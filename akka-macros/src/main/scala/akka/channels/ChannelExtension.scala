@@ -15,6 +15,10 @@ import scala.reflect.runtime.universe
 object ChannelExt extends ExtensionKey[ChannelExtension]
 
 class ChannelExtension(system: ExtendedActorSystem) extends Extension {
+
+  // kick-start the universe (needed due to thread safety issues in runtime mirror)
+  private val t = implicitly[TypeTag[(Int, Int) :+: TNil]]
+
   def actorOf[Ch <: ChannelList: TypeTag](factory: ⇒ Channels[_, Ch]): ChannelRef[Ch] =
     new ChannelRef[Ch](system.actorOf(Props(factory)))
 }

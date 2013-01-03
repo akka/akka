@@ -5,15 +5,21 @@
 package akka.channels
 
 import language.experimental.macros
-import akka.actor.Actor
+import akka.actor.{ Actor, ActorRef }
 import scala.reflect.macros.Context
+import scala.reflect.runtime.{ universe ⇒ ru }
 import scala.reflect.runtime.universe.TypeTag
-import scala.reflect.macros.Universe
+import scala.reflect.api.Universe
 import scala.runtime.AbstractPartialFunction
 import akka.actor.Props
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.{ classTag, ClassTag }
+import scala.concurrent.{ ExecutionContext, Future }
+import akka.util.Timeout
+import akka.pattern.ask
+import scala.util.control.NoStackTrace
+import akka.AkkaException
 
 /**
  * Typed channels atop untyped actors.
@@ -32,7 +38,7 @@ import scala.reflect.{ classTag, ClassTag }
  *    erased type, which may be less precise than the actual channel type; this
  *    can lead to ClassCastExceptions if sending through the untyped ActorRef
  */
-class Channels[P <: ChannelList, C <: ChannelList: TypeTag] extends Actor {
+trait Channels[P <: ChannelList, C <: ChannelList] extends Actor {
 
   import Channels._
 
@@ -75,6 +81,14 @@ class Channels[P <: ChannelList, C <: ChannelList: TypeTag] extends Actor {
       behavior += cls -> recv.asInstanceOf[Recv[Any, ChannelList]]
   }
 
+  /*
+   * HORRIBLE HACK AHEAD
+   * 
+   * I’d like to keep this a trait, but traits cannot have constructor 
+   * arguments, not even TypeTags.
+   */
+  protected var channelListTypeTag: TypeTag[C] = _
+
   /**
    * Sort so that subtypes always precede their supertypes, but without
    * obeying any order between unrelated subtypes (insert sort).
@@ -92,20 +106,29 @@ class Channels[P <: ChannelList, C <: ChannelList: TypeTag] extends Actor {
 
     val index = sortClasses(behavior.keys)
 
-    override def applyOrElse[A, B >: Unit](x: A, default: A ⇒ B): B = {
-      val msgClass = x.getClass
-      index find (_ isAssignableFrom msgClass) match {
-        case None      ⇒ default(x)
-        case Some(cls) ⇒ behavior(cls).apply(x, new ChannelRef(sender))
-      }
+    override def applyOrElse[A, B >: Unit](x: A, default: A ⇒ B): B = x match {
+      case CheckType(tt) ⇒
+        narrowCheck(ru)(channelListTypeTag.tpe, tt.tpe) match {
+          case Nil        ⇒ sender ! CheckTypeACK
+          case err :: Nil ⇒ sender ! CheckTypeNAK(err)
+          case list       ⇒ sender ! CheckTypeNAK(list mkString ("multiple errors:\n  - ", "  - ", ""))
+        }
+      case _ ⇒
+        val msgClass = x.getClass
+        index find (_ isAssignableFrom msgClass) match {
+          case None      ⇒ default(x)
+          case Some(cls) ⇒ behavior(cls).apply(x, new ChannelRef(sender))
+        }
     }
 
-    def isDefinedAt(x: Any): Boolean = {
-      val msgClass = x.getClass
-      index find (_ isAssignableFrom msgClass) match {
-        case None      ⇒ false
-        case Some(cls) ⇒ true
-      }
+    def isDefinedAt(x: Any): Boolean = x match {
+      case c: CheckType[_] ⇒ true
+      case _ ⇒
+        val msgClass = x.getClass
+        index find (_ isAssignableFrom msgClass) match {
+          case None      ⇒ false
+          case Some(cls) ⇒ true
+        }
     }
   }
 }
@@ -113,6 +136,11 @@ class Channels[P <: ChannelList, C <: ChannelList: TypeTag] extends Actor {
 object Channels {
 
   type Recv[T, Ch <: ChannelList] = Function2[T, ChannelRef[Ch], Unit]
+
+  case class CheckType[T](tt: TypeTag[T])
+  case object CheckTypeACK
+  case class CheckTypeNAK(errors: String)
+  case class NarrowingException(errors: String) extends AkkaException(errors) with NoStackTrace
 
   /**
    * This macro transforms a channel[] call which returns “some” Behaviorist
@@ -131,16 +159,26 @@ object Channels {
       reify(null)
     } else {
       val channels = toChannels(c.universe)(out)
-      c.Expr(Apply(
-        TypeApply(
-          Select(c.prefix.tree, "_channel"), List(
-            TypeTree().setType(c.weakTypeOf[T]),
-            TypeTree().setType(channels))),
-        List(Select(
+      c.Expr(
+        Apply(
           TypeApply(
-            Select(Select(Ident("scala"), "reflect"), "classTag"),
-            List(TypeTree().setType(c.weakTypeOf[T]))),
-          "runtimeClass"))))
+            Select(c.prefix.tree, "_channel"), List(
+              TypeTree().setType(c.weakTypeOf[T]),
+              TypeTree().setType(channels))),
+          List(
+            Block(List(
+              If(reify(c.prefix.splice.channelListTypeTag == null).tree,
+                Apply(
+                  Select(c.prefix.tree, "channelListTypeTag_$eq"),
+                  List(TypeApply(
+                    Select(Select(Select(Select(Select(Ident("scala"), "reflect"), "runtime"), nme.PACKAGE), "universe"), "typeTag"),
+                    List(TypeTree().setType(c.weakTypeOf[C]))))),
+                c.literalUnit.tree)),
+              Select(
+                TypeApply(
+                  Select(Select(Ident("scala"), "reflect"), "classTag"),
+                  List(TypeTree().setType(c.weakTypeOf[T]))),
+                "runtimeClass")))))
     }
   }
 
@@ -164,6 +202,25 @@ object Channels {
       c.error(c.enclosingPosition, s"This actor cannot support a child requiring channels ${missing mkString ", "}")
       reify(???)
     }
+  }
+
+  /**
+   * check that the original ChannelList is a subtype of the target ChannelList; return a list or error strings
+   */
+  def narrowCheck(u: Universe)(orig: u.Type, target: u.Type): List[String] = {
+    var errors = List.empty[String]
+    for (in ← inputChannels(u)(target)) {
+      val replies = replyChannels(u)(orig, in)
+      if (replies.isEmpty) errors ::= s"original ChannelRef does not support input type $in"
+      else {
+        val targetReplies = replyChannels(u)(target, in)
+        val unsatisfied = replies filterNot (r ⇒ targetReplies exists (r <:< _))
+        if (unsatisfied.nonEmpty) errors ::= s"reply types ${unsatisfied mkString ", "} not covered for channel $in"
+        val leftovers = targetReplies filterNot (t ⇒ replies exists (_ <:< t))
+        if (leftovers.nonEmpty) errors ::= s"desired reply types ${leftovers mkString ", "} are superfluous for channel $in"
+      }
+    }
+    errors.reverse
   }
 
   /**
@@ -230,4 +287,12 @@ object Channels {
     rec(list.reverse, weakTypeOf[TNil])
   }
 
+  implicit class ActorRefOps(val ref: ActorRef) extends AnyVal {
+    def narrow[C <: ChannelList](implicit timeout: Timeout, ec: ExecutionContext, tt: ru.TypeTag[C]): Future[ChannelRef[C]] = {
+      ref ? CheckType(tt) map {
+        case CheckTypeACK        ⇒ new ChannelRef[C](ref)
+        case CheckTypeNAK(error) ⇒ throw NarrowingException(error)
+      }
+    }
+  }
 }

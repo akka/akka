@@ -59,16 +59,10 @@ object ChannelRef {
       type PrefixType = ChannelRef[T]
     }): c.Expr[ChannelRef[C]] = {
     import c.{ universe ⇒ u }
-    for (in ← inputChannels(u)(u.weakTypeOf[C])) {
-      val replies = replyChannels(u)(u.weakTypeOf[T], in)
-      if (replies.isEmpty) c.error(c.enclosingPosition, s"original ChannelRef does not support input type $in")
-      else {
-        val targetReplies = replyChannels(u)(u.weakTypeOf[C], in)
-        val unsatisfied = replies filterNot (r ⇒ targetReplies exists (r <:< _))
-        if (unsatisfied.nonEmpty) c.error(c.enclosingPosition, s"reply types ${unsatisfied mkString ", "} not covered for channel $in")
-        val leftovers = targetReplies filterNot (t ⇒ replies exists (_ <:< t))
-        if (leftovers.nonEmpty) c.error(c.enclosingPosition, s"reply types ${leftovers mkString ", "} are superfluous for channel $in")
-      }
+    narrowCheck(u)(u.weakTypeOf[T], u.weakTypeOf[C]) match {
+      case Nil        ⇒ // okay
+      case err :: Nil ⇒ c.error(c.enclosingPosition, err)
+      case list       ⇒ c.error(c.enclosingPosition, list mkString ("multiple errors:\n  - ", "\n  - ", ""))
     }
     u.reify(c.prefix.splice.asInstanceOf[ChannelRef[C]])
   }

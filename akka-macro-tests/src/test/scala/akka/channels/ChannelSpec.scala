@@ -4,11 +4,14 @@
 
 package akka.channels
 
-import akka.testkit.AkkaSpec
-import akka.testkit.ImplicitSender
+import akka.testkit._
 import akka.actor.ActorRef
 import akka.makkros.Test._
 import scala.tools.reflect.ToolBoxError
+import akka.util.Timeout
+import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.util.Failure
 
 object ChannelSpec {
 
@@ -64,8 +67,8 @@ object ChannelSpec {
       case (C, _) ⇒ client ! C
     }
 
-    createChild(new Channels[(C, Nothing) :+: TNil, TNil])
-    createChild(new Channels[(A, Nothing) :+:(C, Nothing) :+: TNil, TNil])
+    createChild(new Channels[(C, Nothing) :+: TNil, TNil] {})
+    createChild(new Channels[(A, Nothing) :+:(C, Nothing) :+: TNil, TNil] {})
   }
 }
 
@@ -183,7 +186,7 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
             |import akka.channels._
             |import ChannelSpec._
             |new Channels[TNil, (A, B) :+: (C, D) :+: TNil] {
-            |  createChild(new Channels)
+            |  createChild(new Channels[Nothing, Nothing] {})
             |}
             """.stripMargin)
       }.message must include("Parent argument must not be Nothing")
@@ -195,7 +198,7 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
             |import akka.channels._
             |import ChannelSpec._
             |new Channels[TNil, (A, B) :+: (C, D) :+: TNil] {
-            |  createChild(new Channels[(B, Nothing) :+: TNil, TNil])
+            |  createChild(new Channels[(B, Nothing) :+: TNil, TNil] {})
             |}
             """.stripMargin)
       }.message must include("This actor cannot support a child requiring channels akka.channels.ChannelSpec.B")
@@ -274,6 +277,28 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
             |new ChannelRef[(A, C) :+: (B, D) :+: TNil](null).narrow[(A, C) :+: (A, Nothing) :+: TNil]
             """.stripMargin)
       }.message must include("reply types Nothing are superfluous for channel akka.channels.ChannelSpec.A")
+    }
+
+    "support narrowing ActorRefs" in {
+      import Channels._
+      val channel = ChannelExt(system).actorOf(new RecvC(testActor))
+      val ref = channel.actorRef
+      implicit val t = Timeout(1.second.dilated)
+      import system.dispatcher
+      val r = Await.result(ref.narrow[(C, Nothing) :+: TNil], t.duration)
+      r ! C
+      expectMsg(C)
+    }
+
+    "deny wrong narrowing of ActorRefs" in {
+      import Channels._
+      val channel = ChannelExt(system).actorOf(new RecvC(testActor))
+      val ref = channel.actorRef
+      implicit val t = Timeout(1.second.dilated)
+      import system.dispatcher
+      val f = ref.narrow[(D, Nothing) :+: TNil]
+      Await.ready(f, t.duration)
+      f.value.get must be(Failure(Channels.NarrowingException("original ChannelRef does not support input type akka.channels.ChannelSpec.D")))
     }
 
   }
