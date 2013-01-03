@@ -172,7 +172,7 @@ object Channels {
   final def inputChannels(u: Universe)(list: u.Type): List[u.Type] = {
     import u._
     def rec(l: u.Type, acc: List[u.Type]): List[u.Type] = l match {
-      case TypeRef(_, _, TypeRef(_, _, in :: _) :: tail :: Nil) ⇒ rec(tail, in :: acc)
+      case TypeRef(_, _, TypeRef(_, _, in :: _) :: tail :: Nil) ⇒ rec(tail, if (acc contains in) acc else in :: acc)
       case _ ⇒ acc.reverse
     }
     rec(list, Nil)
@@ -187,7 +187,7 @@ object Channels {
     def rec(l: Type, acc: List[Type]): List[Type] = {
       l match {
         case TypeRef(_, _, TypeRef(_, _, in :: out :: Nil) :: tail :: Nil) if msg <:< in ⇒
-          rec(tail, out :: acc)
+          rec(tail, if (acc contains out) acc else out :: acc)
         case TypeRef(_, _, _ :: tail :: Nil) ⇒
           rec(tail, acc)
         case _ ⇒ acc.reverse

@@ -16,6 +16,8 @@ class ChannelRef[+T <: ChannelList](val actorRef: ActorRef) extends AnyVal {
 
   def ![M](msg: M): Unit = macro ChannelRef.tell[T, M]
 
+  def narrow[C <: ChannelList]: ChannelRef[C] = macro ChannelRef.narrowImpl[C, T]
+
 }
 
 object ChannelRef {
@@ -50,6 +52,25 @@ object ChannelRef {
         else c.Expr(senderTree)(c.WeakTypeTag(senderTree.tpe))
       c.universe.reify(c.prefix.splice.actorRef.tell(msg.splice, sender.splice))
     }
+  }
+
+  def narrowImpl[C <: ChannelList: c.WeakTypeTag, T <: ChannelList: c.WeakTypeTag](
+    c: Context {
+      type PrefixType = ChannelRef[T]
+    }): c.Expr[ChannelRef[C]] = {
+    import c.{ universe ⇒ u }
+    for (in ← inputChannels(u)(u.weakTypeOf[C])) {
+      val replies = replyChannels(u)(u.weakTypeOf[T], in)
+      if (replies.isEmpty) c.error(c.enclosingPosition, s"original ChannelRef does not support input type $in")
+      else {
+        val targetReplies = replyChannels(u)(u.weakTypeOf[C], in)
+        val unsatisfied = replies filterNot (r ⇒ targetReplies exists (r <:< _))
+        if (unsatisfied.nonEmpty) c.error(c.enclosingPosition, s"reply types ${unsatisfied mkString ", "} not covered for channel $in")
+        val leftovers = targetReplies filterNot (t ⇒ replies exists (_ <:< t))
+        if (leftovers.nonEmpty) c.error(c.enclosingPosition, s"reply types ${leftovers mkString ", "} are superfluous for channel $in")
+      }
+    }
+    u.reify(c.prefix.splice.asInstanceOf[ChannelRef[C]])
   }
 
 }

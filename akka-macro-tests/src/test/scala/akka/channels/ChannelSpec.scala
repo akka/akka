@@ -231,6 +231,51 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
       }.message must include("This ChannelRef does not support messages of type akka.channels.ChannelSpec.B.type")
     }
 
+    "support narrowing of references" in {
+      val ref = new ChannelRef[(A, B) :+:(C, D) :+: TNil](null)
+      val n: ChannelRef[(A1.type, B) :+: TNil] = ref.narrow[(A1.type, B) :+: TNil]
+    }
+
+    "not allow narrowed refs to open new channels" in {
+      intercept[ToolBoxError] {
+        eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |new ChannelRef[(A, C) :+: TNil](null).narrow[(A, C) :+: (B, C) :+: TNil]
+            """.stripMargin)
+      }.message must include("original ChannelRef does not support input type akka.channels.ChannelSpec.B")
+    }
+
+    "not allow narrowed refs to widen channels" in {
+      intercept[ToolBoxError] {
+        eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |new ChannelRef[(A1.type, C) :+: TNil](null).narrow[(A, C) :+: TNil]
+            """.stripMargin)
+      }.message must include("original ChannelRef does not support input type akka.channels.ChannelSpec.A")
+    }
+
+    "not allow narrowed refs to miss reply channels" in {
+      intercept[ToolBoxError] {
+        eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |new ChannelRef[(A, C) :+: (A, D) :+: TNil](null).narrow[(A, C) :+: TNil]
+            """.stripMargin)
+      }.message must include("reply types akka.channels.ChannelSpec.D not covered for channel akka.channels.ChannelSpec.A")
+    }
+
+    "not allow narrowed refs to narrow reply channels" in {
+      intercept[ToolBoxError] {
+        eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |new ChannelRef[(A, C) :+: (B, D) :+: TNil](null).narrow[(A, C) :+: (A, Nothing) :+: TNil]
+            """.stripMargin)
+      }.message must include("reply types Nothing are superfluous for channel akka.channels.ChannelSpec.A")
+    }
+
   }
 
 }
