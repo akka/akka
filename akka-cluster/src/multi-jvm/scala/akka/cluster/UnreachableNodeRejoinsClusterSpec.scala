@@ -67,7 +67,7 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
     enterBarrier("after_" + endBarrierNumber)
   }
 
-  "A cluster of " + roles.size + " members" ignore {
+  "A cluster of " + roles.size + " members" must {
 
     "reach initial convergence" taggedAs LongRunningTest in {
       awaitClusterUp(roles: _*)
