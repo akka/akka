@@ -23,6 +23,7 @@ import util.control.{ NoStackTrace, NonFatal }
 import akka.dispatch.ThreadPoolConfig
 import akka.remote.transport.AssociationHandle.HandleEventListener
 import java.util.concurrent.atomic.AtomicInteger
+import org.jboss.netty.handler.ssl.SslHandler
 
 object NettyTransportSettings {
   sealed trait Mode
@@ -244,10 +245,17 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
   }
 
   private val associationListenerPromise: Promise[AssociationEventListener] = Promise()
+
+  private def sslHandler(isClient: Boolean): SslHandler = {
+    val handler = NettySSLSupport(settings.SslSettings.get, log, isClient)
+    handler.setIssueHandshake(true)
+    handler
+  }
+
   private val serverPipelineFactory: ChannelPipelineFactory = new ChannelPipelineFactory {
     override def getPipeline: ChannelPipeline = {
       val pipeline = newPipeline
-      if (EnableSsl) pipeline.addFirst("SslHandler", NettySSLSupport(settings.SslSettings.get, log, false))
+      if (EnableSsl) pipeline.addFirst("SslHandler", sslHandler(isClient = false))
       val handler = if (isDatagram) new UdpServerHandler(NettyTransport.this, associationListenerPromise.future)
       else new TcpServerHandler(NettyTransport.this, associationListenerPromise.future)
       pipeline.addLast("ServerHandler", handler)
@@ -258,7 +266,7 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
   private def clientPipelineFactory(statusPromise: Promise[AssociationHandle]): ChannelPipelineFactory = new ChannelPipelineFactory {
     override def getPipeline: ChannelPipeline = {
       val pipeline = newPipeline
-      if (EnableSsl) pipeline.addFirst("SslHandler", NettySSLSupport(settings.SslSettings.get, log, true))
+      if (EnableSsl) pipeline.addFirst("SslHandler", sslHandler(isClient = true))
       val handler = if (isDatagram) new UdpClientHandler(NettyTransport.this, statusPromise)
       else new TcpClientHandler(NettyTransport.this, statusPromise)
       pipeline.addLast("clienthandler", handler)
