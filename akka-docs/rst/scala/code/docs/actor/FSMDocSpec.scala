@@ -6,6 +6,8 @@ package docs.actor
 import language.postfixOps
 
 import akka.testkit.{ AkkaSpec ⇒ MyFavoriteTestFrameWorkPlusAkkaTestKit }
+import akka.util.ByteString
+
 //#test-code
 import akka.actor.Props
 import scala.collection.immutable
@@ -129,8 +131,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
 
         //#transform-syntax
         when(SomeState)(transform {
-          case Event(bytes: Array[Byte], read) ⇒ stay using (read + bytes.length)
-          case Event(bytes: List[Byte], read)  ⇒ stay using (read + bytes.size)
+          case Event(bytes: ByteString, read) ⇒ stay using (read + bytes.length)
         } using {
           case s @ FSM.State(state, read, timeout, stopReason, replies) if read > 1000 ⇒
             goto(Processing)
@@ -144,8 +145,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
         }
 
         when(SomeState)(transform {
-          case Event(bytes: Array[Byte], read) ⇒ stay using (read + bytes.length)
-          case Event(bytes: List[Byte], read)  ⇒ stay using (read + bytes.size)
+          case Event(bytes: ByteString, read) ⇒ stay using (read + bytes.length)
         } using processingTrigger)
         //#alt-transform-syntax
 
@@ -211,7 +211,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
       expectMsg(Batch(immutable.Seq(45)))
     }
 
-    "batch not if uninitialized" in {
+    "not batch if uninitialized" in {
       val buncher = system.actorOf(Props(new Buncher))
       buncher ! Queue(42)
       expectNoMsg
