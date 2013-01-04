@@ -190,7 +190,11 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
 
   private def finishTerminate() {
     val a = actor
-    // The following order is crucial for things to work properly. Only chnage this if you're very confident and lucky.
+    /* The following order is crucial for things to work properly. Only change this if you're very confident and lucky.
+     *
+     * Please note that if a parent is also a watcher then ChildTerminated and Terminated must be processed in this
+     * specific order.
+     */
     try if (a ne null) a.postStop()
     finally try dispatcher.detach(this)
     finally try parent.sendSystemMessage(ChildTerminated(self))

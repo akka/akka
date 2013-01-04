@@ -19,6 +19,7 @@ import scala.collection.immutable
  */
 @SerialVersionUID(1L)
 final case class Address private (protocol: String, system: String, host: Option[String], port: Option[Int]) {
+  // Please note that local/non-local distinction must be preserved: host.isDefined == !isLocal
 
   def this(protocol: String, system: String) = this(protocol, system, None, None)
   def this(protocol: String, system: String, host: String, port: Int) = this(protocol, system, Option(host), Some(port))
