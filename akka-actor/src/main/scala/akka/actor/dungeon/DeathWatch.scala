@@ -4,7 +4,7 @@
 
 package akka.actor.dungeon
 
-import akka.actor.{ Terminated, InternalActorRef, ActorRef, ActorCell, Actor, Address, AddressTerminated }
+import akka.actor.{ Terminated, InternalActorRef, ActorRef, ActorRefScope, ActorCell, Actor, Address, AddressTerminated }
 import akka.dispatch.{ Watch, Unwatch }
 import akka.event.Logging.{ Warning, Error, Debug }
 import scala.util.control.NonFatal
@@ -51,12 +51,24 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
     if (!watchedBy.isEmpty) {
       val terminated = Terminated(self)(existenceConfirmed = true, addressTerminated = false)
       try {
-        watchedBy foreach {
-          watcher ⇒
-            try watcher.tell(terminated, self) catch {
-              case NonFatal(t) ⇒ publish(Error(t, self.path.toString, clazz(actor), "deathwatch"))
-            }
-        }
+        def sendTerminated(ifLocal: Boolean)(watcher: ActorRef): Unit =
+          if (watcher.asInstanceOf[ActorRefScope].isLocal == ifLocal) watcher.tell(terminated, self)
+
+        /*
+         * It is important to notify the remote watchers first, otherwise RemoteDaemon might shut down, causing
+         * the remoting to shut down as well. At this point Terminated messages to remote watchers are no longer
+         * deliverable.
+         *
+         * The problematic case is:
+         *  1. Terminated is sent to RemoteDaemon
+         *   1a. RemoteDaemon is fast enough to notify the terminator actor in RemoteActorRefProvider
+         *   1b. The terminator is fast enough to enqueue the shutdown command in the remoting
+         *  2. Only at this point is the Terminated (to be sent remotely) enqueued in the mailbox of remoting
+         *
+         * If the remote watchers are notified first, then the mailbox of the Remoting will guarantee the correct order.
+         */
+        watchedBy foreach sendTerminated(ifLocal = false)
+        watchedBy foreach sendTerminated(ifLocal = true)
       } finally watchedBy = ActorCell.emptyActorRefSet
     }
   }
