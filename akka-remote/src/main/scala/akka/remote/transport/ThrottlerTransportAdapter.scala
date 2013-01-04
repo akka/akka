@@ -4,8 +4,6 @@ import ThrottlerTransportAdapter._
 import akka.actor._
 import akka.pattern.pipe
 import akka.remote.transport.ActorTransportAdapter.AssociateUnderlying
-import akka.remote.transport.ActorTransportAdapter.ListenUnderlying
-import akka.remote.transport.ActorTransportAdapter.ListenerRegistered
 import akka.remote.transport.AkkaPduCodec.Associate
 import akka.remote.transport.AssociationHandle.{ ActorHandleEventListener, Disassociated, InboundPayload, HandleEventListener }
 import akka.remote.transport.ThrottledAssociation._
@@ -104,7 +102,10 @@ class ThrottlerTransportAdapter(_wrappedTransport: Transport, _system: ExtendedA
   override protected def addedSchemeIdentifier = SchemeIdentifier
   override protected def maximumOverhead = 0
   protected def managerName = s"throttlermanager.${wrappedTransport.schemeIdentifier}${UniqueId.getAndIncrement}"
-  protected def managerProps = Props(new ThrottlerManager(wrappedTransport))
+  protected def managerProps = {
+    val wt = wrappedTransport
+    Props(new ThrottlerManager(wt))
+  }
 
   override def managementCommand(cmd: Any, statusPromise: Promise[Boolean]): Unit = cmd match {
     case s @ SetThrottle(_, _, _) ⇒
@@ -119,12 +120,10 @@ private[transport] object ThrottlerManager {
   case class Checkin(origin: Address, handle: ThrottlerHandle)
 }
 
-private[transport] class ThrottlerManager(wrappedTransport: Transport) extends Actor {
+private[transport] class ThrottlerManager(wrappedTransport: Transport) extends ActorTransportAdapterManager {
 
   import context.dispatcher
 
-  private val ids = Iterator from 0
-  private var associationListener: AssociationEventListener = _
   private var throttlingModes = Map[Address, (ThrottleMode, Direction)]()
   private var handleTable = List[(Address, ThrottlerHandle)]()
 
@@ -132,20 +131,7 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
 
   override def postStop(): Unit = wrappedTransport.shutdown()
 
-  def receive: Receive = {
-    case ListenUnderlying(listenAddress, upstreamListenerFuture) ⇒
-      upstreamListenerFuture.future.map { ListenerRegistered(_) } pipeTo self
-
-    case ListenerRegistered(listener) ⇒
-      associationListener = listener
-      context.become(ready)
-
-    // Block inbound associations until handler is registered
-    case InboundAssociation(handle) ⇒
-      handle.disassociate()
-  }
-
-  private def ready: Receive = {
+  override def ready: Receive = {
     case InboundAssociation(handle) ⇒
       val wrappedHandle = wrapHandle(handle, associationListener, inbound = true)
       wrappedHandle.throttlerActor ! wrappedHandle
@@ -207,7 +193,7 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
   private def wrapHandle(originalHandle: AssociationHandle, listener: AssociationEventListener, inbound: Boolean): ThrottlerHandle = {
     val managerRef = self
     val throttlerActor = context.actorOf(Props(new ThrottledAssociation(managerRef, listener, originalHandle, inbound)),
-      "throttler" + ids.next())
+      "throttler" + nextId())
     ThrottlerHandle(originalHandle, throttlerActor)
   }
 

@@ -101,9 +101,7 @@ private[remote] class AkkaProtocolTransport(
 private[transport] class AkkaProtocolManager(
   private val wrappedTransport: Transport,
   private val settings: AkkaProtocolSettings)
-  extends Actor {
-
-  import context.dispatcher
+  extends ActorTransportAdapterManager {
 
   // The AkkaProtocolTransport does not handle the recovery of associations, this task is implemented in the
   // remoting itself. Hence the strategy Stop.
@@ -111,32 +109,13 @@ private[transport] class AkkaProtocolManager(
     case NonFatal(_) ⇒ Stop
   }
 
-  private val nextId = Iterator from 0
-
-  var localAddress: Address = _
-
-  private var associationHandler: AssociationEventListener = _
-
-  def receive: Receive = {
-    case ListenUnderlying(listenAddress, upstreamListenerFuture) ⇒
-      localAddress = listenAddress
-      upstreamListenerFuture.future.map { ListenerRegistered(_) } pipeTo self
-
-    case ListenerRegistered(listener) ⇒
-      associationHandler = listener
-      context.become(ready)
-
-    // Block inbound associations until handler is registered
-    case InboundAssociation(handle) ⇒ handle.disassociate()
-  }
-
   private def actorNameFor(remoteAddress: Address): String =
-    "akkaProtocol-" + AddressUrlEncoder(remoteAddress) + "-" + nextId.next()
+    "akkaProtocol-" + AddressUrlEncoder(remoteAddress) + "-" + nextId()
 
-  private def ready: Receive = {
+  override def ready: Receive = {
     case InboundAssociation(handle) ⇒
       val stateActorLocalAddress = localAddress
-      val stateActorAssociationHandler = associationHandler
+      val stateActorAssociationHandler = associationListener
       val stateActorSettings = settings
       val failureDetector = createFailureDetector()
       context.actorOf(Props(new ProtocolStateActor(
