@@ -19,10 +19,26 @@ import scala.collection.immutable
  */
 @SerialVersionUID(1L)
 final case class Address private (protocol: String, system: String, host: Option[String], port: Option[Int]) {
-  // Please note that local/non-local distinction must be preserved: host.isDefined == !isLocal
+  // Please note that local/non-local distinction must be preserved:
+  // host.isDefined == hasGlobalScope
+  // host.isEmpty == hasLocalScope
+  // hasLocalScope == !hasGlobalScope
 
   def this(protocol: String, system: String) = this(protocol, system, None, None)
   def this(protocol: String, system: String, host: String, port: Int) = this(protocol, system, Option(host), Some(port))
+
+  /**
+   * Returns true if this Address is only defined locally. It is not safe to send locally scoped addresses to remote
+   * hosts. See also [[akka.actor.Address#hasGlobalScope]].
+   */
+  def hasLocalScope: Boolean = host.isEmpty
+
+  /**
+   * Returns true if this Address is usable globally. Unlike locally defined addresses ([[akka.actor.Address#hasLocalScope]])
+   * addresses of global scope are safe to sent to other hosts, as they globally and uniquely identify an addressable
+   * entity.
+   */
+  def hasGlobalScope: Boolean = host.isDefined
 
   /**
    * Returns the canonical String representation of this Address formatted as:
