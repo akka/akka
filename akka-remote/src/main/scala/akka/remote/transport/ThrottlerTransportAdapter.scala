@@ -59,43 +59,42 @@ object ThrottlerTransportAdapter {
   case class SetThrottle(address: Address, direction: Direction, mode: ThrottleMode)
 
   sealed trait ThrottleMode {
-    def tryConsumeTokens(timeOfSend: Long, tokens: Int): (ThrottleMode, Boolean)
-    def timeToAvailable(currentTime: Long, tokens: Int): Long
+    def tryConsumeTokens(nanoTimeOfSend: Long, tokens: Int): (ThrottleMode, Boolean)
+    def timeToAvailable(currentNanoTime: Long, tokens: Int): FiniteDuration
   }
 
-  case class TokenBucket(capacity: Int, tokensPerSecond: Double, lastSend: Long, availableTokens: Int)
+  case class TokenBucket(capacity: Int, tokensPerSecond: Double, nanoTimeOfLastSend: Long, availableTokens: Int)
     extends ThrottleMode {
 
-    private def isAvailable(timeOfSend: Long, tokens: Int): Boolean = if ((tokens > capacity && availableTokens > 0)) {
+    private def isAvailable(nanoTimeOfSend: Long, tokens: Int): Boolean = if ((tokens > capacity && availableTokens > 0)) {
       true // Allow messages larger than capacity through, it will be recorded as negative tokens
-    } else min((availableTokens + tokensGenerated(timeOfSend)), capacity) >= tokens
+    } else min((availableTokens + tokensGenerated(nanoTimeOfSend)), capacity) >= tokens
 
-    override def tryConsumeTokens(timeOfSend: Long, tokens: Int): (ThrottleMode, Boolean) = {
-      if (isAvailable(timeOfSend, tokens))
+    override def tryConsumeTokens(nanoTimeOfSend: Long, tokens: Int): (ThrottleMode, Boolean) = {
+      if (isAvailable(nanoTimeOfSend, tokens))
         (this.copy(
-          lastSend = timeOfSend,
-          availableTokens = min(availableTokens - tokens + tokensGenerated(timeOfSend), capacity)), true)
+          nanoTimeOfLastSend = nanoTimeOfSend,
+          availableTokens = min(availableTokens - tokens + tokensGenerated(nanoTimeOfSend), capacity)), true)
       else (this, false)
     }
 
-    override def timeToAvailable(currentTime: Long, tokens: Int): Long = {
-      val needed = (if (tokens > capacity) 1 else tokens) - tokensGenerated(currentTime)
-      TimeUnit.SECONDS.toNanos((needed / tokensPerSecond).toLong)
+    override def timeToAvailable(currentNanoTime: Long, tokens: Int): FiniteDuration = {
+      val needed = (if (tokens > capacity) 1 else tokens) - tokensGenerated(currentNanoTime)
+      (needed / tokensPerSecond).seconds
     }
 
-    private def tokensGenerated(timeOfSend: Long): Int =
-      (TimeUnit.NANOSECONDS.toMillis(timeOfSend - lastSend) * tokensPerSecond / 1000.0).toInt
+    private def tokensGenerated(nanoTimeOfSend: Long): Int =
+      (TimeUnit.NANOSECONDS.toMillis(nanoTimeOfSend - nanoTimeOfLastSend) * tokensPerSecond / 1000.0).toInt
   }
 
   case object Unthrottled extends ThrottleMode {
-
-    override def tryConsumeTokens(timeOfSend: Long, tokens: Int): (ThrottleMode, Boolean) = (this, true)
-    override def timeToAvailable(currentTime: Long, tokens: Int): Long = 1L
+    override def tryConsumeTokens(nanoTimeOfSend: Long, tokens: Int): (ThrottleMode, Boolean) = (this, true)
+    override def timeToAvailable(currentNanoTime: Long, tokens: Int): FiniteDuration = Duration.Zero
   }
 
   case object Blackhole extends ThrottleMode {
-    override def tryConsumeTokens(timeOfSend: Long, tokens: Int): (ThrottleMode, Boolean) = (this, false)
-    override def timeToAvailable(currentTime: Long, tokens: Int): Long = 0L
+    override def tryConsumeTokens(nanoTimeOfSend: Long, tokens: Int): (ThrottleMode, Boolean) = (this, false)
+    override def timeToAvailable(currentNanoTime: Long, tokens: Int): FiniteDuration = Duration.Zero
   }
 }
 
@@ -215,6 +214,8 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
 }
 
 object ThrottledAssociation {
+  private final val DequeueTimerName = "dequeue"
+
   case object Dequeue
 
   sealed trait ThrottlerState
@@ -253,7 +254,7 @@ private[transport] class ThrottledAssociation(
   import context.dispatcher
 
   var inboundThrottleMode: ThrottleMode = _
-  var queue = Queue.empty[ByteString]
+  var throttledMessages = Queue.empty[ByteString]
   var upstreamListener: HandleEventListener = _
 
   override def postStop(): Unit = originalHandle.disassociate()
@@ -272,7 +273,7 @@ private[transport] class ThrottledAssociation(
 
   when(WaitOrigin) {
     case Event(InboundPayload(p), ExposedHandle(exposedHandle)) ⇒
-      queue = queue enqueue p
+      throttledMessages = throttledMessages enqueue p
       peekOrigin(p) match {
         case Some(origin) ⇒
           manager ! Checkin(origin, exposedHandle)
@@ -283,12 +284,12 @@ private[transport] class ThrottledAssociation(
 
   when(WaitMode) {
     case Event(InboundPayload(p), _) ⇒
-      queue = queue enqueue p
+      throttledMessages = throttledMessages enqueue p
       stay()
     case Event(mode: ThrottleMode, ExposedHandle(exposedHandle)) ⇒
       inboundThrottleMode = mode
       if (inboundThrottleMode == Blackhole) {
-        queue = Queue.empty[ByteString]
+        throttledMessages = Queue.empty[ByteString]
         exposedHandle.disassociate()
         stop()
       } else {
@@ -300,7 +301,7 @@ private[transport] class ThrottledAssociation(
 
   when(WaitUpstreamListener) {
     case Event(InboundPayload(p), _) ⇒
-      queue = queue enqueue p
+      throttledMessages = throttledMessages enqueue p
       stay()
     case Event(listener: HandleEventListener, _) ⇒
       upstreamListener = listener
@@ -315,30 +316,30 @@ private[transport] class ThrottledAssociation(
       self ! Dequeue
       goto(Throttling)
     case Event(InboundPayload(p), _) ⇒
-      queue = queue enqueue p
+      throttledMessages = throttledMessages enqueue p
       stay()
   }
 
   when(Throttling) {
     case Event(mode: ThrottleMode, _) ⇒
       inboundThrottleMode = mode
-      if (inboundThrottleMode == Blackhole) queue = Queue.empty[ByteString]
+      if (inboundThrottleMode == Blackhole) throttledMessages = Queue.empty[ByteString]
+      cancelTimer(DequeueTimerName)
+      if (throttledMessages.nonEmpty)
+        scheduleDequeue(inboundThrottleMode.timeToAvailable(System.nanoTime(), throttledMessages.head.length))
       stay()
     case Event(InboundPayload(p), _) ⇒
       forwardOrDelay(p)
       stay()
 
     case Event(Dequeue, _) ⇒
-      if (!queue.isEmpty) {
-        val (payload, newqueue) = queue.dequeue
+      if (throttledMessages.nonEmpty) {
+        val (payload, newqueue) = throttledMessages.dequeue
         upstreamListener notify InboundPayload(payload)
-        queue = newqueue
+        throttledMessages = newqueue
         inboundThrottleMode = inboundThrottleMode.tryConsumeTokens(System.nanoTime(), payload.length)._1
-        if (inboundThrottleMode == Unthrottled && !queue.isEmpty) self ! Dequeue
-        else if (!queue.isEmpty) {
-          context.system.scheduler.scheduleOnce(
-            inboundThrottleMode.timeToAvailable(System.nanoTime(), queue.head.length).nanos, self, Dequeue)
-        }
+        if (throttledMessages.nonEmpty)
+          scheduleDequeue(inboundThrottleMode.timeToAvailable(System.nanoTime(), throttledMessages.head.length))
       }
       stay()
 
@@ -370,22 +371,26 @@ private[transport] class ThrottledAssociation(
     if (inboundThrottleMode == Blackhole) {
       // Do nothing
     } else {
-      if (queue.isEmpty) {
+      if (throttledMessages.isEmpty) {
         val tokens = payload.length
         val (newbucket, success) = inboundThrottleMode.tryConsumeTokens(System.nanoTime(), tokens)
         if (success) {
           inboundThrottleMode = newbucket
           upstreamListener notify InboundPayload(payload)
         } else {
-          queue = queue.enqueue(payload)
-
-          context.system.scheduler.scheduleOnce(
-            inboundThrottleMode.timeToAvailable(System.nanoTime(), tokens).nanos, self, Dequeue)
+          throttledMessages = throttledMessages.enqueue(payload)
+          scheduleDequeue(inboundThrottleMode.timeToAvailable(System.nanoTime(), tokens))
         }
       } else {
-        queue = queue.enqueue(payload)
+        throttledMessages = throttledMessages.enqueue(payload)
       }
     }
+  }
+
+  def scheduleDequeue(delay: FiniteDuration): Unit = inboundThrottleMode match {
+    case Blackhole                   ⇒ // Do nothing
+    case _ if delay <= Duration.Zero ⇒ self ! Dequeue
+    case _                           ⇒ setTimer(DequeueTimerName, Dequeue, delay, repeat = false)
   }
 
 }
