@@ -187,6 +187,7 @@ object Channels {
       c.error(c.enclosingPosition, s"no channel defined for types ${undefined mkString ", "}")
       reify(null)
     } else {
+      checkUnique(c.universe)(tT, tC) foreach (c.error(c.enclosingPosition, _))
       val receive =
         if (tT <:< typeOf[ChannelList]) {
           appliedType(typeOf[Function1[_, _]].typeConstructor, List(
@@ -241,6 +242,13 @@ object Channels {
       c.error(c.enclosingPosition, s"This actor cannot support a child requiring channels ${missing mkString ", "}")
       reify(???)
     }
+  }
+
+  def checkUnique(u: Universe)(channel: u.Type, list: u.Type): Option[String] = {
+    val channels = inputChannels(u)(list) groupBy (_.erasure)
+    val dupes = channels.get(channel.erasure).getOrElse(Nil).filterNot(_ =:= channel)
+    if (dupes.isEmpty) None
+    else Some(s"erasure ${channel.erasure} overlaps with declared channels ${dupes mkString ", "}")
   }
 
   /**

@@ -51,9 +51,8 @@ object ChannelSpec {
   // pos compile test for multiple reply channels
   class SubChannels extends Channels[TNil, (A, B) :+: (A, C) :+: TNil] {
     channel[A] {
-      case (A1, x) ⇒
-        x ! B
-        x ! C
+      case (A1, x) ⇒ x ! B
+      case (_, x)  ⇒ x ! C
     }
   }
 
@@ -80,6 +79,7 @@ object ChannelSpec {
     channel[D] { (d, snd) ⇒ snd ! d }
     channel[T] { x ⇒ target forward x }
   }
+
 }
 
 class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf, classOf[AkkaSpec].getClassLoader)) with ImplicitSender {
@@ -348,6 +348,19 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
       implicit val timeout = Timeout(1.second)
       val r: Future[Msg] = t ? A1
       Await.result(r, 1.second) must be(B)
+    }
+
+    "check that channels do not erase to the same types" in {
+      intercept[ToolBoxError] {
+        eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |new Channels[TNil, (List[A], A) :+: (List[B], B) :+: TNil] {
+            |  channel[List[A]] { (x, s) ⇒ }
+            |  channel[List[B]] { (x, s) ⇒ }
+            |}
+            """.stripMargin)
+      }.message must include("overlaps with declared channels")
     }
 
   }
