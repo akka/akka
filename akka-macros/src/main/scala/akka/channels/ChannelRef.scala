@@ -12,10 +12,14 @@ import scala.annotation.tailrec
 import scala.reflect.macros.Universe
 import akka.actor.Actor
 import akka.actor.ActorContext
+import scala.concurrent.Future
+import akka.util.Timeout
 
 class ChannelRef[+T <: ChannelList](val actorRef: ActorRef) extends AnyVal {
 
   def ![M](msg: M): Unit = macro ChannelRef.tell[T, M]
+
+  def ?[M](msg: M): Future[_] = macro ChannelRef.ask[T, M]
 
   def forward[M](msg: M): Unit = macro ChannelRef.forward[T, M]
 
@@ -54,6 +58,31 @@ object ChannelRef {
         if (senderTree.isEmpty) c.universe.reify(Actor.noSender)
         else c.Expr(senderTree)(c.WeakTypeTag(senderTree.tpe))
       c.universe.reify(c.prefix.splice.actorRef.tell(msg.splice, sender.splice))
+    }
+  }
+
+  def ask[T <: ChannelList: c.WeakTypeTag, M: c.WeakTypeTag](c: Context {
+                                                               type PrefixType = ChannelRef[T]
+                                                             })(msg: c.Expr[M]): c.Expr[Future[_]] = {
+    import c.universe._
+
+    val out = replyChannels(c.universe)(weakTypeOf[T], weakTypeOf[M])
+    if (out.isEmpty) {
+      c.error(c.enclosingPosition, s"This ChannelRef does not support messages of type ${weakTypeOf[M]}")
+      reify(null)
+    } else {
+      val timeout = c.inferImplicitValue(typeOf[Timeout])
+      if (timeout.isEmpty)
+        c.error(c.enclosingPosition, s"no implicit akka.util.Timeout found")
+      val result = appliedType(weakTypeOf[Future[_]].typeConstructor, List(lub(out)))
+      c.Expr(
+        TypeApply(
+          Select(
+            reify(akka.pattern.ask(
+              c.prefix.splice.actorRef, msg.splice)(
+                c.Expr(timeout)(weakTypeTag[Timeout]).splice)).tree,
+            "asInstanceOf"),
+          List(TypeTree().setType(result))))
     }
   }
 

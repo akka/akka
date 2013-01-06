@@ -15,6 +15,7 @@ import scala.concurrent.Await
 import scala.util.Failure
 import akka.actor.ActorSystem
 import scala.reflect.api.Universe
+import scala.concurrent.Future
 
 object ChannelSpec {
 
@@ -333,6 +334,20 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
       wrap ! D
       expectMsg(D)
       lastSender must be(wrap.actorRef)
+    }
+
+    "support typed ask" in {
+      val t = ChannelExt(system).actorOf(new Tester)
+      implicit val timeout = Timeout(1.second)
+      val r: Future[C] = t ? A
+      Await.result(r, 1.second) must be(C)
+    }
+
+    "support typed ask with multiple reply channels" in {
+      val t = ChannelExt(system).actorOf(new SubChannels)
+      implicit val timeout = Timeout(1.second)
+      val r: Future[Msg] = t ? A1
+      Await.result(r, 1.second) must be(B)
     }
 
   }
