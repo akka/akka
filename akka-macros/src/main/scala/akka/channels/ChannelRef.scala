@@ -11,10 +11,13 @@ import scala.reflect.macros.Context
 import scala.annotation.tailrec
 import scala.reflect.macros.Universe
 import akka.actor.Actor
+import akka.actor.ActorContext
 
 class ChannelRef[+T <: ChannelList](val actorRef: ActorRef) extends AnyVal {
 
   def ![M](msg: M): Unit = macro ChannelRef.tell[T, M]
+
+  def forward[M](msg: M): Unit = macro ChannelRef.forward[T, M]
 
   def narrow[C <: ChannelList]: ChannelRef[C] = macro ChannelRef.narrowImpl[C, T]
 
@@ -51,6 +54,21 @@ object ChannelRef {
         if (senderTree.isEmpty) c.universe.reify(Actor.noSender)
         else c.Expr(senderTree)(c.WeakTypeTag(senderTree.tpe))
       c.universe.reify(c.prefix.splice.actorRef.tell(msg.splice, sender.splice))
+    }
+  }
+
+  def forward[T <: ChannelList: c.WeakTypeTag, M: c.WeakTypeTag](c: Context {
+                                                                   type PrefixType = ChannelRef[T]
+                                                                 })(msg: c.Expr[M]): c.Expr[Unit] = {
+    import c.universe._
+    if (weakTypeOf[M] =:= weakTypeOf[Values.WrappedMessage[T]]) {
+      reify(
+        c.prefix.splice.actorRef.forward(
+          msg.splice.asInstanceOf[Values.WrappedMessage[_]].value)(
+            c.Expr(Ident("implicitly"))(weakTypeTag[ActorContext]).splice))
+    } else {
+      c.error(c.enclosingPosition, s"cannot forward message unless types match exactly")
+      reify(())
     }
   }
 

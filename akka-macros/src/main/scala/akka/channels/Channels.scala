@@ -20,6 +20,7 @@ import akka.util.Timeout
 import akka.pattern.ask
 import scala.util.control.NoStackTrace
 import akka.AkkaException
+import akka.actor.ExtendedActorSystem
 
 /**
  * Typed channels atop untyped actors.
@@ -60,7 +61,22 @@ trait Channels[P <: ChannelList, C <: ChannelList] extends Actor {
    */
   implicit def selfChannel = new ChannelRef[C](self)
 
-  private var behavior = Map.empty[Class[_], Recv[Any, ChannelList]]
+  /*
+   * This map holds the current behavior for each erasure-tagged channel; the
+   * basic receive impl will dispatch incoming messages according to the most
+   * specific erased type in this map.
+   */
+  private var behavior = Map.empty[Class[_], FF]
+
+  private trait FF
+  private object FF {
+    def apply(x: Any): FF = x match {
+      case f: Function1[_, _]    ⇒ F1(f.asInstanceOf[Values.WrappedMessage[ChannelList] ⇒ Unit])
+      case f: Function2[_, _, _] ⇒ F2(f.asInstanceOf[(Any, ChannelRef[ChannelList]) ⇒ Unit])
+    }
+  }
+  private case class F1(f: Values.WrappedMessage[ChannelList] ⇒ Unit) extends FF
+  private case class F2(f: (Any, ChannelRef[ChannelList]) ⇒ Unit) extends FF
 
   /**
    * Declare an input channel of the given type; the returned object takes a partial function:
@@ -73,12 +89,13 @@ trait Channels[P <: ChannelList, C <: ChannelList] extends Actor {
    * }
    * }}}
    */
-  def channel[T]: Channels[P, C]#Behaviorist[T, _ <: ChannelList] = macro channelImpl[T, C, P, ChannelList]
+  def channel[T]: Channels[P, C]#Behaviorist[Nothing, T] = macro channelImpl[T, C, P]
 
-  protected def _channel[T, Ch <: ChannelList](cls: Class[_]) = new Behaviorist[T, Ch](cls)
-  protected class Behaviorist[T, Ch <: ChannelList](cls: Class[_]) {
-    def apply(recv: Recv[T, Ch]): Unit =
-      behavior += cls -> recv.asInstanceOf[Recv[Any, ChannelList]]
+  new Behaviorist(null)
+
+  protected class Behaviorist[-R, Ch](tt: ru.TypeTag[Ch]) {
+    def apply(recv: R): Unit =
+      behavior ++= (for (t ← inputChannels(ru)(tt.tpe)) yield tt.mirror.runtimeClass(t.widen) -> FF(recv))
   }
 
   /*
@@ -116,8 +133,12 @@ trait Channels[P <: ChannelList, C <: ChannelList] extends Actor {
       case _ ⇒
         val msgClass = x.getClass
         index find (_ isAssignableFrom msgClass) match {
-          case None      ⇒ default(x)
-          case Some(cls) ⇒ behavior(cls).apply(x, new ChannelRef(sender))
+          case None ⇒ default(x)
+          case Some(cls) ⇒
+            behavior(cls) match {
+              case F1(f) ⇒ f(new Values.WrappedMessage[ChannelList](x))
+              case F2(f) ⇒ f(x, new ChannelRef(sender))
+            }
         }
     }
 
@@ -146,25 +167,45 @@ object Channels {
    * This macro transforms a channel[] call which returns “some” Behaviorist
    * into a _channel[] call with precise reply channel descriptors, so that the
    * partial function it is applied to can enjoy proper type checking.
+   *
+   * T is the message type
+   * C is the channel list of the enclosing Channels
+   * P is the parent channel list
    */
-  def channelImpl[T: c.WeakTypeTag, C <: ChannelList: c.WeakTypeTag, P <: ChannelList: c.WeakTypeTag, Ch <: ChannelList](
+  def channelImpl[T: c.WeakTypeTag, C <: ChannelList: c.WeakTypeTag, P <: ChannelList: c.WeakTypeTag](
     c: Context {
       type PrefixType = Channels[P, C]
-    }): c.Expr[Channels[P, C]#Behaviorist[T, Ch]] = {
+    }): c.Expr[Channels[P, C]#Behaviorist[Nothing, T]] = {
+
+    val tT = c.weakTypeOf[T]
+    val tC = c.weakTypeOf[C]
 
     import c.universe._
-    val out = replyChannels(c.universe)(c.weakTypeOf[C], c.weakTypeOf[T])
-    if (out.isEmpty) {
-      c.error(c.enclosingPosition, s"no channel defined for type ${c.weakTypeOf[T]}")
+
+    val undefined = missingChannels(c.universe)(tC, inputChannels(c.universe)(tT))
+    if (undefined.nonEmpty) {
+      c.error(c.enclosingPosition, s"no channel defined for types ${undefined mkString ", "}")
       reify(null)
     } else {
-      val channels = toChannels(c.universe)(out)
+      val receive =
+        if (tT <:< typeOf[ChannelList]) {
+          appliedType(typeOf[Function1[_, _]].typeConstructor, List(
+            appliedType(typeOf[Values.WrappedMessage[_]].typeConstructor, List(tT)),
+            typeOf[Unit]))
+        } else {
+          val channels = toChannels(c.universe)(replyChannels(c.universe)(tC, tT))
+          appliedType(typeOf[Function2[_, _, _]].typeConstructor, List(
+            tT,
+            appliedType(typeOf[ChannelRef[_]].typeConstructor, List(channels)),
+            typeOf[Unit]))
+        }
       c.Expr(
         Apply(
-          TypeApply(
-            Select(c.prefix.tree, "_channel"), List(
-              TypeTree().setType(c.weakTypeOf[T]),
-              TypeTree().setType(channels))),
+          Select(
+            New(AppliedTypeTree(Select(c.prefix.tree, newTypeName("Behaviorist")), List(
+              TypeTree().setType(receive),
+              TypeTree().setType(tT)))),
+            nme.CONSTRUCTOR),
           List(
             Block(List(
               If(reify(c.prefix.splice.channelListTypeTag == null).tree,
@@ -174,11 +215,9 @@ object Channels {
                     Select(Select(Select(Select(Select(Ident("scala"), "reflect"), "runtime"), nme.PACKAGE), "universe"), "typeTag"),
                     List(TypeTree().setType(c.weakTypeOf[C]))))),
                 c.literalUnit.tree)),
-              Select(
-                TypeApply(
-                  Select(Select(Ident("scala"), "reflect"), "classTag"),
-                  List(TypeTree().setType(c.weakTypeOf[T]))),
-                "runtimeClass")))))
+              TypeApply(
+                Select(Select(Select(Select(Select(Ident("scala"), "reflect"), "runtime"), nme.PACKAGE), "universe"), "typeTag"),
+                List(TypeTree().setType(tT)))))))
     }
   }
 
@@ -224,15 +263,19 @@ object Channels {
   }
 
   /**
-   * get all required channels from a Parent[_]
+   * get all input channels from a ChannelList or return the given type
    */
   final def inputChannels(u: Universe)(list: u.Type): List[u.Type] = {
     import u._
+    val imp = u.mkImporter(ru)
+    val cl = imp.importType(ru.typeOf[ChannelList])
+    val tnil = imp.importType(ru.typeOf[TNil])
     def rec(l: u.Type, acc: List[u.Type]): List[u.Type] = l match {
       case TypeRef(_, _, TypeRef(_, _, in :: _) :: tail :: Nil) ⇒ rec(tail, if (acc contains in) acc else in :: acc)
-      case _ ⇒ acc.reverse
+      case last ⇒ if (last =:= tnil) acc.reverse else (last :: acc).reverse
     }
-    rec(list, Nil)
+    if (list <:< cl) rec(list, Nil)
+    else List(list)
   }
 
   /**
@@ -261,8 +304,8 @@ object Channels {
     // making the top-level method recursive blows up the compiler (when compiling the macro itself)
     def rec(ch: Type, req: List[Type]): List[Type] = {
       ch match {
-        case TypeRef(_, _, TypeRef(_, _, in :: _) :: (tail: Type) :: Nil) ⇒ rec(tail, req filterNot (_ <:< in))
-        case _ ⇒ req
+        case TypeRef(_, _, TypeRef(_, _, in :: _) :: tail :: Nil) ⇒ rec(tail, req filterNot (_ <:< in))
+        case last ⇒ req filterNot (_ <:< last)
       }
     }
     rec(channels, required)
@@ -276,23 +319,17 @@ object Channels {
     import u._
     def rec(l: List[Type], acc: Type): Type = l match {
       case head :: (tail: List[Type]) ⇒
-        rec(tail,
-          appliedType(weakTypeOf[:+:[_, _]].typeConstructor, List(
-            appliedType(weakTypeOf[Tuple2[_, _]].typeConstructor, List(
-              head,
-              weakTypeOf[Nothing])),
-            acc)))
+        if (head =:= weakTypeOf[Nothing]) rec(tail, acc)
+        else
+          rec(tail,
+            appliedType(weakTypeOf[:+:[_, _]].typeConstructor, List(
+              appliedType(weakTypeOf[Tuple2[_, _]].typeConstructor, List(
+                head,
+                weakTypeOf[Nothing])),
+              acc)))
       case _ ⇒ acc
     }
     rec(list.reverse, weakTypeOf[TNil])
   }
 
-  implicit class ActorRefOps(val ref: ActorRef) extends AnyVal {
-    def narrow[C <: ChannelList](implicit timeout: Timeout, ec: ExecutionContext, tt: ru.TypeTag[C]): Future[ChannelRef[C]] = {
-      ref ? CheckType(tt) map {
-        case CheckTypeACK        ⇒ new ChannelRef[C](ref)
-        case CheckTypeNAK(error) ⇒ throw NarrowingException(error)
-      }
-    }
-  }
 }

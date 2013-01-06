@@ -8,10 +8,13 @@ import akka.testkit._
 import akka.actor.ActorRef
 import akka.makkros.Test._
 import scala.tools.reflect.ToolBoxError
+import scala.reflect.runtime.{ universe ⇒ ru }
 import akka.util.Timeout
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.util.Failure
+import akka.actor.ActorSystem
+import scala.reflect.api.Universe
 
 object ChannelSpec {
 
@@ -70,9 +73,15 @@ object ChannelSpec {
     createChild(new Channels[(C, Nothing) :+: TNil, TNil] {})
     createChild(new Channels[(A, Nothing) :+:(C, Nothing) :+: TNil, TNil] {})
   }
+
+  // compile test for polymorphic actors
+  class WriteOnly[T <: ChannelList: ru.TypeTag](target: ChannelRef[T]) extends Channels[TNil, (D, D) :+: T] {
+    channel[D] { (d, snd) ⇒ snd ! d }
+    channel[T] { x ⇒ target forward x }
+  }
 }
 
-class ChannelSpec extends AkkaSpec with ImplicitSender {
+class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf, classOf[AkkaSpec].getClassLoader)) with ImplicitSender {
 
   import ChannelSpec._
 
@@ -163,7 +172,7 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
             |  }
             |}
             """.stripMargin)
-      }.message must include("no channel defined for type akka.channels.ChannelSpec.B")
+      }.message must include("no channel defined for types akka.channels.ChannelSpec.B")
     }
 
     "not permit subchannel replies" in {
@@ -218,6 +227,16 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
         channel[A] { (msg, snd) ⇒ testActor ! msg }
       })
       expectMsg(A)
+    }
+
+    "not permit top-level Channels which send to parent" in {
+      intercept[ToolBoxError] {
+        eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |null.asInstanceOf[ChannelExtension].actorOf(new Channels[(A, A) :+: TNil, (A, Nothing) :+: TNil] {})
+            """.stripMargin)
+      }.message must include("type mismatch")
     }
 
     "not permit sending wrong things to parents" in {
@@ -291,7 +310,6 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
     }
 
     "deny wrong narrowing of ActorRefs" in {
-      import Channels._
       val channel = ChannelExt(system).actorOf(new RecvC(testActor))
       val ref = channel.actorRef
       implicit val t = Timeout(1.second.dilated)
@@ -299,6 +317,22 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
       val f = ref.narrow[(D, Nothing) :+: TNil]
       Await.ready(f, t.duration)
       f.value.get must be(Failure(Channels.NarrowingException("original ChannelRef does not support input type akka.channels.ChannelSpec.D")))
+    }
+
+    "be equal according to its actor" in {
+      val c1, c2 = new ChannelRef[TNil](testActor)
+      c1 must be === c2
+    }
+
+    "allow wrapping of ChannelRefs with pass-through" in {
+      val target = ChannelExt(system).actorOf(new RecvC(testActor))
+      val wrap = ChannelExt(system).actorOf(new WriteOnly(target))
+      wrap ! C
+      expectMsg(C)
+      lastSender must be(target.actorRef)
+      wrap ! D
+      expectMsg(D)
+      lastSender must be(wrap.actorRef)
     }
 
   }
