@@ -16,6 +16,11 @@ import scala.util.Failure
 import akka.actor.ActorSystem
 import scala.reflect.api.Universe
 import scala.concurrent.Future
+import akka.actor.ActorInitializationException
+import akka.actor.Props
+import akka.actor.Actor
+import akka.actor.OneForOneStrategy
+import akka.actor.SupervisorStrategy.Stop
 
 object ChannelSpec {
 
@@ -78,6 +83,10 @@ object ChannelSpec {
   class WriteOnly[T <: ChannelList: ru.TypeTag](target: ChannelRef[T]) extends Channels[TNil, (D, D) :+: T] {
     channel[D] { (d, snd) ⇒ snd ! d }
     channel[T] { x ⇒ target forward x }
+  }
+
+  class MissingChannel extends Channels[TNil, (A, A) :+: (B, B) :+: TNil] {
+    channel[A.type] { (_, _) ⇒ }
   }
 
 }
@@ -361,6 +370,24 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
             |}
             """.stripMargin)
       }.message must include("overlaps with declared channels")
+    }
+
+    "check that all channels were declared" in {
+      EventFilter[ActorInitializationException](occurrences = 1) intercept {
+        system.actorOf(Props(new Actor {
+          context.actorOf(Props[MissingChannel])
+          override val supervisorStrategy = OneForOneStrategy() {
+            case ex: ActorInitializationException ⇒ testActor ! ex.getCause; Stop
+          }
+          def receive = {
+            case _ ⇒
+          }
+        }))
+      }
+      val m = expectMsgType[ActorInitializationException].getMessage
+      m must include("missing declarations for channels")
+      m must include("akka.channels.ChannelSpec.A")
+      m must include("akka.channels.ChannelSpec.B")
     }
 
   }

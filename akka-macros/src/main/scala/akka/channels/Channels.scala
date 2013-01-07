@@ -21,6 +21,7 @@ import akka.pattern.ask
 import scala.util.control.NoStackTrace
 import akka.AkkaException
 import akka.actor.ExtendedActorSystem
+import akka.actor.ActorInitializationException
 
 /**
  * Typed channels atop untyped actors.
@@ -122,6 +123,18 @@ trait Channels[P <: ChannelList, C <: ChannelList] extends Actor {
   final lazy val receive = new AbstractPartialFunction[Any, Unit] {
 
     val index = sortClasses(behavior.keys)
+
+    if (channelListTypeTag != null) verifyCompleteness()
+
+    private def verifyCompleteness() {
+      val channels = inputChannels(ru)(channelListTypeTag.tpe)
+      val classes = channels groupBy (e ⇒ channelListTypeTag.mirror.runtimeClass(e.widen))
+      val missing = classes.keySet -- behavior.keySet
+      if (missing.nonEmpty) {
+        val m = missing.map(classes).flatten
+        throw ActorInitializationException(s"missing declarations for channels ${m mkString ", "}")
+      }
+    }
 
     override def applyOrElse[A, B >: Unit](x: A, default: A ⇒ B): B = x match {
       case CheckType(tt) ⇒
