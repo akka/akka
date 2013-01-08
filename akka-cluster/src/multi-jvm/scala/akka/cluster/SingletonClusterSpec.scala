@@ -66,7 +66,7 @@ abstract class SingletonClusterSpec(multiNodeConfig: SingletonClusterMultiNodeCo
 
         markNodeAsUnavailable(secondAddress)
 
-        awaitUpConvergence(numberOfMembers = 1, canNotBePartOfMemberRing = List(secondAddress), 30.seconds)
+        awaitUpConvergence(numberOfMembers = 1, canNotBePartOfMemberRing = Set(secondAddress), 30.seconds)
         clusterView.isSingletonCluster must be(true)
         awaitCond(clusterView.isLeader)
       }

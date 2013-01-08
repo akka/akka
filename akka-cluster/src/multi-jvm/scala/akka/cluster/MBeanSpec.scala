@@ -115,7 +115,7 @@ abstract class MBeanSpec
       enterBarrier("fourth-down")
 
       runOn(first, second, third) {
-        awaitUpConvergence(3, canNotBePartOfMemberRing = List(fourthAddress))
+        awaitUpConvergence(3, canNotBePartOfMemberRing = Set(fourthAddress))
         assertMembers(clusterView.members, first, second, third)
       }
 

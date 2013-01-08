@@ -130,7 +130,7 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
       }
 
       runOn(allBut(victim): _*) {
-        awaitUpConvergence(roles.size - 1, List(victim))
+        awaitUpConvergence(roles.size - 1, Set(victim))
       }
 
       endBarrier

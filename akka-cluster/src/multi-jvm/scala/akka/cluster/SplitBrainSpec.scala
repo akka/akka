@@ -102,7 +102,7 @@ abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
         // auto-down = on
         awaitCond(clusterView.unreachableMembers.forall(m ⇒ m.status == MemberStatus.Down), 15 seconds)
         clusterView.unreachableMembers.map(_.address) must be(side2.toSet map address)
-        awaitUpConvergence(side1.size, side2 map address)
+        awaitUpConvergence(side1.size, side2.toSet map address)
         assertLeader(side1: _*)
       }
 
@@ -110,7 +110,7 @@ abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
         // auto-down = on
         awaitCond(clusterView.unreachableMembers.forall(m ⇒ m.status == MemberStatus.Down), 15 seconds)
         clusterView.unreachableMembers.map(_.address) must be(side1.toSet map address)
-        awaitUpConvergence(side2.size, side1 map address)
+        awaitUpConvergence(side2.size, side1.toSet map address)
         assertLeader(side2: _*)
       }
 
