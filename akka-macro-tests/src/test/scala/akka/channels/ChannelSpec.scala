@@ -21,6 +21,7 @@ import akka.actor.Props
 import akka.actor.Actor
 import akka.actor.OneForOneStrategy
 import akka.actor.SupervisorStrategy.Stop
+import java.lang.reflect.InvocationTargetException
 
 object ChannelSpec {
 
@@ -62,7 +63,7 @@ object ChannelSpec {
   }
 
   // pos compile test for children
-  class Children extends Channels[TNil, (A, B) :+: (C, D) :+: TNil] {
+  class Children extends Channels[TNil, (A, B) :+: (C, Nothing) :+: TNil] {
     val c = createChild(new Channels[(A, Nothing) :+: TNil, (B, C) :+: TNil] {
       channel[B] { case (B, s) ⇒ s ! C }
     })
@@ -95,6 +96,8 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
 
   import ChannelSpec._
 
+  implicit val selfChannel = new ChannelRef[(Any, Nothing) :+: TNil](testActor)
+
   "Channels" must {
 
     "construct refs" in {
@@ -109,18 +112,18 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
 
     "select return channels" in {
       val ref = ChannelExt(system).actorOf(new Tester)
-      implicit val sender = ChannelExt(system).actorOf(new RecvC(testActor))
+      implicit val selfChannel = ChannelExt(system).actorOf(new RecvC(testActor))
       ref ! A
       expectMsg(C)
-      lastSender must be(sender.actorRef)
+      lastSender must be(selfChannel.actorRef)
     }
 
     "correctly dispatch to subchannels" in {
       val ref = ChannelExt(system).actorOf(new Tester)
-      implicit val sender = ChannelExt(system).actorOf(new RecvC(testActor))
+      implicit val selfChannel = ChannelExt(system).actorOf(new RecvC(testActor))
       ref ! A2
       expectMsg(C1)
-      lastSender must be(sender.actorRef)
+      lastSender must be(selfChannel.actorRef)
     }
 
     "not permit wrong message type" in {
@@ -130,7 +133,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
             |import ChannelSpec._
             |new ChannelRef[(A, C) :+: TNil](null) ! B
             """.stripMargin)
-      }.message must include("This ChannelRef does not support messages of type akka.channels.ChannelSpec.B.type")
+      }.message must include("target ChannelRef does not support messages of types akka.channels.ChannelSpec.B.type")
     }
 
     "not permit wrong message type in complex channel" in {
@@ -140,7 +143,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
             |import ChannelSpec._
             |new ChannelRef[(A, C) :+: (B, D) :+: TNil](null) ! C
             """.stripMargin)
-      }.message must include("This ChannelRef does not support messages of type akka.channels.ChannelSpec.C.type")
+      }.message must include("target ChannelRef does not support messages of types akka.channels.ChannelSpec.C.type")
     }
 
     "not permit unfit sender ref" in {
@@ -151,11 +154,11 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
             |implicit val s = new ChannelRef[(C, D) :+: TNil](null)
             |new ChannelRef[(A, B) :+: TNil](null) ! A
             """.stripMargin)
-      }.message must include("The implicit sender `value s` does not support messages of the reply types akka.channels.ChannelSpec.B")
+      }.message must include("implicit sender `s` does not support messages of the reply types akka.channels.ChannelSpec.B")
     }
 
     "permit any sender for Nothing replies" in {
-      implicit val s = new ChannelRef[TNil](testActor)
+      implicit val selfChannel = new ChannelRef[TNil](testActor)
       new ChannelRef[(A, Nothing) :+: TNil](testActor) ! A
       expectMsg(A)
     }
@@ -168,7 +171,32 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
             |implicit val s = new ChannelRef[TNil](null)
             |new ChannelRef[(A, B) :+: (A, C) :+: TNil](null) ! A
             """.stripMargin)
-      }.message must include("The implicit sender `value s` does not support messages of the reply types akka.channels.ChannelSpec.B, akka.channels.ChannelSpec.C")
+      }.message must include("implicit sender `s` does not support messages of the reply types akka.channels.ChannelSpec.B, akka.channels.ChannelSpec.C")
+    }
+
+    "verify ping-pong chains" in {
+      intercept[ToolBoxError] {
+        eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |implicit val s = new ChannelRef[(B, B) :+: TNil](null)
+            |new ChannelRef[(A, B) :+: (B, C) :+: TNil](null) ! A
+            """.stripMargin)
+      }.message must include("implicit sender `s` does not support messages of the reply types akka.channels.ChannelSpec.C")
+    }
+
+    "tolerate infinite ping-pong" in {
+      val ex = intercept[InvocationTargetException] {
+        eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |implicit val s = new ChannelRef[(B, B) :+: (C, B) :+: TNil](null)
+            |new ChannelRef[(A, B) :+: (B, C) :+: TNil](null) ! A
+            """.stripMargin)
+      }
+      def cause(ex: Throwable): Throwable =
+        if (ex.getCause == null) ex else cause(ex.getCause)
+      cause(ex).getClass must be(classOf[NullPointerException])
     }
 
     "not permit nonsensical channel declarations" in {
@@ -196,7 +224,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
             |  }
             |}
             """.stripMargin)
-      }.message must include("This ChannelRef does not support messages of type akka.channels.ChannelSpec.C.type")
+      }.message must include("target ChannelRef does not support messages of types akka.channels.ChannelSpec.C.type")
     }
 
     "not permit Nothing children" in {
@@ -260,7 +288,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
             |  })
             |}
             """.stripMargin)
-      }.message must include("This ChannelRef does not support messages of type akka.channels.ChannelSpec.B.type")
+      }.message must include("target ChannelRef does not support messages of types akka.channels.ChannelSpec.B.type")
     }
 
     "support narrowing of references" in {
@@ -360,7 +388,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
     }
 
     "check that channels do not erase to the same types" in {
-      intercept[ToolBoxError] {
+      val m = intercept[ToolBoxError] {
         eval("""
             |import akka.channels._
             |import ChannelSpec._
@@ -369,7 +397,9 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
             |  channel[List[B]] { (x, s) ⇒ }
             |}
             """.stripMargin)
-      }.message must include("overlaps with declared channels")
+      }.message
+      m must include("erasure List[Any] overlaps with declared channels List[akka.channels.ChannelSpec.A]")
+      m must include("erasure List[Any] overlaps with declared channels List[akka.channels.ChannelSpec.B]")
     }
 
     "check that all channels were declared" in {

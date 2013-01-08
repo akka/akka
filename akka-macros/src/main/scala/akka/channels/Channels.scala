@@ -314,7 +314,8 @@ object Channels {
         case _ ⇒ acc.reverse
       }
     }
-    rec(list, Nil)
+    val n = typeOf[Nothing]
+    if (msg =:= n) List(n) else rec(list, Nil)
   }
 
   /**

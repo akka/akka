@@ -33,32 +33,52 @@ object ChannelRef {
   def tell[T <: ChannelList: c.WeakTypeTag, M: c.WeakTypeTag](c: Context {
                                                                 type PrefixType = ChannelRef[T]
                                                               })(msg: c.Expr[M]): c.Expr[Unit] = {
-    val out = replyChannels(c.universe)(c.weakTypeOf[T], c.weakTypeOf[M])
-    if (out.isEmpty) {
-      c.error(c.enclosingPosition, s"This ChannelRef does not support messages of type ${c.weakTypeOf[M]}")
-      return c.universe.reify(())
+    import c.{ universe ⇒ u }
+
+    def getSenderChannel = {
+      val replyChannel = c.inferImplicitValue(c.typeOf[ChannelRef[_]])
+      if (!replyChannel.isEmpty) {
+        import u._
+        replyChannel.tpe match {
+          case TypeRef(_, _, param :: Nil) ⇒
+            Some((param, replyChannel, c.Expr(Select(replyChannel, "actorRef"))(u.weakTypeTag[ActorRef])))
+        }
+      } else None
     }
-    val replyChannel = c.inferImplicitValue(c.typeOf[ChannelRef[_]])
-    if (!replyChannel.isEmpty) {
-      import c.universe._
-      val list = replyChannel.tpe match {
-        case TypeRef(_, _, param :: Nil) ⇒ param
-      }
-      val m = missingChannels(c.universe)(list, out) filterNot (_ =:= weakTypeOf[Nothing])
-      if (m.isEmpty) {
-        val sender = c.Expr[ChannelRef[_]](replyChannel)(c.WeakTypeTag(replyChannel.tpe))
-        c.universe.reify(c.prefix.splice.actorRef.tell(msg.splice, sender.splice.actorRef))
-      } else {
-        c.error(c.enclosingPosition, s"The implicit sender `${replyChannel.symbol}` does not support messages of the reply types ${m.mkString(", ")}")
-        c.universe.reify(())
-      }
-    } else {
+
+    def getSenderRef = {
       val senderTree = c.inferImplicitValue(c.typeOf[ActorRef])
-      val sender =
-        if (senderTree.isEmpty) c.universe.reify(Actor.noSender)
-        else c.Expr(senderTree)(c.WeakTypeTag(senderTree.tpe))
-      c.universe.reify(c.prefix.splice.actorRef.tell(msg.splice, sender.splice))
+      if (senderTree.isEmpty) {
+        val noSender = c.universe.reify(Actor.noSender)
+        ((u.typeOf[(Any, Nothing) :+: TNil], noSender.tree, noSender))
+      } else ((u.typeOf[(Any, Any) :+: TNil], senderTree, c.Expr(senderTree)(c.WeakTypeTag(senderTree.tpe))))
     }
+
+    val tT = u.weakTypeOf[T]
+    val (tS, senderTree, sender) = getSenderChannel getOrElse getSenderRef
+
+    def err(msg: String) = c.error(c.enclosingPosition, msg)
+
+    def verify(msg: Set[u.Type], checked: Set[u.Type], depth: Int): Unit = if (msg.nonEmpty) {
+      val replies = msg map (m ⇒ m -> replyChannels(u)(tT, m))
+      val missing = replies collect { case (k, v) if v.size == 0 ⇒ k }
+      if (missing.nonEmpty)
+        err(s"target ChannelRef does not support messages of types ${missing mkString ", "} (at depth $depth)")
+      else {
+        val nextSend = replies.map(_._2).flatten map (m ⇒ m -> replyChannels(u)(tS, m))
+        val nextMissing = nextSend collect { case (k, v) if v.size == 0 ⇒ k }
+        if (nextMissing.nonEmpty)
+          err(s"implicit sender `$senderTree` does not support messages of the reply types ${nextMissing mkString ", "} (at depth $depth)")
+        else {
+          val nextChecked = checked ++ msg
+          val nextMsg = nextSend.map(_._2).flatten -- nextChecked
+          verify(nextMsg, nextChecked, depth + 1)
+        }
+      }
+    }
+
+    verify(Set(u.weakTypeOf[M]), Set(u.typeOf[Nothing]), 1)
+    u.reify(c.prefix.splice.actorRef.tell(msg.splice, sender.splice))
   }
 
   def ask[T <: ChannelList: c.WeakTypeTag, M: c.WeakTypeTag](c: Context {
