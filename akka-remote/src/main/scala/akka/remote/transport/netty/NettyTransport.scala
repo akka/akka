@@ -248,7 +248,7 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
 
   private def sslHandler(isClient: Boolean): SslHandler = {
     val handler = NettySSLSupport(settings.SslSettings.get, log, isClient)
-    handler.setIssueHandshake(true)
+    if (isClient) handler.setIssueHandshake(true)
     handler
   }
 
