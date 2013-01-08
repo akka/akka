@@ -92,7 +92,7 @@ object LogRoleReplace extends ClipboardOwner {
 
 class LogRoleReplace {
 
-  private val RoleStarted = """\[([\w\-]+)\].*Role \[([\w]+)\] started with address \[akka://.*@([\w\-\.]+):([0-9]+)\]""".r
+  private val RoleStarted = """\[([\w\-]+)\].*Role \[([\w]+)\] started with address \[[\w\-\+\.]+://.*@([\w\-\.]+):([0-9]+)\]""".r
   private val ColorCode = """\u001B?\[[0-9]+m"""
 
   private var replacements: Map[String, String] = Map.empty
