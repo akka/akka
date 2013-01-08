@@ -1,6 +1,3 @@
-/**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
- */
 package akka.remote
 
 import scala.language.postfixOps
@@ -403,12 +400,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
   val accepting: Receive = {
     case ManagementCommand(cmd, statusPromise) ⇒
-      val allStatuses = transportMapping.values map { transport ⇒
-        val p = Promise[Boolean]()
-        transport.managementCommand(cmd, p)
-        p.future
-      }
-      statusPromise completeWith Future.fold(allStatuses)(true)(_ && _)
+      transportMapping.values foreach { _.managementCommand(cmd, statusPromise) }
 
     case s @ Send(message, senderOption, recipientRef) ⇒
       val recipientAddress = recipientRef.path.address
