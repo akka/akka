@@ -1,6 +1,3 @@
-/**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
- */
 package akka.remote.transport
 
 import akka.{ OnlyCauseStackTrace, AkkaException }
@@ -378,8 +375,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
         case Disassociate ⇒
           stop()
 
-        case Heartbeat ⇒
-          failureDetector.heartbeat(); stay()
+        case Heartbeat ⇒ failureDetector.heartbeat(); stay()
 
         case Payload(payload) ⇒ stateData match {
           case AssociatedWaitHandler(handlerFuture, wrappedHandle, queue) ⇒
