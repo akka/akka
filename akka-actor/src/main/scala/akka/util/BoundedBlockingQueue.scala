@@ -29,7 +29,7 @@ class BoundedBlockingQueue[E <: AnyRef](
       require(maxCapacity > 0)
   }
 
-  protected val lock = new ReentrantLock(false) // TODO might want to switch to ReentrantReadWriteLock
+  protected val lock = new ReentrantLock(false)
 
   private val notEmpty = lock.newCondition()
   private val notFull = lock.newCondition()
