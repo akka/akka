@@ -103,7 +103,7 @@ object AkkaBuild extends Build {
   lazy val io = Project(
     id = "akka-io",
     base = file("akka-io"),
-    dependencies = Seq(actor),
+    dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ OSGi.io
   )
 
