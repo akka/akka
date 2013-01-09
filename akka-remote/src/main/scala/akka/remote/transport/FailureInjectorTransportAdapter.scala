@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote.transport
 
 import FailureInjectorTransportAdapter._
@@ -48,15 +51,15 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
   override val addedSchemeIdentifier = FailureInjectorSchemeIdentifier
   protected def maximumOverhead = 0
 
-  override def managementCommand(cmd: Any, statusPromise: Promise[Boolean]): Unit = cmd match {
+  override def managementCommand(cmd: Any): Future[Boolean] = cmd match {
     case All(mode) ⇒
       allMode = mode
-      statusPromise.success(true)
+      Future.successful(true)
     case One(address, mode) ⇒
       //  don't care about the protocol part - we are injected in the stack anyway!
       addressChaosTable.put(address.copy(protocol = "", system = ""), mode)
-      statusPromise.success(true)
-    case _ ⇒ wrappedTransport.managementCommand(cmd, statusPromise)
+      Future.successful(true)
+    case _ ⇒ wrappedTransport.managementCommand(cmd)
   }
 
   protected def interceptListen(listenAddress: Address,

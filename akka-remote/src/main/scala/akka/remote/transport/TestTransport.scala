@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote.transport
 
 import TestTransport._
