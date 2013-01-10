@@ -7,6 +7,7 @@ import impl.BundleDelegatingClassLoader
 import akka.actor.ActorSystem
 import com.typesafe.config.{ ConfigFactory, Config }
 import org.osgi.framework.BundleContext
+import java.io.File
 
 /**
  * Factory class to create ActorSystem implementations in an OSGi environment.  This mainly involves dealing with
@@ -33,11 +34,20 @@ class OsgiActorSystemFactory(val context: BundleContext, val fallbackClassLoader
     ActorSystem(actorSystemName(name), actorSystemConfig(context), classloader)
 
   /**
-   * Strategy method to create the Config for the ActorSystem, ensuring that the default/reference configuration is
-   * loaded from the akka-actor bundle.
+   * Strategy method to create the Config for the ActorSystem, based on configuration files found in etc directory,
+   * ensuring that the default/reference configuration is loaded from the akka-actor bundle.
+   * The configuration is based on
+   * etc/bundle-SYMBOLICNAME, etc/bundle-ID, etc/akka.conf
+   * in either ".conf", ".properties", ".json" formats
+   * Configuration files found in akka-actor bundle
    */
-  def actorSystemConfig(context: BundleContext): Config =
-    ConfigFactory.load(classloader).withFallback(ConfigFactory.defaultReference(OsgiActorSystemFactory.akkaActorClassLoader))
+  def actorSystemConfig(context: BundleContext): Config = {
+    val bundleSymbolicName = context.getBundle.getSymbolicName
+    val bundleId = context.getBundle.getBundleId
+    val acceptedFilePath = List(s"bundle-$bundleSymbolicName", s"bundle-$bundleId", "akka").map(x =>  s"etc/$x")
+    val applicationConfiguration = acceptedFilePath.foldLeft(ConfigFactory.empty())((x, y) => x.withFallback(ConfigFactory.parseFileAnySyntax(new File(y))))
+    applicationConfiguration.withFallback(ConfigFactory.load(classloader).withFallback(ConfigFactory.defaultReference(OsgiActorSystemFactory.akkaActorClassLoader)))
+  }
 
   /**
    * Determine the name for the [[akka.actor.ActorSystem]]
