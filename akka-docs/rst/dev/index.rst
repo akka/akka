@@ -6,6 +6,7 @@ Information for Developers
 
    building-akka
    multi-jvm-testing
+   io-layer
    developer-guidelines
    documentation
    team
