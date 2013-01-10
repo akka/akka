@@ -21,7 +21,7 @@ import ls.Plugin.{ lsSettings, LsKeys }
 import java.lang.Boolean.getBoolean
 import sbt.Tests
 import LsKeys.{ lsync, docsUrl => lsDocsUrl, tags => lsTags }
-import java.io.{BufferedReader, InputStreamReader, FileInputStream, File}
+import java.io.{PrintWriter, InputStreamReader, FileInputStream, File}
 import java.nio.charset.Charset
 import java.util.Properties
 
@@ -79,7 +79,7 @@ object AkkaBuild extends Build {
   lazy val actor = Project(
     id = "akka-actor",
     base = file("akka-actor"),
-    settings = defaultSettings ++ OSGi.actor ++ Seq(
+    settings = defaultSettings ++ Seq(
       autoCompilerPlugins := true,
       // to fix scaladoc generation
       fullClasspath in doc in Compile <<= fullClasspath in Compile,
@@ -252,12 +252,38 @@ object AkkaBuild extends Build {
      )
   )
 
+  val ActorReferenceCopyTask = TaskKey[Int]("hello", "Copy reference.conf from akka modules to akka-osgi")
+
+  val ActorReferenceCopyAction = (streams)  map { (s) =>
+    s.log.debug("Copying of the akka-actor reference.conf in akka-osgi")
+    (file("akka-osgi/src/main/resources")).mkdir()
+    if ((file("akka-osgi/src/main/resources/reference.conf")).exists){(file("akka-osgi/src/main/resources/reference.conf")).delete()}
+    val projectReferencesToCopy = for (project <- projects.filter(p => !p.id.contains("test") && !p.id.contains("sample"))
+      if (file(project.base+"/src/main/resources/reference.conf")).exists())  yield project
+
+    val referencesFileToInclude = projectReferencesToCopy.map(project => {
+      copyFile(project.base+"/src/main/resources/reference.conf", "akka-osgi/src/main/resources/"+project.id+".conf")
+      "include \""+ project.id +".conf\""
+      })
+
+    val writer = new PrintWriter(file("akka-osgi/src/main/resources/reference.conf" ))
+    writer.write(referencesFileToInclude.mkString("\n"))
+    writer.close()
+    s.log.info("Akka module reference.conf copied in akka-osgi")
+    projects.size
+  }
+
+
+
   lazy val osgi = Project(
     id = "akka-osgi",
     base = file("akka-osgi"),
     dependencies = Seq(actor),
     settings = defaultSettings ++ OSGi.osgi ++ Seq(
       libraryDependencies ++= Dependencies.osgi,
+      ActorReferenceCopyTask in Compile <<= ActorReferenceCopyAction ,
+      cleanFiles <+= baseDirectory { base => base / "src/main/resources" } ,
+      compile in Compile <<= compile in Compile dependsOn (ActorReferenceCopyTask in Compile),
       parallelExecution in Test := false
     )
   )
@@ -637,12 +663,18 @@ object AkkaBuild extends Build {
     }
   }
 
+  def copyFile(source: String, sink: String){
+    val src = new java.io.File(source)
+    val dest = new java.io.File(sink)
+    new java.io.FileOutputStream(dest) getChannel() transferFrom(
+      new java.io.FileInputStream(src) getChannel, 0, Long.MaxValue )
+  }
+
   // OSGi settings
 
   object OSGi {
 
-    val actor = exports(Seq("akka*"), imports = Seq("akka.remote.*;resolution:=optional", "akka.cluster.*;resolution:=optional"))
-
+    //akka-actor is wrapped into akka-osgi to simplify OSGi deployement.
 
     val agent = exports(Seq("akka.agent.*"))
 
@@ -654,7 +686,11 @@ object AkkaBuild extends Build {
 
     val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"), imports = Seq(protobufImport()))
 
-    val osgi = exports(Seq("akka.osgi")) ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.impl"))
+    val osgi = osgiSettings ++ Seq(
+      OsgiKeys.exportPackage := Seq("akka*"), //exporting (and not importing) akka packages enforces bnd to aggregate akka-actor in the bundle
+      OsgiKeys.privatePackage := Seq("akka.osgi.impl"),
+      OsgiKeys.importPackage := (osgiOptionalImports map optionalResolution) ++ Seq(scalaImport(),configImport(), "org.osgi.framework")
+     )
 
     val osgiAries = exports() ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.aries.*"))
 
@@ -670,16 +706,36 @@ object AkkaBuild extends Build {
 
     val zeroMQ = exports(Seq("akka.zeromq.*"), imports = Seq(protobufImport()) )
 
+    val osgiOptionalImports = Seq("akka.remote",
+      "akka.remote.transport.netty",
+      "akka.remote.security.provider",
+      "akka.remote.netty",
+      "akka.remote.routing",
+      "akka.remote.transport",
+      "akka.remote.serialization",
+      "akka.cluster",
+      "akka.cluster.routing",
+      "akka.transactor",
+      "akka.agent",
+      "akka.dataflow",
+      "akka.actor.mailbox",
+      "akka.camel.internal",
+      "akka.camel.javaapi",
+      "akka.camel",
+      "akka.camel.internal.component",
+      "akka.zeromq",
+      "com.google.protobuf")
+
     def exports(packages: Seq[String] = Seq(), imports: Seq[String] = Nil) = osgiSettings ++ Seq(
       OsgiKeys.importPackage := imports ++ defaultImports,
       OsgiKeys.exportPackage := packages
     )
-
     def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
-    def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.2)\"".format(packageName)
+    def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.2,2.3)\"".format(packageName)
     def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,1.1.0)\"".format(packageName)
     def protobufImport(packageName: String = "com.google.protobuf.*") = "%s;version=\"[2.4.0,2.5.0)\"".format(packageName)
     def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.10,2.11)\"".format(packageName)
+    def optionalResolution(packageName: String) = "%s;resolution:=optional".format(packageName)
   }
 }
 
@@ -701,6 +757,7 @@ object Dependencies {
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
     val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "0.3.2"       // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
+    val osgiCompendium= "org.osgi"                    % "org.osgi.compendium"          % "4.2.0"       // ApacheV2
 
 
     // Camel Sample
@@ -758,7 +815,7 @@ object Dependencies {
 
   val camelSample = Seq(camelJetty)
 
-  val osgi = Seq(osgiCore,Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
+  val osgi = Seq(osgiCore, osgiCompendium, Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
 
   val osgiAries = Seq(osgiCore, ariesBlueprint, Test.ariesProxy)
 
