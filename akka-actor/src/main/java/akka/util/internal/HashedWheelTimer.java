@@ -268,6 +268,8 @@ public class HashedWheelTimer implements Timer {
         // one tick early; that shouldn’t matter since we’re talking 270 years here
         if (relativeIndex < 0) relativeIndex = delay / tickDuration;
         if (relativeIndex == 0) relativeIndex = 1;
+        // if an integral number of wheel rotations, schedule one tick earlier
+        if ((relativeIndex & mask) == 0) relativeIndex--;
         final long remainingRounds = relativeIndex / wheel.length;
 
         // Add the timeout to the wheel.
