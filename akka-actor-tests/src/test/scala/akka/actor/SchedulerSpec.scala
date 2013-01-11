@@ -2,6 +2,7 @@ package akka.actor
 
 import language.postfixOps
 
+import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterEach
 import scala.concurrent.duration._
 import java.util.concurrent.{ CountDownLatch, ConcurrentLinkedQueue, TimeUnit }
@@ -9,9 +10,16 @@ import akka.testkit._
 import scala.concurrent.Await
 import akka.pattern.ask
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.TimeoutException
+
+object SchedulerSpec {
+  val testConf = ConfigFactory.parseString("""
+    akka.scheduler.ticks-per-wheel = 32
+  """).withFallback(AkkaSpec.testConf)
+}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout with ImplicitSender {
+class SchedulerSpec extends AkkaSpec(SchedulerSpec.testConf) with BeforeAndAfterEach with DefaultTimeout with ImplicitSender {
   private val cancellables = new ConcurrentLinkedQueue[Cancellable]()
   import system.dispatcher
 
@@ -229,6 +237,33 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       Await.ready(latch, 6.seconds)
       // Rate
       n * 1000.0 / (System.nanoTime - startTime).nanos.toMillis must be(4.4 plusOrMinus 0.3)
+    }
+  }
+
+  "A HashedWheelTimer" must {
+
+    "not mess up long timeouts" taggedAs LongRunningTest in {
+      val longish = Long.MaxValue.nanos
+      val barrier = TestLatch()
+      import system.dispatcher
+      val job = system.scheduler.scheduleOnce(longish)(barrier.countDown())
+      intercept[TimeoutException] {
+        // this used to fire after 46 seconds due to wrap-around
+        Await.ready(barrier, 90 seconds)
+      }
+      job.cancel()
+    }
+
+    "handle timeouts equal to multiple of wheel period" taggedAs TimingTest in {
+      val timeout = 3200 milliseconds
+      val barrier = TestLatch()
+      import system.dispatcher
+      val job = system.scheduler.scheduleOnce(timeout)(barrier.countDown())
+      try {
+        Await.ready(barrier, 5000 milliseconds)
+      } finally {
+        job.cancel()
+      }
     }
   }
 }
