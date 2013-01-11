@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote
 
 import scala.language.postfixOps
@@ -27,11 +30,12 @@ class RemotingSettings(val config: Config) {
 
   val LogLifecycleEvents: Boolean = getBoolean("akka.remoting.log-remote-lifecycle-events")
 
-  val ShutdownTimeout: FiniteDuration = Duration(getMilliseconds("akka.remoting.shutdown-timeout"), MILLISECONDS)
+  val ShutdownTimeout: Timeout =
+    Duration(getMilliseconds("akka.remoting.shutdown-timeout"), MILLISECONDS)
 
   val FlushWait: FiniteDuration = Duration(getMilliseconds("akka.remoting.flush-wait-on-shutdown"), MILLISECONDS)
 
-  val StartupTimeout: FiniteDuration = Duration(getMilliseconds("akka.remoting.startup-timeout"), MILLISECONDS)
+  val StartupTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.remoting.startup-timeout"), MILLISECONDS))
 
   val RetryGateClosedFor: Long = getNanoseconds("akka.remoting.retry-gate-closed-for")
 
@@ -41,8 +45,10 @@ class RemotingSettings(val config: Config) {
 
   val RetryWindow: FiniteDuration = Duration(getMilliseconds("akka.remoting.retry-window"), MILLISECONDS)
 
-  val BackoffPeriod: FiniteDuration =
-    Duration(getMilliseconds("akka.remoting.backoff-interval"), MILLISECONDS)
+  val BackoffPeriod: FiniteDuration = Duration(getMilliseconds("akka.remoting.backoff-interval"), MILLISECONDS)
+
+  val CommandAckTimeout: Timeout =
+    Timeout(Duration(getMilliseconds("akka.remoting.command-ack-timeout"), MILLISECONDS))
 
   val Transports: Seq[(String, Seq[String], Config)] = transportNames.map { name ⇒
     val transportConfig = transportConfigFor(name)
@@ -146,7 +152,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
     import scala.concurrent.ExecutionContext.Implicits.global
     endpointManager match {
       case Some(manager) ⇒
-        implicit val timeout = new Timeout(settings.ShutdownTimeout)
+        implicit val timeout = settings.ShutdownTimeout
         val stopped: Future[Boolean] = (manager ? ShutdownAndFlush).mapTo[Boolean]
 
         def finalize(): Unit = {
@@ -182,18 +188,17 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
           Props(new EndpointManager(provider.remoteSettings.config, log)), Remoting.EndpointManagerName)
         endpointManager = Some(manager)
 
-        implicit val timeout = new Timeout(settings.StartupTimeout)
-
         try {
           val addressesPromise: Promise[Seq[(Transport, Address)]] = Promise()
           manager ! Listen(addressesPromise)
 
-          val transports: Seq[(Transport, Address)] = Await.result(addressesPromise.future, timeout.duration)
+          val transports: Seq[(Transport, Address)] = Await.result(addressesPromise.future,
+            settings.StartupTimeout.duration)
           if (transports.isEmpty) throw new RemoteTransportException("No transport drivers were loaded.", null)
 
-          transportMapping = transports.groupBy { case (transport, _) ⇒ transport.schemeIdentifier }.mapValues {
-            _.toSet
-          }
+          transportMapping = transports.groupBy {
+            case (transport, _) ⇒ transport.schemeIdentifier
+          } map { case (k, v) ⇒ k -> v.toSet }
 
           defaultAddress = transports.head._2
           addresses = transports.map { _._2 }.toSet
@@ -229,9 +234,9 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
   override def managementCommand(cmd: Any): Future[Boolean] = endpointManager match {
     case Some(manager) ⇒
-      val statusPromise = Promise[Boolean]()
-      manager.tell(ManagementCommand(cmd, statusPromise), sender = Actor.noSender)
-      statusPromise.future
+      import system.dispatcher
+      implicit val timeout = settings.CommandAckTimeout
+      manager ? ManagementCommand(cmd) map { case ManagementCommandAck(status) ⇒ status }
     case None ⇒ throw new IllegalStateException("Attempted to send management command but Remoting is not running.")
   }
 
@@ -253,7 +258,8 @@ private[remote] object EndpointManager {
   case class Send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef) extends RemotingCommand {
     override def toString = s"Remote message $senderOption -> $recipient"
   }
-  case class ManagementCommand(cmd: Any, statusPromise: Promise[Boolean]) extends RemotingCommand
+  case class ManagementCommand(cmd: Any) extends RemotingCommand
+  case class ManagementCommandAck(status: Boolean)
 
   // Messages internal to EndpointManager
   case object Prune
@@ -389,8 +395,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
           transport -> address
       }
       addressesPromise.success(transportsAndAddresses)
-    case ManagementCommand(_, statusPromise) ⇒
-      statusPromise.success(false)
+    case ManagementCommand(_) ⇒
+      sender ! ManagementCommandAck(false)
     case StartupFinished ⇒
       context.become(accepting)
     case ShutdownAndFlush ⇒
@@ -399,8 +405,11 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   }
 
   val accepting: Receive = {
-    case ManagementCommand(cmd, statusPromise) ⇒
-      transportMapping.values foreach { _.managementCommand(cmd, statusPromise) }
+    case ManagementCommand(cmd) ⇒
+      val allStatuses = transportMapping.values map { transport ⇒
+        transport.managementCommand(cmd)
+      }
+      Future.fold(allStatuses)(true)(_ && _) map ManagementCommandAck pipeTo sender
 
     case s @ Send(message, senderOption, recipientRef) ⇒
       val recipientAddress = recipientRef.path.address
