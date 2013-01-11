@@ -29,7 +29,7 @@ class GossipSpec extends WordSpec with MustMatchers {
   "A Gossip" must {
 
     "reach convergence when it's empty" in {
-      Gossip().convergence must be(true)
+      Gossip.empty.convergence must be(true)
     }
 
     "merge members by status priority" in {

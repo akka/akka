@@ -13,6 +13,10 @@ import MemberStatus._
  */
 private[cluster] object Gossip {
   val emptyMembers: immutable.SortedSet[Member] = immutable.SortedSet.empty
+  val empty: Gossip = new Gossip(Gossip.emptyMembers)
+
+  def apply(members: immutable.SortedSet[Member]) =
+    if (members.isEmpty) empty else empty.copy(members = members)
 }
 
 /**
@@ -49,8 +53,8 @@ private[cluster] object Gossip {
  * removed node telling it to shut itself down.
  */
 private[cluster] case class Gossip(
+  members: immutable.SortedSet[Member], // sorted set of members with their status, sorted by address
   overview: GossipOverview = GossipOverview(),
-  members: immutable.SortedSet[Member] = Gossip.emptyMembers, // sorted set of members with their status, sorted by address
   version: VectorClock = VectorClock()) // vector clock version
   extends ClusterMessage // is a serializable cluster message
   with Versioned[Gossip] {
@@ -128,7 +132,7 @@ private[cluster] case class Gossip(
     // 4. fresh seen table
     val mergedSeen = Map.empty[Address, VectorClock]
 
-    Gossip(GossipOverview(mergedSeen, mergedUnreachable), mergedMembers, mergedVClock)
+    Gossip(mergedMembers, GossipOverview(mergedSeen, mergedUnreachable), mergedVClock)
   }
 
   /**
