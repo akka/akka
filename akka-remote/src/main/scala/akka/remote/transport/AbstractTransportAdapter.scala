@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote.transport
 
 import scala.language.postfixOps
@@ -118,14 +121,14 @@ object ActorTransportAdapter {
   case class ListenUnderlying(listenAddress: Address,
                               upstreamListener: Future[AssociationEventListener]) extends TransportOperation
   case object DisassociateUnderlying extends TransportOperation
+
+  implicit val AskTimeout = Timeout(5 seconds)
 }
 
 abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorSystem)
   extends AbstractTransportAdapter(wrappedTransport)(system.dispatcher) {
 
   import ActorTransportAdapter._
-
-  private implicit val timeout = new Timeout(3 seconds)
 
   protected def managerName: String
   protected def managerProps: Props

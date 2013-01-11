@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote.transport
 
 import akka.{ OnlyCauseStackTrace, AkkaException }
@@ -86,8 +89,7 @@ private[remote] class AkkaProtocolTransport(
 
   override val addedSchemeIdentifier: String = AkkaScheme
 
-  override def managementCommand(cmd: Any, statusPromise: Promise[Boolean]): Unit =
-    wrappedTransport.managementCommand(cmd, statusPromise)
+  override def managementCommand(cmd: Any): Future[Boolean] = wrappedTransport.managementCommand(cmd)
 
   override val maximumOverhead: Int = AkkaProtocolTransport.AkkaOverhead
   protected def managerName = s"akkaprotocolmanager.${wrappedTransport.schemeIdentifier}${UniqueId.getAndIncrement}"
@@ -354,7 +356,8 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
         case Disassociate ⇒
           stop()
 
-        case Heartbeat ⇒ failureDetector.heartbeat(); stay()
+        case Heartbeat ⇒
+          failureDetector.heartbeat(); stay()
 
         case Payload(payload) ⇒ stateData match {
           case AssociatedWaitHandler(handlerFuture, wrappedHandle, queue) ⇒
