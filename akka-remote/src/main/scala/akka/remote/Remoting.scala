@@ -207,8 +207,12 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
           eventPublisher.notifyListeners(RemotingListenEvent(addresses))
 
         } catch {
-          case e: TimeoutException ⇒ notifyError("Startup timed out", e)
-          case NonFatal(e)         ⇒ notifyError("Startup failed", e)
+          case e: TimeoutException ⇒
+            notifyError("Startup timed out", e)
+            throw e
+          case NonFatal(e) ⇒
+            notifyError("Startup failed", e)
+            throw e
         }
 
       case Some(_) ⇒
