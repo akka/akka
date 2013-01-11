@@ -7,7 +7,6 @@ import sample.cluster.transformation.japi.TransformationMessages.TransformationR
 import akka.actor.UntypedActor;
 import akka.cluster.Cluster;
 import akka.cluster.ClusterEvent.CurrentClusterState;
-import akka.cluster.ClusterEvent.MemberEvent;
 import akka.cluster.ClusterEvent.MemberUp;
 import akka.cluster.Member;
 import akka.cluster.MemberStatus;
@@ -18,10 +17,10 @@ public class TransformationBackend extends UntypedActor {
 
   Cluster cluster = Cluster.get(getContext().system());
 
-  //subscribe to cluster changes, MemberEvent
+  //subscribe to cluster changes, MemberUp
   @Override
   public void preStart() {
-    cluster.subscribe(getSelf(), MemberEvent.class);
+    cluster.subscribe(getSelf(), MemberUp.class);
   }
 
   //re-subscribe when restart
