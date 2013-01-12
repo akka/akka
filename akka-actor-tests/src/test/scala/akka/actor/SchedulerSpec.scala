@@ -1,7 +1,6 @@
 package akka.actor
 
 import language.postfixOps
-
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterEach
 import scala.concurrent.duration._
@@ -11,6 +10,8 @@ import scala.concurrent.Await
 import akka.pattern.ask
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.TimeoutException
+import scala.util.Random
+import scala.util.control.NonFatal
 
 object SchedulerSpec {
   val testConf = ConfigFactory.parseString("""
@@ -26,15 +27,6 @@ class SchedulerSpec extends AkkaSpec(SchedulerSpec.testConf) with BeforeAndAfter
   def collectCancellable(c: Cancellable): Cancellable = {
     cancellables.add(c)
     c
-  }
-
-  override def afterEach {
-    while (cancellables.peek() ne null) {
-      for (c ← Option(cancellables.poll())) {
-        c.cancel()
-        c.isCancelled must be === true
-      }
-    }
   }
 
   "A Scheduler" must {
@@ -237,6 +229,59 @@ class SchedulerSpec extends AkkaSpec(SchedulerSpec.testConf) with BeforeAndAfter
       Await.ready(latch, 6.seconds)
       // Rate
       n * 1000.0 / (System.nanoTime - startTime).nanos.toMillis must be(4.4 plusOrMinus 0.3)
+    }
+
+    "survive being stressed without cancellation" taggedAs TimingTest in {
+      val r = Random
+      val N = 100000
+      for (_ ← 1 to N) {
+        val next = r.nextInt(3000)
+        val now = System.nanoTime
+        system.scheduler.scheduleOnce(next.millis) {
+          val stop = System.nanoTime
+          testActor ! (stop - now - next * 1000000l)
+        }
+      }
+      val latencies = within(5.seconds) {
+        for (i ← 1 to N) yield try expectMsgType[Long] catch {
+          case NonFatal(e) ⇒ println(s"failed expecting the $i-th latency"); throw e
+        }
+      }
+      val histogram = latencies groupBy (_ / 100000000l)
+      for (k ← histogram.keys.toSeq.sorted) {
+        println(f"${k * 100}%3d: ${histogram(k).size}")
+      }
+    }
+
+    "survive being stressed with cancellation" taggedAs TimingTest in {
+      val r = Random
+      val N = 1000000
+      val tasks = for (_ ← 1 to N) yield {
+        val next = r.nextInt(3000)
+        val now = System.nanoTime
+        system.scheduler.scheduleOnce(next.millis) {
+          val stop = System.nanoTime
+          testActor ! (stop - now - next * 1000000l)
+        }
+      }
+      // get somewhat into the middle of things
+      Thread.sleep(500)
+      val cancellations = for (t ← tasks) yield {
+        t.cancel()
+        if (t.isCancelled) 1 else 0
+      }
+      val cancelled = cancellations.sum
+      println(cancelled)
+      val latencies = within(5.seconds) {
+        for (i ← 1 to (N - cancelled)) yield try expectMsgType[Long] catch {
+          case NonFatal(e) ⇒ println(s"failed expecting the $i-th latency"); throw e
+        }
+      }
+      val histogram = latencies groupBy (_ / 100000000l)
+      for (k ← histogram.keys.toSeq.sorted) {
+        println(f"${k * 100}%3d: ${histogram(k).size}")
+      }
+      expectNoMsg(1.second)
     }
   }
 
