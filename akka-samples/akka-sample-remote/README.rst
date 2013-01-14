@@ -60,7 +60,7 @@ Select to run "sample.remote.calculator.CalcApp" which in the case below is numb
     [5] sample.remote.calculator.java.JCalcApp
     [6] sample.remote.calculator.java.JLookupApp
 
-    Enter number: 44
+    Enter number: 4
 
 You should see something similar to this::
 

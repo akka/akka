@@ -110,7 +110,7 @@ abstract class TransformationSampleJapiSpec extends MultiNodeSpec(Transformation
   }
 
   def assertServiceOk: Unit = {
-    val transformationFrontend = system.actorFor("akka://" + system.name + "/user/frontend")
+    val transformationFrontend = system.actorFor("tcp.akka://" + system.name + "/user/frontend")
     // eventually the service should be ok,
     // backends might not have registered initially
     awaitCond {
