@@ -379,7 +379,11 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
       _ ← always(channelGroup.write(ChannelBuffers.buffer(0)))
       _ ← always({ channelGroup.unbind(); channelGroup.disconnect() })
       _ ← always(channelGroup.close())
-    } inboundBootstrap.releaseExternalResources()
+    } {
+      // Release the selectors, but don't try to kill the dispatcher
+      if (UseDispatcherForIo.isDefined) inboundBootstrap.shutdown()
+      else inboundBootstrap.releaseExternalResources()
+    }
 
   }
 
