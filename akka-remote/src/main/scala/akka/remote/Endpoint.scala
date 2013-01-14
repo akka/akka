@@ -108,6 +108,7 @@ private[remote] object EndpointWriter {
   case object Initializing extends State
   case object Buffering extends State
   case object Writing extends State
+  case object Handoff extends State
 }
 
 private[remote] class EndpointException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with OnlyCauseStackTrace {
@@ -139,7 +140,7 @@ private[remote] class EndpointWriter(
 
   val msgDispatch = new DefaultMessageDispatcher(extendedSystem, RARP(extendedSystem).provider, log)
 
-  def inbound = handle.isDefined
+  var inbound = handle.isDefined
 
   private def publishAndThrow(reason: Throwable): Nothing = {
     try
@@ -150,6 +151,7 @@ private[remote] class EndpointWriter(
 
   override def postRestart(reason: Throwable): Unit = {
     handle = None // Wipe out the possibly injected handle
+    inbound = false
     preStart()
   }
 
@@ -210,16 +212,28 @@ private[remote] class EndpointWriter(
       }
   }
 
+  when(Handoff) {
+    case Event(Terminated(_), _) ⇒
+      reader = startReadEndpoint(handle.get)
+      unstashAll()
+      goto(Writing)
+
+    case Event(Send(msg, senderOption, recipient), _) ⇒
+      stash()
+      stay()
+
+    // TakeOver messages are not handled here but inside the whenUnhandled block, because the procedure is exactly the
+    // same. Any outstanding
+  }
+
   whenUnhandled {
     case Event(Terminated(r), _) if Some(r) == reader ⇒ publishAndThrow(new EndpointException("Disassociated"))
     case Event(TakeOver(newHandle), _) ⇒
       // Shutdown old reader
       handle foreach { _.disassociate() }
-      reader foreach { r ⇒ context stop context.unwatch(r) }
+      reader foreach context.stop
       handle = Some(newHandle)
-      reader = startReadEndpoint(newHandle)
-      unstashAll()
-      goto(Writing)
+      goto(Handoff)
   }
 
   onTransition {

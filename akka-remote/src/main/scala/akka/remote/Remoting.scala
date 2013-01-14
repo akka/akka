@@ -37,7 +37,7 @@ class RemotingSettings(val config: Config) {
 
   val StartupTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.remoting.startup-timeout"), MILLISECONDS))
 
-  val RetryGateClosedFor: Long = getNanoseconds("akka.remoting.retry-gate-closed-for")
+  val RetryGateClosedFor: FiniteDuration = Duration(getMilliseconds("akka.remoting.retry-gate-closed-for"), MILLISECONDS)
 
   val UsePassiveConnections: Boolean = getBoolean("akka.remoting.use-passive-connections")
 
@@ -92,7 +92,7 @@ private[remote] object Remoting {
         responsibleTransports.size match {
           case 0 ⇒
             throw new RemoteTransportException(
-              s"No transport is responsible for address: ${remote} although protocol ${remote.protocol} is available." +
+              s"No transport is responsible for address: $remote although protocol ${remote.protocol} is available." +
                 " Make sure at least one transport is configured to be responsible for the address.",
               null)
 
@@ -101,7 +101,7 @@ private[remote] object Remoting {
 
           case _ ⇒
             throw new RemoteTransportException(
-              s"Multiple transports are available for [${remote}]: [${responsibleTransports.mkString(",")}]. " +
+              s"Multiple transports are available for [$remote]: [${responsibleTransports.mkString(",")}]. " +
                 "Remoting cannot decide which transport to use to reach the remote system. Change your configuration " +
                 "so that only one transport is responsible for the address.",
               null)
@@ -270,73 +270,93 @@ private[remote] object EndpointManager {
   case class ListensResult(addressesPromise: Promise[Seq[(Transport, Address)]],
                            results: Seq[(Transport, Address, Promise[AssociationEventListener])])
 
-  sealed trait EndpointPolicy
-  case class Pass(endpoint: ActorRef) extends EndpointPolicy
-  case class Gated(timeOfFailure: Long) extends EndpointPolicy
-  case class Quarantined(reason: Throwable) extends EndpointPolicy
+  sealed trait EndpointPolicy {
+
+    /**
+     * Indicates that the policy does not contain an active endpoint, but it is a tombstone of a previous failure
+     */
+    def isTombstone: Boolean
+  }
+  case class Pass(endpoint: ActorRef) extends EndpointPolicy {
+    override def isTombstone: Boolean = false
+  }
+  case class Gated(timeOfRelease: Deadline) extends EndpointPolicy {
+    override def isTombstone: Boolean = true
+  }
+  case class Quarantined(reason: Throwable) extends EndpointPolicy {
+    override def isTombstone: Boolean = true
+  }
 
   // Not threadsafe -- only to be used in HeadActor
-  private[EndpointManager] class EndpointRegistry {
-    private var addressToEndpointAndPolicy = HashMap[Address, EndpointPolicy]()
-    private var endpointToAddress = HashMap[ActorRef, Address]()
-    private var addressToPassive = HashMap[Address, ActorRef]()
+  class EndpointRegistry {
+    private var addressToWritable = HashMap[Address, EndpointPolicy]()
+    private var writableToAddress = HashMap[ActorRef, Address]()
+    private var addressToReadonly = HashMap[Address, ActorRef]()
+    private var readonlyToAddress = HashMap[ActorRef, Address]()
 
-    def getEndpointWithPolicy(address: Address): Option[EndpointPolicy] = addressToEndpointAndPolicy.get(address)
+    def registerWritableEndpoint(address: Address, endpoint: ActorRef): ActorRef = addressToWritable.get(address) match {
+      case Some(Pass(e)) ⇒
+        throw new IllegalArgumentException(s"Attempting to overwrite existing endpoint $e with $endpoint")
+      case _ ⇒
+        addressToWritable += address -> Pass(endpoint)
+        writableToAddress += endpoint -> address
+        endpoint
+    }
 
-    def hasActiveEndpointFor(address: Address): Boolean = addressToEndpointAndPolicy.get(address) match {
+    def registerReadOnlyEndpoint(address: Address, endpoint: ActorRef): ActorRef = {
+      addressToReadonly += address -> endpoint
+      readonlyToAddress += endpoint -> address
+      endpoint
+    }
+
+    def unregisterEndpoint(endpoint: ActorRef): Unit = if (isWritable(endpoint)) {
+      val address = writableToAddress(endpoint)
+      addressToWritable.get(address) match {
+        case Some(policy) if policy.isTombstone ⇒ // There is already a tombstone directive, leave it there
+        case _                                  ⇒ addressToWritable -= address
+      }
+      writableToAddress -= endpoint
+    } else if (isReadOnly(endpoint)) {
+      addressToReadonly -= readonlyToAddress(endpoint)
+      readonlyToAddress -= endpoint
+    }
+
+    def writableEndpointWithPolicyFor(address: Address): Option[EndpointPolicy] = addressToWritable.get(address)
+
+    def hasWritableEndpointFor(address: Address): Boolean = writableEndpointWithPolicyFor(address) match {
       case Some(Pass(_)) ⇒ true
       case _             ⇒ false
     }
 
-    def passiveEndpointFor(address: Address): Option[ActorRef] = addressToPassive.get(address)
+    def readOnlyEndpointFor(address: Address): Option[ActorRef] = addressToReadonly.get(address)
 
-    def isQuarantined(address: Address): Boolean = addressToEndpointAndPolicy.get(address) match {
+    def isWritable(endpoint: ActorRef): Boolean = writableToAddress contains endpoint
+
+    def isReadOnly(endpoint: ActorRef): Boolean = readonlyToAddress contains endpoint
+
+    def isQuarantined(address: Address): Boolean = writableEndpointWithPolicyFor(address) match {
       case Some(Quarantined(_)) ⇒ true
       case _                    ⇒ false
     }
 
-    def prune(pruneAge: Long): Unit = {
-      addressToEndpointAndPolicy = addressToEndpointAndPolicy.filter {
-        case (_, Gated(timeOfFailure)) ⇒ timeOfFailure + pruneAge > System.nanoTime()
+    def markAsFailed(endpoint: ActorRef, timeOfRelease: Deadline): Unit = if (isWritable(endpoint)) {
+      addressToWritable += writableToAddress(endpoint) -> Gated(timeOfRelease)
+      writableToAddress -= endpoint
+    } else if (isReadOnly(endpoint)) {
+      addressToReadonly -= readonlyToAddress(endpoint)
+      readonlyToAddress -= endpoint
+    }
+
+    def markAsQuarantined(address: Address, reason: Throwable): Unit = addressToWritable += address -> Quarantined(reason)
+
+    def allEndpoints: collection.Iterable[ActorRef] = writableToAddress.keys ++ readonlyToAddress.keys
+
+    def pruneGatedEntries(): Unit = {
+      addressToWritable = addressToWritable.filter {
+        case (_, Gated(timeOfRelease)) ⇒ timeOfRelease.hasTimeLeft
         case _                         ⇒ true
       }
     }
-
-    def registerActiveEndpoint(address: Address, endpoint: ActorRef): ActorRef = {
-      addressToEndpointAndPolicy = addressToEndpointAndPolicy + (address -> Pass(endpoint))
-      endpointToAddress = endpointToAddress + (endpoint -> address)
-      endpoint
-    }
-
-    def registerPassiveEndpoint(address: Address, endpoint: ActorRef): ActorRef = {
-      addressToPassive = addressToPassive + (address -> endpoint)
-      endpointToAddress = endpointToAddress + (endpoint -> address)
-      endpoint
-    }
-
-    def isPassive(endpoint: ActorRef): Boolean = addressToPassive.contains(endpointToAddress(endpoint))
-
-    def markFailed(endpoint: ActorRef, timeOfFailure: Long): Unit = {
-      addressToEndpointAndPolicy += endpointToAddress(endpoint) -> Gated(timeOfFailure)
-      if (!isPassive(endpoint)) endpointToAddress = endpointToAddress - endpoint
-    }
-
-    def markQuarantine(address: Address, reason: Throwable): Unit =
-      addressToEndpointAndPolicy += address -> Quarantined(reason)
-
-    def removeIfNotGated(endpoint: ActorRef): Unit = {
-      endpointToAddress.get(endpoint) foreach { address ⇒
-        addressToEndpointAndPolicy.get(address) foreach {
-          case Pass(_) ⇒ addressToEndpointAndPolicy = addressToEndpointAndPolicy - address
-          case _       ⇒
-        }
-
-        endpointToAddress = endpointToAddress - endpoint
-        addressToPassive = addressToPassive - address
-      }
-    }
-
-    def allEndpoints: Iterable[ActorRef] = endpointToAddress.keys
   }
 }
 
@@ -357,26 +377,27 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   // Mapping between transports and the local addresses they listen to
   var transportMapping: Map[Address, Transport] = Map()
 
-  def retryGateEnabled = settings.RetryGateClosedFor > 0L
-  val pruneInterval: Long = if (retryGateEnabled) settings.RetryGateClosedFor * 2L else 0L
+  def retryGateEnabled = settings.RetryGateClosedFor > Duration.Zero
+  val pruneInterval: FiniteDuration = if (retryGateEnabled) settings.RetryGateClosedFor * 2 else Duration.Zero
   val pruneTimerCancellable: Option[Cancellable] = if (retryGateEnabled)
-    Some(context.system.scheduler.schedule(pruneInterval milliseconds, pruneInterval milliseconds, self, Prune))
+    Some(context.system.scheduler.schedule(pruneInterval, pruneInterval, self, Prune))
   else None
 
   override val supervisorStrategy = OneForOneStrategy(settings.MaximumRetriesInWindow, settings.RetryWindow) {
     case InvalidAssociation(localAddress, remoteAddress, e) ⇒
-      endpoints.markQuarantine(remoteAddress, e)
+      endpoints.markAsQuarantined(remoteAddress, e)
       Stop
 
     case NonFatal(e) ⇒
-      if (!retryGateEnabled)
+      // Retrying immediately if the retry gate is disabled, and it is an endpoint used for writing.
+      if (!retryGateEnabled && endpoints.isWritable(sender)) {
         // This strategy keeps all the messages in the stash of the endpoint so restart will transfer the queue
         // to the restarted endpoint -- thus no messages are lost
         Restart
-      else {
+      } else {
         // This strategy throws away all the messages enqueued in the endpoint (in its stash), registers the time of failure,
         // keeps throwing away messages until the retry gate becomes open (time specified in RetryGateClosedFor)
-        endpoints.markFailed(sender, System.nanoTime())
+        endpoints.markAsFailed(sender, Deadline.now + settings.RetryGateClosedFor)
         Stop
       }
   }
@@ -418,51 +439,48 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     case s @ Send(message, senderOption, recipientRef) ⇒
       val recipientAddress = recipientRef.path.address
 
-      endpoints.getEndpointWithPolicy(recipientAddress) match {
-        case Some(Pass(endpoint)) ⇒ endpoint ! s
-        case Some(Gated(timeOfFailure)) ⇒ if (retryGateOpen(timeOfFailure)) {
-          val endpoint = createEndpoint(
-            recipientAddress,
-            recipientRef.localAddressToUse,
-            transportMapping(recipientRef.localAddressToUse),
-            settings,
-            None)
-          endpoints.registerActiveEndpoint(recipientAddress, endpoint)
+      def createAndRegisterWritingEndpoint(): ActorRef = endpoints.registerWritableEndpoint(recipientAddress, createEndpoint(
+        recipientAddress,
+        recipientRef.localAddressToUse,
+        transportMapping(recipientRef.localAddressToUse),
+        settings,
+        None))
+
+      endpoints.writableEndpointWithPolicyFor(recipientAddress) match {
+        case Some(Pass(endpoint)) ⇒
           endpoint ! s
-        } else forwardToDeadLetters(s)
-        case Some(Quarantined(_)) ⇒ forwardToDeadLetters(s)
+        case Some(Gated(timeOfRelease)) ⇒
+          if (timeOfRelease.isOverdue()) createAndRegisterWritingEndpoint() ! s
+          else forwardToDeadLetters(s)
+        case Some(Quarantined(_)) ⇒
+          forwardToDeadLetters(s)
         case None ⇒
-          val endpoint = createEndpoint(
-            recipientAddress,
-            recipientRef.localAddressToUse,
-            transportMapping(recipientRef.localAddressToUse),
-            settings,
-            None)
-          endpoints.registerActiveEndpoint(recipientAddress, endpoint)
-          endpoint ! s
+          createAndRegisterWritingEndpoint() ! s
 
       }
 
-    case InboundAssociation(handle) ⇒ endpoints.passiveEndpointFor(handle.remoteAddress) match {
+    case InboundAssociation(handle) ⇒ endpoints.readOnlyEndpointFor(handle.remoteAddress) match {
       case Some(endpoint) ⇒ endpoint ! EndpointWriter.TakeOver(handle)
       case None ⇒
-        val endpoint = createEndpoint(
-          handle.remoteAddress,
-          handle.localAddress,
-          transportMapping(handle.localAddress),
-          settings,
-          Some(handle))
-        eventPublisher.notifyListeners(AssociatedEvent(handle.localAddress, handle.remoteAddress, true))
-        if (settings.UsePassiveConnections && !endpoints.hasActiveEndpointFor(handle.remoteAddress)) {
-          endpoints.registerActiveEndpoint(handle.remoteAddress, endpoint)
-        } else if (!endpoints.isQuarantined(handle.remoteAddress))
-          endpoints.registerPassiveEndpoint(handle.remoteAddress, endpoint)
-        else handle.disassociate()
+        if (endpoints.isQuarantined(handle.remoteAddress)) handle.disassociate()
+        else {
+          eventPublisher.notifyListeners(AssociatedEvent(handle.localAddress, handle.remoteAddress, true))
+          val endpoint = createEndpoint(
+            handle.remoteAddress,
+            handle.localAddress,
+            transportMapping(handle.localAddress),
+            settings,
+            Some(handle))
+          if (settings.UsePassiveConnections && !endpoints.hasWritableEndpointFor(handle.remoteAddress))
+            endpoints.registerWritableEndpoint(handle.remoteAddress, endpoint)
+          else
+            endpoints.registerReadOnlyEndpoint(handle.remoteAddress, endpoint)
+        }
     }
     case Terminated(endpoint) ⇒
-      endpoints.removeIfNotGated(endpoint)
+      endpoints.unregisterEndpoint(endpoint)
     case Prune ⇒
-      endpoints.prune(settings.RetryGateClosedFor)
+      endpoints.pruneGatedEntries()
     case ShutdownAndFlush ⇒
       // Shutdown all endpoints and signal to sender when ready (and whether all endpoints were shut down gracefully)
       val sys = context.system // Avoid closing over context
@@ -479,13 +497,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     case Terminated(_)         ⇒ // why should we care now?
   }
 
-  private def forwardToDeadLetters(s: Send): Unit = {
-    val sender = s.senderOption match {
-      case Some(sender) ⇒ sender
-      case None         ⇒ extendedSystem.deadLetters
-    }
-    extendedSystem.deadLetters.tell(s.message, sender)
-  }
+  private def forwardToDeadLetters(s: Send): Unit = extendedSystem.deadLetters.tell(s.message, s.senderOption.orNull)
 
   private def listens: Future[Seq[(Transport, Address, Promise[AssociationEventListener])]] = {
     /*
@@ -552,8 +564,6 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       .withDispatcher("akka.remoting.writer-dispatcher"),
       "endpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()))
   }
-
-  private def retryGateOpen(timeOfFailure: Long): Boolean = (timeOfFailure + settings.RetryGateClosedFor) < System.nanoTime()
 
   override def postStop(): Unit = {
     pruneTimerCancellable.foreach { _.cancel() }
