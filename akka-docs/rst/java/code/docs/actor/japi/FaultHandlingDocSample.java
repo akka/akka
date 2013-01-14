@@ -311,9 +311,8 @@ public class FaultHandlingDocSample {
         counter.tell(new UseStorage(null), getSelf());
         // Try to re-establish storage after while
         getContext().system().scheduler().scheduleOnce(
-                Duration.create(10, "seconds"), getSelf(), Reconnect,
-          getContext().dispatcher()
-        );
+            Duration.create(10, "seconds"), getSelf(), Reconnect,
+            getContext().dispatcher(), null);
       } else if (msg.equals(Reconnect)) {
         // Re-establish storage after the scheduled delay
         initStorage();

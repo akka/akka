@@ -5,6 +5,7 @@ import java.util.concurrent.TimeoutException;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 
+import akka.actor.Actor;
 import akka.actor.ActorKilledException;
 import akka.actor.ActorRef;
 import akka.actor.ActorRefFactory;
@@ -79,7 +80,7 @@ public class SupervisedAsk {
         targetActor.forward(askParam.message, getContext());
         Scheduler scheduler = getContext().system().scheduler();
         timeoutMessage = scheduler.scheduleOnce(askParam.timeout.duration(),
-            self(), new AskTimeout(), context().dispatcher());
+            self(), new AskTimeout(), context().dispatcher(), null);
       } else if (message instanceof Terminated) {
         Throwable ex = new ActorKilledException("Target actor terminated.");
         caller.tell(new Status.Failure(ex), self());

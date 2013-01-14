@@ -135,7 +135,15 @@ public class JavaTestKit {
         public Object apply() {
           return cond();
         }
-      }, max, interval);
+      }, max, interval, p.awaitCond$default$4());
+    }
+    
+    public AwaitCond(Duration max, Duration interval, String message) {
+      p.awaitCond(new AbstractFunction0<Object>() {
+        public Object apply() {
+          return cond();
+        }
+      }, max, interval, message);
     }
   }
 

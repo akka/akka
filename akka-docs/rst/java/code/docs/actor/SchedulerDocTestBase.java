@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 //#imports1
 
 //#imports2
+import akka.actor.Actor;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.actor.Cancellable;
@@ -43,7 +44,7 @@ public class SchedulerDocTestBase {
   public void scheduleOneOffTask() {
     //#schedule-one-off-message
     system.scheduler().scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS),
-      testActor, "foo", system.dispatcher());
+      testActor, "foo", system.dispatcher(), null);
     //#schedule-one-off-message
 
     //#schedule-one-off-thunk

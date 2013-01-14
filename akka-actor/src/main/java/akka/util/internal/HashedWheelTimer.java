@@ -457,10 +457,11 @@ public class HashedWheelTimer implements Timer {
             return Unsafe.instance.compareAndSwapInt(this, _stateOffset, old, future);
         }
 
-        public void cancel() {
+        public boolean cancel() {
             if (updateState(ST_INIT, ST_CANCELLED)) {
               parent.wheel[stopIndex].remove(this);
-            }
+              return true;
+            } else return false;
         }
 
         public boolean isCancelled() {
