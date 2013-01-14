@@ -478,7 +478,8 @@ private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
 
   override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
     case d: DeadLetter ⇒ if (!specialHandle(d.message)) eventStream.publish(d)
-    case _             ⇒ if (!specialHandle(message)) eventStream.publish(DeadLetter(message, sender, this))
+    case _ ⇒ if (!specialHandle(message))
+      eventStream.publish(DeadLetter(message, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
   }
 
   override protected def specialHandle(msg: Any): Boolean = msg match {
