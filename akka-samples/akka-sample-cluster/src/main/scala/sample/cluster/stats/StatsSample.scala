@@ -123,7 +123,7 @@ object StatsSample {
   def main(args: Array[String]): Unit = {
     // Override the configuration of the port
     // when specified as program argument
-    if (args.nonEmpty) System.setProperty("akka.remoting.transports.tcp.port", args(0))
+    if (args.nonEmpty) System.setProperty("akka.remote.netty.tcp.port", args(0))
 
     //#start-router-lookup
     val system = ActorSystem("ClusterSystem", ConfigFactory.parseString("""
@@ -151,7 +151,7 @@ object StatsSampleOneMaster {
   def main(args: Array[String]): Unit = {
     // Override the configuration of the port
     // when specified as program argument
-    if (args.nonEmpty) System.setProperty("akka.remoting.transports.tcp.port", args(0))
+    if (args.nonEmpty) System.setProperty("akka.remote.netty.tcp.port", args(0))
 
     //#start-router-deploy
     val system = ActorSystem("ClusterSystem", ConfigFactory.parseString("""
