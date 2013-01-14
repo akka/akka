@@ -60,7 +60,7 @@ object FactorialBackend {
   def main(args: Array[String]): Unit = {
     // Override the configuration of the port
     // when specified as program argument
-    if (args.nonEmpty) System.setProperty("akka.remote.netty.port", args(0))
+    if (args.nonEmpty) System.setProperty("akka.remoting.transports.tcp.port", args(0))
 
     val system = ActorSystem("ClusterSystem", ConfigFactory.load("factorial"))
     system.actorOf(Props[FactorialBackend], name = "factorialBackend")

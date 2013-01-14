@@ -15,8 +15,13 @@
   <dependencies>
     <dependency>
       <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-cluster-experimental_2.10.0-RC1</artifactId>
-      <version>2.1-20121016-001042</version>
+      <artifactId>akka-cluster-experimental_2.10.0</artifactId>
+      <version>2.2-20130122-001107</version>
+    </dependency>
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-contrib_2.10.0</artifactId>
+      <version>2.2-20130122-001107</version>
     </dependency>
   </dependencies>
   <repositories>
