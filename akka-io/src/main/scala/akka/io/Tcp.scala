@@ -16,7 +16,6 @@ import java.net.Socket
 import java.net.ServerSocket
 import scala.concurrent.duration._
 import scala.collection.immutable
-import sun.security.tools.KeyTool.Command
 import akka.actor.ActorSystem
 
 object Tcp extends ExtensionKey[TcpExt] {
@@ -33,6 +32,7 @@ object Tcp extends ExtensionKey[TcpExt] {
                   address: InetSocketAddress,
                   backlog: Int = 100,
                   options: immutable.Seq[SO.SocketOption] = Nil) extends Command
+  case object Unbind extends Command
   case class Register(handler: ActorRef) extends Command
 
   object SO {
@@ -161,8 +161,11 @@ object Tcp extends ExtensionKey[TcpExt] {
   /// EVENTS
   sealed trait Event
 
+  case object Bound extends Event
+
   case class Received(data: ByteString) extends Event
   case class Connected(localAddress: InetSocketAddress, remoteAddress: InetSocketAddress) extends Event
+  case class CommandFailed(cmd: Command) extends Event
 
   sealed trait Closed extends Event
   case object PeerClosed extends Closed
@@ -174,6 +177,12 @@ object Tcp extends ExtensionKey[TcpExt] {
   case class RegisterClientChannel(channel: SocketChannel)
   case class RegisterServerChannel(channel: ServerSocketChannel)
   case class CreateConnection(channel: SocketChannel)
+  case class Reject(command: Command, commander: ActorRef)
+  // Retry should be sent by Selector actors to their parent router with retriesLeft decremented. If retries are
+  // depleted, the selector actor must reply directly to the manager with a Reject (above).
+  case class Retry(command: Command, retriesLeft: Int, commander: ActorRef) {
+    require(retriesLeft >= 0, "The upper limit for retries must be nonnegative.")
+  }
   case object ChannelConnectable
   case object ChannelAcceptable
   case object ChannelReadable
@@ -202,6 +211,6 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
   }
 
   val manager = system.asInstanceOf[ActorSystemImpl].systemActorOf(
-    Props.empty.withDispatcher(Settings.ManagementDispatcher), "IO-TCP")
+    Props[TcpManager].withDispatcher(Settings.ManagementDispatcher), "IO-TCP")
 
 }
