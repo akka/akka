@@ -78,6 +78,8 @@ class PhiAccrualFailureDetector(
 
   override def isAvailable: Boolean = phi < threshold
 
+  override def isMonitoring: Boolean = state.get.timestamp.nonEmpty
+
   @tailrec
   final override def heartbeat(): Unit = {
 

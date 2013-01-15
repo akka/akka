@@ -17,6 +17,12 @@ trait FailureDetector {
   def isAvailable: Boolean
 
   /**
+   * Returns true if the failure detector has received any heartbeats and started monitoring
+   * of the resource.
+   */
+  def isMonitoring: Boolean
+
+  /**
    * Notifies the FailureDetector that a heartbeat arrived from the monitored resource. This causes the FailureDetector
    * to update its state.
    */

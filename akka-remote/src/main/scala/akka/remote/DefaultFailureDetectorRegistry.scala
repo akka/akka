@@ -21,13 +21,14 @@ class DefaultFailureDetectorRegistry[A](val detectorFactory: () ⇒ FailureDetec
   private val resourceToFailureDetector = new AtomicReference[Map[A, FailureDetector]](Map())
   private final val failureDetectorCreationLock: Lock = new ReentrantLock
 
-  /**
-   * Returns true if the resource is considered to be up and healthy and returns false otherwise. For unregistered
-   * resources it returns true.
-   */
   final override def isAvailable(resource: A): Boolean = resourceToFailureDetector.get.get(resource) match {
     case Some(r) ⇒ r.isAvailable
     case _       ⇒ true
+  }
+
+  final override def isMonitoring(resource: A): Boolean = resourceToFailureDetector.get.get(resource) match {
+    case Some(r) ⇒ r.isMonitoring
+    case _       ⇒ false
   }
 
   final override def heartbeat(resource: A): Unit = {

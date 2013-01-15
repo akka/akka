@@ -15,8 +15,15 @@ trait FailureDetectorRegistry[A] {
 
   /**
    * Returns true if the resource is considered to be up and healthy and returns false otherwise.
+   * For unregistered resources it returns true.
    */
   def isAvailable(resource: A): Boolean
+
+  /**
+   * Returns true if the failure detector has received any heartbeats and started monitoring
+   * of the resource.
+   */
+  def isMonitoring(resource: A): Boolean
 
   /**
    * Records a heartbeat for a resource. If the resource is not yet registered (i.e. this is the first heartbeat) then
