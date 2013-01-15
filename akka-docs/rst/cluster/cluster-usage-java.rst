@@ -89,7 +89,7 @@ and becomes a member of the cluster. It's status changed to 'Up'.
 
 Switch over to the first terminal window and see in the log output that the member joined.
 
-6. Start another node. Open a sbt session in yet another terminal window and run::
+6. Start another node. Open a maven session in yet another terminal window and run::
 
     mvn exec:java -Dexec.mainClass="sample.cluster.simple.japi.SimpleClusterApp"
 

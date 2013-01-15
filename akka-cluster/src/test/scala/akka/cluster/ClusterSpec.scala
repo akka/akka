@@ -76,10 +76,11 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       try {
         cluster.subscribe(testActor, classOf[ClusterEvent.ClusterDomainEvent])
         // first, is in response to the subscription
-        expectMsgClass(classOf[ClusterEvent.ClusterDomainEvent])
+        expectMsgClass(classOf[ClusterEvent.InstantClusterState])
+        expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
 
         cluster.publishCurrentClusterState()
-        expectMsgClass(classOf[ClusterEvent.ClusterDomainEvent])
+        expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
       } finally {
         cluster.unsubscribe(testActor)
       }
@@ -87,7 +88,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
 
     "send CurrentClusterState to one receiver when requested" in {
       cluster.sendCurrentClusterState(testActor)
-      expectMsgClass(classOf[ClusterEvent.ClusterDomainEvent])
+      expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
     }
 
   }
