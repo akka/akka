@@ -31,31 +31,30 @@ object Tcp extends ExtensionKey[TcpExt] {
   case class Bind(handler: ActorRef,
                   address: InetSocketAddress,
                   backlog: Int = 100,
-                  options: immutable.Seq[SO.SocketOption] = Nil) extends Command
+                  options: immutable.Seq[SocketOption] = Nil) extends Command
   case object Unbind extends Command
   case class Register(handler: ActorRef) extends Command
 
-  object SO {
+  /**
+   * SocketOption is a package of data (from the user) and associated
+   * behavior (how to apply that to a socket).
+   */
+  sealed trait SocketOption {
     /**
-     * SocketOption is a package of data (from the user) and associated
-     * behavior (how to apply that to a socket).
+     * Action to be taken for this option before calling bind()
      */
-    sealed trait SocketOption {
-      /**
-       * Action to be taken for this option before calling bind()
-       */
-      def beforeBind(s: ServerSocket): Unit = ()
-      /**
-       * Action to be taken for this option before calling connect()
-       */
-      def beforeConnect(s: Socket): Unit = ()
-      /**
-       * Action to be taken for this option after connect returned (i.e. on
-       * the slave socket for servers).
-       */
-      def afterConnect(s: Socket): Unit = ()
-    }
-
+    def beforeBind(s: ServerSocket): Unit = ()
+    /**
+     * Action to be taken for this option before calling connect()
+     */
+    def beforeConnect(s: Socket): Unit = ()
+    /**
+     * Action to be taken for this option after connect returned (i.e. on
+     * the slave socket for servers).
+     */
+    def afterConnect(s: Socket): Unit = ()
+  }
+  object SO {
     // shared socket options
 
     /**
@@ -109,7 +108,7 @@ object Tcp extends ExtensionKey[TcpExt] {
      * For more information see [[java.net.Socket.setSendBufferSize]]
      */
     case class SendBufferSize(size: Int) extends SocketOption {
-      require(size > 0, "ReceiveBufferSize must be > 0")
+      require(size > 0, "SendBufferSize must be > 0")
       override def afterConnect(s: Socket): Unit = s.setSendBufferSize(size)
     }
 
@@ -139,39 +138,37 @@ object Tcp extends ExtensionKey[TcpExt] {
   }
 
   // TODO: what about close reasons?
-  case object Close extends Command
-  case object ConfirmedClose extends Command
-  case object Abort extends Command
+  sealed trait CloseCommand extends Command
 
-  trait Write extends Command {
-    def data: ByteString
-    def ack: AnyRef
-    def nack: AnyRef
-  }
+  case object Close extends CloseCommand
+  case object ConfirmedClose extends CloseCommand
+  case object Abort extends CloseCommand
+
+  case class Write(data: ByteString, ack: AnyRef) extends Command
   object Write {
-    def apply(_data: ByteString): Write = new Write {
-      def data: ByteString = _data
-      def ack: AnyRef = null
-      def nack: AnyRef = null
-    }
+    val Empty: Write = Write(ByteString.empty, null)
+    def apply(data: ByteString): Write =
+      if (data.isEmpty) Empty else Write(data, null)
   }
+
   case object StopReading extends Command
   case object ResumeReading extends Command
 
   /// EVENTS
   sealed trait Event
 
-  case object Bound extends Event
-
   case class Received(data: ByteString) extends Event
-  case class Connected(localAddress: InetSocketAddress, remoteAddress: InetSocketAddress) extends Event
+  case class Connected(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress) extends Event
   case class CommandFailed(cmd: Command) extends Event
+  case object Bound extends Event
+  case object Unbound extends Event
 
-  sealed trait Closed extends Event
-  case object PeerClosed extends Closed
-  case object ActivelyClosed extends Closed
-  case object ConfirmedClosed extends Closed
-  case class Error(cause: Throwable) extends Closed
+  sealed trait ConnectionClosed extends Event
+  case object Closed extends ConnectionClosed
+  case object Aborted extends ConnectionClosed
+  case object ConfirmedClosed extends ConnectionClosed
+  case object PeerClosed extends ConnectionClosed
+  case class ErrorClose(cause: Throwable) extends ConnectionClosed
 
   /// INTERNAL
   case class RegisterClientChannel(channel: SocketChannel)
@@ -208,6 +205,10 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
     val SelectorDispatcher = getString("selector-dispatcher")
     val WorkerDispatcher = getString("worker-dispatcher")
     val ManagementDispatcher = getString("management-dispatcher")
+    val DirectBufferSize = getInt("direct-buffer-size")
+    val RegisterTimeout =
+      if (getString("register-timeout") == "infinite") Duration.Undefined
+      else Duration(getMilliseconds("register-timeout"), MILLISECONDS)
   }
 
   val manager = system.asInstanceOf[ActorSystemImpl].systemActorOf(

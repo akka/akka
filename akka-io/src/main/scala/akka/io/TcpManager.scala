@@ -46,8 +46,8 @@ class TcpManager extends Actor {
   val selectorPool = context.actorOf(Props.empty.withRouter(RandomRouter(settings.NrOfSelectors)))
 
   def receive = {
-    case c: Connect ⇒ selectorPool forward c
-    case b: Bind ⇒ selectorPool forward b
+    case c: Connect                 ⇒ selectorPool forward c
+    case b: Bind                    ⇒ selectorPool forward b
     case Reject(command, commander) ⇒ commander ! CommandFailed(command)
   }
 }
