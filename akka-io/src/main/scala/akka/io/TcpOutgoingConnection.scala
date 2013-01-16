@@ -30,7 +30,7 @@ class TcpOutgoingConnection(_selector: ActorRef,
   if (channel.connect(remoteAddress))
     completeConnect(commander, options)
   else {
-    selector ! RegisterClientChannel(channel)
+    selector ! RegisterOutgoingConnection(channel)
     context.become(connecting(commander, options))
   }
 

@@ -233,7 +233,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       val selector = TestProbe()
       val connectionActor = createConnectionActor(selector.ref, userHandler.ref)
       val clientSideChannel = connectionActor.underlyingActor.channel
-      selector.expectMsg(RegisterClientChannel(clientSideChannel))
+      selector.expectMsg(RegisterOutgoingConnection(clientSideChannel))
 
       // close instead of accept
       localServer.close()
@@ -250,7 +250,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       val selector = TestProbe()
       val connectionActor = createConnectionActor(selector.ref, userHandler.ref, serverAddress = new InetSocketAddress("127.0.0.1", 63186))
       val clientSideChannel = connectionActor.underlyingActor.channel
-      selector.expectMsg(RegisterClientChannel(clientSideChannel))
+      selector.expectMsg(RegisterOutgoingConnection(clientSideChannel))
       val sel = SelectorProvider.provider().openSelector()
       val key = clientSideChannel.register(sel, SelectionKey.OP_CONNECT | SelectionKey.OP_READ)
       sel.select(200)
@@ -269,7 +269,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       val selector = TestProbe()
       val connectionActor = createConnectionActor(selector.ref, userHandler.ref)
       val clientSideChannel = connectionActor.underlyingActor.channel
-      selector.expectMsg(RegisterClientChannel(clientSideChannel))
+      selector.expectMsg(RegisterOutgoingConnection(clientSideChannel))
       localServer.accept()
       selector.send(connectionActor, ChannelConnectable)
       userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
@@ -284,7 +284,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       val selector = TestProbe()
       val connectionActor = createConnectionActor(selector.ref, userHandler)
       val clientSideChannel = connectionActor.underlyingActor.channel
-      selector.expectMsg(RegisterClientChannel(clientSideChannel))
+      selector.expectMsg(RegisterOutgoingConnection(clientSideChannel))
       system.stop(userHandler)
       assertActorTerminated(connectionActor)
     }
@@ -346,7 +346,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     val connectionActor = createConnectionActor(selector.ref, userHandler.ref)
     val clientSideChannel = connectionActor.underlyingActor.channel
 
-    selector.expectMsg(RegisterClientChannel(clientSideChannel))
+    selector.expectMsg(RegisterOutgoingConnection(clientSideChannel))
 
     localServer.configureBlocking(true)
     val serverSideChannel = localServer.accept()
