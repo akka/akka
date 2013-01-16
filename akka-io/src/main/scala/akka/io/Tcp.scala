@@ -97,7 +97,7 @@ object Tcp extends ExtensionKey[TcpExt] {
      * For more information see [[java.net.Socket.setSendBufferSize]]
      */
     case class SendBufferSize(size: Int) extends SocketOption {
-      require(size > 0, "ReceiveBufferSize must be > 0")
+      require(size > 0, "SendBufferSize must be > 0")
       override def afterConnect(s: Socket): Unit = s.setSendBufferSize(size)
     }
 
