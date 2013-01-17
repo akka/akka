@@ -832,7 +832,6 @@ abstract class StressSpec
 
         step += 1
         loop(counter + 1, nextAS, nextAddresses)
-
       }
     }
 
@@ -926,6 +925,7 @@ abstract class StressSpec
         }
 
         awaitClusterResult
+        step += 1
       }
     }
 
