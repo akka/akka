@@ -49,16 +49,21 @@ object RemotingSpec {
       actor.provider = "akka.remote.RemoteActorRefProvider"
       remote.transport = "akka.remote.Remoting"
 
-      remoting.retry-latch-closed-for = 1 s
-      remoting.log-remote-lifecycle-events = on
-      remoting.enabled-transports = [test, tcp, udp, ssl]
+      remote.retry-latch-closed-for = 1 s
+      remote.log-remote-lifecycle-events = on
+      remote.enabled-transports = [
+        "akka.remote.test",
+        "akka.remote.netty.tcp",
+        "akka.remote.netty.udp",
+        "akka.remote.netty.ssl"
+      ]
 
-      remoting.transports.tcp.port = 0
-      remoting.transports.udp.port = 0
-      remoting.transports.ssl.port = 0
-      remoting.transports.ssl.ssl = ${common-ssl-settings}
+      remote.netty.tcp.port = 0
+      remote.netty.udp.port = 0
+      remote.netty.ssl.port = 0
+      remote.netty.ssl.ssl = ${common-ssl-settings}
 
-      remoting.transports.test {
+      remote.test {
           transport-class = "akka.remote.transport.TestTransport"
           applied-adapters = []
           registry-key = aX33k0jWKg
@@ -73,7 +78,7 @@ object RemotingSpec {
         /looker/child/grandchild.remote = "test.akka://RemotingSpec@localhost:12345"
       }
     }
-""".format(
+                                               """.format(
     getClass.getClassLoader.getResource("keystore").getPath,
     getClass.getClassLoader.getResource("truststore").getPath))
 
@@ -86,7 +91,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
   val conf = ConfigFactory.parseString(
     """
-      akka.remoting.transports {
+      akka.remote {
         test.local-address = "test://remote-sys@localhost:12346"
       }
     """).withFallback(system.settings.config).resolve()

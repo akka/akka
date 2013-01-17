@@ -30,24 +30,24 @@ private[remote] class AkkaProtocolSettings(config: Config) {
 
   import config._
 
-  val FailureDetectorThreshold: Double = getDouble("akka.remoting.failure-detector.threshold")
+  val FailureDetectorThreshold: Double = getDouble("akka.remote.failure-detector.threshold")
 
-  val FailureDetectorMaxSampleSize: Int = getInt("akka.remoting.failure-detector.max-sample-size")
+  val FailureDetectorMaxSampleSize: Int = getInt("akka.remote.failure-detector.max-sample-size")
 
   val FailureDetectorStdDeviation: FiniteDuration =
-    Duration(getMilliseconds("akka.remoting.failure-detector.min-std-deviation"), MILLISECONDS)
+    Duration(getMilliseconds("akka.remote.failure-detector.min-std-deviation"), MILLISECONDS)
 
   val AcceptableHeartBeatPause: FiniteDuration =
-    Duration(getMilliseconds("akka.remoting.failure-detector.acceptable-heartbeat-pause"), MILLISECONDS)
+    Duration(getMilliseconds("akka.remote.failure-detector.acceptable-heartbeat-pause"), MILLISECONDS)
 
   val HeartBeatInterval: FiniteDuration =
-    Duration(getMilliseconds("akka.remoting.heartbeat-interval"), MILLISECONDS)
+    Duration(getMilliseconds("akka.remote.heartbeat-interval"), MILLISECONDS)
 
-  val WaitActivityEnabled: Boolean = getBoolean("akka.remoting.wait-activity-enabled")
+  val WaitActivityEnabled: Boolean = getBoolean("akka.remote.wait-activity-enabled")
 
-  val RequireCookie: Boolean = getBoolean("akka.remoting.require-cookie")
+  val RequireCookie: Boolean = getBoolean("akka.remote.require-cookie")
 
-  val SecureCookie: String = getString("akka.remoting.secure-cookie")
+  val SecureCookie: String = getString("akka.remote.secure-cookie")
 }
 
 private[remote] object AkkaProtocolTransport { //Couldn't these go into the Remoting Extension/ RemoteSettings instead?

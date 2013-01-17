@@ -16,19 +16,19 @@ object AkkaProtocolStressTest {
       #loglevel = DEBUG
       actor.provider = "akka.remote.RemoteActorRefProvider"
 
-      remoting.retry-latch-closed-for = 0 s
-      remoting.log-remote-lifecycle-events = on
+      remote.retry-latch-closed-for = 0 s
+      remote.log-remote-lifecycle-events = on
 
-      remoting.failure-detector {
+      remote.failure-detector {
         threshold = 1.0
         max-sample-size = 2
         min-std-deviation = 1 ms
         acceptable-heartbeat-pause = 0.01 s
       }
-      remoting.retry-window = 1 s
-      remoting.maximum-retries-in-window = 1000
+      remote.retry-window = 1 s
+      remote.maximum-retries-in-window = 1000
 
-      remoting.transports.tcp {
+      remote.netty.tcp {
         applied-adapters = ["gremlin"]
         port = 0
       }

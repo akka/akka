@@ -10,7 +10,7 @@ import akka.remote.Remoting.RegisterTransportActor
 import akka.remote.transport.ActorTransportAdapter.ListenUnderlying
 import akka.remote.transport.ActorTransportAdapter.ListenerRegistered
 import akka.remote.transport.Transport._
-import akka.remote.{ RARP, RemotingSettings }
+import akka.remote.RARP
 import akka.util.Timeout
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -20,7 +20,7 @@ import scala.util.Success
 trait TransportAdapterProvider extends ((Transport, ExtendedActorSystem) ⇒ Transport)
 
 class TransportAdapters(system: ExtendedActorSystem) extends Extension {
-  val settings = new RemotingSettings(RARP(system).provider.remoteSettings.config)
+  val settings = RARP(system).provider.remoteSettings
 
   private val adaptersTable: Map[String, TransportAdapterProvider] = for ((name, fqn) ← settings.Adapters) yield {
     name -> system.dynamicAccess.createInstanceFor[TransportAdapterProvider](fqn, immutable.Seq.empty).recover({

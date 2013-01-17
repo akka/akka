@@ -123,14 +123,14 @@ private[remote] class EndpointWriter(
   val localAddress: Address,
   val remoteAddress: Address,
   val transport: Transport,
-  val settings: RemotingSettings,
+  val settings: RemoteSettings,
   val codec: AkkaPduCodec) extends Actor with Stash with FSM[EndpointWriter.State, Unit] {
 
   import EndpointWriter._
   import context.dispatcher
 
   val extendedSystem: ExtendedActorSystem = context.system.asInstanceOf[ExtendedActorSystem]
-  val eventPublisher = new EventPublisher(context.system, log, settings.LogLifecycleEvents)
+  val eventPublisher = new EventPublisher(context.system, log, settings.LogRemoteLifecycleEvents)
 
   var reader: Option[ActorRef] = None
   var handle: Option[AssociationHandle] = handleOrActive // FIXME: refactor into state data
