@@ -14,15 +14,13 @@ import akka.pattern.ask
 import Tcp._
 
 class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
-  val port = 47323
-
   "A TcpListener" must {
     val manager = TestProbe()
     val selector = TestProbe()
     val handler = TestProbe()
     val handlerRef = handler.ref
     val bindCommander = TestProbe()
-    val endpoint = new InetSocketAddress("localhost", port)
+    val endpoint = TemporaryServerAddress.get("127.0.0.1")
     val listener = TestActorRef(new TcpListener(manager.ref, selector.ref, handler.ref, endpoint, 100,
       bindCommander.ref, Nil))
     var serverSocketChannel: Option[ServerSocketChannel] = None
@@ -38,9 +36,9 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
     }
 
     "accept two acceptable connections at once and register them with the manager" in {
-      new Socket("localhost", port)
-      new Socket("localhost", port)
-      new Socket("localhost", port)
+      new Socket("localhost", endpoint.getPort)
+      new Socket("localhost", endpoint.getPort)
+      new Socket("localhost", endpoint.getPort)
       listener ! ChannelAcceptable
       val RegisterIncomingConnection(_, `handlerRef`, Nil) = manager.receiveOne(Duration.Zero)
       val RegisterIncomingConnection(_, `handlerRef`, Nil) = manager.receiveOne(Duration.Zero)

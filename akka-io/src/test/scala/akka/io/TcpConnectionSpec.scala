@@ -14,16 +14,13 @@ import java.net._
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import akka.actor.{ ActorRef, Props, Actor, Terminated }
+import akka.actor.{ ActorRef, Terminated }
 import akka.testkit.{ TestProbe, TestActorRef, AkkaSpec }
 import akka.util.ByteString
 import Tcp._
-import java.util.concurrent.CountDownLatch
 
 class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms") {
-  val port = 45679
-  val localhost = InetAddress.getLocalHost
-  val serverAddress = new InetSocketAddress(localhost, port)
+  val serverAddress = TemporaryServerAddress.get("127.0.0.1")
 
   "An outgoing connection" must {
     // common behavior
@@ -248,9 +245,9 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       assertActorTerminated(connectionActor)
     }
 
-    val UnknownAddress = new InetSocketAddress("127.0.0.1", 63186)
+    val UnboundAddress = TemporaryServerAddress.get("127.0.0.1")
     "report failed connection attempt when target is unreachable" in
-      withUnacceptedConnection(connectionActorCons = createConnectionActor(serverAddress = UnknownAddress)) { setup ⇒
+      withUnacceptedConnection(connectionActorCons = createConnectionActor(serverAddress = UnboundAddress)) { setup ⇒
         import setup._
 
         val sel = SelectorProvider.provider().openSelector()
