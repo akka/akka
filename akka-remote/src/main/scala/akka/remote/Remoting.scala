@@ -298,17 +298,18 @@ private[remote] object EndpointManager {
       endpoint
     }
 
-    def unregisterEndpoint(endpoint: ActorRef): Unit = if (isWritable(endpoint)) {
-      val address = writableToAddress(endpoint)
-      addressToWritable.get(address) match {
-        case Some(policy) if policy.isTombstone ⇒ // There is already a tombstone directive, leave it there
-        case _                                  ⇒ addressToWritable -= address
+    def unregisterEndpoint(endpoint: ActorRef): Unit =
+      if (isWritable(endpoint)) {
+        val address = writableToAddress(endpoint)
+        addressToWritable.get(address) match {
+          case Some(policy) if policy.isTombstone ⇒ // There is already a tombstone directive, leave it there
+          case _                                  ⇒ addressToWritable -= address
+        }
+        writableToAddress -= endpoint
+      } else if (isReadOnly(endpoint)) {
+        addressToReadonly -= readonlyToAddress(endpoint)
+        readonlyToAddress -= endpoint
       }
-      writableToAddress -= endpoint
-    } else if (isReadOnly(endpoint)) {
-      addressToReadonly -= readonlyToAddress(endpoint)
-      readonlyToAddress -= endpoint
-    }
 
     def writableEndpointWithPolicyFor(address: Address): Option[EndpointPolicy] = addressToWritable.get(address)
 
@@ -328,13 +329,14 @@ private[remote] object EndpointManager {
       case _                    ⇒ false
     }
 
-    def markAsFailed(endpoint: ActorRef, timeOfRelease: Deadline): Unit = if (isWritable(endpoint)) {
-      addressToWritable += writableToAddress(endpoint) -> Gated(timeOfRelease)
-      writableToAddress -= endpoint
-    } else if (isReadOnly(endpoint)) {
-      addressToReadonly -= readonlyToAddress(endpoint)
-      readonlyToAddress -= endpoint
-    }
+    def markAsFailed(endpoint: ActorRef, timeOfRelease: Deadline): Unit =
+      if (isWritable(endpoint)) {
+        addressToWritable += writableToAddress(endpoint) -> Gated(timeOfRelease)
+        writableToAddress -= endpoint
+      } else if (isReadOnly(endpoint)) {
+        addressToReadonly -= readonlyToAddress(endpoint)
+        readonlyToAddress -= endpoint
+      }
 
     def markAsQuarantined(address: Address, reason: Throwable): Unit = addressToWritable += address -> Quarantined(reason)
 

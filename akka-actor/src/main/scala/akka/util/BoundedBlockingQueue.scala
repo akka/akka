@@ -285,12 +285,13 @@ class BoundedBlockingQueue[E <: AnyRef](
           last = -1 //To avoid 2 subsequent removes without a next in between
           lock.lock()
           try {
-            @tailrec def removeTarget(i: Iterator[E] = backing.iterator()): Unit = if (i.hasNext) {
-              if (i.next eq target) {
-                i.remove()
-                notFull.signal()
-              } else removeTarget(i)
-            }
+            @tailrec def removeTarget(i: Iterator[E] = backing.iterator()): Unit =
+              if (i.hasNext) {
+                if (i.next eq target) {
+                  i.remove()
+                  notFull.signal()
+                } else removeTarget(i)
+              }
 
             removeTarget()
           } finally {

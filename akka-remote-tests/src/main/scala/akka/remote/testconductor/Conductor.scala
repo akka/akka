@@ -125,9 +125,10 @@ trait Conductor { this: TestConductorExt ⇒
   def blackhole(node: RoleName, target: RoleName, direction: Direction): Future[Done] =
     throttle(node, target, direction, 0f)
 
-  private def requireTestConductorTranport(): Unit = if (!transport.defaultAddress.protocol.contains(".gremlin.trttl."))
-    throw new ConfigurationException("To use this feature you must activate the failure injector adapters " +
-      "(gremlin, trttl) by specifying `testTransport(on = true)` in your MultiNodeConfig.")
+  private def requireTestConductorTranport(): Unit =
+    if (!transport.defaultAddress.protocol.contains(".gremlin.trttl."))
+      throw new ConfigurationException("To use this feature you must activate the failure injector adapters " +
+        "(gremlin, trttl) by specifying `testTransport(on = true)` in your MultiNodeConfig.")
 
   /**
    * Switch the Netty pipeline of the remote support into pass through mode for
@@ -377,7 +378,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
     case BarrierTimeout(data)             ⇒ failBarrier(data)
     case FailedBarrier(data)              ⇒ failBarrier(data)
     case BarrierEmpty(data, msg)          ⇒ SupervisorStrategy.Resume
-    case WrongBarrier(name, client, data) ⇒ client ! ToClient(BarrierResult(name, false)); failBarrier(data)
+    case WrongBarrier(name, client, data) ⇒ { client ! ToClient(BarrierResult(name, false)); failBarrier(data) }
     case ClientLost(data, node)           ⇒ failBarrier(data)
     case DuplicateNode(data, node)        ⇒ failBarrier(data)
   }

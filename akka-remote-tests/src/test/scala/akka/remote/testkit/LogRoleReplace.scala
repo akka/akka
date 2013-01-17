@@ -100,10 +100,11 @@ class LogRoleReplace {
   def process(in: BufferedReader, out: PrintWriter): Unit = {
 
     @tailrec
-    def processLines(line: String): Unit = if (line ne null) {
-      out.println(processLine(line))
-      processLines(in.readLine)
-    }
+    def processLines(line: String): Unit =
+      if (line ne null) {
+        out.println(processLine(line))
+        processLines(in.readLine)
+      }
 
     processLines(in.readLine())
   }

@@ -143,17 +143,14 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
     case ExpectedFirstHeartbeat(from) ⇒ triggerFirstHeartbeat(from)
   }
 
-  def reset(snapshot: InstantClusterState): Unit =
-    state = state.reset(snapshot.members.map(_.address))
+  def reset(snapshot: InstantClusterState): Unit = state = state.reset(snapshot.members.map(_.address))
 
-  def addMember(m: Member): Unit = if (m.address != selfAddress)
-    state = state addMember m.address
+  def addMember(m: Member): Unit = if (m.address != selfAddress) state = state addMember m.address
 
-  def removeMember(m: Member): Unit = if (m.address != selfAddress)
-    state = state removeMember m.address
+  def removeMember(m: Member): Unit = if (m.address != selfAddress) state = state removeMember m.address
 
-  def addHeartbeatRequest(address: Address): Unit = if (address != selfAddress)
-    state = state.addHeartbeatRequest(address, Deadline.now + HeartbeatRequestTimeToLive)
+  def addHeartbeatRequest(address: Address): Unit =
+    if (address != selfAddress) state = state.addHeartbeatRequest(address, Deadline.now + HeartbeatRequestTimeToLive)
 
   def sendHeartbeatRequest(address: Address): Unit =
     if (!cluster.failureDetector.isMonitoring(address) && state.ring.mySenders.contains(address)) {

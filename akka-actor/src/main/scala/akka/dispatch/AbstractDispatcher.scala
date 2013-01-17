@@ -158,23 +158,24 @@ private[akka] object MessageDispatcher {
   // since this is a compile-time constant, scalac will elide code behind if (MessageDispatcher.debug) (RK checked with 2.9.1)
   final val debug = false // Deliberately without type ascription to make it a compile-time constant
   lazy val actors = new Index[MessageDispatcher, ActorRef](16, _ compareTo _)
-  def printActors: Unit = if (debug) {
-    for {
-      d ← actors.keys
-      a ← { println(d + " inhabitants: " + d.inhabitants); actors.valueIterator(d) }
-    } {
-      val status = if (a.isTerminated) " (terminated)" else " (alive)"
-      val messages = a match {
-        case r: ActorRefWithCell ⇒ " " + r.underlying.numberOfMessages + " messages"
-        case _                   ⇒ " " + a.getClass
+  def printActors: Unit =
+    if (debug) {
+      for {
+        d ← actors.keys
+        a ← { println(d + " inhabitants: " + d.inhabitants); actors.valueIterator(d) }
+      } {
+        val status = if (a.isTerminated) " (terminated)" else " (alive)"
+        val messages = a match {
+          case r: ActorRefWithCell ⇒ " " + r.underlying.numberOfMessages + " messages"
+          case _                   ⇒ " " + a.getClass
+        }
+        val parent = a match {
+          case i: InternalActorRef ⇒ ", parent: " + i.getParent
+          case _                   ⇒ ""
+        }
+        println(" -> " + a + status + messages + parent)
       }
-      val parent = a match {
-        case i: InternalActorRef ⇒ ", parent: " + i.getParent
-        case _                   ⇒ ""
-      }
-      println(" -> " + a + status + messages + parent)
     }
-  }
 
   implicit def defaultDispatcher(implicit system: ActorSystem): MessageDispatcher = system.dispatcher
 }

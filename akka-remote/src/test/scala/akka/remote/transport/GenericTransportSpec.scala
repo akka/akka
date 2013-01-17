@@ -25,10 +25,11 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
   val nonExistingAddress = Address("test." + schemeIdentifier, "nosystem", "nohost", 0)
 
   def freshTransport(testTransport: TestTransport): Transport
-  def wrapTransport(transport: Transport): Transport = if (withAkkaProtocol) {
-    val provider = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider]
-    new AkkaProtocolTransport(transport, system, new AkkaProtocolSettings(provider.remoteSettings.config), AkkaPduProtobufCodec)
-  } else transport
+  def wrapTransport(transport: Transport): Transport =
+    if (withAkkaProtocol) {
+      val provider = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider]
+      new AkkaProtocolTransport(transport, system, new AkkaProtocolSettings(provider.remoteSettings.config), AkkaPduProtobufCodec)
+    } else transport
 
   def newTransportA(registry: AssociationRegistry): Transport =
     wrapTransport(freshTransport(new TestTransport(addressATest, registry)))

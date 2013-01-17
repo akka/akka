@@ -252,14 +252,15 @@ object ByteIterator {
       normalize()
     }
 
-    @tailrec final override def drop(n: Int): this.type = if ((n > 0) && !isEmpty) {
-      val nCurrent = math.min(n, current.len)
-      current.drop(n)
-      val rest = n - nCurrent
-      assert(current.isEmpty || (rest == 0))
-      normalize()
-      drop(rest)
-    } else this
+    @tailrec final override def drop(n: Int): this.type =
+      if ((n > 0) && !isEmpty) {
+        val nCurrent = math.min(n, current.len)
+        current.drop(n)
+        val rest = n - nCurrent
+        assert(current.isEmpty || (rest == 0))
+        normalize()
+        drop(rest)
+      } else this
 
     final override def takeWhile(p: Byte ⇒ Boolean): this.type = {
       var stop = false
@@ -275,12 +276,13 @@ object ByteIterator {
       normalize()
     }
 
-    @tailrec final override def dropWhile(p: Byte ⇒ Boolean): this.type = if (!isEmpty) {
-      current.dropWhile(p)
-      val dropMore = current.isEmpty
-      normalize()
-      if (dropMore) dropWhile(p) else this
-    } else this
+    @tailrec final override def dropWhile(p: Byte ⇒ Boolean): this.type =
+      if (!isEmpty) {
+        current.dropWhile(p)
+        val dropMore = current.isEmpty
+        normalize()
+        if (dropMore) dropWhile(p) else this
+      } else this
 
     final override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Unit = {
       var pos = start
@@ -309,19 +311,20 @@ object ByteIterator {
       }
     }
 
-    @tailrec protected final def getToArray[A](xs: Array[A], offset: Int, n: Int, elemSize: Int)(getSingle: ⇒ A)(getMult: (Array[A], Int, Int) ⇒ Unit): this.type = if (n <= 0) this else {
-      if (isEmpty) Iterator.empty.next
-      val nDone = if (current.len >= elemSize) {
-        val nCurrent = math.min(n, current.len / elemSize)
-        getMult(xs, offset, nCurrent)
-        nCurrent
-      } else {
-        xs(offset) = getSingle
-        1
+    @tailrec protected final def getToArray[A](xs: Array[A], offset: Int, n: Int, elemSize: Int)(getSingle: ⇒ A)(getMult: (Array[A], Int, Int) ⇒ Unit): this.type =
+      if (n <= 0) this else {
+        if (isEmpty) Iterator.empty.next
+        val nDone = if (current.len >= elemSize) {
+          val nCurrent = math.min(n, current.len / elemSize)
+          getMult(xs, offset, nCurrent)
+          nCurrent
+        } else {
+          xs(offset) = getSingle
+          1
+        }
+        normalize()
+        getToArray(xs, offset + nDone, n - nDone, elemSize)(getSingle)(getMult)
       }
-      normalize()
-      getToArray(xs, offset + nDone, n - nDone, elemSize)(getSingle)(getMult)
-    }
 
     def getBytes(xs: Array[Byte], offset: Int, n: Int): this.type =
       getToArray(xs, offset, n, 1) { getByte } { current.getBytes(_, _, _) }
@@ -359,16 +362,17 @@ object ByteIterator {
       }
 
       override def skip(n: Long): Long = {
-        @tailrec def skipImpl(n: Long, skipped: Long): Long = if (n > 0) {
-          if (!isEmpty) {
-            val m = current.asInputStream.skip(n)
-            normalize()
-            val newN = n - m
-            val newSkipped = skipped + m
-            if (newN > 0) skipImpl(newN, newSkipped)
-            else newSkipped
+        @tailrec def skipImpl(n: Long, skipped: Long): Long =
+          if (n > 0) {
+            if (!isEmpty) {
+              val m = current.asInputStream.skip(n)
+              normalize()
+              val newN = n - m
+              val newSkipped = skipped + m
+              if (newN > 0) skipImpl(newN, newSkipped)
+              else newSkipped
+            } else 0
           } else 0
-        } else 0
 
         skipImpl(n, 0)
       }

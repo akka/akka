@@ -97,10 +97,11 @@ object FSM {
         if (repeat) scheduler.schedule(timeout, timeout, actor, this)
         else scheduler.scheduleOnce(timeout, actor, this))
 
-    def cancel(): Unit = if (ref.isDefined) {
-      ref.get.cancel()
-      ref = None
-    }
+    def cancel(): Unit =
+      if (ref.isDefined) {
+        ref.get.cancel()
+        ref = None
+      }
   }
 
   /**

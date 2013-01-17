@@ -382,7 +382,7 @@ class LocalActorRefProvider(
     override def isTerminated: Boolean = stopped.isOn
 
     override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = stopped.ifOff(message match {
-      case Failed(ex, _) if sender ne null ⇒ causeOfTermination = Some(ex); sender.asInstanceOf[InternalActorRef].stop()
+      case Failed(ex, _) if sender ne null ⇒ { causeOfTermination = Some(ex); sender.asInstanceOf[InternalActorRef].stop() }
       case NullMessage                     ⇒ // do nothing
       case _                               ⇒ log.error(this + " received unexpected message [" + message + "]")
     })
@@ -449,10 +449,11 @@ class LocalActorRefProvider(
       stopWhenAllTerminationHooksDone()
     }
 
-    def stopWhenAllTerminationHooksDone(): Unit = if (terminationHooks.isEmpty) {
-      eventStream.stopDefaultLoggers()
-      context.stop(self)
-    }
+    def stopWhenAllTerminationHooksDone(): Unit =
+      if (terminationHooks.isEmpty) {
+        eventStream.stopDefaultLoggers()
+        context.stop(self)
+      }
 
     // guardian MUST NOT lose its children during restart
     override def preRestart(cause: Throwable, msg: Option[Any]) {}
