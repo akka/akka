@@ -14,24 +14,24 @@ import akka.actor._
 import akka.util.ByteString
 import Tcp._
 import annotation.tailrec
+import java.nio.ByteBuffer
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
  */
 abstract class TcpConnection(val selector: ActorRef,
-                             val channel: SocketChannel) extends Actor with ThreadLocalDirectBuffer with ActorLogging {
+                             val channel: SocketChannel) extends Actor with ActorLogging with WithBufferPool {
   val tcp = Tcp(context.system)
 
   channel.configureBlocking(false)
 
-  var pendingWrite: Write = Write.Empty // a write "queue" of size 1 for holding one unfinished write command
-  var pendingWriteCommander: ActorRef = null
+  var pendingWrite: PendingWrite = null
 
   // Needed to send the ConnectionClosed message in the postStop handler.
   // First element is the handler, second the particular close message.
   var closedMessage: (ActorRef, ConnectionClosed) = null
 
-  def writePending = pendingWrite ne Write.Empty
+  def writePending = pendingWrite ne null
 
   def registerTimeout = tcp.Settings.RegisterTimeout
   def traceLoggingEnabled = tcp.Settings.TraceLogging
@@ -74,8 +74,8 @@ abstract class TcpConnection(val selector: ActorRef,
         sender ! write.ack
 
     case write: Write ⇒
-      pendingWriteCommander = sender
-      pendingWrite = write
+      pendingWrite = createWrite(write)
+
       doWrite(handler)
     case ChannelWritable   ⇒ doWrite(handler)
 
@@ -119,16 +119,17 @@ abstract class TcpConnection(val selector: ActorRef,
   }
 
   def doRead(handler: ActorRef): Unit = {
-    val buffer = directBuffer()
+    val buffer = acquireBuffer()
 
     try {
-      log.debug("Trying to read from channel")
       val readBytes = channel.read(buffer)
       buffer.flip()
 
       if (readBytes > 0) {
         if (traceLoggingEnabled) log.debug("Read {} bytes", readBytes)
         handler ! Received(ByteString(buffer))
+        releaseBuffer(buffer)
+
         if (readBytes == buffer.capacity())
           // directly try reading more because we exhausted our buffer
           self ! ChannelReadable
@@ -147,23 +148,16 @@ abstract class TcpConnection(val selector: ActorRef,
   }
 
   def doWrite(handler: ActorRef): Unit = {
-    val write = pendingWrite
-    val data = write.data
-
-    val buffer = directBuffer()
-    data.copyToBuffer(buffer)
-    buffer.flip()
-
     try {
-      val writtenBytes = channel.write(buffer)
-      if (traceLoggingEnabled) log.debug("Wrote {} bytes", writtenBytes)
-      pendingWrite = consume(write, writtenBytes)
+      val writtenBytes = channel.write(pendingWrite.buffer)
+      if (traceLoggingEnabled) log.debug("Wrote {} bytes to channel", writtenBytes)
 
-      if (writePending) selector ! WriteInterest // still data to write
-      else if (write.wantsAck) {
-        pendingWriteCommander ! write.ack
-        pendingWriteCommander = null
-      } // everything written
+      if (pendingWrite.hasData) selector ! WriteInterest // still data to write
+      else if (pendingWrite.wantsAck) { // everything written
+        pendingWrite.commander ! pendingWrite.ack
+        releaseBuffer(pendingWrite.buffer)
+        pendingWrite = null
+      }
     } catch {
       case e: IOException ⇒ handleError(handler, e)
     }
@@ -239,7 +233,7 @@ abstract class TcpConnection(val selector: ActorRef,
       closedMessage._1 ! msg
 
       if (writePending)
-        pendingWriteCommander ! msg
+        pendingWrite.commander ! msg
     }
 
     if (channel.isOpen)
@@ -249,13 +243,15 @@ abstract class TcpConnection(val selector: ActorRef,
   override def postRestart(reason: Throwable): Unit =
     throw new IllegalStateException("Restarting not supported for connection actors.")
 
-  /** Returns a new write with `numBytes` removed from the front */
-  def consume(write: Write, numBytes: Int): Write =
-    numBytes match {
-      case 0                           ⇒ write
-      case x if x == write.data.length ⇒ Write.Empty
-      case _ ⇒
-        require(numBytes > 0 && numBytes < write.data.length)
-        write.copy(data = write.data.drop(numBytes))
-    }
+  private[TcpConnection] case class PendingWrite(commander: ActorRef, ack: AnyRef, buffer: ByteBuffer) {
+    def hasData = buffer.remaining() > 0
+    def wantsAck = ack ne NoAck
+  }
+  def createWrite(write: Write): PendingWrite = {
+    val buffer = acquireBuffer(write.data.length)
+    write.data.copyToBuffer(buffer)
+    buffer.flip()
+
+    PendingWrite(sender, write.ack, buffer)
+  }
 }
