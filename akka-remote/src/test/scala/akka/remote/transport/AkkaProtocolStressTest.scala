@@ -5,9 +5,10 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import AkkaProtocolStressTest._
 import akka.actor._
 import scala.concurrent.duration._
-import akka.testkit.TestEvent
-import akka.testkit.EventFilter
-import akka.remote.EndpointException
+import akka.testkit._
+import akka.remote.{ RARP, EndpointException }
+import akka.remote.transport.FailureInjectorTransportAdapter.{ One, All, Drop }
+import scala.concurrent.Await
 
 object AkkaProtocolStressTest {
   val configA: Config = ConfigFactory parseString ("""
@@ -56,7 +57,7 @@ object AkkaProtocolStressTest {
             controller ! (maxSeq, losses)
           }
         } else {
-          controller ! "Received out of order message. Previous: ${maxSeq} Received: ${seq}"
+          controller ! s"Received out of order message. Previous: ${maxSeq} Received: ${seq}"
         }
     }
   }
@@ -72,14 +73,17 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
     }
   }), "echo")
 
-  val rootB = RootActorPath(systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress)
+  val addressB = systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+  val rootB = RootActorPath(addressB)
   val here = system.actorFor(rootB / "user" / "echo")
 
   "AkkaProtocolTransport" must {
     "guarantee at-most-once delivery and message ordering despite packet loss" taggedAs TimingTest in {
+      Await.result(RARP(system).provider.transport.managementCommand(One(addressB, Drop(0.3, 0.3))), 3.seconds.dilated)
+
       val tester = system.actorOf(Props(new SequenceVerifier(here, self))) ! "start"
 
-      expectMsgPF(30.seconds) {
+      expectMsgPF(45.seconds) {
         case (received: Int, lost: Int) ⇒
           log.debug(s" ######## Received ${received - lost} messages from ${received} ########")
       }
