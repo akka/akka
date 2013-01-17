@@ -156,16 +156,6 @@ class RemoteActorRefProvider(
     // this enables reception of remote requests
     transport.start()
 
-    val remoteClientLifeCycleHandler = system.systemActorOf(Props(new Actor {
-      def receive = {
-        case RemoteClientError(cause, remote, address) ⇒ remote.shutdownClientConnection(address)
-        case RemoteClientDisconnected(remote, address) ⇒ remote.shutdownClientConnection(address)
-        case _                                         ⇒ //ignore other
-      }
-    }), "RemoteClientLifeCycleListener")
-
-    system.eventStream.subscribe(remoteClientLifeCycleHandler, classOf[RemoteLifeCycleEvent])
-
   }
 
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath,

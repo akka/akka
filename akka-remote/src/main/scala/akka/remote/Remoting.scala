@@ -220,17 +220,6 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
     }
   }
 
-  // TODO: this is called in RemoteActorRefProvider to handle the lifecycle of connections (clients)
-  // which is not how things work in the new remoting
-  override def shutdownClientConnection(address: Address): Unit = {
-    // Ignore
-  }
-
-  // TODO: this is never called anywhere, should be taken out from RemoteTransport API
-  override def restartClientConnection(address: Address): Unit = {
-    // Ignore
-  }
-
   override def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = endpointManager match {
     case Some(manager) ⇒ manager.tell(Send(message, senderOption, recipient), sender = senderOption getOrElse Actor.noSender)
     case None          ⇒ throw new IllegalStateException("Attempted to send remote message but Remoting is not running.")
