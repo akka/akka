@@ -14,69 +14,58 @@ import scala.concurrent.duration._
 import akka.actor._
 import Tcp._
 
-class TcpSelector(manager: ActorRef) extends Actor with ActorLogging {
-  @volatile var childrenKeys = HashMap.empty[String, SelectionKey]
-  var channelsOpened = 0L
-  var channelsClosed = 0L
-  val sequenceNumber = Iterator.from(0)
-  val settings = Tcp(context.system).Settings
-  val selectorManagementDispatcher = context.system.dispatchers.lookup(settings.SelectorDispatcher)
-  val selector = SelectorProvider.provider.openSelector
-  val doSelect: () ⇒ Int =
-    settings.SelectTimeout match {
-      case Duration.Zero ⇒ () ⇒ selector.selectNow()
-      case Duration.Inf  ⇒ () ⇒ selector.select()
-      case x             ⇒ val millis = x.toMillis; () ⇒ selector.select(millis)
-    }
+class TcpSelector(manager: ActorRef, tcp: TcpExt) extends Actor with ActorLogging {
+  import tcp.Settings._
 
-  selectorManagementDispatcher.execute(select) // start selection "loop"
+  @volatile var childrenKeys = HashMap.empty[String, SelectionKey]
+  val sequenceNumber = Iterator.from(0)
+  val selectorManagementDispatcher = context.system.dispatchers.lookup(SelectorDispatcher)
+  val selector = SelectorProvider.provider.openSelector
+  val OP_READ_AND_WRITE = OP_READ + OP_WRITE // compile-time constant
 
   def receive: Receive = {
     case WriteInterest  ⇒ execute(enableInterest(OP_WRITE, sender))
     case ReadInterest   ⇒ execute(enableInterest(OP_READ, sender))
     case AcceptInterest ⇒ execute(enableInterest(OP_ACCEPT, sender))
 
-    case CreateConnection(channel, handler, options) ⇒
-      val connection = context.actorOf(
-        props = Props(
-          creator = () ⇒ new TcpIncomingConnection(self, channel, handler, options),
-          dispatcher = settings.WorkerDispatcher),
-        name = nextName)
-      execute(registerIncomingConnection(channel, handler))
-      context.watch(connection)
-      channelsOpened += 1
+    case cmd: RegisterIncomingConnection ⇒
+      handleIncomingConnection(cmd, SelectorAssociationRetries)
 
     case cmd: Connect ⇒
-      handleConnect(cmd, settings.SelectorAssociationRetries, sender)
+      handleConnect(cmd, SelectorAssociationRetries)
 
-    case Retry(cmd: Connect, retriesLeft, commander) ⇒
-      handleConnect(cmd, retriesLeft, commander)
+    case cmd: Bind ⇒
+      handleBind(cmd, SelectorAssociationRetries)
 
     case RegisterOutgoingConnection(channel) ⇒
       execute(registerOutgoingConnection(channel, sender))
 
-    case cmd: Bind ⇒
-      handleBind(cmd, settings.SelectorAssociationRetries, sender)
-
-    case Retry(cmd: Bind, retriesLeft, commander) ⇒
-      handleBind(cmd, retriesLeft, commander)
-
     case RegisterServerSocketChannel(channel) ⇒
       execute(registerListener(channel, sender))
 
+    case Retry(command, 0) ⇒
+      log.warning("Command '{}' failed since all selectors are at capacity", command)
+      sender ! CommandFailed(command)
+
+    case Retry(cmd: RegisterIncomingConnection, retriesLeft) ⇒
+      handleIncomingConnection(cmd, retriesLeft)
+
+    case Retry(cmd: Connect, retriesLeft) ⇒
+      handleConnect(cmd, retriesLeft)
+
+    case Retry(cmd: Bind, retriesLeft) ⇒
+      handleBind(cmd, retriesLeft)
+
     case Terminated(child) ⇒
       execute(unregister(child))
-      channelsClosed += 1
-
-    case GetStats ⇒
-      sender ! SelectorStats(channelsOpened, channelsClosed)
   }
 
   override def postStop() {
     try {
-      import scala.collection.JavaConverters._
-      selector.keys.asScala.foreach(_.channel.close())
-      selector.close()
+      try {
+        val iterator = selector.keys.iterator
+        while (iterator.hasNext) iterator.next().channel.close()
+      } finally selector.close()
     } catch {
       case NonFatal(e) ⇒ log.error(e, "Error closing selector or key")
     }
@@ -85,35 +74,43 @@ class TcpSelector(manager: ActorRef) extends Actor with ActorLogging {
   // we can never recover from failures of a connection or listener child
   override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
-  def handleConnect(cmd: Connect, retriesLeft: Int, commander: ActorRef): Unit = {
+  def handleIncomingConnection(cmd: RegisterIncomingConnection, retriesLeft: Int): Unit =
+    withCapacityProtection(cmd, retriesLeft) {
+      import cmd._
+      val connection = spawnChild(() ⇒ new TcpIncomingConnection(self, channel, tcp, handler, options))
+      execute(registerIncomingConnection(channel, connection))
+    }
+
+  def handleConnect(cmd: Connect, retriesLeft: Int): Unit =
+    withCapacityProtection(cmd, retriesLeft) {
+      import cmd._
+      val commander = sender
+      spawnChild(() ⇒ new TcpOutgoingConnection(self, tcp, commander, remoteAddress, localAddress, options))
+    }
+
+  def handleBind(cmd: Bind, retriesLeft: Int): Unit =
+    withCapacityProtection(cmd, retriesLeft) {
+      import cmd._
+      val commander = sender
+      spawnChild(() ⇒ new TcpListener(self, handler, endpoint, backlog, commander, tcp.Settings, options))
+    }
+
+  def withCapacityProtection(cmd: Command, retriesLeft: Int)(body: ⇒ Unit): Unit = {
     log.debug("Executing {}", cmd)
-    if (canHandleMoreChannels) {
-      val connection = context.actorOf(
-        props = Props(
-          creator = () ⇒ new TcpOutgoingConnection(self, commander, cmd.remoteAddress, cmd.localAddress, cmd.options),
-          dispatcher = settings.WorkerDispatcher),
-        name = nextName)
-      context.watch(connection)
-      channelsOpened += 1
-    } else sender ! Reject(cmd, retriesLeft, commander)
+    if (MaxChannelsPerSelector == 0 || childrenKeys.size < MaxChannelsPerSelector) {
+      body
+    } else {
+      log.warning("Rejecting '{}' with {} retries left, retrying...", cmd, retriesLeft)
+      context.parent forward Retry(cmd, retriesLeft - 1)
+    }
   }
 
-  def handleBind(cmd: Bind, retriesLeft: Int, commander: ActorRef): Unit = {
-    log.debug("Executing {}", cmd)
-    if (canHandleMoreChannels) {
-      val listener = context.actorOf(
-        props = Props(
-          creator = () ⇒ new TcpListener(manager, self, cmd.handler, cmd.endpoint, cmd.backlog, commander, cmd.options),
-          dispatcher = settings.WorkerDispatcher),
-        name = nextName)
-      context.watch(listener)
-      channelsOpened += 1
-    } else sender ! Reject(cmd, retriesLeft, commander)
-  }
-
-  def nextName = sequenceNumber.next().toString
-
-  def canHandleMoreChannels = childrenKeys.size < settings.MaxChannelsPerSelector
+  def spawnChild(creator: () ⇒ Actor) =
+    context.watch {
+      context.actorOf(
+        props = Props(creator, dispatcher = WorkerDispatcher),
+        name = sequenceNumber.next().toString)
+    }
 
   //////////////// Management Tasks scheduled via the selectorManagementDispatcher /////////////
 
@@ -172,18 +169,28 @@ class TcpSelector(manager: ActorRef) extends Actor with ActorLogging {
     }
 
   val select = new Task {
+    val doSelect: () ⇒ Int =
+      SelectTimeout match {
+        case Duration.Zero ⇒ () ⇒ selector.selectNow()
+        case Duration.Inf  ⇒ () ⇒ selector.select()
+        case x             ⇒ val millis = x.toMillis; () ⇒ selector.select(millis)
+      }
     def tryRun() {
       if (doSelect() > 0) {
         val keys = selector.selectedKeys
         val iterator = keys.iterator()
         while (iterator.hasNext) {
           val key = iterator.next
-          val connection = key.attachment.asInstanceOf[ActorRef]
           if (key.isValid) {
-            if (key.isReadable) connection ! ChannelReadable
-            if (key.isWritable) connection ! ChannelWritable
-            else if (key.isAcceptable) connection ! ChannelAcceptable
-            else if (key.isConnectable) connection ! ChannelConnectable
+            val connection = key.attachment.asInstanceOf[ActorRef]
+            key.readyOps match {
+              case OP_READ                   ⇒ connection ! ChannelReadable
+              case OP_WRITE                  ⇒ connection ! ChannelWritable
+              case OP_READ_AND_WRITE         ⇒ connection ! ChannelWritable; connection ! ChannelReadable
+              case x if (x & OP_ACCEPT) > 0  ⇒ connection ! ChannelAcceptable
+              case x if (x & OP_CONNECT) > 0 ⇒ connection ! ChannelConnectable
+              case x                         ⇒ log.warning("Invalid readyOps: {}", x)
+            }
             key.interestOps(0) // prevent immediate reselection by always clearing
           } else log.warning("Invalid selection key: {}", key)
         }
@@ -193,12 +200,15 @@ class TcpSelector(manager: ActorRef) extends Actor with ActorLogging {
     }
   }
 
+  selectorManagementDispatcher.execute(select) // start selection "loop"
+
   abstract class Task extends Runnable {
     def tryRun()
     def run() {
       try tryRun()
       catch {
-        case NonFatal(e) ⇒ log.error(e, "Error during selector management task: {}", e)
+        case _: java.nio.channels.ClosedSelectorException ⇒ // ok, expected during shutdown
+        case NonFatal(e)                                  ⇒ log.error(e, "Error during selector management task: {}", e)
       }
     }
   }

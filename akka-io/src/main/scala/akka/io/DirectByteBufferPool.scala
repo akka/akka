@@ -32,7 +32,7 @@ class DirectByteBufferPool(bufferSize: Int, maxPoolSize: Int) {
   @volatile private[this] var pool: List[ByteBuffer] = Nil
   @volatile private[this] var poolSize: Int = 0
 
-  private[this] def allocate(size: Int): ByteBuffer =
+  private def allocate(size: Int): ByteBuffer =
     ByteBuffer.allocateDirect(size)
 
   def acquire(size: Int = bufferSize): ByteBuffer = {
@@ -44,8 +44,12 @@ class DirectByteBufferPool(bufferSize: Int, maxPoolSize: Int) {
     if (buf.capacity() <= bufferSize && poolSize < maxPoolSize)
       addBufferToPool(buf)
 
+  // TODO: check whether limiting the spin count in the following two methods is beneficial
+  // (e.g. never limit more than 1000 times), since both methods could fall back to not
+  // using the buffer at all (take fallback: create a new buffer, add fallback: just drop)
+
   @tailrec
-  final def takeBufferFromPool(): ByteBuffer =
+  private def takeBufferFromPool(): ByteBuffer =
     if (state.compareAndSet(Unlocked, Locked))
       try pool match {
         case Nil ⇒ allocate(bufferSize) // we have no more buffer available, so create a new one
@@ -57,7 +61,7 @@ class DirectByteBufferPool(bufferSize: Int, maxPoolSize: Int) {
     else takeBufferFromPool() // spin while locked
 
   @tailrec
-  final def addBufferToPool(buf: ByteBuffer): Unit =
+  private def addBufferToPool(buf: ByteBuffer): Unit =
     if (state.compareAndSet(Unlocked, Locked)) {
       buf.clear() // ensure that we never have dirty buffers in the pool
       pool = buf :: pool

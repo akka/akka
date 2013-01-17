@@ -16,11 +16,13 @@ import Tcp._
  * to be established.
  */
 class TcpOutgoingConnection(_selector: ActorRef,
+                            _tcp: TcpExt,
                             commander: ActorRef,
                             remoteAddress: InetSocketAddress,
                             localAddress: Option[InetSocketAddress],
-                            options: immutable.Seq[SocketOption])
-  extends TcpConnection(_selector, SocketChannel.open()) {
+                            options: immutable.Traversable[SocketOption])
+  extends TcpConnection(_selector, TcpOutgoingConnection.newSocketChannel(), _tcp) {
+
   context.watch(commander) // sign death pact
 
   localAddress.foreach(channel.socket.bind)
@@ -36,7 +38,7 @@ class TcpOutgoingConnection(_selector: ActorRef,
 
   def receive: Receive = PartialFunction.empty
 
-  def connecting(commander: ActorRef, options: immutable.Seq[SocketOption]): Receive = {
+  def connecting(commander: ActorRef, options: immutable.Traversable[SocketOption]): Receive = {
     case ChannelConnectable ⇒
       try {
         val connected = channel.finishConnect()
@@ -48,4 +50,12 @@ class TcpOutgoingConnection(_selector: ActorRef,
       }
   }
 
+}
+
+object TcpOutgoingConnection {
+  private def newSocketChannel() = {
+    val channel = SocketChannel.open()
+    channel.configureBlocking(false)
+    channel
+  }
 }

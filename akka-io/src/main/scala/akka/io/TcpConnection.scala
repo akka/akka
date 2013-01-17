@@ -20,11 +20,9 @@ import java.nio.ByteBuffer
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
  */
 abstract class TcpConnection(val selector: ActorRef,
-                             val channel: SocketChannel) extends Actor with ActorLogging with WithBufferPool {
-  val tcp = Tcp(context.system)
-
-  channel.configureBlocking(false)
-
+                             val channel: SocketChannel,
+                             val tcp: TcpExt) extends Actor with ActorLogging with WithBufferPool {
+  import tcp.Settings._
   var pendingWrite: PendingWrite = null
 
   // Needed to send the ConnectionClosed message in the postStop handler.
@@ -33,15 +31,12 @@ abstract class TcpConnection(val selector: ActorRef,
 
   def writePending = pendingWrite ne null
 
-  def registerTimeout = tcp.Settings.RegisterTimeout
-  def traceLoggingEnabled = tcp.Settings.TraceLogging
-
   // STATES
 
   /** connection established, waiting for registration from user handler */
   def waitingForRegistration(commander: ActorRef): Receive = {
     case Register(handler) ⇒
-      if (traceLoggingEnabled) log.debug("{} registered as connection handler", handler)
+      if (TraceLogging) log.debug("{} registered as connection handler", handler)
       selector ! ReadInterest
 
       context.setReceiveTimeout(Duration.Undefined)
@@ -55,7 +50,7 @@ abstract class TcpConnection(val selector: ActorRef,
     case ReceiveTimeout ⇒
       // after sending `Register` user should watch this actor to make sure
       // it didn't die because of the timeout
-      log.warning("Configured registration timeout of {} expired, stopping", registerTimeout)
+      log.warning("Configured registration timeout of {} expired, stopping", RegisterTimeout)
       context.stop(self)
   }
 
@@ -66,7 +61,7 @@ abstract class TcpConnection(val selector: ActorRef,
     case ChannelReadable ⇒ doRead(handler)
 
     case write: Write if writePending ⇒
-      if (traceLoggingEnabled) log.debug("Dropping write because queue is full")
+      if (TraceLogging) log.debug("Dropping write because queue is full")
       sender ! CommandFailed(write)
 
     case write: Write if write.data.isEmpty ⇒
@@ -107,14 +102,14 @@ abstract class TcpConnection(val selector: ActorRef,
   // AUXILIARIES and IMPLEMENTATION
 
   /** use in subclasses to start the common machinery above once a channel is connected */
-  def completeConnect(commander: ActorRef, options: immutable.Seq[SocketOption]): Unit = {
+  def completeConnect(commander: ActorRef, options: immutable.Traversable[SocketOption]): Unit = {
     options.foreach(_.afterConnect(channel.socket))
 
     commander ! Connected(
       channel.socket.getRemoteSocketAddress.asInstanceOf[InetSocketAddress],
       channel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress])
 
-    context.setReceiveTimeout(registerTimeout)
+    context.setReceiveTimeout(RegisterTimeout)
     context.become(waitingForRegistration(commander))
   }
 
@@ -126,7 +121,7 @@ abstract class TcpConnection(val selector: ActorRef,
       buffer.flip()
 
       if (readBytes > 0) {
-        if (traceLoggingEnabled) log.debug("Read {} bytes", readBytes)
+        if (TraceLogging) log.debug("Read {} bytes", readBytes)
         handler ! Received(ByteString(buffer))
         releaseBuffer(buffer)
 
@@ -135,10 +130,10 @@ abstract class TcpConnection(val selector: ActorRef,
           self ! ChannelReadable
         else selector ! ReadInterest
       } else if (readBytes == 0) {
-        if (traceLoggingEnabled) log.debug("Read nothing. Registering read interest with selector")
+        if (TraceLogging) log.debug("Read nothing. Registering read interest with selector")
         selector ! ReadInterest
       } else if (readBytes == -1) {
-        if (traceLoggingEnabled) log.debug("Read returned end-of-stream")
+        if (TraceLogging) log.debug("Read returned end-of-stream")
         doCloseConnection(handler, closeReason)
       } else throw new IllegalStateException("Unexpected value returned from read: " + readBytes)
 
@@ -150,7 +145,7 @@ abstract class TcpConnection(val selector: ActorRef,
   def doWrite(handler: ActorRef): Unit = {
     try {
       val writtenBytes = channel.write(pendingWrite.buffer)
-      if (traceLoggingEnabled) log.debug("Wrote {} bytes to channel", writtenBytes)
+      if (TraceLogging) log.debug("Wrote {} bytes to channel", writtenBytes)
 
       if (pendingWrite.hasData) selector ! WriteInterest // still data to write
       else if (pendingWrite.wantsAck) { // everything written
@@ -169,20 +164,20 @@ abstract class TcpConnection(val selector: ActorRef,
 
   def handleClose(handler: ActorRef, closedEvent: ConnectionClosed): Unit =
     if (closedEvent == Aborted) { // close instantly
-      if (traceLoggingEnabled) log.debug("Got Abort command. RESETing connection.")
+      if (TraceLogging) log.debug("Got Abort command. RESETing connection.")
       doCloseConnection(handler, closedEvent)
 
     } else if (writePending) { // finish writing first
-      if (traceLoggingEnabled) log.debug("Got Close command but write is still pending.")
+      if (TraceLogging) log.debug("Got Close command but write is still pending.")
       context.become(closingWithPendingWrite(handler, closedEvent))
 
     } else if (closedEvent == ConfirmedClosed) { // shutdown output and wait for confirmation
-      if (traceLoggingEnabled) log.debug("Got ConfirmedClose command, sending FIN.")
+      if (TraceLogging) log.debug("Got ConfirmedClose command, sending FIN.")
       channel.socket.shutdownOutput()
       context.become(closing(handler))
 
     } else { // close now
-      if (traceLoggingEnabled) log.debug("Got Close command, closing connection.")
+      if (TraceLogging) log.debug("Got Close command, closing connection.")
       doCloseConnection(handler, closedEvent)
     }
 
@@ -222,7 +217,7 @@ abstract class TcpConnection(val selector: ActorRef,
       case NonFatal(e) ⇒
         // setSoLinger can fail due to http://bugs.sun.com/view_bug.do?bug_id=6799574
         // (also affected: OS/X Java 1.6.0_37)
-        if (traceLoggingEnabled) log.debug("setSoLinger(true, 0) failed with {}", e)
+        if (TraceLogging) log.debug("setSoLinger(true, 0) failed with {}", e)
     }
     channel.close()
   }

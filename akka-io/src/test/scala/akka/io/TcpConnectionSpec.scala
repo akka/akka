@@ -20,7 +20,7 @@ import akka.util.ByteString
 import Tcp._
 
 class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms") {
-  val serverAddress = TemporaryServerAddress.get("127.0.0.1")
+  val serverAddress = TemporaryServerAddress("127.0.0.1")
 
   "An outgoing connection" must {
     // common behavior
@@ -245,7 +245,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       assertActorTerminated(connectionActor)
     }
 
-    val UnboundAddress = TemporaryServerAddress.get("127.0.0.1")
+    val UnboundAddress = TemporaryServerAddress("127.0.0.1")
     "report failed connection attempt when target is unreachable" in
       withUnacceptedConnection(connectionActorCons = createConnectionActor(serverAddress = UnboundAddress)) { setup ⇒
         import setup._
@@ -397,7 +397,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       commander: ActorRef): TestActorRef[TcpOutgoingConnection] = {
 
     TestActorRef(
-      new TcpOutgoingConnection(selector, commander, serverAddress, localAddress, options) {
+      new TcpOutgoingConnection(selector, Tcp(system), commander, serverAddress, localAddress, options) {
         override def postRestart(reason: Throwable) {
           // ensure we never restart
           context.stop(self)

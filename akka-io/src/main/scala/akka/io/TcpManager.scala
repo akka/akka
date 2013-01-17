@@ -4,12 +4,8 @@
 
 package akka.io
 
-import scala.concurrent.Future
-import scala.concurrent.duration._
 import akka.actor.{ ActorLogging, Actor, Props }
 import akka.routing.RandomRouter
-import akka.util.Timeout
-import akka.pattern.{ ask, pipe }
 import Tcp._
 
 /**
@@ -47,36 +43,13 @@ import Tcp._
  * with a [[akka.io.Tcp.CommandFailed]] message. This message contains the original command for reference.
  *
  */
-class TcpManager extends Actor with ActorLogging {
-  val settings = Tcp(context.system).Settings
-  val selectorNr = Iterator.from(0)
+class TcpManager(tcp: TcpExt) extends Actor with ActorLogging {
 
   val selectorPool = context.actorOf(
-    props = Props(new TcpSelector(self)).withRouter(RandomRouter(settings.NrOfSelectors)),
-    name = selectorNr.next().toString)
+    props = Props(new TcpSelector(self, tcp)).withRouter(RandomRouter(tcp.Settings.NrOfSelectors)),
+    name = "selectors")
 
   def receive = {
-    case RegisterIncomingConnection(channel, handler, options) ⇒
-      selectorPool ! CreateConnection(channel, handler, options)
-
-    case c: Connect ⇒
-      selectorPool forward c
-
-    case b: Bind ⇒
-      selectorPool forward b
-
-    case Reject(command, 0, commander) ⇒
-      log.warning("Command '{}' failed since all {} selectors are at capacity", command, context.children.size)
-      commander ! CommandFailed(command)
-
-    case Reject(command, retriesLeft, commander) ⇒
-      log.warning("Command '{}' rejected by {} with {} retries left, retrying...", command, sender, retriesLeft)
-      selectorPool ! Retry(command, retriesLeft - 1, commander)
-
-    case GetStats ⇒
-      import context.dispatcher
-      implicit val timeout: Timeout = 1 second span
-      val seqFuture = Future.traverse(context.children)(_.ask(GetStats).mapTo[SelectorStats])
-      seqFuture.map(s ⇒ Stats(s.map(_.channelsOpen).sum, s.map(_.channelsClosed).sum, s.toSeq)) pipeTo sender
+    case x @ (_: Connect | _: Bind) ⇒ selectorPool forward x
   }
 }

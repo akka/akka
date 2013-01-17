@@ -15,8 +15,10 @@ import Tcp.SocketOption
  */
 class TcpIncomingConnection(_selector: ActorRef,
                             _channel: SocketChannel,
+                            _tcp: TcpExt,
                             handler: ActorRef,
-                            options: immutable.Seq[SocketOption]) extends TcpConnection(_selector, _channel) {
+                            options: immutable.Traversable[SocketOption])
+  extends TcpConnection(_selector, _channel, _tcp) {
 
   context.watch(handler) // sign death pact
 

@@ -12,15 +12,15 @@ import scala.util.control.NonFatal
 import akka.actor.{ ActorLogging, ActorRef, Actor }
 import Tcp._
 
-class TcpListener(manager: ActorRef,
-                  selector: ActorRef,
+class TcpListener(selector: ActorRef,
                   handler: ActorRef,
                   endpoint: InetSocketAddress,
                   backlog: Int,
                   bindCommander: ActorRef,
-                  options: immutable.Seq[SocketOption]) extends Actor with ActorLogging {
+                  settings: TcpExt#Settings,
+                  options: immutable.Traversable[SocketOption]) extends Actor with ActorLogging {
 
-  val batchAcceptLimit = Tcp(context.system).Settings.BatchAcceptLimit
+  context.watch(handler) // sign death pact
   val channel = {
     val serverSocketChannel = ServerSocketChannel.open
     serverSocketChannel.configureBlocking(false)
@@ -30,7 +30,6 @@ class TcpListener(manager: ActorRef,
     serverSocketChannel
   }
   selector ! RegisterServerSocketChannel(channel)
-  context.watch(bindCommander) // sign death pact
   log.debug("Successfully bound to {}", endpoint)
 
   def receive: Receive = {
@@ -41,7 +40,14 @@ class TcpListener(manager: ActorRef,
 
   def bound: Receive = {
     case ChannelAcceptable ⇒
-      acceptAllPending(batchAcceptLimit)
+      acceptAllPending(settings.BatchAcceptLimit)
+
+    case CommandFailed(RegisterIncomingConnection(socketChannel, _, _)) ⇒
+      log.warning("Could not register incoming connection since capacity limit is reached, closing connection")
+      try socketChannel.close()
+      catch {
+        case NonFatal(e) ⇒ log.error(e, "Error closing channel")
+      }
 
     case Unbind ⇒
       log.debug("Unbinding endpoint {}", endpoint)
@@ -60,15 +66,19 @@ class TcpListener(manager: ActorRef,
         }
       if (socketChannel != null) {
         log.debug("New connection accepted")
-        manager ! RegisterIncomingConnection(socketChannel, handler, options)
-        selector ! AcceptInterest
+        socketChannel.configureBlocking(false)
+        context.parent ! RegisterIncomingConnection(socketChannel, handler, options)
         acceptAllPending(limit - 1)
       }
-    }
+    } else selector ! AcceptInterest
 
   override def postStop() {
-    try channel.close()
-    catch {
+    try {
+      if (channel.isOpen) {
+        log.debug("Closing serverSocketChannel after being stopped")
+        channel.close()
+      }
+    } catch {
       case NonFatal(e) ⇒ log.error(e, "Error closing ServerSocketChannel")
     }
   }

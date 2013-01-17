@@ -17,6 +17,7 @@ import java.net.ServerSocket
 import scala.concurrent.duration._
 import scala.collection.immutable
 import akka.actor.ActorSystem
+import com.typesafe.config.Config
 
 object Tcp extends ExtensionKey[TcpExt] {
 
@@ -126,24 +127,16 @@ object Tcp extends ExtensionKey[TcpExt] {
     }
   }
 
-  case class Stats(channelsOpened: Long, channelsClosed: Long, selectorStats: Seq[SelectorStats]) {
-    def channelsOpen = channelsOpened - channelsClosed
-  }
-
-  case class SelectorStats(channelsOpened: Long, channelsClosed: Long) {
-    def channelsOpen = channelsOpened - channelsClosed
-  }
-
   /// COMMANDS
   sealed trait Command
 
   case class Connect(remoteAddress: InetSocketAddress,
                      localAddress: Option[InetSocketAddress] = None,
-                     options: immutable.Seq[SocketOption] = Nil) extends Command
+                     options: immutable.Traversable[SocketOption] = Nil) extends Command
   case class Bind(handler: ActorRef,
                   endpoint: InetSocketAddress,
                   backlog: Int = 100,
-                  options: immutable.Seq[SocketOption] = Nil) extends Command
+                  options: immutable.Traversable[SocketOption] = Nil) extends Command
   case class Register(handler: ActorRef) extends Command
   case object Unbind extends Command
 
@@ -172,8 +165,6 @@ object Tcp extends ExtensionKey[TcpExt] {
   case object StopReading extends Command
   case object ResumeReading extends Command
 
-  case object GetStats extends Command
-
   /// EVENTS
   sealed trait Event
 
@@ -193,10 +184,9 @@ object Tcp extends ExtensionKey[TcpExt] {
   /// INTERNAL
   case class RegisterOutgoingConnection(channel: SocketChannel)
   case class RegisterServerSocketChannel(channel: ServerSocketChannel)
-  case class RegisterIncomingConnection(channel: SocketChannel, handler: ActorRef, options: immutable.Seq[SocketOption])
-  case class CreateConnection(channel: SocketChannel, handler: ActorRef, options: immutable.Seq[SocketOption])
-  case class Reject(command: Command, retriesLeft: Int, commander: ActorRef)
-  case class Retry(command: Command, retriesLeft: Int, commander: ActorRef)
+  case class RegisterIncomingConnection(channel: SocketChannel, handler: ActorRef,
+                                        options: immutable.Traversable[SocketOption]) extends Command
+  case class Retry(command: Command, retriesLeft: Int) { require(retriesLeft >= 0) }
   case object ChannelConnectable
   case object ChannelAcceptable
   case object ChannelReadable
@@ -208,22 +198,26 @@ object Tcp extends ExtensionKey[TcpExt] {
 
 class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
 
-  object Settings {
-    val config = system.settings.config.getConfig("akka.io.tcp")
+  val Settings = new Settings(system.settings.config.getConfig("akka.io.tcp"))
+  class Settings private[TcpExt] (config: Config) {
     import config._
 
     val NrOfSelectors = getInt("nr-of-selectors")
     val MaxChannels = getInt("max-channels")
-    val SelectTimeout =
-      if (getString("select-timeout") == "infinite") Duration.Inf
-      else Duration(getMilliseconds("select-timeout"), MILLISECONDS)
+    val SelectTimeout = getString("select-timeout") match {
+      case "infinite" ⇒ Duration.Inf
+      case x          ⇒ Duration(x)
+    }
+    if (getString("select-timeout") == "infinite") Duration.Inf
+    else Duration(getMilliseconds("select-timeout"), MILLISECONDS)
     val SelectorAssociationRetries = getInt("selector-association-retries")
     val BatchAcceptLimit = getInt("batch-accept-limit")
     val DirectBufferSize = getInt("direct-buffer-size")
     val MaxDirectBufferPoolSize = getInt("max-direct-buffer-pool-size")
-    val RegisterTimeout =
-      if (getString("register-timeout") == "infinite") Duration.Undefined
-      else Duration(getMilliseconds("register-timeout"), MILLISECONDS)
+    val RegisterTimeout = getString("register-timeout") match {
+      case "infinite" ⇒ Duration.Undefined
+      case x          ⇒ Duration(x)
+    }
     val SelectorDispatcher = getString("selector-dispatcher")
     val WorkerDispatcher = getString("worker-dispatcher")
     val ManagementDispatcher = getString("management-dispatcher")
@@ -238,8 +232,11 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
     val MaxChannelsPerSelector = MaxChannels / NrOfSelectors
   }
 
-  val manager = system.asInstanceOf[ActorSystemImpl].systemActorOf(
-    Props.empty.withDispatcher(Settings.ManagementDispatcher), "IO-TCP")
+  val manager = {
+    system.asInstanceOf[ActorSystemImpl].systemActorOf(
+      props = Props(new TcpManager(this)).withDispatcher(Settings.ManagementDispatcher),
+      name = "IO-TCP")
+  }
 
   val bufferPool = new DirectByteBufferPool(Settings.DirectBufferSize, Settings.MaxDirectBufferPoolSize)
 }
