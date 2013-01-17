@@ -152,11 +152,21 @@ object Tcp extends ExtensionKey[TcpExt] {
   case object ConfirmedClose extends CloseCommand
   case object Abort extends CloseCommand
 
-  case class Write(data: ByteString, ack: AnyRef) extends Command
+  case object NoAck
+
+  /**
+   * Write data to the TCP connection. If no ack is needed use the special
+   * `NoAck` object.
+   */
+  case class Write(data: ByteString, ack: AnyRef) extends Command {
+    require(ack ne null, "ack must be non-null. Use NoAck if you don't want acks.")
+
+    def wantsAck: Boolean = ack ne NoAck
+  }
   object Write {
-    val Empty: Write = Write(ByteString.empty, null)
+    val Empty: Write = Write(ByteString.empty, NoAck)
     def apply(data: ByteString): Write =
-      if (data.isEmpty) Empty else Write(data, null)
+      if (data.isEmpty) Empty else Write(data, NoAck)
   }
 
   case object StopReading extends Command
@@ -178,7 +188,7 @@ object Tcp extends ExtensionKey[TcpExt] {
   case object Aborted extends ConnectionClosed
   case object ConfirmedClosed extends ConnectionClosed
   case object PeerClosed extends ConnectionClosed
-  case class ErrorClose(cause: Throwable) extends ConnectionClosed
+  case class ErrorClose(cause: String) extends ConnectionClosed
 
   /// INTERNAL
   case class RegisterOutgoingConnection(channel: SocketChannel)
@@ -216,6 +226,7 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
     val SelectorDispatcher = getString("selector-dispatcher")
     val WorkerDispatcher = getString("worker-dispatcher")
     val ManagementDispatcher = getString("management-dispatcher")
+    val TraceLogging = getBoolean("trace-logging")
 
     require(NrOfSelectors > 0, "nr-of-selectors must be > 0")
     require(MaxChannels >= 0, "max-channels must be >= 0")

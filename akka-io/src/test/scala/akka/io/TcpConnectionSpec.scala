@@ -53,29 +53,32 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       serverSideChannel.write(ByteBuffer.wrap("testdata".getBytes("ASCII")))
       // emulate selector behavior
       selector.send(connectionActor, ChannelReadable)
-      connectionHandler.expectMsgPF(remaining) {
-        case Received(data) if data.decodeString("ASCII") == "testdata" ⇒
-      }
+      connectionHandler.expectMsgType[Received].data.decodeString("ASCII") must be("testdata")
       // have two packets in flight before the selector notices
       serverSideChannel.write(ByteBuffer.wrap("testdata2".getBytes("ASCII")))
       serverSideChannel.write(ByteBuffer.wrap("testdata3".getBytes("ASCII")))
       selector.send(connectionActor, ChannelReadable)
-      connectionHandler.expectMsgPF(remaining) {
-        case Received(data) if data.decodeString("ASCII") == "testdata2testdata3" ⇒
-      }
+      connectionHandler.expectMsgType[Received].data.decodeString("ASCII") must be("testdata2testdata3")
     }
 
     "write data to network (and acknowledge)" in withEstablishedConnection() { setup ⇒
       import setup._
       serverSideChannel.configureBlocking(false)
+
       object Ack
+      val writer = TestProbe()
+
+      // directly acknowledge an empty write
+      writer.send(connectionActor, Write(ByteString.empty, Ack))
+      writer.expectMsg(Ack)
+
       val write = Write(ByteString("testdata"), Ack)
       val buffer = ByteBuffer.allocate(100)
       serverSideChannel.read(buffer) must be(0)
 
-      // emulate selector behavior
-      connectionHandler.send(connectionActor, write)
-      connectionHandler.expectMsg(Ack)
+      writer.send(connectionActor, write)
+      // make sure the writer gets the ack
+      writer.expectMsg(Ack)
       serverSideChannel.read(buffer) must be(8)
       buffer.flip()
       ByteString(buffer).take(8).decodeString("ASCII") must be("testdata")
@@ -90,6 +93,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
         //serverSideChannel.configureBlocking(false)
         clientSideChannel.socket.setSendBufferSize(1024)
 
+        val writer = TestProbe()
+
         // producing backpressure by sending much more than currently fits into
         // our send buffer
         val firstWrite = writeCmd(Ack1)
@@ -97,14 +102,18 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
         // try to write the buffer but since the SO_SNDBUF is too small
         // it will have to keep the rest of the piece and send it
         // when possible
-        connectionHandler.send(connectionActor, firstWrite)
+        writer.send(connectionActor, firstWrite)
         selector.expectMsg(WriteInterest)
 
         // send another write which should fail immediately
         // because we don't store more than one piece in flight
         val secondWrite = writeCmd(Ack2)
-        connectionHandler.send(connectionActor, secondWrite)
-        connectionHandler.expectMsg(CommandFailed(secondWrite))
+        writer.send(connectionActor, secondWrite)
+        writer.expectMsg(CommandFailed(secondWrite))
+
+        // reject even empty writes
+        writer.send(connectionActor, Write.Empty)
+        writer.expectMsg(CommandFailed(Write.Empty))
 
         // there will be immediately more space in the send buffer because
         // some data will have been sent by now, so we assume we can write
@@ -113,8 +122,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
         // both buffers should now be filled so no more writing
         // is possible
-        setup.pullFromServerSide(TestSize)
-        connectionHandler.expectMsg(Ack1)
+        pullFromServerSide(TestSize)
+        writer.expectMsg(Ack1)
       }
 
     "respect StopReading and ResumeReading" in withEstablishedConnection() { setup ⇒
@@ -141,10 +150,10 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       connectionHandler.send(connectionActor, writeCmd(Ack))
       connectionHandler.send(connectionActor, Close)
 
-      setup.pullFromServerSide(TestSize)
+      pullFromServerSide(TestSize)
       connectionHandler.expectMsg(Ack)
       connectionHandler.expectMsg(Closed)
-      connectionActor.isTerminated must be(true)
+      assertThisConnectionActorTerminated()
 
       val buffer = ByteBuffer.allocate(1)
       serverSideChannel.read(buffer) must be(-1)
@@ -177,7 +186,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       connectionHandler.send(connectionActor, ConfirmedClose)
 
       connectionHandler.expectNoMsg(100.millis)
-      setup.pullFromServerSide(TestSize)
+      pullFromServerSide(TestSize)
       connectionHandler.expectMsg(Ack)
 
       selector.send(connectionActor, ChannelReadable)
@@ -207,9 +216,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
       abortClose(serverSideChannel)
       selector.send(connectionActor, ChannelReadable)
-      connectionHandler.expectMsgPF(remaining) {
-        case ErrorClose(exc: IOException) ⇒ exc.getMessage must be("Connection reset by peer")
-      }
+      connectionHandler.expectMsgType[ErrorClose].cause must be("Connection reset by peer")
       // wait a while
       connectionHandler.expectNoMsg(200.millis)
 
@@ -218,11 +225,13 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     "report when peer closed the connection when trying to write" in withEstablishedConnection() { setup ⇒
       import setup._
 
+      val writer = TestProbe()
+
       abortClose(serverSideChannel)
-      connectionHandler.send(connectionActor, Write(ByteString("testdata")))
-      connectionHandler.expectMsgPF(remaining) {
-        case ErrorClose(_: IOException) ⇒ // ok
-      }
+      writer.send(connectionActor, Write(ByteString("testdata")))
+      // bother writer and handler should get the message
+      writer.expectMsgType[ErrorClose]
+      connectionHandler.expectMsgType[ErrorClose]
 
       assertThisConnectionActorTerminated()
     }
@@ -234,9 +243,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       localServer.close()
 
       selector.send(connectionActor, ChannelConnectable)
-      userHandler.expectMsgPF() {
-        case ErrorClose(e) ⇒ e.getMessage must be("Connection reset by peer")
-      }
+      userHandler.expectMsgType[ErrorClose].cause must be("Connection reset by peer")
 
       assertActorTerminated(connectionActor)
     }
@@ -252,9 +259,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
         key.isConnectable must be(true)
         selector.send(connectionActor, ChannelConnectable)
-        userHandler.expectMsgPF() {
-          case ErrorClose(e) ⇒ e.getMessage must be("Connection refused")
-        }
+        userHandler.expectMsgType[ErrorClose].cause must be("Connection refused")
 
         assertActorTerminated(connectionActor)
       }
@@ -419,7 +424,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     channel.close()
   }
   def assertActorTerminated(connectionActor: TestActorRef[TcpOutgoingConnection]): Unit = {
-    watch(connectionActor)
-    expectMsgType[Terminated].actor must be(connectionActor)
+    val watcher = TestProbe()
+    watcher.watch(connectionActor)
+    watcher.expectMsgType[Terminated].actor must be(connectionActor)
   }
 }
