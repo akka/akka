@@ -5,7 +5,7 @@ package akka.remote.testconductor
 
 import language.postfixOps
 
-import akka.actor.{ Props, AddressFromURIString, ActorRef, Actor, OneForOneStrategy, SupervisorStrategy }
+import akka.actor.{ Props, AddressFromURIString, ActorRef, Actor, OneForOneStrategy, SupervisorStrategy, PoisonPill }
 import akka.testkit.{ AkkaSpec, ImplicitSender, EventFilter, TestProbe, TimingTest }
 import scala.concurrent.duration._
 import akka.event.Logging
@@ -244,6 +244,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       EventFilter[BarrierEmpty](occurrences = 1) intercept {
         b ! Remove(A)
       }
+      b ! PoisonPill // clean up so network connections don't accumulate during test run
     }
 
     "register clients and disconnect them" taggedAs TimingTest in {
@@ -254,12 +255,14 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       expectNoMsg(1 second)
       b ! ClientDisconnected(A)
       expectNoMsg(1 second)
+      b ! PoisonPill // clean up so network connections don't accumulate during test run
     }
 
     "fail entering barrier when nobody registered" taggedAs TimingTest in {
       val b = getController(0)
       b ! EnterBarrier("b", None)
       expectMsg(ToClient(BarrierResult("b", false)))
+      b ! PoisonPill // clean up so network connections don't accumulate during test run
     }
 
     "enter barrier" taggedAs TimingTest in {
@@ -276,6 +279,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
         a.expectMsg(ToClient(BarrierResult("bar11", true)))
         b.expectMsg(ToClient(BarrierResult("bar11", true)))
       }
+      barrier ! PoisonPill // clean up so network connections don't accumulate during test run
     }
 
     "enter barrier with joining node" taggedAs TimingTest in {
@@ -296,6 +300,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
         b.expectMsg(ToClient(BarrierResult("bar12", true)))
         c.expectMsg(ToClient(BarrierResult("bar12", true)))
       }
+      barrier ! PoisonPill // clean up so network connections don't accumulate during test run
     }
 
     "enter barrier with leaving node" taggedAs TimingTest in {
@@ -318,6 +323,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       }
       barrier ! ClientDisconnected(C)
       expectNoMsg(1 second)
+      barrier ! PoisonPill // clean up so network connections don't accumulate during test run
     }
 
     "leave barrier when last “arrived” is removed" taggedAs TimingTest in {
@@ -331,6 +337,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       barrier ! Remove(A)
       b.send(barrier, EnterBarrier("foo", None))
       b.expectMsg(ToClient(BarrierResult("foo", true)))
+      barrier ! PoisonPill // clean up so network connections don't accumulate during test run
     }
 
     "fail barrier with disconnecing node" taggedAs TimingTest in {
@@ -348,6 +355,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
         barrier ! ClientDisconnected(B)
       }
       a.expectMsg(ToClient(BarrierResult("bar15", false)))
+      barrier ! PoisonPill // clean up so network connections don't accumulate during test run
     }
 
     "fail barrier with disconnecing node who already arrived" taggedAs TimingTest in {
@@ -367,6 +375,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
         barrier ! ClientDisconnected(B)
       }
       a.expectMsg(ToClient(BarrierResult("bar16", false)))
+      barrier ! PoisonPill // clean up so network connections don't accumulate during test run
     }
 
     "fail when entering wrong barrier" taggedAs TimingTest in {
@@ -384,6 +393,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       }
       a.expectMsg(ToClient(BarrierResult("bar17", false)))
       b.expectMsg(ToClient(BarrierResult("foo", false)))
+      barrier ! PoisonPill // clean up so network connections don't accumulate during test run
     }
 
     "fail after barrier timeout" taggedAs TimingTest in {
@@ -402,6 +412,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       b.send(barrier, EnterBarrier("bar18", None))
       a.expectMsg(ToClient(BarrierResult("bar18", false)))
       b.expectMsg(ToClient(BarrierResult("bar18", false)))
+      barrier ! PoisonPill // clean up so network connections don't accumulate during test run
     }
 
     "fail if a node registers twice" taggedAs TimingTest in {
@@ -415,6 +426,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       }
       a.expectMsg(ToClient(BarrierResult("initial startup", false)))
       b.expectMsg(ToClient(BarrierResult("initial startup", false)))
+      controller ! PoisonPill // clean up so network connections don't accumulate during test run
     }
 
     "fail subsequent barriers if a node registers twice" taggedAs TimingTest in {
@@ -430,6 +442,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       }
       a.send(controller, EnterBarrier("bar19", None))
       a.expectMsg(ToClient(BarrierResult("bar19", false)))
+      controller ! PoisonPill // clean up so network connections don't accumulate during test run
     }
 
     "fail subsequent barriers after foreced failure" taggedAs TimingTest in {
@@ -451,6 +464,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       b.send(barrier, EnterBarrier("bar21", None))
       a.expectMsg(ToClient(BarrierResult("bar21", false)))
       b.expectMsg(ToClient(BarrierResult("bar21", false)))
+      barrier ! PoisonPill // clean up so network connections don't accumulate during test run
     }
 
     "timeout within the shortest timeout if the new timeout is shorter" taggedAs TimingTest in {
@@ -474,6 +488,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       a.expectMsg(ToClient(BarrierResult("bar22", false)))
       b.expectMsg(ToClient(BarrierResult("bar22", false)))
       c.expectMsg(ToClient(BarrierResult("bar22", false)))
+      barrier ! PoisonPill // clean up so network connections don't accumulate during test run
     }
 
     "timeout within the shortest timeout if the new timeout is longer" taggedAs TimingTest in {
@@ -497,6 +512,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       a.expectMsg(ToClient(BarrierResult("bar23", false)))
       b.expectMsg(ToClient(BarrierResult("bar23", false)))
       c.expectMsg(ToClient(BarrierResult("bar23", false)))
+      barrier ! PoisonPill // clean up so network connections don't accumulate during test run
     }
 
     "finally have no failure messages left" taggedAs TimingTest in {
