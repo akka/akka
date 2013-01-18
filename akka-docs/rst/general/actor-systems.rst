@@ -120,7 +120,7 @@ Examples are legacy RDBMS drivers or messaging APIs, and the underlying reason
 in typically that (network) I/O occurs under the covers. When facing this, you
 may be tempted to just wrap the blocking call inside a :class:`Future` and work
 with that instead, but this strategy is too simple: you are quite likely to
-find bottle-necks or run out of memory or threads when the application runs
+find bottlenecks or run out of memory or threads when the application runs
 under increased load.
 
 The non-exhaustive list of adequate solutions to the “blocking problem”
