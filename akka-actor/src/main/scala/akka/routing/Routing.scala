@@ -10,7 +10,7 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.actor._
 import akka.ConfigurationException
-import akka.dispatch.Dispatchers
+import akka.dispatch.{ Envelope, Dispatchers }
 import akka.pattern.pipe
 import akka.japi.Util.immutableSeq
 import com.typesafe.config.Config
@@ -118,25 +118,24 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
    * resizer is invoked asynchronously, i.e. not necessarily before the
    * message has been sent.
    */
-  override def tell(message: Any, sender: ActorRef): Unit = {
-    val s = if (sender eq null) system.deadLetters else sender
-    val msg = message match {
+  override def sendMessage(msg: Envelope): Unit = {
+    val message = msg.message match {
       case wrapped: RouterEnvelope ⇒ wrapped.message
       case m                       ⇒ m
     }
-    applyRoute(s, message) foreach {
-      case Destination(snd, `self`) ⇒
-        super.tell(msg, snd)
-      case Destination(snd, recipient) ⇒
+    applyRoute(msg.sender, msg.message) foreach {
+      case Destination(sender, `self`) ⇒
+        super.sendMessage(Envelope(message, sender, system))
+      case Destination(sender, recipient) ⇒
         resize() // only resize when the message target is one of the routees
-        recipient.tell(msg, snd)
+        recipient.tell(message, sender)
     }
   }
 
   def resize(): Unit =
     for (r ← routerConfig.resizer) {
       if (r.isTimeForResize(resizeCounter.getAndIncrement()) && resizeInProgress.compareAndSet(false, true))
-        super.tell(Router.Resize, self)
+        super.sendMessage(Envelope(Router.Resize, self, system))
     }
 }
 

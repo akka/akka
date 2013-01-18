@@ -9,27 +9,19 @@ import akka.event.Logging.{ Error, LogEventException }
 import akka.actor._
 import akka.event.EventStream
 import com.typesafe.config.Config
-import akka.serialization.SerializationExtension
 import akka.util.{ Unsafe, Index }
 import scala.annotation.tailrec
 import scala.concurrent.forkjoin.{ ForkJoinTask, ForkJoinPool }
 import scala.concurrent.duration.Duration
-import scala.concurrent.{ ExecutionContext, Await, Awaitable }
-import scala.util.control.NonFatal
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NonFatal
 
 final case class Envelope private (val message: Any, val sender: ActorRef)
 
 object Envelope {
-  def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope = {
-    val msg = message.asInstanceOf[AnyRef]
-    if (msg eq null) throw new InvalidMessageException("Message is null")
-    if (system.settings.SerializeAllMessages && !msg.isInstanceOf[NoSerializationVerificationNeeded]) {
-      val ser = SerializationExtension(system)
-      ser.deserialize(ser.serialize(msg).get, msg.getClass).get
-    }
-    new Envelope(message, sender)
-  }
+  def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope =
+    new Envelope(message, if (sender ne Actor.noSender) sender else system.deadLetters)
 }
 
 /**

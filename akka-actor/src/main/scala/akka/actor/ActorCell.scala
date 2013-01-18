@@ -214,19 +214,19 @@ private[akka] trait Cell {
    */
   def start(): this.type
   /**
-   * Recursively suspend this actor and all its children. Must not throw exceptions.
+   * Recursively suspend this actor and all its children. Is only allowed to throw Fatal Throwables.
    */
   def suspend(): Unit
   /**
-   * Recursively resume this actor and all its children. Must not throw exceptions.
+   * Recursively resume this actor and all its children. Is only allowed to throw Fatal Throwables.
    */
   def resume(causedByFailure: Throwable): Unit
   /**
-   * Restart this actor (will recursively restart or stop all children). Must not throw exceptions.
+   * Restart this actor (will recursively restart or stop all children). Is only allowed to throw Fatal Throwables.
    */
   def restart(cause: Throwable): Unit
   /**
-   * Recursively terminate this actor and all its children. Must not throw exceptions.
+   * Recursively terminate this actor and all its children. Is only allowed to throw Fatal Throwables.
    */
   def stop(): Unit
   /**
@@ -246,16 +246,26 @@ private[akka] trait Cell {
    * Get the stats for the named child, if that exists.
    */
   def getChildByName(name: String): Option[ChildStats]
+
   /**
    * Enqueue a message to be sent to the actor; may or may not actually
    * schedule the actor to run, depending on which type of cell it is.
-   * Must not throw exceptions.
+   * Is only allowed to throw Fatal Throwables.
    */
-  def tell(message: Any, sender: ActorRef): Unit
+  def sendMessage(msg: Envelope): Unit
+
   /**
    * Enqueue a message to be sent to the actor; may or may not actually
    * schedule the actor to run, depending on which type of cell it is.
-   * Must not throw exceptions.
+   * Is only allowed to throw Fatal Throwables.
+   */
+  final def sendMessage(message: Any, sender: ActorRef): Unit =
+    sendMessage(Envelope(message, sender, system))
+
+  /**
+   * Enqueue a message to be sent to the actor; may or may not actually
+   * schedule the actor to run, depending on which type of cell it is.
+   * Is only allowed to throw Fatal Throwables.
    */
   def sendSystemMessage(msg: SystemMessage): Unit
   /**

@@ -44,8 +44,8 @@ class OsgiActorSystemFactory(val context: BundleContext, val fallbackClassLoader
   def actorSystemConfig(context: BundleContext): Config = {
     val bundleSymbolicName = context.getBundle.getSymbolicName
     val bundleId = context.getBundle.getBundleId
-    val acceptedFilePath = List(s"bundle-$bundleSymbolicName", s"bundle-$bundleId", "akka").map(x =>  s"etc/$x")
-    val applicationConfiguration = acceptedFilePath.foldLeft(ConfigFactory.empty())((x, y) => x.withFallback(ConfigFactory.parseFileAnySyntax(new File(y))))
+    val acceptedFilePath = List(s"bundle-$bundleSymbolicName", s"bundle-$bundleId", "akka").map(x ⇒ s"etc/$x")
+    val applicationConfiguration = acceptedFilePath.foldLeft(ConfigFactory.empty())((x, y) ⇒ x.withFallback(ConfigFactory.parseFileAnySyntax(new File(y))))
     applicationConfiguration.withFallback(ConfigFactory.load(classloader).withFallback(ConfigFactory.defaultReference(OsgiActorSystemFactory.akkaActorClassLoader)))
   }
 

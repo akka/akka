@@ -350,7 +350,7 @@ private[akka] class LocalActorRef private[akka] (
 
   override def sendSystemMessage(message: SystemMessage): Unit = actorCell.sendSystemMessage(message)
 
-  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = actorCell.tell(message, sender)
+  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = actorCell.sendMessage(message, sender)
 
   override def restart(cause: Throwable): Unit = actorCell.restart(cause)
 
