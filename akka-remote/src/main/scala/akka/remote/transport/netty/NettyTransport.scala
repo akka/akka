@@ -381,8 +381,13 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
       _ ← always(channelGroup.close())
     } {
       // Release the selectors, but don't try to kill the dispatcher
-      if (UseDispatcherForIo.isDefined) inboundBootstrap.shutdown()
-      else inboundBootstrap.releaseExternalResources()
+      if (UseDispatcherForIo.isDefined) {
+        clientChannelFactory.shutdown()
+        serverChannelFactory.shutdown()
+      } else {
+        clientChannelFactory.releaseExternalResources()
+        serverChannelFactory.releaseExternalResources()
+      }
     }
 
   }
