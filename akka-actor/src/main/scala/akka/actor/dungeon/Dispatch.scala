@@ -5,12 +5,13 @@
 package akka.actor.dungeon
 
 import scala.annotation.tailrec
-import akka.actor.{ ActorRef, ActorCell }
 import akka.dispatch.{ Terminate, SystemMessage, Suspend, Resume, Recreate, MessageDispatcher, Mailbox, Envelope, Create }
 import akka.event.Logging.Error
 import akka.util.Unsafe
 import scala.util.control.NonFatal
 import akka.dispatch.NullMessage
+import akka.actor.{ NoSerializationVerificationNeeded, InvalidMessageException, ActorRef, ActorCell }
+import akka.serialization.SerializationExtension
 
 private[akka] trait Dispatch { this: ActorCell ⇒
 
@@ -102,9 +103,16 @@ private[akka] trait Dispatch { this: ActorCell ⇒
         system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
     }
 
-  def tell(message: Any, sender: ActorRef): Unit =
-    try dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender, system))
-    catch {
+  def sendMessage(msg: Envelope): Unit =
+    try {
+      val m = msg.message.asInstanceOf[AnyRef]
+      if (m eq null) throw new InvalidMessageException("Message is null")
+      if (system.settings.SerializeAllMessages && !m.isInstanceOf[NoSerializationVerificationNeeded]) {
+        val s = SerializationExtension(system)
+        s.deserialize(s.serialize(m).get, m.getClass).get
+      }
+      dispatcher.dispatch(this, msg)
+    } catch {
       case e @ (_: InterruptedException | NonFatal(_)) ⇒
         system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
     }

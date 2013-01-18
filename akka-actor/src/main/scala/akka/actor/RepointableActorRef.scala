@@ -151,7 +151,7 @@ private[akka] class RepointableActorRef(
       }
     } else this
 
-  def !(message: Any)(implicit sender: ActorRef = Actor.noSender) = underlying.tell(message, sender)
+  def !(message: Any)(implicit sender: ActorRef = Actor.noSender) = underlying.sendMessage(message, sender)
 
   def sendSystemMessage(message: SystemMessage) = underlying.sendSystemMessage(message)
 
@@ -181,7 +181,7 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
       while (!queue.isEmpty) {
         queue.poll() match {
           case s: SystemMessage ⇒ cell.sendSystemMessage(s)
-          case e: Envelope      ⇒ cell.tell(e.message, e.sender)
+          case e: Envelope      ⇒ cell.sendMessage(e)
         }
       }
     } finally {
@@ -203,21 +203,20 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
   def childrenRefs: ChildrenContainer = ChildrenContainer.EmptyChildrenContainer
   def getChildByName(name: String): Option[ChildRestartStats] = None
 
-  def tell(message: Any, sender: ActorRef): Unit = {
-    val useSender = if (sender eq Actor.noSender) system.deadLetters else sender
+  def sendMessage(msg: Envelope): Unit = {
     if (lock.tryLock(timeout.length, timeout.unit)) {
       try {
         val cell = self.underlying
         if (cellIsReady(cell)) {
-          cell.tell(message, useSender)
-        } else if (!queue.offer(Envelope(message, useSender, system))) {
-          system.eventStream.publish(Warning(self.path.toString, getClass, "dropping message of type " + message.getClass + " due to enqueue failure"))
-          system.deadLetters ! DeadLetter(message, useSender, self)
+          cell.sendMessage(msg)
+        } else if (!queue.offer(msg)) {
+          system.eventStream.publish(Warning(self.path.toString, getClass, "dropping message of type " + msg.message.getClass + " due to enqueue failure"))
+          system.deadLetters ! DeadLetter(msg.message, msg.sender, self)
         }
       } finally lock.unlock()
     } else {
-      system.eventStream.publish(Warning(self.path.toString, getClass, "dropping message of type" + message.getClass + " due to lock timeout"))
-      system.deadLetters ! DeadLetter(message, useSender, self)
+      system.eventStream.publish(Warning(self.path.toString, getClass, "dropping message of type" + msg.message.getClass + " due to lock timeout"))
+      system.deadLetters ! DeadLetter(msg.message, msg.sender, self)
     }
   }
 
