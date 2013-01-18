@@ -4,8 +4,8 @@ import akka.testkit._
 import akka.actor._
 import com.typesafe.config._
 import scala.concurrent.duration._
-import akka.remote.netty.{ SSLSettings, NettyRemoteTransport }
 import java.util.ArrayList
+import akka.remote.transport.netty.SSLSettings
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class Ticket1978ConfigSpec extends AkkaSpec with ImplicitSender with DefaultTimeout {

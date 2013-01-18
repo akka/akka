@@ -2,20 +2,21 @@
  * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.remote.netty
+package akka.remote.transport.netty
 
-import org.jboss.netty.handler.ssl.SslHandler
-import javax.net.ssl.{ KeyManagerFactory, TrustManager, TrustManagerFactory, SSLContext }
-import akka.remote.RemoteTransportException
-import akka.event.LoggingAdapter
-import java.io.{ IOException, FileNotFoundException, FileInputStream }
-import akka.remote.security.provider.AkkaProvider
-import java.security._
-import com.typesafe.config.Config
-import akka.japi.Util._
 import akka.ConfigurationException
+import akka.event.LoggingAdapter
+import akka.japi.Util._
+import akka.remote.RemoteTransportException
+import akka.remote.security.provider.AkkaProvider
+import com.typesafe.config.Config
+import java.io.{ IOException, FileNotFoundException, FileInputStream }
+import java.security._
+import javax.net.ssl.{ KeyManagerFactory, TrustManager, TrustManagerFactory, SSLContext }
+import org.jboss.netty.handler.ssl.SslHandler
 
 private[akka] class SSLSettings(config: Config) {
+
   import config._
 
   val SSLKeyStore = Option(getString("key-store")).filter(_.length > 0)

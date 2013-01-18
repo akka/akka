@@ -3,30 +3,29 @@
  */
 package akka.remote.transport.netty
 
-import akka.{ OnlyCauseStackTrace, ConfigurationException }
 import akka.actor.{ Address, ExtendedActorSystem }
+import akka.dispatch.ThreadPoolConfig
 import akka.event.Logging
-import akka.remote.netty.{ SSLSettings, NettySSLSupport, DefaultDisposableChannelGroup }
+import akka.remote.transport.AssociationHandle.HandleEventListener
 import akka.remote.transport.Transport._
 import akka.remote.transport.netty.NettyTransportSettings.{ Udp, Tcp, Mode }
 import akka.remote.transport.{ AssociationHandle, Transport }
+import akka.{ OnlyCauseStackTrace, ConfigurationException }
 import com.typesafe.config.Config
 import java.net.{ UnknownHostException, SocketAddress, InetAddress, InetSocketAddress, ConnectException }
-import java.util.concurrent.{ ConcurrentHashMap, Executor, Executors, CancellationException }
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{ ConcurrentHashMap, Executors, CancellationException }
 import org.jboss.netty.bootstrap.{ ConnectionlessBootstrap, Bootstrap, ClientBootstrap, ServerBootstrap }
 import org.jboss.netty.buffer.{ ChannelBuffers, ChannelBuffer }
 import org.jboss.netty.channel._
-import org.jboss.netty.channel.group.{ ChannelGroup, ChannelGroupFuture, ChannelGroupFutureListener }
+import org.jboss.netty.channel.group.{ DefaultChannelGroup, ChannelGroup, ChannelGroupFuture, ChannelGroupFutureListener }
 import org.jboss.netty.channel.socket.nio.{ NioDatagramChannelFactory, NioServerSocketChannelFactory, NioClientSocketChannelFactory }
 import org.jboss.netty.handler.codec.frame.{ LengthFieldBasedFrameDecoder, LengthFieldPrepender }
+import org.jboss.netty.handler.ssl.SslHandler
 import scala.concurrent.duration.{ Duration, FiniteDuration, MILLISECONDS }
 import scala.concurrent.{ ExecutionContext, Promise, Future }
-import scala.util.{ Try, Random }
+import scala.util.Try
 import util.control.{ NoStackTrace, NonFatal }
-import akka.dispatch.ThreadPoolConfig
-import akka.remote.transport.AssociationHandle.HandleEventListener
-import java.util.concurrent.atomic.AtomicInteger
-import org.jboss.netty.handler.ssl.SslHandler
 
 object NettyTransportSettings {
   sealed trait Mode
@@ -209,7 +208,13 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
 
   final val udpConnectionTable = new ConcurrentHashMap[SocketAddress, HandleEventListener]()
 
-  val channelGroup = new DefaultDisposableChannelGroup("akka-netty-transport-driver-channelgroup-" +
+  /*
+   * Be aware, that the close() method of DefaultChannelGroup is racy, because it uses an iterator over a ConcurrentHashMap.
+   * In the old remoting this was handled by using a custom subclass, guarding the close() method with a write-lock.
+   * The usage of this class is safe in the new remoting, as close() is called after unbind() is finished, and no
+   * outbound connections are initiated in the shutdown phase.
+   */
+  val channelGroup = new DefaultChannelGroup("akka-netty-transport-driver-channelgroup-" +
     uniqueIdCounter.getAndIncrement)
 
   private val clientChannelFactory: ChannelFactory = TransportMode match {
