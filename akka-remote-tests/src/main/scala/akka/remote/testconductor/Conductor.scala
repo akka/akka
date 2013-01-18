@@ -476,6 +476,10 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
     case GetNodes    ⇒ sender ! nodes.keys
     case GetSockAddr ⇒ sender ! connection.getLocalAddress
   }
+
+  override def postStop() {
+    RemoteConnection.shutdown(connection)
+  }
 }
 
 /**
