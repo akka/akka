@@ -803,8 +803,9 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
   def oneWayGossipTo(address: Address): Unit =
     gossipTo(address, GossipEnvelope(selfAddress, latestGossip, conversation = false))
 
-  def gossipTo(address: Address, gossipMsg: GossipEnvelope): Unit = if (address != selfAddress)
-    coreSender ! SendClusterMessage(address, gossipMsg)
+  def gossipTo(address: Address, gossipMsg: GossipEnvelope): Unit =
+    if (address != selfAddress)
+      coreSender ! SendClusterMessage(address, gossipMsg)
 
   def publish(newGossip: Gossip): Unit = {
     publisher ! PublishChanges(newGossip)

@@ -40,12 +40,13 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
    * When this actor is watching the subject of [[akka.actor.Terminated]] message
    * it will be propagated to user's receive.
    */
-  protected def watchedActorTerminated(t: Terminated): Unit = if (watching.contains(t.actor)) {
-    maintainAddressTerminatedSubscription(t.actor) {
-      watching -= t.actor
+  protected def watchedActorTerminated(t: Terminated): Unit =
+    if (watching.contains(t.actor)) {
+      maintainAddressTerminatedSubscription(t.actor) {
+        watching -= t.actor
+      }
+      receiveMessage(t)
     }
-    receiveMessage(t)
-  }
 
   protected def tellWatchersWeDied(actor: Actor): Unit = {
     if (!watchedBy.isEmpty) {

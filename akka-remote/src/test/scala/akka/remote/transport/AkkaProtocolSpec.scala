@@ -90,32 +90,35 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
     (new TestFailureDetector, registry, transport, handle)
   }
 
-  def lastActivityIsHeartbeat(registry: AssociationRegistry) = if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
-    case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
-      codec.decodePdu(payload) match {
-        case Heartbeat ⇒ true
-        case _         ⇒ false
-      }
-    case _ ⇒ false
-  }
+  def lastActivityIsHeartbeat(registry: AssociationRegistry) =
+    if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
+      case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
+        codec.decodePdu(payload) match {
+          case Heartbeat ⇒ true
+          case _         ⇒ false
+        }
+      case _ ⇒ false
+    }
 
-  def lastActivityIsAssociate(registry: AssociationRegistry, cookie: Option[String]) = if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
-    case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
-      codec.decodePdu(payload) match {
-        case Associate(c, origin) if c == cookie && origin == localAddress ⇒ true
-        case _ ⇒ false
-      }
-    case _ ⇒ false
-  }
+  def lastActivityIsAssociate(registry: AssociationRegistry, cookie: Option[String]) =
+    if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
+      case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
+        codec.decodePdu(payload) match {
+          case Associate(c, origin) if c == cookie && origin == localAddress ⇒ true
+          case _ ⇒ false
+        }
+      case _ ⇒ false
+    }
 
-  def lastActivityIsDisassociate(registry: AssociationRegistry) = if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
-    case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
-      codec.decodePdu(payload) match {
-        case Disassociate ⇒ true
-        case _            ⇒ false
-      }
-    case _ ⇒ false
-  }
+  def lastActivityIsDisassociate(registry: AssociationRegistry) =
+    if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
+      case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
+        codec.decodePdu(payload) match {
+          case Disassociate ⇒ true
+          case _            ⇒ false
+        }
+      case _ ⇒ false
+    }
 
   "ProtocolStateActor" must {
 

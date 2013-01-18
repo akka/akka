@@ -70,9 +70,10 @@ object ThrottlerTransportAdapter {
   case class TokenBucket(capacity: Int, tokensPerSecond: Double, nanoTimeOfLastSend: Long, availableTokens: Int)
     extends ThrottleMode {
 
-    private def isAvailable(nanoTimeOfSend: Long, tokens: Int): Boolean = if ((tokens > capacity && availableTokens > 0)) {
-      true // Allow messages larger than capacity through, it will be recorded as negative tokens
-    } else min((availableTokens + tokensGenerated(nanoTimeOfSend)), capacity) >= tokens
+    private def isAvailable(nanoTimeOfSend: Long, tokens: Int): Boolean =
+      if ((tokens > capacity && availableTokens > 0)) {
+        true // Allow messages larger than capacity through, it will be recorded as negative tokens
+      } else min((availableTokens + tokensGenerated(nanoTimeOfSend)), capacity) >= tokens
 
     override def tryConsumeTokens(nanoTimeOfSend: Long, tokens: Int): (ThrottleMode, Boolean) = {
       if (isAvailable(nanoTimeOfSend, tokens))

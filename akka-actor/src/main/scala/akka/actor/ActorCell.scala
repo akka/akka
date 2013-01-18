@@ -402,23 +402,24 @@ private[akka] class ActorCell(
     checkReceiveTimeout // Reschedule receive timeout
   }
 
-  def autoReceiveMessage(msg: Envelope): Unit = if (msg.message != NullMessage) {
-    if (system.settings.DebugAutoReceive)
-      publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
+  def autoReceiveMessage(msg: Envelope): Unit =
+    if (msg.message != NullMessage) {
+      if (system.settings.DebugAutoReceive)
+        publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
-    msg.message match {
-      case Failed(cause, uid) ⇒ handleFailure(sender, cause, uid)
-      case t: Terminated ⇒
-        if (t.addressTerminated) removeChildWhenToAddressTerminated(t.actor)
-        watchedActorTerminated(t)
-      case AddressTerminated(address) ⇒ addressTerminated(address)
-      case Kill                       ⇒ throw new ActorKilledException("Kill")
-      case PoisonPill                 ⇒ self.stop()
-      case SelectParent(m)            ⇒ parent.tell(m, msg.sender)
-      case SelectChildName(name, m)   ⇒ getChildByName(name) match { case Some(c: ChildRestartStats) ⇒ c.child.tell(m, msg.sender); case _ ⇒ }
-      case SelectChildPattern(p, m)   ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
+      msg.message match {
+        case Failed(cause, uid) ⇒ handleFailure(sender, cause, uid)
+        case t: Terminated ⇒
+          if (t.addressTerminated) removeChildWhenToAddressTerminated(t.actor)
+          watchedActorTerminated(t)
+        case AddressTerminated(address) ⇒ addressTerminated(address)
+        case Kill                       ⇒ throw new ActorKilledException("Kill")
+        case PoisonPill                 ⇒ self.stop()
+        case SelectParent(m)            ⇒ parent.tell(m, msg.sender)
+        case SelectChildName(name, m)   ⇒ getChildByName(name) match { case Some(c: ChildRestartStats) ⇒ c.child.tell(m, msg.sender); case _ ⇒ }
+        case SelectChildPattern(p, m)   ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
+      }
     }
-  }
 
   /**
    * When a parent is watching a child and it terminates due to AddressTerminated,
@@ -507,16 +508,17 @@ private[akka] class ActorCell(
         }
     }
 
-  private def supervise(child: ActorRef, async: Boolean, uid: Int): Unit = if (!isTerminating) {
-    // Supervise is the first thing we get from a new child, so store away the UID for later use in handleFailure()
-    initChild(child) match {
-      case Some(crs) ⇒
-        crs.uid = uid
-        handleSupervise(child, async)
-        if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
-      case None ⇒ publish(Error(self.path.toString, clazz(actor), "received Supervise from unregistered child " + child + ", this will not end well"))
+  private def supervise(child: ActorRef, async: Boolean, uid: Int): Unit =
+    if (!isTerminating) {
+      // Supervise is the first thing we get from a new child, so store away the UID for later use in handleFailure()
+      initChild(child) match {
+        case Some(crs) ⇒
+          crs.uid = uid
+          handleSupervise(child, async)
+          if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
+        case None ⇒ publish(Error(self.path.toString, clazz(actor), "received Supervise from unregistered child " + child + ", this will not end well"))
+      }
     }
-  }
 
   // future extension point
   protected def handleSupervise(child: ActorRef, async: Boolean): Unit = child match {

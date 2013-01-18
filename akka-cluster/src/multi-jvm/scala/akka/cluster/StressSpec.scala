@@ -435,11 +435,12 @@ object StressMultiJvmSpec extends MultiNodeConfig {
       case RetryTick ⇒ resend()
     }
 
-    def done(replyTo: ActorRef): Unit = if (outstanding.isEmpty) {
-      val duration = (System.nanoTime - startTime).nanos
-      replyTo ! WorkResult(duration, sendCounter, ackCounter)
-      context stop self
-    }
+    def done(replyTo: ActorRef): Unit =
+      if (outstanding.isEmpty) {
+        val duration = (System.nanoTime - startTime).nanos
+        replyTo ! WorkResult(duration, sendCounter, ackCounter)
+        context stop self
+      }
 
     def sendJobs(): Unit = {
       0 until settings.workBatchSize foreach { _ ⇒
