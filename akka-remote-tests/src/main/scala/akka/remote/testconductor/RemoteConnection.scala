@@ -70,4 +70,8 @@ private[akka] object RemoteConnection {
     case i: InetSocketAddress ⇒ i.toString
     case _                    ⇒ "[unknown]"
   }
+
+  def shutdown(channel: Channel) = {
+    channel.getFactory.releaseExternalResources()
+  }
 }
