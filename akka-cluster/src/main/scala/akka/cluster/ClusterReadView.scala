@@ -143,8 +143,8 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   /**
    * Unsubscribe to cluster events.
    */
-  def close(): Unit = if (!eventBusListener.isTerminated) {
-    eventBusListener ! PoisonPill
-  }
+  def close(): Unit =
+    if (!eventBusListener.isTerminated)
+      eventBusListener ! PoisonPill
 
 }

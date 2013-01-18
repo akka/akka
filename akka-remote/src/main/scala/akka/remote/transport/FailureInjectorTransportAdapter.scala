@@ -135,7 +135,8 @@ private[remote] case class FailureInjectorHandle(_wrappedHandle: AssociationHand
 
   override def disassociate(): Unit = wrappedHandle.disassociate()
 
-  override def notify(ev: HandleEvent): Unit = if (!gremlinAdapter.shouldDropInbound(wrappedHandle.remoteAddress))
-    upstreamListener notify ev
+  override def notify(ev: HandleEvent): Unit =
+    if (!gremlinAdapter.shouldDropInbound(wrappedHandle.remoteAddress))
+      upstreamListener notify ev
 
 }

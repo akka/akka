@@ -48,9 +48,10 @@ trait SchemeAugmenter {
 
   protected def augmentScheme(address: Address): Address = address.copy(protocol = augmentScheme(address.protocol))
 
-  protected def removeScheme(scheme: String): String = if (scheme.endsWith(s".$addedSchemeIdentifier"))
-    scheme.take(scheme.length - addedSchemeIdentifier.length - 1)
-  else scheme
+  protected def removeScheme(scheme: String): String =
+    if (scheme.endsWith(s".$addedSchemeIdentifier"))
+      scheme.take(scheme.length - addedSchemeIdentifier.length - 1)
+    else scheme
 
   protected def removeScheme(address: Address): Address = address.copy(protocol = removeScheme(address.protocol))
 }

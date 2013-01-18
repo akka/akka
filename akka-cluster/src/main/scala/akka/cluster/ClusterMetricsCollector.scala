@@ -307,12 +307,13 @@ case class Metric private (name: String, value: Number, private val average: Opt
    * If defined ( [[akka.cluster.MetricNumericConverter.defined()]] ), updates the new
    * data point, and if defined, updates the data stream. Returns the updated metric.
    */
-  def :+(latest: Metric): Metric = if (this sameAs latest) average match {
-    case Some(avg)                        ⇒ copy(value = latest.value, average = Some(avg :+ latest.value.doubleValue))
-    case None if latest.average.isDefined ⇒ copy(value = latest.value, average = latest.average)
-    case _                                ⇒ copy(value = latest.value)
-  }
-  else this
+  def :+(latest: Metric): Metric =
+    if (this sameAs latest) average match {
+      case Some(avg)                        ⇒ copy(value = latest.value, average = Some(avg :+ latest.value.doubleValue))
+      case None if latest.average.isDefined ⇒ copy(value = latest.value, average = latest.average)
+      case _                                ⇒ copy(value = latest.value)
+    }
+    else this
 
   /**
    * The numerical value of the average, if defined, otherwise the latest value

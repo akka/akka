@@ -68,10 +68,11 @@ private[remote] class TcpAssociationHandle(val localAddress: Address, val remote
 
   override val readHandlerPromise: Promise[HandleEventListener] = Promise()
 
-  override def write(payload: ByteString): Boolean = if (channel.isWritable && channel.isOpen) {
-    channel.write(ChannelBuffers.wrappedBuffer(payload.asByteBuffer))
-    true
-  } else false
+  override def write(payload: ByteString): Boolean =
+    if (channel.isWritable && channel.isOpen) {
+      channel.write(ChannelBuffers.wrappedBuffer(payload.asByteBuffer))
+      true
+    } else false
 
   override def disassociate(): Unit = NettyTransport.gracefulClose(channel)
 }
