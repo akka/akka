@@ -8,7 +8,6 @@ import language.postfixOps
 import akka.testkit.AkkaSpec
 import akka.actor.ExtendedActorSystem
 import scala.concurrent.duration._
-import akka.remote.netty.NettyRemoteTransport
 import akka.util.Helpers
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -31,44 +30,6 @@ class RemoteConfigSpec extends AkkaSpec(
       UntrustedMode must be(false)
       RemoteSystemDaemonAckTimeout must be(30 seconds)
       LogRemoteLifeCycleEvents must be(true)
-    }
-
-    "be able to parse Netty config elements" ignore {
-      val settings =
-        system.asInstanceOf[ExtendedActorSystem]
-          .provider.asInstanceOf[RemoteActorRefProvider]
-          .transport.asInstanceOf[NettyRemoteTransport]
-          .settings
-      import settings._
-
-      BackoffTimeout must be(Duration.Zero)
-      SecureCookie must be(None)
-      RequireCookie must be(false)
-      UsePassiveConnections must be(true)
-      Hostname must not be "" // will be set to the local IP
-      PortSelector must be(0)
-      OutboundLocalAddress must be(None)
-      MessageFrameSize must be(1048576)
-      ConnectionTimeout must be(2 minutes)
-      Backlog must be(4096)
-      ReuseAddress must be(!Helpers.isWindows)
-      ExecutionPoolKeepalive must be(1 minute)
-      ExecutionPoolSize must be(4)
-      MaxChannelMemorySize must be(0)
-      MaxTotalMemorySize must be(0)
-      ReconnectDelay must be(5 seconds)
-      ReadTimeout must be(0 millis)
-      WriteTimeout must be(10 seconds)
-      AllTimeout must be(0 millis)
-      ReconnectionTimeWindow must be(10 minutes)
-      WriteBufferHighWaterMark must be(None)
-      WriteBufferLowWaterMark must be(None)
-      SendBufferSize must be(None)
-      ReceiveBufferSize must be(None)
-      ServerSocketWorkerPoolSize must be >= (2)
-      ServerSocketWorkerPoolSize must be <= (8)
-      ClientSocketWorkerPoolSize must be >= (2)
-      ClientSocketWorkerPoolSize must be <= (8)
     }
 
     "contain correct configuration values in reference.conf" in {
