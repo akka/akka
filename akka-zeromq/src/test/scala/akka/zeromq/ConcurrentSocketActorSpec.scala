@@ -99,6 +99,8 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
         system stop requester
         system stop replier
         replierProbe.expectMsg(Closed)
+        awaitCond(requester.isTerminated)
+        awaitCond(replier.isTerminated)
         context.term
       }
     }
@@ -120,6 +122,8 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
         system stop pusher
         system stop puller
         pullerProbe.expectMsg(Closed)
+        awaitCond(pusher.isTerminated)
+        awaitCond(puller.isTerminated)
         context.term
       }
     }
