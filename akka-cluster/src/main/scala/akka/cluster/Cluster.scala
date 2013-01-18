@@ -176,8 +176,13 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * Subscribe to cluster domain events.
    * The `to` Class can be [[akka.cluster.ClusterEvent.ClusterDomainEvent]]
-   * or subclass. A snapshot of [[akka.cluster.ClusterEvent.CurrentClusterState]]
-   * will also be sent to the subscriber.
+   * or subclass.
+   *
+   * A snapshot of [[akka.cluster.ClusterEvent.CurrentClusterState]]
+   * will be sent to the subscriber as the first event. When
+   * `to` Class is a [[akka.cluster.ClusterEvent.InstantMemberEvent]]
+   * (or subclass) the snapshot event will instead be a
+   * [[akka.cluster.ClusterEvent.InstantClusterState]].
    */
   def subscribe(subscriber: ActorRef, to: Class[_]): Unit =
     clusterCore ! InternalClusterAction.Subscribe(subscriber, to)

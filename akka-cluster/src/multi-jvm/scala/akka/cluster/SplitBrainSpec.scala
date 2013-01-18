@@ -87,10 +87,10 @@ abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
       }
 
       runOn(side1: _*) {
-        awaitCond(clusterView.unreachableMembers.map(_.address) == (side2.toSet map address), 20 seconds)
+        awaitCond(clusterView.unreachableMembers.map(_.address) == (side2.toSet map address), 25 seconds)
       }
       runOn(side2: _*) {
-        awaitCond(clusterView.unreachableMembers.map(_.address) == (side1.toSet map address), 20 seconds)
+        awaitCond(clusterView.unreachableMembers.map(_.address) == (side1.toSet map address), 25 seconds)
       }
 
       enterBarrier("after-2")

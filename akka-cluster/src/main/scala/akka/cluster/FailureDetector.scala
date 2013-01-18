@@ -17,6 +17,12 @@ trait FailureDetector {
   def isAvailable(connection: Address): Boolean
 
   /**
+   * Returns true if the failure detector has received any heartbeats and started monitoring
+   * of the resource.
+   */
+  def isMonitoring(connection: Address): Boolean
+
+  /**
    * Records a heartbeat for a connection.
    */
   def heartbeat(connection: Address): Unit

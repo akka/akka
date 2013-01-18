@@ -351,7 +351,7 @@ object StressMultiJvmSpec extends MultiNodeConfig {
         nodes foreach { node ⇒
           val previous = phiByNode(node)
           val φ = fd.phi(node)
-          if (φ > 0) {
+          if (φ > 0 || fd.isMonitoring(node)) {
             val aboveOne = if (!φ.isInfinite && φ > 1.0) 1 else 0
             phiByNode += node -> PhiValue(node, previous.countAboveOne + aboveOne, previous.count + 1,
               math.max(previous.max, φ))
@@ -861,7 +861,7 @@ abstract class StressSpec
             name = "master-" + myself.name)
           m ! Begin
           import system.dispatcher
-          system.scheduler.scheduleOnce(highThroughputDuration) {
+          system.scheduler.scheduleOnce(duration) {
             m.tell(End, testActor)
           }
           val workResult = awaitWorkResult
@@ -931,7 +931,7 @@ abstract class StressSpec
 
   "A cluster under stress" must {
 
-    "join seed nodes" taggedAs LongRunningTest in {
+    "join seed nodes" taggedAs LongRunningTest in within(20 seconds) {
 
       val otherNodesJoiningSeedNodes = roles.slice(numberOfSeedNodes, numberOfSeedNodes + numberOfNodesJoiningToSeedNodesInitially)
       val size = seedNodes.size + otherNodesJoiningSeedNodes.size
