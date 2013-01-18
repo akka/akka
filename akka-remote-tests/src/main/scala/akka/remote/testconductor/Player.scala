@@ -313,6 +313,7 @@ private[akka] class PlayerHandler(
     val channel = event.getChannel
     log.debug("disconnected from {}", getAddrString(channel))
     fsm ! PoisonPill
+    RemoteConnection.shutdown(channel)
   }
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
