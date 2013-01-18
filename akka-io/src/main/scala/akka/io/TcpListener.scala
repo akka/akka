@@ -43,7 +43,7 @@ class TcpListener(selector: ActorRef,
       acceptAllPending(settings.BatchAcceptLimit)
 
     case CommandFailed(RegisterIncomingConnection(socketChannel, _, _)) ⇒
-      log.warning("Could not register incoming connection since capacity limit is reached, closing connection")
+      log.warning("Could not register incoming connection since selector capacity limit is reached, closing connection")
       try socketChannel.close()
       catch {
         case NonFatal(e) ⇒ log.error(e, "Error closing channel")

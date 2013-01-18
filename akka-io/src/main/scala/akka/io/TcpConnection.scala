@@ -238,9 +238,9 @@ abstract class TcpConnection(val selector: ActorRef,
   override def postRestart(reason: Throwable): Unit =
     throw new IllegalStateException("Restarting not supported for connection actors.")
 
-  private[TcpConnection] case class PendingWrite(commander: ActorRef, ack: AnyRef, buffer: ByteBuffer) {
+  private[TcpConnection] case class PendingWrite(commander: ActorRef, ack: Any, buffer: ByteBuffer) {
     def hasData = buffer.remaining() > 0
-    def wantsAck = ack ne NoAck
+    def wantsAck = ack != NoAck
   }
   def createWrite(write: Write): PendingWrite = {
     val buffer = acquireBuffer(write.data.length)

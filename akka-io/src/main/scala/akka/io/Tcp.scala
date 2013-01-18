@@ -151,10 +151,10 @@ object Tcp extends ExtensionKey[TcpExt] {
    * Write data to the TCP connection. If no ack is needed use the special
    * `NoAck` object.
    */
-  case class Write(data: ByteString, ack: AnyRef) extends Command {
-    require(ack ne null, "ack must be non-null. Use NoAck if you don't want acks.")
+  case class Write(data: ByteString, ack: Any) extends Command {
+    require(ack != null, "ack must be non-null. Use NoAck if you don't want acks.")
 
-    def wantsAck: Boolean = ack ne NoAck
+    def wantsAck: Boolean = ack != NoAck
   }
   object Write {
     val Empty: Write = Write(ByteString.empty, NoAck)
@@ -208,8 +208,6 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
       case "infinite" ⇒ Duration.Inf
       case x          ⇒ Duration(x)
     }
-    if (getString("select-timeout") == "infinite") Duration.Inf
-    else Duration(getMilliseconds("select-timeout"), MILLISECONDS)
     val SelectorAssociationRetries = getInt("selector-association-retries")
     val BatchAcceptLimit = getInt("batch-accept-limit")
     val DirectBufferSize = getInt("direct-buffer-size")

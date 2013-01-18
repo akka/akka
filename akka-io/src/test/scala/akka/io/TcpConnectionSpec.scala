@@ -17,10 +17,11 @@ import scala.util.control.NonFatal
 import akka.actor.{ ActorRef, Terminated }
 import akka.testkit.{ TestProbe, TestActorRef, AkkaSpec }
 import akka.util.ByteString
+import TestUtils._
 import Tcp._
 
 class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms") {
-  val serverAddress = TemporaryServerAddress("127.0.0.1")
+  val serverAddress = TemporaryServerAddress()
 
   "An outgoing connection" must {
     // common behavior
@@ -45,7 +46,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       clientChannel.socket.getKeepAlive must be(true)
     }
 
-    "send incoming data to user" in withEstablishedConnection() { setup ⇒
+    "send incoming data to the connection handler" in withEstablishedConnection() { setup ⇒
       import setup._
       serverSideChannel.write(ByteBuffer.wrap("testdata".getBytes("ASCII")))
       // emulate selector behavior
@@ -69,16 +70,24 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       writer.send(connectionActor, Write(ByteString.empty, Ack))
       writer.expectMsg(Ack)
 
-      val write = Write(ByteString("testdata"), Ack)
+      // reply to write commander with Ack
+      val ackedWrite = Write(ByteString("testdata"), Ack)
       val buffer = ByteBuffer.allocate(100)
       serverSideChannel.read(buffer) must be(0)
-
-      writer.send(connectionActor, write)
-      // make sure the writer gets the ack
+      writer.send(connectionActor, ackedWrite)
       writer.expectMsg(Ack)
       serverSideChannel.read(buffer) must be(8)
       buffer.flip()
-      ByteString(buffer).take(8).decodeString("ASCII") must be("testdata")
+
+      // not reply to write commander for writes without Ack
+      val unackedWrite = Write(ByteString("morestuff!"))
+      buffer.clear()
+      serverSideChannel.read(buffer) must be(0)
+      writer.send(connectionActor, unackedWrite)
+      writer.expectNoMsg()
+      serverSideChannel.read(buffer) must be(10)
+      buffer.flip()
+      ByteString(buffer).take(10).decodeString("ASCII") must be("morestuff!")
     }
 
     "stop writing in cases of backpressure and resume afterwards" in
@@ -134,7 +143,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       selector.expectMsg(ReadInterest)
     }
 
-    "close the connection" in withEstablishedConnection(setSmallRcvBuffer) { setup ⇒
+    "close the connection and reply with `Closed` upon reception of a `Close` command" in withEstablishedConnection(setSmallRcvBuffer) { setup ⇒
       import setup._
 
       // we should test here that a pending write command is properly finished first
@@ -145,18 +154,28 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
       // we send a write and a close command directly afterwards
       connectionHandler.send(connectionActor, writeCmd(Ack))
-      connectionHandler.send(connectionActor, Close)
+      val closeCommander = TestProbe()
+      closeCommander.send(connectionActor, Close)
 
       pullFromServerSide(TestSize)
       connectionHandler.expectMsg(Ack)
       connectionHandler.expectMsg(Closed)
+      closeCommander.expectMsg(Closed)
       assertThisConnectionActorTerminated()
 
       val buffer = ByteBuffer.allocate(1)
       serverSideChannel.read(buffer) must be(-1)
     }
 
-    "abort the connection" in withEstablishedConnection() { setup ⇒
+    "send only one `Closed` event to the handler, if the handler commanded the Close" in withEstablishedConnection() { setup ⇒
+      import setup._
+
+      connectionHandler.send(connectionActor, Close)
+      connectionHandler.expectMsg(Closed)
+      connectionHandler.expectNoMsg()
+    }
+
+    "abort the connection and reply with `Aborted` upong reception of an `Abort` command" in withEstablishedConnection() { setup ⇒
       import setup._
 
       connectionHandler.send(connectionActor, Abort)
@@ -169,7 +188,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       thrown.getMessage must be("Connection reset by peer")
     }
 
-    "close the connection and confirm" in withEstablishedConnection(setSmallRcvBuffer) { setup ⇒
+    "close the connection and reply with `ConfirmedClosed` upong reception of an `ConfirmedClose` command" in withEstablishedConnection(setSmallRcvBuffer) { setup ⇒
       import setup._
 
       // we should test here that a pending write command is properly finished first
@@ -242,10 +261,10 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       selector.send(connectionActor, ChannelConnectable)
       userHandler.expectMsgType[ErrorClose].cause must be("Connection reset by peer")
 
-      assertActorTerminated(connectionActor)
+      verifyActorTermination(connectionActor)
     }
 
-    val UnboundAddress = TemporaryServerAddress("127.0.0.1")
+    val UnboundAddress = TemporaryServerAddress()
     "report failed connection attempt when target is unreachable" in
       withUnacceptedConnection(connectionActorCons = createConnectionActor(serverAddress = UnboundAddress)) { setup ⇒
         import setup._
@@ -258,7 +277,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
         selector.send(connectionActor, ChannelConnectable)
         userHandler.expectMsgType[ErrorClose].cause must be("Connection refused")
 
-        assertActorTerminated(connectionActor)
+        verifyActorTermination(connectionActor)
       }
 
     "time out when Connected isn't answered with Register" in withUnacceptedConnection() { setup ⇒
@@ -268,7 +287,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       selector.send(connectionActor, ChannelConnectable)
       userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
 
-      assertActorTerminated(connectionActor)
+      verifyActorTermination(connectionActor)
     }
 
     "close the connection when user handler dies while connecting" in withUnacceptedConnection() { setup ⇒
@@ -277,7 +296,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       // simulate death of userHandler test probe
       userHandler.send(connectionActor, akka.actor.Terminated(userHandler.ref)(false, false))
 
-      assertActorTerminated(connectionActor)
+      verifyActorTermination(connectionActor)
     }
 
     "close the connection when connection handler dies while connected" in withEstablishedConnection() { setup ⇒
@@ -334,7 +353,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       }
 
     def assertThisConnectionActorTerminated(): Unit = {
-      assertActorTerminated(connectionActor)
+      verifyActorTermination(connectionActor)
       clientSideChannel must not be ('open)
     }
   }
@@ -419,10 +438,5 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
   def abort(channel: SocketChannel) {
     channel.socket.setSoLinger(true, 0)
     channel.close()
-  }
-  def assertActorTerminated(connectionActor: TestActorRef[TcpOutgoingConnection]): Unit = {
-    val watcher = TestProbe()
-    watcher.watch(connectionActor)
-    watcher.expectMsgType[Terminated].actor must be(connectionActor)
   }
 }
