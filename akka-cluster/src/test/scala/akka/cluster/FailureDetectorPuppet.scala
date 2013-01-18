@@ -50,6 +50,8 @@ class FailureDetectorPuppet(system: ActorSystem, settings: ClusterSettings) exte
       false
   }
 
+  override def isMonitoring(connection: Address): Boolean = connections.contains(connection)
+
   def heartbeat(connection: Address): Unit = log.debug("Heart beat from cluster node[{}]", connection)
 
   def remove(connection: Address): Unit = {

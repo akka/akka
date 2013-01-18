@@ -19,6 +19,8 @@ object AkkaProtocolSpec {
   class TestFailureDetector extends FailureDetector {
     @volatile var isAvailable: Boolean = true
 
+    def isMonitoring: Boolean = called
+
     @volatile var called: Boolean = false
 
     def heartbeat(): Unit = called = true

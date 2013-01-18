@@ -112,6 +112,7 @@ class FailureDetectorRegistrySpec extends AkkaSpec("akka.loglevel = INFO") {
   "mark node as available after explicit removal of connection and receiving heartbeat again" in {
     val timeInterval = List[Long](0, 1000, 100, 1100, 1100, 1100, 1100, 1100, 100)
     val fd = createFailureDetectorRegistry(clock = fakeTimeGenerator(timeInterval))
+    fd.isMonitoring("resource1") must be(false)
 
     fd.heartbeat("resource1") //0
 
@@ -119,9 +120,11 @@ class FailureDetectorRegistrySpec extends AkkaSpec("akka.loglevel = INFO") {
     fd.heartbeat("resource1") //1100
 
     fd.isAvailable("resource1") must be(true) //2200
+    fd.isMonitoring("resource1") must be(true)
 
     fd.remove("resource1")
 
+    fd.isMonitoring("resource1") must be(false)
     fd.isAvailable("resource1") must be(true) //3300
 
     // it receives heartbeat from an explicitly removed node
@@ -130,6 +133,7 @@ class FailureDetectorRegistrySpec extends AkkaSpec("akka.loglevel = INFO") {
     fd.heartbeat("resource1") //6600
 
     fd.isAvailable("resource1") must be(true) //6700
+    fd.isMonitoring("resource1") must be(true)
   }
 
 }

@@ -94,14 +94,16 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
       fd.phi must be > (0.0)
     }
 
-    "mark node as available after a series of successful heartbeats" in {
+    "mark node as monitored after a series of successful heartbeats" in {
       val timeInterval = List[Long](0, 1000, 100, 100)
       val fd = createFailureDetector(clock = fakeTimeGenerator(timeInterval))
+      fd.isMonitoring must be(false)
 
       fd.heartbeat()
       fd.heartbeat()
       fd.heartbeat()
 
+      fd.isMonitoring must be(true)
       fd.isAvailable must be(true)
     }
 
