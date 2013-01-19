@@ -141,6 +141,9 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     setReceiveTimeout(Duration.Undefined)
     cancelReceiveTimeout
 
+    // prevent Deadletter(Terminated) messages
+    unwatchWatchedActors(actor)
+
     // stop all children, which will turn childrenRefs into TerminatingChildrenContainer (if there are children)
     children foreach stop
 
@@ -200,7 +203,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     finally try parent.sendSystemMessage(ChildTerminated(self))
     finally try parent ! NullMessage // read ScalaDoc of NullMessage to see why
     finally try tellWatchersWeDied(a)
-    finally try unwatchWatchedActors(a)
+    finally try unwatchWatchedActors(a) // stay here as we expect an emergency stop from handleInvokeFailure
     finally {
       if (system.settings.DebugLifecycle)
         publish(Debug(self.path.toString, clazz(a), "stopped"))
