@@ -106,10 +106,10 @@ Actor Best Practices
    experience.
 
 #. Top-level actors are the innermost part of your Error Kernel, so create them
-   sparingly and prefer truly hierarchical systems. This has benefits wrt.
-   fault-handling (both considering the granularity of configuration and the
-   performance) and it also reduces the strain on the guardian actor, which is
-   a single point of contention if over-used.
+   sparingly and prefer truly hierarchical systems. This has benefits with
+   respect to fault-handling (both considering the granularity of configuration
+   and the performance) and it also reduces the strain on the guardian actor,
+   which is a single point of contention if over-used.
 
 Blocking Needs Careful Management
 ---------------------------------
