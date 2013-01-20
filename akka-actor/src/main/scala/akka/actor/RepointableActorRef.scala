@@ -212,7 +212,7 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
         } else if (!queue.offer(msg)) {
           system.eventStream.publish(Warning(self.path.toString, getClass, "dropping message of type " + msg.message.getClass + " due to enqueue failure"))
           system.deadLetters ! DeadLetter(msg.message, msg.sender, self)
-        }
+        } else if (Mailbox.debug) println(s"$self temp queueing ${msg.message} from ${msg.sender}")
       } finally lock.unlock()
     } else {
       system.eventStream.publish(Warning(self.path.toString, getClass, "dropping message of type" + msg.message.getClass + " due to lock timeout"))
@@ -243,7 +243,7 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
           if (!wasEnqueued) {
             system.eventStream.publish(Warning(self.path.toString, getClass, "dropping system message " + msg + " due to enqueue failure"))
             system.deadLetters ! DeadLetter(msg, self, self)
-          }
+          } else if (Mailbox.debug) println(s"$self temp queueing system $msg")
         }
       } finally lock.unlock()
     } else {

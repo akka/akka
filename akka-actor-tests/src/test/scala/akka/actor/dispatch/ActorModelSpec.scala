@@ -420,12 +420,21 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         val f5 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(new ActorInterruptedException(ie)).future }
         val f6 = a ? Reply("bar2")
 
+        val c = system.scheduler.scheduleOnce(2.seconds) {
+          import collection.JavaConverters._
+          Thread.getAllStackTraces().asScala foreach {
+            case (thread, stack) ⇒
+              println(s"$thread:")
+              stack foreach (s => println(s"\t$s"))
+          }
+        }
         assert(Await.result(f1, remaining) === "foo")
         assert(Await.result(f2, remaining) === "bar")
         assert(Await.result(f4, remaining) === "foo2")
         assert(intercept[ActorInterruptedException](Await.result(f3, remaining)).getCause.getMessage === "Ping!")
         assert(Await.result(f6, remaining) === "bar2")
         assert(intercept[ActorInterruptedException](Await.result(f5, remaining)).getCause.getMessage === "Ping!")
+        c.cancel()
       }
     }
 
