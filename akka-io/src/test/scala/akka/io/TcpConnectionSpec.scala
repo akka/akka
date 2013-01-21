@@ -50,13 +50,12 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       import setup._
       serverSideChannel.write(ByteBuffer.wrap("testdata".getBytes("ASCII")))
       // emulate selector behavior
-      selector.send(connectionActor, ChannelReadable)
-      connectionHandler.expectMsgType[Received].data.decodeString("ASCII") must be("testdata")
+      expectReceivedString("testdata")
       // have two packets in flight before the selector notices
       serverSideChannel.write(ByteBuffer.wrap("testdata2".getBytes("ASCII")))
       serverSideChannel.write(ByteBuffer.wrap("testdata3".getBytes("ASCII")))
-      selector.send(connectionActor, ChannelReadable)
-      connectionHandler.expectMsgType[Received].data.decodeString("ASCII") must be("testdata2testdata3")
+
+      expectReceivedString("testdata2testdata3")
     }
 
     "write data to network (and acknowledge)" in withEstablishedConnection() { setup ⇒
@@ -327,7 +326,6 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     unregisteredSetup: UnacceptedSetup,
     connectionHandler: TestProbe,
     serverSideChannel: SocketChannel) {
-
     def userHandler: TestProbe = unregisteredSetup.userHandler
     def selector: TestProbe = unregisteredSetup.selector
     def connectionActor: TestActorRef[TcpOutgoingConnection] = unregisteredSetup.connectionActor
@@ -349,6 +347,18 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
         pullFromServerSide(remaining - read)
       }
+
+    @tailrec final def expectReceivedString(data: String): Unit = {
+      data.length must be > 0
+
+      selector.send(connectionActor, ChannelReadable)
+
+      val gotReceived = connectionHandler.expectMsgType[Received]
+      val receivedString = gotReceived.data.decodeString("ASCII")
+      data.startsWith(receivedString) must be(true)
+      if (receivedString.length < data.length)
+        expectReceivedString(data.drop(receivedString.length))
+    }
 
     def assertThisConnectionActorTerminated(): Unit = {
       verifyActorTermination(connectionActor)
