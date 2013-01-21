@@ -18,7 +18,7 @@ class TcpListener(selector: ActorRef,
                   backlog: Int,
                   bindCommander: ActorRef,
                   settings: TcpExt#Settings,
-                  options: immutable.Traversable[SocketOption]) extends Actor with ActorLogging {
+                  options: Traversable[SocketOption]) extends Actor with ActorLogging {
 
   context.watch(handler) // sign death pact
   val channel = {

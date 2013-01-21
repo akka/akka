@@ -20,7 +20,7 @@ class TcpOutgoingConnection(_selector: ActorRef,
                             commander: ActorRef,
                             remoteAddress: InetSocketAddress,
                             localAddress: Option[InetSocketAddress],
-                            options: immutable.Traversable[SocketOption])
+                            options: Traversable[SocketOption])
   extends TcpConnection(_selector, TcpOutgoingConnection.newSocketChannel(), _tcp) {
 
   context.watch(commander) // sign death pact
@@ -34,11 +34,12 @@ class TcpOutgoingConnection(_selector: ActorRef,
   else {
     selector ! RegisterOutgoingConnection(channel)
     context.become(connecting(commander, options))
+    Seq(1,2,3)
   }
 
   def receive: Receive = PartialFunction.empty
 
-  def connecting(commander: ActorRef, options: immutable.Traversable[SocketOption]): Receive = {
+  def connecting(commander: ActorRef, options: Traversable[SocketOption]): Receive = {
     case ChannelConnectable ⇒
       try {
         val connected = channel.finishConnect()

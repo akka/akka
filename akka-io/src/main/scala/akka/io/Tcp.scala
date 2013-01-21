@@ -132,11 +132,11 @@ object Tcp extends ExtensionKey[TcpExt] {
 
   case class Connect(remoteAddress: InetSocketAddress,
                      localAddress: Option[InetSocketAddress] = None,
-                     options: immutable.Traversable[SocketOption] = Nil) extends Command
+                     options: Traversable[SocketOption] = Nil) extends Command
   case class Bind(handler: ActorRef,
                   endpoint: InetSocketAddress,
                   backlog: Int = 100,
-                  options: immutable.Traversable[SocketOption] = Nil) extends Command
+                  options: Traversable[SocketOption] = Nil) extends Command
   case class Register(handler: ActorRef) extends Command
   case object Unbind extends Command
 
@@ -185,7 +185,7 @@ object Tcp extends ExtensionKey[TcpExt] {
   case class RegisterOutgoingConnection(channel: SocketChannel)
   case class RegisterServerSocketChannel(channel: ServerSocketChannel)
   case class RegisterIncomingConnection(channel: SocketChannel, handler: ActorRef,
-                                        options: immutable.Traversable[SocketOption]) extends Command
+                                        options: Traversable[SocketOption]) extends Command
   case class Retry(command: Command, retriesLeft: Int) { require(retriesLeft >= 0) }
   case object ChannelConnectable
   case object ChannelAcceptable

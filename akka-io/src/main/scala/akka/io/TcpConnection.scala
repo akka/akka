@@ -100,8 +100,8 @@ abstract class TcpConnection(val selector: ActorRef,
 
   // AUXILIARIES and IMPLEMENTATION
 
-  /** use in subclasses to start the common machinery above once a channel is connected */
-  def completeConnect(commander: ActorRef, options: immutable.Traversable[SocketOption]): Unit = {
+  /** used in subclasses to start the common machinery above once a channel is connected */
+  def completeConnect(commander: ActorRef, options: Traversable[SocketOption]): Unit = {
     options.foreach(_.afterConnect(channel.socket))
 
     commander ! Connected(
