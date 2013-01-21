@@ -96,7 +96,6 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
         object Ack1
         object Ack2
 
-        //serverSideChannel.configureBlocking(false)
         clientSideChannel.socket.setSendBufferSize(1024)
 
         val writer = TestProbe()
