@@ -23,8 +23,8 @@ import org.jboss.netty.channel.socket.nio.{ NioDatagramChannelFactory, NioServer
 import org.jboss.netty.handler.codec.frame.{ LengthFieldBasedFrameDecoder, LengthFieldPrepender }
 import org.jboss.netty.handler.ssl.SslHandler
 import scala.concurrent.duration.{ Duration, FiniteDuration, MILLISECONDS }
-import scala.concurrent.{ ExecutionContext, Promise, Future }
-import scala.util.Try
+import scala.concurrent.{ ExecutionContext, Promise, Future, blocking }
+import scala.util.{ Failure, Success, Try }
 import util.control.{ NoStackTrace, NonFatal }
 
 object NettyTransportSettings {
@@ -167,12 +167,12 @@ abstract class ServerHandler(protected final val transport: NettyTransport,
 
 }
 
-abstract class ClientHandler(protected final val transport: NettyTransport,
-                             private final val statusPromise: Promise[AssociationHandle])
+abstract class ClientHandler(protected final val transport: NettyTransport)
   extends NettyClientHelpers with CommonHandlers {
+  final protected val statusPromise = Promise[AssociationHandle]()
+  def statusFuture = statusPromise.future
 
   final protected def initOutbound(channel: Channel, remoteSocketAddress: SocketAddress, msg: ChannelBuffer): Unit = {
-    channel.setReadable(false)
     init(channel, remoteSocketAddress, msg)(statusPromise.success)
   }
 
@@ -256,7 +256,7 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
 
   private def sslHandler(isClient: Boolean): SslHandler = {
     val handler = NettySSLSupport(settings.SslSettings.get, log, isClient)
-    if (isClient) handler.setIssueHandshake(true)
+    handler.setCloseOnSSLException(true)
     handler
   }
 
@@ -271,16 +271,17 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
     }
   }
 
-  private def clientPipelineFactory(statusPromise: Promise[AssociationHandle]): ChannelPipelineFactory = new ChannelPipelineFactory {
-    override def getPipeline: ChannelPipeline = {
-      val pipeline = newPipeline
-      if (EnableSsl) pipeline.addFirst("SslHandler", sslHandler(isClient = true))
-      val handler = if (isDatagram) new UdpClientHandler(NettyTransport.this, statusPromise)
-      else new TcpClientHandler(NettyTransport.this, statusPromise)
-      pipeline.addLast("clienthandler", handler)
-      pipeline
+  private val clientPipelineFactory: ChannelPipelineFactory =
+    new ChannelPipelineFactory {
+      override def getPipeline: ChannelPipeline = {
+        val pipeline = newPipeline
+        if (EnableSsl) pipeline.addFirst("SslHandler", sslHandler(isClient = true))
+        val handler = if (isDatagram) new UdpClientHandler(NettyTransport.this)
+        else new TcpClientHandler(NettyTransport.this)
+        pipeline.addLast("clienthandler", handler)
+        pipeline
+      }
     }
-  }
 
   private def setupBootstrap[B <: Bootstrap](bootstrap: B, pipelineFactory: ChannelPipelineFactory): B = {
     // FIXME: Expose these settings in configuration
@@ -302,8 +303,8 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
     case Udp ⇒ setupBootstrap(new ConnectionlessBootstrap(serverChannelFactory), serverPipelineFactory)
   }
 
-  private def outboundBootstrap(statusPromise: Promise[AssociationHandle]): ClientBootstrap = {
-    val bootstrap = setupBootstrap(new ClientBootstrap(clientChannelFactory), clientPipelineFactory(statusPromise))
+  private def outboundBootstrap: ClientBootstrap = {
+    val bootstrap = setupBootstrap(new ClientBootstrap(clientChannelFactory), clientPipelineFactory)
     bootstrap.setOption("connectTimeoutMillis", settings.ConnectionTimeout.toMillis)
     bootstrap
   }
@@ -346,34 +347,36 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
   override def associate(remoteAddress: Address): Future[AssociationHandle] = {
     if (!serverChannel.isBound) Future.failed(new NettyTransportException("Transport is not bound"))
     else {
-      val statusPromise = Promise[AssociationHandle]()
-      (try {
-        val f = NettyFutureBridge(outboundBootstrap(statusPromise).connect(addressToSocketAddress(remoteAddress))) recover {
-          case c: CancellationException ⇒ throw new NettyTransportException("Connection was cancelled")
-        }
+      val bootstrap: ClientBootstrap = outboundBootstrap
 
-        if (isDatagram)
-          f map { channel ⇒
-            channel.getRemoteAddress match {
+      (for {
+        readyChannel ← NettyFutureBridge(bootstrap.connect(addressToSocketAddress(remoteAddress))) map {
+          channel ⇒
+            if (EnableSsl)
+              blocking {
+                channel.getPipeline.get[SslHandler](classOf[SslHandler]).handshake().awaitUninterruptibly()
+              }
+            if (!isDatagram) channel.setReadable(false)
+            channel
+        }
+        handle ← if (isDatagram)
+          Future {
+            readyChannel.getRemoteAddress match {
               case addr: InetSocketAddress ⇒
-                val handle = new UdpAssociationHandle(localAddress, remoteAddress, channel, NettyTransport.this)
-                statusPromise.success(handle)
-                handle.readHandlerPromise.future.onSuccess { case listener ⇒ udpConnectionTable.put(addr, listener) }
+                val handle = new UdpAssociationHandle(localAddress, remoteAddress, readyChannel, NettyTransport.this)
+                handle.readHandlerPromise.future.onSuccess {
+                  case listener ⇒ udpConnectionTable.put(addr, listener)
+                }
+                handle
               case unknown ⇒ throw new NettyTransportException(s"Unknown remote address type ${unknown.getClass}")
             }
           }
-        else f
-      } catch {
-        case e @ (_: UnknownHostException | _: SecurityException | _: IllegalArgumentException) ⇒
-          Future.failed(InvalidAssociationException("Invalid association ", e))
-        case NonFatal(e) ⇒
-          Future.failed(e)
-      }) onFailure {
-        case t: ConnectException ⇒ statusPromise failure new NettyTransportException(t.getMessage, t.getCause) with NoStackTrace
-        case t                   ⇒ statusPromise failure t
+        else
+          readyChannel.getPipeline.get[ClientHandler](classOf[ClientHandler]).statusFuture
+      } yield handle) recover {
+        case c: CancellationException ⇒ throw new NettyTransportException("Connection was cancelled") with NoStackTrace
+        case NonFatal(t)              ⇒ throw new NettyTransportException(t.getMessage, t.getCause) with NoStackTrace
       }
-
-      statusPromise.future
     }
   }
 
