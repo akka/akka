@@ -1,8 +1,9 @@
 package akka.io
 
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicBoolean
 import java.nio.ByteBuffer
 import annotation.tailrec
+import java.lang.ref.SoftReference
 
 trait WithBufferPool {
   def tcp: TcpExt
@@ -10,62 +11,68 @@ trait WithBufferPool {
   def acquireBuffer(): ByteBuffer =
     tcp.bufferPool.acquire()
 
-  def acquireBuffer(size: Int): ByteBuffer =
-    tcp.bufferPool.acquire(size)
-
   def releaseBuffer(buffer: ByteBuffer) =
     tcp.bufferPool.release(buffer)
 }
 
-/**
- * A buffer pool which keeps direct buffers of a specified default size.
- * If a buffer bigger than the default size is requested it is created
- * but will not be pooled on release.
- *
- * This implementation is very loosely based on the one from Netty.
- */
-class DirectByteBufferPool(bufferSize: Int, maxPoolSize: Int) {
-  private val Unlocked = 0
-  private val Locked = 1
+trait BufferPool {
+  def acquire(): ByteBuffer
+  def release(buf: ByteBuffer): Unit
+}
 
-  private[this] val state = new AtomicInteger(Unlocked)
-  @volatile private[this] var pool: List[ByteBuffer] = Nil
-  @volatile private[this] var poolSize: Int = 0
+/**
+ * A buffer pool which keeps a free list of direct buffers of a specified default
+ * size in a simple fixed size stack.
+ *
+ * If the stack is full a buffer offered back is not kept but will be let for
+ * being freed by normal garbage collection.
+ */
+private[akka] class DirectByteBufferPool(defaultBufferSize: Int, maxPoolEntries: Int) extends BufferPool {
+  private[this] val locked = new AtomicBoolean(false)
+  private[this] val pool: Array[SoftReference[ByteBuffer]] = new Array[SoftReference[ByteBuffer]](maxPoolEntries)
+  private[this] var buffersInPool: Int = 0
+
+  def acquire(): ByteBuffer = {
+    val buffer = takeBufferFromPool()
+
+    // allocate new buffer and clear outside the lock
+    if (buffer == null)
+      allocate(defaultBufferSize)
+    else {
+      buffer.clear()
+      buffer
+    }
+  }
+
+  def release(buf: ByteBuffer): Unit =
+    offerBufferToPool(buf)
 
   private def allocate(size: Int): ByteBuffer =
     ByteBuffer.allocateDirect(size)
 
-  def acquire(size: Int = bufferSize): ByteBuffer = {
-    if (poolSize == 0 || size > bufferSize) allocate(size)
-    else takeBufferFromPool()
+  @tailrec
+  private[this] final def takeBufferFromPool(): ByteBuffer = {
+    @tailrec def findBuffer(): ByteBuffer =
+      if (buffersInPool > 0) {
+        buffersInPool -= 1
+        val buf = pool(buffersInPool).get()
+
+        if (buf != null) buf
+        else findBuffer()
+      } else null
+
+    if (locked.compareAndSet(false, true))
+      try findBuffer() finally locked.set(false)
+    else takeBufferFromPool() // spin while locked
   }
 
-  def release(buf: ByteBuffer): Unit =
-    if (buf.capacity() <= bufferSize && poolSize < maxPoolSize)
-      addBufferToPool(buf)
-
-  // TODO: check whether limiting the spin count in the following two methods is beneficial
-  // (e.g. never limit more than 1000 times), since both methods could fall back to not
-  // using the buffer at all (take fallback: create a new buffer, add fallback: just drop)
-
   @tailrec
-  private def takeBufferFromPool(): ByteBuffer =
-    if (state.compareAndSet(Unlocked, Locked))
-      try pool match {
-        case Nil ⇒ allocate(bufferSize) // we have no more buffer available, so create a new one
-        case buf :: tail ⇒
-          pool = tail
-          poolSize -= 1
-          buf
-      } finally state.set(Unlocked)
-    else takeBufferFromPool() // spin while locked
-
-  @tailrec
-  private def addBufferToPool(buf: ByteBuffer): Unit =
-    if (state.compareAndSet(Unlocked, Locked)) {
-      buf.clear() // ensure that we never have dirty buffers in the pool
-      pool = buf :: pool
-      poolSize += 1
-      state.set(Unlocked)
-    } else addBufferToPool(buf) // spin while locked
+  private final def offerBufferToPool(buf: ByteBuffer): Unit =
+    if (locked.compareAndSet(false, true))
+      try if (buffersInPool < maxPoolEntries) {
+        pool(buffersInPool) = new SoftReference(buf)
+        buffersInPool += 1
+      } // else let the buffer be gc'd
+      finally locked.set(false)
+    else offerBufferToPool(buf) // spin while locked
 }
