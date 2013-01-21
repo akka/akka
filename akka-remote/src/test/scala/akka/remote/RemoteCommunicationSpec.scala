@@ -35,8 +35,26 @@ object RemoteCommunicationSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class RemoteCommunicationSpec extends AkkaSpec("""
-akka {
+class RemoteCommunicationSpec extends RemoteCommunicationBaseSpec("")
+
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class RemoteCommunicationSecureCookiePassiveSpec extends RemoteCommunicationBaseSpec("""
+akka.remote.netty {
+  secure-cookie = "keepitsecretkeepitsafe"
+  require-cookie = on
+  use-passive-connections = on
+}""")
+
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class RemoteCommunicationSecureCookieActiveSpec extends RemoteCommunicationBaseSpec("""
+akka.remote.netty {
+  secure-cookie = "keepitsecretkeepitsafe"
+  require-cookie = on
+  use-passive-connections = off
+}""")
+
+abstract class RemoteCommunicationBaseSpec(config: String) extends AkkaSpec(ConfigFactory.parseString(config).withFallback(ConfigFactory.parseString("""
+  akka {
   actor.provider = "akka.remote.RemoteActorRefProvider"
   remote.netty {
     hostname = localhost
@@ -45,10 +63,10 @@ akka {
   actor.deployment {
     /blub.remote = "akka://remote-sys@localhost:12346"
     /looker/child.remote = "akka://remote-sys@localhost:12346"
-    /looker/child/grandchild.remote = "akka://RemoteCommunicationSpec@localhost:12345"
+    /looker/child/grandchild.remote = "akka://RemoteCommunicationBaseSpec@localhost:12345"
   }
 }
-""") with ImplicitSender with DefaultTimeout {
+"""))) with ImplicitSender with DefaultTimeout {
 
   import RemoteCommunicationSpec._
 
@@ -100,7 +118,7 @@ akka {
 
     "create and supervise children on remote node" in {
       val r = system.actorOf(Props[Echo], "blub")
-      r.path.toString must be === "akka://remote-sys@localhost:12346/remote/RemoteCommunicationSpec@localhost:12345/user/blub"
+      r.path.toString must be === "akka://remote-sys@localhost:12346/remote/RemoteCommunicationBaseSpec@localhost:12345/user/blub"
       r ! 42
       expectMsg(42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {

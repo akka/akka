@@ -315,7 +315,22 @@ private[akka] class PassiveRemoteClient(val currentChannel: Channel,
                                         netty: NettyRemoteTransport,
                                         remoteAddress: Address) extends RemoteClient(netty, remoteAddress) {
 
+  import netty.settings
+
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean = runSwitch switchOn {
+    // This code is duplicated here as to not break binary compatibility of 2.1.x
+    def sendSecureCookie(channel: Channel): Unit = {
+      val localAddress = netty.address
+      val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
+      if (settings.SecureCookie.nonEmpty) handshake.setCookie(settings.SecureCookie.get)
+      handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
+        .setSystem(localAddress.system)
+        .setHostname(localAddress.host.get)
+        .setPort(localAddress.port.get)
+        .build)
+      channel.write(netty.createControlEnvelope(handshake.build))
+    }
+    sendSecureCookie(currentChannel)
     netty.notifyListeners(RemoteClientStarted(netty, remoteAddress))
     log.debug("Starting remote client connection to [{}]", remoteAddress)
   }
