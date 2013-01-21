@@ -161,6 +161,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       closeCommander.expectMsg(Closed)
       assertThisConnectionActorTerminated()
 
+      nioSelector.select(2000)
+
       val buffer = ByteBuffer.allocate(1)
       serverSideChannel.read(buffer) must be(-1)
     }
@@ -207,6 +209,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       connectionHandler.expectNoMsg(100.millis) // not yet
 
       val buffer = ByteBuffer.allocate(1)
+      nioSelector.select(2000)
       serverSideChannel.read(buffer) must be(-1)
       serverSideChannel.close()
 
