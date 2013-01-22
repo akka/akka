@@ -29,11 +29,11 @@ There are several different types of actor references that are supported
 depending on the configuration of the actor system:
 
 - Purely local actor references are used by actor systems which are not
-  configured to support networking functions. These actor references cannot
-  ever be sent across a network connection while retaining their functionality.
+  configured to support networking functions. These actor references will not
+  function if sent across a network connection to a remote JVM.
 - Local actor references when remoting is enabled are used by actor systems
   which support networking functions for those references which represent
-  actors within the same JVM. In order to be recognizable also when sent to
+  actors within the same JVM. In order to also be reachable when sent to
   other network nodes, these references include protocol and remote addressing
   information.
 - There is a subtype of local actor references which is used for routers (i.e.
@@ -42,7 +42,7 @@ depending on the configuration of the actor system:
   them dispatches to one of their children directly instead.
 - Remote actor references represent actors which are reachable using remote
   communication, i.e. sending messages to them will serialize the messages
-  transparently and send them to the other JVM.
+  transparently and send them to the remote JVM.
 - There are several special types of actor references which behave like local
   actor references for all practical purposes:
 
