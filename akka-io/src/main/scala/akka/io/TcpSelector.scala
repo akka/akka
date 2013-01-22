@@ -28,6 +28,8 @@ class TcpSelector(manager: ActorRef, tcp: TcpExt) extends Actor with ActorLoggin
     case ReadInterest   ⇒ execute(enableInterest(OP_READ, sender))
     case AcceptInterest ⇒ execute(enableInterest(OP_ACCEPT, sender))
 
+    case StopReading    ⇒ execute(disableInterest(OP_READ, sender))
+
     case cmd: RegisterIncomingConnection ⇒
       handleIncomingConnection(cmd, SelectorAssociationRetries)
 
@@ -148,7 +150,7 @@ class TcpSelector(manager: ActorRef, tcp: TcpExt) extends Actor with ActorLoggin
       }
     }
 
-  // TODO: evaluate whether we could run this on the TcpSelector actor itself rather than
+  // TODO: evaluate whether we could run the following two tasks directly on the TcpSelector actor itself rather than
   // on the selector-management-dispatcher. The trade-off would be using a ConcurrentHashMap
   // rather than an unsynchronized one, but since switching interest ops is so frequent
   // the change might be beneficial, provided the underlying implementation really is thread-safe
@@ -158,6 +160,14 @@ class TcpSelector(manager: ActorRef, tcp: TcpExt) extends Actor with ActorLoggin
       def tryRun() {
         val key = childrenKeys(connection.path.name)
         key.interestOps(key.interestOps | op)
+      }
+    }
+
+  def disableInterest(op: Int, connection: ActorRef) =
+    new Task {
+      def tryRun() {
+        val key = childrenKeys(connection.path.name)
+        key.interestOps(key.interestOps & ~op)
       }
     }
 
@@ -182,6 +192,7 @@ class TcpSelector(manager: ActorRef, tcp: TcpExt) extends Actor with ActorLoggin
         while (iterator.hasNext) {
           val key = iterator.next
           if (key.isValid) {
+            key.interestOps(0) // prevent immediate reselection by always clearing
             val connection = key.attachment.asInstanceOf[ActorRef]
             key.readyOps match {
               case OP_READ                   ⇒ connection ! ChannelReadable
@@ -191,7 +202,6 @@ class TcpSelector(manager: ActorRef, tcp: TcpExt) extends Actor with ActorLoggin
               case x if (x & OP_CONNECT) > 0 ⇒ connection ! ChannelConnectable
               case x                         ⇒ log.warning("Invalid readyOps: {}", x)
             }
-            key.interestOps(0) // prevent immediate reselection by always clearing
           } else log.warning("Invalid selection key: {}", key)
         }
         keys.clear() // we need to remove the selected keys from the set, otherwise they remain selected

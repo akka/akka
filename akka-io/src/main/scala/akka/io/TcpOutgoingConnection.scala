@@ -7,7 +7,6 @@ package akka.io
 import java.net.InetSocketAddress
 import java.io.IOException
 import java.nio.channels.SocketChannel
-import scala.collection.immutable
 import akka.actor.ActorRef
 import Tcp._
 
@@ -34,7 +33,6 @@ class TcpOutgoingConnection(_selector: ActorRef,
   else {
     selector ! RegisterOutgoingConnection(channel)
     context.become(connecting(commander, options))
-    Seq(1,2,3)
   }
 
   def receive: Receive = PartialFunction.empty

@@ -5,9 +5,7 @@
 package akka.io
 
 import java.net.Socket
-import scala.annotation.tailrec
 import scala.concurrent.duration._
-import org.scalatest.exceptions.TestFailedException
 import akka.actor.{ Terminated, SupervisorStrategy, Actor, Props }
 import akka.testkit.{ TestProbe, TestActorRef, AkkaSpec }
 import Tcp._
@@ -64,9 +62,7 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
 
       listener ! CommandFailed(RegisterIncomingConnection(channel, handler.ref, Nil))
 
-      within(1.second) {
-        channel.isOpen must be(false)
-      }
+      awaitCond(!channel.isOpen)
     }
   }
 
@@ -78,7 +74,7 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
     val handlerRef = handler.ref
     val bindCommander = TestProbe()
     val parent = TestProbe()
-    val endpoint = TemporaryServerAddress()
+    val endpoint = TestUtils.temporaryServerAddress()
     private val parentRef = TestActorRef(new ListenerParent)
 
     def bindListener() {
