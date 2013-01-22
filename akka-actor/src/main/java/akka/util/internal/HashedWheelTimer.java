@@ -20,10 +20,13 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Iterator;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import akka.dispatch.SystemMessage;
 import akka.util.Helpers;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
@@ -89,7 +92,6 @@ public class HashedWheelTimer implements Timer {
     boolean shutdown = false;
     final long tickDuration;
     final Set<HashedWheelTimeout>[] wheel;
-    final ReusableIterator<HashedWheelTimeout>[] iterators;
     final int mask;
     final ReadWriteLock lock = new ReentrantReadWriteLock();
     volatile int wheelCursor;
@@ -127,7 +129,6 @@ public class HashedWheelTimer implements Timer {
 
         // Normalize ticksPerWheel to power of two and initialize the wheel.
         wheel = createWheel(ticksPerWheel);
-        iterators = createIterators(wheel);
         mask = wheel.length - 1;
 
         // Convert to standardized tickDuration
@@ -152,18 +153,9 @@ public class HashedWheelTimer implements Timer {
 
         final Set<HashedWheelTimeout>[] wheel = new Set[normalizeTicksPerWheel(ticksPerWheel)];
         for (int i = 0; i < wheel.length; i ++) {
-            wheel[i] = Collections.newSetFromMap(new ConcurrentIdentityHashMap<HashedWheelTimeout, Boolean>(16, 0.95f, 4));
+            wheel[i] = Collections.newSetFromMap(new ConcurrentHashMap<HashedWheelTimeout, Boolean>(16, 0.95f, 4));
         }
         return wheel;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static ReusableIterator<HashedWheelTimeout>[] createIterators(Set<HashedWheelTimeout>[] wheel) {
-        ReusableIterator<HashedWheelTimeout>[] iterators = new ReusableIterator[wheel.length];
-        for (int i = 0; i < wheel.length; i ++) {
-            iterators[i] = (ReusableIterator<HashedWheelTimeout>) wheel[i].iterator();
-        }
-        return iterators;
     }
 
     private static int normalizeTicksPerWheel(int ticksPerWheel) {
@@ -323,16 +315,16 @@ public class HashedWheelTimer implements Timer {
             lock.writeLock().lock();
             try {
                 final int newWheelCursor = wheelCursor = wheelCursor + 1 & mask;
-                return fetchExpiredTimeouts(iterators[newWheelCursor], deadline);
+                return fetchExpiredTimeouts(wheel[newWheelCursor], deadline);
             } finally {
                 lock.writeLock().unlock();
             }
         }
 
-        private ArrayList<HashedWheelTimeout> fetchExpiredTimeouts(final ReusableIterator<HashedWheelTimeout> i, final long deadline) {
+        private ArrayList<HashedWheelTimeout> fetchExpiredTimeouts(final Iterable<HashedWheelTimeout> it, final long deadline) {
             final ArrayList<HashedWheelTimeout> expiredTimeouts = new ArrayList<HashedWheelTimeout>();
             List<HashedWheelTimeout> slipped = null;
-            i.rewind();
+            Iterator<HashedWheelTimeout> i = it.iterator();
             while (i.hasNext()) {
                 HashedWheelTimeout timeout = i.next();
                 if (timeout.remainingRounds <= 0) {
@@ -481,6 +473,14 @@ public class HashedWheelTimer implements Timer {
                             TimerTask.class.getSimpleName() + ".", t);
                 }
             }
+        }
+
+        @Override public final int hashCode() {
+            return System.identityHashCode(this);
+        }
+
+        @Override public final boolean equals(final Object that) {
+            return this == that;
         }
 
         @Override
