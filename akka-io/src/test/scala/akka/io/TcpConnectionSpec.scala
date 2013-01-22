@@ -390,6 +390,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
           if (nioSelector.selectedKeys().contains(serverSelectionKey)) tryReading()
           else 0
 
+        nioSelector.selectedKeys().clear()
+
         pullFromServerSide(remaining - read, remainingTries - 1)
       }
 
@@ -397,7 +399,9 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       buffer.clear()
       val read = serverSideChannel.read(buffer)
 
-      if (read == -1)
+      if (read == 0)
+        throw new IllegalStateException("Made no progress")
+      else if (read == -1)
         throw new IllegalStateException("Connection was closed unexpectedly with remaining bytes " + remaining)
       else read
     }
