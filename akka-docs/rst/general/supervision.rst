@@ -172,12 +172,13 @@ reacts to failure.
 
 Lifecycle monitoring is implemented using a :class:`Terminated` message to be
 received by the monitoring actor, where the default behavior is to throw a
-special :class:`DeathPactException` if not otherwise handled. In order to
-start listening for :class:`Terminated` messages is to use ``ActorContext.watch(targetActorRef)``
-and then ``ActorContext.unwatch(targetActorRef)`` to stop listening for that.
-One important property is that the message will be delivered irrespective of the order in
-which the monitoring request and target’s termination occur, i.e. you still get
-the message even if at the time of registration the target is already dead.
+special :class:`DeathPactException` if not otherwise handled. In order to start
+listening for :class:`Terminated` messages, invoke
+``ActorContext.watch(targetActorRef)``.  To stop listening, invoke
+``ActorContext.unwatch(targetActorRef)``.  One important property is that the
+message will be delivered irrespective of the order in which the monitoring
+request and target’s termination occur, i.e. you still get the message even if
+at the time of registration the target is already dead.
 
 Monitoring is particularly useful if a supervisor cannot simply restart its
 children and has to terminate them, e.g. in case of errors during actor
