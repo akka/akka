@@ -152,14 +152,17 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
       pendingWrite = pendingWrite.consume(writtenBytes)
 
-      val wroteCompleteBuffer = writtenBytes == toWrite
       if (pendingWrite.hasData)
-        if (wroteCompleteBuffer) innerWrite() // try again now
+        if (writtenBytes == toWrite) innerWrite() // wrote complete buffer, try again now
         else selector ! WriteInterest // try again later
-      else if (pendingWrite.wantsAck) { // everything written
-        pendingWrite.commander ! pendingWrite.ack
-        releaseBuffer(pendingWrite.buffer)
+      else { // everything written
+        if (pendingWrite.wantsAck)
+          pendingWrite.commander ! pendingWrite.ack
+
+        val buffer = pendingWrite.buffer
         pendingWrite = null
+
+        releaseBuffer(buffer)
       }
     }
 
@@ -232,6 +235,12 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
   }
 
   override def postStop(): Unit = {
+    if (channel.isOpen)
+      abort()
+
+    if (writePending)
+      releaseBuffer(pendingWrite.buffer)
+
     if (closedMessage != null) {
       val interestedInClose =
         if (writePending) closedMessage.notificationsTo + pendingWrite.commander
@@ -239,9 +248,6 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
       interestedInClose.foreach(_ ! closedMessage.closedEvent)
     }
-
-    if (channel.isOpen)
-      abort()
   }
 
   override def postRestart(reason: Throwable): Unit =

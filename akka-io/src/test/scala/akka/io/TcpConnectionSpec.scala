@@ -89,6 +89,17 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       buffer.flip()
       ByteString(buffer).take(10).decodeString("ASCII") must be("morestuff!")
     }
+    "write data after not acknowledged data" in withEstablishedConnection() { setup ⇒
+      import setup._
+
+      object Ack
+      val writer = TestProbe()
+      writer.send(connectionActor, Write(ByteString(42.toByte)))
+      writer.expectNoMsg(500.millis)
+
+      writer.send(connectionActor, Write(ByteString.empty, Ack))
+      writer.expectMsg(Ack)
+    }
 
     "stop writing in cases of backpressure and resume afterwards" in
       withEstablishedConnection(setSmallRcvBuffer) { setup ⇒
