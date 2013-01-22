@@ -18,14 +18,19 @@ class CapacityLimitSpec extends AkkaSpec("akka.loglevel = ERROR\nakka.io.tcp.max
 
       // we now have three channels registered: a listener, a server connection and a client connection
       // so register one more channel
-      val bindCommander = TestProbe()
-      bindCommander.send(IO(Tcp), Bind(bindHandler.ref, temporaryServerAddress()))
-      bindCommander.expectMsg(Bound)
+      val commander = TestProbe()
+      commander.send(IO(Tcp), Bind(bindHandler.ref, temporaryServerAddress()))
+      commander.expectMsg(Bound)
 
       // we are now at the configured max-channel capacity of 4
+
       val bindToFail = Bind(bindHandler.ref, temporaryServerAddress())
-      bindCommander.send(IO(Tcp), bindToFail)
-      bindCommander.expectMsgType[CommandFailed].cmd must be theSameInstanceAs (bindToFail)
+      commander.send(IO(Tcp), bindToFail)
+      commander.expectMsgType[CommandFailed].cmd must be theSameInstanceAs (bindToFail)
+
+      val connectToFail = Connect(endpoint)
+      commander.send(IO(Tcp), connectToFail)
+      commander.expectMsgType[CommandFailed].cmd must be theSameInstanceAs (connectToFail)
     }
 
   }
