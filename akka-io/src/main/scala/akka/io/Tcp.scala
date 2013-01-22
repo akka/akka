@@ -5,19 +5,13 @@
 package akka.io
 
 import java.net.InetSocketAddress
-import java.nio.channels.{ ServerSocketChannel, SocketChannel }
-import akka.actor.ActorRef
-import akka.util.ByteString
-import akka.actor.ExtensionKey
-import akka.actor.ExtendedActorSystem
-import akka.actor.ActorSystemImpl
-import akka.actor.Props
 import java.net.Socket
 import java.net.ServerSocket
+import com.typesafe.config.Config
 import scala.concurrent.duration._
 import scala.collection.immutable
-import akka.actor.ActorSystem
-import com.typesafe.config.Config
+import akka.util.ByteString
+import akka.actor._
 
 object Tcp extends ExtensionKey[TcpExt] {
 

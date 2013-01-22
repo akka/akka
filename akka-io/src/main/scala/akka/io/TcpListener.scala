@@ -13,7 +13,8 @@ import akka.actor.{ ActorLogging, ActorRef, Actor }
 import TcpSelector._
 import Tcp._
 
-private[io] class TcpListener(handler: ActorRef,
+private[io] class TcpListener(selectorRouter: ActorRef,
+                              handler: ActorRef,
                               endpoint: InetSocketAddress,
                               backlog: Int,
                               bindCommander: ActorRef,
@@ -69,7 +70,7 @@ private[io] class TcpListener(handler: ActorRef,
       if (socketChannel != null) {
         log.debug("New connection accepted")
         socketChannel.configureBlocking(false)
-        context.parent ! RegisterIncomingConnection(socketChannel, handler, options)
+        selectorRouter ! RegisterIncomingConnection(socketChannel, handler, options)
         acceptAllPending(limit - 1)
       }
     } else context.parent ! AcceptInterest

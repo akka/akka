@@ -15,9 +15,7 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
 
   "A TcpListener" must {
 
-    "register its ServerSocketChannel with its selector" in new TestSetup {
-      parent.expectMsgType[RegisterServerSocketChannel]
-    }
+    "register its ServerSocketChannel with its selector" in new TestSetup
 
     "let the Bind commander know when binding is completed" in new TestSetup {
       listener ! Bound
@@ -25,8 +23,6 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
     }
 
     "accept acceptable connections and register them with its parent" in new TestSetup {
-      parent.expectMsgType[RegisterServerSocketChannel]
-
       bindListener()
 
       attemptConnectionToEndpoint()
@@ -36,18 +32,17 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
       // since the batch-accept-limit is 2 we must only receive 2 accepted connections
       listener ! ChannelAcceptable
 
-      parent.expectMsgPF() { case RegisterIncomingConnection(_, `handlerRef`, Nil) ⇒ /* ok */ }
-      parent.expectMsgPF() { case RegisterIncomingConnection(_, `handlerRef`, Nil) ⇒ /* ok */ }
       parent.expectMsg(AcceptInterest)
-      parent.expectNoMsg(100.millis)
+      selectorRouter.expectMsgPF() { case RegisterIncomingConnection(_, `handlerRef`, Nil) ⇒ /* ok */ }
+      selectorRouter.expectMsgPF() { case RegisterIncomingConnection(_, `handlerRef`, Nil) ⇒ /* ok */ }
+      selectorRouter.expectNoMsg(100.millis)
 
       // and pick up the last remaining connection on the next ChannelAcceptable
       listener ! ChannelAcceptable
-      parent.expectMsgPF() { case RegisterIncomingConnection(_, `handlerRef`, Nil) ⇒ /* ok */ }
+      selectorRouter.expectMsgPF() { case RegisterIncomingConnection(_, `handlerRef`, Nil) ⇒ /* ok */ }
     }
 
     "react to Unbind commands by replying with Unbound and stopping itself" in new TestSetup {
-      parent.expectMsgType[RegisterServerSocketChannel]
       bindListener()
 
       val unbindCommander = TestProbe()
@@ -58,13 +53,12 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
     }
 
     "drop an incoming connection if it cannot be registered with a selector" in new TestSetup {
-      parent.expectMsgType[RegisterServerSocketChannel]
       bindListener()
 
       attemptConnectionToEndpoint()
 
       listener ! ChannelAcceptable
-      val channel = parent.expectMsgType[RegisterIncomingConnection].channel
+      val channel = selectorRouter.expectMsgType[RegisterIncomingConnection].channel
       channel.isOpen must be(true)
 
       listener ! CommandFailed(RegisterIncomingConnection(channel, handler.ref, Nil))
@@ -80,8 +74,11 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
     val handlerRef = handler.ref
     val bindCommander = TestProbe()
     val parent = TestProbe()
+    val selectorRouter = TestProbe()
     val endpoint = TestUtils.temporaryServerAddress()
     private val parentRef = TestActorRef(new ListenerParent)
+
+    parent.expectMsgType[RegisterServerSocketChannel]
 
     def bindListener() {
       listener ! Bound
@@ -94,7 +91,7 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
 
     private class ListenerParent extends Actor {
       val listener = context.actorOf(
-        props = Props(new TcpListener(handler.ref, endpoint, 100, bindCommander.ref,
+        props = Props(new TcpListener(selectorRouter.ref, handler.ref, endpoint, 100, bindCommander.ref,
           Tcp(system).Settings, Nil)),
         name = "test-listener-" + counter.next())
       parent.watch(listener)

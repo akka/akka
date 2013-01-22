@@ -10,7 +10,6 @@ import java.nio.channels.{ ServerSocketChannel, SelectionKey, SocketChannel }
 import java.nio.channels.SelectionKey._
 import scala.util.control.NonFatal
 import scala.collection.immutable
-import immutable.HashMap
 import scala.concurrent.duration._
 import akka.actor._
 import Tcp._
@@ -19,7 +18,7 @@ private[io] class TcpSelector(manager: ActorRef, tcp: TcpExt) extends Actor with
   import TcpSelector._
   import tcp.Settings._
 
-  @volatile var childrenKeys = HashMap.empty[String, SelectionKey]
+  @volatile var childrenKeys = immutable.HashMap.empty[String, SelectionKey]
   val sequenceNumber = Iterator.from(0)
   val selectorManagementDispatcher = context.system.dispatchers.lookup(SelectorDispatcher)
   val selector = SelectorProvider.provider.openSelector
@@ -96,7 +95,7 @@ private[io] class TcpSelector(manager: ActorRef, tcp: TcpExt) extends Actor with
     withCapacityProtection(cmd, retriesLeft) {
       import cmd._
       val commander = sender
-      spawnChild(() ⇒ new TcpListener(handler, endpoint, backlog, commander, tcp.Settings, options))
+      spawnChild(() ⇒ new TcpListener(context.parent, handler, endpoint, backlog, commander, tcp.Settings, options))
     }
 
   def withCapacityProtection(cmd: Command, retriesLeft: Int)(body: ⇒ Unit): Unit = {
