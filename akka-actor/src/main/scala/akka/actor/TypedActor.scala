@@ -674,7 +674,7 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
    * INTERNAL USE ONLY
    */
   private[akka] def invocationHandlerFor(@deprecatedName('typedActor_?) typedActor: AnyRef): TypedActorInvocationHandler =
-    if ((typedActor ne null) && Proxy.isProxyClass(typedActor.getClass)) typedActor match {
+    if ((typedActor ne null) && classOf[Proxy].isAssignableFrom(typedActor.getClass) && Proxy.isProxyClass(typedActor.getClass)) typedActor match {
       case null ⇒ null
       case other ⇒ Proxy.getInvocationHandler(other) match {
         case null                                 ⇒ null
