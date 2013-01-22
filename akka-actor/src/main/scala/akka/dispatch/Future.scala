@@ -62,6 +62,19 @@ object ExecutionContexts {
    * @return a reference to the global ExecutionContext
    */
   def global(): ExecutionContext = ExecutionContext.global
+
+  /**
+   * WARNING: Not A General Purpose ExecutionContext!
+   *
+   * This is an execution context which runs everything on the calling thread.
+   * It is very useful for actions which are known to be non-blocking and
+   * non-throwing in order to save a round-trip to the thread pool.
+   */
+  object sameThreadExecutionContext extends ExecutionContext {
+    override def execute(runnable: Runnable): Unit = runnable.run()
+    override def reportFailure(t: Throwable): Unit =
+      throw new IllegalStateException("exception in sameThreadExecutionContext", t)
+  }
 }
 
 /**

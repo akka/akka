@@ -8,7 +8,7 @@ import scala.tools.reflect.ToolBoxError
 
 object Test {
 
-  def eval(code: String, compileOptions: String = "-cp akka-actor/target/classes:akka-macros/target/classes"): Any = {
+  def eval(code: String, compileOptions: String = "-cp akka-actor/target/classes:akka-channels/target/classes"): Any = {
     val tb = mkToolbox(compileOptions)
     tb.eval(tb.parse(code))
   }

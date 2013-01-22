@@ -73,7 +73,7 @@ object AkkaBuild extends Build {
       generatedPdf in Sphinx <<= generatedPdf in Sphinx in LocalProject(docs.id) map identity
 
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples, macros, macroTests)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples, channels, channelsTests)
   )
 
   lazy val actor = Project(
@@ -409,19 +409,19 @@ object AkkaBuild extends Build {
     )
   ) configs (MultiJvm)
 
-  lazy val macros = Project(
-    id = "akka-macros",
-    base = file("akka-macros"),
+  lazy val channels = Project(
+    id = "akka-channels",
+    base = file("akka-channels"),
     dependencies = Seq(actor),
     settings = defaultSettings ++ Seq(
       libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _)
     )
   )
 
-  lazy val macroTests = Project(
-    id = "akka-macro-tests",
-    base = file("akka-macro-tests"),
-    dependencies = Seq(macros, testkit % "compile;test->test"),
+  lazy val channelsTests = Project(
+    id = "akka-channels-tests",
+    base = file("akka-channels-tests"),
+    dependencies = Seq(channels, testkit % "compile;test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _)
     )
