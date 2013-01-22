@@ -8,18 +8,19 @@ import java.net.InetSocketAddress
 import java.io.IOException
 import java.nio.channels.SocketChannel
 import akka.actor.ActorRef
+import TcpSelector._
 import Tcp._
 
 /**
  * An actor handling the connection state machine for an outgoing connection
  * to be established.
  */
-class TcpOutgoingConnection(_selector: ActorRef,
-                            _tcp: TcpExt,
-                            commander: ActorRef,
-                            remoteAddress: InetSocketAddress,
-                            localAddress: Option[InetSocketAddress],
-                            options: Traversable[SocketOption])
+private[io] class TcpOutgoingConnection(_selector: ActorRef,
+                                        _tcp: TcpExt,
+                                        commander: ActorRef,
+                                        remoteAddress: InetSocketAddress,
+                                        localAddress: Option[InetSocketAddress],
+                                        options: Traversable[SocketOption])
   extends TcpConnection(_selector, TcpOutgoingConnection.newSocketChannel(), _tcp) {
 
   context.watch(commander) // sign death pact

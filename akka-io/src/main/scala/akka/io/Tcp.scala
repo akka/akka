@@ -128,7 +128,7 @@ object Tcp extends ExtensionKey[TcpExt] {
   }
 
   /// COMMANDS
-  sealed trait Command
+  trait Command
 
   case class Connect(remoteAddress: InetSocketAddress,
                      localAddress: Option[InetSocketAddress] = None,
@@ -180,20 +180,6 @@ object Tcp extends ExtensionKey[TcpExt] {
   case object ConfirmedClosed extends ConnectionClosed
   case object PeerClosed extends ConnectionClosed
   case class ErrorClose(cause: String) extends ConnectionClosed
-
-  /// INTERNAL
-  case class RegisterOutgoingConnection(channel: SocketChannel)
-  case class RegisterServerSocketChannel(channel: ServerSocketChannel)
-  case class RegisterIncomingConnection(channel: SocketChannel, handler: ActorRef,
-                                        options: Traversable[SocketOption]) extends Command
-  case class Retry(command: Command, retriesLeft: Int) { require(retriesLeft >= 0) }
-  case object ChannelConnectable
-  case object ChannelAcceptable
-  case object ChannelReadable
-  case object ChannelWritable
-  case object AcceptInterest
-  case object ReadInterest
-  case object WriteInterest
 }
 
 class TcpExt(system: ExtendedActorSystem) extends IO.Extension {

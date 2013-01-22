@@ -43,7 +43,7 @@ import Tcp._
  * with a [[akka.io.Tcp.CommandFailed]] message. This message contains the original command for reference.
  *
  */
-class TcpManager(tcp: TcpExt) extends Actor with ActorLogging {
+private[io] class TcpManager(tcp: TcpExt) extends Actor with ActorLogging {
 
   val selectorPool = context.actorOf(
     props = Props(new TcpSelector(self, tcp)).withRouter(RandomRouter(tcp.Settings.NrOfSelectors)),

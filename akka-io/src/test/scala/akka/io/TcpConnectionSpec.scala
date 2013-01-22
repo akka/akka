@@ -18,6 +18,7 @@ import akka.actor.{ PoisonPill, ActorRef, Terminated }
 import akka.testkit.{ TestProbe, TestActorRef, AkkaSpec }
 import akka.util.ByteString
 import TestUtils._
+import TcpSelector._
 import Tcp._
 
 class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms") {

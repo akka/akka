@@ -8,6 +8,7 @@ import java.net.Socket
 import scala.concurrent.duration._
 import akka.actor.{ Terminated, SupervisorStrategy, Actor, Props }
 import akka.testkit.{ TestProbe, TestActorRef, AkkaSpec }
+import TcpSelector._
 import Tcp._
 
 class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {

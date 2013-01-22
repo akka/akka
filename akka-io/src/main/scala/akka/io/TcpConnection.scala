@@ -7,21 +7,21 @@ package akka.io
 import java.net.InetSocketAddress
 import java.io.IOException
 import java.nio.channels.SocketChannel
+import java.nio.ByteBuffer
+import scala.annotation.tailrec
 import scala.util.control.NonFatal
-import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.actor._
 import akka.util.ByteString
 import Tcp._
-import annotation.tailrec
-import java.nio.ByteBuffer
+import TcpSelector._
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
  */
-abstract class TcpConnection(val selector: ActorRef,
-                             val channel: SocketChannel,
-                             val tcp: TcpExt) extends Actor with ActorLogging with WithBufferPool {
+private[io] abstract class TcpConnection(val selector: ActorRef,
+                                         val channel: SocketChannel,
+                                         val tcp: TcpExt) extends Actor with ActorLogging with WithBufferPool {
   import tcp.Settings._
   var pendingWrite: PendingWrite = null
 

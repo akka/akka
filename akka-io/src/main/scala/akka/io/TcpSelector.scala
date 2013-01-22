@@ -14,7 +14,8 @@ import scala.concurrent.duration._
 import akka.actor._
 import Tcp._
 
-class TcpSelector(manager: ActorRef, tcp: TcpExt) extends Actor with ActorLogging {
+private[io] class TcpSelector(manager: ActorRef, tcp: TcpExt) extends Actor with ActorLogging {
+  import TcpSelector._
   import tcp.Settings._
 
   @volatile var childrenKeys = HashMap.empty[String, SelectionKey]
@@ -222,4 +223,20 @@ class TcpSelector(manager: ActorRef, tcp: TcpExt) extends Actor with ActorLoggin
       }
     }
   }
+}
+
+private[io] object TcpSelector {
+  case class RegisterOutgoingConnection(channel: SocketChannel)
+  case class RegisterServerSocketChannel(channel: ServerSocketChannel)
+  case class RegisterIncomingConnection(channel: SocketChannel, handler: ActorRef,
+                                        options: Traversable[SocketOption]) extends Tcp.Command
+  case class Retry(command: Command, retriesLeft: Int) { require(retriesLeft >= 0) }
+
+  case object ChannelConnectable
+  case object ChannelAcceptable
+  case object ChannelReadable
+  case object ChannelWritable
+  case object AcceptInterest
+  case object ReadInterest
+  case object WriteInterest
 }
