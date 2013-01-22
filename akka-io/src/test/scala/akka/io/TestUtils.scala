@@ -13,10 +13,11 @@ object TestUtils {
 
   def temporaryServerAddress(address: String = "127.0.0.1"): InetSocketAddress = {
     val serverSocket = ServerSocketChannel.open()
-    serverSocket.socket.bind(new InetSocketAddress(address, 0))
-    val port = serverSocket.socket.getLocalPort
-    serverSocket.close()
-    new InetSocketAddress(address, port)
+    try {
+      serverSocket.socket.bind(new InetSocketAddress(address, 0))
+      val port = serverSocket.socket.getLocalPort
+      new InetSocketAddress(address, port)
+    } finally serverSocket.close()
   }
 
   def verifyActorTermination(actor: ActorRef)(implicit system: ActorSystem): Unit = {
