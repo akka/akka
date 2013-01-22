@@ -211,8 +211,8 @@ to all siblings as well. Normally, you should use the
 explicitly.
 
 The :class:`AllForOneStrategy` is applicable in cases where the ensemble of
-children has so tight dependencies among them, that a failure of one child
-affects the function of the others, i.e. they are intricably linked. Since a
+children has such tight dependencies among them, that a failure of one child
+affects the function of the others, i.e. they are inextricably linked. Since a
 restart does not clear out the mailbox, it often is best to terminate the children
 upon failure and re-create them explicitly from the supervisor (by watching the
 children’s lifecycle); otherwise you have to make sure that it is no problem
