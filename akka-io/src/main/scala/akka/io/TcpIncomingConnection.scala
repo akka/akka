@@ -12,12 +12,11 @@ import Tcp.SocketOption
  * An actor handling the connection state machine for an incoming, already connected
  * SocketChannel.
  */
-private[io] class TcpIncomingConnection(_selector: ActorRef,
-                                        _channel: SocketChannel,
+private[io] class TcpIncomingConnection(_channel: SocketChannel,
                                         _tcp: TcpExt,
                                         handler: ActorRef,
                                         options: Traversable[SocketOption])
-  extends TcpConnection(_selector, _channel, _tcp) {
+  extends TcpConnection(_channel, _tcp) {
 
   context.watch(handler) // sign death pact
 

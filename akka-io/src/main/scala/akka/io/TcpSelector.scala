@@ -80,7 +80,7 @@ private[io] class TcpSelector(manager: ActorRef, tcp: TcpExt) extends Actor with
   def handleIncomingConnection(cmd: RegisterIncomingConnection, retriesLeft: Int): Unit =
     withCapacityProtection(cmd, retriesLeft) {
       import cmd._
-      val connection = spawnChild(() ⇒ new TcpIncomingConnection(self, channel, tcp, handler, options))
+      val connection = spawnChild(() ⇒ new TcpIncomingConnection(channel, tcp, handler, options))
       execute(registerIncomingConnection(channel, connection))
     }
 
@@ -88,14 +88,14 @@ private[io] class TcpSelector(manager: ActorRef, tcp: TcpExt) extends Actor with
     withCapacityProtection(cmd, retriesLeft) {
       import cmd._
       val commander = sender
-      spawnChild(() ⇒ new TcpOutgoingConnection(self, tcp, commander, remoteAddress, localAddress, options))
+      spawnChild(() ⇒ new TcpOutgoingConnection(tcp, commander, remoteAddress, localAddress, options))
     }
 
   def handleBind(cmd: Bind, retriesLeft: Int): Unit =
     withCapacityProtection(cmd, retriesLeft) {
       import cmd._
       val commander = sender
-      spawnChild(() ⇒ new TcpListener(self, handler, endpoint, backlog, commander, tcp.Settings, options))
+      spawnChild(() ⇒ new TcpListener(handler, endpoint, backlog, commander, tcp.Settings, options))
     }
 
   def withCapacityProtection(cmd: Command, retriesLeft: Int)(body: ⇒ Unit): Unit = {

@@ -19,8 +19,7 @@ import TcpSelector._
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
  */
-private[io] abstract class TcpConnection(val selector: ActorRef,
-                                         val channel: SocketChannel,
+private[io] abstract class TcpConnection(val channel: SocketChannel,
                                          val tcp: TcpExt) extends Actor with ActorLogging with WithBufferPool {
   import tcp.Settings._
   var pendingWrite: PendingWrite = null
@@ -29,6 +28,8 @@ private[io] abstract class TcpConnection(val selector: ActorRef,
   var closedMessage: CloseInformation = null
 
   def writePending = pendingWrite ne null
+
+  def selector = context.parent
 
   // STATES
 

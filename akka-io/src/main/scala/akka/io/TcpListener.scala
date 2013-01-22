@@ -12,13 +12,14 @@ import akka.actor.{ ActorLogging, ActorRef, Actor }
 import TcpSelector._
 import Tcp._
 
-private[io] class TcpListener(selector: ActorRef,
-                              handler: ActorRef,
+private[io] class TcpListener(handler: ActorRef,
                               endpoint: InetSocketAddress,
                               backlog: Int,
                               bindCommander: ActorRef,
                               settings: TcpExt#Settings,
                               options: Traversable[SocketOption]) extends Actor with ActorLogging {
+
+  def selector: ActorRef = context.parent
 
   context.watch(handler) // sign death pact
   val channel = {
@@ -29,7 +30,7 @@ private[io] class TcpListener(selector: ActorRef,
     socket.bind(endpoint, backlog) // will blow up the actor constructor if the bind fails
     serverSocketChannel
   }
-  selector ! RegisterServerSocketChannel(channel)
+  context.parent ! RegisterServerSocketChannel(channel)
   log.debug("Successfully bound to {}", endpoint)
 
   def receive: Receive = {
@@ -70,7 +71,7 @@ private[io] class TcpListener(selector: ActorRef,
         context.parent ! RegisterIncomingConnection(socketChannel, handler, options)
         acceptAllPending(limit - 1)
       }
-    } else selector ! AcceptInterest
+    } else context.parent ! AcceptInterest
 
   override def postStop() {
     try {

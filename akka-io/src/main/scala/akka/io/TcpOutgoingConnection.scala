@@ -15,13 +15,12 @@ import Tcp._
  * An actor handling the connection state machine for an outgoing connection
  * to be established.
  */
-private[io] class TcpOutgoingConnection(_selector: ActorRef,
-                                        _tcp: TcpExt,
+private[io] class TcpOutgoingConnection(_tcp: TcpExt,
                                         commander: ActorRef,
                                         remoteAddress: InetSocketAddress,
                                         localAddress: Option[InetSocketAddress],
                                         options: Traversable[SocketOption])
-  extends TcpConnection(_selector, TcpOutgoingConnection.newSocketChannel(), _tcp) {
+  extends TcpConnection(TcpOutgoingConnection.newSocketChannel(), _tcp) {
 
   context.watch(commander) // sign death pact
 
