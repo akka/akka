@@ -161,7 +161,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       closeCommander.expectMsg(Closed)
       assertThisConnectionActorTerminated()
 
-      nioSelector.select(2000)
+      checkFor(serverSelectionKey, SelectionKey.OP_READ, 2000)
 
       val buffer = ByteBuffer.allocate(1)
       serverSideChannel.read(buffer) must be(-1)
@@ -209,7 +209,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       connectionHandler.expectNoMsg(100.millis) // not yet
 
       val buffer = ByteBuffer.allocate(1)
-      nioSelector.select(2000)
+      checkFor(serverSelectionKey, SelectionKey.OP_READ, 2000)
       serverSideChannel.read(buffer) must be(-1)
       serverSideChannel.close()
 
@@ -334,13 +334,35 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     def connectionActor: TestActorRef[TcpOutgoingConnection] = unregisteredSetup.connectionActor
     def clientSideChannel: SocketChannel = unregisteredSetup.clientSideChannel
 
-    val (nioSelector, clientSelectionKey) = {
+    val nioSelector = SelectorProvider.provider().openSelector()
+
+    val clientSelectionKey = registerChannel(clientSideChannel, "client")
+    val serverSelectionKey = registerChannel(serverSideChannel, "server")
+
+    def registerChannel(channel: SocketChannel, name: String): SelectionKey = {
+      val res = channel.register(nioSelector, 0)
+      res.attach(name)
+      res
+    }
+
+    def checkFor(key: SelectionKey, interest: Int, millis: Int = 100): Boolean =
+      if (key.isValid) {
+        if ((key.readyOps() & interest) != 0) true
+        else {
+          key.interestOps(interest)
+          val ret = nioSelector.select(millis)
+          key.interestOps(0)
+
+          ret > 0 && nioSelector.selectedKeys().contains(key) && key.isValid &&
+            (key.readyOps() & interest) != 0
+        }
+      } else false
+
+    def openSelectorFor(channel: SocketChannel, interests: Int): (Selector, SelectionKey) = {
       val sel = SelectorProvider.provider().openSelector()
-      val key = clientSideChannel.register(sel, SelectionKey.OP_READ | SelectionKey.OP_WRITE)
+      val key = channel.register(sel, interests)
       (sel, key)
     }
-    val serverSelectionKey =
-      serverSideChannel.register(nioSelector, SelectionKey.OP_READ | SelectionKey.OP_WRITE)
 
     val buffer = ByteBuffer.allocate(TestSize)
 
@@ -348,36 +370,37 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
      * Tries to simultaneously act on client and server side to read from the server
      * all pending data from the client.
      */
-    @tailrec final def pullFromServerSide(remaining: Int, waitingForWrite: Boolean = true): Unit =
-      if (remaining > 0)
-        pullFromServerSide(remaining - tryReading(), checkForWriteInterest(waitingForWrite))
-
-    private def checkForWriteInterest(waitingForWrite: Boolean): Boolean = {
-      val waitingForWrite0 =
+    @tailrec final def pullFromServerSide(remaining: Int, remainingTries: Int = 1000): Unit =
+      if (remainingTries <= 0)
+        throw new AssertionError("Pulling took too many loops")
+      else if (remaining > 0) {
         if (selector.msgAvailable) {
           selector.expectMsg(WriteInterest)
-          true
-        } else waitingForWrite
+          clientSelectionKey.interestOps(SelectionKey.OP_WRITE)
+        }
 
-      nioSelector.select(1)
+        serverSelectionKey.interestOps(SelectionKey.OP_READ)
+        nioSelector.select(10)
+        if (nioSelector.selectedKeys().contains(clientSelectionKey)) {
+          clientSelectionKey.interestOps(0)
+          selector.send(connectionActor, ChannelWritable)
+        }
 
-      if (waitingForWrite0 && clientSelectionKey.isValid && clientSelectionKey.isWritable) {
-        selector.send(connectionActor, ChannelWritable)
-        false
-      } else waitingForWrite0
+        val read =
+          if (nioSelector.selectedKeys().contains(serverSelectionKey)) tryReading()
+          else 0
+
+        pullFromServerSide(remaining - read, remainingTries - 1)
+      }
+
+    private def tryReading(): Int = {
+      buffer.clear()
+      val read = serverSideChannel.read(buffer)
+
+      if (read == -1)
+        throw new IllegalStateException("Connection was closed unexpectedly with remaining bytes " + remaining)
+      else read
     }
-    private def tryReading(): Int =
-      if (serverSelectionKey.isValid && serverSelectionKey.isReadable) {
-        buffer.clear()
-        val read = serverSideChannel.read(buffer)
-        if (read == 0)
-          throw new IllegalStateException("Didn't make any progress")
-        else if (read == -1)
-          throw new IllegalStateException("Connection was closed unexpectedly with remaining bytes " + remaining)
-
-        read
-      } else
-        0
 
     @tailrec final def expectReceivedString(data: String): Unit = {
       data.length must be > 0
