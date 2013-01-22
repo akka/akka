@@ -7,6 +7,7 @@ package akka.io
 import java.net.InetSocketAddress
 import java.nio.channels.ServerSocketChannel
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.util.control.NonFatal
 import akka.actor.{ ActorLogging, ActorRef, Actor }
 import TcpSelector._
@@ -17,7 +18,7 @@ private[io] class TcpListener(handler: ActorRef,
                               backlog: Int,
                               bindCommander: ActorRef,
                               settings: TcpExt#Settings,
-                              options: Traversable[SocketOption]) extends Actor with ActorLogging {
+                              options: immutable.Traversable[SocketOption]) extends Actor with ActorLogging {
 
   def selector: ActorRef = context.parent
 

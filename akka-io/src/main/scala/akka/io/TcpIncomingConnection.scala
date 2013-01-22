@@ -5,6 +5,7 @@
 package akka.io
 
 import java.nio.channels.SocketChannel
+import scala.collection.immutable
 import akka.actor.ActorRef
 import Tcp.SocketOption
 
@@ -15,7 +16,7 @@ import Tcp.SocketOption
 private[io] class TcpIncomingConnection(_channel: SocketChannel,
                                         _tcp: TcpExt,
                                         handler: ActorRef,
-                                        options: Traversable[SocketOption])
+                                        options: immutable.Traversable[SocketOption])
   extends TcpConnection(_channel, _tcp) {
 
   context.watch(handler) // sign death pact

@@ -132,11 +132,11 @@ object Tcp extends ExtensionKey[TcpExt] {
 
   case class Connect(remoteAddress: InetSocketAddress,
                      localAddress: Option[InetSocketAddress] = None,
-                     options: Traversable[SocketOption] = Nil) extends Command
+                     options: immutable.Traversable[SocketOption] = Nil) extends Command
   case class Bind(handler: ActorRef,
                   endpoint: InetSocketAddress,
                   backlog: Int = 100,
-                  options: Traversable[SocketOption] = Nil) extends Command
+                  options: immutable.Traversable[SocketOption] = Nil) extends Command
   case class Register(handler: ActorRef) extends Command
   case object Unbind extends Command
 

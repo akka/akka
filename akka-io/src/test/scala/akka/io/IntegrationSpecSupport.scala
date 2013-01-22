@@ -7,6 +7,7 @@ package akka.io
 import scala.annotation.tailrec
 import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.actor.ActorRef
+import scala.collection.immutable
 import Tcp._
 import TestUtils._
 
@@ -45,10 +46,10 @@ trait IntegrationSpecSupport { _: AkkaSpec ⇒
       }
 
     /** allow overriding socket options for server side channel */
-    def bindOptions: Traversable[SocketOption] = Nil
+    def bindOptions: immutable.Traversable[SocketOption] = Nil
 
     /** allow overriding socket options for client side channel */
-    def connectOptions: Traversable[SocketOption] = Nil
+    def connectOptions: immutable.Traversable[SocketOption] = Nil
   }
 
 }

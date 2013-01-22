@@ -7,6 +7,7 @@ package akka.io
 import java.net.InetSocketAddress
 import java.io.IOException
 import java.nio.channels.SocketChannel
+import scala.collection.immutable
 import akka.actor.ActorRef
 import TcpSelector._
 import Tcp._
@@ -19,7 +20,7 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
                                         commander: ActorRef,
                                         remoteAddress: InetSocketAddress,
                                         localAddress: Option[InetSocketAddress],
-                                        options: Traversable[SocketOption])
+                                        options: immutable.Traversable[SocketOption])
   extends TcpConnection(TcpOutgoingConnection.newSocketChannel(), _tcp) {
 
   context.watch(commander) // sign death pact
@@ -37,7 +38,7 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
 
   def receive: Receive = PartialFunction.empty
 
-  def connecting(commander: ActorRef, options: Traversable[SocketOption]): Receive = {
+  def connecting(commander: ActorRef, options: immutable.Traversable[SocketOption]): Receive = {
     case ChannelConnectable ⇒
       try {
         val connected = channel.finishConnect()

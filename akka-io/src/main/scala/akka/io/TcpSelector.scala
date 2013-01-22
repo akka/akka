@@ -9,7 +9,8 @@ import java.nio.channels.spi.SelectorProvider
 import java.nio.channels.{ ServerSocketChannel, SelectionKey, SocketChannel }
 import java.nio.channels.SelectionKey._
 import scala.util.control.NonFatal
-import scala.collection.immutable.HashMap
+import scala.collection.immutable
+import immutable.HashMap
 import scala.concurrent.duration._
 import akka.actor._
 import Tcp._
@@ -229,7 +230,7 @@ private[io] object TcpSelector {
   case class RegisterOutgoingConnection(channel: SocketChannel)
   case class RegisterServerSocketChannel(channel: ServerSocketChannel)
   case class RegisterIncomingConnection(channel: SocketChannel, handler: ActorRef,
-                                        options: Traversable[SocketOption]) extends Tcp.Command
+                                        options: immutable.Traversable[SocketOption]) extends Tcp.Command
   case class Retry(command: Command, retriesLeft: Int) { require(retriesLeft >= 0) }
 
   case object ChannelConnectable

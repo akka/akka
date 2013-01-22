@@ -9,6 +9,7 @@ import java.io.IOException
 import java.nio.channels.SocketChannel
 import java.nio.ByteBuffer
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.util.control.NonFatal
 import scala.concurrent.duration._
 import akka.actor._
@@ -102,7 +103,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
   // AUXILIARIES and IMPLEMENTATION
 
   /** used in subclasses to start the common machinery above once a channel is connected */
-  def completeConnect(commander: ActorRef, options: Traversable[SocketOption]): Unit = {
+  def completeConnect(commander: ActorRef, options: immutable.Traversable[SocketOption]): Unit = {
     options.foreach(_.afterConnect(channel.socket))
 
     commander ! Connected(
