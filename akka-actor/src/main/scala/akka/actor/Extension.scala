@@ -52,6 +52,9 @@ trait ExtensionId[T <: Extension] {
    * internal use only.
    */
   def createExtension(system: ExtendedActorSystem): T
+
+  override final def hashCode: Int = System.identityHashCode(this)
+  override final def equals(other: Any): Boolean = this eq other.asInstanceOf[AnyRef]
 }
 
 /**

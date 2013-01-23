@@ -425,7 +425,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
           Thread.getAllStackTraces().asScala foreach {
             case (thread, stack) ⇒
               println(s"$thread:")
-              stack foreach (s => println(s"\t$s"))
+              stack foreach (s ⇒ println(s"\t$s"))
           }
         }
         assert(Await.result(f1, remaining) === "foo")
