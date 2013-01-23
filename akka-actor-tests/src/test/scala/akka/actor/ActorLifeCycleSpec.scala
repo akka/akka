@@ -119,6 +119,16 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
       system.stop(supervisor)
     }
 
+    "log failues in postStop" in {
+      val a = system.actorOf(Props(new Actor {
+        def receive = Actor.emptyBehavior
+        override def postStop { throw new Exception("hurrah") }
+      }))
+      EventFilter[Exception]("hurrah", occurrences = 1) intercept {
+        a ! PoisonPill
+      }
+    }
+
     "clear the behavior stack upon restart" in {
       case class Become(recv: ActorContext ⇒ Receive)
       val a = system.actorOf(Props(new Actor {
