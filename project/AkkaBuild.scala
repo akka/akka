@@ -15,7 +15,7 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import com.typesafe.sbt.SbtSite.site
 import com.typesafe.sbt.site.SphinxSupport
-import com.typesafe.sbt.site.SphinxSupport.{ enableOutput, generatePdf, generatedPdf, sphinxInputs, sphinxPackages, Sphinx }
+import com.typesafe.sbt.site.SphinxSupport.{ enableOutput, generatePdf, generatedPdf, generateEpub, generatedEpub, sphinxInputs, sphinxPackages, Sphinx }
 import com.typesafe.sbt.preprocess.Preprocess.{ preprocess, preprocessExts, preprocessVars, simplePreprocess }
 import ls.Plugin.{ lsSettings, LsKeys }
 import java.lang.Boolean.getBoolean
@@ -382,6 +382,7 @@ object AkkaBuild extends Build {
         orig
       },
       enableOutput in generatePdf in Sphinx := true,
+      enableOutput in generateEpub in Sphinx := true,
       unmanagedSourceDirectories in Test <<= sourceDirectory in Sphinx apply { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
       unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
@@ -448,19 +449,19 @@ object AkkaBuild extends Build {
 
   lazy val defaultMultiJvmOptions: Seq[String] = {
     import scala.collection.JavaConverters._
-    // multinode.D= and multinode.X= makes it possible to pass arbitrary 
+    // multinode.D= and multinode.X= makes it possible to pass arbitrary
     // -D or -X arguments to the forked jvm, e.g.
     // -Dmultinode.Djava.net.preferIPv4Stack=true -Dmultinode.Xmx512m -Dmultinode.XX:MaxPermSize=256M
     val MultinodeJvmArgs = "multinode\\.(D|X)(.*)".r
     val akkaProperties = System.getProperties.propertyNames.asScala.toList.collect {
-      case MultinodeJvmArgs(a, b) => 
+      case MultinodeJvmArgs(a, b) =>
         val value = System.getProperty("multinode." + a + b)
         "-" + a + b + (if (value == "") "" else "=" + value)
       case key: String if key.startsWith("multinode.") => "-D" + key + "=" + System.getProperty(key)
       case key: String if key.startsWith("akka.") => "-D" + key + "=" + System.getProperty(key)
     }
 
-    "-Xmx256m" :: akkaProperties ::: 
+    "-Xmx256m" :: akkaProperties :::
       (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
   }
 
@@ -771,4 +772,3 @@ object Dependencies {
 
   val multiNodeSample = Seq(Test.scalatest)
 }
-
