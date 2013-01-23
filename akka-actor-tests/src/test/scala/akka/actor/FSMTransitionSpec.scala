@@ -87,7 +87,7 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
 
     "make previous and next state data available in onTransition" in {
       val fsm = system.actorOf(Props(new OtherFSM(testActor)))
-      within(300 millis) {
+      within(1 second) {
         fsm ! "tick"
         expectMsg((0, 1))
       }
