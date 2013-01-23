@@ -1,14 +1,17 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.io
 
-import akka.actor.{ OneForOneStrategy, Actor, Props }
-import akka.io.Tcp._
+import akka.actor.{ ActorLogging, Actor, Props }
 import akka.routing.RandomRouter
-import akka.actor.SupervisorStrategy.Restart
+import Tcp._
 
 /**
  * TcpManager is a facade for accepting commands ([[akka.io.Tcp.Command]]) to open client or server TCP connections.
  *
- * TcpManager is obtainable by calling {{{ IO(TCP) }}} (see [[akka.io.IO]] and [[akka.io.Tcp]])
+ * TcpManager is obtainable by calling {{{ IO(Tcp) }}} (see [[akka.io.IO]] and [[akka.io.Tcp]])
  *
  * == Bind ==
  *
@@ -30,9 +33,9 @@ import akka.actor.SupervisorStrategy.Restart
  * To initiate a connection to a remote server, a [[akka.io.Tcp.Connect]] message must be sent to this actor. If the
  * connection succeeds, the sender will be notified with a [[akka.io.Tcp.Connected]] message. The sender of the
  * [[akka.io.Tcp.Connected]] message is the Connection actor (an internal actor representing the TCP connection). Before
- * starting to use the connection, a handler should be registered to the Connection actor by sending a [[akka.io.Tcp.Register]]
- * message. After a handler has been registered, all incoming data will be sent to the handler in the form of
- * [[akka.io.Tcp.Received]] messages. To write data to the connection, a [[akka.io.Tcp.Write]] message should be sent
+ * starting to use the connection, a handler must be registered to the Connection actor by sending a [[akka.io.Tcp.Register]]
+ * command message. After a handler has been registered, all incoming data will be sent to the handler in the form of
+ * [[akka.io.Tcp.Received]] messages. To write data to the connection, a [[akka.io.Tcp.Write]] message must be sent
  * to the Connection actor.
  *
  * If the connect request is rejected because the Tcp system is not able to register more channels (see the nr-of-selectors
@@ -40,14 +43,13 @@ import akka.actor.SupervisorStrategy.Restart
  * with a [[akka.io.Tcp.CommandFailed]] message. This message contains the original command for reference.
  *
  */
-class TcpManager extends Actor {
-  val settings = Tcp(context.system).Settings
+private[io] class TcpManager(tcp: TcpExt) extends Actor with ActorLogging {
 
-  val selectorPool = context.actorOf(Props.empty.withRouter(RandomRouter(settings.NrOfSelectors)))
+  val selectorPool = context.actorOf(
+    props = Props(new TcpSelector(self, tcp)).withRouter(RandomRouter(tcp.Settings.NrOfSelectors)),
+    name = "selectors")
 
   def receive = {
-    case c: Connect ⇒ selectorPool forward c
-    case b: Bind ⇒ selectorPool forward b
-    case Reject(command, commander) ⇒ commander ! CommandFailed(command)
+    case x @ (_: Connect | _: Bind) ⇒ selectorPool forward x
   }
 }
