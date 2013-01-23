@@ -135,23 +135,14 @@ class Agent[T](initialValue: T, context: ExecutionContext) {
    * that new state can be obtained.
    * In Java, pass in an instance of `akka.dispatch.Mapper`.
    */
-  def alter(newValue: T): Future[T] = alter(_ ⇒ newValue)
+  def alter(newValue: T): Future[T] = doAlter({ ref.single.update(newValue); newValue })
 
   /**
    * Dispatch a function to update the internal state, and return a Future where
    * that new state can be obtained.
    * In Java, pass in an instance of `akka.dispatch.Mapper`.
    */
-  def alter(f: T ⇒ T): Future[T] = {
-    def dispatch = Future(ref.single.transformAndGet(f))(updater)
-    Txn.findCurrent match {
-      case Some(txn) ⇒
-        val result = Promise[T]()
-        Txn.afterCommit(status ⇒ result completeWith dispatch)(txn)
-        result.future
-      case _ ⇒ dispatch
-    }
-  }
+  def alter(f: T ⇒ T): Future[T] = doAlter(ref.single.transformAndGet(f))
 
   /**
    * Dispatch a function to update the internal state but on its own thread,
@@ -177,6 +168,16 @@ class Agent[T](initialValue: T, context: ExecutionContext) {
     Txn.findCurrent match {
       case Some(txn) ⇒ Txn.afterCommit(status ⇒ dispatch)(txn)
       case _         ⇒ dispatch
+    }
+  }
+
+  private final def doAlter(f: ⇒ T): Future[T] = {
+    Txn.findCurrent match {
+      case Some(txn) ⇒
+        val result = Promise[T]()
+        Txn.afterCommit(status ⇒ result completeWith Future(f)(updater))(txn)
+        result.future
+      case _ ⇒ Future(f)(updater)
     }
   }
 

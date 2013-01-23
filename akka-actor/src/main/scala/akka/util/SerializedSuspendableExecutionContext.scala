@@ -32,9 +32,9 @@ private[akka] final class SerializedSuspendableExecutionContext(throughput: Int)
   import SerializedSuspendableExecutionContext._
   require(throughput > 0, s"SerializedSuspendableExecutionContext.throughput must be greater than 0 but was $throughput")
 
-  private final val state = new AtomicInteger(0)
+  private final val state = new AtomicInteger(Off)
   @tailrec private final def addState(newState: Int): Boolean = {
-    val c = state.get;
+    val c = state.get
     state.compareAndSet(c, c | newState) || addState(newState)
   }
   @tailrec private final def remState(oldState: Int) {

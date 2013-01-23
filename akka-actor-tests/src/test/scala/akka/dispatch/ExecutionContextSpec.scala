@@ -93,6 +93,10 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
       awaitCond(counter.get == 2)
       perform(_ + 4)
       perform(_ * 2)
+      sec.size must be === 2
+      Thread.sleep(500)
+      sec.size must be === 2
+      counter.get must be === 2
       sec.resume()
       awaitCond(counter.get == 12)
       perform(_ * 2)
@@ -100,7 +104,7 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
       sec.isEmpty must be === true
     }
 
-    "execute 'throughput' nmber of tasks per sweep" in {
+    "execute 'throughput' number of tasks per sweep" in {
       val submissions = new AtomicInteger(0)
       val counter = new AtomicInteger(0)
       val underlying = new ExecutionContext {
@@ -119,6 +123,41 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
       awaitCond(counter.get == total)
       submissions.get must be === (total / throughput)
       sec.isEmpty must be === true
+    }
+
+    "execute tasks in serial" in {
+      val sec = SerializedSuspendableExecutionContext(1)(ExecutionContext.global)
+      val total = 10000
+      val counter = new AtomicInteger(0)
+      def perform(f: Int ⇒ Int) = sec execute new Runnable { def run = counter.set(f(counter.get)) }
+
+      1 to total foreach { i ⇒ perform(c ⇒ if (c == (i - 1)) c + 1 else c) }
+      awaitCond(counter.get == total)
+      sec.isEmpty must be === true
+    }
+
+    "should relinquish thread when suspended" in {
+      val submissions = new AtomicInteger(0)
+      val counter = new AtomicInteger(0)
+      val underlying = new ExecutionContext {
+        override def execute(r: Runnable) { submissions.incrementAndGet(); ExecutionContext.global.execute(r) }
+        override def reportFailure(t: Throwable) { ExecutionContext.global.reportFailure(t) }
+      }
+      val throughput = 25
+      val sec = SerializedSuspendableExecutionContext(throughput)(underlying)
+      sec.suspend()
+      def perform(f: Int ⇒ Int) = sec execute new Runnable { def run = counter.set(f(counter.get)) }
+      perform(_ + 1)
+      1 to 10 foreach { _ ⇒ perform(identity) }
+      perform(x ⇒ { sec.suspend(); x * 2 })
+      perform(_ + 8)
+      sec.size must be === 13
+      sec.resume()
+      awaitCond(counter.get == 2)
+      sec.resume()
+      awaitCond(counter.get == 10)
+      sec.isEmpty must be === true
+      submissions.get must be === 2
     }
   }
 }
