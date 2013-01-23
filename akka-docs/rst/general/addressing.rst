@@ -52,11 +52,11 @@ depending on the configuration of the actor system:
   - :class:`DeadLetterActorRef` is the default implementation of the dead
     letters service to which all messages are re-routed when their destination
     actors are shut down or non-existent.
-  - :class:`EmptyLocalActorRef` is what is returned when looking up a
-    non-existing local actor path: it is equivalent to a
-    :class:`DeadLetterActorRef`, but it retains its path so that it can be sent
-    over the network and compared to other existing actor refs for that path,
-    some of which might have been obtained before the actor stopped existing.
+  - :class:`EmptyLocalActorRef` is what Akka returns when looking up a
+    non-existent local actor path: it is equivalent to a
+    :class:`DeadLetterActorRef`, but it retains its path so that Akka can send
+    it over the network and compare it to other existing actor references for
+    that path, some of which might have been obtained before the actor died.
 
 - And then there are some one-off internal implementations which you should
   never really see:
