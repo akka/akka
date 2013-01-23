@@ -19,10 +19,10 @@ immediately available for reading by any thread (using ``get`` or ``apply``)
 without any messages.
 
 Agents are reactive. The update actions of all Agents get interleaved amongst
-threads in a thread pool. At any point in time, at most one ``send`` action for
+threads in an ``ExecutionContext``. At any point in time, at most one ``send`` action for
 each Agent is being executed. Actions dispatched to an agent from another thread
 will occur in the order they were sent, potentially interleaved with actions
-dispatched to the same agent from other sources.
+dispatched to the same agent from other threads.
 
 If an Agent is used within an enclosing transaction, then it will participate in
 that transaction. Agents are integrated with Scala STM - any dispatches made in
@@ -30,32 +30,33 @@ a transaction are held until that transaction commits, and are discarded if it
 is retried or aborted.
 
 
-Creating and stopping Agents
+Creating Agents
 ============================
 
 Agents are created by invoking ``Agent(value)`` passing in the Agent's initial
-value:
+value and providing an implicit ``ExecutionContext`` to be used for it, for these
+examples we're going to use the default global one, but YMMV:
 
 .. includecode:: code/docs/agent/AgentDocSpec.scala#create
 
-Note that creating an Agent requires an implicit ``ActorSystem`` (for creating
-the underlying actors). See :ref:`actor-systems` for more information about
-actor systems. An ActorSystem can be in implicit scope when creating an Agent:
+Reading an Agent's value
+========================
 
-.. includecode:: code/docs/agent/AgentDocSpec.scala#create-implicit-system
+Agents can be dereferenced (you can get an Agent's value) by invoking the Agent
+with parentheses like this:
 
-Or the ActorSystem can be passed explicitly when creating an Agent:
+.. includecode:: code/docs/agent/AgentDocSpec.scala#read-apply
 
-.. includecode:: code/docs/agent/AgentDocSpec.scala#create-explicit-system
+Or by using the get method:
 
-An Agent will be running until you invoke ``close`` on it. Then it will be
-eligible for garbage collection (unless you hold on to it in some way).
+.. includecode:: code/docs/agent/AgentDocSpec.scala#read-get
 
-.. includecode:: code/docs/agent/AgentDocSpec.scala#close
+Reading an Agent's current value does not involve any message passing and
+happens immediately. So while updates to an Agent are asynchronous, reading the
+state of an Agent is synchronous.
 
-
-Updating Agents
-===============
+Updating Agents (send & alter)
+======================
 
 You update an Agent by sending a function that transforms the current value or
 by sending just a new value. The Agent will apply the new value or function
@@ -75,37 +76,22 @@ in order.
 
 .. includecode:: code/docs/agent/AgentDocSpec.scala#send-off
 
+All ``send`` methods also have a corresponding ``alter`` method that returns a ``Future``.
+See :ref:`futures-scala` for more information on ``Futures``.
 
-Reading an Agent's value
-========================
+.. includecode:: code/docs/agent/AgentDocSpec.scala#alter
 
-Agents can be dereferenced (you can get an Agent's value) by invoking the Agent
-with parentheses like this:
-
-.. includecode:: code/docs/agent/AgentDocSpec.scala#read-apply
-
-Or by using the get method:
-
-.. includecode:: code/docs/agent/AgentDocSpec.scala#read-get
-
-Reading an Agent's current value does not involve any message passing and
-happens immediately. So while updates to an Agent are asynchronous, reading the
-state of an Agent is synchronous.
-
+.. includecode:: code/docs/agent/AgentDocSpec.scala#alter-off
 
 Awaiting an Agent's value
 =========================
 
-It is also possible to read the value after all currently queued sends have
-completed. You can do this with ``await``:
-
-.. includecode:: code/docs/agent/AgentDocSpec.scala#read-await
-
-You can also get a ``Future`` to this value, that will be completed after the
+You can also get a ``Future`` to the Agents value, that will be completed after the
 currently queued updates have completed:
 
 .. includecode:: code/docs/agent/AgentDocSpec.scala#read-future
 
+See :ref:`futures-scala` for more information on ``Futures``.
 
 Transactional Agents
 ====================

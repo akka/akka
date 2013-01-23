@@ -7,54 +7,46 @@ import language.postfixOps
 
 import akka.agent.Agent
 import scala.concurrent.duration._
-import akka.util.Timeout
+import scala.concurrent.{ Await, ExecutionContext }
 import akka.testkit._
+import scala.concurrent.Future
 
 class AgentDocSpec extends AkkaSpec {
-
-  "create and close" in {
+  "create" in {
     //#create
+    import scala.concurrent.ExecutionContext.Implicits.global
     import akka.agent.Agent
-
     val agent = Agent(5)
     //#create
-
-    //#close
-    agent.close()
-    //#close
   }
 
-  "create with implicit system" in {
-    //#create-implicit-system
-    import akka.actor.ActorSystem
-    import akka.agent.Agent
+  "read value" in {
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val agent = Agent(0)
 
-    implicit val system = ActorSystem("app")
+    {
+      //#read-apply
+      val result = agent()
+      //#read-apply
+      result must be === 0
+    }
+    {
+      //#read-get
+      val result = agent.get
+      //#read-get
+      result must be === 0
+    }
 
-    val agent = Agent(5)
-    //#create-implicit-system
-
-    agent.close()
-    system.shutdown()
-  }
-
-  "create with explicit system" in {
-    //#create-explicit-system
-    import akka.actor.ActorSystem
-    import akka.agent.Agent
-
-    val system = ActorSystem("app")
-
-    val agent = Agent(5)(system)
-    //#create-explicit-system
-
-    agent.close()
-    system.shutdown()
+    {
+      //#read-future
+      val future = agent.future
+      //#read-future
+      Await.result(future, 5 seconds) must be === 0
+    }
   }
 
   "send and sendOff" in {
-    val agent = Agent(0)
-    import system.dispatcher
+    val agent = Agent(0)(ExecutionContext.global)
     //#send
     // send a value
     agent send 7
@@ -64,70 +56,47 @@ class AgentDocSpec extends AkkaSpec {
     agent send (_ * 2)
     //#send
 
-    def longRunningOrBlockingFunction = (i: Int) ⇒ i * 1
-
+    def longRunningOrBlockingFunction = (i: Int) ⇒ i * 1 // Just for the example code
+    def someExecutionContext() = scala.concurrent.ExecutionContext.Implicits.global // Just for the example code
     //#send-off
+    // the ExecutionContext you want to run the function on
+    implicit val ec = someExecutionContext()
     // sendOff a function
-    agent sendOff (longRunningOrBlockingFunction)
+    agent sendOff longRunningOrBlockingFunction
     //#send-off
 
-    val result = agent.await(Timeout(5 seconds))
-    result must be === 16
+    Await.result(agent.future, 5 seconds) must be === 16
   }
 
-  "read with apply" in {
-    val agent = Agent(0)
+  "alter and alterOff" in {
+    val agent = Agent(0)(ExecutionContext.global)
+    //#alter
+    // alter a value
+    val f1: Future[Int] = agent alter 7
 
-    //#read-apply
-    val result = agent()
-    //#read-apply
+    // alter a function
+    val f2: Future[Int] = agent alter (_ + 1)
+    val f3: Future[Int] = agent alter (_ * 2)
+    //#alter
 
-    result must be === 0
-  }
+    def longRunningOrBlockingFunction = (i: Int) ⇒ i * 1 // Just for the example code
+    def someExecutionContext() = ExecutionContext.global // Just for the example code
 
-  "read with get" in {
-    val agent = Agent(0)
+    //#alter-off
+    // the ExecutionContext you want to run the function on
+    implicit val ec = someExecutionContext()
+    // alterOff a function
+    val f4: Future[Int] = agent alterOff longRunningOrBlockingFunction
+    //#alter-off
 
-    //#read-get
-    val result = agent.get
-    //#read-get
-
-    result must be === 0
-  }
-
-  "read with await" in {
-    val agent = Agent(0)
-
-    //#read-await
-    import scala.concurrent.duration._
-    import akka.util.Timeout
-
-    implicit val timeout = Timeout(5 seconds)
-    val result = agent.await
-    //#read-await
-
-    result must be === 0
-  }
-
-  "read with future" in {
-    val agent = Agent(0)
-
-    //#read-future
-    import scala.concurrent.Await
-
-    implicit val timeout = Timeout(5 seconds)
-    val future = agent.future
-    val result = Await.result(future, timeout.duration)
-    //#read-future
-
-    result must be === 0
+    Await.result(f4, 5 seconds) must be === 16
   }
 
   "transfer example" in {
     //#transfer-example
+    import scala.concurrent.ExecutionContext.Implicits.global
     import akka.agent.Agent
     import scala.concurrent.duration._
-    import akka.util.Timeout
     import scala.concurrent.stm._
 
     def transfer(from: Agent[Int], to: Agent[Int], amount: Int): Boolean = {
@@ -145,25 +114,25 @@ class AgentDocSpec extends AkkaSpec {
     val to = Agent(20)
     val ok = transfer(from, to, 50)
 
-    implicit val timeout = Timeout(5 seconds)
-    val fromValue = from.await // -> 50
-    val toValue = to.await // -> 70
+    val fromValue = from.future // -> 50
+    val toValue = to.future // -> 70
     //#transfer-example
 
-    fromValue must be === 50
-    toValue must be === 70
+    Await.result(fromValue, 5 seconds) must be === 50
+    Await.result(toValue, 5 seconds) must be === 70
+    ok must be === true
   }
 
   "monadic example" in {
+    def println(a: Any) = ()
     //#monadic-example
+    import scala.concurrent.ExecutionContext.Implicits.global
     val agent1 = Agent(3)
     val agent2 = Agent(5)
 
     // uses foreach
-    var result = 0
-    for (value ← agent1) {
-      result = value + 1
-    }
+    for (value ← agent1)
+      println(value)
 
     // uses map
     val agent3 = for (value ← agent1) yield value + 1
@@ -178,15 +147,8 @@ class AgentDocSpec extends AkkaSpec {
     } yield value1 + value2
     //#monadic-example
 
-    result must be === 4
     agent3() must be === 4
     agent4() must be === 4
     agent5() must be === 8
-
-    agent1.close()
-    agent2.close()
-    agent3.close()
-    agent4.close()
-    agent5.close()
   }
 }

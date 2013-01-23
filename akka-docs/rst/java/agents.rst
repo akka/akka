@@ -15,77 +15,35 @@ functions that are asynchronously applied to the Agent's state and whose return
 value becomes the Agent's new state. The state of an Agent should be immutable.
 
 While updates to Agents are asynchronous, the state of an Agent is always
-immediately available for reading by any thread (using ``get``) without any
-messages.
+immediately available for reading by any thread (using ``get``) without any messages.
 
 Agents are reactive. The update actions of all Agents get interleaved amongst
-threads in a thread pool. At any point in time, at most one ``send`` action for
+threads in an ``ExecutionContext``. At any point in time, at most one ``send`` action for
 each Agent is being executed. Actions dispatched to an agent from another thread
 will occur in the order they were sent, potentially interleaved with actions
-dispatched to the same agent from other sources.
+dispatched to the same agent from other threads.
 
 If an Agent is used within an enclosing transaction, then it will participate in
-that transaction. Agents are integrated with the STM - any dispatches made in
+that transaction. Agents are integrated with Scala STM - any dispatches made in
 a transaction are held until that transaction commits, and are discarded if it
 is retried or aborted.
 
 
-Creating and stopping Agents
+Creating Agents
 ============================
 
-Agents are created by invoking ``new Agent(value, system)`` passing in the
-Agent's initial value and a reference to the ``ActorSystem`` for your
-application. An ``ActorSystem`` is required to create the underlying Actors. See
-:ref:`actor-systems` for more information about actor systems.
-
-Here is an example of creating an Agent:
+Agents are created by invoking ``new Agent<ValueType>(value, executionContext)`` – passing in the Agent's initial
+value and providing an ``ExecutionContext`` to be used for it:
 
 .. includecode:: code/docs/agent/AgentDocTest.java
-   :include: import-system,import-agent
+   :include: import-agent,create
    :language: java
-
-.. includecode:: code/docs/agent/AgentDocTest.java#create
-   :language: java
-
-An Agent will be running until you invoke ``close`` on it. Then it will be
-eligible for garbage collection (unless you hold on to it in some way).
-
-.. includecode:: code/docs/agent/AgentDocTest.java#close
-   :language: java
-
-
-Updating Agents
-===============
-
-You update an Agent by sending a function that transforms the current value or
-by sending just a new value. The Agent will apply the new value or function
-atomically and asynchronously. The update is done in a fire-forget manner and
-you are only guaranteed that it will be applied. There is no guarantee of when
-the update will be applied but dispatches to an Agent from a single thread will
-occur in order. You apply a value or a function by invoking the ``send``
-function.
-
-.. includecode:: code/docs/agent/AgentDocTest.java#import-function
-   :language: java
-
-.. includecode:: code/docs/agent/AgentDocTest.java#send
-   :language: java
-
-You can also dispatch a function to update the internal state but on its own
-thread. This does not use the reactive thread pool and can be used for
-long-running or blocking operations. You do this with the ``sendOff``
-method. Dispatches using either ``sendOff`` or ``send`` will still be executed
-in order.
-
-.. includecode:: code/docs/agent/AgentDocTest.java#send-off
-   :language: java
-
 
 Reading an Agent's value
 ========================
 
-Agents can be dereferenced (you can get an Agent's value) by calling the get
-method:
+Agents can be dereferenced (you can get an Agent's value) by invoking the Agent
+with ``get()`` like this:
 
 .. includecode:: code/docs/agent/AgentDocTest.java#read-get
    :language: java
@@ -94,15 +52,58 @@ Reading an Agent's current value does not involve any message passing and
 happens immediately. So while updates to an Agent are asynchronous, reading the
 state of an Agent is synchronous.
 
+You can also get a ``Future`` to the Agents value, that will be completed after the
+currently queued updates have completed:
 
-Awaiting an Agent's value
-=========================
-
-It is also possible to read the value after all currently queued sends have
-completed. You can do this with ``await``:
-
-.. includecode:: code/docs/agent/AgentDocTest.java#import-timeout
+.. includecode:: code/docs/agent/AgentDocTest.java
+   :include: import-future,read-future
    :language: java
 
-.. includecode:: code/docs/agent/AgentDocTest.java#read-await
+See :ref:`futures-java` for more information on ``Futures``.
+
+Updating Agents (send & alter)
+==============================
+
+You update an Agent by sending a function (``akka.dispatch.Mapper``) that transforms the current value or
+by sending just a new value. The Agent will apply the new value or function
+atomically and asynchronously. The update is done in a fire-forget manner and
+you are only guaranteed that it will be applied. There is no guarantee of when
+the update will be applied but dispatches to an Agent from a single thread will
+occur in order. You apply a value or a function by invoking the ``send``
+function.
+
+.. includecode:: code/docs/agent/AgentDocTest.java
+   :include: import-function,send
+   :language: java
+
+You can also dispatch a function to update the internal state but on its own
+thread. This does not use the reactive thread pool and can be used for
+long-running or blocking operations. You do this with the ``sendOff``
+method. Dispatches using either ``sendOff`` or ``send`` will still be executed
+in order.
+
+.. includecode:: code/docs/agent/AgentDocTest.java
+   :include: import-function,send-off
+   :language: java
+
+All ``send`` methods also have a corresponding ``alter`` method that returns a ``Future``.
+See :ref:`futures-java` for more information on ``Futures``.
+
+.. includecode:: code/docs/agent/AgentDocTest.java
+   :include: import-future,import-function,alter
+   :language: java
+
+.. includecode:: code/docs/agent/AgentDocTest.java
+   :include: import-future,import-function,alter-off
+   :language: java
+
+Transactional Agents
+====================
+
+If an Agent is used within an enclosing transaction, then it will participate in
+that transaction. If you send to an Agent within a transaction then the dispatch
+to the Agent will be held until that transaction commits, and discarded if the
+transaction is aborted. Here's an example:
+
+.. includecode:: code/docs/agent/AgentDocTest.java#transfer-example
    :language: java

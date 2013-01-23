@@ -5,107 +5,112 @@ package docs.agent;
 
 import static org.junit.Assert.*;
 
-import scala.concurrent.ExecutionContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import akka.testkit.AkkaSpec;
 
-//#import-system
-import akka.actor.ActorSystem;
-//#import-system
+import scala.concurrent.Await;
+import scala.concurrent.duration.Duration;
 
 //#import-agent
-import akka.agent.Agent;
+    import scala.concurrent.ExecutionContext;
+    import akka.agent.Agent;
+    import akka.dispatch.ExecutionContexts;
 //#import-agent
 
 //#import-function
-import akka.japi.Function;
+    import akka.dispatch.Mapper;
 //#import-function
 
-//#import-timeout
-import akka.util.Timeout;
-import static java.util.concurrent.TimeUnit.SECONDS;
-//#import-timeout
+//#import-future
+    import scala.concurrent.Future;
+//#import-future
 
 public class AgentDocTest {
 
-  private static ActorSystem testSystem;
-  private static ExecutionContext ec;
-
-  @BeforeClass
-  public static void beforeAll() {
-    testSystem = ActorSystem.create("AgentDocTest", AkkaSpec.testConf());
-    ec = testSystem.dispatcher();
-  }
-
-  @AfterClass
-  public static void afterAll() {
-    testSystem.shutdown();
-    testSystem = null;
-  }
+  private static ExecutionContext ec = ExecutionContexts.global();
 
   @Test
-  public void createAndClose() {
-        //#create
-    ActorSystem system = ActorSystem.create("app");
-
-    Agent<Integer> agent = new Agent<Integer>(5, system);
+  public void createAndRead() throws Exception {
+    //#create
+    ExecutionContext ec = ExecutionContexts.global();
+    Agent<Integer> agent = new Agent<Integer>(5, ec);
     //#create
 
-    //#close
-    agent.close();
-    //#close
+    //#read-get
+    Integer result = agent.get();
+    //#read-get
 
-    system.shutdown();
+    //#read-future
+    Future<Integer> future = agent.future();
+    //#read-future
+
+    assertEquals(result, new Integer(5));
+    assertEquals(Await.result(future, Duration.create(5,"s")), new Integer(5));
   }
 
   @Test
-  public void sendAndSendOffAndReadAwait() {
-    Agent<Integer> agent = new Agent<Integer>(5, testSystem);
+  public void sendAndSendOffAndReadAwait() throws Exception {
+    Agent<Integer> agent = new Agent<Integer>(5, ec);
 
     //#send
     // send a value
     agent.send(7);
 
     // send a function
-    agent.send(new Function<Integer, Integer>() {
+    agent.send(new Mapper<Integer, Integer>() {
       public Integer apply(Integer i) {
         return i * 2;
       }
     });
     //#send
 
-    Function<Integer, Integer> longRunningOrBlockingFunction = new Function<Integer, Integer>() {
+      Mapper<Integer, Integer> longRunningOrBlockingFunction = new Mapper<Integer, Integer>() {
       public Integer apply(Integer i) {
         return i * 1;
       }
     };
 
+    ExecutionContext theExecutionContextToExecuteItIn = ec;
     //#send-off
     // sendOff a function
-    agent.sendOff(longRunningOrBlockingFunction, ec);
+    agent.sendOff(longRunningOrBlockingFunction,
+                  theExecutionContextToExecuteItIn);
     //#send-off
 
-    //#read-await
-    Integer result = agent.await(new Timeout(5, SECONDS));
-    //#read-await
-
-    assertEquals(result, new Integer(14));
-
-    agent.close();
+    assertEquals(Await.result(agent.future(), Duration.create(5,"s")), new Integer(14));
   }
 
-  @Test
-  public void readWithGet() {
-    Agent<Integer> agent = new Agent<Integer>(5, testSystem);
+    @Test
+    public void alterAndAlterOff() throws Exception {
+    Agent<Integer> agent = new Agent<Integer>(5, ec);
 
-    //#read-get
-    Integer result = agent.get();
-    //#read-get
+    //#alter
+    // alter a value
+    Future<Integer> f1 = agent.alter(7);
 
-    assertEquals(result, new Integer(5));
+    // alter a function (Mapper)
+    Future<Integer> f2 = agent.alter(new Mapper<Integer, Integer>() {
+        public Integer apply(Integer i) {
+            return i * 2;
+        }
+    });
+    //#alter
 
-    agent.close();
-  }
+    Mapper<Integer, Integer> longRunningOrBlockingFunction = new Mapper<Integer, Integer>() {
+        public Integer apply(Integer i) {
+            return i * 1;
+        }
+    };
+
+    ExecutionContext theExecutionContextToExecuteItIn = ec;
+    //#alter-off
+    // alterOff a function (Mapper)
+    Future<Integer> f3 = agent.alterOff(longRunningOrBlockingFunction,
+                                        theExecutionContextToExecuteItIn);
+    //#alter-off
+
+    assertEquals(Await.result(f3, Duration.create(5,"s")), new Integer(14));
+    }
 }
