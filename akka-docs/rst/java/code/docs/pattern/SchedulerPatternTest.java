@@ -84,7 +84,7 @@ public class SchedulerPatternTest {
     public void preStart() {
       getContext().system().scheduler().scheduleOnce(
         Duration.create(500, TimeUnit.MILLISECONDS),
-        getSelf(), "tick", getContext().dispatcher());
+        getSelf(), "tick", getContext().dispatcher(), null);
     }
 
     // override postRestart so we don't call preStart and schedule a new message
@@ -98,7 +98,7 @@ public class SchedulerPatternTest {
         // send another periodic tick after the specified delay
         getContext().system().scheduler().scheduleOnce(
           Duration.create(1000, TimeUnit.MILLISECONDS),
-          getSelf(), "tick", getContext().dispatcher());
+          getSelf(), "tick", getContext().dispatcher(), null);
         // do something useful here
         //#schedule-receive
         target.tell(message, getSelf());
