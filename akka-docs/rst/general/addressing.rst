@@ -50,8 +50,8 @@ depending on the configuration of the actor system:
     the purpose of being completed by the response from an actor; it is created
     by the :meth:`ActorRef.ask` invocation.
   - :class:`DeadLetterActorRef` is the default implementation of the dead
-    letters service, where all messages are re-routed whose routees are shut
-    down or non-existent.
+    letters service to which all messages are re-routed when their destination
+    actors are shut down or non-existent.
   - :class:`EmptyLocalActorRef` is what is returned when looking up a
     non-existing local actor path: it is equivalent to a
     :class:`DeadLetterActorRef`, but it retains its path so that it can be sent
