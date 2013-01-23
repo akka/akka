@@ -46,11 +46,11 @@ depending on the configuration of the actor system:
 - There are several special types of actor references which behave like local
   actor references for all practical purposes:
 
-  - :class:`PromiseActorRef` is the special representation of a :meth:`Promise` for
-    the purpose of being completed by the response from an actor; it is created
-    by the :meth:`ActorRef.ask` invocation.
+  - :class:`PromiseActorRef` is the special representation of a :meth:`Promise`
+    for the purpose of being completed by the response from an actor.
+    :meth:`ActorRef.ask` creates this actor reference.
   - :class:`DeadLetterActorRef` is the default implementation of the dead
-    letters service to which all messages are re-routed when their destination
+    letters service to which Akka routes all messages after their destination
     actors are shut down or non-existent.
   - :class:`EmptyLocalActorRef` is what Akka returns when looking up a
     non-existent local actor path: it is equivalent to a
