@@ -5,61 +5,44 @@
 package akka.io
 
 import java.net.InetSocketAddress
-import java.nio.channels.{ ServerSocketChannel, SocketChannel }
-import akka.actor.ActorRef
-import akka.util.ByteString
-import akka.actor.ExtensionKey
-import akka.actor.ExtendedActorSystem
-import akka.actor.ActorSystemImpl
-import akka.actor.Props
 import java.net.Socket
 import java.net.ServerSocket
+import com.typesafe.config.Config
 import scala.concurrent.duration._
 import scala.collection.immutable
-import akka.actor.ActorSystem
+import akka.util.ByteString
+import akka.actor._
 
 object Tcp extends ExtensionKey[TcpExt] {
 
   // Java API
   override def get(system: ActorSystem): TcpExt = system.extension(this)
 
-  /// COMMANDS
-  sealed trait Command
-
-  case class Connect(remoteAddress: InetSocketAddress,
-                     localAddress: Option[InetSocketAddress] = None) extends Command
-  case class Bind(handler: ActorRef,
-                  address: InetSocketAddress,
-                  backlog: Int = 100,
-                  options: immutable.Seq[SO.SocketOption] = Nil) extends Command
-  case object Unbind extends Command
-  case class Register(handler: ActorRef) extends Command
-
-  object SO {
+  /**
+   * SocketOption is a package of data (from the user) and associated
+   * behavior (how to apply that to a socket).
+   */
+  sealed trait SocketOption {
     /**
-     * SocketOption is a package of data (from the user) and associated
-     * behavior (how to apply that to a socket).
+     * Action to be taken for this option before calling bind()
      */
-    sealed trait SocketOption {
-      /**
-       * Action to be taken for this option before calling bind()
-       */
-      def beforeBind(s: ServerSocket): Unit = ()
-      /**
-       * Action to be taken for this option before calling connect()
-       */
-      def beforeConnect(s: Socket): Unit = ()
-      /**
-       * Action to be taken for this option after connect returned (i.e. on
-       * the slave socket for servers).
-       */
-      def afterConnect(s: Socket): Unit = ()
-    }
+    def beforeBind(s: ServerSocket): Unit = ()
+    /**
+     * Action to be taken for this option before calling connect()
+     */
+    def beforeConnect(s: Socket): Unit = ()
+    /**
+     * Action to be taken for this option after connect returned (i.e. on
+     * the slave socket for servers).
+     */
+    def afterConnect(s: Socket): Unit = ()
+  }
 
-    // shared socket options
+  // shared socket options
+  object SO {
 
     /**
-     * [[akka.io.Tcp.SO.SocketOption]] to set the SO_RCVBUF option
+     * [[akka.io.Tcp.SocketOption]] to set the SO_RCVBUF option
      *
      * For more information see [[java.net.Socket.setReceiveBufferSize]]
      */
@@ -72,7 +55,7 @@ object Tcp extends ExtensionKey[TcpExt] {
     // server socket options
 
     /**
-     * [[akka.io.Tcp.SO.SocketOption]] to enable or disable SO_REUSEADDR
+     * [[akka.io.Tcp.SocketOption]] to enable or disable SO_REUSEADDR
      *
      * For more information see [[java.net.Socket.setReuseAddress]]
      */
@@ -84,7 +67,7 @@ object Tcp extends ExtensionKey[TcpExt] {
     // general socket options
 
     /**
-     * [[akka.io.Tcp.SO.SocketOption]] to enable or disable SO_KEEPALIVE
+     * [[akka.io.Tcp.SocketOption]] to enable or disable SO_KEEPALIVE
      *
      * For more information see [[java.net.Socket.setKeepAlive]]
      */
@@ -93,7 +76,7 @@ object Tcp extends ExtensionKey[TcpExt] {
     }
 
     /**
-     * [[akka.io.Tcp.SO.SocketOption]] to enable or disable OOBINLINE (receipt
+     * [[akka.io.Tcp.SocketOption]] to enable or disable OOBINLINE (receipt
      * of TCP urgent data) By default, this option is disabled and TCP urgent
      * data is silently discarded.
      *
@@ -104,19 +87,19 @@ object Tcp extends ExtensionKey[TcpExt] {
     }
 
     /**
-     * [[akka.io.Tcp.SO.SocketOption]] to set the SO_SNDBUF option.
+     * [[akka.io.Tcp.SocketOption]] to set the SO_SNDBUF option.
      *
      * For more information see [[java.net.Socket.setSendBufferSize]]
      */
     case class SendBufferSize(size: Int) extends SocketOption {
-      require(size > 0, "ReceiveBufferSize must be > 0")
+      require(size > 0, "SendBufferSize must be > 0")
       override def afterConnect(s: Socket): Unit = s.setSendBufferSize(size)
     }
 
     // SO_LINGER is handled by the Close code
 
     /**
-     * [[akka.io.Tcp.SO.SocketOption]] to enable or disable TCP_NODELAY
+     * [[akka.io.Tcp.SocketOption]] to enable or disable TCP_NODELAY
      * (disable or enable Nagle's algorithm)
      *
      * For more information see [[java.net.Socket.setTcpNoDelay]]
@@ -126,7 +109,7 @@ object Tcp extends ExtensionKey[TcpExt] {
     }
 
     /**
-     * [[akka.io.Tcp.SO.SocketOption]] to set the traffic class or
+     * [[akka.io.Tcp.SocketOption]] to set the traffic class or
      * type-of-service octet in the IP header for packets sent from this
      * socket.
      *
@@ -138,79 +121,103 @@ object Tcp extends ExtensionKey[TcpExt] {
     }
   }
 
-  // TODO: what about close reasons?
-  case object Close extends Command
-  case object ConfirmedClose extends Command
-  case object Abort extends Command
+  /// COMMANDS
+  trait Command
 
-  trait Write extends Command {
-    def data: ByteString
-    def ack: AnyRef
-    def nack: AnyRef
+  case class Connect(remoteAddress: InetSocketAddress,
+                     localAddress: Option[InetSocketAddress] = None,
+                     options: immutable.Traversable[SocketOption] = Nil) extends Command
+  case class Bind(handler: ActorRef,
+                  endpoint: InetSocketAddress,
+                  backlog: Int = 100,
+                  options: immutable.Traversable[SocketOption] = Nil) extends Command
+  case class Register(handler: ActorRef) extends Command
+  case object Unbind extends Command
+
+  sealed trait CloseCommand extends Command
+  case object Close extends CloseCommand
+  case object ConfirmedClose extends CloseCommand
+  case object Abort extends CloseCommand
+
+  case object NoAck
+
+  /**
+   * Write data to the TCP connection. If no ack is needed use the special
+   * `NoAck` object.
+   */
+  case class Write(data: ByteString, ack: Any) extends Command {
+    require(ack != null, "ack must be non-null. Use NoAck if you don't want acks.")
+
+    def wantsAck: Boolean = ack != NoAck
   }
   object Write {
-    def apply(_data: ByteString): Write = new Write {
-      def data: ByteString = _data
-      def ack: AnyRef = null
-      def nack: AnyRef = null
-    }
+    val Empty: Write = Write(ByteString.empty, NoAck)
+    def apply(data: ByteString): Write =
+      if (data.isEmpty) Empty else Write(data, NoAck)
   }
+
   case object StopReading extends Command
   case object ResumeReading extends Command
 
   /// EVENTS
-  sealed trait Event
-
-  case object Bound extends Event
+  trait Event
 
   case class Received(data: ByteString) extends Event
-  case class Connected(localAddress: InetSocketAddress, remoteAddress: InetSocketAddress) extends Event
+  case class Connected(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress) extends Event
   case class CommandFailed(cmd: Command) extends Event
+  case object Bound extends Event
+  case object Unbound extends Event
 
-  sealed trait Closed extends Event
-  case object PeerClosed extends Closed
-  case object ActivelyClosed extends Closed
-  case object ConfirmedClosed extends Closed
-  case class Error(cause: Throwable) extends Closed
-
-  /// INTERNAL
-  case class RegisterClientChannel(channel: SocketChannel)
-  case class RegisterServerChannel(channel: ServerSocketChannel)
-  case class CreateConnection(channel: SocketChannel)
-  case class Reject(command: Command, commander: ActorRef)
-  // Retry should be sent by Selector actors to their parent router with retriesLeft decremented. If retries are
-  // depleted, the selector actor must reply directly to the manager with a Reject (above).
-  case class Retry(command: Command, retriesLeft: Int, commander: ActorRef) {
-    require(retriesLeft >= 0, "The upper limit for retries must be nonnegative.")
-  }
-  case object ChannelConnectable
-  case object ChannelAcceptable
-  case object ChannelReadable
-  case object ChannelWritable
-  case object AcceptInterest
-  case object ReadInterest
-  case object WriteInterest
+  sealed trait ConnectionClosed extends Event
+  case object Closed extends ConnectionClosed
+  case object Aborted extends ConnectionClosed
+  case object ConfirmedClosed extends ConnectionClosed
+  case object PeerClosed extends ConnectionClosed
+  case class ErrorClosed(cause: String) extends ConnectionClosed
 }
 
 class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
 
-  object Settings {
-    val config = system.settings.config.getConfig("akka.io.tcp")
+  val Settings = new Settings(system.settings.config.getConfig("akka.io.tcp"))
+  class Settings private[TcpExt] (config: Config) {
     import config._
 
     val NrOfSelectors = getInt("nr-of-selectors")
-    val MaxChannels = getInt("max-channels")
-    val MaxChannelsPerSelector = MaxChannels / NrOfSelectors
-    val SelectTimeout =
-      if (getString("select-timeout") == "infinite") Duration.Inf
-      else Duration(getMilliseconds("select-timeout"), MILLISECONDS)
+    val MaxChannels = getString("max-channels") match {
+      case "unlimited" ⇒ -1
+      case _           ⇒ getInt("max-channels")
+    }
+    val SelectTimeout = getString("select-timeout") match {
+      case "infinite" ⇒ Duration.Inf
+      case x          ⇒ Duration(x)
+    }
     val SelectorAssociationRetries = getInt("selector-association-retries")
+    val BatchAcceptLimit = getInt("batch-accept-limit")
+    val DirectBufferSize = getInt("direct-buffer-size")
+    val MaxDirectBufferPoolSize = getInt("max-direct-buffer-pool-size")
+    val RegisterTimeout = getString("register-timeout") match {
+      case "infinite" ⇒ Duration.Undefined
+      case x          ⇒ Duration(x)
+    }
     val SelectorDispatcher = getString("selector-dispatcher")
     val WorkerDispatcher = getString("worker-dispatcher")
     val ManagementDispatcher = getString("management-dispatcher")
+    val TraceLogging = getBoolean("trace-logging")
+
+    require(NrOfSelectors > 0, "nr-of-selectors must be > 0")
+    require(MaxChannels == -1 || MaxChannels > 0, "max-channels must be > 0 or 'unlimited'")
+    require(SelectTimeout >= Duration.Zero, "select-timeout must not be negative")
+    require(SelectorAssociationRetries >= 0, "selector-association-retries must be >= 0")
+    require(BatchAcceptLimit > 0, "batch-accept-limit must be > 0")
+
+    val MaxChannelsPerSelector = if (MaxChannels == -1) -1 else math.max(MaxChannels / NrOfSelectors, 1)
   }
 
-  val manager = system.asInstanceOf[ActorSystemImpl].systemActorOf(
-    Props[TcpManager].withDispatcher(Settings.ManagementDispatcher), "IO-TCP")
+  val manager = {
+    system.asInstanceOf[ActorSystemImpl].systemActorOf(
+      props = Props(new TcpManager(this)).withDispatcher(Settings.ManagementDispatcher),
+      name = "IO-TCP")
+  }
 
+  val bufferPool: BufferPool = new DirectByteBufferPool(Settings.DirectBufferSize, Settings.MaxDirectBufferPoolSize)
 }
