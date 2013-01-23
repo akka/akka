@@ -173,7 +173,7 @@ object Tcp extends ExtensionKey[TcpExt] {
   case object Aborted extends ConnectionClosed
   case object ConfirmedClosed extends ConnectionClosed
   case object PeerClosed extends ConnectionClosed
-  case class ErrorClose(cause: String) extends ConnectionClosed
+  case class ErrorClosed(cause: String) extends ConnectionClosed
 }
 
 class TcpExt(system: ExtendedActorSystem) extends IO.Extension {

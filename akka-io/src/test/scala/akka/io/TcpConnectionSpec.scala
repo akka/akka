@@ -245,7 +245,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
       abortClose(serverSideChannel)
       selector.send(connectionActor, ChannelReadable)
-      connectionHandler.expectMsgType[ErrorClose].cause must be("Connection reset by peer")
+      connectionHandler.expectMsgType[ErrorClosed].cause must be("Connection reset by peer")
       // wait a while
       connectionHandler.expectNoMsg(200.millis)
 
@@ -259,8 +259,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       abortClose(serverSideChannel)
       writer.send(connectionActor, Write(ByteString("testdata")))
       // bother writer and handler should get the message
-      writer.expectMsgType[ErrorClose]
-      connectionHandler.expectMsgType[ErrorClose]
+      writer.expectMsgType[ErrorClosed]
+      connectionHandler.expectMsgType[ErrorClosed]
 
       assertThisConnectionActorTerminated()
     }
@@ -272,7 +272,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       localServer.close()
 
       selector.send(connectionActor, ChannelConnectable)
-      userHandler.expectMsgType[ErrorClose].cause must be("Connection reset by peer")
+      userHandler.expectMsgType[ErrorClosed].cause must be("Connection reset by peer")
 
       verifyActorTermination(connectionActor)
     }
@@ -288,7 +288,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
         key.isConnectable must be(true)
         selector.send(connectionActor, ChannelConnectable)
-        userHandler.expectMsgType[ErrorClose].cause must be("Connection refused")
+        userHandler.expectMsgType[ErrorClosed].cause must be("Connection refused")
 
         verifyActorTermination(connectionActor)
       }

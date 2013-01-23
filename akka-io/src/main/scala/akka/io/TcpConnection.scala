@@ -210,7 +210,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
     }
 
   def handleError(handler: ActorRef, exception: IOException): Unit = {
-    closedMessage = CloseInformation(Set(handler), ErrorClose(extractMsg(exception)))
+    closedMessage = CloseInformation(Set(handler), ErrorClosed(extractMsg(exception)))
 
     throw exception
   }

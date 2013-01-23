@@ -28,7 +28,7 @@ class IntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with IntegrationS
       val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
       clientHandler.send(clientConnection, Abort)
       clientHandler.expectMsg(Aborted)
-      serverHandler.expectMsgType[ErrorClose]
+      serverHandler.expectMsgType[ErrorClosed]
       verifyActorTermination(clientConnection)
       verifyActorTermination(serverConnection)
     }
