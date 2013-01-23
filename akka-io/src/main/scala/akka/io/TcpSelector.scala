@@ -100,7 +100,7 @@ private[io] class TcpSelector(manager: ActorRef, tcp: TcpExt) extends Actor with
 
   def withCapacityProtection(cmd: Command, retriesLeft: Int)(body: ⇒ Unit): Unit = {
     log.debug("Executing {}", cmd)
-    if (MaxChannelsPerSelector == 0 || childrenKeys.size < MaxChannelsPerSelector) {
+    if (MaxChannelsPerSelector == -1 || childrenKeys.size < MaxChannelsPerSelector) {
       body
     } else {
       log.warning("Rejecting '{}' with {} retries left, retrying...", cmd, retriesLeft)
