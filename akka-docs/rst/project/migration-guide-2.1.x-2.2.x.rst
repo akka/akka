@@ -112,3 +112,42 @@ The SLF4J logger has been renamed from ``akka.event.slf4j.Slf4jEventHandler`` to
 
 The ``java.util.logging`` logger has been renamed from ``akka.contrib.jul.JavaLoggingEventHandler`` to
 ``akka.contrib.jul.JavaLogger``.
+
+Remoting
+========
+
+The remoting subsystem of Akka has been replaced in favor of a more flexible, pluggable driver based implementation. This
+has required some changes to the configuration sections of ``akka.remote``, the format of Akka remote addresses
+and the Akka protocol itself.
+
+The internal communication protocol of Akka has been evolved into a completely standalone entity, not tied to any
+particular transport. This change has the effect that Akka 2.2 remoting is no longer able to directly communicate with
+older versions.
+
+The ``akka.remote.transport`` configuration key has been removed as the remoting system itself is no longer replaceable.
+Custom transports are now pluggable via the ``akka.remote.enabled-transpotrs`` key (see the :meth:`akka.remote.Transport` SPI
+and the documentation of remoting for more detail on drivers). The transport loaded by default is a Netty based TCP
+driver similar in functionality to the default remoting in Akka 2.1.
+
+Transports are now fully pluggable through drivers, therefore transport specific settings like listening ports now live in the namespace
+of their driver configuration. In particular TCP related settings are now under ``akka.remote.netty.tcp``.
+
+As a result of being able to replace the transport protocol, it is now necessary to include the protocol information
+in Akka URLs for remote addresses. Therefore a remote address of ``akka://remote-sys@remotehost:2552/user/actor``
+has to be changed to ``akka.tcp://remote-sys@remotehost:2552/user/actor`` if the remote system uses TCP as transport. If
+the other system uses SSL on top of TCP, the correct address would be ``akka.ssl.tcp://remote-sys@remotehost:2552/user/actor``.
+
+Remote lifecycle events have been changed to a more coarse-grained, simplified model. All remoting events are subclasses
+of :meth:`akka.remote.RemotingLifecycle`. Events related to the lifecycle of *associations* (formerly called *connections*)
+be it inbound or outbound are subclasses of :meth:`akka.remote.AssociationEvent` (which is in turn a subclass of
+:meth:`RemotingLifecycle`). The direction of the association (inbound or outbound) triggering an ``AssociationEvent`` is
+available via the ``inbound`` boolean field of the event.
+
+.. note::
+    The change in terminology from "Connection" to "Association" reflects the fact that the remoting subsystem may use
+    connectionless transports, but an association similar to transport layer connections is maintained between endpoints
+    by the Akka protocol.
+
+New configuration settings are also available, see the remoting documentation for more detail: :ref:`remoting-scala`
+
+

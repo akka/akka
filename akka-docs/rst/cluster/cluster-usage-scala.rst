@@ -609,7 +609,7 @@ From JMX you can:
 * mark any node in the cluster as down
 * tell any node in the cluster to leave
 
-Member nodes are identified with their address, in format `akka://actor-system-name@hostname:port`.
+Member nodes are identified by their address, in format `akka.<protocol>://<actor-system-name>@<hostname>:<port>`.
 
 .. _cluster_command_line_scala:
 
@@ -637,10 +637,10 @@ Run it without parameters to see instructions about how to use the script::
                                node cluster)
                 is-available - Checks if the member node is available
   Where the <node-url> should be on the format of 
-    'akka://actor-system-name@hostname:port'
+    'akka.<protocol>://<actor-system-name>@<hostname>:<port>'
 
   Examples: bin/akka-cluster localhost:9999 is-available
-            bin/akka-cluster localhost:9999 join akka://MySystem@darkstar:2552
+            bin/akka-cluster localhost:9999 join akka.tcp://MySystem@darkstar:2552
             bin/akka-cluster localhost:9999 cluster-status
 
 
