@@ -16,8 +16,8 @@ import scala.util.{ Failure, Success }
 import scala.util.control.NonFatal
 import akka.util._
 import java.io.Closeable
-import akka.util.internal.{ HashedWheelTimer, ConcurrentIdentityHashMap }
-import java.util.concurrent.{ ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
+import akka.util.internal.{ HashedWheelTimer }
+import java.util.concurrent.{ ConcurrentHashMap, ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor.dungeon.ChildrenContainer
 
@@ -628,7 +628,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     case _            ⇒
   }
 
-  private val extensions = new ConcurrentIdentityHashMap[ExtensionId[_], AnyRef]
+  private val extensions = new ConcurrentHashMap[ExtensionId[_], AnyRef]
 
   /**
    * Returns any extension registered to the specified Extension or returns null if not registered
