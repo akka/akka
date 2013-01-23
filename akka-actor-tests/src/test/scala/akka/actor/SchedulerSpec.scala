@@ -1,3 +1,7 @@
+/**
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.actor
 
 import language.postfixOps
@@ -6,6 +10,7 @@ import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.{ future, Await, ExecutionContext }
 import scala.concurrent.duration._
+import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.Try
 import scala.util.control.NonFatal
 import org.scalatest.BeforeAndAfterEach

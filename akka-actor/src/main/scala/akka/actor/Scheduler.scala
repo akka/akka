@@ -417,9 +417,9 @@ object LightArrayRevolverScheduler {
    * INTERNAL API
    */
   protected[actor] class TaskHolder(@volatile var task: Runnable,
-                           @volatile var next: TaskHolder,
-                           @volatile var rounds: Int)(
-                             implicit executionContext: ExecutionContext) extends TimerTask {
+                                    @volatile var next: TaskHolder,
+                                    @volatile var rounds: Int)(
+                                      implicit executionContext: ExecutionContext) extends TimerTask {
     @tailrec
     private final def extractTask(cancel: Boolean): Runnable = {
       task match {
