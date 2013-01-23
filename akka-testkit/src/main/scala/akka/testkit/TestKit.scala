@@ -62,8 +62,8 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
 
   def receive = {
     case SetIgnore(ign)      ⇒ ignore = ign
-    case x @ Watch(ref)      ⇒ context.watch(ref); queue.offerLast(RealMessage(x, self))
-    case x @ UnWatch(ref)    ⇒ context.unwatch(ref); queue.offerLast(RealMessage(x, self))
+    case Watch(ref)          ⇒ context.watch(ref)
+    case UnWatch(ref)        ⇒ context.unwatch(ref)
     case SetAutoPilot(pilot) ⇒ autopilot = pilot
     case x: AnyRef ⇒
       autopilot = autopilot.run(sender, x) match {
@@ -150,9 +150,8 @@ trait TestKitBase {
    * the Watch message is received back using expectMsg.
    */
   def watch(ref: ActorRef): ActorRef = {
-    val msg = TestActor.Watch(ref)
-    testActor ! msg
-    expectMsg(msg).ref
+    testActor ! TestActor.Watch(ref)
+    ref
   }
 
   /**
@@ -160,9 +159,8 @@ trait TestKitBase {
    * the Watch message is received back using expectMsg.
    */
   def unwatch(ref: ActorRef): ActorRef = {
-    val msg = TestActor.UnWatch(ref)
-    testActor ! msg
-    expectMsg(msg).ref
+    testActor ! TestActor.UnWatch(ref)
+    ref
   }
 
   /**
