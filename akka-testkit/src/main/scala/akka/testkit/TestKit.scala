@@ -215,14 +215,14 @@ trait TestKitBase {
    * Note that the timeout is scaled using Duration.dilated,
    * which uses the configuration entry "akka.test.timefactor".
    */
-  def awaitCond(p: ⇒ Boolean, max: Duration = Duration.Undefined, interval: Duration = 100.millis) {
+  def awaitCond(p: ⇒ Boolean, max: Duration = Duration.Undefined, interval: Duration = 100.millis, message: String = "") {
     val _max = remainingOrDilated(max)
     val stop = now + _max
 
     @tailrec
     def poll(t: Duration) {
       if (!p) {
-        assert(now < stop, "timeout " + _max + " expired")
+        assert(now < stop, "timeout " + _max + " expired: " + message)
         Thread.sleep(t.toMillis)
         poll((stop - now) min interval)
       }
