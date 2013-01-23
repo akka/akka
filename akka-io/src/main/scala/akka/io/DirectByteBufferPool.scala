@@ -1,3 +1,7 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.io
 
 import java.util.concurrent.atomic.AtomicBoolean
@@ -10,13 +14,13 @@ trait WithBufferPool {
   def acquireBuffer(): ByteBuffer =
     tcp.bufferPool.acquire()
 
-  def releaseBuffer(buffer: ByteBuffer) =
+  def releaseBuffer(buffer: ByteBuffer): Unit =
     tcp.bufferPool.release(buffer)
 }
 
 trait BufferPool {
   def acquire(): ByteBuffer
-  def release(buf: ByteBuffer): Unit
+  def release(buf: ByteBuffer)
 }
 
 /**

@@ -71,8 +71,8 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
     case write: Write ⇒
       pendingWrite = createWrite(write)
-
       doWrite(handler)
+
     case ChannelWritable   ⇒ doWrite(handler)
 
     case cmd: CloseCommand ⇒ handleClose(handler, Some(sender), closeResponse(cmd))
