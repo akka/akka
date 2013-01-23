@@ -59,6 +59,24 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
       expectReceivedString("testdata2testdata3")
     }
+    "receive data directly when the connection is established" in withUnacceptedConnection() { unregisteredSetup ⇒
+      import unregisteredSetup._
+
+      localServer.configureBlocking(true)
+      val serverSideChannel = localServer.accept()
+      serverSideChannel must not be (null)
+      serverSideChannel.write(ByteBuffer.wrap("immediatedata".getBytes("ASCII")))
+      serverSideChannel.configureBlocking(false)
+
+      selector.send(connectionActor, ChannelConnectable)
+      userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
+
+      // we unrealistically register the selector here so that we can observe
+      // the ordering between Received and ReadInterest
+      userHandler.send(connectionActor, Register(selector.ref))
+      selector.expectMsgType[Received].data.decodeString("ASCII") must be("immediatedata")
+      selector.expectMsg(ReadInterest)
+    }
 
     "write data to network (and acknowledge)" in withEstablishedConnection() { setup ⇒
       import setup._

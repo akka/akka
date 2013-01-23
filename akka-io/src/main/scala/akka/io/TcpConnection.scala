@@ -38,7 +38,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
   def waitingForRegistration(commander: ActorRef): Receive = {
     case Register(handler) ⇒
       if (TraceLogging) log.debug("{} registered as connection handler", handler)
-      selector ! ReadInterest
+      doRead(handler, None) // immediately try reading
 
       context.setReceiveTimeout(Duration.Undefined)
       context.watch(handler) // sign death pact
