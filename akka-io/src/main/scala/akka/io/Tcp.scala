@@ -160,7 +160,7 @@ object Tcp extends ExtensionKey[TcpExt] {
   case object ResumeReading extends Command
 
   /// EVENTS
-  sealed trait Event
+  trait Event
 
   case class Received(data: ByteString) extends Event
   case class Connected(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress) extends Event
