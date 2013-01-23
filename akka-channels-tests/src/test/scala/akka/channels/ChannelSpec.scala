@@ -82,9 +82,17 @@ object ChannelSpec {
 
   // compile test for polymorphic actors
   class WriteOnly[T1: ru.TypeTag, T2: ru.TypeTag](target: ChannelRef[(T1, T2) :+: TNil]) extends Channels[TNil, (D, D) :+: (T1, T2) :+: TNil] {
-    channel[D] { (d, snd) ⇒ snd <-!- d }
     implicit val t = Timeout(1.second)
-    channel[T1] { (x, snd) ⇒ x -?-> target }
+    import akka.pattern.ask
+
+    channel[D] { (d, snd) ⇒ snd <-!- d }
+
+    channel[T1] { (x, snd) ⇒ x -?-> target -!-> snd -!-> snd }
+  }
+
+  // companion to WriteOnly for testing pass-through
+  class EchoTee(target: ActorRef) extends Channels[TNil, (C, C) :+: TNil] {
+    channel[C] { (c, snd) ⇒ target ! C1; snd <-!- C1 }
   }
 
   class MissingChannel extends Channels[TNil, (A, A) :+: (B, B) :+: TNil] {
@@ -374,6 +382,16 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
       wrap <-!- D
       expectMsg(D)
       lastSender must be(wrap.actorRef)
+    }
+
+    "allow wrapping of ChannelsRefs with replies" in {
+      val probe = TestProbe()
+      val target = ChannelExt(system).actorOf(new EchoTee(probe.ref))
+      val wrap = ChannelExt(system).actorOf(new WriteOnly[C, C](target))
+      C -!-> wrap
+      expectMsg(C1)
+      expectMsg(C1)
+      probe.expectMsg(C1)
     }
 
     "support typed ask" in {

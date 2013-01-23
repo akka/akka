@@ -44,15 +44,14 @@ object Tell {
 
     verify(c)(senderTree, c.universe.weakTypeOf[M], tS, tT)
 
-    c.universe.reify(
-      {
-        val s$1 = sender.splice
-        c.prefix.splice.future.andThen {
-          case Success(s) ⇒ channel.splice.actorRef.tell(s, s$1)
-          case _          ⇒
-        }(ExecutionContexts.sameThreadExecutionContext)
-      })
+    c.universe.reify(pipeTo[M](c.prefix.splice, channel.splice, sender.splice))
   }
+
+  @inline def pipeTo[M](f: FutureOps[M], c: ChannelRef[_], snd: ActorRef): Future[M] =
+    f.future.andThen {
+      case Success(s) ⇒ c.actorRef.tell(s, snd)
+      case _          ⇒
+    }(ExecutionContexts.sameThreadExecutionContext)
 
   def getSenderChannel(c: Context): (c.universe.Type, c.Tree, c.Expr[ActorRef]) = {
     val replyChannel = c.inferImplicitValue(c.typeOf[ChannelRef[_]])

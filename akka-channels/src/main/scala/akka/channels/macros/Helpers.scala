@@ -7,6 +7,7 @@ import scala.reflect.runtime.{ universe ⇒ ru }
 import ru.TypeTag
 import scala.reflect.macros.Context
 import scala.reflect.api.Universe
+import scala.reflect.api.TypeCreator
 
 object Helpers {
 
@@ -18,6 +19,19 @@ object Helpers {
 
   def error(c: Context, msg: String) = c.error(c.enclosingPosition, msg)
   def abort(c: Context, msg: String) = c.abort(c.enclosingPosition, msg)
+
+  def imp[T: c.WeakTypeTag](c: Context): c.Expr[T] = {
+    import c.universe._
+    c.Expr[T](TypeApply(Ident("implicitly"), List(TypeTree().setType(weakTypeOf[T]))))
+  }
+
+  def weakTT[T](c: Context)(tpe: c.universe.Type): c.WeakTypeTag[T] =
+    c.universe.WeakTypeTag[T](c.mirror, new TypeCreator {
+      def apply[U <: Universe with Singleton](m: scala.reflect.api.Mirror[U]) = {
+        val imp = m.universe.mkImporter(c.universe)
+        imp.importType(tpe)
+      }
+    })
 
   def checkUnique(u: Universe)(channel: u.Type, list: u.Type): Option[String] = {
     val channels = inputChannels(u)(list) groupBy (_.erasure)

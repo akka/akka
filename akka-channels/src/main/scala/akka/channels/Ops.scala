@@ -25,12 +25,12 @@ class ActorRefOps(val ref: ActorRef) extends AnyVal {
 
 class FutureOps[T](val future: Future[T]) extends AnyVal {
   def -!->[C <: ChannelList](channel: ChannelRef[C]): Future[T] = macro macros.Tell.futureImpl[C, T]
-  def -?->[C <: ChannelList](channel: ChannelRef[C]): Future[_] = macro macros.Ask.futureImpl[C, T]
+  def -?->[C <: ChannelList](channel: ChannelRef[C]): Future[_] = macro macros.Ask.futureImpl[Any, C, T]
 }
 
 class AnyOps[T](val value: T) extends AnyVal {
   def -!->[C <: ChannelList](channel: ChannelRef[C]): Unit = macro macros.Tell.opsImpl[C, T]
-  def -?->[C <: ChannelList](channel: ChannelRef[C]): Future[_] = macro macros.Ask.opsImpl[C, T]
+  def -?->[C <: ChannelList](channel: ChannelRef[C]): Future[_] = macro macros.Ask.opsImpl[Any, C, T]
 }
 
 class WrappedMessage[T <: ChannelList](val value: Any) extends AnyVal
