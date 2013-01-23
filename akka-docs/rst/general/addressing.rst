@@ -103,7 +103,7 @@ actors in the hierarchy from the root up. Examples are::
   "cluster://my-cluster/service-c"                     // clustered (Future Extension)
 
 Here, ``akka`` is the default remote protocol for the 2.0 release, and others
-are pluggable. The interpretation of the host & port part (i.e.
+are pluggable. The interpretation of the host and port part (i.e.
 ``serv.example.com:5678`` in the example) depends on the transport mechanism
 used, but it must abide by the URI structural rules.
 
