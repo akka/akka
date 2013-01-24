@@ -498,7 +498,13 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
     }
     driver.expectWait()
     try thunk(sched, driver)
-    finally sched.close()
+    catch {
+      case NonFatal(ex) ⇒
+        try sched.close()
+        catch { case _: Exception ⇒ }
+        throw ex
+    }
+    sched.close()
   }
 
 }
