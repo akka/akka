@@ -93,7 +93,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
       import scala.collection.JavaConverters._
       log.info("Using a dedicated scheduler for cluster. Default scheduler can be used if configured " +
         "with 'akka.scheduler.tick-duration' [{} ms] <=  'akka.cluster.scheduler.tick-duration' [{} ms].",
-        1000 / system.scheduler.maxFrequency, SchedulerTickDuration.toMillis)
+        (1000 / system.scheduler.maxFrequency).toInt, SchedulerTickDuration.toMillis)
       new DefaultScheduler(
         ConfigFactory.parseString(s"akka.scheduler.tick-duration=${SchedulerTickDuration.toMillis}ms").withFallback(
           system.settings.config),
