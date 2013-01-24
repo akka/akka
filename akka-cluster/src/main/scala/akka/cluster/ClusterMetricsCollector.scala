@@ -175,7 +175,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
  * INTERNAL API
  */
 private[cluster] object MetricsGossip {
-  val empty = MetricsGossip()
+  val empty = MetricsGossip(Set.empty[NodeMetrics])
 }
 
 /**
@@ -183,7 +183,7 @@ private[cluster] object MetricsGossip {
  *
  * @param nodes metrics per node
  */
-private[cluster] case class MetricsGossip(nodes: Set[NodeMetrics] = Set.empty) {
+private[cluster] case class MetricsGossip(nodes: Set[NodeMetrics]) {
 
   /**
    * Removes nodes if their correlating node ring members are not [[akka.cluster.MemberStatus.Up]]
@@ -701,6 +701,7 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: AnyRef
 
   private val decayFactorOption = Some(decayFactor)
 
+  private val EmptyClassArray: Array[(Class[_])] = Array.empty[(Class[_])]
   private val LoadAverage: Option[Method] = createMethodFrom(sigar, "getLoadAverage")
   private val Cpu: Option[Method] = createMethodFrom(sigar, "getCpuPerc")
   private val CombinedCpu: Option[Method] = Try(Cpu.get.getReturnType.getMethod("getCombined")).toOption
@@ -755,7 +756,7 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: AnyRef
    */
   override def close(): Unit = Try(createMethodFrom(sigar, "close").get.invoke(sigar))
 
-  private def createMethodFrom(ref: AnyRef, method: String, types: Array[(Class[_])] = Array.empty[(Class[_])]): Option[Method] =
+  private def createMethodFrom(ref: AnyRef, method: String, types: Array[(Class[_])] = EmptyClassArray): Option[Method] =
     Try(ref.getClass.getMethod(method, types: _*)).toOption
 
 }

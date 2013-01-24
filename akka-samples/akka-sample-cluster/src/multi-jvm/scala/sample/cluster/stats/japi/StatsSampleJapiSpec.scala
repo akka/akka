@@ -67,7 +67,7 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
 
   "The japi stats sample" must {
 
-    "illustrate how to startup cluster" in within(10 seconds) {
+    "illustrate how to startup cluster" in within(15 seconds) {
       Cluster(system).subscribe(testActor, classOf[MemberUp])
       expectMsgClass(classOf[CurrentClusterState])
 
@@ -90,7 +90,7 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
       testConductor.enter("all-up")
     }
 
-    "show usage of the statsService from one node" in within(5 seconds) {
+    "show usage of the statsService from one node" in within(15 seconds) {
       runOn(second) {
         assertServiceOk
       }
@@ -114,7 +114,7 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
     }
     //#test-statsService
 
-    "show usage of the statsService from all nodes" in within(5 seconds) {
+    "show usage of the statsService from all nodes" in within(15 seconds) {
       assertServiceOk
 
       testConductor.enter("done-3")
