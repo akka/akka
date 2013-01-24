@@ -199,6 +199,10 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
       case "infinite" ⇒ Duration.Undefined
       case x          ⇒ Duration(x)
     }
+    val ReceivedMessageSizeLimit = getString("received-message-size-limit") match {
+      case "unlimited" ⇒ Int.MaxValue
+      case x           ⇒ getInt("received-message-size-limit")
+    }
     val SelectorDispatcher = getString("selector-dispatcher")
     val WorkerDispatcher = getString("worker-dispatcher")
     val ManagementDispatcher = getString("management-dispatcher")
