@@ -70,8 +70,8 @@ object AkkaBuild extends Build {
       // generate online version of docs
       sphinxInputs in Sphinx <<= sphinxInputs in Sphinx in LocalProject(docs.id) map { inputs => inputs.copy(tags = inputs.tags :+ "online") },
       // don't regenerate the pdf, just reuse the akka-docs version
-      generatedPdf in Sphinx <<= generatedPdf in Sphinx in LocalProject(docs.id) map identity
-
+      generatedPdf in Sphinx <<= generatedPdf in Sphinx in LocalProject(docs.id) map identity,
+      generatedEpub in Sphinx <<= generatedEpub in Sphinx in LocalProject(docs.id) map identity
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples)
   )
