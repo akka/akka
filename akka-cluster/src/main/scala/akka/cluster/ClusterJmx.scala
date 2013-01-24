@@ -24,11 +24,13 @@ trait ClusterNodeMBean {
 
   /**
    * Comma separated addresses of member nodes, sorted in the cluster ring order.
+   * The address format is `akka://actor-system-name@hostname:port`
    */
   def getMembers: String
 
   /**
    * Comma separated addresses of unreachable member nodes.
+   * The address format is `akka://actor-system-name@hostname:port`
    */
   def getUnreachable: String
 
@@ -46,6 +48,7 @@ trait ClusterNodeMBean {
 
   /**
    * Get the address of the current leader.
+   * The address format is `akka://actor-system-name@hostname:port`
    */
   def getLeader: String
 
@@ -55,25 +58,27 @@ trait ClusterNodeMBean {
   def isSingleton: Boolean
 
   /**
-   * Returns true if the node is UP or JOINING.
+   * Returns true if the node is not unreachable and not `Down`
+   * and not `Removed`.
    */
   def isAvailable: Boolean
-  /**
-   * Returns true if the cluster node is up and running, false if it is shut down.
-   */
-  def isRunning: Boolean
 
   /**
    * Try to join this cluster node with the node specified by 'address'.
+   * The address format is `akka://actor-system-name@hostname:port`.
    * A 'Join(thisNodeAddress)' command is sent to the node to join.
    */
   def join(address: String)
+
   /**
    * Send command to issue state transition to LEAVING for the node specified by 'address'.
+   * The address format is `akka://actor-system-name@hostname:port`
    */
   def leave(address: String)
+
   /**
    * Send command to DOWN the node specified by 'address'.
+   * The address format is `akka://actor-system-name@hostname:port`
    */
   def down(address: String)
 }
@@ -102,20 +107,18 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
       }
 
       def getMembers: String =
-        clusterView.members.toSeq.map(_.address).mkString(", ")
+        clusterView.members.toSeq.map(_.address).mkString(",")
 
       def getUnreachable: String =
-        clusterView.unreachableMembers.map(_.address).mkString(", ")
+        clusterView.unreachableMembers.map(_.address).mkString(",")
 
       def getMemberStatus: String = clusterView.status.toString
 
-      def getLeader: String = clusterView.leader.getOrElse("").toString
+      def getLeader: String = clusterView.leader.fold("")(_.toString)
 
       def isSingleton: Boolean = clusterView.isSingletonCluster
 
       def isAvailable: Boolean = clusterView.isAvailable
-
-      def isRunning: Boolean = clusterView.isRunning
 
       // JMX commands
 

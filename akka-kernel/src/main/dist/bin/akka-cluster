@@ -168,19 +168,6 @@ case "$2" in
         $JMX_CLIENT $HOST akka:type=Cluster Available
         ;;
 
-    is-running)
-        if [ $# -ne 2 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> is-running"
-            exit 1
-        fi
-
-        ensureNodeIsRunningAndAvailable
-        shift
-
-        echo "Checking if member node on $HOST is RUNNING"
-        $JMX_CLIENT $HOST akka:type=Cluster Running
-        ;;
-
     *)
         printf "Usage: bin/$SELF <node-hostname:jmx-port> <command> ...\n"
         printf "\n"
@@ -195,7 +182,6 @@ case "$2" in
         printf "%26s - %s\n" leader              "Asks the cluster who the current leader is"
         printf "%26s - %s\n" is-singleton        "Checks if the cluster is a singleton cluster (single node cluster)"
         printf "%26s - %s\n" is-available        "Checks if the member node is available"
-        printf "%26s - %s\n" is-running          "Checks if the member node is running"
         printf "Where the <node-url> should be on the format of 'akka://actor-system-name@hostname:port'\n"
         printf "\n"
         printf "Examples: bin/$SELF localhost:9999 is-available\n"

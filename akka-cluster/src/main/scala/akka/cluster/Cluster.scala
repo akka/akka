@@ -67,7 +67,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         format(system, other.getClass.getName))
   }
 
-  private val _isRunning = new AtomicBoolean(true)
+  private val _isTerminated = new AtomicBoolean(false)
   private val log = Logging(system, "Cluster")
 
   log.info("Cluster Node [{}] - is starting up...", selfAddress)
@@ -169,9 +169,9 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   // ======================================================
 
   /**
-   * Returns true if the cluster node is up and running, false if it is shut down.
+   * Returns true if this cluster instance has be shutdown.
    */
-  def isRunning: Boolean = _isRunning.get
+  def isTerminated: Boolean = _isTerminated.get
 
   /**
    * Subscribe to cluster domain events.
@@ -253,7 +253,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * to go through graceful handoff process `LEAVE -> EXITING -> REMOVED -> SHUTDOWN`.
    */
   private[cluster] def shutdown(): Unit = {
-    if (_isRunning.compareAndSet(true, false)) {
+    if (_isTerminated.compareAndSet(false, true)) {
       log.info("Cluster Node [{}] - Shutting down cluster Node and cluster daemons...", selfAddress)
 
       system.stop(clusterDaemons)
