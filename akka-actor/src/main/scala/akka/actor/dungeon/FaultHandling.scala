@@ -192,7 +192,9 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     val a = actor
     // The following order is crucial for things to work properly. Only chnage this if you're very confident and lucky.
     try if (a ne null) a.postStop()
-    finally try dispatcher.detach(this)
+    catch {
+      case NonFatal(e) ⇒ publish(Error(e, self.path.toString, clazz(a), e.getMessage))
+    } finally try dispatcher.detach(this)
     finally try parent.sendSystemMessage(ChildTerminated(self))
     finally try parent ! NullMessage // read ScalaDoc of NullMessage to see why
     finally try tellWatchersWeDied(a)
