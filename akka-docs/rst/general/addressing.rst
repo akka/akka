@@ -29,11 +29,11 @@ There are several different types of actor references that are supported
 depending on the configuration of the actor system:
 
 - Purely local actor references are used by actor systems which are not
-  configured to support networking functions. These actor references cannot
-  ever be sent across a network connection while retaining their functionality.
+  configured to support networking functions. These actor references will not
+  function if sent across a network connection to a remote JVM.
 - Local actor references when remoting is enabled are used by actor systems
   which support networking functions for those references which represent
-  actors within the same JVM. In order to be recognizable also when sent to
+  actors within the same JVM. In order to also be reachable when sent to
   other network nodes, these references include protocol and remote addressing
   information.
 - There is a subtype of local actor references which is used for routers (i.e.
@@ -42,21 +42,21 @@ depending on the configuration of the actor system:
   them dispatches to one of their children directly instead.
 - Remote actor references represent actors which are reachable using remote
   communication, i.e. sending messages to them will serialize the messages
-  transparently and send them to the other JVM.
+  transparently and send them to the remote JVM.
 - There are several special types of actor references which behave like local
   actor references for all practical purposes:
 
-  - :class:`PromiseActorRef` is the special representation of a :meth:`Promise` for
-    the purpose of being completed by the response from an actor; it is created
-    by the :meth:`ActorRef.ask` invocation.
+  - :class:`PromiseActorRef` is the special representation of a :meth:`Promise`
+    for the purpose of being completed by the response from an actor.
+    :meth:`akka.pattern.ask` creates this actor reference.
   - :class:`DeadLetterActorRef` is the default implementation of the dead
-    letters service, where all messages are re-routed whose routees are shut
-    down or non-existent.
-  - :class:`EmptyLocalActorRef` is what is returned when looking up a
-    non-existing local actor path: it is equivalent to a
-    :class:`DeadLetterActorRef`, but it retains its path so that it can be sent
-    over the network and compared to other existing actor refs for that path,
-    some of which might have been obtained before the actor stopped existing.
+    letters service to which Akka routes all messages whose destinations
+    are shut down or non-existent.
+  - :class:`EmptyLocalActorRef` is what Akka returns when looking up a
+    non-existent local actor path: it is equivalent to a
+    :class:`DeadLetterActorRef`, but it retains its path so that Akka can send
+    it over the network and compare it to other existing actor references for
+    that path, some of which might have been obtained before the actor died.
 
 - And then there are some one-off internal implementations which you should
   never really see:
@@ -103,7 +103,7 @@ actors in the hierarchy from the root up. Examples are::
   "cluster://my-cluster/service-c"                     // clustered (Future Extension)
 
 Here, ``akka`` is the default remote protocol for the 2.0 release, and others
-are pluggable. The interpretation of the host & port part (i.e.
+are pluggable. The interpretation of the host and port part (i.e.
 ``serv.example.com:5678`` in the example) depends on the transport mechanism
 used, but it must abide by the URI structural rules.
 
@@ -174,16 +174,16 @@ Looking up Actors by Concrete Path
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In addition, actor references may be looked up using the
-:meth:`ActorSystem.actorFor` method, which returns an (unverified) local,
-remote or clustered actor reference. Sending messages to such a reference or
-attempting to observe its liveness will traverse the actor hierarchy of the
-actor system from top to bottom by passing messages from parent to child until
-either the target is reached or failure is certain, i.e. a name in the path
-does not exist (in practice this process will be optimized using caches, but it
-still has added cost compared to using the physical actor path, which can for
-example be obtained from the sender reference included in replies from that
-actor). The messages passed are handled automatically by Akka, so this process
-is not visible to client code.
+:meth:`ActorSystem.actorFor` method, which returns an (unverified) local, remote
+or clustered actor reference. Sending messages to such a reference or attempting
+to observe its liveness will traverse the actor hierarchy of the actor system
+from top to bottom by passing messages from parent to child until either the
+target is reached or failure is certain, i.e. a name in the path does not exist
+(in practice this process will be optimized using caches, but it still has added
+cost compared to using the physical actor path, which can for example be
+obtained from the sender reference included in replies from that actor). Akka
+handles message passing automatically, so this process is not visible to client
+code.
 
 Absolute vs. Relative Paths
 ```````````````````````````
