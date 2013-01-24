@@ -35,7 +35,7 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
       for (i ← 0 to samples) {
         val metrics = collector.sample.metrics
         assertCreatedUninitialized(metrics)
-        assertInitialized(window, metrics map (_.initialize(window)))
+        assertInitialized(DefaultRateOfDecay, metrics map (_.initialize(DefaultRateOfDecay)))
       }
     }
 
@@ -51,8 +51,8 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
           }
         })
 
-        val sample3 = collector.sample.metrics map (_.initialize(window))
-        val sample4 = collector.sample.metrics map (_.initialize(window))
+        val sample3 = collector.sample.metrics map (_.initialize(DefaultRateOfDecay))
+        val sample4 = collector.sample.metrics map (_.initialize(DefaultRateOfDecay))
         merged = sample4 flatMap (latest ⇒ sample3 collect {
           case peer if latest same peer ⇒ {
             val m = peer :+ latest
@@ -74,7 +74,7 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
 
     "collect accurate metrics for a node" in {
       val sample = collector.sample
-      assertExpectedSampleSize(collector.isSigar, window, sample)
+      assertExpectedSampleSize(collector.isSigar, DefaultRateOfDecay, sample)
       val metrics = sample.metrics.collect { case m if m.isDefined ⇒ (m.name, m.value.get) }
       val used = metrics collectFirst { case ("heap-memory-used", b) ⇒ b }
       val committed = metrics collectFirst { case ("heap-memory-committed", b) ⇒ b }
@@ -120,7 +120,7 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
       val task = system.scheduler.schedule(0 seconds, interval) {
         val sample = collector.sample
         assertCreatedUninitialized(sample.metrics)
-        assertExpectedSampleSize(collector.isSigar, window, sample)
+        assertExpectedSampleSize(collector.isSigar, DefaultRateOfDecay, sample)
         latch.countDown()
       }
       Await.ready(latch, longDuration)
@@ -219,7 +219,7 @@ trait AbstractClusterMetricsSpec extends DefaultTimeout {
 
   val selfAddress = new Address("akka", "localhost")
 
-  val window = 49
+  val DefaultRateOfDecay = 10
 
   val interval: FiniteDuration = 100 millis
 

@@ -12,6 +12,7 @@ class MetricNumericConverterSpec extends AkkaSpec(MetricsEnabledSpec.config) wit
   "MetricNumericConverter" must {
     val collector = createMetricsCollector
 
+    /*
     "convert " in {
       convert(0).isLeft must be(true)
       convert(1).left.get must be(1)
@@ -49,5 +50,6 @@ class MetricNumericConverterSpec extends AkkaSpec(MetricsEnabledSpec.config) wit
       defined(-1) must be(false)
       defined(Double.NaN) must be(false)
     }
+*/
   }
 }
