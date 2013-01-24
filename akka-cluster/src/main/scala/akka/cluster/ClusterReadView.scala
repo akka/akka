@@ -108,7 +108,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   def leader: Option[Address] = state.leader
 
   /**
-   * Is this node a singleton cluster?
+   * Does the cluster consist of only one member?
    */
   def isSingletonCluster: Boolean = members.size == 1
 

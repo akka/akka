@@ -573,6 +573,8 @@ Run it without parameters to see instructions about how to use the script::
             leave <node-url> - Sends a request for node with URL to LEAVE the cluster
              down <node-url> - Sends a request for marking node with URL as DOWN
                member-status - Asks the member node for its current status
+                     members - Asks the cluster for addresses of current members
+                 unreachable - Asks the cluster for addresses of unreachable members
               cluster-status - Asks the cluster for its current status (member ring,
                                unavailable nodes, meta data etc.)
                       leader - Asks the cluster who the current leader is
