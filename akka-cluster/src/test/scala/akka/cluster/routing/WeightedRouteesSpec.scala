@@ -13,7 +13,7 @@ import akka.testkit.AkkaSpec
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
       akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
-      akka.remote.netty.port = 0
+      akka.remoting.transports.tcp.port = 0
       """)) {
 
   val a1 = Address("tcp.akka", "sys", "a1", 2551)

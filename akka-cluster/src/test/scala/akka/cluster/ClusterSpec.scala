@@ -27,7 +27,7 @@ object ClusterSpec {
     }
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
-    akka.remote.netty.port = 0
+    akka.remoting.transports.tcp.port = 0
     # akka.loglevel = DEBUG
     """
 
