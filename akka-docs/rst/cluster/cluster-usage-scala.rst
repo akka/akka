@@ -419,7 +419,7 @@ Adaptive Load Balancing
 -----------------------
 
 The ``AdaptiveLoadBalancingRouter`` performs load balancing of messages to cluster nodes based on the cluster metrics data.
-It uses random selection of routees with probabilities derived from the remaining capacity of corresponding node.
+It uses random selection of routees with probabilities derived from the remaining capacity of the corresponding node.
 It can be configured to use a specific MetricsSelector to produce the probabilities, a.k.a. weights:
 
 * ``heap`` / ``HeapMetricsSelector`` - Used and max JVM heap memory. Weights based on remaining heap capacity; (max - used) / max
