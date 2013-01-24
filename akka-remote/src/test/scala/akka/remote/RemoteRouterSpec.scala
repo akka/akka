@@ -21,7 +21,7 @@ object RemoteRouterSpec {
 class RemoteRouterSpec extends AkkaSpec("""
 akka {
   actor.provider = "akka.remote.RemoteActorRefProvider"
-  remoting.transports.tcp {
+  remote.netty.tcp {
     hostname = localhost
     port = 0
   }
@@ -61,7 +61,7 @@ akka {
 
   import RemoteRouterSpec._
 
-  val conf = ConfigFactory.parseString("""akka.remoting.transports.tcp.port=12347
+  val conf = ConfigFactory.parseString("""akka.remote.netty.tcp.port=12347
 akka.actor.deployment {
   /remote-override {
     router = round-robin

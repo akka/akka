@@ -25,7 +25,7 @@ case class UnreachableNodeRejoinsClusterMultiNodeConfig(failureDetectorPuppet: B
 
   commonConfig(ConfigFactory.parseString(
     """
-      akka.remoting.log-remote-lifecycle-events = off
+      akka.remote.log-remote-lifecycle-events = off
       akka.cluster.publish-stats-interval = 0s
       akka.loglevel = INFO
     """).withFallback(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig)))

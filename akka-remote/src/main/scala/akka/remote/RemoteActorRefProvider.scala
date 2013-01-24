@@ -76,7 +76,7 @@ class RemoteActorRefProvider(
   val dynamicAccess: DynamicAccess) extends ActorRefProvider {
   import RemoteActorRefProvider._
 
-  val remoteSettings: RemoteSettings = new RemoteSettings(settings.config, systemName)
+  val remoteSettings: RemoteSettings = new RemoteSettings(settings.config)
 
   override val deployer: Deployer = createDeployer
 
@@ -134,19 +134,8 @@ class RemoteActorRefProvider(
         local.registerExtraNames(Map(("remote", d)))
         d
       },
-
       serialization = SerializationExtension(system),
-
-      transport = {
-        val fqn = remoteSettings.RemoteTransport
-        val args = List(
-          classOf[ExtendedActorSystem] -> system,
-          classOf[RemoteActorRefProvider] -> this)
-
-        system.dynamicAccess.createInstanceFor[RemoteTransport](fqn, args).recover({
-          case problem ⇒ throw new RemoteTransportException("Could not load remote transport layer " + fqn, problem)
-        }).get
-      })
+      transport = new Remoting(system, this))
 
     _internals = internals
     remotingTerminator ! internals

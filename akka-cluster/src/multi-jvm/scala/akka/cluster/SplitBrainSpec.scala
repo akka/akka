@@ -24,7 +24,7 @@ case class SplitBrainMultiNodeConfig(failureDetectorPuppet: Boolean) extends Mul
 
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
-        akka.remoting.retry-latch-closed-for = 3 s
+        akka.remote.retry-latch-closed-for = 3 s
         akka.cluster {
           auto-down = on
           failure-detector.threshold = 4
