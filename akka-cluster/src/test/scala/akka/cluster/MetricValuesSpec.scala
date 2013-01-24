@@ -4,17 +4,42 @@
 
 package akka.cluster
 
+import scala.util.Try
 import akka.actor.Address
+import akka.cluster.NodeMetrics.MetricValues._
+import akka.testkit.AkkaSpec
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class NodeMetricsComparatorSpec extends ClusterMetricsRouteeSelectorSpec {
-
+class MetricValuesSpec extends AkkaSpec(MetricsEnabledSpec.config) with MetricSpec
+  with MetricsCollectorFactory {
   import NodeMetrics._
+
+  val collector = createMetricsCollector
+
+  val node1 = NodeMetrics(Address("akka", "sys", "a", 2554), 1, collector.sample.metrics)
+  val node2 = NodeMetrics(Address("akka", "sys", "a", 2555), 1, collector.sample.metrics)
+
+  var nodes: Seq[NodeMetrics] = Seq(node1, node2)
+
+  // work up the data streams where applicable
+  for (i ← 1 to 100) {
+    nodes = nodes map {
+      n ⇒
+        n.copy(metrics = collector.sample.metrics.flatMap(latest ⇒ n.metrics.collect {
+          case streaming if latest same streaming ⇒
+            streaming.average match {
+              case Some(e) ⇒ streaming.copy(value = latest.value, average =
+                if (latest.isDefined) Some(e :+ latest.value.get.doubleValue) else None)
+              case None ⇒ streaming.copy(value = latest.value)
+            }
+        }))
+    }
+  }
 
   "NodeMetrics.MetricValues" must {
     "extract expected metrics for load balancing" in {
-      val stream1 = node2.metric("heap-memory-committed").value.get.longValue()
-      val stream2 = node1.metric("heap-memory-used").value.get.longValue()
+      val stream1 = node2.metric(HeapMemoryCommitted).value.get.longValue
+      val stream2 = node1.metric(HeapMemoryUsed).value.get.longValue
       stream1 must be >= (stream2)
     }
 
@@ -39,8 +64,9 @@ class NodeMetricsComparatorSpec extends ClusterMetricsRouteeSelectorSpec {
           }
 
           val (systemLoadAverage, processors, combinedCpu, cores) = MetricValues.unapply(node.cpu)
-          systemLoadAverage must be >= (0.0)
           processors must be > (0)
+          if (systemLoadAverage.isDefined)
+            systemLoadAverage.get must be >= (0.0)
           if (combinedCpu.isDefined) {
             combinedCpu.get must be <= (1.0)
             combinedCpu.get must be >= (0.0)
@@ -53,29 +79,4 @@ class NodeMetricsComparatorSpec extends ClusterMetricsRouteeSelectorSpec {
     }
   }
 
-  "NodeMetricsComparator" must {
-    val seq = Seq((Address("akka", "sys", "a", 2554), 9L), (Address("akka", "sys", "a", 2555), 8L))
-    val seq2 = Seq((Address("akka", "sys", "a", 2554), 9.0), (Address("akka", "sys", "a", 2555), 8.0))
-
-    "handle min ordering of a (Address, Long)" in {
-      import NodeMetricsComparator.longMinAddressOrdering
-      seq.min._1.port.get must be(2555)
-      seq.min._2 must be(8L)
-    }
-    "handle max ordering of a (Address, Long)" in {
-      val (address, value) = NodeMetricsComparator.maxAddressLong(seq)
-      value must be(9L)
-      address.port.get must be(2554)
-    }
-    "handle min ordering of a (Address, Double)" in {
-      import NodeMetricsComparator.doubleMinAddressOrdering
-      seq2.min._1.port.get must be(2555)
-      seq2.min._2 must be(8.0)
-    }
-    "handle max ordering of a (Address, Double)" in {
-      val (address, value) = NodeMetricsComparator.maxAddressDouble(seq2)
-      value must be(9.0)
-      address.port.get must be(2554)
-    }
-  }
 }

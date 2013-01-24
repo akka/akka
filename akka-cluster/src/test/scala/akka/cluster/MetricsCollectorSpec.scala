@@ -7,17 +7,18 @@ package akka.cluster
 import scala.language.postfixOps
 import scala.concurrent.duration._
 import scala.concurrent.Await
+import scala.util.{ Success, Try, Failure }
 
 import akka.actor._
 import akka.testkit._
+import akka.cluster.NodeMetrics.MetricValues._
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import util.{ Success, Try, Failure }
 
 object MetricsEnabledSpec {
   val config = """
     akka.cluster.metrics.enabled = on
-    akka.cluster.metrics.metrics-interval = 1 s
+    akka.cluster.metrics.collect-interval = 1 s
     akka.cluster.metrics.gossip-interval = 1 s
     akka.cluster.metrics.rate-of-decay = 10
     akka.actor.provider = "akka.remote.RemoteActorRefProvider"
@@ -25,22 +26,16 @@ object MetricsEnabledSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with ImplicitSender with AbstractClusterMetricsSpec with MetricSpec {
+class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with ImplicitSender with MetricSpec
+  with MetricsCollectorFactory {
   import system.dispatcher
 
   val collector = createMetricsCollector
 
   "Metric must" must {
-    "create and initialize a new metric or merge an existing one" in {
-      for (i ← 0 to samples) {
-        val metrics = collector.sample.metrics
-        assertCreatedUninitialized(metrics)
-        assertInitialized(DefaultRateOfDecay, metrics map (_.initialize(DefaultRateOfDecay)))
-      }
-    }
 
     "merge 2 metrics that are tracking the same metric" in {
-      for (i ← 0 to samples) {
+      for (i ← 1 to 20) {
         val sample1 = collector.sample.metrics
         val sample2 = collector.sample.metrics
         var merged = sample2 flatMap (latest ⇒ sample1 collect {
@@ -51,8 +46,8 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
           }
         })
 
-        val sample3 = collector.sample.metrics map (_.initialize(DefaultRateOfDecay))
-        val sample4 = collector.sample.metrics map (_.initialize(DefaultRateOfDecay))
+        val sample3 = collector.sample.metrics
+        val sample4 = collector.sample.metrics
         merged = sample4 flatMap (latest ⇒ sample3 collect {
           case peer if latest same peer ⇒ {
             val m = peer :+ latest
@@ -74,62 +69,61 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
 
     "collect accurate metrics for a node" in {
       val sample = collector.sample
-      assertExpectedSampleSize(collector.isSigar, DefaultRateOfDecay, sample)
       val metrics = sample.metrics.collect { case m if m.isDefined ⇒ (m.name, m.value.get) }
-      val used = metrics collectFirst { case ("heap-memory-used", b) ⇒ b }
-      val committed = metrics collectFirst { case ("heap-memory-committed", b) ⇒ b }
+      val used = metrics collectFirst { case (HeapMemoryUsed, b) ⇒ b }
+      val committed = metrics collectFirst { case (HeapMemoryCommitted, b) ⇒ b }
       metrics foreach {
-        case ("total-cores", b)           ⇒ b.intValue must be > (0)
-        case ("network-max-rx", b)        ⇒ b.longValue must be > (0L)
-        case ("network-max-tx", b)        ⇒ b.longValue must be > (0L)
-        case ("system-load-average", b)   ⇒ b.doubleValue must be >= (0.0)
-        case ("processors", b)            ⇒ b.intValue must be >= (0)
-        case ("heap-memory-used", b)      ⇒ b.longValue must be >= (0L)
-        case ("heap-memory-committed", b) ⇒ b.longValue must be > (0L)
-        case ("cpu-combined", b) ⇒
-          b.doubleValue must be <= (1.0)
-          b.doubleValue must be >= (0.0)
-        case ("heap-memory-max", b) ⇒
+        case (TotalCores, b)          ⇒ b.intValue must be > (0)
+        case (NetworkInboundRate, b)  ⇒ b.longValue must be > (0L)
+        case (NetworkOutboundRate, b) ⇒ b.longValue must be > (0L)
+        case (SystemLoadAverage, b)   ⇒ b.doubleValue must be >= (0.0)
+        case (Processors, b)          ⇒ b.intValue must be >= (0)
+        case (HeapMemoryUsed, b)      ⇒ b.longValue must be >= (0L)
+        case (HeapMemoryCommitted, b) ⇒ b.longValue must be > (0L)
+        case (HeapMemoryMax, b) ⇒
+          b.longValue must be > (0L)
           used.get.longValue must be <= (b.longValue)
           committed.get.longValue must be <= (b.longValue)
+        case (CpuCombined, b) ⇒
+          b.doubleValue must be <= (1.0)
+          b.doubleValue must be >= (0.0)
+
       }
     }
 
     "collect SIGAR metrics if it is on the classpath" in {
-      if (collector.isSigar) {
-        // combined cpu may or may not be defined on a given sampling
-        // systemLoadAverage is SIGAR present
-        collector.systemLoadAverage.isDefined must be(true)
-        collector.networkStats.nonEmpty must be(true)
-        collector.networkMaxRx.isDefined must be(true)
-        collector.networkMaxTx.isDefined must be(true)
-        collector.totalCores.isDefined must be(true)
+      collector match {
+        case c: SigarMetricsCollector ⇒
+          // combined cpu may or may not be defined on a given sampling
+          // systemLoadAverage is not present on all platforms
+          c.networkMaxRx.isDefined must be(true)
+          c.networkMaxTx.isDefined must be(true)
+          c.totalCores.isDefined must be(true)
+        case _ ⇒
       }
     }
 
     "collect JMX metrics" in {
       // heap max may be undefined depending on the OS
-      // systemLoadAverage is JMX if SIGAR not present, but not available on all OS
-      collector.used.isDefined must be(true)
-      collector.committed.isDefined must be(true)
-      collector.processors.isDefined must be(true)
+      // systemLoadAverage is JMX when SIGAR not present, but
+      // it's not present on all platforms
+      val c = collector.asInstanceOf[JmxMetricsCollector]
+      c.heapUsed.isDefined must be(true)
+      c.heapCommitted.isDefined must be(true)
+      c.processors.isDefined must be(true)
     }
 
-    "collect [" + samples + "] node metrics samples in an acceptable duration" taggedAs LongRunningTest in {
-      val latch = TestLatch(samples)
-      val task = system.scheduler.schedule(0 seconds, interval) {
+    "collect 50 node metrics samples in an acceptable duration" taggedAs LongRunningTest in within(7 seconds) {
+      (1 to 50) foreach { _ ⇒
         val sample = collector.sample
-        assertCreatedUninitialized(sample.metrics)
-        assertExpectedSampleSize(collector.isSigar, DefaultRateOfDecay, sample)
-        latch.countDown()
+        sample.metrics.size must be >= (3)
+        Thread.sleep(100)
       }
-      Await.ready(latch, longDuration)
-      task.cancel()
     }
   }
 }
 
-trait MetricSpec extends WordSpec with MustMatchers {
+trait MetricSpec extends WordSpec with MustMatchers { this: { def system: ActorSystem } ⇒
 
   def assertMasterMetricsAgainstGossipMetrics(master: Set[NodeMetrics], gossip: MetricsGossip): Unit = {
     val masterMetrics = collectNodeMetrics(master)
@@ -140,71 +134,27 @@ trait MetricSpec extends WordSpec with MustMatchers {
   def assertExpectedNodeAddresses(gossip: MetricsGossip, nodes: Set[NodeMetrics]): Unit =
     gossip.nodes.map(_.address) must be(nodes.map(_.address))
 
-  def assertExpectedSampleSize(isSigar: Boolean, gossip: MetricsGossip): Unit =
-    gossip.nodes.foreach(n ⇒ assertExpectedSampleSize(isSigar, gossip.rateOfDecay, n))
-
-  def assertCreatedUninitialized(gossip: MetricsGossip): Unit =
-    gossip.nodes.foreach(n ⇒ assertCreatedUninitialized(n.metrics.filterNot(_.trendable)))
-
-  def assertInitialized(gossip: MetricsGossip): Unit =
-    gossip.nodes.foreach(n ⇒ assertInitialized(gossip.rateOfDecay, n.metrics))
-
-  def assertCreatedUninitialized(metrics: Set[Metric]): Unit = {
-    metrics.size must be > (0)
-    metrics foreach { m ⇒
-      m.average.isEmpty must be(true)
-      if (m.value.isDefined) m.isDefined must be(true)
-      if (m.initializable) (m.trendable && m.isDefined && m.average.isEmpty) must be(true)
-    }
-  }
-
-  def assertInitialized(decay: Int, metrics: Set[Metric]): Unit = if (decay > 0) metrics.filter(_.trendable) foreach { m ⇒
-    m.initializable must be(false)
-    if (m.isDefined) m.average.isDefined must be(true)
-  }
-
   def assertMerged(latest: Metric, peer: Metric, merged: Metric): Unit = if (latest same peer) {
     if (latest.isDefined) {
       if (peer.isDefined) {
         merged.isDefined must be(true)
         merged.value.get must be(latest.value.get)
-        if (latest.trendable) {
-          if (latest.initializable) merged.average.isEmpty must be(true)
-          else merged.average.isDefined must be(true)
-        }
+        merged.average.isDefined must be(latest.average.isDefined)
       } else {
         merged.isDefined must be(true)
         merged.value.get must be(latest.value.get)
-        if (latest.average.isDefined) merged.average.get must be(latest.average.get)
-        else merged.average.isEmpty must be(true)
+        merged.average.isDefined must be(latest.average.isDefined || peer.average.isDefined)
       }
     } else {
       if (peer.isDefined) {
         merged.isDefined must be(true)
         merged.value.get must be(peer.value.get)
-        if (peer.trendable) {
-          if (peer.initializable) merged.average.isEmpty must be(true)
-          else merged.average.isDefined must be(true)
-        }
+        merged.average.isDefined must be(peer.average.isDefined)
       } else {
         merged.isDefined must be(false)
         merged.average.isEmpty must be(true)
       }
     }
-  }
-
-  def assertExpectedSampleSize(isSigar: Boolean, decay: Int, node: NodeMetrics): Unit = {
-    node.metrics.size must be(9)
-    val metrics = node.metrics.filter(_.isDefined)
-    if (isSigar) { // combined cpu + jmx max heap
-      metrics.size must be >= (7)
-      metrics.size must be <= (9)
-    } else { // jmx max heap
-      metrics.size must be >= (4)
-      metrics.size must be <= (5)
-    }
-
-    if (decay > 0) metrics.collect { case m if m.trendable && (!m.initializable) ⇒ m }.foreach(_.average.isDefined must be(true))
   }
 
   def collectNodeMetrics(nodes: Set[NodeMetrics]): Seq[Metric] = {
@@ -214,19 +164,25 @@ trait MetricSpec extends WordSpec with MustMatchers {
   }
 }
 
-trait AbstractClusterMetricsSpec extends DefaultTimeout {
-  this: AkkaSpec ⇒
+/**
+ * Used when testing metrics without full cluster
+ */
+trait MetricsCollectorFactory { this: AkkaSpec ⇒
 
-  val selfAddress = new Address("akka", "localhost")
+  private def extendedActorSystem = system.asInstanceOf[ExtendedActorSystem]
 
-  val DefaultRateOfDecay = 10
+  def selfAddress = extendedActorSystem.provider.rootPath.address
 
-  val interval: FiniteDuration = 100 millis
+  val defaultRateOfDecay = 10
 
-  val longDuration = 120 seconds // for long running tests
+  def createMetricsCollector: MetricsCollector =
+    Try(new SigarMetricsCollector(selfAddress, defaultRateOfDecay, extendedActorSystem.dynamicAccess)) match {
+      case Success(sigarCollector) ⇒ sigarCollector
+      case Failure(e) ⇒
+        log.debug("Metrics will be retreived from MBeans, Sigar failed to load. Reason: " +
+          e.getMessage)
+        new JmxMetricsCollector(selfAddress, defaultRateOfDecay)
+    }
 
-  val samples = 100
-
-  def createMetricsCollector: MetricsCollector = MetricsCollector(selfAddress, log, system.asInstanceOf[ExtendedActorSystem].dynamicAccess)
-
+  def isSigar(collector: MetricsCollector): Boolean = collector.isInstanceOf[SigarMetricsCollector]
 }
