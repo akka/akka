@@ -51,6 +51,7 @@ object RemotingSpec {
 
       remote.retry-latch-closed-for = 1 s
       remote.log-remote-lifecycle-events = on
+
       remote.enabled-transports = [
         "akka.remote.test",
         "akka.remote.netty.tcp",
@@ -59,8 +60,11 @@ object RemotingSpec {
       ]
 
       remote.netty.tcp.port = 0
+      remote.netty.tcp.hostname = "localhost"
       remote.netty.udp.port = 0
+      remote.netty.udp.hostname = "localhost"
       remote.netty.ssl.port = 0
+      remote.netty.ssl.hostname = "localhost"
       remote.netty.ssl.ssl = ${common-ssl-settings}
 
       remote.test {
