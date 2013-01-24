@@ -36,6 +36,7 @@ class ClusterConfigSpec extends AkkaSpec {
       JoinTimeout must be(60 seconds)
       AutoJoin must be(true)
       AutoDown must be(false)
+      MinNrOfMembers must be(1)
       JmxEnabled must be(true)
       UseDispatcher must be(Dispatchers.DefaultDispatcherId)
       GossipDifferentViewProbability must be(0.8 plusOrMinus 0.0001)

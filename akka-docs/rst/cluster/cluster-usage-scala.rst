@@ -212,6 +212,25 @@ frontend nodes and 3 backend nodes::
 
 .. note:: The above example should probably be designed as two separate, frontend/backend, clusters, when there is a `cluster client for decoupling clusters <https://www.assembla.com/spaces/akka/tickets/1165>`_.
 
+How To Startup when Cluster Size Reached
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A common use case is to start actors after the cluster has been initialized,
+members have joined, and the cluster has reached a certain size. 
+
+With a configuration option you can define required number of members
+before the leader changes member status of 'Joining' members to 'Up'.
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/factorial.conf#min-nr-of-members
+
+You can start the actors in a ``registerOnMemberUp`` callback, which will 
+be invoked when the current member status is changed tp 'Up', i.e. the cluster
+has at least the defined number of members.
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/factorial/FactorialSample.scala#registerOnUp
+
+This callback can be used for other things than starting actors.
+
 Failure Detector
 ^^^^^^^^^^^^^^^^
 

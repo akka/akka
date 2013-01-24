@@ -3,6 +3,7 @@ package sample.cluster.factorial
 //#imports
 import scala.annotation.tailrec
 import scala.concurrent.Future
+import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -21,32 +22,14 @@ object FactorialFrontend {
   def main(args: Array[String]): Unit = {
     val upToN = if (args.isEmpty) 200 else args(0).toInt
 
-    val system = ActorSystem("ClusterSystem")
-
-    // start the calculations when there is at least 2 other members
-    system.actorOf(Props(new Actor with ActorLogging {
-      var memberCount = 0
-
-      log.info("Factorials will start when 3 members in the cluster.")
-      Cluster(context.system).subscribe(self, classOf[MemberUp])
-
-      def receive = {
-        case state: CurrentClusterState ⇒
-          memberCount = state.members.size
-          runWhenReady()
-        case MemberUp(member) ⇒
-          memberCount += 1
-          runWhenReady()
-      }
-
-      def runWhenReady(): Unit = if (memberCount >= 3) {
-        context.system.actorOf(Props(new FactorialFrontend(upToN, repeat = true)),
-          name = "factorialFrontend")
-        context stop self
-      }
-
-    }), name = "startup")
-
+    val system = ActorSystem("ClusterSystem", ConfigFactory.load("factorial"))
+    system.log.info("Factorials will start when 3 members in the cluster.")
+    //#registerOnUp
+    Cluster(system) registerOnMemberUp {
+      system.actorOf(Props(new FactorialFrontend(upToN, repeat = true)),
+        name = "factorialFrontend")
+    }
+    //#registerOnUp
   }
 }
 
@@ -79,7 +62,7 @@ object FactorialBackend {
     // when specified as program argument
     if (args.nonEmpty) System.setProperty("akka.remote.netty.port", args(0))
 
-    val system = ActorSystem("ClusterSystem")
+    val system = ActorSystem("ClusterSystem", ConfigFactory.load("factorial"))
     system.actorOf(Props[FactorialBackend], name = "factorialBackend")
 
     system.actorOf(Props[MetricsListener], name = "metricsListener")

@@ -232,6 +232,24 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   def down(address: Address): Unit =
     clusterCore ! ClusterUserAction.Down(address)
 
+  /**
+   * The supplied thunk will be run, once, when current cluster member is `Up`.
+   * Typically used together with configuration option `akka.cluster.min-nr-of-members'
+   * to defer some action, such as starting actors, until the cluster has reached
+   * a certain size.
+   */
+  def registerOnMemberUp[T](code: ⇒ T): Unit =
+    registerOnMemberUp(new Runnable { def run = code })
+
+  /**
+   * The supplied callback will be run, once, when current cluster member is `Up`.
+   * Typically used together with configuration option `akka.cluster.min-nr-of-members'
+   * to defer some action, such as starting actors, until the cluster has reached
+   * a certain size.
+   * JAVA API
+   */
+  def registerOnMemberUp(callback: Runnable): Unit = clusterDaemons ! InternalClusterAction.AddOnMemberUpListener(callback)
+
   // ========================================================
   // ===================== INTERNAL API =====================
   // ========================================================
@@ -268,4 +286,3 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   }
 
 }
-
