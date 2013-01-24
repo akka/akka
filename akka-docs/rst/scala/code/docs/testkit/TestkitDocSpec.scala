@@ -206,6 +206,16 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     //#test-special-probe
   }
 
+  "demonstrate probe watch" in {
+    import akka.testkit.TestProbe
+    val target = system.actorFor("/buh")
+    //#test-probe-watch
+    val probe = TestProbe()
+    probe watch target
+    probe.expectMsgType[Terminated].actor must be(target)
+    //#test-probe-watch
+  }
+
   "demonstrate probe reply" in {
     import akka.testkit.TestProbe
     import scala.concurrent.duration._
