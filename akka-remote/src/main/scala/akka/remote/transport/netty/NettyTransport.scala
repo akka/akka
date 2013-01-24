@@ -196,7 +196,7 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
 
   implicit val executionContext: ExecutionContext = system.dispatcher
 
-  override val schemeIdentifier: String = TransportMode + (if (EnableSsl) ".ssl" else "")
+  override val schemeIdentifier: String = (if (EnableSsl) "ssl." else "") + TransportMode
   override val maximumPayloadBytes: Int = 32000 // The number of octets required by the remoting specification
 
   private final val isDatagram: Boolean = TransportMode == Udp
