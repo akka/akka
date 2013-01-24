@@ -446,7 +446,10 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
 
   override def isTerminated(): Boolean = true
 
-  override def sendSystemMessage(message: SystemMessage): Unit = specialHandle(message)
+  override def sendSystemMessage(message: SystemMessage): Unit = {
+    if (Mailbox.debug) println(s"ELAR $path having enqueued $message")
+    specialHandle(message)
+  }
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = message match {
     case d: DeadLetter ⇒
