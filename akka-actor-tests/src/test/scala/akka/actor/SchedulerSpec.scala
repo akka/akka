@@ -20,12 +20,12 @@ import akka.testkit._
 
 object SchedulerSpec {
   val testConf = ConfigFactory.parseString("""
-    akka.scheduler.class = akka.actor.DefaultScheduler
+    akka.scheduler.implementation = akka.actor.DefaultScheduler
     akka.scheduler.ticks-per-wheel = 32
   """).withFallback(AkkaSpec.testConf)
 
   val testConfRevolver = ConfigFactory.parseString("""
-    akka.scheduler.class = akka.actor.LightArrayRevolverScheduler
+    akka.scheduler.implementation = akka.actor.LightArrayRevolverScheduler
   """).withFallback(testConf)
 }
 
