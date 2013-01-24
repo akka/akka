@@ -387,6 +387,23 @@ You have complete flexibility here in mixing and matching the
 name for it. In real life your code will probably be a bit more complicated
 than the example given above; just use the power!
 
+.. warning::
+
+  Any message send from a ``TestProbe`` to another actor which runs on the
+  CallingThreadDispatcher runs the risk of dead-lock, if that other actor might
+  also send to this probe. The implementation of :meth:`TestProbe.watch` and
+  :meth:`TestProbe.unwatch` will also send a message to the watchee, which
+  means that it is dangerous to try watching e.g. :class:`TestActorRef` from a
+  :meth:`TestProbe`.
+
+Watching Other Actors from Probes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A :class:`JavaTestKit` can register itself for DeathWatch of any other actor:
+
+.. includecode:: code/docs/testkit/TestKitDocTest.java
+   :include: test-probe-watch
+
 Replying to Messages Received by Probes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
