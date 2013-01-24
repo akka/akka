@@ -59,10 +59,11 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
           case event: MemberEvent ⇒
             // replace current member with new member (might have different status, only address is used in equals)
             state = state.copy(members = state.members - event.member + event.member)
-          case LeaderChanged(leader)        ⇒ state = state.copy(leader = leader)
-          case s: CurrentClusterState       ⇒ state = s
-          case CurrentInternalStats(stats)  ⇒ _latestStats = stats
-          case ClusterMetricsChanged(nodes) ⇒ _clusterMetrics = nodes
+          case LeaderChanged(leader)                          ⇒ state = state.copy(leader = leader)
+          case s: CurrentClusterState                         ⇒ state = s
+          case CurrentInternalStats(stats)                    ⇒ _latestStats = stats
+          case ClusterMetricsChanged(nodes)                   ⇒ _clusterMetrics = nodes
+          case _: InstantClusterState | _: InstantMemberEvent ⇒ // not used here
         }
       }
     }).withDispatcher(cluster.settings.UseDispatcher), name = "clusterEventBusListener")
