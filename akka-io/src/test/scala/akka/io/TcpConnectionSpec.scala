@@ -7,9 +7,10 @@ package akka.io
 import scala.annotation.tailrec
 
 import java.nio.channels.{ Selector, SelectionKey, SocketChannel, ServerSocketChannel }
+import java.nio.channels.{ FileChannel, SelectionKey, SocketChannel, ServerSocketChannel }
 import java.nio.ByteBuffer
 import java.nio.channels.spi.SelectorProvider
-import java.io.IOException
+import java.io.{ FileInputStream, FileOutputStream, File, IOException }
 import java.net._
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -116,6 +117,26 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       writer.expectNoMsg(500.millis)
 
       writer.send(connectionActor, Write(ByteString.empty, Ack))
+      writer.expectMsg(Ack)
+    }
+
+    "write file to network" in withEstablishedConnection() { setup ⇒
+      import setup._
+      serverSideChannel.configureBlocking(false)
+
+      val testFile = File.createTempFile("testdata", ".bin")
+      testFile.deleteOnExit()
+      val fos = new FileOutputStream(testFile)
+      val size = 100000000
+      // create 100MB test file
+      val buf = new Array[Byte](size)
+      fos.write(buf)
+      fos.close()
+
+      object Ack
+      val writer = TestProbe()
+      writer.send(connectionActor, WriteFile(testFile.getAbsolutePath, 0, testFile.length(), Ack))
+      pullFromServerSide(testFile.length().toInt, 1000000)
       writer.expectMsg(Ack)
     }
 
@@ -402,7 +423,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
      */
     @tailrec final def pullFromServerSide(remaining: Int, remainingTries: Int = 1000): Unit =
       if (remainingTries <= 0)
-        throw new AssertionError("Pulling took too many loops")
+        throw new AssertionError("Pulling took too many loops,  remaining data: " + remaining)
       else if (remaining > 0) {
         if (selector.msgAvailable) {
           selector.expectMsg(WriteInterest)

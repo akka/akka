@@ -5,6 +5,13 @@
 package akka.io
 
 import java.net.InetSocketAddress
+import java.nio.channels.{ FileChannel, ServerSocketChannel, SocketChannel }
+import akka.actor.ActorRef
+import akka.util.ByteString
+import akka.actor.ExtensionKey
+import akka.actor.ExtendedActorSystem
+import akka.actor.ActorSystemImpl
+import akka.actor.Props
 import java.net.Socket
 import java.net.ServerSocket
 import com.typesafe.config.Config
@@ -141,20 +148,29 @@ object Tcp extends ExtensionKey[TcpExt] {
 
   case object NoAck
 
+  sealed trait WriteCommand extends Command {
+    require(ack != null, "ack must be non-null. Use NoAck if you don't want acks.")
+
+    def ack: Any
+    def wantsAck: Boolean = ack != NoAck
+  }
+
   /**
    * Write data to the TCP connection. If no ack is needed use the special
    * `NoAck` object.
    */
-  case class Write(data: ByteString, ack: Any) extends Command {
-    require(ack != null, "ack must be non-null. Use NoAck if you don't want acks.")
-
-    def wantsAck: Boolean = ack != NoAck
-  }
+  case class Write(data: ByteString, ack: Any) extends WriteCommand
   object Write {
     val Empty: Write = Write(ByteString.empty, NoAck)
     def apply(data: ByteString): Write =
       if (data.isEmpty) Empty else Write(data, NoAck)
   }
+
+  /**
+   * Write `count` bytes starting at `position` from file at `filePath` to the connection.
+   * When write is finished acknowledge with `ack`. If no ack is needed use `NoAck`.
+   */
+  case class WriteFile(filePath: String, position: Long, count: Long, ack: Any) extends WriteCommand
 
   case object StopReading extends Command
   case object ResumeReading extends Command
@@ -201,6 +217,7 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
     }
     val SelectorDispatcher = getString("selector-dispatcher")
     val WorkerDispatcher = getString("worker-dispatcher")
+    val FileIODispatcher = getString("file-io-dispatcher")
     val ManagementDispatcher = getString("management-dispatcher")
     val TraceLogging = getBoolean("trace-logging")
 
@@ -220,4 +237,5 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
   }
 
   val bufferPool: BufferPool = new DirectByteBufferPool(Settings.DirectBufferSize, Settings.MaxDirectBufferPoolSize)
+  val fileIoDispatcher = system.dispatchers.lookup(Settings.FileIODispatcher)
 }
