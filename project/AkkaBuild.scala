@@ -382,7 +382,7 @@ object AkkaBuild extends Build {
         orig
       },
       enableOutput in generatePdf in Sphinx := true,
-      enableOutput in generateEpub in Sphinx := false,
+      enableOutput in generateEpub in Sphinx := true,
       unmanagedSourceDirectories in Test <<= sourceDirectory in Sphinx apply { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
       unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,

@@ -8,7 +8,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.3.5")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-scalariform" % "1.0.0")
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "0.6.1")
+addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "0.6.2")
 
 addSbtPlugin("com.typesafe.sbtosgi" % "sbtosgi" % "0.3.0")
 
