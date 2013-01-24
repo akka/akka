@@ -4,16 +4,15 @@
 
 package akka.cluster
 
-import akka.testkit.{ ImplicitSender, AkkaSpec }
+import org.scalatest.WordSpec
+import org.scalatest.matchers.MustMatchers
 import akka.cluster.StandardMetrics._
 import scala.util.Failure
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class MetricNumericConverterSpec extends AkkaSpec(MetricsEnabledSpec.config) with MetricNumericConverter with ImplicitSender
-  with MetricsCollectorFactory {
+class MetricNumericConverterSpec extends WordSpec with MustMatchers with MetricNumericConverter {
 
   "MetricNumericConverter" must {
-    val collector = createMetricsCollector
 
     "convert" in {
       convertNumber(0).isLeft must be(true)
