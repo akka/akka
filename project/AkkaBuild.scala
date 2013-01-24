@@ -452,7 +452,9 @@ object AkkaBuild extends Build {
       case key: String if key.startsWith("multinode.") => "-D" + key + "=" + System.getProperty(key)
       case key: String if key.startsWith("akka.") => "-D" + key + "=" + System.getProperty(key)
     }
-    akkaProperties ::: (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
+
+    "-Xmx256m" :: akkaProperties ::: 
+      (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
   }
 
   // for excluding tests by name use system property: -Dakka.test.names.exclude=TimingSpec
