@@ -3,6 +3,7 @@
  */
 package akka.cluster
 
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import com.typesafe.config.Config
 import akka.ConfigurationException
 import akka.actor.Actor
@@ -25,6 +26,14 @@ import akka.event.EventStream
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteDeployer
 import akka.remote.routing.RemoteRouterConfig
+import akka.routing.RouterConfig
+import akka.routing.DefaultResizer
+import akka.cluster.routing.AdaptiveLoadBalancingRouter
+import akka.cluster.routing.MixMetricsSelector
+import akka.cluster.routing.HeapMetricsSelector
+import akka.cluster.routing.SystemLoadAverageMetricsSelector
+import akka.cluster.routing.CpuMetricsSelector
+import akka.cluster.routing.MetricsSelector
 
 /**
  * INTERNAL API
@@ -45,7 +54,7 @@ class ClusterActorRefProvider(
     remoteDeploymentWatcher = system.systemActorOf(Props[RemoteDeploymentWatcher], "RemoteDeploymentWatcher")
   }
 
-  override val deployer: ClusterDeployer = new ClusterDeployer(settings, dynamicAccess)
+  override lazy val deployer: ClusterDeployer = new ClusterDeployer(settings, dynamicAccess)
 
   /**
    * This method is overridden here to keep track of remote deployed actors to
@@ -107,6 +116,36 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
         } else d
       case None ⇒ None
     }
+  }
+
+  override protected def createRouterConfig(routerType: String, key: String, config: Config, deployment: Config): RouterConfig = {
+    val routees = Vector() ++ deployment.getStringList("routees.paths").asScala
+    val nrOfInstances = deployment.getInt("nr-of-instances")
+    val resizer = if (config.hasPath("resizer")) Some(DefaultResizer(deployment.getConfig("resizer"))) else None
+
+    routerType match {
+      case "adaptive" ⇒
+        val metricsSelector = deployment.getString("metrics-selector") match {
+          case "mix"  ⇒ MixMetricsSelector()
+          case "heap" ⇒ HeapMetricsSelector
+          case "cpu"  ⇒ CpuMetricsSelector
+          case "load" ⇒ SystemLoadAverageMetricsSelector
+          case fqn ⇒
+            val args = Seq(classOf[Config] -> deployment)
+            dynamicAccess.createInstanceFor[MetricsSelector](fqn, args).recover({
+              case exception ⇒ throw new IllegalArgumentException(
+                ("Cannot instantiate metrics-selector [%s], defined in [%s], " +
+                  "make sure it extends [akka.cluster.routing.MetricsSelector] and " +
+                  "has constructor with [com.typesafe.config.Config] parameter")
+                  .format(fqn, key), exception)
+            }).get
+        }
+
+        AdaptiveLoadBalancingRouter(metricsSelector, nrOfInstances, routees, resizer)
+
+      case _ ⇒ super.createRouterConfig(routerType, key, config, deployment)
+    }
+
   }
 }
 

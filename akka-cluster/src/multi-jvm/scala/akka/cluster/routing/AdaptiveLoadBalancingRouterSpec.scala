@@ -5,21 +5,25 @@
 package akka.cluster.routing
 
 import language.postfixOps
-import scala.concurrent.duration._
 import java.lang.management.ManagementFactory
-import akka.remote.testkit.{ MultiNodeSpec, MultiNodeConfig }
-import akka.testkit.{ LongRunningTest, DefaultTimeout, ImplicitSender }
-import akka.actor._
-import akka.cluster.{ MemberStatus, MultiNodeClusterSpec }
 import scala.concurrent.Await
-import akka.routing.RouterRoutees
-import akka.pattern.ask
-import akka.routing.CurrentRoutees
-import akka.cluster.Cluster
+import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
-object ClusterLoadBalancingRouterMultiJvmSpec extends MultiNodeConfig {
+import akka.actor._
+import akka.cluster.Cluster
+import akka.cluster.MultiNodeClusterSpec
+import akka.cluster.NodeMetrics
+import akka.pattern.ask
+import akka.remote.testkit.{ MultiNodeSpec, MultiNodeConfig }
+import akka.routing.CurrentRoutees
+import akka.routing.FromConfig
+import akka.routing.RouterRoutees
+import akka.testkit.{ LongRunningTest, DefaultTimeout, ImplicitSender }
+
+object AdaptiveLoadBalancingRouterMultiJvmSpec extends MultiNodeConfig {
 
   class Routee extends Actor {
     var usedMemory: Array[Byte] = _
@@ -51,18 +55,38 @@ object ClusterLoadBalancingRouterMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
       akka.cluster.metrics.collect-interval = 1s
       akka.cluster.metrics.gossip-interval = 1s
+      akka.actor.deployment {
+        /router3 = {
+          router = adaptive
+          metrics-selector = cpu
+          nr-of-instances = 9
+        }
+        /router4 = {
+          router = adaptive
+          metrics-selector = "akka.cluster.routing.TestCustomMetricsSelector"
+          nr-of-instances = 10
+          cluster {
+            enabled = on
+            max-nr-of-instances-per-node = 2
+          }
+        }
+      }
     """)).withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
 
-class ClusterLoadBalancingRouterMultiJvmNode1 extends ClusterLoadBalancingRouterSpec
-class ClusterLoadBalancingRouterMultiJvmNode2 extends ClusterLoadBalancingRouterSpec
-class ClusterLoadBalancingRouterMultiJvmNode3 extends ClusterLoadBalancingRouterSpec
+class TestCustomMetricsSelector(config: Config) extends MetricsSelector {
+  override def weights(nodeMetrics: Set[NodeMetrics]): Map[Address, Int] = Map.empty
+}
 
-abstract class ClusterLoadBalancingRouterSpec extends MultiNodeSpec(ClusterLoadBalancingRouterMultiJvmSpec)
+class AdaptiveLoadBalancingRouterMultiJvmNode1 extends AdaptiveLoadBalancingRouterSpec
+class AdaptiveLoadBalancingRouterMultiJvmNode2 extends AdaptiveLoadBalancingRouterSpec
+class AdaptiveLoadBalancingRouterMultiJvmNode3 extends AdaptiveLoadBalancingRouterSpec
+
+abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoadBalancingRouterMultiJvmSpec)
   with MultiNodeClusterSpec
   with ImplicitSender with DefaultTimeout {
-  import ClusterLoadBalancingRouterMultiJvmSpec._
+  import AdaptiveLoadBalancingRouterMultiJvmSpec._
 
   def currentRoutees(router: ActorRef) =
     Await.result(router ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees].routees
@@ -86,7 +110,7 @@ abstract class ClusterLoadBalancingRouterSpec extends MultiNodeSpec(ClusterLoadB
 
   def startRouter(name: String): ActorRef = {
     val router = system.actorOf(Props[Routee].withRouter(ClusterRouterConfig(
-      local = ClusterLoadBalancingRouter(HeapMetricsSelector),
+      local = AdaptiveLoadBalancingRouter(HeapMetricsSelector),
       settings = ClusterRouterSettings(totalInstances = 10, maxInstancesPerNode = 1))), name)
     awaitCond {
       // it may take some time until router receives cluster member events
@@ -96,7 +120,7 @@ abstract class ClusterLoadBalancingRouterSpec extends MultiNodeSpec(ClusterLoadB
     router
   }
 
-  "A cluster with a ClusterLoadBalancingRouter" must {
+  "A cluster with a AdaptiveLoadBalancingRouter" must {
     "start cluster nodes" taggedAs LongRunningTest in {
       awaitClusterUp(roles: _*)
       enterBarrier("after-1")
@@ -112,6 +136,7 @@ abstract class ClusterLoadBalancingRouterSpec extends MultiNodeSpec(ClusterLoadB
         val iterationCount = 100
         for (i ← 0 until iterationCount) {
           router1 ! "hit"
+          // wait a while between each message, since metrics is collected periodically
           Thread.sleep(10)
         }
 
@@ -146,6 +171,7 @@ abstract class ClusterLoadBalancingRouterSpec extends MultiNodeSpec(ClusterLoadB
         val iterationCount = 100
         for (i ← 0 until iterationCount) {
           router2 ! "hit"
+          // wait a while between each message, since metrics is collected periodically
           Thread.sleep(10)
         }
 
@@ -157,6 +183,31 @@ abstract class ClusterLoadBalancingRouterSpec extends MultiNodeSpec(ClusterLoadB
       }
 
       enterBarrier("after-3")
+    }
+
+    "create routees from configuration" taggedAs LongRunningTest in {
+      runOn(first) {
+        val router3 = system.actorOf(Props[Memory].withRouter(FromConfig()), "router3")
+        awaitCond {
+          // it may take some time until router receives cluster member events
+          currentRoutees(router3).size == 9
+        }
+        currentRoutees(router3).map(fullAddress).toSet must be(Set(address(first)))
+      }
+      enterBarrier("after-4")
+    }
+
+    "create routees from cluster.enabled configuration" taggedAs LongRunningTest in {
+      runOn(first) {
+        val router4 = system.actorOf(Props[Memory].withRouter(FromConfig()), "router4")
+        awaitCond {
+          // it may take some time until router receives cluster member events
+          currentRoutees(router4).size == 6
+        }
+        currentRoutees(router4).map(fullAddress).toSet must be(Set(
+          address(first), address(second), address(third)))
+      }
+      enterBarrier("after-5")
     }
   }
 }

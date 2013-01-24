@@ -4,13 +4,14 @@
 package akka.cluster
 
 import language.postfixOps
-import scala.collection.immutable
 import scala.collection.immutable.{ VectorBuilder, SortedSet }
 import akka.actor.{ Actor, ActorLogging, ActorRef, Address }
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus._
 import akka.event.EventStream
 import akka.actor.AddressTerminated
+import java.lang.Iterable
+import scala.collection.JavaConverters
 
 /**
  * Domain events published to the event bus.
@@ -129,17 +130,23 @@ object ClusterEvent {
   }
 
   /**
-   * INTERNAL API
    * A member is considered as unreachable by the failure detector.
    */
   case class UnreachableMember(member: Member) extends ClusterDomainEvent
 
   /**
-   * INTERNAL API
    *
-   * Current snapshot of cluster member metrics. Published to subscribers.
+   * Current snapshot of cluster node metrics. Published to subscribers.
    */
-  case class ClusterMetricsChanged(nodes: Set[NodeMetrics]) extends ClusterDomainEvent
+  case class ClusterMetricsChanged(nodeMetrics: Set[NodeMetrics]) extends ClusterDomainEvent {
+    /**
+     * Java API
+     */
+    def getNodeMetrics: java.lang.Iterable[NodeMetrics] = {
+      import scala.collection.JavaConverters._
+      nodeMetrics.asJava
+    }
+  }
 
   /**
    * INTERNAL API
@@ -155,19 +162,19 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
-  private[cluster] def diffUnreachable(oldGossip: Gossip, newGossip: Gossip): immutable.Seq[UnreachableMember] =
+  private[cluster] def diffUnreachable(oldGossip: Gossip, newGossip: Gossip): Seq[UnreachableMember] =
     if (newGossip eq oldGossip) Nil
     else {
       val newUnreachable = newGossip.overview.unreachable -- oldGossip.overview.unreachable
       val unreachableEvents = newUnreachable map UnreachableMember
 
-      immutable.Seq.empty ++ unreachableEvents
+      Seq.empty ++ unreachableEvents
     }
 
   /**
    * INTERNAL API.
    */
-  private[cluster] def diffMemberEvents(oldGossip: Gossip, newGossip: Gossip): immutable.Seq[MemberEvent] =
+  private[cluster] def diffMemberEvents(oldGossip: Gossip, newGossip: Gossip): Seq[MemberEvent] =
     if (newGossip eq oldGossip) Nil
     else {
       val newMembers = newGossip.members -- oldGossip.members
@@ -208,14 +215,14 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
-  private[cluster] def diffLeader(oldGossip: Gossip, newGossip: Gossip): immutable.Seq[LeaderChanged] =
+  private[cluster] def diffLeader(oldGossip: Gossip, newGossip: Gossip): Seq[LeaderChanged] =
     if (newGossip.leader != oldGossip.leader) List(LeaderChanged(newGossip.leader))
     else Nil
 
   /**
    * INTERNAL API
    */
-  private[cluster] def diffSeen(oldGossip: Gossip, newGossip: Gossip): immutable.Seq[SeenChanged] =
+  private[cluster] def diffSeen(oldGossip: Gossip, newGossip: Gossip): Seq[SeenChanged] =
     if (newGossip eq oldGossip) Nil
     else {
       val newConvergence = newGossip.convergence
@@ -236,7 +243,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
 
   var latestGossip: Gossip = Gossip()
   var latestConvergedGossip: Gossip = Gossip()
-  var memberEvents: immutable.Seq[MemberEvent] = immutable.Seq.empty
+  var memberEvents: Seq[MemberEvent] = Seq.empty
 
   def receive = {
     case PublishChanges(newGossip)            ⇒ publishChanges(newGossip)
@@ -292,7 +299,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
       val previousConvergedGossip = latestConvergedGossip
       latestConvergedGossip = newGossip
       memberEvents foreach publish
-      memberEvents = immutable.Seq.empty
+      memberEvents = Seq.empty
       diffLeader(previousConvergedGossip, latestConvergedGossip) foreach publish
     }
     // publish internal SeenState for testing purposes
