@@ -13,10 +13,8 @@ import akka.util.Helpers
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RemoteConfigSpec extends AkkaSpec(
   """
-  akka {
-    actor.provider = "akka.remote.RemoteActorRefProvider"
-    remote.netty.port = 0
-  }
+    akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+    akka.remoting.transports.tcp.port = 0
   """) {
 
   // FIXME: These tests are ignored as it tests configuration specific to the old remoting.
