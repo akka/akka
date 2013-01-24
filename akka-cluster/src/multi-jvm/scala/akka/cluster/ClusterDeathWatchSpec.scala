@@ -3,6 +3,8 @@
  */
 package akka.cluster
 
+import language.postfixOps
+import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
@@ -54,7 +56,7 @@ abstract class ClusterDeathWatchSpec
   }
 
   "An actor watching a remote actor in the cluster" must {
-    "receive Terminated when watched node becomes unreachable" taggedAs LongRunningTest in {
+    "receive Terminated when watched node becomes Down" taggedAs LongRunningTest in within(20 seconds) {
       awaitClusterUp(roles: _*)
       enterBarrier("cluster-up")
 
@@ -76,10 +78,12 @@ abstract class ClusterDeathWatchSpec
         watchEstablished.await
         enterBarrier("watch-established")
         expectMsg(path2)
-        expectNoMsg
+        expectNoMsg(2 seconds)
         enterBarrier("second-terminated")
 
         markNodeAsUnavailable(third)
+        awaitCond(clusterView.unreachableMembers.exists(_.address == address(third)))
+        cluster.down(third)
         expectMsg(path3)
         enterBarrier("third-terminated")
 
@@ -91,6 +95,8 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("watch-established")
         runOn(third) {
           markNodeAsUnavailable(second)
+          awaitCond(clusterView.unreachableMembers.exists(_.address == address(second)))
+          cluster.down(second)
         }
         enterBarrier("second-terminated")
         enterBarrier("third-terminated")
@@ -132,7 +138,7 @@ abstract class ClusterDeathWatchSpec
       enterBarrier("after-3")
     }
 
-    "be able to shutdown system when using remote deployed actor on node that crash" taggedAs LongRunningTest in {
+    "be able to shutdown system when using remote deployed actor on node that crash" taggedAs LongRunningTest in within(20 seconds) {
       runOn(fourth) {
         val hello = system.actorOf(Props[Hello], "hello")
         hello.isInstanceOf[RemoteActorRef] must be(true)
@@ -141,6 +147,9 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("hello-deployed")
 
         markNodeAsUnavailable(first)
+        awaitCond(clusterView.unreachableMembers.exists(_.address == address(first)))
+        cluster.down(first)
+
         val t = expectMsgType[Terminated]
         t.actor must be(hello)
 
