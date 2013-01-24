@@ -440,8 +440,8 @@ service nodes and 1 client::
 Cluster Metrics
 ^^^^^^^^^^^^^^^
 
-The member nodes of the cluster collects system health metrics and publish that to other nodes and to 
-registered subscribers. This information is primarily used for load-balancing of nodes.
+The member nodes of the cluster collects system health metrics and publishes that to other nodes and to 
+registered subscribers. This information is primarily used for load-balancing routers.
 
 Hyperic Sigar
 -------------
@@ -454,7 +454,7 @@ Sigar is using a native OS library. To enable usage of Sigar you need to add the
   <dependency>
     <groupId>org.hyperic</groupId>
     <artifactId>sigar</artifactId>
-    <version>1.6.4</version>
+    <version>@sigarVersion@</version>
   </dependency>
 
  
@@ -521,6 +521,8 @@ one frontend::
 
   mvn exec:java \
     -Dexec.mainClass="sample.cluster.factorial.FactorialFrontendMain"
+
+Press ctrl-c in the terminal window of the frontend to stop the factorial calculations.
 
 
 Subscribe to Metrics Events

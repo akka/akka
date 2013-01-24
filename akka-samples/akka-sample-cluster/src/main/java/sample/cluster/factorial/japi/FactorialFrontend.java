@@ -14,6 +14,8 @@ import akka.cluster.routing.SystemLoadAverageMetricsSelector;
 
 //#frontend
 public class FactorialFrontend extends UntypedActor {
+  final int upToN;
+  final boolean repeat;
 
   LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
@@ -21,18 +23,34 @@ public class FactorialFrontend extends UntypedActor {
     new Props(FactorialBackend.class).withRouter(FromConfig.getInstance()),
     "factorialBackendRouter");
 
+  public FactorialFrontend(int upToN, boolean repeat) {
+    this.upToN = upToN;
+    this.repeat = repeat;
+  }
+
+  @Override
+  public void preStart() {
+    sendJobs();
+  }
+
   @Override
   public void onReceive(Object message) {
-    if (message instanceof Integer) {
-      Integer n = (Integer) message;
-      backend.tell(n, getSelf());
-
-    } else if (message instanceof FactorialResult) {
+    if (message instanceof FactorialResult) {
       FactorialResult result = (FactorialResult) message;
-      log.info("{}! = {}", result.n, result.factorial);
+      if (result.n == upToN) {
+        log.debug("{}! = {}", result.n, result.factorial);
+        if (repeat) sendJobs();
+      }
 
     } else {
       unhandled(message);
+    }
+  }
+
+  void sendJobs() {
+    log.info("Starting batch of factorials up to [{}]", upToN);
+    for (int n = 1; n <= upToN; n++) {
+      backend.tell(n, getSelf());
     }
   }
 

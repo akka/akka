@@ -10,8 +10,7 @@ import org.scalatest.matchers.MustMatchers
 import akka.actor.Address
 import akka.cluster.Metric
 import akka.cluster.NodeMetrics
-import akka.cluster.StandardMetrics.HeapMemory.Fields._
-import akka.cluster.StandardMetrics.Cpu.Fields._
+import akka.cluster.StandardMetrics._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MetricsSelectorSpec extends WordSpec with MustMatchers {
@@ -107,7 +106,7 @@ class MetricsSelectorSpec extends WordSpec with MustMatchers {
 
   "MixMetricsSelector" must {
     "aggregate capacity of all metrics" in {
-      val capacity = MixMetricsSelector().capacity(nodeMetrics)
+      val capacity = MixMetricsSelector.capacity(nodeMetrics)
       capacity(a1) must be((0.75 + 0.9 + 0.9375) / 3 plusOrMinus 0.0001)
       capacity(b1) must be((0.75 + 0.5 + 0.9375) / 3 plusOrMinus 0.0001)
       capacity(c1) must be((0.0 + 0.0 + 0.0) / 3 plusOrMinus 0.0001)

@@ -401,8 +401,8 @@ service nodes and 1 client::
 Cluster Metrics
 ^^^^^^^^^^^^^^^
 
-The member nodes of the cluster collects system health metrics and publish that to other nodes and to 
-registered subscribers. This information is primarily used for load-balancing of nodes.
+The member nodes of the cluster collects system health metrics and publishes that to other nodes and to 
+registered subscribers. This information is primarily used for load-balancing routers.
 
 Hyperic Sigar
 -------------
@@ -412,7 +412,7 @@ for a wider and more accurate range of metrics compared to what can be retrieved
 Sigar is using a native OS library. To enable usage of Sigar you need to add the directory of the native library to 
 ``-Djava.libarary.path=<path_of_sigar_libs>`` add the following dependency::
 
-    "org.hyperic" % "sigar" % "1.6.4"
+    "org.hyperic" % "sigar" % "@sigarVersion@"
  
 
 Adaptive Load Balancing
@@ -473,6 +473,7 @@ and you can try by starting nodes in different terminal windows. For example, st
 
   run-main sample.cluster.factorial.FactorialFrontend
 
+Press ctrl-c in the terminal window of the frontend to stop the factorial calculations.
 
 Subscribe to Metrics Events
 ---------------------------

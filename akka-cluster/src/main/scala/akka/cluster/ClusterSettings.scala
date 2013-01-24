@@ -77,9 +77,9 @@ class ClusterSettings(val config: Config, val systemName: String) {
     require(d > Duration.Zero, "metrics.collect-interval must be > 0"); d
   }
   final val MetricsGossipInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.metrics.gossip-interval"), MILLISECONDS)
-  final val MetricsDecayHalfLifeDuration: FiniteDuration = {
-    val d = Duration(getMilliseconds("akka.cluster.metrics.decay-half-life-duration"), MILLISECONDS)
-    require(d > Duration.Zero, "metrics.decay-half-life-duration must be > 0"); d
+  final val MetricsMovingAverageHalfLife: FiniteDuration = {
+    val d = Duration(getMilliseconds("akka.cluster.metrics.moving-average-half-life"), MILLISECONDS)
+    require(d > Duration.Zero, "metrics.moving-average-half-life must be > 0"); d
   }
 }
 

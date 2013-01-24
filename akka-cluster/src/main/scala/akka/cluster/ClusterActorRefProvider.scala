@@ -54,7 +54,11 @@ class ClusterActorRefProvider(
     remoteDeploymentWatcher = system.systemActorOf(Props[RemoteDeploymentWatcher], "RemoteDeploymentWatcher")
   }
 
-  override lazy val deployer: ClusterDeployer = new ClusterDeployer(settings, dynamicAccess)
+  /**
+   * Factory method to make it possible to override deployer in subclass
+   * Creates a new instance every time
+   */
+  override protected def createDeployer: ClusterDeployer = new ClusterDeployer(settings, dynamicAccess)
 
   /**
    * This method is overridden here to keep track of remote deployed actors to
@@ -126,7 +130,7 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
     routerType match {
       case "adaptive" ⇒
         val metricsSelector = deployment.getString("metrics-selector") match {
-          case "mix"  ⇒ MixMetricsSelector()
+          case "mix"  ⇒ MixMetricsSelector
           case "heap" ⇒ HeapMetricsSelector
           case "cpu"  ⇒ CpuMetricsSelector
           case "load" ⇒ SystemLoadAverageMetricsSelector
