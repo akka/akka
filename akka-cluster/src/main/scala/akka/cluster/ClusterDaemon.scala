@@ -191,7 +191,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
   // note that self is not initially member,
   // and the Gossip is not versioned for this 'Node' yet
-  var latestGossip: Gossip = Gossip()
+  var latestGossip: Gossip = Gossip.empty
 
   var stats = ClusterStats()
 
@@ -283,7 +283,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
   def join(address: Address): Unit = {
     if (!latestGossip.members.exists(_.address == address)) {
       // wipe our state since a node that joins a cluster must be empty
-      latestGossip = Gossip()
+      latestGossip = Gossip.empty
       // wipe the failure detector since we are starting fresh and shouldn't care about the past
       failureDetector.reset()
       // wipe the publisher since we are starting fresh
@@ -377,7 +377,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
   def removing(address: Address): Unit = {
     log.info("Cluster Node [{}] - Node has been REMOVED by the leader - shutting down...", selfAddress)
     // just cleaning up the gossip state
-    latestGossip = Gossip()
+    latestGossip = Gossip.empty
     publish(latestGossip)
     context.become(removed)
     // make sure the final (removed) state is published

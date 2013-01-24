@@ -134,5 +134,17 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
       expectMsg(MemberUp(c2))
       expectMsgType[SeenChanged]
     }
+
+    "publish clean state when PublishStart" in {
+      publisher ! PublishChanges(g3)
+      expectMsg(MemberUp(b1))
+      expectMsg(MemberUp(c2))
+      expectMsgType[SeenChanged]
+
+      publisher ! PublishStart
+      expectMsgType[CurrentClusterState] must be(CurrentClusterState())
+
+    }
+
   }
 }

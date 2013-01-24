@@ -241,8 +241,8 @@ object ClusterEvent {
 private[cluster] final class ClusterDomainEventPublisher extends Actor with ActorLogging {
   import InternalClusterAction._
 
-  var latestGossip: Gossip = Gossip()
-  var latestConvergedGossip: Gossip = Gossip()
+  var latestGossip: Gossip = Gossip.empty
+  var latestConvergedGossip: Gossip = Gossip.empty
   var memberEvents: Seq[MemberEvent] = Seq.empty
 
   def receive = {
@@ -316,7 +316,11 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
 
   def publish(event: AnyRef): Unit = eventStream publish event
 
-  def publishStart(): Unit = clearState()
+  def publishStart(): Unit =
+    if ((latestGossip ne Gossip.empty) || (latestConvergedGossip ne Gossip.empty)) {
+      clearState()
+      publishCurrentClusterState(None)
+    }
 
   def publishDone(receiver: ActorRef): Unit = {
     clearState()
@@ -324,7 +328,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   }
 
   def clearState(): Unit = {
-    latestGossip = Gossip()
-    latestConvergedGossip = Gossip()
+    latestGossip = Gossip.empty
+    latestConvergedGossip = Gossip.empty
   }
 }
