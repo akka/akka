@@ -236,6 +236,18 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       n * 1000.0 / (System.nanoTime - startTime).nanos.toMillis must be(4.4 plusOrMinus 0.3)
     }
 
+    "handle timeouts equal to multiple of wheel period" taggedAs TimingTest in {
+      val timeout = 3200 milliseconds
+      val barrier = TestLatch()
+      import system.dispatcher
+      val job = system.scheduler.scheduleOnce(timeout)(barrier.countDown())
+      try {
+        Await.ready(barrier, 5000 milliseconds)
+      } finally {
+        job.cancel()
+      }
+    }
+
     "survive being stressed without cancellation" taggedAs TimingTest in {
       val r = ThreadLocalRandom.current()
       val N = 100000
@@ -258,6 +270,10 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       }
     }
   }
+}
+
+class DefaultSchedulerSpec extends AkkaSpec(SchedulerSpec.testConf) with SchedulerSpec {
+  private val cancellables = new ConcurrentLinkedQueue[Cancellable]()
 
   "A HashedWheelTimer" must {
 
@@ -273,22 +289,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       job.cancel()
     }
 
-    "handle timeouts equal to multiple of wheel period" taggedAs TimingTest in {
-      val timeout = 3200 milliseconds
-      val barrier = TestLatch()
-      import system.dispatcher
-      val job = system.scheduler.scheduleOnce(timeout)(barrier.countDown())
-      try {
-        Await.ready(barrier, 5000 milliseconds)
-      } finally {
-        job.cancel()
-      }
-    }
   }
-}
-
-class DefaultSchedulerSpec extends AkkaSpec(SchedulerSpec.testConf) with SchedulerSpec {
-  private val cancellables = new ConcurrentLinkedQueue[Cancellable]()
 
   def collectCancellable(c: Cancellable): Cancellable = {
     cancellables.add(c)
@@ -485,7 +486,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
           prb.ref ! ns
           try time += lbq.take()
           catch {
-            case _: InterruptedException ⇒
+            case _: InterruptedException ⇒ Thread.currentThread.interrupt()
           }
         }
       }

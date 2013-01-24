@@ -346,9 +346,18 @@ class LightArrayRevolverScheduler(config: Config,
       try nextTick()
       catch {
         case t: Throwable ⇒
-          val thread = threadFactory.newThread(this)
-          try thread.start()
-          finally timerThread = thread
+          log.error(t, "exception on LARS’ timer thread")
+          stopped.get match {
+            case null ⇒
+              val thread = threadFactory.newThread(this)
+              log.info("starting new LARS thread")
+              try thread.start()
+              catch {
+                case e: Throwable ⇒ log.error(e, "LARS cannot start new thread, ship’s going down!")
+              }
+              timerThread = thread
+            case x ⇒ x success clearAll()
+          }
           throw t
       }
     @tailrec final def nextTick(): Unit = {
