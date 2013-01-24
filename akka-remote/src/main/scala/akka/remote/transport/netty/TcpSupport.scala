@@ -12,6 +12,7 @@ import java.net.InetSocketAddress
 import org.jboss.netty.buffer.{ ChannelBuffers, ChannelBuffer }
 import org.jboss.netty.channel._
 import scala.concurrent.{ Future, Promise }
+import scala.util.{ Success, Failure }
 
 private[remote] object ChannelLocalActor extends ChannelLocal[Option[HandleEventListener]] {
   override def initialValue(channel: Channel): Option[HandleEventListener] = None
@@ -30,16 +31,15 @@ private[remote] trait TcpHandlers extends CommonHandlers {
   override def createHandle(channel: Channel, localAddress: Address, remoteAddress: Address): AssociationHandle =
     new TcpAssociationHandle(localAddress, remoteAddress, channel)
 
-  override def onDisconnect(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
+  override def onDisconnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit =
     notifyListener(e.getChannel, Disassociated)
-  }
 
-  override def onMessage(ctx: ChannelHandlerContext, e: MessageEvent) {
+  override def onMessage(ctx: ChannelHandlerContext, e: MessageEvent): Unit = {
     val bytes: Array[Byte] = e.getMessage.asInstanceOf[ChannelBuffer].array()
     if (bytes.length > 0) notifyListener(e.getChannel, InboundPayload(ByteString(bytes)))
   }
 
-  override def onException(ctx: ChannelHandlerContext, e: ExceptionEvent) {
+  override def onException(ctx: ChannelHandlerContext, e: ExceptionEvent): Unit = {
     notifyListener(e.getChannel, Disassociated)
     e.getChannel.close() // No graceful close here
   }
@@ -48,18 +48,16 @@ private[remote] trait TcpHandlers extends CommonHandlers {
 private[remote] class TcpServerHandler(_transport: NettyTransport, _associationListenerFuture: Future[AssociationEventListener])
   extends ServerHandler(_transport, _associationListenerFuture) with TcpHandlers {
 
-  override def onConnect(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
+  override def onConnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit =
     initInbound(e.getChannel, e.getChannel.getRemoteAddress, null)
-  }
 
 }
 
-private[remote] class TcpClientHandler(_transport: NettyTransport, _statusPromise: Promise[AssociationHandle])
-  extends ClientHandler(_transport, _statusPromise) with TcpHandlers {
+private[remote] class TcpClientHandler(_transport: NettyTransport)
+  extends ClientHandler(_transport) with TcpHandlers {
 
-  override def onConnect(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
+  override def onConnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit =
     initOutbound(e.getChannel, e.getChannel.getRemoteAddress, null)
-  }
 
 }
 
