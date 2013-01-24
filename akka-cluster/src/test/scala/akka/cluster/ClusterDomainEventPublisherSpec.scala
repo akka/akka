@@ -18,21 +18,9 @@ import akka.testkit.ImplicitSender
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
 
-object ClusterDomainEventPublisherSpec {
-  val config = """
-    akka.cluster.auto-join = off
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
-    akka.remote.log-remote-lifecycle-events = off
-    akka.remote.netty.port = 0
-    """
-
-  case class GossipTo(address: Address)
-}
-
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublisherSpec.config)
+class ClusterDomainEventPublisherSpec extends AkkaSpec
   with BeforeAndAfterEach with ImplicitSender {
-  import ClusterDomainEventPublisherSpec._
 
   var publisher: ActorRef = _
   val a1 = Member(Address("akka", "sys", "a", 2552), Up)

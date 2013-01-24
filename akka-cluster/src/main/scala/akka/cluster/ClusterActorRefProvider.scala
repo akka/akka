@@ -37,6 +37,10 @@ import akka.cluster.routing.MetricsSelector
 
 /**
  * INTERNAL API
+ *
+ * The `ClusterActorRefProvider` will load the [[akka.cluster.Cluster]]
+ * extension, i.e. the cluster will automatically be started when
+ * the `ClusterActorRefProvider` is used.
  */
 class ClusterActorRefProvider(
   _systemName: String,
@@ -50,6 +54,9 @@ class ClusterActorRefProvider(
 
   override def init(system: ActorSystemImpl): Unit = {
     super.init(system)
+
+    // initialize/load the Cluster extension
+    Cluster(system)
 
     remoteDeploymentWatcher = system.systemActorOf(Props[RemoteDeploymentWatcher], "RemoteDeploymentWatcher")
   }

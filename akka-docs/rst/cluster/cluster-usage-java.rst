@@ -31,7 +31,7 @@ A Simple Cluster Example
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 The following small program together with its configuration starts an ``ActorSystem``
-with the Cluster extension enabled. It joins the cluster and logs some membership events.
+with the Cluster enabled. It joins the cluster and logs some membership events.
 
 Try it out:
 
@@ -42,8 +42,7 @@ Try it out:
 
 To enable cluster capabilities in your Akka project you should, at a minimum, add the :ref:`remoting-java`
 settings, but with ``akka.cluster.ClusterActorRefProvider``.
-The ``akka.cluster.seed-nodes`` and cluster extension should normally also be added to your
-``application.conf`` file.
+The ``akka.cluster.seed-nodes`` should normally also be added to your ``application.conf`` file.
 
 The seed nodes are configured contact points for initial, automatic, join of the cluster.
 
