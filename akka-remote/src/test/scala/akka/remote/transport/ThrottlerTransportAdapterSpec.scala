@@ -18,11 +18,11 @@ object ThrottlerTransportAdapterSpec {
       #loglevel = DEBUG
       actor.provider = "akka.remote.RemoteActorRefProvider"
 
-      remoting.retry-latch-closed-for = 0 s
-      remoting.log-remote-lifecycle-events = on
+      remote.retry-latch-closed-for = 0 s
+      remote.log-remote-lifecycle-events = on
 
-      remoting.transports.tcp.applied-adapters = ["trttl"]
-      remoting.transports.tcp.port = 0
+      remote.netty.tcp.applied-adapters = ["trttl"]
+      remote.netty.tcp.port = 0
     }
                                                    """)
 

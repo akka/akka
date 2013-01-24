@@ -63,7 +63,7 @@ abstract class MultiNodeConfig {
           receive = on
           fsm = on
         }
-        akka.remoting.log-remote-lifecycle-events = on
+        akka.remote.log-remote-lifecycle-events = on
         """)
     else
       ConfigFactory.empty
@@ -101,8 +101,8 @@ abstract class MultiNodeConfig {
     val transportConfig =
       if (_testTransport) ConfigFactory.parseString(
         """
-           akka.remoting.transports.tcp.applied-adapters = [gremlin, trttl]
-           akka.remoting.retry-gate-closed-for = 1 s
+           akka.remote.netty.tcp.applied-adapters = [gremlin, trttl]
+           akka.remote.retry-gate-closed-for = 1 s
         """)
       else ConfigFactory.empty
 
@@ -194,8 +194,8 @@ object MultiNodeSpec {
 
   private[testkit] val nodeConfig = mapToConfig(Map(
     "akka.actor.provider" -> "akka.remote.RemoteActorRefProvider",
-    "akka.remoting.transports.tcp.hostname" -> selfName,
-    "akka.remoting.transports.tcp.port" -> selfPort))
+    "akka.remote.netty.tcp.hostname" -> selfName,
+    "akka.remote.netty.tcp.port" -> selfPort))
 
   private[testkit] val baseConfig: Config = ConfigFactory.parseString("""
       akka {

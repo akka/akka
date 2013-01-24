@@ -34,9 +34,9 @@ object Configuration {
         default-timeout = 10s
       }
 
-      remoting.enabled-transports = ["ssl"]
+      remote.enabled-transports = ["akka.remote.netty.ssl"]
 
-      remoting.transports.ssl {
+      remote.netty.ssl {
         hostname = localhost
         port = %d
         ssl {
@@ -62,7 +62,7 @@ object Configuration {
       //if (true) throw new IllegalArgumentException("Ticket1978*Spec isn't enabled")
 
       val config = ConfigFactory.parseString(conf.format(localPort, trustStore, keyStore, cipher, enabled.mkString(", ")))
-      val fullConfig = config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remoting.transports.ssl.ssl")
+      val fullConfig = config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty.ssl.ssl")
       val settings = new SSLSettings(fullConfig)
 
       val rng = NettySSLSupport.initializeCustomSecureRandom(settings.SSLRandomNumberGenerator,
@@ -126,7 +126,7 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
 
   lazy val other: ActorSystem = ActorSystem(
     "remote-sys",
-    ConfigFactory.parseString("akka.remoting.transports.ssl.port = " + cipherConfig.remotePort).withFallback(system.settings.config))
+    ConfigFactory.parseString("akka.remote.netty.ssl.port = " + cipherConfig.remotePort).withFallback(system.settings.config))
 
   override def afterTermination() {
     if (cipherConfig.runTest) {

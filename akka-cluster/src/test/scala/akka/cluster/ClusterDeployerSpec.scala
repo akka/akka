@@ -29,7 +29,7 @@ object ClusterDeployerSpec {
           cluster.routees-path = "/user/myservice"
         }
       }
-      akka.remoting.transports.tcp.port = 0
+      akka.remote.netty.tcp.port = 0
       """, ConfigParseOptions.defaults)
 
   class RecipeActor extends Actor {
