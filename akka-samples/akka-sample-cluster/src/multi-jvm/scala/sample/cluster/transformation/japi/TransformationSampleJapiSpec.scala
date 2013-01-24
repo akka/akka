@@ -72,7 +72,7 @@ abstract class TransformationSampleJapiSpec extends MultiNodeSpec(Transformation
       testConductor.enter("frontend1-started")
     }
 
-    "illustrate how a backend automatically registers" in within(20 seconds) {
+    "illustrate how a backend automatically registers" in within(15 seconds) {
       runOn(backend1) {
         Cluster(system) join node(frontend1).address
         system.actorOf(Props[TransformationBackend], name = "backend")
@@ -86,7 +86,7 @@ abstract class TransformationSampleJapiSpec extends MultiNodeSpec(Transformation
       testConductor.enter("frontend1-backend1-ok")
     }
 
-    "illustrate how more nodes registers" in within(15 seconds) {
+    "illustrate how more nodes registers" in within(20 seconds) {
       runOn(frontend2) {
         Cluster(system) join node(frontend1).address
         system.actorOf(Props[TransformationFrontend], name = "frontend")
