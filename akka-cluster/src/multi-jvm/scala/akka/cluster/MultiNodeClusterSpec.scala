@@ -69,8 +69,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
         ".*Cluster Node.* - is starting up.*",
         ".*Shutting down cluster Node.*",
         ".*Cluster node successfully shut down.*",
-        ".*Using a dedicated scheduler for cluster.*",
-        ".*Phi value.* for connection.*") foreach { s ⇒
+        ".*Using a dedicated scheduler for cluster.*") foreach { s ⇒
           sys.eventStream.publish(Mute(EventFilter.info(pattern = s)))
         }
 

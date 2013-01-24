@@ -38,8 +38,22 @@ class ClusterSettings(val config: Config, val systemName: String) {
     val d = Duration(getMilliseconds("akka.cluster.failure-detector.heartbeat-interval"), MILLISECONDS)
     require(d > Duration.Zero, "failure-detector.heartbeat-interval must be > 0"); d
   }
-  final val HeartbeatConsistentHashingVirtualNodesFactor = 10 // no need for configuration
-  final val NumberOfEndHeartbeats: Int = (FailureDetectorAcceptableHeartbeatPause / HeartbeatInterval + 1).toInt
+  final val HeartbeatRequestDelay: FiniteDuration = {
+    val d = Duration(getMilliseconds("akka.cluster.failure-detector.heartbeat-request.grace-period"), MILLISECONDS)
+    require(d > Duration.Zero, "failure-detector.heartbeat-request.grace-period must be > 0"); d
+  }
+  final val HeartbeatExpectedResponseAfter: FiniteDuration = {
+    val d = Duration(getMilliseconds("akka.cluster.failure-detector.heartbeat-request.expected-response-after"), MILLISECONDS)
+    require(d > Duration.Zero, "failure-detector.heartbeat-request.expected-response-after > 0"); d
+  }
+  final val HeartbeatRequestTimeToLive: FiniteDuration = {
+    val d = Duration(getMilliseconds("akka.cluster.failure-detector.heartbeat-request.time-to-live"), MILLISECONDS)
+    require(d > Duration.Zero, "failure-detector.heartbeat-request.time-to-live > 0"); d
+  }
+  final val NumberOfEndHeartbeats: Int = {
+    val n = getInt("akka.cluster.failure-detector.nr-of-end-heartbeats")
+    require(n > 0, "failure-detector.nr-of-end-heartbeats must be > 0"); n
+  }
   final val MonitoredByNrOfMembers: Int = {
     val n = getInt("akka.cluster.failure-detector.monitored-by-nr-of-members")
     require(n > 0, "failure-detector.monitored-by-nr-of-members must be > 0"); n
@@ -61,7 +75,6 @@ class ClusterSettings(val config: Config, val systemName: String) {
     require(n > 0, "min-nr-of-members must be > 0"); n
   }
   final val JmxEnabled: Boolean = getBoolean("akka.cluster.jmx.enabled")
-  final val JoinTimeout: FiniteDuration = Duration(getMilliseconds("akka.cluster.join-timeout"), MILLISECONDS)
   final val UseDispatcher: String = getString("akka.cluster.use-dispatcher") match {
     case "" ⇒ Dispatchers.DefaultDispatcherId
     case id ⇒ id

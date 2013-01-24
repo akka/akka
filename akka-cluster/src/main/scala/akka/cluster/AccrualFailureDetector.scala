@@ -109,18 +109,19 @@ class AccrualFailureDetector(
 
   private val state = new AtomicReference[State](State())
 
-  /**
-   * Returns true if the connection is considered to be up and healthy
-   * and returns false otherwise.
-   */
-  def isAvailable(connection: Address): Boolean = phi(connection) < threshold
+  override def isAvailable(connection: Address): Boolean = phi(connection) < threshold
+
+  override def isMonitoring(connection: Address): Boolean = state.get.timestamps.get(connection).nonEmpty
 
   /**
    * Records a heartbeat for a connection.
    */
   @tailrec
   final def heartbeat(connection: Address) {
-    log.debug("Heartbeat from connection [{}] ", connection)
+    if (isMonitoring(connection))
+      log.debug("Heartbeat from connection [{}] ", connection)
+    else
+      log.info("First heartbeat from connection [{}] ", connection)
 
     val timestamp = clock()
     val oldState = state.get
@@ -197,7 +198,9 @@ class AccrualFailureDetector(
    */
   @tailrec
   final def remove(connection: Address): Unit = {
-    log.debug("Remove connection [{}] ", connection)
+    if (isMonitoring(connection))
+      log.info("Remove heartbeat connection [{}] ", connection)
+
     val oldState = state.get
 
     if (oldState.history.contains(connection)) {
