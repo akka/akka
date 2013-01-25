@@ -231,6 +231,17 @@ has at least the defined number of members.
 
 This callback can be used for other things than starting actors.
 
+Cluster Singleton Pattern
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For some use cases it is convenient and sometimes also mandatory to ensure that
+you have exactly one actor of a certain type running somewhere in the cluster.
+
+This can be implemented by subscribing to ``LeaderChanged`` events, but there are
+several corner cases to consider. Therefore, this specific use case is made easily 
+accessible by the :ref:`cluster-singleton` in the contrib module. You can use it as is, 
+or adjust to fit your specific needs. 
+
 Failure Detector
 ^^^^^^^^^^^^^^^^
 
@@ -326,8 +337,8 @@ The same type of router could also have been defined in code:
 See :ref:`cluster_configuration_scala` section for further descriptions of the settings.
 
 
-Router Example
---------------
+Router Example with Remote Deployed Routees
+-------------------------------------------
 
 Let's take a look at how to use cluster aware routers.
 
@@ -384,19 +395,27 @@ service nodes and 1 client::
 
   run-main sample.cluster.stats.StatsSample
 
+Router Example with Lookup of Routees
+-------------------------------------
+
 The above setup is nice for this example, but we will also take a look at how to use
 a single master node that creates and deploys workers. To keep track of a single
-master we need one additional actor:
+master we use the :ref:`cluster-singleton` in the contrib module. The ``ClusterSingletonManager``
+is started on each node.
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#create-singleton-manager
+
+We also need an actor on each node that keeps track of where current single master exists and
+delegates jobs to the ``StatsService``.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#facade
 
 The ``StatsFacade`` receives text from users and delegates to the current ``StatsService``, the single
-master. It listens to cluster events to create or lookup the ``StatsService`` depending on if
-it is on the same same node or on another node. We run the master on the same node as the leader of
-the cluster members, which is nothing more than the address currently sorted first in the member ring,
-i.e. it can change when new nodes join or when current leader leaves.
+master. It listens to cluster events to lookup the ``StatsService`` on the leader node. The master runs 
+on the same node as the leader of the cluster members, which is nothing more than the address currently 
+sorted first in the member ring, i.e. it can change when new nodes join or when current leader leaves.
 
-All nodes start ``StatsFacade`` and the router is now configured like this:
+All nodes start ``StatsFacade`` and the ``ClusterSingletonManager``. The router is now configured like this:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#start-router-deploy
 
@@ -413,7 +432,7 @@ service nodes and 1 client::
 
   run-main sample.cluster.stats.StatsSampleOneMaster
 
-.. note:: The above example, especially the last part, will be simplified when the cluster handles automatic actor partitioning.
+.. note:: The above example will be simplified when the cluster handles automatic actor partitioning.
 
 
 Cluster Metrics
