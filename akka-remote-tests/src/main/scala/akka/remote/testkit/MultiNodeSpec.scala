@@ -101,7 +101,7 @@ abstract class MultiNodeConfig {
     val transportConfig =
       if (_testTransport) ConfigFactory.parseString(
         """
-           akka.remote.netty.tcp.applied-adapters = [gremlin, trttl]
+           akka.remote.netty.tcp.applied-adapters = [trttl, gremlin]
            akka.remote.retry-gate-closed-for = 1 s
         """)
       else ConfigFactory.empty
