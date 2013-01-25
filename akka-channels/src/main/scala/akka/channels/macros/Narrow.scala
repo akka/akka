@@ -9,16 +9,16 @@ import scala.reflect.api.Universe
 object Narrow {
   import Helpers._
 
-  def impl[C <: ChannelList: c.WeakTypeTag, T <: ChannelList: c.WeakTypeTag](
+  def impl[Desired <: ChannelList: c.WeakTypeTag, MyChannels <: ChannelList: c.WeakTypeTag](
     c: Context {
-      type PrefixType = ChannelRef[T]
-    }): c.Expr[ChannelRef[C]] = {
+      type PrefixType = ChannelRef[MyChannels]
+    }): c.Expr[ChannelRef[Desired]] = {
     import c.{ universe ⇒ u }
-    narrowCheck(u)(u.weakTypeOf[T], u.weakTypeOf[C]) match {
+    narrowCheck(u)(u.weakTypeOf[MyChannels], u.weakTypeOf[Desired]) match {
       case Nil        ⇒ // okay
       case err :: Nil ⇒ c.error(c.enclosingPosition, err)
       case list       ⇒ c.error(c.enclosingPosition, list mkString ("multiple errors:\n  - ", "\n  - ", ""))
     }
-    u.reify(c.prefix.splice.asInstanceOf[ChannelRef[C]])
+    u.reify(c.prefix.splice.asInstanceOf[ChannelRef[Desired]])
   }
 }

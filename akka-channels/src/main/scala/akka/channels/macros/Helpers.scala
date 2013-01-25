@@ -25,13 +25,7 @@ object Helpers {
     c.Expr[T](TypeApply(Ident("implicitly"), List(TypeTree().setType(weakTypeOf[T]))))
   }
 
-  def weakTT[T](c: Context)(tpe: c.universe.Type): c.WeakTypeTag[T] =
-    c.universe.WeakTypeTag[T](c.mirror, new TypeCreator {
-      def apply[U <: Universe with Singleton](m: scala.reflect.api.Mirror[U]) = {
-        val imp = m.universe.mkImporter(c.universe)
-        imp.importType(tpe)
-      }
-    })
+  def bool(c: Context, b: Boolean): c.Expr[Boolean] = c.Expr[Boolean](c.universe.Literal(c.universe.Constant(b)))
 
   def checkUnique(u: Universe)(channel: u.Type, list: u.Type): Option[String] = {
     val channels = inputChannels(u)(list) groupBy (_.erasure)

@@ -14,40 +14,40 @@ import akka.dispatch.ExecutionContexts
 object Tell {
   import Helpers._
 
-  def impl[T <: ChannelList: c.WeakTypeTag, M: c.WeakTypeTag](c: Context {
-                                                                type PrefixType = ChannelRef[T]
-                                                              })(msg: c.Expr[M]): c.Expr[Unit] = {
-    val tT = c.universe.weakTypeOf[T]
-    val (tS, senderTree, sender) = getSenderChannel(c)
+  def impl[MyChannels <: ChannelList: c.WeakTypeTag, Msg: c.WeakTypeTag](c: Context {
+                                                                           type PrefixType = ChannelRef[MyChannels]
+                                                                         })(msg: c.Expr[Msg]): c.Expr[Unit] = {
+    val tpeMyChannels = c.universe.weakTypeOf[MyChannels]
+    val (tpeSender, senderTree, sender) = getSenderChannel(c)
 
-    verify(c)(senderTree, c.universe.weakTypeOf[M], tS, tT)
+    verify(c)(senderTree, c.universe.weakTypeOf[Msg], tpeSender, tpeMyChannels)
 
     c.universe.reify(c.prefix.splice.actorRef.tell(msg.splice, sender.splice))
   }
 
-  def opsImpl[T <: ChannelList: c.WeakTypeTag, M: c.WeakTypeTag](c: Context {
-                                                                   type PrefixType = AnyOps[M]
-                                                                 })(channel: c.Expr[ChannelRef[T]]): c.Expr[Unit] = {
-    val tT = c.universe.weakTypeOf[T]
-    val (tS, senderTree, sender) = getSenderChannel(c)
+  def opsImpl[MyChannels <: ChannelList: c.WeakTypeTag, Msg: c.WeakTypeTag](c: Context {
+                                                                              type PrefixType = AnyOps[Msg]
+                                                                            })(channel: c.Expr[ChannelRef[MyChannels]]): c.Expr[Unit] = {
+    val tpeMyChannels = c.universe.weakTypeOf[MyChannels]
+    val (tpeSender, senderTree, sender) = getSenderChannel(c)
 
-    verify(c)(senderTree, c.universe.weakTypeOf[M], tS, tT)
+    verify(c)(senderTree, c.universe.weakTypeOf[Msg], tpeSender, tpeMyChannels)
 
     c.universe.reify(channel.splice.actorRef.tell(c.prefix.splice.value, sender.splice))
   }
 
-  def futureImpl[T <: ChannelList: c.WeakTypeTag, M: c.WeakTypeTag](c: Context {
-                                                                      type PrefixType = FutureOps[M]
-                                                                    })(channel: c.Expr[ChannelRef[T]]): c.Expr[Future[M]] = {
-    val tT = c.universe.weakTypeOf[T]
-    val (tS, senderTree, sender) = getSenderChannel(c)
+  def futureImpl[MyChannels <: ChannelList: c.WeakTypeTag, Msg: c.WeakTypeTag](c: Context {
+                                                                                 type PrefixType = FutureOps[Msg]
+                                                                               })(channel: c.Expr[ChannelRef[MyChannels]]): c.Expr[Future[Msg]] = {
+    val tpeMyChannels = c.universe.weakTypeOf[MyChannels]
+    val (tpeSender, senderTree, sender) = getSenderChannel(c)
 
-    verify(c)(senderTree, c.universe.weakTypeOf[M], tS, tT)
+    verify(c)(senderTree, c.universe.weakTypeOf[Msg], tpeSender, tpeMyChannels)
 
-    c.universe.reify(pipeTo[M](c.prefix.splice, channel.splice, sender.splice))
+    c.universe.reify(pipeTo[Msg](c.prefix.splice, channel.splice, sender.splice))
   }
 
-  @inline def pipeTo[M](f: FutureOps[M], c: ChannelRef[_], snd: ActorRef): Future[M] =
+  @inline def pipeTo[Msg](f: FutureOps[Msg], c: ChannelRef[_], snd: ActorRef): Future[Msg] =
     f.future.andThen {
       case Success(s) ⇒ c.actorRef.tell(s, snd)
       case _          ⇒

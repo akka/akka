@@ -10,25 +10,26 @@ import akka.actor.Props
 object CreateChild {
   import Helpers._
 
-  def impl[C <: ChannelList: c.WeakTypeTag, Pa <: ChannelList: c.WeakTypeTag, Ch <: ChannelList: c.WeakTypeTag](
+  def impl[MyChannels <: ChannelList: c.WeakTypeTag, ParentChannels <: ChannelList: c.WeakTypeTag, ChildChannels <: ChannelList: c.WeakTypeTag](
     c: Context {
-      type PrefixType = Channels[_, C]
-    })(factory: c.Expr[Channels[Pa, Ch]]): c.Expr[ChannelRef[Ch]] = {
+      type PrefixType = Channels[_, MyChannels]
+    })(factory: c.Expr[Channels[ParentChannels, ChildChannels]]): c.Expr[ChannelRef[ChildChannels]] = {
 
     import c.universe._
-    if (weakTypeOf[Pa] =:= weakTypeOf[Nothing]) {
+
+    if (weakTypeOf[ParentChannels] =:= weakTypeOf[Nothing]) {
       c.abort(c.enclosingPosition, "Parent argument must not be Nothing")
     }
-    if (weakTypeOf[Ch] =:= weakTypeOf[Nothing]) {
+    if (weakTypeOf[ChildChannels] =:= weakTypeOf[Nothing]) {
       c.abort(c.enclosingPosition, "channel list must not be Nothing")
     }
-    val missing = missingChannels(c.universe)(weakTypeOf[C], inputChannels(c.universe)(weakTypeOf[Pa]))
+
+    val missing = missingChannels(c.universe)(weakTypeOf[MyChannels], inputChannels(c.universe)(weakTypeOf[ParentChannels]))
     if (missing.isEmpty) {
-      implicit val t = c.TypeTag[Ch](c.weakTypeOf[Ch])
-      reify(new ChannelRef[Ch](c.prefix.splice.context.actorOf(Props(factory.splice))))
+      implicit val t = c.TypeTag[ChildChannels](c.weakTypeOf[ChildChannels])
+      reify(new ChannelRef[ChildChannels](c.prefix.splice.context.actorOf(Props(factory.splice))))
     } else {
-      c.error(c.enclosingPosition, s"This actor cannot support a child requiring channels ${missing mkString ", "}")
-      reify(???)
+      c.abort(c.enclosingPosition, s"This actor cannot support a child requiring channels ${missing mkString ", "}")
     }
   }
 

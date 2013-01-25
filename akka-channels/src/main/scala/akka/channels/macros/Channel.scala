@@ -1,8 +1,7 @@
 package akka.channels.macros
 
 import akka.channels._
-import scala.reflect.runtime.{ universe ⇒ ru }
-import ru.TypeTag
+import scala.reflect.runtime.universe
 import scala.reflect.macros.Context
 import scala.reflect.api.Universe
 
@@ -18,59 +17,41 @@ object Channel {
    * C is the channel list of the enclosing Channels
    * P is the parent channel list
    */
-  def impl[T: c.WeakTypeTag, C <: ChannelList: c.WeakTypeTag, P <: ChannelList: c.WeakTypeTag](
+  def impl[ReplyChannels <: ChannelList, MsgTChan <: ChannelList, MsgT: c.WeakTypeTag, MyChannels <: ChannelList: c.WeakTypeTag, ParentChannels <: ChannelList: c.WeakTypeTag](
     c: Context {
-      type PrefixType = Channels[P, C]
-    }): c.Expr[Channels[P, C]#Behaviorist[Nothing, T]] = {
+      type PrefixType = Channels[ParentChannels, MyChannels]
+    }): c.Expr[(Nothing ⇒ Unit)] = {
 
-    val tT = c.weakTypeOf[T]
-    val tC = c.weakTypeOf[C]
+    val tpeMsgT = c.weakTypeOf[MsgT]
+    val tpeMyChannels = c.weakTypeOf[MyChannels]
 
     import c.universe._
 
-    val undefined = missingChannels(c.universe)(tC, inputChannels(c.universe)(tT))
+    val undefined = missingChannels(c.universe)(tpeMyChannels, inputChannels(c.universe)(tpeMsgT))
     if (undefined.nonEmpty) {
-      c.error(c.enclosingPosition, s"no channel defined for types ${undefined mkString ", "}")
-      reify(null)
+      c.abort(c.enclosingPosition, s"no channel defined for types ${undefined mkString ", "}")
     } else {
-      checkUnique(c.universe)(tT, tC) foreach (c.error(c.enclosingPosition, _))
-      val channels = toChannels(c.universe)(replyChannels(c.universe)(tC, tT))
-      val (receive, wrapped) =
-        if (tT <:< typeOf[ChannelList]) {
-          appliedType(typeOf[Function2[_, _, _]].typeConstructor, List(
-            appliedType(typeOf[WrappedMessage[_]].typeConstructor, List(tT)),
-            appliedType(typeOf[ChannelRef[_]].typeConstructor, List(channels)),
-            typeOf[Unit])) -> true
-        } else {
-          appliedType(typeOf[Function2[_, _, _]].typeConstructor, List(
-            tT,
-            appliedType(typeOf[ChannelRef[_]].typeConstructor, List(channels)),
-            typeOf[Unit])) -> false
+      checkUnique(c.universe)(tpeMsgT, tpeMyChannels) foreach (c.error(c.enclosingPosition, _))
+      val channels = toChannels(c.universe)(replyChannels(c.universe)(tpeMyChannels, tpeMsgT))
+      val wrapped = tpeMsgT <:< typeOf[ChannelList]
+      implicit val ttMyChannels = c.TypeTag[MyChannels](tpeMyChannels)
+      implicit val ttReplyChannels = c.TypeTag[ReplyChannels](channels)
+      implicit val ttMsgT = c.TypeTag[MsgT](tpeMsgT)
+      implicit val ttMsgTChan = c.TypeTag[MsgTChan](tpeMsgT) // this is MsgT reinterpreted as <: ChannelList
+      val prepTree = reify(if (c.prefix.splice.channelListTypeTag == null)
+        c.prefix.splice.channelListTypeTag = universe.typeTag[MyChannels])
+      if (wrapped)
+        reify {
+          prepTree.splice
+          c.prefix.splice.behaviorist[(WrappedMessage[MsgTChan], ChannelRef[ReplyChannels]) ⇒ Unit, MsgT](
+            bool(c, wrapped).splice)(universe.typeTag[MsgT])
         }
-      c.Expr(
-        Block(List(
-          If(
-            {
-              val cltt = c.Expr(Select(c.prefix.tree, "channelListTypeTag"))
-              reify(cltt.splice == null).tree
-            },
-            Apply(
-              Select(c.prefix.tree, "channelListTypeTag_$eq"),
-              List(TypeApply(
-                Select(Select(Select(Select(Select(Ident("scala"), "reflect"), "runtime"), nme.PACKAGE), "universe"), "typeTag"),
-                List(TypeTree().setType(c.weakTypeOf[C]))))),
-            c.literalUnit.tree)),
-          Apply(
-            Select(
-              New(AppliedTypeTree(Select(c.prefix.tree, newTypeName("Behaviorist")), List(
-                TypeTree().setType(receive),
-                TypeTree().setType(tT)))),
-              nme.CONSTRUCTOR),
-            List(
-              TypeApply(
-                Select(Select(Select(Select(Select(Ident("scala"), "reflect"), "runtime"), nme.PACKAGE), "universe"), "typeTag"),
-                List(TypeTree().setType(tT))),
-              Literal(Constant(wrapped))))))
+      else
+        reify {
+          prepTree.splice
+          c.prefix.splice.behaviorist[(MsgT, ChannelRef[ReplyChannels]) ⇒ Unit, MsgT](
+            bool(c, wrapped).splice)(universe.typeTag[MsgT])
+        }
     }
   }
 

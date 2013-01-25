@@ -87,16 +87,19 @@ trait Channels[P <: ChannelList, C <: ChannelList] extends Actor {
    * }
    * }}}
    */
-  def channel[T]: Channels[P, C]#Behaviorist[Nothing, T] = macro macros.Channel.impl[T, C, P]
+  def channel[T]: (Nothing ⇒ Unit) = macro macros.Channel.impl[ChannelList, ChannelList, T, C, P]
 
-  class Behaviorist[-R, Ch](tt: ru.TypeTag[Ch], wrapped: Boolean) {
+  def behaviorist[R, Ch: ru.TypeTag](wrapped: Boolean): (R ⇒ Unit) = new Behaviorist[R, Ch](wrapped)
+  private class Behaviorist[-R, Ch: ru.TypeTag](wrapped: Boolean) extends (R ⇒ Unit) {
     private def ff(recv: R): FF =
       if (wrapped)
         F1(recv.asInstanceOf[(WrappedMessage[ChannelList], ChannelRef[ChannelList]) ⇒ Unit])
       else
         F2(recv.asInstanceOf[(Any, ChannelRef[ChannelList]) ⇒ Unit])
-    def apply(recv: R): Unit =
+    def apply(recv: R): Unit = {
+      val tt = implicitly[ru.TypeTag[Ch]]
       behavior ++= (for (t ← inputChannels(ru)(tt.tpe)) yield tt.mirror.runtimeClass(t.widen) -> ff(recv))
+    }
   }
 
   /*
@@ -105,7 +108,7 @@ trait Channels[P <: ChannelList, C <: ChannelList] extends Actor {
    * I’d like to keep this a trait, but traits cannot have constructor 
    * arguments, not even TypeTags.
    */
-  protected var channelListTypeTag: TypeTag[C] = _
+  var channelListTypeTag: TypeTag[C] = _
 
   /**
    * Sort so that subtypes always precede their supertypes, but without
