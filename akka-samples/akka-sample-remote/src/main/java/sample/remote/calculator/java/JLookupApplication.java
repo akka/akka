@@ -22,7 +22,7 @@ public class JLookupApplication implements Bootable {
         .getConfig("remotelookup"));
     actor = system.actorOf(new Props(JLookupActor.class));
     remoteActor = system.actorFor(
-      "akka://CalculatorApplication@127.0.0.1:2552/user/simpleCalculator");
+      "akka.tcp://CalculatorApplication@127.0.0.1:2552/user/simpleCalculator");
   }
 
   public void doSomething(Op.MathOp mathOp) {
