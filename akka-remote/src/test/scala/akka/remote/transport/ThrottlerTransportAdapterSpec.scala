@@ -95,7 +95,7 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
 class ThrottlerTransportAdapterGenericSpec extends GenericTransportSpec(withAkkaProtocol = true) {
 
   def transportName = "ThrottlerTransportAdapter"
-  def schemeIdentifier = "trttl.akka"
+  def schemeIdentifier = "akka.trttl"
   def freshTransport(testTransport: TestTransport) =
     new ThrottlerTransportAdapter(testTransport, system.asInstanceOf[ExtendedActorSystem])
 
