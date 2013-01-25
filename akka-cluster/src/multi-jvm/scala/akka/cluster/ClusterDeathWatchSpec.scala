@@ -106,7 +106,8 @@ abstract class ClusterDeathWatchSpec
 
     }
 
-    "receive Terminated when watched node is unknown host" taggedAs LongRunningTest in {
+    // the long within timeout is because some networks have long timeout for "cannot resolve unknownhost"
+    "receive Terminated when watched node is unknown host" taggedAs LongRunningTest in within (45 seconds){
       runOn(first) {
         val path = RootActorPath(Address("akka", system.name, "unknownhost", 2552)) / "user" / "subject"
         system.actorOf(Props(new Actor {
