@@ -45,7 +45,7 @@ class RemoteSettings(val config: Config) {
   val Transports: Seq[(String, Seq[String], Config)] = transportNames.map { name ⇒
     val transportConfig = transportConfigFor(name)
     (transportConfig.getString("transport-class"),
-      immutableSeq(transportConfig.getStringList("applied-adapters")),
+      immutableSeq(transportConfig.getStringList("applied-adapters")).reverse,
       transportConfig)
   }
 

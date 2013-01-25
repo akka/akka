@@ -63,10 +63,10 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
   """)
 
   val localAddress = Address("test", "testsystem", "testhost", 1234)
-  val localAkkaAddress = Address("test.akka", "testsystem", "testhost", 1234)
+  val localAkkaAddress = Address("akka.test", "testsystem", "testhost", 1234)
 
   val remoteAddress = Address("test", "testsystem2", "testhost2", 1234)
-  val remoteAkkaAddress = Address("test.akka", "testsystem2", "testhost2", 1234)
+  val remoteAkkaAddress = Address("akka.test", "testsystem2", "testhost2", 1234)
 
   val codec = AkkaPduProtobufCodec
 

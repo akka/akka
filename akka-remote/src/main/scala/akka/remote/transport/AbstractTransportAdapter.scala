@@ -44,13 +44,13 @@ object TransportAdaptersExtension extends ExtensionId[TransportAdapters] with Ex
 trait SchemeAugmenter {
   protected def addedSchemeIdentifier: String
 
-  protected def augmentScheme(originalScheme: String): String = s"$originalScheme.$addedSchemeIdentifier"
+  protected def augmentScheme(originalScheme: String): String = s"$addedSchemeIdentifier.$originalScheme"
 
   protected def augmentScheme(address: Address): Address = address.copy(protocol = augmentScheme(address.protocol))
 
   protected def removeScheme(scheme: String): String =
-    if (scheme.endsWith(s".$addedSchemeIdentifier"))
-      scheme.take(scheme.length - addedSchemeIdentifier.length - 1)
+    if (scheme.startsWith(s"$addedSchemeIdentifier."))
+      scheme.drop(addedSchemeIdentifier.length + 1)
     else scheme
 
   protected def removeScheme(address: Address): Address = address.copy(protocol = removeScheme(address.protocol))

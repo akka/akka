@@ -13,7 +13,7 @@ akka {
     actor {
         provider = "akka.remote.RemoteActorRefProvider"
         deployment {
-            /watchers.remote = "tcp.akka://other@localhost:2666"
+            /watchers.remote = "akka.tcp://other@localhost:2666"
         }
     }
     remote.netty.tcp {

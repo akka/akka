@@ -14,11 +14,11 @@ import scala.collection.immutable
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class HeartbeatNodeRingSpec extends WordSpec with MustMatchers {
 
-  val aa = Address("tcp.akka", "sys", "aa", 2552)
-  val bb = Address("tcp.akka", "sys", "bb", 2552)
-  val cc = Address("tcp.akka", "sys", "cc", 2552)
-  val dd = Address("tcp.akka", "sys", "dd", 2552)
-  val ee = Address("tcp.akka", "sys", "ee", 2552)
+  val aa = Address("akka.tcp", "sys", "aa", 2552)
+  val bb = Address("akka.tcp", "sys", "bb", 2552)
+  val cc = Address("akka.tcp", "sys", "cc", 2552)
+  val dd = Address("akka.tcp", "sys", "dd", 2552)
+  val ee = Address("akka.tcp", "sys", "ee", 2552)
 
   val nodes = Set(aa, bb, cc, dd, ee)
 
