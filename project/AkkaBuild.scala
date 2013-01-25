@@ -323,7 +323,7 @@ object AkkaBuild extends Build {
   lazy val clusterSample = Project(
     id = "akka-sample-cluster-experimental",
     base = file("akka-samples/akka-sample-cluster"),
-    dependencies = Seq(cluster, remoteTests % "test", testkit % "test"),
+    dependencies = Seq(cluster, contrib, remoteTests % "test", testkit % "test"),
     settings = sampleSettings ++ multiJvmSettings ++ experimentalSettings ++ Seq(
       // sigar is in Typesafe repo
       resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
@@ -385,7 +385,7 @@ object AkkaBuild extends Build {
   lazy val contrib = Project(
     id = "akka-contrib",
     base = file("akka-contrib"),
-    dependencies = Seq(remote, remoteTests % "compile;test->test"),
+    dependencies = Seq(remote, remoteTests % "compile;test->test", cluster),
     settings = defaultSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.contrib,
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-v"),

@@ -33,7 +33,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
   import ReliableProxySpec._
   import ReliableProxy._
 
-  override def initialParticipants = 2
+  override def initialParticipants = roles.size
 
   override def afterEach {
     runOn(local) {

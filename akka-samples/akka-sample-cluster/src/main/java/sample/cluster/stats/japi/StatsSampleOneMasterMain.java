@@ -1,7 +1,11 @@
 package sample.cluster.stats.japi;
 
 import akka.actor.ActorSystem;
+import akka.actor.PoisonPill;
 import akka.actor.Props;
+import akka.actor.UntypedActorFactory;
+import akka.contrib.pattern.ClusterSingletonManager;
+import akka.contrib.pattern.ClusterSingletonPropsFactory;
 
 import com.typesafe.config.ConfigFactory;
 
@@ -17,7 +21,7 @@ public class StatsSampleOneMasterMain {
     ActorSystem system = ActorSystem.create("ClusterSystem",
       ConfigFactory.parseString(
         "akka.actor.deployment {                       \n" +
-        "  /statsFacade/statsService/workerRouter {    \n" +
+        "  /singleton/statsService/workerRouter {      \n" +
         "    router = consistent-hashing               \n" +
         "    nr-of-instances = 100                     \n" +
         "    cluster {                                 \n" +
@@ -28,10 +32,24 @@ public class StatsSampleOneMasterMain {
         "  }                                           \n" +
         "}                                             \n")
         .withFallback(ConfigFactory.load()));
-
-    system.actorOf(new Props(StatsFacade.class), "statsFacade");
     //#start-router-deploy
 
-  }
+    //#create-singleton-manager
+    system.actorOf(new Props(new UntypedActorFactory() {
+      @Override
+      public ClusterSingletonManager create() {
+        return new ClusterSingletonManager("statsService", PoisonPill.getInstance(),
+            new ClusterSingletonPropsFactory() {
+              @Override
+              public Props create(Object handOverData) {
+                return new Props(StatsService.class);
+              }
+            });
+      }
+    }), "singleton");
+    //#create-singleton-manager
 
+    system.actorOf(new Props(StatsFacade.class), "statsFacade");
+
+  }
 }
