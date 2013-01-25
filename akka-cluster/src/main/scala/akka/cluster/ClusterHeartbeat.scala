@@ -7,9 +7,7 @@ import language.postfixOps
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import java.net.URLEncoder
-import akka.actor.{ ActorLogging, ActorRef, Address, Actor, RootActorPath, PoisonPill, Props }
-import akka.pattern.{ CircuitBreaker, CircuitBreakerOpenException }
+import akka.actor.{ ActorLogging, ActorRef, Address, Actor, RootActorPath, Props }
 import akka.cluster.ClusterEvent._
 import akka.routing.MurmurHash
 
@@ -81,15 +79,9 @@ private[cluster] object ClusterHeartbeatSender {
  *
  * This actor is responsible for sending the heartbeat messages to
  * a few other nodes that will monitor this node.
- *
- * Netty blocks when sending to broken connections. This actor
- * isolates sending to different nodes by using child actors for each target
- * address and thereby reduce the risk of irregular heartbeats to healty
- * nodes due to broken connections to other nodes.
  */
 private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogging {
   import ClusterHeartbeatSender._
-  import ClusterHeartbeatSenderConnection._
   import ClusterHeartbeatReceiver._
   import InternalClusterAction.HeartbeatTick
 
@@ -121,13 +113,13 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   /**
    * Looks up and returns the remote cluster heartbeat connection for the specific address.
    */
-  def clusterHeartbeatConnectionFor(address: Address): ActorRef =
+  def heartbeatReceiver(address: Address): ActorRef =
     context.actorFor(RootActorPath(address) / "system" / "cluster" / "heartbeatReceiver")
 
   /**
    * Looks up and returns the remote cluster heartbeat sender for the specific address.
    */
-  def heartbeatSenderFor(address: Address): ActorRef = context.actorFor(self.path.toStringWithAddress(address))
+  def heartbeatSender(address: Address): ActorRef = context.actorFor(self.path.toStringWithAddress(address))
 
   def receive = {
     case HeartbeatTick                ⇒ heartbeat()
@@ -154,7 +146,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
 
   def sendHeartbeatRequest(address: Address): Unit =
     if (!cluster.failureDetector.isMonitoring(address) && state.ring.mySenders.contains(address)) {
-      heartbeatSenderFor(address) ! selfHeartbeatRequest
+      heartbeatSender(address) ! selfHeartbeatRequest
       // schedule the expected heartbeat for later, which will give the
       // sender a chance to start heartbeating, and also trigger some resends of
       // the heartbeat request
@@ -170,28 +162,19 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   def heartbeat(): Unit = {
     state = state.removeOverdueHeartbeatRequest()
 
-    def connection(to: Address): ActorRef = {
-      // URL encoded target address as child actor name
-      val connectionName = URLEncoder.encode(to.toString, "UTF-8")
-      context.actorFor(connectionName) match {
-        case notFound if notFound.isTerminated ⇒
-          context.actorOf(Props(new ClusterHeartbeatSenderConnection(clusterHeartbeatConnectionFor(to))), connectionName)
-        case child ⇒ child
-      }
+    state.active foreach { to ⇒
+      log.debug("Cluster Node [{}] - Heartbeat to [{}]", cluster.selfAddress, to)
+      heartbeatReceiver(to) ! selfHeartbeat
     }
-
-    val deadline = Deadline.now + HeartbeatInterval
-    state.active foreach { to ⇒ connection(to) ! SendHeartbeat(selfHeartbeat, to, deadline) }
 
     // When sending heartbeats to a node is stopped a few `EndHeartbeat` messages is
     // sent to notify it that no more heartbeats will be sent.
     for ((to, count) ← state.ending) {
-      val c = connection(to)
-      c ! SendEndHeartbeat(selfEndHeartbeat, to)
-      if (count == NumberOfEndHeartbeats) {
+      log.debug("Cluster Node [{}] - EndHeartbeat to [{}]", cluster.selfAddress, to)
+      heartbeatReceiver(to) ! selfEndHeartbeat
+      if (count == NumberOfEndHeartbeats)
         state = state.removeEnding(to)
-        c ! PoisonPill
-      } else
+      else
         state = state.increaseEndingCount(to)
     }
 
@@ -306,68 +289,6 @@ private[cluster] case class ClusterHeartbeatSenderState private (
 
   def increaseEndingCount(a: Address): ClusterHeartbeatSenderState = copy(ending = ending + (a -> (ending(a) + 1)))
 
-}
-
-/**
- * INTERNAL API
- */
-private[cluster] object ClusterHeartbeatSenderConnection {
-  import ClusterHeartbeatReceiver._
-
-  /**
-   * Command to [akka.cluster.ClusterHeartbeatSenderConnection]], which will send
-   * [[akka.cluster.ClusterHeartbeatReceiver.Heartbeat]] to the other node.
-   * Local only, no need to serialize.
-   */
-  case class SendHeartbeat(heartbeatMsg: Heartbeat, to: Address, deadline: Deadline)
-
-  /**
-   * Command to [akka.cluster.ClusterHeartbeatSenderConnection]], which will send
-   * [[akka.cluster.ClusterHeartbeatReceiver.EndHeartbeat]] to the other node.
-   * Local only, no need to serialize.
-   */
-  case class SendEndHeartbeat(endHeartbeatMsg: EndHeartbeat, to: Address)
-}
-
-/**
- * Responsible for sending [[akka.cluster.ClusterHeartbeatReceiver.Heartbeat]]
- * and [[akka.cluster.ClusterHeartbeatReceiver.EndHeartbeat]] to one specific address.
- *
- * This actor exists only because Netty blocks when sending to broken connections,
- * and this actor uses a configurable circuit breaker to reduce connect attempts to broken
- * connections.
- *
- * @see akka.cluster.ClusterHeartbeatSender
- */
-private[cluster] final class ClusterHeartbeatSenderConnection(toRef: ActorRef)
-  extends Actor with ActorLogging {
-
-  import ClusterHeartbeatSenderConnection._
-
-  val breaker = {
-    val cbSettings = Cluster(context.system).settings.SendCircuitBreakerSettings
-    CircuitBreaker(context.system.scheduler,
-      cbSettings.maxFailures, cbSettings.callTimeout, cbSettings.resetTimeout).
-      onHalfOpen(log.debug("CircuitBreaker Half-Open for: [{}]", toRef)).
-      onOpen(log.info("CircuitBreaker Open for [{}]", toRef)).
-      onClose(log.debug("CircuitBreaker Closed for [{}]", toRef))
-  }
-
-  def receive = {
-    case SendHeartbeat(heartbeatMsg, _, deadline) ⇒
-      if (!deadline.isOverdue) {
-        log.debug("Cluster Node [{}] - Heartbeat to [{}]", heartbeatMsg.from, toRef)
-        // Netty blocks when sending to broken connections, the CircuitBreaker will
-        // measure elapsed time and open if too many long calls
-        try breaker.withSyncCircuitBreaker {
-          toRef ! heartbeatMsg
-        } catch { case e: CircuitBreakerOpenException ⇒ /* skip sending heartbeat to broken connection */ }
-      }
-      if (deadline.isOverdue) log.info("Sending heartbeat to [{}] took longer than expected", toRef)
-    case SendEndHeartbeat(endHeartbeatMsg, _) ⇒
-      log.debug("Cluster Node [{}] - EndHeartbeat to [{}]", endHeartbeatMsg.from, toRef)
-      toRef ! endHeartbeatMsg
-  }
 }
 
 /**
