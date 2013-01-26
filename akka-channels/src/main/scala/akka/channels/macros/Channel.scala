@@ -17,7 +17,7 @@ object Channel {
    * C is the channel list of the enclosing Channels
    * P is the parent channel list
    */
-  def impl[ReplyChannels <: ChannelList, MsgTChan <: ChannelList, MsgT: c.WeakTypeTag, MyChannels <: ChannelList: c.WeakTypeTag, ParentChannels <: ChannelList: c.WeakTypeTag](
+  def impl[LUB, ReplyChannels <: ChannelList, MsgTChan <: ChannelList, MsgT: c.WeakTypeTag, MyChannels <: ChannelList: c.WeakTypeTag, ParentChannels <: ChannelList: c.WeakTypeTag](
     c: Context {
       type PrefixType = Channels[ParentChannels, MyChannels]
     }): c.Expr[(Nothing ⇒ Unit)] = {
@@ -33,24 +33,24 @@ object Channel {
     } else {
       checkUnique(c.universe)(tpeMsgT, tpeMyChannels) foreach (c.error(c.enclosingPosition, _))
       val channels = toChannels(c.universe)(replyChannels(c.universe)(tpeMyChannels, tpeMsgT))
-      val wrapped = tpeMsgT <:< typeOf[ChannelList]
       implicit val ttMyChannels = c.TypeTag[MyChannels](tpeMyChannels)
       implicit val ttReplyChannels = c.TypeTag[ReplyChannels](channels)
       implicit val ttMsgT = c.TypeTag[MsgT](tpeMsgT)
-      implicit val ttMsgTChan = c.TypeTag[MsgTChan](tpeMsgT) // this is MsgT reinterpreted as <: ChannelList
       val prepTree = reify(if (c.prefix.splice.channelListTypeTag == null)
         c.prefix.splice.channelListTypeTag = universe.typeTag[MyChannels])
-      if (wrapped)
+      if (tpeMsgT <:< typeOf[ChannelList]) {
+        implicit val ttMsgTChan = c.TypeTag[MsgTChan](tpeMsgT) // this is MsgT reinterpreted as <: ChannelList
+        implicit val ttLUB = c.TypeTag[LUB](c.universe.lub(inputChannels(c.universe)(tpeMsgT)))
         reify {
           prepTree.splice
-          c.prefix.splice.behaviorist[(WrappedMessage[MsgTChan], ChannelRef[ReplyChannels]) ⇒ Unit, MsgT](
-            bool(c, wrapped).splice)(universe.typeTag[MsgT])
+          c.prefix.splice.behaviorist[(WrappedMessage[MsgTChan, LUB], ChannelRef[ReplyChannels]) ⇒ Unit, MsgT](
+            bool(c, true).splice)(universe.typeTag[MsgT])
         }
-      else
+      } else
         reify {
           prepTree.splice
           c.prefix.splice.behaviorist[(MsgT, ChannelRef[ReplyChannels]) ⇒ Unit, MsgT](
-            bool(c, wrapped).splice)(universe.typeTag[MsgT])
+            bool(c, false).splice)(universe.typeTag[MsgT])
         }
     }
   }

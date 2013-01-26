@@ -14,56 +14,95 @@ import scala.reflect.api.{ TypeCreator }
 object Ask {
   import Helpers._
 
-  def impl[ReturnT, Channel <: ChannelList: c.WeakTypeTag, Msg: c.WeakTypeTag](c: Context {
-                                                                                 type PrefixType = ChannelRef[Channel]
-                                                                               })(msg: c.Expr[Msg]): c.Expr[Future[ReturnT]] = {
+  def impl[ //
+  ReturnChannels <: ChannelList, // the precise type union describing the reply
+  ReturnLUB, // the least-upper bound for the reply types
+  Channel <: ChannelList: c.WeakTypeTag, // the channel being asked
+  Msg: c.WeakTypeTag // the message being sent down the channel
+  ](c: Context {
+      type PrefixType = ChannelRef[Channel]
+    })(msg: c.Expr[Msg]): c.Expr[Future[WrappedMessage[ReturnChannels, ReturnLUB]]] = {
     import c.universe._
 
     val tpeChannel = weakTypeOf[Channel]
     val tpeMsg = weakTypeOf[Msg]
-    val out = replyChannels(c.universe)(tpeChannel, tpeMsg)
-    if (out.isEmpty)
-      abort(c, s"This ChannelRef does not support messages of type $tpeMsg")
+    val unwrapped = unwrapMsgType(c.universe)(tpeMsg)
+    val out = replyChannels(c.universe)(tpeChannel, unwrapped)
 
-    implicit val ttReturn = c.TypeTag[ReturnT](c.universe.lub(out))
-    reify(askOps[ReturnT](c.prefix.splice.actorRef, msg.splice)(imp[Timeout](c).splice))
+    Tell.verify(c)(null, unwrapped, typeOf[(Any, Nothing) :+: TNil], tpeChannel)
+
+    implicit val ttReturnChannels = c.TypeTag[ReturnChannels](toChannels(c.universe)(out))
+    implicit val ttReturnLUB = c.TypeTag[ReturnLUB](c.universe.lub(out))
+    reify(askOps[WrappedMessage[ReturnChannels, ReturnLUB]](
+      c.prefix.splice.actorRef, toMsg(c)(msg, tpeMsg).splice)(imp[Timeout](c).splice))
   }
 
-  def opsImpl[ReturnT, Channel <: ChannelList: c.WeakTypeTag, Msg: c.WeakTypeTag](c: Context {
-                                                                                    type PrefixType = AnyOps[Msg]
-                                                                                  })(channel: c.Expr[ChannelRef[Channel]]): c.Expr[Future[ReturnT]] = {
+  def opsImpl[ //
+  ReturnChannels <: ChannelList, // the precise type union describing the reply
+  ReturnLUB, // the least-upper bound for the reply types
+  Channel <: ChannelList: c.WeakTypeTag, // the channel being asked
+  Msg: c.WeakTypeTag // the message being sent down the channel
+  ](c: Context {
+      type PrefixType = AnyOps[Msg]
+    })(channel: c.Expr[ChannelRef[Channel]]): c.Expr[Future[WrappedMessage[ReturnChannels, ReturnLUB]]] = {
     import c.universe._
 
     val tpeChannel = weakTypeOf[Channel]
     val tpeMsg = weakTypeOf[Msg]
-    val out = replyChannels(c.universe)(tpeChannel, tpeMsg)
-    if (out.isEmpty)
-      abort(c, s"This ChannelRef does not support messages of type $tpeMsg")
+    val unwrapped = unwrapMsgType(c.universe)(tpeMsg)
+    val out = replyChannels(c.universe)(tpeChannel, unwrapped)
 
-    implicit val ttReturn = c.TypeTag[ReturnT](c.universe.lub(out))
-    reify(askOps[ReturnT](channel.splice.actorRef, c.prefix.splice.value)(imp[Timeout](c).splice))
+    Tell.verify(c)(null, unwrapped, typeOf[(Any, Nothing) :+: TNil], tpeChannel)
+
+    implicit val ttReturnChannels = c.TypeTag[ReturnChannels](toChannels(c.universe)(out))
+    implicit val ttReturnLUB = c.TypeTag[ReturnLUB](c.universe.lub(out))
+    val msg = reify(c.prefix.splice.value)
+    reify(askOps[WrappedMessage[ReturnChannels, ReturnLUB]](
+      channel.splice.actorRef, toMsg(c)(msg, tpeMsg).splice)(imp[Timeout](c).splice))
   }
 
-  def futureImpl[ReturnT, Channel <: ChannelList: c.WeakTypeTag, Msg: c.WeakTypeTag](c: Context {
-                                                                                       type PrefixType = FutureOps[Msg]
-                                                                                     })(channel: c.Expr[ChannelRef[Channel]]): c.Expr[Future[ReturnT]] = {
+  def futureImpl[ //
+  ReturnChannels <: ChannelList, // the precise type union describing the reply
+  ReturnLUB, // the least-upper bound for the reply types
+  Channel <: ChannelList: c.WeakTypeTag, // the channel being asked
+  Msg: c.WeakTypeTag // the message being sent down the channel
+  ](c: Context {
+      type PrefixType = FutureOps[Msg]
+    })(channel: c.Expr[ChannelRef[Channel]]): c.Expr[Future[WrappedMessage[ReturnChannels, ReturnLUB]]] = {
     import c.universe._
 
     val tpeChannel = weakTypeOf[Channel]
     val tpeMsg = weakTypeOf[Msg]
-    val reply = replyChannels(c.universe)(tpeChannel, tpeMsg) match {
-      case Nil      ⇒ abort(c, s"This ChannelRef does not support messages of type $tpeMsg")
-      case x :: Nil ⇒ x
-      case xs       ⇒ toChannels(c.universe)(xs)
-    }
+    val unwrapped = unwrapMsgType(c.universe)(tpeMsg)
+    val out = replyChannels(c.universe)(tpeChannel, unwrapped)
 
-    implicit val ttReturn = c.TypeTag[ReturnT](reply)
-    reify(askFuture[Msg, ReturnT](channel.splice.actorRef, c.prefix.splice.future)(imp[Timeout](c).splice))
+    Tell.verify(c)(null, unwrapped, typeOf[(Any, Nothing) :+: TNil], tpeChannel)
+
+    implicit val ttReturnChannels = c.TypeTag[ReturnChannels](toChannels(c.universe)(out))
+    implicit val ttReturnLUB = c.TypeTag[ReturnLUB](c.universe.lub(out))
+    if (tpeMsg <:< typeOf[ChannelList])
+      reify(askFutureWrapped[WrappedMessage[ReturnChannels, ReturnLUB]](
+        channel.splice.actorRef, c.prefix.splice.future.asInstanceOf[Future[WrappedMessage[TNil, Any]]])(imp[Timeout](c).splice))
+    else
+      reify(askFuture[WrappedMessage[ReturnChannels, ReturnLUB]](
+        channel.splice.actorRef, c.prefix.splice.future)(imp[Timeout](c).splice))
   }
 
-  @inline def askOps[T](target: ActorRef, msg: Any)(implicit t: Timeout): Future[T] = akka.pattern.ask(target, msg).asInstanceOf[Future[T]]
+  val wrapMessage = (m: Any) ⇒ (new WrappedMessage[TNil, Any](m): Any)
 
-  def askFuture[T1, T2](target: ActorRef, future: Future[T1])(implicit t: Timeout): Future[T2] =
-    future.flatMap(akka.pattern.ask(target, _).asInstanceOf[Future[T2]])(ExecutionContexts.sameThreadExecutionContext)
+  @inline def askOps[T <: WrappedMessage[_, _]](target: ActorRef, msg: Any)(implicit t: Timeout): Future[T] = {
+    implicit val ec = ExecutionContexts.sameThreadExecutionContext
+    akka.pattern.ask(target, msg).map(wrapMessage).asInstanceOf[Future[T]]
+  }
+
+  def askFuture[T <: WrappedMessage[_, _]](target: ActorRef, future: Future[_])(implicit t: Timeout): Future[T] = {
+    implicit val ec = ExecutionContexts.sameThreadExecutionContext
+    future flatMap (m ⇒ akka.pattern.ask(target, m).map(wrapMessage).asInstanceOf[Future[T]])
+  }
+
+  def askFutureWrapped[T <: WrappedMessage[_, _]](target: ActorRef, future: Future[WrappedMessage[_, _]])(implicit t: Timeout): Future[T] = {
+    implicit val ec = ExecutionContexts.sameThreadExecutionContext
+    future flatMap (w ⇒ akka.pattern.ask(target, w.value).map(wrapMessage).asInstanceOf[Future[T]])
+  }
 
 }

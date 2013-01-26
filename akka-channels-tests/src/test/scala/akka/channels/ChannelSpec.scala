@@ -90,6 +90,17 @@ object ChannelSpec {
     channel[T1] { (x, snd) ⇒ x -?-> target -!-> snd -!-> snd }
   }
 
+  // compile test for whole-channel polymorphism
+  class Poly[T <: ChannelList: ru.TypeTag](target: ChannelRef[T]) extends Channels[TNil, (A, A) :+: (B, B) :+: T] {
+    channel[A] { (a, snd) ⇒ val x: A = a }
+    channel[T] { (x, snd) ⇒
+      val t: T = x.value
+      // val f = target <-?- x 
+    }
+    import language.existentials
+    channel[(A, _) :+: (B, _) :+: TNil] { (x, snd) ⇒ val m: Msg = x.value }
+  }
+
   // companion to WriteOnly for testing pass-through
   class EchoTee(target: ActorRef) extends Channels[TNil, (C, C) :+: TNil] {
     channel[C] { (c, snd) ⇒ target ! C1; snd <-!- C1 }
@@ -397,14 +408,14 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
     "support typed ask" in {
       val t = ChannelExt(system).actorOf(new Tester)
       implicit val timeout = Timeout(1.second)
-      val r: Future[C] = t <-?- A
+      val r: Future[C] = (t <-?- A).lub
       Await.result(r, 1.second) must be(C)
     }
 
     "support typed ask with multiple reply channels" in {
       val t = ChannelExt(system).actorOf(new SubChannels)
       implicit val timeout = Timeout(1.second)
-      val r: Future[Msg] = t <-?- A1
+      val r: Future[Msg] = (t <-?- A1).lub
       Await.result(r, 1.second) must be(B)
     }
 
@@ -439,6 +450,143 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
       m must include("missing declarations for channels")
       m must include("akka.channels.ChannelSpec.A")
       m must include("akka.channels.ChannelSpec.B")
+    }
+
+  }
+
+  "A WrappedMessage" must {
+
+    "be sendable to a ChannelRef" in {
+      implicit val selfChannel = ChannelExt(system).actorOf(new Channels[TNil, (C, Nothing) :+:(D, Nothing) :+: TNil] {
+        channel[C] { (c, snd) ⇒ testActor ! c }
+        channel[D] { (d, snd) ⇒ testActor ! d }
+      })
+      val t = ChannelExt(system).actorOf(new Tester)
+      val a = new WrappedMessage[(A, Nothing) :+:(B, Nothing) :+: TNil, Msg](A)
+      val b = new WrappedMessage[(A, Nothing) :+:(B, Nothing) :+: TNil, Msg](B)
+      t <-!- a
+      expectMsg(C)
+      a -!-> t
+      expectMsg(C)
+      t <-!- b
+      expectMsg(D)
+      b -!-> t
+      expectMsg(D)
+    }
+
+    "not be sendable with wrong channels" when {
+      "sending wrong first directly" in {
+        intercept[ToolBoxError] {
+          eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |implicit val s = new ChannelRef[(Any, Nothing) :+: TNil](null)
+            |new ChannelRef[(A, Nothing) :+: TNil](null) <-!- new WrappedMessage[(B, Nothing) :+: (A, Nothing) :+: TNil, Msg](null)
+            """.stripMargin)
+        }.message must include("target ChannelRef does not support messages of types akka.channels.ChannelSpec.B (at depth 1)")
+      }
+      "sending wrong first indirectly" in {
+        intercept[ToolBoxError] {
+          eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |implicit val s = new ChannelRef[(Any, Nothing) :+: TNil](null)
+            |new WrappedMessage[(B, Nothing) :+: (A, Nothing) :+: TNil, Msg](null) -!-> new ChannelRef[(A, Nothing) :+: TNil](null)
+            """.stripMargin)
+        }.message must include("target ChannelRef does not support messages of types akka.channels.ChannelSpec.B (at depth 1)")
+      }
+      "sending wrong second directly" in {
+        intercept[ToolBoxError] {
+          eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |implicit val s = new ChannelRef[(Any, Nothing) :+: TNil](null)
+            |new ChannelRef[(A, Nothing) :+: TNil](null) <-!- new WrappedMessage[(A, Nothing) :+: (B, Nothing) :+: TNil, Msg](null)
+            """.stripMargin)
+        }.message must include("target ChannelRef does not support messages of types akka.channels.ChannelSpec.B (at depth 1)")
+      }
+      "sending wrong second indirectly" in {
+        intercept[ToolBoxError] {
+          eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |implicit val s = new ChannelRef[(Any, Nothing) :+: TNil](null)
+            |new WrappedMessage[(A, Nothing) :+: (B, Nothing) :+: TNil, Msg](null) -!-> new ChannelRef[(A, Nothing) :+: TNil](null)
+            """.stripMargin)
+        }.message must include("target ChannelRef does not support messages of types akka.channels.ChannelSpec.B (at depth 1)")
+      }
+    }
+
+    "be askable to a ChannelRef" in {
+      implicit val timeout = Timeout(1.second)
+      val t = ChannelExt(system).actorOf(new Tester)
+      val a = new WrappedMessage[(A, Nothing) :+:(B, Nothing) :+: TNil, Msg](A)
+      val b = new WrappedMessage[(A, Nothing) :+:(B, Nothing) :+: TNil, Msg](B)
+      (Await.result(t <-?- a, timeout.duration): WrappedMessage[(C, Nothing) :+: (D, Nothing) :+: TNil, Msg]).value must be(C)
+      (Await.result(a -?-> t, timeout.duration): WrappedMessage[(C, Nothing) :+: (D, Nothing) :+: TNil, Msg]).value must be(C)
+      (Await.result(t <-?- b, timeout.duration): WrappedMessage[(C, Nothing) :+: (D, Nothing) :+: TNil, Msg]).value must be(D)
+      (Await.result(b -?-> t, timeout.duration): WrappedMessage[(C, Nothing) :+: (D, Nothing) :+: TNil, Msg]).value must be(D)
+    }
+
+    "not be askable with wrong channels" when {
+      "sending wrong first directly" in {
+        intercept[ToolBoxError] {
+          eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |implicit val t = akka.util.Timeout(null)
+            |new ChannelRef[(A, Nothing) :+: TNil](null) <-?- new WrappedMessage[(B, Nothing) :+: (A, Nothing) :+: TNil, Msg](null)
+            """.stripMargin)
+        }.message must include("target ChannelRef does not support messages of types akka.channels.ChannelSpec.B (at depth 1)")
+      }
+      "sending wrong first indirectly" in {
+        intercept[ToolBoxError] {
+          eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |implicit val t = akka.util.Timeout(null)
+            |new WrappedMessage[(B, Nothing) :+: (A, Nothing) :+: TNil, Msg](null) -?-> new ChannelRef[(A, Nothing) :+: TNil](null)
+            """.stripMargin)
+        }.message must include("target ChannelRef does not support messages of types akka.channels.ChannelSpec.B (at depth 1)")
+      }
+      "sending wrong second directly" in {
+        intercept[ToolBoxError] {
+          eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |implicit val t = akka.util.Timeout(null)
+            |new ChannelRef[(A, Nothing) :+: TNil](null) <-?- new WrappedMessage[(A, Nothing) :+: (B, Nothing) :+: TNil, Msg](null)
+            """.stripMargin)
+        }.message must include("target ChannelRef does not support messages of types akka.channels.ChannelSpec.B (at depth 1)")
+      }
+      "sending wrong second indirectly" in {
+        intercept[ToolBoxError] {
+          eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |implicit val t = akka.util.Timeout(null)
+            |new WrappedMessage[(A, Nothing) :+: (B, Nothing) :+: TNil, Msg](null) -?-> new ChannelRef[(A, Nothing) :+: TNil](null)
+            """.stripMargin)
+        }.message must include("target ChannelRef does not support messages of types akka.channels.ChannelSpec.B (at depth 1)")
+      }
+    }
+
+    "be LUBbable within a Future" in {
+      implicit val timeout = Timeout(1.second)
+      val t = ChannelExt(system).actorOf(new Tester)
+      val a = new WrappedMessage[(A, Nothing) :+:(B, Nothing) :+: TNil, Msg](A)
+      (Await.result((a -?-> t).lub, timeout.duration): Msg) must be(C)
+    }
+
+    "not be LUBbable if not wrapped" in {
+      intercept[ToolBoxError] {
+        eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |import scala.concurrent.Future
+            |null.asInstanceOf[Future[Int]].lub
+            """.stripMargin)
+      }.message must include("Cannot prove that Int <:< akka.channels.WrappedMessage")
     }
 
   }

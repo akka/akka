@@ -59,13 +59,15 @@ object Helpers {
   final def inputChannels(u: Universe)(list: u.Type): List[u.Type] = {
     import u._
     val imp = u.mkImporter(ru)
-    val cl = imp.importType(ru.typeOf[ChannelList])
-    val tnil = imp.importType(ru.typeOf[TNil])
+    val tpeChannelList = imp.importType(ru.typeOf[ChannelList])
+    val tpeTNil = imp.importType(ru.typeOf[TNil])
     def rec(l: u.Type, acc: List[u.Type]): List[u.Type] = l match {
       case TypeRef(_, _, TypeRef(_, _, in :: _) :: tail :: Nil) ⇒ rec(tail, if (acc contains in) acc else in :: acc)
-      case last ⇒ if (last =:= tnil) acc.reverse else (last :: acc).reverse
+      case TypeRef(_, _, ExistentialType(_, TypeRef(_, _, in :: _)) :: tail :: Nil) ⇒ rec(tail, if (acc contains in) acc else in :: acc)
+      case ExistentialType(_, x) ⇒ rec(x, acc)
+      case last ⇒ if (last =:= tpeTNil) acc.reverse else (last :: acc).reverse
     }
-    if (list <:< cl) rec(list, Nil)
+    if (list <:< tpeChannelList) rec(list, Nil)
     else List(list)
   }
 
@@ -75,9 +77,10 @@ object Helpers {
    */
   final def replyChannels(u: Universe)(list: u.Type, msg: u.Type): List[u.Type] = {
     import u._
+    val msgTypes = inputChannels(u)(msg)
     def rec(l: Type, acc: List[Type]): List[Type] = {
       l match {
-        case TypeRef(_, _, TypeRef(_, _, in :: out :: Nil) :: tail :: Nil) if msg <:< in ⇒
+        case TypeRef(_, _, TypeRef(_, _, in :: out :: Nil) :: tail :: Nil) if msgTypes exists (_ <:< in) ⇒
           rec(tail, if (acc contains out) acc else out :: acc)
         case TypeRef(_, _, _ :: tail :: Nil) ⇒
           rec(tail, acc)
@@ -122,6 +125,26 @@ object Helpers {
       case _ ⇒ acc
     }
     rec(list.reverse, weakTypeOf[TNil])
+  }
+
+  /**
+   * takes a message tpe and tree and returns an expression which yields the
+   * underlying message (i.e. unwraps WrappedMessage if necessary)
+   */
+  final def toMsg(c: Context)(tree: c.Expr[Any], tpe: c.Type): c.Expr[Any] = {
+    import c.universe._
+    if (tpe <:< c.typeOf[WrappedMessage[_, _]])
+      c.universe.reify(tree.splice.asInstanceOf[WrappedMessage[TNil, Any]].value)
+    else tree
+  }
+
+  final def unwrapMsgType(u: Universe)(msg: u.Type): u.Type = {
+    import u._
+    if (msg <:< typeOf[WrappedMessage[_, _]])
+      msg match {
+        case TypeRef(_, _, x :: _) ⇒ x
+      }
+    else msg
   }
 
 }

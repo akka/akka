@@ -7,6 +7,7 @@ import akka.pattern.ask
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.reflect.runtime.{ universe ⇒ ru }
 import scala.util.Success
+import akka.dispatch.ExecutionContexts
 
 sealed trait ChannelList
 sealed trait TNil extends ChannelList
@@ -25,12 +26,16 @@ class ActorRefOps(val ref: ActorRef) extends AnyVal {
 
 class FutureOps[T](val future: Future[T]) extends AnyVal {
   def -!->[C <: ChannelList](channel: ChannelRef[C]): Future[T] = macro macros.Tell.futureImpl[C, T]
-  def -?->[C <: ChannelList](channel: ChannelRef[C]): Future[_] = macro macros.Ask.futureImpl[Any, C, T]
+  def -?->[C <: ChannelList](channel: ChannelRef[C]): Future[_] = macro macros.Ask.futureImpl[ChannelList, Any, C, T]
+  def lub[LUB](implicit ev: T <:< WrappedMessage[_, LUB]): Future[LUB] = {
+    implicit val ec = ExecutionContexts.sameThreadExecutionContext
+    future map (ev(_).value)
+  }
 }
 
 class AnyOps[T](val value: T) extends AnyVal {
   def -!->[C <: ChannelList](channel: ChannelRef[C]): Unit = macro macros.Tell.opsImpl[C, T]
-  def -?->[C <: ChannelList](channel: ChannelRef[C]): Future[_] = macro macros.Ask.opsImpl[Any, C, T]
+  def -?->[C <: ChannelList](channel: ChannelRef[C]): Future[_] = macro macros.Ask.opsImpl[ChannelList, Any, C, T]
 }
 
-class WrappedMessage[T <: ChannelList](val value: Any) extends AnyVal
+class WrappedMessage[T <: ChannelList, LUB](val value: LUB) extends AnyVal

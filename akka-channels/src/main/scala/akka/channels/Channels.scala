@@ -73,7 +73,7 @@ trait Channels[P <: ChannelList, C <: ChannelList] extends Actor {
    * Functions for storage in the behavior, to get around erasure
    */
   private trait FF
-  private case class F1(f: (WrappedMessage[ChannelList], ChannelRef[ChannelList]) ⇒ Unit) extends FF
+  private case class F1(f: (WrappedMessage[ChannelList, Any], ChannelRef[ChannelList]) ⇒ Unit) extends FF
   private case class F2(f: (Any, ChannelRef[ChannelList]) ⇒ Unit) extends FF
 
   /**
@@ -87,13 +87,13 @@ trait Channels[P <: ChannelList, C <: ChannelList] extends Actor {
    * }
    * }}}
    */
-  def channel[T]: (Nothing ⇒ Unit) = macro macros.Channel.impl[ChannelList, ChannelList, T, C, P]
+  def channel[T]: (Nothing ⇒ Unit) = macro macros.Channel.impl[Any, ChannelList, ChannelList, T, C, P]
 
   def behaviorist[R, Ch: ru.TypeTag](wrapped: Boolean): (R ⇒ Unit) = new Behaviorist[R, Ch](wrapped)
   private class Behaviorist[-R, Ch: ru.TypeTag](wrapped: Boolean) extends (R ⇒ Unit) {
     private def ff(recv: R): FF =
       if (wrapped)
-        F1(recv.asInstanceOf[(WrappedMessage[ChannelList], ChannelRef[ChannelList]) ⇒ Unit])
+        F1(recv.asInstanceOf[(WrappedMessage[ChannelList, Any], ChannelRef[ChannelList]) ⇒ Unit])
       else
         F2(recv.asInstanceOf[(Any, ChannelRef[ChannelList]) ⇒ Unit])
     def apply(recv: R): Unit = {
@@ -152,7 +152,7 @@ trait Channels[P <: ChannelList, C <: ChannelList] extends Actor {
           case None ⇒ default(x)
           case Some(cls) ⇒
             behavior(cls) match {
-              case F1(f) ⇒ f(new WrappedMessage[ChannelList](x), new ChannelRef(sender))
+              case F1(f) ⇒ f(new WrappedMessage[ChannelList, Any](x), new ChannelRef(sender))
               case F2(f) ⇒ f(x, new ChannelRef(sender))
             }
         }
