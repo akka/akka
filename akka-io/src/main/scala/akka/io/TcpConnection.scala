@@ -23,6 +23,7 @@ import TcpSelector._
 private[io] abstract class TcpConnection(val channel: SocketChannel,
                                          val tcp: TcpExt) extends Actor with ActorLogging with WithBufferPool {
   import tcp.Settings._
+  import TcpConnection._
   var pendingWrite: PendingWrite = null
 
   // Needed to send the ConnectionClosed message in the postStop handler.
@@ -115,32 +116,48 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
   }
 
   def doRead(handler: ActorRef, closeCommander: Option[ActorRef]): Unit = {
+    @tailrec def innerRead(buffer: ByteBuffer, receivedData: ByteString, remainingLimit: Int): ReadResult =
+      if (remainingLimit > 0) {
+        // never read more than the configured limit
+        buffer.clear()
+        val maxBufferSpace = math.min(DirectBufferSize, remainingLimit)
+        buffer.limit(maxBufferSpace)
+        val readBytes = channel.read(buffer)
+        buffer.flip()
+
+        val totalData = receivedData ++ ByteString(buffer)
+
+        readBytes match {
+          case `maxBufferSpace`          ⇒ innerRead(buffer, totalData, remainingLimit - maxBufferSpace)
+          case x if totalData.length > 0 ⇒ GotCompleteData(totalData)
+          case 0                         ⇒ NoData
+          case -1                        ⇒ EndOfStream
+          case _ ⇒
+            throw new IllegalStateException("Unexpected value returned from read: " + readBytes)
+        }
+      } else MoreDataWaiting(receivedData)
+
     val buffer = acquireBuffer()
-
-    try {
-      val readBytes = channel.read(buffer)
-      buffer.flip()
-
-      if (readBytes > 0) {
-        if (TraceLogging) log.debug("Read {} bytes", readBytes)
-        handler ! Received(ByteString(buffer))
-        releaseBuffer(buffer)
-
-        if (readBytes == buffer.capacity())
-          // directly try reading more because we exhausted our buffer
-          self ! ChannelReadable
-        else selector ! ReadInterest
-      } else if (readBytes == 0) {
-        if (TraceLogging) log.debug("Read nothing. Registering read interest with selector")
+    try innerRead(buffer, ByteString.empty, ReceivedMessageSizeLimit) match {
+      case NoData ⇒
+        if (TraceLogging) log.debug("Read nothing.")
         selector ! ReadInterest
-      } else if (readBytes == -1) {
+      case GotCompleteData(data) ⇒
+        if (TraceLogging) log.debug("Read {} bytes.", data.length)
+
+        handler ! Received(data)
+        selector ! ReadInterest
+      case MoreDataWaiting(data) ⇒
+        if (TraceLogging) log.debug("Read {} bytes. More data waiting.", data.length)
+
+        handler ! Received(data)
+        self ! ChannelReadable
+      case EndOfStream ⇒
         if (TraceLogging) log.debug("Read returned end-of-stream")
         doCloseConnection(handler, closeCommander, closeReason)
-      } else throw new IllegalStateException("Unexpected value returned from read: " + readBytes)
-
     } catch {
       case e: IOException ⇒ handleError(handler, e)
-    }
+    } finally releaseBuffer(buffer)
   }
 
   final def doWrite(handler: ActorRef): Unit = {
@@ -277,12 +294,20 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
     PendingWrite(sender, write.ack, write.data.drop(copied), buffer)
   }
+}
+
+private[io] object TcpConnection {
+  sealed trait ReadResult
+  object NoData extends ReadResult
+  object EndOfStream extends ReadResult
+  case class GotCompleteData(data: ByteString) extends ReadResult
+  case class MoreDataWaiting(data: ByteString) extends ReadResult
 
   /**
    * Used to transport information to the postStop method to notify
    * interested party about a connection close.
    */
-  private[TcpConnection] case class CloseInformation(
+  case class CloseInformation(
     notificationsTo: Set[ActorRef],
     closedEvent: ConnectionClosed)
 }
