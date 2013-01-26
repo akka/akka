@@ -120,14 +120,15 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
       if (remainingLimit > 0) {
         // never read more than the configured limit
         buffer.clear()
-        buffer.limit(math.min(DirectBufferSize, remainingLimit))
+        val maxBufferSpace = math.min(DirectBufferSize, remainingLimit)
+        buffer.limit(maxBufferSpace)
         val readBytes = channel.read(buffer)
         buffer.flip()
 
         val totalData = receivedData ++ ByteString(buffer)
 
         readBytes match {
-          case DirectBufferSize          ⇒ innerRead(buffer, totalData, remainingLimit - DirectBufferSize)
+          case `maxBufferSpace`          ⇒ innerRead(buffer, totalData, remainingLimit - maxBufferSpace)
           case x if totalData.length > 0 ⇒ GotCompleteData(totalData)
           case 0                         ⇒ NoData
           case -1                        ⇒ EndOfStream
