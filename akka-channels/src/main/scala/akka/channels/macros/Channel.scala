@@ -32,7 +32,9 @@ object Channel {
       c.abort(c.enclosingPosition, s"no channel defined for types ${undefined mkString ", "}")
     } else {
       checkUnique(c.universe)(tpeMsgT, tpeMyChannels) foreach (c.error(c.enclosingPosition, _))
-      val channels = toChannels(c.universe)(replyChannels(c.universe)(tpeMyChannels, tpeMsgT))
+      // need to calculate the intersection of the reply channel sets for all input channels
+      val intersection = inputChannels(c.universe)(tpeMsgT) map (replyChannels(c.universe)(tpeMyChannels, _).toSet) reduce (_ intersect _)
+      val channels = toChannels(c.universe)(intersection.toList)
       implicit val ttMyChannels = c.TypeTag[MyChannels](tpeMyChannels)
       implicit val ttReplyChannels = c.TypeTag[ReplyChannels](channels)
       implicit val ttMsgT = c.TypeTag[MsgT](tpeMsgT)
@@ -40,7 +42,10 @@ object Channel {
         c.prefix.splice.channelListTypeTag = universe.typeTag[MyChannels])
       if (tpeMsgT <:< typeOf[ChannelList]) {
         implicit val ttMsgTChan = c.TypeTag[MsgTChan](tpeMsgT) // this is MsgT reinterpreted as <: ChannelList
-        implicit val ttLUB = c.TypeTag[LUB](c.universe.lub(inputChannels(c.universe)(tpeMsgT)))
+        implicit val ttLUB = inputChannels(c.universe)(tpeMsgT) match {
+          case x :: Nil ⇒ c.TypeTag[LUB](typeOf[Any])
+          case xs       ⇒ c.TypeTag[LUB](c.universe.lub(xs))
+        }
         reify {
           prepTree.splice
           c.prefix.splice.behaviorist[(WrappedMessage[MsgTChan, LUB], ChannelRef[ReplyChannels]) ⇒ Unit, MsgT](

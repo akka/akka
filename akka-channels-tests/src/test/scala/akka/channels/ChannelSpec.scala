@@ -92,13 +92,18 @@ object ChannelSpec {
 
   // compile test for whole-channel polymorphism
   class Poly[T <: ChannelList: ru.TypeTag](target: ChannelRef[T]) extends Channels[TNil, (A, A) :+: (B, B) :+: T] {
-    channel[A] { (a, snd) ⇒ val x: A = a }
+    implicit val timeout = Timeout(1.second)
     channel[T] { (x, snd) ⇒
-      val t: T = x.value
-      // val f = target <-?- x 
+      val xx: WrappedMessage[T, Any] = x
+      val f: Future[WrappedMessage[(ReplyChannels[T], Nothing) :+: TNil, ReplyChannels[T]]] = target <-?- x
+      f -!-> snd
     }
     import language.existentials
-    channel[(A, _) :+: (B, _) :+: TNil] { (x, snd) ⇒ val m: Msg = x.value }
+    channel[(A, _) :+: (B, _) :+: TNil] { (x, snd) ⇒
+      val m: Msg = x.value
+      val c: ChannelRef[TNil] = snd
+    }
+    channel[A] { (x, snd) ⇒ x -!-> snd }
   }
 
   // companion to WriteOnly for testing pass-through
@@ -450,6 +455,18 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
       m must include("missing declarations for channels")
       m must include("akka.channels.ChannelSpec.A")
       m must include("akka.channels.ChannelSpec.B")
+    }
+
+    "be able to forward fully generic channels" in {
+      val cd = ChannelExt(system).actorOf(new Channels[TNil, (C, D) :+: TNil] {
+        channel[C] { (x, snd) ⇒ snd <-!- D }
+      })
+      val t = ChannelExt(system).actorOf(new Poly(cd))
+      t <-!- A
+      expectMsg(A)
+      t <-!- C
+      expectMsg(D)
+      lastSender must be === t.actorRef
     }
 
   }

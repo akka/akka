@@ -77,6 +77,9 @@ object Helpers {
    */
   final def replyChannels(u: Universe)(list: u.Type, msg: u.Type): List[u.Type] = {
     import u._
+    val imp = u.mkImporter(ru)
+    val tpeReplyTypes = imp.importType(ru.typeOf[ReplyChannels[_]])
+    val tpeTNil = imp.importType(ru.typeOf[TNil])
     val msgTypes = inputChannels(u)(msg)
     def rec(l: Type, acc: List[Type]): List[Type] = {
       l match {
@@ -84,7 +87,11 @@ object Helpers {
           rec(tail, if (acc contains out) acc else out :: acc)
         case TypeRef(_, _, _ :: tail :: Nil) ⇒
           rec(tail, acc)
-        case _ ⇒ acc.reverse
+        case x if x =:= tpeTNil       ⇒ acc.reverse
+        case x if x <:< tpeReplyTypes ⇒ throw new IllegalArgumentException("cannot compute the ReplyChannels of a ReplyChannels type")
+        case x @ TypeRef(NoPrefix, _, Nil) ⇒
+          acc reverse_::: (if (msgTypes exists (_ <:< x)) appliedType(tpeReplyTypes.typeConstructor, List(x)) :: Nil else Nil)
+        case x ⇒ throw new IllegalArgumentException(s"no idea what this type is: $x")
       }
     }
     val n = typeOf[Nothing]

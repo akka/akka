@@ -12,6 +12,7 @@ import akka.dispatch.ExecutionContexts
 sealed trait ChannelList
 sealed trait TNil extends ChannelList
 sealed trait :+:[A <: (_, _), B <: ChannelList] extends ChannelList
+sealed trait ReplyChannels[T <: ChannelList] extends ChannelList
 
 class ActorRefOps(val ref: ActorRef) extends AnyVal {
   import macros.Helpers._
