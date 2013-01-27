@@ -48,10 +48,12 @@ class AgentDocSpec extends AkkaSpec {
   "send and sendOff" in {
     val agent = Agent(0)(ExecutionContext.global)
     //#send
-    // send a value
+    // send a value, enqueues this change
+    // of the value of the Agent
     agent send 7
 
-    // send a function
+    // send a function, enqueues this change
+    // to the value of the Agent
     agent send (_ + 1)
     agent send (_ * 2)
     //#send

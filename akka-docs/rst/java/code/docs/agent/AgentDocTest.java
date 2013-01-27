@@ -55,10 +55,12 @@ public class AgentDocTest {
     Agent<Integer> agent = new Agent<Integer>(5, ec);
 
     //#send
-    // send a value
+    // send a value, enqueues this change
+    // of the value of the Agent
     agent.send(7);
 
-    // send a function
+    // send a Mapper, enqueues this change
+    // to the value of the Agent
     agent.send(new Mapper<Integer, Integer>() {
       public Integer apply(Integer i) {
         return i * 2;

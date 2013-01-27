@@ -4,14 +4,9 @@
 
 package akka.agent
 
-import akka.actor._
-import akka.japi.{ Function ⇒ JFunc, Procedure ⇒ JProc }
-import akka.pattern.ask
 import scala.concurrent.stm._
-import scala.concurrent.{ ExecutionContext, Future, Promise, Await }
-import scala.concurrent.duration.{ FiniteDuration, Duration }
-import akka.util.{ SerializedSuspendableExecutionContext, Timeout }
-import util.Try
+import scala.concurrent.{ ExecutionContext, Future, Promise }
+import akka.util.{ SerializedSuspendableExecutionContext }
 
 /**
  * Factory method for creating an Agent.
