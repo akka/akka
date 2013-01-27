@@ -414,9 +414,11 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         val a = newTestActor(dispatcher.id)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
-        val f3 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(new ActorInterruptedException(ie)).future }
+        val f3 = a ? Interrupt
+        Thread.interrupted() // CallingThreadDispatcher may necessitate this
         val f4 = a ? Reply("foo2")
-        val f5 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(new ActorInterruptedException(ie)).future }
+        val f5 = a ? Interrupt
+        Thread.interrupted() // CallingThreadDispatcher may necessitate this
         val f6 = a ? Reply("bar2")
 
         assert(Await.result(f1, remaining) === "foo")
