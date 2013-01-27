@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
@@ -97,10 +97,11 @@ object FSM {
         if (repeat) scheduler.schedule(timeout, timeout, actor, this)
         else scheduler.scheduleOnce(timeout, actor, this))
 
-    def cancel(): Unit = if (ref.isDefined) {
-      ref.get.cancel()
-      ref = None
-    }
+    def cancel(): Unit =
+      if (ref.isDefined) {
+        ref.get.cancel()
+        ref = None
+      }
   }
 
   /**
@@ -372,15 +373,15 @@ trait FSM[S, D] extends Listeners with ActorLogging {
    * timer does not exist, has previously been canceled or if it was a
    * single-shot timer whose message was already received.
    */
-  @deprecated("Use isTimerActive(name) instead.", "2.2")
-  final def timerActive_?(name: String) = isTimerActive(name)
+  @deprecated("use isTimerActive instead", "2.2")
+  final def timerActive_?(name: String): Boolean = isTimerActive(name)
 
   /**
    * Inquire whether the named timer is still active. Returns true unless the
    * timer does not exist, has previously been canceled or if it was a
    * single-shot timer whose message was already received.
    */
-  final def isTimerActive(name: String) = timers contains name
+  final def isTimerActive(name: String): Boolean = timers contains name
 
   /**
    * Set state timeout explicitly. This method can safely be used from within a
@@ -640,7 +641,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
   }
 
   private def terminate(nextState: State): Unit = {
-    if (!currentState.stopReason.isDefined) {
+    if (currentState.stopReason.isEmpty) {
       val reason = nextState.stopReason.get
       reason match {
         case Failure(ex: Throwable) ⇒ log.error(ex, "terminating due to Failure")
@@ -649,10 +650,11 @@ trait FSM[S, D] extends Listeners with ActorLogging {
       }
       for (timer ← timers.values) timer.cancel()
       timers.clear()
+      currentState = nextState
+
       val stopEvent = StopEvent(reason, currentState.stateName, currentState.stateData)
       if (terminateEvent.isDefinedAt(stopEvent))
         terminateEvent(stopEvent)
-      currentState = nextState
     }
   }
 

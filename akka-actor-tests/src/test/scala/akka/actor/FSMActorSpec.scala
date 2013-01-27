@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -200,6 +200,21 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       Await.ready(started, timeout.duration)
       system.stop(ref)
       expectMsg(1 second, fsm.StopEvent(FSM.Shutdown, 1, null))
+    }
+
+    "run onTermination with updated state upon stop(reason, stateData)" in {
+      val expected = "pigdog"
+      val actor = system.actorOf(Props(new Actor with FSM[Int, String] {
+        startWith(1, null)
+        when(1) {
+          case Event(2, null) ⇒ stop(FSM.Normal, expected)
+        }
+        onTermination {
+          case StopEvent(FSM.Normal, 1, `expected`) ⇒ testActor ! "green"
+        }
+      }))
+      actor ! 2
+      expectMsg("green")
     }
 
     "cancel all timers when terminated" in {

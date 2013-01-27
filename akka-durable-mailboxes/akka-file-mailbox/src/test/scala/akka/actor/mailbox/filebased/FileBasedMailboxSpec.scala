@@ -45,8 +45,8 @@ class FileBasedMailboxSpec extends DurableMailboxSpec("File", FileBasedMailboxSp
     super.atStartup()
   }
 
-  override def atTermination() {
+  override def afterTermination() {
     clean()
-    super.atTermination()
+    super.afterTermination()
   }
 }

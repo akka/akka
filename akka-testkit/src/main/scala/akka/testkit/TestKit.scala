@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
@@ -62,8 +62,8 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
 
   def receive = {
     case SetIgnore(ign)      ⇒ ignore = ign
-    case x @ Watch(ref)      ⇒ context.watch(ref); queue.offerLast(RealMessage(x, self))
-    case x @ UnWatch(ref)    ⇒ context.unwatch(ref); queue.offerLast(RealMessage(x, self))
+    case Watch(ref)          ⇒ context.watch(ref)
+    case UnWatch(ref)        ⇒ context.unwatch(ref)
     case SetAutoPilot(pilot) ⇒ autopilot = pilot
     case x: AnyRef ⇒
       autopilot = autopilot.run(sender, x) match {
@@ -146,23 +146,19 @@ trait TestKitBase {
   def ignoreNoMsg() { testActor ! TestActor.SetIgnore(None) }
 
   /**
-   * Have the testActor watch someone (i.e. `context.watch(...)`). Waits until
-   * the Watch message is received back using expectMsg.
+   * Have the testActor watch someone (i.e. `context.watch(...)`).
    */
   def watch(ref: ActorRef): ActorRef = {
-    val msg = TestActor.Watch(ref)
-    testActor ! msg
-    expectMsg(msg).ref
+    testActor ! TestActor.Watch(ref)
+    ref
   }
 
   /**
-   * Have the testActor stop watching someone (i.e. `context.unwatch(...)`). Waits until
-   * the Watch message is received back using expectMsg.
+   * Have the testActor stop watching someone (i.e. `context.unwatch(...)`).
    */
   def unwatch(ref: ActorRef): ActorRef = {
-    val msg = TestActor.UnWatch(ref)
-    testActor ! msg
-    expectMsg(msg).ref
+    testActor ! TestActor.UnWatch(ref)
+    ref
   }
 
   /**
@@ -215,14 +211,14 @@ trait TestKitBase {
    * Note that the timeout is scaled using Duration.dilated,
    * which uses the configuration entry "akka.test.timefactor".
    */
-  def awaitCond(p: ⇒ Boolean, max: Duration = Duration.Undefined, interval: Duration = 100.millis) {
+  def awaitCond(p: ⇒ Boolean, max: Duration = Duration.Undefined, interval: Duration = 100.millis, message: String = "") {
     val _max = remainingOrDilated(max)
     val stop = now + _max
 
     @tailrec
     def poll(t: Duration) {
       if (!p) {
-        assert(now < stop, "timeout " + _max + " expired")
+        assert(now < stop, "timeout " + _max + " expired: " + message)
         Thread.sleep(t.toMillis)
         poll((stop - now) min interval)
       }

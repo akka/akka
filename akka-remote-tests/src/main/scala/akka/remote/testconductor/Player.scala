@@ -18,6 +18,7 @@ import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelH
 import akka.pattern.{ ask, pipe, AskTimeoutException }
 import akka.event.{ LoggingAdapter, Logging }
 import java.net.{ InetSocketAddress, ConnectException }
+import akka.remote.transport.ThrottlerTransportAdapter.{ SetThrottle, TokenBucket, Blackhole, Unthrottled }
 
 /**
  * The Player is the client component of the
@@ -51,12 +52,16 @@ trait Player { this: TestConductorExt ⇒
     val a = system.actorOf(Props(new Actor {
       var waiting: ActorRef = _
       def receive = {
-        case fsm: ActorRef                        ⇒ waiting = sender; fsm ! SubscribeTransitionCallBack(self)
+        case fsm: ActorRef ⇒
+          waiting = sender; fsm ! SubscribeTransitionCallBack(self)
         case Transition(_, Connecting, AwaitDone) ⇒ // step 1, not there yet
-        case Transition(_, AwaitDone, Connected)  ⇒ waiting ! Done; context stop self
-        case t: Transition[_]                     ⇒ waiting ! Status.Failure(new RuntimeException("unexpected transition: " + t)); context stop self
-        case CurrentState(_, Connected)           ⇒ waiting ! Done; context stop self
-        case _: CurrentState[_]                   ⇒
+        case Transition(_, AwaitDone, Connected) ⇒
+          waiting ! Done; context stop self
+        case t: Transition[_] ⇒
+          waiting ! Status.Failure(new RuntimeException("unexpected transition: " + t)); context stop self
+        case CurrentState(_, Connected) ⇒
+          waiting ! Done; context stop self
+        case _: CurrentState[_] ⇒
       }
     }))
 
@@ -213,12 +218,24 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
         case t: ThrottleMsg ⇒
           import settings.QueryTimeout
           import context.dispatcher // FIXME is this the right EC for the future below?
-          TestConductor().failureInjector ? t map (_ ⇒ ToServer(Done)) pipeTo self
+          val mode = if (t.rateMBit < 0.0f) Unthrottled
+          else if (t.rateMBit == 0.0f) Blackhole
+          // Conversion needed as the TokenBucket measures in octets: 125000 Octets/s = 1Mbit/s
+          // FIXME: Initial capacity should be carefully chosen
+          else TokenBucket(capacity = 1000, tokensPerSecond = t.rateMBit * 125000.0, nanoTimeOfLastSend = 0, availableTokens = 0)
+
+          val cmdFuture = TestConductor().transport.managementCommand(SetThrottle(t.target, t.direction, mode))
+
+          cmdFuture onSuccess {
+            case b: Boolean ⇒ self ! ToServer(Done)
+            case _ ⇒ throw new RuntimeException("Throttle was requested from the TestConductor, but no transport " +
+              "adapters available that support throttling. Specify `testTransport(on = true)` in your MultiNodeConfig")
+          }
           stay
         case d: DisconnectMsg ⇒
           import settings.QueryTimeout
           import context.dispatcher // FIXME is this the right EC for the future below?
-          TestConductor().failureInjector ? d map (_ ⇒ ToServer(Done)) pipeTo self
+          // FIXME: Currently ignoring, needs support from Remoting
           stay
         case TerminateMsg(exit) ⇒
           System.exit(exit)
@@ -296,6 +313,7 @@ private[akka] class PlayerHandler(
     val channel = event.getChannel
     log.debug("disconnected from {}", getAddrString(channel))
     fsm ! PoisonPill
+    RemoteConnection.shutdown(channel)
   }
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {

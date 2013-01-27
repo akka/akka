@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -10,10 +10,12 @@ import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
+import com.typesafe.config.ConfigFactory
 import akka.actor.Address
-import akka.remote.testconductor.{ RoleName, Direction }
+import akka.remote.testconductor.RoleName
 import scala.concurrent.duration._
 import scala.collection.immutable
+import akka.remote.transport.ThrottlerTransportAdapter.Direction
 
 case class UnreachableNodeRejoinsClusterMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")
@@ -21,7 +23,12 @@ case class UnreachableNodeRejoinsClusterMultiNodeConfig(failureDetectorPuppet: B
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(ConfigFactory.parseString(
+    """
+      akka.remote.log-remote-lifecycle-events = off
+      akka.cluster.publish-stats-interval = 0s
+      akka.loglevel = INFO
+    """).withFallback(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig)))
 
   testTransport(on = true)
 }
@@ -60,7 +67,7 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
     enterBarrier("after_" + endBarrierNumber)
   }
 
-  "A cluster of " + roles.size + " members" ignore {
+  "A cluster of " + roles.size + " members" must {
 
     "reach initial convergence" taggedAs LongRunningTest in {
       awaitClusterUp(roles: _*)
@@ -94,7 +101,6 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
               members.forall(_.status == MemberStatus.Up)
           })
           clusterView.unreachableMembers.map(_.address) must be((allButVictim map address).toSet)
-          clusterView.convergence must be(false)
         }
       }
 
@@ -112,8 +118,6 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
           // still one unreachable
           clusterView.unreachableMembers.size must be(1)
           clusterView.unreachableMembers.head.address must be(node(victim).address)
-          // and therefore no convergence
-          clusterView.convergence must be(false)
         }
       }
 
@@ -126,7 +130,7 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
       }
 
       runOn(allBut(victim): _*) {
-        awaitUpConvergence(roles.size - 1, List(victim))
+        awaitUpConvergence(roles.size - 1, Set(victim))
       }
 
       endBarrier

@@ -38,7 +38,7 @@ public class StatsSampleClient extends UntypedActor {
         .system()
         .scheduler()
         .schedule(interval, interval, getSelf(), "tick",
-            getContext().dispatcher());
+            getContext().dispatcher(), null);
   }
 
   //subscribe to cluster changes, MemberEvent

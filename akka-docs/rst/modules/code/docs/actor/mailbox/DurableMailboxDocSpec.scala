@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.actor.mailbox
 
@@ -127,7 +127,7 @@ class MyMailboxSpec extends DurableMailboxSpec("MyStorage", MyMailboxSpec.config
   override def atStartup() {
   }
 
-  override def atTermination() {
+  override def afterTermination() {
   }
 
   "MyMailbox" must {

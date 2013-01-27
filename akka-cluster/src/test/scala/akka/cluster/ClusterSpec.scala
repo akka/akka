@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -27,7 +27,7 @@ object ClusterSpec {
     }
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
-    akka.remote.netty.port = 0
+    akka.remote.netty.tcp.port = 0
     # akka.loglevel = DEBUG
     """
 
@@ -38,7 +38,8 @@ object ClusterSpec {
 class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
   import ClusterSpec._
 
-  val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[ClusterActorRefProvider].transport.address
+  // FIXME: temporary workaround. See #2663
+  val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[ClusterActorRefProvider].transport.defaultAddress
 
   val cluster = Cluster(system)
   def clusterView = cluster.readView
@@ -67,7 +68,6 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       clusterView.self.address must be(selfAddress)
       clusterView.members.map(_.address) must be(Set(selfAddress))
       clusterView.status must be(MemberStatus.Joining)
-      clusterView.convergence must be(true)
       leaderActions()
       awaitCond(clusterView.status == MemberStatus.Up)
     }
@@ -76,10 +76,11 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       try {
         cluster.subscribe(testActor, classOf[ClusterEvent.ClusterDomainEvent])
         // first, is in response to the subscription
-        expectMsgClass(classOf[ClusterEvent.ClusterDomainEvent])
+        expectMsgClass(classOf[ClusterEvent.InstantClusterState])
+        expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
 
         cluster.publishCurrentClusterState()
-        expectMsgClass(classOf[ClusterEvent.ClusterDomainEvent])
+        expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
       } finally {
         cluster.unsubscribe(testActor)
       }
@@ -87,7 +88,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
 
     "send CurrentClusterState to one receiver when requested" in {
       cluster.sendCurrentClusterState(testActor)
-      expectMsgClass(classOf[ClusterEvent.ClusterDomainEvent])
+      expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
     }
 
   }

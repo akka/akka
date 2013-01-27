@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -13,6 +13,10 @@ import MemberStatus._
  */
 private[cluster] object Gossip {
   val emptyMembers: immutable.SortedSet[Member] = immutable.SortedSet.empty
+  val empty: Gossip = new Gossip(Gossip.emptyMembers)
+
+  def apply(members: immutable.SortedSet[Member]) =
+    if (members.isEmpty) empty else empty.copy(members = members)
 }
 
 /**
@@ -49,8 +53,8 @@ private[cluster] object Gossip {
  * removed node telling it to shut itself down.
  */
 private[cluster] case class Gossip(
+  members: immutable.SortedSet[Member], // sorted set of members with their status, sorted by address
   overview: GossipOverview = GossipOverview(),
-  members: immutable.SortedSet[Member] = Gossip.emptyMembers, // sorted set of members with their status, sorted by address
   version: VectorClock = VectorClock()) // vector clock version
   extends ClusterMessage // is a serializable cluster message
   with Versioned[Gossip] {
@@ -128,14 +132,14 @@ private[cluster] case class Gossip(
     // 4. fresh seen table
     val mergedSeen = Map.empty[Address, VectorClock]
 
-    Gossip(GossipOverview(mergedSeen, mergedUnreachable), mergedMembers, mergedVClock)
+    Gossip(mergedMembers, GossipOverview(mergedSeen, mergedUnreachable), mergedVClock)
   }
 
   /**
    * Checks if we have a cluster convergence. If there are any unreachable nodes then we can't have a convergence -
    * waiting for user to act (issuing DOWN) or leader to act (issuing DOWN through auto-down).
    *
-   * @return Some(convergedGossip) if convergence have been reached and None if not
+   * @return true if convergence have been reached and false if not
    */
   def convergence: Boolean = {
     val unreachable = overview.unreachable
@@ -151,8 +155,10 @@ private[cluster] case class Gossip(
     def allMembersInSeen = members.forall(m ⇒ seen.contains(m.address))
 
     def seenSame: Boolean =
-      if (seen.isEmpty) false
-      else {
+      if (seen.isEmpty) {
+        // if both seen and members are empty, then every(no)body has seen the same thing
+        members.isEmpty
+      } else {
         val values = seen.values
         val seenHead = values.head
         values.forall(_ == seenHead)

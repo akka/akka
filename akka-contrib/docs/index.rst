@@ -29,7 +29,10 @@ The Current List of Modules
 .. toctree::
 
    reliable-proxy
-   throttle   
+   throttle
+   jul
+   peek-mailbox
+   cluster-singleton
 
 Suggested Way of Using these Contributions
 ------------------------------------------

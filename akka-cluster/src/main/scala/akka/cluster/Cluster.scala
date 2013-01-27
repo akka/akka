@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import akka.util.internal.HashedWheelTimer
 import concurrent.{ ExecutionContext, Await }
+import com.typesafe.config.ConfigFactory
 
 /**
  * Cluster Extension Id and factory for creating Cluster extension.
@@ -61,7 +62,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   import settings._
 
   val selfAddress: Address = system.provider match {
-    case c: ClusterActorRefProvider ⇒ c.transport.address
+    case c: ClusterActorRefProvider ⇒ c.transport.defaultAddress
     case other ⇒ throw new ConfigurationException(
       "ActorSystem [%s] needs to have a 'ClusterActorRefProvider' enabled in the configuration, currently uses [%s]".
         format(system, other.getClass.getName))
@@ -88,31 +89,26 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * INTERNAL API
    */
   private[cluster] val scheduler: Scheduler with Closeable = {
-    if (system.settings.SchedulerTickDuration > SchedulerTickDuration) {
+    if (system.scheduler.maxFrequency < 1.second / SchedulerTickDuration) {
+      import scala.collection.JavaConverters._
       log.info("Using a dedicated scheduler for cluster. Default scheduler can be used if configured " +
         "with 'akka.scheduler.tick-duration' [{} ms] <=  'akka.cluster.scheduler.tick-duration' [{} ms].",
-        system.settings.SchedulerTickDuration.toMillis, SchedulerTickDuration.toMillis)
+        (1000 / system.scheduler.maxFrequency).toInt, SchedulerTickDuration.toMillis)
       new DefaultScheduler(
-        new HashedWheelTimer(log,
-          system.threadFactory match {
-            case tf: MonitorableThreadFactory ⇒ tf.copy(name = tf.name + "-cluster-scheduler")
-            case tf                           ⇒ tf
-          },
-          SchedulerTickDuration,
-          SchedulerTicksPerWheel),
-        log)
+        ConfigFactory.parseString(s"akka.scheduler.tick-duration=${SchedulerTickDuration.toMillis}ms").withFallback(
+          system.settings.config),
+        log,
+        system.threadFactory match {
+          case tf: MonitorableThreadFactory ⇒ tf.withName(tf.name + "-cluster-scheduler")
+          case tf                           ⇒ tf
+        })
     } else {
       // delegate to system.scheduler, but don't close over system
       val systemScheduler = system.scheduler
       new Scheduler with Closeable {
         override def close(): Unit = () // we are using system.scheduler, which we are not responsible for closing
 
-        override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration,
-                              receiver: ActorRef, message: Any)(implicit executor: ExecutionContext): Cancellable =
-          systemScheduler.schedule(initialDelay, interval, receiver, message)
-
-        override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
-          systemScheduler.schedule(initialDelay, interval)(f)
+        override def maxFrequency: Double = systemScheduler.maxFrequency
 
         override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration,
                               runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
@@ -121,13 +117,6 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         override def scheduleOnce(delay: FiniteDuration,
                                   runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
           systemScheduler.scheduleOnce(delay, runnable)
-
-        override def scheduleOnce(delay: FiniteDuration, receiver: ActorRef,
-                                  message: Any)(implicit executor: ExecutionContext): Cancellable =
-          systemScheduler.scheduleOnce(delay, receiver, message)
-
-        override def scheduleOnce(delay: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
-          systemScheduler.scheduleOnce(delay)(f)
       }
     }
   }
@@ -176,8 +165,13 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * Subscribe to cluster domain events.
    * The `to` Class can be [[akka.cluster.ClusterEvent.ClusterDomainEvent]]
-   * or subclass. A snapshot of [[akka.cluster.ClusterEvent.CurrentClusterState]]
-   * will also be sent to the subscriber.
+   * or subclass.
+   *
+   * A snapshot of [[akka.cluster.ClusterEvent.CurrentClusterState]]
+   * will be sent to the subscriber as the first event. When
+   * `to` Class is a [[akka.cluster.ClusterEvent.InstantMemberEvent]]
+   * (or subclass) the snapshot event will instead be a
+   * [[akka.cluster.ClusterEvent.InstantClusterState]].
    */
   def subscribe(subscriber: ActorRef, to: Class[_]): Unit =
     clusterCore ! InternalClusterAction.Subscribe(subscriber, to)
@@ -232,6 +226,24 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   def down(address: Address): Unit =
     clusterCore ! ClusterUserAction.Down(address)
 
+  /**
+   * The supplied thunk will be run, once, when current cluster member is `Up`.
+   * Typically used together with configuration option `akka.cluster.min-nr-of-members'
+   * to defer some action, such as starting actors, until the cluster has reached
+   * a certain size.
+   */
+  def registerOnMemberUp[T](code: ⇒ T): Unit =
+    registerOnMemberUp(new Runnable { def run = code })
+
+  /**
+   * The supplied callback will be run, once, when current cluster member is `Up`.
+   * Typically used together with configuration option `akka.cluster.min-nr-of-members'
+   * to defer some action, such as starting actors, until the cluster has reached
+   * a certain size.
+   * JAVA API
+   */
+  def registerOnMemberUp(callback: Runnable): Unit = clusterDaemons ! InternalClusterAction.AddOnMemberUpListener(callback)
+
   // ========================================================
   // ===================== INTERNAL API =====================
   // ========================================================
@@ -268,4 +280,3 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   }
 
 }
-

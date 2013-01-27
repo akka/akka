@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -23,11 +23,11 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
   with BeforeAndAfterEach with ImplicitSender {
 
   var publisher: ActorRef = _
-  val a1 = Member(Address("akka", "sys", "a", 2552), Up)
-  val b1 = Member(Address("akka", "sys", "b", 2552), Up)
-  val c1 = Member(Address("akka", "sys", "c", 2552), Joining)
-  val c2 = Member(Address("akka", "sys", "c", 2552), Up)
-  val d1 = Member(Address("akka", "sys", "a", 2551), Up)
+  val a1 = Member(Address("akka.tcp", "sys", "a", 2552), Up)
+  val b1 = Member(Address("akka.tcp", "sys", "b", 2552), Up)
+  val c1 = Member(Address("akka.tcp", "sys", "c", 2552), Joining)
+  val c2 = Member(Address("akka.tcp", "sys", "c", 2552), Up)
+  val d1 = Member(Address("akka.tcp", "sys", "a", 2551), Up)
 
   val g0 = Gossip(members = SortedSet(a1)).seen(a1.address)
   val g1 = Gossip(members = SortedSet(a1, b1, c1)).seen(a1.address).seen(b1.address).seen(c1.address)
@@ -36,12 +36,18 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
   val g4 = Gossip(members = SortedSet(d1, a1, b1, c2)).seen(a1.address)
   val g5 = Gossip(members = SortedSet(d1, a1, b1, c2)).seen(a1.address).seen(b1.address).seen(c2.address).seen(d1.address)
 
-  override def atStartup(): Unit = {
-    system.eventStream.subscribe(testActor, classOf[ClusterDomainEvent])
-  }
+  // created in beforeEach
+  var memberSubscriber: TestProbe = _
 
   override def beforeEach(): Unit = {
+    memberSubscriber = TestProbe()
+    system.eventStream.subscribe(memberSubscriber.ref, classOf[MemberEvent])
+    system.eventStream.subscribe(memberSubscriber.ref, classOf[LeaderChanged])
+
     publisher = system.actorOf(Props[ClusterDomainEventPublisher])
+    publisher ! PublishChanges(g0)
+    memberSubscriber.expectMsg(MemberUp(a1))
+    memberSubscriber.expectMsg(LeaderChanged(Some(a1.address)))
   }
 
   override def afterEach(): Unit = {
@@ -50,81 +56,117 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
 
   "ClusterDomainEventPublisher" must {
 
-    "publish MemberUp when member status changed to Up" in {
-      publisher ! PublishChanges(g1, g2)
-      expectMsg(MemberUp(c2))
-      expectMsg(ConvergenceChanged(false))
-      expectMsgType[SeenChanged]
+    "not publish MemberUp when there is no convergence" in {
+      publisher ! PublishChanges(g2)
     }
 
-    "publish convergence true when all seen it" in {
-      publisher ! PublishChanges(g2, g3)
-      expectMsg(ConvergenceChanged(true))
-      expectMsgType[SeenChanged]
+    "publish MemberEvents when there is convergence" in {
+      publisher ! PublishChanges(g2)
+      publisher ! PublishChanges(g3)
+      memberSubscriber.expectMsg(MemberUp(b1))
+      memberSubscriber.expectMsg(MemberUp(c2))
     }
 
     "publish leader changed when new leader after convergence" in {
-      publisher ! PublishChanges(g3, g4)
-      expectMsg(MemberUp(d1))
-      expectMsg(ConvergenceChanged(false))
-      expectMsgType[SeenChanged]
-      expectNoMsg(1 second)
+      publisher ! PublishChanges(g4)
+      memberSubscriber.expectNoMsg(1 second)
 
-      publisher ! PublishChanges(g4, g5)
-      expectMsg(LeaderChanged(Some(d1.address)))
-      expectMsg(ConvergenceChanged(true))
-      expectMsgType[SeenChanged]
+      publisher ! PublishChanges(g5)
+      memberSubscriber.expectMsg(MemberUp(d1))
+      memberSubscriber.expectMsg(MemberUp(b1))
+      memberSubscriber.expectMsg(MemberUp(c2))
+      memberSubscriber.expectMsg(LeaderChanged(Some(d1.address)))
     }
 
     "publish leader changed when new leader and convergence both before and after" in {
       // convergence both before and after
-      publisher ! PublishChanges(g3, g5)
-      expectMsg(MemberUp(d1))
-      expectMsg(LeaderChanged(Some(d1.address)))
-      expectMsgType[SeenChanged]
+      publisher ! PublishChanges(g3)
+      memberSubscriber.expectMsg(MemberUp(b1))
+      memberSubscriber.expectMsg(MemberUp(c2))
+      publisher ! PublishChanges(g5)
+      memberSubscriber.expectMsg(MemberUp(d1))
+      memberSubscriber.expectMsg(LeaderChanged(Some(d1.address)))
     }
 
     "not publish leader changed when not convergence" in {
-      publisher ! PublishChanges(g2, g4)
-      expectMsg(MemberUp(d1))
-      expectNoMsg(1 second)
+      publisher ! PublishChanges(g4)
+      memberSubscriber.expectNoMsg(1 second)
     }
 
     "not publish leader changed when changed convergence but still same leader" in {
-      publisher ! PublishChanges(g2, g5)
-      expectMsg(MemberUp(d1))
-      expectMsg(LeaderChanged(Some(d1.address)))
-      expectMsg(ConvergenceChanged(true))
-      expectMsgType[SeenChanged]
+      publisher ! PublishChanges(g5)
+      memberSubscriber.expectMsg(MemberUp(d1))
+      memberSubscriber.expectMsg(MemberUp(b1))
+      memberSubscriber.expectMsg(MemberUp(c2))
+      memberSubscriber.expectMsg(LeaderChanged(Some(d1.address)))
 
-      publisher ! PublishChanges(g5, g4)
-      expectMsg(ConvergenceChanged(false))
-      expectMsgType[SeenChanged]
+      publisher ! PublishChanges(g4)
+      memberSubscriber.expectNoMsg(1 second)
 
-      publisher ! PublishChanges(g4, g5)
-      expectMsg(ConvergenceChanged(true))
-      expectMsgType[SeenChanged]
+      publisher ! PublishChanges(g5)
+      memberSubscriber.expectNoMsg(1 second)
     }
 
     "send CurrentClusterState when subscribe" in {
       val subscriber = TestProbe()
       publisher ! Subscribe(subscriber.ref, classOf[ClusterDomainEvent])
+      subscriber.expectMsgType[InstantClusterState]
       subscriber.expectMsgType[CurrentClusterState]
       // but only to the new subscriber
-      expectNoMsg(1 second)
+      memberSubscriber.expectNoMsg(1 second)
     }
 
     "support unsubscribe" in {
       val subscriber = TestProbe()
-      publisher ! Subscribe(subscriber.ref, classOf[ClusterDomainEvent])
+      publisher ! Subscribe(subscriber.ref, classOf[MemberEvent])
       subscriber.expectMsgType[CurrentClusterState]
-      publisher ! Unsubscribe(subscriber.ref, Some(classOf[ClusterDomainEvent]))
-      publisher ! PublishChanges(Gossip(members = SortedSet(a1)), Gossip(members = SortedSet(a1, b1)))
+      publisher ! Unsubscribe(subscriber.ref, Some(classOf[MemberEvent]))
+      publisher ! PublishChanges(g3)
       subscriber.expectNoMsg(1 second)
-      // but testActor is still subscriber
-      expectMsg(MemberUp(b1))
+      // but memberSubscriber is still subscriber
+      memberSubscriber.expectMsg(MemberUp(b1))
+      memberSubscriber.expectMsg(MemberUp(c2))
+    }
+
+    "publish clean state when PublishStart" in {
+      val subscriber = TestProbe()
+      publisher ! Subscribe(subscriber.ref, classOf[ClusterDomainEvent])
+      subscriber.expectMsgType[InstantClusterState]
+      subscriber.expectMsgType[CurrentClusterState]
+      publisher ! PublishChanges(g3)
+      subscriber.expectMsg(InstantMemberUp(b1))
+      subscriber.expectMsg(InstantMemberUp(c2))
+      subscriber.expectMsg(MemberUp(b1))
+      subscriber.expectMsg(MemberUp(c2))
+      subscriber.expectMsgType[SeenChanged]
+
+      publisher ! PublishStart
+      subscriber.expectMsgType[CurrentClusterState] must be(CurrentClusterState())
+    }
+
+    "publish immediately when subscribing to InstantMemberEvent" in {
+      val subscriber = TestProbe()
+      publisher ! Subscribe(subscriber.ref, classOf[InstantMemberEvent])
+      subscriber.expectMsgType[InstantClusterState]
+      publisher ! PublishChanges(g2)
+      subscriber.expectMsg(InstantMemberUp(b1))
+      subscriber.expectMsg(InstantMemberUp(c2))
+      subscriber.expectNoMsg(1 second)
+      publisher ! PublishChanges(g3)
+      subscriber.expectNoMsg(1 second)
+    }
+
+    "publish SeenChanged" in {
+      val subscriber = TestProbe()
+      publisher ! Subscribe(subscriber.ref, classOf[SeenChanged])
+      subscriber.expectMsgType[CurrentClusterState]
+      publisher ! PublishChanges(g2)
+      subscriber.expectMsgType[SeenChanged]
+      subscriber.expectNoMsg(1 second)
+      publisher ! PublishChanges(g3)
+      subscriber.expectMsgType[SeenChanged]
+      subscriber.expectNoMsg(1 second)
     }
 
   }
-
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -145,7 +145,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
       def contextStackMustBeEmpty = ActorCell.contextStack.get.headOption must be === None
 
-      filterException[akka.actor.ActorInitializationException] {
+      EventFilter[ActorInitializationException](occurrences = 1) intercept {
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
             actorOf(Props(new Actor {
@@ -155,49 +155,63 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
         }
 
         contextStackMustBeEmpty
+      }
 
+      EventFilter[ActorInitializationException](occurrences = 1) intercept {
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
             actorOf(Props(promiseIntercept(new FailingOuterActor(actorOf(Props(new InnerActor))))(result))))
         }
 
         contextStackMustBeEmpty
+      }
 
+      EventFilter[ActorInitializationException](occurrences = 1) intercept {
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
             actorOf(Props(new OuterActor(actorOf(Props(promiseIntercept(new FailingInnerActor)(result)))))))
         }
 
         contextStackMustBeEmpty
+      }
 
+      EventFilter[ActorInitializationException](occurrences = 1) intercept {
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
             actorOf(Props(promiseIntercept(new FailingInheritingOuterActor(actorOf(Props(new InnerActor))))(result))))
         }
 
         contextStackMustBeEmpty
+      }
 
+      EventFilter[ActorInitializationException](occurrences = 2) intercept {
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
             actorOf(Props(new FailingOuterActor(actorOf(Props(promiseIntercept(new FailingInheritingInnerActor)(result)))))))
         }
 
         contextStackMustBeEmpty
+      }
 
+      EventFilter[ActorInitializationException](occurrences = 2) intercept {
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
             actorOf(Props(new FailingInheritingOuterActor(actorOf(Props(promiseIntercept(new FailingInheritingInnerActor)(result)))))))
         }
 
         contextStackMustBeEmpty
+      }
 
+      EventFilter[ActorInitializationException](occurrences = 2) intercept {
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
             actorOf(Props(new FailingInheritingOuterActor(actorOf(Props(promiseIntercept(new FailingInnerActor)(result)))))))
         }
 
         contextStackMustBeEmpty
+      }
 
+      EventFilter[ActorInitializationException](occurrences = 1) intercept {
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
             actorOf(Props(new OuterActor(actorOf(Props(new InnerActor {
@@ -206,21 +220,27 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
         }
 
         contextStackMustBeEmpty
+      }
 
+      EventFilter[ActorInitializationException](occurrences = 2) intercept {
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
             actorOf(Props(new FailingOuterActor(actorOf(Props(promiseIntercept(new FailingInheritingInnerActor)(result)))))))
         }
 
         contextStackMustBeEmpty
+      }
 
+      EventFilter[ActorInitializationException](occurrences = 1) intercept {
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
             actorOf(Props(new OuterActor(actorOf(Props(promiseIntercept(new FailingInheritingInnerActor)(result)))))))
         }
 
         contextStackMustBeEmpty
+      }
 
+      EventFilter[ActorInitializationException](occurrences = 1) intercept {
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
             actorOf(Props(new OuterActor(actorOf(Props(promiseIntercept({ new InnerActor; new InnerActor })(result)))))))

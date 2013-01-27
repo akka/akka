@@ -13,6 +13,7 @@ import org.jboss.netty.handler.timeout.{ ReadTimeoutHandler, ReadTimeoutExceptio
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 import akka.event.Logging
+import akka.util.Helpers
 
 /**
  * INTERNAL API.
@@ -59,7 +60,7 @@ private[akka] object RemoteConnection {
           poolSize)
         val bootstrap = new ServerBootstrap(socketfactory)
         bootstrap.setPipelineFactory(new TestConductorPipelineFactory(handler))
-        bootstrap.setOption("reuseAddress", true)
+        bootstrap.setOption("reuseAddress", !Helpers.isWindows)
         bootstrap.setOption("child.tcpNoDelay", true)
         bootstrap.bind(sockaddr)
     }
@@ -68,5 +69,9 @@ private[akka] object RemoteConnection {
   def getAddrString(channel: Channel) = channel.getRemoteAddress match {
     case i: InetSocketAddress ⇒ i.toString
     case _                    ⇒ "[unknown]"
+  }
+
+  def shutdown(channel: Channel) = {
+    channel.getFactory.releaseExternalResources()
   }
 }

@@ -10,7 +10,7 @@ object SimpleClusterApp {
 
     // Override the configuration of the port 
     // when specified as program argument
-    if (args.nonEmpty) System.setProperty("akka.remote.netty.port", args(0))
+    if (args.nonEmpty) System.setProperty("akka.remoting.transports.tcp.port", args(0))
 
     // Create an Akka system
     val system = ActorSystem("ClusterSystem")
@@ -22,7 +22,7 @@ object SimpleClusterApp {
           log.info("Member joined: {}", member)
         case MemberUp(member) ⇒
           log.info("Member is Up: {}", member)
-        case MemberUnreachable(member) ⇒
+        case UnreachableMember(member) ⇒
           log.info("Member detected as unreachable: {}", member)
         case _: ClusterDomainEvent ⇒ // ignore
 

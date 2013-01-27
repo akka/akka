@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -66,7 +66,7 @@ abstract class SingletonClusterSpec(multiNodeConfig: SingletonClusterMultiNodeCo
 
         markNodeAsUnavailable(secondAddress)
 
-        awaitUpConvergence(numberOfMembers = 1, canNotBePartOfMemberRing = List(secondAddress), 30.seconds)
+        awaitUpConvergence(numberOfMembers = 1, canNotBePartOfMemberRing = Set(secondAddress), 30.seconds)
         clusterView.isSingletonCluster must be(true)
         awaitCond(clusterView.isLeader)
       }

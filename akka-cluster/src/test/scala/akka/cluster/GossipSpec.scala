@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -14,22 +14,25 @@ class GossipSpec extends WordSpec with MustMatchers {
 
   import MemberStatus._
 
-  val a1 = Member(Address("akka", "sys", "a", 2552), Up)
-  val a2 = Member(Address("akka", "sys", "a", 2552), Joining)
-  val b1 = Member(Address("akka", "sys", "b", 2552), Up)
-  val b2 = Member(Address("akka", "sys", "b", 2552), Removed)
-  val c1 = Member(Address("akka", "sys", "c", 2552), Leaving)
-  val c2 = Member(Address("akka", "sys", "c", 2552), Up)
-  val c3 = Member(Address("akka", "sys", "c", 2552), Exiting)
-  val d1 = Member(Address("akka", "sys", "d", 2552), Leaving)
-  val d2 = Member(Address("akka", "sys", "d", 2552), Removed)
-  val e1 = Member(Address("akka", "sys", "e", 2552), Joining)
-  val e2 = Member(Address("akka", "sys", "e", 2552), Up)
+  val a1 = Member(Address("akka.tcp", "sys", "a", 2552), Up)
+  val a2 = Member(Address("akka.tcp", "sys", "a", 2552), Joining)
+  val b1 = Member(Address("akka.tcp", "sys", "b", 2552), Up)
+  val b2 = Member(Address("akka.tcp", "sys", "b", 2552), Removed)
+  val c1 = Member(Address("akka.tcp", "sys", "c", 2552), Leaving)
+  val c2 = Member(Address("akka.tcp", "sys", "c", 2552), Up)
+  val c3 = Member(Address("akka.tcp", "sys", "c", 2552), Exiting)
+  val d1 = Member(Address("akka.tcp", "sys", "d", 2552), Leaving)
+  val d2 = Member(Address("akka.tcp", "sys", "d", 2552), Removed)
+  val e1 = Member(Address("akka.tcp", "sys", "e", 2552), Joining)
+  val e2 = Member(Address("akka.tcp", "sys", "e", 2552), Up)
 
   "A Gossip" must {
 
-    "merge members by status priority" in {
+    "reach convergence when it's empty" in {
+      Gossip.empty.convergence must be(true)
+    }
 
+    "merge members by status priority" in {
       val g1 = Gossip(members = SortedSet(a1, c1, e1))
       val g2 = Gossip(members = SortedSet(a2, c2, e2))
 
@@ -44,7 +47,6 @@ class GossipSpec extends WordSpec with MustMatchers {
     }
 
     "merge unreachable by status priority" in {
-
       val g1 = Gossip(members = Gossip.emptyMembers, overview = GossipOverview(unreachable = Set(a1, b1, c1, d1)))
       val g2 = Gossip(members = Gossip.emptyMembers, overview = GossipOverview(unreachable = Set(a2, b2, c2, d2)))
 

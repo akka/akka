@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.config
@@ -32,10 +32,8 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         settings.SerializeAllMessages must equal(false)
 
         getInt("akka.scheduler.ticks-per-wheel") must equal(512)
-        settings.SchedulerTicksPerWheel must equal(512)
-
         getMilliseconds("akka.scheduler.tick-duration") must equal(100)
-        settings.SchedulerTickDuration must equal(100 millis)
+        getString("akka.scheduler.implementation") must equal("akka.actor.LightArrayRevolverScheduler")
 
         getBoolean("akka.daemonic") must be(false)
         settings.Daemonicity must be(false)

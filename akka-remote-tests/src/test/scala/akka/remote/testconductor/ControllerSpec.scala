@@ -1,13 +1,12 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote.testconductor
 
 import akka.testkit.AkkaSpec
-import akka.actor.Props
+import akka.actor.{ PoisonPill, Props, AddressFromURIString }
 import akka.testkit.ImplicitSender
 import akka.remote.testconductor.Controller.NodeInfo
-import akka.actor.AddressFromURIString
 import java.net.InetSocketAddress
 import java.net.InetAddress
 
@@ -15,7 +14,6 @@ object ControllerSpec {
   val config = """
     akka.testconductor.barrier-timeout = 5s
     akka.actor.provider = akka.remote.RemoteActorRefProvider
-    akka.remote.netty.port = 0
     akka.actor.debug.fsm = on
     akka.actor.debug.lifecycle = on
     """
@@ -36,6 +34,7 @@ class ControllerSpec extends AkkaSpec(ControllerSpec.config) with ImplicitSender
       expectMsg(ToClient(Done))
       c ! Controller.GetNodes
       expectMsgType[Iterable[RoleName]].toSet must be(Set(A, B))
+      c ! PoisonPill // clean up so network connections don't accumulate during test run
     }
 
   }

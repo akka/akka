@@ -10,16 +10,15 @@ import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
+import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.actor.ReceiveTimeout
 import akka.actor.RelativeActorPath
 import akka.actor.RootActorPath
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent.CurrentClusterState
-import akka.cluster.ClusterEvent.LeaderChanged
-import akka.cluster.ClusterEvent.MemberEvent
-import akka.cluster.ClusterEvent.MemberUp
+import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
+import akka.contrib.pattern.ClusterSingletonManager
 import akka.routing.FromConfig
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
 import akka.pattern.ask
@@ -94,8 +93,7 @@ class StatsFacade extends Actor with ActorLogging {
   import context.dispatcher
   val cluster = Cluster(context.system)
 
-  var currentMaster: Option[ActorRef] = None
-  var currentMasterCreatedByMe = false
+  var currentMaster: Option[Address] = None
 
   // subscribe to cluster changes, LeaderChanged
   // re-subscribe when restart
@@ -107,33 +105,15 @@ class StatsFacade extends Actor with ActorLogging {
       sender ! JobFailed("Service unavailable, try again later")
     case job: StatsJob ⇒
       implicit val timeout = Timeout(5.seconds)
-      currentMaster foreach {
-        _ ? job recover {
+      currentMaster foreach { address ⇒
+        val service = context.actorFor(RootActorPath(address) /
+          "user" / "singleton" / "statsService")
+        service ? job recover {
           case _ ⇒ JobFailed("Service unavailable, try again later")
         } pipeTo sender
       }
-    case state: CurrentClusterState ⇒
-      state.leader foreach updateCurrentMaster
-    case LeaderChanged(Some(leaderAddress)) ⇒
-      updateCurrentMaster(leaderAddress)
-  }
-
-  def updateCurrentMaster(leaderAddress: Address): Unit = {
-    if (leaderAddress == cluster.selfAddress) {
-      if (!currentMasterCreatedByMe) {
-        log.info("Creating new statsService master at [{}]", leaderAddress)
-        currentMaster = Some(context.actorOf(Props[StatsService],
-          name = "statsService"))
-        currentMasterCreatedByMe = true
-      }
-    } else {
-      if (currentMasterCreatedByMe)
-        currentMaster foreach { context.stop(_) }
-      log.info("Using statsService master at [{}]", leaderAddress)
-      currentMaster = Some(context.actorFor(
-        self.path.toStringWithAddress(leaderAddress) + "/statsService"))
-      currentMasterCreatedByMe = false
-    }
+    case state: CurrentClusterState ⇒ currentMaster = state.leader
+    case LeaderChanged(leader)      ⇒ currentMaster = leader
   }
 
 }
@@ -143,7 +123,7 @@ object StatsSample {
   def main(args: Array[String]): Unit = {
     // Override the configuration of the port
     // when specified as program argument
-    if (args.nonEmpty) System.setProperty("akka.remote.netty.port", args(0))
+    if (args.nonEmpty) System.setProperty("akka.remoting.transports.tcp.port", args(0))
 
     //#start-router-lookup
     val system = ActorSystem("ClusterSystem", ConfigFactory.parseString("""
@@ -171,12 +151,12 @@ object StatsSampleOneMaster {
   def main(args: Array[String]): Unit = {
     // Override the configuration of the port
     // when specified as program argument
-    if (args.nonEmpty) System.setProperty("akka.remote.netty.port", args(0))
+    if (args.nonEmpty) System.setProperty("akka.remoting.transports.tcp.port", args(0))
 
     //#start-router-deploy
     val system = ActorSystem("ClusterSystem", ConfigFactory.parseString("""
       akka.actor.deployment {
-        /statsFacade/statsService/workerRouter {
+        /singleton/statsService/workerRouter {
             router = consistent-hashing
             nr-of-instances = 100
             cluster {
@@ -189,6 +169,11 @@ object StatsSampleOneMaster {
       """).withFallback(ConfigFactory.load()))
     //#start-router-deploy
 
+    //#create-singleton-manager
+    system.actorOf(Props(new ClusterSingletonManager(
+      singletonProps = _ ⇒ Props[StatsService], singletonName = "statsService",
+      terminationMessage = PoisonPill)), name = "singleton")
+    //#create-singleton-manager
     system.actorOf(Props[StatsFacade], name = "statsFacade")
   }
 }
@@ -203,6 +188,12 @@ object StatsSampleClient {
 object StatsSampleOneMasterClient {
   def main(args: Array[String]): Unit = {
     val system = ActorSystem("ClusterSystem")
+
+    // the client is also part of the cluster
+    system.actorOf(Props(new ClusterSingletonManager(
+      singletonProps = _ ⇒ Props[StatsService], singletonName = "statsService",
+      terminationMessage = PoisonPill)), name = "singleton")
+
     system.actorOf(Props(new StatsSampleClient("/user/statsFacade")), "client")
   }
 }
@@ -219,7 +210,10 @@ class StatsSampleClient(servicePath: String) extends Actor {
 
   var nodes = Set.empty[Address]
 
-  override def preStart(): Unit = cluster.subscribe(self, classOf[MemberEvent])
+  override def preStart(): Unit = {
+    cluster.subscribe(self, classOf[MemberEvent])
+    cluster.subscribe(self, classOf[UnreachableMember])
+  }
   override def postStop(): Unit = {
     cluster.unsubscribe(self)
     tickTask.cancel()
@@ -237,8 +231,9 @@ class StatsSampleClient(servicePath: String) extends Actor {
       println(failed)
     case state: CurrentClusterState ⇒
       nodes = state.members.collect { case m if m.status == MemberStatus.Up ⇒ m.address }
-    case MemberUp(m)        ⇒ nodes += m.address
-    case other: MemberEvent ⇒ nodes -= other.member.address
+    case MemberUp(m)          ⇒ nodes += m.address
+    case other: MemberEvent   ⇒ nodes -= other.member.address
+    case UnreachableMember(m) ⇒ nodes -= m.address
   }
 
 }

@@ -12,7 +12,6 @@ import akka.actor.RootActorPath
 import akka.actor.Terminated
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.CurrentClusterState
-import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.Member
 import akka.cluster.MemberStatus
@@ -31,7 +30,7 @@ object TransformationFrontend {
   def main(args: Array[String]): Unit = {
     // Override the configuration of the port
     // when specified as program argument
-    if (args.nonEmpty) System.setProperty("akka.remote.netty.port", args(0))
+    if (args.nonEmpty) System.setProperty("akka.remoting.transports.tcp.port", args(0))
 
     val system = ActorSystem("ClusterSystem")
     val frontend = system.actorOf(Props[TransformationFrontend], name = "frontend")
@@ -78,7 +77,7 @@ object TransformationBackend {
   def main(args: Array[String]): Unit = {
     // Override the configuration of the port
     // when specified as program argument
-    if (args.nonEmpty) System.setProperty("akka.remote.netty.port", args(0))
+    if (args.nonEmpty) System.setProperty("akka.remoting.transports.tcp.port", args(0))
 
     val system = ActorSystem("ClusterSystem")
     system.actorOf(Props[TransformationBackend], name = "backend")
@@ -90,9 +89,9 @@ class TransformationBackend extends Actor {
 
   val cluster = Cluster(context.system)
 
-  // subscribe to cluster changes, MemberEvent
+  // subscribe to cluster changes, MemberUp
   // re-subscribe when restart
-  override def preStart(): Unit = cluster.subscribe(self, classOf[MemberEvent])
+  override def preStart(): Unit = cluster.subscribe(self, classOf[MemberUp])
   override def postStop(): Unit = cluster.unsubscribe(self)
 
   def receive = {

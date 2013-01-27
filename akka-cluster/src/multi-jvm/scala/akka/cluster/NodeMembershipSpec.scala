@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -43,7 +43,6 @@ abstract class NodeMembershipSpec
         awaitCond {
           clusterView.members.forall(_.status == MemberStatus.Up)
         }
-        awaitCond(clusterView.convergence)
       }
 
       enterBarrier("after-1")
@@ -60,7 +59,6 @@ abstract class NodeMembershipSpec
       awaitCond {
         clusterView.members.forall(_.status == MemberStatus.Up)
       }
-      awaitCond(clusterView.convergence)
 
       enterBarrier("after-2")
     }

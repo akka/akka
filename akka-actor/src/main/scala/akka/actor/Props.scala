@@ -1,10 +1,8 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
-
-import language.existentials
 
 import akka.dispatch._
 import akka.japi.Creator

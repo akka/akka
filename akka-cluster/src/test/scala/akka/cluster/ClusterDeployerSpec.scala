@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -29,7 +29,7 @@ object ClusterDeployerSpec {
           cluster.routees-path = "/user/myservice"
         }
       }
-      akka.remote.netty.port = 0
+      akka.remote.netty.tcp.port = 0
       """, ConfigParseOptions.defaults)
 
   class RecipeActor extends Actor {

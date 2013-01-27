@@ -1,13 +1,14 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.pattern
 
 import language.postfixOps
 
-import akka.testkit.AkkaSpec
+import akka.testkit.{ TestLatch, AkkaSpec }
 import akka.actor.{ Props, Actor }
+import java.util.concurrent.TimeoutException
 import scala.concurrent.{ Future, Promise, Await }
 import scala.concurrent.duration._
 
@@ -15,7 +16,8 @@ object PatternSpec {
   case class Work(duration: Duration)
   class TargetActor extends Actor {
     def receive = {
-      case Work(duration) ⇒ Thread.sleep(duration.toMillis)
+      case (testLatch: TestLatch, duration: FiniteDuration) ⇒
+        Await.ready(testLatch, duration)
     }
   }
 }
@@ -41,8 +43,10 @@ class PatternSpec extends AkkaSpec {
 
     "complete Future with AskTimeoutException when actor not terminated within timeout" in {
       val target = system.actorOf(Props[TargetActor])
-      target ! Work(250 millis)
-      intercept[AskTimeoutException] { Await.result(gracefulStop(target, 10 millis), 200 millis) }
+      val latch = TestLatch()
+      target ! (latch, remaining)
+      intercept[AskTimeoutException] { Await.result(gracefulStop(target, 500 millis), remaining) }
+      latch.open()
     }
   }
 

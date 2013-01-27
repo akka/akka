@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
@@ -70,18 +70,21 @@ abstract class AkkaSpec(_system: ActorSystem)
   }
 
   final override def afterAll {
+    beforeTermination()
     system.shutdown()
     try system.awaitTermination(5 seconds) catch {
       case _: TimeoutException ⇒
         system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
         println(system.asInstanceOf[ActorSystemImpl].printTree)
     }
-    atTermination()
+    afterTermination()
   }
 
   protected def atStartup() {}
 
-  protected def atTermination() {}
+  protected def beforeTermination() {}
+
+  protected def afterTermination() {}
 
   def spawn(dispatcherId: String = Dispatchers.DefaultDispatcherId)(body: ⇒ Unit): Unit =
     Future(body)(system.dispatchers.lookup(dispatcherId))

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -16,10 +16,11 @@ import scala.util.{ Failure, Success }
 import scala.util.control.NonFatal
 import akka.util._
 import java.io.Closeable
-import akka.util.internal.{ HashedWheelTimer, ConcurrentIdentityHashMap }
-import java.util.concurrent.{ ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
+import akka.util.internal.{ HashedWheelTimer }
+import java.util.concurrent.{ ConcurrentHashMap, ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor.dungeon.ChildrenContainer
+import scala.concurrent.ExecutionContext
 
 object ActorSystem {
 
@@ -161,8 +162,7 @@ object ActorSystem {
       case x  ⇒ Some(x)
     }
 
-    final val SchedulerTickDuration: FiniteDuration = Duration(getMilliseconds("akka.scheduler.tick-duration"), MILLISECONDS)
-    final val SchedulerTicksPerWheel: Int = getInt("akka.scheduler.ticks-per-wheel")
+    final val SchedulerClass: String = getString("akka.scheduler.implementation")
     final val Daemonicity: Boolean = getBoolean("akka.daemonic")
     final val JvmExitOnFatalError: Boolean = getBoolean("akka.jvm-exit-on-fatal-error")
 
@@ -601,6 +601,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   def shutdown(): Unit = guardian.stop()
 
+  //#create-scheduler
   /**
    * Create the scheduler service. This one needs one special behavior: if
    * Closeable, it MUST execute all outstanding tasks upon .close() in order
@@ -611,12 +612,11 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
    * executed upon close(), the task may execute before its timeout.
    */
   protected def createScheduler(): Scheduler =
-    new DefaultScheduler(
-      new HashedWheelTimer(log,
-        threadFactory.copy(threadFactory.name + "-scheduler"),
-        settings.SchedulerTickDuration,
-        settings.SchedulerTicksPerWheel),
-      log)
+    dynamicAccess.createInstanceFor[Scheduler](settings.SchedulerClass, immutable.Seq(
+      classOf[Config] -> settings.config,
+      classOf[LoggingAdapter] -> log,
+      classOf[ThreadFactory] -> threadFactory.withName(threadFactory.name + "-scheduler"))).get
+  //#create-scheduler
 
   /*
    * This is called after the last actor has signaled its termination, i.e.
@@ -628,15 +628,17 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     case _            ⇒
   }
 
-  private val extensions = new ConcurrentIdentityHashMap[ExtensionId[_], AnyRef]
+  private val extensions = new ConcurrentHashMap[ExtensionId[_], AnyRef]
 
   /**
    * Returns any extension registered to the specified Extension or returns null if not registered
    */
   @tailrec
   private def findExtension[T <: Extension](ext: ExtensionId[T]): T = extensions.get(ext) match {
-    case c: CountDownLatch ⇒ c.await(); findExtension(ext) //Registration in process, await completion and retry
-    case other             ⇒ other.asInstanceOf[T] //could be a T or null, in which case we return the null as T
+    case c: CountDownLatch ⇒
+      c.await(); findExtension(ext) //Registration in process, await completion and retry
+    case other ⇒
+      other.asInstanceOf[T] //could be a T or null, in which case we return the null as T
   }
 
   @tailrec

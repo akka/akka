@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -69,8 +69,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
         ".*Cluster Node.* - is starting up.*",
         ".*Shutting down cluster Node.*",
         ".*Cluster node successfully shut down.*",
-        ".*Using a dedicated scheduler for cluster.*",
-        ".*Phi value.* for connection.*") foreach { s ⇒
+        ".*Using a dedicated scheduler for cluster.*") foreach { s ⇒
           sys.eventStream.publish(Mute(EventFilter.info(pattern = s)))
         }
 
@@ -82,13 +81,13 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
     }
   }
 
-  def muteMarkingAsUnreachable(sys: ActorSystem = system): Unit = if (!sys.log.isDebugEnabled) {
-    sys.eventStream.publish(Mute(EventFilter.error(pattern = ".*Marking.* as UNREACHABLE.*")))
-  }
+  def muteMarkingAsUnreachable(sys: ActorSystem = system): Unit =
+    if (!sys.log.isDebugEnabled)
+      sys.eventStream.publish(Mute(EventFilter.error(pattern = ".*Marking.* as UNREACHABLE.*")))
 
-  def muteDeadLetters(sys: ActorSystem = system): Unit = if (!sys.log.isDebugEnabled) {
-    sys.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*")))
-  }
+  def muteDeadLetters(sys: ActorSystem = system): Unit =
+    if (!sys.log.isDebugEnabled)
+      sys.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*")))
 
   override def afterAll(): Unit = {
     if (!log.isDebugEnabled) {
@@ -202,15 +201,16 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
    * out of all nodes in the cluster. First
    * member in the cluster ring is expected leader.
    */
-  def assertLeaderIn(nodesInCluster: immutable.Seq[RoleName]): Unit = if (nodesInCluster.contains(myself)) {
-    nodesInCluster.length must not be (0)
-    val expectedLeader = roleOfLeader(nodesInCluster)
-    val leader = clusterView.leader
-    val isLeader = leader == Some(clusterView.selfAddress)
-    assert(isLeader == isNode(expectedLeader),
-      "expectedLeader [%s], got leader [%s], members [%s]".format(expectedLeader, leader, clusterView.members))
-    clusterView.status must (be(MemberStatus.Up) or be(MemberStatus.Leaving))
-  }
+  def assertLeaderIn(nodesInCluster: immutable.Seq[RoleName]): Unit =
+    if (nodesInCluster.contains(myself)) {
+      nodesInCluster.length must not be (0)
+      val expectedLeader = roleOfLeader(nodesInCluster)
+      val leader = clusterView.leader
+      val isLeader = leader == Some(clusterView.selfAddress)
+      assert(isLeader == isNode(expectedLeader),
+        "expectedLeader [%s], got leader [%s], members [%s]".format(expectedLeader, leader, clusterView.members))
+      clusterView.status must (be(MemberStatus.Up) or be(MemberStatus.Leaving))
+    }
 
   /**
    * Wait until the expected number of members has status Up and convergence has been reached.
@@ -218,18 +218,17 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
    */
   def awaitUpConvergence(
     numberOfMembers: Int,
-    canNotBePartOfMemberRing: immutable.Seq[Address] = Nil,
+    canNotBePartOfMemberRing: Set[Address] = Set.empty,
     timeout: FiniteDuration = 20.seconds): Unit = {
     within(timeout) {
-      awaitCond(clusterView.members.size == numberOfMembers)
-      awaitCond(clusterView.members.forall(_.status == MemberStatus.Up))
-      awaitCond(clusterView.convergence)
-      // clusterView.leader is updated by LeaderChanged, await that to be updated also
-      val expectedLeader = clusterView.members.headOption.map(_.address)
-      awaitCond(clusterView.leader == expectedLeader)
       if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
         awaitCond(
           canNotBePartOfMemberRing forall (address ⇒ !(clusterView.members exists (_.address == address))))
+      awaitCond(clusterView.members.size == numberOfMembers)
+      awaitCond(clusterView.members.forall(_.status == MemberStatus.Up))
+      // clusterView.leader is updated by LeaderChanged, await that to be updated also
+      val expectedLeader = clusterView.members.headOption.map(_.address)
+      awaitCond(clusterView.leader == expectedLeader)
     }
   }
 

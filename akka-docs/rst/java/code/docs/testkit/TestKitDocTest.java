@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.testkit;
 
@@ -17,6 +17,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Kill;
 import akka.actor.Props;
+import akka.actor.Terminated;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import scala.concurrent.Await;
@@ -298,6 +299,19 @@ public class TestKitDocTest {
       probe.assertHello();
     }};
     //#test-special-probe
+  }
+  
+  @Test
+  public void demonstrateWatch() {
+    final ActorRef target = system.actorFor("/buh");
+    //#test-probe-watch
+    new JavaTestKit(system) {{
+      final JavaTestKit probe = new JavaTestKit(system);
+      probe.watch(target);
+      final Terminated msg = probe.expectMsgClass(Terminated.class);
+      assertEquals(msg.getActor(), target);
+    }};
+    //#test-probe-watch
   }
   
   @Test

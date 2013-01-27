@@ -103,7 +103,8 @@ object AkkaKernelPlugin extends Plugin {
 
   def isKernelProject(dependencies: Seq[ModuleID]): Boolean = {
     dependencies.exists { d ⇒
-      (d.organization == "com.typesafe.akka" || d.organization == "se.scalablesolutions.akka") && d.name == "akka-kernel"
+      (d.organization == "com.typesafe.akka" || d.organization == "se.scalablesolutions.akka") &&
+        (d.name == "akka-kernel" || d.name.startsWith("akka-kernel_"))
     }
   }
 

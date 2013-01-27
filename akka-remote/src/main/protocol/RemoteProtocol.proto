@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 option java_package = "akka.remote";
@@ -14,7 +14,7 @@ option optimize_for = SPEED;
 *******************************************/
 
 message AkkaRemoteProtocol {
-  optional RemoteMessageProtocol message = 1;
+  optional bytes payload = 1;
   optional RemoteControlProtocol instruction = 2;
 }
 
@@ -78,6 +78,7 @@ message AddressProtocol {
   required string system = 1;
   required string hostname = 2;
   required uint32 port = 3;
+  optional string protocol = 4;
 }
 
 /**

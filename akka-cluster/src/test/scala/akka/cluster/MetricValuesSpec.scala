@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -14,8 +14,8 @@ class MetricValuesSpec extends AkkaSpec(MetricsEnabledSpec.config) with MetricsC
 
   val collector = createMetricsCollector
 
-  val node1 = NodeMetrics(Address("akka", "sys", "a", 2554), 1, collector.sample.metrics)
-  val node2 = NodeMetrics(Address("akka", "sys", "a", 2555), 1, collector.sample.metrics)
+  val node1 = NodeMetrics(Address("akka.tcp", "sys", "a", 2554), 1, collector.sample.metrics)
+  val node2 = NodeMetrics(Address("akka.tcp", "sys", "a", 2555), 1, collector.sample.metrics)
 
   val nodes: Seq[NodeMetrics] = {
     (1 to 100).foldLeft(List(node1, node2)) { (nodes, _) ⇒
@@ -37,17 +37,14 @@ class MetricValuesSpec extends AkkaSpec(MetricsEnabledSpec.config) with MetricsC
     "extract expected MetricValue types for load balancing" in {
       nodes foreach { node ⇒
         node match {
-          case HeapMemory(address, _, used, committed, Some(max)) ⇒
+          case HeapMemory(address, _, used, committed, _) ⇒
+            used must be > (0L)
             committed must be >= (used)
-            used must be <= (max)
-            committed must be <= (max)
+            // Documentation java.lang.management.MemoryUsage says that committed <= max,
+            // but in practice that is not always true (we have seen it happen). Therefore
+            // we don't check the heap max value in this test.
             // extract is the java api
             StandardMetrics.extractHeapMemory(node) must not be (null)
-          case HeapMemory(address, _, used, committed, None) ⇒
-            used must be > (0L)
-            committed must be > (0L)
-            // extract is the java api
-            StandardMetrics.extractCpu(node) must not be (null)
         }
 
         node match {

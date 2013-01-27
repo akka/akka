@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote.testkit
 
@@ -19,7 +19,6 @@ import akka.remote.RemoteActorRefProvider
 import akka.testkit._
 import scala.concurrent.duration._
 import akka.remote.testconductor.RoleName
-import akka.remote.testconductor.TestConductorTransport
 import akka.actor.RootActorPath
 import akka.event.{ Logging, LoggingAdapter }
 
@@ -88,8 +87,8 @@ abstract class MultiNodeConfig {
 
   /**
    * To be able to use `blackhole`, `passThrough`, and `throttle` you must
-   * activate the TestConductorTranport by specifying
-   * `testTransport(on = true)` in your MultiNodeConfig.
+   * activate the failure injector and throttler transport adapters by
+   * specifying `testTransport(on = true)` in your MultiNodeConfig.
    */
   def testTransport(on: Boolean): Unit = _testTransport = on
 
@@ -100,7 +99,11 @@ abstract class MultiNodeConfig {
 
   private[testkit] def config: Config = {
     val transportConfig =
-      if (_testTransport) ConfigFactory.parseString("akka.remote.transport=" + classOf[TestConductorTransport].getName)
+      if (_testTransport) ConfigFactory.parseString(
+        """
+           akka.remote.netty.tcp.applied-adapters = [trttl, gremlin]
+           akka.remote.retry-gate-closed-for = 1 s
+        """)
       else ConfigFactory.empty
 
     val configs = (_nodeConf get myself).toList ::: _commonConf.toList ::: transportConfig :: MultiNodeSpec.nodeConfig :: MultiNodeSpec.baseConfig :: Nil
@@ -191,8 +194,8 @@ object MultiNodeSpec {
 
   private[testkit] val nodeConfig = mapToConfig(Map(
     "akka.actor.provider" -> "akka.remote.RemoteActorRefProvider",
-    "akka.remote.netty.hostname" -> selfName,
-    "akka.remote.netty.port" -> selfPort))
+    "akka.remote.netty.tcp.hostname" -> selfName,
+    "akka.remote.netty.tcp.port" -> selfPort))
 
   private[testkit] val baseConfig: Config = ConfigFactory.parseString("""
       akka {
@@ -269,7 +272,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
         if (verifySystemShutdown) throw new RuntimeException(msg)
         else system.log.warning(msg)
     }
-    atTermination()
+    afterTermination()
   }
 
   /**
@@ -290,7 +293,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
   /**
    * Override this method to do something when the whole test is terminating.
    */
-  protected def atTermination(): Unit = {}
+  protected def afterTermination(): Unit = {}
 
   /**
    * All registered roles
@@ -409,7 +412,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
 
   // useful to see which jvm is running which role, used by LogRoleReplace utility
   log.info("Role [{}] started with address [{}]", myself.name,
-    system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.address)
+    system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.defaultAddress)
 
 }
 

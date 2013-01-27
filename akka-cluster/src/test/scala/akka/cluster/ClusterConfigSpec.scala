@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -28,14 +28,17 @@ class ClusterConfigSpec extends AkkaSpec {
       PeriodicTasksInitialDelay must be(1 seconds)
       GossipInterval must be(1 second)
       HeartbeatInterval must be(1 second)
-      NumberOfEndHeartbeats must be(4)
+      NumberOfEndHeartbeats must be(8)
       MonitoredByNrOfMembers must be(5)
+      HeartbeatRequestDelay must be(10 seconds)
+      HeartbeatExpectedResponseAfter must be(3 seconds)
+      HeartbeatRequestTimeToLive must be(1 minute)
       LeaderActionsInterval must be(1 second)
       UnreachableNodesReaperInterval must be(1 second)
       PublishStatsInterval must be(10 second)
-      JoinTimeout must be(60 seconds)
       AutoJoin must be(true)
       AutoDown must be(false)
+      MinNrOfMembers must be(1)
       JmxEnabled must be(true)
       UseDispatcher must be(Dispatchers.DefaultDispatcherId)
       GossipDifferentViewProbability must be(0.8 plusOrMinus 0.0001)

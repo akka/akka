@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -115,7 +115,7 @@ abstract class MBeanSpec
       enterBarrier("fourth-down")
 
       runOn(first, second, third) {
-        awaitUpConvergence(3, canNotBePartOfMemberRing = List(fourthAddress))
+        awaitUpConvergence(3, canNotBePartOfMemberRing = Set(fourthAddress))
         assertMembers(clusterView.members, first, second, third)
       }
 

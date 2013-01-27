@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
@@ -9,27 +9,19 @@ import akka.event.Logging.{ Error, LogEventException }
 import akka.actor._
 import akka.event.EventStream
 import com.typesafe.config.Config
-import akka.serialization.SerializationExtension
 import akka.util.{ Unsafe, Index }
 import scala.annotation.tailrec
 import scala.concurrent.forkjoin.{ ForkJoinTask, ForkJoinPool }
 import scala.concurrent.duration.Duration
-import scala.concurrent.{ ExecutionContext, Await, Awaitable }
-import scala.util.control.NonFatal
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NonFatal
 
 final case class Envelope private (val message: Any, val sender: ActorRef)
 
 object Envelope {
-  def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope = {
-    val msg = message.asInstanceOf[AnyRef]
-    if (msg eq null) throw new InvalidMessageException("Message is null")
-    if (system.settings.SerializeAllMessages && !msg.isInstanceOf[NoSerializationVerificationNeeded]) {
-      val ser = SerializationExtension(system)
-      ser.deserialize(ser.serialize(msg).get, msg.getClass).get
-    }
-    new Envelope(message, sender)
-  }
+  def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope =
+    new Envelope(message, if (sender ne Actor.noSender) sender else system.deadLetters)
 }
 
 /**
@@ -158,23 +150,24 @@ private[akka] object MessageDispatcher {
   // since this is a compile-time constant, scalac will elide code behind if (MessageDispatcher.debug) (RK checked with 2.9.1)
   final val debug = false // Deliberately without type ascription to make it a compile-time constant
   lazy val actors = new Index[MessageDispatcher, ActorRef](16, _ compareTo _)
-  def printActors: Unit = if (debug) {
-    for {
-      d ← actors.keys
-      a ← { println(d + " inhabitants: " + d.inhabitants); actors.valueIterator(d) }
-    } {
-      val status = if (a.isTerminated) " (terminated)" else " (alive)"
-      val messages = a match {
-        case r: ActorRefWithCell ⇒ " " + r.underlying.numberOfMessages + " messages"
-        case _                   ⇒ " " + a.getClass
+  def printActors: Unit =
+    if (debug) {
+      for {
+        d ← actors.keys
+        a ← { println(d + " inhabitants: " + d.inhabitants); actors.valueIterator(d) }
+      } {
+        val status = if (a.isTerminated) " (terminated)" else " (alive)"
+        val messages = a match {
+          case r: ActorRefWithCell ⇒ " " + r.underlying.numberOfMessages + " messages"
+          case _                   ⇒ " " + a.getClass
+        }
+        val parent = a match {
+          case i: InternalActorRef ⇒ ", parent: " + i.getParent
+          case _                   ⇒ ""
+        }
+        println(" -> " + a + status + messages + parent)
       }
-      val parent = a match {
-        case i: InternalActorRef ⇒ ", parent: " + i.getParent
-        case _                   ⇒ ""
-      }
-      println(" -> " + a + status + messages + parent)
     }
-  }
 
   implicit def defaultDispatcher(implicit system: ActorSystem): MessageDispatcher = system.dispatcher
 }
@@ -450,7 +443,6 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
 }
 
 class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPrerequisites) extends ExecutorServiceConfigurator(config, prerequisites) {
-  import ThreadPoolConfigBuilder.conf_?
 
   val threadPoolConfig: ThreadPoolConfig = createThreadPoolConfigBuilder(config, prerequisites).config
 
@@ -461,15 +453,15 @@ class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPr
       .setCorePoolSizeFromFactor(config getInt "core-pool-size-min", config getDouble "core-pool-size-factor", config getInt "core-pool-size-max")
       .setMaxPoolSizeFromFactor(config getInt "max-pool-size-min", config getDouble "max-pool-size-factor", config getInt "max-pool-size-max")
       .configure(
-        conf_?(Some(config getInt "task-queue-size") flatMap {
+        Some(config getInt "task-queue-size") flatMap {
           case size if size > 0 ⇒
             Some(config getString "task-queue-type") map {
               case "array"       ⇒ ThreadPoolConfig.arrayBlockingQueue(size, false) //TODO config fairness?
               case "" | "linked" ⇒ ThreadPoolConfig.linkedBlockingQueue(size)
               case x             ⇒ throw new IllegalArgumentException("[%s] is not a valid task-queue-type [array|linked]!" format x)
-            }
+            } map { qf ⇒ (q: ThreadPoolConfigBuilder) ⇒ q.setQueueFactory(qf) }
           case _ ⇒ None
-        })(queueFactory ⇒ _.setQueueFactory(queueFactory)))
+        })
   }
 
   def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
@@ -527,7 +519,7 @@ class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrer
     val tf = threadFactory match {
       case m: MonitorableThreadFactory ⇒
         // add the dispatcher id to the thread names
-        m.copy(m.name + "-" + id)
+        m.withName(m.name + "-" + id)
       case other ⇒ other
     }
     new ForkJoinExecutorServiceFactory(

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.zeromq
 
@@ -9,7 +9,7 @@ import org.scalatest.matchers.MustMatchers
 import akka.testkit.{ TestProbe, DefaultTimeout, AkkaSpec }
 import scala.concurrent.duration._
 import akka.actor.{ Cancellable, Actor, Props, ActorRef }
-import akka.util.Timeout
+import akka.util.{ ByteString, Timeout }
 
 class ConcurrentSocketActorSpec extends AkkaSpec {
 
@@ -51,7 +51,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
       val msgGenerator = system.scheduler.schedule(100 millis, 10 millis, new Runnable {
         var number = 0
         def run() {
-          publisher ! ZMQMessage(Frame(number.toString), Frame(Nil))
+          publisher ! ZMQMessage(ByteString(number.toString), ByteString.empty)
           number += 1
         }
       })
@@ -60,9 +60,9 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
         subscriberProbe.expectMsg(Connecting)
         val msgNumbers = subscriberProbe.receiveWhile(2 seconds) {
           case msg: ZMQMessage if msg.frames.size == 2 ⇒
-            msg.payload(1).length must be(0)
+            msg.frames(1).length must be(0)
             msg
-        }.map(_.firstFrameAsString.toInt)
+        }.map(m ⇒ m.frames(0).utf8String.toInt)
         msgNumbers.length must be > 0
         msgNumbers must equal(for (i ← msgNumbers.head to msgNumbers.last) yield i)
       } finally {
@@ -88,8 +88,8 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
 
       try {
         replierProbe.expectMsg(Connecting)
-        val request = ZMQMessage(Frame("Request"))
-        val reply = ZMQMessage(Frame("Reply"))
+        val request = ZMQMessage(ByteString("Request"))
+        val reply = ZMQMessage(ByteString("Reply"))
 
         requester ! request
         replierProbe.expectMsg(request)
@@ -99,6 +99,8 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
         system stop requester
         system stop replier
         replierProbe.expectMsg(Closed)
+        awaitCond(requester.isTerminated)
+        awaitCond(replier.isTerminated)
         context.term
       }
     }
@@ -112,7 +114,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
 
       try {
         pullerProbe.expectMsg(Connecting)
-        val message = ZMQMessage(Frame("Pushed message"))
+        val message = ZMQMessage(ByteString("Pushed message"))
 
         pusher ! message
         pullerProbe.expectMsg(message)
@@ -120,6 +122,8 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
         system stop pusher
         system stop puller
         pullerProbe.expectMsg(Closed)
+        awaitCond(pusher.isTerminated)
+        awaitCond(puller.isTerminated)
         context.term
       }
     }
@@ -146,7 +150,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
       case _ ⇒
         val payload = "%s".format(messageNumber)
         messageNumber += 1
-        actorRef ! ZMQMessage(payload.getBytes)
+        actorRef ! ZMQMessage(ByteString(payload))
     }
   }
 }

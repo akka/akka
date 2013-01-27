@@ -6,7 +6,7 @@ What is an Actor?
 The previous section about :ref:`actor-systems` explained how actors form
 hierarchies and are the smallest unit when building an application. This
 section looks at one such actor in isolation, explaining the concepts you
-encounter while implementing it. For more an in depth reference with all the
+encounter while implementing it. For a more in depth reference with all the
 details please refer to :ref:`actors-scala` and :ref:`untyped-actors-java`.
 
 An actor is a container for `State`_, `Behavior`_, a `Mailbox`_, `Children`_

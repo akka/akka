@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -13,12 +13,12 @@ import scala.reflect.classTag
 import akka.pattern.ask
 import java.io.File
 import java.security.{ NoSuchAlgorithmException, SecureRandom, PrivilegedAction, AccessController }
-import akka.remote.netty.{ NettySettings, NettySSLSupport }
 import javax.net.ssl.SSLException
 import akka.util.Timeout
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.event.{ Logging, NoLogging, LoggingAdapter }
+import akka.remote.transport.netty.{ SSLSettings, NettySSLSupport }
 
 object Configuration {
   // set this in your JAVA_OPTS to see all ssl debug info: "-Djavax.net.debug=ssl,keymanager"
@@ -34,20 +34,25 @@ object Configuration {
         default-timeout = 10s
       }
 
-      remote.netty {
+      remote.enabled-transports = ["akka.remote.netty.ssl"]
+
+      remote.netty.ssl {
         hostname = localhost
         port = %d
         ssl {
           enable = on
           trust-store = "%s"
           key-store = "%s"
+          key-store-password = "changeme"
+          trust-store-password = "changeme"
+          protocol = "TLSv1"
           random-number-generator = "%s"
           enabled-algorithms = [%s]
           sha1prng-random-source = "/dev/./urandom"
         }
       }
     }
-  """
+                     """
 
   case class CipherConfig(runTest: Boolean, config: Config, cipher: String, localPort: Int, remotePort: Int)
 
@@ -57,20 +62,24 @@ object Configuration {
       //if (true) throw new IllegalArgumentException("Ticket1978*Spec isn't enabled")
 
       val config = ConfigFactory.parseString(conf.format(localPort, trustStore, keyStore, cipher, enabled.mkString(", ")))
-      val fullConfig = config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty")
-      val settings = new NettySettings(fullConfig, "placeholder")
+      val fullConfig = config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty.ssl.ssl")
+      val settings = new SSLSettings(fullConfig)
 
-      val rng = NettySSLSupport.initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, NoLogging)
+      val rng = NettySSLSupport.initializeCustomSecureRandom(settings.SSLRandomNumberGenerator,
+        settings.SSLRandomSource, NoLogging)
 
       rng.nextInt() // Has to work
-      settings.SSLRandomNumberGenerator foreach { sRng ⇒ rng.getAlgorithm == sRng || (throw new NoSuchAlgorithmException(sRng)) }
+      settings.SSLRandomNumberGenerator foreach {
+        sRng ⇒ rng.getAlgorithm == sRng || (throw new NoSuchAlgorithmException(sRng))
+      }
 
       val engine = NettySSLSupport.initializeClientSSL(settings, NoLogging).getEngine
       val gotAllSupported = enabled.toSet -- engine.getSupportedCipherSuites.toSet
       val gotAllEnabled = enabled.toSet -- engine.getEnabledCipherSuites.toSet
       gotAllSupported.isEmpty || (throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported))
       gotAllEnabled.isEmpty || (throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled))
-      engine.getSupportedProtocols.contains(settings.SSLProtocol.get) || (throw new IllegalArgumentException("Protocol not supported: " + settings.SSLProtocol.get))
+      engine.getSupportedProtocols.contains(settings.SSLProtocol.get) ||
+        (throw new IllegalArgumentException("Protocol not supported: " + settings.SSLProtocol.get))
 
       CipherConfig(true, config, cipher, localPort, remotePort)
     } catch {
@@ -115,13 +124,11 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
 
   implicit val timeout: Timeout = Timeout(10 seconds)
 
-  import RemoteCommunicationSpec._
-
   lazy val other: ActorSystem = ActorSystem(
     "remote-sys",
-    ConfigFactory.parseString("akka.remote.netty.port=" + cipherConfig.remotePort).withFallback(system.settings.config))
+    ConfigFactory.parseString("akka.remote.netty.ssl.port = " + cipherConfig.remotePort).withFallback(system.settings.config))
 
-  override def atTermination() {
+  override def afterTermination() {
     if (cipherConfig.runTest) {
       other.shutdown()
       other.awaitTermination()
@@ -131,7 +138,7 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
   ("-") must {
     if (cipherConfig.runTest) {
       val ignoreMe = other.actorOf(Props(new Actor { def receive = { case ("ping", x) ⇒ sender ! ((("pong", x), sender)) } }), "echo")
-      val otherAddress = other.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.address
+      val otherAddress = other.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.defaultAddress
 
       "support tell" in {
         val here = system.actorFor(otherAddress.toString + "/user/echo")

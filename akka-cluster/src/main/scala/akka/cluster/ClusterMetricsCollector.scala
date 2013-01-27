@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -76,17 +76,23 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
     MetricsInterval, self, MetricsTick)
 
   override def preStart(): Unit = {
-    cluster.subscribe(self, classOf[MemberEvent])
+    cluster.subscribe(self, classOf[InstantMemberEvent])
+    cluster.subscribe(self, classOf[UnreachableMember])
     log.info("Metrics collection has started successfully on node [{}]", selfAddress)
   }
 
   def receive = {
     case GossipTick                 ⇒ gossip()
     case MetricsTick                ⇒ collect()
-    case state: CurrentClusterState ⇒ receiveState(state)
-    case MemberUp(m)                ⇒ addMember(m)
-    case e: MemberEvent             ⇒ removeMember(e)
     case msg: MetricsGossipEnvelope ⇒ receiveGossip(msg)
+    case state: InstantClusterState ⇒ receiveState(state)
+    case state: CurrentClusterState ⇒ // enough with InstantClusterState
+    case InstantMemberUp(m)         ⇒ addMember(m)
+    case InstantMemberDowned(m)     ⇒ removeMember(m)
+    case InstantMemberRemoved(m)    ⇒ removeMember(m)
+    case UnreachableMember(m)       ⇒ removeMember(m)
+    case _: InstantMemberEvent      ⇒ // not interested in other types of InstantMemberEvent
+
   }
 
   override def postStop: Unit = {
@@ -104,16 +110,16 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   /**
    * Removes a member from the member node ring.
    */
-  def removeMember(event: MemberEvent): Unit = {
-    nodes -= event.member.address
-    latestGossip = latestGossip remove event.member.address
+  def removeMember(member: Member): Unit = {
+    nodes -= member.address
+    latestGossip = latestGossip remove member.address
     publish()
   }
 
   /**
    * Updates the initial node ring for those nodes that are [[akka.cluster.MemberStatus.Up]].
    */
-  def receiveState(state: CurrentClusterState): Unit =
+  def receiveState(state: InstantClusterState): Unit =
     nodes = state.members collect { case m if m.status == Up ⇒ m.address }
 
   /**
@@ -301,12 +307,13 @@ case class Metric private (name: String, value: Number, private val average: Opt
    * If defined ( [[akka.cluster.MetricNumericConverter.defined()]] ), updates the new
    * data point, and if defined, updates the data stream. Returns the updated metric.
    */
-  def :+(latest: Metric): Metric = if (this sameAs latest) average match {
-    case Some(avg)                        ⇒ copy(value = latest.value, average = Some(avg :+ latest.value.doubleValue))
-    case None if latest.average.isDefined ⇒ copy(value = latest.value, average = latest.average)
-    case _                                ⇒ copy(value = latest.value)
-  }
-  else this
+  def :+(latest: Metric): Metric =
+    if (this sameAs latest) average match {
+      case Some(avg)                        ⇒ copy(value = latest.value, average = Some(avg :+ latest.value.doubleValue))
+      case None if latest.average.isDefined ⇒ copy(value = latest.value, average = latest.average)
+      case _                                ⇒ copy(value = latest.value)
+    }
+    else this
 
   /**
    * The numerical value of the average, if defined, otherwise the latest value

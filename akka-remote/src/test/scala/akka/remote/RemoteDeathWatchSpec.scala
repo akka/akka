@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -13,19 +13,25 @@ akka {
     actor {
         provider = "akka.remote.RemoteActorRefProvider"
         deployment {
-            /watchers.remote = "akka://other@127.0.0.1:2666"
+            /watchers.remote = "akka.tcp://other@localhost:2666"
         }
     }
-    remote.netty {
-        hostname = "127.0.0.1"
+    remote.netty.tcp {
+        hostname = "localhost"
         port = 0
     }
 }
-""")) with ImplicitSender with DefaultTimeout with DeathWatchSpec {
+                                                                      """)) with ImplicitSender with DefaultTimeout with DeathWatchSpec {
 
-  val other = ActorSystem("other", ConfigFactory.parseString("akka.remote.netty.port=2666").withFallback(system.settings.config))
+  val other = ActorSystem("other", ConfigFactory.parseString("akka.remote.netty.tcp.port=2666")
+    .withFallback(system.settings.config))
 
-  override def atTermination() {
+  override def beforeTermination() {
+    system.eventStream.publish(TestEvent.Mute(
+      EventFilter.warning(pattern = "received dead letter.*Disassociate")))
+  }
+
+  override def afterTermination() {
     other.shutdown()
   }
 
