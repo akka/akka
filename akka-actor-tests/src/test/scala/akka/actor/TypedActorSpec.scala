@@ -300,10 +300,10 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
     }
 
     "be able to call Future-returning methods non-blockingly" in {
-      val t = newFooBar
+      val t = newFooBar(remaining)
       val f = t.futurePigdog(200)
       f.isCompleted must be(false)
-      Await.result(f, timeout.duration) must be("Pigdog")
+      Await.result(f, remaining) must be("Pigdog")
       mustStop(t)
     }
 
