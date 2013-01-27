@@ -56,7 +56,7 @@ happens immediately. So while updates to an Agent are asynchronous, reading the
 state of an Agent is synchronous.
 
 Updating Agents (send & alter)
-======================
+==============================
 
 You update an Agent by sending a function that transforms the current value or
 by sending just a new value. The Agent will apply the new value or function

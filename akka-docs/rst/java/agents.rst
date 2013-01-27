@@ -100,10 +100,7 @@ See :ref:`futures-java` for more information on ``Futures``.
 Transactional Agents
 ====================
 
-If an Agent is used within an enclosing transaction, then it will participate in
+If an Agent is used within an enclosing ``Scala STM transaction``, then it will participate in
 that transaction. If you send to an Agent within a transaction then the dispatch
 to the Agent will be held until that transaction commits, and discarded if the
-transaction is aborted. Here's an example:
-
-.. includecode:: code/docs/agent/AgentDocTest.java#transfer-example
-   :language: java
+transaction is aborted.
