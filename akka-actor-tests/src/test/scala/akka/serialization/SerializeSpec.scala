@@ -322,36 +322,6 @@ class ReferenceSerializationSpec extends AkkaSpec(SerializationTests.mostlyRefer
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyReferenceSystem) {
-  import SerializationTests._
-
-  val ser = SerializationExtension(system)
-
-  "Cross-version serialization compatibility" must {
-
-    "be preserved for SystemMessages" in {
-      val objs = List[(String, Any)](
-        ("akka.dispatch.Create", Create(1234)),
-        ("akka.dispatch.Recreate", Recreate(FakeThrowable("x"))),
-        ("akka.dispatch.Suspend", Suspend()),
-        ("akka.dispatch.Resume", Resume(FakeThrowable("x"))),
-        ("akka.dispatch.Terminate", Terminate()),
-        ("akka.dispatch.Supervise", Supervise(FakeActorRef("child"), true, 2468)),
-        ("akka.dispatch.ChildTerminated", ChildTerminated(FakeActorRef("child"))),
-        ("akka.dispatch.Watch", Watch(FakeActorRef("watchee"), FakeActorRef("watcher"))),
-        ("akka.dispatch.Unwatch", Unwatch(FakeActorRef("watchee"), FakeActorRef("watcher"))),
-        ("akka.dispatch.NoMessage", NoMessage))
-      val expectedConf = ConfigFactory.load("akka/serialization/serialized.conf")
-      for ((key, obj) ← objs) {
-        val hex = new String(encodeHex(ser.serialize(obj, obj.getClass).get))
-        hex must be(expectedConf.getString(key))
-      }
-    }
-
-  }
-}
-
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class OverriddenSystemMessageSerializationSpec extends AkkaSpec(SerializationTests.systemMessageMultiSerializerConf) {
   import SerializationTests._
 
