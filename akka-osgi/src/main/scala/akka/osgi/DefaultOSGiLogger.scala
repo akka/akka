@@ -1,0 +1,83 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.osgi
+
+import akka.event.Logging
+import org.osgi.service.log.LogService
+import akka.event.Logging.{ DefaultLogger, LogEvent }
+import akka.event.Logging.Error.NoCause
+
+/**
+ * EventHandler for OSGi environment.
+ * Stands for an interface between akka and the OSGi LogService
+ * It uses the OSGi LogService to log the received LogEvents
+ */
+class DefaultOSGiLogger extends DefaultLogger {
+
+  val messageFormat = " %s | %s | %s | %s"
+
+  override def receive: Receive = uninitialisedReceive orElse super.receive
+
+  /**
+   * Behaviour of the EventHandler that waits for its LogService
+   * @return  Receive: Store LogEvent or become initialised
+   */
+  def uninitialisedReceive: Receive = {
+    var messagesToLog: Vector[LogEvent] = Vector()
+    //the Default Logger needs to be aware of the LogService which is published on the EventStream
+    context.system.eventStream.subscribe(self, classOf[LogService])
+    context.system.eventStream.unsubscribe(self, UnregisteringLogService.getClass)
+    /**
+     * Logs every already received LogEvent and set the EventHandler ready to log every incoming LogEvent.
+     *
+     * @param logService OSGi LogService that has been registered,
+     */
+    def setLogService(logService: LogService) {
+      messagesToLog.foreach(x ⇒ {
+        logMessage(logService, x)
+      })
+      context.become(initialisedReceive(logService))
+    }
+
+    {
+      case logService: LogService ⇒ setLogService(logService)
+      case logEvent: LogEvent     ⇒ messagesToLog :+= logEvent
+    }
+  }
+
+  /**
+   * Behaviour of the Eventhanlder that is setup (has received a LogService)
+   * @param logService registrered OSGi LogService
+   * @return Receive : Logs LogEvent or go back to the uninitialised state
+   */
+  def initialisedReceive(logService: LogService): Receive = {
+    context.system.eventStream.subscribe(self, UnregisteringLogService.getClass)
+    context.system.eventStream.unsubscribe(self, classOf[LogService])
+
+    {
+      case logEvent: LogEvent      ⇒ logMessage(logService, logEvent)
+      case UnregisteringLogService ⇒ context.become(uninitialisedReceive)
+    }
+  }
+
+  /**
+   * Logs a message in an OSGi LogService
+   *
+   * @param logService  OSGi LogService registered and used for logging
+   * @param event akka LogEvent that is log unsing the LogService
+   */
+  def logMessage(logService: LogService, event: LogEvent) {
+    event match {
+      case error: Logging.Error if error.cause != NoCause ⇒ logService.log(event.level.asInt, messageFormat.format(timestamp, event.thread.getName, event.logSource, event.message), error.cause)
+      case _ ⇒ logService.log(event.level.asInt, messageFormat.format(timestamp, event.thread.getName, event.logSource, event.message))
+    }
+  }
+
+}
+
+/**
+ * Message sent when LogService is unregistred.
+ * Sent from the ActorSystemActivator to an EventHandler (as DefaultOsgiLogger).
+ */
+case object UnregisteringLogService
