@@ -746,7 +746,7 @@ object Dependencies {
 
   object Compile {
     // Compile
-    val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.10.0" exclude("org.slf4j", "slf4j-api") // ApacheV2
+    val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.10.3" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
     val config        = "com.typesafe"                % "config"                       % "1.0.0"       // ApacheV2
     val netty         = "io.netty"                    % "netty"                        % "3.6.1.Final" // ApacheV2
