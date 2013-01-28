@@ -5,9 +5,8 @@ package akka.osgi
 
 import akka.actor.ActorSystem
 import java.util.{ Dictionary, Properties }
-import org.osgi.framework.{ ServiceRegistration, BundleContext, BundleActivator }
+import org.osgi.framework._
 import org.osgi.service.log.LogService
-import org.osgi.util.tracker.ServiceTracker
 
 /**
  * Abstract bundle activator implementation to bootstrap and configure an actor system in an
@@ -40,21 +39,39 @@ abstract class ActorSystemActivator extends BundleActivator {
    */
   def start(context: BundleContext): Unit = {
     system = Some(OsgiActorSystemFactory(context).createActorSystem(Option(getActorSystemName(context))))
-    findLogService(context) foreach (log ⇒ system.foreach(sys ⇒ sys.eventStream.publish(log)))
+    system foreach (addLogServiceListener(context, _))
     system foreach (configure(context, _))
   }
 
   /**
-   * Finds a LogService in the BundleContext in any
+   * Adds a LogService Listener that will advertise the ActorSystem on LogService registration and unregistration
    *
    * @param context  the BundleContext
-   * @return An option of the LogService in the BundleContext
+   * @param  system  the ActorSystem to be advertised
    */
-  def findLogService(context: BundleContext): Option[LogService] = {
-    val logServiceTracker = new ServiceTracker(context, classOf[LogService].getName, null)
-    logServiceTracker.open()
-    Option(logServiceTracker.getService.asInstanceOf[LogService])
+  def addLogServiceListener(context: BundleContext, system: ActorSystem) {
+    val logServiceListner = new ServiceListener {
+      def serviceChanged(event: ServiceEvent) {
+        event.getType match {
+          case ServiceEvent.REGISTERED    ⇒ system.eventStream.publish(serviceForReference[LogService](context, event.getServiceReference))
+          case ServiceEvent.UNREGISTERING ⇒ system.eventStream.publish(UnregisteringLogService)
+        }
+      }
+    }
+    val filter = s"(objectclass=${classOf[LogService].getName})"
+    context.addServiceListener(logServiceListner, filter)
+
+    //Small trick to create an event if the service is registred before this start listing for
+    Option(context.getServiceReference(classOf[LogService].getName)).foreach(x ⇒ {
+      logServiceListner.serviceChanged(new ServiceEvent(ServiceEvent.REGISTERED, x))
+    })
   }
+
+  /**
+   * Convenience method to find a service by its reference.
+   */
+  def serviceForReference[T](context: BundleContext, reference: ServiceReference): T =
+    context.getService(reference).asInstanceOf[T]
 
   /**
    * Shuts down the ActorSystem when the bundle is stopped and, if necessary, unregisters a service registration.
