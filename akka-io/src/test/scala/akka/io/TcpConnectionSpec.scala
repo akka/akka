@@ -61,6 +61,25 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
       expectReceivedString("testdata2testdata3")
     }
+    "bundle incoming Received messages as long as more data is available" in withEstablishedConnection(
+      clientSocketOptions = List(SO.ReceiveBufferSize(1000000)) // to make sure enough data gets through
+      ) { setup ⇒
+        import setup._
+
+        val DataSize = 1000000
+        val bigData = new Array[Byte](DataSize)
+        val buffer = ByteBuffer.wrap(bigData)
+
+        val wrote = serverSideChannel.write(buffer)
+        wrote must be > 140000
+
+        expectNoMsg(1000.millis) // data should have been transferred fully by now
+
+        selector.send(connectionActor, ChannelReadable)
+
+        // 140000 is more than the direct buffer size
+        connectionHandler.expectMsgType[Received].data.length must be > 140000
+      }
     "receive data directly when the connection is established" in withUnacceptedConnection() { unregisteredSetup ⇒
       import unregisteredSetup._
 
@@ -491,7 +510,9 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
           clientSideChannel)
       }
     }
-  def withEstablishedConnection(setServerSocketOptions: ServerSocketChannel ⇒ Unit = _ ⇒ ())(body: RegisteredSetup ⇒ Any): Unit = withUnacceptedConnection(setServerSocketOptions) { unregisteredSetup ⇒
+  def withEstablishedConnection(
+    setServerSocketOptions: ServerSocketChannel ⇒ Unit = _ ⇒ (),
+    clientSocketOptions: immutable.Seq[SocketOption] = Nil)(body: RegisteredSetup ⇒ Any): Unit = withUnacceptedConnection(setServerSocketOptions, createConnectionActor(options = clientSocketOptions)) { unregisteredSetup ⇒
     import unregisteredSetup._
 
     localServer.configureBlocking(true)

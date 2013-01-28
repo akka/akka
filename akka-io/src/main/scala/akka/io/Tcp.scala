@@ -193,11 +193,15 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
     }
     val SelectorAssociationRetries = getInt("selector-association-retries")
     val BatchAcceptLimit = getInt("batch-accept-limit")
-    val DirectBufferSize = getInt("direct-buffer-size")
+    val DirectBufferSize = getIntBytes("direct-buffer-size")
     val MaxDirectBufferPoolSize = getInt("max-direct-buffer-pool-size")
     val RegisterTimeout = getString("register-timeout") match {
       case "infinite" ⇒ Duration.Undefined
       case x          ⇒ Duration(x)
+    }
+    val ReceivedMessageSizeLimit = getString("received-message-size-limit") match {
+      case "unlimited" ⇒ Int.MaxValue
+      case x           ⇒ getIntBytes("received-message-size-limit")
     }
     val SelectorDispatcher = getString("selector-dispatcher")
     val WorkerDispatcher = getString("worker-dispatcher")
@@ -211,6 +215,12 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
     require(BatchAcceptLimit > 0, "batch-accept-limit must be > 0")
 
     val MaxChannelsPerSelector = if (MaxChannels == -1) -1 else math.max(MaxChannels / NrOfSelectors, 1)
+
+    private[this] def getIntBytes(path: String): Int = {
+      val size = getBytes(path)
+      require(size < Int.MaxValue, s"$path must be < 2 GiB")
+      size.toInt
+    }
   }
 
   val manager = {
