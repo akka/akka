@@ -33,9 +33,9 @@ node that becomes leader or removing current leader node. Be aware that there is
 time period when there is no active singleton during the hand over process.
 
 The cluster failure detector will notice when a leader node becomes unreachable due to 
-things like JVM crash, hard shutdown, or network failure. Then a new leader node will 
+things like JVM crash, hard shut down, or network failure. Then a new leader node will 
 take over and a new singleton actor is created. For these failure scenarios there will 
-not be a graceful hand over, but more than one active singletons is prevented by all 
+not be a graceful hand-over, but more than one active singletons is prevented by all 
 reasonable means. Some corner cases are eventually resolved by configurable timeouts.
 
 You access the singleton actor with ``actorFor`` using the names you have specified when 
@@ -71,10 +71,22 @@ Note that you can send back current state to the ``ClusterSingletonManager`` bef
 This message will be sent over to the ``ClusterSingletonManager`` at the new leader node and it
 will be passed to the ``singletonProps`` factory when creating the new singleton instance.
 
-With the names given above the singleton actor can be looked up by subscribing to 
-``LeaderChanged`` cluster event and using ``actorFor``:
+With the names given above the path of singleton actor can be constructed by subscribing to 
+``LeaderChanged`` cluster event and the actor reference is then looked up using ``actorFor``:
 
-.. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterSingletonManagerSpec.scala#singleton-actorFor
+.. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterSingletonManagerSpec.scala#singleton-proxy
 
+Note that the hand-over might still be in progress and the singleton actor might not be started yet 
+when you receive the ``LeaderChanged`` event.
+
+To test scenarios where the cluster leader node is removed or shut down you can use :ref:`multi-node-testing` and 
+utilize the fact that the leader is supposed to be the first member when sorted by member address.
+
+.. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterSingletonManagerSpec.scala#sort-cluster-roles
+
+.. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterSingletonManagerSpec.scala#test-leave
+
+Also, make sure that you don't shut down the first role, which is running the test conductor controller. 
+Use a dedicated role for the controller, which is not a cluster member.
 
 .. note:: The singleton pattern will be simplified, perhaps provided out-of-the-box, when the cluster handles automatic actor partitioning.
