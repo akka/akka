@@ -6,6 +6,8 @@ package akka.osgi
 import akka.actor.ActorSystem
 import java.util.{ Dictionary, Properties }
 import org.osgi.framework.{ ServiceRegistration, BundleContext, BundleActivator }
+import org.osgi.service.log.LogService
+import org.osgi.util.tracker.ServiceTracker
 
 /**
  * Abstract bundle activator implementation to bootstrap and configure an actor system in an
@@ -38,7 +40,20 @@ abstract class ActorSystemActivator extends BundleActivator {
    */
   def start(context: BundleContext): Unit = {
     system = Some(OsgiActorSystemFactory(context).createActorSystem(Option(getActorSystemName(context))))
+    findLogService(context) foreach (log ⇒ system.foreach(sys ⇒ sys.eventStream.publish(log)))
     system foreach (configure(context, _))
+  }
+
+  /**
+   * Finds a LogService in the BundleContext in any
+   *
+   * @param context  the BundleContext
+   * @return An option of the LogService in the BundleContext
+   */
+  def findLogService(context: BundleContext): Option[LogService] = {
+    val logServiceTracker = new ServiceTracker(context, classOf[LogService].getName, null)
+    logServiceTracker.open()
+    Option(logServiceTracker.getService.asInstanceOf[LogService])
   }
 
   /**
