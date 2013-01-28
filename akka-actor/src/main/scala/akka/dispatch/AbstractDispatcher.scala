@@ -487,10 +487,8 @@ object ForkJoinExecutorConfigurator {
                                threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
                                unhandledExceptionHandler: Thread.UncaughtExceptionHandler)
     extends ForkJoinPool(parallelism, threadFactory, unhandledExceptionHandler, true) with LoadMetrics {
-    override def execute(r: Runnable): Unit = r match {
-      case m: Mailbox ⇒ super.execute(new MailboxExecutionTask(m))
-      case other      ⇒ super.execute(other)
-    }
+    override def execute(r: Runnable): Unit =
+      if (r eq null) throw new NullPointerException else super.execute(new AkkaForkJoinTask(r))
 
     def atFullThrottle(): Boolean = this.getActiveThreadCount() >= this.getParallelism()
   }
@@ -498,10 +496,11 @@ object ForkJoinExecutorConfigurator {
   /**
    * INTERNAL AKKA USAGE ONLY
    */
-  final class MailboxExecutionTask(mailbox: Mailbox) extends ForkJoinTask[Unit] {
-    final override def setRawResult(u: Unit): Unit = ()
-    final override def getRawResult(): Unit = ()
-    final override def exec(): Boolean = try { mailbox.run; true } catch {
+  @SerialVersionUID(1L)
+  final class AkkaForkJoinTask(runnable: Runnable) extends ForkJoinTask[Unit] {
+    override def getRawResult(): Unit = ()
+    override def setRawResult(unit: Unit): Unit = ()
+    final override def exec(): Boolean = try { runnable.run(); true } catch {
       case anything: Throwable ⇒
         val t = Thread.currentThread
         t.getUncaughtExceptionHandler match {

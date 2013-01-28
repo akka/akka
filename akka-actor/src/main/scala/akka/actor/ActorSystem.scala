@@ -4,23 +4,22 @@
 
 package akka.actor
 
+import java.io.Closeable
+import java.util.concurrent.{ ConcurrentHashMap, ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import com.typesafe.config.{ Config, ConfigFactory }
 import akka.event._
 import akka.dispatch._
 import akka.japi.Util.immutableSeq
-import com.typesafe.config.{ Config, ConfigFactory }
+import akka.actor.dungeon.ChildrenContainer
+import akka.util._
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.{ FiniteDuration, Duration }
-import scala.concurrent.{ Await, Awaitable, CanAwait, Future }
+import scala.concurrent.{ Await, Awaitable, CanAwait, Future, ExecutionContext }
 import scala.util.{ Failure, Success }
-import scala.util.control.NonFatal
-import akka.util._
-import java.io.Closeable
-import akka.util.internal.{ HashedWheelTimer }
-import java.util.concurrent.{ ConcurrentHashMap, ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.actor.dungeon.ChildrenContainer
-import scala.concurrent.ExecutionContext
+import scala.util.control.{ NonFatal, ControlThrowable }
+
 
 object ActorSystem {
 
@@ -465,7 +464,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     new Thread.UncaughtExceptionHandler() {
       def uncaughtException(thread: Thread, cause: Throwable): Unit = {
         cause match {
-          case NonFatal(_) | _: InterruptedException ⇒ log.error(cause, "Uncaught error from thread [{}]", thread.getName)
+          case NonFatal(_) | _: InterruptedException | _: NotImplementedError | _: ControlThrowable ⇒ log.error(cause, "Uncaught error from thread [{}]", thread.getName)
           case _ ⇒
             if (settings.JvmExitOnFatalError) {
               try {
