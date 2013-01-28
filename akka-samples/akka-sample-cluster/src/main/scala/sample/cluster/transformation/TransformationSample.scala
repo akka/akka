@@ -30,7 +30,7 @@ object TransformationFrontend {
   def main(args: Array[String]): Unit = {
     // Override the configuration of the port
     // when specified as program argument
-    if (args.nonEmpty) System.setProperty("akka.remoting.transports.tcp.port", args(0))
+    if (args.nonEmpty) System.setProperty("akka.remote.netty.tcp.port", args(0))
 
     val system = ActorSystem("ClusterSystem")
     val frontend = system.actorOf(Props[TransformationFrontend], name = "frontend")
@@ -77,7 +77,7 @@ object TransformationBackend {
   def main(args: Array[String]): Unit = {
     // Override the configuration of the port
     // when specified as program argument
-    if (args.nonEmpty) System.setProperty("akka.remoting.transports.tcp.port", args(0))
+    if (args.nonEmpty) System.setProperty("akka.remote.netty.tcp.port", args(0))
 
     val system = ActorSystem("ClusterSystem")
     system.actorOf(Props[TransformationBackend], name = "backend")
