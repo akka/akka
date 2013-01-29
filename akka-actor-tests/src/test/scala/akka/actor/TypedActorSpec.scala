@@ -211,7 +211,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
 
   import TypedActorSpec._
 
-  def newFooBar: Foo = newFooBar(Duration(2, "s"))
+  def newFooBar: Foo = newFooBar(timeout.duration)
 
   def newFooBar(d: FiniteDuration): Foo =
     TypedActor(system).typedActorOf(TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(Timeout(d)))
@@ -221,7 +221,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
 
   def newStacked(): Stacked =
     TypedActor(system).typedActorOf(
-      TypedProps[StackedImpl](classOf[Stacked], classOf[StackedImpl]).withTimeout(Timeout(2000)))
+      TypedProps[StackedImpl](classOf[Stacked], classOf[StackedImpl]).withTimeout(timeout))
 
   def mustStop(typedActor: AnyRef) = TypedActor(system).stop(typedActor) must be(true)
 
@@ -296,7 +296,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       t.nullJOption() must be === JOption.none
       t.nullOption() must be === None
       t.nullReturn() must be === null
-      Await.result(t.nullFuture(), remaining) must be === null
+      Await.result(t.nullFuture(), timeout.duration) must be === null
     }
 
     "be able to call Future-returning methods non-blockingly" in {
@@ -307,11 +307,11 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       mustStop(t)
     }
 
-    "be able to call multiple Future-returning methods non-blockingly" in {
+    "be able to call multiple Future-returning methods non-blockingly" in within(timeout.duration) {
       val t = newFooBar
       val futures = for (i ← 1 to 20) yield (i, t.futurePigdog(20, i))
       for ((i, f) ← futures) {
-        Await.result(f, timeout.duration) must be("Pigdog" + i)
+        Await.result(f, remaining) must be("Pigdog" + i)
       }
       mustStop(t)
     }
@@ -330,11 +330,11 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       mustStop(t)
     }
 
-    "be able to compose futures without blocking" in {
-      val t, t2 = newFooBar(2 seconds)
+    "be able to compose futures without blocking" in within(timeout.duration) {
+      val t, t2 = newFooBar(remaining)
       val f = t.futureComposePigdogFrom(t2)
       f.isCompleted must be(false)
-      Await.result(f, timeout.duration) must equal("PIGDOG")
+      Await.result(f, remaining) must equal("PIGDOG")
       mustStop(t)
       mustStop(t2)
     }
@@ -391,13 +391,13 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       mustStop(t)
     }
 
-    "be able to support implementation only typed actors" in {
+    "be able to support implementation only typed actors" in within(timeout.duration) {
       val t: Foo = TypedActor(system).typedActorOf(TypedProps[Bar]())
       val f = t.futurePigdog(200)
       val f2 = t.futurePigdog(0)
       f2.isCompleted must be(false)
       f.isCompleted must be(false)
-      Await.result(f, timeout.duration) must equal(Await.result(f2, timeout.duration))
+      Await.result(f, remaining) must equal(Await.result(f2, remaining))
       mustStop(t)
     }
 
@@ -408,13 +408,13 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       mustStop(t)
     }
 
-    "be able to use balancing dispatcher" in {
+    "be able to use balancing dispatcher" in within(timeout.duration) {
       val thais = for (i ← 1 to 60) yield newFooBar("pooled-dispatcher", 6 seconds)
       val iterator = new CyclicIterator(thais)
 
       val results = for (i ← 1 to 120) yield (i, iterator.next.futurePigdog(200L, i))
 
-      for ((i, r) ← results) Await.result(r, timeout.duration) must be("Pigdog" + i)
+      for ((i, r) ← results) Await.result(r, remaining) must be("Pigdog" + i)
 
       for (t ← thais) mustStop(t)
     }
