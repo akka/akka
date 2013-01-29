@@ -17,64 +17,8 @@
 
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.10</artifactId>
-            <version>2.1.0</version>
+            <artifactId>akka-actor_${scala.dep.version}</artifactId>
         </dependency>
 
     </dependencies>
-    <build>
-        <sourceDirectory>src/main/scala</sourceDirectory>
-        <plugins>
-            <plugin>
-                <executions>
-                    <execution>
-                        <id>bundle-manifest</id>
-                        <phase>process-classes</phase>
-                        <goals>
-                            <goal>manifest</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <version>2.3.7</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <instructions>
-                        <Bundle-Name>${project.name}</Bundle-Name>
-                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
-                        <Export-Package>akka.osgi.sample.api</Export-Package>
-                        <Import-Package>!sun.misc, *</Import-Package>
-                        <DynamicImport-Package></DynamicImport-Package>
-                        <Private-Package></Private-Package>
-                        <Require-Bundle></Require-Bundle>
-                    </instructions>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-artifact</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>${project.groupId}</groupId>
-                                    <artifactId>${project.artifactId}</artifactId>
-                                    <version>${project.version}</version>
-                                    <type>${project.packaging}</type>
-                                </artifactItem>
-                            </artifactItems>
-                            <outputDirectory>../bundles</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project>

@@ -9,6 +9,11 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
+    <!--
+    Note that 1.2.3 of uncommons-maths has OSGi meta-data, see https://www.assembla.com/spaces/akka/tickets/2990
+    Once that is available, this module can be removed.
+    -->
+
     <artifactId>uncommons</artifactId>
     <name>org.uncommons.maths.random</name>
     <version>1.2.2</version>
@@ -37,54 +42,17 @@
 
         <plugins>
             <plugin>
-                <executions>
-                    <execution>
-                        <id>bundle-manifest</id>
-                        <phase>process-classes</phase>
-                        <goals>
-                            <goal>manifest</goal>
-                        </goals>
-                    </execution>
-                </executions>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>2.3.7</version>
-                <extensions>true</extensions>
                 <configuration>
                     <instructions>
                         <Bundle-Name>${project.name}</Bundle-Name>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Export-Package>org.uncommons.maths.random</Export-Package>
                         <Import-Package>!sun.misc, *</Import-Package>
-                        <DynamicImport-Package></DynamicImport-Package>
                         <Private-Package>org.uncommons.maths.binary, org.uncommons.maths, org.uncommons.maths.number</Private-Package>
-                        <Require-Bundle></Require-Bundle>
                     </instructions>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-artifact</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>${project.groupId}</groupId>
-                                    <artifactId>${project.artifactId}</artifactId>
-                                    <version>${project.version}</version>
-                                    <type>${project.packaging}</type>
-                                </artifactItem>
-                            </artifactItems>
-                            <outputDirectory>../bundles</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

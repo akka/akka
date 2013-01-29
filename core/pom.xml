@@ -17,156 +17,72 @@
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.core</artifactId>
-            <version>4.2.0</version>
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.compendium</artifactId>
-            <version>4.2.0</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.10</artifactId>
-            <version>2.1.0</version>
+            <artifactId>akka-actor_${scala.dep.version}</artifactId>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-remote_2.10</artifactId>
-            <version>2.1.0</version>
+            <artifactId>akka-remote_${scala.dep.version}</artifactId>
         </dependency>
         <dependency>
             <groupId>com.typesafe</groupId>
             <artifactId>config</artifactId>
-            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>api</artifactId>
-            <version>${version}</version>
         </dependency>
 
         <!--Test dependencies-->
        <!-- <dependency>
             <groupId>org.specs2</groupId>
-            <artifactId>specs2_2.10</artifactId>
+            <artifactId>specs2_${scala.version}</artifactId>
             <version>1.12.3</version>
             <scope>test</scope>
         </dependency>-->
 
         <!--remoting dependencies-->
         <dependency>
-            <groupId>org.jboss.netty</groupId>
+            <groupId>io.netty</groupId>
             <artifactId>netty</artifactId>
-            <version>3.2.7.Final</version>
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
-            <version>2.4.1</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-cluster-experimental_2.10</artifactId>
-            <version>2.1.0</version>
+            <artifactId>akka-cluster-experimental_${scala.dep.version}</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.hyperic</groupId>
+            <groupId>org.fusesource</groupId>
             <artifactId>sigar</artifactId>
             <version>1.6.4</version>
         </dependency>
 
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-osgi_2.10</artifactId>
-            <version>2.1.0</version>
+            <artifactId>akka-osgi_${scala.dep.version}</artifactId>
         </dependency>
     </dependencies>
     <build>
-
-        <sourceDirectory>src/main/scala</sourceDirectory>
         <plugins>
             <plugin>
-                <executions>
-                    <execution>
-                        <id>bundle-manifest</id>
-                        <phase>process-classes</phase>
-                        <goals>
-                            <goal>manifest</goal>
-                        </goals>
-                    </execution>
-                </executions>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>2.3.7</version>
-                <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Bundle-Name>${project.name}</Bundle-Name>
-                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
-                        <Export-Package>akka.osgi.sample.activation</Export-Package>
-                        <Import-Package>!sun.misc, *</Import-Package>
-                        <DynamicImport-Package></DynamicImport-Package>
+                        <!-- The Netty import should be temporary, this is fixed on Akka master -->
+                        <Import-Package>!sun.misc, akka.remote.netty;version="[2.1.0,3.0.0)", *</Import-Package>
                         <Private-Package>akka.osgi.sample.internal, akka.osgi.sample.service</Private-Package>
-                        <Require-Bundle></Require-Bundle>
                         <Bundle-Activator>akka.osgi.sample.activation.Activator</Bundle-Activator>
                     </instructions>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-artifact</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>${project.groupId}</groupId>
-                                    <artifactId>${project.artifactId}</artifactId>
-                                    <version>${project.version}</version>
-                                    <type>${project.packaging}</type>
-                                </artifactItem>
-                            </artifactItems>
-                            <outputDirectory>../bundles</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <artifactId>exec-maven-plugin</artifactId>
-                <groupId>org.codehaus.mojo</groupId>
-                <executions>
-                    <execution><!-- Run our version calculation script -->
-                        <id>osgi-prepare</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>../karaf.sh</executable>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-clean-plugin</artifactId>
-                <version>2.4.1</version>
-                <configuration>
-                    <filesets>
-                        <fileset>
-                            <directory>../apache-karaf-2.3.0</directory>
-                            <includes>
-                                <include>**/*</include>
-                            </includes>
-                            <followSymlinks>false</followSymlinks>
-                        </fileset>
-                    </filesets>
                 </configuration>
             </plugin>
         </plugins>
