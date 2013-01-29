@@ -36,19 +36,19 @@ object ClusterSingletonManager {
   private object Internal {
     /**
      * Sent from new leader to previous leader to initate the
-     * hand over process. `HandOverInProgress` and `HandOverDone`
+     * hand-over process. `HandOverInProgress` and `HandOverDone`
      * are expected replies.
      */
     case object HandOverToMe
     /**
      * Confirmation by the previous leader that the hand
-     * over process, shutdown of the singleton actor, has
+     * over process, shut down of the singleton actor, has
      * started.
      */
     case object HandOverInProgress
     /**
      * Confirmation by the previous leader that the singleton
-     * actor has been terminated and the hand over process is
+     * actor has been terminated and the hand-over process is
      * completed. The `handOverData` holds the message, if any,
      * sent from the singleton actor to its parent ClusterSingletonManager
      * when shutting down. It is passed to the `singletonProps`
@@ -57,7 +57,7 @@ object ClusterSingletonManager {
     case class HandOverDone(handOverData: Option[Any])
     /**
      * Sent from from previous leader to new leader to
-     * initiate the normal hand over process.
+     * initiate the normal hand-over process.
      * Especially useful when new node joins and becomes
      * leader immediately, without knowing who was previous
      * leader.
@@ -160,7 +160,7 @@ trait ClusterSingletonPropsFactory extends Serializable {
   /**
    * Create the `Props` from the `handOverData` sent from
    * previous singleton. `handOverData` might be null
-   * when no hand over took place, or when the there is no need
+   * when no hand-over took place, or when the there is no need
    * for sending data to the new singleton.
    */
   def create(handOverData: Any): Props
@@ -189,18 +189,18 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  * over can normally be performed when joining a new node that becomes
  * leader or removing current leader node. Be aware that there is a
  * short time period when there is no active singleton during the
- * hand over process.
+ * hand-over process.
  *
  * The singleton actor can at any time send a message to its parent
  * ClusterSingletonManager and this message will be passed to the
  * `singletonProps` factory on the new leader node when a graceful
- * hand over is performed.
+ * hand-over is performed.
  *
  * The cluster failure detector will notice when a leader node
- * becomes unreachable due to things like JVM crash, hard shutdown,
+ * becomes unreachable due to things like JVM crash, hard shut down,
  * or network failure. Then a new leader node will take over and a
  * new singleton actor is created. For these failure scenarios there
- * will not be a graceful hand over, but more than one active singletons
+ * will not be a graceful hand-over, but more than one active singletons
  * is prevented by all reasonable means. Some corner cases are eventually
  * resolved by configurable timeouts.
  *
@@ -215,7 +215,7 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  * '''''singletonProps''''' Factory for [[akka.actor.Props]] of the
  *   singleton actor instance. The `Option` parameter is the the
  *   `handOverData` sent from previous singleton. `handOverData`
- *    might be None when no hand over took place, or when the there
+ *    might be None when no hand-over took place, or when the there
  *    is no need for sending data to the new singleton. The `handOverData`
  *    is typically passed as parameter to the constructor of the
  *    singleton actor.
@@ -227,13 +227,13 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  *   it to finish its work, close resources, and stop. It can sending
  *   a message back to the parent ClusterSingletonManager, which will
  *   passed to the `singletonProps` factory on the new leader node.
- *   The hand over to the new leader node is completed when the
+ *   The hand-over to the new leader node is completed when the
  *   singleton actor is terminated.
  *   Note that [[akka.actor.PoisonPill]] is a perfectly fine
  *   `terminationMessage` if you only need to stop the actor.
  *
  * '''''maxHandOverRetries''''' When a node is becoming leader it sends
- *   hand over request to previous leader. This is retried with the
+ *   hand-over request to previous leader. This is retried with the
  *   `retryInterval` until the previous leader confirms that the hand
  *   over has started, or this `maxHandOverRetries` limit has been
  *   reached. If the retry limit is reached it takes the decision to be
@@ -246,7 +246,7 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  *
  * '''''maxTakeOverRetries''''' When a leader node is not leader any more
  *   it sends take over request to the new leader to initiate the normal
- *   hand over process. This is especially useful when new node joins and becomes
+ *   hand-over process. This is especially useful when new node joins and becomes
  *   leader immediately, without knowing who was previous leader. This is retried
  *   with the `retryInterval` until this retry limit has been reached. If the retry
  *   limit is reached it initiates a new round by throwing
@@ -412,8 +412,8 @@ class ClusterSingletonManager(
   when(BecomingLeader) {
 
     case Event(HandOverInProgress, _) ⇒
-      // confirmation that the hand over process has started
-      logInfo("Hand over in progress at [{}]", sender.path.address)
+      // confirmation that the hand-over process has started
+      logInfo("Hand-over in progress at [{}]", sender.path.address)
       cancelTimer(HandOverRetryTimer)
       stay
 
@@ -480,7 +480,7 @@ class ClusterSingletonManager(
           setTimer(TakeOverRetryTimer, TakeOverRetry(leaderPeer, 1), retryInterval, repeat = false)
           goto(WasLeader) using WasLeaderData(singleton, singletonTerminated, handOverData, newLeader = a)
         case _ ⇒
-          // new leader will initiate the hand over
+          // new leader will initiate the hand-over
           stay
       }
 
@@ -503,7 +503,7 @@ class ClusterSingletonManager(
         setTimer(TakeOverRetryTimer, TakeOverRetry(leaderPeer, count + 1), retryInterval, repeat = false)
         stay
       } else
-        throw new ClusterSingletonManagerIsStuck(s"Expected hand over to [${newLeader}] never occured")
+        throw new ClusterSingletonManagerIsStuck(s"Expected hand-over to [${newLeader}] never occured")
 
     case Event(HandOverToMe, WasLeaderData(singleton, singletonTerminated, handOverData, _)) ⇒
       gotoHandingOver(singleton, singletonTerminated, handOverData, Some(sender))
@@ -546,7 +546,7 @@ class ClusterSingletonManager(
 
   def handOverDone(handOverTo: Option[ActorRef], handOverData: Option[Any]): State = {
     val newLeader = handOverTo.map(_.path.address)
-    logInfo("Singleton terminated, hand over done [{} -> {}]", cluster.selfAddress, newLeader)
+    logInfo("Singleton terminated, hand-over done [{} -> {}]", cluster.selfAddress, newLeader)
     handOverTo foreach { _ ! HandOverDone(handOverData) }
     goto(NonLeader) using NonLeaderData(newLeader)
   }
