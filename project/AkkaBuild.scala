@@ -688,9 +688,10 @@ object AkkaBuild extends Build {
     val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"), imports = Seq(protobufImport()))
 
     val osgi = osgiSettings ++ Seq(
-      OsgiKeys.exportPackage := Seq("akka*"), //exporting (and not importing) akka packages enforces bnd to aggregate akka-actor in the bundle
+      OsgiKeys.exportPackage := Seq("akka*"), //exporting akka packages enforces bnd to aggregate akka-actor packages in the bundle
       OsgiKeys.privatePackage := Seq("akka.osgi.impl"),
-      OsgiKeys.importPackage := (osgiOptionalImports map optionalResolution) ++ Seq(scalaImport(),configImport(), "org.osgi.framework")
+      //akka-actor packages are not imported, as contained in the CP
+      OsgiKeys.importPackage := (osgiOptionalImports map optionalResolution) ++ Seq("!sun.misc", scalaImport(),configImport(), "*") 
      )
 
     val osgiAries = exports() ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.aries.*"))
