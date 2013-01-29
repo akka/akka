@@ -7,6 +7,7 @@ import akka.actor.ActorSystem
 import java.util.{ Dictionary, Properties }
 import org.osgi.framework._
 import org.osgi.service.log.LogService
+import com.typesafe.config.{ ConfigFactory, Config }
 
 /**
  * Abstract bundle activator implementation to bootstrap and configure an actor system in an
@@ -38,7 +39,7 @@ abstract class ActorSystemActivator extends BundleActivator {
    * @param context the BundleContext
    */
   def start(context: BundleContext): Unit = {
-    system = Some(OsgiActorSystemFactory(context).createActorSystem(Option(getActorSystemName(context))))
+    system = Some(OsgiActorSystemFactory(context, getActorSystemConfiguration(context)).createActorSystem(Option(getActorSystemName(context))))
     system foreach (addLogServiceListener(context, _))
     system foreach (configure(context, _))
   }
@@ -108,5 +109,17 @@ abstract class ActorSystemActivator extends BundleActivator {
    * @return the actor system name
    */
   def getActorSystemName(context: BundleContext): String = null
+
+  /**
+   * Override this method to define a configuration for your [[akka.actor.ActorSystem]] instance.
+   * This configuration will be merged with fallback on
+   *    the application.conf of your bundle
+   *    the reference.conf of the akka bundles
+   *    the System properties.
+   *
+   * @param context the bundle context
+   * @return the actor system specific configuration, ConfigFactory.empty by default
+   */
+  def getActorSystemConfiguration(context: BundleContext): Config = ConfigFactory.empty
 
 }
