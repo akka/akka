@@ -364,7 +364,7 @@ object AkkaBuild extends Build {
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
-    dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test",
+    dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test", channels,
       remote, cluster, slf4j, agent, dataflow, transactor, fileMailbox, zeroMQ, camel, osgi, osgiAries),
     settings = defaultSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
@@ -720,10 +720,10 @@ object Dependencies {
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
 
     // Camel Sample
-    val camelJetty  = "org.apache.camel"            % "camel-jetty"                  % camelCore.revision // ApacheV2
+    val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
 
     // Cluster Sample
-    val sigar       = "org.hyperic"                 % "sigar"                        % "1.6.4"            // ApacheV2
+    val sigar       = "org.hyperic"                   % "sigar"                        % "1.6.4"            // ApacheV2
 
     // Test
 

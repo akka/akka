@@ -8,6 +8,7 @@ Scala API
 
    actors
    typed-actors
+   typed-channels
    logging
    event-bus
    scheduler

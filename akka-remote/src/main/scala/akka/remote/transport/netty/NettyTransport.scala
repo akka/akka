@@ -340,7 +340,7 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
           Future.failed(e)
       }) onFailure {
         case t: ConnectException ⇒ statusPromise failure new NettyTransportException(t.getMessage, t.getCause)
-        case t ⇒ statusPromise failure t
+        case t                   ⇒ statusPromise failure t
       }
 
       statusPromise.future
