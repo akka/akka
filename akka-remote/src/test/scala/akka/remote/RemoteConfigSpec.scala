@@ -34,7 +34,7 @@ class RemoteConfigSpec extends AkkaSpec(
       LogReceive must be(false)
       LogSend must be(false)
       RetryGateClosedFor must be === 0.seconds
-      UnknownAddressGateClosedFor must be === 10.seconds
+      UnknownAddressGateClosedFor must be === 60.seconds
       MaximumRetriesInWindow must be === 5
       RetryWindow must be === 3.seconds
       BackoffPeriod must be === 10.milliseconds
