@@ -11,6 +11,7 @@ import akka.event.Logging.Error
 import akka.util.Unsafe
 import scala.util.control.NonFatal
 import akka.dispatch.NullMessage
+import scala.util.control.Exception.Catcher
 
 private[akka] trait Dispatch { this: ActorCell ⇒
 
@@ -70,50 +71,30 @@ private[akka] trait Dispatch { this: ActorCell ⇒
     this
   }
 
-  // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def suspend(): Unit =
-    try dispatcher.systemDispatch(this, Suspend())
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
-    }
+  private def handleException: Catcher[Unit] = {
+    case e: InterruptedException ⇒
+      system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "interrupted during message send"))
+      Thread.currentThread.interrupt()
+    case NonFatal(e) ⇒
+      system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
+  }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def resume(causedByFailure: Throwable): Unit =
-    try dispatcher.systemDispatch(this, Resume(causedByFailure))
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
-    }
+  final def suspend(): Unit = try dispatcher.systemDispatch(this, Suspend()) catch handleException
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def restart(cause: Throwable): Unit =
-    try dispatcher.systemDispatch(this, Recreate(cause))
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
-    }
+  final def resume(causedByFailure: Throwable): Unit = try dispatcher.systemDispatch(this, Resume(causedByFailure)) catch handleException
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def stop(): Unit =
-    try dispatcher.systemDispatch(this, Terminate())
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
-    }
+  final def restart(cause: Throwable): Unit = try dispatcher.systemDispatch(this, Recreate(cause)) catch handleException
+
+  // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+  final def stop(): Unit = try dispatcher.systemDispatch(this, Terminate()) catch handleException
 
   def tell(message: Any, sender: ActorRef): Unit =
     try dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender, system))
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
-    }
+    catch handleException
 
-  override def sendSystemMessage(message: SystemMessage): Unit =
-    try dispatcher.systemDispatch(this, message)
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
-    }
+  override def sendSystemMessage(message: SystemMessage): Unit = try dispatcher.systemDispatch(this, message) catch handleException
 
 }
