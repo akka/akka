@@ -318,12 +318,14 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
     case _                     ⇒ None
   }
 
-  def addressToSocketAddress(addr: Address): InetSocketAddress =
-    new InetSocketAddress(InetAddress.getByName(addr.host.get), addr.port.get)
+  // TODO: This should be factored out to an async (or thread-isolated) name lookup service #2960
+  def addressToSocketAddress(addr: Address): Future[InetSocketAddress] =
+    Future { new InetSocketAddress(InetAddress.getByName(addr.host.get), addr.port.get) }
 
-  override def listen: Future[(Address, Promise[AssociationEventListener])] =
-    (Promise[(Address, Promise[AssociationEventListener])]() complete Try {
-      val address = addressToSocketAddress(Address("", "", settings.Hostname, settings.PortSelector))
+  override def listen: Future[(Address, Promise[AssociationEventListener])] = {
+    for {
+      address ← addressToSocketAddress(Address("", "", settings.Hostname, settings.PortSelector))
+    } yield {
       val newServerChannel = inboundBootstrap match {
         case b: ServerBootstrap         ⇒ b.bind(address)
         case b: ConnectionlessBootstrap ⇒ b.bind(address)
@@ -342,7 +344,8 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
           (address, associationListenerPromise)
         case None ⇒ throw new NettyTransportException(s"Unknown local address type ${newServerChannel.getLocalAddress.getClass}")
       }
-    }).future
+    }
+  }
 
   override def associate(remoteAddress: Address): Future[AssociationHandle] = {
     if (!serverChannel.isBound) Future.failed(new NettyTransportException("Transport is not bound"))
@@ -350,7 +353,8 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
       val bootstrap: ClientBootstrap = outboundBootstrap
 
       (for {
-        readyChannel ← NettyFutureBridge(bootstrap.connect(addressToSocketAddress(remoteAddress))) map {
+        socketAddress ← addressToSocketAddress(remoteAddress)
+        readyChannel ← NettyFutureBridge(bootstrap.connect(socketAddress)) map {
           channel ⇒
             if (EnableSsl)
               blocking {
@@ -375,7 +379,8 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
           readyChannel.getPipeline.get[ClientHandler](classOf[ClientHandler]).statusFuture
       } yield handle) recover {
         case c: CancellationException ⇒ throw new NettyTransportException("Connection was cancelled") with NoStackTrace
-        case NonFatal(t)              ⇒ throw new NettyTransportException(t.getMessage, t.getCause) with NoStackTrace
+        case u @ (_: UnknownHostException | _: SecurityException) ⇒ throw new InvalidAssociationException(u.getMessage, u.getCause)
+        case NonFatal(t) ⇒ throw new NettyTransportException(t.getMessage, t.getCause) with NoStackTrace
       }
     }
   }
