@@ -20,7 +20,6 @@ import scala.concurrent.{ Await, Awaitable, CanAwait, Future, ExecutionContext }
 import scala.util.{ Failure, Success }
 import scala.util.control.{ NonFatal, ControlThrowable }
 
-
 object ActorSystem {
 
   val Version: String = "2.2-SNAPSHOT"
