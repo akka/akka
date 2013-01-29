@@ -79,6 +79,7 @@ private[akka] class RemoteSystemDaemon(
                   path, systemService = false, Some(deploy), lookupDeploy = true, async = false)
                 addChild(subpath.mkString("/"), actor)
                 actor.sendSystemMessage(Watch(actor, this))
+                actor.start()
               }
               if (isTerminating) log.error("Skipping [{}] to RemoteSystemDaemon on [{}] while terminating", message, path.address)
             case _ ⇒
