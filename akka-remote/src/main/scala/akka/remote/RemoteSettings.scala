@@ -31,6 +31,8 @@ class RemoteSettings(val config: Config) {
 
   val RetryGateClosedFor: FiniteDuration = Duration(getMilliseconds("akka.remote.retry-gate-closed-for"), MILLISECONDS)
 
+  val UnknownAddressGateClosedFor: FiniteDuration = Duration(getMilliseconds("akka.remote.gate-unknown-addresses-for"), MILLISECONDS)
+
   val UsePassiveConnections: Boolean = getBoolean("akka.remote.use-passive-connections")
 
   val MaximumRetriesInWindow: Int = getInt("akka.remote.maximum-retries-in-window")

@@ -334,7 +334,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
   override val supervisorStrategy = OneForOneStrategy(settings.MaximumRetriesInWindow, settings.RetryWindow) {
     case InvalidAssociation(localAddress, remoteAddress, e) ⇒
-      endpoints.markAsQuarantined(remoteAddress, e)
+      endpoints.markAsFailed(sender, Deadline.now + settings.UnknownAddressGateClosedFor)
       Stop
 
     case NonFatal(e) ⇒

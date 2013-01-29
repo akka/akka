@@ -8,11 +8,12 @@ import akka.actor._
 import akka.dispatch._
 import akka.event.{ Logging, LoggingAdapter, EventStream }
 import akka.event.Logging.Error
-import akka.serialization.{ Serialization, SerializationExtension }
+import akka.serialization.{ JavaSerializer, Serialization, SerializationExtension }
 import akka.pattern.pipe
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 import akka.actor.SystemGuardian.{ TerminationHookDone, TerminationHook, RegisterTerminationHook }
+import scala.throws
 
 object RemoteActorRefProvider {
   private case class Internals(transport: RemoteTransport, serialization: Serialization, remoteDaemon: InternalActorRef)
@@ -59,6 +60,30 @@ object RemoteActorRefProvider {
     }
 
   }
+
+  /*
+   * Remoting wraps messages destined to a remote host in a remoting specific envelope: EndpointManager.Send
+   * As these wrapped messages might arrive to the dead letters of an EndpointWriter, they need to be unwrapped
+   * and handled as dead letters to the original (remote) destination. Without this special case, DeathWatch related
+   * functionality breaks, like the special handling of Watch messages arriving to dead letters.
+   */
+  private class RemoteDeadLetterActorRef(_provider: ActorRefProvider,
+                                         _path: ActorPath,
+                                         _eventStream: EventStream) extends DeadLetterActorRef(_provider, _path, _eventStream) {
+
+    override def !(message: Any)(implicit sender: ActorRef): Unit = message match {
+      case EndpointManager.Send(m, senderOption, _) ⇒ super.!(m)(senderOption.orNull)
+      case _                                        ⇒ super.!(message)(sender)
+    }
+
+    override def specialHandle(msg: Any): Boolean = msg match {
+      case EndpointManager.Send(m, _, _) ⇒ super.specialHandle(m)
+      case _                             ⇒ super.specialHandle(msg)
+    }
+
+    @throws(classOf[java.io.ObjectStreamException])
+    override protected def writeReplace(): AnyRef = DeadLetterActorRef.serialized
+  }
 }
 
 /**
@@ -93,7 +118,7 @@ class RemoteActorRefProvider(
   def log: LoggingAdapter = _log
 
   override def rootPath: ActorPath = local.rootPath
-  override def deadLetters: InternalActorRef = local.deadLetters
+  override val deadLetters: InternalActorRef = new RemoteDeadLetterActorRef(this, rootPath / "deadLetters", eventStream)
 
   // these are only available after init()
   override def rootGuardian: InternalActorRef = local.rootGuardian
