@@ -210,7 +210,10 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       collectCancellable(system.scheduler.schedule(1 second, 300 milliseconds, actor, Msg))
       Await.ready(ticks, 3 seconds)
 
-      (System.nanoTime() - startTime).nanos.toMillis must be(1800L plusOrMinus 199)
+      // LARS is a bit more aggressive in scheduling recurring tasks at the right
+      // frequency and may execute them a little earlier; the actual expected timing 
+      // is 1599ms on a fast machine or 1699ms on a loaded one (plus some room for jenkins)
+      (System.nanoTime() - startTime).nanos.toMillis must be(1750L plusOrMinus 250)
     }
 
     "adjust for scheduler inaccuracy" taggedAs TimingTest in {
