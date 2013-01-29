@@ -34,6 +34,7 @@ object Member {
    * `Address` ordering type class, sorts addresses by host and port.
    */
   implicit val addressOrdering: Ordering[Address] = Ordering.fromLessThan[Address] { (a, b) ⇒
+    // cluster node identifier is the host and port of the address; protocol and system is assumed to be the same
     if (a.host != b.host) a.host.getOrElse("").compareTo(b.host.getOrElse("")) < 0
     else if (a.port != b.port) a.port.getOrElse(0) < b.port.getOrElse(0)
     else false
@@ -87,13 +88,7 @@ object Member {
  *
  * Can be one of: Joining, Up, Leaving, Exiting and Down.
  */
-abstract class MemberStatus extends ClusterMessage {
-
-  /**
-   * Using the same notion for 'unavailable' as 'non-convergence': DOWN
-   */
-  def isUnavailable: Boolean = this == Down
-}
+abstract class MemberStatus extends ClusterMessage
 
 object MemberStatus {
   case object Joining extends MemberStatus

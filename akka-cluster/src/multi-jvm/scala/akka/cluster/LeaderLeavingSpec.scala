@@ -57,7 +57,7 @@ abstract class LeaderLeavingSpec
           enterBarrier("leader-left")
 
           // verify that the LEADER is shut down
-          awaitCond(!cluster.isRunning)
+          awaitCond(cluster.isTerminated)
 
           // verify that the LEADER is REMOVED
           awaitCond(clusterView.status == Removed)

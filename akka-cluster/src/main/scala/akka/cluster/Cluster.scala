@@ -67,7 +67,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         format(system, other.getClass.getName))
   }
 
-  private val _isRunning = new AtomicBoolean(true)
+  private val _isTerminated = new AtomicBoolean(false)
   private val log = Logging(system, "Cluster")
 
   log.info("Cluster Node [{}] - is starting up...", selfAddress)
@@ -169,15 +169,20 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   // ======================================================
 
   /**
-   * Returns true if the cluster node is up and running, false if it is shut down.
+   * Returns true if this cluster instance has be shutdown.
    */
-  def isRunning: Boolean = _isRunning.get
+  def isTerminated: Boolean = _isTerminated.get
 
   /**
    * Subscribe to cluster domain events.
    * The `to` Class can be [[akka.cluster.ClusterEvent.ClusterDomainEvent]]
-   * or subclass. A snapshot of [[akka.cluster.ClusterEvent.CurrentClusterState]]
-   * will also be sent to the subscriber.
+   * or subclass.
+   *
+   * A snapshot of [[akka.cluster.ClusterEvent.CurrentClusterState]]
+   * will be sent to the subscriber as the first event. When
+   * `to` Class is a [[akka.cluster.ClusterEvent.InstantMemberEvent]]
+   * (or subclass) the snapshot event will instead be a
+   * [[akka.cluster.ClusterEvent.InstantClusterState]].
    */
   def subscribe(subscriber: ActorRef, to: Class[_]): Unit =
     clusterCore ! InternalClusterAction.Subscribe(subscriber, to)
@@ -232,6 +237,24 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   def down(address: Address): Unit =
     clusterCore ! ClusterUserAction.Down(address)
 
+  /**
+   * The supplied thunk will be run, once, when current cluster member is `Up`.
+   * Typically used together with configuration option `akka.cluster.min-nr-of-members'
+   * to defer some action, such as starting actors, until the cluster has reached
+   * a certain size.
+   */
+  def registerOnMemberUp[T](code: ⇒ T): Unit =
+    registerOnMemberUp(new Runnable { def run = code })
+
+  /**
+   * The supplied callback will be run, once, when current cluster member is `Up`.
+   * Typically used together with configuration option `akka.cluster.min-nr-of-members'
+   * to defer some action, such as starting actors, until the cluster has reached
+   * a certain size.
+   * JAVA API
+   */
+  def registerOnMemberUp(callback: Runnable): Unit = clusterDaemons ! InternalClusterAction.AddOnMemberUpListener(callback)
+
   // ========================================================
   // ===================== INTERNAL API =====================
   // ========================================================
@@ -253,7 +276,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * to go through graceful handoff process `LEAVE -> EXITING -> REMOVED -> SHUTDOWN`.
    */
   private[cluster] def shutdown(): Unit = {
-    if (_isRunning.compareAndSet(true, false)) {
+    if (_isTerminated.compareAndSet(false, true)) {
       log.info("Cluster Node [{}] - Shutting down cluster Node and cluster daemons...", selfAddress)
 
       system.stop(clusterDaemons)
@@ -268,4 +291,3 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   }
 
 }
-

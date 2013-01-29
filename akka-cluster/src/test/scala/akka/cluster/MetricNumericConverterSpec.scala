@@ -4,40 +4,35 @@
 
 package akka.cluster
 
-import akka.testkit.{ ImplicitSender, AkkaSpec }
+import org.scalatest.WordSpec
+import org.scalatest.matchers.MustMatchers
+import akka.cluster.StandardMetrics._
+import scala.util.Failure
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class MetricNumericConverterSpec extends AkkaSpec(MetricsEnabledSpec.config) with MetricNumericConverter with ImplicitSender with AbstractClusterMetricsSpec {
+class MetricNumericConverterSpec extends WordSpec with MustMatchers with MetricNumericConverter {
 
   "MetricNumericConverter" must {
-    val collector = createMetricsCollector
 
-    "convert " in {
-      convert(0).isLeft must be(true)
-      convert(1).left.get must be(1)
-      convert(1L).isLeft must be(true)
-      convert(0.0).isRight must be(true)
+    "convert" in {
+      convertNumber(0).isLeft must be(true)
+      convertNumber(1).left.get must be(1)
+      convertNumber(1L).isLeft must be(true)
+      convertNumber(0.0).isRight must be(true)
     }
 
     "define a new metric" in {
-      val metric = Metric("heap-memory-used", Some(0L))
-      metric.initializable must be(true)
-      metric.name must not be (null)
-      metric.average.isEmpty must be(true)
-      metric.trendable must be(true)
-
-      if (collector.isSigar) {
-        val cores = collector.totalCores
-        cores.isDefined must be(true)
-        cores.value.get.intValue must be > (0)
-        cores.initializable must be(false)
-      }
+      val Some(metric) = Metric.create(HeapMemoryUsed, 256L, decayFactor = Some(0.18))
+      metric.name must be(HeapMemoryUsed)
+      metric.value must be(256L)
+      metric.isSmooth must be(true)
+      metric.smoothValue must be(256.0 plusOrMinus 0.0001)
     }
 
     "define an undefined value with a None " in {
-      Metric("x", Some(-1)).value.isDefined must be(false)
-      Metric("x", Some(java.lang.Double.NaN)).value.isDefined must be(false)
-      Metric("x", None).isDefined must be(false)
+      Metric.create("x", -1, None).isDefined must be(false)
+      Metric.create("x", java.lang.Double.NaN, None).isDefined must be(false)
+      Metric.create("x", Failure(new RuntimeException), None).isDefined must be(false)
     }
 
     "recognize whether a metric value is defined" in {
@@ -47,6 +42,7 @@ class MetricNumericConverterSpec extends AkkaSpec(MetricsEnabledSpec.config) wit
 
     "recognize whether a metric value is not defined" in {
       defined(-1) must be(false)
+      defined(-1.0) must be(false)
       defined(Double.NaN) must be(false)
     }
   }

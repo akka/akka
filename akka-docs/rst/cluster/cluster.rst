@@ -84,9 +84,9 @@ Gossip
 The cluster membership used in Akka is based on Amazon's `Dynamo`_ system and
 particularly the approach taken in Basho's' `Riak`_ distributed database.
 Cluster membership is communicated using a `Gossip Protocol`_, where the current
-state of the cluster is gossiped randomly through the cluster. Joining a cluster
-is initiated by issuing a ``Join`` command to one of the nodes in the cluster to
-join.
+state of the cluster is gossiped randomly through the cluster, with preference to
+members that have not seen the latest version. Joining a cluster is initiated 
+by issuing a ``Join`` command to one of the nodes in the cluster to join.
 
 .. _Gossip Protocol: http://en.wikipedia.org/wiki/Gossip_protocol
 .. _Dynamo: http://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf
@@ -209,8 +209,7 @@ node to initiate a round of gossip with. The choice of node is random but can
 also include extra gossiping nodes with either newer or older state versions.
 
 The gossip overview contains the current state version for all nodes and also a
-list of unreachable nodes. Whenever a node receives a gossip overview it updates
-the `Failure Detector`_ with the liveness information.
+list of unreachable nodes.
 
 The nodes defined as ``seed`` nodes are just regular member nodes whose only
 "special role" is to function as contact points in the cluster.
