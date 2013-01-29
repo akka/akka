@@ -13,6 +13,10 @@ import MemberStatus._
  */
 private[cluster] object Gossip {
   val emptyMembers: SortedSet[Member] = SortedSet.empty
+  val empty: Gossip = new Gossip(Gossip.emptyMembers)
+
+  def apply(members: SortedSet[Member]) =
+    if (members.isEmpty) empty else empty.copy(members = members)
 }
 
 /**
@@ -49,8 +53,8 @@ private[cluster] object Gossip {
  * removed node telling it to shut itself down.
  */
 private[cluster] case class Gossip(
+  members: SortedSet[Member], // sorted set of members with their status, sorted by address
   overview: GossipOverview = GossipOverview(),
-  members: SortedSet[Member] = Gossip.emptyMembers, // sorted set of members with their status, sorted by address
   version: VectorClock = VectorClock()) // vector clock version
   extends ClusterMessage // is a serializable cluster message
   with Versioned[Gossip] {
@@ -128,7 +132,7 @@ private[cluster] case class Gossip(
     // 4. fresh seen table
     val mergedSeen = Map.empty[Address, VectorClock]
 
-    Gossip(GossipOverview(mergedSeen, mergedUnreachable), mergedMembers, mergedVClock)
+    Gossip(mergedMembers, GossipOverview(mergedSeen, mergedUnreachable), mergedVClock)
   }
 
   /**
@@ -170,15 +174,10 @@ private[cluster] case class Gossip(
   def isSingletonCluster: Boolean = members.size == 1
 
   /**
-   * Returns true if the node is UP or JOINING.
+   * Returns true if the node is in the unreachable set
    */
-  def isAvailable(address: Address): Boolean = !isUnavailable(address)
-
-  def isUnavailable(address: Address): Boolean = {
-    val isUnreachable = overview.unreachable exists { _.address == address }
-    val hasUnavailableMemberStatus = members exists { m ⇒ m.status.isUnavailable && m.address == address }
-    isUnreachable || hasUnavailableMemberStatus
-  }
+  def isUnreachable(address: Address): Boolean =
+    overview.unreachable exists { _.address == address }
 
   def member(address: Address): Member = {
     members.find(_.address == address).orElse(overview.unreachable.find(_.address == address)).

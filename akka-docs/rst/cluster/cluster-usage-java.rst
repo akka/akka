@@ -31,20 +31,18 @@ A Simple Cluster Example
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 The following small program together with its configuration starts an ``ActorSystem``
-with the Cluster extension enabled. It joins the cluster and logs some membership events.
+with the Cluster enabled. It joins the cluster and logs some membership events.
 
 Try it out:
 
 1. Add the following ``application.conf`` in your project, place it in ``src/main/resources``:
 
 
-.. literalinclude:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf
-   :language: none
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf#cluster
 
 To enable cluster capabilities in your Akka project you should, at a minimum, add the :ref:`remoting-java`
 settings, but with ``akka.cluster.ClusterActorRefProvider``.
-The ``akka.cluster.seed-nodes`` and cluster extension should normally also be added to your
-``application.conf`` file.
+The ``akka.cluster.seed-nodes`` should normally also be added to your ``application.conf`` file.
 
 The seed nodes are configured contact points for initial, automatic, join of the cluster.
 
@@ -91,7 +89,7 @@ and becomes a member of the cluster. It's status changed to 'Up'.
 
 Switch over to the first terminal window and see in the log output that the member joined.
 
-6. Start another node. Open a sbt session in yet another terminal window and run::
+6. Start another node. Open a maven session in yet another terminal window and run::
 
     mvn exec:java -Dexec.mainClass="sample.cluster.simple.japi.SimpleClusterApp"
 
@@ -241,6 +239,36 @@ frontend nodes and 3 backend nodes::
 
 .. note:: The above example should probably be designed as two separate, frontend/backend, clusters, when there is a `cluster client for decoupling clusters <https://www.assembla.com/spaces/akka/tickets/1165>`_.
 
+How To Startup when Cluster Size Reached
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A common use case is to start actors after the cluster has been initialized,
+members have joined, and the cluster has reached a certain size. 
+
+With a configuration option you can define required number of members
+before the leader changes member status of 'Joining' members to 'Up'.
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/factorial.conf#min-nr-of-members
+
+You can start the actors in a ``registerOnMemberUp`` callback, which will 
+be invoked when the current member status is changed tp 'Up', i.e. the cluster
+has at least the defined number of members.
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/factorial/japi/FactorialFrontendMain.java#registerOnUp
+
+This callback can be used for other things than starting actors.
+
+Cluster Singleton Pattern
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For some use cases it is convenient and sometimes also mandatory to ensure that
+you have exactly one actor of a certain type running somewhere in the cluster.
+
+This can be implemented by subscribing to ``LeaderChanged`` events, but there are
+several corner cases to consider. Therefore, this specific use case is made easily 
+accessible by the :ref:`cluster-singleton` in the contrib module. You can use it as is, 
+or adjust to fit your specific needs. 
+
 Failure Detector
 ^^^^^^^^^^^^^^^^
 
@@ -334,8 +362,8 @@ The same type of router could also have been defined in code:
 See :ref:`cluster_configuration_java` section for further descriptions of the settings.
 
 
-Router Example
---------------
+Router Example with Remote Deployed Routees
+-------------------------------------------
 
 Let's take a look at how to use cluster aware routers.
 
@@ -399,25 +427,35 @@ service nodes and 1 client::
     -Dexec.mainClass="run-main sample.cluster.stats.japi.StatsSampleMain"
 
 
+Router Example with Lookup of Routees
+-------------------------------------
+
 The above setup is nice for this example, but we will also take a look at how to use
 a single master node that creates and deploys workers. To keep track of a single
-master we need one additional actor:
+master we use the :ref:`cluster-singleton` in the contrib module. The ``ClusterSingletonManager``
+is started on each node.
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsSampleOneMasterMain.java#create-singleton-manager
+
+We also need an actor on each node that keeps track of where current single master exists and
+delegates jobs to the ``StatsService``.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsFacade.java#facade
 
 The ``StatsFacade`` receives text from users and delegates to the current ``StatsService``, the single
-master. It listens to cluster events to create or lookup the ``StatsService`` depending on if
-it is on the same same node or on another node. We run the master on the same node as the leader of
-the cluster members, which is nothing more than the address currently sorted first in the member ring,
-i.e. it can change when new nodes join or when current leader leaves.
+master. It listens to cluster events to lookup the ``StatsService`` on the leader node. The master runs 
+on the same node as the leader of the cluster members, which is nothing more than the address currently 
+sorted first in the member ring, i.e. it can change when new nodes join or when current leader leaves.
 
-All nodes start ``StatsFacade`` and the router is now configured like this:
+All nodes start ``StatsFacade`` and the ``ClusterSingletonManager``. The router is now configured like this:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsSampleOneMasterMain.java#start-router-deploy
 
 This example is included in ``akka-samples/akka-sample-cluster`` and you can try it by copying the 
 `source <@github@/akka-samples/akka-sample-cluster>`_ to your
-maven project, defined as in :ref:`cluster_simple_example_java`.
+maven project, defined as in :ref:`cluster_simple_example_java`. Also add the `akka-contrib` dependency
+to your pom.xml.
+
 Run it by starting nodes in different terminal windows. For example, starting 3
 service nodes and 1 client::
 
@@ -436,8 +474,109 @@ service nodes and 1 client::
     -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleOneMasterMain"
 
 
-.. note:: The above example, especially the last part, will be simplified when the cluster handles automatic actor partitioning.
+.. note:: The above example will be simplified when the cluster handles automatic actor partitioning.
 
+Cluster Metrics
+^^^^^^^^^^^^^^^
+
+The member nodes of the cluster collects system health metrics and publishes that to other nodes and to 
+registered subscribers. This information is primarily used for load-balancing routers.
+
+Hyperic Sigar
+-------------
+
+The built-in metrics is gathered from JMX MBeans, and optionally you can use `Hyperic Sigar <http://www.hyperic.com/products/sigar>`_
+for a wider and more accurate range of metrics compared to what can be retrieved from ordinary MBeans.
+Sigar is using a native OS library. To enable usage of Sigar you need to add the directory of the native library to 
+``-Djava.libarary.path=<path_of_sigar_libs>`` add the following dependency::
+
+  <dependency>
+    <groupId>org.hyperic</groupId>
+    <artifactId>sigar</artifactId>
+    <version>@sigarVersion@</version>
+  </dependency>
+
+ 
+
+Adaptive Load Balancing
+-----------------------
+
+The ``AdaptiveLoadBalancingRouter`` performs load balancing of messages to cluster nodes based on the cluster metrics data.
+It uses random selection of routees with probabilities derived from the remaining capacity of the corresponding node.
+It can be configured to use a specific MetricsSelector to produce the probabilities, a.k.a. weights:
+
+* ``heap`` / ``HeapMetricsSelector`` - Used and max JVM heap memory. Weights based on remaining heap capacity; (max - used) / max
+* ``load`` / ``SystemLoadAverageMetricsSelector`` - System load average for the past 1 minute, corresponding value can be found in ``top`` of Linux systems. The system is possibly nearing a bottleneck if the system load average is nearing number of cpus/cores. Weights based on remaining load capacity; 1 - (load / processors) 
+* ``cpu`` / ``CpuMetricsSelector`` - CPU utilization in percentage, sum of User + Sys + Nice + Wait. Weights based on remaining cpu capacity; 1 - utilization
+* ``mix`` / ``MixMetricsSelector`` - Combines heap, cpu and load. Weights based on mean of remaining capacity of the combined selectors.
+* Any custom implementation of ``akka.cluster.routing.MetricsSelector``
+
+The collected metrics values are smoothed with `exponential weighted moving average <http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average>`_. In the :ref:`cluster_configuration_java` you can adjust how quickly past data is decayed compared to new data.
+
+Let's take a look at this router in action.
+
+In this example the following imports are used:
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/factorial/japi/FactorialBackend.java#imports
+
+The backend worker that performs the factorial calculation:
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/factorial/japi/FactorialBackend.java#backend
+
+The frontend that receives user jobs and delegates to the backends via the router:
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/factorial/japi/FactorialFrontend.java#frontend
+
+
+As you can see, the router is defined in the same way as other routers, and in this case it's configured as follows:
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf#adaptive-router
+
+It's only router type ``adaptive`` and the ``metrics-selector`` that is specific to this router, other things work 
+in the same way as other routers.
+
+The same type of router could also have been defined in code:
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/factorial/japi/FactorialFrontend.java#router-lookup-in-code
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/factorial/japi/FactorialFrontend.java#router-deploy-in-code
+
+This example is included in ``akka-samples/akka-sample-cluster`` and you can try it by copying the 
+`source <@github@/akka-samples/akka-sample-cluster>`_ to your
+maven project, defined as in :ref:`cluster_simple_example_java`.
+Run it by starting nodes in different terminal windows. For example, starting 3 backend nodes and 
+one frontend::
+
+  mvn exec:java \
+    -Dexec.mainClass="sample.cluster.factorial.FactorialBackendMain" \
+    -Dexec.args="2551"
+
+  mvn exec:java \
+    -Dexec.mainClass="sample.cluster.factorial.FactorialBackendMain" \
+    -Dexec.args="2552"
+
+  mvn exec:java \
+    -Dexec.mainClass="sample.cluster.factorial.FactorialBackendMain"
+
+  mvn exec:java \
+    -Dexec.mainClass="sample.cluster.factorial.FactorialFrontendMain"
+
+Press ctrl-c in the terminal window of the frontend to stop the factorial calculations.
+
+
+Subscribe to Metrics Events
+---------------------------
+
+It's possible to subscribe to the metrics events directly to implement other functionality.
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/factorial/japi/MetricsListener.java#metrics-listener
+
+Custom Metrics Collector
+------------------------
+
+You can plug-in your own metrics collector instead of 
+``akka.cluster.SigarMetricsCollector`` or ``akka.cluster.JmxMetricsCollector``. Look at those two implementations
+for inspiration. The implementation class can be defined in the :ref:`cluster_configuration_java`.
 
 .. _cluster_jmx_java:
 
@@ -474,13 +613,14 @@ Run it without parameters to see instructions about how to use the script::
             leave <node-url> - Sends a request for node with URL to LEAVE the cluster
              down <node-url> - Sends a request for marking node with URL as DOWN
                member-status - Asks the member node for its current status
+                     members - Asks the cluster for addresses of current members
+                 unreachable - Asks the cluster for addresses of unreachable members
               cluster-status - Asks the cluster for its current status (member ring,
                                unavailable nodes, meta data etc.)
                       leader - Asks the cluster who the current leader is
                 is-singleton - Checks if the cluster is a singleton cluster (single
                                node cluster)
                 is-available - Checks if the member node is available
-                  is-running - Checks if the member node is running
   Where the <node-url> should be on the format of 
     'akka://actor-system-name@hostname:port'
 

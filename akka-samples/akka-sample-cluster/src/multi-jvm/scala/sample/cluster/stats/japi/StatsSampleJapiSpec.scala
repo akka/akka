@@ -31,6 +31,8 @@ object StatsSampleJapiSpecConfig extends MultiNodeConfig {
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-join = off
+    # don't use sigar for tests, native lib not in path
+    akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
     akka.actor.deployment {
       /statsService/workerRouter {
           router = consistent-hashing
@@ -65,7 +67,7 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
 
   "The japi stats sample" must {
 
-    "illustrate how to startup cluster" in within(10 seconds) {
+    "illustrate how to startup cluster" in within(15 seconds) {
       Cluster(system).subscribe(testActor, classOf[MemberUp])
       expectMsgClass(classOf[CurrentClusterState])
 
@@ -88,7 +90,7 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
       testConductor.enter("all-up")
     }
 
-    "show usage of the statsService from one node" in within(5 seconds) {
+    "show usage of the statsService from one node" in within(15 seconds) {
       runOn(second) {
         assertServiceOk
       }
@@ -112,7 +114,7 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
     }
     //#test-statsService
 
-    "show usage of the statsService from all nodes" in within(5 seconds) {
+    "show usage of the statsService from all nodes" in within(15 seconds) {
       assertServiceOk
 
       testConductor.enter("done-3")

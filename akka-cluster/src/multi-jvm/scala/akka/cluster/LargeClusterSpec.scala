@@ -125,7 +125,7 @@ abstract class LargeClusterSpec
   def startupSystems(): Unit = {
     // one system is already started by the multi-node test
     for (n ← 2 to nodesPerDatacenter) {
-      val sys = ActorSystem(myself.name + "-" + n, system.settings.config)
+      val sys = ActorSystem(system.name, system.settings.config)
       muteLog(sys)
       systems :+= sys
     }

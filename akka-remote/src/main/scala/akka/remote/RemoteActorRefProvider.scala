@@ -28,7 +28,13 @@ class RemoteActorRefProvider(
 
   val remoteSettings: RemoteSettings = new RemoteSettings(settings.config, systemName)
 
-  val deployer: RemoteDeployer = new RemoteDeployer(settings, dynamicAccess)
+  override val deployer: Deployer = createDeployer
+
+  /**
+   * Factory method to make it possible to override deployer in subclass
+   * Creates a new instance every time
+   */
+  protected def createDeployer: RemoteDeployer = new RemoteDeployer(settings, dynamicAccess)
 
   private val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, dynamicAccess, deployer)
 

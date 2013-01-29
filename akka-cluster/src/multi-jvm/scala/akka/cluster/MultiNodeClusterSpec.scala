@@ -64,13 +64,12 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
   def muteLog(sys: ActorSystem = system): Unit = {
     if (!sys.log.isDebugEnabled) {
       Seq(".*Metrics collection has started successfully.*",
-        ".*Hyperic SIGAR was not found on the classpath.*",
+        ".*Metrics will be retreived from MBeans.*",
         ".*Cluster Node.* - registered cluster JMX MBean.*",
         ".*Cluster Node.* - is starting up.*",
         ".*Shutting down cluster Node.*",
         ".*Cluster node successfully shut down.*",
-        ".*Using a dedicated scheduler for cluster.*",
-        ".*Phi value.* for connection.*") foreach { s ⇒
+        ".*Using a dedicated scheduler for cluster.*") foreach { s ⇒
           sys.eventStream.publish(Mute(EventFilter.info(pattern = s)))
         }
 
@@ -206,10 +205,13 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
    * member in the cluster ring is expected leader.
    */
   def assertLeaderIn(nodesInCluster: Seq[RoleName]): Unit = if (nodesInCluster.contains(myself)) {
-    nodesInCluster.length must not be (0)
-    val expectedLeader = roleOfLeader(nodesInCluster)
-    clusterView.isLeader must be(isNode(expectedLeader))
-    clusterView.status must (be(MemberStatus.Up) or be(MemberStatus.Leaving))
+          nodesInCluster.length must not be (0)
+      val expectedLeader = roleOfLeader(nodesInCluster)
+      val leader = clusterView.leader
+      val isLeader = leader == Some(clusterView.selfAddress)
+      assert(isLeader == isNode(expectedLeader),
+        "expectedLeader [%s], got leader [%s], members [%s]".format(expectedLeader, leader, clusterView.members))
+      clusterView.status must (be(MemberStatus.Up) or be(MemberStatus.Leaving))
   }
 
   /**
@@ -221,14 +223,14 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
     canNotBePartOfMemberRing: Seq[Address] = Seq.empty[Address],
     timeout: FiniteDuration = 20.seconds): Unit = {
     within(timeout) {
+            if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
+        awaitCond(
+          canNotBePartOfMemberRing forall (address ⇒ !(clusterView.members exists (_.address == address))))
       awaitCond(clusterView.members.size == numberOfMembers)
       awaitCond(clusterView.members.forall(_.status == MemberStatus.Up))
       // clusterView.leader is updated by LeaderChanged, await that to be updated also
       val expectedLeader = clusterView.members.headOption.map(_.address)
       awaitCond(clusterView.leader == expectedLeader)
-      if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
-        awaitCond(
-          canNotBePartOfMemberRing forall (address ⇒ !(clusterView.members exists (_.address == address))))
     }
   }
 

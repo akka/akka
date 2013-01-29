@@ -30,6 +30,8 @@ object TransformationSampleJapiSpecConfig extends MultiNodeConfig {
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-join = off
+    # don't use sigar for tests, native lib not in path
+    akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
     """))
 
 }
@@ -53,7 +55,7 @@ abstract class TransformationSampleJapiSpec extends MultiNodeSpec(Transformation
   override def afterAll() = multiNodeSpecAfterAll()
 
   "The japi transformation sample" must {
-    "illustrate how to start first frontend" in {
+    "illustrate how to start first frontend" in within(15 seconds) {
       runOn(frontend1) {
         // this will only run on the 'first' node
         Cluster(system) join node(frontend1).address
@@ -84,7 +86,7 @@ abstract class TransformationSampleJapiSpec extends MultiNodeSpec(Transformation
       testConductor.enter("frontend1-backend1-ok")
     }
 
-    "illustrate how more nodes registers" in within(15 seconds) {
+    "illustrate how more nodes registers" in within(20 seconds) {
       runOn(frontend2) {
         Cluster(system) join node(frontend1).address
         system.actorOf(Props[TransformationFrontend], name = "frontend")
