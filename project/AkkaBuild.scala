@@ -24,6 +24,7 @@ import LsKeys.{ lsync, docsUrl => lsDocsUrl, tags => lsTags }
 import java.io.{PrintWriter, InputStreamReader, FileInputStream, File}
 import java.nio.charset.Charset
 import java.util.Properties
+import annotation.tailrec
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -44,7 +45,7 @@ object AkkaBuild extends Build {
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Publish.versionSettings ++
-      SphinxSupport.settings ++ Dist.settings ++ mimaSettings ++ Seq(
+      SphinxSupport.settings ++ Dist.settings ++ mimaSettings ++ unidocScaladocSettings ++ Seq(
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
@@ -79,7 +80,7 @@ object AkkaBuild extends Build {
   lazy val actor = Project(
     id = "akka-actor",
     base = file("akka-actor"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ Seq(
       autoCompilerPlugins := true,
       // to fix scaladoc generation
       fullClasspath in doc in Compile <<= fullClasspath in Compile,
@@ -97,14 +98,14 @@ object AkkaBuild extends Build {
     id = "akka-dataflow",
     base = file("akka-dataflow"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ OSGi.dataflow ++ cpsPlugin
+    settings = defaultSettings ++ scaladocSettings  ++ OSGi.dataflow ++ cpsPlugin
   )
 
   lazy val testkit = Project(
     id = "akka-testkit",
     base = file("akka-testkit"),
     dependencies = Seq(actor),
-    settings = defaultSettings ++ OSGi.testkit ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ OSGi.testkit ++ Seq(
       libraryDependencies ++= Dependencies.testkit,
       initialCommands += "import akka.testkit._",
       previousArtifact := akkaPreviousArtifact("akka-testkit")
@@ -115,7 +116,7 @@ object AkkaBuild extends Build {
     id = "akka-actor-tests",
     base = file("akka-actor-tests"),
     dependencies = Seq(testkit % "compile;test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ scaladocSettings  ++ Seq(
       autoCompilerPlugins := true,
       libraryDependencies ++= Dependencies.actorTests
     )
@@ -125,7 +126,7 @@ object AkkaBuild extends Build {
     id = "akka-remote",
     base = file("akka-remote"),
     dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test"),
-    settings = defaultSettings ++ OSGi.remote ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ OSGi.remote ++ Seq(
       libraryDependencies ++= Dependencies.remote,
       // disable parallel tests
       parallelExecution in Test := false
@@ -136,7 +137,7 @@ object AkkaBuild extends Build {
     id = "akka-remote-tests-experimental",
     base = file("akka-remote-tests"),
     dependencies = Seq(remote, actorTests % "test->test", testkit),
-    settings = defaultSettings ++ multiJvmSettings ++ experimentalSettings ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ multiJvmSettings ++ experimentalSettings ++ Seq(
       libraryDependencies ++= Dependencies.remoteTests,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -152,7 +153,7 @@ object AkkaBuild extends Build {
     id = "akka-cluster-experimental",
     base = file("akka-cluster"),
     dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test"),
-    settings = defaultSettings ++ multiJvmSettings ++ OSGi.cluster ++ experimentalSettings ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ multiJvmSettings ++ OSGi.cluster ++ experimentalSettings ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -168,7 +169,7 @@ object AkkaBuild extends Build {
     id = "akka-slf4j",
     base = file("akka-slf4j"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ OSGi.slf4j ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ OSGi.slf4j ++ Seq(
       libraryDependencies ++= Dependencies.slf4j
     )
   )
@@ -177,7 +178,7 @@ object AkkaBuild extends Build {
     id = "akka-agent",
     base = file("akka-agent"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ OSGi.agent ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ OSGi.agent ++ Seq(
       libraryDependencies ++= Dependencies.agent,
       previousArtifact := akkaPreviousArtifact("akka-agent")
     )
@@ -187,7 +188,7 @@ object AkkaBuild extends Build {
     id = "akka-transactor",
     base = file("akka-transactor"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ OSGi.transactor ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ OSGi.transactor ++ Seq(
       libraryDependencies ++= Dependencies.transactor,
       previousArtifact := akkaPreviousArtifact("akka-transactor")
     )
@@ -206,7 +207,7 @@ object AkkaBuild extends Build {
     id = "akka-mailboxes-common",
     base = file("akka-durable-mailboxes/akka-mailboxes-common"),
     dependencies = Seq(remote, testkit % "compile;test->test"),
-    settings = defaultSettings ++ OSGi.mailboxesCommon ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ OSGi.mailboxesCommon ++ Seq(
       libraryDependencies ++= Dependencies.mailboxes,
       previousArtifact := akkaPreviousArtifact("akka-mailboxes-common"),
       publishArtifact in Test := true
@@ -217,7 +218,7 @@ object AkkaBuild extends Build {
     id = "akka-file-mailbox",
     base = file("akka-durable-mailboxes/akka-file-mailbox"),
     dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
-    settings = defaultSettings ++ OSGi.fileMailbox ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ OSGi.fileMailbox ++ Seq(
       libraryDependencies ++= Dependencies.fileMailbox,
       previousArtifact := akkaPreviousArtifact("akka-file-mailbox")
     )
@@ -227,7 +228,7 @@ object AkkaBuild extends Build {
     id = "akka-zeromq",
     base = file("akka-zeromq"),
     dependencies = Seq(actor, testkit % "test;test->test"),
-    settings = defaultSettings ++ OSGi.zeroMQ ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ OSGi.zeroMQ ++ Seq(
       libraryDependencies ++= Dependencies.zeroMQ,
       previousArtifact := akkaPreviousArtifact("akka-zeromq")
     )
@@ -237,7 +238,7 @@ object AkkaBuild extends Build {
     id = "akka-kernel",
     base = file("akka-kernel"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ Seq(
       libraryDependencies ++= Dependencies.kernel,
       previousArtifact := akkaPreviousArtifact("akka-kernel")
     )
@@ -247,7 +248,7 @@ object AkkaBuild extends Build {
      id = "akka-camel",
      base = file("akka-camel"),
      dependencies = Seq(actor, slf4j, testkit % "test->test"),
-     settings = defaultSettings ++ OSGi.camel ++ Seq(
+     settings = defaultSettings ++ scaladocSettings ++ OSGi.camel ++ Seq(
        libraryDependencies ++= Dependencies.camel
      )
   )
@@ -279,7 +280,7 @@ object AkkaBuild extends Build {
     id = "akka-osgi",
     base = file("akka-osgi"),
     dependencies = Seq(actor),
-    settings = defaultSettings ++ OSGi.osgi ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ OSGi.osgi ++ Seq(
       libraryDependencies ++= Dependencies.osgi,
       ActorReferenceCopyTask in Compile <<= ActorReferenceCopyAction ,
       cleanFiles <+= baseDirectory { base => base / "src/main/resources" } ,
@@ -292,7 +293,7 @@ object AkkaBuild extends Build {
     id = "akka-osgi-aries",
     base = file("akka-osgi-aries"),
     dependencies = Seq(osgi % "compile;test->test"),
-    settings = defaultSettings ++ OSGi.osgiAries ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ OSGi.osgiAries ++ Seq(
       libraryDependencies ++= Dependencies.osgiAries,
       parallelExecution in Test := false
     )
@@ -641,6 +642,52 @@ object AkkaBuild extends Build {
       case (false, _) => Seq.empty
     })
 
+  lazy val scaladocDiagramsEnabled = System.getProperty("akka.scaladoc.diagrams", "true").toBoolean
+  lazy val scaladocOptions = List("-implicits") ::: (if (scaladocDiagramsEnabled) List("-diagrams") else Nil)
+
+  lazy val scaladocSettings: Seq[sbt.Setting[_]]= {
+    Seq(scalacOptions in (Compile, doc) ++= scaladocOptions) ++
+      (if (scaladocDiagramsEnabled)
+        Seq(doc in Compile ~= scaladocVerifier)
+       else Seq.empty)
+  }
+
+  lazy val unidocScaladocSettings: Seq[sbt.Setting[_]]= {
+    Seq(scalacOptions in doc ++= scaladocOptions) ++
+      (if (scaladocDiagramsEnabled)
+        Seq(Unidoc.unidoc ~= scaladocVerifier)
+      else Seq.empty)
+  }
+
+  def scaladocVerifier(file: File): File= {
+    @tailrec
+    def findHTMLFileWithDiagram(dirs: Seq[File]): Boolean = {
+      if (dirs.isEmpty) false
+      else {
+        val curr = dirs.head
+        val (newDirs, files) = curr.listFiles.partition(_.isDirectory)
+        val rest = dirs.tail ++ newDirs
+        val hasDiagram = files exists { f =>
+          val name = f.getName
+          if (name.endsWith(".html") && !name.startsWith("index-") &&
+            !(name.compare("index.html") == 0) && !(name.compare("package.html") == 0)) {
+            val source = scala.io.Source.fromFile(f)
+            val hd = source.getLines().exists(_.contains("<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">"))
+            source.close()
+            hd
+          }
+          else false
+        }
+        hasDiagram || findHTMLFileWithDiagram(rest)
+      }
+    }
+
+    // if we have generated scaladoc and none of the files have a diagram then fail
+    if (file.exists() && !findHTMLFileWithDiagram(List(file)))
+      sys.error("ScalaDoc diagrams not generated!")
+    else
+      file
+  }
 
   lazy val mimaSettings = mimaDefaultSettings ++ Seq(
     // MiMa
