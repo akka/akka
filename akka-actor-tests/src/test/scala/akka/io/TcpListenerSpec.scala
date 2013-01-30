@@ -10,6 +10,7 @@ import akka.actor.{ Terminated, SupervisorStrategy, Actor, Props }
 import akka.testkit.{ TestProbe, TestActorRef, AkkaSpec }
 import TcpSelector._
 import Tcp._
+import akka.testkit.EventFilter
 
 class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
 
@@ -61,9 +62,10 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
       val channel = selectorRouter.expectMsgType[RegisterIncomingConnection].channel
       channel.isOpen must be(true)
 
-      listener ! CommandFailed(RegisterIncomingConnection(channel, handler.ref, Nil))
-
-      awaitCond(!channel.isOpen)
+      EventFilter.warning(pattern = "selector capacity limit", occurrences = 1) intercept {
+        listener ! CommandFailed(RegisterIncomingConnection(channel, handler.ref, Nil))
+        awaitCond(!channel.isOpen)
+      }
     }
   }
 

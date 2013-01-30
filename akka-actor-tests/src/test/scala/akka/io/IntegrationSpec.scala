@@ -8,6 +8,8 @@ import akka.testkit.AkkaSpec
 import akka.util.ByteString
 import Tcp._
 import TestUtils._
+import akka.testkit.EventFilter
+import java.io.IOException
 
 class IntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with IntegrationSpecSupport {
 
@@ -26,7 +28,9 @@ class IntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with IntegrationS
 
     "properly handle connection abort from one side" in new TestSetup {
       val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
-      clientHandler.send(clientConnection, Abort)
+      EventFilter[IOException](occurrences = 1) intercept {
+        clientHandler.send(clientConnection, Abort)
+      }
       clientHandler.expectMsg(Aborted)
       serverHandler.expectMsgType[ErrorClosed]
       verifyActorTermination(clientConnection)

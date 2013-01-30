@@ -4,24 +4,24 @@
 
 package akka.io
 
-import scala.annotation.tailrec
-
-import org.scalatest.matchers.{ MatchResult, BeMatcher }
-
-import java.nio.channels.{ Selector, SelectionKey, SocketChannel, ServerSocketChannel }
-import java.nio.ByteBuffer
-import java.nio.channels.spi.SelectorProvider
 import java.io.IOException
-import java.net._
+import java.net.{ ConnectException, InetSocketAddress, SocketException }
+import java.nio.ByteBuffer
+import java.nio.channels.{ SelectionKey, Selector, ServerSocketChannel, SocketChannel }
+import java.nio.channels.spi.SelectorProvider
+import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import akka.actor.{ PoisonPill, ActorRef, Terminated }
-import akka.testkit.{ TestProbe, TestActorRef, AkkaSpec }
-import akka.util.ByteString
-import TestUtils._
-import TcpSelector._
+import org.scalatest.matchers._
 import Tcp._
+import TcpSelector._
+import TestUtils._
+import akka.actor.{ ActorRef, PoisonPill, Terminated }
+import akka.testkit.{ AkkaSpec, EventFilter, TestActorRef, TestProbe }
+import akka.util.ByteString
+import akka.actor.DeathPactException
+import akka.actor.DeathPactException
 
 class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms") {
   val serverAddress = temporaryServerAddress()
@@ -45,8 +45,10 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
         createConnectionActor(options = Vector(SO.KeepAlive(true)))(selector.ref, userHandler.ref)
       val clientChannel = connectionActor.underlyingActor.channel
       clientChannel.socket.getKeepAlive must be(false) // only set after connection is established
-      selector.send(connectionActor, ChannelConnectable)
-      clientChannel.socket.getKeepAlive must be(true)
+      EventFilter.warning(pattern = "registration timeout", occurrences = 1) intercept {
+        selector.send(connectionActor, ChannelConnectable)
+        clientChannel.socket.getKeepAlive must be(true)
+      }
     }
 
     "send incoming data to the connection handler" in withEstablishedConnection() { setup ⇒
@@ -61,6 +63,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
       expectReceivedString("testdata2testdata3")
     }
+
     "bundle incoming Received messages as long as more data is available" in withEstablishedConnection(
       clientSocketOptions = List(SO.ReceiveBufferSize(1000000)) // to make sure enough data gets through
       ) { setup ⇒
@@ -70,6 +73,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
         val bigData = new Array[Byte](DataSize)
         val buffer = ByteBuffer.wrap(bigData)
 
+        serverSideChannel.socket.setSendBufferSize(150000)
         val wrote = serverSideChannel.write(buffer)
         wrote must be > 140000
 
@@ -80,6 +84,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
         // 140000 is more than the direct buffer size
         connectionHandler.expectMsgType[Received].data.length must be > 140000
       }
+
     "receive data directly when the connection is established" in withUnacceptedConnection() { unregisteredSetup ⇒
       import unregisteredSetup._
 
@@ -282,9 +287,11 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     "report when peer aborted the connection" in withEstablishedConnection() { setup ⇒
       import setup._
 
-      abortClose(serverSideChannel)
-      selector.send(connectionActor, ChannelReadable)
-      connectionHandler.expectMsgType[ErrorClosed].cause must be("Connection reset by peer")
+      EventFilter[IOException](occurrences = 1) intercept {
+        abortClose(serverSideChannel)
+        selector.send(connectionActor, ChannelReadable)
+        connectionHandler.expectMsgType[ErrorClosed].cause must be("Connection reset by peer")
+      }
       // wait a while
       connectionHandler.expectNoMsg(200.millis)
 
@@ -296,9 +303,11 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       val writer = TestProbe()
 
       abortClose(serverSideChannel)
-      writer.send(connectionActor, Write(ByteString("testdata")))
-      // bother writer and handler should get the message
-      writer.expectMsgType[ErrorClosed]
+      EventFilter[IOException](occurrences = 1) intercept {
+        writer.send(connectionActor, Write(ByteString("testdata")))
+        // bother writer and handler should get the message
+        writer.expectMsgType[ErrorClosed]
+      }
       connectionHandler.expectMsgType[ErrorClosed]
 
       assertThisConnectionActorTerminated()
@@ -310,8 +319,10 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       // close instead of accept
       localServer.close()
 
-      selector.send(connectionActor, ChannelConnectable)
-      userHandler.expectMsgType[ErrorClosed].cause must be("Connection reset by peer")
+      EventFilter[SocketException](occurrences = 1) intercept {
+        selector.send(connectionActor, ChannelConnectable)
+        userHandler.expectMsgType[ErrorClosed].cause must be("Connection reset by peer")
+      }
 
       verifyActorTermination(connectionActor)
     }
@@ -326,8 +337,10 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
         sel.select(200)
 
         key.isConnectable must be(true)
-        selector.send(connectionActor, ChannelConnectable)
-        userHandler.expectMsgType[ErrorClosed].cause must be("Connection refused")
+        EventFilter[ConnectException](occurrences = 1) intercept {
+          selector.send(connectionActor, ChannelConnectable)
+          userHandler.expectMsgType[ErrorClosed].cause must be("Connection refused")
+        }
 
         verifyActorTermination(connectionActor)
       }
@@ -336,27 +349,34 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       import setup._
 
       localServer.accept()
-      selector.send(connectionActor, ChannelConnectable)
-      userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
 
-      verifyActorTermination(connectionActor)
+      EventFilter.warning(pattern = "registration timeout", occurrences = 1) intercept {
+        selector.send(connectionActor, ChannelConnectable)
+        userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
+
+        verifyActorTermination(connectionActor)
+      }
     }
 
     "close the connection when user handler dies while connecting" in withUnacceptedConnection() { setup ⇒
       import setup._
 
-      userHandler.ref ! PoisonPill
+      EventFilter[DeathPactException](occurrences = 1) intercept {
+        userHandler.ref ! PoisonPill
 
-      verifyActorTermination(connectionActor)
+        verifyActorTermination(connectionActor)
+      }
     }
 
     "close the connection when connection handler dies while connected" in withEstablishedConnection() { setup ⇒
       import setup._
       watch(connectionHandler.ref)
       watch(connectionActor)
-      system.stop(connectionHandler.ref)
-      expectMsgType[Terminated].actor must be(connectionHandler.ref)
-      expectMsgType[Terminated].actor must be(connectionActor)
+      EventFilter[DeathPactException](occurrences = 1) intercept {
+        system.stop(connectionHandler.ref)
+        expectMsgType[Terminated].actor must be(connectionHandler.ref)
+        expectMsgType[Terminated].actor must be(connectionActor)
+      }
     }
   }
 
