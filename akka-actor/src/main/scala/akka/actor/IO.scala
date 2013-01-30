@@ -37,6 +37,7 @@ import akka.actor.IO.Chunk
  * This is still in an experimental state and is subject to change until it
  * has received more real world testing.
  */
+@deprecated("use the new implementation in package akka.io instead", "2.2")
 object IO {
 
   final class DivergentIterateeException extends IllegalStateException("Iteratees should not return a continuation when receiving EOF")
@@ -833,6 +834,7 @@ final class IOManager private (system: ExtendedActorSystem) extends Extension { 
    * @param option Seq of [[akka.actor.IO.ServerSocketOptions]] to setup on socket
    * @return a [[akka.actor.IO.ServerHandle]] to uniquely identify the created socket
    */
+  @deprecated("use the new implementation in package akka.io instead", "2.2")
   def listen(address: SocketAddress, options: immutable.Seq[IO.ServerSocketOption])(implicit owner: ActorRef): IO.ServerHandle = {
     val server = IO.ServerHandle(owner, actor)
     actor ! IO.Listen(server, address, options)
@@ -848,6 +850,7 @@ final class IOManager private (system: ExtendedActorSystem) extends Extension { 
    * @param owner the ActorRef that will receive messages from the IOManagerActor
    * @return a [[akka.actor.IO.ServerHandle]] to uniquely identify the created socket
    */
+  @deprecated("use the new implementation in package akka.io instead", "2.2")
   def listen(address: SocketAddress)(implicit owner: ActorRef): IO.ServerHandle = listen(address, Nil)
 
   /**
@@ -861,6 +864,7 @@ final class IOManager private (system: ExtendedActorSystem) extends Extension { 
    * @param owner the ActorRef that will receive messages from the IOManagerActor
    * @return a [[akka.actor.IO.ServerHandle]] to uniquely identify the created socket
    */
+  @deprecated("use the new implementation in package akka.io instead", "2.2")
   def listen(host: String, port: Int, options: immutable.Seq[IO.ServerSocketOption] = Nil)(implicit owner: ActorRef): IO.ServerHandle =
     listen(new InetSocketAddress(host, port), options)(owner)
 
@@ -874,6 +878,7 @@ final class IOManager private (system: ExtendedActorSystem) extends Extension { 
    * @param owner the ActorRef that will receive messages from the IOManagerActor
    * @return a [[akka.actor.IO.SocketHandle]] to uniquely identify the created socket
    */
+  @deprecated("use the new implementation in package akka.io instead", "2.2")
   def connect(address: SocketAddress, options: immutable.Seq[IO.SocketOption] = Nil)(implicit owner: ActorRef): IO.SocketHandle = {
     val socket = IO.SocketHandle(owner, actor)
     actor ! IO.Connect(socket, address, options)
@@ -891,6 +896,7 @@ final class IOManager private (system: ExtendedActorSystem) extends Extension { 
    * @param owner the ActorRef that will receive messages from the IOManagerActor
    * @return a [[akka.actor.IO.SocketHandle]] to uniquely identify the created socket
    */
+  @deprecated("use the new implementation in package akka.io instead", "2.2")
   def connect(host: String, port: Int)(implicit owner: ActorRef): IO.SocketHandle =
     connect(new InetSocketAddress(host, port))(owner)
 
