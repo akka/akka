@@ -73,7 +73,7 @@ object AkkaBuild extends Build {
       generatedPdf in Sphinx <<= generatedPdf in Sphinx in LocalProject(docs.id) map identity
 
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, io, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples)
   )
 
   lazy val actor = Project(
@@ -98,13 +98,6 @@ object AkkaBuild extends Build {
     base = file("akka-dataflow"),
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ OSGi.dataflow ++ cpsPlugin
-  )
-
-  lazy val io = Project(
-    id = "akka-io",
-    base = file("akka-io"),
-    dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ OSGi.io
   )
 
   lazy val testkit = Project(
@@ -371,7 +364,7 @@ object AkkaBuild extends Build {
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
-    dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test", io,
+    dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test",
       remote, cluster, slf4j, agent, dataflow, transactor, fileMailbox, zeroMQ, camel, osgi, osgiAries),
     settings = defaultSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
@@ -657,8 +650,6 @@ object AkkaBuild extends Build {
     val cluster = exports(Seq("akka.cluster.*"))
 
     val fileMailbox = exports(Seq("akka.actor.mailbox.filebased.*"))
-
-    val io = exports(Seq("akka.io.*"))
 
     val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"), imports = Seq(protobufImport()))
 
