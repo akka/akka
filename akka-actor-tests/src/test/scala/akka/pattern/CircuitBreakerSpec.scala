@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import akka.testkit._
 import org.scalatest.BeforeAndAfter
 import akka.actor.{ ActorSystem, Scheduler }
-import concurrent.{ ExecutionContext, Future, Await }
+import scala.concurrent.{ ExecutionContext, Future, Await }
 
 object CircuitBreakerSpec {
 

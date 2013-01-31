@@ -318,7 +318,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * explicitly.
    * Importing this member will place the default MessageDispatcher in scope.
    */
-  implicit def dispatcher: MessageDispatcher
+  implicit def dispatcher: ExecutionContext
 
   /**
    * Register a block of code (callback) to run after ActorSystem.shutdown has been issued and
@@ -564,7 +564,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(
     threadFactory, eventStream, deadLetterMailbox, scheduler, dynamicAccess, settings))
 
-  val dispatcher: MessageDispatcher = dispatchers.defaultGlobalDispatcher
+  val dispatcher: ExecutionContext = dispatchers.defaultGlobalDispatcher
 
   def terminationFuture: Future[Unit] = provider.terminationFuture
   def lookupRoot: InternalActorRef = provider.rootGuardian

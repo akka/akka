@@ -22,7 +22,7 @@ import java.io.Closeable
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import akka.util.internal.HashedWheelTimer
-import concurrent.{ ExecutionContext, Await }
+import scala.concurrent.{ ExecutionContext, Await }
 import com.typesafe.config.ConfigFactory
 
 /**

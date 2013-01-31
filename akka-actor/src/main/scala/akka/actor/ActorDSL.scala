@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
  *
  * {{{
  * import ActorDSL._
- * import concurrent.util.duration._
+ * import scala.concurrent.util.duration._
  *
  * implicit val system: ActorSystem = ...
  *
