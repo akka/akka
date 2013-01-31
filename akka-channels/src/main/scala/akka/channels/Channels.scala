@@ -52,6 +52,13 @@ trait Channels[P <: ChannelList, C <: ChannelList] { this: Actor ⇒
   def createChild[Pa <: ChannelList, Ch <: ChannelList](factory: Actor with Channels[Pa, Ch]): ChannelRef[Ch] = macro macros.CreateChild.impl[C, Pa, Ch]
 
   /**
+   * Create a child actor with properly typed ChannelRef and the given name,
+   * verifying that this actor can handle everything which the child tries to
+   * send via its `parent` ChannelRef.
+   */
+  def createChild[Pa <: ChannelList, Ch <: ChannelList](factory: Actor with Channels[Pa, Ch], name: String): ChannelRef[Ch] = macro macros.CreateChild.implName[C, Pa, Ch]
+
+  /**
    * Properly typed ChannelRef for the context.parent.
    */
   final def parentChannel: ChannelRef[P] = new ChannelRef(context.parent)
@@ -131,6 +138,8 @@ trait Channels[P <: ChannelList, C <: ChannelList] { this: Actor ⇒
 
     private def verifyCompleteness() {
       val channels = inputChannels(ru)(channelListTypeTag.tpe)
+      if (channels.isEmpty)
+        throw ActorInitializationException("Actor with Channels cannot have no channels")
       val classes = channels groupBy (e ⇒ channelListTypeTag.mirror.runtimeClass(e.widen))
       val missing = classes.keySet -- behavior.keySet
       if (missing.nonEmpty) {
@@ -162,10 +171,7 @@ trait Channels[P <: ChannelList, C <: ChannelList] { this: Actor ⇒
       case c: CheckType[_] ⇒ true
       case _ ⇒
         val msgClass = x.getClass
-        index find (_ isAssignableFrom msgClass) match {
-          case None      ⇒ false
-          case Some(cls) ⇒ true
-        }
+        index exists (_ isAssignableFrom msgClass)
     }
   }
 }

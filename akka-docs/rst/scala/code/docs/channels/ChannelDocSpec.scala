@@ -40,7 +40,7 @@ object ChannelDocSpec {
 
   class Parent extends Actor
     with Channels[TNil, (Stats, Nothing) :+: (GetChild.type, ChildRef) :+: TNil] {
-    
+
     val child = createChild(new Child)
 
     channel[GetChild.type] { (_, snd) ⇒ ChildRef(child) -!-> snd }
@@ -176,7 +176,7 @@ class ChannelDocSpec extends AkkaSpec {
 
     // type given just for demonstration purposes
     val latch: ChannelRef[(Request, Reply) :+: (String, Int) :+: TNil] =
-      ChannelExt(system).actorOf(new Latch(target))
+      ChannelExt(system).actorOf(new Latch(target), "latch")
 
     "hello" -!-> latch
     //#processing
@@ -202,8 +202,8 @@ class ChannelDocSpec extends AkkaSpec {
     // 
     // then it is used somewhat like this:
     // 
-    
-    val parent = ChannelExt(system).actorOf(new Parent)
+
+    val parent = ChannelExt(system).actorOf(new Parent, "parent")
     parent <-!- GetChild
     val child = expectMsgType[ChildRef].child // this assumes TestKit context
 

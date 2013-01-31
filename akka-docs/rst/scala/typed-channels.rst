@@ -40,7 +40,7 @@ an error, since the companion object ``Command`` is not an instance of type
 
 While this example looks pretty simple, the implications are profound. In order
 to be useful, the system must be as reliable as you would expect a type system
-to be. This means that unless you step outside of the it (i.e. doing the
+to be. This means that unless you step outside of it (i.e. doing the
 equivalent of ``.asInstanceOf[_]``) you shall be protected, failures shall be
 recognized and flagged. There are a number of challenges included in this
 requirement, which are discussed in the following sections. If you are reading

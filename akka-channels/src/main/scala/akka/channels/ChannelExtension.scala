@@ -17,9 +17,10 @@ object ChannelExt extends ExtensionKey[ChannelExtension]
 
 class ChannelExtension(system: ExtendedActorSystem) extends Extension {
 
-  // kick-start the universe (needed due to thread safety issues in runtime mirror)
+  // FIXME: kick-start the universe (needed due to thread safety issues in runtime mirror)
+  // see https://issues.scala-lang.org/browse/SI-6240
   private val t = typeTag[(Int, Int) :+: TNil]
 
-  def actorOf[Ch <: ChannelList](factory: ⇒ Actor with Channels[TNil, Ch]): ChannelRef[Ch] =
-    new ChannelRef[Ch](system.actorOf(Props(factory)))
+  def actorOf[Ch <: ChannelList](factory: ⇒ Actor with Channels[TNil, Ch], name: String): ChannelRef[Ch] =
+    new ChannelRef[Ch](system.actorOf(Props(factory), name))
 }

@@ -12,6 +12,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 import scala.reflect.runtime.{ universe ⇒ ru }
 import scala.util.Success
 import akka.dispatch.ExecutionContexts
+import scala.util.control.NoStackTrace
 
 sealed trait ChannelList
 sealed trait TNil extends ChannelList
@@ -26,8 +27,23 @@ sealed trait ReplyChannels[T <: ChannelList] extends ChannelList
  */
 sealed trait UnknownDoNotWriteMeDown
 
+/**
+ * This exception is used to signal errors when trying to `.narrow` an
+ * ActorRef into a ChannelRef: if the actor finds the requested channel types
+ * incompatible with its selfChannel, it will return errors in the same format
+ * as would occur during compilation of a `ChannelRef.narrow` operation.
+ */
+case class NarrowingException(message: String) extends akka.AkkaException(message) with NoStackTrace
+
 class ActorRefOps(val ref: ActorRef) extends AnyVal {
   import macros.Helpers._
+
+  /**
+   * Send a query to the actor and check whether it supports the requested
+   * channel types; the normal timeout semantics of the `ask` pattern apply.
+   * The Future will be completed either with the desired ChannelRef or with
+   * an exception (TimeoutException or NarrowingException).
+   */
   def narrow[C <: ChannelList](implicit timeout: Timeout, ec: ExecutionContext, tt: ru.TypeTag[C]): Future[ChannelRef[C]] = {
     import Channels._
     ref ? CheckType(tt) map {

@@ -126,7 +126,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
   "Actor with Channels" must {
 
     "construct refs" in {
-      val ref = ChannelExt(system).actorOf(new Tester)
+      val ref = ChannelExt(system).actorOf(new Tester, "t1")
       ref <-!- A
       expectMsg(C)
       lastSender must be(ref.actorRef)
@@ -136,16 +136,16 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
     }
 
     "select return channels" in {
-      val ref = ChannelExt(system).actorOf(new Tester)
-      implicit val selfChannel = ChannelExt(system).actorOf(new RecvC(testActor))
+      val ref = ChannelExt(system).actorOf(new Tester, "t2")
+      implicit val selfChannel = ChannelExt(system).actorOf(new RecvC(testActor), "t3")
       ref <-!- A
       expectMsg(C)
       lastSender must be(selfChannel.actorRef)
     }
 
     "correctly dispatch to subchannels" in {
-      val ref = ChannelExt(system).actorOf(new Tester)
-      implicit val selfChannel = ChannelExt(system).actorOf(new RecvC(testActor))
+      val ref = ChannelExt(system).actorOf(new Tester, "t4")
+      implicit val selfChannel = ChannelExt(system).actorOf(new RecvC(testActor), "t5")
       ref <-!- A2
       expectMsg(C1)
       lastSender must be(selfChannel.actorRef)
@@ -281,7 +281,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
     }
 
     "have a working selfChannel" in {
-      val ref = ChannelExt(system).actorOf(new Children)
+      val ref = ChannelExt(system).actorOf(new Children, "t10")
       ref <-!- A
       expectMsg(C)
     }
@@ -292,7 +292,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
           parentChannel <-!- A
         })
         channel[A] { (msg, snd) ⇒ testActor ! msg }
-      })
+      }, "t11")
       expectMsg(A)
     }
 
@@ -301,7 +301,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
         eval("""
             |import akka.channels._
             |import ChannelSpec._
-            |null.asInstanceOf[ChannelExtension].actorOf(new Actor with Channels[(A, A) :+: TNil, (A, Nothing) :+: TNil] {})
+            |null.asInstanceOf[ChannelExtension].actorOf(new Actor with Channels[(A, A) :+: TNil, (A, Nothing) :+: TNil] {}, "")
             """.stripMargin)
       }.message must include("type mismatch")
     }
@@ -367,7 +367,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
 
     "support narrowing ActorRefs" in {
       import Channels._
-      val channel = ChannelExt(system).actorOf(new RecvC(testActor))
+      val channel = ChannelExt(system).actorOf(new RecvC(testActor), "t15")
       val ref = channel.actorRef
       implicit val t = Timeout(1.second.dilated)
       import system.dispatcher
@@ -377,7 +377,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
     }
 
     "deny wrong narrowing of ActorRefs" in {
-      val channel = ChannelExt(system).actorOf(new RecvC(testActor))
+      val channel = ChannelExt(system).actorOf(new RecvC(testActor), "t16")
       val ref = channel.actorRef
       implicit val t = Timeout(1.second.dilated)
       import system.dispatcher
@@ -392,8 +392,8 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
     }
 
     "allow wrapping of ChannelRefs with pass-through" in {
-      val target = ChannelExt(system).actorOf(new RecvC(testActor))
-      val wrap = ChannelExt(system).actorOf(new WriteOnly[C, Nothing](target))
+      val target = ChannelExt(system).actorOf(new RecvC(testActor), "t17")
+      val wrap = ChannelExt(system).actorOf(new WriteOnly[C, Nothing](target), "t18")
       wrap <-!- C
       expectMsg(C)
       lastSender must be(target.actorRef)
@@ -404,8 +404,8 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
 
     "allow wrapping of Actor with ChannelsRefs with replies" in {
       val probe = TestProbe()
-      val target = ChannelExt(system).actorOf(new EchoTee(probe.ref))
-      val wrap = ChannelExt(system).actorOf(new WriteOnly[C, C](target))
+      val target = ChannelExt(system).actorOf(new EchoTee(probe.ref), "t19")
+      val wrap = ChannelExt(system).actorOf(new WriteOnly[C, C](target), "t20")
       C -!-> wrap
       expectMsg(C1)
       expectMsg(C1)
@@ -413,14 +413,14 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
     }
 
     "support typed ask" in {
-      val t = ChannelExt(system).actorOf(new Tester)
+      val t = ChannelExt(system).actorOf(new Tester, "t21")
       implicit val timeout = Timeout(1.second)
       val r: Future[C] = (t <-?- A).lub
       Await.result(r, 1.second) must be(C)
     }
 
     "support typed ask with multiple reply channels" in {
-      val t = ChannelExt(system).actorOf(new SubChannels)
+      val t = ChannelExt(system).actorOf(new SubChannels, "t22")
       implicit val timeout = Timeout(1.second)
       val r: Future[Msg] = (t <-?- A1).lub
       Await.result(r, 1.second) must be(B)
@@ -462,8 +462,8 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
     "be able to forward fully generic channels" in {
       val cd = ChannelExt(system).actorOf(new Actor with Channels[TNil, (C, D) :+: TNil] {
         channel[C] { (x, snd) ⇒ snd <-!- D }
-      })
-      val t = ChannelExt(system).actorOf(new Poly(cd))
+      }, "t25")
+      val t = ChannelExt(system).actorOf(new Poly(cd), "t26")
       t <-!- A
       expectMsg(A)
       t <-!- C
@@ -479,8 +479,8 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
       implicit val selfChannel = ChannelExt(system).actorOf(new Actor with Channels[TNil, (C, Nothing) :+:(D, Nothing) :+: TNil] {
         channel[C] { (c, snd) ⇒ testActor ! c }
         channel[D] { (d, snd) ⇒ testActor ! d }
-      })
-      val t = ChannelExt(system).actorOf(new Tester)
+      }, "t27")
+      val t = ChannelExt(system).actorOf(new Tester, "t28")
       val a = new WrappedMessage[(A, Nothing) :+:(B, Nothing) :+: TNil, Msg](A)
       val fa = Future successful a
       val b = new WrappedMessage[(A, Nothing) :+:(B, Nothing) :+: TNil, Msg](B)
@@ -548,7 +548,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
 
     "be askable to a ChannelRef" in {
       implicit val timeout = Timeout(1.second)
-      val t = ChannelExt(system).actorOf(new Tester)
+      val t = ChannelExt(system).actorOf(new Tester, "t30")
       val a = new WrappedMessage[(A, Nothing) :+:(B, Nothing) :+: TNil, Msg](A)
       val fa = Future successful a
       val b = new WrappedMessage[(A, Nothing) :+:(B, Nothing) :+: TNil, Msg](B)
@@ -608,7 +608,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
 
     "be LUBbable within a Future" in {
       implicit val timeout = Timeout(1.second)
-      val t = ChannelExt(system).actorOf(new Tester)
+      val t = ChannelExt(system).actorOf(new Tester, "t31")
       val a = new WrappedMessage[(A, Nothing) :+:(B, Nothing) :+: TNil, Msg](A)
       (Await.result((a -?-> t).lub, timeout.duration): Msg) must be(C)
     }
