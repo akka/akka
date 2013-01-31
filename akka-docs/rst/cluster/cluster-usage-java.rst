@@ -320,6 +320,16 @@ This is how the curve looks like for ``acceptable-heartbeat-pause`` configured t
 
 .. image:: images/phi3.png
 
+Death watch uses the cluster failure detector for nodes in the cluster, i.e. it 
+generates ``Terminated`` message from network failures and JVM crashes, in addition 
+to graceful termination of watched actor. 
+
+.. warning::
+
+  Creating a remote deployed child actor with the same name as the terminated 
+  actor is not fully supported. There is a race condition that potentially removes the new 
+  actor.
+
 Cluster Aware Routers
 ^^^^^^^^^^^^^^^^^^^^^
 
