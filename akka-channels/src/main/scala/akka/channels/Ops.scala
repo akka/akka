@@ -14,6 +14,14 @@ sealed trait TNil extends ChannelList
 sealed trait :+:[A <: (_, _), B <: ChannelList] extends ChannelList
 sealed trait ReplyChannels[T <: ChannelList] extends ChannelList
 
+/**
+ * This type is used to stand in for the unknown reply types of the fabricated
+ * sender references; users don’t need to write it down, and if they do, they
+ * know that they’re cheating (since these ref types must not escape their 
+ * defining actor context).
+ */
+sealed trait UnknownDoNotWriteMeDown
+
 class ActorRefOps(val ref: ActorRef) extends AnyVal {
   import macros.Helpers._
   def narrow[C <: ChannelList](implicit timeout: Timeout, ec: ExecutionContext, tt: ru.TypeTag[C]): Future[ChannelRef[C]] = {

@@ -31,7 +31,7 @@ object Ask {
 
     Tell.verify(c)(null, unwrapped, typeOf[(Any, Nothing) :+: TNil], tpeChannel)
 
-    implicit val ttReturnChannels = c.TypeTag[ReturnChannels](toChannels(c.universe)(out))
+    implicit val ttReturnChannels = c.TypeTag[ReturnChannels](toChannels(c.universe)(out, weakTypeOf[Nothing]))
     implicit val ttReturnLUB = c.TypeTag[ReturnLUB](c.universe.lub(out))
     reify(askOps[WrappedMessage[ReturnChannels, ReturnLUB]](
       c.prefix.splice.actorRef, toMsg(c)(msg, tpeMsg).splice)(imp[Timeout](c).splice))
@@ -54,7 +54,7 @@ object Ask {
 
     Tell.verify(c)(null, unwrapped, typeOf[(Any, Nothing) :+: TNil], tpeChannel)
 
-    implicit val ttReturnChannels = c.TypeTag[ReturnChannels](toChannels(c.universe)(out))
+    implicit val ttReturnChannels = c.TypeTag[ReturnChannels](toChannels(c.universe)(out, weakTypeOf[Nothing]))
     implicit val ttReturnLUB = c.TypeTag[ReturnLUB](c.universe.lub(out))
     val msg = reify(c.prefix.splice.value)
     reify(askOps[WrappedMessage[ReturnChannels, ReturnLUB]](
@@ -78,7 +78,7 @@ object Ask {
 
     Tell.verify(c)(null, unwrapped, typeOf[(Any, Nothing) :+: TNil], tpeChannel)
 
-    implicit val ttReturnChannels = c.TypeTag[ReturnChannels](toChannels(c.universe)(out))
+    implicit val ttReturnChannels = c.TypeTag[ReturnChannels](toChannels(c.universe)(out, weakTypeOf[Nothing]))
     implicit val ttReturnLUB = c.TypeTag[ReturnLUB](c.universe.lub(out))
     if (tpeMsg <:< typeOf[ChannelList])
       reify(askFutureWrapped[WrappedMessage[ReturnChannels, ReturnLUB]](

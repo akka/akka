@@ -70,15 +70,18 @@ object Tell {
   }
 
   def verify(c: Context)(sender: c.universe.Tree, msgT: c.universe.Type, sndT: c.universe.Type, chT: c.universe.Type)(): Unit = {
+    val unknown = c.universe.weakTypeOf[UnknownDoNotWriteMeDown]
+    val nothing = c.universe.weakTypeOf[Nothing]
+    def ignoreUnknown(in: c.universe.Type): c.universe.Type = if (in =:= unknown) nothing else in
     def rec(msg: Set[c.universe.Type], checked: Set[c.universe.Type], depth: Int): Unit =
       if (msg.nonEmpty) {
         val u: c.universe.type = c.universe
-        val replies = msg map (m ⇒ m -> replyChannels(u)(chT, m))
+        val replies = msg map (m ⇒ m -> (replyChannels(u)(chT, m) map (t => ignoreUnknown(t))))
         val missing = replies collect { case (k, v) if v.size == 0 ⇒ k }
         if (missing.nonEmpty)
           error(c, s"target ChannelRef does not support messages of types ${missing mkString ", "} (at depth $depth)")
         else {
-          val nextSend = replies.map(_._2).flatten map (m ⇒ m -> replyChannels(u)(sndT, m))
+          val nextSend = replies.map(_._2).flatten map (m ⇒ m -> (replyChannels(u)(sndT, m) map (t => ignoreUnknown(t))))
           val nextMissing = nextSend collect { case (k, v) if v.size == 0 ⇒ k }
           if (nextMissing.nonEmpty)
             error(c, s"implicit sender `$sender` does not support messages of the reply types ${nextMissing mkString ", "} (at depth $depth)")

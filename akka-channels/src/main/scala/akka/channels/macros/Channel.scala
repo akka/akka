@@ -34,7 +34,7 @@ object Channel {
       checkUnique(c.universe)(tpeMsgT, tpeMyChannels) foreach (c.error(c.enclosingPosition, _))
       // need to calculate the intersection of the reply channel sets for all input channels
       val intersection = inputChannels(c.universe)(tpeMsgT) map (replyChannels(c.universe)(tpeMyChannels, _).toSet) reduce (_ intersect _)
-      val channels = toChannels(c.universe)(intersection.toList)
+      val channels = toChannels(c.universe)(intersection.toList, weakTypeOf[UnknownDoNotWriteMeDown])
       implicit val ttMyChannels = c.TypeTag[MyChannels](tpeMyChannels)
       implicit val ttReplyChannels = c.TypeTag[ReplyChannels](channels)
       implicit val ttMsgT = c.TypeTag[MsgT](tpeMsgT)

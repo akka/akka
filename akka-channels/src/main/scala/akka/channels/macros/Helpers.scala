@@ -117,7 +117,7 @@ object Helpers {
    * convert a list of types List(<T1>, <T2>, ...) into a ChannelList
    * ( Channel[<T1>, Nothing] :=: Channel[<T2>, Nothing] :=: ... :=: TNil )
    */
-  final def toChannels(u: Universe)(list: List[u.Type]): u.Type = {
+  final def toChannels(u: Universe)(list: List[u.Type], out: u.Type): u.Type = {
     import u._
     def rec(l: List[Type], acc: Type): Type = l match {
       case head :: (tail: List[Type]) ⇒
@@ -127,7 +127,7 @@ object Helpers {
             appliedType(weakTypeOf[:+:[_, _]].typeConstructor, List(
               appliedType(weakTypeOf[Tuple2[_, _]].typeConstructor, List(
                 head,
-                weakTypeOf[Nothing])),
+                out)),
               acc)))
       case _ ⇒ acc
     }
