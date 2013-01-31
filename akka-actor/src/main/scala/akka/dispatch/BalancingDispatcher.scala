@@ -1,5 +1,5 @@
 /**
- *    Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *    Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
@@ -85,17 +85,18 @@ class BalancingDispatcher(
     if (!registerForExecution(receiver.mailbox, false, false)) teamWork()
   }
 
-  protected def teamWork(): Unit = if (attemptTeamWork) {
-    @tailrec def scheduleOne(i: Iterator[ActorCell] = team.iterator): Unit =
-      if (messageQueue.hasMessages
-        && i.hasNext
-        && (executorService.executor match {
-          case lm: LoadMetrics ⇒ lm.atFullThrottle == false
-          case other           ⇒ true
-        })
-        && !registerForExecution(i.next.mailbox, false, false))
-        scheduleOne(i)
+  protected def teamWork(): Unit =
+    if (attemptTeamWork) {
+      @tailrec def scheduleOne(i: Iterator[ActorCell] = team.iterator): Unit =
+        if (messageQueue.hasMessages
+          && i.hasNext
+          && (executorService.executor match {
+            case lm: LoadMetrics ⇒ lm.atFullThrottle == false
+            case other           ⇒ true
+          })
+          && !registerForExecution(i.next.mailbox, false, false))
+          scheduleOne(i)
 
-    scheduleOne()
-  }
+      scheduleOne()
+    }
 }

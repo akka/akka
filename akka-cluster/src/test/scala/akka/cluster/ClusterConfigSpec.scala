@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -28,12 +28,14 @@ class ClusterConfigSpec extends AkkaSpec {
       PeriodicTasksInitialDelay must be(1 seconds)
       GossipInterval must be(1 second)
       HeartbeatInterval must be(1 second)
-      NumberOfEndHeartbeats must be(4)
+      NumberOfEndHeartbeats must be(8)
       MonitoredByNrOfMembers must be(5)
+      HeartbeatRequestDelay must be(10 seconds)
+      HeartbeatExpectedResponseAfter must be(3 seconds)
+      HeartbeatRequestTimeToLive must be(1 minute)
       LeaderActionsInterval must be(1 second)
       UnreachableNodesReaperInterval must be(1 second)
       PublishStatsInterval must be(10 second)
-      JoinTimeout must be(60 seconds)
       AutoJoin must be(true)
       AutoDown must be(false)
       MinNrOfMembers must be(1)
@@ -43,10 +45,6 @@ class ClusterConfigSpec extends AkkaSpec {
       MaxGossipMergeRate must be(5.0 plusOrMinus 0.0001)
       SchedulerTickDuration must be(33 millis)
       SchedulerTicksPerWheel must be(512)
-      SendCircuitBreakerSettings must be(CircuitBreakerSettings(
-        maxFailures = 3,
-        callTimeout = 2 seconds,
-        resetTimeout = 30 seconds))
       MetricsEnabled must be(true)
       MetricsCollectorClass must be(classOf[SigarMetricsCollector].getName)
       MetricsInterval must be(3 seconds)

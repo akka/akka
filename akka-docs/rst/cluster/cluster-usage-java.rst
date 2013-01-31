@@ -89,7 +89,7 @@ and becomes a member of the cluster. It's status changed to 'Up'.
 
 Switch over to the first terminal window and see in the log output that the member joined.
 
-6. Start another node. Open a sbt session in yet another terminal window and run::
+6. Start another node. Open a maven session in yet another terminal window and run::
 
     mvn exec:java -Dexec.mainClass="sample.cluster.simple.japi.SimpleClusterApp"
 
@@ -258,6 +258,17 @@ has at least the defined number of members.
 
 This callback can be used for other things than starting actors.
 
+Cluster Singleton Pattern
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For some use cases it is convenient and sometimes also mandatory to ensure that
+you have exactly one actor of a certain type running somewhere in the cluster.
+
+This can be implemented by subscribing to ``LeaderChanged`` events, but there are
+several corner cases to consider. Therefore, this specific use case is made easily 
+accessible by the :ref:`cluster-singleton` in the contrib module. You can use it as is, 
+or adjust to fit your specific needs. 
+
 Failure Detector
 ^^^^^^^^^^^^^^^^
 
@@ -309,6 +320,16 @@ This is how the curve looks like for ``acceptable-heartbeat-pause`` configured t
 
 .. image:: images/phi3.png
 
+Death watch uses the cluster failure detector for nodes in the cluster, i.e. it 
+generates ``Terminated`` message from network failures and JVM crashes, in addition 
+to graceful termination of watched actor. 
+
+.. warning::
+
+  Creating a remote deployed child actor with the same name as the terminated 
+  actor is not fully supported. There is a race condition that potentially removes the new 
+  actor.
+
 Cluster Aware Routers
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -351,8 +372,8 @@ The same type of router could also have been defined in code:
 See :ref:`cluster_configuration_java` section for further descriptions of the settings.
 
 
-Router Example
---------------
+Router Example with Remote Deployed Routees
+-------------------------------------------
 
 Let's take a look at how to use cluster aware routers.
 
@@ -416,25 +437,35 @@ service nodes and 1 client::
     -Dexec.mainClass="run-main sample.cluster.stats.japi.StatsSampleMain"
 
 
+Router Example with Lookup of Routees
+-------------------------------------
+
 The above setup is nice for this example, but we will also take a look at how to use
 a single master node that creates and deploys workers. To keep track of a single
-master we need one additional actor:
+master we use the :ref:`cluster-singleton` in the contrib module. The ``ClusterSingletonManager``
+is started on each node.
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsSampleOneMasterMain.java#create-singleton-manager
+
+We also need an actor on each node that keeps track of where current single master exists and
+delegates jobs to the ``StatsService``.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsFacade.java#facade
 
 The ``StatsFacade`` receives text from users and delegates to the current ``StatsService``, the single
-master. It listens to cluster events to create or lookup the ``StatsService`` depending on if
-it is on the same same node or on another node. We run the master on the same node as the leader of
-the cluster members, which is nothing more than the address currently sorted first in the member ring,
-i.e. it can change when new nodes join or when current leader leaves.
+master. It listens to cluster events to lookup the ``StatsService`` on the leader node. The master runs 
+on the same node as the leader of the cluster members, which is nothing more than the address currently 
+sorted first in the member ring, i.e. it can change when new nodes join or when current leader leaves.
 
-All nodes start ``StatsFacade`` and the router is now configured like this:
+All nodes start ``StatsFacade`` and the ``ClusterSingletonManager``. The router is now configured like this:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsSampleOneMasterMain.java#start-router-deploy
 
 This example is included in ``akka-samples/akka-sample-cluster`` and you can try it by copying the 
 `source <@github@/akka-samples/akka-sample-cluster>`_ to your
-maven project, defined as in :ref:`cluster_simple_example_java`.
+maven project, defined as in :ref:`cluster_simple_example_java`. Also add the `akka-contrib` dependency
+to your pom.xml.
+
 Run it by starting nodes in different terminal windows. For example, starting 3
 service nodes and 1 client::
 
@@ -453,7 +484,7 @@ service nodes and 1 client::
     -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleOneMasterMain"
 
 
-.. note:: The above example, especially the last part, will be simplified when the cluster handles automatic actor partitioning.
+.. note:: The above example will be simplified when the cluster handles automatic actor partitioning.
 
 Cluster Metrics
 ^^^^^^^^^^^^^^^

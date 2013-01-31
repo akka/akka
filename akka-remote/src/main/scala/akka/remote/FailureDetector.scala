@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote
 
 import java.util.concurrent.TimeUnit._
@@ -12,6 +15,12 @@ trait FailureDetector {
    * Returns true if the resource is considered to be up and healthy and returns false otherwise.
    */
   def isAvailable: Boolean
+
+  /**
+   * Returns true if the failure detector has received any heartbeats and started monitoring
+   * of the resource.
+   */
+  def isMonitoring: Boolean
 
   /**
    * Notifies the FailureDetector that a heartbeat arrived from the monitored resource. This causes the FailureDetector

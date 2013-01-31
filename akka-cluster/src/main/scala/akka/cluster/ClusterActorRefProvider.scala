@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -94,7 +94,7 @@ private[akka] class RemoteDeploymentWatcher extends Actor {
 
     case t @ Terminated(a) if supervisors isDefinedAt a ⇒
       // send extra ChildTerminated to the supervisor so that it will remove the child
-      if (t.addressTerminated) supervisors(a).sendSystemMessage(ChildTerminated(a))
+      supervisors(a).sendSystemMessage(ChildTerminated(a))
       supervisors -= a
 
     case _: Terminated ⇒

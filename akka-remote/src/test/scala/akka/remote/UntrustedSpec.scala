@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote
@@ -25,19 +25,19 @@ import akka.actor.PoisonPill
 class UntrustedSpec extends AkkaSpec("""
 akka.actor.provider = akka.remote.RemoteActorRefProvider
 akka.remote.untrusted-mode = on
-akka.remoting.transports.tcp.port = 0
+akka.remote.netty.tcp.port = 0
 akka.loglevel = DEBUG
 """) with ImplicitSender {
 
   val other = ActorSystem("UntrustedSpec-client", ConfigFactory.parseString("""
       akka.actor.provider = akka.remote.RemoteActorRefProvider
-      akka.remoting.transports.tcp.port = 0
+      akka.remote.netty.tcp.port = 0
   """))
   val addr = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.addresses.head
   val target1 = other.actorFor(RootActorPath(addr) / "remote")
   val target2 = other.actorFor(RootActorPath(addr) / testActor.path.elements)
 
-  override def atTermination() {
+  override def afterTermination() {
     other.shutdown()
   }
 

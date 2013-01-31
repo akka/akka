@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
@@ -270,6 +270,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       val t = probe.expectMsg(Terminated(a)(existenceConfirmed = true, addressTerminated = false))
       t.existenceConfirmed must be(true)
       t.addressTerminated must be(false)
+      system.shutdown()
     }
 
     "shut down when /user escalates" in {

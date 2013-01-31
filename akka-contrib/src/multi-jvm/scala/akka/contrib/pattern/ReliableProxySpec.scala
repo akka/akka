@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.contrib.pattern
@@ -33,12 +33,13 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
   import ReliableProxySpec._
   import ReliableProxy._
 
-  override def initialParticipants = 2
+  override def initialParticipants = roles.size
 
   override def afterEach {
     runOn(local) {
-      testConductor.throttle(local, remote, Direction.Both, -1).await
+      testConductor.passThrough(local, remote, Direction.Both).await
     }
+    enterBarrier("after-each")
   }
 
   @volatile var target: ActorRef = system.deadLetters
@@ -46,8 +47,8 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
 
   def expectState(s: State) = expectMsg(FSM.CurrentState(proxy, s))
   def expectTransition(s1: State, s2: State) = expectMsg(FSM.Transition(proxy, s1, s2))
-  
-  def sendN(n: Int) =  (1 to n) foreach (proxy ! _)
+
+  def sendN(n: Int) = (1 to n) foreach (proxy ! _)
   def expectN(n: Int) = (1 to n) foreach { n ⇒ expectMsg(n); lastSender must be === target }
 
   "A ReliableProxy" must {
@@ -82,6 +83,8 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
       runOn(remote) {
         expectMsg("hello")
       }
+
+      enterBarrier("initialize-done")
     }
 
     "forward messages in sequence" in {
@@ -95,9 +98,9 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
           expectN(100)
         }
       }
-      
+
       enterBarrier("test1a")
-      
+
       runOn(local) {
         sendN(100)
         expectTransition(Idle, Active)
@@ -108,7 +111,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
           expectN(100)
         }
       }
-      
+
       enterBarrier("test1b")
     }
 
@@ -121,17 +124,17 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
           expectNoMsg
         }
       }
-      
+
       enterBarrier("test2a")
-      
+
       runOn(remote) {
         expectNoMsg(0 seconds)
       }
-      
+
       enterBarrier("test2b")
-      
+
       runOn(local) {
-        testConductor.throttle(local, remote, Direction.Send, -1).await
+        testConductor.passThrough(local, remote, Direction.Send).await
         within(5 seconds) { expectTransition(Active, Idle) }
       }
       runOn(remote) {
@@ -139,7 +142,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
           expectN(100)
         }
       }
-      
+
       enterBarrier("test2c")
     }
 
@@ -157,23 +160,29 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
           expectN(100)
         }
       }
-      
+
       enterBarrier("test3a")
-      
+
       runOn(local) {
-        testConductor.throttle(local, remote, Direction.Receive, -1).await
+        testConductor.passThrough(local, remote, Direction.Receive).await
         within(5 seconds) { expectTransition(Active, Idle) }
       }
-      
+
       enterBarrier("test3b")
     }
 
-    "resend across a slow link" in {
+    "resend across a slow outbound link" in {
       runOn(local) {
-        testConductor.throttle(local, remote, Direction.Send, rateMBit = 0.1).await
+        // the rateMBit value is derived from empirical studies so that it will trigger resends,
+        // the exact value is not important, but it must not be too large
+        testConductor.throttle(local, remote, Direction.Send, rateMBit = 0.02).await
         sendN(50)
         within(5 seconds) {
           expectTransition(Idle, Active)
+          // use the slow link for a while, which will trigger resends
+          Thread.sleep(2000)
+          // full speed, and it will catch up outstanding messages
+          testConductor.passThrough(local, remote, Direction.Send).await
           expectTransition(Active, Idle)
         }
       }
@@ -181,16 +190,25 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
         within(5 seconds) {
           expectN(50)
         }
+        expectNoMsg(1 second)
       }
-      
-      enterBarrier("test4a")
-      
+
+      enterBarrier("test4")
+    }
+
+    "resend across a slow inbound link" in {
       runOn(local) {
-        testConductor.throttle(local, remote, Direction.Send, rateMBit = -1).await
-        testConductor.throttle(local, remote, Direction.Receive, rateMBit = 0.1).await
+        testConductor.passThrough(local, remote, Direction.Send).await
+        // the rateMBit value is derived from empirical studies so that it will trigger resends,
+        // the exact value is not important, but it must not be too large
+        testConductor.throttle(local, remote, Direction.Receive, rateMBit = 0.02).await
         sendN(50)
         within(5 seconds) {
           expectTransition(Idle, Active)
+          // use the slow link for a while, which will trigger resends
+          Thread.sleep(2000)
+          // full speed, and it will catch up outstanding messages
+          testConductor.passThrough(local, remote, Direction.Receive).await
           expectTransition(Active, Idle)
         }
       }
@@ -198,9 +216,10 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
         within(1 second) {
           expectN(50)
         }
+        expectNoMsg(2 seconds)
       }
-      
-      enterBarrier("test4a")
+
+      enterBarrier("test5")
     }
 
   }

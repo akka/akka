@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote.testconductor
 
@@ -94,8 +94,8 @@ trait Conductor { this: TestConductorExt ⇒
    * increased latency.
    *
    * ====Note====
-   * To use this feature you must activate the `TestConductorTranport`
-   * by specifying `testTransport(on = true)` in your MultiNodeConfig.
+   * To use this feature you must activate the failure injector and throttler
+   * transport adapters by specifying `testTransport(on = true)` in your MultiNodeConfig.
    *
    * @param node is the symbolic name of the node which is to be affected
    * @param target is the symbolic name of the other node to which connectivity shall be throttled
@@ -115,40 +115,35 @@ trait Conductor { this: TestConductorExt ⇒
    * Socket.
    *
    * ====Note====
-   * To use this feature you must activate the `TestConductorTranport`
-   * by specifying `testTransport(on = true)` in your MultiNodeConfig.
+   * To use this feature you must activate the failure injector and throttler
+   * transport adapters by specifying `testTransport(on = true)` in your MultiNodeConfig.
    *
    * @param node is the symbolic name of the node which is to be affected
    * @param target is the symbolic name of the other node to which connectivity shall be impeded
    * @param direction can be either `Direction.Send`, `Direction.Receive` or `Direction.Both`
    */
-  def blackhole(node: RoleName, target: RoleName, direction: Direction): Future[Done] = {
-    import Settings.QueryTimeout
-    requireTestConductorTranport()
-    controller ? Throttle(node, target, direction, 0f) mapTo classTag[Done]
-  }
+  def blackhole(node: RoleName, target: RoleName, direction: Direction): Future[Done] =
+    throttle(node, target, direction, 0f)
 
-  private def requireTestConductorTranport(): Unit = if (!transport.defaultAddress.protocol.contains(".gremlin.trttl."))
-    throw new ConfigurationException("To use this feature you must activate the failure injector adapters " +
-      "(gremlin, trttl) by specifying `testTransport(on = true)` in your MultiNodeConfig.")
+  private def requireTestConductorTranport(): Unit =
+    if (!transport.defaultAddress.protocol.contains(".trttl.gremlin."))
+      throw new ConfigurationException("To use this feature you must activate the failure injector adapters " +
+        "(trttl, gremlin) by specifying `testTransport(on = true)` in your MultiNodeConfig.")
 
   /**
    * Switch the Netty pipeline of the remote support into pass through mode for
    * sending and/or receiving.
    *
    * ====Note====
-   * To use this feature you must activate the `TestConductorTranport`
-   * by specifying `testTransport(on = true)` in your MultiNodeConfig.
+   * To use this feature you must activate the failure injector and throttler
+   * transport adapters by specifying `testTransport(on = true)` in your MultiNodeConfig.
    *
    * @param node is the symbolic name of the node which is to be affected
    * @param target is the symbolic name of the other node to which connectivity shall be impeded
    * @param direction can be either `Direction.Send`, `Direction.Receive` or `Direction.Both`
    */
-  def passThrough(node: RoleName, target: RoleName, direction: Direction): Future[Done] = {
-    import Settings.QueryTimeout
-    requireTestConductorTranport()
-    controller ? Throttle(node, target, direction, -1f) mapTo classTag[Done]
-  }
+  def passThrough(node: RoleName, target: RoleName, direction: Direction): Future[Done] =
+    throttle(node, target, direction, -1f)
 
   /**
    * Tell the remote support to shutdown the connection to the given remote
@@ -383,7 +378,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
     case BarrierTimeout(data)             ⇒ failBarrier(data)
     case FailedBarrier(data)              ⇒ failBarrier(data)
     case BarrierEmpty(data, msg)          ⇒ SupervisorStrategy.Resume
-    case WrongBarrier(name, client, data) ⇒ client ! ToClient(BarrierResult(name, false)); failBarrier(data)
+    case WrongBarrier(name, client, data) ⇒ { client ! ToClient(BarrierResult(name, false)); failBarrier(data) }
     case ClientLost(data, node)           ⇒ failBarrier(data)
     case DuplicateNode(data, node)        ⇒ failBarrier(data)
   }
@@ -453,6 +448,10 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
       }
     case GetNodes    ⇒ sender ! nodes.keys
     case GetSockAddr ⇒ sender ! connection.getLocalAddress
+  }
+
+  override def postStop() {
+    RemoteConnection.shutdown(connection)
   }
 }
 

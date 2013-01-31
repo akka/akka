@@ -1,28 +1,31 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote.transport.netty
 
-import akka.{ OnlyCauseStackTrace, ConfigurationException }
 import akka.actor.{ Address, ExtendedActorSystem }
+import akka.dispatch.ThreadPoolConfig
 import akka.event.Logging
-import akka.remote.netty.{ SSLSettings, NettySSLSupport, DefaultDisposableChannelGroup }
+import akka.remote.transport.AssociationHandle.HandleEventListener
 import akka.remote.transport.Transport._
 import akka.remote.transport.netty.NettyTransportSettings.{ Udp, Tcp, Mode }
 import akka.remote.transport.{ AssociationHandle, Transport }
+import akka.{ OnlyCauseStackTrace, ConfigurationException }
 import com.typesafe.config.Config
 import java.net.{ UnknownHostException, SocketAddress, InetAddress, InetSocketAddress, ConnectException }
-import java.util.concurrent.{ ConcurrentHashMap, Executor, Executors, CancellationException }
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{ ConcurrentHashMap, Executors, CancellationException }
 import org.jboss.netty.bootstrap.{ ConnectionlessBootstrap, Bootstrap, ClientBootstrap, ServerBootstrap }
-import org.jboss.netty.buffer.ChannelBuffer
+import org.jboss.netty.buffer.{ ChannelBuffers, ChannelBuffer }
 import org.jboss.netty.channel._
-import org.jboss.netty.channel.group.{ ChannelGroupFuture, ChannelGroupFutureListener }
+import org.jboss.netty.channel.group.{ DefaultChannelGroup, ChannelGroup, ChannelGroupFuture, ChannelGroupFutureListener }
 import org.jboss.netty.channel.socket.nio.{ NioDatagramChannelFactory, NioServerSocketChannelFactory, NioClientSocketChannelFactory }
 import org.jboss.netty.handler.codec.frame.{ LengthFieldBasedFrameDecoder, LengthFieldPrepender }
+import org.jboss.netty.handler.ssl.SslHandler
 import scala.concurrent.duration.{ Duration, FiniteDuration, MILLISECONDS }
-import scala.concurrent.{ ExecutionContext, Promise, Future }
-import scala.util.{ Try, Random }
+import scala.concurrent.{ ExecutionContext, Promise, Future, blocking }
+import scala.util.{ Failure, Success, Try }
 import util.control.{ NoStackTrace, NonFatal }
-import akka.dispatch.ThreadPoolConfig
-import akka.remote.transport.AssociationHandle.HandleEventListener
-import java.util.concurrent.atomic.AtomicInteger
 
 object NettyTransportSettings {
   sealed trait Mode
@@ -38,6 +41,20 @@ object NettyFutureBridge {
         if (future.isSuccess) future.getChannel
         else if (future.isCancelled) throw new CancellationException
         else throw future.getCause)
+    })
+    p.future
+  }
+
+  def apply(nettyFuture: ChannelGroupFuture): Future[ChannelGroup] = {
+    import scala.collection.JavaConverters._
+    val p = Promise[ChannelGroup]
+    nettyFuture.addListener(new ChannelGroupFutureListener {
+      def operationComplete(future: ChannelGroupFuture): Unit = p complete Try(
+        if (future.isCompleteSuccess) future.getGroup
+        else throw future.iterator.asScala.collectFirst {
+          case f if f.isCancelled ⇒ new CancellationException
+          case f if !f.isSuccess  ⇒ f.getCause
+        } getOrElse new IllegalStateException("Error reported in ChannelGroupFuture, but no error found in individual futures."))
     })
     p.future
   }
@@ -150,12 +167,12 @@ abstract class ServerHandler(protected final val transport: NettyTransport,
 
 }
 
-abstract class ClientHandler(protected final val transport: NettyTransport,
-                             private final val statusPromise: Promise[AssociationHandle])
+abstract class ClientHandler(protected final val transport: NettyTransport)
   extends NettyClientHelpers with CommonHandlers {
+  final protected val statusPromise = Promise[AssociationHandle]()
+  def statusFuture = statusPromise.future
 
   final protected def initOutbound(channel: Channel, remoteSocketAddress: SocketAddress, msg: ChannelBuffer): Unit = {
-    channel.setReadable(false)
     init(channel, remoteSocketAddress, msg)(statusPromise.success)
   }
 
@@ -179,7 +196,7 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
 
   implicit val executionContext: ExecutionContext = system.dispatcher
 
-  override val schemeIdentifier: String = TransportMode + (if (EnableSsl) ".ssl" else "")
+  override val schemeIdentifier: String = (if (EnableSsl) "ssl." else "") + TransportMode
   override val maximumPayloadBytes: Int = 32000 // The number of octets required by the remoting specification
 
   private final val isDatagram: Boolean = TransportMode == Udp
@@ -191,7 +208,13 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
 
   final val udpConnectionTable = new ConcurrentHashMap[SocketAddress, HandleEventListener]()
 
-  val channelGroup = new DefaultDisposableChannelGroup("akka-netty-transport-driver-channelgroup-" +
+  /*
+   * Be aware, that the close() method of DefaultChannelGroup is racy, because it uses an iterator over a ConcurrentHashMap.
+   * In the old remoting this was handled by using a custom subclass, guarding the close() method with a write-lock.
+   * The usage of this class is safe in the new remoting, as close() is called after unbind() is finished, and no
+   * outbound connections are initiated in the shutdown phase.
+   */
+  val channelGroup = new DefaultChannelGroup("akka-netty-transport-driver-channelgroup-" +
     uniqueIdCounter.getAndIncrement)
 
   private val clientChannelFactory: ChannelFactory = TransportMode match {
@@ -230,10 +253,17 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
   }
 
   private val associationListenerPromise: Promise[AssociationEventListener] = Promise()
+
+  private def sslHandler(isClient: Boolean): SslHandler = {
+    val handler = NettySSLSupport(settings.SslSettings.get, log, isClient)
+    handler.setCloseOnSSLException(true)
+    handler
+  }
+
   private val serverPipelineFactory: ChannelPipelineFactory = new ChannelPipelineFactory {
     override def getPipeline: ChannelPipeline = {
       val pipeline = newPipeline
-      if (EnableSsl) pipeline.addFirst("SslHandler", NettySSLSupport(settings.SslSettings.get, log, false))
+      if (EnableSsl) pipeline.addFirst("SslHandler", sslHandler(isClient = false))
       val handler = if (isDatagram) new UdpServerHandler(NettyTransport.this, associationListenerPromise.future)
       else new TcpServerHandler(NettyTransport.this, associationListenerPromise.future)
       pipeline.addLast("ServerHandler", handler)
@@ -241,16 +271,17 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
     }
   }
 
-  private def clientPipelineFactory(statusPromise: Promise[AssociationHandle]): ChannelPipelineFactory = new ChannelPipelineFactory {
-    override def getPipeline: ChannelPipeline = {
-      val pipeline = newPipeline
-      if (EnableSsl) pipeline.addFirst("SslHandler", NettySSLSupport(settings.SslSettings.get, log, true))
-      val handler = if (isDatagram) new UdpClientHandler(NettyTransport.this, statusPromise)
-      else new TcpClientHandler(NettyTransport.this, statusPromise)
-      pipeline.addLast("clienthandler", handler)
-      pipeline
+  private val clientPipelineFactory: ChannelPipelineFactory =
+    new ChannelPipelineFactory {
+      override def getPipeline: ChannelPipeline = {
+        val pipeline = newPipeline
+        if (EnableSsl) pipeline.addFirst("SslHandler", sslHandler(isClient = true))
+        val handler = if (isDatagram) new UdpClientHandler(NettyTransport.this)
+        else new TcpClientHandler(NettyTransport.this)
+        pipeline.addLast("clienthandler", handler)
+        pipeline
+      }
     }
-  }
 
   private def setupBootstrap[B <: Bootstrap](bootstrap: B, pipelineFactory: ChannelPipelineFactory): B = {
     // FIXME: Expose these settings in configuration
@@ -272,8 +303,8 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
     case Udp ⇒ setupBootstrap(new ConnectionlessBootstrap(serverChannelFactory), serverPipelineFactory)
   }
 
-  private def outboundBootstrap(statusPromise: Promise[AssociationHandle]): ClientBootstrap = {
-    val bootstrap = setupBootstrap(new ClientBootstrap(clientChannelFactory), clientPipelineFactory(statusPromise))
+  private def outboundBootstrap: ClientBootstrap = {
+    val bootstrap = setupBootstrap(new ClientBootstrap(clientChannelFactory), clientPipelineFactory)
     bootstrap.setOption("connectTimeoutMillis", settings.ConnectionTimeout.toMillis)
     bootstrap
   }
@@ -287,12 +318,14 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
     case _                     ⇒ None
   }
 
-  def addressToSocketAddress(addr: Address): InetSocketAddress =
-    new InetSocketAddress(InetAddress.getByName(addr.host.get), addr.port.get)
+  // TODO: This should be factored out to an async (or thread-isolated) name lookup service #2960
+  def addressToSocketAddress(addr: Address): Future[InetSocketAddress] =
+    Future { new InetSocketAddress(InetAddress.getByName(addr.host.get), addr.port.get) }
 
-  override def listen: Future[(Address, Promise[AssociationEventListener])] =
-    (Promise[(Address, Promise[AssociationEventListener])]() complete Try {
-      val address = addressToSocketAddress(Address("", "", settings.Hostname, settings.PortSelector))
+  override def listen: Future[(Address, Promise[AssociationEventListener])] = {
+    for {
+      address ← addressToSocketAddress(Address("", "", settings.Hostname, settings.PortSelector))
+    } yield {
       val newServerChannel = inboundBootstrap match {
         case b: ServerBootstrap         ⇒ b.bind(address)
         case b: ConnectionlessBootstrap ⇒ b.bind(address)
@@ -311,50 +344,65 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
           (address, associationListenerPromise)
         case None ⇒ throw new NettyTransportException(s"Unknown local address type ${newServerChannel.getLocalAddress.getClass}")
       }
-    }).future
+    }
+  }
 
   override def associate(remoteAddress: Address): Future[AssociationHandle] = {
     if (!serverChannel.isBound) Future.failed(new NettyTransportException("Transport is not bound"))
     else {
-      val statusPromise = Promise[AssociationHandle]()
-      (try {
-        val f = NettyFutureBridge(outboundBootstrap(statusPromise).connect(addressToSocketAddress(remoteAddress))) recover {
-          case c: CancellationException ⇒ throw new NettyTransportException("Connection was cancelled")
-        }
+      val bootstrap: ClientBootstrap = outboundBootstrap
 
-        if (isDatagram)
-          f map { channel ⇒
-            channel.getRemoteAddress match {
+      (for {
+        socketAddress ← addressToSocketAddress(remoteAddress)
+        readyChannel ← NettyFutureBridge(bootstrap.connect(socketAddress)) map {
+          channel ⇒
+            if (EnableSsl)
+              blocking {
+                channel.getPipeline.get[SslHandler](classOf[SslHandler]).handshake().awaitUninterruptibly()
+              }
+            if (!isDatagram) channel.setReadable(false)
+            channel
+        }
+        handle ← if (isDatagram)
+          Future {
+            readyChannel.getRemoteAddress match {
               case addr: InetSocketAddress ⇒
-                val handle = new UdpAssociationHandle(localAddress, remoteAddress, channel, NettyTransport.this)
-                statusPromise.success(handle)
-                handle.readHandlerPromise.future.onSuccess { case listener ⇒ udpConnectionTable.put(addr, listener) }
+                val handle = new UdpAssociationHandle(localAddress, remoteAddress, readyChannel, NettyTransport.this)
+                handle.readHandlerPromise.future.onSuccess {
+                  case listener ⇒ udpConnectionTable.put(addr, listener)
+                }
+                handle
               case unknown ⇒ throw new NettyTransportException(s"Unknown remote address type ${unknown.getClass}")
             }
           }
-        else f
-      } catch {
-        case e @ (_: UnknownHostException | _: SecurityException | _: IllegalArgumentException) ⇒
-          Future.failed(InvalidAssociationException("Invalid association ", e))
-        case NonFatal(e) ⇒
-          Future.failed(e)
-      }) onFailure {
-        case t: ConnectException ⇒ statusPromise failure new NettyTransportException(t.getMessage, t.getCause)
-        case t                   ⇒ statusPromise failure t
+        else
+          readyChannel.getPipeline.get[ClientHandler](classOf[ClientHandler]).statusFuture
+      } yield handle) recover {
+        case c: CancellationException ⇒ throw new NettyTransportException("Connection was cancelled") with NoStackTrace
+        case u @ (_: UnknownHostException | _: SecurityException) ⇒ throw new InvalidAssociationException(u.getMessage, u.getCause)
+        case NonFatal(t) ⇒ throw new NettyTransportException(t.getMessage, t.getCause) with NoStackTrace
       }
-
-      statusPromise.future
     }
   }
 
   override def shutdown(): Unit = {
-    channelGroup.unbind()
-    channelGroup.disconnect().addListener(new ChannelGroupFutureListener {
-      def operationComplete(future: ChannelGroupFuture) {
-        channelGroup.close()
-        inboundBootstrap.releaseExternalResources()
+    def always(c: ChannelGroupFuture) = NettyFutureBridge(c) recover { case _ ⇒ c.getGroup }
+    for {
+      // Force flush by trying to write an empty buffer and wait for success
+      _ ← always(channelGroup.write(ChannelBuffers.buffer(0)))
+      _ ← always({ channelGroup.unbind(); channelGroup.disconnect() })
+      _ ← always(channelGroup.close())
+    } {
+      // Release the selectors, but don't try to kill the dispatcher
+      if (UseDispatcherForIo.isDefined) {
+        clientChannelFactory.shutdown()
+        serverChannelFactory.shutdown()
+      } else {
+        clientChannelFactory.releaseExternalResources()
+        serverChannelFactory.releaseExternalResources()
       }
-    })
+    }
+
   }
 
 }

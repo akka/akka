@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -99,8 +99,6 @@ private[cluster] object InternalClusterAction {
 
   case object PublishStatsTick extends Tick
 
-  case class SendClusterMessage(to: Address, msg: ClusterMessage)
-
   case class SendGossipTo(address: Address)
 
   case object GetClusterCoreRef
@@ -181,7 +179,6 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
 private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Actor with ActorLogging {
   import ClusterLeaderAction._
   import InternalClusterAction._
-  import ClusterHeartbeatSender.JoinInProgress
 
   val cluster = Cluster(context.system)
   import cluster.{ selfAddress, scheduler, failureDetector }
@@ -191,12 +188,16 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
   // note that self is not initially member,
   // and the Gossip is not versioned for this 'Node' yet
-  var latestGossip: Gossip = Gossip()
+  var latestGossip: Gossip = Gossip.empty
 
   var stats = ClusterStats()
 
-  val coreSender = context.actorOf(Props[ClusterCoreSender].
-    withDispatcher(UseDispatcher), name = "coreSender")
+  /**
+   * Looks up and returns the remote cluster command connection for the specific address.
+   */
+  private def clusterCore(address: Address): ActorRef =
+    context.actorFor(RootActorPath(address) / "system" / "cluster" / "core")
+
   val heartbeatSender = context.actorOf(Props[ClusterHeartbeatSender].
     withDispatcher(UseDispatcher), name = "heartbeatSender")
 
@@ -281,22 +282,27 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
    * A 'Join(thisNodeAddress)' command is sent to the node to join.
    */
   def join(address: Address): Unit = {
-    if (!latestGossip.members.exists(_.address == address)) {
+    if (address.protocol != selfAddress.protocol)
+      log.info("Member with wrong protocol tried to join, but was ignored, expected [{}] but was [{}]",
+        selfAddress.protocol, address.protocol)
+    else if (address.system != selfAddress.system)
+      log.info("Member with wrong ActorSystem name tried to join, but was ignored, expected [{}] but was [{}]",
+        selfAddress.system, address.system)
+    else if (!latestGossip.members.exists(_.address == address)) {
       // wipe our state since a node that joins a cluster must be empty
-      latestGossip = Gossip()
+      latestGossip = Gossip.empty
       // wipe the failure detector since we are starting fresh and shouldn't care about the past
       failureDetector.reset()
       // wipe the publisher since we are starting fresh
       publisher ! PublishStart
 
       publish(latestGossip)
-      heartbeatSender ! JoinInProgress(address, Deadline.now + JoinTimeout)
 
       context.become(initialized)
       if (address == selfAddress)
         joining(address)
       else
-        coreSender ! SendClusterMessage(address, ClusterUserAction.Join(selfAddress))
+        clusterCore(address) ! ClusterUserAction.Join(selfAddress)
     }
   }
 
@@ -331,7 +337,6 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
       log.debug("Cluster Node [{}] - Node [{}] is JOINING", selfAddress, node)
       // treat join as initial heartbeat, so that it becomes unavailable if nothing more happens
       if (node != selfAddress) {
-        failureDetector heartbeat node
         gossipTo(node)
       }
 
@@ -377,7 +382,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
   def removing(address: Address): Unit = {
     log.info("Cluster Node [{}] - Node has been REMOVED by the leader - shutting down...", selfAddress)
     // just cleaning up the gossip state
-    latestGossip = Gossip()
+    latestGossip = Gossip.empty
     publish(latestGossip)
     context.become(removed)
     // make sure the final (removed) state is published
@@ -494,7 +499,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
         val rate = mergeRate(stats.mergeConflictCount)
 
         if (rate <= MaxGossipMergeRate)
-          coreSender ! SendClusterMessage(to = localGossip.leader.get, msg = GossipMergeConflict(GossipEnvelope(selfAddress, localGossip), envelope))
+          localGossip.leader foreach { clusterCore(_) ! GossipMergeConflict(GossipEnvelope(selfAddress, localGossip), envelope) }
         else
           log.debug("Skipping gossip merge conflict due to rate [{}] / s ", rate)
 
@@ -709,18 +714,14 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
         removedMembers foreach { member ⇒
           val address = member.address
           log.info("Cluster Node [{}] - Leader is moving node [{}] from EXITING to REMOVED - and removing node from node ring", selfAddress, address)
-          coreSender ! SendClusterMessage(
-            to = address,
-            msg = ClusterLeaderAction.Remove(address))
+          clusterCore(address) ! ClusterLeaderAction.Remove(address)
         }
 
         //  tell all exiting members to exit
         exitingMembers foreach { member ⇒
           val address = member.address
           log.info("Cluster Node [{}] - Leader is moving node [{}] from LEAVING to EXITING", selfAddress, address)
-          coreSender ! SendClusterMessage(
-            to = address,
-            msg = ClusterLeaderAction.Exit(address)) // FIXME should use ? to await completion of handoff?
+          clusterCore(address) ! ClusterLeaderAction.Exit(address) // FIXME should use ? to await completion of handoff?
         }
 
         // log the auto-downing of the unreachable nodes
@@ -800,8 +801,8 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
   def oneWayGossipTo(address: Address): Unit =
     gossipTo(address, GossipEnvelope(selfAddress, latestGossip, conversation = false))
 
-  def gossipTo(address: Address, gossipMsg: GossipEnvelope): Unit = if (address != selfAddress)
-    coreSender ! SendClusterMessage(address, gossipMsg)
+  def gossipTo(address: Address, gossipMsg: GossipEnvelope): Unit =
+    if (address != selfAddress) clusterCore(address) ! gossipMsg
 
   def publish(newGossip: Gossip): Unit = {
     publisher ! PublishChanges(newGossip)
@@ -866,27 +867,6 @@ private[cluster] final class JoinSeedNodeProcess(seedNodes: immutable.IndexedSeq
   def done: Actor.Receive = {
     case InitJoinAck(_) ⇒ // already received one, skip rest
     case ReceiveTimeout ⇒ context.stop(self)
-  }
-}
-
-/**
- * INTERNAL API.
- */
-private[cluster] final class ClusterCoreSender extends Actor with ActorLogging {
-  import InternalClusterAction._
-
-  val selfAddress = Cluster(context.system).selfAddress
-
-  /**
-   * Looks up and returns the remote cluster command connection for the specific address.
-   */
-  private def clusterCoreConnectionFor(address: Address): ActorRef =
-    context.actorFor(RootActorPath(address) / "system" / "cluster" / "core")
-
-  def receive = {
-    case SendClusterMessage(to, msg) ⇒
-      log.debug("Cluster Node [{}] - Trying to send [{}] to [{}]", selfAddress, msg.getClass.getSimpleName, to)
-      clusterCoreConnectionFor(to) ! msg
   }
 }
 

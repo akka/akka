@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -11,8 +11,8 @@ import akka.util.{ Switch, Helpers }
 import akka.japi.Util.immutableSeq
 import akka.util.Collections.EmptyImmutableSeq
 import scala.util.{ Success, Failure }
-import scala.concurrent.{ Future, Promise }
 import java.util.concurrent.atomic.AtomicLong
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -51,8 +51,8 @@ trait ActorRefProvider {
    */
   def settings: ActorSystem.Settings
 
-  //FIXME WHY IS THIS HERE?
-  def dispatcher: MessageDispatcher
+  //FIXME Only here because of AskSupport, should be dealt with
+  def dispatcher: ExecutionContext
 
   /**
    * Initialization of an ActorRefProvider happens in two steps: first
@@ -169,7 +169,7 @@ trait ActorRefFactory {
   /**
    * Returns the default MessageDispatcher associated with this ActorRefFactory
    */
-  implicit def dispatcher: MessageDispatcher
+  implicit def dispatcher: ExecutionContext
 
   /**
    * Father of all children created by this interface.
@@ -326,13 +326,15 @@ private[akka] object SystemGuardian {
  *
  * Depending on this class is not supported, only the [[ActorRefProvider]] interface is supported.
  */
-class LocalActorRefProvider(
+class LocalActorRefProvider private[akka] (
   _systemName: String,
   override val settings: ActorSystem.Settings,
   val eventStream: EventStream,
   override val scheduler: Scheduler,
   val dynamicAccess: DynamicAccess,
-  override val deployer: Deployer) extends ActorRefProvider {
+  override val deployer: Deployer,
+  _deadLetters: Option[ActorPath ⇒ InternalActorRef])
+  extends ActorRefProvider {
 
   // this is the constructor needed for reflectively instantiating the provider
   def this(_systemName: String,
@@ -345,13 +347,15 @@ class LocalActorRefProvider(
       eventStream,
       scheduler,
       dynamicAccess,
-      new Deployer(settings, dynamicAccess))
+      new Deployer(settings, dynamicAccess),
+      None)
 
   override val rootPath: ActorPath = RootActorPath(Address("akka", _systemName))
 
   private[akka] val log: LoggingAdapter = Logging(eventStream, "LocalActorRefProvider(" + rootPath.address + ")")
 
-  override val deadLetters: InternalActorRef = new DeadLetterActorRef(this, rootPath / "deadLetters", eventStream)
+  override val deadLetters: InternalActorRef =
+    _deadLetters.getOrElse((p: ActorPath) ⇒ new DeadLetterActorRef(this, p, eventStream)).apply(rootPath / "deadLetters")
 
   /*
    * generate name for temporary actor refs
@@ -382,7 +386,7 @@ class LocalActorRefProvider(
     override def isTerminated: Boolean = stopped.isOn
 
     override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = stopped.ifOff(message match {
-      case Failed(ex, _) if sender ne null ⇒ causeOfTermination = Some(ex); sender.asInstanceOf[InternalActorRef].stop()
+      case Failed(ex, _) if sender ne null ⇒ { causeOfTermination = Some(ex); sender.asInstanceOf[InternalActorRef].stop() }
       case NullMessage                     ⇒ // do nothing
       case _                               ⇒ log.error(this + " received unexpected message [" + message + "]")
     })
@@ -449,10 +453,11 @@ class LocalActorRefProvider(
       stopWhenAllTerminationHooksDone()
     }
 
-    def stopWhenAllTerminationHooksDone(): Unit = if (terminationHooks.isEmpty) {
-      eventStream.stopDefaultLoggers()
-      context.stop(self)
-    }
+    def stopWhenAllTerminationHooksDone(): Unit =
+      if (terminationHooks.isEmpty) {
+        eventStream.stopDefaultLoggers()
+        context.stop(self)
+      }
 
     // guardian MUST NOT lose its children during restart
     override def preRestart(cause: Throwable, msg: Option[Any]) {}
@@ -468,7 +473,7 @@ class LocalActorRefProvider(
   @volatile
   private var system: ActorSystemImpl = _
 
-  def dispatcher: MessageDispatcher = system.dispatcher
+  def dispatcher: ExecutionContext = system.dispatcher
 
   lazy val terminationPromise: Promise[Unit] = Promise[Unit]()
 
@@ -549,6 +554,7 @@ class LocalActorRefProvider(
 
   def init(_system: ActorSystemImpl) {
     system = _system
+    rootGuardian.start()
     // chain death watchers so that killing guardian stops the application
     systemGuardian.sendSystemMessage(Watch(guardian, systemGuardian))
     rootGuardian.sendSystemMessage(Watch(systemGuardian, rootGuardian))

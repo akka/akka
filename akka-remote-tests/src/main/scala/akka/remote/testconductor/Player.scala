@@ -52,12 +52,16 @@ trait Player { this: TestConductorExt ⇒
     val a = system.actorOf(Props(new Actor {
       var waiting: ActorRef = _
       def receive = {
-        case fsm: ActorRef                        ⇒ waiting = sender; fsm ! SubscribeTransitionCallBack(self)
+        case fsm: ActorRef ⇒
+          waiting = sender; fsm ! SubscribeTransitionCallBack(self)
         case Transition(_, Connecting, AwaitDone) ⇒ // step 1, not there yet
-        case Transition(_, AwaitDone, Connected)  ⇒ waiting ! Done; context stop self
-        case t: Transition[_]                     ⇒ waiting ! Status.Failure(new RuntimeException("unexpected transition: " + t)); context stop self
-        case CurrentState(_, Connected)           ⇒ waiting ! Done; context stop self
-        case _: CurrentState[_]                   ⇒
+        case Transition(_, AwaitDone, Connected) ⇒
+          waiting ! Done; context stop self
+        case t: Transition[_] ⇒
+          waiting ! Status.Failure(new RuntimeException("unexpected transition: " + t)); context stop self
+        case CurrentState(_, Connected) ⇒
+          waiting ! Done; context stop self
+        case _: CurrentState[_] ⇒
       }
     }))
 
@@ -218,7 +222,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
           else if (t.rateMBit == 0.0f) Blackhole
           // Conversion needed as the TokenBucket measures in octets: 125000 Octets/s = 1Mbit/s
           // FIXME: Initial capacity should be carefully chosen
-          else TokenBucket(capacity = 1000, tokensPerSecond = t.rateMBit * 125000.0, lastSend = 0, availableTokens = 0)
+          else TokenBucket(capacity = 1000, tokensPerSecond = t.rateMBit * 125000.0, nanoTimeOfLastSend = 0, availableTokens = 0)
 
           val cmdFuture = TestConductor().transport.managementCommand(SetThrottle(t.target, t.direction, mode))
 
@@ -309,6 +313,7 @@ private[akka] class PlayerHandler(
     val channel = event.getChannel
     log.debug("disconnected from {}", getAddrString(channel))
     fsm ! PoisonPill
+    RemoteConnection.shutdown(channel)
   }
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {

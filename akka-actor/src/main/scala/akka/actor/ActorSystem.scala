@@ -1,25 +1,24 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
 
+import java.io.Closeable
+import java.util.concurrent.{ ConcurrentHashMap, ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import com.typesafe.config.{ Config, ConfigFactory }
 import akka.event._
 import akka.dispatch._
 import akka.japi.Util.immutableSeq
-import com.typesafe.config.{ Config, ConfigFactory }
+import akka.actor.dungeon.ChildrenContainer
+import akka.util._
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.{ FiniteDuration, Duration }
-import scala.concurrent.{ Await, Awaitable, CanAwait, Future }
+import scala.concurrent.{ Await, Awaitable, CanAwait, Future, ExecutionContext }
 import scala.util.{ Failure, Success }
-import scala.util.control.NonFatal
-import akka.util._
-import java.io.Closeable
-import akka.util.internal.{ HashedWheelTimer, ConcurrentIdentityHashMap }
-import java.util.concurrent.{ ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.actor.dungeon.ChildrenContainer
+import scala.util.control.{ NonFatal, ControlThrowable }
 
 object ActorSystem {
 
@@ -161,8 +160,7 @@ object ActorSystem {
       case x  ⇒ Some(x)
     }
 
-    final val SchedulerTickDuration: FiniteDuration = Duration(getMilliseconds("akka.scheduler.tick-duration"), MILLISECONDS)
-    final val SchedulerTicksPerWheel: Int = getInt("akka.scheduler.ticks-per-wheel")
+    final val SchedulerClass: String = getString("akka.scheduler.implementation")
     final val Daemonicity: Boolean = getBoolean("akka.daemonic")
     final val JvmExitOnFatalError: Boolean = getBoolean("akka.jvm-exit-on-fatal-error")
 
@@ -320,7 +318,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * explicitly.
    * Importing this member will place the default MessageDispatcher in scope.
    */
-  implicit def dispatcher: MessageDispatcher
+  implicit def dispatcher: ExecutionContext
 
   /**
    * Register a block of code (callback) to run after ActorSystem.shutdown has been issued and
@@ -465,7 +463,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     new Thread.UncaughtExceptionHandler() {
       def uncaughtException(thread: Thread, cause: Throwable): Unit = {
         cause match {
-          case NonFatal(_) | _: InterruptedException ⇒ log.error(cause, "Uncaught error from thread [{}]", thread.getName)
+          case NonFatal(_) | _: InterruptedException | _: NotImplementedError | _: ControlThrowable ⇒ log.error(cause, "Uncaught error from thread [{}]", thread.getName)
           case _ ⇒
             if (settings.JvmExitOnFatalError) {
               try {
@@ -566,7 +564,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(
     threadFactory, eventStream, deadLetterMailbox, scheduler, dynamicAccess, settings))
 
-  val dispatcher: MessageDispatcher = dispatchers.defaultGlobalDispatcher
+  val dispatcher: ExecutionContext = dispatchers.defaultGlobalDispatcher
 
   def terminationFuture: Future[Unit] = provider.terminationFuture
   def lookupRoot: InternalActorRef = provider.rootGuardian
@@ -601,6 +599,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   def shutdown(): Unit = guardian.stop()
 
+  //#create-scheduler
   /**
    * Create the scheduler service. This one needs one special behavior: if
    * Closeable, it MUST execute all outstanding tasks upon .close() in order
@@ -611,12 +610,11 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
    * executed upon close(), the task may execute before its timeout.
    */
   protected def createScheduler(): Scheduler =
-    new DefaultScheduler(
-      new HashedWheelTimer(log,
-        threadFactory.withName(threadFactory.name + "-scheduler"),
-        settings.SchedulerTickDuration,
-        settings.SchedulerTicksPerWheel),
-      log)
+    dynamicAccess.createInstanceFor[Scheduler](settings.SchedulerClass, immutable.Seq(
+      classOf[Config] -> settings.config,
+      classOf[LoggingAdapter] -> log,
+      classOf[ThreadFactory] -> threadFactory.withName(threadFactory.name + "-scheduler"))).get
+  //#create-scheduler
 
   /*
    * This is called after the last actor has signaled its termination, i.e.
@@ -628,15 +626,17 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     case _            ⇒
   }
 
-  private val extensions = new ConcurrentIdentityHashMap[ExtensionId[_], AnyRef]
+  private val extensions = new ConcurrentHashMap[ExtensionId[_], AnyRef]
 
   /**
    * Returns any extension registered to the specified Extension or returns null if not registered
    */
   @tailrec
   private def findExtension[T <: Extension](ext: ExtensionId[T]): T = extensions.get(ext) match {
-    case c: CountDownLatch ⇒ c.await(); findExtension(ext) //Registration in process, await completion and retry
-    case other             ⇒ other.asInstanceOf[T] //could be a T or null, in which case we return the null as T
+    case c: CountDownLatch ⇒
+      c.await(); findExtension(ext) //Registration in process, await completion and retry
+    case other ⇒
+      other.asInstanceOf[T] //could be a T or null, in which case we return the null as T
   }
 
   @tailrec

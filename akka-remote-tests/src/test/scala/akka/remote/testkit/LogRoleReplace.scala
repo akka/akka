@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote.testkit
@@ -92,7 +92,7 @@ object LogRoleReplace extends ClipboardOwner {
 
 class LogRoleReplace {
 
-  private val RoleStarted = """\[([\w\-]+)\].*Role \[([\w]+)\] started with address \[akka://.*@([\w\-\.]+):([0-9]+)\]""".r
+  private val RoleStarted = """\[([\w\-]+)\].*Role \[([\w]+)\] started with address \[[\w\-\+\.]+://.*@([\w\-\.]+):([0-9]+)\]""".r
   private val ColorCode = """\u001B?\[[0-9]+m"""
 
   private var replacements: Map[String, String] = Map.empty
@@ -100,10 +100,11 @@ class LogRoleReplace {
   def process(in: BufferedReader, out: PrintWriter): Unit = {
 
     @tailrec
-    def processLines(line: String): Unit = if (line ne null) {
-      out.println(processLine(line))
-      processLines(in.readLine)
-    }
+    def processLines(line: String): Unit =
+      if (line ne null) {
+        out.println(processLine(line))
+        processLines(in.readLine)
+      }
 
     processLines(in.readLine())
   }

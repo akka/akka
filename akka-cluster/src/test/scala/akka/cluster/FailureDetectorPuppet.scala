@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -49,6 +49,8 @@ class FailureDetectorPuppet(system: ActorSystem, settings: ClusterSettings) exte
       log.debug("isAvailable: Cluster node IS available [{}]", connection)
       false
   }
+
+  override def isMonitoring(connection: Address): Boolean = connections.contains(connection)
 
   def heartbeat(connection: Address): Unit = log.debug("Heart beat from cluster node[{}]", connection)
 

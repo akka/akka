@@ -25,6 +25,12 @@ Search                               Replace with
 If you need to convert from Java to ``scala.collection.immutable.Seq`` or ``scala.collection.immutable.Iterable`` you should use ``akka.japi.Util.immutableSeq(…)``,
 and if you need to convert from Scala you can simply switch to using immutable collections yourself or use the ``to[immutable.<collection-type>]`` method.
 
+ActorContext & ActorRefFactory dispatcher
+=========================================
+
+The return type of ``ActorContext``'s and ``ActorRefFactory``'s ``dispatcher``-method now returns ``ExecutionContext`` instead of ``MessageDispatcher``.
+
+
 API changes to FSM and TestFSMRef
 =================================
 
@@ -53,3 +59,42 @@ ZeroMQ ByteString
 ``akka.zeromq.Frame`` and the use of ``Seq[Byte]`` in the API has been removed and is replaced by ``akka.util.ByteString``.
 
 ``ZMQMessage.firstFrameAsString`` has been removed, please use ``ZMQMessage.frames`` or ``ZMQMessage.frame(int)`` to access the frames.
+
+Brand new Agents
+================
+
+Akka's ``Agent`` has been rewritten to improve the API and to remove the need to manually ``close`` an Agent.
+The Java API has also been harmonized so both Java and Scala call the same methods.
+
+======================================================= =======================================================
+Old Java API                                            New Java API
+======================================================= =======================================================
+``new Agent<type>(value, actorSystem)``                   ``new Agent<type>(value, executionContext)``
+``agent.update(newValue)``                                ``agent.send(newValue)``
+``agent.future(Timeout)``                                 ``agent.future()``
+``agent.await(Timeout)``                                  ``Await.result(agent.future(), Timeout)``
+``agent.send(Function)``                                  ``agent.send(Mapper)``
+``agent.sendOff(Function, ExecutionContext)``             ``agent.sendOff(Mapper, ExecutionContext)``
+``agent.alter(Function, Timeout)``                        ``agent.alter(Mapper)``
+``agent.alterOff(Function, Timeout, ExecutionContext)``   ``agent.alter(Mapper, ExecutionContext)``
+``agent.map(Function)``                                   ``agent.map(Mapper)``
+``agent.flatMap(Function)``                               ``agent.flatMap(Mapper)``
+``agent.foreach(Procedure)``                              ``agent.foreach(Foreach)``
+``agent.suspend()``                                       ``No replacement, pointless feature``
+``agent.resume()``                                        ``No replacement, pointless feature``
+``agent.close()``                                         ``No replacement, not needed in new implementation``
+======================================================= =======================================================
+
+
+======================================================== ========================================================
+Old Scala API                                            New Scala API
+======================================================== ========================================================
+``Agent[T](value)(implicit ActorSystem)``                  ``Agent[T](value)(implicit ExecutionContext)``
+``agent.update(newValue)``                                 ``agent.send(newValue)``
+``agent.alterOff(Function1)(Timeout, ExecutionContext)``   ``agent.alterOff(Function1)(ExecutionContext)``
+``agent.await(Timeout)``                                   ``Await.result(agent.future, Timeout)``
+``agent.future(Timeout)``                                  ``agent.future``
+``agent.suspend()``                                        ``No replacement, pointless feature``
+``agent.resume()``                                         ``No replacement, pointless feature``
+``agent.close()``                                          ``No replacement, not needed in new implementation``
+======================================================== ========================================================

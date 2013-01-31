@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -350,7 +350,7 @@ private[akka] class LocalActorRef private[akka] (
 
   override def sendSystemMessage(message: SystemMessage): Unit = actorCell.sendSystemMessage(message)
 
-  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = actorCell.tell(message, sender)
+  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = actorCell.sendMessage(message, sender)
 
   override def restart(cause: Throwable): Unit = actorCell.restart(cause)
 
@@ -446,7 +446,10 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
 
   override def isTerminated(): Boolean = true
 
-  override def sendSystemMessage(message: SystemMessage): Unit = specialHandle(message)
+  override def sendSystemMessage(message: SystemMessage): Unit = {
+    if (Mailbox.debug) println(s"ELAR $path having enqueued $message")
+    specialHandle(message)
+  }
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = message match {
     case d: DeadLetter ⇒
@@ -478,7 +481,8 @@ private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
 
   override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
     case d: DeadLetter ⇒ if (!specialHandle(d.message)) eventStream.publish(d)
-    case _             ⇒ if (!specialHandle(message)) eventStream.publish(DeadLetter(message, sender, this))
+    case _ ⇒ if (!specialHandle(message))
+      eventStream.publish(DeadLetter(message, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
   }
 
   override protected def specialHandle(msg: Any): Boolean = msg match {

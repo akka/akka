@@ -1,4 +1,3 @@
-
 .. _message-delivery-guarantees:
 
 ###########################
@@ -171,7 +170,7 @@ Reliability of Local Message Sends
 ----------------------------------
 
 The Akka test suite relies on not losing messages in the local context (and for
-non-error condition tests also for remote deployment), meaning that the we
+non-error condition tests also for remote deployment), meaning that we
 actually do apply the best effort to keep our tests stable. A local ``tell``
 operation can however fail for the same reasons as a normal method call can on
 the JVM:

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -24,7 +24,7 @@ case class SplitBrainMultiNodeConfig(failureDetectorPuppet: Boolean) extends Mul
 
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
-        akka.remoting.retry-latch-closed-for = 3 s
+        akka.remote.retry-latch-closed-for = 3 s
         akka.cluster {
           auto-down = on
           failure-detector.threshold = 4
@@ -59,7 +59,7 @@ abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
   val side1 = Vector(first, second)
   val side2 = Vector(third, fourth, fifth)
 
-  "A cluster of 5 members" ignore {
+  "A cluster of 5 members" must {
 
     "reach initial convergence" taggedAs LongRunningTest in {
       awaitClusterUp(first, second, third, fourth, fifth)
@@ -87,10 +87,10 @@ abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
       }
 
       runOn(side1: _*) {
-        awaitCond(clusterView.unreachableMembers.map(_.address) == (side2.toSet map address), 20 seconds)
+        awaitCond(clusterView.unreachableMembers.map(_.address) == (side2.toSet map address), 25 seconds)
       }
       runOn(side2: _*) {
-        awaitCond(clusterView.unreachableMembers.map(_.address) == (side1.toSet map address), 20 seconds)
+        awaitCond(clusterView.unreachableMembers.map(_.address) == (side1.toSet map address), 25 seconds)
       }
 
       enterBarrier("after-2")
@@ -102,7 +102,7 @@ abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
         // auto-down = on
         awaitCond(clusterView.unreachableMembers.forall(m ⇒ m.status == MemberStatus.Down), 15 seconds)
         clusterView.unreachableMembers.map(_.address) must be(side2.toSet map address)
-        awaitUpConvergence(side1.size, side2 map address)
+        awaitUpConvergence(side1.size, side2.toSet map address)
         assertLeader(side1: _*)
       }
 
@@ -110,7 +110,7 @@ abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
         // auto-down = on
         awaitCond(clusterView.unreachableMembers.forall(m ⇒ m.status == MemberStatus.Down), 15 seconds)
         clusterView.unreachableMembers.map(_.address) must be(side1.toSet map address)
-        awaitUpConvergence(side2.size, side1 map address)
+        awaitUpConvergence(side2.size, side1.toSet map address)
         assertLeader(side2: _*)
       }
 

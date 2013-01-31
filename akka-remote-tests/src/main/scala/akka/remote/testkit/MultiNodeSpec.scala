@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote.testkit
 
@@ -63,7 +63,7 @@ abstract class MultiNodeConfig {
           receive = on
           fsm = on
         }
-        akka.remoting.log-remote-lifecycle-events = on
+        akka.remote.log-remote-lifecycle-events = on
         """)
     else
       ConfigFactory.empty
@@ -87,8 +87,8 @@ abstract class MultiNodeConfig {
 
   /**
    * To be able to use `blackhole`, `passThrough`, and `throttle` you must
-   * activate the TestConductorTranport by specifying
-   * `testTransport(on = true)` in your MultiNodeConfig.
+   * activate the failure injector and throttler transport adapters by
+   * specifying `testTransport(on = true)` in your MultiNodeConfig.
    */
   def testTransport(on: Boolean): Unit = _testTransport = on
 
@@ -101,8 +101,8 @@ abstract class MultiNodeConfig {
     val transportConfig =
       if (_testTransport) ConfigFactory.parseString(
         """
-           akka.remoting.transports.tcp.applied-adapters = [gremlin, trttl]
-           akka.remoting.retry-gate-closed-for = 1 s
+           akka.remote.netty.tcp.applied-adapters = [trttl, gremlin]
+           akka.remote.retry-gate-closed-for = 1 s
         """)
       else ConfigFactory.empty
 
@@ -194,8 +194,8 @@ object MultiNodeSpec {
 
   private[testkit] val nodeConfig = mapToConfig(Map(
     "akka.actor.provider" -> "akka.remote.RemoteActorRefProvider",
-    "akka.remoting.transports.tcp.hostname" -> selfName,
-    "akka.remoting.transports.tcp.port" -> selfPort))
+    "akka.remote.netty.tcp.hostname" -> selfName,
+    "akka.remote.netty.tcp.port" -> selfPort))
 
   private[testkit] val baseConfig: Config = ConfigFactory.parseString("""
       akka {
@@ -272,7 +272,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
         if (verifySystemShutdown) throw new RuntimeException(msg)
         else system.log.warning(msg)
     }
-    atTermination()
+    afterTermination()
   }
 
   /**
@@ -293,7 +293,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
   /**
    * Override this method to do something when the whole test is terminating.
    */
-  protected def atTermination(): Unit = {}
+  protected def afterTermination(): Unit = {}
 
   /**
    * All registered roles

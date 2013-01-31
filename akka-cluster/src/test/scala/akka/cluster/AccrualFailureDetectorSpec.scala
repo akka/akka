@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -24,8 +24,8 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
   }
 
   "An AccrualFailureDetector" must {
-    val conn = Address("tcp.akka", "", "localhost", 2552)
-    val conn2 = Address("tcp.akka", "", "localhost", 2553)
+    val conn = Address("akka.tcp", "", "localhost", 2552)
+    val conn2 = Address("akka.tcp", "", "localhost", 2553)
 
     def fakeTimeGenerator(timeIntervals: immutable.Seq[Long]): () ⇒ Long = {
       var times = timeIntervals.tail.foldLeft(List[Long](timeIntervals.head))((acc, c) ⇒ acc ::: List[Long](acc.last + c))

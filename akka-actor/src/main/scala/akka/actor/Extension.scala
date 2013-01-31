@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
@@ -52,6 +52,9 @@ trait ExtensionId[T <: Extension] {
    * internal use only.
    */
   def createExtension(system: ExtendedActorSystem): T
+
+  override final def hashCode: Int = System.identityHashCode(this)
+  override final def equals(other: Any): Boolean = this eq other.asInstanceOf[AnyRef]
 }
 
 /**

@@ -123,6 +123,15 @@ And then using it:
 
 .. includecode:: ../java/code/docs/dispatcher/DispatcherDocTestBase.java#defining-pinned-dispatcher
 
+Note that ``thread-pool-executor`` configuration as per the above ``my-thread-pool-dispatcher`` example is
+NOT applicable. This is because every actor will have its own thread pool when using ``PinnedDispatcher``,
+and that pool will have only one thread.
+
+Note that it's not guaranteed that the *same* thread is used over time, since the core pool timeout
+is used for ``PinnedDispatcher`` to keep resource usage down in case of idle actors. To use the same
+thread all the time you need to add ``thread-pool-executor.allow-core-timeout=off`` to the
+configuration of the ``PinnedDispatcher``.
+
 Mailboxes
 ---------
 

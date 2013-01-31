@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -106,22 +106,6 @@ abstract class ClusterDeathWatchSpec
 
     }
 
-    "receive Terminated when watched node is unknown host" taggedAs LongRunningTest in {
-      runOn(first) {
-        val path = RootActorPath(Address("akka", system.name, "unknownhost", 2552)) / "user" / "subject"
-        system.actorOf(Props(new Actor {
-          context.watch(context.actorFor(path))
-          def receive = {
-            case t: Terminated ⇒ testActor ! t.actor.path
-          }
-        }), name = "observer2")
-
-        expectMsg(path)
-      }
-
-      enterBarrier("after-2")
-    }
-
     "receive Terminated when watched path doesn't exist" taggedAs LongRunningTest in {
       runOn(first) {
         val path = RootActorPath(second) / "user" / "non-existing"
@@ -135,7 +119,7 @@ abstract class ClusterDeathWatchSpec
         expectMsg(path)
       }
 
-      enterBarrier("after-3")
+      enterBarrier("after-2")
     }
 
     "be able to shutdown system when using remote deployed actor on node that crash" taggedAs LongRunningTest in within(20 seconds) {
@@ -172,7 +156,7 @@ abstract class ClusterDeathWatchSpec
           testConductor.removeNode(fourth)
         }
 
-        enterBarrier("after-4")
+        enterBarrier("after-3")
       }
 
     }

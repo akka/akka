@@ -113,7 +113,15 @@ v2.1::
     case m: NoSuchElementException => 
   }
 
+A ``Promise`` is no longer also a ``Future``, obtain the reference to its Future by calling ``promise.future``.
 
+v2.0::
+
+  Await.result(promise, duration)
+
+v2.1::
+
+  Await.result(promise.future, duration)
 
 API Changes to Future - Java
 ============================
@@ -190,6 +198,16 @@ v2.1::
           sendToTheInternetz(result);
       }
     }, ec);
+
+A ``Promise`` is no longer also a ``Future``, obtain the reference to its Future by calling ``promise.future()``.
+
+v2.0::
+
+  Await.result(promise, duration);
+
+v2.1::
+
+  Await.result(promise.future(), duration);
 
 API changes to DynamicAccess
 ============================

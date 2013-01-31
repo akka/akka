@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -15,6 +15,7 @@ import akka.dispatch.{ Watch, Unwatch, Terminate, SystemMessage, Suspend, Superv
 import akka.event.Logging.{ LogEvent, Debug, Error }
 import akka.japi.Procedure
 import akka.dispatch.NullMessage
+import scala.concurrent.ExecutionContext
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -119,7 +120,7 @@ trait ActorContext extends ActorRefFactory {
    * Returns the dispatcher (MessageDispatcher) that is used for this Actor.
    * Importing this member will place a implicit MessageDispatcher in scope.
    */
-  implicit def dispatcher: MessageDispatcher
+  implicit def dispatcher: ExecutionContext
 
   /**
    * The system that the actor belongs to.
@@ -214,19 +215,19 @@ private[akka] trait Cell {
    */
   def start(): this.type
   /**
-   * Recursively suspend this actor and all its children. Must not throw exceptions.
+   * Recursively suspend this actor and all its children. Is only allowed to throw Fatal Throwables.
    */
   def suspend(): Unit
   /**
-   * Recursively resume this actor and all its children. Must not throw exceptions.
+   * Recursively resume this actor and all its children. Is only allowed to throw Fatal Throwables.
    */
   def resume(causedByFailure: Throwable): Unit
   /**
-   * Restart this actor (will recursively restart or stop all children). Must not throw exceptions.
+   * Restart this actor (will recursively restart or stop all children). Is only allowed to throw Fatal Throwables.
    */
   def restart(cause: Throwable): Unit
   /**
-   * Recursively terminate this actor and all its children. Must not throw exceptions.
+   * Recursively terminate this actor and all its children. Is only allowed to throw Fatal Throwables.
    */
   def stop(): Unit
   /**
@@ -246,16 +247,26 @@ private[akka] trait Cell {
    * Get the stats for the named child, if that exists.
    */
   def getChildByName(name: String): Option[ChildStats]
+
   /**
    * Enqueue a message to be sent to the actor; may or may not actually
    * schedule the actor to run, depending on which type of cell it is.
-   * Must not throw exceptions.
+   * Is only allowed to throw Fatal Throwables.
    */
-  def tell(message: Any, sender: ActorRef): Unit
+  def sendMessage(msg: Envelope): Unit
+
   /**
    * Enqueue a message to be sent to the actor; may or may not actually
    * schedule the actor to run, depending on which type of cell it is.
-   * Must not throw exceptions.
+   * Is only allowed to throw Fatal Throwables.
+   */
+  final def sendMessage(message: Any, sender: ActorRef): Unit =
+    sendMessage(Envelope(message, sender, system))
+
+  /**
+   * Enqueue a message to be sent to the actor; may or may not actually
+   * schedule the actor to run, depending on which type of cell it is.
+   * Is only allowed to throw Fatal Throwables.
    */
   def sendSystemMessage(msg: SystemMessage): Unit
   /**
@@ -286,8 +297,8 @@ private[akka] object ActorCell {
   }
 
   final val emptyCancellable: Cancellable = new Cancellable {
-    def isCancelled = false
-    def cancel() {}
+    def isCancelled: Boolean = false
+    def cancel(): Boolean = false
   }
 
   final val emptyBehaviorStack: List[Actor.Receive] = Nil
@@ -392,35 +403,22 @@ private[akka] class ActorCell(
     checkReceiveTimeout // Reschedule receive timeout
   }
 
-  def autoReceiveMessage(msg: Envelope): Unit = if (msg.message != NullMessage) {
-    if (system.settings.DebugAutoReceive)
-      publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
+  def autoReceiveMessage(msg: Envelope): Unit =
+    if (msg.message != NullMessage) {
+      if (system.settings.DebugAutoReceive)
+        publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
-    msg.message match {
-      case Failed(cause, uid) ⇒ handleFailure(sender, cause, uid)
-      case t: Terminated ⇒
-        if (t.addressTerminated) removeChildWhenToAddressTerminated(t.actor)
-        watchedActorTerminated(t)
-      case AddressTerminated(address) ⇒ addressTerminated(address)
-      case Kill                       ⇒ throw new ActorKilledException("Kill")
-      case PoisonPill                 ⇒ self.stop()
-      case SelectParent(m)            ⇒ parent.tell(m, msg.sender)
-      case SelectChildName(name, m)   ⇒ getChildByName(name) match { case Some(c: ChildRestartStats) ⇒ c.child.tell(m, msg.sender); case _ ⇒ }
-      case SelectChildPattern(p, m)   ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
+      msg.message match {
+        case Failed(cause, uid)         ⇒ handleFailure(sender, cause, uid)
+        case t: Terminated              ⇒ watchedActorTerminated(t)
+        case AddressTerminated(address) ⇒ addressTerminated(address)
+        case Kill                       ⇒ throw new ActorKilledException("Kill")
+        case PoisonPill                 ⇒ self.stop()
+        case SelectParent(m)            ⇒ parent.tell(m, msg.sender)
+        case SelectChildName(name, m)   ⇒ getChildByName(name) match { case Some(c: ChildRestartStats) ⇒ c.child.tell(m, msg.sender); case _ ⇒ }
+        case SelectChildPattern(p, m)   ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
+      }
     }
-  }
-
-  /**
-   * When a parent is watching a child and it terminates due to AddressTerminated,
-   * it should be removed to support immediate creation of child with same name.
-   *
-   * For remote deployed actors ChildTerminated should be sent to the supervisor
-   * to clean up child references of remote deployed actors when remote node
-   * goes down, i.e. triggered by AddressTerminated, but that is the responsibility
-   * of the ActorRefProvider to handle that scenario.
-   */
-  private def removeChildWhenToAddressTerminated(child: ActorRef): Unit =
-    childrenRefs.getByRef(child) foreach { crs ⇒ removeChildAndGetStateChange(crs.child) }
 
   final def receiveMessage(msg: Any): Unit = behaviorStack.head.applyOrElse(msg, actor.unhandled)
 
@@ -497,16 +495,17 @@ private[akka] class ActorCell(
         }
     }
 
-  private def supervise(child: ActorRef, async: Boolean, uid: Int): Unit = if (!isTerminating) {
-    // Supervise is the first thing we get from a new child, so store away the UID for later use in handleFailure()
-    initChild(child) match {
-      case Some(crs) ⇒
-        crs.uid = uid
-        handleSupervise(child, async)
-        if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
-      case None ⇒ publish(Error(self.path.toString, clazz(actor), "received Supervise from unregistered child " + child + ", this will not end well"))
+  private def supervise(child: ActorRef, async: Boolean, uid: Int): Unit =
+    if (!isTerminating) {
+      // Supervise is the first thing we get from a new child, so store away the UID for later use in handleFailure()
+      initChild(child) match {
+        case Some(crs) ⇒
+          crs.uid = uid
+          handleSupervise(child, async)
+          if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
+        case None ⇒ publish(Error(self.path.toString, clazz(actor), "received Supervise from unregistered child " + child + ", this will not end well"))
+      }
     }
-  }
 
   // future extension point
   protected def handleSupervise(child: ActorRef, async: Boolean): Unit = child match {

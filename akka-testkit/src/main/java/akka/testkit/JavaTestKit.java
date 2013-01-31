@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit;
 
@@ -135,7 +135,15 @@ public class JavaTestKit {
         public Object apply() {
           return cond();
         }
-      }, max, interval);
+      }, max, interval, p.awaitCond$default$4());
+    }
+    
+    public AwaitCond(Duration max, Duration interval, String message) {
+      p.awaitCond(new AbstractFunction0<Object>() {
+        public Object apply() {
+          return cond();
+        }
+      }, max, interval, message);
     }
   }
 

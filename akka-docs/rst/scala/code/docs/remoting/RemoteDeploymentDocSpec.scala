@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.remoting
 
@@ -20,15 +20,15 @@ object RemoteDeploymentDocSpec {
 
 class RemoteDeploymentDocSpec extends AkkaSpec("""
     akka.actor.provider = "akka.remote.RemoteActorRefProvider"
-    akka.remoting.transports.tcp.port = 0
+    akka.remote.netty.tcp.port = 0
 """) with ImplicitSender {
 
   import RemoteDeploymentDocSpec._
 
   val other = ActorSystem("remote", system.settings.config)
-  val address = other.asInstanceOf[ExtendedActorSystem].provider.getExternalAddressFor(Address("tcp.akka", "s", "host", 1)).get
+  val address = other.asInstanceOf[ExtendedActorSystem].provider.getExternalAddressFor(Address("akka.tcp", "s", "host", 1)).get
 
-  override def atTermination() { other.shutdown() }
+  override def afterTermination() { other.shutdown() }
 
   "demonstrate programmatic deployment" in {
     //#deploy
@@ -42,8 +42,8 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
 
   "demonstrate address extractor" in {
     //#make-address
-    val one = AddressFromURIString("tcp.akka://sys@host:1234")
-    val two = Address("tcp.akka", "sys", "host", 1234) // this gives the same
+    val one = AddressFromURIString("akka.tcp://sys@host:1234")
+    val two = Address("akka.tcp", "sys", "host", 1234) // this gives the same
     //#make-address
     one must be === two
   }

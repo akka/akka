@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote
 
 import akka.{ OnlyCauseStackTrace, AkkaException }
@@ -53,9 +56,7 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
           if (LogReceive) log.debug("received daemon message {}", msgLog)
           payload match {
             case m @ (_: DaemonMsg | _: Terminated) ⇒
-              try remoteDaemon ! m catch {
-                case NonFatal(e) ⇒ log.error(e, "exception while processing remote command {} from {}", m, sender)
-              }
+              remoteDaemon ! m
             case x ⇒ log.debug("remoteDaemon received illegal message {} from {}", x, sender)
           }
         }
@@ -105,6 +106,7 @@ private[remote] object EndpointWriter {
   case object Initializing extends State
   case object Buffering extends State
   case object Writing extends State
+  case object Handoff extends State
 }
 
 private[remote] class EndpointException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with OnlyCauseStackTrace {
@@ -119,14 +121,14 @@ private[remote] class EndpointWriter(
   val localAddress: Address,
   val remoteAddress: Address,
   val transport: Transport,
-  val settings: RemotingSettings,
+  val settings: RemoteSettings,
   val codec: AkkaPduCodec) extends Actor with Stash with FSM[EndpointWriter.State, Unit] {
 
   import EndpointWriter._
   import context.dispatcher
 
   val extendedSystem: ExtendedActorSystem = context.system.asInstanceOf[ExtendedActorSystem]
-  val eventPublisher = new EventPublisher(context.system, log, settings.LogLifecycleEvents)
+  val eventPublisher = new EventPublisher(context.system, log, settings.LogRemoteLifecycleEvents)
 
   var reader: Option[ActorRef] = None
   var handle: Option[AssociationHandle] = handleOrActive // FIXME: refactor into state data
@@ -136,7 +138,7 @@ private[remote] class EndpointWriter(
 
   val msgDispatch = new DefaultMessageDispatcher(extendedSystem, RARP(extendedSystem).provider, log)
 
-  def inbound = handle.isDefined
+  var inbound = handle.isDefined
 
   private def publishAndThrow(reason: Throwable): Nothing = {
     try
@@ -147,6 +149,7 @@ private[remote] class EndpointWriter(
 
   override def postRestart(reason: Throwable): Unit = {
     handle = None // Wipe out the possibly injected handle
+    inbound = false
     preStart()
   }
 
@@ -167,7 +170,7 @@ private[remote] class EndpointWriter(
       stash()
       stay()
     case Event(Status.Failure(e: InvalidAssociationException), _) ⇒
-      log.error(e, "Tried to associate with invalid remote address [{}]. " +
+      log.error("Tried to associate with invalid remote address [{}]. " +
         "Address is now quarantined, all messages to this address will be delivered to dead letters.", remoteAddress)
       publishAndThrow(new InvalidAssociation(localAddress, remoteAddress, e))
     case Event(Status.Failure(e), _) ⇒
@@ -207,16 +210,28 @@ private[remote] class EndpointWriter(
       }
   }
 
+  when(Handoff) {
+    case Event(Terminated(_), _) ⇒
+      reader = startReadEndpoint(handle.get)
+      unstashAll()
+      goto(Writing)
+
+    case Event(Send(msg, senderOption, recipient), _) ⇒
+      stash()
+      stay()
+
+    // TakeOver messages are not handled here but inside the whenUnhandled block, because the procedure is exactly the
+    // same. Any outstanding
+  }
+
   whenUnhandled {
     case Event(Terminated(r), _) if Some(r) == reader ⇒ publishAndThrow(new EndpointException("Disassociated"))
     case Event(TakeOver(newHandle), _) ⇒
       // Shutdown old reader
       handle foreach { _.disassociate() }
-      reader foreach { r ⇒ context stop context.unwatch(r) }
+      reader foreach context.stop
       handle = Some(newHandle)
-      reader = startReadEndpoint(newHandle)
-      unstashAll()
-      goto(Writing)
+      goto(Handoff)
   }
 
   onTransition {

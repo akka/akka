@@ -9,7 +9,7 @@ import akka.camel.internal.ActivationProtocol._
 import scala.util.control.NonFatal
 import scala.concurrent.duration._
 import org.apache.camel.ProducerTemplate
-import concurrent.{ Future, ExecutionContext }
+import scala.concurrent.{ Future, ExecutionContext }
 import akka.util.Timeout
 import akka.pattern.ask
 import java.io.InputStream

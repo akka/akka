@@ -1,13 +1,15 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.util
 
 import java.nio.{ ByteBuffer, ByteOrder }
+import java.lang.{ Iterable ⇒ JIterable }
 
 import scala.collection.IndexedSeqOptimized
 import scala.collection.mutable.{ Builder, WrappedArray }
+import scala.collection.immutable
 import scala.collection.immutable.{ IndexedSeq, VectorBuilder }
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
@@ -94,10 +96,12 @@ object ByteString {
 
     private[akka] def toByteString1: ByteString1 = ByteString1(bytes)
 
-    def asByteBuffer: ByteBuffer =
-      toByteString1.asByteBuffer
+    def asByteBuffer: ByteBuffer = toByteString1.asByteBuffer
 
-    def decodeString(charset: String): String = new String(bytes, charset)
+    def asByteBuffers: scala.collection.immutable.Iterable[ByteBuffer] = List(asByteBuffer)
+
+    def decodeString(charset: String): String =
+      if (isEmpty) "" else new String(bytes, charset)
 
     def ++(that: ByteString): ByteString =
       if (that.isEmpty) this
@@ -110,9 +114,10 @@ object ByteString {
   }
 
   private[akka] object ByteString1 {
-    def apply(bytes: Array[Byte]): ByteString1 = new ByteString1(bytes)
+    val empty: ByteString1 = new ByteString1(Array.empty[Byte])
+    def apply(bytes: Array[Byte]): ByteString1 = ByteString1(bytes, 0, bytes.length)
     def apply(bytes: Array[Byte], startIndex: Int, length: Int): ByteString1 =
-      new ByteString1(bytes, startIndex, length)
+      if (length == 0) empty else new ByteString1(bytes, startIndex, length)
   }
 
   /**
@@ -144,6 +149,8 @@ object ByteString {
       if (buffer.remaining < bytes.length) buffer.slice
       else buffer
     }
+
+    def asByteBuffers: scala.collection.immutable.Iterable[ByteBuffer] = List(asByteBuffer)
 
     def decodeString(charset: String): String =
       new String(if (length == bytes.length) bytes else toArray, charset)
@@ -250,6 +257,8 @@ object ByteString {
 
     def asByteBuffer: ByteBuffer = compact.asByteBuffer
 
+    def asByteBuffers: scala.collection.immutable.Iterable[ByteBuffer] = bytestrings map { _.asByteBuffer }
+
     def decodeString(charset: String): String = compact.decodeString(charset)
   }
 
@@ -344,6 +353,25 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
    * if it is not fragmented.
    */
   def asByteBuffer: ByteBuffer
+
+  /**
+   * Returns an immutable Iterable of read-only ByteBuffers that directly wraps this ByteStrings
+   * all fragments. Will always have at least one entry.
+   *
+   * Scala API
+   */
+  def asByteBuffers: immutable.Iterable[ByteBuffer]
+
+  /**
+   * Returns an Iterable of read-only ByteBuffers that directly wraps this ByteStrings
+   * all fragments. Will always have at least one entry.
+   *
+   * Java API
+   */
+  def getByteBuffers(): JIterable[ByteBuffer] = {
+    import scala.collection.JavaConverters.asJavaIterableConverter
+    asByteBuffers.asJava
+  }
 
   /**
    * Creates a new ByteBuffer with a copy of all bytes contained in this

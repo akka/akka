@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka
@@ -14,10 +14,6 @@ package akka
 @SerialVersionUID(1L)
 class AkkaException(message: String, cause: Throwable) extends RuntimeException(message, cause) with Serializable {
   def this(msg: String) = this(msg, null)
-
-  lazy val uuid: String = java.util.UUID.randomUUID().toString
-
-  override def toString(): String = uuid + super.toString()
 }
 
 /**

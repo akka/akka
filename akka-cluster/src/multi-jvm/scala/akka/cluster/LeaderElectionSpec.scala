@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -110,12 +110,12 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
       }
     }
 
-    "be able to 're-elect' a single leader after leader has left" taggedAs LongRunningTest in within(20 seconds) {
+    "be able to 're-elect' a single leader after leader has left" taggedAs LongRunningTest in within(30 seconds) {
       shutdownLeaderAndVerifyNewLeader(alreadyShutdown = 0)
       enterBarrier("after-2")
     }
 
-    "be able to 're-elect' a single leader after leader has left (again)" taggedAs LongRunningTest in within(20 seconds) {
+    "be able to 're-elect' a single leader after leader has left (again)" taggedAs LongRunningTest in within(30 seconds) {
       shutdownLeaderAndVerifyNewLeader(alreadyShutdown = 1)
       enterBarrier("after-3")
     }

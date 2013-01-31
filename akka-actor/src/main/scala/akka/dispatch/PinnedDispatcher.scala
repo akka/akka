@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
@@ -26,7 +26,7 @@ class PinnedDispatcher(
     Int.MaxValue,
     Duration.Zero,
     _mailboxType,
-    _threadPoolConfig.copy(allowCorePoolTimeout = true, corePoolSize = 1, maxPoolSize = 1),
+    _threadPoolConfig.copy(corePoolSize = 1, maxPoolSize = 1),
     _shutdownTimeout) {
 
   @volatile

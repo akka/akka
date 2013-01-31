@@ -1,22 +1,26 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote.transport
 
 import scala.language.postfixOps
 import akka.actor._
-import akka.pattern.ask
+import akka.pattern.{ ask, pipe }
+import akka.remote.Remoting.RegisterTransportActor
+import akka.remote.transport.ActorTransportAdapter.ListenUnderlying
+import akka.remote.transport.ActorTransportAdapter.ListenerRegistered
 import akka.remote.transport.Transport._
-import akka.remote.{ RARP, RemotingSettings, RemoteActorRefProvider }
+import akka.remote.RARP
+import akka.util.Timeout
 import scala.collection.immutable
+import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Promise, Future }
 import scala.util.Success
-import scala.util.Failure
-import akka.remote.Remoting.RegisterTransportActor
-import akka.util.Timeout
-import scala.concurrent.duration._
 
 trait TransportAdapterProvider extends ((Transport, ExtendedActorSystem) ⇒ Transport)
 
 class TransportAdapters(system: ExtendedActorSystem) extends Extension {
-  val settings = new RemotingSettings(RARP(system).provider.remoteSettings.config)
+  val settings = RARP(system).provider.remoteSettings
 
   private val adaptersTable: Map[String, TransportAdapterProvider] = for ((name, fqn) ← settings.Adapters) yield {
     name -> system.dynamicAccess.createInstanceFor[TransportAdapterProvider](fqn, immutable.Seq.empty).recover({
@@ -40,13 +44,14 @@ object TransportAdaptersExtension extends ExtensionId[TransportAdapters] with Ex
 trait SchemeAugmenter {
   protected def addedSchemeIdentifier: String
 
-  protected def augmentScheme(originalScheme: String): String = s"$originalScheme.$addedSchemeIdentifier"
+  protected def augmentScheme(originalScheme: String): String = s"$addedSchemeIdentifier.$originalScheme"
 
   protected def augmentScheme(address: Address): Address = address.copy(protocol = augmentScheme(address.protocol))
 
-  protected def removeScheme(scheme: String): String = if (scheme.endsWith(s".$addedSchemeIdentifier"))
-    scheme.take(scheme.length - addedSchemeIdentifier.length - 1)
-  else scheme
+  protected def removeScheme(scheme: String): String =
+    if (scheme.startsWith(s"$addedSchemeIdentifier."))
+      scheme.drop(addedSchemeIdentifier.length + 1)
+    else scheme
 
   protected def removeScheme(address: Address): Address = address.copy(protocol = removeScheme(address.protocol))
 }
@@ -117,12 +122,14 @@ object ActorTransportAdapter {
   case class ListenUnderlying(listenAddress: Address,
                               upstreamListener: Future[AssociationEventListener]) extends TransportOperation
   case object DisassociateUnderlying extends TransportOperation
+
+  implicit val AskTimeout = Timeout(5 seconds)
 }
 
 abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorSystem)
   extends AbstractTransportAdapter(wrappedTransport)(system.dispatcher) {
+
   import ActorTransportAdapter._
-  private implicit val timeout = new Timeout(3 seconds)
 
   protected def managerName: String
   protected def managerProps: Props
@@ -150,3 +157,38 @@ abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorS
   override def shutdown(): Unit = manager ! PoisonPill
 }
 
+abstract class ActorTransportAdapterManager extends Actor {
+  private var delayedEvents = immutable.Queue.empty[Any]
+
+  protected var associationListener: AssociationEventListener = _
+  protected var localAddress: Address = _
+  private var uniqueId = 0L
+
+  protected def nextId(): Long = {
+    uniqueId += 1
+    uniqueId
+  }
+
+  import context.dispatcher
+
+  def receive: Receive = {
+    case ListenUnderlying(listenAddress, upstreamListenerFuture) ⇒
+      localAddress = listenAddress
+      upstreamListenerFuture.future.map { ListenerRegistered(_) } pipeTo self
+
+    case ListenerRegistered(listener) ⇒
+      associationListener = listener
+      delayedEvents foreach { self.tell(_, Actor.noSender) }
+      delayedEvents = immutable.Queue.empty[Any]
+      context.become(ready)
+
+    /* Simple imitation of Stash. It is more lightweight as it does not need any specific dispatchers or additional
+     * queue. The difference is that these messages will not survive a restart -- which is not needed here.
+     * These messages will be processed in the ready state.
+     */
+    case otherEvent ⇒ delayedEvents = delayedEvents enqueue otherEvent
+
+  }
+
+  protected def ready: Receive
+}

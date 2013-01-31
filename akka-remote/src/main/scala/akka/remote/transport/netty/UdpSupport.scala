@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote.transport.netty
 
 import akka.actor.Address
@@ -34,7 +37,8 @@ private[remote] trait UdpHandlers extends CommonHandlers {
         initUdp(e.getChannel, e.getRemoteAddress, e.getMessage.asInstanceOf[ChannelBuffer])
       } else {
         val listener = transport.udpConnectionTable.get(inetSocketAddress)
-        listener notify InboundPayload(ByteString(e.getMessage.asInstanceOf[ChannelBuffer].array()))
+        val bytes: Array[Byte] = e.getMessage.asInstanceOf[ChannelBuffer].array()
+        if (bytes.length > 0) listener notify InboundPayload(ByteString(bytes))
       }
     case _ ⇒
   }
@@ -49,8 +53,7 @@ private[remote] class UdpServerHandler(_transport: NettyTransport, _associationL
     initInbound(channel, remoteSocketAddress, msg)
 }
 
-private[remote] class UdpClientHandler(_transport: NettyTransport, _statusPromise: Promise[AssociationHandle])
-  extends ClientHandler(_transport, _statusPromise) with UdpHandlers {
+private[remote] class UdpClientHandler(_transport: NettyTransport) extends ClientHandler(_transport) with UdpHandlers {
 
   override def initUdp(channel: Channel, remoteSocketAddress: SocketAddress, msg: ChannelBuffer): Unit =
     initOutbound(channel, remoteSocketAddress, msg)

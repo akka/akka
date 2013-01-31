@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package sample.remote.calculator
 
@@ -20,7 +20,7 @@ class LookupApplication extends Bootable {
     ActorSystem("LookupApplication", ConfigFactory.load.getConfig("remotelookup"))
   val actor = system.actorOf(Props[LookupActor], "lookupActor")
   val remoteActor = system.actorFor(
-    "akka://CalculatorApplication@127.0.0.1:2552/user/simpleCalculator")
+    "akka.tcp://CalculatorApplication@127.0.0.1:2552/user/simpleCalculator")
 
   def doSomething(op: MathOp) = {
     actor ! (remoteActor, op)

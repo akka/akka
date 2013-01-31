@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -27,7 +27,7 @@ object ClusterSpec {
     }
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
-    akka.remote.netty.port = 0
+    akka.remote.netty.tcp.port = 0
     # akka.loglevel = DEBUG
     """
 
@@ -76,10 +76,11 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       try {
         cluster.subscribe(testActor, classOf[ClusterEvent.ClusterDomainEvent])
         // first, is in response to the subscription
-        expectMsgClass(classOf[ClusterEvent.ClusterDomainEvent])
+        expectMsgClass(classOf[ClusterEvent.InstantClusterState])
+        expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
 
         cluster.publishCurrentClusterState()
-        expectMsgClass(classOf[ClusterEvent.ClusterDomainEvent])
+        expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
       } finally {
         cluster.unsubscribe(testActor)
       }
@@ -87,7 +88,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
 
     "send CurrentClusterState to one receiver when requested" in {
       cluster.sendCurrentClusterState(testActor)
-      expectMsgClass(classOf[ClusterEvent.ClusterDomainEvent])
+      expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
     }
 
   }

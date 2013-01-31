@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.camel.internal.component
@@ -25,7 +25,7 @@ import akka.actor.ActorSystem.Settings
 import akka.event.LoggingAdapter
 import akka.testkit.{ TestLatch, TimingTest, TestKit, TestProbe }
 import org.apache.camel.impl.DefaultCamelContext
-import concurrent.{ Await, Promise, Future }
+import scala.concurrent.{ Await, Promise, Future }
 import akka.util.Timeout
 import akka.actor._
 import akka.testkit._

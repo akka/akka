@@ -172,12 +172,13 @@ reacts to failure.
 
 Lifecycle monitoring is implemented using a :class:`Terminated` message to be
 received by the monitoring actor, where the default behavior is to throw a
-special :class:`DeathPactException` if not otherwise handled. In order to
-start listening for :class:`Terminated` messages is to use ``ActorContext.watch(targetActorRef)``
-and then ``ActorContext.unwatch(targetActorRef)`` to stop listening for that.
-One important property is that the message will be delivered irrespective of the order in
-which the monitoring request and target’s termination occur, i.e. you still get
-the message even if at the time of registration the target is already dead.
+special :class:`DeathPactException` if not otherwise handled. In order to start
+listening for :class:`Terminated` messages, invoke
+``ActorContext.watch(targetActorRef)``.  To stop listening, invoke
+``ActorContext.unwatch(targetActorRef)``.  One important property is that the
+message will be delivered irrespective of the order in which the monitoring
+request and target’s termination occur, i.e. you still get the message even if
+at the time of registration the target is already dead.
 
 Monitoring is particularly useful if a supervisor cannot simply restart its
 children and has to terminate them, e.g. in case of errors during actor
@@ -210,8 +211,8 @@ to all siblings as well. Normally, you should use the
 explicitly.
 
 The :class:`AllForOneStrategy` is applicable in cases where the ensemble of
-children has so tight dependencies among them, that a failure of one child
-affects the function of the others, i.e. they are intricably linked. Since a
+children has such tight dependencies among them, that a failure of one child
+affects the function of the others, i.e. they are inextricably linked. Since a
 restart does not clear out the mailbox, it often is best to terminate the children
 upon failure and re-create them explicitly from the supervisor (by watching the
 children’s lifecycle); otherwise you have to make sure that it is no problem
@@ -219,7 +220,7 @@ for any of the actors to receive a message which was queued before the restart
 but processed afterwards.
 
 Normally stopping a child (i.e. not in response to a failure) will not
-automatically terminate the other children in an all-for-one strategy, that can
+automatically terminate the other children in an all-for-one strategy; this can
 easily be done by watching their lifecycle: if the :class:`Terminated` message
 is not handled by the supervisor, it will throw a :class:`DeathPactException`
 which (depending on its supervisor) will restart it, and the default

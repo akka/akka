@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor.dungeon
@@ -141,6 +141,9 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     setReceiveTimeout(Duration.Undefined)
     cancelReceiveTimeout
 
+    // prevent Deadletter(Terminated) messages
+    unwatchWatchedActors(actor)
+
     // stop all children, which will turn childrenRefs into TerminatingChildrenContainer (if there are children)
     children foreach stop
 
@@ -190,13 +193,19 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
 
   private def finishTerminate() {
     val a = actor
-    // The following order is crucial for things to work properly. Only chnage this if you're very confident and lucky.
+    /* The following order is crucial for things to work properly. Only change this if you're very confident and lucky.
+     *
+     * Please note that if a parent is also a watcher then ChildTerminated and Terminated must be processed in this
+     * specific order.
+     */
     try if (a ne null) a.postStop()
-    finally try dispatcher.detach(this)
+    catch {
+      case NonFatal(e) ⇒ publish(Error(e, self.path.toString, clazz(a), e.getMessage))
+    } finally try dispatcher.detach(this)
     finally try parent.sendSystemMessage(ChildTerminated(self))
     finally try parent ! NullMessage // read ScalaDoc of NullMessage to see why
     finally try tellWatchersWeDied(a)
-    finally try unwatchWatchedActors(a)
+    finally try unwatchWatchedActors(a) // stay here as we expect an emergency stop from handleInvokeFailure
     finally {
       if (system.settings.DebugLifecycle)
         publish(Debug(self.path.toString, clazz(a), "stopped"))

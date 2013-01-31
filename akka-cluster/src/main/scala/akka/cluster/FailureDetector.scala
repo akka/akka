@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -15,6 +15,12 @@ trait FailureDetector {
    * Returns true if the connection is considered to be up and healthy and returns false otherwise.
    */
   def isAvailable(connection: Address): Boolean
+
+  /**
+   * Returns true if the failure detector has received any heartbeats and started monitoring
+   * of the resource.
+   */
+  def isMonitoring(connection: Address): Boolean
 
   /**
    * Records a heartbeat for a connection.

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor.dispatch
 
@@ -80,21 +80,21 @@ object ActorModelSpec {
     }
 
     def receive = {
-      case AwaitLatch(latch)            ⇒ ack; latch.await(); busy.switchOff()
-      case Meet(sign, wait)             ⇒ ack; sign.countDown(); wait.await(); busy.switchOff()
-      case Wait(time)                   ⇒ ack; Thread.sleep(time); busy.switchOff()
-      case WaitAck(time, l)             ⇒ ack; Thread.sleep(time); l.countDown(); busy.switchOff()
-      case Reply(msg)                   ⇒ ack; sender ! msg; busy.switchOff()
-      case TryReply(msg)                ⇒ ack; sender.tell(msg, null); busy.switchOff()
-      case Forward(to, msg)             ⇒ ack; to.forward(msg); busy.switchOff()
-      case CountDown(latch)             ⇒ ack; latch.countDown(); busy.switchOff()
-      case Increment(count)             ⇒ ack; count.incrementAndGet(); busy.switchOff()
-      case CountDownNStop(l)            ⇒ ack; l.countDown(); context.stop(self); busy.switchOff()
-      case Restart                      ⇒ ack; busy.switchOff(); throw new Exception("Restart requested")
-      case Interrupt                    ⇒ ack; sender ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"))); busy.switchOff(); throw new InterruptedException("Ping!")
-      case InterruptNicely(msg)         ⇒ ack; sender ! msg; busy.switchOff(); Thread.currentThread().interrupt()
-      case ThrowException(e: Throwable) ⇒ ack; busy.switchOff(); throw e
-      case DoubleStop                   ⇒ ack; context.stop(self); context.stop(self); busy.switchOff
+      case AwaitLatch(latch)            ⇒ { ack; latch.await(); busy.switchOff() }
+      case Meet(sign, wait)             ⇒ { ack; sign.countDown(); wait.await(); busy.switchOff() }
+      case Wait(time)                   ⇒ { ack; Thread.sleep(time); busy.switchOff() }
+      case WaitAck(time, l)             ⇒ { ack; Thread.sleep(time); l.countDown(); busy.switchOff() }
+      case Reply(msg)                   ⇒ { ack; sender ! msg; busy.switchOff() }
+      case TryReply(msg)                ⇒ { ack; sender.tell(msg, null); busy.switchOff() }
+      case Forward(to, msg)             ⇒ { ack; to.forward(msg); busy.switchOff() }
+      case CountDown(latch)             ⇒ { ack; latch.countDown(); busy.switchOff() }
+      case Increment(count)             ⇒ { ack; count.incrementAndGet(); busy.switchOff() }
+      case CountDownNStop(l)            ⇒ { ack; l.countDown(); context.stop(self); busy.switchOff() }
+      case Restart                      ⇒ { ack; busy.switchOff(); throw new Exception("Restart requested") }
+      case Interrupt                    ⇒ { ack; sender ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"))); busy.switchOff(); throw new InterruptedException("Ping!") }
+      case InterruptNicely(msg)         ⇒ { ack; sender ! msg; busy.switchOff(); Thread.currentThread().interrupt() }
+      case ThrowException(e: Throwable) ⇒ { ack; busy.switchOff(); throw e }
+      case DoubleStop                   ⇒ { ack; context.stop(self); context.stop(self); busy.switchOff }
     }
   }
 
@@ -229,16 +229,17 @@ object ActorModelSpec {
     }
   }
 
-  @tailrec def await(until: Long)(condition: ⇒ Boolean): Unit = if (System.currentTimeMillis() <= until) {
-    var done = false
-    try {
-      done = condition
-      if (!done) Thread.sleep(25)
-    } catch {
-      case e: InterruptedException ⇒
-    }
-    if (!done) await(until)(condition)
-  } else throw new AssertionError("await failed")
+  @tailrec def await(until: Long)(condition: ⇒ Boolean): Unit =
+    if (System.currentTimeMillis() <= until) {
+      var done = false
+      try {
+        done = condition
+        if (!done) Thread.sleep(25)
+      } catch {
+        case e: InterruptedException ⇒
+      }
+      if (!done) await(until)(condition)
+    } else throw new AssertionError("await failed")
 }
 
 abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with DefaultTimeout {
@@ -414,17 +415,28 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         val a = newTestActor(dispatcher.id)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
-        val f3 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(new ActorInterruptedException(ie)).future }
+        val f3 = a ? Interrupt
+        Thread.interrupted() // CallingThreadDispatcher may necessitate this
         val f4 = a ? Reply("foo2")
-        val f5 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(new ActorInterruptedException(ie)).future }
+        val f5 = a ? Interrupt
+        Thread.interrupted() // CallingThreadDispatcher may necessitate this
         val f6 = a ? Reply("bar2")
 
+        val c = system.scheduler.scheduleOnce(2.seconds) {
+          import collection.JavaConverters._
+          Thread.getAllStackTraces().asScala foreach {
+            case (thread, stack) ⇒
+              println(s"$thread:")
+              stack foreach (s ⇒ println(s"\t$s"))
+          }
+        }
         assert(Await.result(f1, remaining) === "foo")
         assert(Await.result(f2, remaining) === "bar")
         assert(Await.result(f4, remaining) === "foo2")
         assert(intercept[ActorInterruptedException](Await.result(f3, remaining)).getCause.getMessage === "Ping!")
         assert(Await.result(f6, remaining) === "bar2")
         assert(intercept[ActorInterruptedException](Await.result(f5, remaining)).getCause.getMessage === "Ping!")
+        c.cancel()
       }
     }
 

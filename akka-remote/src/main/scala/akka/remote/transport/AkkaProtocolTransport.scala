@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote.transport
 
 import akka.{ OnlyCauseStackTrace, AkkaException }
@@ -27,24 +30,24 @@ private[remote] class AkkaProtocolSettings(config: Config) {
 
   import config._
 
-  val FailureDetectorThreshold: Double = getDouble("akka.remoting.failure-detector.threshold")
+  val FailureDetectorThreshold: Double = getDouble("akka.remote.failure-detector.threshold")
 
-  val FailureDetectorMaxSampleSize: Int = getInt("akka.remoting.failure-detector.max-sample-size")
+  val FailureDetectorMaxSampleSize: Int = getInt("akka.remote.failure-detector.max-sample-size")
 
   val FailureDetectorStdDeviation: FiniteDuration =
-    Duration(getMilliseconds("akka.remoting.failure-detector.min-std-deviation"), MILLISECONDS)
+    Duration(getMilliseconds("akka.remote.failure-detector.min-std-deviation"), MILLISECONDS)
 
   val AcceptableHeartBeatPause: FiniteDuration =
-    Duration(getMilliseconds("akka.remoting.failure-detector.acceptable-heartbeat-pause"), MILLISECONDS)
+    Duration(getMilliseconds("akka.remote.failure-detector.acceptable-heartbeat-pause"), MILLISECONDS)
 
   val HeartBeatInterval: FiniteDuration =
-    Duration(getMilliseconds("akka.remoting.heartbeat-interval"), MILLISECONDS)
+    Duration(getMilliseconds("akka.remote.heartbeat-interval"), MILLISECONDS)
 
-  val WaitActivityEnabled: Boolean = getBoolean("akka.remoting.wait-activity-enabled")
+  val WaitActivityEnabled: Boolean = getBoolean("akka.remote.wait-activity-enabled")
 
-  val RequireCookie: Boolean = getBoolean("akka.remoting.require-cookie")
+  val RequireCookie: Boolean = getBoolean("akka.remote.require-cookie")
 
-  val SecureCookie: String = getString("akka.remoting.secure-cookie")
+  val SecureCookie: String = getString("akka.remote.secure-cookie")
 }
 
 private[remote] object AkkaProtocolTransport { //Couldn't these go into the Remoting Extension/ RemoteSettings instead?
@@ -86,8 +89,7 @@ private[remote] class AkkaProtocolTransport(
 
   override val addedSchemeIdentifier: String = AkkaScheme
 
-  override def managementCommand(cmd: Any, statusPromise: Promise[Boolean]): Unit =
-    wrappedTransport.managementCommand(cmd, statusPromise)
+  override def managementCommand(cmd: Any): Future[Boolean] = wrappedTransport.managementCommand(cmd)
 
   override val maximumOverhead: Int = AkkaProtocolTransport.AkkaOverhead
   protected def managerName = s"akkaprotocolmanager.${wrappedTransport.schemeIdentifier}${UniqueId.getAndIncrement}"
@@ -101,9 +103,7 @@ private[remote] class AkkaProtocolTransport(
 private[transport] class AkkaProtocolManager(
   private val wrappedTransport: Transport,
   private val settings: AkkaProtocolSettings)
-  extends Actor {
-
-  import context.dispatcher
+  extends ActorTransportAdapterManager {
 
   // The AkkaProtocolTransport does not handle the recovery of associations, this task is implemented in the
   // remoting itself. Hence the strategy Stop.
@@ -111,32 +111,13 @@ private[transport] class AkkaProtocolManager(
     case NonFatal(_) ⇒ Stop
   }
 
-  private val nextId = Iterator from 0
-
-  var localAddress: Address = _
-
-  private var associationHandler: AssociationEventListener = _
-
-  def receive: Receive = {
-    case ListenUnderlying(listenAddress, upstreamListenerFuture) ⇒
-      localAddress = listenAddress
-      upstreamListenerFuture.future.map { ListenerRegistered(_) } pipeTo self
-
-    case ListenerRegistered(listener) ⇒
-      associationHandler = listener
-      context.become(ready)
-
-    // Block inbound associations until handler is registered
-    case InboundAssociation(handle) ⇒ handle.disassociate()
-  }
-
   private def actorNameFor(remoteAddress: Address): String =
-    "akkaProtocol-" + AddressUrlEncoder(remoteAddress) + "-" + nextId.next()
+    "akkaProtocol-" + AddressUrlEncoder(remoteAddress) + "-" + nextId()
 
-  private def ready: Receive = {
+  override def ready: Receive = {
     case InboundAssociation(handle) ⇒
       val stateActorLocalAddress = localAddress
-      val stateActorAssociationHandler = associationHandler
+      val stateActorAssociationHandler = associationListener
       val stateActorSettings = settings
       val failureDetector = createFailureDetector()
       context.actorOf(Props(new ProtocolStateActor(
@@ -375,7 +356,8 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
         case Disassociate ⇒
           stop()
 
-        case Heartbeat ⇒ failureDetector.heartbeat(); stay()
+        case Heartbeat ⇒
+          failureDetector.heartbeat(); stay()
 
         case Payload(payload) ⇒ stateData match {
           case AssociatedWaitHandler(handlerFuture, wrappedHandle, queue) ⇒

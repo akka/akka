@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.actor
 
@@ -29,7 +29,7 @@ class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     expectMsg(1 second, "foo")
 
     //#schedule-one-off-thunk
-    //Schedules a function to be executed (send the current time) to the testActor after 50ms
+    //Schedules a function to be executed (send a message to the testActor) after 50ms
     system.scheduler.scheduleOnce(50 milliseconds) {
       testActor ! System.currentTimeMillis
     }

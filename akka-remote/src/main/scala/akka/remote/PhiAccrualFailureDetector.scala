@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote
 
 import akka.remote.FailureDetector.Clock
@@ -74,6 +77,8 @@ class PhiAccrualFailureDetector(
   private val state = new AtomicReference[State](State(history = firstHeartbeat, timestamp = None))
 
   override def isAvailable: Boolean = phi < threshold
+
+  override def isMonitoring: Boolean = state.get.timestamp.nonEmpty
 
   @tailrec
   final override def heartbeat(): Unit = {

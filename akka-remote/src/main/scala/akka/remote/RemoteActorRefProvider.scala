@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote
@@ -8,11 +8,12 @@ import akka.actor._
 import akka.dispatch._
 import akka.event.{ Logging, LoggingAdapter, EventStream }
 import akka.event.Logging.Error
-import akka.serialization.{ Serialization, SerializationExtension }
+import akka.serialization.{ JavaSerializer, Serialization, SerializationExtension }
 import akka.pattern.pipe
-import scala.concurrent.Future
 import scala.util.control.NonFatal
 import akka.actor.SystemGuardian.{ TerminationHookDone, TerminationHook, RegisterTerminationHook }
+import scala.util.control.Exception.Catcher
+import scala.concurrent.{ ExecutionContext, Future }
 
 object RemoteActorRefProvider {
   private case class Internals(transport: RemoteTransport, serialization: Serialization, remoteDaemon: InternalActorRef)
@@ -59,6 +60,31 @@ object RemoteActorRefProvider {
     }
 
   }
+
+  /*
+   * Remoting wraps messages destined to a remote host in a remoting specific envelope: EndpointManager.Send
+   * As these wrapped messages might arrive to the dead letters of an EndpointWriter, they need to be unwrapped
+   * and handled as dead letters to the original (remote) destination. Without this special case, DeathWatch related
+   * functionality breaks, like the special handling of Watch messages arriving to dead letters.
+   */
+  private class RemoteDeadLetterActorRef(_provider: ActorRefProvider,
+                                         _path: ActorPath,
+                                         _eventStream: EventStream) extends DeadLetterActorRef(_provider, _path, _eventStream) {
+
+    override def !(message: Any)(implicit sender: ActorRef): Unit = message match {
+      case EndpointManager.Send(m, senderOption, _) ⇒ super.!(m)(senderOption.orNull)
+      case _                                        ⇒ super.!(message)(sender)
+    }
+
+    override def specialHandle(msg: Any): Boolean = msg match {
+      // unwrap again in case the original message was DeadLetter(EndpointManager.Send(m))
+      case EndpointManager.Send(m, _, _) ⇒ super.specialHandle(m)
+      case _                             ⇒ super.specialHandle(msg)
+    }
+
+    @throws(classOf[java.io.ObjectStreamException])
+    override protected def writeReplace(): AnyRef = DeadLetterActorRef.serialized
+  }
 }
 
 /**
@@ -76,7 +102,7 @@ class RemoteActorRefProvider(
   val dynamicAccess: DynamicAccess) extends ActorRefProvider {
   import RemoteActorRefProvider._
 
-  val remoteSettings: RemoteSettings = new RemoteSettings(settings.config, systemName)
+  val remoteSettings: RemoteSettings = new RemoteSettings(settings.config)
 
   override val deployer: Deployer = createDeployer
 
@@ -86,7 +112,8 @@ class RemoteActorRefProvider(
    */
   protected def createDeployer: RemoteDeployer = new RemoteDeployer(settings, dynamicAccess)
 
-  private val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, dynamicAccess, deployer)
+  private val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, dynamicAccess, deployer,
+    Some(deadLettersPath ⇒ new RemoteDeadLetterActorRef(this, deadLettersPath, eventStream)))
 
   @volatile
   private var _log = local.log
@@ -100,7 +127,7 @@ class RemoteActorRefProvider(
   override def guardian: LocalActorRef = local.guardian
   override def systemGuardian: LocalActorRef = local.systemGuardian
   override def terminationFuture: Future[Unit] = local.terminationFuture
-  override def dispatcher: MessageDispatcher = local.dispatcher
+  override def dispatcher: ExecutionContext = local.dispatcher
   override def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit = local.registerTempActor(actorRef, path)
   override def unregisterTempActor(path: ActorPath): Unit = local.unregisterTempActor(path)
   override def tempPath(): ActorPath = local.tempPath()
@@ -134,19 +161,8 @@ class RemoteActorRefProvider(
         local.registerExtraNames(Map(("remote", d)))
         d
       },
-
       serialization = SerializationExtension(system),
-
-      transport = {
-        val fqn = remoteSettings.RemoteTransport
-        val args = List(
-          classOf[ExtendedActorSystem] -> system,
-          classOf[RemoteActorRefProvider] -> this)
-
-        system.dynamicAccess.createInstanceFor[RemoteTransport](fqn, args).recover({
-          case problem ⇒ throw new RemoteTransportException("Could not load remote transport layer " + fqn, problem)
-        }).get
-      })
+      transport = new Remoting(system, this))
 
     _internals = internals
     remotingTerminator ! internals
@@ -155,16 +171,6 @@ class RemoteActorRefProvider(
 
     // this enables reception of remote requests
     transport.start()
-
-    val remoteClientLifeCycleHandler = system.systemActorOf(Props(new Actor {
-      def receive = {
-        case RemoteClientError(cause, remote, address) ⇒ remote.shutdownClientConnection(address)
-        case RemoteClientDisconnected(remote, address) ⇒ remote.shutdownClientConnection(address)
-        case _                                         ⇒ //ignore other
-      }
-    }), "RemoteClientLifeCycleListener")
-
-    system.eventStream.subscribe(remoteClientLifeCycleHandler, classOf[RemoteLifeCycleEvent])
 
   }
 
@@ -335,21 +341,18 @@ private[akka] class RemoteActorRef private[akka] (
 
   def isTerminated: Boolean = false
 
-  def sendSystemMessage(message: SystemMessage): Unit =
-    try remote.send(message, None, this)
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        remote.system.eventStream.publish(Error(e, path.toString, classOf[RemoteActorRef], "swallowing exception during message send"))
-        provider.deadLetters ! message
-    }
+  private def handleException: Catcher[Unit] = {
+    case e: InterruptedException ⇒
+      remote.system.eventStream.publish(Error(e, path.toString, getClass, "interrupted during message send"))
+      Thread.currentThread.interrupt()
+    case NonFatal(e) ⇒
+      remote.system.eventStream.publish(Error(e, path.toString, getClass, "swallowing exception during message send"))
+  }
+
+  def sendSystemMessage(message: SystemMessage): Unit = try remote.send(message, None, this) catch handleException
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit =
-    try remote.send(message, Option(sender), this)
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        remote.system.eventStream.publish(Error(e, path.toString, classOf[RemoteActorRef], "swallowing exception during message send"))
-        provider.deadLetters ! message
-    }
+    try remote.send(message, Option(sender), this) catch handleException
 
   def start(): Unit = if (props.isDefined && deploy.isDefined) provider.useActorOnNode(path, props.get, deploy.get, getParent)
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.util
@@ -29,7 +29,7 @@ class BoundedBlockingQueue[E <: AnyRef](
       require(maxCapacity > 0)
   }
 
-  protected val lock = new ReentrantLock(false) // TODO might want to switch to ReentrantReadWriteLock
+  protected val lock = new ReentrantLock(false)
 
   private val notEmpty = lock.newCondition()
   private val notFull = lock.newCondition()
@@ -285,12 +285,13 @@ class BoundedBlockingQueue[E <: AnyRef](
           last = -1 //To avoid 2 subsequent removes without a next in between
           lock.lock()
           try {
-            @tailrec def removeTarget(i: Iterator[E] = backing.iterator()): Unit = if (i.hasNext) {
-              if (i.next eq target) {
-                i.remove()
-                notFull.signal()
-              } else removeTarget(i)
-            }
+            @tailrec def removeTarget(i: Iterator[E] = backing.iterator()): Unit =
+              if (i.hasNext) {
+                if (i.next eq target) {
+                  i.remove()
+                  notFull.signal()
+                } else removeTarget(i)
+              }
 
             removeTarget()
           } finally {

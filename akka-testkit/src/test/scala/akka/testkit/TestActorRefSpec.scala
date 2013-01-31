@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
@@ -56,7 +56,9 @@ object TestActorRefSpec {
 
   class WorkerActor() extends TActor {
     def receiveT = {
-      case "work"              ⇒ sender ! "workDone"; context.stop(self)
+      case "work" ⇒
+        sender ! "workDone"
+        context stop self
       case replyTo: Promise[_] ⇒ replyTo.asInstanceOf[Promise[Any]].success("complexReply")
       case replyTo: ActorRef   ⇒ replyTo ! "complexReply"
     }
@@ -88,7 +90,9 @@ object TestActorRefSpec {
   class ReceiveTimeoutActor(target: ActorRef) extends Actor {
     context setReceiveTimeout 1.second
     def receive = {
-      case ReceiveTimeout ⇒ target ! "timeout"
+      case ReceiveTimeout ⇒
+        target ! "timeout"
+        context stop self
     }
   }
 

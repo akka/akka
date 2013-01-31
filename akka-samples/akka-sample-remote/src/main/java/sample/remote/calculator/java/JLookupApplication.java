@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package sample.remote.calculator.java;
 
@@ -22,7 +22,7 @@ public class JLookupApplication implements Bootable {
         .getConfig("remotelookup"));
     actor = system.actorOf(new Props(JLookupActor.class));
     remoteActor = system.actorFor(
-      "akka://CalculatorApplication@127.0.0.1:2552/user/simpleCalculator");
+      "akka.tcp://CalculatorApplication@127.0.0.1:2552/user/simpleCalculator");
   }
 
   public void doSomething(Op.MathOp mathOp) {
