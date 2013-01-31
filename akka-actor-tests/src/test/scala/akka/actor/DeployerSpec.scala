@@ -22,7 +22,7 @@ object DeployerSpec {
         }
         /service-direct2 {
           router = from-code
-          # nr-of-instances ignored when router = direct
+          # nr-of-instances ignored when router = from-code
           nr-of-instances = 2
         }
         /service-round-robin {
@@ -101,11 +101,11 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       }
     }
 
-    "be able to parse 'akka.actor.deployment._' with direct router" in {
+    "be able to parse 'akka.actor.deployment._' with from-code router" in {
       assertRouting("/service-direct", NoRouter, "/service-direct")
     }
 
-    "ignore nr-of-instances with direct router" in {
+    "ignore nr-of-instances with from-code router" in {
       assertRouting("/service-direct2", NoRouter, "/service-direct2")
     }
 
