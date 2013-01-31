@@ -77,6 +77,7 @@ object RemoteActorRefProvider {
     }
 
     override def specialHandle(msg: Any): Boolean = msg match {
+      // unwrap again in case the original message was DeadLetter(EndpointManager.Send(m))
       case EndpointManager.Send(m, _, _) ⇒ super.specialHandle(m)
       case _                             ⇒ super.specialHandle(msg)
     }
@@ -111,14 +112,15 @@ class RemoteActorRefProvider(
    */
   protected def createDeployer: RemoteDeployer = new RemoteDeployer(settings, dynamicAccess)
 
-  private val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, dynamicAccess, deployer)
+  private val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, dynamicAccess, deployer,
+    Some(deadLettersPath ⇒ new RemoteDeadLetterActorRef(this, deadLettersPath, eventStream)))
 
   @volatile
   private var _log = local.log
   def log: LoggingAdapter = _log
 
   override def rootPath: ActorPath = local.rootPath
-  override val deadLetters: InternalActorRef = new RemoteDeadLetterActorRef(this, rootPath / "deadLetters", eventStream)
+  override def deadLetters: InternalActorRef = local.deadLetters
 
   // these are only available after init()
   override def rootGuardian: InternalActorRef = local.rootGuardian

@@ -326,13 +326,15 @@ private[akka] object SystemGuardian {
  *
  * Depending on this class is not supported, only the [[ActorRefProvider]] interface is supported.
  */
-class LocalActorRefProvider(
+class LocalActorRefProvider private[akka] (
   _systemName: String,
   override val settings: ActorSystem.Settings,
   val eventStream: EventStream,
   override val scheduler: Scheduler,
   val dynamicAccess: DynamicAccess,
-  override val deployer: Deployer) extends ActorRefProvider {
+  override val deployer: Deployer,
+  _deadLetters: Option[ActorPath ⇒ InternalActorRef])
+  extends ActorRefProvider {
 
   // this is the constructor needed for reflectively instantiating the provider
   def this(_systemName: String,
@@ -345,13 +347,15 @@ class LocalActorRefProvider(
       eventStream,
       scheduler,
       dynamicAccess,
-      new Deployer(settings, dynamicAccess))
+      new Deployer(settings, dynamicAccess),
+      None)
 
   override val rootPath: ActorPath = RootActorPath(Address("akka", _systemName))
 
   private[akka] val log: LoggingAdapter = Logging(eventStream, "LocalActorRefProvider(" + rootPath.address + ")")
 
-  override val deadLetters: InternalActorRef = new DeadLetterActorRef(this, rootPath / "deadLetters", eventStream)
+  override val deadLetters: InternalActorRef =
+    _deadLetters.getOrElse((p: ActorPath) ⇒ new DeadLetterActorRef(this, p, eventStream)).apply(rootPath / "deadLetters")
 
   /*
    * generate name for temporary actor refs

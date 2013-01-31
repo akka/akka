@@ -5,7 +5,7 @@
 package akka.actor.dungeon
 
 import akka.actor.{ Terminated, InternalActorRef, ActorRef, ActorRefScope, ActorCell, Actor, Address, AddressTerminated }
-import akka.dispatch.{ Watch, Unwatch }
+import akka.dispatch.{ ChildTerminated, Watch, Unwatch }
 import akka.event.Logging.{ Warning, Error, Debug }
 import scala.util.control.NonFatal
 
@@ -130,7 +130,11 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
     // send Terminated to self for all matching subjects
     // existenceConfirmed = false because we could have been watching a
     // non-local ActorRef that had never resolved before the other node went down
+    // When a parent is watching a child and it terminates due to AddressTerminated
+    // it is removed by sending ChildTerminated to support immediate creation of child
+    // with same name.
     for (a ← watching; if a.path.address == address) {
+      childrenRefs.getByRef(a) foreach { _ ⇒ self.sendSystemMessage(ChildTerminated(a)) }
       self ! Terminated(a)(existenceConfirmed = false, addressTerminated = true)
     }
   }
