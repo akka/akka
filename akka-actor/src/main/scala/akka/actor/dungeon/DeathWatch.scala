@@ -78,9 +78,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
     if (!watching.isEmpty) {
       try {
         watching foreach { // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-          case watchee: InternalActorRef ⇒ try watchee.sendSystemMessage(Unwatch(watchee, self)) catch {
-            case NonFatal(t) ⇒ publish(Error(t, self.path.toString, clazz(actor), "deathwatch"))
-          }
+          case watchee: InternalActorRef ⇒ watchee.sendSystemMessage(Unwatch(watchee, self))
         }
       } finally {
         watching = ActorCell.emptyActorRefSet
