@@ -72,10 +72,6 @@ class ClusterSettings(val config: Config, val systemName: String) {
   final val MaxGossipMergeRate: Double = getDouble("akka.cluster.max-gossip-merge-rate")
   final val SchedulerTickDuration: FiniteDuration = Duration(getMilliseconds("akka.cluster.scheduler.tick-duration"), MILLISECONDS)
   final val SchedulerTicksPerWheel: Int = getInt("akka.cluster.scheduler.ticks-per-wheel")
-  final val SendCircuitBreakerSettings: CircuitBreakerSettings = CircuitBreakerSettings(
-    maxFailures = getInt("akka.cluster.send-circuit-breaker.max-failures"),
-    callTimeout = Duration(getMilliseconds("akka.cluster.send-circuit-breaker.call-timeout"), MILLISECONDS),
-    resetTimeout = Duration(getMilliseconds("akka.cluster.send-circuit-breaker.reset-timeout"), MILLISECONDS))
   final val MetricsEnabled: Boolean = getBoolean("akka.cluster.metrics.enabled")
   final val MetricsCollectorClass: String = getString("akka.cluster.metrics.collector-class")
   final val MetricsInterval: FiniteDuration = {
@@ -87,4 +83,3 @@ class ClusterSettings(val config: Config, val systemName: String) {
   } requiring (_ > Duration.Zero, "metrics.moving-average-half-life must be > 0")
 }
 
-case class CircuitBreakerSettings(maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)
