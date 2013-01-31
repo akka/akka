@@ -21,7 +21,9 @@ case class NarrowingException(errors: String) extends AkkaException(errors) with
 
 class ChannelRef[+T <: ChannelList](val actorRef: ActorRef) extends AnyVal {
 
-  def <-!-[M](msg: M): Unit = macro macros.Tell.impl[T, M]
+  def <-!-[M](msg: M): M = macro macros.Tell.impl[T, M]
+
+  def <-!-[M](future: Future[M]): Future[M] = macro macros.Tell.futureImpl[T, M]
 
   def <-?-[M](msg: M): Future[_] = macro macros.Ask.impl[ChannelList, Any, T, M]
 

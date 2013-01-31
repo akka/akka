@@ -17,7 +17,7 @@ sealed trait ReplyChannels[T <: ChannelList] extends ChannelList
 /**
  * This type is used to stand in for the unknown reply types of the fabricated
  * sender references; users don’t need to write it down, and if they do, they
- * know that they’re cheating (since these ref types must not escape their 
+ * know that they’re cheating (since these ref types must not escape their
  * defining actor context).
  */
 sealed trait UnknownDoNotWriteMeDown
@@ -34,7 +34,7 @@ class ActorRefOps(val ref: ActorRef) extends AnyVal {
 }
 
 class FutureOps[T](val future: Future[T]) extends AnyVal {
-  def -!->[C <: ChannelList](channel: ChannelRef[C]): Future[T] = macro macros.Tell.futureImpl[C, T]
+  def -!->[C <: ChannelList](channel: ChannelRef[C]): Future[T] = macro macros.Tell.futureOpsImpl[C, T]
   def -?->[C <: ChannelList](channel: ChannelRef[C]): Future[_] = macro macros.Ask.futureImpl[ChannelList, Any, C, T]
   def lub[LUB](implicit ev: T <:< WrappedMessage[_, LUB]): Future[LUB] = {
     implicit val ec = ExecutionContexts.sameThreadExecutionContext
@@ -43,7 +43,7 @@ class FutureOps[T](val future: Future[T]) extends AnyVal {
 }
 
 class AnyOps[T](val value: T) extends AnyVal {
-  def -!->[C <: ChannelList](channel: ChannelRef[C]): Unit = macro macros.Tell.opsImpl[C, T]
+  def -!->[C <: ChannelList](channel: ChannelRef[C]): T = macro macros.Tell.opsImpl[C, T]
   def -?->[C <: ChannelList](channel: ChannelRef[C]): Future[_] = macro macros.Ask.opsImpl[ChannelList, Any, C, T]
 }
 

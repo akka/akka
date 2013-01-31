@@ -482,7 +482,9 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
       })
       val t = ChannelExt(system).actorOf(new Tester)
       val a = new WrappedMessage[(A, Nothing) :+:(B, Nothing) :+: TNil, Msg](A)
+      val fa = Future successful a
       val b = new WrappedMessage[(A, Nothing) :+:(B, Nothing) :+: TNil, Msg](B)
+      val fb = Future successful b
       t <-!- a
       expectMsg(C)
       a -!-> t
@@ -490,6 +492,14 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
       t <-!- b
       expectMsg(D)
       b -!-> t
+      expectMsg(D)
+      t <-!- fa
+      expectMsg(C)
+      fa -!-> t
+      expectMsg(C)
+      t <-!- fb
+      expectMsg(D)
+      fb -!-> t
       expectMsg(D)
     }
 
@@ -540,11 +550,17 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
       implicit val timeout = Timeout(1.second)
       val t = ChannelExt(system).actorOf(new Tester)
       val a = new WrappedMessage[(A, Nothing) :+:(B, Nothing) :+: TNil, Msg](A)
+      val fa = Future successful a
       val b = new WrappedMessage[(A, Nothing) :+:(B, Nothing) :+: TNil, Msg](B)
+      val fb = Future successful b
       (Await.result(t <-?- a, timeout.duration): WrappedMessage[(C, Nothing) :+: (D, Nothing) :+: TNil, Msg]).value must be(C)
       (Await.result(a -?-> t, timeout.duration): WrappedMessage[(C, Nothing) :+: (D, Nothing) :+: TNil, Msg]).value must be(C)
       (Await.result(t <-?- b, timeout.duration): WrappedMessage[(C, Nothing) :+: (D, Nothing) :+: TNil, Msg]).value must be(D)
       (Await.result(b -?-> t, timeout.duration): WrappedMessage[(C, Nothing) :+: (D, Nothing) :+: TNil, Msg]).value must be(D)
+      (Await.result(t <-?- fa, timeout.duration): WrappedMessage[(C, Nothing) :+: (D, Nothing) :+: TNil, Msg]).value must be(C)
+      (Await.result(fa -?-> t, timeout.duration): WrappedMessage[(C, Nothing) :+: (D, Nothing) :+: TNil, Msg]).value must be(C)
+      (Await.result(t <-?- fb, timeout.duration): WrappedMessage[(C, Nothing) :+: (D, Nothing) :+: TNil, Msg]).value must be(D)
+      (Await.result(fb -?-> t, timeout.duration): WrappedMessage[(C, Nothing) :+: (D, Nothing) :+: TNil, Msg]).value must be(D)
     }
 
     "not be askable with wrong channels" when {

@@ -91,7 +91,7 @@ class ChannelDocSpec extends AkkaSpec {
     channelA <-!- a // send a to channelA
     a -!-> channelA // same thing as above
 
-    //channelA <-!- fA // eventually send the future’s value to channelA
+    channelA <-!- fA // eventually send the future’s value to channelA
     fA -!-> channelA // same thing as above
 
     // ask the actor; return type given in full for illustration
@@ -100,7 +100,7 @@ class ChannelDocSpec extends AkkaSpec {
 
     a -?-> channelA // same thing as above
 
-    //channelA <-?- fA // eventually ask the actor, return the future
+    channelA <-?- fA // eventually ask the actor, return the future
     fA -?-> channelA // same thing as above
 
     // chaining works as well

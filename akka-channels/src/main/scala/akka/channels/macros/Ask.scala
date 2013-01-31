@@ -26,15 +26,29 @@ object Ask {
 
     val tpeChannel = weakTypeOf[Channel]
     val tpeMsg = weakTypeOf[Msg]
-    val unwrapped = unwrapMsgType(c.universe)(tpeMsg)
+    val isFuture = tpeMsg <:< typeOf[Future[_]]
+    val unwrapped =
+      if (isFuture)
+        tpeMsg match {
+          case TypeRef(_, _, x :: _) ⇒ unwrapMsgType(c.universe)(x)
+        }
+      else unwrapMsgType(c.universe)(tpeMsg)
     val out = replyChannels(c.universe)(tpeChannel, unwrapped)
 
     Tell.verify(c)(null, unwrapped, typeOf[(Any, Nothing) :+: TNil], tpeChannel)
 
     implicit val ttReturnChannels = c.TypeTag[ReturnChannels](toChannels(c.universe)(out, weakTypeOf[Nothing]))
     implicit val ttReturnLUB = c.TypeTag[ReturnLUB](c.universe.lub(out))
-    reify(askOps[WrappedMessage[ReturnChannels, ReturnLUB]](
-      c.prefix.splice.actorRef, toMsg(c)(msg, tpeMsg).splice)(imp[Timeout](c).splice))
+    if (isFuture)
+      if (unwrapped <:< typeOf[ChannelList])
+        reify(askFutureWrapped[WrappedMessage[ReturnChannels, ReturnLUB]](
+          c.prefix.splice.actorRef, msg.splice.asInstanceOf[Future[WrappedMessage[TNil, Any]]])(imp[Timeout](c).splice))
+      else
+        reify(askFuture[WrappedMessage[ReturnChannels, ReturnLUB]](
+          c.prefix.splice.actorRef, msg.splice.asInstanceOf[Future[Any]])(imp[Timeout](c).splice))
+    else
+      reify(askOps[WrappedMessage[ReturnChannels, ReturnLUB]](
+        c.prefix.splice.actorRef, toMsg(c)(msg, tpeMsg).splice)(imp[Timeout](c).splice))
   }
 
   def opsImpl[ //
@@ -61,6 +75,7 @@ object Ask {
       channel.splice.actorRef, toMsg(c)(msg, tpeMsg).splice)(imp[Timeout](c).splice))
   }
 
+  // this is the implementation for Future[_] -?-> ChannelRef[_]
   def futureImpl[ //
   ReturnChannels <: ChannelList, // the precise type union describing the reply
   ReturnLUB, // the least-upper bound for the reply types
@@ -80,7 +95,7 @@ object Ask {
 
     implicit val ttReturnChannels = c.TypeTag[ReturnChannels](toChannels(c.universe)(out, weakTypeOf[Nothing]))
     implicit val ttReturnLUB = c.TypeTag[ReturnLUB](c.universe.lub(out))
-    if (tpeMsg <:< typeOf[ChannelList])
+    if (tpeMsg <:< typeOf[WrappedMessage[_, _]])
       reify(askFutureWrapped[WrappedMessage[ReturnChannels, ReturnLUB]](
         channel.splice.actorRef, c.prefix.splice.future.asInstanceOf[Future[WrappedMessage[TNil, Any]]])(imp[Timeout](c).splice))
     else
