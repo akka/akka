@@ -45,10 +45,6 @@ class ClusterConfigSpec extends AkkaSpec {
       MaxGossipMergeRate must be(5.0 plusOrMinus 0.0001)
       SchedulerTickDuration must be(33 millis)
       SchedulerTicksPerWheel must be(512)
-      SendCircuitBreakerSettings must be(CircuitBreakerSettings(
-        maxFailures = 3,
-        callTimeout = 2 seconds,
-        resetTimeout = 30 seconds))
       MetricsEnabled must be(true)
       MetricsCollectorClass must be(classOf[SigarMetricsCollector].getName)
       MetricsInterval must be(3 seconds)

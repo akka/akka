@@ -99,8 +99,6 @@ private[cluster] object InternalClusterAction {
 
   case object PublishStatsTick extends Tick
 
-  case class SendClusterMessage(to: Address, msg: ClusterMessage)
-
   case class SendGossipTo(address: Address)
 
   case object GetClusterCoreRef
@@ -194,8 +192,12 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
   var stats = ClusterStats()
 
-  val coreSender = context.actorOf(Props[ClusterCoreSender].
-    withDispatcher(UseDispatcher), name = "coreSender")
+  /**
+   * Looks up and returns the remote cluster command connection for the specific address.
+   */
+  private def clusterCore(address: Address): ActorRef =
+    context.actorFor(RootActorPath(address) / "system" / "cluster" / "core")
+
   val heartbeatSender = context.actorOf(Props[ClusterHeartbeatSender].
     withDispatcher(UseDispatcher), name = "heartbeatSender")
 
@@ -300,7 +302,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
       if (address == selfAddress)
         joining(address)
       else
-        coreSender ! SendClusterMessage(address, ClusterUserAction.Join(selfAddress))
+        clusterCore(address) ! ClusterUserAction.Join(selfAddress)
     }
   }
 
@@ -497,7 +499,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
         val rate = mergeRate(stats.mergeConflictCount)
 
         if (rate <= MaxGossipMergeRate)
-          coreSender ! SendClusterMessage(to = localGossip.leader.get, msg = GossipMergeConflict(GossipEnvelope(selfAddress, localGossip), envelope))
+          localGossip.leader foreach { clusterCore(_) ! GossipMergeConflict(GossipEnvelope(selfAddress, localGossip), envelope) }
         else
           log.debug("Skipping gossip merge conflict due to rate [{}] / s ", rate)
 
@@ -712,18 +714,14 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
         removedMembers foreach { member ⇒
           val address = member.address
           log.info("Cluster Node [{}] - Leader is moving node [{}] from EXITING to REMOVED - and removing node from node ring", selfAddress, address)
-          coreSender ! SendClusterMessage(
-            to = address,
-            msg = ClusterLeaderAction.Remove(address))
+          clusterCore(address) ! ClusterLeaderAction.Remove(address)
         }
 
         //  tell all exiting members to exit
         exitingMembers foreach { member ⇒
           val address = member.address
           log.info("Cluster Node [{}] - Leader is moving node [{}] from LEAVING to EXITING", selfAddress, address)
-          coreSender ! SendClusterMessage(
-            to = address,
-            msg = ClusterLeaderAction.Exit(address)) // FIXME should use ? to await completion of handoff?
+          clusterCore(address) ! ClusterLeaderAction.Exit(address) // FIXME should use ? to await completion of handoff?
         }
 
         // log the auto-downing of the unreachable nodes
@@ -804,8 +802,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
     gossipTo(address, GossipEnvelope(selfAddress, latestGossip, conversation = false))
 
   def gossipTo(address: Address, gossipMsg: GossipEnvelope): Unit =
-    if (address != selfAddress)
-      coreSender ! SendClusterMessage(address, gossipMsg)
+    if (address != selfAddress) clusterCore(address) ! gossipMsg
 
   def publish(newGossip: Gossip): Unit = {
     publisher ! PublishChanges(newGossip)
@@ -870,27 +867,6 @@ private[cluster] final class JoinSeedNodeProcess(seedNodes: immutable.IndexedSeq
   def done: Actor.Receive = {
     case InitJoinAck(_) ⇒ // already received one, skip rest
     case ReceiveTimeout ⇒ context.stop(self)
-  }
-}
-
-/**
- * INTERNAL API.
- */
-private[cluster] final class ClusterCoreSender extends Actor with ActorLogging {
-  import InternalClusterAction._
-
-  val selfAddress = Cluster(context.system).selfAddress
-
-  /**
-   * Looks up and returns the remote cluster command connection for the specific address.
-   */
-  private def clusterCoreConnectionFor(address: Address): ActorRef =
-    context.actorFor(RootActorPath(address) / "system" / "cluster" / "core")
-
-  def receive = {
-    case SendClusterMessage(to, msg) ⇒
-      log.debug("Cluster Node [{}] - Trying to send [{}] to [{}]", selfAddress, msg.getClass.getSimpleName, to)
-      clusterCoreConnectionFor(to) ! msg
   }
 }
 
