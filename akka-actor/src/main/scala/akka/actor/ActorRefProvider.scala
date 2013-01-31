@@ -11,8 +11,8 @@ import akka.util.{ Switch, Helpers }
 import akka.japi.Util.immutableSeq
 import akka.util.Collections.EmptyImmutableSeq
 import scala.util.{ Success, Failure }
-import scala.concurrent.{ Future, Promise }
 import java.util.concurrent.atomic.AtomicLong
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -51,8 +51,8 @@ trait ActorRefProvider {
    */
   def settings: ActorSystem.Settings
 
-  //FIXME WHY IS THIS HERE?
-  def dispatcher: MessageDispatcher
+  //FIXME Only here because of AskSupport, should be dealt with
+  def dispatcher: ExecutionContext
 
   /**
    * Initialization of an ActorRefProvider happens in two steps: first
@@ -169,7 +169,7 @@ trait ActorRefFactory {
   /**
    * Returns the default MessageDispatcher associated with this ActorRefFactory
    */
-  implicit def dispatcher: MessageDispatcher
+  implicit def dispatcher: ExecutionContext
 
   /**
    * Father of all children created by this interface.
@@ -469,7 +469,7 @@ class LocalActorRefProvider(
   @volatile
   private var system: ActorSystemImpl = _
 
-  def dispatcher: MessageDispatcher = system.dispatcher
+  def dispatcher: ExecutionContext = system.dispatcher
 
   lazy val terminationPromise: Promise[Unit] = Promise[Unit]()
 

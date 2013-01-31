@@ -10,10 +10,10 @@ import akka.event.{ Logging, LoggingAdapter, EventStream }
 import akka.event.Logging.Error
 import akka.serialization.{ JavaSerializer, Serialization, SerializationExtension }
 import akka.pattern.pipe
-import scala.concurrent.Future
 import scala.util.control.NonFatal
 import akka.actor.SystemGuardian.{ TerminationHookDone, TerminationHook, RegisterTerminationHook }
 import scala.util.control.Exception.Catcher
+import scala.concurrent.{ ExecutionContext, Future }
 
 object RemoteActorRefProvider {
   private case class Internals(transport: RemoteTransport, serialization: Serialization, remoteDaemon: InternalActorRef)
@@ -125,7 +125,7 @@ class RemoteActorRefProvider(
   override def guardian: LocalActorRef = local.guardian
   override def systemGuardian: LocalActorRef = local.systemGuardian
   override def terminationFuture: Future[Unit] = local.terminationFuture
-  override def dispatcher: MessageDispatcher = local.dispatcher
+  override def dispatcher: ExecutionContext = local.dispatcher
   override def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit = local.registerTempActor(actorRef, path)
   override def unregisterTempActor(path: ActorPath): Unit = local.unregisterTempActor(path)
   override def tempPath(): ActorPath = local.tempPath()

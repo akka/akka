@@ -25,6 +25,12 @@ Search                               Replace with
 If you need to convert from Java to ``scala.collection.immutable.Seq`` or ``scala.collection.immutable.Iterable`` you should use ``akka.japi.Util.immutableSeq(…)``,
 and if you need to convert from Scala you can simply switch to using immutable collections yourself or use the ``to[immutable.<collection-type>]`` method.
 
+ActorContext & ActorRefFactory dispatcher
+=========================================
+
+The return type of ``ActorContext``'s and ``ActorRefFactory``'s ``dispatcher``-method now returns ``ExecutionContext`` instead of ``MessageDispatcher``.
+
+
 API changes to FSM and TestFSMRef
 =================================
 

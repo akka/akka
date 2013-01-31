@@ -13,7 +13,7 @@ import akka.actor._
 import TestSupport._
 import org.scalatest.WordSpec
 import akka.testkit.TestLatch
-import concurrent.Await
+import scala.concurrent.Await
 import java.util.concurrent.TimeoutException
 import akka.util.Timeout
 

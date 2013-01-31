@@ -178,8 +178,6 @@ private[akka] object MessageDispatcher {
         println(" -> " + a + status + messages + parent)
       }
     }
-
-  implicit def defaultDispatcher(implicit system: ActorSystem): MessageDispatcher = system.dispatcher
 }
 
 abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) extends AbstractMessageDispatcher with BatchingExecutor with ExecutionContext {

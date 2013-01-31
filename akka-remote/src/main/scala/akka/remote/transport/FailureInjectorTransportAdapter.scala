@@ -39,8 +39,6 @@ private[remote] object FailureInjectorTransportAdapter {
 private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transport, val extendedSystem: ExtendedActorSystem)
   extends AbstractTransportAdapter(wrappedTransport)(extendedSystem.dispatcher) with AssociationEventListener {
 
-  import extendedSystem.dispatcher
-
   private def rng = ThreadLocalRandom.current()
   private val log = Logging(extendedSystem, "FailureInjector (gremlin)")
 

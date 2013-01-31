@@ -13,7 +13,7 @@ import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll, Suite }
 import org.scalatest.matchers.{ BePropertyMatcher, BePropertyMatchResult }
 import scala.reflect.ClassTag
 import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
-import concurrent.Await
+import scala.concurrent.Await
 import akka.util.Timeout
 import akka.testkit.AkkaSpec
 

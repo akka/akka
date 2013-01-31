@@ -4,7 +4,7 @@ import akka.event.Logging._
 import akka.actor._
 import akka.event.LoggingAdapter
 import java.util.logging
-import concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ ExecutionContext, Future }
 
 /**
  * Makes the Akka `Logging` API available as the `log`
