@@ -6,14 +6,15 @@ import ru.TypeTag
 import scala.reflect.macros.Context
 import scala.reflect.api.Universe
 import akka.actor.Props
+import akka.actor.Actor
 
 object CreateChild {
   import Helpers._
 
   def impl[MyChannels <: ChannelList: c.WeakTypeTag, ParentChannels <: ChannelList: c.WeakTypeTag, ChildChannels <: ChannelList: c.WeakTypeTag](
     c: Context {
-      type PrefixType = Channels[_, MyChannels]
-    })(factory: c.Expr[Channels[ParentChannels, ChildChannels]]): c.Expr[ChannelRef[ChildChannels]] = {
+      type PrefixType = Actor with Channels[_, MyChannels]
+    })(factory: c.Expr[Actor with Channels[ParentChannels, ChildChannels]]): c.Expr[ChannelRef[ChildChannels]] = {
 
     import c.universe._
 

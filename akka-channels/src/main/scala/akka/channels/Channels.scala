@@ -40,7 +40,7 @@ import akka.actor.ActorInitializationException
  *    erased type, which may be less precise than the actual channel type; this
  *    can lead to ClassCastExceptions if sending through the untyped ActorRef
  */
-trait Channels[P <: ChannelList, C <: ChannelList] extends Actor {
+trait Channels[P <: ChannelList, C <: ChannelList] { this: Actor ⇒
 
   import macros.Helpers._
 
@@ -49,7 +49,7 @@ trait Channels[P <: ChannelList, C <: ChannelList] extends Actor {
    * actor can handle everything which the child tries to send via its
    * `parent` ChannelRef.
    */
-  def createChild[Pa <: ChannelList, Ch <: ChannelList](factory: Channels[Pa, Ch]): ChannelRef[Ch] = macro macros.CreateChild.impl[C, Pa, Ch]
+  def createChild[Pa <: ChannelList, Ch <: ChannelList](factory: Actor with Channels[Pa, Ch]): ChannelRef[Ch] = macro macros.CreateChild.impl[C, Pa, Ch]
 
   /**
    * Properly typed ChannelRef for the context.parent.

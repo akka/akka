@@ -43,19 +43,19 @@ object ChannelSpec {
   object D extends D
 
   // used for sender verification in the first two test cases
-  class Tester extends Channels[TNil, (A, C) :+: (B, D) :+: TNil] {
+  class Tester extends Actor with Channels[TNil, (A, C) :+: (B, D) :+: TNil] {
     channel[A.type] { (msg, snd) ⇒ snd <-!- C }
     channel[A] { (msg, snd) ⇒ snd <-!- C1 }
     channel[B] {
       case (B, s) ⇒ s <-!- D
     }
   }
-  class RecvC(ref: ActorRef) extends Channels[TNil, (C, Nothing) :+: TNil] {
+  class RecvC(ref: ActorRef) extends Actor with Channels[TNil, (C, Nothing) :+: TNil] {
     channel[C] { case (x, _) ⇒ ref ! x }
   }
 
   // pos compile test for multiple reply channels
-  class SubChannels extends Channels[TNil, (A, B) :+: (A, C) :+: TNil] {
+  class SubChannels extends Actor with Channels[TNil, (A, B) :+: (A, C) :+: TNil] {
     channel[A] {
       case (A1, x) ⇒ B -!-> x
       case (_, x)  ⇒ x <-!- C
@@ -63,8 +63,8 @@ object ChannelSpec {
   }
 
   // pos compile test for children
-  class Children extends Channels[TNil, (A, B) :+: (C, Nothing) :+: TNil] {
-    val c = createChild(new Channels[(A, Nothing) :+: TNil, (B, C) :+: TNil] {
+  class Children extends Actor with Channels[TNil, (A, B) :+: (C, Nothing) :+: TNil] {
+    val c = createChild(new Actor with Channels[(A, Nothing) :+: TNil, (B, C) :+: TNil] {
       channel[B] { case (B, s) ⇒ s <-!- C }
     })
 
@@ -76,12 +76,12 @@ object ChannelSpec {
       case (C, _) ⇒ client ! C
     }
 
-    createChild(new Channels[(C, Nothing) :+: TNil, TNil] {})
-    createChild(new Channels[(A, Nothing) :+:(C, Nothing) :+: TNil, TNil] {})
+    createChild(new Actor with Channels[(C, Nothing) :+: TNil, TNil] {})
+    createChild(new Actor with Channels[(A, Nothing) :+:(C, Nothing) :+: TNil, TNil] {})
   }
 
   // compile test for polymorphic actors
-  class WriteOnly[T1: ru.TypeTag, T2: ru.TypeTag](target: ChannelRef[(T1, T2) :+: TNil]) extends Channels[TNil, (D, D) :+: (T1, T2) :+: TNil] {
+  class WriteOnly[T1: ru.TypeTag, T2: ru.TypeTag](target: ChannelRef[(T1, T2) :+: TNil]) extends Actor with Channels[TNil, (D, D) :+: (T1, T2) :+: TNil] {
     implicit val t = Timeout(1.second)
     import akka.pattern.ask
 
@@ -91,7 +91,7 @@ object ChannelSpec {
   }
 
   // compile test for whole-channel polymorphism
-  class Poly[T <: ChannelList: ru.TypeTag](target: ChannelRef[T]) extends Channels[TNil, (A, A) :+: (B, B) :+: T] {
+  class Poly[T <: ChannelList: ru.TypeTag](target: ChannelRef[T]) extends Actor with Channels[TNil, (A, A) :+: (B, B) :+: T] {
     implicit val timeout = Timeout(1.second)
     channel[T] { (x, snd) ⇒
       val xx: WrappedMessage[T, Any] = x
@@ -107,11 +107,11 @@ object ChannelSpec {
   }
 
   // companion to WriteOnly for testing pass-through
-  class EchoTee(target: ActorRef) extends Channels[TNil, (C, C) :+: TNil] {
+  class EchoTee(target: ActorRef) extends Actor with Channels[TNil, (C, C) :+: TNil] {
     channel[C] { (c, snd) ⇒ target ! C1; snd <-!- C1 }
   }
 
-  class MissingChannel extends Channels[TNil, (A, A) :+: (B, B) :+: TNil] {
+  class MissingChannel extends Actor with Channels[TNil, (A, A) :+: (B, B) :+: TNil] {
     channel[A.type] { (_, _) ⇒ }
   }
 
@@ -123,7 +123,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
 
   implicit val selfChannel = new ChannelRef[(Any, Nothing) :+: TNil](testActor)
 
-  "Channels" must {
+  "Actor with Channels" must {
 
     "construct refs" in {
       val ref = ChannelExt(system).actorOf(new Tester)
@@ -231,7 +231,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
         eval("""
             |import akka.channels._
             |import ChannelSpec._
-            |new Channels[TNil, (A, B) :+: TNil] {
+            |new Actor with Channels[TNil, (A, B) :+: TNil] {
             |  channel[B] {
             |    case (B, _) =>
             |  }
@@ -245,7 +245,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
         eval("""
             |import akka.channels._
             |import ChannelSpec._
-            |new Channels[TNil, (A, B) :+: (A1.type, C) :+: TNil] {
+            |new Actor with Channels[TNil, (A, B) :+: (A1.type, C) :+: TNil] {
             |  channel[A] {
             |    case (A1, x) => x <-!- C
             |  }
@@ -258,9 +258,10 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
       intercept[ToolBoxError] {
         eval("""
             |import akka.channels._
+            |import akka.actor.Actor
             |import ChannelSpec._
-            |new Channels[TNil, (A, B) :+: (C, D) :+: TNil] {
-            |  createChild(new Channels[Nothing, Nothing] {})
+            |new Actor with Channels[TNil, (A, B) :+: (C, D) :+: TNil] {
+            |  createChild(new Actor with Channels[Nothing, Nothing] {})
             |}
             """.stripMargin)
       }.message must include("Parent argument must not be Nothing")
@@ -270,9 +271,10 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
       intercept[ToolBoxError] {
         eval("""
             |import akka.channels._
+            |import akka.actor.Actor
             |import ChannelSpec._
-            |new Channels[TNil, (A, B) :+: (C, D) :+: TNil] {
-            |  createChild(new Channels[(B, Nothing) :+: TNil, TNil] {})
+            |new Actor with Channels[TNil, (A, B) :+: (C, D) :+: TNil] {
+            |  createChild(new Actor with Channels[(B, Nothing) :+: TNil, TNil] {})
             |}
             """.stripMargin)
       }.message must include("This actor cannot support a child requiring channels akka.channels.ChannelSpec.B")
@@ -285,8 +287,8 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
     }
 
     "have a working parentChannel" in {
-      val parent = ChannelExt(system).actorOf(new Channels[TNil, (A, Nothing) :+: TNil] {
-        createChild(new Channels[(A, Nothing) :+: TNil, TNil] {
+      val parent = ChannelExt(system).actorOf(new Actor with Channels[TNil, (A, Nothing) :+: TNil] {
+        createChild(new Actor with Channels[(A, Nothing) :+: TNil, TNil] {
           parentChannel <-!- A
         })
         channel[A] { (msg, snd) ⇒ testActor ! msg }
@@ -294,12 +296,12 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
       expectMsg(A)
     }
 
-    "not permit top-level Channels which send to parent" in {
+    "not permit top-level Actor with Channels which send to parent" in {
       intercept[ToolBoxError] {
         eval("""
             |import akka.channels._
             |import ChannelSpec._
-            |null.asInstanceOf[ChannelExtension].actorOf(new Channels[(A, A) :+: TNil, (A, Nothing) :+: TNil] {})
+            |null.asInstanceOf[ChannelExtension].actorOf(new Actor with Channels[(A, A) :+: TNil, (A, Nothing) :+: TNil] {})
             """.stripMargin)
       }.message must include("type mismatch")
     }
@@ -309,8 +311,8 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
         eval("""
             |import akka.channels._
             |import ChannelSpec._
-            |new Channels[TNil, (A, Nothing) :+: TNil] {
-            |  createChild(new Channels[(A, Nothing) :+: TNil, TNil] {
+            |new Actor with Channels[TNil, (A, Nothing) :+: TNil] {
+            |  createChild(new Actor with Channels[(A, Nothing) :+: TNil, TNil] {
             |    parentChannel <-!- B
             |  })
             |}
@@ -400,7 +402,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
       lastSender must be(wrap.actorRef)
     }
 
-    "allow wrapping of ChannelsRefs with replies" in {
+    "allow wrapping of Actor with ChannelsRefs with replies" in {
       val probe = TestProbe()
       val target = ChannelExt(system).actorOf(new EchoTee(probe.ref))
       val wrap = ChannelExt(system).actorOf(new WriteOnly[C, C](target))
@@ -429,7 +431,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
         eval("""
             |import akka.channels._
             |import ChannelSpec._
-            |new Channels[TNil, (List[A], A) :+: (List[B], B) :+: TNil] {
+            |new Actor with Channels[TNil, (List[A], A) :+: (List[B], B) :+: TNil] {
             |  channel[List[A]] { (x, s) ⇒ }
             |  channel[List[B]] { (x, s) ⇒ }
             |}
@@ -458,7 +460,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
     }
 
     "be able to forward fully generic channels" in {
-      val cd = ChannelExt(system).actorOf(new Channels[TNil, (C, D) :+: TNil] {
+      val cd = ChannelExt(system).actorOf(new Actor with Channels[TNil, (C, D) :+: TNil] {
         channel[C] { (x, snd) ⇒ snd <-!- D }
       })
       val t = ChannelExt(system).actorOf(new Poly(cd))
@@ -474,7 +476,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
   "A WrappedMessage" must {
 
     "be sendable to a ChannelRef" in {
-      implicit val selfChannel = ChannelExt(system).actorOf(new Channels[TNil, (C, Nothing) :+:(D, Nothing) :+: TNil] {
+      implicit val selfChannel = ChannelExt(system).actorOf(new Actor with Channels[TNil, (C, Nothing) :+:(D, Nothing) :+: TNil] {
         channel[C] { (c, snd) ⇒ testActor ! c }
         channel[D] { (d, snd) ⇒ testActor ! d }
       })
