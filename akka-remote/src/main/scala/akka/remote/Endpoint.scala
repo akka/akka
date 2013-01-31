@@ -56,9 +56,7 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
           if (LogReceive) log.debug("received daemon message {}", msgLog)
           payload match {
             case m @ (_: DaemonMsg | _: Terminated) ⇒
-              try remoteDaemon ! m catch {
-                case NonFatal(e) ⇒ log.error(e, "exception while processing remote command {} from {}", m, sender)
-              }
+              remoteDaemon ! m
             case x ⇒ log.debug("remoteDaemon received illegal message {} from {}", x, sender)
           }
         }
