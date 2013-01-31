@@ -13,7 +13,7 @@ import scala.concurrent.duration._
 import akka.util.Timeout
 import akka.testkit.TestProbe
 
-class ChannelDocSpec extends AkkaSpec {
+object ChannelDocSpec {
 
   //#motivation0
   trait Request
@@ -23,6 +23,39 @@ class ChannelDocSpec extends AkkaSpec {
   case object CommandSuccess extends Reply
   case class CommandFailure(msg: String) extends Reply
   //#motivation0
+
+  //#child
+  case class Stats(b: Request)
+  case object GetChild
+  case class ChildRef(child: ChannelRef[(Request, Reply) :+: TNil])
+
+  class Child extends Actor
+    with Channels[(Stats, Nothing) :+: TNil, (Request, Reply) :+: TNil] {
+
+    channel[Request] { (x, snd) ⇒
+      parentChannel <-!- Stats(x)
+      snd <-!- CommandSuccess
+    }
+  }
+
+  class Parent extends Actor
+    with Channels[TNil, (Stats, Nothing) :+: (GetChild.type, ChildRef) :+: TNil] {
+    
+    val child = createChild(new Child)
+
+    channel[GetChild.type] { (_, snd) ⇒ ChildRef(child) -!-> snd }
+
+    channel[Stats] { (x, _) ⇒
+      // collect some stats
+    }
+  }
+
+  //#child
+}
+
+class ChannelDocSpec extends AkkaSpec {
+
+  import ChannelDocSpec._
 
   class A
   class B
@@ -116,14 +149,14 @@ class ChannelDocSpec extends AkkaSpec {
       extends Actor with Channels[TNil, (Request, Reply) :+: (T1, T2) :+: TNil] {
 
       implicit val timeout = Timeout(5.seconds)
-      
+
       //#become
       channel[Request] {
-        
+
         case (Command("close"), snd) ⇒
           channel[T1] { (t, s) ⇒ t -?-> target -!-> s }
           snd <-!- CommandSuccess
-          
+
         case (Command("open"), snd) ⇒
           channel[T1] { (_, _) ⇒ }
           snd <-!- CommandSuccess
@@ -161,6 +194,22 @@ class ChannelDocSpec extends AkkaSpec {
     //#processing
     expectNoMsg(500.millis)
     //#usage
+  }
+
+  "demonstrate child creation" in {
+    implicit val selfChannel = new ChannelRef[(Any, Nothing) :+: TNil](testActor)
+    //#child
+    // 
+    // then it is used somewhat like this:
+    // 
+    
+    val parent = ChannelExt(system).actorOf(new Parent)
+    parent <-!- GetChild
+    val child = expectMsgType[ChildRef].child // this assumes TestKit context
+
+    child <-!- Command("hey there")
+    expectMsg(CommandSuccess)
+    //#child
   }
 
 }

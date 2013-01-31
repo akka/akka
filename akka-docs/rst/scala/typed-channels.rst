@@ -449,6 +449,18 @@ Creating top-level actors with channels is done using the ``ChannelExt`` extensi
    :include: usage
    :exclude: processing
 
+Inside an actor with channels children are created using the ``createChild`` method:
+
+.. includecode:: code/docs/channels/ChannelDocSpec.scala#child
+
+In this example we create a simple child actor which responds to requests, but
+also keeps its parent informed about what it is doing. The parent channel
+within the child is thus declared to accept :class:`Stats` messages, and the
+parent must consequently declare such a channel in order to be able to create
+such a child. The parent’s job then is to create the child, make it available
+to the outside via properly typed messages and collect the statistics coming in
+from the child.
+
 Implementation Restrictions
 ---------------------------
 
