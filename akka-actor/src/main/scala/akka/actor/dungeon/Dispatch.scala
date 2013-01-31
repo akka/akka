@@ -8,11 +8,12 @@ import scala.annotation.tailrec
 import akka.dispatch.{ Terminate, SystemMessage, Suspend, Resume, Recreate, MessageDispatcher, Mailbox, Envelope, Create }
 import akka.event.Logging.Error
 import akka.util.Unsafe
-import scala.util.control.NonFatal
 import akka.dispatch.NullMessage
 import akka.actor.{ NoSerializationVerificationNeeded, InvalidMessageException, ActorRef, ActorCell }
 import akka.serialization.SerializationExtension
+import scala.util.control.NonFatal
 import scala.util.control.Exception.Catcher
+import scala.concurrent.ExecutionContext
 
 private[akka] trait Dispatch { this: ActorCell ⇒
 
@@ -31,11 +32,6 @@ private[akka] trait Dispatch { this: ActorCell ⇒
   final def numberOfMessages: Int = mailbox.numberOfMessages
 
   val dispatcher: MessageDispatcher = system.dispatchers.lookup(props.dispatcher)
-
-  /**
-   * UntypedActorContext impl
-   */
-  final def getDispatcher(): MessageDispatcher = dispatcher
 
   final def isTerminated: Boolean = mailbox.isClosed
 

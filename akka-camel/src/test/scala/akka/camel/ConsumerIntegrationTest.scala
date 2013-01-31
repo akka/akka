@@ -18,7 +18,7 @@ import org.apache.camel.{ FailedToCreateRouteException, CamelExecutionException 
 import java.util.concurrent.{ ExecutionException, TimeUnit, TimeoutException }
 import akka.actor.Status.Failure
 import scala.concurrent.duration._
-import concurrent.{ ExecutionContext, Await }
+import scala.concurrent.{ ExecutionContext, Await }
 import akka.testkit._
 import akka.util.Timeout
 
