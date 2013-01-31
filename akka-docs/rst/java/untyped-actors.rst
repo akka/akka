@@ -322,6 +322,8 @@ message. This gives the best concurrency and scalability characteristics.
 
   actor.tell("Hello");
 
+.. _actors-tell-sender-java:
+
 Or with the sender reference passed along with the message and available to the receiving Actor
 in its ``getSender: ActorRef`` member field. The target actor can use this
 to reply to the original sender, by using ``getSender().tell(replyMsg)``.
@@ -499,6 +501,8 @@ enables cleaning up of resources:
   actor and create its replacement in response to the :class:`Terminated`
   message which will eventually arrive.
 
+.. _poison-pill-java:
+
 PoisonPill
 ----------
 
@@ -628,14 +632,18 @@ actor's state which have the same property. The :class:`Stash` trait’s
 implementation of :meth:`preRestart` will call ``unstashAll()``, which is
 usually the desired behavior.
 
+.. _killing-actors-java:
 
 Killing an Actor
 ================
 
-You can kill an actor by sending a ``Kill`` message. This will restart the actor
-through regular supervisor semantics.
+You can kill an actor by sending a ``Kill`` message. This will cause the actor
+to throw a :class:`ActorKilledException`, triggering a failure. The actor will
+suspend operation and its supervisor will be asked how to handle the failure,
+which may mean resuming the actor, restarting it or terminating it completely.
+See :ref:`supervision-directives` for more information.
 
-Use it like this:
+Use ``Kill`` like this:
 
 .. includecode:: code/docs/actor/UntypedActorDocTestBase.java
    :include: import-actors
