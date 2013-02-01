@@ -50,7 +50,7 @@ public class TestKitDocTest {
   @BeforeClass
   public static void setup() {
     final Config config = ConfigFactory.parseString(
-        "akka.event-handlers = [akka.testkit.TestEventListener]");
+        "akka.loggers = [akka.testkit.TestEventListener]");
     system = ActorSystem.create("demoSystem", config);
   }
   

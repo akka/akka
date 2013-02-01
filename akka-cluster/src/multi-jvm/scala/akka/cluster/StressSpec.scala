@@ -101,7 +101,7 @@ object StressMultiJvmSpec extends MultiNodeConfig {
       auto-down = on
       publish-stats-interval = 0 s # always, when it happens
     }
-    akka.event-handlers = ["akka.testkit.TestEventListener"]
+    akka.loggers = ["akka.testkit.TestEventListener"]
     akka.loglevel = INFO
     akka.remote.log-remote-lifecycle-events = off
 

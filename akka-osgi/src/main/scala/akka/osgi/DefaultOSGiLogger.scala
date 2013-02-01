@@ -9,7 +9,7 @@ import akka.event.Logging.{ DefaultLogger, LogEvent }
 import akka.event.Logging.Error.NoCause
 
 /**
- * EventHandler for OSGi environment.
+ * Logger for OSGi environment.
  * Stands for an interface between akka and the OSGi LogService
  * It uses the OSGi LogService to log the received LogEvents
  */
@@ -20,7 +20,7 @@ class DefaultOSGiLogger extends DefaultLogger {
   override def receive: Receive = uninitialisedReceive orElse super.receive
 
   /**
-   * Behaviour of the EventHandler that waits for its LogService
+   * Behaviour of the logger that waits for its LogService
    * @return  Receive: Store LogEvent or become initialised
    */
   def uninitialisedReceive: Receive = {
@@ -29,7 +29,7 @@ class DefaultOSGiLogger extends DefaultLogger {
     context.system.eventStream.subscribe(self, classOf[LogService])
     context.system.eventStream.unsubscribe(self, UnregisteringLogService.getClass)
     /**
-     * Logs every already received LogEvent and set the EventHandler ready to log every incoming LogEvent.
+     * Logs every already received LogEvent and set the logger ready to log every incoming LogEvent.
      *
      * @param logService OSGi LogService that has been registered,
      */
@@ -78,6 +78,6 @@ class DefaultOSGiLogger extends DefaultLogger {
 
 /**
  * Message sent when LogService is unregistred.
- * Sent from the ActorSystemActivator to an EventHandler (as DefaultOsgiLogger).
+ * Sent from the ActorSystemActivator to a logger (as DefaultOsgiLogger).
  */
 case object UnregisteringLogService

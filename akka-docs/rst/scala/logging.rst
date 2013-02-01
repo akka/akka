@@ -196,26 +196,27 @@ purposes as it contains exactly the default behavior.
   to look up the logger instance to use instead of the class’ name), and you
   might want to do this also in case you implement your own logging adapter.
 
-Event Handler
-=============
+Loggers
+=======
 
 Logging is performed asynchronously through an event bus. You can configure
-which event handlers that should subscribe to the logging events. That is done
-using the ``event-handlers`` element in the :ref:`configuration`.  Here you can
+which loggers that should subscribe to the logging events. That is done
+using the ``loggers`` element in the :ref:`configuration`.  Here you can
 also define the log level.
 
 .. code-block:: ruby
 
   akka {
-    # Event handlers to register at boot time (Logging$DefaultLogger logs to STDOUT)
-    event-handlers = ["akka.event.Logging$DefaultLogger"]
+    # Loggers to register at boot time (akka.event.Logging$DefaultLogger logs
+    # to STDOUT)
+    loggers = ["akka.event.Logging$DefaultLogger"]
     # Options: ERROR, WARNING, INFO, DEBUG
     loglevel = "DEBUG"
   }
 
 The default one logs to STDOUT and is registered by default. It is not intended
 to be used for production. There is also an :ref:`slf4j-scala`
-event handler available in the 'akka-slf4j' module.
+logger available in the 'akka-slf4j' module.
 
 Example of creating a listener:
 
@@ -227,7 +228,7 @@ Example of creating a listener:
 SLF4J
 =====
 
-Akka provides an event handler for `SL4FJ <http://www.slf4j.org/>`_. This module is available in the 'akka-slf4j.jar'.
+Akka provides a logger for `SL4FJ <http://www.slf4j.org/>`_. This module is available in the 'akka-slf4j.jar'.
 It has one single dependency; the slf4j-api jar. In runtime you also need a SLF4J backend, we recommend `Logback <http://logback.qos.ch/>`_:
 
   .. code-block:: scala
@@ -235,7 +236,7 @@ It has one single dependency; the slf4j-api jar. In runtime you also need a SLF4
      lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.7"
 
 
-You need to enable the Slf4jEventHandler in the 'event-handlers' element in
+You need to enable the Slf4jLogger in the 'loggers' element in
 the :ref:`configuration`. Here you can also define the log level of the event bus.
 More fine grained log levels can be defined in the configuration of the SLF4J backend
 (e.g. logback.xml).
@@ -243,7 +244,7 @@ More fine grained log levels can be defined in the configuration of the SLF4J ba
 .. code-block:: ruby
 
   akka {
-    event-handlers = ["akka.event.slf4j.Slf4jEventHandler"]
+    loggers = ["akka.event.slf4j.Slf4jLogger"]
     loglevel = "DEBUG"
   }
 

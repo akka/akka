@@ -98,3 +98,17 @@ Old Scala API                                            New Scala API
 ``agent.resume()``                                         ``No replacement, pointless feature``
 ``agent.close()``                                          ``No replacement, not needed in new implementation``
 ======================================================== ========================================================
+
+
+``event-handlers`` renamed to ``loggers``
+=========================================
+
+If you have defined custom event handlers (loggers) in your configuration you need to change
+``akka.event-handlers`` to ``akka.loggers`` and
+``akka.event-handler-startup-timeout`` to ``akka.logger-startup-timeout``.
+
+The SLF4J logger has been renamed from ``akka.event.slf4j.Slf4jEventHandler`` to
+``akka.event.slf4j.Slf4jLogger``.
+
+The ``java.util.logging`` logger has been renamed from ``akka.contrib.jul.JavaLoggingEventHandler`` to
+``akka.contrib.jul.JavaLogger``.

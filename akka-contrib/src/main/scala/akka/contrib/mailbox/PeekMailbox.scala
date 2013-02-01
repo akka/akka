@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.contrib.mailbox
 
 import java.util.concurrent.{ ConcurrentHashMap, ConcurrentLinkedQueue }
@@ -55,8 +58,8 @@ class PeekMailbox(owner: ActorRef, system: ActorSystem, maxRetries: Int)
 
   /*
    * Since the queue itself is used to determine when to schedule the actor
-   * (see Mailbox.hasMessages), we cannot poll() on the first try and then 
-   * continue handing back out that same message until ACKed, peek() must be 
+   * (see Mailbox.hasMessages), we cannot poll() on the first try and then
+   * continue handing back out that same message until ACKed, peek() must be
    * used. The retry limit logic is then formulated in terms of the `tries`
    * field, which holds
    *  0             if clean slate (i.e. last dequeue was ack()ed)
@@ -70,10 +73,18 @@ class PeekMailbox(owner: ActorRef, system: ActorSystem, maxRetries: Int)
 
   // this logic does not work if maxRetries==0, but then you could also use a normal mailbox
   override def dequeue(): Envelope = tries match {
-    case -1           ⇒ queue.poll()
-    case 0 | Marker   ⇒ val e = queue.peek(); tries = if (e eq null) 0 else 1; e
-    case `maxRetries` ⇒ tries = Marker; queue.poll()
-    case n            ⇒ tries = n + 1; queue.peek()
+    case -1 ⇒
+      queue.poll()
+    case 0 | Marker ⇒
+      val e = queue.peek()
+      tries = if (e eq null) 0 else 1
+      e
+    case `maxRetries` ⇒
+      tries = Marker
+      queue.poll()
+    case n ⇒
+      tries = n + 1
+      queue.peek()
   }
 
   def ack(): Unit = {
