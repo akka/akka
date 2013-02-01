@@ -25,8 +25,8 @@ class RemoteConfigSpec extends AkkaSpec(
       val settings = RARP(system).provider.remoteSettings
       import settings._
 
-      StartupTimeout must be === Timeout(5.seconds)
-      ShutdownTimeout must be === Timeout(5.seconds)
+      StartupTimeout must be === Timeout(10.seconds)
+      ShutdownTimeout must be === Timeout(10.seconds)
       FlushWait must be === 2.seconds
       UsePassiveConnections must be(true)
       UntrustedMode must be(false)
