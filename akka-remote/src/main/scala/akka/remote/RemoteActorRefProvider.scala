@@ -243,18 +243,20 @@ private[akka] class RemoteActorRef private[akka] (
 
   def isTerminated: Boolean = false
 
-  private def handleException: Catcher[Unit] = {
+  private def handleException(message: Any): Catcher[Unit] = {
     case e: InterruptedException ⇒
       remote.system.eventStream.publish(Error(e, path.toString, getClass, "interrupted during message send"))
+      provider.deadLetters ! message
       Thread.currentThread.interrupt()
     case NonFatal(e) ⇒
       remote.system.eventStream.publish(Error(e, path.toString, getClass, "swallowing exception during message send"))
+      provider.deadLetters ! message
   }
 
-  def sendSystemMessage(message: SystemMessage): Unit = try remote.send(message, None, this) catch handleException
+  def sendSystemMessage(message: SystemMessage): Unit = try remote.send(message, None, this) catch handleException(message)
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit =
-    try remote.send(message, Option(sender), this) catch handleException
+    try remote.send(message, Option(sender), this) catch handleException(message)
 
   def start(): Unit = if (props.isDefined && deploy.isDefined) provider.useActorOnNode(path, props.get, deploy.get, getParent)
 
