@@ -26,7 +26,7 @@ private[io] object UdpFFSelector {
 private[io] class UdpFFSelector(manager: ActorRef, udp: UdpFFExt) extends Actor with ActorLogging {
 
   import UdpFFSelector._
-  import udp.Settings._
+  import udp.settings._
 
   @volatile var childrenKeys = immutable.HashMap.empty[String, SelectionKey]
   val sequenceNumber = Iterator from 0

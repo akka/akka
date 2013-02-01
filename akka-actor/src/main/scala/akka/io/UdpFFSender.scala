@@ -6,7 +6,7 @@ package akka.io
 import akka.actor._
 import java.nio.channels.DatagramChannel
 import akka.io.UdpFF._
-import akka.io.UdpFFSelector.RegisterDatagramChannel
+import akka.io.SelectionHandler.RegisterChannel
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
@@ -19,7 +19,7 @@ private[io] class UdpFFSender(val udpFF: UdpFFExt, val selector: ActorRef)
     datagramChannel.configureBlocking(false)
     datagramChannel
   }
-  selector ! RegisterDatagramChannel(channel, 0)
+  selector ! RegisterChannel(channel, 0)
 
   def receive: Receive = internalReceive orElse sendHandlers
 

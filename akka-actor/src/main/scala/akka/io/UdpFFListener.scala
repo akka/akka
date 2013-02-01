@@ -5,7 +5,7 @@ package akka.io
 
 import akka.actor.{ ActorLogging, Actor, ActorRef }
 import akka.io.UdpFF._
-import akka.io.UdpFFSelector._
+import akka.io.SelectionHandler._
 import akka.util.ByteString
 import java.net.InetSocketAddress
 import java.nio.channels.DatagramChannel
@@ -20,7 +20,7 @@ private[io] class UdpFFListener(selectorRouter: ActorRef,
                                 val udpFF: UdpFFExt,
                                 options: immutable.Traversable[SocketOption])
   extends Actor with ActorLogging with WithUdpFFBufferPool with WithUdpFFSend {
-  import udpFF.Settings._
+  import udpFF.settings._
 
   def selector: ActorRef = context.parent
 
@@ -33,7 +33,7 @@ private[io] class UdpFFListener(selectorRouter: ActorRef,
     socket.bind(endpoint) // will blow up the actor constructor if the bind fails
     datagramChannel
   }
-  context.parent ! RegisterDatagramChannel(channel, OP_READ)
+  context.parent ! RegisterChannel(channel, OP_READ)
   bindCommander ! Bound
   log.debug("Successfully bound to {}", endpoint)
 
@@ -44,12 +44,12 @@ private[io] class UdpFFListener(selectorRouter: ActorRef,
     case ResumeReading   ⇒ selector ! ReadInterest
     case ChannelReadable ⇒ doReceive(handler, None)
 
-    case CommandFailed(RegisterDatagramChannel(datagramChannel, _)) ⇒
-      log.warning("Could not bind to UDP port since selector capacity limit is reached, aborting bind")
-      try datagramChannel.close()
-      catch {
-        case NonFatal(e) ⇒ log.error(e, "Error closing channel")
-      }
+    //    case CommandFailed(RegisterChannel(channel, _)) ⇒
+    //      log.warning("Could not bind to UDP port since selector capacity limit is reached, aborting bind")
+    //      try channel.close()
+    //      catch {
+    //        case NonFatal(e) ⇒ log.error(e, "Error closing channel")
+    //      }
 
     case Unbind ⇒
       log.debug("Unbinding endpoint {}", endpoint)

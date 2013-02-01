@@ -121,34 +121,19 @@ object UdpFF extends ExtensionKey[UdpFFExt] {
 
 class UdpFFExt(system: ExtendedActorSystem) extends IO.Extension {
 
-  val Settings = new Settings(system.settings.config.getConfig("akka.io.udpFF"))
-  class Settings private[UdpFFExt] (config: Config) {
-    import config._
+  val settings = new Settings(system.settings.config.getConfig("akka.io.udpFF"))
+  class Settings private[UdpFFExt] (_config: Config) extends SelectionHandlerSettings(_config) {
+    import _config._
 
     val NrOfSelectors = getInt("nr-of-selectors")
-    val MaxChannels = getString("max-channels") match {
-      case "unlimited" ⇒ -1
-      case _           ⇒ getInt("max-channels")
-    }
-    val SelectTimeout = getString("select-timeout") match {
-      case "infinite" ⇒ Duration.Inf
-      case x          ⇒ Duration(x)
-    }
-    val SelectorAssociationRetries = getInt("selector-association-retries")
     val DirectBufferSize = getIntBytes("direct-buffer-size")
     val MaxDirectBufferPoolSize = getInt("max-direct-buffer-pool-size")
 
-    val SelectorDispatcher = getString("selector-dispatcher")
-    val WorkerDispatcher = getString("worker-dispatcher")
     val ManagementDispatcher = getString("management-dispatcher")
-    val TraceLogging = getBoolean("trace-logging")
 
     require(NrOfSelectors > 0, "nr-of-selectors must be > 0")
-    require(MaxChannels == -1 || MaxChannels > 0, "max-channels must be > 0 or 'unlimited'")
-    require(SelectTimeout >= Duration.Zero, "select-timeout must not be negative")
-    require(SelectorAssociationRetries >= 0, "selector-association-retries must be >= 0")
 
-    val MaxChannelsPerSelector = if (MaxChannels == -1) -1 else math.max(MaxChannels / NrOfSelectors, 1)
+    override val MaxChannelsPerSelector = if (MaxChannels == -1) -1 else math.max(MaxChannels / NrOfSelectors, 1)
 
     private[this] def getIntBytes(path: String): Int = {
       val size = getBytes(path)
@@ -163,7 +148,7 @@ class UdpFFExt(system: ExtendedActorSystem) extends IO.Extension {
       name = "IO-UDP-FF")
   }
 
-  val bufferPool: BufferPool = new DirectByteBufferPool(Settings.DirectBufferSize, Settings.MaxDirectBufferPoolSize)
+  val bufferPool: BufferPool = new DirectByteBufferPool(settings.DirectBufferSize, settings.MaxDirectBufferPoolSize)
 }
 
 trait WithUdpFFBufferPool {

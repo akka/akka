@@ -5,7 +5,7 @@ package akka.io
 
 import akka.actor.{ ActorRef, ActorLogging, Actor }
 import akka.io.UdpFF.{ CommandFailed, Send }
-import akka.io.UdpFFSelector._
+import akka.io.SelectionHandler._
 import java.nio.channels.DatagramChannel
 
 trait WithUdpFFSend {
@@ -17,7 +17,7 @@ trait WithUdpFFSend {
   def selector: ActorRef
   def channel: DatagramChannel
   def udpFF: UdpFFExt
-  val settings = udpFF.Settings
+  val settings = udpFF.settings
 
   import settings._
 
