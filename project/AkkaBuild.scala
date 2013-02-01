@@ -74,7 +74,7 @@ object AkkaBuild extends Build {
       generatedPdf in Sphinx <<= generatedPdf in Sphinx in LocalProject(docs.id) map identity,
       generatedEpub in Sphinx <<= generatedEpub in Sphinx in LocalProject(docs.id) map identity
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples, channels, channelsTests)
   )
 
   lazy val actor = Project(
@@ -391,7 +391,7 @@ object AkkaBuild extends Build {
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
-    dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test",
+    dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test", channels,
       remote, cluster, slf4j, agent, dataflow, transactor, fileMailbox, zeroMQ, camel, osgi, osgiAries),
     settings = defaultSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
@@ -436,6 +436,24 @@ object AkkaBuild extends Build {
                         |""".stripMargin
     )
   ) configs (MultiJvm)
+
+  lazy val channels = Project(
+    id = "akka-channels-experimental",
+    base = file("akka-channels"),
+    dependencies = Seq(actor),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _)
+    )
+  )
+
+  lazy val channelsTests = Project(
+    id = "akka-channels-tests",
+    base = file("akka-channels-tests"),
+    dependencies = Seq(channels, testkit % "compile;test->test"),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _)
+    )
+  )
 
   // Settings
 
@@ -807,12 +825,11 @@ object Dependencies {
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
     val osgiCompendium= "org.osgi"                    % "org.osgi.compendium"          % "4.2.0"       // ApacheV2
 
-
     // Camel Sample
-    val camelJetty  = "org.apache.camel"            % "camel-jetty"                  % camelCore.revision // ApacheV2
+    val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
 
     // Cluster Sample
-    val sigar       = "org.hyperic"                 % "sigar"                        % "1.6.4"            // ApacheV2
+    val sigar       = "org.hyperic"                   % "sigar"                        % "1.6.4"            // ApacheV2
 
     // Test
 
