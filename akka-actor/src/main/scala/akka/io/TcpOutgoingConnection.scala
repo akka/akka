@@ -6,10 +6,10 @@ package akka.io
 
 import java.net.InetSocketAddress
 import java.io.IOException
-import java.nio.channels.SocketChannel
+import java.nio.channels.{ SelectionKey, SocketChannel }
 import scala.collection.immutable
 import akka.actor.ActorRef
-import TcpSelector._
+import akka.io.SelectionHandler._
 import Tcp._
 
 /**
@@ -32,7 +32,7 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
   if (channel.connect(remoteAddress))
     completeConnect(commander, options)
   else {
-    selector ! RegisterOutgoingConnection(channel)
+    selector ! RegisterChannel(channel, SelectionKey.OP_CONNECT)
     context.become(connecting(commander, options))
   }
 

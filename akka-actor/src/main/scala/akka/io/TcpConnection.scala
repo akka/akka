@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 import akka.actor._
 import akka.util.ByteString
 import Tcp._
-import TcpSelector._
+import akka.io.SelectionHandler._
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.

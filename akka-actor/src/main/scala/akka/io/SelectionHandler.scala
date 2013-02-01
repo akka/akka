@@ -43,6 +43,8 @@ abstract class SelectionHandlerSettings(config: Config) {
 private[io] object SelectionHandler {
   //FIXME: temporary
   case class KickStartCommand(childProps: Props)
+  // FIXME: all actors should listen to this
+  case object KickStartDone
 
   case class RegisterChannel(channel: SelectableChannel, initialOps: Int)
   case class Retry(command: KickStartCommand, retriesLeft: Int) { require(retriesLeft >= 0) }
@@ -150,7 +152,7 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
   //    }
 
   def kickStart(cmd: KickStartCommand, retriesLeft: Int): Unit = withCapacityProtection(cmd, retriesLeft) {
-    spawnChild(cmd.childProps) // TODO: inject sender somehow
+    spawnChild(cmd.childProps) ! KickStartDone
   }
 
   def withCapacityProtection(cmd: KickStartCommand, retriesLeft: Int)(body: ⇒ Unit): Unit = {
@@ -163,7 +165,7 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
     }
   }
 
-  def spawnChild(props: Props) =
+  def spawnChild(props: Props): ActorRef =
     context.watch {
       context.actorOf(
         props = props.withDispatcher(WorkerDispatcher),

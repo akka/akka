@@ -57,7 +57,7 @@ private[io] class UdpFFManager(udpFF: UdpFFExt) extends Actor {
   def receive = {
     case Bind(handler, endpoint, options) ⇒
       val commander = sender
-      selectorPool forward KickStartCommand(Props(
+      selectorPool ! KickStartCommand(Props(
         new UdpFFListener(selectorPool, handler, endpoint, commander, udpFF, options)))
     case SimpleSender ⇒ anonymousSender forward SimpleSender
   }

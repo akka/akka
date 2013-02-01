@@ -8,6 +8,7 @@ import java.nio.channels.SocketChannel
 import scala.collection.immutable
 import akka.actor.ActorRef
 import Tcp.SocketOption
+import akka.io.SelectionHandler.RegisterChannel
 
 /**
  * An actor handling the connection state machine for an incoming, already connected
@@ -22,6 +23,7 @@ private[io] class TcpIncomingConnection(_channel: SocketChannel,
   context.watch(handler) // sign death pact
 
   completeConnect(handler, options)
+  context.parent ! RegisterChannel(channel, 0)
 
   def receive = PartialFunction.empty
 }

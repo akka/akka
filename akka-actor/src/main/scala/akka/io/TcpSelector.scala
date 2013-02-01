@@ -95,7 +95,7 @@ private[io] class TcpSelector(manager: ActorRef, tcp: TcpExt) extends Actor with
     withCapacityProtection(cmd, retriesLeft) {
       import cmd._
       val commander = sender
-      spawnChild(() ⇒ new TcpListener(context.parent, handler, endpoint, backlog, commander, tcp.Settings, options))
+      spawnChild(() ⇒ new TcpListener(context.parent, handler, endpoint, backlog, commander, tcp, options))
     }
 
   def withCapacityProtection(cmd: Command, retriesLeft: Int)(body: ⇒ Unit): Unit = {

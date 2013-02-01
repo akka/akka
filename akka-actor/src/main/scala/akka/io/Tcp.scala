@@ -179,19 +179,12 @@ object Tcp extends ExtensionKey[TcpExt] {
 class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
 
   val Settings = new Settings(system.settings.config.getConfig("akka.io.tcp"))
-  class Settings private[TcpExt] (config: Config) {
-    import config._
+  // FIXME: get away with subclassess
+  class Settings private[TcpExt] (_config: Config) extends SelectionHandlerSettings(_config) {
+    import _config._
 
     val NrOfSelectors = getInt("nr-of-selectors")
-    val MaxChannels = getString("max-channels") match {
-      case "unlimited" ⇒ -1
-      case _           ⇒ getInt("max-channels")
-    }
-    val SelectTimeout = getString("select-timeout") match {
-      case "infinite" ⇒ Duration.Inf
-      case x          ⇒ Duration(x)
-    }
-    val SelectorAssociationRetries = getInt("selector-association-retries")
+
     val BatchAcceptLimit = getInt("batch-accept-limit")
     val DirectBufferSize = getIntBytes("direct-buffer-size")
     val MaxDirectBufferPoolSize = getInt("max-direct-buffer-pool-size")
@@ -203,10 +196,7 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
       case "unlimited" ⇒ Int.MaxValue
       case x           ⇒ getIntBytes("received-message-size-limit")
     }
-    val SelectorDispatcher = getString("selector-dispatcher")
-    val WorkerDispatcher = getString("worker-dispatcher")
     val ManagementDispatcher = getString("management-dispatcher")
-    val TraceLogging = getBoolean("trace-logging")
 
     require(NrOfSelectors > 0, "nr-of-selectors must be > 0")
     require(MaxChannels == -1 || MaxChannels > 0, "max-channels must be > 0 or 'unlimited'")
