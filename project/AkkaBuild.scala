@@ -437,7 +437,7 @@ object AkkaBuild extends Build {
   ) configs (MultiJvm)
 
   lazy val channels = Project(
-    id = "akka-channels",
+    id = "akka-channels-experimental",
     base = file("akka-channels"),
     dependencies = Seq(actor),
     settings = defaultSettings ++ Seq(

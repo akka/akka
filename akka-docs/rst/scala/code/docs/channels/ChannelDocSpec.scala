@@ -57,10 +57,10 @@ class ChannelDocSpec extends AkkaSpec {
 
   import ChannelDocSpec._
 
-  class A
-  class B
-  class C
-  class D
+  class MsgA
+  class MsgB
+  class MsgC
+  class MsgD
 
   "demonstrate why Typed Channels" in {
     def someActor = testActor
@@ -79,7 +79,7 @@ class ChannelDocSpec extends AkkaSpec {
 
     type Example = //
     //#motivation-types
-    (A, B) :+: (C, D) :+: TNil
+    (MsgA, MsgB) :+: (MsgC, MsgD) :+: TNil
     //#motivation-types
   }
 
@@ -114,12 +114,12 @@ class ChannelDocSpec extends AkkaSpec {
     implicit val dummySender: ChannelRef[(Any, Nothing) :+: TNil] = ???
     implicit val timeout: Timeout = ??? // for the ask operations
 
-    val channelA: ChannelRef[(A, B) :+: TNil] = ???
-    val channelB: ChannelRef[(B, C) :+: TNil] = ???
-    val channelC: ChannelRef[(C, D) :+: TNil] = ???
+    val channelA: ChannelRef[(MsgA, MsgB) :+: TNil] = ???
+    val channelB: ChannelRef[(MsgB, MsgC) :+: TNil] = ???
+    val channelC: ChannelRef[(MsgC, MsgD) :+: TNil] = ???
 
-    val a = new A
-    val fA = Future { new A }
+    val a = new MsgA
+    val fA = Future { new MsgA }
 
     channelA <-!- a // send a to channelA
     a -!-> channelA // same thing as above
@@ -128,8 +128,8 @@ class ChannelDocSpec extends AkkaSpec {
     fA -!-> channelA // same thing as above
 
     // ask the actor; return type given in full for illustration
-    val fB: Future[WrappedMessage[(B, Nothing) :+: TNil, B]] = channelA <-?- a
-    val fBunwrapped: Future[B] = fB.lub
+    val fB: Future[WrappedMessage[(MsgB, Nothing) :+: TNil, MsgB]] = channelA <-?- a
+    val fBunwrapped: Future[MsgB] = fB.lub
 
     a -?-> channelA // same thing as above
 

@@ -13,19 +13,12 @@ import scala.concurrent.{ ExecutionContext, Future, Promise, Await }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.Success
+import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 
 /**
  * Companion object providing factory methods for Circuit Breaker which runs callbacks in caller's thread
  */
 object CircuitBreaker {
-
-  /**
-   * Synchronous execution context to run in caller's thread - used by companion object factory methods
-   */
-  private[CircuitBreaker] val syncExecutionContext = new ExecutionContext {
-    override def execute(runnable: Runnable): Unit = runnable.run()
-    override def reportFailure(t: Throwable): Unit = ()
-  }
 
   /**
    * Callbacks run in caller's thread when using withSyncCircuitBreaker, and in same ExecutionContext as the passed
@@ -38,7 +31,7 @@ object CircuitBreaker {
    * @param resetTimeout [[scala.concurrent.duration.FiniteDuration]] of time after which to attempt to close the circuit
    */
   def apply(scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration): CircuitBreaker =
-    new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout)(syncExecutionContext)
+    new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout)(sameThreadExecutionContext)
 
   /**
    * Callbacks run in caller's thread when using withSyncCircuitBreaker, and in same ExecutionContext as the passed
@@ -301,7 +294,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
       bodyFuture.onComplete({
         case s: Success[_] if !deadline.isOverdue() ⇒ callSucceeds()
         case _                                      ⇒ callFails()
-      })(CircuitBreaker.syncExecutionContext)
+      })(sameThreadExecutionContext)
       bodyFuture
     }
 

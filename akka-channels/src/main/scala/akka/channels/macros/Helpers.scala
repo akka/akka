@@ -151,11 +151,10 @@ object Helpers {
 
   final def unwrapMsgType(u: Universe)(msg: u.Type): u.Type = {
     import u._
-    if (msg <:< typeOf[WrappedMessage[_, _]])
-      msg match {
-        case TypeRef(_, _, x :: _) ⇒ x
-      }
-    else msg
+    msg match {
+      case TypeRef(_, _, x :: _) if msg <:< typeOf[WrappedMessage[_, _]] ⇒ x
+      case x ⇒ x
+    }
   }
 
 }
