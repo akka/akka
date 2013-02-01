@@ -11,7 +11,7 @@ import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 import akka.actor.dungeon.ChildrenContainer
 import akka.actor.dungeon.ChildrenContainer.WaitingForChildren
-import akka.dispatch.{ Watch, Unwatch, Terminate, SystemMessage, Suspend, Supervise, Resume, Recreate, NoMessage, MessageDispatcher, Envelope, Create, ChildTerminated }
+import akka.dispatch.{ Watch, Unwatch, Terminate, SystemMessage, Suspend, Failed, Supervise, Resume, Recreate, NoMessage, MessageDispatcher, Envelope, Create, ChildTerminated }
 import akka.event.Logging.{ LogEvent, Debug, Error }
 import akka.japi.Procedure
 import akka.dispatch.NullMessage
@@ -346,9 +346,10 @@ private[akka] class ActorCell(
    * MESSAGE PROCESSING
    */
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
-  @tailrec final def systemInvoke(message: SystemMessage): Unit = {
+  final def systemInvoke(message: SystemMessage): Unit = {
+
     /*
-     * When recreate/suspend/resume are received while restarting (i.e. between
+     * When recreate/suspend/resume/failed are received while restarting (i.e. between
      * preRestart and postRestart, waiting for children to terminate), these
      * must not be executed immediately, but instead queued and released after
      * finishRecreate returns. This can only ever be triggered by
@@ -356,36 +357,63 @@ private[akka] class ActorCell(
      * types (hence the overwrite further down). Mailbox sets message.next=null
      * before systemInvoke, so this will only be non-null during such a replay.
      */
-    var todo = message.next
-    try {
-      message match {
-        case Create(uid)               ⇒ create(uid)
-        case Watch(watchee, watcher)   ⇒ addWatcher(watchee, watcher)
-        case Unwatch(watchee, watcher) ⇒ remWatcher(watchee, watcher)
-        case Recreate(cause) ⇒
-          waitingForChildrenOrNull match {
-            case null                  ⇒ faultRecreate(cause)
-            case w: WaitingForChildren ⇒ w.enqueue(message)
-          }
-        case Suspend() ⇒
-          waitingForChildrenOrNull match {
-            case null                  ⇒ faultSuspend()
-            case w: WaitingForChildren ⇒ w.enqueue(message)
-          }
-        case Resume(inRespToFailure) ⇒
-          waitingForChildrenOrNull match {
-            case null                  ⇒ faultResume(inRespToFailure)
-            case w: WaitingForChildren ⇒ w.enqueue(message)
-          }
-        case Terminate()                  ⇒ terminate()
-        case Supervise(child, async, uid) ⇒ supervise(child, async, uid)
-        case ChildTerminated(child)       ⇒ todo = handleChildTerminated(child)
-        case NoMessage                    ⇒ // only here to suppress warning
-      }
-    } catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒ handleInvokeFailure(Nil, e, "error while processing " + message)
+
+    def normalBehavior(msg: SystemMessage): SystemMessage = msg match {
+      case Create(uid)                   ⇒ { create(uid); null }
+      case Watch(watchee, watcher)       ⇒ { addWatcher(watchee, watcher); null }
+      case Unwatch(watchee, watcher)     ⇒ { remWatcher(watchee, watcher); null }
+      case Recreate(cause)               ⇒ faultRecreate(cause)
+      case Suspend()                     ⇒ { faultSuspend(); null }
+      case Resume(inRespToFailure)       ⇒ faultResume(inRespToFailure)
+      case Terminate()                   ⇒ { terminate(); null }
+      case Supervise(child, async, uid)  ⇒ { supervise(child, async, uid); null }
+      case f @ Failed(child, cause, uid) ⇒ { handleFailure(f); null }
+      case ChildTerminated(child)        ⇒ handleChildTerminated(child)
+      case NoMessage                     ⇒ null // only here to suppress warning
     }
-    if (todo != null) systemInvoke(todo)
+
+    def waitingBehavior(msg: SystemMessage, w: WaitingForChildren): SystemMessage = msg match {
+      case Create(uid)                  ⇒ { create(uid); null }
+      case Watch(watchee, watcher)      ⇒ { addWatcher(watchee, watcher); null }
+      case Unwatch(watchee, watcher)    ⇒ { remWatcher(watchee, watcher); null }
+      case Recreate(cause)              ⇒ { w.enqueue(msg); null }
+      case Suspend()                    ⇒ { w.enqueue(msg); null }
+      case Resume(inRespToFailure)      ⇒ { w.enqueue(msg); null }
+      case Terminate()                  ⇒ { terminate(); null }
+      case Supervise(child, async, uid) ⇒ { supervise(child, async, uid); null }
+      case Failed(child, cause, uid)    ⇒ { w.enqueue(msg); null }
+      case ChildTerminated(child)       ⇒ handleChildTerminated(child)
+      case NoMessage                    ⇒ null // only here to suppress warning
+    }
+
+    @tailrec def runAll(msg: SystemMessage): Unit = {
+      val next = msg.next
+      msg.next = null
+      val additionalWork =
+        try {
+          waitingForChildrenOrNull match {
+            case null ⇒ normalBehavior(msg)
+            case w    ⇒ waitingBehavior(msg, w)
+          }
+        } catch {
+          case e @ (_: InterruptedException | NonFatal(_)) ⇒
+            handleInvokeFailure(Nil, e, "error while processing " + message)
+            null
+        }
+      val remainingWork = SystemMessage.concat(additionalWork, next)
+      if (!isTerminated) {
+        if (remainingWork != null) runAll(remainingWork)
+      } else dump(remainingWork)
+    }
+
+    @tailrec def dump(msg: SystemMessage): Unit =
+      if (msg != null) {
+        val next = msg.next
+        provider.deadLetters ! msg
+        dump(next)
+      }
+
+    runAll(message)
   }
 
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
@@ -409,7 +437,6 @@ private[akka] class ActorCell(
         publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
       msg.message match {
-        case Failed(cause, uid)         ⇒ handleFailure(sender, cause, uid)
         case t: Terminated              ⇒ watchedActorTerminated(t)
         case AddressTerminated(address) ⇒ addressTerminated(address)
         case Kill                       ⇒ throw new ActorKilledException("Kill")

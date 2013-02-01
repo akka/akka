@@ -386,16 +386,16 @@ class LocalActorRefProvider private[akka] (
     override def isTerminated: Boolean = stopped.isOn
 
     override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = stopped.ifOff(message match {
-      case Failed(ex, _) if sender ne null ⇒ { causeOfTermination = Some(ex); sender.asInstanceOf[InternalActorRef].stop() }
-      case NullMessage                     ⇒ // do nothing
-      case _                               ⇒ log.error(this + " received unexpected message [" + message + "]")
+      case NullMessage ⇒ // do nothing
+      case _           ⇒ log.error(this + " received unexpected message [" + message + "]")
     })
 
     override def sendSystemMessage(message: SystemMessage): Unit = stopped ifOff {
       message match {
-        case Supervise(_, _, _) ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
-        case ChildTerminated(_) ⇒ stop()
-        case _                  ⇒ log.error(this + " received unexpected system message [" + message + "]")
+        case Failed(child, ex, _) if child ne null ⇒ { causeOfTermination = Some(ex); child.asInstanceOf[InternalActorRef].stop() }
+        case Supervise(_, _, _)                    ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
+        case ChildTerminated(_)                    ⇒ stop()
+        case _                                     ⇒ log.error(this + " received unexpected system message [" + message + "]")
       }
     }
   }

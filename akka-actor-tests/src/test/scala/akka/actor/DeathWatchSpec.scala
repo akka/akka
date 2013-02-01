@@ -9,6 +9,7 @@ import akka.testkit._
 import scala.concurrent.duration._
 import java.util.concurrent.atomic._
 import scala.concurrent.Await
+import akka.dispatch.Failed
 import akka.pattern.ask
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -129,7 +130,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout �
         case class FF(fail: Failed)
         val strategy = new OneForOneStrategy(maxNrOfRetries = 0)(SupervisorStrategy.makeDecider(List(classOf[Exception]))) {
           override def handleFailure(context: ActorContext, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]) = {
-            testActor.tell(FF(Failed(cause, 0)), child)
+            testActor.tell(FF(Failed(child, cause, 0)), child)
             super.handleFailure(context, child, cause, stats, children)
           }
         }
@@ -145,9 +146,9 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout �
 
         failed ! Kill
         val result = receiveWhile(3 seconds, messages = 3) {
-          case FF(Failed(_: ActorKilledException, _)) if lastSender eq failed       ⇒ 1
-          case FF(Failed(DeathPactException(`failed`), _)) if lastSender eq brother ⇒ 2
-          case WrappedTerminated(Terminated(`brother`))                             ⇒ 3
+          case FF(Failed(_, _: ActorKilledException, _)) if lastSender eq failed       ⇒ 1
+          case FF(Failed(_, DeathPactException(`failed`), _)) if lastSender eq brother ⇒ 2
+          case WrappedTerminated(Terminated(`brother`))                                ⇒ 3
         }
         testActor.isTerminated must not be true
         result must be(Seq(1, 2, 3))

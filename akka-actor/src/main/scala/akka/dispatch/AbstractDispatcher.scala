@@ -56,6 +56,18 @@ private[akka] object SystemMessage {
       reverse(next, list)
     }
   }
+
+  final def concat(first: SystemMessage, second: SystemMessage): SystemMessage = {
+    @tailrec def rec(point: SystemMessage): SystemMessage = {
+      if (point.next == null) {
+        point.next = second
+        first
+      } else rec(point.next)
+    }
+    if (first == null) second
+    else if (second == null) first
+    else rec(first)
+  }
 }
 
 /**
@@ -107,6 +119,11 @@ private[akka] case class Terminate() extends SystemMessage // sent to self from 
  */
 @SerialVersionUID(3245747602115485675L)
 private[akka] case class Supervise(child: ActorRef, async: Boolean, uid: Int) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
+/**
+ * Internal use only
+ */
+@SerialVersionUID(3L)
+private[akka] case class Failed(child: ActorRef, cause: Throwable, uid: Int) extends SystemMessage
 /**
  * INTERNAL API
  */

@@ -5,7 +5,7 @@
 package akka.actor.dungeon
 
 import scala.annotation.tailrec
-import akka.actor.{ PreRestartException, PostRestartException, InternalActorRef, Failed, ActorRef, ActorInterruptedException, ActorCell, Actor }
+import akka.actor.{ PreRestartException, PostRestartException, InternalActorRef, ActorRef, ActorInterruptedException, ActorCell, Actor }
 import akka.dispatch._
 import akka.event.Logging.{ Warning, Error, Debug }
 import scala.util.control.NonFatal
@@ -13,10 +13,11 @@ import akka.event.Logging
 import scala.collection.immutable
 import akka.dispatch.ChildTerminated
 import akka.actor.PreRestartException
-import akka.actor.Failed
 import akka.actor.PostRestartException
 import akka.event.Logging.Debug
 import scala.concurrent.duration.Duration
+
+private[akka] class FailedContainer(val perp: ActorRef, var queue: SystemMessage)
 
 private[akka] trait FaultHandling { this: ActorCell ⇒
 
@@ -43,16 +44,22 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
    * a restart with dying children)
    * might well be replaced by ref to a Cancellable in the future (see #2299)
    */
-  private var _failed: ActorRef = null
+  private var _failed: FailedContainer = null
   private def isFailed: Boolean = _failed != null
-  private def setFailed(perpetrator: ActorRef): Unit = _failed = perpetrator
-  private def clearFailed(): Unit = _failed = null
-  private def perpetrator: ActorRef = _failed
+  private def setFailed(perpetrator: ActorRef): Unit = _failed = new FailedContainer(perpetrator, null)
+  private def queueFailed(msg: SystemMessage): Unit = { msg.next = _failed.queue; _failed.queue = msg }
+  private def clearFailed(): SystemMessage =
+    if (_failed != null) {
+      val ret = _failed.queue
+      _failed = null
+      SystemMessage.reverse(ret)
+    } else null
+  private def perpetrator: ActorRef = if (_failed == null) null else _failed.perp
 
   /**
    * Do re-create the actor in response to a failure.
    */
-  protected def faultRecreate(cause: Throwable): Unit =
+  protected def faultRecreate(cause: Throwable): SystemMessage =
     if (actor == null) {
       system.eventStream.publish(Error(self.path.toString, clazz(actor),
         "changing Recreate into Create after " + cause))
@@ -75,6 +82,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       }
       assert(mailbox.isSuspended, "mailbox must be suspended during restart, status=" + mailbox.status)
       if (!setChildrenTerminationReason(ChildrenContainer.Recreation(cause))) finishRecreate(cause, failedActor)
+      else null
     } else {
       // need to keep that suspend counter balanced
       faultResume(causedByFailure = null)
@@ -96,7 +104,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
    * @param causedByFailure signifies if it was our own failure which
    *        prompted this action.
    */
-  protected def faultResume(causedByFailure: Throwable): Unit = {
+  protected def faultResume(causedByFailure: Throwable): SystemMessage = {
     if (actor == null) {
       system.eventStream.publish(Error(self.path.toString, clazz(actor),
         "changing Resume into Create after " + causedByFailure))
@@ -107,18 +115,20 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       faultRecreate(causedByFailure)
     } else {
       val perp = perpetrator
+      var queue: SystemMessage = null
       // done always to keep that suspend counter balanced
       // must happen “atomically”
       try resumeNonRecursive()
-      finally if (causedByFailure != null) clearFailed()
+      finally if (causedByFailure != null) queue = clearFailed()
       resumeChildren(causedByFailure, perp)
+      queue
     }
   }
 
   /**
    * Do create the actor in response to a failure.
    */
-  protected def faultCreate(): Unit = {
+  protected def faultCreate(): SystemMessage = {
     assert(mailbox.isSuspended, "mailbox must be suspended during failed creation, status=" + mailbox.status)
     assert(perpetrator == self)
 
@@ -129,12 +139,24 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     children foreach stop
 
     if (!setChildrenTerminationReason(ChildrenContainer.Creation())) finishCreate()
+    else null
   }
 
-  private def finishCreate(): Unit = {
+  private def finishCreate(): SystemMessage = {
+    var queue: SystemMessage = null
+
     try resumeNonRecursive()
-    finally clearFailed()
-    create(uid)
+    finally queue = clearFailed()
+
+    try {
+      create(uid)
+      queue
+    } catch {
+      case e @ (_: InterruptedException | NonFatal(_)) ⇒
+        handleInvokeFailure(Nil, e, s"error while processing Create($uid)")
+        if (queue != null) queueFailed(SystemMessage.reverse(queue))
+        null
+    }
   }
 
   protected def terminate() {
@@ -170,17 +192,19 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       suspendNonRecursive()
       // suspend children
       val skip: Set[ActorRef] = currentMessage match {
-        case Envelope(Failed(_, _), child) ⇒ setFailed(child); Set(child)
-        case _                             ⇒ setFailed(self); Set.empty
+        case Envelope(Failed(_, _, _), child) ⇒ { setFailed(child); Set(child) }
+        case _                                ⇒ { setFailed(self); Set.empty }
       }
       suspendChildren(exceptFor = skip ++ childrenNotToSuspend)
       // tell supervisor
       t match { // Wrap InterruptedExceptions and, clear the flag and rethrow
         case _: InterruptedException ⇒
-          parent.tell(Failed(new ActorInterruptedException(t), uid), self)
+          // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+          parent.sendSystemMessage(Failed(self, new ActorInterruptedException(t), uid))
           Thread.interrupted() // clear interrupted flag before throwing according to java convention
           throw t
-        case _ ⇒ parent.tell(Failed(t, uid), self)
+        // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+        case _ ⇒ parent.sendSystemMessage(Failed(self, t, uid))
       }
     } catch {
       case NonFatal(e) ⇒
@@ -214,13 +238,19 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     }
   }
 
-  private def finishRecreate(cause: Throwable, failedActor: Actor): Unit = {
+  private def finishRecreate(cause: Throwable, failedActor: Actor): SystemMessage = {
     // need to keep a snapshot of the surviving children before the new actor instance creates new ones
     val survivors = children
 
+    /*
+     * We clear the “failed” status first, then try to recreate; if that fails, then we 
+     * are immediately failed again, thus we need to re-enqueue whatever system messages
+     * were dequeued when clearing the status. Otherwise return the dequeued messages.
+     */
+    var queue: SystemMessage = null
     try {
       try resumeNonRecursive()
-      finally clearFailed() // must happen in any case, so that failure is propagated
+      finally queue = clearFailed() // must happen in any case, so that failure is propagated
 
       val freshActor = newActor()
       actor = freshActor // this must happen before postRestart has a chance to fail
@@ -235,28 +265,38 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
         catch {
           case NonFatal(e) ⇒ publish(Error(e, self.path.toString, clazz(freshActor), "restarting " + child))
         })
+      queue
     } catch {
-      case NonFatal(e) ⇒
+      case e @ (NonFatal(_) | _: InterruptedException) ⇒
         clearActorFields(actor) // in order to prevent preRestart() from happening again
         handleInvokeFailure(survivors, new PostRestartException(self, e, cause), e.getMessage)
+        if (queue != null) queueFailed(SystemMessage.reverse(queue))
+        null
     }
   }
 
-  final protected def handleFailure(child: ActorRef, cause: Throwable, uid: Int): Unit =
-    getChildByRef(child) match {
+  final protected def handleFailure(f: Failed): Unit = {
+    currentMessage = Envelope(f, f.child, system)
+    getChildByRef(f.child) match {
       /*
        * only act upon the failure, if it comes from a currently known child;
        * the UID protects against reception of a Failed from a child which was
        * killed in preRestart and re-created in postRestart
        */
       case Some(stats) if stats.uid == uid ⇒
-        if (!actor.supervisorStrategy.handleFailure(this, child, cause, stats, getAllChildStats)) throw cause
+        /*
+         * If we receive a Failed message while being Failed ourselves, we need to
+         * enqueue that message for later, when we clear the failed status.
+         */
+        if (isFailed) queueFailed(f)
+        else if (!actor.supervisorStrategy.handleFailure(this, f.child, f.cause, stats, getAllChildStats)) throw f.cause
       case Some(stats) ⇒
         publish(Debug(self.path.toString, clazz(actor),
-          "dropping Failed(" + cause + ") from old child " + child + " (uid=" + stats.uid + " != " + uid + ")"))
+          s"dropping Failed(${f.cause}) from old child ${f.child} (uid=${stats.uid} != $uid)"))
       case None ⇒
-        publish(Debug(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child))
+        publish(Debug(self.path.toString, clazz(actor), "dropping Failed(" + f.cause + ") from unknown child " + f.child))
     }
+  }
 
   final protected def handleChildTerminated(child: ActorRef): SystemMessage = {
     val status = removeChildAndGetStateChange(child)
@@ -276,9 +316,13 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
      * then we are continuing the previously suspended recreate/create/terminate action
      */
     status match {
-      case Some(c @ ChildrenContainer.Recreation(cause)) ⇒ finishRecreate(cause, actor); c.dequeueAll()
-      case Some(c @ ChildrenContainer.Creation()) ⇒ finishCreate(); c.dequeueAll()
-      case Some(ChildrenContainer.Termination) ⇒ finishTerminate(); null
+      case Some(c @ ChildrenContainer.Recreation(cause)) ⇒
+        SystemMessage.concat(finishRecreate(cause, actor), c.dequeueAll())
+      case Some(c @ ChildrenContainer.Creation()) ⇒
+        SystemMessage.concat(finishCreate(), c.dequeueAll())
+      case Some(ChildrenContainer.Termination) ⇒
+        finishTerminate()
+        null
       case _ ⇒ null
     }
   }
