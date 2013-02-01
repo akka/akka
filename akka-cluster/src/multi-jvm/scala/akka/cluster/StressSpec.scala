@@ -27,6 +27,8 @@ import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.StandardMetrics.Cpu
 import akka.cluster.StandardMetrics.HeapMemory
+import akka.remote.DefaultFailureDetectorRegistry
+import akka.remote.PhiAccrualFailureDetector
 import akka.remote.RemoteScope
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -328,11 +330,18 @@ object StressMultiJvmSpec extends MultiNodeConfig {
    */
   class PhiObserver extends Actor with ActorLogging {
     val cluster = Cluster(context.system)
-    val fd = cluster.failureDetector.asInstanceOf[AccrualFailureDetector]
     var reportTo: Option[ActorRef] = None
     val emptyPhiByNode = Map.empty[Address, PhiValue].withDefault(address ⇒ PhiValue(address, 0, 0, 0.0))
     var phiByNode = emptyPhiByNode
     var nodes = Set.empty[Address]
+
+    def phi(address: Address): Double = cluster.failureDetector match {
+      case reg: DefaultFailureDetectorRegistry[Address] ⇒ reg.failureDetector(address) match {
+        case Some(fd: PhiAccrualFailureDetector) ⇒ fd.phi
+        case _                                   ⇒ 0.0
+      }
+      case _ ⇒ 0.0
+    }
 
     import context.dispatcher
     val checkPhiTask = context.system.scheduler.schedule(
@@ -350,8 +359,8 @@ object StressMultiJvmSpec extends MultiNodeConfig {
       case PhiTick ⇒
         nodes foreach { node ⇒
           val previous = phiByNode(node)
-          val φ = fd.phi(node)
-          if (φ > 0 || fd.isMonitoring(node)) {
+          val φ = phi(node)
+          if (φ > 0 || cluster.failureDetector.isMonitoring(node)) {
             val aboveOne = if (!φ.isInfinite && φ > 1.0) 1 else 0
             phiByNode += node -> PhiValue(node, previous.countAboveOne + aboveOne, previous.count + 1,
               math.max(previous.max, φ))

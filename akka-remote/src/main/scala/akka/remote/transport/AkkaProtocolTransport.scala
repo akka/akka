@@ -21,6 +21,7 @@ import scala.util.control.NonFatal
 import scala.util.{ Success, Failure }
 import scala.collection.immutable
 import akka.remote.transport.ActorTransportAdapter._
+import akka.ConfigurationException
 
 class AkkaProtocolException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with OnlyCauseStackTrace {
   def this(msg: String) = this(msg, null)
@@ -30,18 +31,15 @@ private[remote] class AkkaProtocolSettings(config: Config) {
 
   import config._
 
-  val FailureDetectorThreshold: Double = getDouble("akka.remote.failure-detector.threshold")
+  val FailureDetectorConfig: Config = getConfig("akka.remote.failure-detector")
 
-  val FailureDetectorMaxSampleSize: Int = getInt("akka.remote.failure-detector.max-sample-size")
-
-  val FailureDetectorStdDeviation: FiniteDuration =
-    Duration(getMilliseconds("akka.remote.failure-detector.min-std-deviation"), MILLISECONDS)
+  val FailureDetectorImplementationClass: String = FailureDetectorConfig.getString("implementation-class")
 
   val AcceptableHeartBeatPause: FiniteDuration =
-    Duration(getMilliseconds("akka.remote.failure-detector.acceptable-heartbeat-pause"), MILLISECONDS)
+    Duration(FailureDetectorConfig.getMilliseconds("acceptable-heartbeat-pause"), MILLISECONDS)
 
   val HeartBeatInterval: FiniteDuration =
-    Duration(getMilliseconds("akka.remote.heartbeat-interval"), MILLISECONDS)
+    Duration(FailureDetectorConfig.getMilliseconds("heartbeat-interval"), MILLISECONDS)
 
   val WaitActivityEnabled: Boolean = getBoolean("akka.remote.wait-activity-enabled")
 
@@ -143,12 +141,14 @@ private[transport] class AkkaProtocolManager(
         failureDetector)), actorNameFor(remoteAddress)) // Why don't we watch this one?
   }
 
-  private def createFailureDetector(): FailureDetector = new PhiAccrualFailureDetector(
-    settings.FailureDetectorThreshold,
-    settings.FailureDetectorMaxSampleSize,
-    settings.FailureDetectorStdDeviation,
-    settings.AcceptableHeartBeatPause,
-    settings.HeartBeatInterval)
+  private def createFailureDetector(): FailureDetector = {
+    import settings.{ FailureDetectorImplementationClass ⇒ fqcn }
+    context.system.asInstanceOf[ExtendedActorSystem].dynamicAccess.createInstanceFor[FailureDetector](
+      fqcn, List(classOf[Config] -> settings.FailureDetectorConfig)).recover({
+        case e ⇒ throw new ConfigurationException(
+          s"Could not create custom remote failure detector [$fqcn] due to: ${e.toString}", e)
+      }).get
+  }
 
   override def postStop() {
     wrappedTransport.shutdown()

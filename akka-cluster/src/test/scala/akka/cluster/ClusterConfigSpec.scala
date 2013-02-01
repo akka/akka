@@ -5,10 +5,10 @@
 package akka.cluster
 
 import language.postfixOps
-
 import akka.testkit.AkkaSpec
 import akka.dispatch.Dispatchers
 import scala.concurrent.duration._
+import akka.remote.PhiAccrualFailureDetector
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterConfigSpec extends AkkaSpec {
@@ -18,11 +18,11 @@ class ClusterConfigSpec extends AkkaSpec {
     "be able to parse generic cluster config elements" in {
       val settings = new ClusterSettings(system.settings.config, system.name)
       import settings._
-      FailureDetectorThreshold must be(8.0 plusOrMinus 0.0001)
-      FailureDetectorMaxSampleSize must be(1000)
-      FailureDetectorImplementationClass must be(classOf[AccrualFailureDetector].getName)
-      FailureDetectorMinStdDeviation must be(100 millis)
-      FailureDetectorAcceptableHeartbeatPause must be(3 seconds)
+      FailureDetectorConfig.getDouble("threshold") must be(8.0 plusOrMinus 0.0001)
+      FailureDetectorConfig.getInt("max-sample-size") must be(1000)
+      Duration(FailureDetectorConfig.getMilliseconds("min-std-deviation"), MILLISECONDS) must be(100 millis)
+      Duration(FailureDetectorConfig.getMilliseconds("acceptable-heartbeat-pause"), MILLISECONDS) must be(3 seconds)
+      FailureDetectorImplementationClass must be(classOf[PhiAccrualFailureDetector].getName)
       SeedNodes must be(Seq.empty[String])
       SeedNodeTimeout must be(5 seconds)
       PeriodicTasksInitialDelay must be(1 seconds)

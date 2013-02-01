@@ -24,6 +24,9 @@ import java.util.concurrent.atomic.AtomicReference
 import akka.util.internal.HashedWheelTimer
 import scala.concurrent.{ ExecutionContext, Await }
 import com.typesafe.config.ConfigFactory
+import akka.remote.DefaultFailureDetectorRegistry
+import akka.remote.FailureDetector
+import com.typesafe.config.Config
 
 /**
  * Cluster Extension Id and factory for creating Cluster extension.
@@ -73,12 +76,17 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   log.info("Cluster Node [{}] - is starting up...", selfAddress)
 
-  val failureDetector: FailureDetector = {
-    import settings.{ FailureDetectorImplementationClass ⇒ fqcn }
-    system.dynamicAccess.createInstanceFor[FailureDetector](
-      fqcn, List(classOf[ActorSystem] -> system, classOf[ClusterSettings] -> settings)).recover({
-        case e ⇒ throw new ConfigurationException("Could not create custom failure detector [" + fqcn + "] due to:" + e.toString)
-      }).get
+  val failureDetector: FailureDetectorRegistry[Address] = {
+    def createFailureDetector(): FailureDetector = {
+      import settings.{ FailureDetectorImplementationClass ⇒ fqcn }
+      system.dynamicAccess.createInstanceFor[FailureDetector](
+        fqcn, List(classOf[Config] -> settings.FailureDetectorConfig)).recover({
+          case e ⇒ throw new ConfigurationException(
+            s"Could not create custom cluster failure detector [$fqcn] due to: ${e.toString}", e)
+        }).get
+    }
+
+    new DefaultFailureDetectorRegistry(() ⇒ createFailureDetector())
   }
 
   // ========================================================
