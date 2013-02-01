@@ -103,6 +103,12 @@ to use from an sbt project) use the ``publish-local`` command::
 
    sbt publish-local
 
+.. note::
+
+   Akka generates class diagrams for the API documentation using ScalaDoc. This needs the ``dot`` command from
+   the Graphviz software package to be installed to avoid errors. You can disable the diagram generation by
+   adding the flag ``-Dakka.scaladoc.diagrams=false``
+
 
 sbt Interactive Mode
 --------------------
