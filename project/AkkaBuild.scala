@@ -49,8 +49,8 @@ object AkkaBuild extends Build {
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
-      Unidoc.unidocExclude := Seq(samples.id),
-      Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id, samples.id, osgi.id, osgiAries.id),
+      Unidoc.unidocExclude := Seq(samples.id, channelsTests.id, remoteTests.id),
+      Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id, samples.id, osgi.id, osgiAries.id, channelsTests.id),
       initialCommands in ThisBuild :=
         """|import language.postfixOps
            |import akka.actor._
@@ -421,7 +421,7 @@ object AkkaBuild extends Build {
     id = "akka-contrib",
     base = file("akka-contrib"),
     dependencies = Seq(remote, remoteTests % "compile;test->test", cluster),
-    settings = defaultSettings ++ multiJvmSettings ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.contrib,
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-v"),
       description := """|
@@ -441,7 +441,7 @@ object AkkaBuild extends Build {
     id = "akka-channels-experimental",
     base = file("akka-channels"),
     dependencies = Seq(actor),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ experimentalSettings ++ Seq(
       libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _)
     )
   )
@@ -450,7 +450,7 @@ object AkkaBuild extends Build {
     id = "akka-channels-tests",
     base = file("akka-channels-tests"),
     dependencies = Seq(channels, testkit % "compile;test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ experimentalSettings ++ Seq(
       libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _)
     )
   )
