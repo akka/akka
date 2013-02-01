@@ -38,21 +38,20 @@ class FailureDetectorPuppet(system: ActorSystem, settings: ClusterSettings) exte
   }
 
   def isAvailable(connection: Address): Boolean = connections.get(connection) match {
-    case null ⇒
-      log.debug("Adding cluster node [{}]", connection)
-      connections.put(connection, Up)
-      true
-    case Up ⇒
-      log.debug("isAvailable: Cluster node IS NOT available [{}]", connection)
+    case null | Up ⇒
+      log.debug("Cluster node is available [{}]", connection)
       true
     case Down ⇒
-      log.debug("isAvailable: Cluster node IS available [{}]", connection)
+      log.debug("Cluster node is unavailable [{}]", connection)
       false
   }
 
-  override def isMonitoring(connection: Address): Boolean = connections.contains(connection)
+  override def isMonitoring(connection: Address): Boolean = connections.containsKey(connection)
 
-  def heartbeat(connection: Address): Unit = log.debug("Heart beat from cluster node[{}]", connection)
+  def heartbeat(connection: Address): Unit = {
+    log.debug("Heart beat from cluster node[{}]", connection)
+    connections.putIfAbsent(connection, Up)
+  }
 
   def remove(connection: Address): Unit = {
     log.debug("Removing cluster node [{}]", connection)
