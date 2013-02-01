@@ -5,9 +5,12 @@ package akka.remote
 
 import akka.remote.FailureDetector.Clock
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import scala.annotation.tailrec
+import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 import scala.collection.immutable
+import com.typesafe.config.Config
 
 /**
  * Implementation of 'The Phi Accrual Failure Detector' by Hayashibara et al. as defined in their paper:
@@ -56,6 +59,26 @@ class PhiAccrualFailureDetector(
   val acceptableHeartbeatPause: FiniteDuration,
   val firstHeartbeatEstimate: FiniteDuration)(
     implicit clock: Clock) extends FailureDetector {
+
+  /**
+   * Constructor that reads parameters from config.
+   * Expecting config properties named `threshold`, `max-sample-size`,
+   * `min-std-deviation`, `acceptable-heartbeat-pause` and
+   * `heartbeat-interval`.
+   */
+  def this(config: Config) =
+    this(
+      threshold = config.getDouble("threshold"),
+      maxSampleSize = config.getInt("max-sample-size"),
+      minStdDeviation = Duration(config.getMilliseconds("min-std-deviation"), MILLISECONDS),
+      acceptableHeartbeatPause = Duration(config.getMilliseconds("acceptable-heartbeat-pause"), MILLISECONDS),
+      firstHeartbeatEstimate = Duration(config.getMilliseconds("heartbeat-interval"), MILLISECONDS))
+
+  require(threshold > 0.0, "failure-detector.threshold must be > 0")
+  require(maxSampleSize > 0, "failure-detector.max-sample-size must be > 0")
+  require(minStdDeviation > Duration.Zero, "failure-detector.min-std-deviation must be > 0")
+  require(acceptableHeartbeatPause >= Duration.Zero, "failure-detector.acceptable-heartbeat-pause must be >= 0")
+  require(firstHeartbeatEstimate > Duration.Zero, "failure-detector.heartbeat-interval must be > 0")
 
   // guess statistics for first heartbeat,
   // important so that connections with only one heartbeat becomes unavailable

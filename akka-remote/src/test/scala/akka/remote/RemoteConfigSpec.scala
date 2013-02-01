@@ -47,13 +47,16 @@ class RemoteConfigSpec extends AkkaSpec(
       import settings._
 
       WaitActivityEnabled must be(true)
-      FailureDetectorThreshold must be === 7
-      FailureDetectorMaxSampleSize must be === 100
-      FailureDetectorStdDeviation must be === 100.milliseconds
+      FailureDetectorImplementationClass must be(classOf[PhiAccrualFailureDetector].getName)
       AcceptableHeartBeatPause must be === 3.seconds
       HeartBeatInterval must be === 1.seconds
       RequireCookie must be(false)
       SecureCookie must be === ""
+
+      FailureDetectorConfig.getDouble("threshold") must be(7.0 plusOrMinus 0.0001)
+      FailureDetectorConfig.getInt("max-sample-size") must be(100)
+      Duration(FailureDetectorConfig.getMilliseconds("min-std-deviation"), MILLISECONDS) must be(100 millis)
+
     }
 
     "contain correct configuration values in reference.conf" ignore {
