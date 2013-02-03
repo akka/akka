@@ -57,10 +57,12 @@ class ChannelDocSpec extends AkkaSpec {
 
   import ChannelDocSpec._
 
-  class MsgA
-  class MsgB
-  class MsgC
-  class MsgD
+  trait Msg
+
+  class MsgA extends Msg
+  class MsgB extends Msg
+  class MsgC extends Msg
+  class MsgD extends Msg
 
   "demonstrate why Typed Channels" in {
     def someActor = testActor
@@ -115,6 +117,7 @@ class ChannelDocSpec extends AkkaSpec {
     implicit val timeout: Timeout = ??? // for the ask operations
 
     val channelA: ChannelRef[(MsgA, MsgB) :+: TNil] = ???
+    val channelA2: ChannelRef[(MsgA, MsgB) :+: (MsgA, MsgC) :+: TNil] = ???
     val channelB: ChannelRef[(MsgB, MsgC) :+: TNil] = ???
     val channelC: ChannelRef[(MsgC, MsgD) :+: TNil] = ???
 
@@ -127,11 +130,14 @@ class ChannelDocSpec extends AkkaSpec {
     channelA <-!- fA // eventually send the future’s value to channelA
     fA -!-> channelA // same thing as above
 
-    // ask the actor; return type given in full for illustration
-    val fB: Future[WrappedMessage[(MsgB, Nothing) :+: TNil, MsgB]] = channelA <-?- a
-    val fBunwrapped: Future[MsgB] = fB.lub
-
+    val fB: Future[MsgB] = channelA <-?- a // ask the actor
     a -?-> channelA // same thing as above
+
+    // ask the actor with multiple reply types
+    // return type given in full for illustration
+    val fM: Future[WrappedMessage[ //
+    (MsgB, Nothing) :+: (MsgC, Nothing) :+: TNil, Msg]] = channelA2 <-?- a
+    val fMunwrapped: Future[Msg] = fM.lub
 
     channelA <-?- fA // eventually ask the actor, return the future
     fA -?-> channelA // same thing as above

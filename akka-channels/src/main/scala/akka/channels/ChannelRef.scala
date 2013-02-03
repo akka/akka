@@ -32,7 +32,7 @@ class ChannelRef[+T <: ChannelList](val actorRef: ActorRef) extends AnyVal {
    * which will be completed with the reply message or a TimeoutException.
    * If the message is a Future itself, eventually send the Future’s value.
    */
-  def <-?-[M](msg: M): Future[_] = macro macros.Ask.impl[ChannelList, Any, T, M]
+  def <-?-[M](msg: M): Future[_] = macro macros.Ask.impl[ChannelList, Any, Any, T, M]
 
   /**
    * Narrow this ChannelRef by removing channels or narrowing input types or

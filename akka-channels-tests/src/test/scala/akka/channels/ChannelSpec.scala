@@ -95,7 +95,7 @@ object ChannelSpec {
     implicit val timeout = Timeout(1.second)
     channel[T] { (x, snd) ⇒
       val xx: WrappedMessage[T, Any] = x
-      val f: Future[WrappedMessage[(ReplyChannels[T], Nothing) :+: TNil, ReplyChannels[T]]] = target <-?- x
+      val f: Future[ReplyChannels[T]] = target <-?- x
       f -!-> snd
     }
     import language.existentials
@@ -415,7 +415,7 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
     "support typed ask" in {
       val t = ChannelExt(system).actorOf(new Tester, "t21")
       implicit val timeout = Timeout(1.second)
-      val r: Future[C] = (t <-?- A).lub
+      val r: Future[C] = t <-?- A
       Await.result(r, 1.second) must be(C)
     }
 
@@ -471,12 +471,22 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
       lastSender must be === t.actorRef
     }
 
+    "not wrap Futures unnecessarily" in {
+      val a = ChannelExt(system).actorOf(new Tester, "t26a")
+      implicit val timeout = Timeout(1.second)
+      val c1: C = Await.result(a <-?- A, 1.second)
+      val c2: C = Await.result(A -?-> a, 1.second)
+      val fA = Future successful A
+      val c3: C = Await.result(a <-?- fA, 1.second)
+      val c4: C = Await.result(fA -?-> a, 1.second)
+    }
+
     "be able to transform Futures" in {
       val client = new ChannelRef[(Any, Nothing) :+: TNil](testActor)
       val someActor = ChannelExt(system).actorOf(new Tester, "t26b")
       implicit val timeout = Timeout(1.second)
       implicit val ec = system.dispatcher
-      A -?-> someActor -*-> (_ map (_.value match { case C ⇒ B })) -?-> someActor -!-> client
+      A -?-> someActor -*-> (_ map { case C ⇒ B }) -?-> someActor -!-> client
       expectMsg(D)
     }
 
