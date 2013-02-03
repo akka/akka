@@ -104,7 +104,7 @@ trait Channels[P <: ChannelList, C <: ChannelList] { this: Actor ⇒
       else
         F2(recv.asInstanceOf[(Any, ChannelRef[ChannelList]) ⇒ Unit])
     def apply(recv: R): Unit = {
-      val tt = implicitly[ru.TypeTag[Ch]]
+      val tt = ru.typeTag[Ch]
       behavior ++= (for (t ← inputChannels(ru)(tt.tpe)) yield tt.mirror.runtimeClass(t.widen) -> ff(recv))
     }
   }

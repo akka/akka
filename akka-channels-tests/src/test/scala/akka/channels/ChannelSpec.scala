@@ -471,6 +471,15 @@ class ChannelSpec extends AkkaSpec(ActorSystem("ChannelSpec", AkkaSpec.testConf,
       lastSender must be === t.actorRef
     }
 
+    "be able to transform Futures" in {
+      val client = new ChannelRef[(Any, Nothing) :+: TNil](testActor)
+      val someActor = ChannelExt(system).actorOf(new Tester, "t26b")
+      implicit val timeout = Timeout(1.second)
+      implicit val ec = system.dispatcher
+      A -?-> someActor -*-> (_ map (_.value match { case C ⇒ B })) -?-> someActor -!-> client
+      expectMsg(D)
+    }
+
   }
 
   "A WrappedMessage" must {

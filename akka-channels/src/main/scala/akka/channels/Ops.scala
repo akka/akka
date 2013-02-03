@@ -56,6 +56,7 @@ class ActorRefOps(val ref: ActorRef) extends AnyVal {
 class FutureOps[T](val future: Future[T]) extends AnyVal {
   def -!->[C <: ChannelList](channel: ChannelRef[C]): Future[T] = macro macros.Tell.futureOpsImpl[C, T]
   def -?->[C <: ChannelList](channel: ChannelRef[C]): Future[_] = macro macros.Ask.futureImpl[ChannelList, Any, C, T]
+  def -*->[U](f: Future[T] ⇒ Future[U]): Future[U] = f(future)
   def lub[LUB](implicit ev: T <:< WrappedMessage[_, LUB]): Future[LUB] = {
     implicit val ec = ExecutionContexts.sameThreadExecutionContext
     future map (ev(_).value)
