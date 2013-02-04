@@ -76,7 +76,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
 
   override def postStop() = {
     import scala.collection.JavaConverters._
-    queue.asScala foreach { m ⇒ context.system.deadLetters ! DeadLetter(m.msg, m.sender, self) }
+    queue.asScala foreach { m ⇒ context.system.deadLetters.tell(DeadLetter(m.msg, m.sender, self), m.sender) }
   }
 }
 

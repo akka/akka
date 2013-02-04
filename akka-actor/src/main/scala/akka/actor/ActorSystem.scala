@@ -546,7 +546,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   //FIXME Why do we need this at all?
   val deadLetterQueue: MessageQueue = new MessageQueue {
     def enqueue(receiver: ActorRef, envelope: Envelope): Unit =
-      deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver)
+      deadLetters.tell(DeadLetter(envelope.message, envelope.sender, receiver), envelope.sender)
     def dequeue() = null
     def hasMessages = false
     def numberOfMessages = 0
