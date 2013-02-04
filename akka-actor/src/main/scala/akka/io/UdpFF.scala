@@ -150,13 +150,3 @@ class UdpFFExt(system: ExtendedActorSystem) extends IO.Extension {
 
   val bufferPool: BufferPool = new DirectByteBufferPool(settings.DirectBufferSize, settings.MaxDirectBufferPoolSize)
 }
-
-trait WithUdpFFBufferPool {
-  def udpFF: UdpFFExt
-
-  def acquireBuffer(): ByteBuffer =
-    udpFF.bufferPool.acquire()
-
-  def releaseBuffer(buffer: ByteBuffer): Unit =
-    udpFF.bufferPool.release(buffer)
-}

@@ -12,7 +12,7 @@ import akka.io.SelectionHandler.RegisterChannel
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
  */
 private[io] class UdpFFSender(val udpFF: UdpFFExt, val selector: ActorRef)
-  extends Actor with ActorLogging with WithUdpFFBufferPool with WithUdpFFSend {
+  extends Actor with ActorLogging with WithUdpFFSend {
 
   val channel = {
     val datagramChannel = DatagramChannel.open

@@ -21,8 +21,9 @@ import akka.io.SelectionHandler._
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
  */
 private[io] abstract class TcpConnection(val channel: SocketChannel,
-                                         val tcp: TcpExt) extends Actor with ActorLogging with WithBufferPool {
+                                         val tcp: TcpExt) extends Actor with ActorLogging {
   import tcp.Settings._
+  import tcp.bufferPool
   import TcpConnection._
   var pendingWrite: PendingWrite = null
 
@@ -137,7 +138,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
         }
       } else MoreDataWaiting(receivedData)
 
-    val buffer = acquireBuffer()
+    val buffer = bufferPool.acquire()
     try innerRead(buffer, ByteString.empty, ReceivedMessageSizeLimit) match {
       case NoData ⇒
         if (TraceLogging) log.debug("Read nothing.")
@@ -157,7 +158,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
         doCloseConnection(handler, closeCommander, closeReason)
     } catch {
       case e: IOException ⇒ handleError(handler, e)
-    } finally releaseBuffer(buffer)
+    } finally bufferPool.release(buffer)
   }
 
   final def doWrite(handler: ActorRef): Unit = {
@@ -179,7 +180,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
         val buffer = pendingWrite.buffer
         pendingWrite = null
 
-        releaseBuffer(buffer)
+        bufferPool.release(buffer)
       }
     }
 
@@ -256,7 +257,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
       abort()
 
     if (writePending)
-      releaseBuffer(pendingWrite.buffer)
+      bufferPool.release(pendingWrite.buffer)
 
     if (closedMessage != null) {
       val interestedInClose =
@@ -288,7 +289,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
     def wantsAck = ack != NoAck
   }
   def createWrite(write: Write): PendingWrite = {
-    val buffer = acquireBuffer()
+    val buffer = bufferPool.acquire()
     val copied = write.data.copyToBuffer(buffer)
     buffer.flip()
 

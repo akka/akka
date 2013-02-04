@@ -9,7 +9,7 @@ import akka.io.SelectionHandler._
 import java.nio.channels.DatagramChannel
 
 trait WithUdpFFSend {
-  me: Actor with ActorLogging with WithUdpFFBufferPool ⇒
+  me: Actor with ActorLogging ⇒
 
   var pendingSend: (Send, ActorRef) = null
   def writePending = pendingSend ne null
@@ -41,7 +41,7 @@ trait WithUdpFFSend {
 
   final def doSend(): Unit = {
 
-    val buffer = acquireBuffer()
+    val buffer = udpFF.bufferPool.acquire()
     try {
       val (send, commander) = pendingSend
       buffer.clear()
@@ -55,7 +55,7 @@ trait WithUdpFFSend {
       else if (send.wantsAck) commander ! send.ack
 
     } finally {
-      releaseBuffer(buffer)
+      udpFF.bufferPool.release(buffer)
       pendingSend = null
     }
 

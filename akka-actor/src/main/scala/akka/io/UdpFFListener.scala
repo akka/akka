@@ -19,8 +19,9 @@ private[io] class UdpFFListener(selectorRouter: ActorRef,
                                 bindCommander: ActorRef,
                                 val udpFF: UdpFFExt,
                                 options: immutable.Traversable[SocketOption])
-  extends Actor with ActorLogging with WithUdpFFBufferPool with WithUdpFFSend {
+  extends Actor with ActorLogging with WithUdpFFSend {
   import udpFF.settings._
+  import udpFF.bufferPool
 
   def selector: ActorRef = context.parent
 
@@ -60,7 +61,7 @@ private[io] class UdpFFListener(selectorRouter: ActorRef,
   }
 
   def doReceive(handler: ActorRef, closeCommander: Option[ActorRef]): Unit = {
-    val buffer = acquireBuffer()
+    val buffer = bufferPool.acquire()
     try {
       buffer.clear()
       buffer.limit(DirectBufferSize)
@@ -73,7 +74,7 @@ private[io] class UdpFFListener(selectorRouter: ActorRef,
       }
 
       selector ! ReadInterest
-    } finally releaseBuffer(buffer)
+    } finally bufferPool.release(buffer)
   }
 
   override def postStop() {
