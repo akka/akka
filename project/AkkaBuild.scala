@@ -450,7 +450,7 @@ object AkkaBuild extends Build {
     id = "akka-channels-tests",
     base = file("akka-channels-tests"),
     dependencies = Seq(channels, testkit % "compile;test->test"),
-    settings = defaultSettings ++ scaladocSettings ++ experimentalSettings ++ Seq(
+    settings = defaultSettings ++ experimentalSettings ++ Seq(
       libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _)
     )
   )
