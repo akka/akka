@@ -72,7 +72,8 @@ private[io] class TcpListener(selectorRouter: ActorRef,
         log.debug("New connection accepted")
         socketChannel.configureBlocking(false)
         //selectorRouter ! RegisterIncomingConnection(socketChannel, handler, options)
-        selectorRouter ! KickStartCommand(Props(new TcpIncomingConnection(socketChannel, tcp, handler, options)))
+        // FIXME null is not nice. There is no explicit API command here
+        selectorRouter ! KickStartCommand(null, context.system.deadLetters, Props(new TcpIncomingConnection(socketChannel, tcp, handler, options)))
         acceptAllPending(limit - 1)
       }
     } else context.parent ! AcceptInterest

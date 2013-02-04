@@ -15,13 +15,13 @@ import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import org.scalatest.matchers._
 import Tcp._
-import TcpSelector._
+import akka.io.SelectionHandler._
 import TestUtils._
 import akka.actor.{ ActorRef, PoisonPill, Terminated }
 import akka.testkit.{ AkkaSpec, EventFilter, TestActorRef, TestProbe }
 import akka.util.ByteString
 import akka.actor.DeathPactException
-import akka.actor.DeathPactException
+import java.nio.channels.SelectionKey._
 
 class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms") {
   val serverAddress = temporaryServerAddress()
@@ -241,7 +241,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
       val buffer = ByteBuffer.allocate(1)
       val thrown = evaluating { serverSideChannel.read(buffer) } must produce[IOException]
-      thrown.getMessage must be("Connection reset by peer")
+      // FIXME: On windows this message is localized
+      //thrown.getMessage must be("Connection reset by peer")
     }
 
     "close the connection and reply with `ConfirmedClosed` upong reception of an `ConfirmedClose` command" in withEstablishedConnection(setSmallRcvBuffer) { setup ⇒
@@ -519,7 +520,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       val connectionActor = connectionActorCons(selector.ref, userHandler.ref)
       val clientSideChannel = connectionActor.underlyingActor.channel
 
-      selector.expectMsg(RegisterOutgoingConnection(clientSideChannel))
+      selector.expectMsg(RegisterChannel(clientSideChannel, OP_CONNECT))
 
       body {
         UnacceptedSetup(

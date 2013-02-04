@@ -29,12 +29,12 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
   options.foreach(_.beforeConnect(channel.socket))
 
   log.debug("Attempting connection to {}", remoteAddress)
-  if (channel.connect(remoteAddress))
-    completeConnect(commander, options)
-  else {
-    selector ! RegisterChannel(channel, SelectionKey.OP_CONNECT)
-    context.become(connecting(commander, options))
-  }
+  //  if (channel.connect(remoteAddress))
+  //    completeConnect(commander, options)
+  //  else {
+  selector ! RegisterChannel(channel, SelectionKey.OP_CONNECT)
+  context.become(connecting(commander, options))
+  //  }
 
   def receive: Receive = PartialFunction.empty
 

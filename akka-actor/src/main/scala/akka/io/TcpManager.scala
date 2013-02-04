@@ -7,7 +7,7 @@ package akka.io
 import akka.actor.{ ActorLogging, Actor, Props }
 import akka.routing.RandomRouter
 import Tcp._
-import akka.io.SelectionHandler.KickStartCommand
+import akka.io.SelectionHandler.{ KickStartFailed, KickStartCommand }
 
 /**
  * TcpManager is a facade for accepting commands ([[akka.io.Tcp.Command]]) to open client or server TCP connections.
@@ -52,12 +52,14 @@ private[io] class TcpManager(tcp: TcpExt) extends Actor with ActorLogging {
 
   def receive = {
     //case x @ (_: Connect | _: Bind) ⇒ selectorPool forward x
-    case Connect(remoteAddress, localAddress, options) ⇒
+    case c @ Connect(remoteAddress, localAddress, options) ⇒
       val commander = sender
-      selectorPool ! KickStartCommand(Props(new TcpOutgoingConnection(tcp, commander, remoteAddress, localAddress, options)))
+      selectorPool ! KickStartCommand(c, commander, Props(new TcpOutgoingConnection(tcp, commander, remoteAddress, localAddress, options)))
 
-    case Bind(handler, endpoint, backlog, options) ⇒
+    case b @ Bind(handler, endpoint, backlog, options) ⇒
       val commander = sender
-      selectorPool ! KickStartCommand(Props(new TcpListener(selectorPool, handler, endpoint, backlog, commander, tcp, options)))
+      selectorPool ! KickStartCommand(b, commander, Props(new TcpListener(selectorPool, handler, endpoint, backlog, commander, tcp, options)))
+
+    case KickStartFailed(cmd: Command, commander) ⇒ commander ! CommandFailed(cmd)
   }
 }

@@ -6,7 +6,7 @@ package akka.io
 import akka.actor.{ ActorRef, Props, Actor }
 import akka.io.UdpFF._
 import akka.routing.RandomRouter
-import akka.io.SelectionHandler.KickStartCommand
+import akka.io.SelectionHandler.{ KickStartFailed, KickStartCommand }
 
 /**
  * UdpFFManager is a facade for simple fire-and-forget style UDP operations
@@ -55,11 +55,12 @@ private[io] class UdpFFManager(udpFF: UdpFFExt) extends Actor {
     name = "simplesend")
 
   def receive = {
-    case Bind(handler, endpoint, options) ⇒
+    case b @ Bind(handler, endpoint, options) ⇒
       val commander = sender
-      selectorPool ! KickStartCommand(Props(
+      selectorPool ! KickStartCommand(b, commander, Props(
         new UdpFFListener(selectorPool, handler, endpoint, commander, udpFF, options)))
-    case SimpleSender ⇒ anonymousSender forward SimpleSender
+    case SimpleSender                             ⇒ anonymousSender forward SimpleSender
+    case KickStartFailed(cmd: Command, commander) ⇒ commander ! CommandFailed(cmd)
   }
 
 }

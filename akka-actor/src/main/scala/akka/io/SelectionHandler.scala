@@ -41,10 +41,12 @@ abstract class SelectionHandlerSettings(config: Config) {
 }
 
 private[io] object SelectionHandler {
+
   //FIXME: temporary
-  case class KickStartCommand(childProps: Props)
+  case class KickStartCommand(apiCommand: Any, commander: ActorRef, childProps: Props)
   // FIXME: all actors should listen to this
   case object KickStartDone
+  case class KickStartFailed(apiCommand: Any, commander: ActorRef)
 
   case class RegisterChannel(channel: SelectableChannel, initialOps: Int)
   case class Retry(command: KickStartCommand, retriesLeft: Int) { require(retriesLeft >= 0) }
@@ -75,42 +77,19 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
 
     //case StopReading    ⇒ execute(disableInterest(OP_READ, sender))
 
-    //    case cmd: RegisterIncomingConnection ⇒
-    //      handleIncomingConnection(cmd, SelectorAssociationRetries)
-    //
-    //    case cmd: Connect ⇒
-    //      handleConnect(cmd, SelectorAssociationRetries)
-    //
-    //    case cmd: Bind ⇒
-    //      handleBind(cmd, SelectorAssociationRetries)
-
     case cmd: KickStartCommand ⇒
-      kickStart(cmd, SelectorAssociationRetries)
-
-    //    case RegisterOutgoingConnection(channel) ⇒
-    //      execute(registerOutgoingConnection(channel, sender))
-    //
-    //    case RegisterServerSocketChannel(channel) ⇒
-    //      execute(registerListener(channel, sender))
+      // FIXME: factor out to common
+      withCapacityProtection(cmd, SelectorAssociationRetries) { spawnChild(cmd.childProps) ! KickStartDone }
 
     case RegisterChannel(channel, initialOps) ⇒
       execute(registerChannel(channel, sender, initialOps))
 
-    //    case Retry(command, 0) ⇒
-    //      log.warning("Command '{}' failed since all selectors are at capacity", command)
-    //      sender ! CommandFailed(command)
+    case Retry(cmd, 0) ⇒
+      // FIXME: extractors
+      manager ! KickStartFailed(cmd.apiCommand, cmd.commander)
 
     case Retry(cmd, retriesLeft) ⇒
-      kickStart(cmd, retriesLeft)
-
-    //    case Retry(cmd: RegisterIncomingConnection, retriesLeft) ⇒
-    //      handleIncomingConnection(cmd, retriesLeft)
-    //
-    //    case Retry(cmd: Connect, retriesLeft) ⇒
-    //      handleConnect(cmd, retriesLeft)
-    //
-    //    case Retry(cmd: Bind, retriesLeft) ⇒
-    //      handleBind(cmd, retriesLeft)
+      withCapacityProtection(cmd, retriesLeft) { spawnChild(cmd.childProps) ! KickStartDone }
 
     case Terminated(child) ⇒
       execute(unregister(child))
@@ -118,42 +97,22 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
 
   override def postStop() {
     try {
-      try {
-        val iterator = selector.keys.iterator
-        while (iterator.hasNext) iterator.next().channel.close()
-      } finally selector.close()
+      val iterator = selector.keys.iterator
+      while (iterator.hasNext) {
+        val key = iterator.next()
+        try key.channel.close()
+        catch {
+          case NonFatal(e) ⇒ log.error(e, "Error closing channel")
+        }
+      }
+      selector.close()
     } catch {
-      case NonFatal(e) ⇒ log.error(e, "Error closing selector or key")
+      case NonFatal(e) ⇒ log.error(e, "Error closing selector")
     }
   }
 
   // we can never recover from failures of a connection or listener child
   override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
-
-  //  def handleIncomingConnection(cmd: RegisterIncomingConnection, retriesLeft: Int): Unit =
-  //    withCapacityProtection(cmd, retriesLeft) {
-  //      import cmd._
-  //      val connection = spawnChild(() ⇒ new TcpIncomingConnection(channel, tcp, handler, options))
-  //      execute(registerIncomingConnection(channel, connection))
-  //    }
-  //
-  //  def handleConnect(cmd: Connect, retriesLeft: Int): Unit =
-  //    withCapacityProtection(cmd, retriesLeft) {
-  //      import cmd._
-  //      val commander = sender
-  //      spawnChild(() ⇒ new TcpOutgoingConnection(tcp, commander, remoteAddress, localAddress, options))
-  //    }
-  //
-  //  def handleBind(cmd: Bind, retriesLeft: Int): Unit =
-  //    withCapacityProtection(cmd, retriesLeft) {
-  //      import cmd._
-  //      val commander = sender
-  //      spawnChild(() ⇒ new TcpListener(context.parent, handler, endpoint, backlog, commander, tcp.Settings, options))
-  //    }
-
-  def kickStart(cmd: KickStartCommand, retriesLeft: Int): Unit = withCapacityProtection(cmd, retriesLeft) {
-    spawnChild(cmd.childProps) ! KickStartDone
-  }
 
   def withCapacityProtection(cmd: KickStartCommand, retriesLeft: Int)(body: ⇒ Unit): Unit = {
     log.debug("Executing {}", cmd)
@@ -181,32 +140,6 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
 
   def updateKeyMap(child: ActorRef, key: SelectionKey): Unit =
     childrenKeys = childrenKeys.updated(child.path.name, key)
-
-  //  def registerOutgoingConnection(channel: SocketChannel, connection: ActorRef) =
-  //    new Task {
-  //      def tryRun() {
-  //        val key = channel.register(selector, OP_CONNECT, connection)
-  //        updateKeyMap(connection, key)
-  //      }
-  //    }
-  //
-  //  def registerListener(channel: ServerSocketChannel, listener: ActorRef) =
-  //    new Task {
-  //      def tryRun() {
-  //        val key = channel.register(selector, OP_ACCEPT, listener)
-  //        updateKeyMap(listener, key)
-  //        listener ! Bound
-  //      }
-  //    }
-  //
-  //  def registerIncomingConnection(channel: SocketChannel, connection: ActorRef) =
-  //    new Task {
-  //      def tryRun() {
-  //        // we only enable reading after the user-level connection handler has registered
-  //        val key = channel.register(selector, 0, connection)
-  //        updateKeyMap(connection, key)
-  //      }
-  //    }
 
   def registerChannel(channel: SelectableChannel, channelActor: ActorRef, initialOps: Int): Task =
     new Task {
