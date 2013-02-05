@@ -8,7 +8,7 @@ import akka.io.UdpFF.{ CommandFailed, Send }
 import akka.io.SelectionHandler._
 import java.nio.channels.DatagramChannel
 
-trait WithUdpFFSend {
+private[io] trait WithUdpFFSend {
   me: Actor with ActorLogging ⇒
 
   var pendingSend: (Send, ActorRef) = null

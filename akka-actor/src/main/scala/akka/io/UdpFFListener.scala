@@ -38,17 +38,18 @@ private[io] class UdpFFListener(selectorRouter: ActorRef,
     datagramChannel
   }
   context.parent ! RegisterChannel(channel, OP_READ)
-  bindCommander ! Bound
   log.debug("Successfully bound to {}", endpoint)
 
   def receive: Receive = {
-    case ChannelRegistered ⇒ context.become(readHandlers orElse sendHandlers, discardOld = true)
+    case ChannelRegistered ⇒
+      bindCommander ! Bound
+      context.become(readHandlers orElse sendHandlers, discardOld = true)
   }
 
   def readHandlers: Receive = {
     case StopReading     ⇒ selector ! DisableReadInterest
     case ResumeReading   ⇒ selector ! ReadInterest
-    case ChannelReadable ⇒ doReceive(handler, None)
+    case ChannelReadable ⇒ doReceive(handler)
 
     case Unbind ⇒
       log.debug("Unbinding endpoint {}", endpoint)
@@ -58,7 +59,7 @@ private[io] class UdpFFListener(selectorRouter: ActorRef,
       context.stop(self)
   }
 
-  def doReceive(handler: ActorRef, closeCommander: Option[ActorRef]): Unit = {
+  def doReceive(handler: ActorRef): Unit = {
     val buffer = bufferPool.acquire()
     try {
       buffer.clear()
@@ -76,13 +77,12 @@ private[io] class UdpFFListener(selectorRouter: ActorRef,
   }
 
   override def postStop() {
-    try {
-      if (channel.isOpen) {
-        log.debug("Closing serverSocketChannel after being stopped")
-        channel.close()
+    if (channel.isOpen) {
+      log.debug("Closing DatagramChannel after being stopped")
+      try channel.close()
+      catch {
+        case NonFatal(e) ⇒ log.error(e, "Error closing DatagramChannel")
       }
-    } catch {
-      case NonFatal(e) ⇒ log.error(e, "Error closing ServerSocketChannel")
     }
   }
 }

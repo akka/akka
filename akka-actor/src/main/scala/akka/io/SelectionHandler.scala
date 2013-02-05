@@ -70,11 +70,11 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
   val OP_READ_AND_WRITE = OP_READ | OP_WRITE // compile-time constant
 
   def receive: Receive = {
-    case WriteInterest  ⇒ execute(enableInterest(OP_WRITE, sender))
-    case ReadInterest   ⇒ execute(enableInterest(OP_READ, sender))
-    case AcceptInterest ⇒ execute(enableInterest(OP_ACCEPT, sender))
+    case WriteInterest       ⇒ execute(enableInterest(OP_WRITE, sender))
+    case ReadInterest        ⇒ execute(enableInterest(OP_READ, sender))
+    case AcceptInterest      ⇒ execute(enableInterest(OP_ACCEPT, sender))
 
-    case DisableReadInterest    ⇒ execute(disableInterest(OP_READ, sender))
+    case DisableReadInterest ⇒ execute(disableInterest(OP_READ, sender))
 
     case cmd: WorkerForCommand ⇒
       withCapacityProtection(cmd, SelectorAssociationRetries) { spawnChild(cmd.childProps) }

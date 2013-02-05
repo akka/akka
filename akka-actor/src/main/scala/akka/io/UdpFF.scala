@@ -4,11 +4,11 @@
 package akka.io
 
 import akka.actor._
-import akka.util.ByteString
-import java.net.{ DatagramSocket, InetSocketAddress }
-import scala.collection.immutable
-import com.typesafe.config.Config
 import akka.io.Inet.SocketOption
+import akka.io.Udp.UdpSettings
+import akka.util.ByteString
+import java.net.InetSocketAddress
+import scala.collection.immutable
 
 object UdpFF extends ExtensionKey[UdpFFExt] {
 
@@ -47,36 +47,13 @@ object UdpFF extends ExtensionKey[UdpFFExt] {
   case object SimpleSendReady extends Event
   case object Unbound extends Event
 
-  sealed trait CloseCommand extends Command
-  case object Close extends CloseCommand
-  case object Abort extends CloseCommand
-
   case class SendFailed(cause: Throwable) extends Event
 
 }
 
 class UdpFFExt(system: ExtendedActorSystem) extends IO.Extension {
 
-  val settings = new Settings(system.settings.config.getConfig("akka.io.udpFF"))
-  class Settings private[UdpFFExt] (_config: Config) extends SelectionHandlerSettings(_config) {
-    import _config._
-
-    val NrOfSelectors = getInt("nr-of-selectors")
-    val DirectBufferSize = getIntBytes("direct-buffer-size")
-    val MaxDirectBufferPoolSize = getInt("max-direct-buffer-pool-size")
-
-    val ManagementDispatcher = getString("management-dispatcher")
-
-    require(NrOfSelectors > 0, "nr-of-selectors must be > 0")
-
-    override val MaxChannelsPerSelector = if (MaxChannels == -1) -1 else math.max(MaxChannels / NrOfSelectors, 1)
-
-    private[this] def getIntBytes(path: String): Int = {
-      val size = getBytes(path)
-      require(size < Int.MaxValue, s"$path must be < 2 GiB")
-      size.toInt
-    }
-  }
+  val settings = new UdpSettings(system.settings.config.getConfig("akka.io.udp-fire-and-forget"))
 
   val manager = {
     system.asInstanceOf[ActorSystemImpl].systemActorOf(
