@@ -9,21 +9,23 @@ This project provides three Osgi Bundles
  - core  implementing the whole logic: clustered connections, Hakkers, ChopSticks. It finally provide an ActorRef of one created Hakker
  - command use a service to get a Hakker (ActorRef) with its position around the table
 
+An integration testing module is provided to verify OSGi functionality:
+ - integration-test
+
 Two modules that provision the project into the Karaf OSGi container for experimentation and integration testing:
  - assembly-features  defines the karaf "feature" that allows Karaf to provision the bundles
  - assembly-dist  creates a distribution tar.gz and zip file containing the configured Karaf runtime
 
 ## How to use it
 
-### Setup with sbt  --  TODO update this for latest Karaf provisioning changes and other Maven build changes
+### Setup with sbt
 just run:
 ```bash
 sbt clean
 sbt package
 sbt osgi-bundle
-sbt osgi-prepare
 ```
-
+sbt will creates the bundles in each subproject (api, command, core)/target/scala-2.10 directories. To have integration tests and OSGi environment loaded, please use the Maven build (at least for the moment)
 ### Setup with Maven
 ```bash
 mvn clean install
@@ -45,6 +47,3 @@ Then try to restart some bundles, to test the stability of the bundles:
 ``exit`` or CTRL-D to exit the Karaf console
 
 Depending on the akka version you're using, you may need to modify the core bundle when deploying on a second machine, to set it's akka.remote.netty.hostname in the application.conf.
-
-# TODO: The VM ips below are specific to one environment, make this more general
-The configuration is set to start the fist node on localhost, and to start other nodes on vm running on the same machine for tests (localhost and first vm ip would be 192.168.229.128, but it may differ according to your configuration.

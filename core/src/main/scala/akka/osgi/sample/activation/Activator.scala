@@ -16,19 +16,19 @@ See the License for the specific language governing permissions and
 package akka.osgi.sample.activation
 
 import akka.osgi.ActorSystemActivator
-import org.osgi.framework.{ServiceRegistration, BundleContext}
 import akka.actor.{Props, ActorSystem}
-import java.util.{Dictionary, Properties}
 import akka.osgi.sample.internal.Table
 import akka.osgi.sample.service.DiningHakkersServiceImpl
 import akka.osgi.sample.api.DiningHakkersService
 import akka.event.{LogSource, Logging}
+import org.osgi.framework.{ServiceRegistration, BundleContext}
+import scala.collection.mutable.ListBuffer
 
 class Activator extends ActorSystemActivator {
 
   import Activator._
 
-  var service: Option[ServiceRegistration[_]] = None
+  val services: ListBuffer[ServiceRegistration[_]] = ListBuffer()
 
   def configure(context: BundleContext, system: ActorSystem) {
     val log = Logging(system, this)
@@ -42,20 +42,19 @@ class Activator extends ActorSystemActivator {
 
     val hakkersService = new DiningHakkersServiceImpl(system)
 
-    service.foreach(_.unregister()) //Cleanup   //TODO required??
-    service = Some(context.registerService(classOf[DiningHakkersService].getName, hakkersService, (new Properties()).asInstanceOf[Dictionary[String, Any]]))
+    services += context.registerService(classOf[DiningHakkersService], hakkersService, null)
+    services += context.registerService(classOf[ActorSystem], system, null)
 
   }
 
-
   override def stop(context: BundleContext) {
-    unregisterHakkersService(context)
+    unregisterServices(context)
     println("Hakker service unregistred")
     super.stop(context)
   }
 
-  def unregisterHakkersService(context: BundleContext) {
-    service foreach (_.unregister())
+  def unregisterServices(context: BundleContext) {
+    services foreach (_.unregister())
   }
 
   override def getActorSystemName(context: BundleContext): String = "akka-osgi-sample"

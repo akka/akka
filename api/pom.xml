@@ -17,7 +17,7 @@
 
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_${scala.dep.version}</artifactId>
+            <artifactId>akka-osgi_${scala.dep.version}</artifactId>
         </dependency>
 
     </dependencies>

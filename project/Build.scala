@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
  */
 import sbt._
 import Keys._
-import com.typesafe.sbtosgi.OsgiPlugin.{OsgiKeys, osgiSettings}
+import com.typesafe.sbt.osgi.SbtOsgi.{OsgiKeys, osgiSettings}
 
 
 object OsgiSampleBuild extends Build {
@@ -32,30 +32,18 @@ object OsgiSampleBuild extends Build {
   lazy val buildSettings = Seq(
     scalaVersion := "2.10.0",
     resolvers ++= Seq("oss-sonatype-releases" at "https://oss.sonatype.org/content/repositories/releases",
+              "JBoss Repo" at "http://repository.jboss.org/nexus/content/groups/public/",
       "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/"),
-    version := "2.1.0-SNAPSHOT"
+    version := "2.2.0-SNAPSHOT"
   )
 
-
-  val ActorReferenceCopyTask = TaskKey[Int]("osgi-prepare", "Prepare an Osgi framework and required bundles")
-
-  val ActorReferenceCopyAction = ActorReferenceCopyTask:={
-    new File("bundles").mkdir()
-    projects.map(_.base).filter(p => (new File(p+"/target/scala-2.10")).exists).foreach(p =>  {
-      List("sh", "-c", "cp "+p+"/target/scala-2.10/*.jar bundles") !;
-    })
-    List("sh", "-c", "cd core; bash ../karaf.sh") !;
-  }
 
   lazy val root = Project(id = "osgi-sample",
     base = file("."),
     settings = Project.defaultSettings ++ Seq(
-     ActorReferenceCopyAction,
-     cleanFiles <+= baseDirectory { base => base / "bundles" },
-     cleanFiles <+= baseDirectory { base => base / "apache-karaf-2.3.0" },
       libraryDependencies ++= Seq()
     )
-  ) aggregate(api, command, core, uncommons, protobuf)
+  ) aggregate(api, command, core, uncommons)
 
   lazy val api = Project(id = "api",
     base = file("./api"),
@@ -87,14 +75,6 @@ object OsgiSampleBuild extends Build {
     )
   )
 
-  lazy val protobuf = Project(id = "protobuf",
-    base = file("./protobuf"),
-    settings = Project.defaultSettings ++ exports(Seq("com.google.protobuf")) ++ Seq(
-      libraryDependencies ++= Seq(Dependencies.protobuf),
-      version := "2.4.1"
-    )
-  )
-
   def exports(packages: Seq[String] = Seq(), imports: Seq[String] = Nil, privates: Seq[String] = Nil) = osgiSettings ++ Seq(
     OsgiKeys.importPackage := imports ++ Seq("*"),
     OsgiKeys.privatePackage := privates,
@@ -111,7 +91,7 @@ object OsgiSampleBuild extends Build {
 
   def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport())
 
-  def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.3)\"".format(packageName)
+  def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.2,2.3)\"".format(packageName)
 
   def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,1.1.0)\"".format(packageName)
 
@@ -122,10 +102,10 @@ object OsgiSampleBuild extends Build {
 }
 
 object Dependencies {
-  val akka_actor = "com.typesafe.akka" % "akka-actor_2.10" % "2.2-SNAPSHOT"              changing()
-  val akka_osgi = "com.typesafe.akka" % "akka-osgi_2.10" % "2.2-SNAPSHOT"  exclude("org.osgi.core", "org.osgi.compendium") changing()
-  val akka_remote = "com.typesafe.akka" % "akka-remote_2.10" % "2.2-SNAPSHOT"              changing()
-  val akka_cluster = "com.typesafe.akka" % "akka-cluster-experimental_2.10" % "2.2-SNAPSHOT" changing()
+  val akka_actor = "com.typesafe.akka" % "akka-actor_2.10" % "2.2-SNAPSHOT"
+  val akka_osgi = "com.typesafe.akka" % "akka-osgi_2.10" % "2.2-SNAPSHOT"  exclude("org.osgi.core", "org.osgi.compendium")
+  val akka_remote = "com.typesafe.akka" % "akka-remote_2.10" % "2.2-SNAPSHOT"
+  val akka_cluster = "com.typesafe.akka" % "akka-cluster-experimental_2.10" % "2.2-SNAPSHOT"
   val config = "com.typesafe" % "config" % "1.0.0"
 
   val osgiCore = "org.osgi" % "org.osgi.core" % "4.3.0"

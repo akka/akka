@@ -8,14 +8,17 @@
     <version>2.2.0-SNAPSHOT</version>
 
     <properties>
-        <akka.version>2.1.0</akka.version>
+        <akka.version>2.2-SNAPSHOT</akka.version>
         <karaf.version>2.3.0</karaf.version>
-        <netty.version>3.5.8.Final</netty.version>
+        <karaf.tooling.exam.version>${karaf.version}</karaf.tooling.exam.version>
+        <netty.version>3.6.2.Final</netty.version>
         <osgi.version>4.3.0</osgi.version>
         <paxexam.version>2.6.0</paxexam.version>
+        <paxswissbox.version>1.6.0</paxswissbox.version>
         <protobuf.version>2.4.1</protobuf.version>
         <scala.version>2.10.0</scala.version>
         <scala.dep.version>2.10</scala.dep.version>
+        <scalatest.version>1.9.1</scalatest.version>
         <typesafe.config.version>1.0.0</typesafe.config.version>
     </properties>
 
@@ -27,6 +30,7 @@
 
         <module>assembly-features</module>
         <module>assembly-dist</module>
+        <module>integration-test</module>
     </modules>
     <packaging>pom</packaging>
     <name>com.typesafe.akka.akka-osgi.sample</name>
@@ -62,11 +66,6 @@
 
             <dependency>
                 <groupId>com.typesafe.akka</groupId>
-                <artifactId>akka-actor_${scala.dep.version}</artifactId>
-                <version>${akka.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.typesafe.akka</groupId>
                 <artifactId>akka-osgi_${scala.dep.version}</artifactId>
                 <version>${akka.version}</version>
             </dependency>
@@ -97,10 +96,34 @@
             </dependency>
 
             <dependency>
-              <groupId>org.apache.karaf</groupId>
-              <artifactId>apache-karaf</artifactId>
-              <version>${karaf.version}</version>
-              <type>tar.gz</type>
+                <groupId>org.apache.karaf.tooling.exam</groupId>
+                <artifactId>org.apache.karaf.tooling.exam.container</artifactId>
+                <version>${karaf.tooling.exam.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.ops4j.pax.exam</groupId>
+                <artifactId>pax-exam-junit4</artifactId>
+                <version>${paxexam.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.typesafe.akka</groupId>
+                <artifactId>akka-testkit_${scala.dep.version}</artifactId>
+                <version>${akka.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.scalatest</groupId>
+                <artifactId>scalatest_${scala.dep.version}</artifactId>
+                <version>${scalatest.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.9</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -112,23 +135,28 @@
             <version>${scala.version}</version>
         </dependency>
 
+        <!-- Depend on both the tar.gz and the zip, Pax Exam then does not have to download them separately -->
         <dependency>
-            <groupId>org.apache.karaf.tooling.exam</groupId>
-            <artifactId>org.apache.karaf.tooling.exam.container</artifactId>
+            <groupId>org.apache.karaf</groupId>
+            <artifactId>apache-karaf</artifactId>
             <version>${karaf.version}</version>
-            <scope>test</scope>
+            <type>tar.gz</type>
         </dependency>
         <dependency>
-            <groupId>org.ops4j.pax.exam</groupId>
-            <artifactId>pax-exam-junit4</artifactId>
-            <version>${paxexam.version}</version>
-            <scope>test</scope>
+            <groupId>org.apache.karaf</groupId>
+            <artifactId>apache-karaf</artifactId>
+            <version>${karaf.version}</version>
+            <type>zip</type>
         </dependency>
     </dependencies>
     <repositories>
         <repository>
             <id>oss-sonatype-releases</id>
             <url>https://oss.sonatype.org/content/repositories/releases</url>
+        </repository>
+        <repository>
+            <id>typesafe-snapshots</id>
+            <url>http://repo.typesafe.com/typesafe/snapshots/</url>
         </repository>
     </repositories>
 
@@ -153,16 +181,36 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.scala-tools</groupId>
-                <artifactId>maven-scala-plugin</artifactId>
-                <version>2.15.2</version>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>3.1.2</version>
                 <executions>
                     <execution>
+                        <id>scala-compile-first</id>
+                        <phase>process-resources</phase>
                         <goals>
+                            <goal>add-source</goal>
                             <goal>compile</goal>
                         </goals>
                     </execution>
+                    <execution>
+                        <id>scala-test-compile</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
                 </executions>
+                <configuration>
+                    <args>
+                        <arg>-deprecation</arg>
+                        <arg>-feature</arg>
+                        <arg>-encoding</arg>
+                        <arg>UTF-8</arg>
+                        <!--<arg>-uniqid</arg>-->
+                    </args>
+                    <!--<useZincServer>true</useZincServer>-->
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.felix</groupId>

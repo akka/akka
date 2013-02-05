@@ -23,24 +23,23 @@
     </feature>
 
     <feature name='typesafe-config' description='Typesafe config' version='${typesafe.config.version}' resolver='(obr)'>
-        <feature version="[2.10.0,2.11.0)">scala</feature>
+        <feature version="[${scala.version},2.11.0)">scala</feature>
         <bundle start-level="25">mvn:com.typesafe/config/${typesafe.config.version}</bundle>
     </feature>
 
     <feature name='akka' description='Akka' version='${akka.version}' resolver='(obr)'>
-        <feature version="[2.10.0,2.11.0)">scala</feature>
-        <feature version="[3.5.0,4.0.0)">netty</feature>
+        <feature version="[${scala.version},2.11.0)">scala</feature>
+        <feature version="[${netty.version},4.0.0)">netty</feature>
         <feature version="[1.2.2,3.0.0)">uncommons-maths</feature>
-        <feature version="[2.4.1,3.0.0)">protobuf</feature>
-        <feature version="[1.0.0,2.0.0)">typesafe-config</feature>
-        <bundle start-level="30">mvn:com.typesafe.akka/akka-actor_${scala.dep.version}/${akka.version}</bundle>
+        <feature version="[${protobuf.version},3.0.0)">protobuf</feature>
+        <feature version="[${typesafe.config.version},2.0.0)">typesafe-config</feature>
         <bundle start-level="30">mvn:com.typesafe.akka/akka-cluster-experimental_${scala.dep.version}/${akka.version}</bundle>
         <bundle start-level="30">mvn:com.typesafe.akka/akka-remote_${scala.dep.version}/${akka.version}</bundle>
         <bundle start-level="30">mvn:com.typesafe.akka/akka-osgi_${scala.dep.version}/${akka.version}</bundle>
     </feature>
 
     <feature name='dining-hakker' description='Akka Dining Hakker Sample' version='${project.version}' resolver='(obr)'>
-        <feature version="[2.1.0,3.0.0)">akka</feature>
+        <feature version="[${akka.version},3.0.0)">akka</feature>
         <bundle start-level="50">mvn:com.typesafe.akka/api/${project.version}</bundle>
         <bundle start-level="50">mvn:com.typesafe.akka/core/${project.version}</bundle>
         <bundle start-level="50">mvn:com.typesafe.akka/command/${project.version}</bundle>

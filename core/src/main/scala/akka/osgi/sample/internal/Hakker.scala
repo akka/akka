@@ -14,22 +14,7 @@ import akka.event.Logging
 import akka.actor._
 import scala.concurrent.duration._
 
-/*
-* First we define our messages, they basically speak for themselves
-*/
-sealed trait DiningHakkerMessage
-
-case class Busy(chopstick: ActorRef) extends DiningHakkerMessage
-
-case class Put(hakker: ActorRef) extends DiningHakkerMessage
-
-case class Take(hakker: ActorRef) extends DiningHakkerMessage
-
-case class Taken(chopstick: ActorRef) extends DiningHakkerMessage
-
-object Eat extends DiningHakkerMessage
-
-object Think extends DiningHakkerMessage
+import akka.osgi.sample.api._
 
 /*
 * A Chopstick is an actor, it can be taken, and put back
@@ -92,6 +77,7 @@ class Hakker(name: String, chair: Int) extends Actor {
       become(hungry(left, right) orElse (clusterEvents))
       left ! Take(self)
       right ! Take(self)
+    case Identify ⇒ identify("Thinking")
   }
 
   //When a hakker is hungry it tries to pick up its chopsticks and eat
@@ -105,6 +91,7 @@ class Hakker(name: String, chair: Int) extends Actor {
       become(waiting_for(left, right, true) orElse (clusterEvents))
     case Busy(chopstick) ⇒
       become(denied_a_chopstick(left, right) orElse (clusterEvents))
+    case Identify ⇒ identify("Hungry")
   }
 
   //When a hakker is waiting for the last chopstick it can either obtain it
@@ -127,6 +114,7 @@ class Hakker(name: String, chair: Int) extends Actor {
         left ! Put(self)
       }
       self ! Eat
+    case Identify ⇒ identify("Waiting for Chopstick")
   }
 
   //When the results of the other grab comes back,
@@ -140,6 +128,7 @@ class Hakker(name: String, chair: Int) extends Actor {
     case Busy(chopstick) ⇒
       become(thinking(left, right) orElse (clusterEvents))
       self ! Eat
+    case Identify ⇒ identify("Denied a Chopstick")
   }
 
   //When a hakker is eating, he can decide to start to think,
@@ -151,6 +140,7 @@ class Hakker(name: String, chair: Int) extends Actor {
       right ! Put(self)
       log.info("%s puts down his chopsticks and starts to think".format(name))
       system.scheduler.scheduleOnce(5 seconds, self, Eat)
+    case Identify ⇒ identify("Eating")
   }
 
   def waitForChopsticks: Receive = {
@@ -162,6 +152,10 @@ class Hakker(name: String, chair: Int) extends Actor {
   def clusterEvents: Receive = {
     case state: CurrentClusterState ⇒ state.leader foreach updateTable
     case LeaderChanged(Some(leaderAddress)) ⇒ updateTable(leaderAddress)
+  }
+
+  def identify(busyWith: String) {
+    sender ! Identification(name, busyWith)
   }
 
   def updateTable(leaderAdress: Address) {
