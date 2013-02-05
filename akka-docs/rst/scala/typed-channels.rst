@@ -169,10 +169,10 @@ Operations on typed channels are composable and obey a few simple rules:
 * the operators are fully symmetric, i.e. ``-!->`` and ``<-!-`` do the same
   thing provided the arguments also switch places
 
-* sending with ``-?->`` or ``<-?-`` always returns a
-  ``Future[WrappedMessage[_, _]]`` representing all possible reply channels,
-  even if there is only one (use ``.lub`` to get a :class:`Future[_]` with the
-  most precise single type for the value)
+* sending with ``-?->`` or ``<-?-`` returns a ``Future[WrappedMessage[_, _]]``
+  representing all possible reply channels if there is more than one (use
+  ``.lub`` to get a :class:`Future[_]` with the most precise single type for
+  the value)
 
 * sending a :class:`Future[_]` with ``-!->`` or ``<-!-`` returns a new
   :class:`Future[_]` which will be completed with the value after it has been
