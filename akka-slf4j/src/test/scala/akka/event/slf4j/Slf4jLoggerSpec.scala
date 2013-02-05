@@ -16,15 +16,15 @@ import java.io.StringWriter
 import java.io.ByteArrayOutputStream
 import org.scalatest.BeforeAndAfterEach
 
-object Slf4jEventHandlerSpec {
+object Slf4jLoggerSpec {
 
   // This test depends on logback configuration in src/test/resources/logback-test.xml
 
   val config = """
     akka {
       loglevel = INFO
-      event-handlers = ["akka.event.slf4j.Slf4jEventHandler"]
-      event-handler-startup-timeout = 30s
+      loggers = ["akka.event.slf4j.Slf4jLogger"]
+      logger-startup-timeout = 30s
     }
     """
 
@@ -53,8 +53,8 @@ object Slf4jEventHandlerSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class Slf4jEventHandlerSpec extends AkkaSpec(Slf4jEventHandlerSpec.config) with BeforeAndAfterEach {
-  import Slf4jEventHandlerSpec._
+class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAfterEach {
+  import Slf4jLoggerSpec._
 
   val producer = system.actorOf(Props[LogProducer], name = "logProducer")
 
@@ -62,22 +62,22 @@ class Slf4jEventHandlerSpec extends AkkaSpec(Slf4jEventHandlerSpec.config) with 
     output.reset()
   }
 
-  val sourceThreadRegex = "sourceThread=\\[Slf4jEventHandlerSpec-akka.actor.default-dispatcher-[1-9][0-9]*\\]"
+  val sourceThreadRegex = "sourceThread=\\[Slf4jLoggerSpec-akka.actor.default-dispatcher-[1-9][0-9]*\\]"
 
-  "Slf4jEventHandler" must {
+  "Slf4jLogger" must {
 
     "log error with stackTrace" in {
       producer ! new RuntimeException("Simulated error")
 
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
-      s must include("akkaSource=[akka://Slf4jEventHandlerSpec/user/logProducer]")
+      s must include("akkaSource=[akka://Slf4jLoggerSpec/user/logProducer]")
       s must include("level=[ERROR]")
-      s must include("logger=[akka.event.slf4j.Slf4jEventHandlerSpec$LogProducer]")
+      s must include("logger=[akka.event.slf4j.Slf4jLoggerSpec$LogProducer]")
       s must include regex (sourceThreadRegex)
       s must include("msg=[Simulated error]")
       s must include("java.lang.RuntimeException: Simulated error")
-      s must include("at akka.event.slf4j.Slf4jEventHandlerSpec")
+      s must include("at akka.event.slf4j.Slf4jLoggerSpec")
     }
 
     "log info with parameters" in {
@@ -85,29 +85,29 @@ class Slf4jEventHandlerSpec extends AkkaSpec(Slf4jEventHandlerSpec.config) with 
 
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
-      s must include("akkaSource=[akka://Slf4jEventHandlerSpec/user/logProducer]")
+      s must include("akkaSource=[akka://Slf4jLoggerSpec/user/logProducer]")
       s must include("level=[INFO]")
-      s must include("logger=[akka.event.slf4j.Slf4jEventHandlerSpec$LogProducer]")
+      s must include("logger=[akka.event.slf4j.Slf4jLoggerSpec$LogProducer]")
       s must include regex (sourceThreadRegex)
       s must include("msg=[test x=3 y=17]")
     }
 
     "include system info in akkaSource when creating Logging with system" in {
-      val log = Logging(system, "akka.event.slf4j.Slf4jEventHandlerSpec.MyLogSource")
+      val log = Logging(system, "akka.event.slf4j.Slf4jLoggerSpec.MyLogSource")
       log.info("test")
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
-      s must include("akkaSource=[akka.event.slf4j.Slf4jEventHandlerSpec.MyLogSource(akka://Slf4jEventHandlerSpec)]")
-      s must include("logger=[akka.event.slf4j.Slf4jEventHandlerSpec.MyLogSource(akka://Slf4jEventHandlerSpec)]")
+      s must include("akkaSource=[akka.event.slf4j.Slf4jLoggerSpec.MyLogSource(akka://Slf4jLoggerSpec)]")
+      s must include("logger=[akka.event.slf4j.Slf4jLoggerSpec.MyLogSource(akka://Slf4jLoggerSpec)]")
     }
 
     "not include system info in akkaSource when creating Logging with system.eventStream" in {
-      val log = Logging(system.eventStream, "akka.event.slf4j.Slf4jEventHandlerSpec.MyLogSource")
+      val log = Logging(system.eventStream, "akka.event.slf4j.Slf4jLoggerSpec.MyLogSource")
       log.info("test")
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
-      s must include("akkaSource=[akka.event.slf4j.Slf4jEventHandlerSpec.MyLogSource]")
-      s must include("logger=[akka.event.slf4j.Slf4jEventHandlerSpec.MyLogSource]")
+      s must include("akkaSource=[akka.event.slf4j.Slf4jLoggerSpec.MyLogSource]")
+      s must include("logger=[akka.event.slf4j.Slf4jLoggerSpec.MyLogSource]")
     }
 
     "use short class name and include system info in akkaSource when creating Logging with system and class" in {
@@ -115,8 +115,8 @@ class Slf4jEventHandlerSpec extends AkkaSpec(Slf4jEventHandlerSpec.config) with 
       log.info("test")
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
-      s must include("akkaSource=[Slf4jEventHandlerSpec$MyLogSource(akka://Slf4jEventHandlerSpec)]")
-      s must include("logger=[akka.event.slf4j.Slf4jEventHandlerSpec$MyLogSource]")
+      s must include("akkaSource=[Slf4jLoggerSpec$MyLogSource(akka://Slf4jLoggerSpec)]")
+      s must include("logger=[akka.event.slf4j.Slf4jLoggerSpec$MyLogSource]")
     }
 
     "use short class name in akkaSource when creating Logging with system.eventStream and class" in {
@@ -124,8 +124,8 @@ class Slf4jEventHandlerSpec extends AkkaSpec(Slf4jEventHandlerSpec.config) with 
       log.info("test")
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
-      s must include("akkaSource=[Slf4jEventHandlerSpec$MyLogSource]")
-      s must include("logger=[akka.event.slf4j.Slf4jEventHandlerSpec$MyLogSource]")
+      s must include("akkaSource=[Slf4jLoggerSpec$MyLogSource]")
+      s must include("logger=[akka.event.slf4j.Slf4jLoggerSpec$MyLogSource]")
     }
   }
 

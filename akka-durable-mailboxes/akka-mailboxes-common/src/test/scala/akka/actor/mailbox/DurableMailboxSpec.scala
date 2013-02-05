@@ -40,7 +40,7 @@ object DurableMailboxSpecActorFactory {
 object DurableMailboxSpec {
   def fallbackConfig: Config = ConfigFactory.parseString("""
       akka {
-        event-handlers = ["akka.testkit.TestEventListener"]
+        loggers = ["akka.testkit.TestEventListener"]
         loglevel = "WARNING"
         stdout-loglevel = "WARNING"
       }

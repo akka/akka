@@ -305,11 +305,11 @@ fails.
 
 .. note::
 
-   Be sure to exchange the default event handler with the
+   Be sure to exchange the default logger with the
    :class:`TestEventListener` in your ``application.conf`` to enable this
    function::
 
-     akka.event-handlers = [akka.testkit.TestEventListener]
+     akka.loggers = [akka.testkit.TestEventListener]
 
 .. _JavaTestKit.within:
 

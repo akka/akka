@@ -19,7 +19,7 @@ import akka.pattern.ask
 object AkkaSpec {
   val testConf: Config = ConfigFactory.parseString("""
       akka {
-        event-handlers = ["akka.testkit.TestEventListener"]
+        loggers = ["akka.testkit.TestEventListener"]
         loglevel = "WARNING"
         stdout-loglevel = "WARNING"
         actor {

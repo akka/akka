@@ -19,7 +19,7 @@ object EventStreamSpec {
       akka {
         stdout-loglevel = WARNING
         loglevel = INFO
-        event-handlers = ["akka.event.EventStreamSpec$MyLog", "%s"]
+        loggers = ["akka.event.EventStreamSpec$MyLog", "%s"]
       }
       """.format(Logging.StandardOutLogger.getClass.getName))
 

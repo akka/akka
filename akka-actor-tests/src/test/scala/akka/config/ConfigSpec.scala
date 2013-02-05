@@ -5,12 +5,12 @@
 package akka.config
 
 import language.postfixOps
-
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import akka.actor.{ IOManager, ActorSystem }
+import akka.event.Logging.DefaultLogger
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.findClassLoader())) {
@@ -46,6 +46,13 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
 
         getMilliseconds("akka.actor.unstarted-push-timeout") must be(10.seconds.toMillis)
         settings.UnstartedPushTimeout.duration must be(10.seconds)
+
+        settings.Loggers.size must be(1)
+        settings.Loggers.head must be(classOf[DefaultLogger].getName)
+        getStringList("akka.loggers").get(0) must be(classOf[DefaultLogger].getName)
+
+        getMilliseconds("akka.logger-startup-timeout") must be(5.seconds.toMillis)
+        settings.LoggerStartTimeout.duration must be(5.seconds)
       }
 
       {
