@@ -117,7 +117,6 @@ object Tcp extends ExtensionKey[TcpExt] {
 class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
 
   val Settings = new Settings(system.settings.config.getConfig("akka.io.tcp"))
-  // FIXME: get away with subclassess
   class Settings private[TcpExt] (_config: Config) extends SelectionHandlerSettings(_config) {
     import _config._
 

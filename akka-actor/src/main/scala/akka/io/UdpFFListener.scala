@@ -46,7 +46,7 @@ private[io] class UdpFFListener(selectorRouter: ActorRef,
   }
 
   def readHandlers: Receive = {
-    case StopReading     ⇒ selector ! StopReading
+    case StopReading     ⇒ selector ! DisableReadInterest
     case ResumeReading   ⇒ selector ! ReadInterest
     case ChannelReadable ⇒ doReceive(handler, None)
 

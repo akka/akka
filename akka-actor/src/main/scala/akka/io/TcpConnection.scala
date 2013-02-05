@@ -60,7 +60,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
   /** normal connected state */
   def connected(handler: ActorRef): Receive = {
-    case StopReading     ⇒ selector ! StopReading
+    case StopReading     ⇒ selector ! DisableReadInterest
     case ResumeReading   ⇒ selector ! ReadInterest
     case ChannelReadable ⇒ doRead(handler, None)
 
@@ -83,7 +83,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
   /** connection is closing but a write has to be finished first */
   def closingWithPendingWrite(handler: ActorRef, closeCommander: Option[ActorRef], closedEvent: ConnectionClosed): Receive = {
-    case StopReading     ⇒ selector ! StopReading
+    case StopReading     ⇒ selector ! DisableReadInterest
     case ResumeReading   ⇒ selector ! ReadInterest
     case ChannelReadable ⇒ doRead(handler, closeCommander)
 
@@ -97,7 +97,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
   /** connection is closed on our side and we're waiting from confirmation from the other side */
   def closing(handler: ActorRef, closeCommander: Option[ActorRef]): Receive = {
-    case StopReading     ⇒ selector ! StopReading
+    case StopReading     ⇒ selector ! DisableReadInterest
     case ResumeReading   ⇒ selector ! ReadInterest
     case ChannelReadable ⇒ doRead(handler, closeCommander)
     case Abort           ⇒ handleClose(handler, Some(sender), Aborted)

@@ -55,6 +55,7 @@ private[io] object SelectionHandler {
   case object ChannelWritable
   case object AcceptInterest
   case object ReadInterest
+  case object DisableReadInterest
   case object WriteInterest
 }
 
@@ -73,11 +74,9 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
     case ReadInterest   ⇒ execute(enableInterest(OP_READ, sender))
     case AcceptInterest ⇒ execute(enableInterest(OP_ACCEPT, sender))
 
-    // FIXME: provide StopReading functionality
-    //case StopReading    ⇒ execute(disableInterest(OP_READ, sender))
+    case DisableReadInterest    ⇒ execute(disableInterest(OP_READ, sender))
 
     case cmd: WorkerForCommand ⇒
-      // FIXME: factor out to common
       withCapacityProtection(cmd, SelectorAssociationRetries) { spawnChild(cmd.childProps) }
 
     case RegisterChannel(channel, initialOps) ⇒
