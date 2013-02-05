@@ -5,7 +5,7 @@
 package akka.io
 
 import java.net.InetSocketAddress
-import java.nio.channels.{ SelectionKey, ServerSocketChannel }
+import java.nio.channels.{ SocketChannel, SelectionKey, ServerSocketChannel }
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
@@ -13,6 +13,17 @@ import akka.actor.{ Props, ActorLogging, ActorRef, Actor }
 import akka.io.SelectionHandler._
 import akka.io.Inet.SocketOption
 import akka.io.Tcp._
+import akka.io.IO.HasFailureMessage
+
+private[io] object TcpListener {
+
+  case class RegisterIncoming(channel: SocketChannel) extends HasFailureMessage {
+    def failureMessage = FailedRegisterIncoming(channel)
+  }
+
+  case class FailedRegisterIncoming(channel: SocketChannel)
+
+}
 
 private[io] class TcpListener(selectorRouter: ActorRef,
                               handler: ActorRef,
@@ -23,6 +34,7 @@ private[io] class TcpListener(selectorRouter: ActorRef,
                               options: immutable.Traversable[SocketOption]) extends Actor with ActorLogging {
 
   def selector: ActorRef = context.parent
+  import TcpListener._
   import tcp.Settings._
 
   context.watch(handler) // sign death pact
@@ -38,7 +50,7 @@ private[io] class TcpListener(selectorRouter: ActorRef,
   log.debug("Successfully bound to {}", endpoint)
 
   def receive: Receive = {
-    case KickStartDone ⇒
+    case WorkerForCommandDone ⇒
       bindCommander ! Bound
       context.become(bound)
   }
@@ -47,12 +59,12 @@ private[io] class TcpListener(selectorRouter: ActorRef,
     case ChannelAcceptable ⇒
       acceptAllPending(BatchAcceptLimit)
 
-    //    case CommandFailed(RegisterIncomingConnection(socketChannel, _, _)) ⇒
-    //      log.warning("Could not register incoming connection since selector capacity limit is reached, closing connection")
-    //      try socketChannel.close()
-    //      catch {
-    //        case NonFatal(e) ⇒ log.error(e, "Error closing channel")
-    //      }
+    case FailedRegisterIncoming(socketChannel) ⇒
+      log.warning("Could not register incoming connection since selector capacity limit is reached, closing connection")
+      try socketChannel.close()
+      catch {
+        case NonFatal(e) ⇒ log.error(e, "Error closing channel")
+      }
 
     case Unbind ⇒
       log.debug("Unbinding endpoint {}", endpoint)
@@ -72,9 +84,7 @@ private[io] class TcpListener(selectorRouter: ActorRef,
       if (socketChannel != null) {
         log.debug("New connection accepted")
         socketChannel.configureBlocking(false)
-        //selectorRouter ! RegisterIncomingConnection(socketChannel, handler, options)
-        // FIXME null is not nice. There is no explicit API command here
-        selectorRouter ! KickStartCommand(null, context.system.deadLetters, Props(new TcpIncomingConnection(socketChannel, tcp, handler, options)))
+        selectorRouter ! WorkerForCommand(RegisterIncoming(socketChannel), self, Props(new TcpIncomingConnection(socketChannel, tcp, handler, options)))
         acceptAllPending(limit - 1)
       }
     } else context.parent ! AcceptInterest

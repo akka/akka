@@ -6,7 +6,7 @@ package akka.io
 
 import akka.actor._
 import akka.routing.RandomRouter
-import akka.io.SelectionHandler.KickStartCommand
+import akka.io.SelectionHandler.WorkerForCommand
 
 object IO {
 
@@ -16,22 +16,25 @@ object IO {
 
   def apply[T <: Extension](key: ExtensionKey[T])(implicit system: ActorSystem): ActorRef = key(system).manager
 
+  trait HasFailureMessage {
+    def failureMessage: Any
+  }
+
   abstract class SelectorBasedManager(selectorSettings: SelectionHandlerSettings, nrOfSelectors: Int) extends Actor {
 
     val selectorPool = context.actorOf(
       props = Props(new SelectionHandler(self, selectorSettings)).withRouter(RandomRouter(nrOfSelectors)),
       name = "selectors")
 
-    def createKickStart(pf: PartialFunction[Any, Props], cmd: Any): PartialFunction[Any, KickStartCommand] = {
-      pf.andThen { props ⇒
+    private def createKickStart(pf: PartialFunction[HasFailureMessage, Props]): PartialFunction[HasFailureMessage, WorkerForCommand] = {
+      case cmd ⇒
+        val props = pf(cmd)
         val commander = sender
-        KickStartCommand(cmd, commander, props)
-      }
+        WorkerForCommand(cmd, commander, props)
     }
 
     def kickStartReceive(pf: PartialFunction[Any, Props]): Receive = {
-      //case KickStartFailed =
-      case cmd if pf.isDefinedAt(cmd) ⇒ selectorPool ! createKickStart(pf, cmd)(cmd)
+      case cmd: HasFailureMessage if pf.isDefinedAt(cmd) ⇒ selectorPool ! createKickStart(pf)(cmd)
     }
   }
 

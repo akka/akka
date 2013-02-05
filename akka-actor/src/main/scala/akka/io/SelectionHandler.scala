@@ -14,6 +14,7 @@ import scala.concurrent.duration._
 import akka.actor._
 import com.typesafe.config.Config
 import akka.actor.Terminated
+import akka.io.IO.HasFailureMessage
 
 abstract class SelectionHandlerSettings(config: Config) {
   import config._
@@ -42,14 +43,12 @@ abstract class SelectionHandlerSettings(config: Config) {
 
 private[io] object SelectionHandler {
 
-  //FIXME: temporary
-  case class KickStartCommand(apiCommand: Any, commander: ActorRef, childProps: Props)
+  case class WorkerForCommand(apiCommand: HasFailureMessage, commander: ActorRef, childProps: Props)
   // FIXME: all actors should listen to this
-  case object KickStartDone
-  case class KickStartFailed(apiCommand: Any, commander: ActorRef)
+  case object WorkerForCommandDone
 
   case class RegisterChannel(channel: SelectableChannel, initialOps: Int)
-  case class Retry(command: KickStartCommand, retriesLeft: Int) { require(retriesLeft >= 0) }
+  case class Retry(command: WorkerForCommand, retriesLeft: Int) { require(retriesLeft >= 0) }
 
   case object ChannelConnectable
   case object ChannelAcceptable
@@ -75,21 +74,21 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
     case ReadInterest   ⇒ execute(enableInterest(OP_READ, sender))
     case AcceptInterest ⇒ execute(enableInterest(OP_ACCEPT, sender))
 
+    // FIXME: provide StopReading functionality
     //case StopReading    ⇒ execute(disableInterest(OP_READ, sender))
 
-    case cmd: KickStartCommand ⇒
+    case cmd: WorkerForCommand ⇒
       // FIXME: factor out to common
-      withCapacityProtection(cmd, SelectorAssociationRetries) { spawnChild(cmd.childProps) ! KickStartDone }
+      withCapacityProtection(cmd, SelectorAssociationRetries) { spawnChild(cmd.childProps) ! WorkerForCommandDone }
 
     case RegisterChannel(channel, initialOps) ⇒
       execute(registerChannel(channel, sender, initialOps))
 
-    case Retry(cmd, 0) ⇒
-      // FIXME: extractors
-      manager ! KickStartFailed(cmd.apiCommand, cmd.commander)
+    case Retry(WorkerForCommand(cmd, commander, _), 0) ⇒
+      commander ! cmd.failureMessage
 
     case Retry(cmd, retriesLeft) ⇒
-      withCapacityProtection(cmd, retriesLeft) { spawnChild(cmd.childProps) ! KickStartDone }
+      withCapacityProtection(cmd, retriesLeft) { spawnChild(cmd.childProps) ! WorkerForCommandDone }
 
     case Terminated(child) ⇒
       execute(unregister(child))
@@ -114,7 +113,7 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
   // we can never recover from failures of a connection or listener child
   override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
-  def withCapacityProtection(cmd: KickStartCommand, retriesLeft: Int)(body: ⇒ Unit): Unit = {
+  def withCapacityProtection(cmd: WorkerForCommand, retriesLeft: Int)(body: ⇒ Unit): Unit = {
     log.debug("Executing {}", cmd)
     if (MaxChannelsPerSelector == -1 || childrenKeys.size < MaxChannelsPerSelector) {
       body

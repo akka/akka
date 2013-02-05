@@ -6,7 +6,7 @@ package akka.io
 
 import java.net.InetSocketAddress
 import java.net.Socket
-import akka.io.Inet.SocketOption
+import akka.io.Inet._
 import com.typesafe.config.Config
 import scala.concurrent.duration._
 import scala.collection.immutable
@@ -58,7 +58,9 @@ object Tcp extends ExtensionKey[TcpExt] {
   }
 
   /// COMMANDS
-  trait Command
+  trait Command extends IO.HasFailureMessage {
+    def failureMessage = CommandFailed(this)
+  }
 
   case class Connect(remoteAddress: InetSocketAddress,
                      localAddress: Option[InetSocketAddress] = None,

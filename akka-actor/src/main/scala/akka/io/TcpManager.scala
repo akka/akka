@@ -4,10 +4,8 @@
 
 package akka.io
 
-import akka.actor.{ ActorLogging, Actor, Props }
-import akka.routing.RandomRouter
 import Tcp._
-import akka.io.SelectionHandler.{ KickStartFailed, KickStartCommand }
+import akka.actor.{ ActorLogging, Props }
 import akka.io.IO.SelectorBasedManager
 
 /**

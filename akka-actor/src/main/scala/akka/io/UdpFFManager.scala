@@ -3,11 +3,9 @@
  */
 package akka.io
 
-import akka.actor.{ ActorRef, Props, Actor }
-import akka.io.UdpFF._
-import akka.routing.RandomRouter
-import akka.io.SelectionHandler.{ KickStartFailed, KickStartCommand }
+import akka.actor.{ ActorRef, Props }
 import akka.io.IO.SelectorBasedManager
+import akka.io.UdpFF._
 
 /**
  * UdpFFManager is a facade for simple fire-and-forget style UDP operations

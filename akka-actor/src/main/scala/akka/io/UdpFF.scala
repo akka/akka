@@ -15,7 +15,9 @@ object UdpFF extends ExtensionKey[UdpFFExt] {
   // Java API
   override def get(system: ActorSystem): UdpFFExt = system.extension(this)
 
-  trait Command
+  trait Command extends IO.HasFailureMessage {
+    def failureMessage = CommandFailed(this)
+  }
 
   case object NoAck
   case class Send(payload: ByteString, target: InetSocketAddress, ack: Any) extends Command {
