@@ -7,7 +7,7 @@ package akka.io
 import java.nio.channels.SocketChannel
 import scala.collection.immutable
 import akka.actor.ActorRef
-import akka.io.Tcp.SocketOption
+import akka.io.Inet.SocketOption
 import akka.io.SelectionHandler.RegisterChannel
 
 /**

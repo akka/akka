@@ -5,6 +5,7 @@ package akka.io
 
 import akka.actor.{ ActorLogging, Actor, ActorRef }
 import akka.io.UdpFF._
+import akka.io.Inet.SocketOption
 import akka.io.SelectionHandler._
 import akka.util.ByteString
 import java.net.InetSocketAddress
@@ -30,7 +31,7 @@ private[io] class UdpFFListener(selectorRouter: ActorRef,
     val datagramChannel = DatagramChannel.open
     datagramChannel.configureBlocking(false)
     val socket = datagramChannel.socket
-    options.foreach(_.beforeBind(socket))
+    options.foreach(_.beforeDatagramBind(socket))
     socket.bind(endpoint) // will blow up the actor constructor if the bind fails
     datagramChannel
   }

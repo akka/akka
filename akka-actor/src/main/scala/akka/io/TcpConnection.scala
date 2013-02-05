@@ -14,7 +14,8 @@ import scala.util.control.NonFatal
 import scala.concurrent.duration._
 import akka.actor._
 import akka.util.ByteString
-import Tcp._
+import akka.io.Inet.SocketOption
+import akka.io.Tcp._
 import akka.io.SelectionHandler._
 
 /**

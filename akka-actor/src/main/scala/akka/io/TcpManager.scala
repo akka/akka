@@ -8,6 +8,7 @@ import akka.actor.{ ActorLogging, Actor, Props }
 import akka.routing.RandomRouter
 import Tcp._
 import akka.io.SelectionHandler.{ KickStartFailed, KickStartCommand }
+import akka.io.IO.SelectorBasedManager
 
 /**
  * TcpManager is a facade for accepting commands ([[akka.io.Tcp.Command]]) to open client or server TCP connections.
@@ -44,22 +45,15 @@ import akka.io.SelectionHandler.{ KickStartFailed, KickStartCommand }
  * with a [[akka.io.Tcp.CommandFailed]] message. This message contains the original command for reference.
  *
  */
-private[io] class TcpManager(tcp: TcpExt) extends Actor with ActorLogging {
+private[io] class TcpManager(tcp: TcpExt) extends SelectorBasedManager(tcp.Settings, tcp.Settings.NrOfSelectors) with ActorLogging {
 
-  val selectorPool = context.actorOf(
-    props = Props(new SelectionHandler(self, tcp.Settings)).withRouter(RandomRouter(tcp.Settings.NrOfSelectors)),
-    name = "selectors")
-
-  def receive = {
-    //case x @ (_: Connect | _: Bind) ⇒ selectorPool forward x
-    case c @ Connect(remoteAddress, localAddress, options) ⇒
+  def receive = kickStartReceive {
+    case Connect(remoteAddress, localAddress, options) ⇒
       val commander = sender
-      selectorPool ! KickStartCommand(c, commander, Props(new TcpOutgoingConnection(tcp, commander, remoteAddress, localAddress, options)))
-
-    case b @ Bind(handler, endpoint, backlog, options) ⇒
+      Props(new TcpOutgoingConnection(tcp, commander, remoteAddress, localAddress, options))
+    case Bind(handler, endpoint, backlog, options) ⇒
       val commander = sender
-      selectorPool ! KickStartCommand(b, commander, Props(new TcpListener(selectorPool, handler, endpoint, backlog, commander, tcp, options)))
-
-    case KickStartFailed(cmd: Command, commander) ⇒ commander ! CommandFailed(cmd)
+      Props(new TcpListener(selectorPool, handler, endpoint, backlog, commander, tcp, options))
   }
+
 }

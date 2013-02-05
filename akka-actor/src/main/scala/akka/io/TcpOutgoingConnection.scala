@@ -10,7 +10,8 @@ import java.nio.channels.{ SelectionKey, SocketChannel }
 import scala.collection.immutable
 import akka.actor.ActorRef
 import akka.io.SelectionHandler._
-import Tcp._
+import akka.io.Inet.SocketOption
+import akka.io.Tcp._
 
 /**
  * An actor handling the connection state machine for an outgoing connection

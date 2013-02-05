@@ -6,6 +6,7 @@ package akka.io
 
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
+import akka.io.Inet
 import Tcp._
 import TestUtils._
 import akka.testkit.EventFilter
@@ -64,8 +65,8 @@ class IntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with IntegrationS
 
       expectReceivedData(clientHandler, 100000)
 
-      override def bindOptions = List(SO.SendBufferSize(1024))
-      override def connectOptions = List(SO.ReceiveBufferSize(1024))
+      override def bindOptions = List(Inet.SO.SendBufferSize(1024))
+      override def connectOptions = List(Inet.SO.ReceiveBufferSize(1024))
     }
   }
 

@@ -5,81 +5,15 @@ package akka.io
 
 import akka.actor._
 import akka.util.ByteString
-import java.net.{ DatagramSocket, Socket, InetSocketAddress }
+import java.net.{ DatagramSocket, InetSocketAddress }
 import scala.collection.immutable
 import com.typesafe.config.Config
-import scala.concurrent.duration.Duration
-import java.nio.ByteBuffer
+import akka.io.Inet.SocketOption
 
 object UdpFF extends ExtensionKey[UdpFFExt] {
 
   // Java API
   override def get(system: ActorSystem): UdpFFExt = system.extension(this)
-
-  /**
-   * SocketOption is a package of data (from the user) and associated
-   * behavior (how to apply that to a socket).
-   */
-  sealed trait SocketOption {
-    /**
-     * Action to be taken for this option before calling bind()
-     */
-    def beforeBind(s: DatagramSocket): Unit = ()
-
-  }
-
-  object SO {
-
-    /**
-     * [[akka.io.UdpFF.SocketOption]] to set the SO_BROADCAST option
-     *
-     * For more information see [[java.net.DatagramSocket#setBroadcast]]
-     */
-    case class Broadcast(on: Boolean) extends SocketOption {
-      override def beforeBind(s: DatagramSocket): Unit = s.setBroadcast(on)
-    }
-
-    /**
-     * [[akka.io.UdpFF.SocketOption]] to set the SO_RCVBUF option
-     *
-     * For more information see [[java.net.Socket#setReceiveBufferSize]]
-     */
-    case class ReceiveBufferSize(size: Int) extends SocketOption {
-      require(size > 0, "ReceiveBufferSize must be > 0")
-      override def beforeBind(s: DatagramSocket): Unit = s.setReceiveBufferSize(size)
-    }
-
-    /**
-     * [[akka.io.UdpFF.SocketOption]] to enable or disable SO_REUSEADDR
-     *
-     * For more information see [[java.net.Socket#setReuseAddress]]
-     */
-    case class ReuseAddress(on: Boolean) extends SocketOption {
-      override def beforeBind(s: DatagramSocket): Unit = s.setReuseAddress(on)
-    }
-
-    /**
-     * [[akka.io.UdpFF.SocketOption]] to set the SO_SNDBUF option.
-     *
-     * For more information see [[java.net.Socket#setSendBufferSize]]
-     */
-    case class SendBufferSize(size: Int) extends SocketOption {
-      require(size > 0, "SendBufferSize must be > 0")
-      override def beforeBind(s: DatagramSocket): Unit = s.setSendBufferSize(size)
-    }
-
-    /**
-     * [[akka.io.UdpFF.SocketOption]] to set the traffic class or
-     * type-of-service octet in the IP header for packets sent from this
-     * socket.
-     *
-     * For more information see [[java.net.Socket#setTrafficClass]]
-     */
-    case class TrafficClass(tc: Int) extends SocketOption {
-      require(0 <= tc && tc <= 255, "TrafficClass needs to be in the interval [0, 255]")
-      override def beforeBind(s: DatagramSocket): Unit = s.setTrafficClass(tc)
-    }
-  }
 
   trait Command
 

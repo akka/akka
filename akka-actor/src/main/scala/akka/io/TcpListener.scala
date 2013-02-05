@@ -11,7 +11,8 @@ import scala.collection.immutable
 import scala.util.control.NonFatal
 import akka.actor.{ Props, ActorLogging, ActorRef, Actor }
 import akka.io.SelectionHandler._
-import Tcp._
+import akka.io.Inet.SocketOption
+import akka.io.Tcp._
 
 private[io] class TcpListener(selectorRouter: ActorRef,
                               handler: ActorRef,
@@ -29,7 +30,7 @@ private[io] class TcpListener(selectorRouter: ActorRef,
     val serverSocketChannel = ServerSocketChannel.open
     serverSocketChannel.configureBlocking(false)
     val socket = serverSocketChannel.socket
-    options.foreach(_.beforeBind(socket))
+    options.foreach(_.beforeServerSocketBind(socket))
     socket.bind(endpoint, backlog) // will blow up the actor constructor if the bind fails
     serverSocketChannel
   }

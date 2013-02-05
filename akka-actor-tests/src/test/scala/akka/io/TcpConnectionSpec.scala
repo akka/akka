@@ -22,6 +22,7 @@ import akka.testkit.{ AkkaSpec, EventFilter, TestActorRef, TestProbe }
 import akka.util.ByteString
 import akka.actor.DeathPactException
 import java.nio.channels.SelectionKey._
+import akka.io.Inet.SocketOption
 
 class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms") {
   val serverAddress = temporaryServerAddress()
@@ -33,7 +34,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       val userHandler = TestProbe()
       val selector = TestProbe()
       val connectionActor =
-        createConnectionActor(options = Vector(SO.ReuseAddress(true)))(selector.ref, userHandler.ref)
+        createConnectionActor(options = Vector(Inet.SO.ReuseAddress(true)))(selector.ref, userHandler.ref)
       val clientChannel = connectionActor.underlyingActor.channel
       clientChannel.socket.getReuseAddress must be(true)
     }
@@ -65,7 +66,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     }
 
     "bundle incoming Received messages as long as more data is available" in withEstablishedConnection(
-      clientSocketOptions = List(SO.ReceiveBufferSize(1000000)) // to make sure enough data gets through
+      clientSocketOptions = List(Inet.SO.ReceiveBufferSize(1000000)) // to make sure enough data gets through
       ) { setup ⇒
         import setup._
 
@@ -567,7 +568,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
   def createConnectionActor(
     serverAddress: InetSocketAddress = serverAddress,
     localAddress: Option[InetSocketAddress] = None,
-    options: immutable.Seq[Tcp.SocketOption] = Nil)(
+    options: immutable.Seq[SocketOption] = Nil)(
       _selector: ActorRef,
       commander: ActorRef): TestActorRef[TcpOutgoingConnection] = {
 

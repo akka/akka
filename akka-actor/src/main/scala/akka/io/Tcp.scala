@@ -6,7 +6,7 @@ package akka.io
 
 import java.net.InetSocketAddress
 import java.net.Socket
-import java.net.ServerSocket
+import akka.io.Inet.SocketOption
 import com.typesafe.config.Config
 import scala.concurrent.duration._
 import scala.collection.immutable
@@ -18,56 +18,13 @@ object Tcp extends ExtensionKey[TcpExt] {
   // Java API
   override def get(system: ActorSystem): TcpExt = system.extension(this)
 
-  /**
-   * SocketOption is a package of data (from the user) and associated
-   * behavior (how to apply that to a socket).
-   */
-  sealed trait SocketOption {
-    /**
-     * Action to be taken for this option before calling bind()
-     */
-    def beforeBind(s: ServerSocket): Unit = ()
-    /**
-     * Action to be taken for this option before calling connect()
-     */
-    def beforeConnect(s: Socket): Unit = ()
-    /**
-     * Action to be taken for this option after connect returned (i.e. on
-     * the slave socket for servers).
-     */
-    def afterConnect(s: Socket): Unit = ()
-  }
-
   // shared socket options
   object SO {
-
-    /**
-     * [[akka.io.Tcp.SocketOption]] to set the SO_RCVBUF option
-     *
-     * For more information see [[java.net.Socket.setReceiveBufferSize]]
-     */
-    case class ReceiveBufferSize(size: Int) extends SocketOption {
-      require(size > 0, "ReceiveBufferSize must be > 0")
-      override def beforeBind(s: ServerSocket): Unit = s.setReceiveBufferSize(size)
-      override def beforeConnect(s: Socket): Unit = s.setReceiveBufferSize(size)
-    }
-
-    // server socket options
-
-    /**
-     * [[akka.io.Tcp.SocketOption]] to enable or disable SO_REUSEADDR
-     *
-     * For more information see [[java.net.Socket.setReuseAddress]]
-     */
-    case class ReuseAddress(on: Boolean) extends SocketOption {
-      override def beforeBind(s: ServerSocket): Unit = s.setReuseAddress(on)
-      override def beforeConnect(s: Socket): Unit = s.setReuseAddress(on)
-    }
 
     // general socket options
 
     /**
-     * [[akka.io.Tcp.SocketOption]] to enable or disable SO_KEEPALIVE
+     * [[akka.io.Inet.SocketOption]] to enable or disable SO_KEEPALIVE
      *
      * For more information see [[java.net.Socket.setKeepAlive]]
      */
@@ -76,7 +33,7 @@ object Tcp extends ExtensionKey[TcpExt] {
     }
 
     /**
-     * [[akka.io.Tcp.SocketOption]] to enable or disable OOBINLINE (receipt
+     * [[akka.io.Inet.SocketOption]] to enable or disable OOBINLINE (receipt
      * of TCP urgent data) By default, this option is disabled and TCP urgent
      * data is silently discarded.
      *
@@ -86,20 +43,10 @@ object Tcp extends ExtensionKey[TcpExt] {
       override def afterConnect(s: Socket): Unit = s.setOOBInline(on)
     }
 
-    /**
-     * [[akka.io.Tcp.SocketOption]] to set the SO_SNDBUF option.
-     *
-     * For more information see [[java.net.Socket.setSendBufferSize]]
-     */
-    case class SendBufferSize(size: Int) extends SocketOption {
-      require(size > 0, "SendBufferSize must be > 0")
-      override def afterConnect(s: Socket): Unit = s.setSendBufferSize(size)
-    }
-
     // SO_LINGER is handled by the Close code
 
     /**
-     * [[akka.io.Tcp.SocketOption]] to enable or disable TCP_NODELAY
+     * [[akka.io.Inet.SocketOption]] to enable or disable TCP_NODELAY
      * (disable or enable Nagle's algorithm)
      *
      * For more information see [[java.net.Socket.setTcpNoDelay]]
@@ -108,17 +55,6 @@ object Tcp extends ExtensionKey[TcpExt] {
       override def afterConnect(s: Socket): Unit = s.setTcpNoDelay(on)
     }
 
-    /**
-     * [[akka.io.Tcp.SocketOption]] to set the traffic class or
-     * type-of-service octet in the IP header for packets sent from this
-     * socket.
-     *
-     * For more information see [[java.net.Socket.setTrafficClass]]
-     */
-    case class TrafficClass(tc: Int) extends SocketOption {
-      require(0 <= tc && tc <= 255, "TrafficClass needs to be in the interval [0, 255]")
-      override def afterConnect(s: Socket): Unit = s.setTrafficClass(tc)
-    }
   }
 
   /// COMMANDS
