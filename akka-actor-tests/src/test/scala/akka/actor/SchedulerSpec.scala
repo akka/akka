@@ -443,7 +443,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       withScheduler() { (sched, driver) ⇒
         import system.dispatcher
         val counter = new AtomicInteger
-        future { Thread.sleep(5); sched.close() }
+        future { Thread.sleep(5); driver.close(); sched.close() }
         val headroom = 200
         var overrun = headroom
         val cap = 1000000
@@ -466,6 +466,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
     def expectWait(d: FiniteDuration) { expectWait() must be(d) }
     def probe: TestProbe
     def step: FiniteDuration
+    def close(): Unit
   }
 
   val localEC = new ExecutionContext {
@@ -489,21 +490,11 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
           prb.ref ! ns
           try time += (lbq.get match {
             case q: LinkedBlockingQueue[Long] ⇒ q.take()
-            case _ ⇒
-              val start = System.nanoTime()
-              super.waitNanos(ns)
-              System.nanoTime() - start
+            case _                            ⇒ 0L
           })
           catch {
             case _: InterruptedException ⇒ Thread.currentThread.interrupt()
           }
-        }
-        override def close(): Unit = {
-          lbq.getAndSet(null) match {
-            case q: LinkedBlockingQueue[Long] ⇒ q.offer(0L)
-            case _                            ⇒
-          }
-          super.close()
         }
       }
     val driver = new Driver {
@@ -514,15 +505,22 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       def expectWait(): FiniteDuration = probe.expectMsgType[Long].nanos
       def probe = prb
       def step = sched.TickDuration
+      def close() = lbq.getAndSet(null) match {
+        case q: LinkedBlockingQueue[Long] ⇒ q.offer(0L)
+        case _                            ⇒
+      }
     }
     driver.expectWait()
     try thunk(sched, driver)
     catch {
       case NonFatal(ex) ⇒
-        try sched.close()
-        catch { case _: Exception ⇒ }
+        try {
+          driver.close()
+          sched.close()
+        } catch { case _: Exception ⇒ }
         throw ex
     }
+    driver.close()
     sched.close()
   }
 
