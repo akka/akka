@@ -8,7 +8,7 @@ Provided with this module is an implementation of `akka.event.LoggingAdapter` wh
 
 To enable j.u.l as the `akka.event.Logging` backend, use the following Akka config:
 
-  event-handlers = ["akka.contrib.jul.JavaLoggingEventHandler"]
+  loggers = ["akka.contrib.jul.JavaLogger"]
 
 To access the `akka.event.Logging` API from non-Actor code, mix in `akka.contrib.jul.JavaLogging`.
 

@@ -43,7 +43,7 @@ object MultiNodeClusterSpec {
     }
     akka.loglevel = INFO
     akka.remote.log-remote-lifecycle-events = off
-    akka.event-handlers = ["akka.testkit.TestEventListener"]
+    akka.loggers = ["akka.testkit.TestEventListener"]
     akka.test {
       single-expect-default = 5 s
     }

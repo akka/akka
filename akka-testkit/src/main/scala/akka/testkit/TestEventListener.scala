@@ -453,7 +453,7 @@ case class CustomEventFilter(test: PartialFunction[LogEvent, Boolean])(occurrenc
  *
  * <pre><code>
  * akka {
- *   event-handlers = ["akka.testkit.TestEventListener"]
+ *   loggers = ["akka.testkit.TestEventListener"]
  * }
  * </code></pre>
  */

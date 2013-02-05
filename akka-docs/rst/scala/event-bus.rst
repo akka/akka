@@ -170,7 +170,7 @@ stream for logging: these are the handlers which are configured for example in
 .. code-block:: text
 
   akka {
-    event-handlers = ["akka.event.Logging$DefaultLogger"]
+    loggers = ["akka.event.Logging$DefaultLogger"]
   }
 
 The handlers listed here by fully-qualified class name will be subscribed to
