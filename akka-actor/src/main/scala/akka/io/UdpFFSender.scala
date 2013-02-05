@@ -6,7 +6,7 @@ package akka.io
 import akka.actor._
 import java.nio.channels.DatagramChannel
 import akka.io.UdpFF._
-import akka.io.SelectionHandler.RegisterChannel
+import akka.io.SelectionHandler.{ ChannelRegistered, RegisterChannel }
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
@@ -21,9 +21,12 @@ private[io] class UdpFFSender(val udpFF: UdpFFExt, val selector: ActorRef)
   }
   selector ! RegisterChannel(channel, 0)
 
-  def receive: Receive = internalReceive orElse sendHandlers
+  def receive: Receive = {
+    case ChannelRegistered ⇒ context.become(simpleSendHandlers orElse sendHandlers, discardOld = true)
+    case _                 ⇒ sender ! SimpleSendReady // FIXME: queueing here?
+  }
 
-  def internalReceive: Receive = {
+  def simpleSendHandlers: Receive = {
     case SimpleSender ⇒ sender ! SimpleSendReady
   }
 

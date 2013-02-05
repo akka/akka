@@ -28,16 +28,17 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
 
   localAddress.foreach(channel.socket.bind)
   options.foreach(_.beforeConnect(channel.socket))
+  selector ! RegisterChannel(channel, SelectionKey.OP_CONNECT)
 
-  log.debug("Attempting connection to {}", remoteAddress)
-  if (channel.connect(remoteAddress))
-    completeConnect(commander, options)
-  else {
-    selector ! RegisterChannel(channel, SelectionKey.OP_CONNECT)
-    context.become(connecting(commander, options))
+  def receive: Receive = {
+    case ChannelRegistered ⇒
+      log.debug("Attempting connection to {}", remoteAddress)
+      if (channel.connect(remoteAddress))
+        completeConnect(commander, options)
+      else {
+        context.become(connecting(commander, options))
+      }
   }
-
-  def receive: Receive = PartialFunction.empty
 
   def connecting(commander: ActorRef, options: immutable.Traversable[SocketOption]): Receive = {
     case ChannelConnectable ⇒

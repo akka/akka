@@ -20,7 +20,7 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
     "register its ServerSocketChannel with its selector" in new TestSetup
 
     "let the Bind commander know when binding is completed" in new TestSetup {
-      listener ! WorkerForCommandDone
+      listener ! ChannelRegistered
       bindCommander.expectMsg(Bound)
     }
 
@@ -87,7 +87,7 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
     parent.expectMsgType[RegisterChannel]
 
     def bindListener() {
-      listener ! WorkerForCommandDone
+      listener ! ChannelRegistered
       bindCommander.expectMsg(Bound)
     }
 

@@ -44,10 +44,9 @@ abstract class SelectionHandlerSettings(config: Config) {
 private[io] object SelectionHandler {
 
   case class WorkerForCommand(apiCommand: HasFailureMessage, commander: ActorRef, childProps: Props)
-  // FIXME: all actors should listen to this
-  case object WorkerForCommandDone
 
   case class RegisterChannel(channel: SelectableChannel, initialOps: Int)
+  case object ChannelRegistered
   case class Retry(command: WorkerForCommand, retriesLeft: Int) { require(retriesLeft >= 0) }
 
   case object ChannelConnectable
@@ -79,7 +78,7 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
 
     case cmd: WorkerForCommand ⇒
       // FIXME: factor out to common
-      withCapacityProtection(cmd, SelectorAssociationRetries) { spawnChild(cmd.childProps) ! WorkerForCommandDone }
+      withCapacityProtection(cmd, SelectorAssociationRetries) { spawnChild(cmd.childProps) }
 
     case RegisterChannel(channel, initialOps) ⇒
       execute(registerChannel(channel, sender, initialOps))
@@ -88,7 +87,7 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
       commander ! cmd.failureMessage
 
     case Retry(cmd, retriesLeft) ⇒
-      withCapacityProtection(cmd, retriesLeft) { spawnChild(cmd.childProps) ! WorkerForCommandDone }
+      withCapacityProtection(cmd, retriesLeft) { spawnChild(cmd.childProps) }
 
     case Terminated(child) ⇒
       execute(unregister(child))
@@ -144,6 +143,7 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
     new Task {
       def tryRun() {
         updateKeyMap(channelActor, channel.register(selector, initialOps, channelActor))
+        channelActor ! ChannelRegistered
       }
     }
 

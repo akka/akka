@@ -49,7 +49,7 @@ private[io] class UdpFFManager(udpFF: UdpFFExt) extends SelectorBasedManager(udp
     props = Props(new UdpFFSender(udpFF, selectorPool)),
     name = "simplesend")
 
-  def receive = kickStartReceive {
+  def receive = workerForCommand {
     case Bind(handler, endpoint, options) ⇒
       val commander = sender
       Props(new UdpFFListener(selectorPool, handler, endpoint, commander, udpFF, options))

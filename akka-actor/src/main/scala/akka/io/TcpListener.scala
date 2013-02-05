@@ -50,7 +50,7 @@ private[io] class TcpListener(selectorRouter: ActorRef,
   log.debug("Successfully bound to {}", endpoint)
 
   def receive: Receive = {
-    case WorkerForCommandDone ⇒
+    case ChannelRegistered ⇒
       bindCommander ! Bound
       context.become(bound)
   }

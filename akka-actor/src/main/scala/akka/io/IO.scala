@@ -26,15 +26,15 @@ object IO {
       props = Props(new SelectionHandler(self, selectorSettings)).withRouter(RandomRouter(nrOfSelectors)),
       name = "selectors")
 
-    private def createKickStart(pf: PartialFunction[HasFailureMessage, Props]): PartialFunction[HasFailureMessage, WorkerForCommand] = {
+    private def createWorkerMessage(pf: PartialFunction[HasFailureMessage, Props]): PartialFunction[HasFailureMessage, WorkerForCommand] = {
       case cmd ⇒
         val props = pf(cmd)
         val commander = sender
         WorkerForCommand(cmd, commander, props)
     }
 
-    def kickStartReceive(pf: PartialFunction[Any, Props]): Receive = {
-      case cmd: HasFailureMessage if pf.isDefinedAt(cmd) ⇒ selectorPool ! createKickStart(pf)(cmd)
+    def workerForCommand(pf: PartialFunction[Any, Props]): Receive = {
+      case cmd: HasFailureMessage if pf.isDefinedAt(cmd) ⇒ selectorPool ! createWorkerMessage(pf)(cmd)
     }
   }
 

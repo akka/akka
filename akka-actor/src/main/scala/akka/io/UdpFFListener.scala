@@ -13,6 +13,8 @@ import java.nio.channels.DatagramChannel
 import java.nio.channels.SelectionKey._
 import scala.collection.immutable
 import scala.util.control.NonFatal
+import akka.io.UdpFF.Received
+import akka.io.SelectionHandler.RegisterChannel
 
 private[io] class UdpFFListener(selectorRouter: ActorRef,
                                 handler: ActorRef,
@@ -39,19 +41,14 @@ private[io] class UdpFFListener(selectorRouter: ActorRef,
   bindCommander ! Bound
   log.debug("Successfully bound to {}", endpoint)
 
-  def receive: Receive = receiveInternal orElse sendHandlers
+  def receive: Receive = {
+    case ChannelRegistered ⇒ context.become(readHandlers orElse sendHandlers, discardOld = true)
+  }
 
-  def receiveInternal: Receive = {
+  def readHandlers: Receive = {
     case StopReading     ⇒ selector ! StopReading
     case ResumeReading   ⇒ selector ! ReadInterest
     case ChannelReadable ⇒ doReceive(handler, None)
-
-    //    case CommandFailed(RegisterChannel(channel, _)) ⇒
-    //      log.warning("Could not bind to UDP port since selector capacity limit is reached, aborting bind")
-    //      try channel.close()
-    //      catch {
-    //        case NonFatal(e) ⇒ log.error(e, "Error closing channel")
-    //      }
 
     case Unbind ⇒
       log.debug("Unbinding endpoint {}", endpoint)
