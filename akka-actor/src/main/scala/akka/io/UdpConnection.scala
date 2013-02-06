@@ -16,17 +16,14 @@ import scala.util.control.NonFatal
 import java.nio.ByteBuffer
 import scala.annotation.tailrec
 
-private[io] class UdpConnection(selectorRouter: ActorRef,
-                                handler: ActorRef,
-                                localAddress: Option[InetSocketAddress],
-                                remoteAddress: InetSocketAddress,
-                                bindCommander: ActorRef,
-                                val udpConn: UdpConnExt,
-                                options: immutable.Traversable[SocketOption]) extends Actor with ActorLogging {
+private[io] class UdpConnection(val udpConn: UdpConnExt,
+                                val commander: ActorRef,
+                                val connect: Connect) extends Actor with ActorLogging {
 
   def selector: ActorRef = context.parent
 
   import udpConn._
+  import connect._
   import udpConn.settings._
 
   var pendingSend: (Send, ActorRef) = null
@@ -38,9 +35,15 @@ private[io] class UdpConnection(selectorRouter: ActorRef,
     datagramChannel.configureBlocking(false)
     val socket = datagramChannel.socket
     options.foreach(_.beforeDatagramBind(socket))
-    // FIXME: All bind failures have to be reported to the commander in TCP as well
-    localAddress foreach { socket.bind } // will blow up the actor constructor if the bind fails
-    datagramChannel.connect(remoteAddress)
+    try {
+      localAddress foreach { socket.bind } // will blow up the actor constructor if the bind fails
+      datagramChannel.connect(remoteAddress)
+    } catch {
+      case NonFatal(e) ⇒
+        log.error(e, "Failure while connecting UDP channel")
+        commander ! CommandFailed(connect)
+        context.stop(self)
+    }
     datagramChannel
   }
   selector ! RegisterChannel(channel, OP_READ)
@@ -48,7 +51,7 @@ private[io] class UdpConnection(selectorRouter: ActorRef,
 
   def receive = {
     case ChannelRegistered ⇒
-      bindCommander ! Connected
+      commander ! Connected
       selector ! ReadInterest
       context.become(connected, discardOld = true)
   }

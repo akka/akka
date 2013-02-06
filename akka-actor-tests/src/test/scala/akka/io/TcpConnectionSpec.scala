@@ -573,7 +573,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       commander: ActorRef): TestActorRef[TcpOutgoingConnection] = {
 
     TestActorRef(
-      new TcpOutgoingConnection(Tcp(system), commander, serverAddress, localAddress, options) {
+      new TcpOutgoingConnection(Tcp(system), commander, Connect(serverAddress, localAddress, options)) {
         override def postRestart(reason: Throwable) {
           // ensure we never restart
           context.stop(self)

@@ -4,29 +4,24 @@
 package akka.io
 
 import akka.actor.{ ActorLogging, Actor, ActorRef }
-import akka.io.UdpFF._
-import akka.io.Inet.SocketOption
 import akka.io.SelectionHandler._
+import akka.io.UdpFF._
 import akka.util.ByteString
 import java.net.InetSocketAddress
+import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.nio.channels.SelectionKey._
-import scala.collection.immutable
-import scala.util.control.NonFatal
-import akka.io.UdpFF.Received
-import akka.io.SelectionHandler.RegisterChannel
 import scala.annotation.tailrec
-import java.nio.ByteBuffer
+import scala.util.control.NonFatal
 
-private[io] class UdpFFListener(selectorRouter: ActorRef,
-                                handler: ActorRef,
-                                endpoint: InetSocketAddress,
-                                bindCommander: ActorRef,
-                                val udpFF: UdpFFExt,
-                                options: immutable.Traversable[SocketOption])
+private[io] class UdpFFListener(val udpFF: UdpFFExt,
+                                val bindCommander: ActorRef,
+                                val bind: Bind)
   extends Actor with ActorLogging with WithUdpFFSend {
-  import udpFF.settings._
+
+  import bind._
   import udpFF.bufferPool
+  import udpFF.settings._
 
   def selector: ActorRef = context.parent
 
@@ -36,8 +31,13 @@ private[io] class UdpFFListener(selectorRouter: ActorRef,
     datagramChannel.configureBlocking(false)
     val socket = datagramChannel.socket
     options.foreach(_.beforeDatagramBind(socket))
-    // FIXME: signal bind failures
-    socket.bind(endpoint) // will blow up the actor constructor if the bind fails
+    try socket.bind(endpoint)
+    catch {
+      case NonFatal(e) ⇒
+        bindCommander ! CommandFailed(bind)
+        log.error(e, "Failed to bind UDP channel")
+        context.stop(self)
+    }
     datagramChannel
   }
   context.parent ! RegisterChannel(channel, OP_READ)

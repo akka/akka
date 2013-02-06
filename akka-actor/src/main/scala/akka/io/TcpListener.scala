@@ -25,17 +25,15 @@ private[io] object TcpListener {
 
 }
 
-private[io] class TcpListener(selectorRouter: ActorRef,
-                              handler: ActorRef,
-                              endpoint: InetSocketAddress,
-                              backlog: Int,
-                              bindCommander: ActorRef,
-                              tcp: TcpExt,
-                              options: immutable.Traversable[SocketOption]) extends Actor with ActorLogging {
+private[io] class TcpListener(val selectorRouter: ActorRef,
+                              val tcp: TcpExt,
+                              val bindCommander: ActorRef,
+                              val bind: Bind) extends Actor with ActorLogging {
 
   def selector: ActorRef = context.parent
   import TcpListener._
   import tcp.Settings._
+  import bind._
 
   context.watch(handler) // sign death pact
   val channel = {
@@ -43,7 +41,13 @@ private[io] class TcpListener(selectorRouter: ActorRef,
     serverSocketChannel.configureBlocking(false)
     val socket = serverSocketChannel.socket
     options.foreach(_.beforeServerSocketBind(socket))
-    socket.bind(endpoint, backlog) // will blow up the actor constructor if the bind fails
+    try socket.bind(endpoint, backlog)
+    catch {
+      case NonFatal(e) ⇒
+        bindCommander ! CommandFailed(bind)
+        log.error(e, "Bind failed for TCP channel")
+        context.stop(self)
+    }
     serverSocketChannel
   }
   context.parent ! RegisterChannel(channel, SelectionKey.OP_ACCEPT)

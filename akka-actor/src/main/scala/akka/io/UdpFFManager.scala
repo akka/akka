@@ -3,7 +3,7 @@
  */
 package akka.io
 
-import akka.actor.{ ActorRef, Props }
+import akka.actor.Props
 import akka.io.IO.SelectorBasedManager
 import akka.io.UdpFF._
 
@@ -45,9 +45,9 @@ import akka.io.UdpFF._
 private[io] class UdpFFManager(udpFF: UdpFFExt) extends SelectorBasedManager(udpFF.settings, udpFF.settings.NrOfSelectors) {
 
   def receive = workerForCommand {
-    case Bind(handler, endpoint, options) ⇒
+    case b: Bind ⇒
       val commander = sender
-      Props(new UdpFFListener(selectorPool, handler, endpoint, commander, udpFF, options))
+      Props(new UdpFFListener(udpFF, commander, b))
     case SimpleSender(options) ⇒
       val commander = sender
       Props(new UdpFFSender(udpFF, options, commander))

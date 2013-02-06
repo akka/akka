@@ -12,7 +12,7 @@ import akka.io.Inet.SocketOption
 import Tcp._
 import TestUtils._
 
-trait IntegrationSpecSupport { _: AkkaSpec ⇒
+trait TcpIntegrationSpecSupport { _: AkkaSpec ⇒
 
   class TestSetup {
     val bindHandler = TestProbe()

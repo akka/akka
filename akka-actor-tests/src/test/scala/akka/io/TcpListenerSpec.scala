@@ -97,8 +97,7 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
 
     private class ListenerParent extends Actor {
       val listener = context.actorOf(
-        props = Props(new TcpListener(selectorRouter.ref, handler.ref, endpoint, 100, bindCommander.ref,
-          Tcp(system), Nil)),
+        props = Props(new TcpListener(selectorRouter.ref, Tcp(system), bindCommander.ref, Bind(handler.ref, endpoint, 100, Nil))),
         name = "test-listener-" + counter.next())
       parent.watch(listener)
       def receive: Receive = {

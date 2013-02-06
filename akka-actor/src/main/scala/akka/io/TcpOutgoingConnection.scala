@@ -4,14 +4,13 @@
 
 package akka.io
 
-import java.net.InetSocketAddress
+import akka.actor.ActorRef
+import akka.io.Inet.SocketOption
+import akka.io.SelectionHandler._
+import akka.io.Tcp._
 import java.io.IOException
 import java.nio.channels.{ SelectionKey, SocketChannel }
 import scala.collection.immutable
-import akka.actor.ActorRef
-import akka.io.SelectionHandler._
-import akka.io.Inet.SocketOption
-import akka.io.Tcp._
 
 /**
  * An actor handling the connection state machine for an outgoing connection
@@ -19,10 +18,10 @@ import akka.io.Tcp._
  */
 private[io] class TcpOutgoingConnection(_tcp: TcpExt,
                                         commander: ActorRef,
-                                        remoteAddress: InetSocketAddress,
-                                        localAddress: Option[InetSocketAddress],
-                                        options: immutable.Traversable[SocketOption])
+                                        connect: Connect)
   extends TcpConnection(TcpOutgoingConnection.newSocketChannel(), _tcp) {
+
+  import connect._
 
   context.watch(commander) // sign death pact
 
