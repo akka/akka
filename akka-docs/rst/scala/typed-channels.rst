@@ -88,13 +88,20 @@ Terminology
 .. describe:: trait Channels[P <: ChannelList, C <: ChannelList]
 
   A mixin for the :class:`Actor` trait which is parameterized in the channel
-  requirements this actor has for its parent (P) and its selfChannel (C).
+  requirements this actor has for its parentChannel (P) and its selfChannel (C)
+  (corresponding to ``context.parent`` and ``self`` for untyped Actors,
+  respectively).
 
 .. describe:: selfChannel
 
   An ``Actor with Channels[P, C]`` has a ``selfChannel`` of type
   ``ChannelRef[C]``. This is the same type of channel reference which is
   obtained by creating an instance of this actor.
+
+.. describe:: parentChannel
+
+  An ``Actor with Channels[P, C]`` has a ``parentChannel`` of type
+  ``ChannelRef[P]``.
 
 .. describe:: type ReplyChannels[T <: ChannelList] <: ChannelList
 
@@ -104,7 +111,7 @@ Terminology
   channel uses the ReplyChannels type to abstractly refer to this unknown set
   of channels in order to forward a reply from a ``ChannelRef[T]`` back to the
   original sender. This operation’s type-safety is ensured at the sender’s site
-  by way of the ping-pong analysis described above.
+  by way of the ping-pong analysis described below.
 
 .. describe:: class WrappedMessage[T <: ChannelList, LUB]
 
@@ -128,12 +135,15 @@ with the target channel’s reply types. In this case we want to demonstrate jus
 the syntax of sending, hence the dummy sender which accepts everything and
 replies never.
 
-Presupposing three channel references of chainable types, an input value ``a``
-and a Future holding such a value, we demonstrate the two basic operations
-which are well known from untyped actors: tell/! and ask/?. The type of the
-Future returned by the ask operation may seem surprising at first, but as the
-last line demonstrates, it is built in a way which makes building actor chains
-very simple. What the last line does is the following:
+Presupposing three channel references of chainable types (and a fourth one for
+demonstrating multiple reply type), an input value ``a`` and a Future holding
+such a value, we demonstrate the two basic operations which are well known from
+untyped actors: tell/! and ask/?. The type of the Future returned by the ask
+operation on ``channelA2`` may seem surprising at first, but keeping track of
+all possible reply types is necessary to enable sending of replies to other
+actors which do support all possibilities. This is especially handy in
+situations like the one demonstrated on the last line.  What the last line does
+is the following:
 
 * it asks channelA, which returns a Future
 
@@ -209,7 +219,7 @@ executing the replying message send, etc. And as always, the ``snd`` reference
 may be used more than once, and even stored away for later. It must not leave
 the actor within it was created, however, because that would defeat the
 ping-pong check; this is the reason for the curious name of the fabricated
-reply type ``UnknownDoNotWriteMeDown``, if you find yourself declaring that
+reply type ``UnknownDoNotWriteMeDown``; if you find yourself declaring that
 type as part of a message or similar you know that you are cheating.
 
 Declaration of Subchannels
@@ -222,7 +232,7 @@ It can be convenient to carve out subchannels for special treatment like so:
 This means that all ``Command`` requests will be positively answered while all
 others may or may not be lucky. This dispatching between the two declarations
 does not depend on their order but is solely done based on which type is more
-specific.
+specific—but see the restrictions imposed by JVM type erasure below.
 
 Forwarding Messages
 -------------------
@@ -253,8 +263,8 @@ implementing its control channel:
 
 This shows all elements of the toolkit in action: calling ``channel[T1]`` again
 during the lifetime of the actor will alter its behavior on that channel. In
-this case a latch or gate is modeled which when closed will permit the message
-flow through and when not will drop the messages to the floor.
+this case a latch or gate is modeled which when closed will permit the messages
+to flow through and when not will drop the messages to the floor.
 
 Creating Actors with Channels
 -----------------------------
@@ -277,15 +287,40 @@ such a child. The parent’s job then is to create the child, make it available
 to the outside via properly typed messages and collect the statistics coming in
 from the child.
 
+Stepping Outside of Type-Safety
+-------------------------------
+
+In much the same was as Scala’s type system can be circumvented by using
+``.asInstanceOf[_]`` typed channels can also be circumvented. Casting them to
+alter the type arguments would be an obvious way of doing that, but there are
+less obvious ways which are therefore enumerated here:
+
+* explicitly constructing :class:`ChannelRef` instances by hand allows using
+  arbitrary types as arguments
+
+* sending to the ``actorRef`` member of the :class:`ChannelRef`; this is a
+  normal untyped actor reference without any compile-time checks, which is the
+  reason for choosing visibly different operator names for typed and untyped
+  message send operations
+
+* using the ``context.parent`` reference instead of ``parentChannel``
+
+* using the untyped ``sender`` reference instead of the second argument to a
+  channel’s behavior function
+
+Sending unforeseen messages will be flagged as a type error as long as none of
+these techniques are used within an application.
+
 Implementation Restrictions
 ---------------------------
 
-The erasure-based dispatch of incoming messages requires all channels which are
-declared to have unique JVM type representations, i.e. it is not possible to
-have two channel declarations with types ``List[A]`` and ``List[B]`` because
-both would at runtime only be known as ``List[_]``.
+As described below, incoming messages are dispatched to declared channels based
+on their runtime class information.  This erasure-based dispatch of messages
+requires all declared channels to have unique JVM type representations, i.e. it
+is not possible to have two channel declarations with types ``List[A]`` and
+``List[B]`` because both would at runtime only be known as ``List[_]``.
 
-The specific dispatch mechanism also require the declaration of all channels or
+The specific dispatch mechanism also requires the declaration of all channels or
 subchannels during the actor’s construction, independent of whether they shall
 later change behavior or not. Changing behavior for a subchannel is only
 possible if that subchannel was declared up-front.
@@ -314,15 +349,18 @@ especially easy to see that those two channels will probably not be related,
 their types will not be derived from a meaningful common supertype; instead the
 least upper bound will probably be :class:`AnyRef`. If a typed channel
 reference only had the capability to express a single type, this type would
-then be no restriction anymore.
+then be no restriction anymore. This loss of type safety caused by the need of
+handling multiple disjoint sets of types is called “type pollution”, the term
+was coined by Prof. Philip Wadler.
 
-One solution to this is to never expose references describe more than one
+One solution to this is to never expose references describing more than one
 channel at a time. But where would these references come from? It would be very
 difficult to make this construction process type-safe, and it would also be an
 inconvenient restriction, since message ordering guarantees only apply for the
-same sender–receive pair, and if there are relations between the messages sent
-on multiple channels those would need more boilerplate code to realize than if
-all interaction were possible through a single reference.
+same sender–receive pair: if there are relations between the messages sent
+on multiple channels then implementing this mixed-channel communication would
+incur programmatic and runtime overhead compared to just sending to the same
+untyped reference.
 
 The other solution thus is to express multiple channel types by a single
 channel reference, which requires the implementation of type lists and
@@ -334,8 +372,8 @@ map. The implementation chosen uses type lists like this:
 
 This type expresses two channels: type ``A`` may stimulate replies of type
 ``B``, while type ``C`` may evoke replies of type ``D``. The type operator
-``:+:`` is a binary type which form a list of these channel definitions, and
-like every good list it ends with an empty terminator ``TNil``.
+``:+:`` is a binary type constructor which forms a list of these channel
+definitions, and like every good list it ends with an empty tail ``TNil``.
 
 The Reply Problem
 -----------------
@@ -393,12 +431,13 @@ The Parent Problem
 There is one other actor reference which is available to every actor: its
 parent. Since the child–parent relationship is established permanently when the
 child is created by the parent, this problem is easily solvable by encoding the
-requirements of the child for its parent channel in its type signature having
-the typed variant of ``actorOf`` verify this against the ``selfChannel``.
+requirements of the child for its parent channel in its type signature and
+having the typed variant of ``actorOf`` verify this against the
+``selfChannel``.
 
-Anecdotally, since the guardian actor does not care at all about message sent
-to it, top-level type channel actors must declare their parent channel to be
-empty.
+Anecdotally, since the guardian actor does not care at all about messages sent
+to it, top-level actors with typed channels must declare their parent channel
+to be empty.
 
 The Exposure/Restriction Problem
 --------------------------------
@@ -423,9 +462,9 @@ be possible but its implementation would be forbiddingly complex.
 Therefore this topic gained traction as macros became available: being able to
 write down type calculations using standard collections and their
 transformations reduces the implementation to a handful of lines. The “narrow”
-operation implemented this way allows all narrowing of input channels and
-widening of output channels down to ``(Nothing, Any)`` (which is to say:
-removal).
+operation implemented this way allows narrowing of input channels and
+widening of output channels down to ``(Nothing, Any)`` (which is to say that
+channels may be narrowed or just plain removed from a channel list).
 
 The Forwarding Problem
 ----------------------
@@ -446,7 +485,7 @@ final recipient would reply to the forwarded request, that sender reference
 would belong to a different channel and there is no single location in the
 source code where all these pieces are known at compile time.
 
-The solution to this problem is not to allow forwarding in the normal untyped
+The solution to this problem is to not allow forwarding in the normal untyped
 :class:`ActorRef` sense. Replies must always be sent by the recipient of the
 original message in order for the type checks at the sender site to be
 effective. Since forwarding is an important communication pattern among actors,
@@ -464,7 +503,7 @@ contained in the message, which due to the erasure of generic type information
 is an incomplete image of the true channel types. Those full types exist only
 at compile-time and reifying them into TypeTags at runtime for every message
 send would be prohibitively expensive. This means that channels which erase to
-the same JVM type cannot coexist within the same actor, message would not be
+the same JVM type cannot coexist within the same actor, messages would not be
 routable reliably in that case.
 
 The Actor Lookup Problem
