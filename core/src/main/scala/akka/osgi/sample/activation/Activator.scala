@@ -28,22 +28,28 @@ class Activator extends ActorSystemActivator {
 
   import Activator._
 
-  val services: ListBuffer[ServiceRegistration[_]] = ListBuffer()
+  var diningHakkerService: Option[ServiceRegistration[_]] = None
 
   def configure(context: BundleContext, system: ActorSystem) {
     val log = Logging(system, this)
     log.info("Core bundle configured")
     system.actorOf(Props[Table], "table")
+    registerService(context, system)
     registerHakkersService(context, system)
-    log.info("Hakker service registred")
+    log.info("Hakker service registered")
   }
 
+  /**
+   * registers the DinningHakkerService as a Service to be tracked and find by other OSGi bundles.
+   * in other words, this instance may be used in other bundles which listen or track the OSGi Service
+   * @param context  OSGi BundleContext
+   * @param system   ActorSystem
+   */
   def registerHakkersService(context: BundleContext, system: ActorSystem) {
 
     val hakkersService = new DiningHakkersServiceImpl(system)
 
-    services += context.registerService(classOf[DiningHakkersService], hakkersService, null)
-    services += context.registerService(classOf[ActorSystem], system, null)
+    diningHakkerService = Some(context.registerService(classOf[DiningHakkersService], hakkersService, null))
 
   }
 
@@ -54,7 +60,7 @@ class Activator extends ActorSystemActivator {
   }
 
   def unregisterServices(context: BundleContext) {
-    services foreach (_.unregister())
+    diningHakkerService foreach (_.unregister())
   }
 
   override def getActorSystemName(context: BundleContext): String = "akka-osgi-sample"

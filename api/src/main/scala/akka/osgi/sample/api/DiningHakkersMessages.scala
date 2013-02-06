@@ -1,4 +1,7 @@
-package akka.osgi.sample.api
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>.
+ */
+package akka.sample.osgi.api
 
 import akka.actor.ActorRef
 

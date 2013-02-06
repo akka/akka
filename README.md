@@ -1,12 +1,12 @@
-akka-osgi-sample   :  Clustered DiningHakker
+akka-osgi-sample   :  Clustered DiningHakkers
 ================
-This project may be used to test akka bundles in OSGi Frameworks. The build tool (sbt for the moment) provide scripts to run in an OSGi Framework (Karaf only for the moment) a version of the DiningHakkers that runs on several nodes unsing the akka-cluster module.
+This project may be used to test akka bundles in OSGi Frameworks. The build tool (sbt for the moment) provide scripts to run in an OSGi Framework (Karaf only for the moment) a version of the DiningHakkers that runs on several nodes using the akka-cluster module.
 
 ## Bundle overview
 
 This project provides three Osgi Bundles
  - api  providing an API for the Service exposed by the core and used by the command
- - core  implementing the whole logic: clustered connections, Hakkers, ChopSticks. It finally provide an ActorRef of one created Hakker
+ - core  implementing the whole logic: clustered connections, Hakkers, ChopSticks. Finally it provides an ActorRef of one created Hakker
  - command use a service to get a Hakker (ActorRef) with its position around the table
 
 An integration testing module is provided to verify OSGi functionality:
@@ -25,7 +25,7 @@ sbt clean
 sbt package
 sbt osgi-bundle
 ```
-sbt will creates the bundles in each subproject (api, command, core)/target/scala-2.10 directories. To have integration tests and OSGi environment loaded, please use the Maven build (at least for the moment)
+sbt will creates the bundles in each subproject akka-sample/akka-sample-osgi-dining-hakkers/(api, command, core)/target directories. To have integration tests and OSGi environment loaded, please use the Maven build (at least for the moment)
 ### Setup with Maven
 ```bash
 mvn clean install
@@ -38,7 +38,7 @@ This can be extracted to any location, and bin/karaf executed. The provided kara
 Extract the OSGi Framework from the tar.gz described above into any location, or run:
 ``./karaf.sh``
 
-Execute the framework by running bin ``/karaf`` from inside the extracted directory.
+Execute the framework by running  ``bin/karaf`` from inside the extracted directory.
 
 Then try to restart some bundles, to test the stability of the bundles:
 
@@ -46,4 +46,4 @@ Then try to restart some bundles, to test the stability of the bundles:
 ``restart #bundle_number`` to restart the bundle using its ID
 ``exit`` or CTRL-D to exit the Karaf console
 
-Depending on the akka version you're using, you may need to modify the core bundle when deploying on a second machine, to set it's akka.remote.netty.hostname in the application.conf.
+Depending on the akka version you're using, you may need to modify the core bundle when deploying on a second machine, to set its akka.remote.netty.hostname in the application.conf.

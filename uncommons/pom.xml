@@ -3,8 +3,8 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>osgi-sample</artifactId>
-        <groupId>com.typesafe.akka</groupId>
+        <artifactId>parent</artifactId>
+        <groupId>com.typesafe.akka.akka-sample.akka-sample-osgi-dining-hakkers</groupId>
         <version>2.2.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -12,6 +12,7 @@
     <!--
     Note that 1.2.3 of uncommons-maths has OSGi meta-data, see https://www.assembla.com/spaces/akka/tickets/2990
     Once that is available, this module can be removed.
+    @see ticket #2990
     -->
 
     <artifactId>uncommons</artifactId>

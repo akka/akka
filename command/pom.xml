@@ -3,8 +3,8 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>osgi-sample</artifactId>
-        <groupId>com.typesafe.akka</groupId>
+        <artifactId>parent</artifactId>
+        <groupId>com.typesafe.akka.akka-sample.akka-sample-osgi</groupId>
         <version>2.2.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -38,7 +38,8 @@
                 <artifactId>maven-bundle-plugin</artifactId>
                 <configuration>
                     <instructions>
-                        <Bundle-Activator>akka.osgi.sample.command.Activator</Bundle-Activator>
+                        <Bundle-Activator>akka.sample.osgi.command.Activator</Bundle-Activator>
+                        <Import-Package>*</Import-Package>
                     </instructions>
                 </configuration>
             </plugin>

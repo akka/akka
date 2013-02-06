@@ -77,16 +77,9 @@
             <includes>
                 <include>bin/**</include>
             </includes>
+            <lineEnding>unix</lineEnding>
             <fileMode>0755</fileMode>
         </fileSet>
     </fileSets>
 
-    <!--
-      <dependencySets>
-        <dependencySet>
-          <useTransitiveDependencies>false</useTransitiveDependencies>
-          <unpack>true</unpack>
-        </dependencySet>
-      </dependencySets>
-    -->
 </assembly>

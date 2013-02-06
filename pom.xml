@@ -3,8 +3,8 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.typesafe.akka</groupId>
-    <artifactId>osgi-sample</artifactId>
+    <groupId>com.typesafe.akka.akka-sample.akka-sample-osgi-dining-hakkers</groupId>
+    <artifactId>parent</artifactId>
     <version>2.2.0-SNAPSHOT</version>
 
     <properties>
@@ -33,7 +33,7 @@
         <module>integration-test</module>
     </modules>
     <packaging>pom</packaging>
-    <name>com.typesafe.akka.akka-osgi.sample</name>
+    <name>com.typesafe.akka.akka-sample.akka-sample-osgi-dining-hakkers.sample</name>
 
     <dependencyManagement>
         <dependencies>
