@@ -12,6 +12,9 @@ private[io] trait WithUdpFFSend {
   me: Actor with ActorLogging ⇒
 
   var pendingSend: (Send, ActorRef) = null
+  // If send fails first, we allow a second go after selected writable, but no more. This flag signals that
+  // pending send was already tried once.
+  var retriedSend = false
   def writePending = pendingSend ne null
 
   def selector: ActorRef
@@ -33,7 +36,7 @@ private[io] trait WithUdpFFSend {
 
     case send: Send ⇒
       pendingSend = (send, sender)
-      selector ! WriteInterest
+      doSend()
 
     case ChannelWritable ⇒ doSend()
 
@@ -51,12 +54,19 @@ private[io] trait WithUdpFFSend {
       if (TraceLogging) log.debug("Wrote {} bytes to channel", writtenBytes)
 
       // Datagram channel either sends the whole message, or nothing
-      if (writtenBytes == 0) commander ! CommandFailed(send)
-      else if (send.wantsAck) commander ! send.ack
+      if (writtenBytes == 0) {
+        if (retriedSend) {
+          commander ! CommandFailed(send)
+          retriedSend = false
+          pendingSend = null
+        } else {
+          selector ! WriteInterest
+          retriedSend = true
+        }
+      } else if (send.wantsAck) commander ! send.ack
 
     } finally {
       udpFF.bufferPool.release(buffer)
-      pendingSend = null
     }
 
   }

@@ -10,7 +10,7 @@ import akka.actor.{ Props, ActorSystemImpl }
 
 object Udp {
 
-  object SO {
+  object SO extends Inet.SoForwarders {
 
     /**
      * [[akka.io.Inet.SocketOption]] to set the SO_BROADCAST option
@@ -29,9 +29,11 @@ object Udp {
     val NrOfSelectors = getInt("nr-of-selectors")
     val DirectBufferSize = getIntBytes("direct-buffer-size")
     val MaxDirectBufferPoolSize = getInt("max-direct-buffer-pool-size")
+    val BatchReceiveLimit = getInt("batch-receive-limit")
 
     val ManagementDispatcher = getString("management-dispatcher")
 
+    // FIXME: Use new requiring
     require(NrOfSelectors > 0, "nr-of-selectors must be > 0")
 
     override val MaxChannelsPerSelector = if (MaxChannels == -1) -1 else math.max(MaxChannels / NrOfSelectors, 1)

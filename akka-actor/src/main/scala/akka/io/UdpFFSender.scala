@@ -7,27 +7,34 @@ import akka.actor._
 import java.nio.channels.DatagramChannel
 import akka.io.UdpFF._
 import akka.io.SelectionHandler.{ ChannelRegistered, RegisterChannel }
+import scala.collection.immutable
+import akka.io.Inet.SocketOption
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
  */
-private[io] class UdpFFSender(val udpFF: UdpFFExt, val selector: ActorRef)
+private[io] class UdpFFSender(val udpFF: UdpFFExt, options: immutable.Traversable[SocketOption], val commander: ActorRef)
   extends Actor with ActorLogging with WithUdpFFSend {
+
+  def selector: ActorRef = context.parent
 
   val channel = {
     val datagramChannel = DatagramChannel.open
     datagramChannel.configureBlocking(false)
+    val socket = datagramChannel.socket
+
+    options foreach { o ⇒
+      o.beforeDatagramBind(socket)
+    }
+
     datagramChannel
   }
   selector ! RegisterChannel(channel, 0)
 
   def receive: Receive = {
-    case ChannelRegistered ⇒ context.become(simpleSendHandlers orElse sendHandlers, discardOld = true)
-    case _                 ⇒ sender ! SimpleSendReady // FIXME: queueing here?
-  }
-
-  def simpleSendHandlers: Receive = {
-    case SimpleSender ⇒ sender ! SimpleSendReady
+    case ChannelRegistered ⇒
+      context.become(sendHandlers, discardOld = true)
+      commander ! SimpleSendReady
   }
 
   override def postStop(): Unit = if (channel.isOpen) channel.close()

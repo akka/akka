@@ -79,4 +79,11 @@ object Inet {
 
   }
 
+  trait SoForwarders {
+    val ReceiveBufferSize = SO.ReceiveBufferSize
+    val ReuseAddress = SO.ReuseAddress
+    val SendBufferSize = SO.SendBufferSize
+    val TrafficClass = SO.TrafficClass
+  }
+
 }

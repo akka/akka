@@ -208,6 +208,7 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
 
   selectorManagementDispatcher.execute(select) // start selection "loop"
 
+  // FIXME: Add possibility to signal failure of task to someone
   abstract class Task extends Runnable {
     def tryRun()
     def run() {

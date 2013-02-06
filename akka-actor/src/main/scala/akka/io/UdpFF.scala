@@ -34,7 +34,7 @@ object UdpFF extends ExtensionKey[UdpFFExt] {
                   options: immutable.Traversable[SocketOption] = Nil) extends Command
   case object Unbind extends Command
 
-  case object SimpleSender extends Command
+  case class SimpleSender(options: immutable.Traversable[SocketOption] = Nil) extends Command
 
   case object StopReading extends Command
   case object ResumeReading extends Command

@@ -19,9 +19,9 @@ class UdpConnIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with Impli
     (address, commander.sender)
   }
 
-  def connectUdp(localAddress: Option[InetSocketAddress], remoteAddress: InetSocketAddress): ActorRef = {
+  def connectUdp(localAddress: Option[InetSocketAddress], remoteAddress: InetSocketAddress, handler: ActorRef): ActorRef = {
     val commander = TestProbe()
-    commander.send(IO(UdpConn), UdpConn.Connect(testActor, localAddress, remoteAddress, Nil))
+    commander.send(IO(UdpConn), UdpConn.Connect(handler, localAddress, remoteAddress, Nil))
     commander.expectMsg(UdpConn.Connected)
     commander.sender
   }
@@ -32,7 +32,7 @@ class UdpConnIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with Impli
       val (serverAddress, server) = bindUdp(testActor)
       val data1 = ByteString("To infinity and beyond!")
       val data2 = ByteString("All your datagram belong to us")
-      connectUdp(localAddress = None, serverAddress) ! UdpConn.Send(data1)
+      connectUdp(localAddress = None, serverAddress, testActor) ! UdpConn.Send(data1)
 
       val clientAddress = expectMsgPF() {
         case UdpFF.Received(d, a) ⇒
@@ -55,7 +55,7 @@ class UdpConnIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with Impli
       val (serverAddress, server) = bindUdp(testActor)
       val data1 = ByteString("To infinity and beyond!")
       val data2 = ByteString("All your datagram belong to us")
-      connectUdp(Some(clientAddress), serverAddress) ! UdpConn.Send(data1)
+      connectUdp(Some(clientAddress), serverAddress, testActor) ! UdpConn.Send(data1)
 
       expectMsgPF() {
         case UdpFF.Received(d, a) ⇒

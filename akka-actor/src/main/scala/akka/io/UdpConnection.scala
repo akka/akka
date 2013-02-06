@@ -13,6 +13,8 @@ import java.nio.channels.DatagramChannel
 import java.nio.channels.SelectionKey._
 import scala.collection.immutable
 import scala.util.control.NonFatal
+import java.nio.ByteBuffer
+import scala.annotation.tailrec
 
 private[io] class UdpConnection(selectorRouter: ActorRef,
                                 handler: ActorRef,
@@ -36,6 +38,7 @@ private[io] class UdpConnection(selectorRouter: ActorRef,
     datagramChannel.configureBlocking(false)
     val socket = datagramChannel.socket
     options.foreach(_.beforeDatagramBind(socket))
+    // FIXME: All bind failures have to be reported to the commander in TCP as well
     localAddress foreach { socket.bind } // will blow up the actor constructor if the bind fails
     datagramChannel.connect(remoteAddress)
     datagramChannel
@@ -46,13 +49,14 @@ private[io] class UdpConnection(selectorRouter: ActorRef,
   def receive = {
     case ChannelRegistered ⇒
       bindCommander ! Connected
+      selector ! ReadInterest
       context.become(connected, discardOld = true)
   }
 
   def connected: Receive = {
     case StopReading     ⇒ selector ! DisableReadInterest
     case ResumeReading   ⇒ selector ! ReadInterest
-    case ChannelReadable ⇒ doRead(handler)
+    case ChannelReadable ⇒ println("read"); doRead(handler)
 
     case Close ⇒
       log.debug("Closing UDP connection to {}", remoteAddress)
@@ -77,14 +81,17 @@ private[io] class UdpConnection(selectorRouter: ActorRef,
   }
 
   def doRead(handler: ActorRef): Unit = {
-    val buffer = bufferPool.acquire()
-    try {
+    @tailrec def innerRead(readsLeft: Int, buffer: ByteBuffer): Unit = {
       buffer.clear()
       buffer.limit(DirectBufferSize)
 
-      if (channel.read(buffer) > 0) handler ! Received(ByteString(buffer))
-
-    } finally {
+      if (channel.read(buffer) > 0) {
+        handler ! Received(ByteString(buffer))
+        innerRead(readsLeft - 1, buffer)
+      }
+    }
+    val buffer = bufferPool.acquire()
+    try innerRead(BatchReceiveLimit, buffer) finally {
       selector ! ReadInterest
       bufferPool.release(buffer)
     }
@@ -104,7 +111,6 @@ private[io] class UdpConnection(selectorRouter: ActorRef,
       // Datagram channel either sends the whole message, or nothing
       if (writtenBytes == 0) commander ! CommandFailed(send)
       else if (send.wantsAck) commander ! send.ack
-
     } finally {
       udpConn.bufferPool.release(buffer)
       pendingSend = null

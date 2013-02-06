@@ -44,17 +44,13 @@ import akka.io.UdpFF._
  */
 private[io] class UdpFFManager(udpFF: UdpFFExt) extends SelectorBasedManager(udpFF.settings, udpFF.settings.NrOfSelectors) {
 
-  // FIXME: fix close overs
-  lazy val anonymousSender: ActorRef = context.actorOf(
-    props = Props(new UdpFFSender(udpFF, selectorPool)),
-    name = "simplesend")
-
   def receive = workerForCommand {
     case Bind(handler, endpoint, options) ⇒
       val commander = sender
       Props(new UdpFFListener(selectorPool, handler, endpoint, commander, udpFF, options))
-  } orElse {
-    case SimpleSender ⇒ anonymousSender forward SimpleSender
+    case SimpleSender(options) ⇒
+      val commander = sender
+      Props(new UdpFFSender(udpFF, options, commander))
   }
 
 }

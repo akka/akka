@@ -19,7 +19,7 @@ object Tcp extends ExtensionKey[TcpExt] {
   override def get(system: ActorSystem): TcpExt = system.extension(this)
 
   // shared socket options
-  object SO {
+  object SO extends Inet.SoForwarders {
 
     // general socket options
 

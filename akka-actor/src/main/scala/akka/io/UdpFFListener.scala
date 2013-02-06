@@ -15,6 +15,8 @@ import scala.collection.immutable
 import scala.util.control.NonFatal
 import akka.io.UdpFF.Received
 import akka.io.SelectionHandler.RegisterChannel
+import scala.annotation.tailrec
+import java.nio.ByteBuffer
 
 private[io] class UdpFFListener(selectorRouter: ActorRef,
                                 handler: ActorRef,
@@ -34,6 +36,7 @@ private[io] class UdpFFListener(selectorRouter: ActorRef,
     datagramChannel.configureBlocking(false)
     val socket = datagramChannel.socket
     options.foreach(_.beforeDatagramBind(socket))
+    // FIXME: signal bind failures
     socket.bind(endpoint) // will blow up the actor constructor if the bind fails
     datagramChannel
   }
@@ -60,8 +63,7 @@ private[io] class UdpFFListener(selectorRouter: ActorRef,
   }
 
   def doReceive(handler: ActorRef): Unit = {
-    val buffer = bufferPool.acquire()
-    try {
+    @tailrec def innerReceive(readsLeft: Int, buffer: ByteBuffer) {
       buffer.clear()
       buffer.limit(DirectBufferSize)
 
@@ -69,11 +71,16 @@ private[io] class UdpFFListener(selectorRouter: ActorRef,
         case sender: InetSocketAddress ⇒
           buffer.flip()
           handler ! Received(ByteString(buffer), sender)
-        case _ ⇒ // Ignore
+          if (readsLeft > 0) innerReceive(readsLeft - 1, buffer)
+        case null ⇒ // null means no data was available
       }
+    }
 
+    val buffer = bufferPool.acquire()
+    try innerReceive(BatchReceiveLimit, buffer) finally {
+      bufferPool.release(buffer)
       selector ! ReadInterest
-    } finally bufferPool.release(buffer)
+    }
   }
 
   override def postStop() {
