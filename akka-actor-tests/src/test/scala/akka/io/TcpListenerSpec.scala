@@ -12,6 +12,7 @@ import Tcp._
 import akka.testkit.EventFilter
 import akka.io.SelectionHandler._
 import java.nio.channels.SelectionKey._
+import akka.io.TcpListener.{ RegisterIncoming, FailedRegisterIncoming }
 
 class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
 
@@ -31,18 +32,25 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
       attemptConnectionToEndpoint()
       attemptConnectionToEndpoint()
 
+      def expectWorkerForCommand: Unit = {
+        selectorRouter.expectMsgPF() {
+          case WorkerForCommand(RegisterIncoming(chan), commander, _) ⇒
+            chan.isOpen must be(true)
+            commander must be === listener
+        }
+      }
+
       // since the batch-accept-limit is 2 we must only receive 2 accepted connections
       listener ! ChannelAcceptable
 
       parent.expectMsg(AcceptInterest)
-      // FIXME: ugly stuff here
-      selectorRouter.expectMsgType[WorkerForCommand]
-      selectorRouter.expectMsgType[WorkerForCommand]
+      expectWorkerForCommand
+      expectWorkerForCommand
       selectorRouter.expectNoMsg(100.millis)
 
       // and pick up the last remaining connection on the next ChannelAcceptable
       listener ! ChannelAcceptable
-      selectorRouter.expectMsgType[WorkerForCommand]
+      expectWorkerForCommand
     }
 
     "react to Unbind commands by replying with Unbound and stopping itself" in new TestSetup {
@@ -61,15 +69,17 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
       attemptConnectionToEndpoint()
 
       listener ! ChannelAcceptable
-      val props = selectorRouter.expectMsgType[WorkerForCommand].childProps
-      // FIXME: need to instantiate propss
-      //selectorRouter.expectMsgType[RegisterChannel].channel.isOpen must be(true)
+      val channel = selectorRouter.expectMsgPF() {
+        case WorkerForCommand(RegisterIncoming(chan), commander, _) ⇒
+          chan.isOpen must be(true)
+          commander must be === listener
+          chan
+      }
 
-      // FIXME: fix this
-      //      EventFilter.warning(pattern = "selector capacity limit", occurrences = 1) intercept {
-      //        //listener ! CommandFailed(RegisterIncomingConnection(channel, handler.ref, Nil))
-      //        awaitCond(!channel.isOpen)
-      //      }
+      EventFilter.warning(pattern = "selector capacity limit", occurrences = 1) intercept {
+        listener ! FailedRegisterIncoming(channel)
+        awaitCond(!channel.isOpen)
+      }
     }
   }
 
