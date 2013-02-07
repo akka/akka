@@ -342,7 +342,10 @@ class LightArrayRevolverScheduler(config: Config,
   private val stopped = new AtomicReference[Promise[immutable.Seq[TimerTask]]]
   def stop(): Future[immutable.Seq[TimerTask]] =
     if (stopped.compareAndSet(null, Promise())) {
-      timerThread.interrupt()
+      // Interrupting the timer thread to make it shut down faster is not good since
+      // it could be in the middle of executing the scheduled tasks, which might not
+      // respond well to being interrupted.
+      // Instead we just wait one more tick for it to finish.
       stopped.get.future
     } else Future.successful(Nil)
 
