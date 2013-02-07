@@ -155,7 +155,7 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
       val inMode = getInboundMode(naked)
       wrappedHandle.outboundThrottleMode.set(getOutboundMode(naked))
       wrappedHandle.readHandlerPromise.future.map { (_, inMode) } pipeTo wrappedHandle.throttlerActor
-      handleTable ::= nakedAddress(naked) -> wrappedHandle
+      handleTable ::= naked -> wrappedHandle
       statusPromise.success(wrappedHandle)
     case SetThrottle(address, direction, mode) ⇒
       val naked = nakedAddress(address)
