@@ -4,17 +4,14 @@
 package akka.io
 
 import akka.actor.{ Actor, ActorLogging, ActorRef }
-import akka.io.Inet.SocketOption
 import akka.io.SelectionHandler._
 import akka.io.UdpConn._
 import akka.util.ByteString
-import java.net.InetSocketAddress
+import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.nio.channels.SelectionKey._
-import scala.collection.immutable
-import scala.util.control.NonFatal
-import java.nio.ByteBuffer
 import scala.annotation.tailrec
+import scala.util.control.NonFatal
 
 private[io] class UdpConnection(val udpConn: UdpConnExt,
                                 val commander: ActorRef,
@@ -22,8 +19,8 @@ private[io] class UdpConnection(val udpConn: UdpConnExt,
 
   def selector: ActorRef = context.parent
 
-  import udpConn._
   import connect._
+  import udpConn._
   import udpConn.settings._
 
   var pendingSend: (Send, ActorRef) = null
@@ -36,7 +33,7 @@ private[io] class UdpConnection(val udpConn: UdpConnExt,
     val socket = datagramChannel.socket
     options.foreach(_.beforeDatagramBind(socket))
     try {
-      localAddress foreach { socket.bind } // will blow up the actor constructor if the bind fails
+      localAddress.foreach { socket.bind _ } // will blow up the actor constructor if the bind fails
       datagramChannel.connect(remoteAddress)
     } catch {
       case NonFatal(e) ⇒
@@ -52,14 +49,13 @@ private[io] class UdpConnection(val udpConn: UdpConnExt,
   def receive = {
     case ChannelRegistered ⇒
       commander ! Connected
-      selector ! ReadInterest
       context.become(connected, discardOld = true)
   }
 
   def connected: Receive = {
     case StopReading     ⇒ selector ! DisableReadInterest
     case ResumeReading   ⇒ selector ! ReadInterest
-    case ChannelReadable ⇒ println("read"); doRead(handler)
+    case ChannelReadable ⇒ doRead(handler)
 
     case Close ⇒
       log.debug("Closing UDP connection to {}", remoteAddress)
@@ -89,6 +85,7 @@ private[io] class UdpConnection(val udpConn: UdpConnExt,
       buffer.limit(DirectBufferSize)
 
       if (channel.read(buffer) > 0) {
+        buffer.flip()
         handler ! Received(ByteString(buffer))
         innerRead(readsLeft - 1, buffer)
       }

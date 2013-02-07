@@ -40,8 +40,6 @@ class UdpConnIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with Impli
           a
       }
 
-      println(clientAddress)
-
       server ! UdpFF.Send(data2, clientAddress)
 
       // FIXME: Currently this line fails

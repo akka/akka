@@ -41,7 +41,7 @@ class UdpFFIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with Implici
     }
 
     "be able to send with binding" in {
-      val (serverAddress, _) = bindUdp(testActor)
+      val (serverAddress, server) = bindUdp(testActor)
       val (clientAddress, client) = bindUdp(testActor)
       val data = ByteString("Fly little packet!")
 
@@ -51,6 +51,12 @@ class UdpFFIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with Implici
         case Received(d, a) ⇒
           d must be === data
           a must be === clientAddress
+      }
+      server ! Send(data, clientAddress)
+      expectMsgPF() {
+        case Received(d, a) ⇒
+          d must be === data
+          a must be === serverAddress
       }
     }
 
