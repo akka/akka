@@ -185,8 +185,10 @@ private[akka] trait Children { this: ActorCell ⇒
           cell.provider.actorOf(cell.systemImpl, props, cell.self, cell.self.path / name,
             systemService = systemService, deploy = None, lookupDeploy = true, async = async)
         } catch {
-          case NonFatal(e) ⇒
+          case e @ (_: InterruptedException | NonFatal(_)) ⇒
             unreserveChild(name)
+            if (e.isInstanceOf[InterruptedException])
+              Thread.interrupted() // clear interrupted flag before throwing according to java convention
             throw e
         }
       // mailbox==null during RoutedActorCell constructor, where suspends are queued otherwise
