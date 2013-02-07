@@ -53,8 +53,8 @@ private[remote] class TcpServerHandler(_transport: NettyTransport, _associationL
 
 }
 
-private[remote] class TcpClientHandler(_transport: NettyTransport)
-  extends ClientHandler(_transport) with TcpHandlers {
+private[remote] class TcpClientHandler(_transport: NettyTransport, remoteAddress: Address)
+  extends ClientHandler(_transport, remoteAddress) with TcpHandlers {
 
   override def onConnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit =
     initOutbound(e.getChannel, e.getChannel.getRemoteAddress, null)
