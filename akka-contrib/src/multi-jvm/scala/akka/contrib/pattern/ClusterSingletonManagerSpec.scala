@@ -155,12 +155,12 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
 
     def receive = {
       case state: CurrentClusterState ⇒ leaderAddress = state.leader
-      case LeaderChanged(leader) ⇒ leaderAddress = leader
-      case other => consumer foreach { _ forward other }
+      case LeaderChanged(leader)      ⇒ leaderAddress = leader
+      case other                      ⇒ consumer foreach { _ forward other }
     }
 
     def consumer: Option[ActorRef] =
-      leaderAddress map (a => context.actorFor(RootActorPath(a) /
+      leaderAddress map (a ⇒ context.actorFor(RootActorPath(a) /
         "user" / "singleton" / "consumer"))
   }
   //#singleton-proxy
@@ -300,7 +300,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       verify(sortedClusterRoles(0), msg = 4, expectedCurrent = 3)
     }
 
-    "hand over when leader leaves in 6 nodes cluster " in within(20 seconds) {
+    "hand over when leader leaves in 6 nodes cluster " in within(30 seconds) {
       //#test-leave
       val leaveRole = sortedClusterRoles(0)
       val newLeaderRole = sortedClusterRoles(1)
