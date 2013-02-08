@@ -12,10 +12,14 @@ import akka.util.ByteString
 import com.google.protobuf.InvalidProtocolBufferException
 import com.google.protobuf.{ ByteString ⇒ PByteString }
 
-class PduCodecException(msg: String, cause: Throwable) extends AkkaException(msg, cause)
+/**
+ * INTERNAL API
+ */
+@SerialVersionUID(1L)
+private[remote] class PduCodecException(msg: String, cause: Throwable) extends AkkaException(msg, cause)
 
 /**
- * Internal API
+ * INTERNAL API
  *
  * Companion object of the [[akka.remote.transport.AkkaPduCodec]] trait. Contains the representation case classes
  * of decoded Akka Protocol Data Units (PDUs).
@@ -39,6 +43,8 @@ private[remote] object AkkaPduCodec {
 }
 
 /**
+ * INTERNAL API
+ *
  * A Codec that is able to convert Akka PDUs (Protocol Data Units) from and to [[akka.util.ByteString]]s.
  */
 private[remote] trait AkkaPduCodec {
@@ -89,6 +95,9 @@ private[remote] trait AkkaPduCodec {
     senderOption: Option[ActorRef]): ByteString
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
 
   override def constructMessage(

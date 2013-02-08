@@ -15,6 +15,9 @@ case class RemoteScope(node: Address) extends Scope {
   def withFallback(other: Scope): Scope = this
 }
 
+/**
+ * INTERNAL API
+ */
 private[akka] class RemoteDeployer(_settings: ActorSystem.Settings, _pm: DynamicAccess) extends Deployer(_settings, _pm) {
   override def parseConfig(path: String, config: Config): Option[Deploy] = {
     import scala.collection.JavaConverters._

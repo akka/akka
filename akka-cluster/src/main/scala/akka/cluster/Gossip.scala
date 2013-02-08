@@ -9,7 +9,7 @@ import scala.collection.immutable
 import MemberStatus._
 
 /**
- * Internal API
+ * INTERNAL API
  */
 private[cluster] object Gossip {
   val emptyMembers: immutable.SortedSet[Member] = immutable.SortedSet.empty

@@ -11,8 +11,9 @@ import java.util.regex.Pattern
 import scala.annotation.tailrec
 
 /**
+ * INTERNAL API
+ *
  * Marker trait to show which Messages are automatically handled by Akka
- * Internal use only
  */
 private[akka] trait AutoReceivedMessage extends Serializable
 
@@ -28,7 +29,7 @@ trait PossiblyHarmful
 trait NoSerializationVerificationNeeded
 
 /**
- * Internal use only
+ * INTERNAL API
  */
 @SerialVersionUID(2L)
 private[akka] case class Failed(cause: Throwable, uid: Int) extends AutoReceivedMessage with PossiblyHarmful
@@ -112,19 +113,19 @@ case object ReceiveTimeout extends ReceiveTimeout {
 sealed trait SelectionPath extends AutoReceivedMessage with PossiblyHarmful
 
 /**
- * Internal use only
+ * INTERNAL API
  */
 @SerialVersionUID(1L)
 private[akka] case class SelectChildName(name: String, next: Any) extends SelectionPath
 
 /**
- * Internal use only
+ * INTERNAL API
  */
 @SerialVersionUID(1L)
 private[akka] case class SelectChildPattern(pattern: Pattern, next: Any) extends SelectionPath
 
 /**
- * Internal use only
+ * INTERNAL API
  */
 @SerialVersionUID(1L)
 private[akka] case class SelectParent(next: Any) extends SelectionPath

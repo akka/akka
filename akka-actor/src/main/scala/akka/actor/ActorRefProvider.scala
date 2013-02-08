@@ -158,11 +158,11 @@ trait ActorRefProvider {
  */
 trait ActorRefFactory {
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   protected def systemImpl: ActorSystemImpl
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   protected def provider: ActorRefProvider
 
@@ -174,12 +174,12 @@ trait ActorRefFactory {
   /**
    * Father of all children created by this interface.
    *
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   protected def guardian: InternalActorRef
 
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   protected def lookupRoot: InternalActorRef
 

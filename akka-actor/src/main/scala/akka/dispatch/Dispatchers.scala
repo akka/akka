@@ -24,7 +24,7 @@ trait DispatcherPrerequisites {
 }
 
 /**
- * INTERNAL USE ONLY
+ * INTERNAL API
  */
 private[akka] case class DefaultDispatcherPrerequisites(
   val threadFactory: ThreadFactory,
@@ -114,6 +114,8 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
   }
 
   /**
+   * INTERNAL API
+   *
    * Creates a dispatcher from a Config. Internal test purpose only.
    *
    * ex: from(config.getConfig(id))
@@ -122,22 +124,20 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    *
    * Throws: IllegalArgumentException if the value of "type" is not valid
    *         IllegalArgumentException if it cannot create the MessageDispatcherConfigurator
-   *
-   * INTERNAL USE ONLY
    */
   private[akka] def from(cfg: Config): MessageDispatcher = configuratorFrom(cfg).dispatcher()
 
   private[akka] def isBalancingDispatcher(id: String): Boolean = settings.config.hasPath(id) && config(id).getString("type") == "BalancingDispatcher"
 
   /**
+   * INTERNAL API
+   *
    * Creates a MessageDispatcherConfigurator from a Config.
    *
    * The Config must also contain a `id` property, which is the identifier of the dispatcher.
    *
    * Throws: IllegalArgumentException if the value of "type" is not valid
    *         IllegalArgumentException if it cannot create the MessageDispatcherConfigurator
-   *
-   * INTERNAL USE ONLY
    */
   private def configuratorFrom(cfg: Config): MessageDispatcherConfigurator = {
     if (!cfg.hasPath("id")) throw new IllegalArgumentException("Missing dispatcher 'id' property in config: " + cfg.root.render)

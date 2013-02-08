@@ -42,7 +42,7 @@ import akka.cluster.routing.MetricsSelector
  * extension, i.e. the cluster will automatically be started when
  * the `ClusterActorRefProvider` is used.
  */
-class ClusterActorRefProvider(
+private[akka] class ClusterActorRefProvider(
   _systemName: String,
   _settings: ActorSystem.Settings,
   _eventStream: EventStream,

@@ -47,7 +47,7 @@ class Dispatcher(
   protected final def executorService: ExecutorServiceDelegate = executorServiceDelegate
 
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope): Unit = {
     val mbox = receiver.mailbox
@@ -56,7 +56,7 @@ class Dispatcher(
   }
 
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   protected[akka] def systemDispatch(receiver: ActorCell, invocation: SystemMessage): Unit = {
     val mbox = receiver.mailbox
@@ -65,7 +65,7 @@ class Dispatcher(
   }
 
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   protected[akka] def executeTask(invocation: TaskInvocation) {
     try {
@@ -83,13 +83,13 @@ class Dispatcher(
   }
 
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   protected[akka] def createMailbox(actor: akka.actor.Cell): Mailbox =
     new Mailbox(mailboxType.create(Some(actor.self), Some(actor.system))) with DefaultSystemMessageQueue
 
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   protected[akka] def shutdown: Unit = {
     val newDelegate = executorServiceDelegate.copy() // Doesn't matter which one we copy
@@ -104,7 +104,7 @@ class Dispatcher(
   /**
    * Returns if it was registered
    *
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   protected[akka] override def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = {
     if (mbox.canBeScheduledForExecution(hasMessageHint, hasSystemMessageHint)) { //This needs to be here to ensure thread safety and no races
