@@ -62,6 +62,10 @@ version to work with and can decide when to update to a newer version. The Akka
 snapshots repository is also proxied through http://repo.typesafe.com/typesafe/snapshots/
 which includes proxies for several other repositories that Akka modules depend on.
 
+.. warning::
+
+  The use of Akka SNAPSHOTs, nightlies and milestone releases is discouraged unless you know what you are doing.
+
 Microkernel
 -----------
 
@@ -75,10 +79,19 @@ More information is available in the documentation of the
 Using a build tool
 ------------------
 
-Akka can be used with build tools that support Maven repositories. The Akka
-Maven repository can be found at http://repo.akka.io/releases/ and Typesafe provides
-http://repo.typesafe.com/typesafe/releases/ that proxies several other
-repositories, including akka.io.
+Akka can be used with build tools that support Maven repositories.
+
+Maven repositories
+------------------
+
+For Akka version 2.1-M2 and onwards:
+
+`Maven Central <http://repo1.maven.org/maven2/>`_
+
+For previous Akka versions:
+
+`Akka Repo <http://repo.akka.io/releases/>`_
+`Typesafe Repo <http://repo.typesafe.com/typesafe/releases/>`_
 
 Using Akka with Maven
 ---------------------
@@ -134,6 +147,34 @@ SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <htt
 
     libraryDependencies +=
       "com.typesafe.akka" % "akka-actor_@binVersion@" % "@version@"
+
+
+Using Akka with Gradle
+----------------------
+
+Requires at least `Gradle <http://gradle.org>`_ 1.4
+Uses the `Scala plugin <http://gradle.org/docs/current/userguide/scala_plugin.html>`_
+
+.. parsed-literal::
+
+    apply plugin: 'scala'
+
+    repositories {
+      mavenCentral()
+    }
+
+    dependencies {
+      compile 'org.scala-lang:scala-library:@scalaVersion@'
+    }
+
+    tasks.withType(ScalaCompile) {
+      scalaCompileOptions.useAnt = false
+    }
+
+    dependencies {
+      compile group: 'com.typesafe.akka', name: 'akka-actor_@binVersion@', version: '@version@'
+      compile group: 'org.scala-lang', name: 'scala-library', version: '@scalaVersion@'
+    }
 
 
 Using Akka with Eclipse
