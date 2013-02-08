@@ -29,8 +29,6 @@ private[akka] class SSLSettings(config: Config) {
 
   val SSLProtocol = Option(getString("protocol")).filter(_.length > 0)
 
-  val SSLRandomSource = Option(getString("sha1prng-random-source")).filter(_.length > 0)
-
   val SSLRandomNumberGenerator = Option(getString("random-number-generator")).filter(_.length > 0)
 
   // FIXME: Change messages to reflect new configuration
@@ -58,17 +56,7 @@ private[akka] object NettySSLSupport {
   def apply(settings: SSLSettings, log: LoggingAdapter, isClient: Boolean): SslHandler =
     if (isClient) initializeClientSSL(settings, log) else initializeServerSSL(settings, log)
 
-  def initializeCustomSecureRandom(rngName: Option[String], sourceOfRandomness: Option[String], log: LoggingAdapter): SecureRandom = {
-    /**
-     * According to this bug report: http://bugs.sun.com/view_bug.do?bug_id=6202721
-     * Using /dev/./urandom is only necessary when using SHA1PRNG on Linux
-     * <quote>Use 'new SecureRandom()' instead of 'SecureRandom.getInstance("SHA1PRNG")'</quote> to avoid having problems
-     */
-    sourceOfRandomness foreach { path ⇒
-      System.setProperty("java.security.egd", path)
-      System.setProperty("securerandom.source", path)
-    }
-
+  def initializeCustomSecureRandom(rngName: Option[String], log: LoggingAdapter): SecureRandom = {
     val rng = rngName match {
       case Some(r @ ("AES128CounterSecureRNG" | "AES256CounterSecureRNG" | "AES128CounterInetRNG" | "AES256CounterInetRNG")) ⇒
         log.debug("SSL random number generator set to: {}", r)
@@ -94,7 +82,7 @@ private[akka] object NettySSLSupport {
 
     def constructClientContext(settings: SSLSettings, log: LoggingAdapter, trustStorePath: String, trustStorePassword: String, protocol: String): Option[SSLContext] =
       try {
-        val rng = initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)
+        val rng = initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, log)
         val trustManagers: Array[TrustManager] = {
           val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
           trustManagerFactory.init({
@@ -143,7 +131,7 @@ private[akka] object NettySSLSupport {
 
     def constructServerContext(settings: SSLSettings, log: LoggingAdapter, keyStorePath: String, keyStorePassword: String, protocol: String): Option[SSLContext] =
       try {
-        val rng = initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)
+        val rng = initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, log)
         val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
         factory.init({
           val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
