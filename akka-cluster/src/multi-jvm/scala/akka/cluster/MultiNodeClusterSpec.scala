@@ -4,10 +4,8 @@
 package akka.cluster
 
 import language.implicitConversions
-
 import org.scalatest.Suite
 import org.scalatest.exceptions.TestFailedException
-
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.remote.testconductor.RoleName
@@ -19,6 +17,7 @@ import akka.event.Logging.ErrorLevel
 import scala.concurrent.duration._
 import scala.collection.immutable
 import java.util.concurrent.ConcurrentHashMap
+import akka.remote.DefaultFailureDetectorRegistry
 
 object MultiNodeClusterSpec {
 
@@ -44,7 +43,7 @@ object MultiNodeClusterSpec {
     }
     akka.loglevel = INFO
     akka.remote.log-remote-lifecycle-events = off
-    akka.event-handlers = ["akka.testkit.TestEventListener"]
+    akka.loggers = ["akka.testkit.TestEventListener"]
     akka.test {
       single-expect-default = 5 s
     }
@@ -258,20 +257,32 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
    * [[akka.cluster.FailureDetectorPuppet]] is used as
    * failure detector.
    */
-  def markNodeAsAvailable(address: Address): Unit = cluster.failureDetector match {
-    case puppet: FailureDetectorPuppet ⇒ puppet.markNodeAsAvailable(address)
-    case _                             ⇒
-  }
+  def markNodeAsAvailable(address: Address): Unit =
+    failureDetectorPuppet(address) foreach (_.markNodeAsAvailable())
 
   /**
    * Marks a node as unavailable in the failure detector if
    * [[akka.cluster.FailureDetectorPuppet]] is used as
    * failure detector.
    */
-  def markNodeAsUnavailable(address: Address): Unit = cluster.failureDetector match {
-    case puppet: FailureDetectorPuppet ⇒ puppet.markNodeAsUnavailable(address)
-    case _                             ⇒
+  def markNodeAsUnavailable(address: Address): Unit = {
+    if (isFailureDetectorPuppet) {
+      // before marking it as unavailble there must be at least one heartbeat
+      // to create the FailureDetectorPuppet in the FailureDetectorRegistry
+      cluster.failureDetector.heartbeat(address)
+      failureDetectorPuppet(address) foreach (_.markNodeAsUnavailable())
+    }
   }
+
+  private def isFailureDetectorPuppet: Boolean =
+    cluster.settings.FailureDetectorImplementationClass == classOf[FailureDetectorPuppet].getName
+
+  private def failureDetectorPuppet(address: Address): Option[FailureDetectorPuppet] =
+    cluster.failureDetector match {
+      case reg: DefaultFailureDetectorRegistry[Address] ⇒
+        reg.failureDetector(address) collect { case p: FailureDetectorPuppet ⇒ p }
+      case _ ⇒ None
+    }
 
 }
 

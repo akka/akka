@@ -78,10 +78,11 @@ A custom ``application.conf`` might look like this::
 
   akka {
 
-    # Event handlers to register at boot time (Logging$DefaultLogger logs to STDOUT)
-    event-handlers = ["akka.event.slf4j.Slf4jEventHandler"]
+    # Loggers to register at boot time (akka.event.Logging$DefaultLogger logs
+    # to STDOUT)
+    loggers = ["akka.event.slf4j.Slf4jLogger"]
 
-    # Log level used by the configured loggers (see "event-handlers") as soon
+    # Log level used by the configured loggers (see "loggers") as soon
     # as they have been started; before that, see "stdout-loglevel"
     # Options: ERROR, WARNING, INFO, DEBUG
     loglevel = DEBUG

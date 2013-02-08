@@ -14,18 +14,22 @@ class CircuitBreakerMTSpec extends AkkaSpec {
   "A circuit breaker being called by many threads" must {
     val callTimeout = 1.second.dilated
     val resetTimeout = 2.seconds.dilated
-    val breaker = new CircuitBreaker(system.scheduler, 5, callTimeout, resetTimeout)
+    val maxFailures = 5
+    val breaker = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
     val numberOfTestCalls = 100
 
     def openBreaker(): Unit = {
-      @tailrec def call(attemptsLeft: Int): Unit = {
-        attemptsLeft must be > (0)
-        if (Await.result(breaker.withCircuitBreaker(Future(throw new RuntimeException("FAIL"))) recover {
-          case _: CircuitBreakerOpenException ⇒ false
-          case _                              ⇒ true
-        }, remaining)) call(attemptsLeft - 1)
-      }
-      call(10)
+      // returns true if the breaker is open
+      def failingCall(): Boolean =
+        Await.result(breaker.withCircuitBreaker(Future(throw new RuntimeException("FAIL"))) recover {
+          case _: CircuitBreakerOpenException ⇒ true
+          case _                              ⇒ false
+        }, remaining)
+
+      // fire some failing calls
+      1 to (maxFailures + 1) foreach { _ ⇒ failingCall() }
+      // and then continue with failing calls until the breaker is open
+      awaitCond(failingCall())
     }
 
     def testCallsWithBreaker(): immutable.IndexedSeq[Future[String]] = {

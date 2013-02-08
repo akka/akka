@@ -4,23 +4,21 @@
 
 package akka.actor
 
+import java.io.Closeable
+import java.util.concurrent.{ ConcurrentHashMap, ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import com.typesafe.config.{ Config, ConfigFactory }
 import akka.event._
 import akka.dispatch._
 import akka.japi.Util.immutableSeq
-import com.typesafe.config.{ Config, ConfigFactory }
+import akka.actor.dungeon.ChildrenContainer
+import akka.util._
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.{ FiniteDuration, Duration }
-import scala.concurrent.{ Await, Awaitable, CanAwait, Future }
+import scala.concurrent.{ Await, Awaitable, CanAwait, Future, ExecutionContext }
 import scala.util.{ Failure, Success }
-import scala.util.control.NonFatal
-import akka.util._
-import java.io.Closeable
-import akka.util.internal.{ HashedWheelTimer }
-import java.util.concurrent.{ ConcurrentHashMap, ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.actor.dungeon.ChildrenContainer
-import scala.concurrent.ExecutionContext
+import scala.util.control.{ NonFatal, ControlThrowable }
 
 object ActorSystem {
 
@@ -145,7 +143,11 @@ object ActorSystem {
 
     final val LogLevel: String = getString("akka.loglevel")
     final val StdoutLogLevel: String = getString("akka.stdout-loglevel")
+    final val Loggers: immutable.Seq[String] = immutableSeq(getStringList("akka.loggers"))
+    final val LoggerStartTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.logger-startup-timeout"), MILLISECONDS))
+    @deprecated("use Loggers)", "2.2")
     final val EventHandlers: immutable.Seq[String] = immutableSeq(getStringList("akka.event-handlers"))
+    @deprecated("use LoggerStartTimeout)", "2.2")
     final val EventHandlerStartTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.event-handler-startup-timeout"), MILLISECONDS))
     final val LogConfigOnStart: Boolean = config.getBoolean("akka.log-config-on-start")
 
@@ -320,7 +322,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * explicitly.
    * Importing this member will place the default MessageDispatcher in scope.
    */
-  implicit def dispatcher: MessageDispatcher
+  implicit def dispatcher: ExecutionContext
 
   /**
    * Register a block of code (callback) to run after ActorSystem.shutdown has been issued and
@@ -465,7 +467,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     new Thread.UncaughtExceptionHandler() {
       def uncaughtException(thread: Thread, cause: Throwable): Unit = {
         cause match {
-          case NonFatal(_) | _: InterruptedException ⇒ log.error(cause, "Uncaught error from thread [{}]", thread.getName)
+          case NonFatal(_) | _: InterruptedException | _: NotImplementedError | _: ControlThrowable ⇒ log.error(cause, "Uncaught error from thread [{}]", thread.getName)
           case _ ⇒
             if (settings.JvmExitOnFatalError) {
               try {
@@ -548,7 +550,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   //FIXME Why do we need this at all?
   val deadLetterQueue: MessageQueue = new MessageQueue {
     def enqueue(receiver: ActorRef, envelope: Envelope): Unit =
-      deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver)
+      deadLetters.tell(DeadLetter(envelope.message, envelope.sender, receiver), envelope.sender)
     def dequeue() = null
     def hasMessages = false
     def numberOfMessages = 0
@@ -566,7 +568,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(
     threadFactory, eventStream, deadLetterMailbox, scheduler, dynamicAccess, settings))
 
-  val dispatcher: MessageDispatcher = dispatchers.defaultGlobalDispatcher
+  val dispatcher: ExecutionContext = dispatchers.defaultGlobalDispatcher
 
   def terminationFuture: Future[Unit] = provider.terminationFuture
   def lookupRoot: InternalActorRef = provider.rootGuardian

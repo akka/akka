@@ -1,10 +1,13 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.contrib.jul
 
 import akka.event.Logging._
 import akka.actor._
 import akka.event.LoggingAdapter
 import java.util.logging
-import concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ ExecutionContext, Future }
 
 /**
  * Makes the Akka `Logging` API available as the `log`
@@ -25,35 +28,26 @@ trait JavaLogging {
 }
 
 /**
- * `java.util.logging` EventHandler.
+ * `java.util.logging` logger.
  */
-class JavaLoggingEventHandler extends Actor {
+class JavaLogger extends Actor {
 
   def receive = {
-    case event @ Error(cause, logSource, logClass, message) ⇒
-      log(logging.Level.SEVERE, cause, logSource, logClass, message, event)
-
-    case event @ Warning(logSource, logClass, message) ⇒
-      log(logging.Level.WARNING, null, logSource, logClass, message, event)
-
-    case event @ Info(logSource, logClass, message) ⇒
-      log(logging.Level.INFO, null, logSource, logClass, message, event)
-
-    case event @ Debug(logSource, logClass, message) ⇒
-      log(logging.Level.CONFIG, null, logSource, logClass, message, event)
-
-    case InitializeLogger(_) ⇒
-      sender ! LoggerInitialized
+    case event @ Error(cause, _, _, _) ⇒ log(logging.Level.SEVERE, cause, event)
+    case event: Warning                ⇒ log(logging.Level.WARNING, null, event)
+    case event: Info                   ⇒ log(logging.Level.INFO, null, event)
+    case event: Debug                  ⇒ log(logging.Level.CONFIG, null, event)
+    case InitializeLogger(_)           ⇒ sender ! LoggerInitialized
   }
 
   @inline
-  def log(level: logging.Level, cause: Throwable, logSource: String, logClass: Class[_], message: Any, event: LogEvent) {
-    val logger = logging.Logger.getLogger(logSource)
-    val record = new logging.LogRecord(level, message.toString)
+  def log(level: logging.Level, cause: Throwable, event: LogEvent) {
+    val logger = logging.Logger.getLogger(event.logSource)
+    val record = new logging.LogRecord(level, String.valueOf(event.message))
     record.setLoggerName(logger.getName)
     record.setThrown(cause)
     record.setThreadID(event.thread.getId.toInt)
-    record.setSourceClassName(logClass.getName)
+    record.setSourceClassName(event.logClass.getName)
     record.setSourceMethodName(null) // lost forever
     logger.log(record)
   }

@@ -5,6 +5,7 @@
 package akka.remote
 
 import scala.annotation.tailrec
+import scala.util.control.NonFatal
 import akka.actor.{ VirtualPathContainer, Terminated, Deploy, Props, Nobody, LocalActorRef, InternalActorRef, Address, ActorSystemImpl, ActorRef, ActorPathExtractor, ActorPath, Actor, AddressTerminated }
 import akka.event.LoggingAdapter
 import akka.dispatch.Watch
@@ -62,11 +63,11 @@ private[akka] class RemoteSystemDaemon(
     }
   }
 
-  override def !(msg: Any)(implicit sender: ActorRef = Actor.noSender): Unit = msg match {
+  override def !(msg: Any)(implicit sender: ActorRef = Actor.noSender): Unit = try msg match {
     case message: DaemonMsg ⇒
       log.debug("Received command [{}] to RemoteSystemDaemon on [{}]", message, path.address)
       message match {
-        case DaemonMsgCreate(_, _, path, _) if untrustedMode ⇒ log.debug("does not accept deployments (untrusted) for {}", path)
+        case DaemonMsgCreate(_, _, path, _) if untrustedMode ⇒ log.debug("does not accept deployments (untrusted) for [{}]", path)
         case DaemonMsgCreate(props, deploy, path, supervisor) ⇒
           path match {
             case ActorPathExtractor(address, elems) if elems.nonEmpty && elems.head == "remote" ⇒
@@ -79,6 +80,7 @@ private[akka] class RemoteSystemDaemon(
                   path, systemService = false, Some(deploy), lookupDeploy = true, async = false)
                 addChild(subpath.mkString("/"), actor)
                 actor.sendSystemMessage(Watch(actor, this))
+                actor.start()
               }
               if (isTerminating) log.error("Skipping [{}] to RemoteSystemDaemon on [{}] while terminating", message, path.address)
             case _ ⇒
@@ -106,7 +108,10 @@ private[akka] class RemoteSystemDaemon(
         case _ ⇒ // skip, this child doesn't belong to the terminated address
       }
 
-    case unknown ⇒ log.warning("Unknown message {} received by {}", unknown, this)
+    case unknown ⇒ log.warning("Unknown message [{}] received by [{}]", unknown, this)
+
+  } catch {
+    case NonFatal(e) ⇒ log.error(e, "exception while processing remote command [{}] from [{}]", msg, sender)
   }
 
   def terminationHookDoneWhenNoChildren(): Unit = terminating.whileOn {

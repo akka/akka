@@ -16,75 +16,60 @@ import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util.immutableSeq
 
 class ClusterSettings(val config: Config, val systemName: String) {
-  import config._
 
-  final val FailureDetectorThreshold: Double = {
-    getDouble("akka.cluster.failure-detector.threshold")
-  } requiring (_ > 0.0, "failure-detector.threshold must be > 0")
-  final val FailureDetectorMaxSampleSize: Int = {
-    getInt("akka.cluster.failure-detector.max-sample-size")
-  } requiring (_ > 0, "failure-detector.max-sample-size must be > 0")
-  final val FailureDetectorImplementationClass: String = getString("akka.cluster.failure-detector.implementation-class")
-  final val FailureDetectorMinStdDeviation: FiniteDuration = {
-    Duration(getMilliseconds("akka.cluster.failure-detector.min-std-deviation"), MILLISECONDS)
-  } requiring (_ > Duration.Zero, "failure-detector.min-std-deviation must be > 0")
-  final val FailureDetectorAcceptableHeartbeatPause: FiniteDuration = {
-    Duration(getMilliseconds("akka.cluster.failure-detector.acceptable-heartbeat-pause"), MILLISECONDS)
-  } requiring (_ >= Duration.Zero, "failure-detector.acceptable-heartbeat-pause must be >= 0")
+  private val cc = config.getConfig("akka.cluster")
+
+  final val FailureDetectorConfig: Config = cc.getConfig("failure-detector")
+  final val FailureDetectorImplementationClass: String = FailureDetectorConfig.getString("implementation-class")
   final val HeartbeatInterval: FiniteDuration = {
-    Duration(getMilliseconds("akka.cluster.failure-detector.heartbeat-interval"), MILLISECONDS)
+    Duration(FailureDetectorConfig.getMilliseconds("heartbeat-interval"), MILLISECONDS)
   } requiring (_ > Duration.Zero, "failure-detector.heartbeat-interval must be > 0")
   final val HeartbeatRequestDelay: FiniteDuration = {
-    Duration(getMilliseconds("akka.cluster.failure-detector.heartbeat-request.grace-period"), MILLISECONDS)
+    Duration(FailureDetectorConfig.getMilliseconds("heartbeat-request.grace-period"), MILLISECONDS)
   } requiring (_ > Duration.Zero, "failure-detector.heartbeat-request.grace-period must be > 0")
   final val HeartbeatExpectedResponseAfter: FiniteDuration = {
-    Duration(getMilliseconds("akka.cluster.failure-detector.heartbeat-request.expected-response-after"), MILLISECONDS)
+    Duration(FailureDetectorConfig.getMilliseconds("heartbeat-request.expected-response-after"), MILLISECONDS)
   } requiring (_ > Duration.Zero, "failure-detector.heartbeat-request.expected-response-after > 0")
   final val HeartbeatRequestTimeToLive: FiniteDuration = {
-    Duration(getMilliseconds("akka.cluster.failure-detector.heartbeat-request.time-to-live"), MILLISECONDS)
+    Duration(FailureDetectorConfig.getMilliseconds("heartbeat-request.time-to-live"), MILLISECONDS)
   } requiring (_ > Duration.Zero, "failure-detector.heartbeat-request.time-to-live > 0")
   final val NumberOfEndHeartbeats: Int = {
-    getInt("akka.cluster.failure-detector.nr-of-end-heartbeats")
+    FailureDetectorConfig.getInt("nr-of-end-heartbeats")
   } requiring (_ > 0, "failure-detector.nr-of-end-heartbeats must be > 0")
   final val MonitoredByNrOfMembers: Int = {
-    getInt("akka.cluster.failure-detector.monitored-by-nr-of-members")
+    FailureDetectorConfig.getInt("monitored-by-nr-of-members")
   } requiring (_ > 0, "failure-detector.monitored-by-nr-of-members must be > 0")
 
   final val SeedNodes: immutable.IndexedSeq[Address] =
-    immutableSeq(getStringList("akka.cluster.seed-nodes")).map { case AddressFromURIString(addr) ⇒ addr }.toVector
-  final val SeedNodeTimeout: FiniteDuration = Duration(getMilliseconds("akka.cluster.seed-node-timeout"), MILLISECONDS)
-  final val PeriodicTasksInitialDelay: FiniteDuration = Duration(getMilliseconds("akka.cluster.periodic-tasks-initial-delay"), MILLISECONDS)
-  final val GossipInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.gossip-interval"), MILLISECONDS)
-  final val LeaderActionsInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.leader-actions-interval"), MILLISECONDS)
-  final val UnreachableNodesReaperInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.unreachable-nodes-reaper-interval"), MILLISECONDS)
-  final val PublishStatsInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.publish-stats-interval"), MILLISECONDS)
-  final val AutoJoin: Boolean = getBoolean("akka.cluster.auto-join")
-  final val AutoDown: Boolean = getBoolean("akka.cluster.auto-down")
+    immutableSeq(cc.getStringList("seed-nodes")).map { case AddressFromURIString(addr) ⇒ addr }.toVector
+  final val SeedNodeTimeout: FiniteDuration = Duration(cc.getMilliseconds("seed-node-timeout"), MILLISECONDS)
+  final val PeriodicTasksInitialDelay: FiniteDuration = Duration(cc.getMilliseconds("periodic-tasks-initial-delay"), MILLISECONDS)
+  final val GossipInterval: FiniteDuration = Duration(cc.getMilliseconds("gossip-interval"), MILLISECONDS)
+  final val LeaderActionsInterval: FiniteDuration = Duration(cc.getMilliseconds("leader-actions-interval"), MILLISECONDS)
+  final val UnreachableNodesReaperInterval: FiniteDuration = Duration(cc.getMilliseconds("unreachable-nodes-reaper-interval"), MILLISECONDS)
+  final val PublishStatsInterval: FiniteDuration = Duration(cc.getMilliseconds("publish-stats-interval"), MILLISECONDS)
+  final val AutoJoin: Boolean = cc.getBoolean("auto-join")
+  final val AutoDown: Boolean = cc.getBoolean("auto-down")
   final val MinNrOfMembers: Int = {
-    getInt("akka.cluster.min-nr-of-members")
+    cc.getInt("min-nr-of-members")
   } requiring (_ > 0, "min-nr-of-members must be > 0")
-  final val JmxEnabled: Boolean = getBoolean("akka.cluster.jmx.enabled")
-  final val UseDispatcher: String = getString("akka.cluster.use-dispatcher") match {
+  final val JmxEnabled: Boolean = cc.getBoolean("jmx.enabled")
+  final val UseDispatcher: String = cc.getString("use-dispatcher") match {
     case "" ⇒ Dispatchers.DefaultDispatcherId
     case id ⇒ id
   }
-  final val GossipDifferentViewProbability: Double = getDouble("akka.cluster.gossip-different-view-probability")
-  final val MaxGossipMergeRate: Double = getDouble("akka.cluster.max-gossip-merge-rate")
-  final val SchedulerTickDuration: FiniteDuration = Duration(getMilliseconds("akka.cluster.scheduler.tick-duration"), MILLISECONDS)
-  final val SchedulerTicksPerWheel: Int = getInt("akka.cluster.scheduler.ticks-per-wheel")
-  final val SendCircuitBreakerSettings: CircuitBreakerSettings = CircuitBreakerSettings(
-    maxFailures = getInt("akka.cluster.send-circuit-breaker.max-failures"),
-    callTimeout = Duration(getMilliseconds("akka.cluster.send-circuit-breaker.call-timeout"), MILLISECONDS),
-    resetTimeout = Duration(getMilliseconds("akka.cluster.send-circuit-breaker.reset-timeout"), MILLISECONDS))
-  final val MetricsEnabled: Boolean = getBoolean("akka.cluster.metrics.enabled")
-  final val MetricsCollectorClass: String = getString("akka.cluster.metrics.collector-class")
+  final val GossipDifferentViewProbability: Double = cc.getDouble("gossip-different-view-probability")
+  final val MaxGossipMergeRate: Double = cc.getDouble("max-gossip-merge-rate")
+  final val SchedulerTickDuration: FiniteDuration = Duration(cc.getMilliseconds("scheduler.tick-duration"), MILLISECONDS)
+  final val SchedulerTicksPerWheel: Int = cc.getInt("scheduler.ticks-per-wheel")
+  final val MetricsEnabled: Boolean = cc.getBoolean("metrics.enabled")
+  final val MetricsCollectorClass: String = cc.getString("metrics.collector-class")
   final val MetricsInterval: FiniteDuration = {
-    Duration(getMilliseconds("akka.cluster.metrics.collect-interval"), MILLISECONDS)
+    Duration(cc.getMilliseconds("metrics.collect-interval"), MILLISECONDS)
   } requiring (_ > Duration.Zero, "metrics.collect-interval must be > 0")
-  final val MetricsGossipInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.metrics.gossip-interval"), MILLISECONDS)
+  final val MetricsGossipInterval: FiniteDuration = Duration(cc.getMilliseconds("metrics.gossip-interval"), MILLISECONDS)
   final val MetricsMovingAverageHalfLife: FiniteDuration = {
-    Duration(getMilliseconds("akka.cluster.metrics.moving-average-half-life"), MILLISECONDS)
+    Duration(cc.getMilliseconds("metrics.moving-average-half-life"), MILLISECONDS)
   } requiring (_ > Duration.Zero, "metrics.moving-average-half-life must be > 0")
 }
 
-case class CircuitBreakerSettings(maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)

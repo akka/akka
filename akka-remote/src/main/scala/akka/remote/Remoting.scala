@@ -334,7 +334,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
   override val supervisorStrategy = OneForOneStrategy(settings.MaximumRetriesInWindow, settings.RetryWindow) {
     case InvalidAssociation(localAddress, remoteAddress, e) ⇒
-      endpoints.markAsQuarantined(remoteAddress, e)
+      endpoints.markAsFailed(sender, Deadline.now + settings.UnknownAddressGateClosedFor)
       Stop
 
     case NonFatal(e) ⇒
@@ -446,7 +446,10 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     case Terminated(_)         ⇒ // why should we care now?
   }
 
-  private def forwardToDeadLetters(s: Send): Unit = extendedSystem.deadLetters.tell(s.message, s.senderOption.orNull)
+  private def forwardToDeadLetters(s: Send): Unit = {
+    val sender = s.senderOption.getOrElse(extendedSystem.deadLetters)
+    extendedSystem.deadLetters.tell(DeadLetter(s.message, sender, s.recipient), sender)
+  }
 
   private def listens: Future[Seq[(Transport, Address, Promise[AssociationEventListener])]] = {
     /*

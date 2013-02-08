@@ -9,7 +9,7 @@ public class TransformationBackendMain {
     // Override the configuration of the port
     // when specified as program argument
     if (args.length > 0)
-      System.setProperty("akka.remoting.transports.tcp.port", args[0]);
+      System.setProperty("akka.remote.netty.tcp.port", args[0]);
 
     ActorSystem system = ActorSystem.create("ClusterSystem");
 

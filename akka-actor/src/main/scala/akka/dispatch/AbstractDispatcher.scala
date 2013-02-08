@@ -72,7 +72,7 @@ private[akka] object SystemMessage {
  *
  * ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
  */
-private[akka] sealed trait SystemMessage extends PossiblyHarmful {
+private[akka] sealed trait SystemMessage extends PossiblyHarmful with Serializable {
   @transient
   var next: SystemMessage = _
 }
@@ -80,42 +80,52 @@ private[akka] sealed trait SystemMessage extends PossiblyHarmful {
 /**
  * INTERNAL API
  */
+@SerialVersionUID(-4836972106317757555L)
 private[akka] case class Create(uid: Int) extends SystemMessage // send to self from Dispatcher.register
 /**
  * INTERNAL API
  */
+@SerialVersionUID(686735569005808256L)
 private[akka] case class Recreate(cause: Throwable) extends SystemMessage // sent to self from ActorCell.restart
 /**
  * INTERNAL API
  */
+@SerialVersionUID(7270271967867221401L)
 private[akka] case class Suspend() extends SystemMessage // sent to self from ActorCell.suspend
 /**
  * INTERNAL API
  */
+@SerialVersionUID(-2567504317093262591L)
 private[akka] case class Resume(causedByFailure: Throwable) extends SystemMessage // sent to self from ActorCell.resume
 /**
  * INTERNAL API
  */
+@SerialVersionUID(708873453777219599L)
 private[akka] case class Terminate() extends SystemMessage // sent to self from ActorCell.stop
 /**
  * INTERNAL API
  */
+@SerialVersionUID(3245747602115485675L)
 private[akka] case class Supervise(child: ActorRef, async: Boolean, uid: Int) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
 /**
  * INTERNAL API
  */
+@SerialVersionUID(5513569382760799668L)
 private[akka] case class ChildTerminated(child: ActorRef) extends SystemMessage // sent to supervisor from ActorCell.doTerminate
 /**
  * INTERNAL API
  */
+@SerialVersionUID(3323205435124174788L)
 private[akka] case class Watch(watchee: ActorRef, watcher: ActorRef) extends SystemMessage // sent to establish a DeathWatch
 /**
  * INTERNAL API
  */
+@SerialVersionUID(6363620903363658256L)
 private[akka] case class Unwatch(watchee: ActorRef, watcher: ActorRef) extends SystemMessage // sent to tear down a DeathWatch
 /**
  * INTERNAL API
  */
+@SerialVersionUID(-5475916034683997987L)
 private[akka] case object NoMessage extends SystemMessage // switched into the mailbox to signal termination
 
 final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cleanup: () ⇒ Unit) extends Batchable {
@@ -168,8 +178,6 @@ private[akka] object MessageDispatcher {
         println(" -> " + a + status + messages + parent)
       }
     }
-
-  implicit def defaultDispatcher(implicit system: ActorSystem): MessageDispatcher = system.dispatcher
 }
 
 abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) extends AbstractMessageDispatcher with BatchingExecutor with ExecutionContext {
@@ -184,6 +192,13 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   @tailrec private final def addInhabitants(add: Long): Long = {
     val c = inhabitants
     val r = c + add
+    if (r < 0) {
+      // We haven't succeeded in decreasing the inhabitants yet but the simple fact that we're trying to
+      // go below zero means that there is an imbalance and we might as well throw the exception
+      val e = new IllegalStateException("ACTOR SYSTEM CORRUPTED!!! A dispatcher can't have less than 0 inhabitants!")
+      reportFailure(e)
+      throw e
+    }
     if (Unsafe.instance.compareAndSwapLong(this, inhabitantsOffset, c, r)) r else addInhabitants(add)
   }
 
@@ -236,18 +251,16 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   }
 
   @tailrec
-  private final def ifSensibleToDoSoThenScheduleShutdown(): Unit = inhabitants match {
-    case 0 ⇒
-      shutdownSchedule match {
-        case UNSCHEDULED ⇒
-          if (updateShutdownSchedule(UNSCHEDULED, SCHEDULED)) scheduleShutdownAction()
-          else ifSensibleToDoSoThenScheduleShutdown()
-        case SCHEDULED ⇒
-          if (updateShutdownSchedule(SCHEDULED, RESCHEDULED)) ()
-          else ifSensibleToDoSoThenScheduleShutdown()
-        case RESCHEDULED ⇒
-      }
-    case _ ⇒
+  private final def ifSensibleToDoSoThenScheduleShutdown(): Unit = {
+    if (inhabitants <= 0) shutdownSchedule match {
+      case UNSCHEDULED ⇒
+        if (updateShutdownSchedule(UNSCHEDULED, SCHEDULED)) scheduleShutdownAction()
+        else ifSensibleToDoSoThenScheduleShutdown()
+      case SCHEDULED ⇒
+        if (updateShutdownSchedule(SCHEDULED, RESCHEDULED)) ()
+        else ifSensibleToDoSoThenScheduleShutdown()
+      case RESCHEDULED ⇒
+    }
   }
 
   private def scheduleShutdownAction(): Unit = {
@@ -477,10 +490,8 @@ object ForkJoinExecutorConfigurator {
                                threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
                                unhandledExceptionHandler: Thread.UncaughtExceptionHandler)
     extends ForkJoinPool(parallelism, threadFactory, unhandledExceptionHandler, true) with LoadMetrics {
-    override def execute(r: Runnable): Unit = r match {
-      case m: Mailbox ⇒ super.execute(new MailboxExecutionTask(m))
-      case other      ⇒ super.execute(other)
-    }
+    override def execute(r: Runnable): Unit =
+      if (r eq null) throw new NullPointerException else super.execute(new AkkaForkJoinTask(r))
 
     def atFullThrottle(): Boolean = this.getActiveThreadCount() >= this.getParallelism()
   }
@@ -488,10 +499,11 @@ object ForkJoinExecutorConfigurator {
   /**
    * INTERNAL AKKA USAGE ONLY
    */
-  final class MailboxExecutionTask(mailbox: Mailbox) extends ForkJoinTask[Unit] {
-    final override def setRawResult(u: Unit): Unit = ()
-    final override def getRawResult(): Unit = ()
-    final override def exec(): Boolean = try { mailbox.run; true } catch {
+  @SerialVersionUID(1L)
+  final class AkkaForkJoinTask(runnable: Runnable) extends ForkJoinTask[Unit] {
+    override def getRawResult(): Unit = ()
+    override def setRawResult(unit: Unit): Unit = ()
+    final override def exec(): Boolean = try { runnable.run(); true } catch {
       case anything: Throwable ⇒
         val t = Thread.currentThread
         t.getUncaughtExceptionHandler match {

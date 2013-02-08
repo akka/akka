@@ -6,12 +6,12 @@ import akka.testkit.AkkaSpec
 import java.util.logging
 import java.io.ByteArrayInputStream
 
-object JavaLoggingEventHandlerSpec {
+object JavaLoggerSpec {
 
   val config = ConfigFactory.parseString("""
     akka {
       loglevel = INFO
-      event-handlers = ["akka.contrib.jul.JavaLoggingEventHandler"]
+      loggers = ["akka.contrib.jul.JavaLogger"]
     }""")
 
   class LogProducer extends Actor with ActorLogging {
@@ -25,9 +25,9 @@ object JavaLoggingEventHandlerSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class JavaLoggingEventHandlerSpec extends AkkaSpec(JavaLoggingEventHandlerSpec.config) {
+class JavaLoggerSpec extends AkkaSpec(JavaLoggerSpec.config) {
 
-  val logger = logging.Logger.getLogger("akka://JavaLoggingEventHandlerSpec/user/log")
+  val logger = logging.Logger.getLogger("akka://JavaLoggerSpec/user/log")
   logger.setUseParentHandlers(false) // turn off output of test LogRecords
   logger.addHandler(new logging.Handler {
     def publish(record: logging.LogRecord) {
@@ -38,9 +38,9 @@ class JavaLoggingEventHandlerSpec extends AkkaSpec(JavaLoggingEventHandlerSpec.c
     def close() {}
   })
 
-  val producer = system.actorOf(Props[JavaLoggingEventHandlerSpec.LogProducer], name = "log")
+  val producer = system.actorOf(Props[JavaLoggerSpec.LogProducer], name = "log")
 
-  "JavaLoggingEventHandler" must {
+  "JavaLogger" must {
 
     "log error with stackTrace" in {
       producer ! new RuntimeException("Simulated error")
@@ -53,7 +53,7 @@ class JavaLoggingEventHandlerSpec extends AkkaSpec(JavaLoggingEventHandlerSpec.c
       record.getLevel must be(logging.Level.SEVERE)
       record.getMessage must be("Simulated error")
       record.getThrown.isInstanceOf[RuntimeException] must be(true)
-      record.getSourceClassName must be("akka.contrib.jul.JavaLoggingEventHandlerSpec$LogProducer")
+      record.getSourceClassName must be(classOf[JavaLoggerSpec.LogProducer].getName)
       record.getSourceMethodName must be(null)
     }
 
@@ -68,7 +68,7 @@ class JavaLoggingEventHandlerSpec extends AkkaSpec(JavaLoggingEventHandlerSpec.c
       record.getLevel must be(logging.Level.INFO)
       record.getMessage must be("3 is the magic number")
       record.getThrown must be(null)
-      record.getSourceClassName must be("akka.contrib.jul.JavaLoggingEventHandlerSpec$LogProducer")
+      record.getSourceClassName must be(classOf[JavaLoggerSpec.LogProducer].getName)
       record.getSourceMethodName must be(null)
     }
   }

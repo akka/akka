@@ -13,7 +13,7 @@ import java.io.File
  * Factory class to create ActorSystem implementations in an OSGi environment.  This mainly involves dealing with
  * bundle classloaders appropriately to ensure that configuration files and classes get loaded properly
  */
-class OsgiActorSystemFactory(val context: BundleContext, val fallbackClassLoader: Option[ClassLoader]) {
+class OsgiActorSystemFactory(val context: BundleContext, val fallbackClassLoader: Option[ClassLoader], config: Config = ConfigFactory.empty) {
 
   /*
    * Classloader that delegates to the bundle for which the factory is creating an ActorSystem
@@ -34,19 +34,12 @@ class OsgiActorSystemFactory(val context: BundleContext, val fallbackClassLoader
     ActorSystem(actorSystemName(name), actorSystemConfig(context), classloader)
 
   /**
-   * Strategy method to create the Config for the ActorSystem, based on configuration files found in etc directory,
+   * Strategy method to create the Config for the ActorSystem
    * ensuring that the default/reference configuration is loaded from the akka-actor bundle.
-   * The configuration is based on
-   * etc/bundle-SYMBOLICNAME, etc/bundle-ID, etc/akka.conf
-   * in either ".conf", ".properties", ".json" formats
    * Configuration files found in akka-actor bundle
    */
   def actorSystemConfig(context: BundleContext): Config = {
-    val bundleSymbolicName = context.getBundle.getSymbolicName
-    val bundleId = context.getBundle.getBundleId
-    val acceptedFilePath = List(s"bundle-$bundleSymbolicName", s"bundle-$bundleId", "akka").map(x ⇒ s"etc/$x")
-    val applicationConfiguration = acceptedFilePath.foldLeft(ConfigFactory.empty())((x, y) ⇒ x.withFallback(ConfigFactory.parseFileAnySyntax(new File(y))))
-    applicationConfiguration.withFallback(ConfigFactory.load(classloader).withFallback(ConfigFactory.defaultReference(OsgiActorSystemFactory.akkaActorClassLoader)))
+    config.withFallback(ConfigFactory.load(classloader).withFallback(ConfigFactory.defaultReference(OsgiActorSystemFactory.akkaActorClassLoader)))
   }
 
   /**
@@ -67,5 +60,5 @@ object OsgiActorSystemFactory {
   /*
    * Create an [[OsgiActorSystemFactory]] instance to set up Akka in an OSGi environment
    */
-  def apply(context: BundleContext): OsgiActorSystemFactory = new OsgiActorSystemFactory(context, Some(akkaActorClassLoader))
+  def apply(context: BundleContext, config: Config): OsgiActorSystemFactory = new OsgiActorSystemFactory(context, Some(akkaActorClassLoader), config)
 }

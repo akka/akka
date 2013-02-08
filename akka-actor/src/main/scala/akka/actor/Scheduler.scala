@@ -226,8 +226,8 @@ class LightArrayRevolverScheduler(config: Config,
   override def schedule(initialDelay: FiniteDuration,
                         delay: FiniteDuration,
                         runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
-    try new AtomicReference[Cancellable] with Cancellable { self ⇒
-      set(schedule(
+    try new AtomicReference[Cancellable](InitialRepeatMarker) with Cancellable { self ⇒
+      compareAndSet(InitialRepeatMarker, schedule(
         new AtomicLong(clock() + initialDelay.toNanos) with Runnable {
           override def run(): Unit = {
             try {
@@ -308,8 +308,24 @@ class LightArrayRevolverScheduler(config: Config,
        */
       @tailrec
       def rec(t: TaskHolder): TimerTask = {
-        val bucket = (currentBucket + ticks) & wheelMask
-        get(bucket) match {
+        val current = currentBucket
+        val bucket = (current + ticks) & wheelMask
+        val contents = get(bucket)
+        /*
+         * The timer thread does the following:
+         * - swap Pause into the currentBucket
+         * - increment currentBucket
+         * - swap empty list into the Paused bucket (guaranteed != previous contents, even if empty)
+         * 
+         * If we read the bucket contents before the last step, everything is fine,
+         * it will either succeed (all done before the Pause) or fail with Pause or in the CAS.
+         * But if we read the bucket contents after the third step but had read the currentBucket
+         * before the second step, then we’d enqueue into the wrong round. After seeing the new
+         * bucket contents, this next read will need to see the incremented currentBucket so we
+         * can detect this race and retry.
+         */
+        if (current != currentBucket) rec(t)
+        else contents match {
           case Pause ⇒
             if (stopped.get != null) throw new SchedulerException("cannot enqueue after timer shutdown")
             rec(t)
@@ -326,7 +342,10 @@ class LightArrayRevolverScheduler(config: Config,
   private val stopped = new AtomicReference[Promise[immutable.Seq[TimerTask]]]
   def stop(): Future[immutable.Seq[TimerTask]] =
     if (stopped.compareAndSet(null, Promise())) {
-      timerThread.interrupt()
+      // Interrupting the timer thread to make it shut down faster is not good since
+      // it could be in the middle of executing the scheduled tasks, which might not
+      // respond well to being interrupted.
+      // Instead we just wait one more tick for it to finish.
       stopped.get.future
     } else Future.successful(Nil)
 
@@ -470,6 +489,11 @@ object LightArrayRevolverScheduler {
     def cancel(): Boolean = false
     def isCancelled: Boolean = false
     def run(): Unit = ()
+  }
+
+  private val InitialRepeatMarker = new Cancellable {
+    def cancel(): Boolean = false
+    def isCancelled: Boolean = false
   }
   // marker object during wheel movement
   private val Pause = new TaskHolder(null, null, 0)(null)

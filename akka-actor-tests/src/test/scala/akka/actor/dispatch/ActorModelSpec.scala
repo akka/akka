@@ -410,14 +410,16 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
     }
 
     "continue to process messages when a thread gets interrupted and throws an exception" in {
-      filterEvents(EventFilter[InterruptedException](), EventFilter[akka.event.Logging.EventHandlerException]()) {
+      filterEvents(EventFilter[InterruptedException](), EventFilter[akka.event.Logging.LoggerException]()) {
         implicit val dispatcher = interceptedDispatcher()
         val a = newTestActor(dispatcher.id)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
-        val f3 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(new ActorInterruptedException(ie)).future }
+        val f3 = a ? Interrupt
+        Thread.interrupted() // CallingThreadDispatcher may necessitate this
         val f4 = a ? Reply("foo2")
-        val f5 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(new ActorInterruptedException(ie)).future }
+        val f5 = a ? Interrupt
+        Thread.interrupted() // CallingThreadDispatcher may necessitate this
         val f6 = a ? Reply("bar2")
 
         val c = system.scheduler.scheduleOnce(2.seconds) {

@@ -5,8 +5,7 @@ package akka.remote.testkit
 
 import language.implicitConversions
 import language.postfixOps
-
-import java.net.InetSocketAddress
+import java.net.{ InetAddress, InetSocketAddress }
 import java.util.concurrent.TimeoutException
 import com.typesafe.config.{ ConfigObject, ConfigFactory, Config }
 import scala.concurrent.{ Await, Awaitable }
@@ -137,9 +136,15 @@ object MultiNodeSpec {
    * {{{
    * -Dmultinode.host=host.example.com
    * }}}
+   *
+   * InetAddress.getLocalHost.getHostAddress is used if empty or "localhost"
+   * is defined as system property "multinode.host".
    */
-  val selfName: String = Option(System.getProperty("multinode.host")) getOrElse
-    (throw new IllegalStateException("need system property multinode.host to be set"))
+  val selfName: String = Option(System.getProperty("multinode.host")) match {
+    case None       ⇒ throw new IllegalStateException("need system property multinode.host to be set")
+    case Some("")   ⇒ InetAddress.getLocalHost.getHostAddress
+    case Some(host) ⇒ host
+  }
 
   require(selfName != "", "multinode.host must not be empty")
 
@@ -199,7 +204,7 @@ object MultiNodeSpec {
 
   private[testkit] val baseConfig: Config = ConfigFactory.parseString("""
       akka {
-        event-handlers = ["akka.testkit.TestEventListener"]
+        loggers = ["akka.testkit.TestEventListener"]
         loglevel = "WARNING"
         stdout-loglevel = "WARNING"
         actor {

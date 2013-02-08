@@ -8,10 +8,12 @@ import scala.annotation.tailrec
 import akka.dispatch.{ Terminate, SystemMessage, Suspend, Resume, Recreate, MessageDispatcher, Mailbox, Envelope, Create }
 import akka.event.Logging.Error
 import akka.util.Unsafe
-import scala.util.control.NonFatal
 import akka.dispatch.NullMessage
 import akka.actor.{ NoSerializationVerificationNeeded, InvalidMessageException, ActorRef, ActorCell }
 import akka.serialization.SerializationExtension
+import scala.util.control.NonFatal
+import scala.util.control.Exception.Catcher
+import scala.concurrent.ExecutionContext
 
 private[akka] trait Dispatch { this: ActorCell ⇒
 
@@ -30,11 +32,6 @@ private[akka] trait Dispatch { this: ActorCell ⇒
   final def numberOfMessages: Int = mailbox.numberOfMessages
 
   val dispatcher: MessageDispatcher = system.dispatchers.lookup(props.dispatcher)
-
-  /**
-   * UntypedActorContext impl
-   */
-  final def getDispatcher(): MessageDispatcher = dispatcher
 
   final def isTerminated: Boolean = mailbox.isClosed
 
@@ -71,37 +68,25 @@ private[akka] trait Dispatch { this: ActorCell ⇒
     this
   }
 
-  // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def suspend(): Unit =
-    try dispatcher.systemDispatch(this, Suspend())
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
-    }
+  private def handleException: Catcher[Unit] = {
+    case e: InterruptedException ⇒
+      system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "interrupted during message send"))
+      Thread.currentThread.interrupt()
+    case NonFatal(e) ⇒
+      system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
+  }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def resume(causedByFailure: Throwable): Unit =
-    try dispatcher.systemDispatch(this, Resume(causedByFailure))
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
-    }
+  final def suspend(): Unit = try dispatcher.systemDispatch(this, Suspend()) catch handleException
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def restart(cause: Throwable): Unit =
-    try dispatcher.systemDispatch(this, Recreate(cause))
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
-    }
+  final def resume(causedByFailure: Throwable): Unit = try dispatcher.systemDispatch(this, Resume(causedByFailure)) catch handleException
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def stop(): Unit =
-    try dispatcher.systemDispatch(this, Terminate())
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
-    }
+  final def restart(cause: Throwable): Unit = try dispatcher.systemDispatch(this, Recreate(cause)) catch handleException
+
+  // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+  final def stop(): Unit = try dispatcher.systemDispatch(this, Terminate()) catch handleException
 
   def sendMessage(msg: Envelope): Unit =
     try {
@@ -112,16 +97,8 @@ private[akka] trait Dispatch { this: ActorCell ⇒
         s.deserialize(s.serialize(m).get, m.getClass).get
       }
       dispatcher.dispatch(this, msg)
-    } catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
-    }
+    } catch handleException
 
-  override def sendSystemMessage(message: SystemMessage): Unit =
-    try dispatcher.systemDispatch(this, message)
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
-    }
+  override def sendSystemMessage(message: SystemMessage): Unit = try dispatcher.systemDispatch(this, message) catch handleException
 
 }

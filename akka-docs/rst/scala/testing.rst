@@ -337,11 +337,11 @@ test fails.
 
 .. note::
 
-   Be sure to exchange the default event handler with the
+   Be sure to exchange the default logger with the
    :class:`TestEventListener` in your ``application.conf`` to enable this
    function::
 
-     akka.event-handlers = [akka.testkit.TestEventListener]
+     akka.loggers = [akka.testkit.TestEventListener]
 
 .. _TestKit.within:
 
@@ -614,6 +614,28 @@ production.
    scenarios, but keep in mind that it has may give false negatives as well as
    false positives.
 
+Thread Interruptions
+--------------------
+
+If the CallingThreadDispatcher sees that the current thread has its
+``isInterrupted()`` flag set when message processing returns, it will throw an
+:class:`InterruptedException` after finishing all its processing (i.e. all
+messages which need processing as described above are processed before this
+happens). As :meth:`tell` cannot throw exceptions due to its contract, this
+exception will then be caught and logged, and the thread’s interrupted status
+will be set again.
+
+If during message processing an :class:`InterruptedException` is thrown then it
+will be caught inside the CallingThreadDispatcher’s message handling loop, the
+thread’s interrupted flag will be set and processing continues normally.
+
+.. note::
+
+  The summary of these two paragraphs is that if the current thread is
+  interrupted while doing work under the CallingThreadDispatcher, then that
+  will result in the ``isInterrupted`` flag to be ``true`` when the message
+  send returns and no :class:`InterruptedException` will be thrown.
+
 Benefits
 --------
 
@@ -657,8 +679,7 @@ options:
 
   The logging feature is coupled to this specific local mark-up because
   enabling it uniformly on all actors is not usually what you need, and it
-  would lead to endless loops if it were applied to :class:`EventHandler`
-  listeners.
+  would lead to endless loops if it were applied to event bus logger listeners.
 
 * *Logging of special messages*
 

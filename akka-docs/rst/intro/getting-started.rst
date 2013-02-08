@@ -39,7 +39,7 @@ Akka is very modular and consists of several JARs containing different features.
 - ``akka-agent`` -- Agents, integrated with Scala STM
 - ``akka-camel`` -- Apache Camel integration
 - ``akka-zeromq`` -- ZeroMQ integration
-- ``akka-slf4j`` -- SLF4J Event Handler Listener
+- ``akka-slf4j`` -- SLF4J Logger (event bus listener)
 - ``akka-filebased-mailbox`` -- Akka durable mailbox (find more among community projects)
 
 The filename of the actual JAR is for example ``@jarName@`` (and analog for
@@ -127,6 +127,13 @@ SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <htt
 
     libraryDependencies +=
       "com.typesafe.akka" %% "akka-actor" % "@version@" @crossString@
+
+**Note**: the libraryDependencies setting above is specific to SBT v0.12.x and higher.  If you are using an older version of SBT, the libraryDependencies should look like this:
+
+.. parsed-literal::
+
+    libraryDependencies +=
+      "com.typesafe.akka" % "akka-actor_@binVersion@" % "@version@"
 
 
 Using Akka with Eclipse

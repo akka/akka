@@ -72,7 +72,7 @@ trait LoggingBus extends ActorEventBus {
    */
   private[akka] def startStdoutLogger(config: Settings) {
     val level = levelFor(config.StdoutLogLevel) getOrElse {
-      StandardOutLogger.print(Error(new EventHandlerException, simpleName(this), this.getClass, "unknown akka.stdout-loglevel " + config.StdoutLogLevel))
+      StandardOutLogger.print(Error(new LoggerException, simpleName(this), this.getClass, "unknown akka.stdout-loglevel " + config.StdoutLogLevel))
       ErrorLevel
     }
     AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(StandardOutLogger, classFor(l)))
@@ -89,13 +89,18 @@ trait LoggingBus extends ActorEventBus {
   private[akka] def startDefaultLoggers(system: ActorSystemImpl) {
     val logName = simpleName(this) + "(" + system + ")"
     val level = levelFor(system.settings.LogLevel) getOrElse {
-      StandardOutLogger.print(Error(new EventHandlerException, logName, this.getClass, "unknown akka.stdout-loglevel " + system.settings.LogLevel))
+      StandardOutLogger.print(Error(new LoggerException, logName, this.getClass, "unknown akka.stdout-loglevel " + system.settings.LogLevel))
       ErrorLevel
     }
     try {
       val defaultLoggers = system.settings.EventHandlers match {
-        case Nil     ⇒ "akka.event.Logging$DefaultLogger" :: Nil
-        case loggers ⇒ loggers
+        case Nil ⇒ system.settings.Loggers match {
+          case Nil     ⇒ classOf[DefaultLogger].getName :: Nil
+          case loggers ⇒ loggers
+        }
+        case loggers ⇒
+          StandardOutLogger.print(Warning(logName, this.getClass, "[akka.event-handlers] config is deprecated, use [akka.loggers]"))
+          loggers
       }
       val myloggers =
         for {
@@ -106,7 +111,7 @@ trait LoggingBus extends ActorEventBus {
             case actorClass ⇒ addLogger(system, actorClass, level, logName)
           }).recover({
             case e ⇒ throw new ConfigurationException(
-              "Event Handler specified in config can't be loaded [" + loggerName +
+              "Logger specified in config can't be loaded [" + loggerName +
                 "] due to [" + e.toString + "]", e)
           }).get
         }
@@ -166,7 +171,13 @@ trait LoggingBus extends ActorEventBus {
   private def addLogger(system: ActorSystemImpl, clazz: Class[_ <: Actor], level: LogLevel, logName: String): ActorRef = {
     val name = "log" + Extension(system).id() + "-" + simpleName(clazz)
     val actor = system.systemActorOf(Props(clazz), name)
-    implicit def timeout = system.settings.EventHandlerStartTimeout
+    implicit def timeout =
+      if (system.settings.EventHandlerStartTimeout.duration >= Duration.Zero) {
+        StandardOutLogger.print(Warning(logName, this.getClass,
+          "[akka.event-handler-startup-timeout] config is deprecated, use [akka.logger-startup-timeout]"))
+        system.settings.EventHandlerStartTimeout
+      } else system.settings.LoggerStartTimeout
+
     import akka.pattern.ask
     val response = try Await.result(actor ? InitializeLogger(this), timeout.duration) catch {
       case _: TimeoutException ⇒
@@ -353,8 +364,8 @@ object LogSource {
  *
  * <pre><code>
  * akka {
- *   event-handlers = ["akka.slf4j.Slf4jEventHandler"] # for example
- *   loglevel = "INFO"        # used when normal logging ("event-handlers") has been started
+ *   loggers = ["akka.slf4j.Slf4jLogger"] # for example
+ *   loglevel = "INFO"        # used when normal logging ("loggers") has been started
  *   stdout-loglevel = "WARN" # used during application start-up until normal logging is available
  * }
  * </code></pre>
@@ -531,7 +542,7 @@ object Logging {
    * Artificial exception injected into Error events if no Throwable is
    * supplied; used for getting a stack dump of error locations.
    */
-  class EventHandlerException extends AkkaException("")
+  class LoggerException extends AkkaException("")
 
   /**
    * Exception that wraps a LogEvent.
@@ -716,7 +727,7 @@ object Logging {
 
   /**
    * Actor wrapper around the standard output logger. If
-   * <code>akka.event-handlers</code> is not set, it defaults to just this
+   * <code>akka.loggers</code> is not set, it defaults to just this
    * logger.
    */
   class DefaultLogger extends Actor with StdOutLogger {

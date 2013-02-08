@@ -4,8 +4,10 @@
 package akka.remote
 
 import akka.testkit._
-import akka.actor.{ ActorSystem, DeathWatchSpec }
+import akka.actor._
 import com.typesafe.config.ConfigFactory
+import akka.actor.RootActorPath
+import scala.concurrent.duration._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RemoteDeathWatchSpec extends AkkaSpec(ConfigFactory.parseString("""
@@ -33,6 +35,18 @@ akka {
 
   override def afterTermination() {
     other.shutdown()
+  }
+
+  "receive Terminated when watched node is unknown host" in {
+    val path = RootActorPath(Address("akka.tcp", system.name, "unknownhost", 2552)) / "user" / "subject"
+    system.actorOf(Props(new Actor {
+      context.watch(context.actorFor(path))
+      def receive = {
+        case t: Terminated ⇒ testActor ! t.actor.path
+      }
+    }), name = "observer2")
+
+    expectMsg(60.seconds, path)
   }
 
 }

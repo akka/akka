@@ -55,17 +55,19 @@ Select to run "sample.remote.calculator.CalcApp" which in the case below is numb
 
     [1] sample.remote.calculator.LookupApp
     [2] sample.remote.calculator.CreationApp
-    [3] sample.remote.calculator.CalcApp
+    [3] sample.remote.calculator.java.JCreationApp
+    [4] sample.remote.calculator.CalcApp
+    [5] sample.remote.calculator.java.JCalcApp
+    [6] sample.remote.calculator.java.JLookupApp
 
-    Enter number: 3
+    Enter number: 4
 
 You should see something similar to this::
 
     [info] Running sample.remote.calculator.CalcApp
-    [INFO] [12/22/2011 14:21:51.631] [run-main] [ActorSystem] REMOTE: RemoteServerStarted@akka://CalculatorApplication@127.0.0.1:2552
-    [INFO] [12/22/2011 14:21:51.632] [run-main] [Remote] Starting remote server on [akka://CalculatorApplication@127.0.0.1:2552]
+    [INFO] [01/25/2013 15:02:51.355] [run-main] [Remoting] Starting remoting
+    [INFO] [01/25/2013 15:02:52.121] [run-main] [Remoting] Remoting started; listening on addresses :[akka.tcp://CalculatorApplication@127.0.0.1:2552]
     Started Calculator Application - waiting for messages
-    [INFO] [12/22/2011 14:22:39.894] [New I/O server worker #1-1] [ActorSystem] REMOTE: RemoteClientStarted@akka://127.0.0.1:2553
 
 Open up a new terminal window and run SBT once more:
 
@@ -81,21 +83,23 @@ Select to run "sample.remote.calculator.LookupApp" which in the case below is nu
 
     [1] sample.remote.calculator.LookupApp
     [2] sample.remote.calculator.CreationApp
-    [3] sample.remote.calculator.CalcApp
+    [3] sample.remote.calculator.java.JCreationApp
+    [4] sample.remote.calculator.CalcApp
+    [5] sample.remote.calculator.java.JCalcApp
+    [6] sample.remote.calculator.java.JLookupApp
 
     Enter number: 1
 
 Now you should see something like this::
 
     [info] Running sample.remote.calculator.LookupApp
-    [INFO] [12/22/2011 14:54:38.630] [run-main] [ActorSystem] REMOTE: RemoteServerStarted@akka://LookupApplication@127.0.0.1:2553
-    [INFO] [12/22/2011 14:54:38.632] [run-main] [Remote] Starting remote server on [akka://LookupApplication@127.0.0.1:2553]
+    [INFO] [01/25/2013 15:05:53.954] [run-main] [Remoting] Starting remoting
+    [INFO] [01/25/2013 15:05:54.769] [run-main] [Remoting] Remoting started; listening on addresses :[akka.tcp://LookupApplication@127.0.0.1:2553]
     Started Lookup Application
-    [INFO] [12/22/2011 14:54:38.801] [default-dispatcher-21] [ActorSystem] REMOTE: RemoteClientStarted@akka://127.0.0.1:2552
-    Sub result: 4 - 30 = -26
-    Add result: 17 + 1 = 18
-    Add result: 37 + 43 = 80
-    Add result: 68 + 66 = 134
+    Add result: 0 + 22 = 22
+    Add result: 41 + 71 = 112
+    Add result: 61 + 14 = 75
+    Add result: 77 + 82 = 159
 
 Congrats! You have now successfully looked up a remote actor and communicated with it.
 The next step is to have an actor deployed on a remote note.
@@ -113,22 +117,22 @@ Select to run "sample.remote.calculator.CreationApp" which in the case below is 
 
     [1] sample.remote.calculator.LookupApp
     [2] sample.remote.calculator.CreationApp
-    [3] sample.remote.calculator.CalcApp
+    [3] sample.remote.calculator.java.JCreationApp
+    [4] sample.remote.calculator.CalcApp
+    [5] sample.remote.calculator.java.JCalcApp
+    [6] sample.remote.calculator.java.JLookupApp
 
     Enter number: 2
 
 Now you should see something like this::
 
     [info] Running sample.remote.calculator.CreationApp
-    [INFO] [12/22/2011 14:57:02.150] [run-main] [ActorSystem] REMOTE: RemoteServerStarted@akka://RemoteCreation@127.0.0.1:2554
-    [INFO] [12/22/2011 14:57:02.151] [run-main] [Remote] Starting remote server on [akka://RemoteCreation@127.0.0.1:2554]
-    [INFO] [12/22/2011 14:57:02.267] [default-dispatcher-21] [ActorSystem] REMOTE: RemoteClientStarted@akka://127.0.0.1:2552
+    [INFO] [01/14/2013 15:08:08.890] [run-main] [Remoting] Starting remoting
     Started Creation Application
-    Mul result: 14 * 17 = 238
-    Div result: 3764 / 80 = 47.00
-    Mul result: 16 * 5 = 80
-    Mul result: 1 * 18 = 18
-    Mul result: 8 * 13 = 104
+    Mul result: 15 * 12 = 180
+    Div result: 3840 / 10 = 384,00
+    Mul result: 1 * 5 = 5
+    Div result: 3240 / 45 = 72,00
 
 That's it!
 

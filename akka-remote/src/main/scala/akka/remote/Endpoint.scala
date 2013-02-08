@@ -56,9 +56,7 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
           if (LogReceive) log.debug("received daemon message {}", msgLog)
           payload match {
             case m @ (_: DaemonMsg | _: Terminated) ⇒
-              try remoteDaemon ! m catch {
-                case NonFatal(e) ⇒ log.error(e, "exception while processing remote command {} from {}", m, sender)
-              }
+              remoteDaemon ! m
             case x ⇒ log.debug("remoteDaemon received illegal message {} from {}", x, sender)
           }
         }
@@ -172,7 +170,7 @@ private[remote] class EndpointWriter(
       stash()
       stay()
     case Event(Status.Failure(e: InvalidAssociationException), _) ⇒
-      log.error(e, "Tried to associate with invalid remote address [{}]. " +
+      log.error("Tried to associate with invalid remote address [{}]. " +
         "Address is now quarantined, all messages to this address will be delivered to dead letters.", remoteAddress)
       publishAndThrow(new InvalidAssociation(localAddress, remoteAddress, e))
     case Event(Status.Failure(e), _) ⇒

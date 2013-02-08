@@ -15,6 +15,7 @@ import akka.dispatch.{ Watch, Unwatch, Terminate, SystemMessage, Suspend, Superv
 import akka.event.Logging.{ LogEvent, Debug, Error }
 import akka.japi.Procedure
 import akka.dispatch.NullMessage
+import scala.concurrent.ExecutionContext
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -119,7 +120,7 @@ trait ActorContext extends ActorRefFactory {
    * Returns the dispatcher (MessageDispatcher) that is used for this Actor.
    * Importing this member will place a implicit MessageDispatcher in scope.
    */
-  implicit def dispatcher: MessageDispatcher
+  implicit def dispatcher: ExecutionContext
 
   /**
    * The system that the actor belongs to.
@@ -408,10 +409,8 @@ private[akka] class ActorCell(
         publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
       msg.message match {
-        case Failed(cause, uid) ⇒ handleFailure(sender, cause, uid)
-        case t: Terminated ⇒
-          if (t.addressTerminated) removeChildWhenToAddressTerminated(t.actor)
-          watchedActorTerminated(t)
+        case Failed(cause, uid)         ⇒ handleFailure(sender, cause, uid)
+        case t: Terminated              ⇒ watchedActorTerminated(t)
         case AddressTerminated(address) ⇒ addressTerminated(address)
         case Kill                       ⇒ throw new ActorKilledException("Kill")
         case PoisonPill                 ⇒ self.stop()
@@ -420,18 +419,6 @@ private[akka] class ActorCell(
         case SelectChildPattern(p, m)   ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
       }
     }
-
-  /**
-   * When a parent is watching a child and it terminates due to AddressTerminated,
-   * it should be removed to support immediate creation of child with same name.
-   *
-   * For remote deployed actors ChildTerminated should be sent to the supervisor
-   * to clean up child references of remote deployed actors when remote node
-   * goes down, i.e. triggered by AddressTerminated, but that is the responsibility
-   * of the ActorRefProvider to handle that scenario.
-   */
-  private def removeChildWhenToAddressTerminated(child: ActorRef): Unit =
-    childrenRefs.getByRef(child) foreach { crs ⇒ removeChildAndGetStateChange(crs.child) }
 
   final def receiveMessage(msg: Any): Unit = behaviorStack.head.applyOrElse(msg, actor.unhandled)
 

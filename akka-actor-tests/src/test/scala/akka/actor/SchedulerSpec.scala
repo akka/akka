@@ -7,7 +7,7 @@ package akka.actor
 import language.postfixOps
 import java.io.Closeable
 import java.util.concurrent._
-import java.util.concurrent.atomic.AtomicInteger
+import atomic.{ AtomicReference, AtomicInteger }
 import scala.concurrent.{ future, Await, ExecutionContext }
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
@@ -210,7 +210,10 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       collectCancellable(system.scheduler.schedule(1 second, 300 milliseconds, actor, Msg))
       Await.ready(ticks, 3 seconds)
 
-      (System.nanoTime() - startTime).nanos.toMillis must be(1800L plusOrMinus 199)
+      // LARS is a bit more aggressive in scheduling recurring tasks at the right
+      // frequency and may execute them a little earlier; the actual expected timing 
+      // is 1599ms on a fast machine or 1699ms on a loaded one (plus some room for jenkins)
+      (System.nanoTime() - startTime).nanos.toMillis must be(1750L plusOrMinus 250)
     }
 
     "adjust for scheduler inaccuracy" taggedAs TimingTest in {
@@ -440,7 +443,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       withScheduler() { (sched, driver) ⇒
         import system.dispatcher
         val counter = new AtomicInteger
-        future { Thread.sleep(5); sched.close() }
+        future { Thread.sleep(5); driver.close(); sched.close() }
         val headroom = 200
         var overrun = headroom
         val cap = 1000000
@@ -463,6 +466,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
     def expectWait(d: FiniteDuration) { expectWait() must be(d) }
     def probe: TestProbe
     def step: FiniteDuration
+    def close(): Unit
   }
 
   val localEC = new ExecutionContext {
@@ -472,7 +476,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
 
   def withScheduler(start: Long = 0L, config: Config = ConfigFactory.empty)(thunk: (Scheduler with Closeable, Driver) ⇒ Unit): Unit = {
     import akka.actor.{ LightArrayRevolverScheduler ⇒ LARS }
-    val lbq = new LinkedBlockingQueue[Long]
+    val lbq = new AtomicReference[LinkedBlockingQueue[Long]](new LinkedBlockingQueue[Long])
     val prb = TestProbe()
     val tf = system.asInstanceOf[ActorSystemImpl].threadFactory
     val sched =
@@ -484,26 +488,39 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
         override protected def waitNanos(ns: Long): Unit = {
           // println(s"waiting $ns")
           prb.ref ! ns
-          try time += lbq.take()
+          try time += (lbq.get match {
+            case q: LinkedBlockingQueue[Long] ⇒ q.take()
+            case _                            ⇒ 0L
+          })
           catch {
             case _: InterruptedException ⇒ Thread.currentThread.interrupt()
           }
         }
       }
     val driver = new Driver {
-      def wakeUp(d: FiniteDuration) { lbq.offer(d.toNanos) }
+      def wakeUp(d: FiniteDuration) = lbq.get match {
+        case q: LinkedBlockingQueue[Long] ⇒ q.offer(d.toNanos)
+        case _                            ⇒
+      }
       def expectWait(): FiniteDuration = probe.expectMsgType[Long].nanos
       def probe = prb
       def step = sched.TickDuration
+      def close() = lbq.getAndSet(null) match {
+        case q: LinkedBlockingQueue[Long] ⇒ q.offer(0L)
+        case _                            ⇒
+      }
     }
     driver.expectWait()
     try thunk(sched, driver)
     catch {
       case NonFatal(ex) ⇒
-        try sched.close()
-        catch { case _: Exception ⇒ }
+        try {
+          driver.close()
+          sched.close()
+        } catch { case _: Exception ⇒ }
         throw ex
     }
+    driver.close()
     sched.close()
   }
 

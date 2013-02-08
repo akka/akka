@@ -25,14 +25,16 @@ class RemoteConfigSpec extends AkkaSpec(
       val settings = RARP(system).provider.remoteSettings
       import settings._
 
-      StartupTimeout must be === Timeout(5.seconds)
-      ShutdownTimeout must be === Timeout(5.seconds)
+      StartupTimeout must be === Timeout(10.seconds)
+      ShutdownTimeout must be === Timeout(10.seconds)
       FlushWait must be === 2.seconds
       UsePassiveConnections must be(true)
       UntrustedMode must be(false)
       LogRemoteLifecycleEvents must be(false)
       LogReceive must be(false)
       LogSend must be(false)
+      RetryGateClosedFor must be === 0.seconds
+      UnknownAddressGateClosedFor must be === 60.seconds
       MaximumRetriesInWindow must be === 5
       RetryWindow must be === 3.seconds
       BackoffPeriod must be === 10.milliseconds
@@ -45,13 +47,16 @@ class RemoteConfigSpec extends AkkaSpec(
       import settings._
 
       WaitActivityEnabled must be(true)
-      FailureDetectorThreshold must be === 7
-      FailureDetectorMaxSampleSize must be === 100
-      FailureDetectorStdDeviation must be === 100.milliseconds
+      FailureDetectorImplementationClass must be(classOf[PhiAccrualFailureDetector].getName)
       AcceptableHeartBeatPause must be === 3.seconds
       HeartBeatInterval must be === 1.seconds
       RequireCookie must be(false)
       SecureCookie must be === ""
+
+      FailureDetectorConfig.getDouble("threshold") must be(7.0 plusOrMinus 0.0001)
+      FailureDetectorConfig.getInt("max-sample-size") must be(100)
+      Duration(FailureDetectorConfig.getMilliseconds("min-std-deviation"), MILLISECONDS) must be(100 millis)
+
     }
 
     "contain correct configuration values in reference.conf" ignore {

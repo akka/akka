@@ -37,7 +37,7 @@ private[akka] class RepointableActorRef(
 
   /*
    * H E R E   B E   D R A G O N S !
-   * 
+   *
    * There are two main functions of a Cell: message queueing and child lookup.
    * When switching out the UnstartedCell for its real replacement, the former
    * must be switched after all messages have been drained from the temporary
@@ -92,8 +92,8 @@ private[akka] class RepointableActorRef(
     underlying match {
       case u: UnstartedCell ⇒
         /*
-         * The problem here was that if the real actor (which will start running 
-         * at cell.start()) creates children in its constructor, then this may 
+         * The problem here was that if the real actor (which will start running
+         * at cell.start()) creates children in its constructor, then this may
          * happen before the swapCell in u.replaceWith, meaning that those
          * children cannot be looked up immediately, e.g. if they shall become
          * routees.
@@ -166,7 +166,7 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
                                   val uid: Int) extends Cell {
 
   /*
-   * This lock protects all accesses to this cell’s queues. It also ensures 
+   * This lock protects all accesses to this cell’s queues. It also ensures
    * safe switching to the started ActorCell.
    */
   private[this] final val lock = new ReentrantLock
@@ -211,12 +211,12 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
           cell.sendMessage(msg)
         } else if (!queue.offer(msg)) {
           system.eventStream.publish(Warning(self.path.toString, getClass, "dropping message of type " + msg.message.getClass + " due to enqueue failure"))
-          system.deadLetters ! DeadLetter(msg.message, msg.sender, self)
+          system.deadLetters.tell(DeadLetter(msg.message, msg.sender, self), msg.sender)
         } else if (Mailbox.debug) println(s"$self temp queueing ${msg.message} from ${msg.sender}")
       } finally lock.unlock()
     } else {
       system.eventStream.publish(Warning(self.path.toString, getClass, "dropping message of type" + msg.message.getClass + " due to lock timeout"))
-      system.deadLetters ! DeadLetter(msg.message, msg.sender, self)
+      system.deadLetters.tell(DeadLetter(msg.message, msg.sender, self), msg.sender)
     }
   }
 
