@@ -44,8 +44,8 @@ public class RemoteDeploymentDocTestBase {
   @Test
   public void demonstrateDeployment() {
     //#make-address
-    Address addr = new Address("akka", "sys", "host", 1234);
-    addr = AddressFromURIString.parse("akka://sys@host:1234"); // the same
+    Address addr = new Address("akka.tcp", "sys", "host", 1234);
+    addr = AddressFromURIString.parse("akka.tcp://sys@host:1234"); // the same
     //#make-address
     //#deploy
     ActorRef ref = system.actorOf(new Props(SampleActor.class).withDeploy(
@@ -66,7 +66,7 @@ public class RemoteDeploymentDocTestBase {
   @Test
   public void demonstrateProgrammaticConfig() {
     //#programmatic
-    ConfigFactory.parseString("akka.remote.netty.hostname=\"1.2.3.4\"")
+    ConfigFactory.parseString("akka.remote.netty.tcp.hostname=\"1.2.3.4\"")
         .withFallback(ConfigFactory.load());
     //#programmatic
   }

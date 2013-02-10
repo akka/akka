@@ -381,7 +381,7 @@ its identity (i.e. the path which was looked up).
 
 Remote actor addresses may also be looked up, if remoting is enabled::
 
-  context.actorFor("akka://app@otherhost:1234/user/serviceB")
+  context.actorFor("akka.tcp://app@otherhost:1234/user/serviceB")
 
 These look-ups return a (possibly remote) actor reference immediately, so you
 will have to send to it and await a reply in order to verify that ``serviceB``
