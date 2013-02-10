@@ -342,7 +342,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
 
   var latestGossip: Gossip = Gossip.empty
   var latestConvergedGossip: Gossip = Gossip.empty
-  var memberEvents: Seq[MemberEvent] = Seq.empty
+  var bufferedEvents: IndexedSeq[ClusterDomainEvent] = Vector.empty
 
   def receive = {
     case PublishChanges(newGossip)            ⇒ publishChanges(newGossip)
@@ -404,14 +404,16 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     val newMemberEvents = diffMemberEvents(oldGossip, newGossip)
     convertToInstantMemberEvents(newMemberEvents) foreach publish
     // buffer up the MemberEvents waiting for convergence
-    memberEvents ++= newMemberEvents
-    // if we have convergence then publish the MemberEvents and possibly a LeaderChanged
+    bufferedEvents ++= newMemberEvents
+    // buffer up the LeaderChanged waiting for convergence
+    bufferedEvents ++= diffLeader(oldGossip, newGossip)
+    // if we have convergence then publish the MemberEvents and LeaderChanged
     if (newGossip.convergence) {
       val previousConvergedGossip = latestConvergedGossip
       latestConvergedGossip = newGossip
-      memberEvents foreach { event ⇒
+      bufferedEvents foreach { event ⇒
         event match {
-          case m @ (MemberDowned(_) | MemberRemoved(_)) ⇒
+          case m: MemberEvent if m.isInstanceOf[MemberDowned] || m.isInstanceOf[MemberRemoved] ⇒
             // TODO MemberDowned match should probably be covered by MemberRemoved, see ticket #2788
             //   but right now we don't change Downed to Removed
             publish(event)
@@ -420,8 +422,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
           case _ ⇒ publish(event)
         }
       }
-      memberEvents = Seq.empty
-      diffLeader(previousConvergedGossip, latestConvergedGossip) foreach publish
+      bufferedEvents = Vector.empty
     }
     // publish internal SeenState for testing purposes
     diffSeen(oldGossip, newGossip) foreach publish
