@@ -3,14 +3,67 @@
 IO (Scala)
 ==========
 
-
 Introduction
 ------------
 
+The ``akka.io`` package has been developed in collaboration between the Akka
+and `spray.io`_ teams. Its design incorporates the experiences with the
+``spray-io`` module along with improvements that were jointly developed for
+more general consumption as an actor-based service.
+
 This documentation is in progress and some sections may be incomplete. More will be coming.
 
-Components
-----------
+.. note::
+  The old IO implementation has been deprecated and its documentation has been moved: :ref:`io-scala-old`
+
+Terminology, Concepts
+---------------------
+The I/O API is completely actor based, meaning that all operations are implemented as message passing instead of
+direct method calls. Every I/O driver (TCP, UDP) has a special actor, called *manager* that serves
+as the entry point for the API. The manager is accessible through an extension, for example the following code
+looks up the TCP manager and returns its ``ActorRef``:
+
+.. code-block:: scala
+
+  import akka.io.IO
+  import akka.io.Tcp
+  val tcpManager = IO(Tcp)
+
+For various I/O commands the manager instantiates worker actors that will expose themselves to the user of the
+API by replying to the command. For example after a ``Connect`` command sent to the TCP manager the manager creates
+an actor representing the TCP connection. All operations related to the given TCP connections can be invoked by sending
+messages to the connection actor which announces itself by sending a ``Connected`` message.
+
+DeathWatch and Resource Management
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Worker actors usually need a user-side counterpart actor listening for events (such events could be inbound connections,
+incoming bytes or acknowledgements for writes). These worker actors *watch* their listener counterparts, therefore the
+resources assigned to them are automatically released when the listener stops. This design makes the API more robust
+against resource leaks.
+
+Write models (Ack, Nack)
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Basically all of the I/O devices have a maximum throughput which limits the frequency and size of writes. When an
+application tries to push more data then a device can handle, the driver has to buffer all bytes that the device has
+not yet been able to write. With this approach it is possible to handle short bursts of intensive writes --- but no buffer is infinite.
+Therefore, the driver has to notify the writer (a user-side actor) either that no further writes are possible, or by
+explicitly notifying it when the next chunk is possible to be written or buffered.
+
+Both of these models are available in the TCP and UDP implementations of Akka IO. Ack based flow control can be enabled
+by providing an ack object in the write message (``Write`` in the case of TCP and ``Send`` for UDP) that will be used by
+the worker to notify the writer about the success.
+
+If a write (or any other command) fails, the driver notifies the commander with a special message (``CommandFailed`` in
+the case of UDP and TCP). This message also serves as a means to notify the writer of a failed write. Please note, that
+in a Nack based flow-control setting the writer has to buffer some of the writes as the failure notification for a
+write ``W1`` might arrive after additional write commands ``W2`` ``W3`` has been sent.
+
+.. warning::
+  An acknowledged write does not mean acknowledged delivery or storage. The Ack/Nack
+  protocol described here is a means of flow control not error handling: receiving an Ack for a write signals that the
+  I/O driver is ready to accept a new one.
 
 ByteString
 ^^^^^^^^^^
@@ -57,7 +110,7 @@ After extracting data from a ``ByteIterator``, the remaining content can also be
 
 .. includecode:: code/docs/io/BinaryCoding.scala
    :include: rest-to-seq
-    
+
 with no copying from bytes to rest involved. In general, conversions from ByteString to ByteIterator and vice versa are O(1) for non-chunked ByteStrings and (at worst) O(nChunks) for chunked ByteStrings.
 
 Encoding of data also is very natural, using ``ByteStringBuilder``
@@ -65,180 +118,46 @@ Encoding of data also is very natural, using ``ByteStringBuilder``
 .. includecode:: code/docs/io/BinaryCoding.scala
    :include: encoding
 
- 
-The encoded data then can be sent over socket (see ``IOManager``):
- 
-.. includecode:: code/docs/io/BinaryCoding.scala
-   :include: sending
+Using TCP
+---------
 
+TODO
 
-IO.Handle
-^^^^^^^^^
+Connecting
+^^^^^^^^^^
 
-``IO.Handle`` is an immutable reference to a Java NIO ``Channel``. Passing mutable ``Channel``\s between ``Actor``\s could lead to unsafe behavior, so instead subclasses of the ``IO.Handle`` trait are used. Currently there are 2 concrete subclasses: ``IO.SocketHandle`` (representing a ``SocketChannel``) and ``IO.ServerHandle`` (representing a ``ServerSocketChannel``).
+TODO
 
-IOManager
-^^^^^^^^^
+Accepting connections
+^^^^^^^^^^^^^^^^^^^^^
 
-The ``IOManager`` takes care of the low level IO details. Each ``ActorSystem`` has it's own ``IOManager``, which can be accessed calling ``IOManager(system: ActorSystem)``. ``Actor``\s communicate with the ``IOManager`` with specific messages. The messages sent from an ``Actor`` to the ``IOManager`` are handled automatically when using certain methods and the messages sent from an ``IOManager`` are handled within an ``Actor``\'s ``receive`` method.
+TODO
 
-Connecting to a remote host:
+Using UDP
+---------
 
-.. code-block:: scala
+TODO
 
-  val address = new InetSocketAddress("remotehost", 80)
-  val socket = IOManager(actorSystem).connect(address)
+Connectionless UDP
+^^^^^^^^^^^^^^^^^^^
+    - Simple send
+    - Bind and send
 
-.. code-block:: scala
+Connection based UDP
+^^^^^^^^^^^^^^^^^^^^
 
-  val socket = IOManager(actorSystem).connect("remotehost", 80)
+.. note::
+  There is some performance benefit in using connection based UDP API over the connectionless one -- if its possible.
+  If there is a SecurityManager enabled on the system, every connectionless message send has to go through a security
+  check, while in the case of connection-based UDP the security check is cached after connection, thus writes does
+  not suffer an additional performance penalty.
 
-Creating a server:
+Integration with Iteratees
+--------------------------
 
-.. code-block:: scala
+Architecture in-depth
+---------------------
 
-  val address = new InetSocketAddress("localhost", 80)
-  val serverSocket = IOManager(actorSystem).listen(address)
+For further details on the design and internal architecture see :ref:`io-layer`.
 
-.. code-block:: scala
-
-  val serverSocket = IOManager(actorSystem).listen("localhost", 80)
-
-Receiving messages from the ``IOManager``:
-
-.. code-block:: scala
-
-  def receive = {
-
-    case IO.Listening(server, address) =>
-      println("The server is listening on socket " + address)
-
-    case IO.Connected(socket, address) =>
-      println("Successfully connected to " + address)
-
-    case IO.NewClient(server) =>
-      println("New incoming connection on server")
-      val socket = server.accept()
-      println("Writing to new client socket")
-      socket.write(bytes)
-      println("Closing socket")
-      socket.close()
-
-    case IO.Read(socket, bytes) =>
-      println("Received incoming data from socket")
-
-    case IO.Closed(socket: IO.SocketHandle, cause) =>
-      println("Socket has closed, cause: " + cause)
-
-    case IO.Closed(server: IO.ServerHandle, cause) =>
-      println("Server socket has closed, cause: " + cause)
-
-  }
-
-IO.Iteratee
-^^^^^^^^^^^
-
-Included with Akka's IO support is a basic implementation of ``Iteratee``\s. ``Iteratee``\s are an effective way of handling a stream of data without needing to wait for all the data to arrive. This is especially useful when dealing with non blocking IO since we will usually receive data in chunks which may not include enough information to process, or it may contain much more data than we currently need.
-
-This ``Iteratee`` implementation is much more basic than what is usually found. There is only support for ``ByteString`` input, and enumerators aren't used. The reason for this limited implementation is to reduce the amount of explicit type signatures needed and to keep things simple. It is important to note that Akka's ``Iteratee``\s are completely optional, incoming data can be handled in any way, including other ``Iteratee`` libraries.
-
-``Iteratee``\s work by processing the data that it is given and returning either the result (with any unused input) or a continuation if more input is needed. They are monadic, so methods like ``flatMap`` can be used to pass the result of an ``Iteratee`` to another.
-
-The basic ``Iteratee``\s included in the IO support can all be found in the ScalaDoc under ``akka.actor.IO``, and some of them are covered in the example below.
-
-Examples
---------
-
-Http Server
-^^^^^^^^^^^
-
-This example will create a simple high performance HTTP server. We begin with our imports:
-
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: imports
-
-Some commonly used constants:
-
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: constants
-
-And case classes to hold the resulting request:
-
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: request-class
-
-Now for our first ``Iteratee``. There are 3 main sections of a HTTP request: the request line, the headers, and an optional body. The main request ``Iteratee`` handles each section separately:
-
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: read-request
-
-In the above code ``readRequest`` takes the results of 3 different ``Iteratees`` (``readRequestLine``, ``readHeaders``, ``readBody``) and combines them into a single ``Request`` object. ``readRequestLine`` actually returns a tuple, so we extract it's individual components. ``readBody`` depends on values contained within the header section, so we must pass those to the method.
-
-The request line has 3 parts to it: the HTTP method, the requested URI, and the HTTP version. The parts are separated by a single space, and the entire request line ends with a ``CRLF``.
-
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: read-request-line
-
-Reading the request method is simple as it is a single string ending in a space. The simple ``Iteratee`` that performs this is ``IO.takeUntil(delimiter: ByteString): Iteratee[ByteString]``. It keeps consuming input until the specified delimiter is found. Reading the HTTP version is also a simple string that ends with a ``CRLF``.
-
-The ``ascii`` method is a helper that takes a ``ByteString`` and parses it as a ``US-ASCII`` ``String``.
-
-Reading the request URI is a bit more complicated because we want to parse the individual components of the URI instead of just returning a simple string:
-
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: read-request-uri
-
-For this example we are only interested in handling absolute paths. To detect if we the URI is an absolute path we use ``IO.peek(length: Int): Iteratee[ByteString]``, which returns a ``ByteString`` of the request length but doesn't actually consume the input. We peek at the next bit of input and see if it matches our ``PATH`` constant (defined above as ``ByteString("/")``). If it doesn't match we throw an error, but for a more robust solution we would want to handle other valid URIs.
-
-Next we handle the path itself:
-
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: read-path
-
-The ``step`` method is a recursive method that takes a ``List`` of the accumulated path segments. It first checks if the remaining input starts with the ``PATH`` constant, and if it does, it drops that input, and returns the ``readUriPart`` ``Iteratee`` which has it's result added to the path segment accumulator and the ``step`` method is run again.
-
-If after reading in a path segment the next input does not start with a path, we reverse the accumulated segments and return it (dropping the last segment if it is blank).
-
-Following the path we read in the query (if it exists):
-
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: read-query
-
-It is much simpler than reading the path since we aren't doing any parsing of the query since there is no standard format of the query string.
-
-Both the path and query used the ``readUriPart`` ``Iteratee``, which is next:
-
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: read-uri-part
-
-Here we have several ``Set``\s that contain valid characters pulled from the URI spec. The ``readUriPart`` method takes a ``Set`` of valid characters (already mapped to ``Byte``\s) and will continue to match characters until it reaches on that is not part of the ``Set``. If it is a percent encoded character then that is handled as a valid character and processing continues, or else we are done collecting this part of the URI.
-
-Headers are next:
-
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: read-headers
-
-And if applicable, we read in the message body:
-
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: read-body
-
-Finally we get to the actual ``Actor``:
-
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: actor
-
-And it's companion object:
-
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: actor-companion
-
-And the OKResponse:
-
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: ok-response
-
-A ``main`` method to start everything up:
-
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: main
+.. _spray.io: http://spray.io
