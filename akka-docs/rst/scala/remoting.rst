@@ -363,13 +363,18 @@ It is possible to listen to events that occur in Akka Remote, and to subscribe/u
 you simply register as listener to the below described types in on the ``ActorSystem.eventStream``.
 
 .. note::
-    To subscribe to any remote event, subscribe to :meth:``RemotingLifecycleEvent`
-    To subscribe to events related only to the lifecycle of associations, subscribe to :meth:`akka.remote.AssociationEvent`
+
+    To subscribe to any remote event, subscribe to
+    :meth:`RemotingLifecycleEvent`.  To subscribe to events related only to
+    the lifecycle of associations, subscribe to
+    :meth:`akka.remote.AssociationEvent`.
 
 .. note::
-    The use of term "Association" instead of "Connection" reflects that the remoting subsystem may use
-    connectionless transports, but an association similar to transport layer connections is maintained between endpoints
-    by the Akka protocol.
+
+    The use of term "Association" instead of "Connection" reflects that the
+    remoting subsystem may use connectionless transports, but an association
+    similar to transport layer connections is maintained between endpoints by
+    the Akka protocol.
 
 By default an event listener is registered which logs all of the events
 described below. This default was chosen to help setting up a system, but it is
@@ -377,6 +382,7 @@ quite common to switch this logging off once that phase of the project is
 finished.
 
 .. note::
+
   In order to switch off the logging, set
   ``akka.remote.log-remote-lifecycle-events = off`` in your
   ``application.conf``.

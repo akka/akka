@@ -98,7 +98,9 @@ object AkkaBuild extends Build {
     id = "akka-dataflow",
     base = file("akka-dataflow"),
     dependencies = Seq(testkit % "test->test"),
-    settings = defaultSettings ++ scaladocSettings  ++ OSGi.dataflow ++ cpsPlugin
+    settings = defaultSettings ++ scaladocSettings  ++ OSGi.dataflow ++ cpsPlugin ++ Seq(
+      previousArtifact := akkaPreviousArtifact("akka-dataflow")
+    )
   )
 
   lazy val testkit = Project(
@@ -118,6 +120,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(testkit % "compile;test->test"),
     settings = defaultSettings ++ scaladocSettings  ++ Seq(
       autoCompilerPlugins := true,
+      publishArtifact in Compile := false,
       libraryDependencies ++= Dependencies.actorTests
     )
   )
@@ -129,15 +132,25 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ scaladocSettings ++ OSGi.remote ++ Seq(
       libraryDependencies ++= Dependencies.remote,
       // disable parallel tests
-      parallelExecution in Test := false
+      parallelExecution in Test := false,
+      previousArtifact := akkaPreviousArtifact("akka-remote")
+    )
+  )
+
+  lazy val multiNodeTests = Project(
+    id = "akka-multi-node-testkit",
+    base = file("akka-multi-node-testkit"),
+    dependencies = Seq(remote, testkit),
+    settings = defaultSettings ++ scaladocSettings ++ Seq(
+      previousArtifact := akkaPreviousArtifact("akka-multi-node-testkit")
     )
   )
 
   lazy val remoteTests = Project(
-    id = "akka-remote-tests-experimental",
+    id = "akka-remote-tests",
     base = file("akka-remote-tests"),
-    dependencies = Seq(remote, actorTests % "test->test", testkit),
-    settings = defaultSettings ++ scaladocSettings ++ multiJvmSettings ++ experimentalSettings ++ Seq(
+    dependencies = Seq(actorTests % "test->test", multiNodeTests),
+    settings = defaultSettings ++ scaladocSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.remoteTests,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -145,7 +158,8 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
-      previousArtifact := akkaPreviousArtifact("akka-remote")
+      publishArtifact in Compile := false,
+      previousArtifact := akkaPreviousArtifact("akka-remote-tests")
     )
   ) configs (MultiJvm)
 
@@ -161,7 +175,7 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
-      previousArtifact := akkaPreviousArtifact("akka-remote")
+      previousArtifact := akkaPreviousArtifact("akka-cluster-experimental")
     )
   ) configs (MultiJvm)
 
@@ -170,7 +184,8 @@ object AkkaBuild extends Build {
     base = file("akka-slf4j"),
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ scaladocSettings ++ OSGi.slf4j ++ Seq(
-      libraryDependencies ++= Dependencies.slf4j
+      libraryDependencies ++= Dependencies.slf4j,
+      previousArtifact := akkaPreviousArtifact("akka-slf4j")
     )
   )
 
@@ -412,6 +427,7 @@ object AkkaBuild extends Build {
       enableOutput in generateEpub in Sphinx := true,
       unmanagedSourceDirectories in Test <<= sourceDirectory in Sphinx apply { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
+      publishArtifact in Compile := false,
       unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")
     )
@@ -451,6 +467,7 @@ object AkkaBuild extends Build {
     base = file("akka-channels-tests"),
     dependencies = Seq(channels, testkit % "compile;test->test"),
     settings = defaultSettings ++ experimentalSettings ++ Seq(
+      publishArtifact in Compile := false,
       libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _)
     )
   )

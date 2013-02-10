@@ -543,7 +543,7 @@ How to Test
 :ref:`multi-node-testing` is useful for testing cluster applications.
 
 Set up your project according to the instructions in :ref:`multi-node-testing` and :ref:`multi-jvm-testing`, i.e.
-add the ``sbt-multi-jvm`` plugin and the dependency to ``akka-remote-tests-experimental``.
+add the ``sbt-multi-jvm`` plugin and the dependency to ``akka-multi-node-testkit``.
 
 First, as described in :ref:`multi-node-testing`, we need some scaffolding to configure the ``MultiNodeSpec``.
 Define the participating roles and their :ref:`cluster_configuration_scala` in an object extending ``MultiNodeConfig``:

@@ -31,16 +31,55 @@ Modules
 
 Akka is very modular and consists of several JARs containing different features.
 
-- ``akka-actor`` -- Classic Actors, Typed Actors, IO Actor etc.
-- ``akka-remote`` -- Remote Actors
-- ``akka-testkit`` -- Toolkit for testing Actor systems
-- ``akka-kernel`` -- Akka microkernel for running a bare-bones mini application server
-- ``akka-transactor`` -- Transactors - transactional actors, integrated with Scala STM
-- ``akka-agent`` -- Agents, integrated with Scala STM
-- ``akka-camel`` -- Apache Camel integration
-- ``akka-zeromq`` -- ZeroMQ integration
-- ``akka-slf4j`` -- SLF4J Logger (event bus listener)
-- ``akka-filebased-mailbox`` -- Akka durable mailbox (find more among community projects)
+- ``akka-actor`` – Classic Actors, Typed Actors, IO Actor etc.
+
+- ``akka-agent`` – Agents, integrated with Scala STM
+
+- ``akka-camel`` – Apache Camel integration
+
+- ``akka-dataflow`` – add-on to SIP-14 futures supporting implicit
+  continuation-passing style
+
+- ``akka-file-mailbox`` – Akka durable mailbox (find more among community
+  projects)
+
+- ``akka-kernel`` – Akka microkernel for running a bare-bones mini application
+  server
+
+- ``akka-mailboxes-common`` – common infrastructure for implementing durable
+  mailboxes
+
+- ``akka-osgi`` – base bundle for using Akka in OSGi containers, containing the
+  ``akka-actor`` classes
+
+- ``akka-osgi-aries`` – Aries blueprint for provisioning actor systems
+
+- ``akka-remote`` – Remote Actors
+
+- ``akka-slf4j`` – SLF4J Logger (event bus listener)
+
+- ``akka-testkit`` – Toolkit for testing Actor systems
+
+- ``akka-transactor`` – Transactors - transactional actors, integrated with
+  Scala STM
+
+- ``akka-zeromq`` – ZeroMQ integration
+
+In addition to these stable modules there are several which are on their way
+into the stable core but are still marked “experimental” at this point. This
+does not mean that they do not function as intended, it primarily means that
+their API has not yet solidified enough in order to be considered frozen. You
+can help accelerating this process by giving feedback on these modules on our
+mailing list.
+
+- ``akka-channels-experimental`` – Typed Channels on top of untyped Actors,
+  using Scala 2.10 macros
+
+- ``akka-cluster-experimental`` – Cluster membership management, leader
+  election, elastic routers.
+
+- ``akka-contrib`` – an assortment of contributions which may or may not be
+  moved into core modules, see :ref:`akka-contrib` for more details.
 
 The filename of the actual JAR is for example ``@jarName@`` (and analog for
 the other modules).
