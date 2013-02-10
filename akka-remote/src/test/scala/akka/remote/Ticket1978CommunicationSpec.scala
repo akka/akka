@@ -48,7 +48,6 @@ object Configuration {
           protocol = "TLSv1"
           random-number-generator = "%s"
           enabled-algorithms = [%s]
-          sha1prng-random-source = "/dev/./urandom"
         }
       }
     }
@@ -65,8 +64,7 @@ object Configuration {
       val fullConfig = config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty.ssl.ssl")
       val settings = new SSLSettings(fullConfig)
 
-      val rng = NettySSLSupport.initializeCustomSecureRandom(settings.SSLRandomNumberGenerator,
-        settings.SSLRandomSource, NoLogging)
+      val rng = NettySSLSupport.initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, NoLogging)
 
       rng.nextInt() // Has to work
       settings.SSLRandomNumberGenerator foreach {

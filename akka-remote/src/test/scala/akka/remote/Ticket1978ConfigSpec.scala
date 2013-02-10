@@ -19,7 +19,6 @@ class Ticket1978ConfigSpec extends AkkaSpec with ImplicitSender with DefaultTime
       protocol = "TLSv1"
       random-number-generator = "AES128CounterSecureRNG"
       enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
-      sha1prng-random-source = "/dev/./urandom"
     }""")
 
   "SSL Remoting" must {
@@ -32,7 +31,6 @@ class Ticket1978ConfigSpec extends AkkaSpec with ImplicitSender with DefaultTime
       settings.SSLTrustStorePassword must be(Some("changeme"))
       settings.SSLProtocol must be(Some("TLSv1"))
       settings.SSLEnabledAlgorithms must be(Set("TLS_RSA_WITH_AES_128_CBC_SHA"))
-      settings.SSLRandomSource must be(Some("/dev/./urandom"))
       settings.SSLRandomNumberGenerator must be(Some("AES128CounterSecureRNG"))
     }
   }
