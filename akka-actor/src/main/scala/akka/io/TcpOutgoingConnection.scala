@@ -31,7 +31,7 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
 
   def receive: Receive = {
     case ChannelRegistered ⇒
-      log.debug("Attempting connection to {}", remoteAddress)
+      log.debug("Attempting connection to [{}]", remoteAddress)
       if (channel.connect(remoteAddress))
         completeConnect(commander, options)
       else {

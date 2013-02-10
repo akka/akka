@@ -9,7 +9,7 @@ import akka.io.UdpConn.Connect
 
 class UdpConnManager(udpConn: UdpConnExt) extends SelectorBasedManager(udpConn.settings, udpConn.settings.NrOfSelectors) {
 
-  def receive = workerForCommand {
+  def receive = workerForCommandHandler {
     case c: Connect ⇒
       val commander = sender
       Props(new UdpConnection(udpConn, commander, c))

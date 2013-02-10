@@ -14,7 +14,7 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import org.scalatest.matchers._
-import Tcp._
+import akka.io.Tcp._
 import akka.io.SelectionHandler._
 import TestUtils._
 import akka.actor.{ ActorRef, PoisonPill, Terminated }
@@ -169,6 +169,9 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
      */
     "stop writing in cases of backpressure and resume afterwards" in
       withEstablishedConnection(clientSocketOptions = List(SO.ReceiveBufferSize(1000000))) { setup ⇒
+        info("Currently ignored as SO_SNDBUF is usually a lower bound on the send buffer so the test fails as no real " +
+          "backpressure present.")
+        pending
         ignoreIfWindows()
         import setup._
         object Ack1

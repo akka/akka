@@ -44,7 +44,7 @@ import akka.io.UdpFF._
  */
 private[io] class UdpFFManager(udpFF: UdpFFExt) extends SelectorBasedManager(udpFF.settings, udpFF.settings.NrOfSelectors) {
 
-  def receive = workerForCommand {
+  def receive = workerForCommandHandler {
     case b: Bind ⇒
       val commander = sender
       Props(new UdpFFListener(udpFF, commander, b))

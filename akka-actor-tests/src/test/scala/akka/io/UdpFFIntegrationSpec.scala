@@ -34,10 +34,8 @@ class UdpFFIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with Implici
       val data = ByteString("To infinity and beyond!")
       simpleSender ! Send(data, serverAddress)
 
-      expectMsgPF() {
-        case Received(d, _) ⇒
-          d must be === data
-      }
+      expectMsgType[Received].data must be === data
+
     }
 
     "be able to send with binding" in {

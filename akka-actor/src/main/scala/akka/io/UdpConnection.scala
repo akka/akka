@@ -33,18 +33,19 @@ private[io] class UdpConnection(val udpConn: UdpConnExt,
     val socket = datagramChannel.socket
     options.foreach(_.beforeDatagramBind(socket))
     try {
-      localAddress.foreach { socket.bind _ } // will blow up the actor constructor if the bind fails
+      localAddress foreach socket.bind
       datagramChannel.connect(remoteAddress)
     } catch {
       case NonFatal(e) ⇒
-        log.error(e, "Failure while connecting UDP channel")
+        log.error(e, "Failure while connecting UDP channel to remote address [{}] local address [{}]",
+          remoteAddress, localAddress.map { _.toString }.getOrElse("undefined"))
         commander ! CommandFailed(connect)
         context.stop(self)
     }
     datagramChannel
   }
   selector ! RegisterChannel(channel, OP_READ)
-  log.debug("Successfully connected to {}", remoteAddress)
+  log.debug("Successfully connected to [{}]", remoteAddress)
 
   def receive = {
     case ChannelRegistered ⇒
@@ -58,10 +59,10 @@ private[io] class UdpConnection(val udpConn: UdpConnExt,
     case ChannelReadable ⇒ doRead(handler)
 
     case Close ⇒
-      log.debug("Closing UDP connection to {}", remoteAddress)
+      log.debug("Closing UDP connection to [{}]", remoteAddress)
       channel.close()
       sender ! Disconnected
-      log.debug("Connection closed to {}, stopping listener", remoteAddress)
+      log.debug("Connection closed to [{}], stopping listener", remoteAddress)
       context.stop(self)
 
     case send: Send if writePending ⇒
@@ -106,7 +107,7 @@ private[io] class UdpConnection(val udpConn: UdpConnExt,
       send.payload.copyToBuffer(buffer)
       buffer.flip()
       val writtenBytes = channel.write(buffer)
-      if (TraceLogging) log.debug("Wrote {} bytes to channel", writtenBytes)
+      if (TraceLogging) log.debug("Wrote [{}] bytes to channel", writtenBytes)
 
       // Datagram channel either sends the whole message, or nothing
       if (writtenBytes == 0) commander ! CommandFailed(send)

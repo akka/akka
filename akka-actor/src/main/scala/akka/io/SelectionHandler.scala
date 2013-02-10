@@ -94,15 +94,16 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
 
   override def postStop() {
     try {
-      val iterator = selector.keys.iterator
-      while (iterator.hasNext) {
-        val key = iterator.next()
-        try key.channel.close()
-        catch {
-          case NonFatal(e) ⇒ log.error(e, "Error closing channel")
+      try {
+        val iterator = selector.keys.iterator
+        while (iterator.hasNext) {
+          val key = iterator.next()
+          try key.channel.close()
+          catch {
+            case NonFatal(e) ⇒ log.error(e, "Error closing channel")
+          }
         }
-      }
-      selector.close()
+      } finally selector.close()
     } catch {
       case NonFatal(e) ⇒ log.error(e, "Error closing selector")
     }
@@ -112,11 +113,11 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
   override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
   def withCapacityProtection(cmd: WorkerForCommand, retriesLeft: Int)(body: ⇒ Unit): Unit = {
-    log.debug("Executing {}", cmd)
+    log.debug("Executing [{}]", cmd)
     if (MaxChannelsPerSelector == -1 || childrenKeys.size < MaxChannelsPerSelector) {
       body
     } else {
-      log.warning("Rejecting '{}' with {} retries left, retrying...", cmd, retriesLeft)
+      log.warning("Rejecting [{}] with [{}] retries left, retrying...", cmd, retriesLeft)
       context.parent forward Retry(cmd, retriesLeft - 1)
     }
   }
@@ -198,9 +199,9 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
               case OP_READ_AND_WRITE         ⇒ connection ! ChannelWritable; connection ! ChannelReadable
               case x if (x & OP_ACCEPT) > 0  ⇒ connection ! ChannelAcceptable
               case x if (x & OP_CONNECT) > 0 ⇒ connection ! ChannelConnectable
-              case x                         ⇒ log.warning("Invalid readyOps: {}", x)
+              case x                         ⇒ log.warning("Invalid readyOps: [{}]", x)
             }
-          } else log.warning("Invalid selection key: {}", key)
+          } else log.warning("Invalid selection key: [{}]", key)
         }
         keys.clear() // we need to remove the selected keys from the set, otherwise they remain selected
       }
@@ -217,7 +218,7 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
       try tryRun()
       catch {
         case _: java.nio.channels.ClosedSelectorException ⇒ // ok, expected during shutdown
-        case NonFatal(e)                                  ⇒ log.error(e, "Error during selector management task: {}", e)
+        case NonFatal(e)                                  ⇒ log.error(e, "Error during selector management task: [{}]", e)
       }
     }
   }

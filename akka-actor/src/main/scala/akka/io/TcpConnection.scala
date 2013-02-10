@@ -40,7 +40,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
   /** connection established, waiting for registration from user handler */
   def waitingForRegistration(commander: ActorRef): Receive = {
     case Register(handler) ⇒
-      if (TraceLogging) log.debug("{} registered as connection handler", handler)
+      if (TraceLogging) log.debug("[{}] registered as connection handler", handler)
       doRead(handler, None) // immediately try reading
 
       context.setReceiveTimeout(Duration.Undefined)
@@ -54,7 +54,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
     case ReceiveTimeout ⇒
       // after sending `Register` user should watch this actor to make sure
       // it didn't die because of the timeout
-      log.warning("Configured registration timeout of {} expired, stopping", RegisterTimeout)
+      log.warning("Configured registration timeout of [{}] expired, stopping", RegisterTimeout)
       context.stop(self)
   }
 
@@ -145,12 +145,12 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
         if (TraceLogging) log.debug("Read nothing.")
         selector ! ReadInterest
       case GotCompleteData(data) ⇒
-        if (TraceLogging) log.debug("Read {} bytes.", data.length)
+        if (TraceLogging) log.debug("Read [{}] bytes.", data.length)
 
         handler ! Received(data)
         selector ! ReadInterest
       case MoreDataWaiting(data) ⇒
-        if (TraceLogging) log.debug("Read {} bytes. More data waiting.", data.length)
+        if (TraceLogging) log.debug("Read [{}] bytes. More data waiting.", data.length)
 
         handler ! Received(data)
         self ! ChannelReadable
@@ -167,7 +167,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
       val toWrite = pendingWrite.buffer.remaining()
       require(toWrite != 0)
       val writtenBytes = channel.write(pendingWrite.buffer)
-      if (TraceLogging) log.debug("Wrote {} bytes to channel", writtenBytes)
+      if (TraceLogging) log.debug("Wrote [{}] bytes to channel", writtenBytes)
 
       pendingWrite = pendingWrite.consume(writtenBytes)
 
@@ -248,7 +248,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
       case NonFatal(e) ⇒
         // setSoLinger can fail due to http://bugs.sun.com/view_bug.do?bug_id=6799574
         // (also affected: OS/X Java 1.6.0_37)
-        if (TraceLogging) log.debug("setSoLinger(true, 0) failed with {}", e)
+        if (TraceLogging) log.debug("setSoLinger(true, 0) failed with [{}]", e)
     }
     channel.close()
   }

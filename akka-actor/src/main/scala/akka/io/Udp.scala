@@ -28,8 +28,8 @@ object Udp {
 
     val NrOfSelectors = getInt("nr-of-selectors")
     val DirectBufferSize = getIntBytes("direct-buffer-size")
-    val MaxDirectBufferPoolSize = getInt("max-direct-buffer-pool-size")
-    val BatchReceiveLimit = getInt("batch-receive-limit")
+    val MaxDirectBufferPoolSize = getInt("direct-buffer-pool-limit")
+    val BatchReceiveLimit = getInt("receive-throughput")
 
     val ManagementDispatcher = getString("management-dispatcher")
 

@@ -11,11 +11,12 @@ import java.nio.channels.DatagramChannel
 private[io] trait WithUdpFFSend {
   me: Actor with ActorLogging ⇒
 
-  var pendingSend: (Send, ActorRef) = null
+  var pendingSend: Send = null
+  var pendingCommander: ActorRef = null
   // If send fails first, we allow a second go after selected writable, but no more. This flag signals that
   // pending send was already tried once.
   var retriedSend = false
-  def writePending = pendingSend ne null
+  def hasWritePending = pendingSend ne null
 
   def selector: ActorRef
   def channel: DatagramChannel
@@ -26,7 +27,7 @@ private[io] trait WithUdpFFSend {
 
   def sendHandlers: Receive = {
 
-    case send: Send if writePending ⇒
+    case send: Send if hasWritePending ⇒
       if (TraceLogging) log.debug("Dropping write because queue is full")
       sender ! CommandFailed(send)
 
@@ -35,10 +36,11 @@ private[io] trait WithUdpFFSend {
         sender ! send.ack
 
     case send: Send ⇒
-      pendingSend = (send, sender)
+      pendingSend = send
+      pendingCommander = sender
       doSend()
 
-    case ChannelWritable ⇒ doSend()
+    case ChannelWritable ⇒ if (hasWritePending) doSend()
 
   }
 
@@ -46,24 +48,24 @@ private[io] trait WithUdpFFSend {
 
     val buffer = udpFF.bufferPool.acquire()
     try {
-      val (send, commander) = pendingSend
       buffer.clear()
-      send.payload.copyToBuffer(buffer)
+      pendingSend.payload.copyToBuffer(buffer)
       buffer.flip()
-      val writtenBytes = channel.send(buffer, send.target)
-      if (TraceLogging) log.debug("Wrote {} bytes to channel", writtenBytes)
+      val writtenBytes = channel.send(buffer, pendingSend.target)
+      if (TraceLogging) log.debug("Wrote [{}] bytes to channel", writtenBytes)
 
       // Datagram channel either sends the whole message, or nothing
       if (writtenBytes == 0) {
         if (retriedSend) {
-          commander ! CommandFailed(send)
+          pendingCommander ! CommandFailed(pendingSend)
           retriedSend = false
           pendingSend = null
+          pendingCommander = null
         } else {
           selector ! WriteInterest
           retriedSend = true
         }
-      } else if (send.wantsAck) commander ! send.ack
+      } else if (pendingSend.wantsAck) pendingCommander ! pendingSend.ack
 
     } finally {
       udpFF.bufferPool.release(buffer)

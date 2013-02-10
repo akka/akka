@@ -13,7 +13,7 @@ import scala.collection.immutable
 object UdpFF extends ExtensionKey[UdpFFExt] {
 
   // Java API
-  override def get(system: ActorSystem): UdpFFExt = system.extension(this)
+  override def get(system: ActorSystem): UdpFFExt = super.get(system)
 
   trait Command extends IO.HasFailureMessage {
     def failureMessage = CommandFailed(this)
@@ -53,9 +53,9 @@ object UdpFF extends ExtensionKey[UdpFFExt] {
 
 class UdpFFExt(system: ExtendedActorSystem) extends IO.Extension {
 
-  val settings = new UdpSettings(system.settings.config.getConfig("akka.io.udp-fire-and-forget"))
+  val settings: UdpSettings = new UdpSettings(system.settings.config.getConfig("akka.io.udp-fire-and-forget"))
 
-  val manager = {
+  val manager: ActorRef = {
     system.asInstanceOf[ActorSystemImpl].systemActorOf(
       props = Props(new UdpFFManager(this)),
       name = "IO-UDP-FF")

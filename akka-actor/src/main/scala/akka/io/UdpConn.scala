@@ -12,7 +12,7 @@ import scala.collection.immutable
 
 object UdpConn extends ExtensionKey[UdpConnExt] {
   // Java API
-  override def get(system: ActorSystem): UdpConnExt = system.extension(this)
+  override def get(system: ActorSystem): UdpConnExt = super.get(system)
 
   trait Command extends IO.HasFailureMessage {
     def failureMessage = CommandFailed(this)
@@ -51,9 +51,9 @@ object UdpConn extends ExtensionKey[UdpConnExt] {
 
 class UdpConnExt(system: ExtendedActorSystem) extends IO.Extension {
 
-  val settings = new UdpSettings(system.settings.config.getConfig("akka.io.udp-fire-and-forget"))
+  val settings: UdpSettings = new UdpSettings(system.settings.config.getConfig("akka.io.udp-fire-and-forget"))
 
-  val manager = {
+  val manager: ActorRef = {
     system.asInstanceOf[ActorSystemImpl].systemActorOf(
       props = Props(new UdpConnManager(this)),
       name = "IO-UDP-CONN")

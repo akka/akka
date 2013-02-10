@@ -16,7 +16,7 @@ import akka.actor._
 object Tcp extends ExtensionKey[TcpExt] {
 
   // Java API
-  override def get(system: ActorSystem): TcpExt = system.extension(this)
+  override def get(system: ActorSystem): TcpExt = super.get(system)
 
   // shared socket options
   object SO extends Inet.SoForwarders {
@@ -124,12 +124,12 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
 
     val BatchAcceptLimit = getInt("batch-accept-limit")
     val DirectBufferSize = getIntBytes("direct-buffer-size")
-    val MaxDirectBufferPoolSize = getInt("max-direct-buffer-pool-size")
+    val MaxDirectBufferPoolSize = getInt("direct-buffer-pool-limit")
     val RegisterTimeout = getString("register-timeout") match {
       case "infinite" ⇒ Duration.Undefined
       case x          ⇒ Duration(x)
     }
-    val ReceivedMessageSizeLimit = getString("received-message-size-limit") match {
+    val ReceivedMessageSizeLimit = getString("max-received-message-size") match {
       case "unlimited" ⇒ Int.MaxValue
       case x           ⇒ getIntBytes("received-message-size-limit")
     }
@@ -150,7 +150,7 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
     }
   }
 
-  val manager = {
+  val manager: ActorRef = {
     system.asInstanceOf[ActorSystemImpl].systemActorOf(
       props = Props(new TcpManager(this)).withDispatcher(Settings.ManagementDispatcher),
       name = "IO-TCP")

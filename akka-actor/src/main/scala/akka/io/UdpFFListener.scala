@@ -35,13 +35,13 @@ private[io] class UdpFFListener(val udpFF: UdpFFExt,
     catch {
       case NonFatal(e) ⇒
         bindCommander ! CommandFailed(bind)
-        log.error(e, "Failed to bind UDP channel")
+        log.error(e, "Failed to bind UDP channel to endpoint [{}]", endpoint)
         context.stop(self)
     }
     datagramChannel
   }
   context.parent ! RegisterChannel(channel, OP_READ)
-  log.debug("Successfully bound to {}", endpoint)
+  log.debug("Successfully bound to [{}]", endpoint)
 
   def receive: Receive = {
     case ChannelRegistered ⇒
@@ -55,11 +55,12 @@ private[io] class UdpFFListener(val udpFF: UdpFFExt,
     case ChannelReadable ⇒ doReceive(handler)
 
     case Unbind ⇒
-      log.debug("Unbinding endpoint {}", endpoint)
-      channel.close()
-      sender ! Unbound
-      log.debug("Unbound endpoint {}, stopping listener", endpoint)
-      context.stop(self)
+      log.debug("Unbinding endpoint [{}]", endpoint)
+      try {
+        channel.close()
+        sender ! Unbound
+        log.debug("Unbound endpoint [{}], stopping listener", endpoint)
+      } finally context.stop(self)
   }
 
   def doReceive(handler: ActorRef): Unit = {

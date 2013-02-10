@@ -9,6 +9,7 @@ import akka.io.UdpFF._
 import akka.io.SelectionHandler.{ ChannelRegistered, RegisterChannel }
 import scala.collection.immutable
 import akka.io.Inet.SocketOption
+import scala.util.control.NonFatal
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
@@ -23,9 +24,7 @@ private[io] class UdpFFSender(val udpFF: UdpFFExt, options: immutable.Traversabl
     datagramChannel.configureBlocking(false)
     val socket = datagramChannel.socket
 
-    options foreach { o ⇒
-      o.beforeDatagramBind(socket)
-    }
+    options foreach { _.beforeDatagramBind(socket) }
 
     datagramChannel
   }
@@ -37,7 +36,13 @@ private[io] class UdpFFSender(val udpFF: UdpFFExt, options: immutable.Traversabl
       commander ! SimpleSendReady
   }
 
-  override def postStop(): Unit = if (channel.isOpen) channel.close()
+  override def postStop(): Unit = if (channel.isOpen) {
+    log.debug("Closing DatagramChannel after being stopped")
+    try channel.close()
+    catch {
+      case NonFatal(e) ⇒ log.error(e, "Error closing DatagramChannel")
+    }
+  }
 
   override def postRestart(reason: Throwable): Unit =
     throw new IllegalStateException("Restarting not supported for connection actors.")

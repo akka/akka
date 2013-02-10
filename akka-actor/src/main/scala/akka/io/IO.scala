@@ -33,7 +33,7 @@ object IO {
         WorkerForCommand(cmd, commander, props)
     }
 
-    def workerForCommand(pf: PartialFunction[Any, Props]): Receive = {
+    def workerForCommandHandler(pf: PartialFunction[Any, Props]): Receive = {
       case cmd: HasFailureMessage if pf.isDefinedAt(cmd) ⇒ selectorPool ! createWorkerMessage(pf)(cmd)
     }
   }
