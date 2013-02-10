@@ -39,7 +39,7 @@ class BalancingDispatcher(
   extends Dispatcher(_prerequisites, _id, throughput, throughputDeadlineTime, mailboxType, _executorServiceFactoryProvider, _shutdownTimeout) {
 
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   private[akka] val team = new ConcurrentSkipListSet[ActorCell](
     Helpers.identityHashComparator(new Comparator[ActorCell] {
@@ -47,7 +47,7 @@ class BalancingDispatcher(
     }))
 
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   private[akka] val messageQueue: MessageQueue = mailboxType.create(None, None)
 

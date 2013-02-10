@@ -180,7 +180,7 @@ object ActorSystem {
   }
 
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   private[akka] def findClassLoader(): ClassLoader = {
     def findCaller(get: Int ⇒ Class[_]): ClassLoader =

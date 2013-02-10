@@ -23,6 +23,7 @@ import scala.collection.immutable
 import akka.remote.transport.ActorTransportAdapter._
 import akka.ConfigurationException
 
+@SerialVersionUID(1L)
 class AkkaProtocolException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with OnlyCauseStackTrace {
   def this(msg: String) = this(msg, null)
 }

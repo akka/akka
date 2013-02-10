@@ -167,9 +167,9 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   }
 
   /**
-   * Represents the serialized form of a MethodCall, uses readResolve and writeReplace to marshall the call
+   * INTERNAL API
    *
-   * INTERNAL USE ONLY
+   * Represents the serialized form of a MethodCall, uses readResolve and writeReplace to marshall the call
    */
   private[akka] case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], serializedParameters: Array[(Int, Class[_], Array[Byte])]) {
 
@@ -240,9 +240,9 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   implicit def dispatcher = context.dispatcher
 
   /**
-   * Implementation of TypedActor as an Actor
+   * INTERNAL API
    *
-   * INTERNAL USE ONLY
+   * Implementation of TypedActor as an Actor
    */
   private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyVar: AtomVar[R], createInstance: ⇒ T) extends Actor {
     val me = withContext[T](createInstance)
@@ -398,7 +398,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   }
 
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   private[akka] class TypedActorInvocationHandler(@transient val extension: TypedActorExtension, @transient val actorVar: AtomVar[ActorRef], @transient val timeout: Timeout) extends InvocationHandler with Serializable {
 
@@ -412,7 +412,8 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
         implicit val dispatcher = extension.system.dispatcher
         import akka.pattern.ask
         MethodCall(method, args) match {
-          case m if m.isOneWay ⇒ actor ! m; null //Null return value
+          case m if m.isOneWay ⇒
+            actor ! m; null //Null return value
           case m if m.returnsFuture ⇒ ask(actor, m)(timeout) map {
             case NullResponse ⇒ null
             case other        ⇒ other
@@ -433,7 +434,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   }
 
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   private[akka] case class SerializedTypedActorInvocationHandler(val actor: ActorRef, val timeout: FiniteDuration) {
     @throws(classOf[ObjectStreamException]) private def readResolve(): AnyRef = JavaSerializer.currentSystem.value match {
@@ -650,7 +651,7 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
 
   // Private API
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   private[akka] def createActorRefProxy[R <: AnyRef, T <: R](props: TypedProps[T], proxyVar: AtomVar[R], actorRef: ⇒ ActorRef): R = {
     //Warning, do not change order of the following statements, it's some elaborate chicken-n-egg handling
@@ -671,7 +672,7 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
   }
 
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   private[akka] def invocationHandlerFor(@deprecatedName('typedActor_?) typedActor: AnyRef): TypedActorInvocationHandler =
     if ((typedActor ne null) && classOf[Proxy].isAssignableFrom(typedActor.getClass) && Proxy.isProxyClass(typedActor.getClass)) typedActor match {

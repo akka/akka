@@ -7,7 +7,7 @@ import com.typesafe.config.Config
 import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.util.Timeout
-import scala.collection.immutable.Seq
+import scala.collection.immutable
 import akka.japi.Util._
 
 class RemoteSettings(val config: Config) {
@@ -44,7 +44,7 @@ class RemoteSettings(val config: Config) {
   val CommandAckTimeout: Timeout =
     Timeout(Duration(getMilliseconds("akka.remote.command-ack-timeout"), MILLISECONDS))
 
-  val Transports: Seq[(String, Seq[String], Config)] = transportNames.map { name ⇒
+  val Transports: immutable.Seq[(String, immutable.Seq[String], Config)] = transportNames.map { name ⇒
     val transportConfig = transportConfigFor(name)
     (transportConfig.getString("transport-class"),
       immutableSeq(transportConfig.getStringList("applied-adapters")).reverse,
@@ -53,7 +53,7 @@ class RemoteSettings(val config: Config) {
 
   val Adapters: Map[String, String] = configToMap(getConfig("akka.remote.adapters"))
 
-  private def transportNames: Seq[String] = immutableSeq(getStringList("akka.remote.enabled-transports"))
+  private def transportNames: immutable.Seq[String] = immutableSeq(getStringList("akka.remote.enabled-transports"))
 
   private def transportConfigFor(transportName: String): Config = getConfig(transportName)
 

@@ -20,18 +20,18 @@ import akka.AkkaException
 object ClusterSingletonManager {
 
   /**
-   * Internal API
+   * INTERNAL API
    * public due to the `with FSM` type parameters
    */
   sealed trait State
   /**
-   * Internal API
+   * INTERNAL API
    * public due to the `with FSM` type parameters
    */
   sealed trait Data
 
   /**
-   * Internal API
+   * INTERNAL API
    */
   private object Internal {
     /**

@@ -17,6 +17,7 @@ object Transport {
    * Indicates that the association setup request is invalid, and it is impossible to recover (malformed IP address,
    * hostname, etc.).
    */
+  @SerialVersionUID(1L)
   case class InvalidAssociationException(msg: String, cause: Throwable) extends AkkaException(msg, cause)
 
   /**

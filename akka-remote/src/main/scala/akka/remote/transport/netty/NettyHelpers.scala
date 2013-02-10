@@ -8,6 +8,9 @@ import java.nio.channels.ClosedChannelException
 import org.jboss.netty.channel._
 import scala.util.control.NonFatal
 
+/**
+ * INTERNAL API
+ */
 private[netty] trait NettyHelpers {
 
   protected def onConnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = {}
@@ -30,6 +33,9 @@ private[netty] trait NettyHelpers {
   }
 }
 
+/**
+ * INTERNAL API
+ */
 private[netty] trait NettyServerHelpers extends SimpleChannelUpstreamHandler with NettyHelpers {
 
   final override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent): Unit = {
@@ -55,6 +61,9 @@ private[netty] trait NettyServerHelpers extends SimpleChannelUpstreamHandler wit
   }
 }
 
+/**
+ * INTERNAL API
+ */
 private[netty] trait NettyClientHelpers extends SimpleChannelHandler with NettyHelpers {
   final override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent): Unit = {
     super.messageReceived(ctx, e)

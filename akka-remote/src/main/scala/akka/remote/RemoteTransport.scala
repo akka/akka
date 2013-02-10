@@ -4,7 +4,6 @@
 
 package akka.remote
 
-import scala.reflect.BeanProperty
 import akka.dispatch.SystemMessage
 import akka.event.{ LoggingAdapter, Logging }
 import akka.AkkaException
@@ -18,9 +17,12 @@ import scala.concurrent.Future
  * RemoteTransportException represents a general failure within a RemoteTransport,
  * such as inability to start, wrong configuration etc.
  */
+@SerialVersionUID(1L)
 class RemoteTransportException(message: String, cause: Throwable) extends AkkaException(message, cause)
 
 /**
+ * INTERNAL API
+ *
  * The remote transport is responsible for sending and receiving messages.
  * Each transport has an address, which it should provide in
  * Serialization.currentTransportAddress (thread-local) while serializing
@@ -28,7 +30,7 @@ class RemoteTransportException(message: String, cause: Throwable) extends AkkaEx
  * be available (i.e. fully initialized) by the time the first message is
  * received or when the start() method returns, whatever happens first.
  */
-abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: RemoteActorRefProvider) {
+private[akka] abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: RemoteActorRefProvider) {
   /**
    * Shuts down the remoting
    */

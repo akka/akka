@@ -15,7 +15,10 @@ import akka.actor.SystemGuardian.{ TerminationHookDone, TerminationHook, Registe
 import scala.util.control.Exception.Catcher
 import scala.concurrent.{ ExecutionContext, Future }
 
-object RemoteActorRefProvider {
+/**
+ * INTERNAL API
+ */
+private[akka] object RemoteActorRefProvider {
   private case class Internals(transport: RemoteTransport, serialization: Serialization, remoteDaemon: InternalActorRef)
 
   sealed trait TerminatorState
@@ -88,13 +91,13 @@ object RemoteActorRefProvider {
 }
 
 /**
+ * INTERNAL API
+ * Depending on this class is not supported, only the [[akka.actor.ActorRefProvider]] interface is supported.
+ *
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
  *
- * INTERNAL API!
- *
- * Depending on this class is not supported, only the [[ActorRefProvider]] interface is supported.
  */
-class RemoteActorRefProvider(
+private[akka] class RemoteActorRefProvider(
   val systemName: String,
   val settings: ActorSystem.Settings,
   val eventStream: EventStream,
@@ -272,7 +275,7 @@ class RemoteActorRefProvider(
     case _ ⇒ local.actorFor(ref, path)
   }
 
-  /*
+  /**
    * INTERNAL API
    * Called in deserialization of incoming remote messages. In this case the correct local address is known, therefore
    * this method is faster than the actorFor above.
@@ -317,6 +320,7 @@ private[akka] trait RemoteRef extends ActorRefScope {
 }
 
 /**
+ * INTERNAL API
  * Remote ActorRef that is used when referencing the Actor on a different node than its "home" node.
  * This reference is network-aware (remembers its origin) and immutable.
  */

@@ -7,7 +7,7 @@ import org.uncommons.maths.random.{ AESCounterRNG }
 import SeedSize.Seed128
 
 /**
- * Internal API
+ * INTERNAL API
  * This class is a wrapper around the 128-bit AESCounterRNG algorithm provided by http://maths.uncommons.org/
  * It uses the default seed generator which uses one of the following 3 random seed sources:
  * Depending on availability: random.org, /dev/random, and SecureRandom (provided by Java)

@@ -15,6 +15,9 @@ import java.security._
 import javax.net.ssl.{ KeyManagerFactory, TrustManager, TrustManagerFactory, SSLContext }
 import org.jboss.netty.handler.ssl.SslHandler
 
+/**
+ * INTERNAL API
+ */
 private[akka] class SSLSettings(config: Config) {
 
   import config._
@@ -45,8 +48,9 @@ private[akka] class SSLSettings(config: Config) {
 }
 
 /**
+ * INTERNAL API
+ *
  * Used for adding SSL support to Netty pipeline
- * Internal use only
  */
 private[akka] object NettySSLSupport {
 
