@@ -3,12 +3,9 @@
  */
 package akka.remote.transport
 
-import scala.language.postfixOps
 import akka.actor._
 import akka.pattern.{ ask, pipe }
 import akka.remote.Remoting.RegisterTransportActor
-import akka.remote.transport.ActorTransportAdapter.ListenUnderlying
-import akka.remote.transport.ActorTransportAdapter.ListenerRegistered
 import akka.remote.transport.Transport._
 import akka.remote.RARP
 import akka.util.Timeout
@@ -17,7 +14,12 @@ import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Promise, Future }
 import scala.util.Success
 
-trait TransportAdapterProvider extends ((Transport, ExtendedActorSystem) ⇒ Transport)
+trait TransportAdapterProvider {
+  /**
+   * Create the transport adapter that wraps an underlying transport.
+   */
+  def create(wrappedTransport: Transport, system: ExtendedActorSystem): Transport
+}
 
 class TransportAdapters(system: ExtendedActorSystem) extends Extension {
   val settings = RARP(system).provider.remoteSettings
@@ -123,7 +125,7 @@ object ActorTransportAdapter {
                               upstreamListener: Future[AssociationEventListener]) extends TransportOperation
   case object DisassociateUnderlying extends TransportOperation
 
-  implicit val AskTimeout = Timeout(5 seconds)
+  implicit val AskTimeout = Timeout(5.seconds)
 }
 
 abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorSystem)
@@ -158,6 +160,8 @@ abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorS
 }
 
 abstract class ActorTransportAdapterManager extends Actor {
+  import ActorTransportAdapter.{ ListenUnderlying, ListenerRegistered }
+
   private var delayedEvents = immutable.Queue.empty[Any]
 
   protected var associationListener: AssociationEventListener = _

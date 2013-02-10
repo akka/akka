@@ -14,11 +14,17 @@ import org.jboss.netty.channel._
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Success, Failure }
 
+/**
+ * INTERNAL API
+ */
 private[remote] object ChannelLocalActor extends ChannelLocal[Option[HandleEventListener]] {
   override def initialValue(channel: Channel): Option[HandleEventListener] = None
   def notifyListener(channel: Channel, msg: HandleEvent): Unit = get(channel) foreach { _ notify msg }
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] trait TcpHandlers extends CommonHandlers {
 
   import ChannelLocalActor._
@@ -45,6 +51,9 @@ private[remote] trait TcpHandlers extends CommonHandlers {
   }
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] class TcpServerHandler(_transport: NettyTransport, _associationListenerFuture: Future[AssociationEventListener])
   extends ServerHandler(_transport, _associationListenerFuture) with TcpHandlers {
 
@@ -53,6 +62,9 @@ private[remote] class TcpServerHandler(_transport: NettyTransport, _associationL
 
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] class TcpClientHandler(_transport: NettyTransport, remoteAddress: Address)
   extends ClientHandler(_transport, remoteAddress) with TcpHandlers {
 
@@ -61,6 +73,9 @@ private[remote] class TcpClientHandler(_transport: NettyTransport, remoteAddress
 
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] class TcpAssociationHandle(val localAddress: Address, val remoteAddress: Address, private val channel: Channel)
   extends AssociationHandle {
 

@@ -15,27 +15,43 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NoStackTrace
 
+@SerialVersionUID(1L)
 case class FailureInjectorException(msg: String) extends AkkaException(msg) with NoStackTrace
 
 class FailureInjectorProvider extends TransportAdapterProvider {
 
-  def apply(wrappedTransport: Transport, system: ExtendedActorSystem): Transport =
+  override def create(wrappedTransport: Transport, system: ExtendedActorSystem): Transport =
     new FailureInjectorTransportAdapter(wrappedTransport, system)
 
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] object FailureInjectorTransportAdapter {
   val FailureInjectorSchemeIdentifier = "gremlin"
 
   trait FailureInjectorCommand
+  @SerialVersionUID(1L)
   case class All(mode: GremlinMode)
+  @SerialVersionUID(1L)
   case class One(remoteAddress: Address, mode: GremlinMode)
 
   sealed trait GremlinMode
-  case object PassThru extends GremlinMode
+  @SerialVersionUID(1L)
+  case object PassThru extends GremlinMode {
+    /**
+     * Java API: get the singleton instance
+     */
+    def getInstance = this
+  }
+  @SerialVersionUID(1L)
   case class Drop(outboundDropP: Double, inboundDropP: Double) extends GremlinMode
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transport, val extendedSystem: ExtendedActorSystem)
   extends AbstractTransportAdapter(wrappedTransport)(extendedSystem.dispatcher) with AssociationEventListener {
 
@@ -112,6 +128,9 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
   }
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] case class FailureInjectorHandle(_wrappedHandle: AssociationHandle,
                                                  private val gremlinAdapter: FailureInjectorTransportAdapter)
   extends AbstractTransportAdapterHandle(_wrappedHandle, FailureInjectorSchemeIdentifier)

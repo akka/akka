@@ -13,6 +13,9 @@ import org.jboss.netty.buffer.{ ChannelBuffer, ChannelBuffers }
 import org.jboss.netty.channel._
 import scala.concurrent.{ Future, Promise }
 
+/**
+ * INTERNAL API
+ */
 private[remote] trait UdpHandlers extends CommonHandlers {
 
   override def createHandle(channel: Channel, localAddress: Address, remoteAddress: Address): AssociationHandle =
@@ -46,6 +49,9 @@ private[remote] trait UdpHandlers extends CommonHandlers {
   def initUdp(channel: Channel, remoteSocketAddress: SocketAddress, msg: ChannelBuffer): Unit
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] class UdpServerHandler(_transport: NettyTransport, _associationListenerFuture: Future[AssociationEventListener])
   extends ServerHandler(_transport, _associationListenerFuture) with UdpHandlers {
 
@@ -53,6 +59,9 @@ private[remote] class UdpServerHandler(_transport: NettyTransport, _associationL
     initInbound(channel, remoteSocketAddress, msg)
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] class UdpClientHandler(_transport: NettyTransport, remoteAddress: Address)
   extends ClientHandler(_transport, remoteAddress) with UdpHandlers {
 
@@ -60,6 +69,9 @@ private[remote] class UdpClientHandler(_transport: NettyTransport, remoteAddress
     initOutbound(channel, remoteSocketAddress, msg)
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] class UdpAssociationHandle(val localAddress: Address,
                                            val remoteAddress: Address,
                                            private val channel: Channel,
