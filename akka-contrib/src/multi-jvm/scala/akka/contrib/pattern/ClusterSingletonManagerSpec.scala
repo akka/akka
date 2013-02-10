@@ -155,12 +155,12 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
 
     def receive = {
       case state: CurrentClusterState ⇒ leaderAddress = state.leader
-      case LeaderChanged(leader) ⇒ leaderAddress = leader
-      case other => consumer foreach { _ forward other }
+      case LeaderChanged(leader)      ⇒ leaderAddress = leader
+      case other                      ⇒ consumer foreach { _ forward other }
     }
 
     def consumer: Option[ActorRef] =
-      leaderAddress map (a => context.actorFor(RootActorPath(a) /
+      leaderAddress map (a ⇒ context.actorFor(RootActorPath(a) /
         "user" / "singleton" / "consumer"))
   }
   //#singleton-proxy
@@ -283,8 +283,17 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       verify(newLeaderRole, msg = 3, expectedCurrent = 2)
     }
 
-    "hand over when adding three new potential leaders to 3 nodes cluster" in within(30 seconds) {
+    "hand over when adding three new potential leaders to 3 nodes cluster" in within(60 seconds) {
+      // this test will result in restart after retry timeout
+      // because the new leader will not know about the real previous leader and the
+      // previous leader sortedClusterRoles(3) will first think that sortedClusterRoles(2)
+      // is the new leader
+      runOn(controller) {
+        queue ! Reset
+        expectMsg(ResetOk)
+      }
       runOn(sortedClusterRoles(2)) {
+        // previous leader
         Cluster(system) join node(sortedClusterRoles(3)).address
         createSingleton()
       }
@@ -297,10 +306,10 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
         createSingleton()
       }
 
-      verify(sortedClusterRoles(0), msg = 4, expectedCurrent = 3)
+      verify(sortedClusterRoles(0), msg = 4, expectedCurrent = 0)
     }
 
-    "hand over when leader leaves in 6 nodes cluster " in within(20 seconds) {
+    "hand over when leader leaves in 6 nodes cluster " in within(30 seconds) {
       //#test-leave
       val leaveRole = sortedClusterRoles(0)
       val newLeaderRole = sortedClusterRoles(1)
