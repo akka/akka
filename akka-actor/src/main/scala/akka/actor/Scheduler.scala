@@ -215,6 +215,11 @@ class LightArrayRevolverScheduler(config: Config,
   /**
    * Overridable for tests
    */
+  protected def getShutdownTimeout: FiniteDuration = ShutdownTimeout
+
+  /**
+   * Overridable for tests
+   */
   protected def waitNanos(nanos: Long): Unit = {
     // see http://www.javamex.com/tutorials/threads/sleep_issues.shtml
     val sleepMs = if (Helpers.isWindows) (nanos + 4999999) / 10000000 * 10 else (nanos + 999999) / 1000000
@@ -276,7 +281,7 @@ class LightArrayRevolverScheduler(config: Config,
     }
   }
 
-  override def close(): Unit = Await.result(stop(), ShutdownTimeout) foreach execDirectly
+  override def close(): Unit = Await.result(stop(), getShutdownTimeout) foreach execDirectly
 
   override val maxFrequency: Double = 1.second / TickDuration
 
