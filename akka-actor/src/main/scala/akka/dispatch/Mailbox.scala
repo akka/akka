@@ -231,12 +231,11 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       if (next ne null) {
         if (Mailbox.debug) println(actor.self + " processing message " + next)
         actor invoke next
-        processAllSystemMessages()
-        if ((left > 1) && ((dispatcher.isThroughputDeadlineTimeDefined == false) || (System.nanoTime - deadlineNs) < 0)) {
-          processMailbox(left - 1, deadlineNs)
-        } else if (Thread.interrupted()) {
+        if (Thread.interrupted())
           throw new InterruptedException("Interrupted while processing actor messages")
-        }
+        processAllSystemMessages()
+        if ((left > 1) && ((dispatcher.isThroughputDeadlineTimeDefined == false) || (System.nanoTime - deadlineNs) < 0))
+          processMailbox(left - 1, deadlineNs)
       }
     }
 
@@ -255,12 +254,10 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       nextMessage = nextMessage.next
       msg.next = null
       if (debug) println(actor.self + " processing system message " + msg + " with " + actor.childrenRefs)
-      try {
-        actor systemInvoke msg
-      } catch {
-        // we know here that systemInvoke ensures that only InterruptedException and "fatal" exceptions get rethrown
-        case e: InterruptedException ⇒ interruption = e
-      }
+      // we know here that systemInvoke ensures that only "fatal" exceptions get rethrown
+      actor systemInvoke msg
+      if (Thread.interrupted())
+        interruption = new InterruptedException("Interrupted while processing system messages")
       // don’t ever execute normal message when system message present!
       if ((nextMessage eq null) && !isClosed) nextMessage = systemDrain(null)
     }
