@@ -48,7 +48,6 @@ object RemotingSpec {
       protocol = "TLSv1"
       random-number-generator = "AES128CounterSecureRNG"
       enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
-      sha1prng-random-source = "/dev/./urandom"
     }
 
     akka {
