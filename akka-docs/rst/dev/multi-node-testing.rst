@@ -173,10 +173,10 @@ The multi node testing kit is a separate jar file. Make sure that you have the f
 
 .. parsed-literal::
 
-  "com.typesafe.akka" %% "akka-remote-tests-experimental" % "@version@" @crossString@
+  "com.typesafe.akka" %% "akka-multi-node-testkit" % "@version@" @crossString@
 
 If you are using the latest nightly build you should pick a timestamped Akka version from
-`<http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/akka-remote-tests-experimental_@binVersion@/>`_.
+`<http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/akka-multi-node-testkit_@binVersion@/>`_.
 We recommend against using ``SNAPSHOT`` in order to obtain stable builds.
 
 A Multi Node Testing Example
