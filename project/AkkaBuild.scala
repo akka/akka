@@ -97,7 +97,7 @@ object AkkaBuild extends Build {
   lazy val dataflow = Project(
     id = "akka-dataflow",
     base = file("akka-dataflow"),
-    dependencies = Seq(actor, testkit % "test->test"),
+    dependencies = Seq(testkit % "test->test"),
     settings = defaultSettings ++ scaladocSettings  ++ OSGi.dataflow ++ cpsPlugin
   )
 
