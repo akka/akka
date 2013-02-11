@@ -59,9 +59,6 @@ abstract class LeaderLeavingSpec
           // verify that the LEADER is shut down
           awaitCond(cluster.isTerminated)
 
-          // verify that the LEADER is REMOVED
-          awaitCond(clusterView.status == Removed)
-
         } else {
 
           val leavingLatch = TestLatch()
