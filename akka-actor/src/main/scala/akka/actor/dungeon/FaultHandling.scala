@@ -174,20 +174,16 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
         case _                             ⇒ setFailed(self); Set.empty
       }
       suspendChildren(exceptFor = skip ++ childrenNotToSuspend)
-      // tell supervisor
-      t match { // Wrap InterruptedExceptions and, clear the flag and rethrow
-        case _: InterruptedException ⇒
-          parent.tell(Failed(new ActorInterruptedException(t), uid), self)
-          Thread.interrupted() // clear interrupted flag before throwing according to java convention
-          throw t
-        case _ ⇒ parent.tell(Failed(t, uid), self)
+      t match {
+        // tell supervisor
+        case _: InterruptedException ⇒ parent.tell(Failed(new ActorInterruptedException(t), uid), self)
+        case _                       ⇒ parent.tell(Failed(t, uid), self)
       }
-    } catch {
-      case NonFatal(e) ⇒
-        publish(Error(e, self.path.toString, clazz(actor),
-          "emergency stop: exception in failure handling for " + t.getClass + Logging.stackTraceFor(t)))
-        try children foreach stop
-        finally finishTerminate()
+    } catch handleNonFatalOrInterruptedException { e ⇒
+      publish(Error(e, self.path.toString, clazz(actor),
+        "emergency stop: exception in failure handling for " + t.getClass + Logging.stackTraceFor(t)))
+      try children foreach stop
+      finally finishTerminate()
     }
   }
 
