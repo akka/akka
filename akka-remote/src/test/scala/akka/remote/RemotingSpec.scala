@@ -70,7 +70,7 @@ object RemotingSpec {
       remote.netty.udp.hostname = "localhost"
       remote.netty.ssl.port = 0
       remote.netty.ssl.hostname = "localhost"
-      remote.netty.ssl.ssl = ${common-ssl-settings}
+      remote.netty.ssl.security = ${common-ssl-settings}
 
       remote.test {
           transport-class = "akka.remote.transport.TestTransport"
