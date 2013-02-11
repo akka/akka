@@ -1,3 +1,5 @@
+.. _akka-contrib:
+
 External Contributions
 ======================
 

@@ -70,7 +70,7 @@ Here is an example Build.scala file that uses the MultiJvm plugin:
          // ---- test dependencies ----
          "com.typesafe.akka" %% "akka-testkit" % "@version@" %
            "test" @crossString@,
-         "com.typesafe.akka" %% "akka-remote-tests-experimental" % "@version@" %
+         "com.typesafe.akka" %% "akka-multi-node-testkit" % "@version@" %
            "test" @crossString@,
          "org.scalatest"     %% "scalatest" % "1.9.1" % "test",
          "junit"              % "junit" % "4.5" % "test"
