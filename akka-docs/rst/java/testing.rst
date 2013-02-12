@@ -235,6 +235,11 @@ obey the innermost enclosing :class:`Within` as detailed :ref:`below
     message has been received before calling this method which has not been
     removed from the queue using one of the other methods.
 
+  * :meth:`Object[] receiveN(int n, Duration max)`
+
+    ``n`` messages must be received within the given time; the received
+    messages are returned.
+
 For cases which require more refined conditions there are constructs which take
 code blocks:
 

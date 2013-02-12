@@ -227,6 +227,14 @@ public class JavaTestKit {
     p.expectNoMsg(max);
   }
 
+  public Object[] receiveN(int n) {
+    return (Object[]) p.receiveN(n).toArray(Util.classTag(Object.class));
+  }
+
+  public Object[] receiveN(int n, FiniteDuration max) {
+    return (Object[]) p.receiveN(n, max).toArray(Util.classTag(Object.class));
+  }
+
   public abstract class ReceiveWhile<T> {
     abstract protected T match(Object msg) throws Exception;
 
@@ -264,10 +272,6 @@ public class JavaTestKit {
     }
   }
 
-  public Object[] receiveN(int n, FiniteDuration max) {
-    return (Object[]) p.receiveN(n, max).toArray(Util.classTag(Object.class));
-  }
-  
   public abstract class EventFilter<T> {
     abstract protected T run();
     

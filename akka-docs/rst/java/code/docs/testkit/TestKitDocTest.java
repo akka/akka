@@ -206,6 +206,11 @@ public class TestKitDocTest {
       final Number j     = expectMsgAnyClassOf(Integer.class, Long.class);
       expectNoMsg();
       //#test-expect
+      getRef().tell("receveN-1", null);
+      getRef().tell("receveN-2", null);
+      //#test-expect
+      final Object[] two = receiveN(2);
+      //#test-expect
       assertEquals("hello", hello);
       assertEquals("hello", any);
       assertEquals(42, i);
