@@ -9,6 +9,7 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.control.NonFatal
+import java.util.UUID
 import akka.actor.{ Actor, ActorLogging, ActorRef, Address, Cancellable, Props, PoisonPill, ReceiveTimeout, RootActorPath, Scheduler }
 import akka.actor.OneForOneStrategy
 import akka.actor.Status.Failure
@@ -219,7 +220,8 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
   import cluster.{ selfAddress, scheduler, failureDetector }
   import cluster.settings._
 
-  val vclockNode = VectorClock.Node(selfAddress.toString)
+  // FIXME the UUID should not be needed when Address contains uid, ticket #2788
+  val vclockNode = VectorClock.Node(selfAddress.toString + "-" + UUID.randomUUID())
 
   // note that self is not initially member,
   // and the Gossip is not versioned for this 'Node' yet
@@ -507,10 +509,10 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
     val localGossip = latestGossip
 
     if (remoteGossip.overview.unreachable.exists(_.address == selfAddress)) {
-      // FIXME how should we handle this situation?
-      log.debug("Received gossip with self as unreachable, from [{}]", from)
-
-    } else if (!localGossip.overview.isNonDownUnreachable(from)) {
+      log.debug("Ignoring received gossip with self [{}] as unreachable, from [{}]", selfAddress, from)
+    } else if (localGossip.overview.isNonDownUnreachable(from)) {
+      log.debug("Ignoring received gossip from unreachable [{}] ", from)
+    } else {
 
       // leader handles merge conflicts, or when they have different views of how is leader
       val handleMerge = localGossip.leader == Some(selfAddress) || localGossip.leader != remoteGossip.leader
@@ -830,7 +832,8 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
     gossipTo(address, GossipEnvelope(selfAddress, latestGossip, conversation = false))
 
   def gossipTo(address: Address, gossipMsg: GossipEnvelope): Unit =
-    if (address != selfAddress) clusterCore(address) ! gossipMsg
+    if (address != selfAddress && gossipMsg.gossip.members.exists(_.address == address))
+      clusterCore(address) ! gossipMsg
 
   def publish(newGossip: Gossip): Unit = {
     publisher ! PublishChanges(newGossip)
