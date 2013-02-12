@@ -8,16 +8,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.nio.ByteBuffer
 import annotation.tailrec
 
-trait WithBufferPool {
-  def tcp: TcpExt
-
-  def acquireBuffer(): ByteBuffer =
-    tcp.bufferPool.acquire()
-
-  def releaseBuffer(buffer: ByteBuffer): Unit =
-    tcp.bufferPool.release(buffer)
-}
-
 trait BufferPool {
   def acquire(): ByteBuffer
   def release(buf: ByteBuffer)

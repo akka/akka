@@ -9,7 +9,7 @@ import Tcp._
 import TestUtils._
 
 class CapacityLimitSpec extends AkkaSpec("akka.loglevel = ERROR\nakka.io.tcp.max-channels = 4")
-  with IntegrationSpecSupport {
+  with TcpIntegrationSpecSupport {
 
   "The TCP transport implementation" should {
 

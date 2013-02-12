@@ -4,9 +4,9 @@
 
 package akka.io
 
-import akka.actor.{ ActorLogging, Actor, Props }
-import akka.routing.RandomRouter
 import Tcp._
+import akka.actor.{ ActorLogging, Props }
+import akka.io.IO.SelectorBasedManager
 
 /**
  * TcpManager is a facade for accepting commands ([[akka.io.Tcp.Command]]) to open client or server TCP connections.
@@ -43,13 +43,15 @@ import Tcp._
  * with a [[akka.io.Tcp.CommandFailed]] message. This message contains the original command for reference.
  *
  */
-private[io] class TcpManager(tcp: TcpExt) extends Actor with ActorLogging {
+private[io] class TcpManager(tcp: TcpExt) extends SelectorBasedManager(tcp.Settings, tcp.Settings.NrOfSelectors) with ActorLogging {
 
-  val selectorPool = context.actorOf(
-    props = Props(new TcpSelector(self, tcp)).withRouter(RandomRouter(tcp.Settings.NrOfSelectors)),
-    name = "selectors")
-
-  def receive = {
-    case x @ (_: Connect | _: Bind) ⇒ selectorPool forward x
+  def receive = workerForCommandHandler {
+    case c: Connect ⇒
+      val commander = sender
+      Props(new TcpOutgoingConnection(tcp, commander, c))
+    case b: Bind ⇒
+      val commander = sender
+      Props(new TcpListener(selectorPool, tcp, commander, b))
   }
+
 }
