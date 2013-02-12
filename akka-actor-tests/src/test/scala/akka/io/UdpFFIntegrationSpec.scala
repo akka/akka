@@ -22,7 +22,7 @@ class UdpFFIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with Implici
 
   val simpleSender: ActorRef = {
     val commander = TestProbe()
-    commander.send(IO(UdpFF), SimpleSender(Nil))
+    commander.send(IO(UdpFF), SimpleSender)
     commander.expectMsg(SimpleSendReady)
     commander.sender
   }

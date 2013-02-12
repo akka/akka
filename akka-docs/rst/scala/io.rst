@@ -235,7 +235,7 @@ may handle all close events in the same way.
 Throttling Reads and Writes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-TODO
+*This section is not yet ready. More coming soon*
 
 Using UDP
 ---------
@@ -264,7 +264,7 @@ manager:
 
 .. code-block:: scala
 
-  IO(UdpFF) ! SimpleSender()
+  IO(UdpFF) ! SimpleSender
   // or with socket options:
   import akka.io.Udp._
   IO(UdpFF) ! SimpleSender(List(SO.Broadcast(true)))
@@ -370,12 +370,8 @@ Again, the send does not contain a remote address, as it is always the endpoint 
 Throttling Reads and Writes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-TODO
+*This section is not yet ready. More coming soon*
 
-Integration with Iteratees
---------------------------
-
-TODO
 
 Architecture in-depth
 ---------------------
