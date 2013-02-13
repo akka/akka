@@ -50,9 +50,8 @@ abstract class NodeLeavingAndExitingAndBeingRemovedSpec
       }
 
       runOn(second) {
-        // verify that the second node is shut down and has status REMOVED
+        // verify that the second node is shut down
         awaitCond(cluster.isTerminated, reaperWaitingTime)
-        awaitCond(clusterView.status == MemberStatus.Removed, reaperWaitingTime)
       }
 
       enterBarrier("finished")
