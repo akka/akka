@@ -380,6 +380,28 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
         if (!s.isClosed) s.close()
       }
     }
+
+    "fail when listening on an invalid address" in {
+      implicit val self = testActor
+      val address = new InetSocketAddress("irate.elephant", 9999)
+      IOManager(system).listen(address)
+      expectMsgType[Status.Failure](1 seconds)
+    }
+
+    "fail when listening on a privileged port" in {
+      implicit val self = testActor
+      val address = new InetSocketAddress("localhost", 80) // Assumes test not run as root
+      IOManager(system).listen(address)
+      expectMsgType[Status.Failure](1 seconds)
+    }
+
+    "fail when connecting to an invalid address" in {
+      implicit val self = testActor
+      val address = new InetSocketAddress("irate.elephant", 80)
+      IOManager(system).connect(address)
+      expectMsgType[Status.Failure](1 seconds)
+    }
+
   }
 
 }
