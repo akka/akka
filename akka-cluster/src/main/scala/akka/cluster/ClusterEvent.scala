@@ -344,6 +344,15 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   var latestConvergedGossip: Gossip = Gossip.empty
   var bufferedEvents: IndexedSeq[ClusterDomainEvent] = Vector.empty
 
+  override def preRestart(reason: Throwable, message: Option[Any]) {
+    // don't postStop when restarted, no children to stop
+  }
+
+  override def postStop(): Unit = {
+    // publish the final removed state before shutting down
+    publishChanges(Gossip.empty)
+  }
+
   def receive = {
     case PublishChanges(newGossip)            ⇒ publishChanges(newGossip)
     case currentStats: CurrentInternalStats   ⇒ publishInternalStats(currentStats)
@@ -352,7 +361,6 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     case Unsubscribe(subscriber, to)          ⇒ unsubscribe(subscriber, to)
     case PublishEvent(event)                  ⇒ publish(event)
     case PublishStart                         ⇒ publishStart()
-    case PublishDone                          ⇒ publishDone(sender)
   }
 
   def eventStream: EventStream = context.system.eventStream
@@ -437,11 +445,6 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
       clearState()
       publishCurrentClusterState(None)
     }
-
-  def publishDone(receiver: ActorRef): Unit = {
-    clearState()
-    receiver ! PublishDoneFinished
-  }
 
   def clearState(): Unit = {
     latestGossip = Gossip.empty

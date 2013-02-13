@@ -58,7 +58,8 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
             state = state.copy(members = state.members - member, unreachable = state.unreachable - member + member)
           case event: MemberEvent ⇒
             // replace current member with new member (might have different status, only address is used in equals)
-            state = state.copy(members = state.members - event.member + event.member)
+            state = state.copy(members = state.members - event.member + event.member,
+              unreachable = state.unreachable - event.member)
           case LeaderChanged(leader)                          ⇒ state = state.copy(leader = leader)
           case s: CurrentClusterState                         ⇒ state = s
           case CurrentInternalStats(stats)                    ⇒ _latestStats = stats
