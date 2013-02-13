@@ -9,6 +9,7 @@ import scala.collection.immutable.SortedSet
 import scala.concurrent.duration._
 import org.scalatest.BeforeAndAfterEach
 import akka.actor.Address
+import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.cluster.MemberStatus._
 import akka.cluster.InternalClusterAction._
@@ -55,10 +56,6 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
     publisher ! PublishChanges(g0)
     memberSubscriber.expectMsg(MemberUp(aUp))
     memberSubscriber.expectMsg(LeaderChanged(Some(aUp.address)))
-  }
-
-  override def afterEach(): Unit = {
-    system.stop(publisher)
   }
 
   "ClusterDomainEventPublisher" must {
@@ -192,6 +189,11 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
       publisher ! PublishChanges(g3)
       subscriber.expectMsgType[SeenChanged]
       subscriber.expectNoMsg(1 second)
+    }
+
+    "publish Removed when stopped" in {
+      publisher ! PoisonPill
+      memberSubscriber.expectMsg(MemberRemoved(aRemoved))
     }
 
   }
