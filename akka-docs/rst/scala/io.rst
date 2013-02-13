@@ -1,21 +1,75 @@
 .. _io-scala:
 
-IO (Scala)
+I/O (Scala)
 ==========
-
 
 Introduction
 ------------
 
+The ``akka.io`` package has been developed in collaboration between the Akka
+and `spray.io`_ teams. Its design incorporates the experiences with the
+``spray-io`` module along with improvements that were jointly developed for
+more general consumption as an actor-based service.
+
 This documentation is in progress and some sections may be incomplete. More will be coming.
 
-Components
-----------
+.. note::
+  The old I/O implementation has been deprecated and its documentation has been moved: :ref:`io-scala-old`
+
+Terminology, Concepts
+---------------------
+The I/O API is completely actor based, meaning that all operations are implemented as message passing instead of
+direct method calls. Every I/O driver (TCP, UDP) has a special actor, called *manager* that serves
+as the entry point for the API. The manager is accessible through an extension, for example the following code
+looks up the TCP manager and returns its ``ActorRef``:
+
+.. code-block:: scala
+
+  val tcpManager = IO(Tcp)
+
+For various I/O commands the manager instantiates worker actors that will expose themselves to the user of the
+API by replying to the command. For example after a ``Connect`` command sent to the TCP manager the manager creates
+an actor representing the TCP connection. All operations related to the given TCP connections can be invoked by sending
+messages to the connection actor which announces itself by sending a ``Connected`` message.
+
+DeathWatch and Resource Management
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Worker actors usually need a user-side counterpart actor listening for events (such events could be inbound connections,
+incoming bytes or acknowledgements for writes). These worker actors *watch* their listener counterparts, therefore the
+resources assigned to them are automatically released when the listener stops. This design makes the API more robust
+against resource leaks.
+
+Thanks to the completely actor based approach of the I/O API the opposite direction works as well: a user actor
+responsible for handling a connection might watch the connection actor to be notified if it unexpectedly terminates.
+
+Write models (Ack, Nack)
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Basically all of the I/O devices have a maximum throughput which limits the frequency and size of writes. When an
+application tries to push more data then a device can handle, the driver has to buffer all bytes that the device has
+not yet been able to write. With this approach it is possible to handle short bursts of intensive writes --- but no buffer is infinite.
+Therefore, the driver has to notify the writer (a user-side actor) either that no further writes are possible, or by
+explicitly notifying it when the next chunk is possible to be written or buffered.
+
+Both of these models are available in the TCP and UDP implementations of Akka I/O. Ack based flow control can be enabled
+by providing an ack object in the write message (``Write`` in the case of TCP and ``Send`` for UDP) that will be used by
+the worker to notify the writer about the success.
+
+If a write (or any other command) fails, the driver notifies the commander with a special message (``CommandFailed`` in
+the case of UDP and TCP). This message also serves as a means to notify the writer of a failed write. Please note, that
+in a Nack based flow-control setting the writer has to buffer some of the writes as the failure notification for a
+write ``W1`` might arrive after additional write commands ``W2`` ``W3`` has been sent.
+
+.. warning::
+  An acknowledged write does not mean acknowledged delivery or storage. The Ack/Nack
+  protocol described here is a means of flow control not error handling: receiving an Ack for a write signals that the
+  I/O driver is ready to accept a new one.
 
 ByteString
 ^^^^^^^^^^
 
-A primary goal of Akka's IO support is to only communicate between actors with immutable objects. When dealing with network IO on the jvm ``Array[Byte]`` and ``ByteBuffer`` are commonly used to represent collections of ``Byte``\s, but they are mutable. Scala's collection library also lacks a suitably efficient immutable collection for ``Byte``\s. Being able to safely and efficiently move ``Byte``\s around is very important for this IO support, so ``ByteString`` was developed.
+A primary goal of Akka's IO support is to only communicate between actors with immutable objects. When dealing with network I/O on the jvm ``Array[Byte]`` and ``ByteBuffer`` are commonly used to represent collections of ``Byte``\s, but they are mutable. Scala's collection library also lacks a suitably efficient immutable collection for ``Byte``\s. Being able to safely and efficiently move ``Byte``\s around is very important for this I/O support, so ``ByteString`` was developed.
 
 ``ByteString`` is a `Rope-like <http://en.wikipedia.org/wiki/Rope_(computer_science)>`_ data structure that is immutable and efficient. When 2 ``ByteString``\s are concatenated together they are both stored within the resulting ``ByteString`` instead of copying both to a new ``Array``. Operations such as ``drop`` and ``take`` return ``ByteString``\s that still reference the original ``Array``, but just change the offset and length that is visible. Great care has also been taken to make sure that the internal ``Array`` cannot be modified. Whenever a potentially unsafe ``Array`` is used to create a new ``ByteString`` a defensive copy is created. If you require a ``ByteString`` that only blocks a much memory as necessary for it's content, use the ``compact`` method to get a ``CompactByteString`` instance. If the ``ByteString`` represented only a slice of the original array, this will result in copying all bytes in that slice.
 
@@ -57,7 +111,7 @@ After extracting data from a ``ByteIterator``, the remaining content can also be
 
 .. includecode:: code/docs/io/BinaryCoding.scala
    :include: rest-to-seq
-    
+
 with no copying from bytes to rest involved. In general, conversions from ByteString to ByteIterator and vice versa are O(1) for non-chunked ByteStrings and (at worst) O(nChunks) for chunked ByteStrings.
 
 Encoding of data also is very natural, using ``ByteStringBuilder``
@@ -65,180 +119,263 @@ Encoding of data also is very natural, using ``ByteStringBuilder``
 .. includecode:: code/docs/io/BinaryCoding.scala
    :include: encoding
 
- 
-The encoded data then can be sent over socket (see ``IOManager``):
- 
-.. includecode:: code/docs/io/BinaryCoding.scala
-   :include: sending
+Using TCP
+---------
 
-
-IO.Handle
-^^^^^^^^^
-
-``IO.Handle`` is an immutable reference to a Java NIO ``Channel``. Passing mutable ``Channel``\s between ``Actor``\s could lead to unsafe behavior, so instead subclasses of the ``IO.Handle`` trait are used. Currently there are 2 concrete subclasses: ``IO.SocketHandle`` (representing a ``SocketChannel``) and ``IO.ServerHandle`` (representing a ``ServerSocketChannel``).
-
-IOManager
-^^^^^^^^^
-
-The ``IOManager`` takes care of the low level IO details. Each ``ActorSystem`` has it's own ``IOManager``, which can be accessed calling ``IOManager(system: ActorSystem)``. ``Actor``\s communicate with the ``IOManager`` with specific messages. The messages sent from an ``Actor`` to the ``IOManager`` are handled automatically when using certain methods and the messages sent from an ``IOManager`` are handled within an ``Actor``\'s ``receive`` method.
-
-Connecting to a remote host:
+As with all of the Akka I/O APIs, everything starts with acquiring a reference to the appropriate manager:
 
 .. code-block:: scala
 
-  val address = new InetSocketAddress("remotehost", 80)
-  val socket = IOManager(actorSystem).connect(address)
+  import akka.io.IO
+  import akka.io.Tcp
+  val tcpManager = IO(Tcp)
+
+This is an actor that handles the underlying low level I/O resources (Selectors, channels) and instantiates workers for
+specific tasks, like listening to incoming connections.
+
+Connecting
+^^^^^^^^^^
+
+The first step of connecting to a remote address is sending a ``Connect`` message to the TCP manager:
 
 .. code-block:: scala
 
-  val socket = IOManager(actorSystem).connect("remotehost", 80)
+  import akka.io.Tcp._
+  IO(Tcp) ! Connect(remoteSocketAddress)
+  // It is also possible to set various socket options or specify a local address:
+  IO(Tcp) ! Connect(remoteSocketAddress, Some(localSocketAddress), List(SO.KeepAlive(true)))
 
-Creating a server:
-
-.. code-block:: scala
-
-  val address = new InetSocketAddress("localhost", 80)
-  val serverSocket = IOManager(actorSystem).listen(address)
-
-.. code-block:: scala
-
-  val serverSocket = IOManager(actorSystem).listen("localhost", 80)
-
-Receiving messages from the ``IOManager``:
+After issuing the Connect command the TCP manager spawns a worker actor that will handle commands related to the
+connection. This worker actor will reveal itself by replying with a ``Connected`` message to the actor who sent the
+``Connect`` command.
 
 .. code-block:: scala
 
-  def receive = {
+  case Connected(remoteAddress, localAddress) =>
+    connectionActor = sender
 
-    case IO.Listening(server, address) =>
-      println("The server is listening on socket " + address)
+At this point, there is still no listener associated with the connection. To finish the connection setup a ``Register``
+has to be sent to the connection actor with the listener ``ActorRef`` as a parameter.
 
-    case IO.Connected(socket, address) =>
-      println("Successfully connected to " + address)
+.. code-block:: scala
 
-    case IO.NewClient(server) =>
-      println("New incoming connection on server")
-      val socket = server.accept()
-      println("Writing to new client socket")
-      socket.write(bytes)
-      println("Closing socket")
-      socket.close()
+  connectionActor ! Register(listener)
 
-    case IO.Read(socket, bytes) =>
-      println("Received incoming data from socket")
+After registration, the listener actor provided in the ``listener`` parameter will be watched by the connection actor.
+If the listener stops, the connection is closed, and all resources allocated for the connection released. During the
+lifetime the listener may receive various event notifications:
 
-    case IO.Closed(socket: IO.SocketHandle, cause) =>
-      println("Socket has closed, cause: " + cause)
+.. code-block:: scala
 
-    case IO.Closed(server: IO.ServerHandle, cause) =>
-      println("Server socket has closed, cause: " + cause)
+  case Received(dataByteString) => // handle incoming chunk of data
+  case CommandFailed(cmd)       => // handle failure of command: cmd
+  case _: ConnectionClosed      => // handle closed connections
 
-  }
+The last line handles all connection close events in the same way. It is possible to listen for more fine-grained
+connection events, see the appropriate section below.
 
-IO.Iteratee
-^^^^^^^^^^^
 
-Included with Akka's IO support is a basic implementation of ``Iteratee``\s. ``Iteratee``\s are an effective way of handling a stream of data without needing to wait for all the data to arrive. This is especially useful when dealing with non blocking IO since we will usually receive data in chunks which may not include enough information to process, or it may contain much more data than we currently need.
+Accepting connections
+^^^^^^^^^^^^^^^^^^^^^
 
-This ``Iteratee`` implementation is much more basic than what is usually found. There is only support for ``ByteString`` input, and enumerators aren't used. The reason for this limited implementation is to reduce the amount of explicit type signatures needed and to keep things simple. It is important to note that Akka's ``Iteratee``\s are completely optional, incoming data can be handled in any way, including other ``Iteratee`` libraries.
+To create a TCP server and listen for inbound connection, a ``Bind`` command has to be sent to the TCP manager:
 
-``Iteratee``\s work by processing the data that it is given and returning either the result (with any unused input) or a continuation if more input is needed. They are monadic, so methods like ``flatMap`` can be used to pass the result of an ``Iteratee`` to another.
+.. code-block:: scala
 
-The basic ``Iteratee``\s included in the IO support can all be found in the ScalaDoc under ``akka.actor.IO``, and some of them are covered in the example below.
+  import akka.io.IO
+  import akka.io.Tcp
+  IO(Tcp) ! Bind(handler, localAddress)
 
-Examples
---------
+The actor sending the ``Bind`` message will receive a ``Bound`` message signalling that the server is ready to accept
+incoming connections. Accepting connections is very similar to the last two steps of opening outbound connections: when
+an incoming connection is established, the actor provided in ``handler`` will receive a ``Connected`` message whose
+sender is the connection actor:
 
-Http Server
-^^^^^^^^^^^
+.. code-block:: scala
 
-This example will create a simple high performance HTTP server. We begin with our imports:
+  case Connected(remoteAddress, localAddress) =>
+    connectionActor = sender
 
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: imports
+At this point, there is still no listener associated with the connection. To finish the connection setup a ``Register``
+has to be sent to the connection actor with the listener ``ActorRef`` as a parameter.
 
-Some commonly used constants:
+.. code-block:: scala
 
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: constants
+  connectionActor ! Register(listener)
 
-And case classes to hold the resulting request:
+After registration, the listener actor provided in the ``listener`` parameter will be watched by the connection actor.
+If the listener stops, the connection is closed, and all resources allocated for the connection released. During the
+lifetime the listener will receive various event notifications in the same way as we has seen in the outbound
+connection case.
 
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: request-class
+Closing connections
+^^^^^^^^^^^^^^^^^^^
 
-Now for our first ``Iteratee``. There are 3 main sections of a HTTP request: the request line, the headers, and an optional body. The main request ``Iteratee`` handles each section separately:
+A connection can be closed by sending one of the commands ``Close``, ``ConfirmedClose`` or ``Abort`` to the connection
+actor.
 
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: read-request
+``Close`` will close the connection by sending a ``FIN`` message, but without waiting for confirmation from
+the remote endpoint. Pending writes will be flushed. If the close is successful, the listener will be notified with
+``Closed``
 
-In the above code ``readRequest`` takes the results of 3 different ``Iteratees`` (``readRequestLine``, ``readHeaders``, ``readBody``) and combines them into a single ``Request`` object. ``readRequestLine`` actually returns a tuple, so we extract it's individual components. ``readBody`` depends on values contained within the header section, so we must pass those to the method.
+``ConfirmedClose`` will close the sending direction of the connection by sending a ``FIN`` message, but receives
+will continue until the remote endpoint closes the connection, too. Pending writes will be flushed. If the close is
+successful, the listener will be notified with ``ConfirmedClosed``
 
-The request line has 3 parts to it: the HTTP method, the requested URI, and the HTTP version. The parts are separated by a single space, and the entire request line ends with a ``CRLF``.
+``Abort`` will immediately terminate the connection by sending a ``RST`` message to the remote endpoint. Pending
+writes will be not flushed. If the close is successful, the listener will be notified with ``Aborted``
 
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: read-request-line
+``PeerClosed`` will be sent to the listener if the connection has been closed by the remote endpoint.
 
-Reading the request method is simple as it is a single string ending in a space. The simple ``Iteratee`` that performs this is ``IO.takeUntil(delimiter: ByteString): Iteratee[ByteString]``. It keeps consuming input until the specified delimiter is found. Reading the HTTP version is also a simple string that ends with a ``CRLF``.
+``ErrorClosed`` will be sent to the listener whenever an error happened that forced the connection to be closed.
 
-The ``ascii`` method is a helper that takes a ``ByteString`` and parses it as a ``US-ASCII`` ``String``.
+All close notifications are subclasses of ``ConnectionClosed`` so listeners who do not need fine-grained close events
+may handle all close events in the same way.
 
-Reading the request URI is a bit more complicated because we want to parse the individual components of the URI instead of just returning a simple string:
+Throttling Reads and Writes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: read-request-uri
+*This section is not yet ready. More coming soon*
 
-For this example we are only interested in handling absolute paths. To detect if we the URI is an absolute path we use ``IO.peek(length: Int): Iteratee[ByteString]``, which returns a ``ByteString`` of the request length but doesn't actually consume the input. We peek at the next bit of input and see if it matches our ``PATH`` constant (defined above as ``ByteString("/")``). If it doesn't match we throw an error, but for a more robust solution we would want to handle other valid URIs.
+Using UDP
+---------
 
-Next we handle the path itself:
+UDP support comes in two flavors: connectionless, and connection based:
 
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: read-path
+.. code-block:: scala
 
-The ``step`` method is a recursive method that takes a ``List`` of the accumulated path segments. It first checks if the remaining input starts with the ``PATH`` constant, and if it does, it drops that input, and returns the ``readUriPart`` ``Iteratee`` which has it's result added to the path segment accumulator and the ``step`` method is run again.
+  import akka.io.IO
+  import akka.io.UdpFF
+  val connectionLessUdp = IO(UdpFF)
+  // ... or ...
+  import akka.io.UdpConn
+  val connectionBasedUdp = IO(UdpConn)
 
-If after reading in a path segment the next input does not start with a path, we reverse the accumulated segments and return it (dropping the last segment if it is blank).
+UDP servers can be only implemented by the connectionless API, but clients can use both.
 
-Following the path we read in the query (if it exists):
+Connectionless UDP
+^^^^^^^^^^^^^^^^^^
 
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: read-query
+Simple Send
+............
 
-It is much simpler than reading the path since we aren't doing any parsing of the query since there is no standard format of the query string.
+To simply send a UDP datagram without listening to an answer one needs to send the ``SimpleSender`` command to the
+manager:
 
-Both the path and query used the ``readUriPart`` ``Iteratee``, which is next:
+.. code-block:: scala
 
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: read-uri-part
+  IO(UdpFF) ! SimpleSender
+  // or with socket options:
+  import akka.io.Udp._
+  IO(UdpFF) ! SimpleSender(List(SO.Broadcast(true)))
 
-Here we have several ``Set``\s that contain valid characters pulled from the URI spec. The ``readUriPart`` method takes a ``Set`` of valid characters (already mapped to ``Byte``\s) and will continue to match characters until it reaches on that is not part of the ``Set``. If it is a percent encoded character then that is handled as a valid character and processing continues, or else we are done collecting this part of the URI.
+The manager will create a worker for sending, and the worker will reply with a ``SimpleSendReady`` message:
 
-Headers are next:
+.. code-block:: scala
 
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: read-headers
+  case SimpleSendReady =>
+    simpleSender = sender
 
-And if applicable, we read in the message body:
+After saving the sender of the ``SimpleSendReady`` message it is possible to send out UDP datagrams with a simple
+message send:
 
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: read-body
+.. code-block:: scala
 
-Finally we get to the actual ``Actor``:
+  simpleSender ! Send(data, serverAddress)
 
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: actor
 
-And it's companion object:
+Bind (and Send)
+...............
 
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: actor-companion
+To listen for UDP datagrams arriving on a given port, the ``Bind`` command has to be sent to the connectionless UDP
+manager
 
-And the OKResponse:
+.. code-block:: scala
 
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: ok-response
+  IO(UdpFF) ! Bind(handler, localAddress)
 
-A ``main`` method to start everything up:
+After the bind succeeds, the sender of the ``Bind`` command will be notified with a ``Bound`` message. The sender of
+this message is the worker for the UDP channel bound to the local address.
 
-.. includecode:: code/docs/io/HTTPServer.scala
-   :include: main
+.. code-block:: scala
+
+  case Bound =>
+    udpWorker = sender // Save the worker ref for later use
+
+The actor passed in the ``handler`` parameter will receive inbound UDP datagrams sent to the bound address:
+
+.. code-block:: scala
+
+  case Received(dataByteString, remoteAddress) => // Do something with the data
+
+The ``Received`` message contains the payload of the datagram and the address of the sender.
+
+It is also possible to send UDP datagrams using the ``ActorRef`` of the worker saved in ``udpWorker``:
+
+.. code-block:: scala
+
+ udpWorker ! Send(data, serverAddress)
+
+.. note::
+  The difference between using a bound UDP worker to send instead of a simple-send worker is that in the former case
+  the sender field of the UDP datagram will be the bound local address, while in the latter it will be an undetermined
+  ephemeral port.
+
+Connection based UDP
+^^^^^^^^^^^^^^^^^^^^
+
+The service provided by the connection based UDP API is similar to the bind-and-send service we have seen earlier, but
+the main difference is that a connection is only able to send to the remoteAddress it was connected to, and will
+receive datagrams only from that address.
+
+Connecting is similar to what we have seen in the previous section:
+
+.. code-block:: scala
+
+  IO(UdpConn) ! Connect(handler, remoteAddress)
+  // or, with more options:
+  IO(UdpConn) ! Connect(handler, Some(localAddress), remoteAddress, List(SO.Broadcast(true)))
+
+After the connect succeeds, the sender of the ``Connect`` command will be notified with a ``Connected`` message. The sender of
+this message is the worker for the UDP connection.
+
+.. code-block:: scala
+
+  case Connected =>
+    udpConnectionActor = sender // Save the worker ref for later use
+
+The actor passed in the ``handler`` parameter will receive inbound UDP datagrams sent to the bound address:
+
+.. code-block:: scala
+
+  case Received(dataByteString) => // Do something with the data
+
+The ``Received`` message contains the payload of the datagram but unlike in the connectionless case, no sender address
+will be provided, as an UDP connection only receives messages from the endpoint it has been connected to.
+
+It is also possible to send UDP datagrams using the ``ActorRef`` of the worker saved in ``udpWorker``:
+
+.. code-block:: scala
+
+ udpConnectionActor ! Send(data)
+
+Again, the send does not contain a remote address, as it is always the endpoint we have been connected to.
+
+.. note::
+  There is a small performance benefit in using connection based UDP API over the connectionless one.
+  If there is a SecurityManager enabled on the system, every connectionless message send has to go through a security
+  check, while in the case of connection-based UDP the security check is cached after connect, thus writes does
+  not suffer an additional performance penalty.
+
+Throttling Reads and Writes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*This section is not yet ready. More coming soon*
+
+
+Architecture in-depth
+---------------------
+
+For further details on the design and internal architecture see :ref:`io-layer`.
+
+.. _spray.io: http://spray.io
