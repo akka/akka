@@ -263,6 +263,10 @@ public class JavaTestKit {
       return (T[]) results;
     }
   }
+
+  public Object[] receiveN(int n, FiniteDuration max) {
+    return (Object[]) p.receiveN(n, max).toArray(Util.classTag(Object.class));
+  }
   
   public abstract class EventFilter<T> {
     abstract protected T run();

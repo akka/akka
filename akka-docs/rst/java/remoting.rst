@@ -131,6 +131,8 @@ actor systems has to have a JAR containing the class.
   ``/foo/bar`` is considered **more specific** than ``/foo/*`` and only the highest priority match is used.
   Please note that it **cannot** be used to partially match section, like this: ``/foo*/bar``, ``/f*o/bar`` etc.
 
+.. _remote-deployment-warnings-java:
+
 .. warning::
 
   *Caveat:* Remote deployment ties both systems together in a tight fashion,
