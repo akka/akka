@@ -39,7 +39,7 @@ object Configuration {
       remote.netty.ssl {
         hostname = localhost
         port = %d
-        ssl {
+        security {
           enable = on
           trust-store = "%s"
           key-store = "%s"
@@ -61,7 +61,7 @@ object Configuration {
       //if (true) throw new IllegalArgumentException("Ticket1978*Spec isn't enabled")
 
       val config = ConfigFactory.parseString(conf.format(localPort, trustStore, keyStore, cipher, enabled.mkString(", ")))
-      val fullConfig = config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty.ssl.ssl")
+      val fullConfig = config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty.ssl.security")
       val settings = new SSLSettings(fullConfig)
 
       val rng = NettySSLSupport.initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, NoLogging)

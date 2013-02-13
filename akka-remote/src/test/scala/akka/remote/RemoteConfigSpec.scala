@@ -4,12 +4,12 @@
 package akka.remote
 
 import language.postfixOps
-
 import akka.testkit.AkkaSpec
 import akka.actor.ExtendedActorSystem
 import scala.concurrent.duration._
 import akka.remote.transport.AkkaProtocolSettings
 import akka.util.{ Timeout, Helpers }
+import akka.remote.transport.netty.SSLSettings
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RemoteConfigSpec extends AkkaSpec(
@@ -59,13 +59,41 @@ class RemoteConfigSpec extends AkkaSpec(
 
     }
 
-    "contain correct configuration values in reference.conf" ignore {
+    "contain correct configuration values in reference.conf" in {
+      val remoteSettings = RARP(system).provider.remoteSettings
+      import remoteSettings._
+
+      LogReceive must be(false)
+      LogSend must be(false)
+      UntrustedMode must be(false)
+      LogRemoteLifecycleEvents must be(false)
+      ShutdownTimeout.duration must be(10 seconds)
+      FlushWait must be(2 seconds)
+      StartupTimeout.duration must be(10 seconds)
+      RetryGateClosedFor must be(Duration.Zero)
+      UnknownAddressGateClosedFor must be(1 minute)
+      UsePassiveConnections must be(true)
+      MaximumRetriesInWindow must be(5)
+      RetryWindow must be(3 seconds)
+      BackoffPeriod must be(10 millis)
+      CommandAckTimeout.duration must be(30 seconds)
+      Transports.size must be(1)
+      Transports.head._1 must be(classOf[akka.remote.transport.netty.NettyTransport].getName)
+      Transports.head._2 must be(Nil)
+      Adapters must be(Map(
+        "gremlin" -> classOf[akka.remote.transport.FailureInjectorProvider].getName,
+        "trttl" -> classOf[akka.remote.transport.ThrottlerProvider].getName))
+
+    }
+
+    "contain correct socket worker pool configuration values in reference.conf" in {
       val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.netty.tcp")
 
       // server-socket-worker-pool
       {
         val pool = c.getConfig("server-socket-worker-pool")
         pool.getInt("pool-size-min") must equal(2)
+
         pool.getDouble("pool-size-factor") must equal(1.0)
         pool.getInt("pool-size-max") must equal(8)
       }
@@ -78,9 +106,17 @@ class RemoteConfigSpec extends AkkaSpec(
         pool.getInt("pool-size-max") must equal(8)
       }
 
-      {
-        c.getString("reuse-address") must be("off-for-windows")
-      }
+    }
+
+    "contain correct ssl configuration values in reference.conf" in {
+      val sslSettings = new SSLSettings(system.settings.config.getConfig("akka.remote.netty.ssl.security"))
+      sslSettings.SSLKeyStore must be(Some("keystore"))
+      sslSettings.SSLKeyStorePassword must be(Some("changeme"))
+      sslSettings.SSLTrustStore must be(Some("truststore"))
+      sslSettings.SSLTrustStorePassword must be(Some("changeme"))
+      sslSettings.SSLProtocol must be(Some("TLSv1"))
+      sslSettings.SSLEnabledAlgorithms must be(Set("TLS_RSA_WITH_AES_128_CBC_SHA"))
+      sslSettings.SSLRandomNumberGenerator must be(None)
     }
   }
 }

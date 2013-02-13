@@ -110,7 +110,7 @@ class NettyTransportSettings(config: Config) {
   @deprecated("WARNING: This should only be used by professionals.", "2.0")
   val PortSelector: Int = getInt("port")
 
-  val SslSettings: Option[SSLSettings] = if (EnableSsl) Some(new SSLSettings(config.getConfig("ssl"))) else None
+  val SslSettings: Option[SSLSettings] = if (EnableSsl) Some(new SSLSettings(config.getConfig("security"))) else None
 
   val ServerSocketWorkerPoolSize: Int = computeWPS(config.getConfig("server-socket-worker-pool"))
 

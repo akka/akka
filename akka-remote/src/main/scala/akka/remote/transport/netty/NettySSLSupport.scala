@@ -36,13 +36,13 @@ private[akka] class SSLSettings(config: Config) {
 
   // FIXME: Change messages to reflect new configuration
   if (SSLProtocol.isEmpty) throw new ConfigurationException(
-    "Configuration option 'akka.remote.netty.ssl.enable is turned on but no protocol is defined in 'akka.remote.netty.ssl.protocol'.")
+    "Configuration option 'akka.remote.netty.ssl.enable-ssl is turned on but no protocol is defined in 'akka.remote.netty.ssl.security.protocol'.")
   if (SSLKeyStore.isEmpty && SSLTrustStore.isEmpty) throw new ConfigurationException(
-    "Configuration option 'akka.remote.netty.ssl.enable is turned on but no key/trust store is defined in 'akka.remote.netty.ssl.key-store' / 'akka.remote.netty.ssl.trust-store'.")
+    "Configuration option 'akka.remote.netty.ssl.enable-ssl is turned on but no key/trust store is defined in 'akka.remote.netty.ssl.security.key-store' / 'akka.remote.netty.ssl.security.trust-store'.")
   if (SSLKeyStore.isDefined && SSLKeyStorePassword.isEmpty) throw new ConfigurationException(
-    "Configuration option 'akka.remote.netty.ssl.key-store' is defined but no key-store password is defined in 'akka.remote.netty.ssl.key-store-password'.")
+    "Configuration option 'akka.remote.netty.ssl.security.key-store' is defined but no key-store password is defined in 'akka.remote.netty.ssl.security.key-store-password'.")
   if (SSLTrustStore.isDefined && SSLTrustStorePassword.isEmpty) throw new ConfigurationException(
-    "Configuration option 'akka.remote.netty.ssl.trust-store' is defined but no trust-store password is defined in 'akka.remote.netty.ssl.trust-store-password'.")
+    "Configuration option 'akka.remote.netty.ssl.security.trust-store' is defined but no trust-store password is defined in 'akka.remote.netty.ssl.security.trust-store-password'.")
 }
 
 /**
