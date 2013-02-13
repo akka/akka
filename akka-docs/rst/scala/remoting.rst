@@ -320,7 +320,7 @@ An example of setting up the default Netty based SSL driver as default::
     remote {
       enabled-transports = [akka.remote.netty.ssl]
 
-      netty.ssl {
+      netty.ssl.security {
         key-store = "mykeystore"
         trust-store = "mytruststore"
         key-store-password = "changeme"
@@ -328,7 +328,6 @@ An example of setting up the default Netty based SSL driver as default::
         protocol = "TLSv1"
         random-number-generator = "AES128CounterSecureRNG"
         enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
-        sha1prng-random-source = "/dev/./urandom"
       }
     }
   }
