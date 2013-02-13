@@ -11,7 +11,7 @@ import TestUtils._
 import akka.testkit.EventFilter
 import java.io.IOException
 
-class IntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with IntegrationSpecSupport {
+class TcpIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with TcpIntegrationSpecSupport {
 
   "The TCP transport implementation" should {
 

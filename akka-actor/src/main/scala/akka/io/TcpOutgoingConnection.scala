@@ -4,13 +4,13 @@
 
 package akka.io
 
-import java.net.InetSocketAddress
-import java.io.IOException
-import java.nio.channels.SocketChannel
-import scala.collection.immutable
 import akka.actor.ActorRef
-import TcpSelector._
-import Tcp._
+import akka.io.Inet.SocketOption
+import akka.io.SelectionHandler._
+import akka.io.Tcp._
+import java.io.IOException
+import java.nio.channels.{ SelectionKey, SocketChannel }
+import scala.collection.immutable
 
 /**
  * An actor handling the connection state machine for an outgoing connection
@@ -18,25 +18,26 @@ import Tcp._
  */
 private[io] class TcpOutgoingConnection(_tcp: TcpExt,
                                         commander: ActorRef,
-                                        remoteAddress: InetSocketAddress,
-                                        localAddress: Option[InetSocketAddress],
-                                        options: immutable.Traversable[SocketOption])
+                                        connect: Connect)
   extends TcpConnection(TcpOutgoingConnection.newSocketChannel(), _tcp) {
+
+  import connect._
 
   context.watch(commander) // sign death pact
 
   localAddress.foreach(channel.socket.bind)
   options.foreach(_.beforeConnect(channel.socket))
+  selector ! RegisterChannel(channel, SelectionKey.OP_CONNECT)
 
-  log.debug("Attempting connection to {}", remoteAddress)
-  if (channel.connect(remoteAddress))
-    completeConnect(commander, options)
-  else {
-    selector ! RegisterOutgoingConnection(channel)
-    context.become(connecting(commander, options))
+  def receive: Receive = {
+    case ChannelRegistered ⇒
+      log.debug("Attempting connection to [{}]", remoteAddress)
+      if (channel.connect(remoteAddress))
+        completeConnect(commander, options)
+      else {
+        context.become(connecting(commander, options))
+      }
   }
-
-  def receive: Receive = PartialFunction.empty
 
   def connecting(commander: ActorRef, options: immutable.Traversable[SocketOption]): Receive = {
     case ChannelConnectable ⇒

@@ -14,15 +14,17 @@ import scala.util.control.NonFatal
 import scala.concurrent.duration._
 import akka.actor._
 import akka.util.ByteString
-import Tcp._
-import TcpSelector._
+import akka.io.Inet.SocketOption
+import akka.io.Tcp._
+import akka.io.SelectionHandler._
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
  */
 private[io] abstract class TcpConnection(val channel: SocketChannel,
-                                         val tcp: TcpExt) extends Actor with ActorLogging with WithBufferPool {
+                                         val tcp: TcpExt) extends Actor with ActorLogging {
   import tcp.Settings._
+  import tcp.bufferPool
   import TcpConnection._
   var pendingWrite: PendingWrite = null
 
@@ -38,7 +40,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
   /** connection established, waiting for registration from user handler */
   def waitingForRegistration(commander: ActorRef): Receive = {
     case Register(handler) ⇒
-      if (TraceLogging) log.debug("{} registered as connection handler", handler)
+      if (TraceLogging) log.debug("[{}] registered as connection handler", handler)
       doRead(handler, None) // immediately try reading
 
       context.setReceiveTimeout(Duration.Undefined)
@@ -52,13 +54,13 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
     case ReceiveTimeout ⇒
       // after sending `Register` user should watch this actor to make sure
       // it didn't die because of the timeout
-      log.warning("Configured registration timeout of {} expired, stopping", RegisterTimeout)
+      log.warning("Configured registration timeout of [{}] expired, stopping", RegisterTimeout)
       context.stop(self)
   }
 
   /** normal connected state */
   def connected(handler: ActorRef): Receive = {
-    case StopReading     ⇒ selector ! StopReading
+    case StopReading     ⇒ selector ! DisableReadInterest
     case ResumeReading   ⇒ selector ! ReadInterest
     case ChannelReadable ⇒ doRead(handler, None)
 
@@ -74,14 +76,14 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
       pendingWrite = createWrite(write)
       doWrite(handler)
 
-    case ChannelWritable   ⇒ doWrite(handler)
+    case ChannelWritable   ⇒ if (writePending) doWrite(handler)
 
     case cmd: CloseCommand ⇒ handleClose(handler, Some(sender), closeResponse(cmd))
   }
 
   /** connection is closing but a write has to be finished first */
   def closingWithPendingWrite(handler: ActorRef, closeCommander: Option[ActorRef], closedEvent: ConnectionClosed): Receive = {
-    case StopReading     ⇒ selector ! StopReading
+    case StopReading     ⇒ selector ! DisableReadInterest
     case ResumeReading   ⇒ selector ! ReadInterest
     case ChannelReadable ⇒ doRead(handler, closeCommander)
 
@@ -95,7 +97,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
   /** connection is closed on our side and we're waiting from confirmation from the other side */
   def closing(handler: ActorRef, closeCommander: Option[ActorRef]): Receive = {
-    case StopReading     ⇒ selector ! StopReading
+    case StopReading     ⇒ selector ! DisableReadInterest
     case ResumeReading   ⇒ selector ! ReadInterest
     case ChannelReadable ⇒ doRead(handler, closeCommander)
     case Abort           ⇒ handleClose(handler, Some(sender), Aborted)
@@ -137,18 +139,18 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
         }
       } else MoreDataWaiting(receivedData)
 
-    val buffer = acquireBuffer()
+    val buffer = bufferPool.acquire()
     try innerRead(buffer, ByteString.empty, ReceivedMessageSizeLimit) match {
       case NoData ⇒
         if (TraceLogging) log.debug("Read nothing.")
         selector ! ReadInterest
       case GotCompleteData(data) ⇒
-        if (TraceLogging) log.debug("Read {} bytes.", data.length)
+        if (TraceLogging) log.debug("Read [{}] bytes.", data.length)
 
         handler ! Received(data)
         selector ! ReadInterest
       case MoreDataWaiting(data) ⇒
-        if (TraceLogging) log.debug("Read {} bytes. More data waiting.", data.length)
+        if (TraceLogging) log.debug("Read [{}] bytes. More data waiting.", data.length)
 
         handler ! Received(data)
         self ! ChannelReadable
@@ -157,7 +159,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
         doCloseConnection(handler, closeCommander, closeReason)
     } catch {
       case e: IOException ⇒ handleError(handler, e)
-    } finally releaseBuffer(buffer)
+    } finally bufferPool.release(buffer)
   }
 
   final def doWrite(handler: ActorRef): Unit = {
@@ -165,7 +167,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
       val toWrite = pendingWrite.buffer.remaining()
       require(toWrite != 0)
       val writtenBytes = channel.write(pendingWrite.buffer)
-      if (TraceLogging) log.debug("Wrote {} bytes to channel", writtenBytes)
+      if (TraceLogging) log.debug("Wrote [{}] bytes to channel", writtenBytes)
 
       pendingWrite = pendingWrite.consume(writtenBytes)
 
@@ -179,7 +181,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
         val buffer = pendingWrite.buffer
         pendingWrite = null
 
-        releaseBuffer(buffer)
+        bufferPool.release(buffer)
       }
     }
 
@@ -246,7 +248,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
       case NonFatal(e) ⇒
         // setSoLinger can fail due to http://bugs.sun.com/view_bug.do?bug_id=6799574
         // (also affected: OS/X Java 1.6.0_37)
-        if (TraceLogging) log.debug("setSoLinger(true, 0) failed with {}", e)
+        if (TraceLogging) log.debug("setSoLinger(true, 0) failed with [{}]", e)
     }
     channel.close()
   }
@@ -256,7 +258,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
       abort()
 
     if (writePending)
-      releaseBuffer(pendingWrite.buffer)
+      bufferPool.release(pendingWrite.buffer)
 
     if (closedMessage != null) {
       val interestedInClose =
@@ -288,7 +290,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
     def wantsAck = ack != NoAck
   }
   def createWrite(write: Write): PendingWrite = {
-    val buffer = acquireBuffer()
+    val buffer = bufferPool.acquire()
     val copied = write.data.copyToBuffer(buffer)
     buffer.flip()
 
