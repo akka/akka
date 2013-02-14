@@ -77,6 +77,22 @@ object AkkaBuild extends Build {
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples, channels, channelsTests)
   )
 
+  // this detached pseudo-project is used for running the tests against a different Scala version than the one used for compilation
+  // usage:
+  //   all-tests/test (or test-only)
+  // customizing (on the SBT command line):
+  //   set scalaVersion in allTests := "2.11.0"
+  lazy val allTests = Project(
+    id = "all-tests",
+    base = file("all-tests"),
+    dependencies = (akka.aggregate: Seq[ProjectReference]) map (_ % "test->test"),
+    settings = defaultSettings ++ Seq(
+      scalaVersion := "2.10.1-RC1",
+      publishArtifact := false,
+      definedTests in Test := Nil
+    ) ++ ((akka.aggregate: Seq[ProjectReference]) filterNot (_ contains "slf4j") map { pr => definedTests in Test <++= definedTests in (pr, Test) })
+  )
+
   lazy val actor = Project(
     id = "akka-actor",
     base = file("akka-actor"),
