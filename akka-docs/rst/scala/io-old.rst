@@ -1,12 +1,11 @@
 .. _io-scala-old:
 
+Old IO (Scala)
+==============
+
 .. warning::
   This is the documentation of the old IO implementation that is considered now deprecated. Please take a look
   at new IO API: :ref:`io-scala`
-
-IO (Scala)
-==========
-
 
 Introduction
 ------------
