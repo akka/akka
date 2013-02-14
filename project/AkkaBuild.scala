@@ -90,7 +90,15 @@ object AkkaBuild extends Build {
       scalaVersion := "2.10.1-RC1",
       publishArtifact := false,
       definedTests in Test := Nil
-    ) ++ ((akka.aggregate: Seq[ProjectReference]) filterNot (_ contains "slf4j") map { pr => definedTests in Test <++= definedTests in (pr, Test) })
+    ) ++ (
+      (akka.aggregate: Seq[ProjectReference])
+        filterNot {
+          case LocalProject(name) => name contains "slf4j"
+          case _                  => false
+        } map {
+          pr => definedTests in Test <++= definedTests in (pr, Test)
+        }
+      )
   )
 
   lazy val actor = Project(
