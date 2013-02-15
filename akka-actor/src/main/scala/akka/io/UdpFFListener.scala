@@ -14,6 +14,9 @@ import java.nio.channels.SelectionKey._
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 
+/**
+ * INTERNAL API
+ */
 private[io] class UdpFFListener(val udpFF: UdpFFExt,
                                 val bindCommander: ActorRef,
                                 val bind: Bind)

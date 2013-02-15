@@ -15,6 +15,9 @@ import akka.io.Inet.SocketOption
 import akka.io.Tcp._
 import akka.io.IO.HasFailureMessage
 
+/**
+ * INTERNAL API
+ */
 private[io] object TcpListener {
 
   case class RegisterIncoming(channel: SocketChannel) extends HasFailureMessage {
@@ -25,6 +28,9 @@ private[io] object TcpListener {
 
 }
 
+/**
+ * INTERNAL API
+ */
 private[io] class TcpListener(val selectorRouter: ActorRef,
                               val tcp: TcpExt,
                               val bindCommander: ActorRef,

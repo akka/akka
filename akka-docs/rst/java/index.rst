@@ -20,6 +20,7 @@ Java API
    stm
    agents
    transactors
+   io
    fsm
    extending-akka
    zeromq

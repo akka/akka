@@ -8,6 +8,8 @@ import akka.io.IO.SelectorBasedManager
 import akka.io.UdpFF._
 
 /**
+ * INTERNAL API
+ *
  * UdpFFManager is a facade for simple fire-and-forget style UDP operations
  *
  * UdpFFManager is obtainable by calling {{{ IO(UdpFF) }}} (see [[akka.io.IO]] and [[akka.io.UdpFF]])

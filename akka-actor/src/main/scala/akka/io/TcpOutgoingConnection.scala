@@ -15,6 +15,8 @@ import scala.collection.immutable
 /**
  * An actor handling the connection state machine for an outgoing connection
  * to be established.
+ *
+ * INTERNAL API
  */
 private[io] class TcpOutgoingConnection(_tcp: TcpExt,
                                         commander: ActorRef,
@@ -53,7 +55,10 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
 
 }
 
-object TcpOutgoingConnection {
+/**
+ * INTERNAL API
+ */
+private[io] object TcpOutgoingConnection {
   private def newSocketChannel() = {
     val channel = SocketChannel.open()
     channel.configureBlocking(false)

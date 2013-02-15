@@ -8,6 +8,9 @@ import akka.io.UdpFF.{ CommandFailed, Send }
 import akka.io.SelectionHandler._
 import java.nio.channels.DatagramChannel
 
+/**
+ * INTERNAL API
+ */
 private[io] trait WithUdpFFSend {
   me: Actor with ActorLogging ⇒
 
