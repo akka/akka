@@ -13,6 +13,8 @@ import akka.io.SelectionHandler.{ ChannelRegistered, RegisterChannel }
 /**
  * An actor handling the connection state machine for an incoming, already connected
  * SocketChannel.
+ *
+ * INTERNAL API
  */
 private[io] class TcpIncomingConnection(_channel: SocketChannel,
                                         _tcp: TcpExt,
