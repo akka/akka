@@ -9,6 +9,8 @@ import akka.actor.{ ActorLogging, Props }
 import akka.io.IO.SelectorBasedManager
 
 /**
+ * INTERNAL API
+ *
  * TcpManager is a facade for accepting commands ([[akka.io.Tcp.Command]]) to open client or server TCP connections.
  *
  * TcpManager is obtainable by calling {{{ IO(Tcp) }}} (see [[akka.io.IO]] and [[akka.io.Tcp]])

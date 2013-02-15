@@ -13,6 +13,9 @@ import java.nio.channels.SelectionKey._
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 
+/**
+ * INTERNAL API
+ */
 private[io] class UdpConnection(val udpConn: UdpConnExt,
                                 val commander: ActorRef,
                                 val connect: Connect) extends Actor with ActorLogging {
