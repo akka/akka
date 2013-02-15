@@ -4,7 +4,7 @@
 package akka.io
 
 import java.net.DatagramSocket
-import akka.io.Inet.SocketOption
+import akka.io.Inet.{ SoJavaFactories, SocketOption }
 import com.typesafe.config.Config
 import akka.actor.{ Props, ActorSystemImpl }
 
@@ -45,4 +45,9 @@ object Udp {
     }
   }
 
+}
+
+object UdpSO extends SoJavaFactories {
+  import Udp.SO._
+  def broadcast(on: Boolean) = Broadcast(on)
 }
