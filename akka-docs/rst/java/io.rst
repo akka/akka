@@ -177,19 +177,16 @@ Using UDP
 
 UDP support comes in two flavors: connectionless, and connection based:
 
-.. code-block:: scala
-
-  import akka.io.IO
-  import akka.io.UdpFF
-  val connectionLessUdp = IO(UdpFF)
-  // ... or ...
-  import akka.io.UdpConn
-  val connectionBasedUdp = IO(UdpConn)
+.. includecode:: code/docs/io/IOUdpFFDocTest.java#manager
 
 UDP servers can be only implemented by the connectionless API, but clients can use both.
 
 Connectionless UDP
 ^^^^^^^^^^^^^^^^^^
+
+The following imports are assumed in the following sections:
+
+.. includecode:: code/docs/io/IOUdpFFDocTest.java#imports
 
 Simple Send
 ............
@@ -197,26 +194,16 @@ Simple Send
 To simply send a UDP datagram without listening to an answer one needs to send the ``SimpleSender`` command to the
 manager:
 
-.. code-block:: scala
-
-  IO(UdpFF) ! SimpleSender
-  // or with socket options:
-  import akka.io.Udp._
-  IO(UdpFF) ! SimpleSender(List(SO.Broadcast(true)))
+.. includecode:: code/docs/io/IOUdpFFDocTest.java#simplesend
 
 The manager will create a worker for sending, and the worker will reply with a ``SimpleSendReady`` message:
 
-.. code-block:: scala
-
-  case SimpleSendReady =>
-    simpleSender = sender
+.. includecode:: code/docs/io/IOUdpFFDocTest.java#simplesend-finish
 
 After saving the sender of the ``SimpleSendReady`` message it is possible to send out UDP datagrams with a simple
 message send:
 
-.. code-block:: scala
-
-  simpleSender ! Send(data, serverAddress)
+.. includecode:: code/docs/io/IOUdpFFDocTest.java#simplesend-send
 
 
 Bind (and Send)
@@ -225,31 +212,23 @@ Bind (and Send)
 To listen for UDP datagrams arriving on a given port, the ``Bind`` command has to be sent to the connectionless UDP
 manager
 
-.. code-block:: scala
-
-  IO(UdpFF) ! Bind(handler, localAddress)
+.. includecode:: code/docs/io/IOUdpFFDocTest.java#bind
 
 After the bind succeeds, the sender of the ``Bind`` command will be notified with a ``Bound`` message. The sender of
 this message is the worker for the UDP channel bound to the local address.
 
-.. code-block:: scala
-
-  case Bound =>
-    udpWorker = sender // Save the worker ref for later use
+.. includecode:: code/docs/io/IOUdpFFDocTest.java#bind-finish
 
 The actor passed in the ``handler`` parameter will receive inbound UDP datagrams sent to the bound address:
 
-.. code-block:: scala
-
-  case Received(dataByteString, remoteAddress) => // Do something with the data
+.. includecode:: code/docs/io/IOUdpFFDocTest.java#bind-receive
 
 The ``Received`` message contains the payload of the datagram and the address of the sender.
 
 It is also possible to send UDP datagrams using the ``ActorRef`` of the worker saved in ``udpWorker``:
 
-.. code-block:: scala
+.. includecode:: code/docs/io/IOUdpFFDocTest.java#bind-send
 
- udpWorker ! Send(data, serverAddress)
 
 .. note::
   The difference between using a bound UDP worker to send instead of a simple-send worker is that in the former case
