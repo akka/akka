@@ -1,7 +1,7 @@
 .. _io-scala:
 
 I/O (Scala)
-==========
+===========
 
 Introduction
 ------------
