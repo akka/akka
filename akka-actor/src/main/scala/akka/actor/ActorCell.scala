@@ -382,8 +382,8 @@ private[akka] class ActorCell(
         case ChildTerminated(child)       ⇒ todo = handleChildTerminated(child)
         case NoMessage                    ⇒ // only here to suppress warning
       }
-    } catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒ handleInvokeFailure(Nil, e, "error while processing " + message)
+    } catch handleNonFatalOrInterruptedException { e ⇒
+      handleInvokeFailure(Nil, e, "error while processing " + message)
     }
     if (todo != null) systemInvoke(todo)
   }
@@ -397,8 +397,8 @@ private[akka] class ActorCell(
       case msg                      ⇒ receiveMessage(msg)
     }
     currentMessage = null // reset current message after successful invocation
-  } catch {
-    case e @ (_: InterruptedException | NonFatal(_)) ⇒ handleInvokeFailure(Nil, e, e.getMessage)
+  } catch handleNonFatalOrInterruptedException { e ⇒
+    handleInvokeFailure(Nil, e, e.getMessage)
   } finally {
     checkReceiveTimeout // Reschedule receive timeout
   }
@@ -471,7 +471,13 @@ private[akka] class ActorCell(
     }
   }
 
-  protected def create(uid: Int): Unit =
+  protected def create(uid: Int): Unit = {
+    def clearOutActorIfNonNull(): Unit = {
+      if (actor != null) {
+        clearActorFields(actor)
+        actor = null // ensure that we know that we failed during creation
+      }
+    }
     try {
       this.uid = uid
       val created = newActor()
@@ -480,11 +486,12 @@ private[akka] class ActorCell(
       checkReceiveTimeout
       if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {
+      case e: InterruptedException ⇒
+        clearOutActorIfNonNull()
+        Thread.currentThread().interrupt()
+        throw ActorInitializationException(self, "interruption during creation", e)
       case NonFatal(e) ⇒
-        if (actor != null) {
-          clearActorFields(actor)
-          actor = null // ensure that we know that we failed during creation
-        }
+        clearOutActorIfNonNull()
         e match {
           case i: InstantiationException ⇒ throw ActorInitializationException(self,
             """exception during creation, this problem is likely to occur because the class of the Actor you tried to create is either,
@@ -494,6 +501,7 @@ private[akka] class ActorCell(
           case x ⇒ throw ActorInitializationException(self, "exception during creation", x)
         }
     }
+  }
 
   private def supervise(child: ActorRef, async: Boolean, uid: Int): Unit =
     if (!isTerminating) {
