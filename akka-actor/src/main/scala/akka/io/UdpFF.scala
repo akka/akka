@@ -66,21 +66,21 @@ object UdpFFMessage {
   import scala.collection.JavaConverters._
   import language.implicitConversions
 
-  def send(payload: ByteString, target: InetSocketAddress) = Send(payload, target)
-  def send(payload: ByteString, target: InetSocketAddress, ack: Any) = Send(payload, target, ack)
+  def send(payload: ByteString, target: InetSocketAddress): Send = Send(payload, target)
+  def send(payload: ByteString, target: InetSocketAddress, ack: Any): Send = Send(payload, target, ack)
 
-  def bind(handler: ActorRef, endpoint: InetSocketAddress, options: JIterable[SocketOption]) =
+  def bind(handler: ActorRef, endpoint: InetSocketAddress, options: JIterable[SocketOption]): Bind =
     Bind(handler, endpoint, options.asScala.to)
 
-  def bind(handler: ActorRef, endpoint: InetSocketAddress) = Bind(handler, endpoint, Nil)
+  def bind(handler: ActorRef, endpoint: InetSocketAddress): Bind = Bind(handler, endpoint, Nil)
 
-  def simpleSender(options: JIterable[SocketOption]) = SimpleSender(options.asScala.to)
-  def simpleSender = SimpleSender
+  def simpleSender(options: JIterable[SocketOption]): SimpleSender = SimpleSender(options.asScala.to)
+  def simpleSender: SimpleSender = SimpleSender
 
-  def unbind = Unbind
+  def unbind: Unbind.type = Unbind
 
-  def stopReading = StopReading
-  def resumeReading = ResumeReading
+  def stopReading: StopReading.type = StopReading
+  def resumeReading: ResumeReading.type = ResumeReading
 }
 
 class UdpFFExt(system: ExtendedActorSystem) extends IO.Extension {
