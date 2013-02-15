@@ -50,3 +50,8 @@ object UdpSO extends SoJavaFactories {
   import Udp.SO._
   def broadcast(on: Boolean) = Broadcast(on)
 }
+
+object UdpSO extends SoJavaFactories {
+  import Udp.SO._
+  def broadcast(on: Boolean) = Broadcast(on)
+}

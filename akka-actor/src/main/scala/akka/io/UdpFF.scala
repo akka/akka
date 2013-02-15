@@ -19,11 +19,13 @@ object UdpFF extends ExtensionKey[UdpFFExt] {
     def failureMessage = CommandFailed(this)
   }
 
-  case object NoAck
+  case class NoAck(token: Any)
+  object NoAck extends NoAck(null)
+
   case class Send(payload: ByteString, target: InetSocketAddress, ack: Any) extends Command {
     require(ack != null, "ack must be non-null. Use NoAck if you don't want acks.")
 
-    def wantsAck: Boolean = ack != NoAck
+    def wantsAck: Boolean = !ack.isInstanceOf[NoAck]
   }
   object Send {
     def apply(data: ByteString, target: InetSocketAddress): Send = Send(data, target, NoAck)
@@ -44,12 +46,41 @@ object UdpFF extends ExtensionKey[UdpFFExt] {
 
   case class Received(data: ByteString, sender: InetSocketAddress) extends Event
   case class CommandFailed(cmd: Command) extends Event
-  case object Bound extends Event
-  case object SimpleSendReady extends Event
-  case object Unbound extends Event
+
+  sealed trait Bound extends Event
+  case object Bound extends Bound
+
+  sealed trait SimpleSendReady extends Event
+  case object SimpleSendReady extends SimpleSendReady
+
+  sealed trait Unbound
+  case object Unbound extends Unbound
 
   case class SendFailed(cause: Throwable) extends Event
 
+}
+
+object UdpFFMessage {
+  import UdpFF._
+  import java.lang.{ Iterable ⇒ JIterable }
+  import scala.collection.JavaConverters._
+  import language.implicitConversions
+
+  def send(payload: ByteString, target: InetSocketAddress): Send = Send(payload, target)
+  def send(payload: ByteString, target: InetSocketAddress, ack: Any): Send = Send(payload, target, ack)
+
+  def bind(handler: ActorRef, endpoint: InetSocketAddress, options: JIterable[SocketOption]): Bind =
+    Bind(handler, endpoint, options.asScala.to)
+
+  def bind(handler: ActorRef, endpoint: InetSocketAddress): Bind = Bind(handler, endpoint, Nil)
+
+  def simpleSender(options: JIterable[SocketOption]): SimpleSender = SimpleSender(options.asScala.to)
+  def simpleSender: SimpleSender = SimpleSender
+
+  def unbind: Unbind.type = Unbind
+
+  def stopReading: StopReading.type = StopReading
+  def resumeReading: ResumeReading.type = ResumeReading
 }
 
 class UdpFFExt(system: ExtendedActorSystem) extends IO.Extension {
