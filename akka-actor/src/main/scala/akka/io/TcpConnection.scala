@@ -289,7 +289,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
       } else this
 
     def hasData = buffer.remaining() > 0 || remainingData.size > 0
-    def wantsAck = ack != NoAck
+    def wantsAck = !ack.isInstanceOf[NoAck]
   }
   def createWrite(write: Write): PendingWrite = {
     val buffer = bufferPool.acquire()
