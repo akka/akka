@@ -87,7 +87,7 @@ object AkkaBuild extends Build {
     base = file("all-tests"),
     dependencies = (akka.aggregate: Seq[ProjectReference]) map (_ % "test->test"),
     settings = defaultSettings ++ Seq(
-      scalaVersion := "2.10.1-RC1",
+      scalaVersion := "2.10.1-RC1", // FIXME no hardcoded value, has to be passed in manually
       publishArtifact := false,
       definedTests in Test := Nil
     ) ++ (
