@@ -20,6 +20,8 @@ import akka.io.SelectionHandler._
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
+ *
+ * INTERNAL API
  */
 private[io] abstract class TcpConnection(val channel: SocketChannel,
                                          val tcp: TcpExt) extends Actor with ActorLogging {
@@ -298,6 +300,9 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
   }
 }
 
+/**
+ * INTERNAL API
+ */
 private[io] object TcpConnection {
   sealed trait ReadResult
   object NoData extends ReadResult

@@ -13,6 +13,8 @@ import scala.util.control.NonFatal
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
+ *
+ * INTERNAL API
  */
 private[io] class UdpFFSender(val udpFF: UdpFFExt, options: immutable.Traversable[SocketOption], val commander: ActorRef)
   extends Actor with ActorLogging with WithUdpFFSend {

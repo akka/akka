@@ -106,8 +106,11 @@ object Tcp extends ExtensionKey[TcpExt] {
   case class Received(data: ByteString) extends Event
   case class Connected(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress) extends Event
   case class CommandFailed(cmd: Command) extends Event
-  case object Bound extends Event
-  case object Unbound extends Event
+
+  sealed trait Bound extends Event
+  case object Bound extends Bound
+  sealed trait Unbound extends Event
+  case object Unbound extends Unbound
 
   sealed trait ConnectionClosed extends Event {
     def isAborted: Boolean = false
@@ -190,34 +193,34 @@ object TcpMessage {
 
   def connect(remoteAddress: InetSocketAddress,
               localAddress: InetSocketAddress,
-              options: JIterable[SocketOption]) = Connect(remoteAddress, Some(localAddress), options)
+              options: JIterable[SocketOption]): Command = Connect(remoteAddress, Some(localAddress), options)
   def connect(remoteAddress: InetSocketAddress,
-              options: JIterable[SocketOption]) = Connect(remoteAddress, None, options)
-  def connect(remoteAddress: InetSocketAddress) = Connect(remoteAddress, None, Nil)
+              options: JIterable[SocketOption]): Command = Connect(remoteAddress, None, options)
+  def connect(remoteAddress: InetSocketAddress): Command = Connect(remoteAddress, None, Nil)
 
   def bind(handler: ActorRef,
            endpoint: InetSocketAddress,
            backlog: Int,
-           options: JIterable[SocketOption]) = Bind(handler, endpoint, backlog, options)
+           options: JIterable[SocketOption]): Command = Bind(handler, endpoint, backlog, options)
   def bind(handler: ActorRef,
            endpoint: InetSocketAddress,
-           backlog: Int) = Bind(handler, endpoint, backlog, Nil)
+           backlog: Int): Command = Bind(handler, endpoint, backlog, Nil)
 
-  def register(handler: ActorRef) = Register(handler)
-  def unbind = Unbind
+  def register(handler: ActorRef): Command = Register(handler)
+  def unbind: Command = Unbind
 
-  def close = Close
-  def confirmedClose = ConfirmedClose
-  def abort = Abort
+  def close: Command = Close
+  def confirmedClose: Command = ConfirmedClose
+  def abort: Command = Abort
 
-  def noAck = NoAck
-  def noAck(token: AnyRef) = NoAck(token)
+  def noAck: NoAck = NoAck
+  def noAck(token: AnyRef): NoAck = NoAck(token)
 
-  def write(data: ByteString) = Write(data)
-  def write(data: ByteString, ack: AnyRef) = Write(data, ack)
+  def write(data: ByteString): Command = Write(data)
+  def write(data: ByteString, ack: AnyRef): Command = Write(data, ack)
 
-  def stopReading = StopReading
-  def resumeReading = ResumeReading
+  def stopReading: Command = StopReading
+  def resumeReading: Command = ResumeReading
 
   implicit private def fromJava[T](coll: JIterable[T]): immutable.Traversable[T] = {
     import scala.collection.JavaConverters._

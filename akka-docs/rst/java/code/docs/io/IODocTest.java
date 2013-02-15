@@ -87,13 +87,5 @@ public class IODocTest {
 
   static ActorSystem system;
 
-  @BeforeClass
-  static public void setup() {
-    system = ActorSystem.create("IODocTest");
-  }
-
-  @Test
-  public void demonstrateConnect() {
-  }
-
+  // This is currently only a compilation test, nothing is run
 }
