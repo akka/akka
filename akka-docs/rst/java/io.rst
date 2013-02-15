@@ -1,7 +1,7 @@
-.. _io-scala:
+.. _io-java:
 
-I/O (Scala)
-===========
+I/O (Java)
+==========
 
 Introduction
 ------------
@@ -13,13 +13,6 @@ more general consumption as an actor-based service.
 
 This documentation is in progress and some sections may be incomplete. More will be coming.
 
-.. toctree::
-
-  io-old
-
-.. note::
-  The old I/O implementation has been deprecated and its documentation has been moved: :ref:`io-scala-old`
-
 Terminology, Concepts
 ---------------------
 The I/O API is completely actor based, meaning that all operations are implemented as message passing instead of
@@ -27,9 +20,7 @@ direct method calls. Every I/O driver (TCP, UDP) has a special actor, called *ma
 as the entry point for the API. The manager is accessible through an extension, for example the following code
 looks up the TCP manager and returns its ``ActorRef``:
 
-.. code-block:: scala
-
-  val tcpManager = IO(Tcp)
+.. includecode:: code/docs/io/IODocTest.java#manager
 
 For various I/O commands the manager instantiates worker actors that will expose themselves to the user of the
 API by replying to the command. For example after a ``Connect`` command sent to the TCP manager the manager creates
@@ -86,53 +77,16 @@ Compatibility with java.io
 
 A ``ByteStringBuilder`` can be wrapped in a `java.io.OutputStream` via the ``asOutputStream`` method. Likewise, ``ByteIterator`` can we wrapped in a ``java.io.InputStream`` via ``asInputStream``. Using these, ``akka.io`` applications can integrate legacy code based on ``java.io`` streams.
 
-Encoding and decoding of binary data
-....................................
-
-``ByteStringBuilder`` and ``ByteIterator`` support encoding and decoding of binary data. As an example, consider a stream of binary data frames with the following format:
-
-.. code-block:: text
-
-  frameLen: Int
-  n: Int
-  m: Int
-  n times {
-    a: Short
-    b: Long
-  }
-  data: m times Double
-
-In this example, the data is to be stored in arrays of ``a``, ``b`` and ``data``.
-
-Decoding of such frames can be efficiently implemented in the following fashion:
-
-.. includecode:: code/docs/io/BinaryCoding.scala
-   :include: decoding
-
-This implementation naturally follows the example data format. In a true Scala application, one might, of course, want use specialized immutable Short/Long/Double containers instead of mutable Arrays.
-
-After extracting data from a ``ByteIterator``, the remaining content can also be turned back into a ``ByteString`` using the ``toSeq`` method
-
-.. includecode:: code/docs/io/BinaryCoding.scala
-   :include: rest-to-seq
-
-with no copying from bytes to rest involved. In general, conversions from ByteString to ByteIterator and vice versa are O(1) for non-chunked ByteStrings and (at worst) O(nChunks) for chunked ByteStrings.
-
-Encoding of data also is very natural, using ``ByteStringBuilder``
-
-.. includecode:: code/docs/io/BinaryCoding.scala
-   :include: encoding
-
 Using TCP
 ---------
 
+The following imports are assumed throughout this section:
+
+.. includecode:: code/docs/io/IODocTest.java#imports
+
 As with all of the Akka I/O APIs, everything starts with acquiring a reference to the appropriate manager:
 
-.. code-block:: scala
-
-  import akka.io.IO
-  import akka.io.Tcp
-  val tcpManager = IO(Tcp)
+.. includecode:: code/docs/io/IODocTest.java#manager
 
 This is an actor that handles the underlying low level I/O resources (Selectors, channels) and instantiates workers for
 specific tasks, like listening to incoming connections.
@@ -142,38 +96,24 @@ Connecting
 
 The first step of connecting to a remote address is sending a ``Connect`` message to the TCP manager:
 
-.. code-block:: scala
-
-  import akka.io.Tcp._
-  IO(Tcp) ! Connect(remoteSocketAddress)
-  // It is also possible to set various socket options or specify a local address:
-  IO(Tcp) ! Connect(remoteSocketAddress, Some(localSocketAddress), List(SO.KeepAlive(true)))
+.. includecode:: code/docs/io/IODocTest.java#connect
 
 After issuing the Connect command the TCP manager spawns a worker actor that will handle commands related to the
 connection. This worker actor will reveal itself by replying with a ``Connected`` message to the actor who sent the
 ``Connect`` command.
 
-.. code-block:: scala
+.. includecode:: code/docs/io/IODocTest.java#connected
 
-  case Connected(remoteAddress, localAddress) =>
-    connectionActor = sender
-
-At this point, there is still no listener associated with the connection. To finish the connection setup a ``Register``
-has to be sent to the connection actor with the listener ``ActorRef`` as a parameter.
-
-.. code-block:: scala
-
-  connectionActor ! Register(listener)
+When receiving the :class:`Connected` message there is still no listener
+associated with the connection. To finish the connection setup a ``Register``
+has to be sent to the connection actor with the listener ``ActorRef`` as a
+parameter, which therefore done in the last line above.
 
 After registration, the listener actor provided in the ``listener`` parameter will be watched by the connection actor.
 If the listener stops, the connection is closed, and all resources allocated for the connection released. During the
 lifetime the listener may receive various event notifications:
 
-.. code-block:: scala
-
-  case Received(dataByteString) => // handle incoming chunk of data
-  case CommandFailed(cmd)       => // handle failure of command: cmd
-  case _: ConnectionClosed      => // handle closed connections
+.. includecode:: code/docs/io/IODocTest.java#received
 
 The last line handles all connection close events in the same way. It is possible to listen for more fine-grained
 connection events, see the appropriate section below.
@@ -184,28 +124,19 @@ Accepting connections
 
 To create a TCP server and listen for inbound connection, a ``Bind`` command has to be sent to the TCP manager:
 
-.. code-block:: scala
-
-  import akka.io.IO
-  import akka.io.Tcp
-  IO(Tcp) ! Bind(handler, localAddress)
+.. includecode:: code/docs/io/IODocTest.java#bind
 
 The actor sending the ``Bind`` message will receive a ``Bound`` message signalling that the server is ready to accept
 incoming connections. Accepting connections is very similar to the last two steps of opening outbound connections: when
 an incoming connection is established, the actor provided in ``handler`` will receive a ``Connected`` message whose
 sender is the connection actor:
 
-.. code-block:: scala
+.. includecode:: code/docs/io/IODocTest.java#connected
 
-  case Connected(remoteAddress, localAddress) =>
-    connectionActor = sender
-
-At this point, there is still no listener associated with the connection. To finish the connection setup a ``Register``
-has to be sent to the connection actor with the listener ``ActorRef`` as a parameter.
-
-.. code-block:: scala
-
-  connectionActor ! Register(listener)
+When receiving the :class:`Connected` message there is still no listener
+associated with the connection. To finish the connection setup a ``Register``
+has to be sent to the connection actor with the listener ``ActorRef`` as a
+parameter, which therefore done in the last line above.
 
 After registration, the listener actor provided in the ``listener`` parameter will be watched by the connection actor.
 If the listener stops, the connection is closed, and all resources allocated for the connection released. During the

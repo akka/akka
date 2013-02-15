@@ -86,4 +86,12 @@ object Inet {
     val TrafficClass = SO.TrafficClass
   }
 
+  trait SoJavaFactories {
+    import SO._
+    def receiveBufferSize(size: Int) = ReceiveBufferSize(size)
+    def reuseAddress(on: Boolean) = ReuseAddress(on)
+    def sendBufferSize(size: Int) = SendBufferSize(size)
+    def trafficClass(tc: Int) = TrafficClass(tc)
+  }
+
 }
