@@ -12,6 +12,7 @@ import scala.concurrent.duration._
 import scala.collection.immutable
 import akka.util.ByteString
 import akka.actor._
+import java.lang.{ Iterable ⇒ JIterable }
 
 object Tcp extends ExtensionKey[TcpExt] {
 
@@ -69,6 +70,7 @@ object Tcp extends ExtensionKey[TcpExt] {
                   endpoint: InetSocketAddress,
                   backlog: Int = 100,
                   options: immutable.Traversable[SocketOption] = Nil) extends Command
+
   case class Register(handler: ActorRef) extends Command
   case object Unbind extends Command
 
@@ -77,7 +79,8 @@ object Tcp extends ExtensionKey[TcpExt] {
   case object ConfirmedClose extends CloseCommand
   case object Abort extends CloseCommand
 
-  case object NoAck
+  case class NoAck(token: Any)
+  object NoAck extends NoAck(null)
 
   /**
    * Write data to the TCP connection. If no ack is needed use the special
@@ -86,7 +89,7 @@ object Tcp extends ExtensionKey[TcpExt] {
   case class Write(data: ByteString, ack: Any) extends Command {
     require(ack != null, "ack must be non-null. Use NoAck if you don't want acks.")
 
-    def wantsAck: Boolean = ack != NoAck
+    def wantsAck: Boolean = !ack.isInstanceOf[NoAck]
   }
   object Write {
     val Empty: Write = Write(ByteString.empty, NoAck)
@@ -103,15 +106,33 @@ object Tcp extends ExtensionKey[TcpExt] {
   case class Received(data: ByteString) extends Event
   case class Connected(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress) extends Event
   case class CommandFailed(cmd: Command) extends Event
-  case object Bound extends Event
-  case object Unbound extends Event
 
-  sealed trait ConnectionClosed extends Event
+  sealed trait Bound extends Event
+  case object Bound extends Bound
+  sealed trait Unbound extends Event
+  case object Unbound extends Unbound
+
+  sealed trait ConnectionClosed extends Event {
+    def isAborted: Boolean = false
+    def isConfirmed: Boolean = false
+    def isPeerClosed: Boolean = false
+    def isErrorClosed: Boolean = false
+    def getErrorCause: String = null
+  }
   case object Closed extends ConnectionClosed
-  case object Aborted extends ConnectionClosed
-  case object ConfirmedClosed extends ConnectionClosed
-  case object PeerClosed extends ConnectionClosed
-  case class ErrorClosed(cause: String) extends ConnectionClosed
+  case object Aborted extends ConnectionClosed {
+    override def isAborted = true
+  }
+  case object ConfirmedClosed extends ConnectionClosed {
+    override def isConfirmed = true
+  }
+  case object PeerClosed extends ConnectionClosed {
+    override def isPeerClosed = true
+  }
+  case class ErrorClosed(cause: String) extends ConnectionClosed {
+    override def isErrorClosed = true
+    override def getErrorCause = cause
+  }
 }
 
 class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
@@ -157,4 +178,52 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
   }
 
   val bufferPool: BufferPool = new DirectByteBufferPool(Settings.DirectBufferSize, Settings.MaxDirectBufferPoolSize)
+}
+
+object TcpSO extends SoJavaFactories {
+  import Tcp.SO._
+  def keepAlive(on: Boolean) = KeepAlive(on)
+  def oobInline(on: Boolean) = OOBInline(on)
+  def tcpNoDelay(on: Boolean) = TcpNoDelay(on)
+}
+
+object TcpMessage {
+  import language.implicitConversions
+  import Tcp._
+
+  def connect(remoteAddress: InetSocketAddress,
+              localAddress: InetSocketAddress,
+              options: JIterable[SocketOption]): Command = Connect(remoteAddress, Some(localAddress), options)
+  def connect(remoteAddress: InetSocketAddress,
+              options: JIterable[SocketOption]): Command = Connect(remoteAddress, None, options)
+  def connect(remoteAddress: InetSocketAddress): Command = Connect(remoteAddress, None, Nil)
+
+  def bind(handler: ActorRef,
+           endpoint: InetSocketAddress,
+           backlog: Int,
+           options: JIterable[SocketOption]): Command = Bind(handler, endpoint, backlog, options)
+  def bind(handler: ActorRef,
+           endpoint: InetSocketAddress,
+           backlog: Int): Command = Bind(handler, endpoint, backlog, Nil)
+
+  def register(handler: ActorRef): Command = Register(handler)
+  def unbind: Command = Unbind
+
+  def close: Command = Close
+  def confirmedClose: Command = ConfirmedClose
+  def abort: Command = Abort
+
+  def noAck: NoAck = NoAck
+  def noAck(token: AnyRef): NoAck = NoAck(token)
+
+  def write(data: ByteString): Command = Write(data)
+  def write(data: ByteString, ack: AnyRef): Command = Write(data, ack)
+
+  def stopReading: Command = StopReading
+  def resumeReading: Command = ResumeReading
+
+  implicit private def fromJava[T](coll: JIterable[T]): immutable.Traversable[T] = {
+    import scala.collection.JavaConverters._
+    coll.asScala.to
+  }
 }

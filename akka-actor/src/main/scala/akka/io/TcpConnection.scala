@@ -20,6 +20,8 @@ import akka.io.SelectionHandler._
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
+ *
+ * INTERNAL API
  */
 private[io] abstract class TcpConnection(val channel: SocketChannel,
                                          val tcp: TcpExt) extends Actor with ActorLogging {
@@ -287,7 +289,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
       } else this
 
     def hasData = buffer.remaining() > 0 || remainingData.size > 0
-    def wantsAck = ack != NoAck
+    def wantsAck = !ack.isInstanceOf[NoAck]
   }
   def createWrite(write: Write): PendingWrite = {
     val buffer = bufferPool.acquire()
@@ -298,6 +300,9 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
   }
 }
 
+/**
+ * INTERNAL API
+ */
 private[io] object TcpConnection {
   sealed trait ReadResult
   object NoData extends ReadResult
