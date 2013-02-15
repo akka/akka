@@ -244,34 +244,23 @@ receive datagrams only from that address.
 
 Connecting is similar to what we have seen in the previous section:
 
-.. code-block:: scala
-
-  IO(UdpConn) ! Connect(handler, remoteAddress)
-  // or, with more options:
-  IO(UdpConn) ! Connect(handler, Some(localAddress), remoteAddress, List(SO.Broadcast(true)))
+.. includecode:: code/docs/io/UdpConnDocTest.java#connect
 
 After the connect succeeds, the sender of the ``Connect`` command will be notified with a ``Connected`` message. The sender of
 this message is the worker for the UDP connection.
 
-.. code-block:: scala
-
-  case Connected =>
-    udpConnectionActor = sender // Save the worker ref for later use
+.. includecode:: code/docs/io/UdpConnDocTest.java#connected
 
 The actor passed in the ``handler`` parameter will receive inbound UDP datagrams sent to the bound address:
 
-.. code-block:: scala
-
-  case Received(dataByteString) => // Do something with the data
+.. includecode:: code/docs/io/UdpConnDocTest.java#received
 
 The ``Received`` message contains the payload of the datagram but unlike in the connectionless case, no sender address
 will be provided, as an UDP connection only receives messages from the endpoint it has been connected to.
 
 It is also possible to send UDP datagrams using the ``ActorRef`` of the worker saved in ``udpWorker``:
 
-.. code-block:: scala
-
- udpConnectionActor ! Send(data)
+.. includecode:: code/docs/io/UdpConnDocTest.java#send
 
 Again, the send does not contain a remote address, as it is always the endpoint we have been connected to.
 
