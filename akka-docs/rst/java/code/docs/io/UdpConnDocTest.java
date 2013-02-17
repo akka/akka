@@ -38,14 +38,15 @@ public class UdpConnDocTest {
         final InetSocketAddress remoteAddr =
             new InetSocketAddress("127.0.0.1", 12345);
         udp.tell(UdpConnMessage.connect(handler, remoteAddr), getSelf());
-        // or with socket options
+        //#connect
+        //#connect-with-options
         final InetSocketAddress localAddr =
             new InetSocketAddress("127.0.0.1", 1234);
         final List<Inet.SocketOption> options =
             new ArrayList<Inet.SocketOption>();
         options.add(UdpSO.broadcast(true));
         udp.tell(UdpConnMessage.connect(handler, remoteAddr, localAddr, options), getSelf());
-        //#connect
+        //#connect-with-options
       } else
         //#connected
         if (msg instanceof UdpConn.Connected) {
