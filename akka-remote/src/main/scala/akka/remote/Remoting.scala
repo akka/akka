@@ -3,7 +3,6 @@
  */
 package akka.remote
 
-import scala.language.postfixOps
 import akka.actor.SupervisorStrategy._
 import akka.actor._
 import akka.event.{ Logging, LoggingAdapter }
@@ -23,11 +22,20 @@ import scala.concurrent.{ Promise, Await, Future }
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success }
 
+/**
+ * INTERNAL API
+ */
 private[remote] object AddressUrlEncoder {
   def apply(address: Address): String = URLEncoder.encode(address.toString, "utf-8")
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] case class RARP(provider: RemoteActorRefProvider) extends Extension
+/**
+ * INTERNAL API
+ */
 private[remote] object RARP extends ExtensionId[RARP] with ExtensionIdProvider {
 
   override def lookup() = RARP
@@ -35,6 +43,9 @@ private[remote] object RARP extends ExtensionId[RARP] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem) = RARP(system.provider.asInstanceOf[RemoteActorRefProvider])
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] object Remoting {
 
   final val EndpointManagerName = "endpointManager"
@@ -48,7 +59,7 @@ private[remote] object Remoting {
         responsibleTransports.size match {
           case 0 ⇒
             throw new RemoteTransportException(
-              s"No transport is responsible for address: $remote although protocol ${remote.protocol} is available." +
+              s"No transport is responsible for address: [$remote] although protocol [${remote.protocol}] is available." +
                 " Make sure at least one transport is configured to be responsible for the address.",
               null)
 
@@ -63,7 +74,7 @@ private[remote] object Remoting {
               null)
         }
       case None ⇒ throw new RemoteTransportException(
-        s"No transport is loaded for protocol: ${remote.protocol}, available protocols: ${transportMapping.keys.mkString}", null)
+        s"No transport is loaded for protocol: [${remote.protocol}], available protocols: [${transportMapping.keys.mkString}]", null)
     }
   }
 
@@ -81,6 +92,9 @@ private[remote] object Remoting {
 
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider) extends RemoteTransport(_system, _provider) {
 
   @volatile private var endpointManager: Option[ActorRef] = None
@@ -199,6 +213,9 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] object EndpointManager {
 
   // Messages between Remoting and EndpointManager
@@ -243,7 +260,7 @@ private[remote] object EndpointManager {
 
     def registerWritableEndpoint(address: Address, endpoint: ActorRef): ActorRef = addressToWritable.get(address) match {
       case Some(Pass(e)) ⇒
-        throw new IllegalArgumentException(s"Attempting to overwrite existing endpoint $e with $endpoint")
+        throw new IllegalArgumentException(s"Attempting to overwrite existing endpoint [$e] with [$endpoint]")
       case _ ⇒
         addressToWritable += address -> Pass(endpoint)
         writableToAddress += endpoint -> address
@@ -309,6 +326,9 @@ private[remote] object EndpointManager {
   }
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends Actor {
 
   import EndpointManager._
@@ -483,7 +503,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         adapters.map { TransportAdaptersExtension.get(context.system).getAdapterProvider(_) }.foldLeft(driver) {
           (t: Transport, provider: TransportAdapterProvider) ⇒
             // The TransportAdapterProvider will wrap the given Transport and returns with a wrapped one
-            provider(t, context.system.asInstanceOf[ExtendedActorSystem])
+            provider.create(t, context.system.asInstanceOf[ExtendedActorSystem])
         }
 
       // Apply AkkaProtocolTransport wrapper to the end of the chain

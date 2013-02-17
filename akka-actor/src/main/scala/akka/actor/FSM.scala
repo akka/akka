@@ -80,12 +80,12 @@ object FSM {
   case object StateTimeout
 
   /**
-   * Internal API
+   * INTERNAL API
    */
   private case class TimeoutMarker(generation: Long)
 
   /**
-   * Internal API
+   * INTERNAL API
    */
   private[akka] case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(context: ActorContext) {
     private var ref: Option[Cancellable] = _
@@ -154,7 +154,7 @@ object FSM {
     }
 
     /**
-     * Internal API.
+     * INTERNAL API.
      */
     private[akka] def withStopReason(reason: Reason): State[S, D] = {
       copy(stopReason = Some(reason))
@@ -390,7 +390,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
   final def setStateTimeout(state: S, timeout: Timeout): Unit = stateTimeouts(state) = timeout
 
   /**
-   * Internal API, used for testing.
+   * INTERNAL API, used for testing.
    */
   private[akka] final def isStateTimerActive = timeoutFuture.isDefined
 

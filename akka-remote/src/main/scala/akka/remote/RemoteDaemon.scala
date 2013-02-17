@@ -13,15 +13,23 @@ import akka.actor.ActorRefWithCell
 import akka.actor.ActorRefScope
 import akka.util.Switch
 
+/**
+ * INTERNAL API
+ */
 private[akka] sealed trait DaemonMsg
+
+/**
+ * INTERNAL API
+ */
+@SerialVersionUID(1L)
 private[akka] case class DaemonMsgCreate(props: Props, deploy: Deploy, path: String, supervisor: ActorRef) extends DaemonMsg
 
 /**
+ * INTERNAL API
+ *
  * Internal system "daemon" actor for remote internal communication.
  *
  * It acts as the brain of the remote that responds to system remote events (messages) and undertakes action.
- *
- * INTERNAL USE ONLY!
  */
 private[akka] class RemoteSystemDaemon(
   system: ActorSystemImpl,

@@ -3,7 +3,7 @@
  */
 package akka.remote
 
-import java.util.concurrent.TimeUnit._
+import java.util.concurrent.TimeUnit.NANOSECONDS
 
 /**
  * A failure detector must be a thread-safe mutable construct that registers heartbeat events of a resource and is able to

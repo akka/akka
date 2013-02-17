@@ -144,9 +144,7 @@ class PhiAccrualFailureDetector(
       val mean = history.mean
       val stdDeviation = ensureValidStdDeviation(history.stdDeviation)
 
-      val φ = phi(timeDiff, mean + acceptableHeartbeatPauseMillis, stdDeviation)
-
-      φ
+      phi(timeDiff, mean + acceptableHeartbeatPauseMillis, stdDeviation)
     }
   }
 

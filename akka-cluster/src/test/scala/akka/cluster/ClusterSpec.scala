@@ -91,5 +91,15 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
     }
 
+    // this must be the last test step, since the cluster is shutdown
+    "publish MemberRemoved when shutdown" in {
+      cluster.subscribe(testActor, classOf[ClusterEvent.MemberRemoved])
+      // first, is in response to the subscription
+      expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
+
+      cluster.shutdown()
+      expectMsgType[ClusterEvent.MemberRemoved].member.address must be(selfAddress)
+    }
+
   }
 }

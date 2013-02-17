@@ -347,7 +347,7 @@ trait MessageQueue {
 }
 
 /**
- * INTERNAL USE ONLY
+ * INTERNAL API
  */
 private[akka] trait SystemMessageQueue {
   /**
@@ -364,7 +364,7 @@ private[akka] trait SystemMessageQueue {
 }
 
 /**
- * INTERNAL USE ONLY
+ * INTERNAL API
  */
 private[akka] trait DefaultSystemMessageQueue { self: Mailbox ⇒
 

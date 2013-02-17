@@ -381,7 +381,7 @@ its identity (i.e. the path which was looked up).
 
 Remote actor addresses may also be looked up, if remoting is enabled::
 
-  context.actorFor("akka://app@otherhost:1234/user/serviceB")
+  context.actorFor("akka.tcp://app@otherhost:1234/user/serviceB")
 
 These look-ups return a (possibly remote) actor reference immediately, so you
 will have to send to it and await a reply in order to verify that ``serviceB``
@@ -440,6 +440,8 @@ message. This gives the best concurrency and scalability characteristics.
 .. code-block:: scala
 
   actor ! "hello"
+
+.. _actors-tell-sender-scala:
 
 If invoked from within an Actor, then the sending actor reference will be
 implicitly passed along with the message and available to the receiving Actor
@@ -626,6 +628,8 @@ enables cleaning up of resources:
   actor and create its replacement in response to the :class:`Terminated`
   message which will eventually arrive.
 
+.. _poison-pill-scala:
+
 PoisonPill
 ----------
 
@@ -756,18 +760,22 @@ actor's state which have the same property. The :class:`Stash` trait’s
 implementation of :meth:`preRestart` will call ``unstashAll()``, which is
 usually the desired behavior.
 
+.. _killing-actors-scala:
 
 Killing an Actor
 ================
 
-You can kill an actor by sending a ``Kill`` message. This will restart the actor
-through regular supervisor semantics.
+You can kill an actor by sending a ``Kill`` message. This will cause the actor
+to throw a :class:`ActorKilledException`, triggering a failure. The actor will
+suspend operation and its supervisor will be asked how to handle the failure,
+which may mean resuming the actor, restarting it or terminating it completely.
+See :ref:`supervision-directives` for more information.
 
-Use it like this:
+Use ``Kill`` like this:
 
 .. code-block:: scala
 
-  // kill the actor called 'victim'
+  // kill the 'victim' actor
   victim ! Kill
 
 

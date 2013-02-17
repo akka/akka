@@ -48,7 +48,6 @@ object RemotingSpec {
       protocol = "TLSv1"
       random-number-generator = "AES128CounterSecureRNG"
       enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
-      sha1prng-random-source = "/dev/./urandom"
     }
 
     akka {
@@ -71,7 +70,7 @@ object RemotingSpec {
       remote.netty.udp.hostname = "localhost"
       remote.netty.ssl.port = 0
       remote.netty.ssl.hostname = "localhost"
-      remote.netty.ssl.ssl = ${common-ssl-settings}
+      remote.netty.ssl.security = ${common-ssl-settings}
 
       remote.test {
           transport-class = "akka.remote.transport.TestTransport"

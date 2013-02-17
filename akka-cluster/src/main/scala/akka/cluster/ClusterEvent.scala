@@ -339,7 +339,16 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
 
   var latestGossip: Gossip = Gossip.empty
   var latestConvergedGossip: Gossip = Gossip.empty
-  var memberEvents: immutable.Seq[MemberEvent] = immutable.Seq.empty
+  var bufferedEvents: immutable.IndexedSeq[ClusterDomainEvent] = Vector.empty
+
+  override def preRestart(reason: Throwable, message: Option[Any]) {
+    // don't postStop when restarted, no children to stop
+  }
+
+  override def postStop(): Unit = {
+    // publish the final removed state before shutting down
+    publishChanges(Gossip.empty)
+  }
 
   def receive = {
     case PublishChanges(newGossip)            ⇒ publishChanges(newGossip)
@@ -349,7 +358,6 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     case Unsubscribe(subscriber, to)          ⇒ unsubscribe(subscriber, to)
     case PublishEvent(event)                  ⇒ publish(event)
     case PublishStart                         ⇒ publishStart()
-    case PublishDone                          ⇒ publishDone(sender)
   }
 
   def eventStream: EventStream = context.system.eventStream
@@ -401,14 +409,16 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     val newMemberEvents = diffMemberEvents(oldGossip, newGossip)
     convertToInstantMemberEvents(newMemberEvents) foreach publish
     // buffer up the MemberEvents waiting for convergence
-    memberEvents ++= newMemberEvents
-    // if we have convergence then publish the MemberEvents and possibly a LeaderChanged
+    bufferedEvents ++= newMemberEvents
+    // buffer up the LeaderChanged waiting for convergence
+    bufferedEvents ++= diffLeader(oldGossip, newGossip)
+    // if we have convergence then publish the MemberEvents and LeaderChanged
     if (newGossip.convergence) {
       val previousConvergedGossip = latestConvergedGossip
       latestConvergedGossip = newGossip
-      memberEvents foreach { event ⇒
+      bufferedEvents foreach { event ⇒
         event match {
-          case m @ (MemberDowned(_) | MemberRemoved(_)) ⇒
+          case m: MemberEvent if m.isInstanceOf[MemberDowned] || m.isInstanceOf[MemberRemoved] ⇒
             // TODO MemberDowned match should probably be covered by MemberRemoved, see ticket #2788
             //   but right now we don't change Downed to Removed
             publish(event)
@@ -417,8 +427,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
           case _ ⇒ publish(event)
         }
       }
-      memberEvents = immutable.Seq.empty
-      diffLeader(previousConvergedGossip, latestConvergedGossip) foreach publish
+      bufferedEvents = Vector.empty
     }
     // publish internal SeenState for testing purposes
     diffSeen(oldGossip, newGossip) foreach publish
@@ -433,11 +442,6 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
       clearState()
       publishCurrentClusterState(None)
     }
-
-  def publishDone(receiver: ActorRef): Unit = {
-    clearState()
-    receiver ! PublishDoneFinished
-  }
 
   def clearState(): Unit = {
     latestGossip = Gossip.empty

@@ -20,18 +20,18 @@ import akka.AkkaException
 object ClusterSingletonManager {
 
   /**
-   * Internal API
+   * INTERNAL API
    * public due to the `with FSM` type parameters
    */
   sealed trait State
   /**
-   * Internal API
+   * INTERNAL API
    * public due to the `with FSM` type parameters
    */
   sealed trait Data
 
   /**
-   * Internal API
+   * INTERNAL API
    */
   private object Internal {
     /**
@@ -65,7 +65,7 @@ object ClusterSingletonManager {
     case object TakeOverFromMe
 
     case class HandOverRetry(count: Int)
-    case class TakeOverRetry(leaderPeer: ActorRef, count: Int)
+    case class TakeOverRetry(count: Int)
     case object Cleanup
     case object StartLeaderChangedBuffer
 
@@ -83,7 +83,7 @@ object ClusterSingletonManager {
     case class LeaderData(singleton: ActorRef, singletonTerminated: Boolean = false,
                           handOverData: Option[Any] = None) extends Data
     case class WasLeaderData(singleton: ActorRef, singletonTerminated: Boolean, handOverData: Option[Any],
-                             newLeader: Address) extends Data
+                             newLeaderOption: Option[Address]) extends Data
     case class HandingOverData(singleton: ActorRef, handOverTo: Option[ActorRef], handOverData: Option[Any]) extends Data
 
     val HandOverRetryTimer = "hand-over-retry"
@@ -475,13 +475,13 @@ class ClusterSingletonManager(
           gotoHandingOver(singleton, singletonTerminated, handOverData, None)
         case Some(a) ⇒
           // send TakeOver request in case the new leader doesn't know previous leader
-          val leaderPeer = peer(a)
-          leaderPeer ! TakeOverFromMe
-          setTimer(TakeOverRetryTimer, TakeOverRetry(leaderPeer, 1), retryInterval, repeat = false)
-          goto(WasLeader) using WasLeaderData(singleton, singletonTerminated, handOverData, newLeader = a)
-        case _ ⇒
+          peer(a) ! TakeOverFromMe
+          setTimer(TakeOverRetryTimer, TakeOverRetry(1), retryInterval, repeat = false)
+          goto(WasLeader) using WasLeaderData(singleton, singletonTerminated, handOverData, newLeaderOption = Some(a))
+        case None ⇒
           // new leader will initiate the hand-over
-          stay
+          setTimer(TakeOverRetryTimer, TakeOverRetry(1), retryInterval, repeat = false)
+          goto(WasLeader) using WasLeaderData(singleton, singletonTerminated, handOverData, newLeaderOption = None)
       }
 
     case Event(HandOverToMe, LeaderData(singleton, singletonTerminated, handOverData)) ⇒
@@ -495,20 +495,19 @@ class ClusterSingletonManager(
   }
 
   when(WasLeader) {
-    case Event(TakeOverRetry(leaderPeer, count), _) ⇒
-      val newLeader = leaderPeer.path.address
+    case Event(TakeOverRetry(count), WasLeaderData(_, _, _, newLeaderOption)) ⇒
       if (count <= maxTakeOverRetries) {
-        logInfo("Retry [{}], sending TakeOverFromMe to [{}]", count, newLeader)
-        leaderPeer ! TakeOverFromMe
-        setTimer(TakeOverRetryTimer, TakeOverRetry(leaderPeer, count + 1), retryInterval, repeat = false)
+        logInfo("Retry [{}], sending TakeOverFromMe to [{}]", count, newLeaderOption)
+        newLeaderOption foreach { peer(_) ! TakeOverFromMe }
+        setTimer(TakeOverRetryTimer, TakeOverRetry(count + 1), retryInterval, repeat = false)
         stay
       } else
-        throw new ClusterSingletonManagerIsStuck(s"Expected hand-over to [${newLeader}] never occured")
+        throw new ClusterSingletonManagerIsStuck(s"Expected hand-over to [${newLeaderOption}] never occured")
 
     case Event(HandOverToMe, WasLeaderData(singleton, singletonTerminated, handOverData, _)) ⇒
       gotoHandingOver(singleton, singletonTerminated, handOverData, Some(sender))
 
-    case Event(MemberDowned(m), WasLeaderData(singleton, singletonTerminated, handOverData, newLeader)) if m.address == newLeader ⇒
+    case Event(MemberDowned(m), WasLeaderData(singleton, singletonTerminated, handOverData, Some(newLeader))) if m.address == newLeader ⇒
       addDowned(m.address)
       gotoHandingOver(singleton, singletonTerminated, handOverData, None)
 

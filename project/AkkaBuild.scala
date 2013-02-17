@@ -77,6 +77,30 @@ object AkkaBuild extends Build {
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples, channels, channelsTests)
   )
 
+  // this detached pseudo-project is used for running the tests against a different Scala version than the one used for compilation
+  // usage:
+  //   all-tests/test (or test-only)
+  // customizing (on the SBT command line):
+  //   set scalaVersion in allTests := "2.11.0"
+  lazy val allTests = Project(
+    id = "all-tests",
+    base = file("all-tests"),
+    dependencies = (akka.aggregate: Seq[ProjectReference]) map (_ % "test->test"),
+    settings = defaultSettings ++ Seq(
+      scalaVersion := "2.10.1-RC1", // FIXME no hardcoded value, has to be passed in manually
+      publishArtifact := false,
+      definedTests in Test := Nil
+    ) ++ (
+      (akka.aggregate: Seq[ProjectReference])
+        filterNot {
+          case LocalProject(name) => name contains "slf4j"
+          case _                  => false
+        } map {
+          pr => definedTests in Test <++= definedTests in (pr, Test)
+        }
+      )
+  )
+
   lazy val actor = Project(
     id = "akka-actor",
     base = file("akka-actor"),
@@ -97,8 +121,10 @@ object AkkaBuild extends Build {
   lazy val dataflow = Project(
     id = "akka-dataflow",
     base = file("akka-dataflow"),
-    dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ scaladocSettings  ++ OSGi.dataflow ++ cpsPlugin
+    dependencies = Seq(testkit % "test->test"),
+    settings = defaultSettings ++ scaladocSettings  ++ OSGi.dataflow ++ cpsPlugin ++ Seq(
+      previousArtifact := akkaPreviousArtifact("akka-dataflow")
+    )
   )
 
   lazy val testkit = Project(
@@ -118,6 +144,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(testkit % "compile;test->test"),
     settings = defaultSettings ++ scaladocSettings  ++ Seq(
       autoCompilerPlugins := true,
+      publishArtifact in Compile := false,
       libraryDependencies ++= Dependencies.actorTests
     )
   )
@@ -129,15 +156,25 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ scaladocSettings ++ OSGi.remote ++ Seq(
       libraryDependencies ++= Dependencies.remote,
       // disable parallel tests
-      parallelExecution in Test := false
+      parallelExecution in Test := false,
+      previousArtifact := akkaPreviousArtifact("akka-remote")
+    )
+  )
+
+  lazy val multiNodeTests = Project(
+    id = "akka-multi-node-testkit",
+    base = file("akka-multi-node-testkit"),
+    dependencies = Seq(remote, testkit),
+    settings = defaultSettings ++ scaladocSettings ++ Seq(
+      previousArtifact := akkaPreviousArtifact("akka-multi-node-testkit")
     )
   )
 
   lazy val remoteTests = Project(
-    id = "akka-remote-tests-experimental",
+    id = "akka-remote-tests",
     base = file("akka-remote-tests"),
-    dependencies = Seq(remote, actorTests % "test->test", testkit),
-    settings = defaultSettings ++ scaladocSettings ++ multiJvmSettings ++ experimentalSettings ++ Seq(
+    dependencies = Seq(actorTests % "test->test", multiNodeTests),
+    settings = defaultSettings ++ scaladocSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.remoteTests,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -145,7 +182,8 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
-      previousArtifact := akkaPreviousArtifact("akka-remote")
+      publishArtifact in Compile := false,
+      previousArtifact := akkaPreviousArtifact("akka-remote-tests")
     )
   ) configs (MultiJvm)
 
@@ -161,7 +199,7 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
-      previousArtifact := akkaPreviousArtifact("akka-remote")
+      previousArtifact := akkaPreviousArtifact("akka-cluster-experimental")
     )
   ) configs (MultiJvm)
 
@@ -170,7 +208,8 @@ object AkkaBuild extends Build {
     base = file("akka-slf4j"),
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ scaladocSettings ++ OSGi.slf4j ++ Seq(
-      libraryDependencies ++= Dependencies.slf4j
+      libraryDependencies ++= Dependencies.slf4j,
+      previousArtifact := akkaPreviousArtifact("akka-slf4j")
     )
   )
 
@@ -412,6 +451,7 @@ object AkkaBuild extends Build {
       enableOutput in generateEpub in Sphinx := true,
       unmanagedSourceDirectories in Test <<= sourceDirectory in Sphinx apply { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
+      publishArtifact in Compile := false,
       unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")
     )
@@ -451,6 +491,7 @@ object AkkaBuild extends Build {
     base = file("akka-channels-tests"),
     dependencies = Seq(channels, testkit % "compile;test->test"),
     settings = defaultSettings ++ experimentalSettings ++ Seq(
+      publishArtifact in Compile := false,
       libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _)
     )
   )

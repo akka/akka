@@ -37,6 +37,7 @@ import akka.actor.IO.Chunk
  * This is still in an experimental state and is subject to change until it
  * has received more real world testing.
  */
+@deprecated("use the new implementation in package akka.io instead", "2.2")
 object IO {
 
   final class DivergentIterateeException extends IllegalStateException("Iteratees should not return a continuation when receiving EOF")
@@ -833,6 +834,7 @@ final class IOManager private (system: ExtendedActorSystem) extends Extension { 
    * @param option Seq of [[akka.actor.IO.ServerSocketOptions]] to setup on socket
    * @return a [[akka.actor.IO.ServerHandle]] to uniquely identify the created socket
    */
+  @deprecated("use the new implementation in package akka.io instead", "2.2")
   def listen(address: SocketAddress, options: immutable.Seq[IO.ServerSocketOption])(implicit owner: ActorRef): IO.ServerHandle = {
     val server = IO.ServerHandle(owner, actor)
     actor ! IO.Listen(server, address, options)
@@ -848,6 +850,7 @@ final class IOManager private (system: ExtendedActorSystem) extends Extension { 
    * @param owner the ActorRef that will receive messages from the IOManagerActor
    * @return a [[akka.actor.IO.ServerHandle]] to uniquely identify the created socket
    */
+  @deprecated("use the new implementation in package akka.io instead", "2.2")
   def listen(address: SocketAddress)(implicit owner: ActorRef): IO.ServerHandle = listen(address, Nil)
 
   /**
@@ -861,6 +864,7 @@ final class IOManager private (system: ExtendedActorSystem) extends Extension { 
    * @param owner the ActorRef that will receive messages from the IOManagerActor
    * @return a [[akka.actor.IO.ServerHandle]] to uniquely identify the created socket
    */
+  @deprecated("use the new implementation in package akka.io instead", "2.2")
   def listen(host: String, port: Int, options: immutable.Seq[IO.ServerSocketOption] = Nil)(implicit owner: ActorRef): IO.ServerHandle =
     listen(new InetSocketAddress(host, port), options)(owner)
 
@@ -874,6 +878,7 @@ final class IOManager private (system: ExtendedActorSystem) extends Extension { 
    * @param owner the ActorRef that will receive messages from the IOManagerActor
    * @return a [[akka.actor.IO.SocketHandle]] to uniquely identify the created socket
    */
+  @deprecated("use the new implementation in package akka.io instead", "2.2")
   def connect(address: SocketAddress, options: immutable.Seq[IO.SocketOption] = Nil)(implicit owner: ActorRef): IO.SocketHandle = {
     val socket = IO.SocketHandle(owner, actor)
     actor ! IO.Connect(socket, address, options)
@@ -891,6 +896,7 @@ final class IOManager private (system: ExtendedActorSystem) extends Extension { 
    * @param owner the ActorRef that will receive messages from the IOManagerActor
    * @return a [[akka.actor.IO.SocketHandle]] to uniquely identify the created socket
    */
+  @deprecated("use the new implementation in package akka.io instead", "2.2")
   def connect(host: String, port: Int)(implicit owner: ActorRef): IO.SocketHandle =
     connect(new InetSocketAddress(host, port))(owner)
 
@@ -1016,31 +1022,43 @@ final class IOManagerActor(val settings: Settings) extends Actor with ActorLoggi
 
     case IO.Listen(server, address, options) ⇒
       val channel = ServerSocketChannel open ()
-      channel configureBlocking false
-
-      var backlog = defaultBacklog
-      val sock = channel.socket
-      options foreach {
-        case IO.ReceiveBufferSize(size) ⇒ forwardFailure(sock.setReceiveBufferSize(size))
-        case IO.ReuseAddress(on)        ⇒ forwardFailure(sock.setReuseAddress(on))
-        case IO.PerformancePreferences(connTime, latency, bandwidth) ⇒
-          forwardFailure(sock.setPerformancePreferences(connTime, latency, bandwidth))
-        case IO.Backlog(number) ⇒ backlog = number
+      try {
+        channel configureBlocking false
+        var backlog = defaultBacklog
+        val sock = channel.socket
+        options foreach {
+          case IO.ReceiveBufferSize(size) ⇒ forwardFailure(sock.setReceiveBufferSize(size))
+          case IO.ReuseAddress(on)        ⇒ forwardFailure(sock.setReuseAddress(on))
+          case IO.PerformancePreferences(connTime, latency, bandwidth) ⇒
+            forwardFailure(sock.setPerformancePreferences(connTime, latency, bandwidth))
+          case IO.Backlog(number) ⇒ backlog = number
+        }
+        sock bind (address, backlog)
+        channels update (server, channel)
+        channel register (selector, OP_ACCEPT, server)
+        server.owner ! IO.Listening(server, sock.getLocalSocketAddress())
+      } catch {
+        case NonFatal(e) ⇒ {
+          channel close ()
+          sender ! Status.Failure(e)
+        }
       }
-
-      channel.socket bind (address, backlog)
-      channels update (server, channel)
-      channel register (selector, OP_ACCEPT, server)
-      server.owner ! IO.Listening(server, sock.getLocalSocketAddress())
       run()
 
     case IO.Connect(socket, address, options) ⇒
       val channel = SocketChannel open ()
-      channel configureBlocking false
-      channel connect address
-      setSocketOptions(channel.socket, options)
-      channels update (socket, channel)
-      channel register (selector, OP_CONNECT | OP_READ, socket)
+      try {
+        channel configureBlocking false
+        channel connect address
+        setSocketOptions(channel.socket, options)
+        channels update (socket, channel)
+        channel register (selector, OP_CONNECT | OP_READ, socket)
+      } catch {
+        case NonFatal(e) ⇒ {
+          channel close ()
+          sender ! Status.Failure(e)
+        }
+      }
       run()
 
     case IO.Accept(socket, server, options) ⇒

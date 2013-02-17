@@ -25,7 +25,7 @@ import org.jboss.netty.handler.ssl.SslHandler
 import scala.concurrent.duration.{ Duration, FiniteDuration, MILLISECONDS }
 import scala.concurrent.{ ExecutionContext, Promise, Future, blocking }
 import scala.util.{ Failure, Success, Try }
-import util.control.{ NoStackTrace, NonFatal }
+import scala.util.control.{ NoStackTrace, NonFatal }
 
 object NettyTransportSettings {
   sealed trait Mode
@@ -60,6 +60,7 @@ object NettyFutureBridge {
   }
 }
 
+@SerialVersionUID(1L)
 class NettyTransportException(msg: String, cause: Throwable) extends RuntimeException(msg, cause) with OnlyCauseStackTrace {
   def this(msg: String) = this(msg, null)
 }
@@ -71,7 +72,7 @@ class NettyTransportSettings(config: Config) {
   val TransportMode: Mode = getString("transport-protocol") match {
     case "tcp"   ⇒ Tcp
     case "udp"   ⇒ Udp
-    case unknown ⇒ throw new ConfigurationException(s"Unknown transport: $unknown")
+    case unknown ⇒ throw new ConfigurationException(s"Unknown transport: [$unknown]")
   }
 
   val EnableSsl: Boolean = if (getBoolean("enable-ssl") && TransportMode == Udp)
@@ -109,7 +110,7 @@ class NettyTransportSettings(config: Config) {
   @deprecated("WARNING: This should only be used by professionals.", "2.0")
   val PortSelector: Int = getInt("port")
 
-  val SslSettings: Option[SSLSettings] = if (EnableSsl) Some(new SSLSettings(config.getConfig("ssl"))) else None
+  val SslSettings: Option[SSLSettings] = if (EnableSsl) Some(new SSLSettings(config.getConfig("security"))) else None
 
   val ServerSocketWorkerPoolSize: Int = computeWPS(config.getConfig("server-socket-worker-pool"))
 
@@ -123,7 +124,10 @@ class NettyTransportSettings(config: Config) {
 
 }
 
-trait CommonHandlers extends NettyHelpers {
+/**
+ * INTERNAL API
+ */
+private[netty] trait CommonHandlers extends NettyHelpers {
   protected val transport: NettyTransport
 
   final override def onOpen(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = transport.channelGroup.add(e.getChannel)
@@ -153,8 +157,11 @@ trait CommonHandlers extends NettyHelpers {
   }
 }
 
-abstract class ServerHandler(protected final val transport: NettyTransport,
-                             private final val associationListenerFuture: Future[AssociationEventListener])
+/**
+ * INTERNAL API
+ */
+private[netty] abstract class ServerHandler(protected final val transport: NettyTransport,
+                                            private final val associationListenerFuture: Future[AssociationEventListener])
   extends NettyServerHelpers with CommonHandlers {
 
   import transport.executionContext
@@ -172,7 +179,10 @@ abstract class ServerHandler(protected final val transport: NettyTransport,
 
 }
 
-abstract class ClientHandler(protected final val transport: NettyTransport, remoteAddress: Address)
+/**
+ * INTERNAL API
+ */
+private[netty] abstract class ClientHandler(protected final val transport: NettyTransport, remoteAddress: Address)
   extends NettyClientHelpers with CommonHandlers {
   final protected val statusPromise = Promise[AssociationHandle]()
   def statusFuture = statusPromise.future
@@ -183,6 +193,9 @@ abstract class ClientHandler(protected final val transport: NettyTransport, remo
 
 }
 
+/**
+ * INTERNAL API
+ */
 private[transport] object NettyTransport {
   // 4 bytes will be used to represent the frame length. Used by netty LengthFieldPrepender downstream handler.
   val FrameLengthFieldLength = 4
@@ -209,16 +222,19 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   implicit val executionContext: ExecutionContext = system.dispatcher
 
   override val schemeIdentifier: String = (if (EnableSsl) "ssl." else "") + TransportMode
-  override val maximumPayloadBytes: Int = 32000 // The number of octets required by the remoting specification
+  override def maximumPayloadBytes: Int = 32000 // The number of octets required by the remoting specification
 
-  private final val isDatagram: Boolean = TransportMode == Udp
+  private final val isDatagram = TransportMode == Udp
 
   @volatile private var localAddress: Address = _
   @volatile private var serverChannel: Channel = _
 
   private val log = Logging(system, this.getClass)
 
-  final val udpConnectionTable = new ConcurrentHashMap[SocketAddress, HandleEventListener]()
+  /**
+   * INTERNAL API
+   */
+  private[netty] final val udpConnectionTable = new ConcurrentHashMap[SocketAddress, HandleEventListener]()
 
   /*
    * Be aware, that the close() method of DefaultChannelGroup is racy, because it uses an iterator over a ConcurrentHashMap.

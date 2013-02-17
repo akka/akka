@@ -15,11 +15,11 @@ import akka.remote.transport.AssociationHandle._
 import akka.remote.transport.{ AkkaPduCodec, Transport, AssociationHandle }
 import akka.serialization.Serialization
 import akka.util.ByteString
-import util.control.{ NoStackTrace, NonFatal }
+import scala.util.control.{ NoStackTrace, NonFatal }
 import akka.remote.transport.Transport.InvalidAssociationException
 
 /**
- * Internal API
+ * INTERNAL API
  */
 private[remote] trait InboundMessageDispatcher {
   def dispatch(recipient: InternalActorRef,
@@ -28,6 +28,9 @@ private[remote] trait InboundMessageDispatcher {
                senderOption: Option[ActorRef]): Unit
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] class DefaultMessageDispatcher(private val system: ExtendedActorSystem,
                                                private val provider: RemoteActorRefProvider,
                                                private val log: LoggingAdapter) extends InboundMessageDispatcher {
@@ -88,7 +91,7 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
 }
 
 /**
- * Internal API
+ * INTERNAL API
  */
 private[remote] object EndpointWriter {
 
@@ -109,13 +112,23 @@ private[remote] object EndpointWriter {
   case object Handoff extends State
 }
 
+/**
+ * INTERNAL API
+ */
+@SerialVersionUID(1L)
 private[remote] class EndpointException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with OnlyCauseStackTrace {
   def this(msg: String) = this(msg, null)
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] case class InvalidAssociation(localAddress: Address, remoteAddress: Address, cause: Throwable)
   extends EndpointException("Invalid address: " + remoteAddress, cause)
 
+/**
+ * INTERNAL API
+ */
 private[remote] class EndpointWriter(
   handleOrActive: Option[AssociationHandle],
   val localAddress: Address,
@@ -279,6 +292,9 @@ private[remote] class EndpointWriter(
 
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] class EndpointReader(
   val codec: AkkaPduCodec,
   val localAddress: Address,

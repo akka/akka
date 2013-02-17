@@ -4,11 +4,14 @@
 Routing (Scala)
 ===============
 
-A Router is an actor that routes incoming messages to outbound actors.
-The router routes the messages sent to it to its underlying actors called 'routees'.
+A Router is an actor that receives messages and efficiently routes them to other actors, known as
+its *routees*.
 
-Akka comes with some defined routers out of the box, but as you will see in this chapter it
-is really easy to create your own. The routers shipped with Akka are:
+Different routing strategies can be used, according to your application's needs. Akka comes with
+several useful routing strategies right out of the box. But, as you will see in this chapter, it is
+also possible to :ref:`create your own <custom-router-scala>`.
+
+The routers shipped with Akka are:
 
 * ``akka.routing.RoundRobinRouter``
 * ``akka.routing.RandomRouter``
@@ -17,112 +20,120 @@ is really easy to create your own. The routers shipped with Akka are:
 * ``akka.routing.ScatterGatherFirstCompletedRouter``
 * ``akka.routing.ConsistentHashingRouter``
 
-Routers In Action
+Routers in Action
 ^^^^^^^^^^^^^^^^^
 
-This is an example of how to create a router that is defined in configuration:
-
-.. includecode:: code/docs/routing/RouterViaConfigDocSpec.scala#config-round-robin
-
-.. includecode:: code/docs/routing/RouterViaConfigDocSpec.scala#configurableRouting
-
-This is an example of how to programmatically create a router and set the number of routees it should create:
-
-.. includecode:: code/docs/routing/RouterViaProgramExample.scala#programmaticRoutingNrOfInstances
-
-You can also give the router already created routees as in:
-
-.. includecode:: code/docs/routing/RouterViaProgramExample.scala#programmaticRoutingRoutees
-
-.. note::
-
-    No actor factory or class needs to be provided in this
-    case, as the ``Router`` will not create any children on its own (which is not
-    true anymore when using a resizer). The routees can also be specified by giving
-    their path strings.
-
-
-When you create a router programmatically you define the number of routees *or* you pass already created routees to it.
-If you send both parameters to the router *only* the latter will be used, i.e. ``nrOfInstances`` is disregarded.
-
-*It is also worth pointing out that if you define the ``router`` in the
-configuration file then this value will be used instead of any programmatically
-sent parameters. The decision whether to create a router at all, on the other
-hand, must be taken within the code, i.e. you cannot make something a router by
-external configuration alone (see below for details).*
-
-Once you have the router actor it is just to send messages to it as you would to any actor:
+Sending a message to a router is easy.
 
 .. code-block:: scala
 
   router ! MyMsg
 
-The router will forward the message to its routees according to its routing policy.
+A router actor forwards messages to its routees according to its routing policy.
 
-Remotely Deploying Routees
-**************************
+.. note::
 
-In addition to being able to supply looked-up remote actors as routees, you can
-make the router deploy its created children on a set of remote hosts; this will
-be done in round-robin fashion. In order to do that, wrap the router
-configuration in a :class:`RemoteRouterConfig`, attaching the remote addresses of
-the nodes to deploy to. Naturally, this requires you to include the
-``akka-remote`` module on your classpath:
+    In general, any message sent to a router will be sent onwards to its routees. But there are a
+    few exceptions. These are documented in the :ref:`router-special-messages-scala` section below.
+
+Creating a Router
+*****************
+
+Routers and routees are closely intertwined. Router actors are created by specifying the desired
+*routee* :class:`Props` then attaching the router's :class:`RouterConfig`. When you create a router
+actor it will create routees, as needed, as its children.
+
+For example, the following code and configuration snippets show how to create a :ref:`round-robin
+<round-robin-router-scala>` router that forwards messages to five ``ExampleActor`` routees. The
+routees will be created as the router's children.
+
+.. includecode:: code/docs/routing/RouterViaConfigDocSpec.scala#config-round-robin
+
+.. includecode:: code/docs/routing/RouterViaConfigDocSpec.scala#configurableRouting
+
+Here is the same example, but with the router configuration provided programmatically instead of
+from configuration.
+
+.. includecode:: code/docs/routing/RouterViaProgramExample.scala#programmaticRoutingNrOfInstances
+
+Sometimes, rather than having the router create its routees, it is desirable to create routees
+separately and provide them to the router for its use. You can do this by passing an
+:class:`Iterable` of routees to the router's configuration.
+
+The example below shows how to create a router by providing it with the :class:`ActorRef`\s of three
+routee actors.
+
+.. includecode:: code/docs/routing/RouterViaProgramExample.scala#programmaticRoutingRoutees
+
+Routees can also be specified by providing their path strings instead of their :class:`ActorRef`\s.
+
+.. includecode:: code/docs/routing/RouterViaProgramDocSpec.scala#programmaticRoutingRouteePaths
+
+In addition to being able to supply looked-up remote actors as routees, you can ask the router to
+deploy its created children on a set of remote hosts. Routees will be deployed in round-robin
+fashion. In order to deploy routees remotely, wrap the router configuration in a
+:class:`RemoteRouterConfig`, attaching the remote addresses of the nodes to deploy to. Remote
+deployment requires the ``akka-remote`` module to be included in the classpath.
 
 .. includecode:: code/docs/routing/RouterViaProgramExample.scala#remoteRoutees
 
-How Routing is Designed within Akka
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+There are a few gotchas to be aware of when creating routers:
 
-Routers behave like single actors, but they should also not hinder scalability.
-This apparent contradiction is solved by making routers be represented by a
-special :class:`RoutedActorRef` (implementation detail, what the user gets is
-an :class:`ActorRef` as usual) which dispatches incoming messages destined
-for the routees without actually invoking the router actor’s behavior (and thus
-avoiding its mailbox; the single router actor’s task is to manage all aspects
-related to the lifecycle of the routees). This means that the code which decides
-which route to take is invoked concurrently from all possible senders and hence
-must be thread-safe, it cannot live the simple and happy life of code within an
-actor.
+* If you define the ``router`` in the configuration file then this value will be used instead of any
+  programmatically provided parameters.
+* Although routers can be configured in the configuration file, they must still be created
+  programmatically, i.e. you cannot make a router through external configuration alone.
+* If you provide the ``routees`` in the router configuration then
+  the value of ``nrOfInstances``, if provided, will be disregarded.
+* When you provide routees programmatically the router will generally ignore the routee
+  :class:`Props`, as it does not need to create routees. However, if you use a :ref:`resizable
+  router <resizable-routers-scala>` then the routee :class:`Props` will be used whenever the
+  resizer creates new routees.
+* The same issues that apply to remotely-deployed actors also apply to remotely-deployed routees.
+  Read about :ref:`the limitations of remote deployment <remote-deployment-warnings-scala>` for
+  more information.
 
-There is one part in the above paragraph which warrants some more background
-explanation: Why does a router need a “head” which is actual parent to all the
-routees? The initial design tried to side-step this issue, but location
-transparency as well as mandatory parental supervision required a redesign.
-Each of the actors which the router spawns must have its unique identity, which
-translates into a unique actor path. Since the router has only one given name
-in its parent’s context, another level in the name space is needed, which
-according to the addressing semantics implies the existence of an actor with
-the router’s name. This is not only necessary for the internal messaging
-involved in creating, restarting and terminating actors, it is also needed when
-the pooled actors need to converse with other actors and receive replies in a
-deterministic fashion. Since each actor knows its own external representation
-as well as that of its parent, the routees decide where replies should be sent
-when reacting to a message:
+Routers, Routees and Senders
+****************************
 
-.. includecode:: code/docs/actor/ActorDocSpec.scala#reply-with-sender
+The router forwards messages onto its routees without changing the original sender. When a routee
+replies to a routed message, the reply will be sent to the original sender, not to the router.
+
+When a router creates routees, they are created as the routers children. This gives each routee its
+own identity in the actor system.
+
+By default, when a routee sends a message, it will :ref:`implicitly set itself as the sender
+<actors-tell-sender-scala>`.
 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#reply-without-sender
 
-It is apparent now why routing needs to be enabled in code rather than being
-possible to “bolt on” later: whether or not an actor is routed means a change
-to the actor hierarchy, changing the actor paths of all children of the router.
-The routees especially do need to know that they are routed to in order to
-choose the sender reference for any messages they dispatch as shown above.
+However, it is often useful for routees to set the *router* as a sender. For example, you might want
+to set the router as the sender if you want to hide the details of the routees behind the router.
+The following code snippet shows how to set the parent router as sender.
 
-Routers vs. Supervision
+.. includecode:: code/docs/actor/ActorDocSpec.scala#reply-with-sender
+
+Note that different code would be needed if the routees were not children of the router, i.e. if
+they were provided when the router was created.
+
+Routers and Supervision
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-As explained in the previous section, routers create new actor instances as
-children of the “head” router, who therefor also is their supervisor. The
-supervisor strategy of this actor can be configured by means of the
-:meth:`RouterConfig.supervisorStrategy` property, which is supported for all
-built-in router types. It defaults to “always escalate”, which leads to the
-application of the router’s parent’s supervision directive to all children of
-the router uniformly (i.e. not only the one which failed). It should be
-mentioned that the router overrides the default behavior of terminating all
-children upon restart, which means that a restart—while re-creating them—does
-not have an effect on the number of actors in the pool.
+Routees can be created by a router or provided to the router when it is created. Any routees that
+are created by a router will be created as the router's children. The router is therefore also the
+children's supervisor.
+
+The supervision strategy of the router actor can be configured with the
+:meth:`RouterConfig.supervisorStrategy` property. If no configuration is provided, routers default
+to a strategy of “always escalate”. This means that errors are passed up to the router's supervisor
+for handling. The router's supervisor will decide what to do about any errors.
+
+Note the router's supervisor will treat the error as an error with the router itself. Therefore a
+directive to stop or restart will cause the router *itself* to stop or restart. The router, in
+turn, will cause its children to stop and restart.
+
+It should be mentioned that the router's restart behavior has been overridden so that a restart,
+while still re-creating the children, will still preserve the same number of actors in the pool.
 
 Setting the strategy is easily done:
 
@@ -133,6 +144,8 @@ Setting the strategy is easily done:
 Another potentially useful approach is to give the router the same strategy as
 its parent, which effectively treats all actors in the pool as if they were
 direct children of their grand-parent instead.
+
+.. _note-router-terminated-children-scala:
 
 .. note::
 
@@ -152,6 +165,7 @@ and
 
 .. includecode:: code/docs/routing/RouterTypeExample.scala#fibonacciActor
 
+.. _round-robin-router-scala:
 
 RoundRobinRouter
 ****************
@@ -258,6 +272,12 @@ This is an example of how to define a broadcast router in configuration:
 
 .. includecode:: code/docs/routing/RouterViaConfigDocSpec.scala#config-broadcast
 
+.. note::
+
+  Broadcast routers always broadcast *every* message to their routees. If you do not want to
+  broadcast every message, then you can use a non-broadcasting router and use
+  :ref:`broadcast-messages-scala` as needed.
+
 
 ScatterGatherFirstCompletedRouter
 *********************************
@@ -320,19 +340,94 @@ This is an example of how to define a consistent-hashing router in configuration
 
 .. includecode:: code/docs/routing/RouterViaConfigDocSpec.scala#config-consistent-hashing
 
+.. _router-special-messages-scala:
+
+Handling for Special Messages
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Most messages sent to routers will be forwarded according to the routers' usual routing rules.
+However there are a few types of messages that have special behavior.
+
+.. _broadcast-messages-scala:
 
 Broadcast Messages
-^^^^^^^^^^^^^^^^^^
+******************
 
-There is a special type of message that will be sent to all routees regardless of the router.
-This message is called ``Broadcast`` and is used in the following manner:
+A ``Broadcast`` message can be used to send a message to *all* of a router's routees. When a router
+receives a ``Broadcast`` message, it will broadcast that message's *payload* to all routees, no
+matter how that router would normally route its messages.
 
-.. code-block:: scala
+The example below shows how you would use a ``Broadcast`` message to send a very important message
+to every routee of a router.
 
-  router ! Broadcast("Watch out for Davy Jones' locker")
+.. includecode:: code/docs/routing/RouterViaProgramDocSpec.scala#broadcastDavyJonesWarning
 
-Only the actual message is forwarded to the routees, i.e. "Watch out for Davy Jones' locker" in the example above.
-It is up to the routee implementation whether to handle the broadcast message or not.
+In this example the router receives the ``Broadcast`` message, extracts its payload
+(``"Watch out for Davy Jones' locker"``), and then sends the payload on to all of the router's
+routees. It is up to each each routee actor to handle the received payload message.
+
+PoisonPill Messages
+*******************
+
+A ``PoisonPill`` message has special handling for all actors, including for routers. When any actor
+receives a ``PoisonPill`` message, that actor will be stopped. See the :ref:`poison-pill-scala`
+documentation for details.
+
+.. includecode:: code/docs/routing/RouterViaProgramDocSpec.scala#poisonPill
+
+For a router, which normally passes on messages to routees, it is important to realised that
+``PoisonPill`` messages are processed by the router only. ``PoisonPill`` messages sent to a router
+will *not* be sent on to routees.
+
+However, a ``PoisonPill`` message sent to a router may still affect its routees, because it will
+stop the router and when the router stops it also stops its children. Stopping children is normal
+actor behavior. The router will stop routees that it has created as children. Each child will
+process its current message and then tstop. This may lead to some messages being unprocessed.
+See the documentation on :ref:`stopping-actors-scala` for more information.
+
+If you wish to stop a router and its routees, but you would like the routees to first process all
+the messages currently in their mailboxes, then you should not send a ``PoisonPill`` message to the
+router. Instead you should wrap a ``PoisonPill`` message inside a broadcast message so that each
+routee will the ``PoisonPill`` message directly. Note that this will stop all routees, even if the
+routees aren't children of the router, i.e. even routees programmatically provided to the router.
+
+.. includecode:: code/docs/routing/RouterViaProgramDocSpec.scala#broadcastPoisonPill
+
+With the code shown above, each routee will receive a ``PoisonPill`` message. Each routee will
+continue to process its messages as normal, eventually processing the ``PoisonPill``. This will
+cause the routee to stop. After all routees have stopped the router will itself be :ref:`stopped
+automatically <note-router-terminated-children-scala>`.
+
+.. note::
+
+  Brendan W McAdams' excellent blog post `Distributing Akka Workloads - And Shutting Down Afterwards
+  <http://blog.evilmonkeylabs.com/2013/01/17/Distributing_Akka_Workloads_And_Shutting_Down_After/>`_
+  discusses in more detail how ``PoisonPill`` messages can be used to shut down routers and routees.
+
+Kill Messages
+*************
+
+``Kill`` messages are another type of message that has special handling. See
+:ref:`killing-actors-scala` for general information about how actors handle ``Kill`` messages.
+
+When a ``Kill`` message is sent to a router the router processes the message internally, and does
+*not* send it on to its routees. The router will throw an :class:`ActorKilledException` and fail. It
+will then be either resumed, restarted or terminated, depending how it is supervised.
+
+Routees that are children of the router will also be suspended, and will be affected by the
+supervision directive that is applied to the router. Routees that are not the routers children, i.e.
+those that were created externally to the router, will not be affected.
+
+.. includecode:: code/docs/routing/RouterViaProgramDocSpec.scala#kill
+
+As with the ``PoisonPill`` message, there is a distinction between killing a router, which
+indirectly kills its children (who happen to be routees), and killing routees directly (some of whom
+may not be children.) To kill routees directly the router should be sent a ``Kill`` message wrapped
+in a ``Broadcast`` message.
+
+.. includecode:: code/docs/routing/RouterViaProgramDocSpec.scala#broadcastKill
+
+.. _resizable-routers-scala:
 
 Dynamically Resizable Routers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -366,11 +461,42 @@ will be used instead of any programmatically sent parameters.*
   this, configure the pool to use a balancing dispatcher, see `Configuring
   Dispatchers`_ for more information.
 
+.. _router-design-scala:
+
+How Routing is Designed within Akka
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+On the surface routers look like normal actors, but they are actually implemented differently.
+Routers are designed to be extremely efficient at receiving messages and passing them quickly on to
+routees.
+
+A normal actor can be used for routing messages, but an actor's single-threaded processing can
+become a bottleneck. Routers can achieve much higher throughput with an optimization to the usual
+message-processing pipeline that allows concurrent routing. This is achieved by embedding routers'
+routing logic directly in their :class:`ActorRef` rather than in the router actor. Messages sent to
+a router's :class:`ActorRef` can be immediately routed to the routee, bypassing the single-threaded
+router actor entirely.
+
+The cost to this is, of course, that the internals of routing code are more complicated than if
+routers were implemented with normal actors. Fortunately all of this complexity is invisible to
+consumers of the routing API. However, it is something to be aware of when implementing your own
+routers.
+
+.. _custom-router-scala:
+
 Custom Router
 ^^^^^^^^^^^^^
 
-You can also create your own router should you not find any of the ones provided by Akka sufficient for your needs.
+You can create your own router should you not find any of the ones provided by Akka sufficient for your needs.
 In order to roll your own router you have to fulfill certain criteria which are explained in this section.
+
+Before creating your own router you should consider whether a normal actor with router-like
+behavior might do the job just as well as a full-blown router. As explained
+:ref:`above <router-design-scala>`, the primary benefit of routers over normal actors is their
+higher performance. But they are somewhat more complicated to write than normal actors. Therefore if
+lower maximum throughput is acceptable in your application you may wish to stick with traditional
+actors. This section, however, assumes that you wish to get maximum performance and so demonstrates
+how you can create your own router.
 
 The router created in this example is a simple vote counter. It will route the votes to specific vote counter actors.
 In this case we only have two parties the Republicans and the Democrats. We would like a router that forwards all
