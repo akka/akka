@@ -23,6 +23,7 @@ import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteActorRefPr
 import scala.util.control.NonFatal
 import akka.actor.{ ExtendedActorSystem, Address, ActorRef }
 import com.google.protobuf.MessageLite
+import org.jboss.netty.buffer.ChannelBuffers
 
 private[akka] object ChannelAddress extends ChannelLocal[Option[Address]] {
   override def initialValue(ch: Channel): Option[Address] = None
@@ -292,12 +293,22 @@ private[akka] class RemoteMessageEncoder(remoteSupport: NettyRemoteTransport) ex
   override def encode(ctx: ChannelHandlerContext, channel: Channel, msg: AnyRef): AnyRef = {
     msg match {
       case (message: Any, sender: Option[_], recipient: ActorRef) ⇒
-        super.encode(ctx, channel,
-          remoteSupport.createMessageSendEnvelope(
-            remoteSupport.createRemoteMessageProtocolBuilder(
-              recipient,
-              message,
-              sender.asInstanceOf[Option[ActorRef]]).build))
+        val sndr = sender.asInstanceOf[Option[ActorRef]]
+        try {
+          super.encode(ctx, channel,
+            remoteSupport.createMessageSendEnvelope(
+              remoteSupport.createRemoteMessageProtocolBuilder(
+                recipient,
+                message,
+                sndr).build))
+        } catch {
+          case NonFatal(e) ⇒
+            import remoteSupport._
+            log.error(e, "Remote message [{}] could not be delivered from [{}] to [{}]",
+              message, sndr.getOrElse(system.deadLetters), recipient)
+            system.deadLetters.tell(message, sndr.orNull)
+            ChannelBuffers.EMPTY_BUFFER // According to the contract, we must return something, at least an empty buffer
+        }
       case _ ⇒ super.encode(ctx, channel, msg)
     }
   }

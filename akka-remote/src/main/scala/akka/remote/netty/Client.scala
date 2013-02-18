@@ -21,6 +21,7 @@ import akka.util.Switch
 import scala.util.control.NonFatal
 import org.jboss.netty.handler.ssl.SslHandler
 import scala.concurrent.duration._
+import java.io.NotSerializableException
 
 /**
  * This is the abstract baseclass for netty remote clients, currently there's only an

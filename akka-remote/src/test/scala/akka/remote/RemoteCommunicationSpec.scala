@@ -11,6 +11,7 @@ import scala.concurrent.Await
 import scala.reflect.classTag
 import akka.pattern.ask
 import akka.event.Logging
+import java.io.NotSerializableException
 
 object RemoteCommunicationSpec {
   class Echo extends Actor {
@@ -31,6 +32,10 @@ object RemoteCommunicationSpec {
     override def postStop() {
       target ! "postStop"
     }
+  }
+
+  class NotSerializable(val x: String) {
+    override def toString: String = x
   }
 }
 
@@ -158,6 +163,17 @@ abstract class RemoteCommunicationBaseSpec(config: String) extends AkkaSpec(Conf
       import system.dispatcher
       val f = for (_ ← 1 to 1000) yield here ? "ping" mapTo classTag[(String, ActorRef)]
       Await.result(Future.sequence(f), remaining).map(_._1).toSet must be(Set("pong"))
+    }
+
+    "report not serializable messages without closing the channel" in {
+      system.eventStream.subscribe(testActor, classOf[RemoteLifeCycleEvent])
+
+      filterEvents(
+        EventFilter[Exception](pattern = "Remote message.*could not be delivered", occurrences = 1),
+        EventFilter.warning(pattern = "dead.*I can't fly", occurrences = 1)) {
+          here ! new NotSerializable("I can't fly")
+        }
+      expectNoMsg()
     }
 
   }
