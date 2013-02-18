@@ -185,6 +185,10 @@ private[akka] trait Children { this: ActorCell ⇒
           cell.provider.actorOf(cell.systemImpl, props, cell.self, cell.self.path / name,
             systemService = systemService, deploy = None, lookupDeploy = true, async = async)
         } catch {
+          case e: InterruptedException ⇒
+            unreserveChild(name)
+            Thread.interrupted() // clear interrupted flag before throwing according to java convention
+            throw e
           case NonFatal(e) ⇒
             unreserveChild(name)
             throw e
