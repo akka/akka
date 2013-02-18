@@ -12,7 +12,7 @@ object Introduction {
     import akka.camel.{ CamelMessage, Consumer }
 
     class MyEndpoint extends Consumer {
-      def endpointUri = "mina:tcp://localhost:6200?textline=true"
+      def endpointUri = "mina2:tcp://localhost:6200?textline=true"
 
       def receive = {
         case msg: CamelMessage ⇒ { /* ... */ }
@@ -82,7 +82,7 @@ object Introduction {
     import scala.concurrent.duration._
 
     class MyEndpoint extends Consumer {
-      def endpointUri = "mina:tcp://localhost:6200?textline=true"
+      def endpointUri = "mina2:tcp://localhost:6200?textline=true"
 
       def receive = {
         case msg: CamelMessage ⇒ { /* ... */ }
