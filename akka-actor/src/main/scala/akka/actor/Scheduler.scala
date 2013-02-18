@@ -507,9 +507,7 @@ object LightArrayRevolverScheduler {
 }
 
 /**
- * Scheduled tasks (Runnable and functions) are executed with the supplied dispatcher.
- * Note that dispatcher is by-name parameter, because dispatcher might not be initialized
- * when the scheduler is created.
+ * A scheduler implementation based on a HashedWheelTimer.
  *
  * The HashedWheelTimer used by this class MUST throw an IllegalStateException
  * if it does not enqueue a task. Once a task is queued, it MUST be executed or
