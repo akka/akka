@@ -23,15 +23,15 @@ private[akka] object Mailbox {
   type Status = Int
 
   /*
-   * the following assigned numbers CANNOT be changed without looking at the code which uses them!
+   * The following assigned numbers CANNOT be changed without looking at the code which uses them!
    */
 
-  // primary status
+  // Primary status
   final val Open = 0 // _status is not initialized in AbstractMailbox, so default must be zero! Deliberately without type ascription to make it a compile-time constant
   final val Closed = 1 // Deliberately without type ascription to make it a compile-time constant
-  // secondary status: Scheduled bit may be added to Open/Suspended
+  // Secondary status: Scheduled bit may be added to Open/Suspended
   final val Scheduled = 2 // Deliberately without type ascription to make it a compile-time constant
-  // shifted by 2: the suspend count!
+  // Shifted by 2: the suspend count!
   final val shouldScheduleMask = 3
   final val shouldNotProcessMask = ~2
   final val suspendMask = ~3
@@ -177,8 +177,8 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
   final def setAsScheduled(): Boolean = {
     val s = status
     /*
-     * only try to add Scheduled bit if pure Open/Suspended, not Closed or with
-     * Scheduled bit already set
+     * Only try to add Scheduled bit if pure Open/Suspended, not Closed or with
+     * Scheduled bit already set.
      */
     if ((s & shouldScheduleMask) != Open) false
     else updateStatus(s, s | Scheduled) || setAsScheduled()
@@ -194,7 +194,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
   }
 
   /*
-   * AtomicReferenceFieldUpdater for system queue
+   * AtomicReferenceFieldUpdater for system queue.
    */
   protected final def systemQueueGet: SystemMessage =
     Unsafe.instance.getObjectVolatile(this, AbstractMailbox.systemMessageOffset).asInstanceOf[SystemMessage]
@@ -309,7 +309,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
 /**
  * A MessageQueue is one of the core components in forming an Akka Mailbox.
  * The MessageQueue is where the normal messages that are sent to Actors will be enqueued (and subsequently dequeued)
- * It needs to atleast support N producers and 1 consumer thread-safely.
+ * It needs to at least support N producers and 1 consumer thread-safely.
  */
 trait MessageQueue {
   /**
@@ -374,7 +374,7 @@ private[akka] trait DefaultSystemMessageQueue { self: Mailbox ⇒
       if (actor ne null) actor.systemImpl.deadLetterMailbox.systemEnqueue(receiver, message)
     } else {
       /*
-       * this write is safely published by the compareAndSet contained within
+       * This write is safely published by the compareAndSet contained within
        * systemQueuePut; “Intra-Thread Semantics” on page 12 of the JSR133 spec
        * guarantees that “head” uses the value obtained from systemQueueGet above.
        * Hence, SystemMessage.next does not need to be volatile.
@@ -398,7 +398,7 @@ private[akka] trait DefaultSystemMessageQueue { self: Mailbox ⇒
 }
 
 /**
- * A QueueBasedMessageQueue is a MessageQueue backed by a java.util.Queue
+ * A QueueBasedMessageQueue is a MessageQueue backed by a java.util.Queue.
  */
 trait QueueBasedMessageQueue extends MessageQueue {
   def queue: Queue[Envelope]
@@ -426,7 +426,7 @@ trait UnboundedMessageQueueSemantics extends QueueBasedMessageQueue {
 
 /**
  * BoundedMessageQueueSemantics adds bounded semantics to a QueueBasedMessageQueue,
- * i.e. blocking enqueue with timeout
+ * i.e. blocking enqueue with timeout.
  */
 trait BoundedMessageQueueSemantics extends QueueBasedMessageQueue {
   def pushTimeOut: Duration
@@ -443,7 +443,7 @@ trait BoundedMessageQueueSemantics extends QueueBasedMessageQueue {
 }
 
 /**
- * DequeBasedMessageQueue refines QueueBasedMessageQueue to be backed by a java.util.Deque
+ * DequeBasedMessageQueue refines QueueBasedMessageQueue to be backed by a java.util.Deque.
  */
 trait DequeBasedMessageQueue extends QueueBasedMessageQueue {
   def queue: Deque[Envelope]
@@ -462,7 +462,7 @@ trait UnboundedDequeBasedMessageQueueSemantics extends DequeBasedMessageQueue {
 
 /**
  * BoundedMessageQueueSemantics adds bounded semantics to a DequeBasedMessageQueue,
- * i.e. blocking enqueue with timeout
+ * i.e. blocking enqueue with timeout.
  */
 trait BoundedDequeBasedMessageQueueSemantics extends DequeBasedMessageQueue {
   def pushTimeOut: Duration
