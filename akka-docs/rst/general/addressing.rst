@@ -121,7 +121,7 @@ Physical Actor Paths
 
 While the logical actor path describes the functional location within one actor
 system, configuration-based remote deployment means that an actor may be
-created on a different network host as its parent, i.e. within a different
+created on a different network host than its parent, i.e. within a different
 actor system. In this case, following the actor path from the root guardian up
 entails traversing the network, which is a costly operation. Therefore, each
 actor also has a physical path, starting at the root guardian of the actor
@@ -143,7 +143,7 @@ therefore provides a translation from virtual paths to physical paths which may
 change in reaction to node failures, cluster rebalancing, etc.
 
 *This area is still under active development, expect updates in this section
-for the 2.1 release.*
+for the Akka release code named Rollins .*
 
 How are Actor References obtained?
 ----------------------------------
@@ -157,7 +157,7 @@ querying the logical actor hierarchy.
 concerning the facilities mentioned below, the exact semantics of clustered
 actor references and their paths—while certainly as similar as possible—may
 differ in certain aspects, owing to the virtual nature of those paths. Expect
-updates for the 2.1 release.*
+updates for the Akka release code named Rollins.*
 
 Creating Actors
 ^^^^^^^^^^^^^^^
@@ -174,16 +174,15 @@ Looking up Actors by Concrete Path
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In addition, actor references may be looked up using the
-:meth:`ActorSystem.actorFor` method, which returns an (unverified) local, remote
-or clustered actor reference. Sending messages to such a reference or attempting
-to observe its liveness will traverse the actor hierarchy of the actor system
-from top to bottom by passing messages from parent to child until either the
-target is reached or failure is certain, i.e. a name in the path does not exist
-(in practice this process will be optimized using caches, but it still has added
-cost compared to using the physical actor path, which can for example be
-obtained from the sender reference included in replies from that actor). Akka
-handles message passing automatically, so this process is not visible to client
-code.
+:meth:`ActorSystem.actorFor` method, which returns a local or remote actor
+reference. The reference can be reused for communicating with said actor during
+the whole lifetime of the actor. In the case of a local actor reference, the
+named actor needs to exist before the lookup, or else the acquired reference
+will be an :class:`EmptyLocalActorRef`. This will be true even if an actor with
+that exact path is created after acquiring the actor reference. For remote actor
+references the behaviour is different and sending messages to such a reference
+will under the hood look up the actor by path on the remote system for every
+message send.
 
 Absolute vs. Relative Paths
 ```````````````````````````
