@@ -198,7 +198,11 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
         try {
           timer.stop()
         } finally {
-          clientChannelFactory.releaseExternalResources()
+          // Release the selectors, but don't try to kill the dispatcher
+          if (settings.UseDispatcherForIO.isDefined)
+            clientChannelFactory.shutdown()
+          else
+            clientChannelFactory.releaseExternalResources()
         }
       }
     }
