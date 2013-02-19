@@ -25,7 +25,7 @@ public class MyEndpoint extends UntypedConsumerActor{
   }
 
   public MyEndpoint() {
-    this.uri = "mina:tcp://localhost:6200?textline=true";
+    this.uri = "mina2:tcp://localhost:6200?textline=true";
   }
 }
 //#Consumer-mina
