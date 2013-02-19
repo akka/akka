@@ -95,11 +95,11 @@ A custom ``application.conf`` might look like this::
 
     # Log level used by the configured loggers (see "loggers") as soon
     # as they have been started; before that, see "stdout-loglevel"
-    # Options: ERROR, WARNING, INFO, DEBUG
+    # Options: OFF, ERROR, WARNING, INFO, DEBUG
     loglevel = DEBUG
 
     # Log level for the very basic logger activated during AkkaApplication startup
-    # Options: ERROR, WARNING, INFO, DEBUG
+    # Options: OFF, ERROR, WARNING, INFO, DEBUG
     stdout-loglevel = DEBUG
 
     actor {

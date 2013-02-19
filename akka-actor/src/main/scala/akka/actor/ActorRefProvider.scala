@@ -455,7 +455,7 @@ class LocalActorRefProvider private[akka] (
 
     def stopWhenAllTerminationHooksDone(): Unit =
       if (terminationHooks.isEmpty) {
-        eventStream.stopDefaultLoggers()
+        eventStream.stopDefaultLoggers(system)
         context.stop(self)
       }
 
