@@ -38,13 +38,14 @@ public class IODocTest {
         final InetSocketAddress remoteAddr = new InetSocketAddress("127.0.0.1",
             12345);
         tcp.tell(TcpMessage.connect(remoteAddr), getSelf());
-        // or with socket options
+        //#connect
+        //#connect-with-options
         final InetSocketAddress localAddr = new InetSocketAddress("127.0.0.1",
             1234);
         final List<Inet.SocketOption> options = new ArrayList<Inet.SocketOption>();
         options.add(TcpSO.keepAlive(true));
         tcp.tell(TcpMessage.connect(remoteAddr, localAddr, options), getSelf());
-        //#connect
+        //#connect-with-options
       } else
       //#connected
       if (msg instanceof Tcp.Connected) {
