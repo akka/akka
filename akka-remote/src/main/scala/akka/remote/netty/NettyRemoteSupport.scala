@@ -203,6 +203,8 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
             clientChannelFactory.shutdown()
           else
             clientChannelFactory.releaseExternalResources()
+          // Shut down the execution handler as well
+          PipelineFactory.executionHandler.foreach(_.releaseExternalResources())
         }
       }
     }
