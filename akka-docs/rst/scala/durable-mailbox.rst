@@ -1,9 +1,9 @@
 
-.. _durable-mailboxes:
+.. _durable-mailboxes-scala:
 
-###################
- Durable Mailboxes
-###################
+###########################
+ Durable Mailboxes (Scala)
+###########################
 
 
 Overview
@@ -55,14 +55,9 @@ of the mailbox:
 .. includecode:: code/docs/actor/mailbox/DurableMailboxDocSpec.scala
    :include: dispatcher-config
 
-Here is an example of how to create an actor with a durable dispatcher, in Scala:
+Here is an example of how to create an actor with a durable dispatcher:
 
 .. includecode:: code/docs/actor/mailbox/DurableMailboxDocSpec.scala
-   :include: imports,dispatcher-config-use
-
-Corresponding example in Java:
-
-.. includecode:: code/docs/actor/mailbox/DurableMailboxDocTestBase.java
    :include: imports,dispatcher-config-use
 
 You can also configure and tune the file-based durable mailbox. This is done in

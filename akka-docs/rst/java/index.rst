@@ -21,9 +21,10 @@ Java API
    agents
    transactors
    fsm
+   testing
    extending-akka
    zeromq
    microkernel
    camel
-   testing
+   durable-mailbox
    howto
