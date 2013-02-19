@@ -708,7 +708,10 @@ object Logging {
     val path: ActorPath = new RootActorPath(Address("akka", "all-systems"), "/StandardOutLogger")
     def provider: ActorRefProvider = throw new UnsupportedOperationException("StandardOutLogger does not provide")
     override val toString = "StandardOutLogger"
-    override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = print(message)
+    override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
+      if (message == null) throw new InvalidMessageException("Message is null")
+      print(message)
+    }
   }
 
   val StandardOutLogger = new StandardOutLogger
