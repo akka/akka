@@ -23,7 +23,7 @@ import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteActorRefPr
 import scala.util.control.NonFatal
 import akka.actor.{ ExtendedActorSystem, Address, ActorRef }
 import com.google.protobuf.MessageLite
-import org.jboss.netty.buffer.ChannelBuffers
+import org.jboss.netty.buffer.{ ChannelBuffer, ChannelBuffers }
 
 private[akka] object ChannelAddress extends ChannelLocal[Option[Address]] {
   override def initialValue(ch: Channel): Option[Address] = None
@@ -295,12 +295,16 @@ private[akka] class RemoteMessageEncoder(remoteSupport: NettyRemoteTransport) ex
       case (message: Any, sender: Option[_], recipient: ActorRef) ⇒
         val sndr = sender.asInstanceOf[Option[ActorRef]]
         try {
-          super.encode(ctx, channel,
+          val buf = super.encode(ctx, channel,
             remoteSupport.createMessageSendEnvelope(
               remoteSupport.createRemoteMessageProtocolBuilder(
                 recipient,
                 message,
-                sndr).build))
+                sndr).build)).asInstanceOf[ChannelBuffer]
+          if (buf.readableBytes > remoteSupport.settings.MessageFrameSize)
+            throw new IllegalArgumentException(s"Message was too large, maximum is [${remoteSupport.settings.MessageFrameSize}] " +
+              s"bytes, but message was [${buf.readableBytes()}] bytes long.")
+          buf
         } catch {
           case NonFatal(e) ⇒
             import remoteSupport._

@@ -12,7 +12,6 @@ import akka.serialization.Serialization
 import akka.remote.RemoteProtocol._
 import akka.actor._
 import scala.util.control.NonFatal
-import scala.util.Try
 
 /**
  * Remote life-cycle events.
@@ -274,7 +273,7 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
           if (useUntrustedMode) log.debug("dropping daemon message in untrusted mode")
           else {
             if (provider.remoteSettings.LogReceive) log.debug("received daemon message [{}]", remoteMessage)
-            remoteMessage.payload.get match {
+            remoteMessage.payload match {
               case m @ (_: DaemonMsg | _: Terminated) ⇒
                 remoteDaemon ! m
               case x ⇒ log.debug("remoteDaemon received illegal message [{}] from [{}]", x, remoteMessage.sender)
@@ -282,7 +281,7 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
           }
         case l @ (_: LocalRef | _: RepointableRef) if l.isLocal ⇒
           if (provider.remoteSettings.LogReceive) log.debug("received local message [{}]", remoteMessage)
-          remoteMessage.payload.get match {
+          remoteMessage.payload match {
             case msg: PossiblyHarmful if useUntrustedMode ⇒ log.debug("operating in UntrustedMode, dropping inbound PossiblyHarmful message of type [{}]", msg.getClass)
             case msg: SystemMessage                       ⇒ l.sendSystemMessage(msg)
             case msg                                      ⇒ l.!(msg)(remoteMessage.sender)
@@ -292,7 +291,7 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
           remoteMessage.originalReceiver match {
             case AddressFromURIString(address) if address == provider.transport.address ⇒
               // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
-              r.!(remoteMessage.payload.get)(remoteMessage.sender)
+              r.!(remoteMessage.payload)(remoteMessage.sender)
             case r ⇒
               log.debug("dropping message [{}] for non-local recipient [{}] arriving at [{}] inbound address is [{}]",
                 remoteMessage.payloadClass, r, address, provider.transport.address)
@@ -339,7 +338,7 @@ class RemoteMessage(input: RemoteMessageProtocol, system: ExtendedActorSystem) {
   /**
    * Returns the message
    */
-  lazy val payload: Try[AnyRef] = MessageSerializer.deserialize(system, input.getMessage)
+  lazy val payload: AnyRef = MessageSerializer.deserialize(system, input.getMessage)
 
   def payloadClass: Class[_] = if (payload eq null) null else payload.getClass
 

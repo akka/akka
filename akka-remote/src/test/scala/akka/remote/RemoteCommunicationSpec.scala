@@ -11,7 +11,6 @@ import scala.concurrent.Await
 import scala.reflect.classTag
 import akka.pattern.ask
 import akka.event.Logging
-import java.io.NotSerializableException
 
 object RemoteCommunicationSpec {
   class Echo extends Actor {
@@ -36,6 +35,11 @@ object RemoteCommunicationSpec {
 
   class NotSerializable(val x: String) {
     override def toString: String = x
+  }
+
+  class LargeMessage extends Serializable {
+    val body: Array[Byte] = Array.ofDim[Byte](1024 * 1024)
+    override def toString: String = "LargeMessage"
   }
 }
 
@@ -176,6 +180,16 @@ abstract class RemoteCommunicationBaseSpec(config: String) extends AkkaSpec(Conf
       expectNoMsg()
     }
 
+    "report oversized messages without closing the channel" in {
+      system.eventStream.subscribe(testActor, classOf[RemoteLifeCycleEvent])
+
+      filterEvents(
+        EventFilter[Exception](pattern = "Remote message.*could not be delivered", occurrences = 1),
+        EventFilter.warning(pattern = "dead.*LargeMessage", occurrences = 1)) {
+          here ! new LargeMessage
+        }
+      expectNoMsg()
+    }
   }
 
 }

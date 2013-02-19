@@ -10,7 +10,6 @@ import akka.remote.RemoteProtocol._
 import com.google.protobuf.ByteString
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializationExtension
-import scala.util.Try
 
 /**
  * MessageSerializer is a helper for serialize and deserialize messages
@@ -20,7 +19,7 @@ private[akka] object MessageSerializer {
   /**
    * Uses Akka Serialization for the specified ActorSystem to transform the given MessageProtocol to a message
    */
-  def deserialize(system: ExtendedActorSystem, messageProtocol: MessageProtocol): Try[AnyRef] = Try {
+  def deserialize(system: ExtendedActorSystem, messageProtocol: MessageProtocol): AnyRef = {
     SerializationExtension(system).deserialize(
       messageProtocol.getMessage.toByteArray,
       messageProtocol.getSerializerId,
