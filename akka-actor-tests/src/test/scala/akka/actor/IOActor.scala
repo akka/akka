@@ -15,6 +15,7 @@ import akka.pattern.ask
 import java.net.{ Socket, InetSocketAddress, InetAddress, SocketAddress }
 import scala.util.Failure
 import scala.annotation.tailrec
+import akka.AkkaException
 
 object IOActorSpec {
 
@@ -400,6 +401,17 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
       val address = new InetSocketAddress("irate.elephant", 80)
       IOManager(system).connect(address)
       expectMsgType[Status.Failure](1 seconds)
+    }
+
+    "fail when binding to already bound port and report port in failure" in {
+      implicit val self = testActor
+      IOManager(system).listen(new InetSocketAddress("localhost", 0))
+      val boundTo = expectMsgType[IO.Listening].address.asInstanceOf[InetSocketAddress]
+      IOManager(system).listen(boundTo)
+      val exc = expectMsgType[Status.Failure].cause
+      exc.getClass must be(classOf[AkkaException])
+      exc.getMessage must include("Address already in use")
+      exc.getMessage must include(boundTo.getPort.toString)
     }
 
   }
