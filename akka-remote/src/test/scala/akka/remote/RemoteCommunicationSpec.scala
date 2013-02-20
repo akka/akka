@@ -32,6 +32,15 @@ object RemoteCommunicationSpec {
       target ! "postStop"
     }
   }
+
+  class NotSerializable(val x: String) {
+    override def toString: String = x
+  }
+
+  class LargeMessage extends Serializable {
+    val body: Array[Byte] = Array.ofDim[Byte](1024 * 1024)
+    override def toString: String = "LargeMessage"
+  }
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -160,6 +169,27 @@ abstract class RemoteCommunicationBaseSpec(config: String) extends AkkaSpec(Conf
       Await.result(Future.sequence(f), remaining).map(_._1).toSet must be(Set("pong"))
     }
 
+    "report not serializable messages without closing the channel" in {
+      system.eventStream.subscribe(testActor, classOf[RemoteLifeCycleEvent])
+
+      filterEvents(
+        EventFilter[Exception](pattern = "Remote message.*could not be delivered", occurrences = 1),
+        EventFilter.warning(pattern = "dead.*I can't fly", occurrences = 1)) {
+          here ! new NotSerializable("I can't fly")
+        }
+      expectNoMsg()
+    }
+
+    "report oversized messages without closing the channel" in {
+      system.eventStream.subscribe(testActor, classOf[RemoteLifeCycleEvent])
+
+      filterEvents(
+        EventFilter[Exception](pattern = "Remote message.*could not be delivered", occurrences = 1),
+        EventFilter.warning(pattern = "dead.*LargeMessage", occurrences = 1)) {
+          here ! new LargeMessage
+        }
+      expectNoMsg()
+    }
   }
 
 }
