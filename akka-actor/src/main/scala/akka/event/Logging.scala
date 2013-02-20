@@ -66,19 +66,23 @@ trait LoggingBus extends ActorEventBus {
     _logLevel = level
   }
 
-  /**
-   * Internal Akka use only
-   */
-  private[akka] def startStdoutLogger(config: Settings) {
+  private def setUpStdoutLogger(config: Settings) {
     val level = levelFor(config.StdoutLogLevel) getOrElse {
       StandardOutLogger.print(Error(new EventHandlerException, simpleName(this), this.getClass, "unknown akka.stdout-loglevel " + config.StdoutLogLevel))
       ErrorLevel
     }
     AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(StandardOutLogger, classFor(l)))
     guard.withGuard {
-      loggers = Seq(StandardOutLogger)
+      loggers :+= StandardOutLogger
       _logLevel = level
     }
+  }
+
+  /**
+   * Internal Akka use only
+   */
+  private[akka] def startStdoutLogger(config: Settings) {
+    setUpStdoutLogger(config)
     publish(Debug(simpleName(this), this.getClass, "StandardOutLogger started"))
   }
 
@@ -139,10 +143,10 @@ trait LoggingBus extends ActorEventBus {
   /**
    * Internal Akka use only
    */
-  private[akka] def stopDefaultLoggers() {
+  private[akka] def stopDefaultLoggers(system: ActorSystem) {
     val level = _logLevel // volatile access before reading loggers
     if (!(loggers contains StandardOutLogger)) {
-      AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(StandardOutLogger, classFor(l)))
+      setUpStdoutLogger(system.settings)
       publish(Debug(simpleName(this), this.getClass, "shutting down: StandardOutLogger started"))
     }
     for {
@@ -413,16 +417,25 @@ object Logging {
   final val DebugLevel = LogLevel(4)
 
   /**
+   * Internal Akka use only
+   *
+   * Don't include the OffLevel in the AllLogLevels since we should never subscribe
+   * to some kind of OffEvent.
+   */
+  private final val OffLevel = LogLevel(Int.MinValue)
+
+  /**
    * Returns the LogLevel associated with the given string,
    * valid inputs are upper or lowercase (not mixed) versions of:
    * "error", "warning", "info" and "debug"
    */
-  def levelFor(s: String): Option[LogLevel] = s match {
-    case "ERROR" | "error"     ⇒ Some(ErrorLevel)
-    case "WARNING" | "warning" ⇒ Some(WarningLevel)
-    case "INFO" | "info"       ⇒ Some(InfoLevel)
-    case "DEBUG" | "debug"     ⇒ Some(DebugLevel)
-    case unknown               ⇒ None
+  def levelFor(s: String): Option[LogLevel] = s.toLowerCase match {
+    case "off"     ⇒ Some(OffLevel)
+    case "error"   ⇒ Some(ErrorLevel)
+    case "warning" ⇒ Some(WarningLevel)
+    case "info"    ⇒ Some(InfoLevel)
+    case "debug"   ⇒ Some(DebugLevel)
+    case unknown   ⇒ None
   }
 
   /**
