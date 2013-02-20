@@ -29,4 +29,5 @@ Scala API
    zeromq
    microkernel
    camel
+   durable-mailbox
    howto
