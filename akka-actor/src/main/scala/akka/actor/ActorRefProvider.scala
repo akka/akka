@@ -453,7 +453,7 @@ class LocalActorRefProvider(
     }
 
     def stopWhenAllTerminationHooksDone(): Unit = if (terminationHooks.isEmpty) {
-      eventStream.stopDefaultLoggers()
+      eventStream.stopDefaultLoggers(system)
       context.stop(self)
     }
 
