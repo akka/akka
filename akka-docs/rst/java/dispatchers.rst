@@ -175,7 +175,7 @@ Akka comes shipped with a number of default mailbox implementations:
 
   - Bounded: Yes
 
-* Durable mailboxes, see :ref:`durable-mailboxes`.
+* Durable mailboxes, see :ref:`durable-mailboxes-java`.
 
 Mailbox configuration examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
