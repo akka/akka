@@ -452,6 +452,7 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
   }
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = message match {
+    case null ⇒ throw new InvalidMessageException("Message is null")
     case d: DeadLetter ⇒
       specialHandle(d.message) // do NOT form endless loops, since deadLetters will resend!
     case _ if !specialHandle(message) ⇒
@@ -480,6 +481,7 @@ private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
                                        _eventStream: EventStream) extends EmptyLocalActorRef(_provider, _path, _eventStream) {
 
   override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
+    case null          ⇒ throw new InvalidMessageException("Message is null")
     case d: DeadLetter ⇒ if (!specialHandle(d.message)) eventStream.publish(d)
     case _ ⇒ if (!specialHandle(message))
       eventStream.publish(DeadLetter(message, if (sender eq Actor.noSender) provider.deadLetters else sender, this))

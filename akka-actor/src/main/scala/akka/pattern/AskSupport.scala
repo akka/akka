@@ -249,12 +249,14 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = state match {
     case Stopped | _: StoppedWithPath ⇒ provider.deadLetters ! message
-    case _ ⇒ if (!(result.tryComplete(
-      message match {
-        case Status.Success(r) ⇒ Success(r)
-        case Status.Failure(f) ⇒ Failure(f)
-        case other             ⇒ Success(other)
-      }))) provider.deadLetters ! message
+    case _ ⇒
+      if (message == null) throw new InvalidMessageException("Message is null")
+      if (!(result.tryComplete(
+        message match {
+          case Status.Success(r) ⇒ Success(r)
+          case Status.Failure(f) ⇒ Failure(f)
+          case other             ⇒ Success(other)
+        }))) provider.deadLetters ! message
   }
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {

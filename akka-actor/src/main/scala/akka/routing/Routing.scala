@@ -108,6 +108,7 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
   }
 
   override def tell(message: Any, sender: ActorRef): Unit = {
+    if (message == null) throw new InvalidMessageException("Message is null")
     resize() // Mucho importante
     val s = if (sender eq null) system.deadLetters else sender
     applyRoute(s, message) match {
