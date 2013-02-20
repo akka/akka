@@ -13,15 +13,15 @@ object LoggerSpec {
 
   val defaultConfig = ConfigFactory.parseString("""
       akka {
-        stdout-loglevel = WARNING
-        loglevel = DEBUG
+        stdout-loglevel = "WARNING"
+        loglevel = "DEBUG"
       }
     """).withFallback(AkkaSpec.testConf)
 
   val noLoggingConfig = ConfigFactory.parseString("""
       akka {
-        stdout-loglevel = OFF
-        loglevel = OFF
+        stdout-loglevel = "OFF"
+        loglevel = "OFF"
       }
     """).withFallback(AkkaSpec.testConf)
 }
