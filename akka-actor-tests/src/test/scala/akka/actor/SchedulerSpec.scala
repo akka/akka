@@ -32,7 +32,6 @@ class SchedulerSpec extends AkkaSpec(SchedulerSpec.testConf) with BeforeAndAfter
     while (cancellables.peek() ne null) {
       for (c ← Option(cancellables.poll())) {
         c.cancel()
-        c.isCancelled must be === true
       }
     }
   }
@@ -144,6 +143,20 @@ class SchedulerSpec extends AkkaSpec(SchedulerSpec.testConf) with BeforeAndAfter
       Thread.sleep((delay + 100.milliseconds.dilated).toMillis)
 
       ticks.get must be(1)
+    }
+
+    "be canceled if cancel is performed before execution" in {
+      val task = collectCancellable(system.scheduler.scheduleOnce(10 seconds)())
+      task.cancel()
+      task.isCancelled must be(true)
+    }
+
+    "not be canceled if cancel is performed after execution" in {
+      val latch = TestLatch(1)
+      val task = collectCancellable(system.scheduler.scheduleOnce(10 millis)(latch.countDown()))
+      Await.ready(latch, remaining)
+      task.cancel()
+      task.isCancelled must be(false)
     }
 
     /**
