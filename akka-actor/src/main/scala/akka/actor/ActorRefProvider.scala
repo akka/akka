@@ -386,6 +386,7 @@ class LocalActorRefProvider private[akka] (
     override def isTerminated: Boolean = stopped.isOn
 
     override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = stopped.ifOff(message match {
+      case null                            ⇒ throw new InvalidMessageException("Message is null")
       case Failed(ex, _) if sender ne null ⇒ { causeOfTermination = Some(ex); sender.asInstanceOf[InternalActorRef].stop() }
       case NullMessage                     ⇒ // do nothing
       case _                               ⇒ log.error(this + " received unexpected message [" + message + "]")
