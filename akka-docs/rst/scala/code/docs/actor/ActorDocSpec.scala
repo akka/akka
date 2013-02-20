@@ -139,29 +139,6 @@ class SpecificActor extends GenericActor {
 case class MyMsg(subject: String)
 //#receive-orElse
 
-//#receive-orElse2
-trait ComposableActor extends Actor {
-  private var receives: List[Receive] = List()
-  protected def registerReceive(receive: Receive) {
-    receives = receive :: receives
-  }
-
-  def receive = receives reduce { _ orElse _ }
-}
-
-class MyComposableActor extends ComposableActor {
-  override def preStart() {
-    registerReceive({
-      case "foo" ⇒ /* Do something */
-    })
-
-    registerReceive({
-      case "bar" ⇒ /* Do something */
-    })
-  }
-}
-
-//#receive-orElse2
 class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
   "import context" in {
@@ -420,6 +397,61 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       superviseWith(OneForOneStrategy() { case _ ⇒ Stop; Restart; Resume; Escalate })
       superviseWith(AllForOneStrategy() { case _ ⇒ Stop; Restart; Resume; Escalate })
     })
+  }
+
+  "using ComposableActor" in {
+    //#receive-orElse2
+    class PartialFunctionBuilder[A, B] {
+      import scala.collection.immutable.Vector
+
+      // Abbreviate to make code fit
+      type PF = PartialFunction[A, B]
+
+      private var pfsOption: Option[Vector[PF]] = Some(Vector.empty)
+
+      private def mapPfs[C](f: Vector[PF] ⇒ (Option[Vector[PF]], C)): C = {
+        pfsOption.fold(throw new IllegalStateException("Already built"))(f) match {
+          case (newPfsOption, result) ⇒ {
+            pfsOption = newPfsOption
+            result
+          }
+        }
+      }
+
+      def +=(pf: PF): Unit =
+        mapPfs { case pfs ⇒ (Some(pfs :+ pf), ()) }
+
+      def result(): PF =
+        mapPfs { case pfs ⇒ (None, pfs.foldLeft[PF](Map.empty) { _ orElse _ }) }
+    }
+
+    trait ComposableActor extends Actor {
+      protected lazy val receiveBuilder = new PartialFunctionBuilder[Any, Unit]
+      final def receive = receiveBuilder.result()
+    }
+
+    trait TheirComposableActor extends ComposableActor {
+      receiveBuilder += {
+        case "foo" ⇒ sender ! "foo received"
+      }
+    }
+
+    class MyComposableActor extends TheirComposableActor {
+      receiveBuilder += {
+        case "bar" ⇒ sender ! "bar received"
+      }
+    }
+    //#receive-orElse2
+
+    val composed = system.actorOf(Props(new MyComposableActor))
+    implicit val me = testActor
+    composed ! "foo"
+    expectMsg("foo received")
+    composed ! "bar"
+    expectMsg("bar received")
+    EventFilter.warning(pattern = ".*unhandled message from.*baz", occurrences = 1) intercept {
+      composed ! "baz"
+    }
   }
 
 }
