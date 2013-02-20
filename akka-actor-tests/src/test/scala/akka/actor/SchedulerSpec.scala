@@ -141,6 +141,24 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       ticks.get must be(1)
     }
 
+    "be canceled if cancel is performed before execution" in {
+      val task = collectCancellable(system.scheduler.scheduleOnce(10 seconds)())
+      task.cancel() must be(true)
+      task.isCancelled must be(true)
+      task.cancel() must be(false)
+      task.isCancelled must be(true)
+    }
+
+    "not be canceled if cancel is performed after execution" in {
+      val latch = TestLatch(1)
+      val task = collectCancellable(system.scheduler.scheduleOnce(10 millis)(latch.countDown()))
+      Await.ready(latch, remaining)
+      task.cancel() must be(false)
+      task.isCancelled must be(false)
+      task.cancel() must be(false)
+      task.isCancelled must be(false)
+    }
+
     /**
      * ticket #307
      */
@@ -211,7 +229,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       Await.ready(ticks, 3 seconds)
 
       // LARS is a bit more aggressive in scheduling recurring tasks at the right
-      // frequency and may execute them a little earlier; the actual expected timing 
+      // frequency and may execute them a little earlier; the actual expected timing
       // is 1599ms on a fast machine or 1699ms on a loaded one (plus some room for jenkins)
       (System.nanoTime() - startTime).nanos.toMillis must be(1750L plusOrMinus 250)
     }
@@ -303,7 +321,6 @@ class DefaultSchedulerSpec extends AkkaSpec(SchedulerSpec.testConf) with Schedul
     while (cancellables.peek() ne null) {
       for (c ← Option(cancellables.poll())) {
         c.cancel()
-        c.isCancelled must be === true
       }
     }
   }
