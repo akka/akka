@@ -23,6 +23,13 @@ abstract class DurableMessageQueue(val owner: ActorRef, val system: ExtendedActo
 }
 
 /**
+ * Java API
+ * DurableMessageQueue with functionality to serialize and deserialize Envelopes (messages)
+ */
+abstract class DurableMessageQueueWithSerialization(_owner: ActorRef, _system: ExtendedActorSystem)
+  extends DurableMessageQueue(_owner, _system) with DurableMessageSerialization
+
+/**
  * DurableMessageSerialization can be mixed into a DurableMessageQueue and adds functionality
  * to serialize and deserialize Envelopes (messages)
  */

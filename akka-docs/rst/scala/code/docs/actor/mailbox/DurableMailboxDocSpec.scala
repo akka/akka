@@ -72,7 +72,7 @@ class MyMessageQueue(_owner: ActorRef, _system: ExtendedActorSystem)
   extends DurableMessageQueue(_owner, _system) with DurableMessageSerialization {
 
   val storage = new QueueStorage
-  // A real-world implmentation would use configuration to set the last 
+  // A real-world implementation would use configuration to set the last 
   // three parameters below
   val breaker = CircuitBreaker(system.scheduler, 5, 30.seconds, 1.minute)
 
