@@ -13,10 +13,6 @@ more general consumption as an actor-based service.
 
 This documentation is in progress and some sections may be incomplete. More will be coming.
 
-.. toctree::
-
-  io-old
-
 .. note::
   The old I/O implementation has been deprecated and its documentation has been moved: :ref:`io-scala-old`
 
