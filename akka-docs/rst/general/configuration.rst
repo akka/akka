@@ -3,6 +3,17 @@
 Configuration
 =============
 
+You can start using Akka without defining any configuration, since sensible default values
+are provided. Later on you might need to amend the settings to change the default behavior
+or adapt for specific runtime environments. Typical examples of settings that you
+might amend:
+
+* log level and logger backend
+* enable remoting
+* message serializers
+* definition of routers
+* tuning of dispatchers
+
 Akka uses the `Typesafe Config Library
 <https://github.com/typesafehub/config>`_, which might also be a good choice
 for the configuration of your own application or library built with or without
