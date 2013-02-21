@@ -355,8 +355,10 @@ private[akka] class RemoteActorRef private[akka] (
 
   def sendSystemMessage(message: SystemMessage): Unit = try remote.send(message, None, this) catch handleException
 
-  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit =
+  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
+    if (message == null) throw new InvalidMessageException("Message is null")
     try remote.send(message, Option(sender), this) catch handleException
+  }
 
   def start(): Unit = if (props.isDefined && deploy.isDefined) provider.useActorOnNode(path, props.get, deploy.get, getParent)
 

@@ -91,7 +91,6 @@ private[akka] trait Dispatch { this: ActorCell ⇒
   def sendMessage(msg: Envelope): Unit =
     try {
       val m = msg.message.asInstanceOf[AnyRef]
-      if (m eq null) throw new InvalidMessageException("Message is null")
       if (system.settings.SerializeAllMessages && !m.isInstanceOf[NoSerializationVerificationNeeded]) {
         val s = SerializationExtension(system)
         s.deserialize(s.serialize(m).get, m.getClass).get
