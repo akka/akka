@@ -5,7 +5,6 @@ package akka.actor
 
 import language.higherKinds
 import language.postfixOps
-
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.Duration
@@ -30,6 +29,7 @@ import java.util.UUID
 import java.io.{ EOFException, IOException }
 import akka.actor.IOManager.Settings
 import akka.actor.IO.Chunk
+import akka.AkkaException
 
 /**
  * IO messages and iteratees.
@@ -1038,10 +1038,10 @@ final class IOManagerActor(val settings: Settings) extends Actor with ActorLoggi
         channel register (selector, OP_ACCEPT, server)
         server.owner ! IO.Listening(server, sock.getLocalSocketAddress())
       } catch {
-        case NonFatal(e) ⇒ {
-          channel close ()
-          sender ! Status.Failure(e)
-        }
+        case NonFatal(e) ⇒
+          try { channel close () } finally {
+            sender ! Status.Failure(new AkkaException(s"Failed to listen to [${address}], due to [${e.getMessage}]", e))
+          }
       }
       run()
 
@@ -1054,10 +1054,10 @@ final class IOManagerActor(val settings: Settings) extends Actor with ActorLoggi
         channels update (socket, channel)
         channel register (selector, OP_CONNECT | OP_READ, socket)
       } catch {
-        case NonFatal(e) ⇒ {
-          channel close ()
-          sender ! Status.Failure(e)
-        }
+        case NonFatal(e) ⇒
+          try { channel close () } finally {
+            sender ! Status.Failure(e)
+          }
       }
       run()
 
