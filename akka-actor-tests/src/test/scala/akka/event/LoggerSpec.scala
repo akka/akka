@@ -17,7 +17,7 @@ object LoggerSpec {
       akka {
         stdout-loglevel = "WARNING"
         loglevel = "DEBUG"
-        event-handlers = ["akka.event.LoggerSpec$TestLogger"]
+        loggers = ["akka.event.LoggerSpec$TestLogger"]
       }
     """).withFallback(AkkaSpec.testConf)
 
@@ -25,7 +25,7 @@ object LoggerSpec {
       akka {
         stdout-loglevel = "OFF"
         loglevel = "OFF"
-        event-handlers = ["akka.event.LoggerSpec$TestLogger"]
+        loggers = ["akka.event.LoggerSpec$TestLogger"]
       }
     """).withFallback(AkkaSpec.testConf)
 
