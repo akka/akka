@@ -210,21 +210,20 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter) 
 }
 
 private[akka] object ContinuousCancellable {
-  private class NullHWTimeout extends HWTimeout {
+  val initial: HWTimeout = new HWTimeout {
     override def getTimer: Timer = null
     override def getTask: TimerTask = null
     override def isExpired: Boolean = false
     override def isCancelled: Boolean = false
     override def cancel: Unit = ()
   }
-  val initial: HWTimeout = new NullHWTimeout
 
-  val cancelled: HWTimeout = new NullHWTimeout {
+  val cancelled: HWTimeout = new HWTimeout {
+    override def getTimer: Timer = null
+    override def getTask: TimerTask = null
+    override def isExpired: Boolean = false
     override def isCancelled: Boolean = true
-  }
-
-  val expired: HWTimeout = new NullHWTimeout {
-    override def isExpired: Boolean = true
+    override def cancel: Unit = ()
   }
 }
 /**
@@ -248,16 +247,6 @@ private[akka] class ContinuousCancellable extends AtomicReference[HWTimeout](Con
 }
 
 private[akka] class DefaultCancellable(timeout: HWTimeout) extends AtomicReference[HWTimeout](timeout) with Cancellable {
-  @tailrec final override def cancel(): Unit = {
-    get match {
-      case ContinuousCancellable.expired | ContinuousCancellable.cancelled ⇒ // already done
-      case x ⇒
-        val y =
-          if (!x.isCancelled && x.isExpired) ContinuousCancellable.expired
-          else ContinuousCancellable.cancelled
-        if (compareAndSet(x, y)) x.cancel()
-        else cancel()
-    }
-  }
+  override def cancel(): Unit = getAndSet(ContinuousCancellable.cancelled).cancel()
   override def isCancelled: Boolean = get().isCancelled
 }
