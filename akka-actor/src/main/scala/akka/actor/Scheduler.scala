@@ -321,7 +321,7 @@ class LightArrayRevolverScheduler(config: Config,
          * - swap Pause into the currentBucket
          * - increment currentBucket
          * - swap empty list into the Paused bucket (guaranteed != previous contents, even if empty)
-         * 
+         *
          * If we read the bucket contents before the last step, everything is fine,
          * it will either succeed (all done before the Pause) or fail with Pause or in the CAS.
          * But if we read the bucket contents after the third step but had read the currentBucket
@@ -578,20 +578,23 @@ class DefaultScheduler(config: Config,
 }
 
 private[akka] object ContinuousCancellable {
-  val initial: HWTimeout = new HWTimeout {
+  private class NullHWTimeout extends HWTimeout {
     override def getTimer: HWTimer = null
     override def getTask: HWTimerTask = null
     override def isExpired: Boolean = false
     override def isCancelled: Boolean = false
+    override def cancel: Boolean = false
+  }
+  val initial: HWTimeout = new NullHWTimeout {
     override def cancel: Boolean = true
   }
 
-  val cancelled: HWTimeout = new HWTimeout {
-    override def getTimer: HWTimer = null
-    override def getTask: HWTimerTask = null
-    override def isExpired: Boolean = false
+  val cancelled: HWTimeout = new NullHWTimeout {
     override def isCancelled: Boolean = true
-    override def cancel: Boolean = false
+  }
+
+  val expired: HWTimeout = new NullHWTimeout {
+    override def isExpired: Boolean = true
   }
 }
 /**
@@ -615,6 +618,17 @@ private[akka] class ContinuousCancellable extends AtomicReference[HWTimeout](Con
 }
 
 private[akka] class DefaultCancellable(timeout: HWTimeout) extends AtomicReference[HWTimeout](timeout) with Cancellable {
-  override def cancel(): Boolean = getAndSet(ContinuousCancellable.cancelled).cancel()
+  @tailrec final override def cancel(): Boolean = {
+    get match {
+      case ContinuousCancellable.expired | ContinuousCancellable.cancelled ⇒ false // already done
+      case x ⇒
+        val y =
+          if (!x.isCancelled && x.isExpired) ContinuousCancellable.expired
+          else ContinuousCancellable.cancelled
+        if (compareAndSet(x, y)) x.cancel()
+        else cancel()
+    }
+  }
+
   override def isCancelled: Boolean = get().isCancelled
 }
