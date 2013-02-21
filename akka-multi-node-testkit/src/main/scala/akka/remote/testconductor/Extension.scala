@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote.testconductor
 
 import akka.actor.{ ExtensionKey, Extension, ExtendedActorSystem, ActorContext, ActorRef, Address, ActorSystemImpl, Props }
