@@ -240,8 +240,20 @@ actual Debug messages).
 In addition, it offers:
 
 * :obj:`self` reference to the :class:`ActorRef` of the actor
+
 * :obj:`sender` reference sender Actor of the last received message, typically used as described in :ref:`Actor.Reply`
+
 * :obj:`supervisorStrategy` user overridable definition the strategy to use for supervising child actors
+
+  This strategy is typically declared inside the actor in order to have access
+  to the actor’s internal state within the decider function: since failure is
+  communicated as a message sent to the supervisor and processed like other
+  messages (albeit outside of the normal behavior), all values and variables
+  within the actor are available, as is the ``sender`` reference (which will
+  be the immediate child reporting the failure; if the original failure
+  occurred within a distant descendant it is still reported one level up at a
+  time).
+
 * :obj:`context` exposes contextual information for the actor and the current message, such as:
 
   * factory methods to create child actors (:meth:`actorOf`)
