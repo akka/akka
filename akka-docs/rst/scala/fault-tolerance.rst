@@ -49,6 +49,13 @@ The match statement which forms the bulk of the body is of type ``Decider``,
 which is a ``PartialFunction[Throwable, Directive]``. This
 is the piece which maps child failure types to their corresponding directives.
 
+.. note::
+
+  If the strategy is declared inside the supervising actor (as opposed to
+  within a companion object) its decider has access to all internal state of
+  the actor in a thread-safe fashion, including obtaining a reference to the
+  currently failed child (available as the ``sender`` of the failure message).
+
 Default Supervisor Strategy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

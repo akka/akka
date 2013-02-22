@@ -142,5 +142,21 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
       }
     }
 
+    "have access to the failing child’s reference in supervisorStrategy" in {
+      val parent = system.actorOf(Props(new Actor {
+        override val supervisorStrategy = OneForOneStrategy() {
+          case _: Exception ⇒ testActor ! sender; SupervisorStrategy.Stop
+        }
+        def receive = {
+          case "doit" ⇒ context.actorOf(Props.empty, "child") ! Kill
+        }
+      }))
+      EventFilter[ActorKilledException](occurrences = 1) intercept {
+        parent ! "doit"
+      }
+      val p = expectMsgType[ActorRef].path
+      p.parent must be === parent.path
+      p.name must be === "child"
+    }
   }
 }
