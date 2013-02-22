@@ -5,13 +5,13 @@
 package akka.io
 
 import java.net.Socket
+import java.nio.channels.SocketChannel
 import scala.concurrent.duration._
 import akka.actor.{ Terminated, SupervisorStrategy, Actor, Props }
 import akka.testkit.{ TestProbe, TestActorRef, AkkaSpec }
 import Tcp._
 import akka.testkit.EventFilter
 import akka.io.SelectionHandler._
-import java.nio.channels.SelectionKey._
 import akka.io.TcpListener.{ RegisterIncoming, FailedRegisterIncoming }
 
 class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
@@ -32,25 +32,33 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
       attemptConnectionToEndpoint()
       attemptConnectionToEndpoint()
 
-      def expectWorkerForCommand: Unit = {
-        selectorRouter.expectMsgPF() {
-          case WorkerForCommand(RegisterIncoming(chan), commander, _) ⇒
-            chan.isOpen must be(true)
-            commander must be === listener
-        }
-      }
-
       // since the batch-accept-limit is 2 we must only receive 2 accepted connections
       listener ! ChannelAcceptable
 
-      parent.expectMsg(AcceptInterest)
       expectWorkerForCommand
       expectWorkerForCommand
       selectorRouter.expectNoMsg(100.millis)
+      parent.expectMsg(AcceptInterest)
 
       // and pick up the last remaining connection on the next ChannelAcceptable
       listener ! ChannelAcceptable
       expectWorkerForCommand
+    }
+
+    "continue to accept connections after a previous accept" in new TestSetup {
+      bindListener()
+
+      attemptConnectionToEndpoint()
+      listener ! ChannelAcceptable
+      expectWorkerForCommand
+      selectorRouter.expectNoMsg(100.millis)
+      parent.expectMsg(AcceptInterest)
+
+      attemptConnectionToEndpoint()
+      listener ! ChannelAcceptable
+      expectWorkerForCommand
+      selectorRouter.expectNoMsg(100.millis)
+      parent.expectMsg(AcceptInterest)
     }
 
     "react to Unbind commands by replying with Unbound and stopping itself" in new TestSetup {
@@ -69,12 +77,7 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
       attemptConnectionToEndpoint()
 
       listener ! ChannelAcceptable
-      val channel = selectorRouter.expectMsgPF() {
-        case WorkerForCommand(RegisterIncoming(chan), commander, _) ⇒
-          chan.isOpen must be(true)
-          commander must be === listener
-          chan
-      }
+      val channel = expectWorkerForCommand
 
       EventFilter.warning(pattern = "selector capacity limit", occurrences = 1) intercept {
         listener ! FailedRegisterIncoming(channel)
@@ -104,6 +107,14 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
     def attemptConnectionToEndpoint(): Unit = new Socket(endpoint.getHostName, endpoint.getPort)
 
     def listener = parentRef.underlyingActor.listener
+
+    def expectWorkerForCommand: SocketChannel =
+      selectorRouter.expectMsgPF() {
+        case WorkerForCommand(RegisterIncoming(chan), commander, _) ⇒
+          chan.isOpen must be(true)
+          commander must be === listener
+          chan
+      }
 
     private class ListenerParent extends Actor {
       val listener = context.actorOf(
