@@ -136,8 +136,20 @@ to have them converted into actual Debug messages).
 In addition, it offers:
 
 * :obj:`getSelf()` reference to the :class:`ActorRef` of the actor
+
 * :obj:`getSender()` reference sender Actor of the last received message, typically used as described in :ref:`UntypedActor.Reply`
+
 * :obj:`supervisorStrategy()` user overridable definition the strategy to use for supervising child actors
+
+  This strategy is typically declared inside the actor in order to have access
+  to the actor’s internal state within the decider function: since failure is
+  communicated as a message sent to the supervisor and processed like other
+  messages (albeit outside of the normal behavior), all values and variables
+  within the actor are available, as is the ``getSender()`` reference (which will
+  be the immediate child reporting the failure; if the original failure
+  occurred within a distant descendant it is still reported one level up at a
+  time).
+
 * :obj:`getContext()` exposes contextual information for the actor and the current message, such as:
 
   * factory methods to create child actors (:meth:`actorOf`)
@@ -212,15 +224,20 @@ mentioned above:
    which caused the restart and the message which triggered that exception; the
    latter may be ``None`` if the restart was not caused by processing a
    message, e.g. when a supervisor does not trap the exception and is restarted
-   in turn by its supervisor. This method is the best place for cleaning up,
-   preparing hand-over to the fresh actor instance, etc.
-   By default it stops all children and calls :meth:`postStop`.
+   in turn by its supervisor, or if an actor is restarted due to a sibling’s
+   failure. If the message is available, then that message’s sender is also
+   accessible in the usual way (i.e. by calling ``getSender()``).
+   
+   This method is the best place for cleaning up, preparing hand-over to the
+   fresh actor instance, etc.  By default it stops all children and calls
+   :meth:`postStop`.
+
 2. The initial factory from the ``actorOf`` call is used
    to produce the fresh instance.
+
 3. The new actor’s :meth:`postRestart` method is invoked with the exception
    which caused the restart. By default the :meth:`preStart`
    is called, just as in the normal start-up case.
-
 
 An actor restart replaces only the actual actor object; the contents of the
 mailbox is unaffected by the restart, so processing of messages will resume
@@ -660,29 +677,29 @@ kind of exception is thrown, e.g. a database exception.
 What happens to the Message
 ---------------------------
 
-If an exception is thrown while a message is being processed (so taken of his
-mailbox and handed over to the receive), then this message will be lost. It is
-important to understand that it is not put back on the mailbox. So if you want
-to retry processing of a message, you need to deal with it yourself by catching
-the exception and retry your flow. Make sure that you put a bound on the number
-of retries since you don't want a system to livelock (so consuming a lot of cpu
-cycles without making progress).
+If an exception is thrown while a message is being processed (i.e. taken out of
+its mailbox and handed over to the current behavior), then this message will be
+lost. It is important to understand that it is not put back on the mailbox. So
+if you want to retry processing of a message, you need to deal with it yourself
+by catching the exception and retry your flow. Make sure that you put a bound
+on the number of retries since you don't want a system to livelock (so
+consuming a lot of cpu cycles without making progress). Another possibility
+would be to have a look at the :ref:`PeekMailbox pattern <mailbox-acking>`.
 
 What happens to the mailbox
 ---------------------------
 
 If an exception is thrown while a message is being processed, nothing happens to
 the mailbox. If the actor is restarted, the same mailbox will be there. So all
-messages on that mailbox, will be there as well.
+messages on that mailbox will be there as well.
 
 What happens to the actor
 -------------------------
 
-If an exception is thrown, the actor instance is discarded and a new instance is
-created. This new instance will now be used in the actor references to this actor
-(so this is done invisible to the developer). Note that this means that current
-state of the failing actor instance is lost if you don't store and restore it in
-``preRestart`` and ``postRestart`` callbacks.
+If code within an actor throws an exception, that actor is suspended and the
+supervision process is started (see :ref:`supervision`). Depending on the
+supervisor’s decision the actor is resumed (as if nothing happened), restarted
+(wiping out its internal state and starting from scratch) or terminated.
 
 Initialization patterns
 =======================
