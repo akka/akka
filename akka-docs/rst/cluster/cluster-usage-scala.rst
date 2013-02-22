@@ -96,16 +96,17 @@ sends a message to all seed nodes and then sends join command to the one that
 answers first. If no one of the seed nodes replied (might not be started yet)
 it retries this procedure until successful or shutdown.
 
-There is one thing to be aware of regarding the seed node configured as the
-first element in the ``seed-nodes`` configuration list.
 The seed nodes can be started in any order and it is not necessary to have all
-seed nodes running, but the first seed node must be started when initially
-starting a cluster, otherwise the other seed-nodes will not become initialized
-and no other node can join the cluster. Once more than two seed nodes have been
-started it is no problem to shut down the first seed node. If it goes down it
-must be manually joined to the cluster again.
-Automatic joining of the first seed node is not possible, it would only join
-itself. It is only the first seed node that has this restriction.
+seed nodes running, but the node configured as the first element in the ``seed-nodes``
+configuration list must be started when initially starting a cluster, otherwise the 
+other seed-nodes will not become initialized and no other node can join the cluster. 
+It is quickest to start all configured seed nodes at the same time (order doesn't matter), 
+otherwise it can take up to the configured ``seed-node-timeout`` until the nodes
+can join.
+
+Once more than two seed nodes have been started it is no problem to shut down the first
+seed node. If the first seed node is restarted it will first try join the other 
+seed nodes in the existing cluster.
 
 You can disable automatic joining with configuration::
 
