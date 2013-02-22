@@ -92,7 +92,7 @@ trait LoggingBus extends ActorEventBus {
   private[akka] def startDefaultLoggers(system: ActorSystemImpl) {
     val logName = simpleName(this) + "(" + system + ")"
     val level = levelFor(system.settings.LogLevel) getOrElse {
-      StandardOutLogger.print(Error(new EventHandlerException, logName, this.getClass, "unknown akka.stdout-loglevel " + system.settings.LogLevel))
+      StandardOutLogger.print(Error(new EventHandlerException, logName, this.getClass, "unknown akka.loglevel " + system.settings.LogLevel))
       ErrorLevel
     }
     try {
