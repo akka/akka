@@ -618,7 +618,7 @@ All these messages are logged at ``DEBUG`` level. To summarize, you can enable
 full logging of actor activities using this configuration fragment::
 
   akka {
-    loglevel = DEBUG
+    loglevel = "DEBUG"
     actor {
       debug {
         autoreceive = on
