@@ -84,20 +84,21 @@ private[io] class TcpListener(val selectorRouter: ActorRef,
       context.stop(self)
   }
 
-  @tailrec final def acceptAllPending(limit: Int): Unit =
-    if (limit > 0) {
-      val socketChannel =
+  @tailrec final def acceptAllPending(limit: Int): Unit = {
+    val socketChannel =
+      if (limit > 0) {
         try channel.accept()
         catch {
           case NonFatal(e) ⇒ log.error(e, "Accept error: could not accept new connection due to {}", e); null
         }
-      if (socketChannel != null) {
-        log.debug("New connection accepted")
-        socketChannel.configureBlocking(false)
-        selectorRouter ! WorkerForCommand(RegisterIncoming(socketChannel), self, Props(new TcpIncomingConnection(socketChannel, tcp, handler, options)))
-        acceptAllPending(limit - 1)
-      }
+      } else null
+    if (socketChannel != null) {
+      log.debug("New connection accepted")
+      socketChannel.configureBlocking(false)
+      selectorRouter ! WorkerForCommand(RegisterIncoming(socketChannel), self, Props(new TcpIncomingConnection(socketChannel, tcp, handler, options)))
+      acceptAllPending(limit - 1)
     } else context.parent ! AcceptInterest
+  }
 
   override def postStop() {
     try {
