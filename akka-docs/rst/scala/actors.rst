@@ -825,3 +825,63 @@ extend that, either through inheritance or delegation, is to use
 Or:
 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#receive-orElse2
+
+Initialization patterns
+=======================
+
+The rich lifecycle hooks of Actors provide a useful toolkit to implement various initialization patterns. During the
+lifetime of an ``ActorRef``, an actor can potentially go through several restarts, where the old instance is replaced by
+a fresh one, invisibly to the outside observer who only sees the ``ActorRef``.
+
+One may think about the new instances as "incarnations". Initialization might be necessary for every incarnation
+of an actor, but sometimes one needs initialization to happen only at the birth of the first instance when the
+``ActorRef`` is created. The following sections provide patterns for different initialization needs.
+
+Initialization via constructor
+------------------------------
+
+Using the constructor for initialization has various benefits. First of all, it makes it possible to use ``val`` fields to store
+any state that does not change during the life of the actor instance, making the implementation of the actor more robust.
+The constructor is invoked for every incarnation of the actor, therefore the internals of the actor can always assume
+that proper initialization happened. This is also the drawback of this approach, as there are cases when one would
+like to avoid reinitializing internals on restart. For example, it is often useful to preserve child actors across
+restarts. The following section provides a pattern for this case.
+
+Initialization via preStart
+---------------------------
+
+The method ``preStart()`` of an actor is only called once directly during the initialization of the first instance, that
+is, at creation of its ``ActorRef``. In the case of restarts, ``preStart()`` is called from ``postRestart()``, therefore
+if not overridden, ``preStart()`` is called on every incarnation. However, overriding ``postRestart()`` one can disable
+this behavior, and ensure that there is only one call to ``preStart()``.
+
+One useful usage of this pattern is to disable creation of new ``ActorRefs`` for children during restarts. This can be
+achieved by overriding ``preRestart()``:
+
+.. includecode:: code/docs/actor/InitializationDocSpec.scala#preStartInit
+
+Please note, that the child actors are *still restarted*, but no new ``ActorRef`` is created. One can recursively apply
+the same principles for the children, ensuring that their ``preStart()`` method is called only at the creation of their
+refs.
+
+For more information see :ref:`what-restarting-means-scala`.
+
+Initialization via message passing
+----------------------------------
+
+There are cases when it is impossible to pass all the information needed for actor initialization in the constructor,
+for example in the presence of circular dependencies. In this case the actor should listen for an initialization message,
+and use ``become()`` or a finite state-machine state transition to encode the initialized and uninitialized states
+of the actor.
+
+.. includecode:: code/docs/actor/InitializationDocSpec.scala#messageInit
+
+If the actor may receive messages before it has been initialized, a useful tool can be the ``Stash`` to save messages
+until the initialization finishes, and replaying them after the actor became initialized.
+
+.. warning::
+
+  This pattern should be used with care, and applied only when none of the patterns above are applicable. One of
+  the potential issues is that messages might be lost when sent to remote actors. Also, publishing an ``ActorRef`` in
+  an uninitialized state might lead to the condition that it receives a user message before the initialization has been
+  done.
