@@ -259,7 +259,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       connectionHandler.expectNoMsg(500.millis)
     }
 
-    "abort the connection and reply with `Aborted` upong reception of an `Abort` command (simplified)" in withEstablishedConnection() { setup ⇒
+    "abort the connection and reply with `Aborted` upon reception of an `Abort` command (simplified)" in withEstablishedConnection() { setup ⇒
       import setup._
 
       connectionHandler.send(connectionActor, Abort)
@@ -271,7 +271,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       val thrown = evaluating { serverSideChannel.read(buffer) } must produce[IOException]
     }
 
-    "abort the connection and reply with `Aborted` upong reception of an `Abort` command" in withEstablishedConnection() { setup ⇒
+    "abort the connection and reply with `Aborted` upon reception of an `Abort` command" in withEstablishedConnection() { setup ⇒
       ignoreIfWindows()
       import setup._
 
@@ -297,7 +297,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
      * has hit the network medium. The only exception is when you disable the Winsock buffering by setting
      * SO_SNDBUF to 0."
      */
-    "close the connection and reply with `ConfirmedClosed` upong reception of an `ConfirmedClose` command (simplified)" in withEstablishedConnection(setSmallRcvBuffer) { setup ⇒
+    "close the connection and reply with `ConfirmedClosed` upon reception of an `ConfirmedClose` command (simplified)" in withEstablishedConnection(setSmallRcvBuffer) { setup ⇒
       import setup._
 
       // we should test here that a pending write command is properly finished first
@@ -326,7 +326,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       assertThisConnectionActorTerminated()
     }
 
-    "close the connection and reply with `ConfirmedClosed` upong reception of an `ConfirmedClose` command" in withEstablishedConnection(setSmallRcvBuffer) { setup ⇒
+    "close the connection and reply with `ConfirmedClosed` upon reception of an `ConfirmedClose` command" in withEstablishedConnection(setSmallRcvBuffer) { setup ⇒
       ignoreIfWindows()
       import setup._
 
