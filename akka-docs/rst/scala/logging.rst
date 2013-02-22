@@ -57,7 +57,7 @@ You almost definitely need to have logging set to DEBUG to use any of the option
 .. code-block:: ruby
 
     akka {
-      loglevel = DEBUG
+      loglevel = "DEBUG"
     }
 
 This config option is very good if you want to know what config settings are loaded by Akka:
@@ -196,6 +196,21 @@ purposes as it contains exactly the default behavior.
   to look up the logger instance to use instead of the class’ name), and you
   might want to do this also in case you implement your own logging adapter.
 
+Turn Off Logging
+----------------
+
+To turn off logging you can configure the log levels to be ``OFF`` like this.
+
+.. code-block:: ruby
+
+  akka {
+    stdout-loglevel = "OFF"
+    loglevel = "OFF"
+  }
+
+The ``stdout-loglevel`` is only in effect during system startup and shutdown, and setting
+it to ``OFF`` as well, ensures that nothing gets logged during system startup or shutdown.
+
 Loggers
 =======
 
@@ -210,7 +225,7 @@ also define the log level.
     # Loggers to register at boot time (akka.event.Logging$DefaultLogger logs
     # to STDOUT)
     loggers = ["akka.event.Logging$DefaultLogger"]
-    # Options: ERROR, WARNING, INFO, DEBUG
+    # Options: OFF, ERROR, WARNING, INFO, DEBUG
     loglevel = "DEBUG"
   }
 

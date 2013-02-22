@@ -95,12 +95,12 @@ A custom ``application.conf`` might look like this::
 
     # Log level used by the configured loggers (see "loggers") as soon
     # as they have been started; before that, see "stdout-loglevel"
-    # Options: ERROR, WARNING, INFO, DEBUG
-    loglevel = DEBUG
+    # Options: OFF, ERROR, WARNING, INFO, DEBUG
+    loglevel = "DEBUG"
 
     # Log level for the very basic logger activated during AkkaApplication startup
-    # Options: ERROR, WARNING, INFO, DEBUG
-    stdout-loglevel = DEBUG
+    # Options: OFF, ERROR, WARNING, INFO, DEBUG
+    stdout-loglevel = "DEBUG"
 
     actor {
       default-dispatcher {
@@ -222,11 +222,11 @@ from the whole class path, it is easiest to utilize that functionality and
 differentiate actor systems within the hierarchy of the configuration::
 
   myapp1 {
-    akka.loglevel = WARNING
+    akka.loglevel = "WARNING"
     my.own.setting = 43
   }
   myapp2 {
-    akka.loglevel = ERROR
+    akka.loglevel = "ERROR"
     app2.setting = "appname"
   }
   my.own.setting = 42
@@ -245,15 +245,17 @@ system is this
 
 .. code-block:: ruby
 
-  akka.loglevel = WARNING
+  akka.loglevel = "WARNING"
   my.own.setting = 43
   my.other.setting = "hello"
   // plus myapp1 and myapp2 subtrees
 
 while in the second one, only the “akka” subtree is lifted, with the following
-result::
+result
 
-  akka.loglevel = ERROR
+.. code-block:: ruby
+
+  akka.loglevel = "ERROR"
   my.own.setting = 42
   my.other.setting = "hello"
   // plus myapp1 and myapp2 subtrees
