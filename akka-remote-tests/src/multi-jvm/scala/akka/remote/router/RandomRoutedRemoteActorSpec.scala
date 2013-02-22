@@ -12,7 +12,7 @@ import akka.actor.PoisonPill
 import akka.actor.Address
 import scala.concurrent.Await
 import akka.pattern.ask
-import akka.remote.testkit.{STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec}
+import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec }
 import akka.routing.Broadcast
 import akka.routing.RandomRouter
 import akka.routing.RoutedActorRef
@@ -65,7 +65,7 @@ class RandomRoutedRemoteActorSpec extends MultiNodeSpec(RandomRoutedRemoteActorM
         actor.isInstanceOf[RoutedActorRef] must be(true)
 
         val connectionCount = 3
-        val iterationCount = 10
+        val iterationCount = 100
 
         for (i ← 0 until iterationCount; k ← 0 until connectionCount) {
           actor ! "hit"
@@ -81,7 +81,8 @@ class RandomRoutedRemoteActorSpec extends MultiNodeSpec(RandomRoutedRemoteActorM
         actor ! Broadcast(PoisonPill)
 
         enterBarrier("end")
-        replies.values foreach { _ must be > (0) }
+        // since it's random we can't be too strict in the assert
+        replies.values count (_ > 0) must be > (connectionCount - 2)
         replies.get(node(fourth).address) must be(None)
 
         // shut down the actor before we let the other node(s) shut down so we don't try to send
