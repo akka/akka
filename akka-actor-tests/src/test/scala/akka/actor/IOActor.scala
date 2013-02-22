@@ -410,7 +410,6 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
       IOManager(system).listen(boundTo)
       val exc = expectMsgType[Status.Failure].cause
       exc.getClass must be(classOf[AkkaException])
-      exc.getMessage must include("Address already in use")
       exc.getMessage must include(boundTo.getPort.toString)
     }
 
