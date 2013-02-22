@@ -4,6 +4,12 @@
  Logging (Java)
 ################
 
+Logging in Akka is not tied to a specific logging backend. By default
+log messages are printed to STDOUT, but you can plug-in a SLF4J logger or 
+your own logger. Logging is performed asynchronously to ensure that logging
+has minimal performance impact. Logging generally means IO and locks,
+which can slow down the operations of your code if it was performed 
+synchronously.
 
 How to Log
 ==========
@@ -171,8 +177,13 @@ it to ``OFF`` as well, ensures that nothing gets logged during system startup or
 Loggers
 =======
 
-Logging is performed asynchronously through an event bus. You can configure which loggers that should
-subscribe to the logging events. That is done using the 'loggers' element in the :ref:`configuration`.
+Logging is performed asynchronously through an event bus. Log events are processed by an event handler actor
+and it will receive the log events in the same order as they were emitted. 
+
+One gotcha is that currently the timestamp is attributed in the event handler, not when actually doing the logging.
+
+You can configure which event handlers are created at system start-up and listen to logging events. That is done using the 
+``loggers`` element in the :ref:`configuration`.
 Here you can also define the log level.
 
 .. code-block:: ruby
