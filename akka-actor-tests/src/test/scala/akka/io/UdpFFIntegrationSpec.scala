@@ -12,12 +12,13 @@ import akka.actor.ActorRef
 
 class UdpFFIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with ImplicitSender {
 
-  def bindUdp(handler: ActorRef): (InetSocketAddress, ActorRef) = {
-    val address = temporaryServerAddress()
+  val addresses = temporaryServerAddresses(3)
+
+  def bindUdp(address: InetSocketAddress, handler: ActorRef): ActorRef = {
     val commander = TestProbe()
     commander.send(IO(UdpFF), Bind(handler, address))
     commander.expectMsg(Bound)
-    (address, commander.sender)
+    commander.sender
   }
 
   val simpleSender: ActorRef = {
@@ -30,7 +31,8 @@ class UdpFFIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with Implici
   "The UDP Fire-and-Forget implementation" must {
 
     "be able to send without binding" in {
-      val (serverAddress, server) = bindUdp(testActor)
+      val serverAddress = addresses(0)
+      val server = bindUdp(serverAddress, testActor)
       val data = ByteString("To infinity and beyond!")
       simpleSender ! Send(data, serverAddress)
 
@@ -39,8 +41,10 @@ class UdpFFIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with Implici
     }
 
     "be able to send with binding" in {
-      val (serverAddress, server) = bindUdp(testActor)
-      val (clientAddress, client) = bindUdp(testActor)
+      val serverAddress = addresses(1)
+      val clientAddress = addresses(2)
+      val server = bindUdp(serverAddress, testActor)
+      val client = bindUdp(clientAddress, testActor)
       val data = ByteString("Fly little packet!")
 
       client ! Send(data, serverAddress)

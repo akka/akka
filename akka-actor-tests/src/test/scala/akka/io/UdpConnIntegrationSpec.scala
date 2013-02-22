@@ -11,12 +11,13 @@ import akka.actor.ActorRef
 
 class UdpConnIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with ImplicitSender {
 
-  def bindUdp(handler: ActorRef): (InetSocketAddress, ActorRef) = {
-    val address = temporaryServerAddress()
+  val addresses = temporaryServerAddresses(3)
+
+  def bindUdp(address: InetSocketAddress, handler: ActorRef): ActorRef = {
     val commander = TestProbe()
     commander.send(IO(UdpFF), UdpFF.Bind(handler, address))
     commander.expectMsg(UdpFF.Bound)
-    (address, commander.sender)
+    commander.sender
   }
 
   def connectUdp(localAddress: Option[InetSocketAddress], remoteAddress: InetSocketAddress, handler: ActorRef): ActorRef = {
@@ -29,7 +30,8 @@ class UdpConnIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with Impli
   "The UDP connection oriented implementation" must {
 
     "be able to send and receive without binding" in {
-      val (serverAddress, server) = bindUdp(testActor)
+      val serverAddress = addresses(0)
+      val server = bindUdp(serverAddress, testActor)
       val data1 = ByteString("To infinity and beyond!")
       val data2 = ByteString("All your datagram belong to us")
       connectUdp(localAddress = None, serverAddress, testActor) ! UdpConn.Send(data1)
@@ -49,8 +51,9 @@ class UdpConnIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with Impli
     }
 
     "be able to send and receive with binding" in {
-      val clientAddress = temporaryServerAddress()
-      val (serverAddress, server) = bindUdp(testActor)
+      val serverAddress = addresses(1)
+      val clientAddress = addresses(2)
+      val server = bindUdp(serverAddress, testActor)
       val data1 = ByteString("To infinity and beyond!")
       val data2 = ByteString("All your datagram belong to us")
       connectUdp(Some(clientAddress), serverAddress, testActor) ! UdpConn.Send(data1)
