@@ -69,6 +69,7 @@ trait LoggingBus extends ActorEventBus {
 
   private def setUpStdoutLogger(config: Settings) {
     val level = levelFor(config.StdoutLogLevel) getOrElse {
+      // only log initialization errors directly with StandardOutLogger.print
       StandardOutLogger.print(Error(new LoggerException, simpleName(this), this.getClass, "unknown akka.stdout-loglevel " + config.StdoutLogLevel))
       ErrorLevel
     }
@@ -93,7 +94,8 @@ trait LoggingBus extends ActorEventBus {
   private[akka] def startDefaultLoggers(system: ActorSystemImpl) {
     val logName = simpleName(this) + "(" + system + ")"
     val level = levelFor(system.settings.LogLevel) getOrElse {
-      StandardOutLogger.print(Error(new LoggerException, logName, this.getClass, "unknown akka.stdout-loglevel " + system.settings.LogLevel))
+      // only log initialization errors directly with StandardOutLogger.print
+      StandardOutLogger.print(Error(new LoggerException, logName, this.getClass, "unknown akka.loglevel " + system.settings.LogLevel))
       ErrorLevel
     }
     try {
@@ -103,7 +105,7 @@ trait LoggingBus extends ActorEventBus {
           case loggers ⇒ loggers
         }
         case loggers ⇒
-          StandardOutLogger.print(Warning(logName, this.getClass, "[akka.event-handlers] config is deprecated, use [akka.loggers]"))
+          publish(Warning(logName, this.getClass, "[akka.event-handlers] config is deprecated, use [akka.loggers]"))
           loggers
       }
       val myloggers =
@@ -177,7 +179,7 @@ trait LoggingBus extends ActorEventBus {
     val actor = system.systemActorOf(Props(clazz), name)
     implicit def timeout =
       if (system.settings.EventHandlerStartTimeout.duration >= Duration.Zero) {
-        StandardOutLogger.print(Warning(logName, this.getClass,
+        publish(Warning(logName, this.getClass,
           "[akka.event-handler-startup-timeout] config is deprecated, use [akka.logger-startup-timeout]"))
         system.settings.EventHandlerStartTimeout
       } else system.settings.LoggerStartTimeout
