@@ -24,6 +24,13 @@ sample as it is easy to follow the log output to understand what is happening in
 
    fault-tolerance-sample
 
+.. note::
+
+  If the strategy is declared inside the supervising actor (as opposed to
+  as a static property or class) its decider has access to all internal state of
+  the actor in a thread-safe fashion, including obtaining a reference to the
+  currently failed child (available as the ``getSender()`` of the failure message).
+
 Creating a Supervisor Strategy
 ------------------------------
 
