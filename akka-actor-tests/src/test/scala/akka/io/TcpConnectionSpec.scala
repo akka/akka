@@ -259,7 +259,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       connectionHandler.expectNoMsg(500.millis)
     }
 
-    "abort the connection and reply with `Aborted` upong reception of an `Abort` command (simplified)" in withEstablishedConnection() { setup ⇒
+    "abort the connection and reply with `Aborted` upon reception of an `Abort` command (simplified)" in withEstablishedConnection() { setup ⇒
       import setup._
 
       connectionHandler.send(connectionActor, Abort)
@@ -271,8 +271,9 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       val thrown = evaluating { serverSideChannel.read(buffer) } must produce[IOException]
     }
 
-    "abort the connection and reply with `Aborted` upong reception of an `Abort` command" in withEstablishedConnection() { setup ⇒
-      ignoreIfWindows()
+    "abort the connection and reply with `Aborted` upon reception of an `Abort` command" in withEstablishedConnection() { setup ⇒
+      info("Temporarily disabled due to l10n problems")
+      pending
       import setup._
 
       connectionHandler.send(connectionActor, Abort)
@@ -383,7 +384,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
     "report when peer aborted the connection" in withEstablishedConnection() { setup ⇒
       import setup._
-      ignoreIfWindows()
+      info("Temporarily disabled due to l10n problems")
+      pending
 
       EventFilter[IOException](occurrences = 1) intercept {
         abortClose(serverSideChannel)
@@ -416,7 +418,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     // no TCP level connection has been established with the client does not hold.
     "report failed connection attempt while not accepted" in withUnacceptedConnection() { setup ⇒
       import setup._
-      ignoreIfWindows()
+      info("Temporarily disabled due to l10n problems")
+      pending
       // close instead of accept
       localServer.close()
 
@@ -451,7 +454,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     "report failed connection attempt when target is unreachable" in
       withUnacceptedConnection(connectionActorCons = createConnectionActor(serverAddress = UnboundAddress)) { setup ⇒
         import setup._
-        ignoreIfWindows()
+        info("Temporarily disabled due to l10n problems")
+        pending
 
         val sel = SelectorProvider.provider().openSelector()
         val key = clientSideChannel.register(sel, SelectionKey.OP_CONNECT | SelectionKey.OP_READ)
