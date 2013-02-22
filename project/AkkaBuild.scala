@@ -12,7 +12,8 @@ import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import com.typesafe.sbtosgi.OsgiPlugin.{ OsgiKeys, osgiSettings }
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
-import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
+import com.typesafe.tools.mima.plugin.MimaKeys.{ previousArtifact, binaryIssueFilters }
+import com.typesafe.tools.mima.core._
 import com.typesafe.sbt.SbtSite.site
 import com.typesafe.sbt.site.SphinxSupport
 import com.typesafe.sbt.site.SphinxSupport.{ enableOutput, generatePdf, generatedPdf, sphinxInputs, sphinxPackages, Sphinx }
@@ -24,7 +25,7 @@ import LsKeys.{ lsync, docsUrl => lsDocsUrl, tags => lsTags }
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
-  val enableMiMa = false
+  val enableMiMa = true
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
@@ -37,7 +38,7 @@ object AkkaBuild extends Build {
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Publish.versionSettings ++
-      SphinxSupport.settings ++ Dist.settings ++ mimaSettings ++ Seq(
+      SphinxSupport.settings ++ Dist.settings ++ Seq(
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
@@ -72,12 +73,16 @@ object AkkaBuild extends Build {
   lazy val actor = Project(
     id = "akka-actor",
     base = file("akka-actor"),
-    settings = defaultSettings ++ OSGi.actor ++ Seq(
+    settings = defaultSettings ++ mimaSettings ++ OSGi.actor ++ Seq(
       autoCompilerPlugins := true,
       // to fix scaladoc generation
       fullClasspath in doc in Compile <<= fullClasspath in Compile,
       libraryDependencies ++= Dependencies.actor,
-      previousArtifact := akkaPreviousArtifact("akka-actor")
+      previousArtifact := akkaPreviousArtifact("akka-actor"),
+      binaryIssueFilters ++= Seq(
+        ProblemFilters.exclude[MissingMethodProblem]("akka.event.EventStream.stopDefaultLoggers"),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.event.LoggingBus.stopDefaultLoggers")
+      )
     )
   )
 
@@ -90,14 +95,16 @@ object AkkaBuild extends Build {
     id = "akka-dataflow",
     base = file("akka-dataflow"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ OSGi.dataflow ++ cpsPlugin
+    settings = defaultSettings ++ mimaSettings ++ OSGi.dataflow ++ cpsPlugin ++ Seq(
+      previousArtifact := akkaPreviousArtifact("akka-dataflow")
+    )
   )
 
   lazy val testkit = Project(
     id = "akka-testkit",
     base = file("akka-testkit"),
     dependencies = Seq(actor),
-    settings = defaultSettings ++ OSGi.testkit ++ Seq(
+    settings = defaultSettings ++ mimaSettings ++ OSGi.testkit ++ Seq(
       libraryDependencies ++= Dependencies.testkit,
       initialCommands += "import akka.testkit._",
       previousArtifact := akkaPreviousArtifact("akka-testkit")
@@ -118,10 +125,11 @@ object AkkaBuild extends Build {
     id = "akka-remote",
     base = file("akka-remote"),
     dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test"),
-    settings = defaultSettings ++ OSGi.remote ++ Seq(
+    settings = defaultSettings ++ mimaSettings ++ OSGi.remote ++ Seq(
       libraryDependencies ++= Dependencies.remote,
       // disable parallel tests
-      parallelExecution in Test := false
+      parallelExecution in Test := false,
+      previousArtifact := akkaPreviousArtifact("akka-remote")
     )
   )
 
@@ -161,8 +169,9 @@ object AkkaBuild extends Build {
     id = "akka-slf4j",
     base = file("akka-slf4j"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ OSGi.slf4j ++ Seq(
-      libraryDependencies ++= Dependencies.slf4j
+    settings = defaultSettings ++ mimaSettings ++ OSGi.slf4j ++ Seq(
+      libraryDependencies ++= Dependencies.slf4j,
+      previousArtifact := akkaPreviousArtifact("akka-slf4j")
     )
   )
 
@@ -170,7 +179,7 @@ object AkkaBuild extends Build {
     id = "akka-agent",
     base = file("akka-agent"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ OSGi.agent ++ Seq(
+    settings = defaultSettings ++ mimaSettings ++ OSGi.agent ++ Seq(
       libraryDependencies ++= Dependencies.agent,
       previousArtifact := akkaPreviousArtifact("akka-agent")
     )
@@ -180,7 +189,7 @@ object AkkaBuild extends Build {
     id = "akka-transactor",
     base = file("akka-transactor"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ OSGi.transactor ++ Seq(
+    settings = defaultSettings ++ mimaSettings ++ OSGi.transactor ++ Seq(
       libraryDependencies ++= Dependencies.transactor,
       previousArtifact := akkaPreviousArtifact("akka-transactor")
     )
@@ -199,7 +208,7 @@ object AkkaBuild extends Build {
     id = "akka-mailboxes-common",
     base = file("akka-durable-mailboxes/akka-mailboxes-common"),
     dependencies = Seq(remote, testkit % "compile;test->test"),
-    settings = defaultSettings ++ OSGi.mailboxesCommon ++ Seq(
+    settings = defaultSettings ++ mimaSettings ++ OSGi.mailboxesCommon ++ Seq(
       libraryDependencies ++= Dependencies.mailboxes,
       previousArtifact := akkaPreviousArtifact("akka-mailboxes-common"),
       publishArtifact in Test := true
@@ -210,7 +219,7 @@ object AkkaBuild extends Build {
     id = "akka-file-mailbox",
     base = file("akka-durable-mailboxes/akka-file-mailbox"),
     dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
-    settings = defaultSettings ++ OSGi.fileMailbox ++ Seq(
+    settings = defaultSettings ++ mimaSettings ++ OSGi.fileMailbox ++ Seq(
       libraryDependencies ++= Dependencies.fileMailbox,
       previousArtifact := akkaPreviousArtifact("akka-file-mailbox")
     )
@@ -220,7 +229,7 @@ object AkkaBuild extends Build {
     id = "akka-zeromq",
     base = file("akka-zeromq"),
     dependencies = Seq(actor, testkit % "test;test->test"),
-    settings = defaultSettings ++ OSGi.zeroMQ ++ Seq(
+    settings = defaultSettings ++ mimaSettings ++ OSGi.zeroMQ ++ Seq(
       libraryDependencies ++= Dependencies.zeroMQ,
       previousArtifact := akkaPreviousArtifact("akka-zeromq")
     )
@@ -230,7 +239,7 @@ object AkkaBuild extends Build {
     id = "akka-kernel",
     base = file("akka-kernel"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ mimaSettings ++ Seq(
       libraryDependencies ++= Dependencies.kernel,
       previousArtifact := akkaPreviousArtifact("akka-kernel")
     )
@@ -240,8 +249,9 @@ object AkkaBuild extends Build {
      id = "akka-camel",
      base = file("akka-camel"),
      dependencies = Seq(actor, slf4j, testkit % "test->test"),
-     settings = defaultSettings ++ OSGi.camel ++ Seq(
-       libraryDependencies ++= Dependencies.camel
+     settings = defaultSettings ++ mimaSettings ++ OSGi.camel ++ Seq(
+       libraryDependencies ++= Dependencies.camel,
+       previousArtifact := akkaPreviousArtifact("akka-camel")
      )
   )
 
@@ -249,9 +259,10 @@ object AkkaBuild extends Build {
     id = "akka-osgi",
     base = file("akka-osgi"),
     dependencies = Seq(actor),
-    settings = defaultSettings ++ OSGi.osgi ++ Seq(
+    settings = defaultSettings ++ mimaSettings ++ OSGi.osgi ++ Seq(
       libraryDependencies ++= Dependencies.osgi,
-      parallelExecution in Test := false
+      parallelExecution in Test := false,
+      previousArtifact := akkaPreviousArtifact("akka-osgi")
     )
   )
 
@@ -259,9 +270,10 @@ object AkkaBuild extends Build {
     id = "akka-osgi-aries",
     base = file("akka-osgi-aries"),
     dependencies = Seq(osgi % "compile;test->test"),
-    settings = defaultSettings ++ OSGi.osgiAries ++ Seq(
+    settings = defaultSettings ++ mimaSettings ++ OSGi.osgiAries ++ Seq(
       libraryDependencies ++= Dependencies.osgiAries,
-      parallelExecution in Test := false
+      parallelExecution in Test := false,
+      previousArtifact := akkaPreviousArtifact("akka-osgi-aries")
     )
   )
 
@@ -489,7 +501,7 @@ object AkkaBuild extends Build {
     (if (useOnlyTestTags.isEmpty) Seq.empty else Seq("-n", if (multiNodeEnabled) useOnlyTestTags.mkString("\"", " ", "\"") else useOnlyTestTags.mkString(" ")))
   }
 
-  lazy val defaultSettings = baseSettings ++ formatSettings ++ mimaSettings ++ lsSettings ++ Seq(
+  lazy val defaultSettings = baseSettings ++ formatSettings ++ lsSettings ++ Seq(
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Ywarn-adapted-args"),
     javacOptions in Compile ++= Seq("-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
@@ -615,8 +627,8 @@ object AkkaBuild extends Build {
     previousArtifact := None
   )
 
-  def akkaPreviousArtifact(id: String, organization: String = "com.typesafe.akka", version: String = "2.0"): Option[sbt.ModuleID] =
-    if (enableMiMa) Some(organization % id % version) // the artifact to compare binary compatibility with
+  def akkaPreviousArtifact(id: String, organization: String = "com.typesafe.akka", version: String = "2.1.0"): Option[sbt.ModuleID] =
+    if (enableMiMa) Some(organization % (id + "_2.10") % version) // the artifact to compare binary compatibility with
     else None
 
   // OSGi settings
