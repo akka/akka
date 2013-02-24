@@ -76,8 +76,8 @@ This config option is very good if you want to know what config settings are loa
       log-config-on-start = on
     }
 
-If you want very detailed logging of all user-level messages that are processed
-by Actors that use akka.event.LoggingReceive:
+If you want very detailed logging of user-level messages then wrap your actors' behaviors with
+``akka.event.LoggingReceive`` and enable the ``receive`` option:
 
 .. code-block:: ruby
 
