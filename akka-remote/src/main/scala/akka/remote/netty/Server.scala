@@ -71,11 +71,7 @@ private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
       openChannels.write(netty.createControlEnvelope(shutdownSignal))
       openChannels.disconnect
       openChannels.close.awaitUninterruptibly
-      // Release the selectors, but don't try to kill the dispatcher
-      if (settings.UseDispatcherForIO.isDefined)
-        bootstrap.shutdown()
-      else
-        bootstrap.releaseExternalResources()
+      bootstrap.releaseExternalResources()
       netty.notifyListeners(RemoteServerShutdown(netty))
     } catch {
       case e: Exception ⇒ netty.notifyListeners(RemoteServerError(e, netty))
