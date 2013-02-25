@@ -23,6 +23,7 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.io.ObjectStreamException
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
+import akka.pattern.AskTimeoutException
 
 /**
  * A TypedActorFactory is something that can created TypedActor instances.
@@ -421,8 +422,10 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           case m if m.returnsJOption || m.returnsOption ⇒
             val f = ask(actor, m)(timeout)
             (try { Await.ready(f, timeout.duration).value } catch { case _: TimeoutException ⇒ None }) match {
-              case None | Some(Success(NullResponse)) ⇒ if (m.returnsJOption) JOption.none[Any] else None
-              case Some(t: Try[_])                    ⇒ t.get.asInstanceOf[AnyRef]
+              case None | Some(Success(NullResponse)) | Some(Failure(_: AskTimeoutException)) ⇒
+                if (m.returnsJOption) JOption.none[Any] else None
+              case Some(t: Try[_]) ⇒
+                t.get.asInstanceOf[AnyRef]
             }
           case m ⇒ Await.result(ask(actor, m)(timeout), timeout.duration) match {
             case NullResponse ⇒ null
