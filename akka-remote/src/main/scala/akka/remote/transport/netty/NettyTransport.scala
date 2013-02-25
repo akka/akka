@@ -199,7 +199,13 @@ private[netty] abstract class ClientHandler(protected final val transport: Netty
 private[transport] object NettyTransport {
   // 4 bytes will be used to represent the frame length. Used by netty LengthFieldPrepender downstream handler.
   val FrameLengthFieldLength = 4
-  def gracefulClose(channel: Channel): Unit = channel.disconnect().addListener(ChannelFutureListener.CLOSE)
+  def gracefulClose(channel: Channel)(implicit ec: ExecutionContext): Unit = {
+    def always(c: ChannelFuture) = NettyFutureBridge(c) recover { case _ ⇒ c.getChannel }
+    for {
+      _ ← always { channel.write(ChannelBuffers.buffer(0)) } // Force flush by waiting on a final dummy write
+      _ ← always { channel.disconnect() }
+    } channel.close()
+  }
 
   val uniqueIdCounter = new AtomicInteger(0)
 

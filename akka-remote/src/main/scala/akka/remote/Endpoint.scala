@@ -104,6 +104,7 @@ private[remote] object EndpointWriter {
    */
   case class TakeOver(handle: AssociationHandle)
   case object BackoffTimer
+  case object FlushAndStop
 
   sealed trait State
   case object Initializing extends State
@@ -202,6 +203,10 @@ private[remote] class EndpointWriter(
       stay()
 
     case Event(BackoffTimer, _) ⇒ goto(Writing)
+
+    case Event(FlushAndStop, _) ⇒
+      stash() // Flushing is postponed after the pending writes
+      stay()
   }
 
   when(Writing) {
@@ -221,6 +226,9 @@ private[remote] class EndpointWriter(
         case NonFatal(e: EndpointException) ⇒ publishAndThrow(e)
         case NonFatal(e)                    ⇒ publishAndThrow(new EndpointException("Failed to write message to the transport", e))
       }
+
+    // We are in Writing state, so stash is emtpy, safe to stop here
+    case Event(FlushAndStop, _) ⇒ stop()
   }
 
   when(Handoff) {
@@ -245,6 +253,8 @@ private[remote] class EndpointWriter(
       reader foreach context.stop
       handle = Some(newHandle)
       goto(Handoff)
+    case Event(FlushAndStop, _) ⇒
+      stop()
   }
 
   onTransition {
