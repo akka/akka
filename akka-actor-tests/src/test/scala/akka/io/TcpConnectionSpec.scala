@@ -98,9 +98,12 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     "receive data directly when the connection is established" in withUnacceptedConnection() { unregisteredSetup ⇒
       import unregisteredSetup._
 
-      localServer.configureBlocking(true)
-      val serverSideChannel = localServer.accept()
-      serverSideChannel must not be (null)
+      @volatile var serverSideChannel: SocketChannel = null
+      awaitCond {
+        serverSideChannel = localServer.accept()
+        serverSideChannel != null
+      }
+
       serverSideChannel.write(ByteBuffer.wrap("immediatedata".getBytes("ASCII")))
       serverSideChannel.configureBlocking(false)
 
@@ -662,8 +665,11 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     clientSocketOptions: immutable.Seq[SocketOption] = Nil)(body: RegisteredSetup ⇒ Any): Unit = withUnacceptedConnection(setServerSocketOptions, createConnectionActor(options = clientSocketOptions)) { unregisteredSetup ⇒
     import unregisteredSetup._
 
-    localServer.configureBlocking(true)
-    val serverSideChannel = localServer.accept()
+    @volatile var serverSideChannel: SocketChannel = null
+    awaitCond {
+      serverSideChannel = localServer.accept()
+      serverSideChannel != null
+    }
     serverSideChannel.configureBlocking(false)
 
     serverSideChannel must not be (null)
