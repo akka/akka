@@ -29,7 +29,7 @@ class RemoteActorRefProvider(
 
   val remoteSettings: RemoteSettings = new RemoteSettings(settings.config, systemName)
 
-  override val deployer: Deployer = createDeployer
+  override val deployer: RemoteDeployer = createDeployer
 
   /**
    * Factory method to make it possible to override deployer in subclass
