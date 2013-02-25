@@ -199,11 +199,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
         try {
           timer.stop()
         } finally {
-          // Release the selectors, but don't try to kill the dispatcher
-          if (settings.UseDispatcherForIO.isDefined)
-            clientChannelFactory.shutdown()
-          else
-            clientChannelFactory.releaseExternalResources()
+          clientChannelFactory.releaseExternalResources()
           // Shut down the execution handler as well
           PipelineFactory.executionHandler.foreach(_.releaseExternalResources())
         }
