@@ -501,8 +501,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       watch(connectionActor)
       EventFilter[DeathPactException](occurrences = 1) intercept {
         system.stop(connectionHandler.ref)
-        expectMsgType[Terminated].actor must be(connectionHandler.ref)
-        expectMsgType[Terminated].actor must be(connectionActor)
+        val deaths = Set(expectMsgType[Terminated].actor, expectMsgType[Terminated].actor)
+        deaths must be(Set(connectionHandler.ref, connectionActor))
       }
     }
   }
