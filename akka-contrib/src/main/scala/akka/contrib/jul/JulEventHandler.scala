@@ -52,7 +52,7 @@ class JavaLoggingEventHandler extends Actor {
   @inline
   def log(level: logging.Level, cause: Throwable, logSource: String, logClass: Class[_], message: Any, event: LogEvent) {
     val logger = logging.Logger.getLogger(logSource)
-    val record = new logging.LogRecord(level, message.toString)
+    val record = new logging.LogRecord(level, if (message == null) null else message.toString)
     record.setLoggerName(logger.getName)
     record.setThrown(cause)
     record.setThreadID(event.thread.getId.toInt)
