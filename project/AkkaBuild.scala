@@ -74,7 +74,9 @@ object AkkaBuild extends Build {
       generatedPdf in Sphinx <<= generatedPdf in Sphinx in LocalProject(docs.id) map identity,
       generatedEpub in Sphinx <<= generatedEpub in Sphinx in LocalProject(docs.id) map identity
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples, channels, channelsTests)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
+      mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples, channels, channelsTests,
+      multiNodeTestkit)
   )
 
   // this detached pseudo-project is used for running the tests against a different Scala version than the one used for compilation
@@ -161,7 +163,7 @@ object AkkaBuild extends Build {
     )
   )
 
-  lazy val multiNodeTests = Project(
+  lazy val multiNodeTestkit = Project(
     id = "akka-multi-node-testkit",
     base = file("akka-multi-node-testkit"),
     dependencies = Seq(remote, testkit),
@@ -173,7 +175,7 @@ object AkkaBuild extends Build {
   lazy val remoteTests = Project(
     id = "akka-remote-tests",
     base = file("akka-remote-tests"),
-    dependencies = Seq(actorTests % "test->test", multiNodeTests),
+    dependencies = Seq(actorTests % "test->test", multiNodeTestkit),
     settings = defaultSettings ++ scaladocSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.remoteTests,
       // disable parallel tests
@@ -414,9 +416,9 @@ object AkkaBuild extends Build {
   ) configs (MultiJvm)
 
   lazy val multiNodeSample = Project(
-    id = "akka-sample-multi-node-experimental",
+    id = "akka-sample-multi-node",
     base = file("akka-samples/akka-sample-multi-node"),
-    dependencies = Seq(remoteTests % "test", testkit % "test"),
+    dependencies = Seq(multiNodeTestkit % "test", testkit % "test"),
     settings = sampleSettings ++ multiJvmSettings ++ experimentalSettings ++ Seq(
       libraryDependencies ++= Dependencies.multiNodeSample,
       // disable parallel tests
