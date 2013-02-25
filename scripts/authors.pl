@@ -24,7 +24,7 @@ if (@ARGV > 0) {
 
 while (<$input>) {
   ($author) = /Author: (.*) </;
-  my ($insert, $delete) = /files changed, (\d+) insert.* (\d+) delet/;
+  my ($insert, $delete) = /files? changed, (\d+) insert.* (\d+) delet/;
   next unless defined $insert;
   $auth{$author} = [0, 0, 0] unless defined($auth{$author});
   my @l = @{$auth{$author}};
