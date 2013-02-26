@@ -35,7 +35,7 @@ private[remote] trait TcpHandlers extends CommonHandlers {
                                 remoteSocketAddress: InetSocketAddress): Unit = ChannelLocalActor.set(channel, Some(listener))
 
   override def createHandle(channel: Channel, localAddress: Address, remoteAddress: Address): AssociationHandle =
-    new TcpAssociationHandle(localAddress, remoteAddress, channel)
+    new TcpAssociationHandle(localAddress, remoteAddress, transport, channel)
 
   override def onDisconnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit =
     notifyListener(e.getChannel, Disassociated)
@@ -76,8 +76,12 @@ private[remote] class TcpClientHandler(_transport: NettyTransport, remoteAddress
 /**
  * INTERNAL API
  */
-private[remote] class TcpAssociationHandle(val localAddress: Address, val remoteAddress: Address, private val channel: Channel)
+private[remote] class TcpAssociationHandle(val localAddress: Address,
+                                           val remoteAddress: Address,
+                                           val transport: NettyTransport,
+                                           private val channel: Channel)
   extends AssociationHandle {
+  import transport.executionContext
 
   override val readHandlerPromise: Promise[HandleEventListener] = Promise()
 
