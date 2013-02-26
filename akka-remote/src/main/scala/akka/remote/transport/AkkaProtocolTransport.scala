@@ -15,7 +15,7 @@ import akka.remote.transport.Transport._
 import akka.remote.{ AddressUrlEncoder, PhiAccrualFailureDetector, FailureDetector, RemoteActorRefProvider }
 import akka.util.ByteString
 import com.typesafe.config.Config
-import scala.concurrent.duration.{ Duration, FiniteDuration, MILLISECONDS }
+import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
 import scala.util.{ Success, Failure }
@@ -276,15 +276,20 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
       stop()
 
     case Event(wrappedHandle: AssociationHandle, OutboundUnassociated(_, statusPromise, _)) ⇒
-      wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(self))
-      sendAssociate(wrappedHandle)
-      failureDetector.heartbeat()
-      initTimers()
+      if (sendAssociate(wrappedHandle)) {
+        wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(self))
+        failureDetector.heartbeat()
+        initTimers()
 
-      if (settings.WaitActivityEnabled)
-        goto(WaitActivity) using OutboundUnderlyingAssociated(statusPromise, wrappedHandle)
-      else
-        goto(Open) using AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, immutable.Queue.empty)
+        if (settings.WaitActivityEnabled)
+          goto(WaitActivity) using OutboundUnderlyingAssociated(statusPromise, wrappedHandle)
+        else
+          goto(Open) using AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, immutable.Queue.empty)
+      } else {
+        // Underlying transport was busy -- Associate could not be sent
+        setTimer("associate-retry", wrappedHandle, 100.milliseconds, repeat = false)
+        stay()
+      }
 
     case Event(DisassociateUnderlying, _) ⇒
       stop()
@@ -487,8 +492,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
     case NonFatal(e) ⇒ throw new AkkaProtocolException("Error writing DISASSOCIATE to transport", e)
   }
 
-  // Associate should be the first message, so backoff is not needed
-  private def sendAssociate(wrappedHandle: AssociationHandle): Unit = try {
+  private def sendAssociate(wrappedHandle: AssociationHandle): Boolean = try {
     val cookie = if (settings.RequireCookie) Some(settings.SecureCookie) else None
     wrappedHandle.write(codec.constructAssociate(cookie, localAddress))
   } catch {
