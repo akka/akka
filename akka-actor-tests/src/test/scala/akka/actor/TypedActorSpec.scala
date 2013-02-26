@@ -324,6 +324,12 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       mustStop(t)
     }
 
+    "be able to handle AskTimeoutException as None" taggedAs TimingTest in {
+      val t = newFooBar(200 millis)
+      t.joptionPigdog(600 millis) must be(JOption.none[String])
+      mustStop(t)
+    }
+
     "be able to call methods returning Scala Options" taggedAs TimingTest in {
       val t = newFooBar(1 second)
       t.optionPigdog(100 millis).get must be("Pigdog")
