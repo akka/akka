@@ -400,8 +400,6 @@ object AkkaBuild extends Build {
     base = file("akka-samples/akka-sample-cluster"),
     dependencies = Seq(cluster, contrib, remoteTests % "test", testkit % "test"),
     settings = sampleSettings ++ multiJvmSettings ++ experimentalSettings ++ Seq(
-      // sigar is in Typesafe repo
-      resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
       libraryDependencies ++= Dependencies.clusterSample,
       javaOptions in run ++= Seq(
         "-Djava.library.path=./sigar",
@@ -873,7 +871,7 @@ object Dependencies {
     val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
 
     // Cluster Sample
-    val sigar       = "org.hyperic"                   % "sigar"                        % "1.6.4"            // ApacheV2
+    val sigar       = "org.fusesource"                % "sigar"                        % "1.6.4"            // ApacheV2
 
     // Test
 

@@ -23,7 +23,7 @@ object StatsSampleSingleMasterSpecConfig extends MultiNodeConfig {
   // register the named roles (nodes) of the test
   val first = role("first")
   val second = role("second")
-  val third = role("thrid")
+  val third = role("third")
 
   // this configuration will be used for all nodes
   // note that no fixed host names and ports are used
