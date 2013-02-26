@@ -454,7 +454,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       // Shutdown all endpoints and signal to sender when ready (and whether all endpoints were shut down gracefully)
       val sys = context.system // Avoid closing over context
       Future sequence endpoints.allEndpoints.map {
-        gracefulStop(_, settings.FlushWait)(sys)
+        gracefulStop(_, settings.FlushWait, EndpointWriter.FlushAndStop)(sys)
       } map { _.foldLeft(true) { _ && _ } } pipeTo sender
       // Ignore all other writes
       context.become(flushing)
