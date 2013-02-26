@@ -941,7 +941,7 @@ abstract class StressSpec
 
   "A cluster under stress" must {
 
-    "join seed nodes" taggedAs LongRunningTest in within(20 seconds) {
+    "join seed nodes" taggedAs LongRunningTest in within(30 seconds) {
 
       val otherNodesJoiningSeedNodes = roles.slice(numberOfSeedNodes, numberOfSeedNodes + numberOfNodesJoiningToSeedNodesInitially)
       val size = seedNodes.size + otherNodesJoiningSeedNodes.size
