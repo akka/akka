@@ -276,8 +276,8 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
       stop()
 
     case Event(wrappedHandle: AssociationHandle, OutboundUnassociated(_, statusPromise, _)) ⇒
+      wrappedHandle.readHandlerPromise.trySuccess(ActorHandleEventListener(self))
       if (sendAssociate(wrappedHandle)) {
-        wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(self))
         failureDetector.heartbeat()
         initTimers()
 
