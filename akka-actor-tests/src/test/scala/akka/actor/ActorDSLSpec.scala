@@ -7,13 +7,20 @@ package akka.actor
 import language.postfixOps
 
 import akka.testkit.{ AkkaSpec, EventFilter }
-//#import
 import akka.actor.ActorDSL._
-//#import
 import akka.event.Logging.Warning
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import java.util.concurrent.TimeoutException
+
+class ActorDSLDummy {
+  //#import
+  import akka.actor.ActorDSL._
+  import akka.actor.ActorSystem
+
+  implicit val system = ActorSystem("demo")
+  //#import
+}
 
 class ActorDSLSpec extends AkkaSpec {
 

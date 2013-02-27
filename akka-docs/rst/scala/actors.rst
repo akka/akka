@@ -162,8 +162,9 @@ infrastructure is bundled in the following import:
 
 .. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#import
 
-This import is assumed for all code samples throughout this section. To define
-a simple actor, the following is sufficient:
+This import is assumed for all code samples throughout this section. The
+implicit actor system serves as :class:`ActorRefFactory` for all examples
+below. To define a simple actor, the following is sufficient:
 
 .. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#simple-actor
 
