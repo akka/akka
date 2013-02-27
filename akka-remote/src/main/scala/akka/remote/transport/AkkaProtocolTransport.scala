@@ -12,7 +12,7 @@ import akka.remote.transport.AkkaProtocolTransport._
 import akka.remote.transport.AssociationHandle._
 import akka.remote.transport.ProtocolStateActor._
 import akka.remote.transport.Transport._
-import akka.remote.{ AddressUrlEncoder, PhiAccrualFailureDetector, FailureDetector, RemoteActorRefProvider }
+import akka.remote._
 import akka.util.ByteString
 import com.typesafe.config.Config
 import scala.concurrent.duration._
@@ -22,6 +22,20 @@ import scala.util.{ Success, Failure }
 import scala.collection.immutable
 import akka.remote.transport.ActorTransportAdapter._
 import akka.ConfigurationException
+import akka.remote.transport.ActorTransportAdapter.AssociateUnderlying
+import akka.remote.transport.Transport.InboundAssociation
+import scala.Some
+import akka.actor.OneForOneStrategy
+import akka.remote.transport.ProtocolStateActor.HandleListenerRegistered
+import akka.remote.transport.ProtocolStateActor.ListenerReady
+import akka.remote.transport.AkkaPduCodec.Payload
+import akka.remote.transport.ProtocolStateActor.AssociatedWaitHandler
+import akka.remote.transport.AssociationHandle.InboundPayload
+import akka.remote.transport.AkkaPduCodec.Associate
+import akka.remote.transport.ProtocolStateActor.OutboundUnassociated
+import akka.remote.transport.AssociationHandle.ActorHandleEventListener
+import akka.remote.transport.ProtocolStateActor.InboundUnassociated
+import akka.remote.transport.ProtocolStateActor.OutboundUnderlyingAssociated
 
 @SerialVersionUID(1L)
 class AkkaProtocolException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with OnlyCauseStackTrace {
@@ -287,7 +301,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
           goto(Open) using AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, immutable.Queue.empty)
       } else {
         // Underlying transport was busy -- Associate could not be sent
-        setTimer("associate-retry", wrappedHandle, 100.milliseconds, repeat = false)
+        setTimer("associate-retry", wrappedHandle, RARP(context.system).provider.remoteSettings.BackoffPeriod, repeat = false)
         stay()
       }
 
