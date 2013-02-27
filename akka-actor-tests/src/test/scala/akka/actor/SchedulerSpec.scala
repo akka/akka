@@ -280,7 +280,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
           testActor ! (stop - now - next * 1000000L)
         }
       }
-      val latencies = within(5.seconds) {
+      val latencies = within(10.seconds) {
         for (i ← 1 to N) yield try expectMsgType[Long] catch {
           case NonFatal(e) ⇒ throw new Exception(s"failed expecting the $i-th latency", e)
         }
@@ -352,7 +352,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       }
       val cancelled = cancellations.sum
       println(cancelled)
-      val latencies = within(5.seconds) {
+      val latencies = within(10.seconds) {
         for (i ← 1 to (N - cancelled)) yield try expectMsgType[Long] catch {
           case NonFatal(e) ⇒ throw new Exception(s"failed expecting the $i-th latency", e)
         }
