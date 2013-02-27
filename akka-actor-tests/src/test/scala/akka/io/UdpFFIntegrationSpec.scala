@@ -40,28 +40,37 @@ class UdpFFIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with Implici
 
     }
 
-    "be able to send with binding" in {
+    "be able to send several packet back and forth with binding" in {
       val serverAddress = addresses(1)
       val clientAddress = addresses(2)
       val server = bindUdp(serverAddress, testActor)
       val client = bindUdp(clientAddress, testActor)
       val data = ByteString("Fly little packet!")
 
-      client ! Send(data, serverAddress)
-
-      expectMsgPF() {
-        case Received(d, a) ⇒
-          d must be === data
-          a must be === clientAddress
+      def checkSendingToClient(): Unit = {
+        server ! Send(data, clientAddress)
+        expectMsgPF() {
+          case Received(d, a) ⇒
+            d must be === data
+            a must be === serverAddress
+        }
       }
-      server ! Send(data, clientAddress)
-      expectMsgPF() {
-        case Received(d, a) ⇒
-          d must be === data
-          a must be === serverAddress
+      def checkSendingToServer(): Unit = {
+        client ! Send(data, serverAddress)
+        expectMsgPF() {
+          case Received(d, a) ⇒
+            d must be === data
+            a must be === clientAddress
+        }
+      }
+
+      (0 until 20).foreach(_ ⇒ checkSendingToServer())
+      (0 until 20).foreach(_ ⇒ checkSendingToClient())
+      (0 until 20).foreach { i ⇒
+        if (i % 2 == 0) checkSendingToServer()
+        else checkSendingToClient()
       }
     }
-
   }
 
 }
