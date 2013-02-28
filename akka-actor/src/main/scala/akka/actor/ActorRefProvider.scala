@@ -13,6 +13,7 @@ import akka.util.Collections.EmptyImmutableSeq
 import scala.util.{ Success, Failure }
 import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent.{ ExecutionContext, Future, Promise }
+import scala.annotation.implicitNotFound
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -156,6 +157,7 @@ trait ActorRefProvider {
  * Interface implemented by ActorSystem and ActorContext, the only two places
  * from which you can get fresh actors.
  */
+@implicitNotFound("implicit ActorRefFactory required: if outside of an Actor you need an implicit ActorSystem, inside of an actor this should be the implicit ActorContext")
 trait ActorRefFactory {
   /**
    * INTERNAL API
