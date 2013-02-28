@@ -62,9 +62,6 @@ class TestTransport(
         remoteListener notify InboundAssociation(remoteHandle)
         val remoteHandlerFuture = remoteHandle.readHandlerPromise.future
 
-        // Expose the handle to the local after a reader has been registered remotely
-        val exposeToLocal = remoteHandlerFuture.map { _ ⇒ localHandle }
-
         // Registration of reader at local finishes the registration and enables communication
         for {
           remoteListener ← remoteHandlerFuture
@@ -75,7 +72,7 @@ class TestTransport(
           remoteHandle.writable = true
         }
 
-        exposeToLocal
+        remoteHandlerFuture.map { _ ⇒ localHandle }
 
       case None ⇒
         Future.failed(new IllegalArgumentException(s"No registered transport: $remoteAddress"))
@@ -127,10 +124,7 @@ class TestTransport(
   }
 
   private def defaultDisassociate(handle: TestAssociationHandle): Future[Unit] = {
-    registry.deregisterAssociation(handle.key).foreach {
-      case (listener1, listener2) ⇒
-        (if (handle.inbound) listener1 else listener2) notify Disassociated
-    }
+    registry.deregisterAssociation(handle.key).foreach { registry.remoteListenerRelativeTo(handle, _) notify Disassociated }
     Future.successful(())
   }
 
@@ -295,6 +289,19 @@ object TestTransport {
     private val listenersTable = new ConcurrentHashMap[(Address, Address), (HandleEventListener, HandleEventListener)]()
 
     /**
+     * Returns the remote endpoint for a pair of endpoints relative to the owner of the supplied handle.
+     * @param handle the reference handle to determine the remote endpoint relative to
+     * @param listenerPair pair of listeners in initiator, receiver order.
+     * @return
+     */
+    def remoteListenerRelativeTo(handle: TestAssociationHandle,
+                                 listenerPair: (HandleEventListener, HandleEventListener)): HandleEventListener = {
+      listenerPair match {
+        case (initiator, receiver) ⇒ if (handle.inbound) initiator else receiver
+      }
+    }
+
+    /**
      * Logs a transport activity.
      *
      * @param activity Activity to be logged.
@@ -394,9 +401,7 @@ object TestTransport {
      * @return The option that contains the Future for the listener if exists.
      */
     def getRemoteReadHandlerFor(localHandle: TestAssociationHandle): Option[HandleEventListener] = {
-      Option(listenersTable.get(localHandle.key)) map { pair ⇒
-        if (localHandle.inbound) pair._1 else pair._2
-      }
+      Option(listenersTable.get(localHandle.key)) map { remoteListenerRelativeTo(localHandle, _) }
     }
 
     /**

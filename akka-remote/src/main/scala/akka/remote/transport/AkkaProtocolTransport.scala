@@ -3,39 +3,24 @@
  */
 package akka.remote.transport
 
-import akka.{ OnlyCauseStackTrace, AkkaException }
+import akka.ConfigurationException
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
 import akka.pattern.pipe
+import akka.remote._
+import akka.remote.transport.ActorTransportAdapter._
 import akka.remote.transport.AkkaPduCodec._
 import akka.remote.transport.AkkaProtocolTransport._
 import akka.remote.transport.AssociationHandle._
 import akka.remote.transport.ProtocolStateActor._
 import akka.remote.transport.Transport._
-import akka.remote._
 import akka.util.ByteString
+import akka.{ OnlyCauseStackTrace, AkkaException }
 import com.typesafe.config.Config
+import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
-import scala.util.{ Success, Failure }
-import scala.collection.immutable
-import akka.remote.transport.ActorTransportAdapter._
-import akka.ConfigurationException
-import akka.remote.transport.ActorTransportAdapter.AssociateUnderlying
-import akka.remote.transport.Transport.InboundAssociation
-import scala.Some
-import akka.actor.OneForOneStrategy
-import akka.remote.transport.ProtocolStateActor.HandleListenerRegistered
-import akka.remote.transport.ProtocolStateActor.ListenerReady
-import akka.remote.transport.AkkaPduCodec.Payload
-import akka.remote.transport.ProtocolStateActor.AssociatedWaitHandler
-import akka.remote.transport.AssociationHandle.InboundPayload
-import akka.remote.transport.AkkaPduCodec.Associate
-import akka.remote.transport.ProtocolStateActor.OutboundUnassociated
-import akka.remote.transport.AssociationHandle.ActorHandleEventListener
-import akka.remote.transport.ProtocolStateActor.InboundUnassociated
-import akka.remote.transport.ProtocolStateActor.OutboundUnderlyingAssociated
 
 @SerialVersionUID(1L)
 class AkkaProtocolException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with OnlyCauseStackTrace {
