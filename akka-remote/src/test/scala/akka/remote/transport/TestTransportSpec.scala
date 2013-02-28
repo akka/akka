@@ -76,11 +76,11 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
         case InboundAssociation(handle) if handle.remoteAddress == addressA ⇒ handle
       }
 
+      handleB.readHandlerPromise.success(ActorHandleEventListener(self))
       val handleA = Await.result(associate, timeout.duration)
 
       // Initialize handles
       handleA.readHandlerPromise.success(ActorHandleEventListener(self))
-      handleB.readHandlerPromise.success(ActorHandleEventListener(self))
 
       val akkaPDU = ByteString("AkkaPDU")
 
@@ -113,11 +113,11 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
         case InboundAssociation(handle) if handle.remoteAddress == addressA ⇒ handle
       }
 
+      handleB.readHandlerPromise.success(ActorHandleEventListener(self))
       val handleA = Await.result(associate, timeout.duration)
 
       // Initialize handles
       handleA.readHandlerPromise.success(ActorHandleEventListener(self))
-      handleB.readHandlerPromise.success(ActorHandleEventListener(self))
 
       awaitCond(registry.existsAssociation(addressA, addressB))
 
