@@ -478,8 +478,8 @@ private[transport] case class ThrottlerHandle(_wrappedHandle: AssociationHandle,
       case Blackhole ⇒ true
       case bucket @ _ ⇒
         val success = tryConsume(outboundThrottleMode.get())
-        if (success) wrappedHandle.write(payload)
-        success
+        if (success) wrappedHandle.write(payload) else false
+      // FIXME: this depletes the token bucket even when no write happened!! See #2825
     }
 
   }
