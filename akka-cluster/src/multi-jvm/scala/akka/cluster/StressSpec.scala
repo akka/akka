@@ -75,15 +75,16 @@ object StressMultiJvmSpec extends MultiNodeConfig {
       nr-of-nodes-shutdown = 2
       nr-of-nodes-join-remove = 2
       # not scaled
+      # scale the *-duration settings with this factor
+      duration-factor = 1
       join-remove-duration = 90s
       work-batch-size = 100
       work-batch-interval = 2s
       payload-size = 1000
-      # scale the *-duration settings with this factor
-      duration-factor = 1
       normal-throughput-duration = 30s
       high-throughput-duration = 10s
       supervision-duration = 10s
+      supervision-one-iteration = 1s
       # actors are created in a tree structure defined
       # by tree-width (number of children for each actor) and
       # tree-levels, total number of actors can be calculated by
@@ -167,6 +168,7 @@ object StressMultiJvmSpec extends MultiNodeConfig {
     val normalThroughputDuration = getDuration("normal-throughput-duration") * dFactor
     val highThroughputDuration = getDuration("high-throughput-duration") * dFactor
     val supervisionDuration = getDuration("supervision-duration") * dFactor
+    val supervisionOneIteration = getDuration("supervision-one-iteration") * dFactor
     val treeWidth = getInt("tree-width")
     val treeLevels = getInt("tree-levels")
     val reportMetricsInterval = getDuration("report-metrics-interval")
@@ -801,12 +803,12 @@ abstract class StressSpec
   def exerciseJoinRemove(title: String, duration: FiniteDuration): Unit = {
     val activeRoles = roles.take(numberOfNodesJoinRemove)
     val loopDuration = 10.seconds + convergenceWithin(4.seconds, nbrUsedRoles + activeRoles.size)
-    val deadline = Deadline.now + duration - loopDuration
+    val rounds = ((duration - loopDuration).toMillis / loopDuration.toMillis).max(1).toInt
     val usedRoles = roles.take(nbrUsedRoles)
     val usedAddresses = usedRoles.map(address(_)).toSet
 
     @tailrec def loop(counter: Int, previousAS: Option[ActorSystem], allPreviousAddresses: Set[Address]): Option[ActorSystem] = {
-      if (deadline.isOverdue) previousAS
+      if (counter > rounds) previousAS
       else {
         val t = title + " round " + counter
         runOn(usedRoles: _*) {
@@ -902,10 +904,11 @@ abstract class StressSpec
     workResult
   }
 
-  def exerciseSupervision(title: String, duration: FiniteDuration): Unit =
+  def exerciseSupervision(title: String, duration: FiniteDuration, oneIteration: Duration): Unit =
     within(duration + 10.seconds) {
+      val rounds = (duration.toMillis / oneIteration.toMillis).max(1).toInt
       val supervisor = system.actorOf(Props[Supervisor], "supervisor")
-      while (remaining > 10.seconds) {
+      for (count <- 0 until rounds) {
         createResultAggregator(title, expectedResults = nbrUsedRoles, includeInHistory = false)
 
         reportResult {
@@ -1027,13 +1030,13 @@ abstract class StressSpec
       enterBarrier("after-" + step)
     }
 
-    "excercise join/remove/join/remove" taggedAs LongRunningTest in {
-      exerciseJoinRemove("excercise join/remove", joinRemoveDuration)
+    "exercise join/remove/join/remove" taggedAs LongRunningTest in {
+      exerciseJoinRemove("exercise join/remove", joinRemoveDuration)
       enterBarrier("after-" + step)
     }
 
-    "excercise supervision" taggedAs LongRunningTest in {
-      exerciseSupervision("excercise supervision", supervisionDuration)
+    "exercise supervision" taggedAs LongRunningTest in {
+      exerciseSupervision("exercise supervision", supervisionDuration, supervisionOneIteration)
       enterBarrier("after-" + step)
     }
 
