@@ -50,15 +50,22 @@ object MultiNodeClusterSpec {
     """)
 }
 
-trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeSpec ⇒
+trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner { self: MultiNodeSpec ⇒
 
   override def initialParticipants = roles.size
 
   private val cachedAddresses = new ConcurrentHashMap[RoleName, Address]
 
   override def atStartup(): Unit = {
+    startCoroner()
     muteLog()
   }
+
+  override def afterTermination(): Unit = {
+    stopCoroner()
+  }
+
+  override def expectedTestDuration = 60.seconds
 
   def muteLog(sys: ActorSystem = system): Unit = {
     if (!sys.log.isDebugEnabled) {

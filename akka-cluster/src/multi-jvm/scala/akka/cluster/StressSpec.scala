@@ -85,6 +85,7 @@ object StressMultiJvmSpec extends MultiNodeConfig {
       high-throughput-duration = 10s
       supervision-duration = 10s
       supervision-one-iteration = 1s
+      expected-test-duration = 600s
       # actors are created in a tree structure defined
       # by tree-width (number of children for each actor) and
       # tree-levels, total number of actors can be calculated by
@@ -169,6 +170,7 @@ object StressMultiJvmSpec extends MultiNodeConfig {
     val highThroughputDuration = getDuration("high-throughput-duration") * dFactor
     val supervisionDuration = getDuration("supervision-duration") * dFactor
     val supervisionOneIteration = getDuration("supervision-one-iteration") * dFactor
+    val expectedTestDuration = getDuration("expected-test-duration") * dFactor
     val treeWidth = getInt("tree-width")
     val treeLevels = getInt("tree-levels")
     val reportMetricsInterval = getDuration("report-metrics-interval")
@@ -616,6 +618,8 @@ abstract class StressSpec
   var nbrUsedRoles = 0
 
   override def beforeEach(): Unit = { step += 1 }
+
+  override def expectedTestDuration = settings.expectedTestDuration
 
   override def muteLog(sys: ActorSystem = system): Unit = {
     super.muteLog(sys)
