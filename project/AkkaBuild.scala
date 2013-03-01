@@ -431,7 +431,6 @@ object AkkaBuild extends Build {
     base = file("akka-samples/akka-sample-osgi-dining-hakkers"),
     settings = sampleSettings ++ Seq(
       test in Test ~= { x => {
-        if({List("sh", "-c", "which mvn") !} != 0 ) {throw new Exception("Maven is not installed or not in the $PATH")}
         if({List("sh", "-c", "cd akka-samples/akka-sample-osgi-dining-hakkers; mvn clean install") !} != 0 ) {throw new Exception("Osgi sample Dining hakkers failed")}
       } }
     )
@@ -917,8 +916,8 @@ object Dependencies {
     // Camel Sample
     val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
 
-    // Cluster Sample   //TODO check for fusesource
-    val sigar       = "org.hyperic"                   % "sigar"                        % "1.6.4"            // ApacheV2
+    // Cluster Sample
+    val sigar       = "org.fusesource"                   % "sigar"                        % "1.6.4"            // ApacheV2
 
     // Test
 
