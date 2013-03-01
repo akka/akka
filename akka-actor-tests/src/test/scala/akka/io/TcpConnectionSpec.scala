@@ -322,7 +322,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       val buffer = ByteBuffer.allocate(1)
       serverSelectionKey must be(selectedAs(SelectionKey.OP_READ, 2.seconds))
       serverSideChannel.read(buffer) must be(-1)
-      serverSideChannel.close()
+
+      closeServerSideAndWaitForClientReadable()
 
       selector.send(connectionActor, ChannelReadable)
       connectionHandler.expectMsg(ConfirmedClosed)
@@ -354,7 +355,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       val buffer = ByteBuffer.allocate(1)
       serverSelectionKey must be(selectedAs(SelectionKey.OP_READ, 2.seconds))
       serverSideChannel.read(buffer) must be(-1)
-      serverSideChannel.close()
+
+      closeServerSideAndWaitForClientReadable()
 
       selector.send(connectionActor, ChannelReadable)
       connectionHandler.expectMsg(ConfirmedClosed)
@@ -365,7 +367,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     "report when peer closed the connection" in withEstablishedConnection() { setup ⇒
       import setup._
 
-      serverSideChannel.close()
+      closeServerSideAndWaitForClientReadable()
+
       selector.send(connectionActor, ChannelReadable)
       connectionHandler.expectMsg(PeerClosed)
 
@@ -539,6 +542,11 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
     val clientSelectionKey = registerChannel(clientSideChannel, "client")
     val serverSelectionKey = registerChannel(serverSideChannel, "server")
+
+    def closeServerSideAndWaitForClientReadable(): Unit = {
+      serverSideChannel.close()
+      checkFor(clientSelectionKey, SelectionKey.OP_READ, 3.seconds.toMillis.toInt) must be(true)
+    }
 
     def registerChannel(channel: SocketChannel, name: String): SelectionKey = {
       val res = channel.register(nioSelector, 0)
