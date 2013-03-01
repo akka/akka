@@ -79,11 +79,13 @@ abstract class AbstractTransportAdapter(protected val wrappedTransport: Transpor
 
   override def listen: Future[(Address, Promise[AssociationEventListener])] = {
     val upstreamListenerPromise: Promise[AssociationEventListener] = Promise()
-    wrappedTransport.listen andThen {
-      case Success((listenAddress, listenerPromise)) ⇒
-        // Register to downstream
-        listenerPromise.tryCompleteWith(interceptListen(listenAddress, upstreamListenerPromise.future))
-    } map { case (listenAddress, _) ⇒ (augmentScheme(listenAddress), upstreamListenerPromise) }
+
+    for {
+      (listenAddress, listenerPromise) ← wrappedTransport.listen
+      // Enforce ordering between the signalling of "listen ready" to upstream
+      // and initialization happening in interceptListen
+      _ ← listenerPromise.tryCompleteWith(interceptListen(listenAddress, upstreamListenerPromise.future)).future
+    } yield (augmentScheme(listenAddress), upstreamListenerPromise)
   }
 
   override def associate(remoteAddress: Address): Future[AssociationHandle] = {
