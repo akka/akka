@@ -461,8 +461,9 @@ for a wider and more accurate range of metrics compared to what can be retrieved
 Sigar is using a native OS library. To enable usage of Sigar you need to add the directory of the native library to 
 ``-Djava.libarary.path=<path_of_sigar_libs>`` add the following dependency::
 
-    "org.hyperic" % "sigar" % "@sigarVersion@"
+    "org.fusesource" % "sigar" % "@sigarVersion@"
  
+Download the native Sigar libraries from `Maven Central <http://repo1.maven.org/maven2/org/fusesource/sigar/@sigarVersion@/>`_
 
 Adaptive Load Balancing
 -----------------------
