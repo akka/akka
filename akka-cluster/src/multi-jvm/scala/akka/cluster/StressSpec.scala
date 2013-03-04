@@ -954,7 +954,7 @@ abstract class StressSpec
       runOn((seedNodes ++ otherNodesJoiningSeedNodes): _*) {
         reportResult {
           cluster.joinSeedNodes(seedNodes.toIndexedSeq map address)
-          awaitUpConvergence(size)
+          awaitUpConvergence(size, timeout = remaining)
         }
       }
 
