@@ -223,7 +223,7 @@ object SupervisorHierarchySpec {
       state.kids foreach {
         case (child, kidSize) ⇒
           val name = child.path.name
-          if (context.actorFor(name).isTerminated) {
+          if (context.child(name).isEmpty) {
             listener ! Died(child)
             val props = Props(new Hierarchy(kidSize, breadth, listener, myLevel + 1)).withDispatcher("hierarchy")
             context.watch(context.actorOf(props, name))
@@ -281,7 +281,7 @@ object SupervisorHierarchySpec {
            * (if the unwatch() came too late), so just ignore in this case.
            */
           val name = ref.path.name
-          if (pongsToGo == 0 && context.actorFor(name).isTerminated) {
+          if (pongsToGo == 0 && context.child(name).isEmpty) {
             listener ! Died(ref)
             val kids = stateCache.get(self).kids(ref)
             val props = Props(new Hierarchy(kids, breadth, listener, myLevel + 1)).withDispatcher("hierarchy")

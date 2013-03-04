@@ -283,7 +283,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
        * the UID protects against reception of a Failed from a child which was
        * killed in preRestart and re-created in postRestart
        */
-      case Some(stats) if stats.uid == uid ⇒
+      case Some(stats) if stats.uid == f.uid ⇒
         /*
          * If we receive a Failed message while being Failed ourselves, we need to
          * enqueue that message for later, when we clear the failed status.
@@ -292,7 +292,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
         else if (!actor.supervisorStrategy.handleFailure(this, f.child, f.cause, stats, getAllChildStats)) throw f.cause
       case Some(stats) ⇒
         publish(Debug(self.path.toString, clazz(actor),
-          s"dropping Failed(${f.cause}) from old child ${f.child} (uid=${stats.uid} != $uid)"))
+          s"dropping Failed(${f.cause}) from old child ${f.child} (uid=${stats.uid} != $f.uid)"))
       case None ⇒
         publish(Debug(self.path.toString, clazz(actor), "dropping Failed(" + f.cause + ") from unknown child " + f.child))
     }
