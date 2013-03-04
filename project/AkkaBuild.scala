@@ -103,19 +103,29 @@ object AkkaBuild extends Build {
       )
   )
 
+  val JavaDoc = config("genjavadoc") extend Compile
+
+  val javadocPlugin = inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
+    libraryDependencies += compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.1-SNAPSHOT" cross CrossVersion.full),
+    scalacOptions <+= target map (t => "-P:genjavadoc:out=" + t + "/java"),
+    packageDoc in Compile <<= packageDoc in JavaDoc,
+    sources in JavaDoc <<= (target, compile in Compile) map ((t, c) => (t / "java" ** "*.java").get),
+    javacOptions in JavaDoc := Seq(),
+    artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar")
+  )
+
   lazy val actor = Project(
     id = "akka-actor",
     base = file("akka-actor"),
-    settings = defaultSettings ++ scaladocSettings ++ Seq(
-      autoCompilerPlugins := true,
+    settings = defaultSettings ++ scaladocSettings ++ javadocPlugin ++ Seq(
       // to fix scaladoc generation
       fullClasspath in doc in Compile <<= fullClasspath in Compile,
       libraryDependencies ++= Dependencies.actor,
       previousArtifact := akkaPreviousArtifact("akka-actor")
     )
-  )
+  ).configs(JavaDoc)
 
-  def cpsPlugin = Seq(
+  val cpsPlugin = Seq(
     libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
     scalacOptions += "-P:continuations:enable"
   )
@@ -145,7 +155,6 @@ object AkkaBuild extends Build {
     base = file("akka-actor-tests"),
     dependencies = Seq(testkit % "compile;test->test"),
     settings = defaultSettings ++ scaladocSettings  ++ Seq(
-      autoCompilerPlugins := true,
       publishArtifact in Compile := false,
       libraryDependencies ++= Dependencies.actorTests
     )
