@@ -48,7 +48,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
       // The throttler for this example, setting the rate
       val throttler = system.actorOf(Props(new TimerBasedThrottler(
         3 msgsPer (1.second.dilated))))
-      // Set the target 
+      // Set the target
       throttler ! SetTarget(Some(printer))
       // These three messages will be sent to the echoer immediately
       throttler ! "1"
@@ -63,21 +63,11 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
     "keep messages until a target is set" in {
       val echo = system.actorOf(Props[TimerBasedThrottlerSpec.EchoActor])
       val throttler = system.actorOf(Props(new TimerBasedThrottler(3 msgsPer (1.second.dilated))))
-      throttler ! "1"
-      throttler ! "2"
-      throttler ! "3"
-      throttler ! "4"
-      throttler ! "5"
-      throttler ! "6"
+      1 to 6 foreach { throttler ! _ }
       expectNoMsg(1 second)
       throttler ! SetTarget(Some(echo))
-      within(2 seconds) {
-        expectMsg("1")
-        expectMsg("2")
-        expectMsg("3")
-        expectMsg("4")
-        expectMsg("5")
-        expectMsg("6")
+      within(2.5 seconds) {
+        1 to 6 foreach { expectMsg(_) }
       }
     }
 
@@ -85,30 +75,17 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
       val echo = system.actorOf(Props[TimerBasedThrottlerSpec.EchoActor])
       val throttler = system.actorOf(Props(new TimerBasedThrottler(3 msgsPer (1.second.dilated))))
       throttler ! SetTarget(Some(echo))
-      throttler ! "1"
-      throttler ! "2"
-      throttler ! "3"
+      1 to 3 foreach { throttler ! _ }
       throttler ! SetTarget(None)
       within(1 second) {
-        expectMsg("1")
-        expectMsg("2")
-        expectMsg("3")
+        1 to 3 foreach { expectMsg(_) }
         expectNoMsg()
       }
       expectNoMsg(1 second)
       throttler ! SetTarget(Some(echo))
-      throttler ! "4"
-      throttler ! "5"
-      throttler ! "6"
-      throttler ! "7"
-      within(1 seconds) {
-        expectMsg("4")
-        expectMsg("5")
-        expectMsg("6")
-        expectNoMsg()
-      }
-      within(1 second) {
-        expectMsg("7")
+      4 to 7 foreach { throttler ! _ }
+      within(0.5 seconds, 1.5 seconds) {
+        4 to 7 foreach { expectMsg(_) }
       }
     }
 
@@ -116,91 +93,33 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
       val echo = system.actorOf(Props[TimerBasedThrottlerSpec.EchoActor])
       val throttler = system.actorOf(Props(new TimerBasedThrottler(3 msgsPer (1.second.dilated))))
       throttler ! SetTarget(Some(echo))
-      throttler ! "1"
-      throttler ! "2"
-      throttler ! "3"
-      throttler ! "4"
-      throttler ! "5"
-      throttler ! "6"
-      throttler ! "7"
+      1 to 7 foreach { throttler ! _ }
       throttler ! SetTarget(None)
       within(1 second) {
-        expectMsg("1")
-        expectMsg("2")
-        expectMsg("3")
+        1 to 3 foreach { expectMsg(_) }
         expectNoMsg()
       }
       expectNoMsg(1 second)
       throttler ! SetTarget(Some(echo))
-      within(1 seconds) {
-        expectMsg("4")
-        expectMsg("5")
-        expectMsg("6")
-        expectNoMsg()
-      }
-      within(1 second) {
-        expectMsg("7")
+      within(0.5 seconds, 1.5 seconds) {
+        4 to 7 foreach { expectMsg(_) }
       }
     }
 
-    "respect the rate (3 msg/s)" in {
+    "respect the rate (3 msg/s)" in within(1.5 seconds, 2.5 seconds) {
       val echo = system.actorOf(Props[TimerBasedThrottlerSpec.EchoActor])
       val throttler = system.actorOf(Props(new TimerBasedThrottler(3 msgsPer (1.second.dilated))))
       throttler ! SetTarget(Some(echo))
-      throttler ! "1"
-      throttler ! "2"
-      throttler ! "3"
-      throttler ! "4"
-      throttler ! "5"
-      throttler ! "6"
-      throttler ! "7"
-      within(1 second) {
-        expectMsg("1")
-        expectMsg("2")
-        expectMsg("3")
-        expectNoMsg()
-      }
-      within(1 second) {
-        expectMsg("4")
-        expectMsg("5")
-        expectMsg("6")
-        expectNoMsg()
-      }
-      within(1 second) {
-        expectMsg("7")
-      }
+      1 to 7 foreach { throttler ! _ }
+      1 to 7 foreach { expectMsg(_) }
     }
 
-    "respect the rate (4 msg/s)" in {
+    "respect the rate (4 msg/s)" in within(1.5 seconds, 2.5 seconds) {
       val echo = system.actorOf(Props[TimerBasedThrottlerSpec.EchoActor])
       val throttler = system.actorOf(Props(new TimerBasedThrottler(4 msgsPer (1.second.dilated))))
       throttler ! SetTarget(Some(echo))
-      throttler ! "1"
-      throttler ! "2"
-      throttler ! "3"
-      throttler ! "4"
-      throttler ! "5"
-      throttler ! "6"
-      throttler ! "7"
-      throttler ! "8"
-      throttler ! "9"
-      within(1 second) {
-        expectMsg("1")
-        expectMsg("2")
-        expectMsg("3")
-        expectMsg("4")
-        expectNoMsg()
-      }
-      within(1 second) {
-        expectMsg("5")
-        expectMsg("6")
-        expectMsg("7")
-        expectMsg("8")
-        expectNoMsg()
-      }
-      within(1 second) {
-        expectMsg("9")
-      }
+      1 to 9 foreach { throttler ! _ }
+      1 to 9 foreach { expectMsg(_) }
     }
   }
 }
