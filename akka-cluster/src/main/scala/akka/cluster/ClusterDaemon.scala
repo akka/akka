@@ -554,7 +554,8 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
       // leader handles merge conflicts, or when they have different views of how is leader
       val handleMerge = localGossip.leader == Some(selfAddress) || localGossip.leader != remoteGossip.leader
-      val conflict = remoteGossip.version <> localGossip.version
+      val comparison = remoteGossip.version tryCompareTo localGossip.version
+      val conflict = !comparison.isDefined
 
       if (conflict && !handleMerge) {
         // delegate merge resolution to leader to reduce number of simultaneous resolves,
@@ -573,10 +574,24 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
       } else {
 
-        val winningGossip =
-          if (conflict) (remoteGossip merge localGossip) :+ vclockNode // conflicting versions, merge, and new version
-          else if (remoteGossip.version < localGossip.version) localGossip // local gossip is newer
-          else remoteGossip // remote gossip is newer
+        val (winningGossip, talkback) = comparison match {
+          case None ⇒
+            // conflicting versions, merge, and new version
+            ((remoteGossip merge localGossip) :+ vclockNode, true)
+          case Some(0) ⇒
+            // same version
+            stats = stats.incrementSameCount
+            // TODO optimize talkback based on how the merged seen differs
+            (remoteGossip mergeSeen localGossip, !remoteGossip.hasSeen(selfAddress))
+          case Some(x) if (x < 0) ⇒
+            // local is newer
+            stats = stats.incrementNewerCount
+            (localGossip, true)
+          case _ ⇒
+            // remote is newer
+            stats = stats.incrementOlderCount
+            (remoteGossip, !remoteGossip.hasSeen(selfAddress))
+        }
 
         latestGossip = winningGossip seen selfAddress
 
@@ -597,8 +612,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
         stats = stats.incrementReceivedGossipCount
         publish(latestGossip)
 
-        if (envelope.conversation &&
-          (conflict || (winningGossip ne remoteGossip) || (latestGossip ne remoteGossip))) {
+        if (envelope.conversation && talkback) {
           // send back gossip to sender when sender had different view, i.e. merge, or sender had
           // older or sender had newer
           gossipTo(from)
@@ -1040,7 +1054,10 @@ private[cluster] case class ClusterStats(
   receivedGossipCount: Long = 0L,
   mergeConflictCount: Long = 0L,
   mergeCount: Long = 0L,
-  mergeDetectedCount: Long = 0L) {
+  mergeDetectedCount: Long = 0L,
+  sameCount: Long = 0L,
+  newerCount: Long = 0L,
+  olderCount: Long = 0L) {
 
   def incrementReceivedGossipCount(): ClusterStats =
     copy(receivedGossipCount = receivedGossipCount + 1)
@@ -1053,4 +1070,36 @@ private[cluster] case class ClusterStats(
 
   def incrementMergeDetectedCount(): ClusterStats =
     copy(mergeDetectedCount = mergeDetectedCount + 1)
+
+  def incrementSameCount(): ClusterStats =
+    copy(sameCount = sameCount + 1)
+
+  def incrementNewerCount(): ClusterStats =
+    copy(newerCount = newerCount + 1)
+
+  def incrementOlderCount(): ClusterStats =
+    copy(olderCount = olderCount + 1)
+
+  def +(that: ClusterStats): ClusterStats = {
+    ClusterStats(
+      this.receivedGossipCount + that.receivedGossipCount,
+      this.mergeConflictCount + that.mergeConflictCount,
+      this.mergeCount + that.mergeCount,
+      this.mergeDetectedCount + that.mergeDetectedCount,
+      this.sameCount + that.sameCount,
+      this.newerCount + that.newerCount,
+      this.olderCount + that.olderCount)
+  }
+
+  def -(that: ClusterStats): ClusterStats = {
+    ClusterStats(
+      this.receivedGossipCount - that.receivedGossipCount,
+      this.mergeConflictCount - that.mergeConflictCount,
+      this.mergeCount - that.mergeCount,
+      this.mergeDetectedCount - that.mergeDetectedCount,
+      this.sameCount - that.sameCount,
+      this.newerCount - that.newerCount,
+      this.olderCount - that.olderCount)
+  }
+
 }
