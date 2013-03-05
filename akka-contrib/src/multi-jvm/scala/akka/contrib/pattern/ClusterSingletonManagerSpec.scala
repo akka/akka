@@ -22,7 +22,6 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
-import akka.testkit.ImplicitSender
 import akka.testkit.TestEvent._
 import akka.actor.Terminated
 
@@ -42,8 +41,6 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
     akka.cluster.auto-join = off
     akka.cluster.auto-down = on
     """))
-
-  testTransport(on = true)
 
   object PointToPointChannel {
     case object RegisterConsumer
@@ -196,6 +193,13 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
 
   def queue: ActorRef = system.actorFor(node(controller) / "user" / "queue")
 
+  def join(from: RoleName, to: RoleName): Unit = {
+    runOn(from) {
+      Cluster(system) join node(to).address
+      createSingleton()
+    }
+  }
+
   def createSingleton(): ActorRef = {
     //#create-singleton-manager
     system.actorOf(Props(new ClusterSingletonManager(
@@ -255,58 +259,38 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       }
       enterBarrier("queue-started")
 
-      runOn(sortedClusterRoles(5)) {
-        Cluster(system) join node(sortedClusterRoles(5)).address
-        createSingleton()
-      }
-
+      join(sortedClusterRoles.last, sortedClusterRoles.last)
       verify(sortedClusterRoles.last, msg = 1, expectedCurrent = 0)
     }
 
     "hand over when new leader joins to 1 node cluster" in within(15 seconds) {
       val newLeaderRole = sortedClusterRoles(4)
-      runOn(newLeaderRole) {
-        Cluster(system) join node(sortedClusterRoles.last).address
-        createSingleton()
-      }
-
+      join(newLeaderRole, sortedClusterRoles.last)
       verify(newLeaderRole, msg = 2, expectedCurrent = 1)
     }
 
     "hand over when new leader joins to 2 nodes cluster" in within(15 seconds) {
       val newLeaderRole = sortedClusterRoles(3)
-      runOn(newLeaderRole) {
-        Cluster(system) join node(sortedClusterRoles.last).address
-        createSingleton()
-      }
-
+      join(newLeaderRole, sortedClusterRoles.last)
       verify(newLeaderRole, msg = 3, expectedCurrent = 2)
     }
 
-    "hand over when adding three new potential leaders to 3 nodes cluster" in within(60 seconds) {
-      // this test will result in restart after retry timeout
-      // because the new leader will not know about the real previous leader and the
-      // previous leader sortedClusterRoles(3) will first think that sortedClusterRoles(2)
-      // is the new leader
-      runOn(controller) {
-        queue ! Reset
-        expectMsg(ResetOk)
-      }
-      runOn(sortedClusterRoles(2)) {
-        // previous leader
-        Cluster(system) join node(sortedClusterRoles(3)).address
-        createSingleton()
-      }
-      runOn(sortedClusterRoles(1)) {
-        Cluster(system) join node(sortedClusterRoles(4)).address
-        createSingleton()
-      }
-      runOn(sortedClusterRoles(0)) {
-        Cluster(system) join node(sortedClusterRoles(5)).address
-        createSingleton()
-      }
+    "hand over when new leader joins to 3 nodes cluster" in within(15 seconds) {
+      val newLeaderRole = sortedClusterRoles(2)
+      join(newLeaderRole, sortedClusterRoles.last)
+      verify(newLeaderRole, msg = 4, expectedCurrent = 3)
+    }
 
-      verify(sortedClusterRoles(0), msg = 4, expectedCurrent = 0)
+    "hand over when new leader joins to 4 nodes cluster" in within(15 seconds) {
+      val newLeaderRole = sortedClusterRoles(1)
+      join(newLeaderRole, sortedClusterRoles.last)
+      verify(newLeaderRole, msg = 5, expectedCurrent = 4)
+    }
+
+    "hand over when new leader joins to 5 nodes cluster" in within(15 seconds) {
+      val newLeaderRole = sortedClusterRoles(0)
+      join(newLeaderRole, sortedClusterRoles.last)
+      verify(newLeaderRole, msg = 6, expectedCurrent = 5)
     }
 
     "hand over when leader leaves in 6 nodes cluster " in within(30 seconds) {
@@ -319,7 +303,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       }
       //#test-leave
 
-      verify(newLeaderRole, msg = 5, expectedCurrent = 4)
+      verify(newLeaderRole, msg = 7, expectedCurrent = 6)
 
       runOn(leaveRole) {
         val singleton = system.actorFor("/user/singleton")
@@ -337,17 +321,17 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       enterBarrier("logs-muted")
 
       crash(sortedClusterRoles(1))
-      verify(sortedClusterRoles(2), msg = 6, expectedCurrent = 0)
+      verify(sortedClusterRoles(2), msg = 8, expectedCurrent = 0)
     }
 
     "take over when two leaders crash in 3 nodes cluster" in within(45 seconds) {
       crash(sortedClusterRoles(2), sortedClusterRoles(3))
-      verify(sortedClusterRoles(4), msg = 7, expectedCurrent = 0)
+      verify(sortedClusterRoles(4), msg = 9, expectedCurrent = 0)
     }
 
     "take over when leader crashes in 2 nodes cluster" in within(25 seconds) {
       crash(sortedClusterRoles(4))
-      verify(sortedClusterRoles(5), msg = 6, expectedCurrent = 0)
+      verify(sortedClusterRoles(5), msg = 10, expectedCurrent = 0)
     }
 
   }
