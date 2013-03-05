@@ -88,13 +88,13 @@ abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
 
       runOn(side1: _*) {
         // auto-down = on
-        awaitUpConvergence(side1.size, side2.toSet map address)
+        awaitMembersUp(side1.size, side2.toSet map address)
         assertLeader(side1: _*)
       }
 
       runOn(side2: _*) {
         // auto-down = on
-        awaitUpConvergence(side2.size, side1.toSet map address)
+        awaitMembersUp(side2.size, side1.toSet map address)
         assertLeader(side2: _*)
       }
 

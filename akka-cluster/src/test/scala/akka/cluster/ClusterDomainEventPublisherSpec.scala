@@ -60,11 +60,7 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
 
   "ClusterDomainEventPublisher" must {
 
-    "not publish MemberUp when there is no convergence" in {
-      publisher ! PublishChanges(g2)
-    }
-
-    "publish MemberEvents when there is convergence" in {
+    "publish MemberUp" in {
       publisher ! PublishChanges(g2)
       publisher ! PublishChanges(g3)
       memberSubscriber.expectMsg(MemberUp(bUp))
@@ -73,12 +69,12 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
 
     "publish leader changed when new leader after convergence" in {
       publisher ! PublishChanges(g4)
-      memberSubscriber.expectNoMsg(1 second)
-
-      publisher ! PublishChanges(g5)
       memberSubscriber.expectMsg(MemberUp(dUp))
       memberSubscriber.expectMsg(MemberUp(bUp))
       memberSubscriber.expectMsg(MemberUp(cUp))
+      memberSubscriber.expectNoMsg(1 second)
+
+      publisher ! PublishChanges(g5)
       memberSubscriber.expectMsg(LeaderChanged(Some(dUp.address)))
     }
 
@@ -99,20 +95,22 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
       publisher ! PublishChanges(g6)
       memberSubscriber.expectNoMsg(1 second)
       publisher ! PublishChanges(g7)
+      memberSubscriber.expectMsg(MemberExited(aExiting))
       memberSubscriber.expectNoMsg(1 second)
       // at the removed member a an empty gossip is the last thing
       publisher ! PublishChanges(Gossip.empty)
-      memberSubscriber.expectMsg(MemberLeft(aLeaving))
-      memberSubscriber.expectMsg(MemberExited(aExiting))
-      memberSubscriber.expectMsg(LeaderChanged(Some(bUp.address)))
       memberSubscriber.expectMsg(MemberRemoved(aRemoved))
       memberSubscriber.expectMsg(MemberRemoved(bRemoved))
       memberSubscriber.expectMsg(MemberRemoved(cRemoved))
+      memberSubscriber.expectMsg(LeaderChanged(Some(bUp.address)))
       memberSubscriber.expectMsg(LeaderChanged(None))
     }
 
     "not publish leader changed when not convergence" in {
       publisher ! PublishChanges(g4)
+      memberSubscriber.expectMsg(MemberUp(dUp))
+      memberSubscriber.expectMsg(MemberUp(bUp))
+      memberSubscriber.expectMsg(MemberUp(cUp))
       memberSubscriber.expectNoMsg(1 second)
     }
 
@@ -133,7 +131,6 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
     "send CurrentClusterState when subscribe" in {
       val subscriber = TestProbe()
       publisher ! Subscribe(subscriber.ref, classOf[ClusterDomainEvent])
-      subscriber.expectMsgType[InstantClusterState]
       subscriber.expectMsgType[CurrentClusterState]
       // but only to the new subscriber
       memberSubscriber.expectNoMsg(1 second)
@@ -154,29 +151,14 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
     "publish clean state when PublishStart" in {
       val subscriber = TestProbe()
       publisher ! Subscribe(subscriber.ref, classOf[ClusterDomainEvent])
-      subscriber.expectMsgType[InstantClusterState]
       subscriber.expectMsgType[CurrentClusterState]
       publisher ! PublishChanges(g3)
-      subscriber.expectMsg(InstantMemberUp(bUp))
-      subscriber.expectMsg(InstantMemberUp(cUp))
       subscriber.expectMsg(MemberUp(bUp))
       subscriber.expectMsg(MemberUp(cUp))
       subscriber.expectMsgType[SeenChanged]
 
       publisher ! PublishStart
       subscriber.expectMsgType[CurrentClusterState] must be(CurrentClusterState())
-    }
-
-    "publish immediately when subscribing to InstantMemberEvent" in {
-      val subscriber = TestProbe()
-      publisher ! Subscribe(subscriber.ref, classOf[InstantMemberEvent])
-      subscriber.expectMsgType[InstantClusterState]
-      publisher ! PublishChanges(g2)
-      subscriber.expectMsg(InstantMemberUp(bUp))
-      subscriber.expectMsg(InstantMemberUp(cUp))
-      subscriber.expectNoMsg(1 second)
-      publisher ! PublishChanges(g3)
-      subscriber.expectNoMsg(1 second)
     }
 
     "publish SeenChanged" in {

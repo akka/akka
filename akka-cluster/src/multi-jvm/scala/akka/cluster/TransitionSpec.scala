@@ -47,8 +47,7 @@ abstract class TransitionSpec
     val statusOption = (clusterView.members ++ clusterView.unreachableMembers).collectFirst {
       case m if m.address == address ⇒ m.status
     }
-    statusOption must not be (None)
-    statusOption.get
+    statusOption.getOrElse(Removed)
   }
 
   def memberAddresses: Set[Address] = clusterView.members.map(_.address)
@@ -62,11 +61,15 @@ abstract class TransitionSpec
   }
 
   def awaitMembers(addresses: Address*): Unit = awaitCond {
-    memberAddresses == addresses.toSet
+    val result = memberAddresses == addresses.toSet
+    clusterView.refreshCurrentState()
+    result
   }
 
   def awaitMemberStatus(address: Address, status: MemberStatus): Unit = awaitCond {
-    memberStatus(address) == status
+    val result = memberStatus(address) == status
+    clusterView.refreshCurrentState()
+    result
   }
 
   def leaderActions(): Unit =
@@ -111,11 +114,11 @@ abstract class TransitionSpec
     "start nodes as singleton clusters" taggedAs LongRunningTest in {
 
       runOn(first) {
-        startClusterNode()
-        awaitCond(clusterView.isSingletonCluster)
+        cluster join myself
         awaitMemberStatus(myself, Joining)
         leaderActions()
         awaitMemberStatus(myself, Up)
+        awaitCond(clusterView.isSingletonCluster)
       }
 
       enterBarrier("after-1")
@@ -188,14 +191,14 @@ abstract class TransitionSpec
         leaderActions()
         awaitMemberStatus(first, Up)
         awaitMemberStatus(second, Up)
-        awaitMemberStatus(third, Joining)
+        awaitMemberStatus(third, Up)
       }
       enterBarrier("leader-actions-3")
 
       // leader gossipTo first non-leader
       leader(first, second, third) gossipTo nonLeader(first, second, third).head
       runOn(nonLeader(first, second, third).head) {
-        awaitMemberStatus(third, Joining)
+        awaitMemberStatus(third, Up)
         awaitCond(seenLatestGossip == Set(leader(first, second, third), myself))
       }
 

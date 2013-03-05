@@ -44,7 +44,7 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
       val (g1, _) = converge(Gossip(members = SortedSet(a1)))
       val (g2, s2) = converge(Gossip(members = SortedSet(a1, b1, e1)))
 
-      diffMemberEvents(g1, g2) must be(Seq(MemberUp(b1), MemberJoined(e1)))
+      diffMemberEvents(g1, g2) must be(Seq(MemberUp(b1)))
       diffUnreachable(g1, g2) must be(Seq.empty)
       diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = true, seenBy = s2)))
     }
@@ -53,7 +53,7 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
       val (g1, _) = converge(Gossip(members = SortedSet(a2, b1, c2)))
       val (g2, s2) = converge(Gossip(members = SortedSet(a1, b1, c1, e1)))
 
-      diffMemberEvents(g1, g2) must be(Seq(MemberUp(a1), MemberLeft(c1), MemberJoined(e1)))
+      diffMemberEvents(g1, g2) must be(Seq(MemberUp(a1)))
       diffUnreachable(g1, g2) must be(Seq.empty)
       diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = true, seenBy = s2)))
     }
@@ -62,17 +62,7 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
       val g1 = Gossip(members = SortedSet(a1, b1), overview = GossipOverview(unreachable = Set(c2, e2)))
       val g2 = Gossip(members = SortedSet(a1), overview = GossipOverview(unreachable = Set(c2, b3, e3)))
 
-      diffMemberEvents(g1, g2) must be(Seq(MemberDowned(b3), MemberDowned(e3)))
       diffUnreachable(g1, g2) must be(Seq(UnreachableMember(b3)))
-      diffSeen(g1, g2) must be(Seq.empty)
-    }
-
-    "be produced for downed members" in {
-      val (g1, _) = converge(Gossip(members = SortedSet(a1, b1)))
-      val (g2, _) = converge(Gossip(members = SortedSet(a1, b1), overview = GossipOverview(unreachable = Set(e3))))
-
-      diffMemberEvents(g1, g2) must be(Seq(MemberDowned(e3)))
-      diffUnreachable(g1, g2) must be(Seq(UnreachableMember(e3)))
       diffSeen(g1, g2) must be(Seq.empty)
     }
 

@@ -8,8 +8,7 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.Props
-import akka.cluster.ClusterEvent.InstantClusterState
-import akka.cluster.ClusterEvent.InstantMemberJoined
+import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
@@ -48,20 +47,11 @@ abstract class InitialHeartbeatSpec
       awaitClusterUp(first)
 
       runOn(first) {
-        val joinLatch = TestLatch()
-        cluster.subscribe(system.actorOf(Props(new Actor {
-          def receive = {
-            case state: InstantClusterState ⇒
-              if (state.members.exists(_.address == secondAddress))
-                joinLatch.countDown()
-            case InstantMemberJoined(m) ⇒
-              if (m.address == secondAddress)
-                joinLatch.countDown()
-          }
-        })), classOf[InstantMemberJoined])
-
         within(10 seconds) {
-          joinLatch.await
+          awaitCond {
+            cluster.sendCurrentClusterState(testActor)
+            expectMsgType[CurrentClusterState].members.exists(_.address == secondAddress)
+          }
         }
       }
       runOn(second) {

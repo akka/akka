@@ -83,7 +83,7 @@ abstract class MBeanSpec
       }
       enterBarrier("joined")
 
-      awaitUpConvergence(4)
+      awaitMembersUp(4)
       assertMembers(clusterView.members, roles.map(address(_)): _*)
       awaitCond(mbeanServer.getAttribute(mbeanName, "MemberStatus") == "Up")
       val expectedMembers = roles.sorted.map(address(_)).mkString(",")
@@ -115,7 +115,7 @@ abstract class MBeanSpec
       enterBarrier("fourth-down")
 
       runOn(first, second, third) {
-        awaitUpConvergence(3, canNotBePartOfMemberRing = Set(fourthAddress))
+        awaitMembersUp(3, canNotBePartOfMemberRing = Set(fourthAddress))
         assertMembers(clusterView.members, first, second, third)
         awaitCond(mbeanServer.getAttribute(mbeanName, "Unreachable") == "")
       }
@@ -129,7 +129,7 @@ abstract class MBeanSpec
       }
       enterBarrier("third-left")
       runOn(first, second) {
-        awaitUpConvergence(2)
+        awaitMembersUp(2)
         assertMembers(clusterView.members, first, second)
         val expectedMembers = Seq(first, second).sorted.map(address(_)).mkString(",")
         awaitCond(mbeanServer.getAttribute(mbeanName, "Members") == expectedMembers)

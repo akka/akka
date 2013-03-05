@@ -20,9 +20,8 @@ object MinMembersBeforeUpMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
-          # turn off unreachable reaper
-          akka.cluster.min-nr-of-members = 3""")).
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(
+    "akka.cluster.min-nr-of-members = 3")).
     withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
@@ -44,8 +43,12 @@ abstract class MinMembersBeforeUpSpec
       cluster.registerOnMemberUp(onUpLatch.countDown())
 
       runOn(first) {
-        startClusterNode()
-        awaitCond(clusterView.status == Joining)
+        cluster join myself
+        awaitCond {
+          val result = clusterView.status == Joining
+          clusterView.refreshCurrentState()
+          result
+        }
       }
       enterBarrier("first-started")
 
@@ -56,7 +59,11 @@ abstract class MinMembersBeforeUpSpec
       }
       runOn(first, second) {
         val expectedAddresses = Set(first, second) map address
-        awaitCond(clusterView.members.map(_.address) == expectedAddresses)
+        awaitCond {
+          val result = clusterView.members.map(_.address) == expectedAddresses
+          clusterView.refreshCurrentState()
+          result
+        }
         clusterView.members.map(_.status) must be(Set(Joining))
         // and it should not change
         1 to 5 foreach { _ ⇒
