@@ -683,7 +683,7 @@ abstract class StressSpec
         runOn(currentRoles.last) {
           cluster.join(roles.head)
         }
-        awaitUpConvergence(currentRoles.size, timeout = remaining)
+        awaitMembersUp(currentRoles.size, timeout = remaining)
       }
 
     }
@@ -703,7 +703,7 @@ abstract class StressSpec
             if (toSeedNodes) cluster.joinSeedNodes(seedNodes.toIndexedSeq map address)
             else cluster.join(roles.head)
           }
-          awaitUpConvergence(currentRoles.size, timeout = remaining)
+          awaitMembersUp(currentRoles.size, timeout = remaining)
         }
 
       }
@@ -743,7 +743,7 @@ abstract class StressSpec
             testConductor.shutdown(removeRole, 0).await
           }
         }
-        awaitUpConvergence(currentRoles.size, timeout = remaining)
+        awaitMembersUp(currentRoles.size, timeout = remaining)
       }
     }
 
@@ -776,7 +776,7 @@ abstract class StressSpec
               testConductor.shutdown(r, 0).await
             }
           }
-          awaitUpConvergence(currentRoles.size, timeout = remaining)
+          awaitMembersUp(currentRoles.size, timeout = remaining)
         }
       }
       awaitClusterResult
@@ -826,7 +826,7 @@ abstract class StressSpec
                 Some(sys)
               } else previousAS
             runOn(usedRoles: _*) {
-              awaitUpConvergence(
+              awaitMembersUp(
                 nbrUsedRoles + activeRoles.size,
                 canNotBePartOfMemberRing = allPreviousAddresses,
                 timeout = remaining)
@@ -850,7 +850,7 @@ abstract class StressSpec
     loop(1, None, Set.empty) foreach { _.shutdown }
     within(loopDuration) {
       runOn(usedRoles: _*) {
-        awaitUpConvergence(nbrUsedRoles, timeout = remaining)
+        awaitMembersUp(nbrUsedRoles, timeout = remaining)
         phiObserver ! Reset
       }
     }
@@ -954,7 +954,7 @@ abstract class StressSpec
       runOn((seedNodes ++ otherNodesJoiningSeedNodes): _*) {
         reportResult {
           cluster.joinSeedNodes(seedNodes.toIndexedSeq map address)
-          awaitUpConvergence(size, timeout = remaining)
+          awaitMembersUp(size, timeout = remaining)
         }
       }
 

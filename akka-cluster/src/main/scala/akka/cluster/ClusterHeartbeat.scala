@@ -101,7 +101,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
     HeartbeatInterval, self, HeartbeatTick)
 
   override def preStart(): Unit = {
-    cluster.subscribe(self, classOf[InstantMemberEvent])
+    cluster.subscribe(self, classOf[MemberEvent])
     cluster.subscribe(self, classOf[UnreachableMember])
   }
 
@@ -123,19 +123,17 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
 
   def receive = {
     case HeartbeatTick                ⇒ heartbeat()
-    case InstantMemberUp(m)           ⇒ addMember(m)
+    case MemberUp(m)                  ⇒ addMember(m)
     case UnreachableMember(m)         ⇒ removeMember(m)
-    case InstantMemberDowned(m)       ⇒ removeMember(m)
-    case InstantMemberRemoved(m)      ⇒ removeMember(m)
-    case s: InstantClusterState       ⇒ reset(s)
-    case _: CurrentClusterState       ⇒ // enough with InstantClusterState
-    case _: InstantMemberEvent        ⇒ // not interested in other types of InstantMemberEvent
+    case MemberRemoved(m)             ⇒ removeMember(m)
+    case s: CurrentClusterState       ⇒ reset(s)
+    case _: MemberEvent               ⇒ // not interested in other types of MemberEvent
     case HeartbeatRequest(from)       ⇒ addHeartbeatRequest(from)
     case SendHeartbeatRequest(to)     ⇒ sendHeartbeatRequest(to)
     case ExpectedFirstHeartbeat(from) ⇒ triggerFirstHeartbeat(from)
   }
 
-  def reset(snapshot: InstantClusterState): Unit = state = state.reset(snapshot.members.map(_.address))
+  def reset(snapshot: CurrentClusterState): Unit = state = state.reset(snapshot.members.map(_.address))
 
   def addMember(m: Member): Unit = if (m.address != selfAddress) state = state addMember m.address
 

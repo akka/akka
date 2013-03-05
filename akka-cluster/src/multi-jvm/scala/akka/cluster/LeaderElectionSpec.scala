@@ -102,7 +102,7 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
           enterBarrier("after-unavailable" + n)
 
           enterBarrier("after-down" + n)
-          awaitUpConvergence(currentRoles.size - 1)
+          awaitMembersUp(currentRoles.size - 1)
           val nextExpectedLeader = remainingRoles.head
           clusterView.isLeader must be(myself == nextExpectedLeader)
           assertLeaderIn(remainingRoles)

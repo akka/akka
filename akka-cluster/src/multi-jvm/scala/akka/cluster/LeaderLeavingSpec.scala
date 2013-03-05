@@ -61,17 +61,13 @@ abstract class LeaderLeavingSpec
 
         } else {
 
-          val leavingLatch = TestLatch()
           val exitingLatch = TestLatch()
 
           cluster.subscribe(system.actorOf(Props(new Actor {
             def receive = {
               case state: CurrentClusterState ⇒
-                if (state.members.exists(m ⇒ m.address == oldLeaderAddress && m.status == Leaving))
-                  leavingLatch.countDown()
                 if (state.members.exists(m ⇒ m.address == oldLeaderAddress && m.status == Exiting))
                   exitingLatch.countDown()
-              case MemberLeft(m) if m.address == oldLeaderAddress ⇒ leavingLatch.countDown()
               case MemberExited(m) if m.address == oldLeaderAddress ⇒ exitingLatch.countDown()
               case _ ⇒ // ignore
             }
@@ -82,9 +78,6 @@ abstract class LeaderLeavingSpec
 
           val expectedAddresses = roles.toSet map address
           awaitCond(clusterView.members.map(_.address) == expectedAddresses)
-
-          // verify that the LEADER is LEAVING
-          leavingLatch.await
 
           // verify that the LEADER is EXITING
           exitingLatch.await

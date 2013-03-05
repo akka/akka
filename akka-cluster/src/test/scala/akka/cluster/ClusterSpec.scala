@@ -63,12 +63,10 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     "initially become singleton cluster when joining itself and reach convergence" in {
       clusterView.members.size must be(0) // auto-join = off
       cluster.join(selfAddress)
-      Thread.sleep(5000)
+      leaderActions() // Joining -> Up
       awaitCond(clusterView.isSingletonCluster)
       clusterView.self.address must be(selfAddress)
       clusterView.members.map(_.address) must be(Set(selfAddress))
-      clusterView.status must be(MemberStatus.Joining)
-      leaderActions()
       awaitCond(clusterView.status == MemberStatus.Up)
     }
 
@@ -76,7 +74,6 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       try {
         cluster.subscribe(testActor, classOf[ClusterEvent.ClusterDomainEvent])
         // first, is in response to the subscription
-        expectMsgClass(classOf[ClusterEvent.InstantClusterState])
         expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
 
         cluster.publishCurrentClusterState()

@@ -76,7 +76,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
     MetricsInterval, self, MetricsTick)
 
   override def preStart(): Unit = {
-    cluster.subscribe(self, classOf[InstantMemberEvent])
+    cluster.subscribe(self, classOf[MemberEvent])
     cluster.subscribe(self, classOf[UnreachableMember])
     log.info("Metrics collection has started successfully on node [{}]", selfAddress)
   }
@@ -85,13 +85,11 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
     case GossipTick                 ⇒ gossip()
     case MetricsTick                ⇒ collect()
     case msg: MetricsGossipEnvelope ⇒ receiveGossip(msg)
-    case state: InstantClusterState ⇒ receiveState(state)
-    case state: CurrentClusterState ⇒ // enough with InstantClusterState
-    case InstantMemberUp(m)         ⇒ addMember(m)
-    case InstantMemberDowned(m)     ⇒ removeMember(m)
-    case InstantMemberRemoved(m)    ⇒ removeMember(m)
+    case state: CurrentClusterState ⇒ receiveState(state)
+    case MemberUp(m)                ⇒ addMember(m)
+    case MemberRemoved(m)           ⇒ removeMember(m)
     case UnreachableMember(m)       ⇒ removeMember(m)
-    case _: InstantMemberEvent      ⇒ // not interested in other types of InstantMemberEvent
+    case _: MemberEvent             ⇒ // not interested in other types of MemberEvent
 
   }
 
@@ -119,7 +117,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   /**
    * Updates the initial node ring for those nodes that are [[akka.cluster.MemberStatus.Up]].
    */
-  def receiveState(state: InstantClusterState): Unit =
+  def receiveState(state: CurrentClusterState): Unit =
     nodes = state.members collect { case m if m.status == Up ⇒ m.address }
 
   /**
