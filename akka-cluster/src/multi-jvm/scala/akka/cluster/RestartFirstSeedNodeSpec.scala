@@ -108,7 +108,7 @@ abstract class RestartFirstSeedNodeSpec
       }
       runOn(seed2, seed3) {
         awaitUpConvergence(2, canNotBePartOfMemberRing = Set(seedNodes.head))
-        awaitCond(clusterView.unreachableMembers.exists(m ⇒ m.status == Down && m.address == seedNodes.head))
+        awaitCond(clusterView.unreachableMembers.forall(_.address != seedNodes.head))
       }
       enterBarrier("seed1-shutdown")
 

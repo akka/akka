@@ -79,16 +79,6 @@ class GossipSpec extends WordSpec with MustMatchers {
 
     }
 
-    "merge by allowing Down -> Joining" in {
-      val g1 = Gossip(members = SortedSet(a1, b1), overview = GossipOverview(unreachable = Set(e3)))
-      val g2 = Gossip(members = SortedSet(a1, b1, e1), overview = GossipOverview(unreachable = Set.empty))
-
-      val merged2 = g2 merge g1
-      merged2.members must be(SortedSet(a1, b1, e1))
-      merged2.members.toSeq.map(_.status) must be(Seq(Up, Up, Joining))
-      merged2.overview.unreachable must be(Set.empty)
-    }
-
     "start with fresh seen table after merge" in {
       val g1 = Gossip(members = SortedSet(a1, e1)).seen(a1.address).seen(e1.address)
       val g2 = Gossip(members = SortedSet(a2, e2)).seen(a2.address).seen(e2.address)

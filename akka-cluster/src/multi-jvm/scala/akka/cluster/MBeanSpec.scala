@@ -117,6 +117,7 @@ abstract class MBeanSpec
       runOn(first, second, third) {
         awaitUpConvergence(3, canNotBePartOfMemberRing = Set(fourthAddress))
         assertMembers(clusterView.members, first, second, third)
+        awaitCond(mbeanServer.getAttribute(mbeanName, "Unreachable") == "")
       }
 
       enterBarrier("after-5")
