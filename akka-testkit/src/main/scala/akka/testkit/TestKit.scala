@@ -428,10 +428,18 @@ trait TestKitBase {
    */
   def expectMsgAllOf[T](max: FiniteDuration, obj: T*): immutable.Seq[T] = expectMsgAllOf_internal(max.dilated, obj: _*)
 
+  private def checkMissingAndUnexpected(missing: Seq[Any], unexpected: Seq[Any],
+                                        missingMessage: String, unexpectedMessage: String): Unit = {
+    assert(missing.isEmpty && unexpected.isEmpty,
+      (if (missing.isEmpty) "" else missing.mkString(missingMessage + " [", ", ", "] ")) +
+        (if (unexpected.isEmpty) "" else unexpected.mkString(unexpectedMessage + " [", ", ", "]")))
+  }
+
   private def expectMsgAllOf_internal[T](max: FiniteDuration, obj: T*): immutable.Seq[T] = {
     val recv = receiveN_internal(obj.size, max)
-    obj foreach (x ⇒ assert(recv exists (x == _), "not found " + x))
-    recv foreach (x ⇒ assert(obj exists (x == _), "found unexpected " + x))
+    val missing = obj filterNot (x ⇒ recv exists (x == _))
+    val unexpected = recv filterNot (x ⇒ obj exists (x == _))
+    checkMissingAndUnexpected(missing, unexpected, "not found", "found unexpected")
     recv.asInstanceOf[immutable.Seq[T]]
   }
 
@@ -452,8 +460,9 @@ trait TestKitBase {
 
   private def internalExpectMsgAllClassOf[T](max: FiniteDuration, obj: Class[_ <: T]*): immutable.Seq[T] = {
     val recv = receiveN_internal(obj.size, max)
-    obj foreach (x ⇒ assert(recv exists (_.getClass eq BoxedType(x)), "not found " + x))
-    recv foreach (x ⇒ assert(obj exists (c ⇒ BoxedType(c) eq x.getClass), "found non-matching object " + x))
+    val missing = obj filterNot (x ⇒ recv exists (_.getClass eq BoxedType(x)))
+    val unexpected = recv filterNot (x ⇒ obj exists (c ⇒ BoxedType(c) eq x.getClass))
+    checkMissingAndUnexpected(missing, unexpected, "not found", "found non-matching object(s)")
     recv.asInstanceOf[immutable.Seq[T]]
   }
 
@@ -477,8 +486,9 @@ trait TestKitBase {
 
   private def internalExpectMsgAllConformingOf[T](max: FiniteDuration, obj: Class[_ <: T]*): immutable.Seq[T] = {
     val recv = receiveN_internal(obj.size, max)
-    obj foreach (x ⇒ assert(recv exists (BoxedType(x) isInstance _), "not found " + x))
-    recv foreach (x ⇒ assert(obj exists (c ⇒ BoxedType(c) isInstance x), "found non-matching object " + x))
+    val missing = obj filterNot (x ⇒ recv exists (BoxedType(x) isInstance _))
+    val unexpected = recv filterNot (x ⇒ obj exists (c ⇒ BoxedType(c) isInstance x))
+    checkMissingAndUnexpected(missing, unexpected, "not found", "found non-matching object(s)")
     recv.asInstanceOf[immutable.Seq[T]]
   }
 
