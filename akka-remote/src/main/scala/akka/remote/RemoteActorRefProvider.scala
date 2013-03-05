@@ -5,7 +5,7 @@
 package akka.remote
 
 import akka.actor._
-import akka.dispatch._
+import akka.dispatch.sysmsg._
 import akka.event.{ Logging, LoggingAdapter, EventStream }
 import akka.event.Logging.Error
 import akka.serialization.{ JavaSerializer, Serialization, SerializationExtension }

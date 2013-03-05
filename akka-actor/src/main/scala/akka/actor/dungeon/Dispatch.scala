@@ -5,7 +5,8 @@
 package akka.actor.dungeon
 
 import scala.annotation.tailrec
-import akka.dispatch.{ Terminate, SystemMessage, Suspend, Resume, Recreate, MessageDispatcher, Mailbox, Envelope, Create }
+import akka.dispatch.{ MessageDispatcher, Mailbox, Envelope }
+import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
 import akka.util.Unsafe
 import akka.dispatch.NullMessage
@@ -53,7 +54,7 @@ private[akka] trait Dispatch { this: ActorCell ⇒
 
     if (sendSupervise) {
       // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-      parent.sendSystemMessage(akka.dispatch.Supervise(self, async = false))
+      parent.sendSystemMessage(akka.dispatch.sysmsg.Supervise(self, async = false, uid))
       parent ! NullMessage // read ScalaDoc of NullMessage to see why
     }
     this

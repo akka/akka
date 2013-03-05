@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import akka.dispatch.SystemMessage;
+import akka.dispatch.sysmsg.SystemMessage;
 import akka.util.Helpers;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;

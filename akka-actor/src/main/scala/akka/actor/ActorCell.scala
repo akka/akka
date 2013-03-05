@@ -4,9 +4,17 @@
 
 package akka.actor
 
+import akka.actor.dungeon.ChildrenContainer
+import akka.dispatch.Envelope
+import akka.dispatch.NullMessage
+import akka.dispatch.sysmsg._
+import akka.event.Logging.Debug
+import akka.event.Logging.{ LogEvent, Error }
+import akka.japi.Procedure
 import java.io.{ ObjectOutputStream, NotSerializableException }
-import scala.annotation.tailrec
+import scala.annotation.{ switch, tailrec }
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 import akka.actor.dungeon.ChildrenContainer
@@ -16,7 +24,6 @@ import akka.event.Logging.{ LogEvent, Debug, Error }
 import akka.japi.Procedure
 import akka.dispatch.NullMessage
 import scala.concurrent.ExecutionContext
-import scala.concurrent.forkjoin.ThreadLocalRandom
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -325,6 +332,9 @@ private[akka] object ActorCell {
     else (name.substring(0, i), Integer.valueOf(name.substring(i + 1)))
   }
 
+  final val DefaultState = 0
+  final val SuspendedState = 1
+  final val SuspendedWaitForChildrenState = 2
 }
 
 //ACTORCELL IS 64bytes and should stay that way unless very good reason not to (machine sympathy, cache line fit)
@@ -362,12 +372,24 @@ private[akka] class ActorCell(
   protected def actor_=(a: Actor): Unit = _actor = a
   var currentMessage: Envelope = _
   private var behaviorStack: List[Actor.Receive] = emptyBehaviorStack
+  private[this] var sysmsgStash: LatestFirstSystemMessageList = SystemMessageList.LNil
+
+  protected def stash(msg: SystemMessage): Unit = {
+    assert(msg.unlinked)
+    sysmsgStash ::= msg
+  }
+
+  private def unstashAll(): LatestFirstSystemMessageList = {
+    val unstashed = sysmsgStash
+    sysmsgStash = SystemMessageList.LNil
+    unstashed
+  }
 
   /*
    * MESSAGE PROCESSING
    */
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
-  @tailrec final def systemInvoke(message: SystemMessage): Unit = {
+  final def systemInvoke(message: SystemMessage): Unit = {
     /*
      * When recreate/suspend/resume are received while restarting (i.e. between
      * preRestart and postRestart, waiting for children to terminate), these
@@ -377,36 +399,61 @@ private[akka] class ActorCell(
      * types (hence the overwrite further down). Mailbox sets message.next=null
      * before systemInvoke, so this will only be non-null during such a replay.
      */
-    var todo = message.next
-    try {
-      message match {
-        case Create()                  ⇒ create()
-        case Watch(watchee, watcher)   ⇒ addWatcher(watchee, watcher)
-        case Unwatch(watchee, watcher) ⇒ remWatcher(watchee, watcher)
-        case Recreate(cause) ⇒
-          waitingForChildrenOrNull match {
-            case null                  ⇒ faultRecreate(cause)
-            case w: WaitingForChildren ⇒ w.enqueue(message)
-          }
-        case Suspend() ⇒
-          waitingForChildrenOrNull match {
-            case null                  ⇒ faultSuspend()
-            case w: WaitingForChildren ⇒ w.enqueue(message)
-          }
-        case Resume(inRespToFailure) ⇒
-          waitingForChildrenOrNull match {
-            case null                  ⇒ faultResume(inRespToFailure)
-            case w: WaitingForChildren ⇒ w.enqueue(message)
-          }
-        case Terminate()             ⇒ terminate()
-        case Supervise(child, async) ⇒ supervise(child, async)
-        case ChildTerminated(child)  ⇒ todo = handleChildTerminated(child)
-        case NoMessage               ⇒ // only here to suppress warning
+
+    def calculateState: Int =
+      if (waitingForChildrenOrNull ne null) SuspendedWaitForChildrenState
+      else if (mailbox.isSuspended) SuspendedState
+      else DefaultState
+
+    @tailrec def sendAllToDeadLetters(messages: EarliestFirstSystemMessageList): Unit =
+      if (messages.nonEmpty) {
+        val tail = messages.tail
+        val msg = messages.head
+        msg.unlink()
+        provider.deadLetters ! msg
+        sendAllToDeadLetters(tail)
       }
-    } catch handleNonFatalOrInterruptedException { e ⇒
-      handleInvokeFailure(Nil, e)
+
+    def shouldStash(m: SystemMessage, state: Int): Boolean =
+      (state: @switch) match {
+        case DefaultState                  ⇒ false
+        case SuspendedState                ⇒ m.isInstanceOf[StashWhenFailed]
+        case SuspendedWaitForChildrenState ⇒ m.isInstanceOf[StashWhenWaitingForChildren]
+      }
+
+    @tailrec
+    def invokeAll(messages: EarliestFirstSystemMessageList, currentState: Int): Unit = {
+      val rest = messages.tail
+      val message = messages.head
+      message.unlink()
+      try {
+        message match {
+          case message: SystemMessage if shouldStash(message, currentState) ⇒ stash(message)
+          case f: Failed ⇒ handleFailure(f)
+          case Create() ⇒ create(uid)
+          case Watch(watchee, watcher) ⇒ addWatcher(watchee, watcher)
+          case Unwatch(watchee, watcher) ⇒ remWatcher(watchee, watcher)
+          case Recreate(cause) ⇒ faultRecreate(cause)
+          case Suspend() ⇒ faultSuspend()
+          case Resume(inRespToFailure) ⇒ faultResume(inRespToFailure)
+          case Terminate() ⇒ terminate()
+          case Supervise(child, async) ⇒ supervise(child, async, uid)
+          case ChildTerminated(child) ⇒ handleChildTerminated(child)
+          case NoMessage ⇒ // only here to suppress warning
+        }
+      } catch handleNonFatalOrInterruptedException { e ⇒
+        handleInvokeFailure(Nil, e)
+      }
+      val newState = calculateState
+      // As each state accepts a strict subset of another state, it is enough to unstash if we "walk up" the state
+      // chain
+      val todo = if (newState < currentState) unstashAll() reverse_::: rest else rest
+
+      if (isTerminated) sendAllToDeadLetters(todo)
+      else if (todo.nonEmpty) invokeAll(todo, newState)
     }
-    if (todo != null) systemInvoke(todo)
+
+    invokeAll(new EarliestFirstSystemMessageList(message), calculateState)
   }
 
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
@@ -430,7 +477,6 @@ private[akka] class ActorCell(
         publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
       msg.message match {
-        case Failed(cause, uid)         ⇒ handleFailure(sender, cause, uid)
         case t: Terminated              ⇒ watchedActorTerminated(t)
         case AddressTerminated(address) ⇒ addressTerminated(address)
         case Kill                       ⇒ throw new ActorKilledException("Kill")

@@ -242,6 +242,8 @@ object SupervisorHierarchySpec {
     override def postStop {
       if (failed || suspended) {
         listener ! ErrorLog("not resumed (" + failed + ", " + suspended + ")", log)
+        val state = stateCache.get(self)
+        stateCache.put(self.path, state.copy(log = log))
       } else {
         stateCache.put(self.path, HierarchyState(log, Map(), null))
       }
@@ -249,7 +251,7 @@ object SupervisorHierarchySpec {
 
     def check(msg: Any): Boolean = {
       suspended = false
-      log :+= Event(msg, identityHashCode(this))
+      log :+= Event(msg, identityHashCode(Hierarchy.this))
       if (failed) {
         abort("processing message while failed")
         failed = false
@@ -287,13 +289,15 @@ object SupervisorHierarchySpec {
             val props = Props(new Hierarchy(kids, breadth, listener, myLevel + 1)).withDispatcher("hierarchy")
             context.watch(context.actorOf(props, name))
           } else {
-            log :+= Event(sender + " terminated while pongOfDeath", identityHashCode(this))
+            // WARNING: The Terminated that is logged by this is logged by check() above, too. It is not
+            // an indication of duplicate Terminate messages
+            log :+= Event(sender + " terminated while pongOfDeath", identityHashCode(Hierarchy.this))
           }
         case Abort ⇒ abort("terminating")
         case PingOfDeath ⇒
           if (size > 1) {
             pongsToGo = context.children.size
-            log :+= Event("sending " + pongsToGo + " pingOfDeath", identityHashCode(this))
+            log :+= Event("sending " + pongsToGo + " pingOfDeath", identityHashCode(Hierarchy.this))
             context.children foreach (_ ! PingOfDeath)
           } else {
             context stop self

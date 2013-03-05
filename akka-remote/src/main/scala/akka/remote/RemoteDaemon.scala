@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import akka.actor.{ VirtualPathContainer, Terminated, Deploy, Props, Nobody, LocalActorRef, InternalActorRef, Address, ActorSystemImpl, ActorRef, ActorPathExtractor, ActorPath, Actor, AddressTerminated }
 import akka.event.LoggingAdapter
-import akka.dispatch.Watch
+import akka.dispatch.sysmsg.Watch
 import akka.actor.ActorRefWithCell
 import akka.actor.ActorRefScope
 import akka.util.Switch

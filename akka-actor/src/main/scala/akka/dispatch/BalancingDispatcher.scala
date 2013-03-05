@@ -5,6 +5,7 @@
 package akka.dispatch
 
 import akka.actor.{ ActorCell, ActorRef }
+import akka.dispatch.sysmsg._
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import akka.util.Helpers
@@ -56,13 +57,13 @@ class BalancingDispatcher(
     override def cleanUp(): Unit = {
       val dlq = system.deadLetterMailbox
       //Don't call the original implementation of this since it scraps all messages, and we don't want to do that
-      var message = systemDrain(NoMessage)
-      while (message ne null) {
+      var messages = systemDrain(new LatestFirstSystemMessageList(NoMessage))
+      while (messages.nonEmpty) {
         // message must be “virgin” before being able to systemEnqueue again
-        val next = message.next
-        message.next = null
+        val message = messages.head
+        messages = messages.tail
+        message.unlink()
         dlq.systemEnqueue(system.deadLetters, message)
-        message = next
       }
     }
   }

@@ -7,6 +7,7 @@ package akka.dispatch
 import akka.event.Logging.Error
 import akka.actor.ActorCell
 import akka.event.Logging
+import akka.dispatch.sysmsg.SystemMessage
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ ExecutorService, RejectedExecutionException }
 import scala.concurrent.forkjoin.ForkJoinPool
