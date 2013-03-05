@@ -388,20 +388,17 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
       val localUnreachable = latestGossip.overview.unreachable
 
       val alreadyMember = localMembers.exists(_.address == node)
-      val isUnreachable = latestGossip.overview.isNonDownUnreachable(node)
+      val isUnreachable = localUnreachable.exists(_.address == node)
 
       if (!alreadyMember && !isUnreachable) {
-        // remove the node from the 'unreachable' set in case it is a DOWN node that is rejoining cluster
-        val (rejoiningMember, newUnreachableMembers) = localUnreachable partition { _.address == node }
-        val newOverview = latestGossip.overview copy (unreachable = newUnreachableMembers)
 
-        // remove the node from the failure detector if it is a DOWN node that is rejoining cluster
-        if (rejoiningMember.nonEmpty) failureDetector.remove(node)
+        // remove the node from the failure detector
+        failureDetector.remove(node)
 
         // add joining node as Joining
         // add self in case someone else joins before self has joined (Set discards duplicates)
         val newMembers = localMembers + Member(node, Joining) + Member(selfAddress, Joining)
-        val newGossip = latestGossip copy (overview = newOverview, members = newMembers)
+        val newGossip = latestGossip copy (members = newMembers)
 
         val versionedGossip = newGossip :+ vclockNode
         val seenVersionedGossip = versionedGossip seen selfAddress
@@ -666,10 +663,11 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
       //   3. Non-exiting remain              -- When all partition handoff has completed
       //   4. Move EXITING     => REMOVED     -- When all nodes have seen that the node is EXITING (convergence) - remove the nodes from the node ring and seen table
       //   5. Move UNREACHABLE => DOWN        -- When the node is in the UNREACHABLE set it can be auto-down by leader
-      //   6. Updating the vclock version for the changes
-      //   7. Updating the 'seen' table
-      //   8. Try to update the state with the new gossip
-      //   9. If success - run all the side-effecting processing
+      //   6. Move DOWN        => REMOVED     -- When all nodes have seen that the node is DOWN (convergence) - remove the nodes from the node ring and seen table
+      //   7. Updating the vclock version for the changes
+      //   8. Updating the 'seen' table
+      //   9. Try to update the state with the new gossip
+      //  10. If success - run all the side-effecting processing
 
       val (
         newGossip: Gossip,
@@ -687,45 +685,46 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
           // transform the node member ring
           val newMembers = localMembers collect {
-            // 1. Move JOINING => UP (once all nodes have seen that this node is JOINING, i.e. we have a convergence)
+            // Move JOINING => UP (once all nodes have seen that this node is JOINING, i.e. we have a convergence)
             // and minimum number of nodes have joined the cluster
             case member if isJoiningToUp(member) ⇒ member copy (status = Up)
-            // 2. Move LEAVING => EXITING (once we have a convergence on LEAVING
+            // Move LEAVING => EXITING (once we have a convergence on LEAVING
             // *and* if we have a successful partition handoff)
             case member if member.status == Leaving && hasPartionHandoffCompletedSuccessfully ⇒
               member copy (status = Exiting)
-            // 3. Everyone else that is not Exiting stays as they are
-            case member if member.status != Exiting ⇒ member
-            // 4. Move EXITING => REMOVED - e.g. remove the nodes from the 'members' set/node ring and seen table
+            // Everyone else that is not Exiting stays as they are
+            case member if member.status != Exiting && member.status != Down ⇒ member
+            // Move EXITING => REMOVED, DOWN => REMOVED - i.e. remove the nodes from the 'members' set/node ring and seen table
           }
 
           // ----------------------
-          // 5. Store away all stuff needed for the side-effecting processing in 10.
+          // Store away all stuff needed for the side-effecting processing
           // ----------------------
 
           // Check for the need to do side-effecting on successful state change
-          // Repeat the checking for transitions between JOINING -> UP, LEAVING -> EXITING, EXITING -> REMOVED
+          // Repeat the checking for transitions between JOINING -> UP, LEAVING -> EXITING, EXITING -> REMOVED, DOWN -> REMOVED
           // to check for state-changes and to store away removed and exiting members for later notification
           //    1. check for state-changes to update
           //    2. store away removed and exiting members so we can separate the pure state changes
-          val (removedMembers, newMembers1) = localMembers partition (_.status == Exiting)
+          val (removedMembers, newMembers1) = localMembers partition (m ⇒ m.status == Exiting || m.status == Down)
+          val removedMembers2 = removedMembers ++ localUnreachableMembers.filter(_.status == Down)
 
           val (upMembers, newMembers2) = newMembers1 partition (isJoiningToUp(_))
 
           val exitingMembers = newMembers2 filter (_.status == Leaving && hasPartionHandoffCompletedSuccessfully)
 
-          val hasChangedState = removedMembers.nonEmpty || upMembers.nonEmpty || exitingMembers.nonEmpty
+          val hasChangedState = removedMembers2.nonEmpty || upMembers.nonEmpty || exitingMembers.nonEmpty
 
           // removing REMOVED nodes from the 'seen' table
-          val newSeen = localSeen -- removedMembers.map(_.address)
+          val newSeen = localSeen -- removedMembers2.map(_.address)
 
           // removing REMOVED nodes from the 'unreachable' set
-          val newUnreachableMembers = localUnreachableMembers -- removedMembers
+          val newUnreachableMembers = localUnreachableMembers -- removedMembers2
 
           val newOverview = localOverview copy (seen = newSeen, unreachable = newUnreachableMembers) // update gossip overview
           val newGossip = localGossip copy (members = newMembers, overview = newOverview) // update gossip
 
-          (newGossip, hasChangedState, upMembers, exitingMembers, removedMembers, Member.none)
+          (newGossip, hasChangedState, upMembers, exitingMembers, removedMembers2, Member.none)
 
         } else if (AutoDown) {
           // we don't have convergence - so we might have unreachable nodes
@@ -733,7 +732,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
           // if 'auto-down' is turned on, then try to auto-down any unreachable nodes
           val newUnreachableMembers = localUnreachableMembers collect {
             // ----------------------
-            // 6. Move UNREACHABLE => DOWN (auto-downing by leader)
+            // Move UNREACHABLE => DOWN (auto-downing by leader)
             // ----------------------
             case member if member.status != Down ⇒ member copy (status = Down)
             case downMember                      ⇒ downMember // no need to DOWN members already DOWN
@@ -754,25 +753,25 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
       if (hasChangedState) { // we have a change of state - version it and try to update
         // ----------------------
-        // 6. Updating the vclock version for the changes
+        // Updating the vclock version for the changes
         // ----------------------
         val versionedGossip = newGossip :+ vclockNode
 
         // ----------------------
-        // 7. Updating the 'seen' table
-        //    Unless the leader (this node) is part of the removed members, i.e. the leader have moved himself from EXITING -> REMOVED
+        // Updating the 'seen' table
+        // Unless the leader (this node) is part of the removed members, i.e. the leader have moved himself from EXITING -> REMOVED
         // ----------------------
         val seenVersionedGossip =
           if (removedMembers.exists(_.address == selfAddress)) versionedGossip
           else versionedGossip seen selfAddress
 
         // ----------------------
-        // 8. Update the state with the new gossip
+        // Update the state with the new gossip
         // ----------------------
         latestGossip = seenVersionedGossip
 
         // ----------------------
-        // 9. Run all the side-effecting processing
+        // Run all the side-effecting processing
         // ----------------------
 
         // log the move of members from joining to up

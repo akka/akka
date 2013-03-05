@@ -287,9 +287,9 @@ object ClusterEvent {
       }
       val unreachableDownedEvents = unreachableDownMembers map MemberDowned
 
-      val removedEvents = (oldGossip.members -- newGossip.members -- newGossip.overview.unreachable) map { m ⇒
-        MemberRemoved(m.copy(status = Removed))
-      }
+      val removedMembers = (oldGossip.members -- newGossip.members -- newGossip.overview.unreachable) ++
+        (oldGossip.overview.unreachable -- newGossip.overview.unreachable)
+      val removedEvents = removedMembers.map(m ⇒ MemberRemoved(m.copy(status = Removed)))
 
       (new VectorBuilder[MemberEvent]() ++= memberEvents ++= downedEvents ++= unreachableDownedEvents
         ++= removedEvents).result()
@@ -418,9 +418,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
       latestConvergedGossip = newGossip
       bufferedEvents foreach { event ⇒
         event match {
-          case m: MemberEvent if m.isInstanceOf[MemberDowned] || m.isInstanceOf[MemberRemoved] ⇒
-            // TODO MemberDowned match should probably be covered by MemberRemoved, see ticket #2788
-            //   but right now we don't change Downed to Removed
+          case m: MemberEvent if m.isInstanceOf[MemberRemoved] ⇒
             publish(event)
             // notify DeathWatch about downed node
             publish(AddressTerminated(m.member.address))

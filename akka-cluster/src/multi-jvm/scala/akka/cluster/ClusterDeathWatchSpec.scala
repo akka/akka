@@ -82,8 +82,11 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("second-terminated")
 
         markNodeAsUnavailable(third)
+        awaitCond(clusterView.members.forall(_.address != address(third)))
         awaitCond(clusterView.unreachableMembers.exists(_.address == address(third)))
         cluster.down(third)
+        // removed
+        awaitCond(clusterView.unreachableMembers.forall(_.address != address(third)))
         expectMsg(path3)
         enterBarrier("third-terminated")
 
@@ -95,8 +98,11 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("watch-established")
         runOn(third) {
           markNodeAsUnavailable(second)
+          awaitCond(clusterView.members.forall(_.address != address(second)))
           awaitCond(clusterView.unreachableMembers.exists(_.address == address(second)))
           cluster.down(second)
+          // removed
+          awaitCond(clusterView.unreachableMembers.forall(_.address != address(second)))
         }
         enterBarrier("second-terminated")
         enterBarrier("third-terminated")
@@ -131,8 +137,11 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("hello-deployed")
 
         markNodeAsUnavailable(first)
+        awaitCond(clusterView.members.forall(_.address != address(first)))
         awaitCond(clusterView.unreachableMembers.exists(_.address == address(first)))
         cluster.down(first)
+        // removed
+        awaitCond(clusterView.unreachableMembers.forall(_.address != address(first)))
 
         val t = expectMsgType[Terminated]
         t.actor must be(hello)
