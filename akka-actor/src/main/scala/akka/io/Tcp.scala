@@ -50,6 +50,8 @@ object Tcp extends ExtensionKey[TcpExt] {
      * [[akka.io.Inet.SocketOption]] to enable or disable TCP_NODELAY
      * (disable or enable Nagle's algorithm)
      *
+     * Please note, that TCP_NODELAY is enabled by default.
+     *
      * For more information see [[java.net.Socket.setTcpNoDelay]]
      */
     case class TcpNoDelay(on: Boolean) extends SocketOption {
