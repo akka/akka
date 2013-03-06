@@ -48,9 +48,10 @@ class MemberOrderingSpec extends WordSpec with MustMatchers {
     }
 
     "have stable equals and hashCode" in {
-      val m1 = Member(Address("akka.tcp", "sys1", "host1", 9000), MemberStatus.Joining)
-      val m2 = Member(Address("akka.tcp", "sys1", "host1", 9000), MemberStatus.Up)
-      val m3 = Member(Address("akka.tcp", "sys1", "host1", 10000), MemberStatus.Up)
+      val address = Address("akka.tcp", "sys1", "host1", 9000)
+      val m1 = Member(address, MemberStatus.Joining)
+      val m2 = Member(address, MemberStatus.Up)
+      val m3 = Member(address.copy(port = Some(10000)), MemberStatus.Up)
 
       m1 must be(m2)
       m1.hashCode must be(m2.hashCode)
@@ -61,7 +62,7 @@ class MemberOrderingSpec extends WordSpec with MustMatchers {
 
     "have consistent ordering and equals" in {
       val address1 = Address("akka.tcp", "sys1", "host1", 9001)
-      val address2 = Address("akka.tcp", "sys1", "host1", 9002)
+      val address2 = address1.copy(port = Some(9002))
 
       val x = Member(address1, Exiting)
       val y = Member(address1, Removed)
@@ -72,8 +73,8 @@ class MemberOrderingSpec extends WordSpec with MustMatchers {
 
     "work with SortedSet" in {
       val address1 = Address("akka.tcp", "sys1", "host1", 9001)
-      val address2 = Address("akka.tcp", "sys1", "host1", 9002)
-      val address3 = Address("akka.tcp", "sys1", "host1", 9003)
+      val address2 = address1.copy(port = Some(9002))
+      val address3 = address1.copy(port = Some(9003))
 
       (SortedSet(Member(address1, MemberStatus.Joining)) - Member(address1, MemberStatus.Up)) must be(SortedSet.empty[Member])
       (SortedSet(Member(address1, MemberStatus.Exiting)) - Member(address1, MemberStatus.Removed)) must be(SortedSet.empty[Member])
@@ -128,6 +129,24 @@ class MemberOrderingSpec extends WordSpec with MustMatchers {
       seq(1) must equal(AddressFromURIString("akka://sys@darkstar0:1111"))
       seq(2) must equal(AddressFromURIString("akka://sys@darkstar2:1110"))
       seq(3) must equal(AddressFromURIString("akka://sys@darkstar2:1111"))
+    }
+  }
+
+  "Leader status ordering" must {
+
+    "order members with status Joining, Exiting and Down last" in {
+      val address = Address("akka.tcp", "sys1", "host1", 5000)
+      val m1 = Member(address, MemberStatus.Joining)
+      val m2 = Member(address.copy(port = Some(7000)), MemberStatus.Joining)
+      val m3 = Member(address.copy(port = Some(3000)), MemberStatus.Exiting)
+      val m4 = Member(address.copy(port = Some(6000)), MemberStatus.Exiting)
+      val m5 = Member(address.copy(port = Some(2000)), MemberStatus.Down)
+      val m6 = Member(address.copy(port = Some(4000)), MemberStatus.Down)
+      val m7 = Member(address.copy(port = Some(8000)), MemberStatus.Up)
+      val m8 = Member(address.copy(port = Some(9000)), MemberStatus.Up)
+      val expected = IndexedSeq(m7, m8, m1, m2, m3, m4, m5, m6)
+      val shuffled = Random.shuffle(expected)
+      shuffled.sorted(Member.leaderStatusOrdering) must be(expected)
     }
   }
 }

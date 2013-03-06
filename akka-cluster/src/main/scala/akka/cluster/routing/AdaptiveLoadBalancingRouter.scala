@@ -138,7 +138,7 @@ case class AdaptiveLoadBalancingRouter(
  * INTERNAL API.
  *
  * This strategy is a metrics-aware router which performs load balancing of messages to
- * cluster nodes based on cluster metric data. It consumes [[akka.cluster.ClusterMetricsChanged]]
+ * cluster nodes based on cluster metric data. It consumes [[akka.cluster.ClusterEvent.ClusterMetricsChanged]]
  * events and the [[akka.cluster.routing.MetricsSelector]] creates an mix of
  * weighted routees based on the node metrics. Messages are routed randomly to the
  * weighted routees, i.e. nodes with lower load are more likely to be used than nodes with

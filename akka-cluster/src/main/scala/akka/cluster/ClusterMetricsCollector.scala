@@ -291,8 +291,8 @@ private[cluster] case class EWMA(value: Double, alpha: Double) extends ClusterMe
  * Equality of Metric is based on its name.
  *
  * @param name the metric name
- * @param value the metric value, which may or may not be defined, it must be a valid numerical value,
- *   see [[akka.cluster.MetricNumericConverter.defined()]]
+ * @param value the metric value, which must be a valid numerical value,
+ *   a valid value is neither negative nor NaN/Infinite.
  * @param average the data stream of the metric value, for trending over time. Metrics that are already
  *   averages (e.g. system load average) or finite (e.g. as number of processors), are not trended.
  */
@@ -302,8 +302,8 @@ case class Metric private (name: String, value: Number, private val average: Opt
   require(defined(value), s"Invalid Metric [$name] value [$value]")
 
   /**
-   * If defined ( [[akka.cluster.MetricNumericConverter.defined()]] ), updates the new
-   * data point, and if defined, updates the data stream. Returns the updated metric.
+   * Updates the data point, and if defined, updates the data stream (average).
+   * Returns the updated metric.
    */
   def :+(latest: Metric): Metric =
     if (this sameAs latest) average match {

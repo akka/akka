@@ -41,6 +41,24 @@ object Member {
   }
 
   /**
+   * INTERNAL API
+   * Orders the members by their address except that members with status
+   * Joining, Exiting and Down are ordered last (in that order).
+   */
+  private[cluster] val leaderStatusOrdering: Ordering[Member] = Ordering.fromLessThan[Member] { (a, b) ⇒
+    (a.status, b.status) match {
+      case (as, bs) if as == bs ⇒ ordering.compare(a, b) <= 0
+      case (Down, _)            ⇒ false
+      case (_, Down)            ⇒ true
+      case (Exiting, _)         ⇒ false
+      case (_, Exiting)         ⇒ true
+      case (Joining, _)         ⇒ false
+      case (_, Joining)         ⇒ true
+      case _                    ⇒ ordering.compare(a, b) <= 0
+    }
+  }
+
+  /**
    * `Member` ordering type class, sorts members by host and port.
    */
   implicit val ordering: Ordering[Member] = new Ordering[Member] {
