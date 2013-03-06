@@ -242,7 +242,7 @@ private[akka] class RemoteActorRefProvider(
             try {
               val localAddress = transport.localAddressForRemote(addr)
               val rpath = RootActorPath(addr) / "remote" / localAddress.protocol / localAddress.hostPort / path.elements
-              new RemoteActorRef(this, transport, localAddress, rpath, supervisor, Some(props), Some(d))
+              new RemoteActorRef(transport, localAddress, rpath, supervisor, Some(props), Some(d))
             } catch {
               case NonFatal(e) ⇒
                 log.error(e, "Error while looking up address {}", addr)
@@ -258,7 +258,7 @@ private[akka] class RemoteActorRefProvider(
   def actorFor(path: ActorPath): InternalActorRef = {
     if (hasAddress(path.address)) actorFor(rootGuardian, path.elements)
     else try {
-      new RemoteActorRef(this, transport, transport.localAddressForRemote(path.address),
+      new RemoteActorRef(transport, transport.localAddressForRemote(path.address),
         path, Nobody, props = None, deploy = None)
     } catch {
       case NonFatal(e) ⇒
@@ -270,7 +270,7 @@ private[akka] class RemoteActorRefProvider(
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case ActorPathExtractor(address, elems) ⇒
       if (hasAddress(address)) actorFor(rootGuardian, elems)
-      else new RemoteActorRef(this, transport, transport.localAddressForRemote(address),
+      else new RemoteActorRef(transport, transport.localAddressForRemote(address),
         new RootActorPath(address) / elems, Nobody, props = None, deploy = None)
     case _ ⇒ local.actorFor(ref, path)
   }
@@ -283,7 +283,7 @@ private[akka] class RemoteActorRefProvider(
   def actorForWithLocalAddress(ref: InternalActorRef, path: String, localAddress: Address): InternalActorRef = path match {
     case ActorPathExtractor(address, elems) ⇒
       if (hasAddress(address)) actorFor(rootGuardian, elems)
-      else new RemoteActorRef(this, transport, localAddress,
+      else new RemoteActorRef(transport, localAddress,
         new RootActorPath(address) / elems, Nobody, props = None, deploy = None)
     case _ ⇒ local.actorFor(ref, path)
   }
@@ -325,7 +325,6 @@ private[akka] trait RemoteRef extends ActorRefScope {
  * This reference is network-aware (remembers its origin) and immutable.
  */
 private[akka] class RemoteActorRef private[akka] (
-  val provider: RemoteActorRefProvider,
   remote: RemoteTransport,
   val localAddressToUse: Address,
   val path: ActorPath,
@@ -339,7 +338,7 @@ private[akka] class RemoteActorRef private[akka] (
     s.headOption match {
       case None       ⇒ this
       case Some("..") ⇒ getParent getChild name
-      case _          ⇒ new RemoteActorRef(provider, remote, localAddressToUse, path / s, Nobody, props = None, deploy = None)
+      case _          ⇒ new RemoteActorRef(remote, localAddressToUse, path / s, Nobody, props = None, deploy = None)
     }
   }
 
@@ -360,7 +359,10 @@ private[akka] class RemoteActorRef private[akka] (
     try remote.send(message, Option(sender), this) catch handleException
   }
 
-  def start(): Unit = if (props.isDefined && deploy.isDefined) provider.useActorOnNode(path, props.get, deploy.get, getParent)
+  override def provider: RemoteActorRefProvider = remote.provider
+
+  def start(): Unit =
+    if (props.isDefined && deploy.isDefined) remote.provider.useActorOnNode(path, props.get, deploy.get, getParent)
 
   def suspend(): Unit = sendSystemMessage(Suspend())
 
