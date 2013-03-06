@@ -100,7 +100,7 @@ private[cluster] case class Gossip(
    * Map with the VectorClock (version) for the new gossip.
    */
   def seen(address: Address): Gossip = {
-    if (overview.seen.contains(address) && overview.seen(address) == version) this
+    if (hasSeen(address)) this
     else this copy (overview = overview copy (seen = overview.seen + (address -> version)))
   }
 
@@ -111,6 +111,28 @@ private[cluster] case class Gossip(
     overview.seen.collect {
       case (address, vclock) if vclock == version ⇒ address
     }.toSet
+  }
+
+  /**
+   * Has this Gossip been seen by this address.
+   */
+  def hasSeen(address: Address): Boolean = {
+    overview.seen.get(address).exists(_ == version)
+  }
+
+  /**
+   * Merges the seen table of two Gossip instances.
+   */
+  def mergeSeen(that: Gossip): Gossip = {
+    val mergedSeen = (overview.seen /: that.overview.seen) {
+      case (merged, (address, version)) ⇒
+        val curr = merged.getOrElse(address, version)
+        if (curr > version)
+          merged + (address -> curr)
+        else
+          merged + (address -> version)
+    }
+    this copy (overview = overview copy (seen = mergedSeen))
   }
 
   /**
