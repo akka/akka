@@ -25,6 +25,7 @@ import java.io.{PrintWriter, InputStreamReader, FileInputStream, File}
 import java.nio.charset.Charset
 import java.util.Properties
 import annotation.tailrec
+import Unidoc.{ JavaDoc, javadocSettings, junidocSources, unidoc, unidocExclude }
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -45,29 +46,18 @@ object AkkaBuild extends Build {
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Publish.versionSettings ++
-      SphinxSupport.settings ++ Dist.settings ++ mimaSettings ++ unidocScaladocSettings ++ Seq(
+      SphinxSupport.settings ++ Dist.settings ++ mimaSettings ++ unidocScaladocSettings ++ 
+      inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
-      Unidoc.unidocExclude := Seq(samples.id, channelsTests.id, remoteTests.id),
+      unidocExclude := Seq(samples.id, channelsTests.id, remoteTests.id),
+      unidoc <<= (unidoc, doc in JavaDoc) map ((u, d) => u),
+      sources in JavaDoc <<= junidocSources,
+      javacOptions in JavaDoc := Seq(),
+      artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar"),
+      packageDoc in Compile <<= packageDoc in JavaDoc,
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id, samples.id, osgi.id, osgiAries.id, channelsTests.id),
-      initialCommands in ThisBuild :=
-        """|import language.postfixOps
-           |import akka.actor._
-           |import ActorDSL._
-           |import scala.concurrent._
-           |import com.typesafe.config.ConfigFactory
-           |import scala.concurrent.duration._
-           |import akka.util.Timeout
-           |val config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG,pinned{type=PinnedDispatcher,executor=thread-pool-executor,throughput=1000}")
-           |val remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=akka.remote.RemoteActorRefProvider").withFallback(config)
-           |var system: ActorSystem = null
-           |implicit def _system = system
-           |def startSystem(remoting: Boolean = false) { system = ActorSystem("repl", if(remoting) remoteConfig else config); println("don’t forget to system.shutdown()!") }
-           |implicit def ec = system.dispatcher
-           |implicit val timeout = Timeout(5 seconds)
-           |""".stripMargin,
-      initialCommands in Test in ThisBuild += "import akka.testkit._",
       // generate online version of docs
       sphinxInputs in Sphinx <<= sphinxInputs in Sphinx in LocalProject(docs.id) map { inputs => inputs.copy(tags = inputs.tags :+ "online") },
       // don't regenerate the pdf, just reuse the akka-docs version
@@ -101,17 +91,6 @@ object AkkaBuild extends Build {
           pr => definedTests in Test <++= definedTests in (pr, Test)
         }
       )
-  )
-
-  val JavaDoc = config("genjavadoc") extend Compile
-
-  val javadocSettings = inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
-    libraryDependencies += compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.1-SNAPSHOT" cross CrossVersion.full),
-    scalacOptions <+= target map (t => "-P:genjavadoc:out=" + t + "/java"),
-    packageDoc in Compile <<= packageDoc in JavaDoc,
-    sources in JavaDoc <<= (target, compile in Compile, sources in Compile) map ((t, c, s) => (t / "java" ** "*.java").get ++ s.filter(_.getName.endsWith(".java"))),
-    javacOptions in JavaDoc := Seq(),
-    artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar")
   )
 
   lazy val actor = Project(
@@ -609,6 +588,23 @@ object AkkaBuild extends Build {
     licenses in lsync := Seq(("Apache 2", url("http://www.apache.org/licenses/LICENSE-2.0.html"))),
     externalResolvers in lsync := Seq("Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases"),
 
+    initialCommands :=
+      """|import language.postfixOps
+         |import akka.actor._
+         |import ActorDSL._
+         |import scala.concurrent._
+         |import com.typesafe.config.ConfigFactory
+         |import scala.concurrent.duration._
+         |import akka.util.Timeout
+         |val config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG,pinned{type=PinnedDispatcher,executor=thread-pool-executor,throughput=1000}")
+         |val remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=akka.remote.RemoteActorRefProvider").withFallback(config)
+         |var system: ActorSystem = null
+         |implicit def _system = system
+         |def startSystem(remoting: Boolean = false) { system = ActorSystem("repl", if(remoting) remoteConfig else config); println("don’t forget to system.shutdown()!") }
+         |implicit def ec = system.dispatcher
+         |implicit val timeout = Timeout(5 seconds)
+         |""".stripMargin,
+
     /**
      * Test settings
      */
@@ -723,7 +719,7 @@ object AkkaBuild extends Build {
   lazy val unidocScaladocSettings: Seq[sbt.Setting[_]]= {
     Seq(scalacOptions in doc ++= scaladocOptions) ++
       (if (scaladocDiagramsEnabled)
-        Seq(Unidoc.unidoc ~= scaladocVerifier)
+        Seq(unidoc ~= scaladocVerifier)
       else Seq.empty)
   }
 
@@ -881,6 +877,9 @@ object Dependencies {
 
     // Cluster Sample
     val sigar       = "org.fusesource"                % "sigar"                        % "1.6.4"            // ApacheV2
+
+    // Compiler plugins
+    val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.2" cross CrossVersion.full) // ApacheV2
 
     // Test
 
