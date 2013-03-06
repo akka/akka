@@ -114,10 +114,13 @@ class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonMan
     enterBarrier(leader.name + "-active")
 
     runOn(sortedClusterRoles.filterNot(_ == leader): _*) {
-      ignoreMsg { case EchoStarted ⇒ true }
       echo(leader) ! "hello"
-      expectMsgType[ActorRef].path.address must be(node(leader).address)
-      ignoreNoMsg()
+      fishForMessage() {
+        case _: ActorRef ⇒ true
+        case EchoStarted ⇒ false
+      } match {
+        case echoRef: ActorRef ⇒ echoRef.path.address must be(node(leader).address)
+      }
     }
     enterBarrier(leader.name + "-verified")
   }
