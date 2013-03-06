@@ -35,7 +35,7 @@ public class AgentDocTest {
   public void createAndRead() throws Exception {
     //#create
     ExecutionContext ec = ExecutionContexts.global();
-    Agent<Integer> agent = new Agent<Integer>(5, ec);
+    Agent<Integer> agent = Agent.create(5, ec);
     //#create
 
     //#read-get
@@ -52,7 +52,7 @@ public class AgentDocTest {
 
   @Test
   public void sendAndSendOffAndReadAwait() throws Exception {
-    Agent<Integer> agent = new Agent<Integer>(5, ec);
+    Agent<Integer> agent = Agent.create(5, ec);
 
     //#send
     // send a value, enqueues this change
@@ -86,7 +86,7 @@ public class AgentDocTest {
 
     @Test
     public void alterAndAlterOff() throws Exception {
-    Agent<Integer> agent = new Agent<Integer>(5, ec);
+    Agent<Integer> agent = Agent.create(5, ec);
 
     //#alter
     // alter a value
