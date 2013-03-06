@@ -25,6 +25,7 @@ import java.io.{PrintWriter, InputStreamReader, FileInputStream, File}
 import java.nio.charset.Charset
 import java.util.Properties
 import annotation.tailrec
+import Unidoc.{ JavaDoc, javadocSettings, junidocSources, unidoc, unidocExclude }
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -45,29 +46,18 @@ object AkkaBuild extends Build {
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Publish.versionSettings ++
-      SphinxSupport.settings ++ Dist.settings ++ mimaSettings ++ unidocScaladocSettings ++ Seq(
+      SphinxSupport.settings ++ Dist.settings ++ mimaSettings ++ unidocScaladocSettings ++ 
+      inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
-      Unidoc.unidocExclude := Seq(samples.id, channelsTests.id, remoteTests.id),
+      unidocExclude := Seq(samples.id, channelsTests.id, remoteTests.id),
+      unidoc <<= (unidoc, doc in JavaDoc) map ((u, d) => u),
+      sources in JavaDoc <<= junidocSources,
+      javacOptions in JavaDoc := Seq(),
+      artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar"),
+      packageDoc in Compile <<= packageDoc in JavaDoc,
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id, samples.id, osgi.id, osgiAries.id, channelsTests.id),
-      initialCommands in ThisBuild :=
-        """|import language.postfixOps
-           |import akka.actor._
-           |import ActorDSL._
-           |import scala.concurrent._
-           |import com.typesafe.config.ConfigFactory
-           |import scala.concurrent.duration._
-           |import akka.util.Timeout
-           |val config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG,pinned{type=PinnedDispatcher,executor=thread-pool-executor,throughput=1000}")
-           |val remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=akka.remote.RemoteActorRefProvider").withFallback(config)
-           |var system: ActorSystem = null
-           |implicit def _system = system
-           |def startSystem(remoting: Boolean = false) { system = ActorSystem("repl", if(remoting) remoteConfig else config); println("don’t forget to system.shutdown()!") }
-           |implicit def ec = system.dispatcher
-           |implicit val timeout = Timeout(5 seconds)
-           |""".stripMargin,
-      initialCommands in Test in ThisBuild += "import akka.testkit._",
       // generate online version of docs
       sphinxInputs in Sphinx <<= sphinxInputs in Sphinx in LocalProject(docs.id) map { inputs => inputs.copy(tags = inputs.tags :+ "online") },
       // don't regenerate the pdf, just reuse the akka-docs version
@@ -106,8 +96,7 @@ object AkkaBuild extends Build {
   lazy val actor = Project(
     id = "akka-actor",
     base = file("akka-actor"),
-    settings = defaultSettings ++ scaladocSettings ++ Seq(
-      autoCompilerPlugins := true,
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ Seq(
       // to fix scaladoc generation
       fullClasspath in doc in Compile <<= fullClasspath in Compile,
       libraryDependencies ++= Dependencies.actor,
@@ -115,7 +104,7 @@ object AkkaBuild extends Build {
     )
   )
 
-  def cpsPlugin = Seq(
+  val cpsPlugin = Seq(
     libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
     scalacOptions += "-P:continuations:enable"
   )
@@ -133,7 +122,7 @@ object AkkaBuild extends Build {
     id = "akka-testkit",
     base = file("akka-testkit"),
     dependencies = Seq(actor),
-    settings = defaultSettings ++ scaladocSettings ++ OSGi.testkit ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.testkit ++ Seq(
       libraryDependencies ++= Dependencies.testkit,
       initialCommands += "import akka.testkit._",
       previousArtifact := akkaPreviousArtifact("akka-testkit")
@@ -145,7 +134,6 @@ object AkkaBuild extends Build {
     base = file("akka-actor-tests"),
     dependencies = Seq(testkit % "compile;test->test"),
     settings = defaultSettings ++ scaladocSettings  ++ Seq(
-      autoCompilerPlugins := true,
       publishArtifact in Compile := false,
       libraryDependencies ++= Dependencies.actorTests
     )
@@ -155,7 +143,7 @@ object AkkaBuild extends Build {
     id = "akka-remote",
     base = file("akka-remote"),
     dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test"),
-    settings = defaultSettings ++ scaladocSettings ++ OSGi.remote ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.remote ++ Seq(
       libraryDependencies ++= Dependencies.remote,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -167,7 +155,7 @@ object AkkaBuild extends Build {
     id = "akka-multi-node-testkit",
     base = file("akka-multi-node-testkit"),
     dependencies = Seq(remote, testkit),
-    settings = defaultSettings ++ scaladocSettings ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ Seq(
       previousArtifact := akkaPreviousArtifact("akka-multi-node-testkit")
     )
   )
@@ -193,7 +181,7 @@ object AkkaBuild extends Build {
     id = "akka-cluster-experimental",
     base = file("akka-cluster"),
     dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test"),
-    settings = defaultSettings ++ scaladocSettings ++ multiJvmSettings ++ OSGi.cluster ++ experimentalSettings ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ multiJvmSettings ++ OSGi.cluster ++ experimentalSettings ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -209,7 +197,7 @@ object AkkaBuild extends Build {
     id = "akka-slf4j",
     base = file("akka-slf4j"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ scaladocSettings ++ OSGi.slf4j ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.slf4j ++ Seq(
       libraryDependencies ++= Dependencies.slf4j,
       previousArtifact := akkaPreviousArtifact("akka-slf4j")
     )
@@ -219,7 +207,7 @@ object AkkaBuild extends Build {
     id = "akka-agent",
     base = file("akka-agent"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ scaladocSettings ++ OSGi.agent ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.agent ++ Seq(
       libraryDependencies ++= Dependencies.agent,
       previousArtifact := akkaPreviousArtifact("akka-agent")
     )
@@ -229,7 +217,7 @@ object AkkaBuild extends Build {
     id = "akka-transactor",
     base = file("akka-transactor"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ scaladocSettings ++ OSGi.transactor ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.transactor ++ Seq(
       libraryDependencies ++= Dependencies.transactor,
       previousArtifact := akkaPreviousArtifact("akka-transactor")
     )
@@ -248,7 +236,7 @@ object AkkaBuild extends Build {
     id = "akka-mailboxes-common",
     base = file("akka-durable-mailboxes/akka-mailboxes-common"),
     dependencies = Seq(remote, testkit % "compile;test->test"),
-    settings = defaultSettings ++ scaladocSettings ++ OSGi.mailboxesCommon ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.mailboxesCommon ++ Seq(
       libraryDependencies ++= Dependencies.mailboxes,
       previousArtifact := akkaPreviousArtifact("akka-mailboxes-common"),
       publishArtifact in Test := true
@@ -259,7 +247,7 @@ object AkkaBuild extends Build {
     id = "akka-file-mailbox",
     base = file("akka-durable-mailboxes/akka-file-mailbox"),
     dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
-    settings = defaultSettings ++ scaladocSettings ++ OSGi.fileMailbox ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.fileMailbox ++ Seq(
       libraryDependencies ++= Dependencies.fileMailbox,
       previousArtifact := akkaPreviousArtifact("akka-file-mailbox")
     )
@@ -269,7 +257,7 @@ object AkkaBuild extends Build {
     id = "akka-zeromq",
     base = file("akka-zeromq"),
     dependencies = Seq(actor, testkit % "test;test->test"),
-    settings = defaultSettings ++ scaladocSettings ++ OSGi.zeroMQ ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.zeroMQ ++ Seq(
       libraryDependencies ++= Dependencies.zeroMQ,
       previousArtifact := akkaPreviousArtifact("akka-zeromq")
     )
@@ -279,7 +267,7 @@ object AkkaBuild extends Build {
     id = "akka-kernel",
     base = file("akka-kernel"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ scaladocSettings ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ Seq(
       libraryDependencies ++= Dependencies.kernel,
       previousArtifact := akkaPreviousArtifact("akka-kernel")
     )
@@ -289,7 +277,7 @@ object AkkaBuild extends Build {
      id = "akka-camel",
      base = file("akka-camel"),
      dependencies = Seq(actor, slf4j, testkit % "test->test"),
-     settings = defaultSettings ++ scaladocSettings ++ OSGi.camel ++ Seq(
+     settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.camel ++ Seq(
        libraryDependencies ++= Dependencies.camel
      )
   )
@@ -321,7 +309,7 @@ object AkkaBuild extends Build {
     id = "akka-osgi",
     base = file("akka-osgi"),
     dependencies = Seq(actor),
-    settings = defaultSettings ++ scaladocSettings ++ OSGi.osgi ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.osgi ++ Seq(
       libraryDependencies ++= Dependencies.osgi,
       ActorReferenceCopyTask in Compile <<= ActorReferenceCopyAction ,
       cleanFiles <+= baseDirectory { base => base / "src/main/resources" } ,
@@ -334,7 +322,7 @@ object AkkaBuild extends Build {
     id = "akka-osgi-aries",
     base = file("akka-osgi-aries"),
     dependencies = Seq(osgi % "compile;test->test"),
-    settings = defaultSettings ++ scaladocSettings ++ OSGi.osgiAries ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.osgiAries ++ Seq(
       libraryDependencies ++= Dependencies.osgiAries,
       parallelExecution in Test := false
     )
@@ -461,7 +449,7 @@ object AkkaBuild extends Build {
     id = "akka-contrib",
     base = file("akka-contrib"),
     dependencies = Seq(remote, remoteTests % "compile;test->test", cluster),
-    settings = defaultSettings ++ scaladocSettings ++ multiJvmSettings ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.contrib,
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-v"),
       description := """|
@@ -600,6 +588,23 @@ object AkkaBuild extends Build {
     licenses in lsync := Seq(("Apache 2", url("http://www.apache.org/licenses/LICENSE-2.0.html"))),
     externalResolvers in lsync := Seq("Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases"),
 
+    initialCommands :=
+      """|import language.postfixOps
+         |import akka.actor._
+         |import ActorDSL._
+         |import scala.concurrent._
+         |import com.typesafe.config.ConfigFactory
+         |import scala.concurrent.duration._
+         |import akka.util.Timeout
+         |val config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG,pinned{type=PinnedDispatcher,executor=thread-pool-executor,throughput=1000}")
+         |val remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=akka.remote.RemoteActorRefProvider").withFallback(config)
+         |var system: ActorSystem = null
+         |implicit def _system = system
+         |def startSystem(remoting: Boolean = false) { system = ActorSystem("repl", if(remoting) remoteConfig else config); println("don’t forget to system.shutdown()!") }
+         |implicit def ec = system.dispatcher
+         |implicit val timeout = Timeout(5 seconds)
+         |""".stripMargin,
+
     /**
      * Test settings
      */
@@ -714,7 +719,7 @@ object AkkaBuild extends Build {
   lazy val unidocScaladocSettings: Seq[sbt.Setting[_]]= {
     Seq(scalacOptions in doc ++= scaladocOptions) ++
       (if (scaladocDiagramsEnabled)
-        Seq(Unidoc.unidoc ~= scaladocVerifier)
+        Seq(unidoc ~= scaladocVerifier)
       else Seq.empty)
   }
 
@@ -872,6 +877,9 @@ object Dependencies {
 
     // Cluster Sample
     val sigar       = "org.fusesource"                % "sigar"                        % "1.6.4"            // ApacheV2
+
+    // Compiler plugins
+    val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.2" cross CrossVersion.full) // ApacheV2
 
     // Test
 
