@@ -64,12 +64,14 @@ Brand new Agents
 ================
 
 Akka's ``Agent`` has been rewritten to improve the API and to remove the need to manually ``close`` an Agent.
+It's also now an abstract class with the potential for subtyping and has a new factory method
+allowing Java to correctly infer the type of the Agent.
 The Java API has also been harmonized so both Java and Scala call the same methods.
 
 ======================================================= =======================================================
 Old Java API                                            New Java API
 ======================================================= =======================================================
-``new Agent<type>(value, actorSystem)``                   ``new Agent<type>(value, executionContext)``
+``new Agent<type>(value, actorSystem)``                   ``Agent.create(value, executionContext)``
 ``agent.update(newValue)``                                ``agent.send(newValue)``
 ``agent.future(Timeout)``                                 ``agent.future()``
 ``agent.await(Timeout)``                                  ``Await.result(agent.future(), Timeout)``

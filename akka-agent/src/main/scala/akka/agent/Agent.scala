@@ -15,14 +15,15 @@ object Agent {
   def apply[T](initialValue: T)(implicit context: ExecutionContext): Agent[T] = new SecretAgent(initialValue, context)
 
   /**
-   *  Factory method for Java Iterop.
+   * Java API
+   * Factory method for creating an Agent.
    */
   def create[T](initialValue: T, context: ExecutionContext): Agent[T] = Agent(initialValue)(context)
 
   /**
    * Default agent implementation.
    */
-  private class SecretAgent[T](initialValue: T, context: ExecutionContext) extends Agent[T] {
+  private final class SecretAgent[T](initialValue: T, context: ExecutionContext) extends Agent[T] {
     private val ref = Ref(initialValue)
     private val updater = SerializedSuspendableExecutionContext(10)(context)
 
