@@ -555,7 +555,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
       // leader handles merge conflicts, or when they have different views of how is leader
       val handleMerge = localGossip.leader == Some(selfAddress) || localGossip.leader != remoteGossip.leader
       val comparison = remoteGossip.version tryCompareTo localGossip.version
-      val conflict = !comparison.isDefined
+      val conflict = comparison.isEmpty
 
       if (conflict && !handleMerge) {
         // delegate merge resolution to leader to reduce number of simultaneous resolves,
@@ -574,25 +574,23 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
       } else {
 
-        val (winningGossip, talkback) = comparison match {
+        val (winningGossip, talkback, newStats) = comparison match {
           case None ⇒
             // conflicting versions, merge, and new version
-            ((remoteGossip merge localGossip) :+ vclockNode, true)
+            ((remoteGossip merge localGossip) :+ vclockNode, true, stats)
           case Some(0) ⇒
             // same version
-            stats = stats.incrementSameCount
             // TODO optimize talkback based on how the merged seen differs
-            (remoteGossip mergeSeen localGossip, !remoteGossip.hasSeen(selfAddress))
-          case Some(x) if (x < 0) ⇒
+            (remoteGossip mergeSeen localGossip, !remoteGossip.hasSeen(selfAddress), stats.incrementSameCount)
+          case Some(x) if x < 0 ⇒
             // local is newer
-            stats = stats.incrementNewerCount
-            (localGossip, true)
+            (localGossip, true, stats.incrementNewerCount)
           case _ ⇒
             // remote is newer
-            stats = stats.incrementOlderCount
-            (remoteGossip, !remoteGossip.hasSeen(selfAddress))
+            (remoteGossip, !remoteGossip.hasSeen(selfAddress), stats.incrementOlderCount)
         }
 
+        stats = newStats
         latestGossip = winningGossip seen selfAddress
 
         // for all new joining nodes we remove them from the failure detector
@@ -1080,7 +1078,7 @@ private[cluster] case class ClusterStats(
   def incrementOlderCount(): ClusterStats =
     copy(olderCount = olderCount + 1)
 
-  def +(that: ClusterStats): ClusterStats = {
+  def :+(that: ClusterStats): ClusterStats = {
     ClusterStats(
       this.receivedGossipCount + that.receivedGossipCount,
       this.mergeConflictCount + that.mergeConflictCount,
@@ -1091,7 +1089,7 @@ private[cluster] case class ClusterStats(
       this.olderCount + that.olderCount)
   }
 
-  def -(that: ClusterStats): ClusterStats = {
+  def :-(that: ClusterStats): ClusterStats = {
     ClusterStats(
       this.receivedGossipCount - that.receivedGossipCount,
       this.mergeConflictCount - that.mergeConflictCount,

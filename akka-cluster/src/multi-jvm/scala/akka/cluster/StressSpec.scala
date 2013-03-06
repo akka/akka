@@ -213,7 +213,7 @@ object StressMultiJvmSpec extends MultiNodeConfig {
     var nodeMetrics = Set.empty[NodeMetrics]
     var phiValuesObservedByNode = {
       import akka.cluster.Member.addressOrdering
-      immutable.SortedMap.empty[Address, Set[PhiValue]]
+      immutable.SortedMap.empty[Address, immutable.SortedSet[PhiValue]]
     }
     var clusterStatsObservedByNode = {
       import akka.cluster.Member.addressOrdering
@@ -235,7 +235,7 @@ object StressMultiJvmSpec extends MultiNodeConfig {
     def receive = {
       case ClusterMetricsChanged(clusterMetrics) ⇒ nodeMetrics = clusterMetrics
       case PhiResult(from, phiValues)            ⇒ phiValuesObservedByNode += from -> phiValues
-      case StatsResult(from, stats) => clusterStatsObservedByNode += from -> stats
+      case StatsResult(from, stats)              ⇒ clusterStatsObservedByNode += from -> stats
       case ReportTick ⇒
         log.info(s"[${title}] in progress\n${formatMetrics}\n\n${formatPhi}\n\n${formatStats}")
       case r: ClusterResult ⇒
@@ -252,7 +252,7 @@ object StressMultiJvmSpec extends MultiNodeConfig {
 
     def maxDuration = results.map(_.duration).max
 
-    def totalClusterStats = results.map(_.clusterStats).foldLeft(ClusterStats()){_ + _}
+    def totalClusterStats = results.foldLeft(ClusterStats()){_ :+ _.clusterStats}
 
     def formatMetrics: String = {
       import akka.cluster.Member.addressOrdering
@@ -286,11 +286,11 @@ object StressMultiJvmSpec extends MultiNodeConfig {
         import akka.cluster.Member.addressOrdering
         val lines =
           for {
-            (monitor, phiValues) ← phiValuesObservedByNode.toSeq
-            phi ← phiValues.toSeq.sortBy(_.address)
+            (monitor, phiValues) ← phiValuesObservedByNode
+            phi ← phiValues
           } yield formatPhiLine(monitor, phi.address, phi)
 
-        (formatPhiHeader +: lines).mkString("\n")
+        lines.mkString(formatPhiHeader + "\n", "\n", "")
       }
     }
 
@@ -299,16 +299,9 @@ object StressMultiJvmSpec extends MultiNodeConfig {
     def formatPhiLine(monitor: Address, subject: Address, phi: PhiValue): String =
       s"${monitor}\t${subject}\t${phi.count}\t${phi.countAboveOne}\t${phi.max.form}"
 
-    def formatStats: String = {
-      if (clusterStatsObservedByNode.isEmpty) ""
-      else {
-        val lines =
-          for {
-          (monitor, stats) ← clusterStatsObservedByNode.toSeq
-        } yield s"${monitor}\t${stats}"
-        ("ClusterStats" +: lines).mkString("\n")
-      }
-    }
+    def formatStats: String =
+      (clusterStatsObservedByNode map { case (monitor, stats) => s"${monitor}\t${stats}" }).
+        mkString("ClusterStats\n", "\n", "")
   }
 
   /**
@@ -377,7 +370,8 @@ object StressMultiJvmSpec extends MultiNodeConfig {
               math.max(previous.max, φ))
           }
         }
-        reportTo foreach { _ ! PhiResult(cluster.selfAddress, phiByNode.values.toSet) }
+        val phiSet = immutable.SortedSet.empty[PhiValue] ++ phiByNode.values
+        reportTo foreach { _ ! PhiResult(cluster.selfAddress, phiSet) }
       case state: CurrentClusterState ⇒ nodes = state.members.map(_.address)
       case memberEvent: MemberEvent   ⇒ nodes += memberEvent.member.address
       case ReportTo(ref)              ⇒ reportTo = ref
@@ -406,7 +400,7 @@ object StressMultiJvmSpec extends MultiNodeConfig {
 
     def receive = {
       case StatsTick ⇒
-        val res = StatsResult(cluster.selfAddress, cluster.readView.latestStats - startStats)
+        val res = StatsResult(cluster.selfAddress, cluster.readView.latestStats :- startStats)
         reportTo foreach { _ !  res }
       case ReportTo(ref) ⇒
         reportTo = ref
@@ -599,8 +593,11 @@ object StressMultiJvmSpec extends MultiNodeConfig {
   case object RetryTick
   case object ReportTick
   case object PhiTick
-  case class PhiResult(from: Address, phiValues: Set[PhiValue])
-  case class PhiValue(address: Address, countAboveOne: Int, count: Int, max: Double)
+  case class PhiResult(from: Address, phiValues: immutable.SortedSet[PhiValue])
+  case class PhiValue(address: Address, countAboveOne: Int, count: Int, max: Double) extends Ordered[PhiValue] {
+    import akka.cluster.Member.addressOrdering
+    def compare(that: PhiValue) = addressOrdering.compare(this.address, that.address)
+  }
   case class ReportTo(ref: Option[ActorRef])
   case object StatsTick
   case class StatsResult(from: Address, stats: ClusterStats)
@@ -831,7 +828,7 @@ abstract class StressSpec
     val returnValue = thunk
 
     clusterResultAggregator !
-      ClusterResult(cluster.selfAddress, (System.nanoTime - startTime).nanos, cluster.readView.latestStats - startStats)
+      ClusterResult(cluster.selfAddress, (System.nanoTime - startTime).nanos, cluster.readView.latestStats :- startStats)
 
     returnValue
   }

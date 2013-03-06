@@ -117,7 +117,7 @@ private[cluster] case class Gossip(
    * Has this Gossip been seen by this address.
    */
   def hasSeen(address: Address): Boolean = {
-    overview.seen.get(address).fold { false } { _ == version }
+    overview.seen.get(address).exists(_ == version)
   }
 
   /**
