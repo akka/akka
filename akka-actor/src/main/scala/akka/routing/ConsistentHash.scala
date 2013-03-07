@@ -41,10 +41,9 @@ class ConsistentHash[T: ClassTag] private (nodes: immutable.SortedMap[Int, T], v
     new ConsistentHash(nodes ++ ((1 to virtualNodesFactor) map { r ⇒ (nodeHashFor(node, r) -> node) }), virtualNodesFactor)
 
   /**
-   * Adds a node to the node ring.
+   * Java API: Adds a node to the node ring.
    * Note that the instance is immutable and this
    * operation returns a new instance.
-   * JAVA API
    */
   def add(node: T): ConsistentHash[T] = this :+ node
 
@@ -57,10 +56,9 @@ class ConsistentHash[T: ClassTag] private (nodes: immutable.SortedMap[Int, T], v
     new ConsistentHash(nodes -- ((1 to virtualNodesFactor) map { r ⇒ nodeHashFor(node, r) }), virtualNodesFactor)
 
   /**
-   * Removes a node from the node ring.
+   * Java API: Removes a node from the node ring.
    * Note that the instance is immutable and this
    * operation returns a new instance.
-   * JAVA API
    */
   def remove(node: T): ConsistentHash[T] = this :- node
 
@@ -112,8 +110,7 @@ object ConsistentHash {
   }
 
   /**
-   * Factory method to create a ConsistentHash
-   * JAVA API
+   * Java API: Factory method to create a ConsistentHash
    */
   def create[T](nodes: java.lang.Iterable[T], virtualNodesFactor: Int): ConsistentHash[T] = {
     import scala.collection.JavaConverters._

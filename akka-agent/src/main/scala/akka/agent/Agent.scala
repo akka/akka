@@ -15,8 +15,7 @@ object Agent {
   def apply[T](initialValue: T)(implicit context: ExecutionContext): Agent[T] = new SecretAgent(initialValue, context)
 
   /**
-   * Java API
-   * Factory method for creating an Agent.
+   * Java API: Factory method for creating an Agent.
    */
   def create[T](initialValue: T, context: ExecutionContext): Agent[T] = Agent(initialValue)(context)
 
@@ -161,8 +160,7 @@ object Agent {
 abstract class Agent[T] {
 
   /**
-   * Read the internal state of the agent.
-   * Java API
+   * Java API: Read the internal state of the agent.
    */
   def get(): T
 

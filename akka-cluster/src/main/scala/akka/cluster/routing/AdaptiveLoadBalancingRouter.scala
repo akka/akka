@@ -79,16 +79,16 @@ case class AdaptiveLoadBalancingRouter(
   extends RouterConfig with AdaptiveLoadBalancingRouterLike {
 
   /**
-   * Constructor that sets nrOfInstances to be created.
-   * Java API
+   * Java API: Constructor that sets nrOfInstances to be created.
+   *
    * @param selector the selector is responsible for producing weighted mix of routees from the node metrics
    * @param nr number of routees to create
    */
   def this(selector: MetricsSelector, nr: Int) = this(metricsSelector = selector, nrOfInstances = nr)
 
   /**
-   * Constructor that sets the routees to be used.
-   * Java API
+   * Java API: Constructor that sets the routees to be used.
+   *
    * @param selector the selector is responsible for producing weighted mix of routees from the node metrics
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
@@ -97,8 +97,8 @@ case class AdaptiveLoadBalancingRouter(
     this(metricsSelector = selector, routees = immutableSeq(routeePaths))
 
   /**
-   * Constructor that sets the resizer to be used.
-   * Java API
+   * Java API: Constructor that sets the resizer to be used.
+   *
    * @param selector the selector is responsible for producing weighted mix of routees from the node metrics
    */
   def this(selector: MetricsSelector, resizer: Resizer) =
@@ -307,7 +307,7 @@ abstract class MixMetricsSelectorBase(selectors: immutable.IndexedSeq[CapacityMe
   extends CapacityMetricsSelector {
 
   /**
-   * Java API
+   * Java API: construct a mix-selector from a sequence of selectors
    */
   def this(selectors: java.lang.Iterable[CapacityMetricsSelector]) = this(immutableSeq(selectors).toVector)
 

@@ -12,7 +12,9 @@ import scala.collection.immutable
 
 object UdpFF extends ExtensionKey[UdpFFExt] {
 
-  // Java API
+  /**
+   * Java API: retrieve the UdpFF extension for the given system.
+   */
   override def get(system: ActorSystem): UdpFFExt = super.get(system)
 
   trait Command extends IO.HasFailureMessage {
@@ -60,6 +62,9 @@ object UdpFF extends ExtensionKey[UdpFFExt] {
 
 }
 
+/**
+ * Java API: factory methods for the message types used when communicating with the UdpConn service.
+ */
 object UdpFFMessage {
   import UdpFF._
   import java.lang.{ Iterable ⇒ JIterable }

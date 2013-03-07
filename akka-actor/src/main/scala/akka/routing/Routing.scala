@@ -236,11 +236,10 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
   def registerRoutees(routees: immutable.Iterable[ActorRef]): Unit = routedCell.addRoutees(routees)
 
   /**
-   * Adds the routees to the router.
+   * Java API: Adds the routees to the router.
    * Adds death watch of the routees so that they are removed when terminated.
    * Not thread safe, but intended to be called from protected points, such as
    * `RouterConfig.createRoute` and `Resizer.resize`.
-   * Java API.
    */
   def registerRoutees(routees: java.lang.Iterable[ActorRef]): Unit = registerRoutees(immutableSeq(routees))
 
@@ -253,11 +252,10 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
   def unregisterRoutees(routees: immutable.Iterable[ActorRef]): Unit = routedCell.removeRoutees(routees)
 
   /**
-   * Removes routees from the router. This method doesn't stop the routees.
+   * Java API: Removes routees from the router. This method doesn't stop the routees.
    * Removes death watch of the routees.
    * Not thread safe, but intended to be called from protected points, such as
    * `Resizer.resize`.
-   * JAVA API
    */
   def unregisterRoutees(routees: java.lang.Iterable[ActorRef]): Unit = unregisterRoutees(immutableSeq(routees))
 
@@ -267,8 +265,7 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
   def registerRouteesFor(paths: immutable.Iterable[String]): Unit = registerRoutees(paths.map(context.actorFor(_)))
 
   /**
-   * Looks up routes with specified paths and registers them.
-   * JAVA API
+   * Java API: Looks up routes with specified paths and registers them.
    */
   def registerRouteesFor(paths: java.lang.Iterable[String]): Unit = registerRouteesFor(immutableSeq(paths))
 
@@ -321,8 +318,7 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
   def routees: immutable.IndexedSeq[ActorRef] = routedCell.routees
 
   /**
-   * All routees of the router
-   * JAVA API
+   * Java API: All routees of the router
    */
   def getRoutees(): java.util.List[ActorRef] = routees.asJava
 
@@ -347,12 +343,13 @@ abstract class CustomRouterConfig extends RouterConfig {
 
 }
 
+/**
+ * Java API helper for creating a single-destination routing.
+ */
 trait CustomRoute {
   /**
    * use akka.japi.Util.immutableSeq to convert a java.lang.Iterable to the return type needed for destinationsFor,
    * or if you just want to return a single Destination, use akka.japi.Util.immutableSingletonSeq
-   *
-   * Java API
    */
   def destinationsFor(sender: ActorRef, message: Any): immutable.Seq[Destination]
 }
@@ -561,22 +558,20 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[
   extends RouterConfig with RoundRobinLike {
 
   /**
-   * Constructor that sets nrOfInstances to be created.
-   * Java API
+   * Java API: Constructor that sets nrOfInstances to be created.
    */
   def this(nr: Int) = this(nrOfInstances = nr)
 
   /**
-   * Constructor that sets the routees to be used.
-   * Java API
+   * Java API: Constructor that sets the routees to be used.
+   *
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
   def this(routeePaths: java.lang.Iterable[String]) = this(routees = immutableSeq(routeePaths))
 
   /**
-   * Constructor that sets the resizer to be used.
-   * Java API
+   * Java API: Constructor that sets the resizer to be used.
    */
   def this(resizer: Resizer) = this(resizer = Some(resizer))
 
@@ -696,22 +691,20 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[Stri
   extends RouterConfig with RandomLike {
 
   /**
-   * Constructor that sets nrOfInstances to be created.
-   * Java API
+   * Java API: Constructor that sets nrOfInstances to be created.
    */
   def this(nr: Int) = this(nrOfInstances = nr)
 
   /**
-   * Constructor that sets the routees to be used.
-   * Java API
+   * Java API: Constructor that sets the routees to be used.
+   *
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
   def this(routeePaths: java.lang.Iterable[String]) = this(routees = immutableSeq(routeePaths))
 
   /**
-   * Constructor that sets the resizer to be used.
-   * Java API
+   * Java API: Constructor that sets the resizer to be used.
    */
   def this(resizer: Resizer) = this(resizer = Some(resizer))
 
@@ -838,22 +831,20 @@ case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: immutable.Iter
   extends RouterConfig with SmallestMailboxLike {
 
   /**
-   * Constructor that sets nrOfInstances to be created.
-   * Java API
+   * Java API: Constructor that sets nrOfInstances to be created.
    */
   def this(nr: Int) = this(nrOfInstances = nr)
 
   /**
-   * Constructor that sets the routees to be used.
-   * Java API
+   * Java API: Constructor that sets the routees to be used.
+   *
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
   def this(routeePaths: java.lang.Iterable[String]) = this(routees = immutableSeq(routeePaths))
 
   /**
-   * Constructor that sets the resizer to be used.
-   * Java API
+   * Java API: Constructor that sets the resizer to be used.
    */
   def this(resizer: Resizer) = this(resizer = Some(resizer))
 
@@ -1055,22 +1046,20 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[S
   extends RouterConfig with BroadcastLike {
 
   /**
-   * Constructor that sets nrOfInstances to be created.
-   * Java API
+   * Java API: Constructor that sets nrOfInstances to be created.
    */
   def this(nr: Int) = this(nrOfInstances = nr)
 
   /**
-   * Constructor that sets the routees to be used.
-   * Java API
+   * Java API: Constructor that sets the routees to be used.
+   *
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
   def this(routeePaths: java.lang.Iterable[String]) = this(routees = immutableSeq(routeePaths))
 
   /**
-   * Constructor that sets the resizer to be used.
-   * Java API
+   * Java API: Constructor that sets the resizer to be used.
    */
   def this(resizer: Resizer) = this(resizer = Some(resizer))
 
@@ -1185,22 +1174,20 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: im
     "[within: Duration] can not be zero or negative, was [" + within + "]")
 
   /**
-   * Constructor that sets nrOfInstances to be created.
-   * Java API
+   * Java API: Constructor that sets nrOfInstances to be created.
    */
   def this(nr: Int, w: FiniteDuration) = this(nrOfInstances = nr, within = w)
 
   /**
-   * Constructor that sets the routees to be used.
-   * Java API
+   * Java API: Constructor that sets the routees to be used.
+   *
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
   def this(routeePaths: java.lang.Iterable[String], w: FiniteDuration) = this(routees = immutableSeq(routeePaths), within = w)
 
   /**
-   * Constructor that sets the resizer to be used.
-   * Java API
+   * Java API: Constructor that sets the resizer to be used.
    */
   def this(resizer: Resizer, w: FiniteDuration) = this(resizer = Some(resizer), within = w)
 

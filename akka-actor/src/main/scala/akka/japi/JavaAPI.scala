@@ -113,8 +113,6 @@ abstract class JavaPartialFunction[A, B] extends AbstractPartialFunction[A, B] {
  * This class represents optional values. Instances of <code>Option</code>
  * are either instances of case class <code>Some</code> or it is case
  * object <code>None</code>.
- * <p>
- * Java API
  */
 sealed abstract class Option[A] extends java.lang.Iterable[A] {
   def get: A
@@ -179,24 +177,23 @@ object Util {
 
   /**
    * Returns a ClassTag describing the provided Class.
-   *
-   * Java API
    */
   def classTag[T](clazz: Class[T]): ClassTag[T] = ClassTag(clazz)
 
   /**
    * Returns an immutable.Seq representing the provided array of Classes,
    * an overloading of the generic immutableSeq in Util, to accommodate for erasure.
-   *
-   * Java API
    */
   def immutableSeq(arr: Array[Class[_]]): immutable.Seq[Class[_]] = immutableSeq[Class[_]](arr)
 
   /**
-   *
+   * Turns an array into an immutable Scala sequence (by copying it).
    */
   def immutableSeq[T](arr: Array[T]): immutable.Seq[T] = if ((arr ne null) && arr.length > 0) Vector(arr: _*) else Nil
 
+  /**
+   * Turns an [[java.lang.Iterable]] into an immutable Scala sequence (by copying it).
+   */
   def immutableSeq[T](iterable: java.lang.Iterable[T]): immutable.Seq[T] =
     iterable match {
       case imm: immutable.Seq[_] ⇒ imm.asInstanceOf[immutable.Seq[T]]

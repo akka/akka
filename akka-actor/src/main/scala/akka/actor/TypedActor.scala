@@ -532,24 +532,20 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
       creator = instantiator(implementation))
 
   /**
-   * Uses the supplied Creator as the factory for the TypedActor implementation,
+   * Java API: Uses the supplied Creator as the factory for the TypedActor implementation,
    * and that has the specified interface,
    * or if the interface class is not an interface, all the interfaces it implements,
    * appended in the sequence of interfaces.
-   *
-   * Java API.
    */
   def this(interface: Class[_ >: T], implementation: Creator[T]) =
     this(interfaces = TypedProps.extractInterfaces(interface),
       creator = implementation.create _)
 
   /**
-   * Uses the supplied class as the factory for the TypedActor implementation,
+   * Java API: Uses the supplied class as the factory for the TypedActor implementation,
    * and that has the specified interface,
    * or if the interface class is not an interface, all the interfaces it implements,
    * appended in the sequence of interfaces.
-   *
-   * Java API.
    */
   def this(interface: Class[_ >: T], implementation: Class[T]) =
     this(interfaces = TypedProps.extractInterfaces(interface),
@@ -566,15 +562,13 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def withDeploy(d: Deploy): TypedProps[T] = copy(deploy = d)
 
   /**
-   * @return a new TypedProps that will use the specified ClassLoader to create its proxy class in
+   * Java API: return a new TypedProps that will use the specified ClassLoader to create its proxy class in
    * If loader is null, it will use the bootstrap classloader.
-   *
-   * Java API
    */
   def withLoader(loader: ClassLoader): TypedProps[T] = withLoader(Option(loader))
 
   /**
-   * @return a new TypedProps that will use the specified ClassLoader to create its proxy class in
+   * Scala API: return a new TypedProps that will use the specified ClassLoader to create its proxy class in
    * If loader is null, it will use the bootstrap classloader.
    *
    * Scala API
@@ -582,18 +576,16 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def withLoader(loader: Option[ClassLoader]): TypedProps[T] = this.copy(loader = loader)
 
   /**
-   * @return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
+   * Java API: return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
    * if null is specified, it will use the default timeout as specified in the configuration.
-   *
-   * Java API
    */
   def withTimeout(timeout: Timeout): TypedProps[T] = this.copy(timeout = Option(timeout))
 
   /**
-   * @return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
+   * Scala API: return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
    * if None is specified, it will use the default timeout as specified in the configuration.
    *
-   * Scala API
+   *
    */
   def withTimeout(timeout: Option[Timeout]): TypedProps[T] = this.copy(timeout = timeout)
 
