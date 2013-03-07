@@ -74,7 +74,8 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
       endBarrier
     }
 
-    "mark a node as UNREACHABLE when we pull the network" taggedAs LongRunningTest in {
+    // FIXME ignored due to ticket #2930 - timeout changing throttler mode
+    "mark a node as UNREACHABLE when we pull the network" taggedAs LongRunningTest ignore {
       // let them send at least one heartbeat to each other after the gossip convergence
       // because for new joining nodes we remove them from the failure detector when
       // receive gossip
@@ -124,7 +125,8 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
       endBarrier
     }
 
-    "mark the node as DOWN" taggedAs LongRunningTest in {
+    // FIXME ignored due to ticket #2930 - timeout changing throttler mode
+    "mark the node as DOWN" taggedAs LongRunningTest ignore {
       runOn(master) {
         cluster down victim
       }
@@ -138,7 +140,8 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
       endBarrier
     }
 
-    "allow node to REJOIN when the network is plugged back in" taggedAs LongRunningTest in {
+    // FIXME ignored due to ticket #2930 - timeout changing throttler mode
+    "allow node to REJOIN when the network is plugged back in" taggedAs LongRunningTest ignore {
       runOn(first) {
         // put the network back in
         allBut(victim).foreach { roleName ⇒
