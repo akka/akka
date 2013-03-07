@@ -88,7 +88,8 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   final def compareTo(other: ActorRef) = this.path compareTo other.path
 
   /**
-   * Sends the specified message to the sender, i.e. fire-and-forget semantics.<p/>
+   * Sends the specified message to the sender, i.e. fire-and-forget semantics.
+   *
    * <pre>
    * actor.tell(message);
    * </pre>
@@ -97,10 +98,10 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   final def tell(msg: Any): Unit = this.!(msg)(null: ActorRef)
 
   /**
-   * Java API. <p/>
-   * Sends the specified message to the sender, i.e. fire-and-forget
+   * Java API: Sends the specified message to the sender, i.e. fire-and-forget
    * semantics, including the sender reference if possible (pass `null` if
-   * there is nobody to reply to).<p/>
+   * there is nobody to reply to).
+   *
    * <pre>
    * actor.tell(message, context);
    * </pre>
@@ -109,7 +110,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
 
   /**
    * Forwards the message and passes the original sender actor as the sender.
-   * <p/>
+   *
    * Works with '!' and '?'/'ask'.
    */
   def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender)

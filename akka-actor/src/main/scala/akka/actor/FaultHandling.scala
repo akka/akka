@@ -114,26 +114,24 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
   case object Escalate extends Directive
 
   /**
-   * Resumes message processing for the failed Actor
-   * Java API
+   * Java API: Returning this directive resumes message processing for the failed Actor
    */
   def resume = Resume
 
   /**
-   * Discards the old Actor instance and replaces it with a new,
+   * Java API: Returning this directive discards the old Actor instance and replaces it with a new,
    * then resumes message processing.
-   * Java API
    */
   def restart = Restart
 
   /**
-   * Stops the Actor
+   * Java API: Returning this directive stops the Actor
    * Java API
    */
   def stop = Stop
 
   /**
-   * Escalates the failure to the supervisor of the supervisor,
+   * Java API: Returning this directive escalates the failure to the supervisor of the supervisor,
    * by rethrowing the cause of the failure.
    * Java API
    */

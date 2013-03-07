@@ -70,27 +70,34 @@ object ExecutionContexts {
 object Futures {
   import scala.collection.JavaConverters.iterableAsScalaIterableConverter
   /**
-   * Java API, equivalent to Future.apply
+   * Starts an asynchronous computation and returns a `Future` object with the result of that computation.
+   *
+   * The result becomes available once the asynchronous computation is completed.
+   *
+   * @param body     the asychronous computation
+   * @param executor the execution context on which the future is run
+   * @return         the `Future` holding the result of the computation
    */
   def future[T](body: Callable[T], executor: ExecutionContext): Future[T] = Future(body.call)(executor)
 
   /**
-   * Java API, equivalent to Promise.apply
+   * Creates a promise object which can be completed with a value.
+   *
+   * @return         the newly created `Promise` object
    */
   def promise[T](): Promise[T] = Promise[T]()
 
   /**
-   * Java API, creates an already completed Promise with the specified exception
+   * Creates an already completed Promise with the specified exception
    */
   def failed[T](exception: Throwable): Future[T] = Future.failed(exception)
 
   /**
-   * Java API, Creates an already completed Promise with the specified result
+   * Creates an already completed Promise with the specified result
    */
   def successful[T](result: T): Future[T] = Future.successful(result)
 
   /**
-   * Java API.
    * Returns a Future that will hold the optional result of the first Future with a result that matches the predicate
    */
   def find[T <: AnyRef](futures: JIterable[Future[T]], predicate: JFunc[T, java.lang.Boolean], executor: ExecutionContext): Future[JOption[T]] = {
@@ -99,14 +106,12 @@ object Futures {
   }
 
   /**
-   * Java API.
    * Returns a Future to the result of the first future in the list that is completed
    */
   def firstCompletedOf[T <: AnyRef](futures: JIterable[Future[T]], executor: ExecutionContext): Future[T] =
     Future.firstCompletedOf(futures.asScala)(executor)
 
   /**
-   * Java API
    * A non-blocking fold over the specified futures, with the start value of the given zero.
    * The fold is performed on the thread where the last future is completed,
    * the result will be the first failure of any of the futures, or any failure in the actual fold,
@@ -116,15 +121,13 @@ object Futures {
     Future.fold(futures.asScala)(zero)(fun.apply)(executor)
 
   /**
-   * Java API.
    * Reduces the results of the supplied futures and binary function.
    */
   def reduce[T <: AnyRef, R >: T](futures: JIterable[Future[T]], fun: akka.japi.Function2[R, T, R], executor: ExecutionContext): Future[R] =
     Future.reduce[T, R](futures.asScala)(fun.apply)(executor)
 
   /**
-   * Java API.
-   * Simple version of Future.traverse. Transforms a JIterable[Future[A]] into a Future[JIterable[A]].
+   * Simple version of [[#traverse]]. Transforms a JIterable[Future[A]] into a Future[JIterable[A]].
    * Useful for reducing many Futures into a single Future.
    */
   def sequence[A](in: JIterable[Future[A]], executor: ExecutionContext): Future[JIterable[A]] = {
@@ -133,7 +136,6 @@ object Futures {
   }
 
   /**
-   * Java API.
    * Transforms a JIterable[A] into a Future[JIterable[B]] using the provided Function A ⇒ Future[B].
    * This is useful for performing a parallel map. For example, to apply a function to all items of a list
    * in parallel.

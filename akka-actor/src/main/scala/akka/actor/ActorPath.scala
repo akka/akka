@@ -56,7 +56,7 @@ sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
   def /(child: String): ActorPath
 
   /**
-   * ''Java API'': Create a new child actor path.
+   * Java API: Create a new child actor path.
    */
   def child(child: String): ActorPath = /(child)
 
@@ -66,7 +66,7 @@ sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
   def /(child: Iterable[String]): ActorPath = (this /: child)((path, elem) ⇒ if (elem.isEmpty) path else path / elem)
 
   /**
-   * ''Java API'': Recursively create a descendant’s path by appending all child names.
+   * Java API: Recursively create a descendant’s path by appending all child names.
    */
   def descendant(names: java.lang.Iterable[String]): ActorPath = {
     import scala.collection.JavaConverters._
@@ -79,7 +79,7 @@ sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
   def elements: Iterable[String]
 
   /**
-   * ''Java API'': Sequence of names for this path from root to this. Performance implication: has to allocate a list.
+   * Java API: Sequence of names for this path from root to this. Performance implication: has to allocate a list.
    */
   def getElements: java.lang.Iterable[String] = {
     import scala.collection.JavaConverters._

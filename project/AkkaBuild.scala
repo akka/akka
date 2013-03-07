@@ -761,7 +761,7 @@ object Dependencies {
     val sigar       = "org.hyperic"                 % "sigar"                        % "1.6.4"            // ApacheV2
 
     // Compiler plugins
-    val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.2" cross CrossVersion.full) // ApacheV2
+    val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.3" cross CrossVersion.full) // ApacheV2
 
     // Test
 

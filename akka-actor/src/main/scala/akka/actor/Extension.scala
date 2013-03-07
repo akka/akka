@@ -92,6 +92,7 @@ trait ExtensionIdProvider {
  *   public MyExt(ExtendedActorSystem system) {
  *     ...
  *   }
+ * }
  * }}}
  */
 abstract class ExtensionKey[T <: Extension](implicit m: ClassTag[T]) extends ExtensionId[T] with ExtensionIdProvider {

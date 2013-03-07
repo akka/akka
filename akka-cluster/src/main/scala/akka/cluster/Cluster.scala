@@ -247,11 +247,10 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     registerOnMemberUp(new Runnable { def run = code })
 
   /**
-   * The supplied callback will be run, once, when current cluster member is `Up`.
+   * Java API: The supplied callback will be run, once, when current cluster member is `Up`.
    * Typically used together with configuration option `akka.cluster.min-nr-of-members'
    * to defer some action, such as starting actors, until the cluster has reached
    * a certain size.
-   * JAVA API
    */
   def registerOnMemberUp(callback: Runnable): Unit = clusterDaemons ! InternalClusterAction.AddOnMemberUpListener(callback)
 
