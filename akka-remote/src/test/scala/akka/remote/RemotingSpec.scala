@@ -137,9 +137,10 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     }
 
     "send error message for wrong address" in {
-      filterEvents(EventFilter[EndpointException](occurrences = 6), EventFilter.error(start = "Association", occurrences = 6)) {
-        system.actorFor("akka.test://nonexistingsystem@localhost:12346/user/echo") ! "ping"
-      }
+      filterEvents(EventFilter.error(start = "Association", occurrences = 6),
+        EventFilter.warning(pattern = ".*dead letter.*echo.*", occurrences = 1)) {
+          system.actorFor("akka.test://nonexistingsystem@localhost:12346/user/echo") ! "ping"
+        }
     }
 
     "support ask" in {
