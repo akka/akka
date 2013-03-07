@@ -307,7 +307,8 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   override def indexOf[B >: Byte](elem: B): Int = iterator.indexOf(elem)
 
   /**
-   * JAVA API
+   * Java API: copy this ByteString into a fresh byte array
+   *
    * @return this ByteString copied into a byte array
    */
   protected[ByteString] def toArray: Array[Byte] = toArray[Byte] // protected[ByteString] == public to Java but hidden to Scala * fnizz *
@@ -355,18 +356,14 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   def asByteBuffer: ByteBuffer
 
   /**
-   * Returns an immutable Iterable of read-only ByteBuffers that directly wraps this ByteStrings
+   * Scala API: Returns an immutable Iterable of read-only ByteBuffers that directly wraps this ByteStrings
    * all fragments. Will always have at least one entry.
-   *
-   * Scala API
    */
   def asByteBuffers: immutable.Iterable[ByteBuffer]
 
   /**
-   * Returns an Iterable of read-only ByteBuffers that directly wraps this ByteStrings
+   * Java API: Returns an Iterable of read-only ByteBuffers that directly wraps this ByteStrings
    * all fragments. Will always have at least one entry.
-   *
-   * Java API
    */
   def getByteBuffers(): JIterable[ByteBuffer] = {
     import scala.collection.JavaConverters.asJavaIterableConverter

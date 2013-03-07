@@ -92,7 +92,7 @@ case class SendTo(actor: ActorRef, message: Option[Any] = None)
  * can implement normal actor behavior, or use the normal STM atomic for
  * local transactions.
  *
- * @see [[akka.transactor.Coordinated]] for more information about the underlying mechanism
+ * @see [[akka.transactor.Coordinated]]
  */
 trait Transactor extends Actor {
   private val settings = TransactorExtension(context.system)
