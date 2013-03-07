@@ -90,8 +90,8 @@ class GossipSpec extends WordSpec with MustMatchers {
     }
 
     "start with fresh seen table after merge" in {
-      val g1 = Gossip(members = SortedSet(a1, e1)).seen(a1.address).seen(a1.address)
-      val g2 = Gossip(members = SortedSet(a2, e2)).seen(e2.address).seen(e2.address)
+      val g1 = Gossip(members = SortedSet(a1, e1)).seen(a1.address).seen(e1.address)
+      val g2 = Gossip(members = SortedSet(a2, e2)).seen(a2.address).seen(e2.address)
 
       val merged1 = g1 merge g2
       merged1.overview.seen.isEmpty must be(true)
@@ -120,5 +120,28 @@ class GossipSpec extends WordSpec with MustMatchers {
       Gossip(members = SortedSet(c3)).leader must be(Some(c3.address))
     }
 
+    "merge seen table correctly" in {
+      val vclockNode = VectorClock.Node("something")
+      val g1 = (Gossip(members = SortedSet(a1, b1, c1, d1)) :+ vclockNode).seen(a1.address).seen(b1.address)
+      val g2 = (Gossip(members = SortedSet(a1, b1, c1, d1)) :+ vclockNode).seen(a1.address).seen(c1.address)
+      val g3 = (g1 copy (version = g2.version)).seen(d1.address)
+
+      def checkMerged(merged: Gossip) {
+        val keys = merged.overview.seen.keys.toSeq
+        keys.length must be(4)
+        keys.toSet must be(Set(a1.address, b1.address, c1.address, d1.address))
+
+        merged hasSeen (a1.address) must be(true)
+        merged hasSeen (b1.address) must be(false)
+        merged hasSeen (c1.address) must be(true)
+        merged hasSeen (d1.address) must be(true)
+        merged hasSeen (e1.address) must be(false)
+
+        merged.overview.seen(b1.address) must be(g1.version)
+      }
+
+      checkMerged(g3 mergeSeen g2)
+      checkMerged(g2 mergeSeen g3)
+    }
   }
 }
