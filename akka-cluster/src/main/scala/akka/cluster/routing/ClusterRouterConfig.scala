@@ -109,15 +109,13 @@ case class ClusterRouterSettings private[akka] (
   allowLocalRoutees: Boolean) {
 
   /**
-   * Settings for create and deploy of the routees
-   * JAVA API
+   * Java API: Settings for create and deploy of the routees
    */
   def this(totalInstances: Int, maxInstancesPerNode: Int, allowLocalRoutees: Boolean) =
     this(totalInstances, maxInstancesPerNode, routeesPath = "", allowLocalRoutees)
 
   /**
-   * Settings for lookup of the routees
-   * JAVA API
+   * Java API: Settings for lookup of the routees
    */
   def this(totalInstances: Int, routeesPath: String, allowLocalRoutees: Boolean) =
     this(totalInstances, maxInstancesPerNode = 1, routeesPath, allowLocalRoutees)

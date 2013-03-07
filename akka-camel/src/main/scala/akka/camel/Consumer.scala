@@ -71,7 +71,7 @@ trait Consumer extends Actor with CamelSupport {
   }
 
   /**
-   * Java API. Returns the [[akka.dispatch.Mapper]] function that will be used as a route definition handler
+   * Java API: Returns the [[akka.dispatch.Mapper]] function that will be used as a route definition handler
    * for creating custom route to this consumer. By default it returns an identity function, override this method to
    * return a custom route definition handler. The [[akka.dispatch.Mapper]] is not allowed to close over 'this', meaning it is
    * not allowed to refer to the actor instance itself, since that can easily cause concurrent shared state issues.

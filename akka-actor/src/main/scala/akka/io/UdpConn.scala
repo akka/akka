@@ -12,7 +12,9 @@ import scala.collection.immutable
 import java.lang.{ Iterable ⇒ JIterable }
 
 object UdpConn extends ExtensionKey[UdpConnExt] {
-  // Java API
+  /**
+   * Java API: retrieve the UdpConn extension for the given system.
+   */
   override def get(system: ActorSystem): UdpConnExt = super.get(system)
 
   trait Command extends IO.HasFailureMessage {
@@ -71,7 +73,7 @@ class UdpConnExt(system: ExtendedActorSystem) extends IO.Extension {
 }
 
 /**
- * Java API
+ * Java API: factory methods for the message types used when communicating with the UdpConn service.
  */
 object UdpConnMessage {
   import language.implicitConversions

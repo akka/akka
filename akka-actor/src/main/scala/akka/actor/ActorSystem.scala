@@ -263,7 +263,7 @@ abstract class ActorSystem extends ActorRefFactory {
   def /(name: String): ActorPath
 
   /**
-   * ''Java API'': Create a new child actor path.
+   * Java API: Create a new child actor path.
    */
   def child(child: String): ActorPath = /(child)
 
@@ -273,7 +273,7 @@ abstract class ActorSystem extends ActorRefFactory {
   def /(name: Iterable[String]): ActorPath
 
   /**
-   * ''Java API'': Recursively create a descendant’s path by appending all child names.
+   * Java API: Recursively create a descendant’s path by appending all child names.
    */
   def descendant(names: java.lang.Iterable[String]): ActorPath = /(immutableSeq(names))
 
@@ -338,15 +338,13 @@ abstract class ActorSystem extends ActorRefFactory {
   def registerOnTermination[T](code: ⇒ T): Unit
 
   /**
-   * Register a block of code (callback) to run after ActorSystem.shutdown has been issued and
+   * Java API: Register a block of code (callback) to run after ActorSystem.shutdown has been issued and
    * all actors in this actor system have been stopped.
    * Multiple code blocks may be registered by calling this method multiple times.
    * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
    *
    * @throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
-   *
-   * Java API
    */
   def registerOnTermination(code: Runnable): Unit
 
