@@ -97,7 +97,7 @@ abstract class RestartFirstSeedNodeSpec
       }
       runOn(seed2, seed3) {
         cluster.joinSeedNodes(seedNodes)
-        awaitUpConvergence(3)
+        awaitMembersUp(3)
       }
       enterBarrier("started")
 
@@ -107,8 +107,8 @@ abstract class RestartFirstSeedNodeSpec
         seed1System.awaitTermination(remaining)
       }
       runOn(seed2, seed3) {
-        awaitUpConvergence(2, canNotBePartOfMemberRing = Set(seedNodes.head))
-        awaitCond(clusterView.unreachableMembers.exists(m ⇒ m.status == Down && m.address == seedNodes.head))
+        awaitMembersUp(2, canNotBePartOfMemberRing = Set(seedNodes.head))
+        awaitCond(clusterView.unreachableMembers.forall(_.address != seedNodes.head))
       }
       enterBarrier("seed1-shutdown")
 
@@ -119,7 +119,7 @@ abstract class RestartFirstSeedNodeSpec
         awaitCond(Cluster(restartedSeed1System).readView.members.forall(_.status == Up))
       }
       runOn(seed2, seed3) {
-        awaitUpConvergence(3)
+        awaitMembersUp(3)
       }
       enterBarrier("seed1-restarted")
 

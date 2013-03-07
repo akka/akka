@@ -152,21 +152,12 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
   }
 
   /**
-   * Initialize the cluster with the specified member
-   * nodes (roles). First node will be started first
-   * and others will join the first.
-   */
-  def startCluster(roles: RoleName*): Unit = awaitStartCluster(false, roles.to[immutable.Seq])
-
-  /**
    * Initialize the cluster of the specified member
    * nodes (roles) and wait until all joined and `Up`.
    * First node will be started first  and others will join
    * the first.
    */
-  def awaitClusterUp(roles: RoleName*): Unit = awaitStartCluster(true, roles.to[immutable.Seq])
-
-  private def awaitStartCluster(upConvergence: Boolean = true, roles: immutable.Seq[RoleName]): Unit = {
+  def awaitClusterUp(roles: RoleName*): Unit = {
     runOn(roles.head) {
       // make sure that the node-to-join is started before other join
       startClusterNode()
@@ -175,8 +166,8 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
     if (roles.tail.contains(myself)) {
       cluster.join(roles.head)
     }
-    if (upConvergence && roles.contains(myself)) {
-      awaitUpConvergence(numberOfMembers = roles.length)
+    if (roles.contains(myself)) {
+      awaitMembersUp(numberOfMembers = roles.length)
     }
     enterBarrier(roles.map(_.name).mkString("-") + "-joined")
   }
@@ -192,6 +183,13 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
     expectedAddresses.sorted.zipWithIndex.foreach { case (a, i) ⇒ members(i).address must be(a) }
   }
 
+  /**
+   * Note that this can only be used for a cluster with all members
+   * in Up status, i.e. use `awaitMembersUp` before using this method.
+   * The reason for that is that the cluster leader is preferably a
+   * member with status Up or Leaving and that information can't
+   * be determined from the `RoleName`.
+   */
   def assertLeader(nodesInCluster: RoleName*): Unit =
     if (nodesInCluster.contains(myself)) assertLeaderIn(nodesInCluster.to[immutable.Seq])
 
@@ -199,6 +197,12 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
    * Assert that the cluster has elected the correct leader
    * out of all nodes in the cluster. First
    * member in the cluster ring is expected leader.
+   *
+   * Note that this can only be used for a cluster with all members
+   * in Up status, i.e. use `awaitMembersUp` before using this method.
+   * The reason for that is that the cluster leader is preferably a
+   * member with status Up or Leaving and that information can't
+   * be determined from the `RoleName`.
    */
   def assertLeaderIn(nodesInCluster: immutable.Seq[RoleName]): Unit =
     if (nodesInCluster.contains(myself)) {
@@ -212,10 +216,10 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
     }
 
   /**
-   * Wait until the expected number of members has status Up and convergence has been reached.
+   * Wait until the expected number of members has status Up has been reached.
    * Also asserts that nodes in the 'canNotBePartOfMemberRing' are *not* part of the cluster ring.
    */
-  def awaitUpConvergence(
+  def awaitMembersUp(
     numberOfMembers: Int,
     canNotBePartOfMemberRing: Set[Address] = Set.empty,
     timeout: FiniteDuration = 20.seconds): Unit = {
@@ -237,13 +241,21 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
   def awaitSeenSameState(addresses: Address*): Unit =
     awaitCond((addresses.toSet -- clusterView.seenBy).isEmpty)
 
+  /**
+   * Leader according to the address ordering of the roles.
+   * Note that this can only be used for a cluster with all members
+   * in Up status, i.e. use `awaitMembersUp` before using this method.
+   * The reason for that is that the cluster leader is preferably a
+   * member with status Up or Leaving and that information can't
+   * be determined from the `RoleName`.
+   */
   def roleOfLeader(nodesInCluster: immutable.Seq[RoleName] = roles): RoleName = {
     nodesInCluster.length must not be (0)
     nodesInCluster.sorted.head
   }
 
   /**
-   * Sort the roles in the order used by the cluster.
+   * Sort the roles in the address order used by the cluster node ring.
    */
   implicit val clusterOrdering: Ordering[RoleName] = new Ordering[RoleName] {
     import Member.addressOrdering

@@ -130,7 +130,9 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
       }
 
       runOn(allBut(victim): _*) {
-        awaitUpConvergence(roles.size - 1, Set(victim))
+        awaitMembersUp(roles.size - 1, Set(victim))
+        // eventually removed
+        awaitCond(clusterView.unreachableMembers.isEmpty, 15 seconds)
       }
 
       endBarrier
@@ -150,7 +152,7 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
         cluster join master
       }
 
-      awaitUpConvergence(roles.size)
+      awaitMembersUp(roles.size)
 
       endBarrier
     }

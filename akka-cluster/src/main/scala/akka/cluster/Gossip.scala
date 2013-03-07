@@ -145,12 +145,7 @@ private[cluster] case class Gossip(
     val mergedVClock = this.version merge that.version
 
     // 2. merge unreachable by selecting the single Member with highest MemberStatus out of the Member groups
-    // FIXME allowing Down -> Joining should be adjusted as part of ticket #2788
-    val mergedUnreachable = Member.pickHighestPriority(
-      this.overview.unreachable.filterNot(m1 ⇒
-        m1.status == Down && that.members.exists(m2 ⇒ m2.status == Joining && m2.address == m1.address)),
-      that.overview.unreachable.filterNot(m1 ⇒
-        m1.status == Down && this.members.exists(m2 ⇒ m2.status == Joining && m2.address == m1.address)))
+    val mergedUnreachable = Member.pickHighestPriority(this.overview.unreachable, that.overview.unreachable)
 
     // 3. merge members by selecting the single Member with highest MemberStatus out of the Member groups,
     //    and exclude unreachable
@@ -196,7 +191,11 @@ private[cluster] case class Gossip(
 
   def isLeader(address: Address): Boolean = leader == Some(address)
 
-  def leader: Option[Address] = members.find(_.status != Exiting).orElse(members.headOption).map(_.address)
+  def leader: Option[Address] = {
+    if (members.isEmpty) None
+    else members.find(m ⇒ m.status != Joining && m.status != Exiting && m.status != Down).
+      orElse(Some(members.min(Member.leaderStatusOrdering))).map(_.address)
+  }
 
   def isSingletonCluster: Boolean = members.size == 1
 
