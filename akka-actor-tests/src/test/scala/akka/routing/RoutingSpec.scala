@@ -169,14 +169,14 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         RoundRobinRouter(1, supervisorStrategy = escalator)))
       //#supervision
       router ! CurrentRoutees
-      EventFilter[ActorKilledException](occurrences = 2) intercept {
+      EventFilter[ActorKilledException](occurrences = 1) intercept {
         expectMsgType[RouterRoutees].routees.head ! Kill
       }
       expectMsgType[ActorKilledException]
 
       val router2 = system.actorOf(Props.empty.withRouter(RoundRobinRouter(1).withSupervisorStrategy(escalator)))
       router2 ! CurrentRoutees
-      EventFilter[ActorKilledException](occurrences = 2) intercept {
+      EventFilter[ActorKilledException](occurrences = 1) intercept {
         expectMsgType[RouterRoutees].routees.head ! Kill
       }
       expectMsgType[ActorKilledException]
@@ -194,7 +194,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         override def postRestart(reason: Throwable): Unit = testActor ! "restarted"
       }).withRouter(RoundRobinRouter(3))
       val router = expectMsgType[ActorRef]
-      EventFilter[Exception]("die", occurrences = 2) intercept {
+      EventFilter[Exception]("die", occurrences = 1) intercept {
         router ! "die"
       }
       expectMsgType[Exception].getMessage must be("die")
