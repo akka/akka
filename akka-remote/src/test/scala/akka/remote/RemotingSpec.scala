@@ -197,7 +197,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       expectMsg(42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
         r ! new Exception("crash")
-      }(other)
+      }
       expectMsg("preRestart")
       r ! 42
       expectMsg(42)
@@ -242,7 +242,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       expectMsg(42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
         r ! new Exception("crash")
-      }(other)
+      }
       expectMsg("preRestart")
       r ! 42
       expectMsg(42)
@@ -258,7 +258,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       expectMsg(10.seconds, 42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
         r ! new Exception("crash")
-      }(other)
+      }
       expectMsg("preRestart")
       r ! 42
       expectMsg(42)
@@ -274,7 +274,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       expectMsg(10.seconds, 42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
         r ! new Exception("crash")
-      }(other)
+      }
       expectMsg("preRestart")
       r ! 42
       expectMsg(42)

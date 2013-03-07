@@ -4,13 +4,16 @@
 package akka.actor
 
 import language.implicitConversions
-
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.concurrent.TimeUnit
 import akka.japi.Util.immutableSeq
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
+import akka.event.Logging.LogEvent
+import akka.event.Logging.Error
+import akka.event.Logging.Warning
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -35,9 +38,10 @@ case class ChildRestartStats(child: ActorRef, var maxNrOfRetriesCount: Int = 0, 
   def requestRestartPermission(retriesWindow: (Option[Int], Option[Int])): Boolean =
     retriesWindow match {
       case (Some(retries), _) if retries < 1 ⇒ false
-      case (Some(retries), None)             ⇒ maxNrOfRetriesCount += 1; maxNrOfRetriesCount <= retries
-      case (x, Some(window))                 ⇒ retriesInWindowOkay(if (x.isDefined) x.get else 1, window)
-      case (None, _)                         ⇒ true
+      case (Some(retries), None) ⇒
+        maxNrOfRetriesCount += 1; maxNrOfRetriesCount <= retries
+      case (x, Some(window)) ⇒ retriesInWindowOkay(if (x.isDefined) x.get else 1, window)
+      case (None, _)         ⇒ true
     }
 
   private def retriesInWindowOkay(retries: Int, window: Int): Boolean = {
@@ -276,14 +280,51 @@ abstract class SupervisorStrategy {
    * @param children is a lazy collection (a view)
    */
   def handleFailure(context: ActorContext, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Boolean = {
-    val directive = decider.applyOrElse(cause, escalateDefault)
-    directive match {
-      case Resume   ⇒ resumeChild(child, cause); true
-      case Restart  ⇒ processFailure(context, true, child, cause, stats, children); true
-      case Stop     ⇒ processFailure(context, false, child, cause, stats, children); true
-      case Escalate ⇒ false
+    try {
+      val directive = decider.applyOrElse(cause, escalateDefault)
+      directive match {
+        case d @ Resume ⇒
+          logFailure(context, child, cause, d)
+          resumeChild(child, cause)
+          true
+        case d @ Restart ⇒
+          logFailure(context, child, cause, d)
+          processFailure(context, true, child, cause, stats, children)
+          true
+        case d @ Stop ⇒
+          logFailure(context, child, cause, d)
+          processFailure(context, false, child, cause, stats, children)
+          true
+        case d @ Escalate ⇒
+          logFailure(context, child, cause, d)
+          false
+      }
+    } catch {
+      case NonFatal(e) ⇒
+        // exception from the decider, or error handling action
+        publish(context, Error(e, context.self.path.toString, getClass, e.getMessage))
+        throw e
     }
   }
+
+  protected def loggingEnabled: Boolean = true
+
+  protected def logFailure(context: ActorContext, child: ActorRef, cause: Throwable, decision: Directive): Unit =
+    if (loggingEnabled) {
+      val logMessage = cause match {
+        case e: ActorInitializationException ⇒ e.getCause.getMessage
+        case e                               ⇒ e.getMessage
+      }
+      decision match {
+        case Resume   ⇒ publish(context, Warning(child.path.toString, getClass, logMessage))
+        case Escalate ⇒ // don't log here
+        case _        ⇒ publish(context, Error(cause, child.path.toString, getClass, logMessage))
+      }
+    }
+
+  // logging is not the main purpose, and if it fails there’s nothing we can do
+  private def publish(context: ActorContext, logEvent: LogEvent): Unit =
+    try context.system.eventStream.publish(logEvent) catch { case NonFatal(_) ⇒ }
 
   /**
    * Resume the previously failed child: <b>do never apply this to a child which
@@ -319,11 +360,18 @@ abstract class SupervisorStrategy {
  * @param withinTimeRange duration of the time window for maxNrOfRetries, Duration.Inf means no window
  * @param decider mapping from Throwable to [[akka.actor.SupervisorStrategy.Directive]], you can also use a
  *   `Seq` of Throwables which maps the given Throwables to restarts, otherwise escalates.
+ * @param loggingEnabled the strategy logs the failure if this is enabled (true), by default it is enabled
  */
-case class AllForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration = Duration.Inf)(val decider: SupervisorStrategy.Decider)
+case class AllForOneStrategy(
+  maxNrOfRetries: Int = -1,
+  withinTimeRange: Duration = Duration.Inf,
+  override val loggingEnabled: Boolean = true)(val decider: SupervisorStrategy.Decider)
   extends SupervisorStrategy {
 
   import SupervisorStrategy._
+
+  def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider, loggingEnabled: Boolean) =
+    this(maxNrOfRetries, withinTimeRange, loggingEnabled)(SupervisorStrategy.makeDecider(decider))
 
   def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider) =
     this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(decider))
@@ -358,9 +406,16 @@ case class AllForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration
  * @param withinTimeRange duration of the time window for maxNrOfRetries, Duration.Inf means no window
  * @param decider mapping from Throwable to [[akka.actor.SupervisorStrategy.Directive]], you can also use a
  *   `Seq` of Throwables which maps the given Throwables to restarts, otherwise escalates.
+ * @param loggingEnabled the strategy logs the failure if this is enabled (true), by default it is enabled
  */
-case class OneForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration = Duration.Inf)(val decider: SupervisorStrategy.Decider)
+case class OneForOneStrategy(
+  maxNrOfRetries: Int = -1,
+  withinTimeRange: Duration = Duration.Inf,
+  override val loggingEnabled: Boolean = true)(val decider: SupervisorStrategy.Decider)
   extends SupervisorStrategy {
+
+  def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider, loggingEnabled: Boolean) =
+    this(maxNrOfRetries, withinTimeRange, loggingEnabled)(SupervisorStrategy.makeDecider(decider))
 
   def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider) =
     this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(decider))

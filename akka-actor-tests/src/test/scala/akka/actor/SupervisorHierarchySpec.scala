@@ -233,8 +233,10 @@ object SupervisorHierarchySpec {
         abort("invariant violated: " + state.kids.size + " != " + context.children.size)
       }
       cause match {
-        case f: Failure if f.failPost > 0 ⇒ f.failPost -= 1; throw f
-        case PostRestartException(`self`, f: Failure, _) if f.failPost > 0 ⇒ f.failPost -= 1; throw f
+        case f: Failure if f.failPost > 0 ⇒
+          f.failPost -= 1; throw f
+        case PostRestartException(`self`, f: Failure, _) if f.failPost > 0 ⇒
+          f.failPost -= 1; throw f
         case _ ⇒
       }
     }
@@ -272,12 +274,13 @@ object SupervisorHierarchySpec {
           setFlags(f.directive)
           stateCache.put(self, stateCache.get(self).copy(failConstr = f.copy()))
           throw f
-        case "ping"      ⇒ Thread.sleep((Random.nextFloat * 1.03).toLong); sender ! "pong"
+        case "ping" ⇒
+          Thread.sleep((Random.nextFloat * 1.03).toLong); sender ! "pong"
         case Dump(0)     ⇒ abort("dump")
         case Dump(level) ⇒ context.children foreach (_ ! Dump(level - 1))
         case Terminated(ref) ⇒
           /*
-           * It might be that we acted upon this death already in postRestart 
+           * It might be that we acted upon this death already in postRestart
            * (if the unwatch() came too late), so just ignore in this case.
            */
           val name = ref.path.name
@@ -332,17 +335,17 @@ object SupervisorHierarchySpec {
    * This stress test will construct a supervision hierarchy of configurable
    * depth and breadth and then randomly fail and check its actors. The actors
    * perform certain checks internally (verifying that they do not run when
-   * suspended, for example), and they are checked for health by the test 
+   * suspended, for example), and they are checked for health by the test
    * procedure.
-   * 
+   *
    * Execution happens in phases (which is the reason for FSM):
-   * 
+   *
    * Idle:
    * - upon reception of Init message, construct hierary and go to Init state
-   * 
+   *
    * Init:
    * - receive refs of all contained actors
-   * 
+   *
    * Stress:
    * - deal out actions (Fail or "ping"), keeping the hierarchy busy
    * - whenever all actors are in the "pinged" list (i.e. have not yet
@@ -353,29 +356,29 @@ object SupervisorHierarchySpec {
    * - make sure to remove all actors which die in the course of the test
    *   from the pinged and idle sets (others will be spawned from within the
    *   hierarchy)
-   * 
+   *
    * Finishing:
    * - after dealing out the last action, wait for the outstanding "pong"
    *   messages
    * - when last "pong" is received, goto LastPing state
    * - upon state timeout, stop the hierarchy and go to the Failed state
-   * 
+   *
    * LastPing:
    * - upon entering this state, send a "ping" to all actors
    * - when last "pong" is received, goto Stopping state
    * - upon state timeout, stop the hierarchy and go to the Failed state
-   * 
+   *
    * Stopping:
    * - upon entering this state, stop the hierarchy
    * - upon termination of the hierarchy send back successful result
-   * 
+   *
    * Whenever an ErrorLog is received, goto Failed state
-   * 
+   *
    * Failed:
    * - accumulate ErrorLog messages
    * - upon termination of the hierarchy send back failed result and print
    *   the logs, merged and in chronological order.
-   *   
+   *
    * Remark about test failures which lead to stopping:
    * The FSM needs to know not the send more things to the dead guy, but it
    * also must not watch all targets, because the dead guy’s supervisor also
@@ -558,10 +561,10 @@ object SupervisorHierarchySpec {
           stop
         } else if (false) {
           /*
-           * This part of the test is normally disabled, because it does not 
+           * This part of the test is normally disabled, because it does not
            * work reliably: even though I found only these weak references
            * using YourKit just now, GC wouldn’t collect them and the test
-           * failed. I’m leaving this code in so that manual inspection remains 
+           * failed. I’m leaving this code in so that manual inspection remains
            * an option (by setting the above condition to “true”).
            */
           val weak = children map (new WeakReference(_))
@@ -756,7 +759,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
       val worker = expectMsgType[ActorRef]
       worker ! "ping"
       expectMsg("pong")
-      EventFilter[Exception]("expected", occurrences = 1) intercept {
+      EventFilter.warning("expected", occurrences = 1) intercept {
         middle ! "fail"
       }
       middle ! "ping"
@@ -781,13 +784,13 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
       val worker = expectMsgType[ActorRef]
       worker ! "ping"
       expectMsg("pong")
-      EventFilter[Exception]("expected", occurrences = 1) intercept {
+      EventFilter.warning("expected", occurrences = 1) intercept {
         boss ! "fail"
+        awaitCond(worker.asInstanceOf[LocalActorRef].underlying.mailbox.isSuspended)
+        worker ! "ping"
+        expectNoMsg(2 seconds)
+        latch.countDown()
       }
-      awaitCond(worker.asInstanceOf[LocalActorRef].underlying.mailbox.isSuspended)
-      worker ! "ping"
-      expectNoMsg(2 seconds)
-      latch.countDown()
       expectMsg("pong")
     }
 

@@ -93,7 +93,7 @@ class FaultHandlingDocSpec extends AkkaSpec with ImplicitSender {
       supervisor ! Props[Child]
       val child = expectMsgType[ActorRef] // retrieve answer from TestKit’s testActor
       //#create
-      EventFilter[ArithmeticException](occurrences = 1) intercept {
+      EventFilter.warning(occurrences = 1) intercept {
         //#resume
         child ! 42 // set state to 42
         child ! "get"
@@ -121,7 +121,7 @@ class FaultHandlingDocSpec extends AkkaSpec with ImplicitSender {
         child.isTerminated must be(true)
         //#stop
       }
-      EventFilter[Exception]("CRASH", occurrences = 4) intercept {
+      EventFilter[Exception]("CRASH", occurrences = 2) intercept {
         //#escalate-kill
         supervisor ! Props[Child] // create new child
         val child2 = expectMsgType[ActorRef]

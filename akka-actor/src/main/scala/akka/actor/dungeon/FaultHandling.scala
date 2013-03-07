@@ -24,11 +24,11 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
   /* =================
    * T H E   R U L E S
    * =================
-   * 
+   *
    * Actors can be suspended for two reasons:
    * - they fail
    * - their supervisor gets suspended
-   * 
+   *
    * In particular they are not suspended multiple times because of cascading
    * own failures, i.e. while currentlyFailed() they do not fail again. In case
    * of a restart, failures in constructor/preStart count as new failures.
@@ -163,15 +163,15 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     }
   }
 
-  final def handleInvokeFailure(childrenNotToSuspend: immutable.Iterable[ActorRef], t: Throwable, message: String): Unit = {
-    publish(Error(t, self.path.toString, clazz(actor), message))
+  final def handleInvokeFailure(childrenNotToSuspend: immutable.Iterable[ActorRef], t: Throwable): Unit = {
     // prevent any further messages to be processed until the actor has been restarted
     if (!isFailed) try {
       suspendNonRecursive()
       // suspend children
       val skip: Set[ActorRef] = currentMessage match {
-        case Envelope(Failed(_, _), child) ⇒ setFailed(child); Set(child)
-        case _                             ⇒ setFailed(self); Set.empty
+        case Envelope(Failed(_, _), child) ⇒
+          setFailed(child); Set(child)
+        case _ ⇒ setFailed(self); Set.empty
       }
       suspendChildren(exceptFor = skip ++ childrenNotToSuspend)
       t match {
@@ -233,7 +233,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
         })
     } catch handleNonFatalOrInterruptedException { e ⇒
       clearActorFields(actor) // in order to prevent preRestart() from happening again
-      handleInvokeFailure(survivors, new PostRestartException(self, e, cause), e.getMessage)
+      handleInvokeFailure(survivors, new PostRestartException(self, e, cause))
     }
   }
 
@@ -256,14 +256,15 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
   final protected def handleChildTerminated(child: ActorRef): SystemMessage = {
     val status = removeChildAndGetStateChange(child)
     /*
-     * if this fails, we do nothing in case of terminating/restarting state, 
+     * if this fails, we do nothing in case of terminating/restarting state,
      * otherwise tell the supervisor etc. (in that second case, the match
      * below will hit the empty default case, too)
      */
     if (actor != null) {
       try actor.supervisorStrategy.handleChildTerminated(this, child, children)
       catch handleNonFatalOrInterruptedException { e ⇒
-        handleInvokeFailure(Nil, e, "handleChildTerminated failed")
+        publish(Error(e, self.path.toString, clazz(actor), "handleChildTerminated failed"))
+        handleInvokeFailure(Nil, e)
       }
     }
     /*
@@ -271,9 +272,12 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
      * then we are continuing the previously suspended recreate/create/terminate action
      */
     status match {
-      case Some(c @ ChildrenContainer.Recreation(cause)) ⇒ finishRecreate(cause, actor); c.dequeueAll()
-      case Some(c @ ChildrenContainer.Creation()) ⇒ finishCreate(); c.dequeueAll()
-      case Some(ChildrenContainer.Termination) ⇒ finishTerminate(); null
+      case Some(c @ ChildrenContainer.Recreation(cause)) ⇒
+        finishRecreate(cause, actor); c.dequeueAll()
+      case Some(c @ ChildrenContainer.Creation()) ⇒
+        finishCreate(); c.dequeueAll()
+      case Some(ChildrenContainer.Termination) ⇒
+        finishTerminate(); null
       case _ ⇒ null
     }
   }
