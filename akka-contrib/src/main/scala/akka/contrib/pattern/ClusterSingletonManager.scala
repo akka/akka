@@ -237,8 +237,8 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  *   `retryInterval` until the previous leader confirms that the hand
  *   over has started, or this `maxHandOverRetries` limit has been
  *   reached. If the retry limit is reached it takes the decision to be
- *   the new leader if previous leader is unknown (typically removed or
- *   downed), otherwise it initiates a new round by throwing
+ *   the new leader if previous leader is unknown (typically removed),
+ *   otherwise it initiates a new round by throwing
  *   [[akka.contrib.pattern.ClusterSingletonManagerIsStuck]] and expecting
  *   restart with fresh state. For a cluster with many members you might
  *   need to increase this retry limit because it takes longer time to
@@ -306,19 +306,13 @@ class ClusterSingletonManager(
   // Previous GetNext request delivered event and new GetNext is to be sent
   var leaderChangedReceived = true
 
-  // keep track of previously downed members
-  var downed = Map.empty[Address, Deadline]
   // keep track of previously removed members
   var removed = Map.empty[Address, Deadline]
-
-  def addDowned(address: Address): Unit =
-    downed += address -> (Deadline.now + 15.minutes)
 
   def addRemoved(address: Address): Unit =
     removed += address -> (Deadline.now + 15.minutes)
 
   def cleanupOverdueNotMemberAnyMore(): Unit = {
-    downed = downed filter { case (address, deadline) ⇒ deadline.hasTimeLeft }
     removed = removed filter { case (address, deadline) ⇒ deadline.hasTimeLeft }
   }
 
@@ -336,7 +330,6 @@ class ClusterSingletonManager(
     require(!cluster.isTerminated, "Cluster node must not be terminated")
 
     // subscribe to cluster changes, re-subscribe when restart
-    cluster.subscribe(self, classOf[MemberDowned])
     cluster.subscribe(self, classOf[MemberRemoved])
 
     setTimer(CleanupTimer, Cleanup, 1.minute, repeat = true)
@@ -385,8 +378,8 @@ class ClusterSingletonManager(
       if (leaderOption == selfAddressOption) {
         logInfo("NonLeader observed LeaderChanged: [{} -> myself]", previousLeaderOption)
         previousLeaderOption match {
-          case None                                ⇒ gotoLeader(None)
-          case Some(prev) if downed.contains(prev) ⇒ gotoLeader(None)
+          case None                                 ⇒ gotoLeader(None)
+          case Some(prev) if removed.contains(prev) ⇒ gotoLeader(None)
           case Some(prev) ⇒
             peer(prev) ! HandOverToMe
             goto(BecomingLeader) using BecomingLeaderData(previousLeaderOption)
@@ -397,9 +390,9 @@ class ClusterSingletonManager(
         stay using NonLeaderData(leaderOption)
       }
 
-    case Event(MemberDowned(m), NonLeaderData(Some(previousLeader))) if m.address == previousLeader ⇒
-      logInfo("Previous leader downed [{}]", m.address)
-      addDowned(m.address)
+    case Event(MemberRemoved(m), NonLeaderData(Some(previousLeader))) if m.address == previousLeader ⇒
+      logInfo("Previous leader removed [{}]", m.address)
+      addRemoved(m.address)
       // transition when LeaderChanged
       stay using NonLeaderData(None)
 
@@ -426,9 +419,9 @@ class ClusterSingletonManager(
         stay
       }
 
-    case Event(MemberDowned(m), BecomingLeaderData(Some(previousLeader))) if m.address == previousLeader ⇒
-      logInfo("Previous leader [{}] downed", previousLeader)
-      addDowned(m.address)
+    case Event(MemberRemoved(m), BecomingLeaderData(Some(previousLeader))) if m.address == previousLeader ⇒
+      logInfo("Previous leader [{}] removed", previousLeader)
+      addRemoved(m.address)
       gotoLeader(None)
 
     case Event(TakeOverFromMe, BecomingLeaderData(None)) ⇒
@@ -471,7 +464,7 @@ class ClusterSingletonManager(
         case Some(a) if a == cluster.selfAddress ⇒
           // already leader
           stay
-        case Some(a) if downed.contains(a) || removed.contains(a) ⇒
+        case Some(a) if removed.contains(a) ⇒
           gotoHandingOver(singleton, singletonTerminated, handOverData, None)
         case Some(a) ⇒
           // send TakeOver request in case the new leader doesn't know previous leader
@@ -507,8 +500,8 @@ class ClusterSingletonManager(
     case Event(HandOverToMe, WasLeaderData(singleton, singletonTerminated, handOverData, _)) ⇒
       gotoHandingOver(singleton, singletonTerminated, handOverData, Some(sender))
 
-    case Event(MemberDowned(m), WasLeaderData(singleton, singletonTerminated, handOverData, Some(newLeader))) if m.address == newLeader ⇒
-      addDowned(m.address)
+    case Event(MemberRemoved(m), WasLeaderData(singleton, singletonTerminated, handOverData, Some(newLeader))) if m.address == newLeader ⇒
+      addRemoved(m.address)
       gotoHandingOver(singleton, singletonTerminated, handOverData, None)
 
     case Event(singletonHandOverMessage, d @ WasLeaderData(singleton, _, _, _)) if sender == singleton ⇒
@@ -554,12 +547,7 @@ class ClusterSingletonManager(
     case Event(_: CurrentClusterState, _) ⇒ stay
     case Event(MemberRemoved(m), _) ⇒
       logInfo("Member removed [{}]", m.address)
-      // if self removed, it will be stopped onTranstion to NonLeader
       addRemoved(m.address)
-      stay
-    case Event(MemberDowned(m), _) ⇒
-      logInfo("Member downed [{}]", m.address)
-      addDowned(m.address)
       stay
     case Event(TakeOverFromMe, _) ⇒
       logInfo("Ignoring TakeOver request in [{}] from [{}].", stateName, sender.path.address)
@@ -587,7 +575,7 @@ class ClusterSingletonManager(
   }
 
   onTransition {
-    case _ -> NonLeader if removed.contains(cluster.selfAddress) || downed.contains(cluster.selfAddress) ⇒
+    case _ -> NonLeader if removed.contains(cluster.selfAddress) ⇒
       logInfo("Self removed, stopping ClusterSingletonManager")
       stop()
   }

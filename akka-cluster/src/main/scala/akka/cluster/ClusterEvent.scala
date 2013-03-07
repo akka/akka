@@ -65,7 +65,9 @@ object ClusterEvent {
 
   /**
    * Marker interface for membership events.
-   * Only published after convergence, when all members have seen current
+   * Published when the state change is first seen on a node.
+   * The state change was performed by the leader when there was
+   * convergence on the leader node, i.e. all members had seen previous
    * state.
    */
   sealed trait MemberEvent extends ClusterDomainEvent {
@@ -73,127 +75,23 @@ object ClusterEvent {
   }
 
   /**
-   * A new member joined the cluster.
-   * Only published after convergence, when all members have seen current
-   * state.
-   */
-  case class MemberJoined(member: Member) extends MemberEvent {
-    if (member.status != Joining) throw new IllegalArgumentException("Expected Joining status, got: " + member)
-  }
-
-  /**
    * Member status changed to Up.
-   * Only published after convergence, when all members have seen current
-   * state.
    */
   case class MemberUp(member: Member) extends MemberEvent {
     if (member.status != Up) throw new IllegalArgumentException("Expected Up status, got: " + member)
   }
 
   /**
-   * Member status changed to Leaving.
-   * Only published after convergence, when all members have seen current
-   * state.
-   */
-  case class MemberLeft(member: Member) extends MemberEvent {
-    if (member.status != Leaving) throw new IllegalArgumentException("Expected Leaving status, got: " + member)
-  }
-
-  /**
    * Member status changed to Exiting.
-   * Only published after convergence, when all members have seen current
-   * state.
    */
   case class MemberExited(member: Member) extends MemberEvent {
     if (member.status != Exiting) throw new IllegalArgumentException("Expected Exiting status, got: " + member)
   }
 
   /**
-   * Member status changed to Down.
-   * Only published after convergence, when all members have seen current
-   * state.
-   */
-  case class MemberDowned(member: Member) extends MemberEvent {
-    if (member.status != Down) throw new IllegalArgumentException("Expected Down status, got: " + member)
-  }
-
-  /**
-   * Member completely removed from the cluster. Only published after convergence,
-   * when all other members have seen the state.
+   * Member completely removed from the cluster.
    */
   case class MemberRemoved(member: Member) extends MemberEvent {
-    if (member.status != Removed) throw new IllegalArgumentException("Expected Removed status, got: " + member)
-  }
-
-  /**
-   * Current snapshot state of the cluster. Sent to new subscriber of
-   * [akka.cluster.ClusterEvent.InstantMemberEvent].
-   */
-  case class InstantClusterState(members: immutable.SortedSet[Member] = immutable.SortedSet.empty)
-    extends ClusterDomainEvent {
-
-    /**
-     * Java API: get current member list
-     */
-    def getMembers: java.lang.Iterable[Member] = {
-      import scala.collection.JavaConverters._
-      members.asJava
-    }
-  }
-
-  /**
-   * Marker interface for membership events published immediately  when
-   * it happened. All other members might not have seen the state.
-   */
-  sealed trait InstantMemberEvent extends ClusterDomainEvent {
-    def member: Member
-  }
-
-  /**
-   * A new member joined the cluster. Published immediately when it happened.
-   * All other members might not have seen the state.
-   */
-  case class InstantMemberJoined(member: Member) extends InstantMemberEvent {
-    if (member.status != Joining) throw new IllegalArgumentException("Expected Joining status, got: " + member)
-  }
-
-  /**
-   * Member status changed to Up. Published immediately when it happened.
-   * All other members might not have seen the state.
-   */
-  case class InstantMemberUp(member: Member) extends InstantMemberEvent {
-    if (member.status != Up) throw new IllegalArgumentException("Expected Up status, got: " + member)
-  }
-
-  /**
-   * Member status changed to Leaving. Published immediately when it happened.
-   * All other members might not have seen the state.
-   */
-  case class InstantMemberLeft(member: Member) extends InstantMemberEvent {
-    if (member.status != Leaving) throw new IllegalArgumentException("Expected Leaving status, got: " + member)
-  }
-
-  /**
-   * Member status changed to Exiting. Published immediately when it happened.
-   * All other members might not have seen the state.
-   */
-  case class InstantMemberExited(member: Member) extends InstantMemberEvent {
-    if (member.status != Exiting) throw new IllegalArgumentException("Expected Exiting status, got: " + member)
-  }
-
-  /**
-   * Member status changed to Down. Published immediately when it happened.
-   * All other members might not have seen the state.
-   */
-  case class InstantMemberDowned(member: Member) extends InstantMemberEvent {
-    if (member.status != Down) throw new IllegalArgumentException("Expected Down status, got: " + member)
-  }
-
-  /**
-   * Member completely removed from the cluster. Published immediately when it happened.
-   * All other members might not have seen the state.
-   */
-  case class InstantMemberRemoved(member: Member) extends InstantMemberEvent {
     if (member.status != Removed) throw new IllegalArgumentException("Expected Removed status, got: " + member)
   }
 
@@ -260,19 +158,13 @@ object ClusterEvent {
       val changedMembers = membersGroupedByAddress collect {
         case (_, newMember :: oldMember :: Nil) if newMember.status != oldMember.status ⇒ newMember
       }
-      val memberEvents = (newMembers ++ changedMembers) map { m ⇒
-        m.status match {
-          case Joining ⇒ MemberJoined(m)
-          case Up      ⇒ MemberUp(m)
-          case Leaving ⇒ MemberLeft(m)
-          case Exiting ⇒ MemberExited(m)
-          case _       ⇒ throw new IllegalStateException("Unexpected member status: " + m)
-        }
+      val memberEvents = (newMembers ++ changedMembers) collect {
+        case m if m.status == Up      ⇒ MemberUp(m)
+        case m if m.status == Exiting ⇒ MemberExited(m)
+        // no events for other transitions
       }
 
       val allNewUnreachable = newGossip.overview.unreachable -- oldGossip.overview.unreachable
-      val newDowned = allNewUnreachable filter { _.status == Down }
-      val downedEvents = newDowned map MemberDowned
 
       val unreachableGroupedByAddress =
         List(newGossip.overview.unreachable, oldGossip.overview.unreachable).flatten.groupBy(_.address)
@@ -280,27 +172,12 @@ object ClusterEvent {
         case (_, newMember :: oldMember :: Nil) if newMember.status == Down && newMember.status != oldMember.status ⇒
           newMember
       }
-      val unreachableDownedEvents = unreachableDownMembers map MemberDowned
 
-      val removedEvents = (oldGossip.members -- newGossip.members -- newGossip.overview.unreachable) map { m ⇒
-        MemberRemoved(m.copy(status = Removed))
-      }
+      val removedMembers = (oldGossip.members -- newGossip.members -- newGossip.overview.unreachable) ++
+        (oldGossip.overview.unreachable -- newGossip.overview.unreachable)
+      val removedEvents = removedMembers.map(m ⇒ MemberRemoved(m.copy(status = Removed)))
 
-      (new VectorBuilder[MemberEvent]() ++= memberEvents ++= downedEvents ++= unreachableDownedEvents
-        ++= removedEvents).result()
-    }
-
-  /**
-   * INTERNAL API
-   */
-  private[cluster] def convertToInstantMemberEvents(memberEvents: immutable.Seq[MemberEvent]): immutable.Seq[InstantMemberEvent] =
-    memberEvents map {
-      case MemberJoined(m)  ⇒ InstantMemberJoined(m)
-      case MemberUp(m)      ⇒ InstantMemberUp(m)
-      case MemberDowned(m)  ⇒ InstantMemberDowned(m)
-      case MemberLeft(m)    ⇒ InstantMemberLeft(m)
-      case MemberExited(m)  ⇒ InstantMemberExited(m)
-      case MemberRemoved(m) ⇒ InstantMemberRemoved(m)
+      (new VectorBuilder[MemberEvent]() ++= memberEvents ++= removedEvents).result()
     }
 
   /**
@@ -358,12 +235,12 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   def eventStream: EventStream = context.system.eventStream
 
   /**
-   * The current snapshot state that is a mix of converged and latest gossip
+   * The current snapshot state corresponding to latest gossip
    * to mimic what you would have seen if you where listening to the events.
    */
   def publishCurrentClusterState(receiver: Option[ActorRef]): Unit = {
     val state = CurrentClusterState(
-      members = latestConvergedGossip.members,
+      members = latestGossip.members,
       unreachable = latestGossip.overview.unreachable,
       seenBy = latestGossip.seenBy,
       leader = latestConvergedGossip.leader)
@@ -373,20 +250,8 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     }
   }
 
-  /**
-   * Publish the snapshot state that is based on latest gossip to mimic what you
-   * would have seen if you where listening to the InstantMemberEvent stream.
-   */
-  def publishInstantClusterState(receiver: ActorRef): Unit =
-    receiver ! InstantClusterState(members = latestGossip.members)
-
   def subscribe(subscriber: ActorRef, to: Class[_]): Unit = {
-    val isInstantMemberEvent = classOf[InstantMemberEvent].isAssignableFrom(to)
-    if (classOf[ClusterDomainEvent] == to || isInstantMemberEvent)
-      publishInstantClusterState(subscriber)
-    if (!isInstantMemberEvent)
-      publishCurrentClusterState(Some(subscriber))
-
+    publishCurrentClusterState(Some(subscriber))
     eventStream.subscribe(subscriber, to)
   }
 
@@ -401,27 +266,22 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     latestGossip = newGossip
     // first publish the diffUnreachable between the last two gossips
     diffUnreachable(oldGossip, newGossip) foreach publish
-    val newMemberEvents = diffMemberEvents(oldGossip, newGossip)
-    convertToInstantMemberEvents(newMemberEvents) foreach publish
-    // buffer up the MemberEvents waiting for convergence
-    bufferedEvents ++= newMemberEvents
+    diffMemberEvents(oldGossip, newGossip) foreach { event ⇒
+      event match {
+        case MemberRemoved(m) ⇒
+          publish(event)
+          // notify DeathWatch about downed node
+          publish(AddressTerminated(m.address))
+        case _ ⇒ publish(event)
+      }
+    }
     // buffer up the LeaderChanged waiting for convergence
     bufferedEvents ++= diffLeader(oldGossip, newGossip)
     // if we have convergence then publish the MemberEvents and LeaderChanged
     if (newGossip.convergence) {
       val previousConvergedGossip = latestConvergedGossip
       latestConvergedGossip = newGossip
-      bufferedEvents foreach { event ⇒
-        event match {
-          case m: MemberEvent if m.isInstanceOf[MemberDowned] || m.isInstanceOf[MemberRemoved] ⇒
-            // TODO MemberDowned match should probably be covered by MemberRemoved, see ticket #2788
-            //   but right now we don't change Downed to Removed
-            publish(event)
-            // notify DeathWatch about downed node
-            publish(AddressTerminated(m.member.address))
-          case _ ⇒ publish(event)
-        }
-      }
+      bufferedEvents foreach publish
       bufferedEvents = Vector.empty
     }
     // publish internal SeenState for testing purposes

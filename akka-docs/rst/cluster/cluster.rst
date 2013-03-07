@@ -159,9 +159,9 @@ Leader
 After gossip convergence a ``leader`` for the cluster can be determined. There is no
 ``leader`` election process, the ``leader`` can always be recognised deterministically
 by any node whenever there is gossip convergence. The ``leader`` is simply the first
-node in sorted order that is able to take the leadership role, where the only
-allowed member states for a ``leader`` are ``up``, ``leaving`` or ``exiting`` (see
-below for more information about member states).
+node in sorted order that is able to take the leadership role, where the preferred
+member states for a ``leader`` are ``up`` and ``leaving`` (see below for more 
+information about member states).
 
 The role of the ``leader`` is to shift members in and out of the cluster, changing
 ``joining`` members to the ``up`` state or ``exiting`` members to the
