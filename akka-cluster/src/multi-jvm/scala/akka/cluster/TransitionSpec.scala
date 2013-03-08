@@ -11,7 +11,6 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.actor.Address
-import akka.pattern.ask
 import akka.remote.testconductor.RoleName
 import MemberStatus._
 import InternalClusterAction._
@@ -138,14 +137,14 @@ abstract class TransitionSpec
       }
       enterBarrier("convergence-joining-2")
 
-      runOn(leader(first, second)) {
+      runOn(first) {
         leaderActions()
         awaitMemberStatus(first, Up)
         awaitMemberStatus(second, Joining)
       }
       enterBarrier("leader-actions-2")
 
-      leader(first, second) gossipTo nonLeader(first, second).head
+      first gossipTo second
       runOn(first, second) {
         // gossip chat will synchronize the views
         awaitMemberStatus(second, Up)
@@ -187,7 +186,9 @@ abstract class TransitionSpec
 
       enterBarrier("convergence-joining-3")
 
-      runOn(leader(first, second, third)) {
+      val leader12 = leader(first, second)
+      val (other1, other2) = { val tmp = roles.filterNot(_ == leader12); (tmp.head, tmp.tail.head) }
+      runOn(leader12) {
         leaderActions()
         awaitMemberStatus(first, Up)
         awaitMemberStatus(second, Up)
@@ -196,25 +197,25 @@ abstract class TransitionSpec
       enterBarrier("leader-actions-3")
 
       // leader gossipTo first non-leader
-      leader(first, second, third) gossipTo nonLeader(first, second, third).head
-      runOn(nonLeader(first, second, third).head) {
+      leader12 gossipTo other1
+      runOn(other1) {
         awaitMemberStatus(third, Up)
-        awaitCond(seenLatestGossip == Set(leader(first, second, third), myself))
+        awaitCond(seenLatestGossip == Set(leader12, myself))
       }
 
       // first non-leader gossipTo the other non-leader
-      nonLeader(first, second, third).head gossipTo nonLeader(first, second, third).tail.head
-      runOn(nonLeader(first, second, third).head) {
+      other1 gossipTo other2
+      runOn(other1) {
         // send gossip
-        cluster.clusterCore ! InternalClusterAction.SendGossipTo(nonLeader(first, second, third).tail.head)
+        cluster.clusterCore ! InternalClusterAction.SendGossipTo(other2)
       }
-      runOn(nonLeader(first, second, third).tail.head) {
+      runOn(other2) {
         awaitMemberStatus(third, Up)
         awaitCond(seenLatestGossip == Set(first, second, third))
       }
 
       // first non-leader gossipTo the leader
-      nonLeader(first, second, third).head gossipTo leader(first, second, third)
+      other1 gossipTo leader12
       runOn(first, second, third) {
         awaitMemberStatus(first, Up)
         awaitMemberStatus(second, Up)
