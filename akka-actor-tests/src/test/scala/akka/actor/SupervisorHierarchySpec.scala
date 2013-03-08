@@ -233,10 +233,8 @@ object SupervisorHierarchySpec {
         abort("invariant violated: " + state.kids.size + " != " + context.children.size)
       }
       cause match {
-        case f: Failure if f.failPost > 0 ⇒
-          f.failPost -= 1; throw f
-        case PostRestartException(`self`, f: Failure, _) if f.failPost > 0 ⇒
-          f.failPost -= 1; throw f
+        case f: Failure if f.failPost > 0 ⇒ { f.failPost -= 1; throw f }
+        case PostRestartException(`self`, f: Failure, _) if f.failPost > 0 ⇒ { f.failPost -= 1; throw f }
         case _ ⇒
       }
     }
@@ -274,8 +272,7 @@ object SupervisorHierarchySpec {
           setFlags(f.directive)
           stateCache.put(self, stateCache.get(self).copy(failConstr = f.copy()))
           throw f
-        case "ping" ⇒
-          Thread.sleep((Random.nextFloat * 1.03).toLong); sender ! "pong"
+        case "ping"      ⇒ { Thread.sleep((Random.nextFloat * 1.03).toLong); sender ! "pong" }
         case Dump(0)     ⇒ abort("dump")
         case Dump(level) ⇒ context.children foreach (_ ! Dump(level - 1))
         case Terminated(ref) ⇒

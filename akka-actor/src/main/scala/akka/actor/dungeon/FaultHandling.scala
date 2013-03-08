@@ -169,9 +169,8 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       suspendNonRecursive()
       // suspend children
       val skip: Set[ActorRef] = currentMessage match {
-        case Envelope(Failed(_, _), child) ⇒
-          setFailed(child); Set(child)
-        case _ ⇒ setFailed(self); Set.empty
+        case Envelope(Failed(_, _), child) ⇒ { setFailed(child); Set(child) }
+        case _                             ⇒ { setFailed(self); Set.empty }
       }
       suspendChildren(exceptFor = skip ++ childrenNotToSuspend)
       t match {
@@ -272,12 +271,9 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
      * then we are continuing the previously suspended recreate/create/terminate action
      */
     status match {
-      case Some(c @ ChildrenContainer.Recreation(cause)) ⇒
-        finishRecreate(cause, actor); c.dequeueAll()
-      case Some(c @ ChildrenContainer.Creation()) ⇒
-        finishCreate(); c.dequeueAll()
-      case Some(ChildrenContainer.Termination) ⇒
-        finishTerminate(); null
+      case Some(c @ ChildrenContainer.Recreation(cause)) ⇒ { finishRecreate(cause, actor); c.dequeueAll() }
+      case Some(c @ ChildrenContainer.Creation()) ⇒ { finishCreate(); c.dequeueAll() }
+      case Some(ChildrenContainer.Termination) ⇒ { finishTerminate(); null }
       case _ ⇒ null
     }
   }

@@ -38,10 +38,9 @@ case class ChildRestartStats(child: ActorRef, var maxNrOfRetriesCount: Int = 0, 
   def requestRestartPermission(retriesWindow: (Option[Int], Option[Int])): Boolean =
     retriesWindow match {
       case (Some(retries), _) if retries < 1 ⇒ false
-      case (Some(retries), None) ⇒
-        maxNrOfRetriesCount += 1; maxNrOfRetriesCount <= retries
-      case (x, Some(window)) ⇒ retriesInWindowOkay(if (x.isDefined) x.get else 1, window)
-      case (None, _)         ⇒ true
+      case (Some(retries), None)             ⇒ { maxNrOfRetriesCount += 1; maxNrOfRetriesCount <= retries }
+      case (x, Some(window))                 ⇒ retriesInWindowOkay(if (x.isDefined) x.get else 1, window)
+      case (None, _)                         ⇒ true
     }
 
   private def retriesInWindowOkay(retries: Int, window: Int): Boolean = {
@@ -277,38 +276,47 @@ abstract class SupervisorStrategy {
    * failure, which will lead to this actor re-throwing the exception which
    * caused the failure. The exception will not be wrapped.
    *
+   * This method calls [[akka.actor.SupervisorStrategy#logFailure]], which will
+   * log the failure unless it is escalated. You can customize the logging by
+   * setting [[akka.actor.SupervisorStrategy#loggingEnabled]] to `false` and
+   * do the logging inside the `decider` or override the `logFailure` method.
+   *
    * @param children is a lazy collection (a view)
    */
   def handleFailure(context: ActorContext, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Boolean = {
-    try {
-      val directive = decider.applyOrElse(cause, escalateDefault)
-      directive match {
-        case d @ Resume ⇒
-          logFailure(context, child, cause, d)
-          resumeChild(child, cause)
-          true
-        case d @ Restart ⇒
-          logFailure(context, child, cause, d)
-          processFailure(context, true, child, cause, stats, children)
-          true
-        case d @ Stop ⇒
-          logFailure(context, child, cause, d)
-          processFailure(context, false, child, cause, stats, children)
-          true
-        case d @ Escalate ⇒
-          logFailure(context, child, cause, d)
-          false
-      }
-    } catch {
-      case NonFatal(e) ⇒
-        // exception from the decider, or error handling action
-        publish(context, Error(e, context.self.path.toString, getClass, e.getMessage))
-        throw e
+    val directive = decider.applyOrElse(cause, escalateDefault)
+    directive match {
+      case d @ Resume ⇒
+        logFailure(context, child, cause, d)
+        resumeChild(child, cause)
+        true
+      case d @ Restart ⇒
+        logFailure(context, child, cause, d)
+        processFailure(context, true, child, cause, stats, children)
+        true
+      case d @ Stop ⇒
+        logFailure(context, child, cause, d)
+        processFailure(context, false, child, cause, stats, children)
+        true
+      case d @ Escalate ⇒
+        logFailure(context, child, cause, d)
+        false
     }
   }
 
+  /**
+   * Logging of actor failures is done when this is `true`.
+   */
   protected def loggingEnabled: Boolean = true
 
+  /**
+   * Default logging of actor failures when
+   * [[akka.actor.SupervisorStrategy#loggingEnabled]] is `true`.
+   * `Escalate` failures are not logged here, since they are supposed
+   * to be handled at a level higher up in the hierarchy.
+   * `Resume` failures are logged at `Warning` level.
+   * `Stop` and `Restart` failures are logged at `Error` level.
+   */
   protected def logFailure(context: ActorContext, child: ActorRef, cause: Throwable, decision: Directive): Unit =
     if (loggingEnabled) {
       val logMessage = cause match {
