@@ -314,7 +314,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       enterBarrier("after-leave")
     }
 
-    "take over when leader crashes in 5 nodes cluster" in within(35 seconds) {
+    "take over when leader crashes in 5 nodes cluster" in within(60 seconds) {
       system.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*")))
       system.eventStream.publish(Mute(EventFilter.error(pattern = ".*Disassociated.*")))
       system.eventStream.publish(Mute(EventFilter.error(pattern = ".*Association failed.*")))
@@ -324,12 +324,12 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       verify(sortedClusterRoles(2), msg = 8, expectedCurrent = 0)
     }
 
-    "take over when two leaders crash in 3 nodes cluster" in within(45 seconds) {
+    "take over when two leaders crash in 3 nodes cluster" in within(60 seconds) {
       crash(sortedClusterRoles(2), sortedClusterRoles(3))
       verify(sortedClusterRoles(4), msg = 9, expectedCurrent = 0)
     }
 
-    "take over when leader crashes in 2 nodes cluster" in within(25 seconds) {
+    "take over when leader crashes in 2 nodes cluster" in within(60 seconds) {
       crash(sortedClusterRoles(4))
       verify(sortedClusterRoles(5), msg = 10, expectedCurrent = 0)
     }
