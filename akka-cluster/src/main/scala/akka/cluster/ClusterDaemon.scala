@@ -405,8 +405,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
         latestGossip = seenVersionedGossip
 
-        log.debug("Cluster Node [{}] - Node [{}] is JOINING", selfAddress, node)
-        // treat join as initial heartbeat, so that it becomes unavailable if nothing more happens
+        log.info("Cluster Node [{}] - Node [{}] is JOINING", selfAddress, node)
         if (node != selfAddress) {
           gossipTo(node)
         }
