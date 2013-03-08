@@ -59,7 +59,6 @@ class ClusterSettings(val config: Config, val systemName: String) {
     case id ⇒ id
   }
   final val GossipDifferentViewProbability: Double = cc.getDouble("gossip-different-view-probability")
-  final val MaxGossipMergeRate: Double = cc.getDouble("max-gossip-merge-rate")
   final val SchedulerTickDuration: FiniteDuration = Duration(cc.getMilliseconds("scheduler.tick-duration"), MILLISECONDS)
   final val SchedulerTicksPerWheel: Int = cc.getInt("scheduler.ticks-per-wheel")
   final val MetricsEnabled: Boolean = cc.getBoolean("metrics.enabled")

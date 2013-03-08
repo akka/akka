@@ -540,8 +540,8 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
       latestGossip = winningGossip seen selfAddress
 
       // for all new joining nodes we remove them from the failure detector
-      (latestGossip.members -- localGossip.members).foreach {
-        node ⇒ if (node.status == Joining) failureDetector.remove(node.address)
+      latestGossip.members foreach {
+        node ⇒ if (node.status == Joining && !localGossip.members(node)) failureDetector.remove(node.address)
       }
 
       log.debug("Cluster Node [{}] - Receiving gossip from [{}]", selfAddress, from)

@@ -120,17 +120,21 @@ private[cluster] case class Gossip(
     overview.seen.get(address).exists(_ == version)
   }
 
-  private def mergeSeenTables(allowed: immutable.Set[Member], one: Map[Address, VectorClock], another: Map[Address, VectorClock]): Map[Address, VectorClock] = {
-    (one.filter { case (a, v) ⇒ allowed.exists(_.address == a) } /: another) {
-      case (merged, (address, oneVersion)) ⇒
-        if (allowed.exists(_.address == address)) {
-          val anotherVersion = merged.getOrElse(address, oneVersion)
-          anotherVersion tryCompareTo oneVersion match {
-            case None             ⇒ merged - address
-            case Some(x) if x > 0 ⇒ merged + (address -> anotherVersion)
-            case _                ⇒ merged + (address -> oneVersion)
-          }
-        } else merged
+  private def mergeSeenTables(allowed: Set[Member], one: Map[Address, VectorClock], another: Map[Address, VectorClock]): Map[Address, VectorClock] = {
+    (Map.empty[Address, VectorClock] /: allowed) {
+      (merged, member) ⇒
+        val address = member.address
+        (one.get(address), another.get(address)) match {
+          case (None, None)     ⇒ merged
+          case (Some(v1), None) ⇒ merged.updated(address, v1)
+          case (None, Some(v2)) ⇒ merged.updated(address, v2)
+          case (Some(v1), Some(v2)) ⇒
+            v1 tryCompareTo v2 match {
+              case None             ⇒ merged
+              case Some(x) if x > 0 ⇒ merged.updated(address, v1)
+              case _                ⇒ merged.updated(address, v2)
+            }
+        }
     }
   }
 
@@ -169,19 +173,14 @@ private[cluster] case class Gossip(
    * @return true if convergence have been reached and false if not
    */
   def convergence: Boolean = {
-    val unreachable = overview.unreachable
-    val seen = overview.seen
-
     // First check that:
     //   1. we don't have any members that are unreachable, or
     //   2. all unreachable members in the set have status DOWN
     // Else we can't continue to check for convergence
     // When that is done we check that all members exists in the seen table and
     // have the latest vector clock version
-    val hasUnreachable = unreachable.nonEmpty && unreachable.exists { _.status != Down }
-    def allMembersInSeenHasLatest = members.forall(m ⇒ seen.get(m.address).exists(_ == version))
 
-    !hasUnreachable && allMembersInSeenHasLatest
+    overview.unreachable.forall(_.status == Down) && members.forall(m ⇒ seenByAddress(m.address))
   }
 
   def isLeader(address: Address): Boolean = leader == Some(address)
