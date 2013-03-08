@@ -95,7 +95,7 @@ abstract class MBeanSpec
       enterBarrier("after-4")
     }
 
-    "support down" taggedAs LongRunningTest in {
+    "support down" taggedAs LongRunningTest in within(20 seconds) {
       val fourthAddress = address(fourth)
       runOn(first) {
         testConductor.shutdown(fourth, 0).await
