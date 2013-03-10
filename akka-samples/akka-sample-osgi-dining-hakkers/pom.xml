@@ -33,7 +33,7 @@
         <module>integration-test</module>
     </modules>
     <packaging>pom</packaging>
-    <name>com.typesafe.akka.akka-sample.akka-sample-osgi-dining-hakkers.sample</name>
+    <name>com.typesafe.akka.akka-sample.dining-hakkers.sample</name>
 
     <dependencyManagement>
         <dependencies>

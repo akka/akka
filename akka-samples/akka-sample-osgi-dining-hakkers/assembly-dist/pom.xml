@@ -54,7 +54,7 @@
                             <descriptors>
                                 <descriptor>mvn:org.apache.karaf.assemblies.features/standard/${karaf.version}/xml/features</descriptor>
                                 <descriptor>mvn:org.apache.karaf.assemblies.features/enterprise/${karaf.version}/xml/features</descriptor>
-                                <descriptor>mvn:com.typesafe.akka.akka-sample.akka-sample-osgi-dining-hakkers/assembly-features/${project.version}/xml/features</descriptor>
+                                <descriptor>mvn:com.typesafe.akka.akka-sample.dining-hakkers/assembly-features/${project.version}/xml/features</descriptor>
                             </descriptors>
                             <repository>target/generated-features-repo</repository>
                         </configuration>
