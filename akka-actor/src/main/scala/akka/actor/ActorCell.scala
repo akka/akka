@@ -383,7 +383,7 @@ private[akka] class ActorCell(
         case NoMessage                    ⇒ // only here to suppress warning
       }
     } catch handleNonFatalOrInterruptedException { e ⇒
-      handleInvokeFailure(Nil, e, "error while processing " + message)
+      handleInvokeFailure(Nil, e)
     }
     if (todo != null) systemInvoke(todo)
   }
@@ -398,7 +398,7 @@ private[akka] class ActorCell(
     }
     currentMessage = null // reset current message after successful invocation
   } catch handleNonFatalOrInterruptedException { e ⇒
-    handleInvokeFailure(Nil, e, e.getMessage)
+    handleInvokeFailure(Nil, e)
   } finally {
     checkReceiveTimeout // Reschedule receive timeout
   }

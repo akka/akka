@@ -81,6 +81,9 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
 
       Seq(".*received dead letter from.*ClientDisconnected",
         ".*received dead letter from.*deadLetters.*PoisonPill",
+        ".*received dead letter from.*Disassociated",
+        ".*received dead letter from.*DisassociateUnderlying",
+        ".*received dead letter from.*HandleListenerRegistered",
         ".*installing context org.jboss.netty.channel.DefaultChannelPipeline.*") foreach { s ⇒
           sys.eventStream.publish(Mute(EventFilter.warning(pattern = s)))
         }

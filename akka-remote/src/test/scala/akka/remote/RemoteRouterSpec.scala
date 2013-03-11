@@ -210,9 +210,7 @@ akka.actor.deployment {
 
       router ! CurrentRoutees
       EventFilter[ActorKilledException](occurrences = 1) intercept {
-        EventFilter[ActorKilledException](occurrences = 1).intercept {
-          expectMsgType[RouterRoutees].routees.head ! Kill
-        }(otherSystem)
+        expectMsgType[RouterRoutees].routees.head ! Kill
       }
       expectMsgType[ActorKilledException]
     }
