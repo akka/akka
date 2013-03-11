@@ -428,7 +428,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
       latestGossip = seenVersionedGossip
 
-      log.info("Cluster Node [{}] - Marked address [{}] as LEAVING", selfAddress, address)
+      log.info("Cluster Node [{}] - Marked address [{}] as [{}]", selfAddress, address, Leaving)
       publish(latestGossip)
     }
   }
@@ -437,7 +437,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
    * State transition to EXITING.
    */
   def exiting(address: Address): Unit = {
-    log.info("Cluster Node [{}] - Marked node [{}] as EXITING", selfAddress, address)
+    log.info("Cluster Node [{}] - Marked node [{}] as [{}]", selfAddress, address, Exiting)
     // FIXME implement when we implement hand-off
   }
 
@@ -475,7 +475,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
     val newMembers = downedMember match {
       case Some(m) ⇒
-        log.info("Cluster Node [{}] - Marking node [{}] as DOWN", selfAddress, m.address)
+        log.info("Cluster Node [{}] - Marking node [{}] as [{}]", selfAddress, m.address, Down)
         localMembers - m
       case None ⇒ localMembers
     }
@@ -485,7 +485,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
       localUnreachableMembers.map { member ⇒
         // no need to DOWN members already DOWN
         if (member.address == address && member.status != Down) {
-          log.info("Cluster Node [{}] - Marking unreachable node [{}] as DOWN", selfAddress, member.address)
+          log.info("Cluster Node [{}] - Marking unreachable node [{}] as [{}]", selfAddress, member.address, Down)
           member copy (status = Down)
         } else member
       }
@@ -786,25 +786,30 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
         // ----------------------
 
         // log the move of members from joining to up
-        upMembers foreach { member ⇒ log.info("Cluster Node [{}] - Leader is moving node [{}] from JOINING to UP", selfAddress, member.address) }
+        upMembers foreach { member ⇒
+          log.info("Cluster Node [{}] - Leader is moving node [{}] from [{}] to [{}]",
+            selfAddress, member.address, member.status, Up)
+        }
 
         //  tell all removed members to remove and shut down themselves
         removedMembers foreach { member ⇒
           val address = member.address
-          log.info("Cluster Node [{}] - Leader is moving node [{}] from EXITING to REMOVED - and removing node from node ring", selfAddress, address)
+          log.info("Cluster Node [{}] - Leader is moving node [{}] from [{}] to [{}] - and removing node from node ring",
+            selfAddress, address, member.status, Removed)
           clusterCore(address) ! ClusterLeaderAction.Remove(address)
         }
 
         //  tell all exiting members to exit
         exitingMembers foreach { member ⇒
           val address = member.address
-          log.info("Cluster Node [{}] - Leader is moving node [{}] from LEAVING to EXITING", selfAddress, address)
+          log.info("Cluster Node [{}] - Leader is moving node [{}] from [{}] to [{}]",
+            selfAddress, address, member.status, Exiting)
           clusterCore(address) ! ClusterLeaderAction.Exit(address) // FIXME should use ? to await completion of handoff?
         }
 
         // log the auto-downing of the unreachable nodes
         unreachableButNotDownedMembers foreach { member ⇒
-          log.info("Cluster Node [{}] - Leader is marking unreachable node [{}] as DOWN", selfAddress, member.address)
+          log.info("Cluster Node [{}] - Leader is marking unreachable node [{}] as [{}]", selfAddress, member.address, Down)
         }
 
         publish(latestGossip)

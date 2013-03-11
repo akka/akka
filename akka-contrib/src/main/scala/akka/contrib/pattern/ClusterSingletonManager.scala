@@ -422,7 +422,7 @@ class ClusterSingletonManager(
     case Event(MemberRemoved(m), BecomingLeaderData(Some(previousLeader))) if m.address == previousLeader ⇒
       logInfo("Previous leader [{}] removed", previousLeader)
       addRemoved(m.address)
-      gotoLeader(None)
+      stay
 
     case Event(TakeOverFromMe, BecomingLeaderData(None)) ⇒
       sender ! HandOverToMe
@@ -439,10 +439,10 @@ class ClusterSingletonManager(
         logInfo("Retry [{}], sending HandOverToMe to [{}]", count, previousLeaderOption)
         previousLeaderOption foreach { peer(_) ! HandOverToMe }
         setTimer(HandOverRetryTimer, HandOverRetry(count + 1), retryInterval, repeat = false)
-      } else if (previousLeaderOption.isEmpty) {
+      } else if (previousLeaderOption forall removed.contains) {
         // can't send HandOverToMe, previousLeader unknown for new node (or restart)
         // previous leader might be down or removed, so no TakeOverFromMe message is received
-        logInfo("Timeout in BecomingLeader. Previous leader unknown and no TakeOver request.")
+        logInfo("Timeout in BecomingLeader. Previous leader unknown, removed and no TakeOver request.")
         gotoLeader(None)
       } else
         throw new ClusterSingletonManagerIsStuck(
