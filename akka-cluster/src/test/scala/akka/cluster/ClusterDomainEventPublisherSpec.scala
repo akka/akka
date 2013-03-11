@@ -67,25 +67,13 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
       memberSubscriber.expectMsg(MemberUp(cUp))
     }
 
-    "publish leader changed when new leader after convergence" in {
+    "publish leader changed" in {
       publisher ! PublishChanges(g4)
       memberSubscriber.expectMsg(MemberUp(dUp))
       memberSubscriber.expectMsg(MemberUp(bUp))
       memberSubscriber.expectMsg(MemberUp(cUp))
+      memberSubscriber.expectMsg(LeaderChanged(Some(dUp.address)))
       memberSubscriber.expectNoMsg(1 second)
-
-      publisher ! PublishChanges(g5)
-      memberSubscriber.expectMsg(LeaderChanged(Some(dUp.address)))
-    }
-
-    "publish leader changed when new leader and convergence both before and after" in {
-      // convergence both before and after
-      publisher ! PublishChanges(g3)
-      memberSubscriber.expectMsg(MemberUp(bUp))
-      memberSubscriber.expectMsg(MemberUp(cUp))
-      publisher ! PublishChanges(g5)
-      memberSubscriber.expectMsg(MemberUp(dUp))
-      memberSubscriber.expectMsg(LeaderChanged(Some(dUp.address)))
     }
 
     "publish leader changed when old leader leaves and is removed" in {
@@ -96,33 +84,22 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
       memberSubscriber.expectNoMsg(1 second)
       publisher ! PublishChanges(g7)
       memberSubscriber.expectMsg(MemberExited(aExiting))
+      memberSubscriber.expectMsg(LeaderChanged(Some(bUp.address)))
       memberSubscriber.expectNoMsg(1 second)
       // at the removed member a an empty gossip is the last thing
       publisher ! PublishChanges(Gossip.empty)
       memberSubscriber.expectMsg(MemberRemoved(aRemoved))
       memberSubscriber.expectMsg(MemberRemoved(bRemoved))
       memberSubscriber.expectMsg(MemberRemoved(cRemoved))
-      memberSubscriber.expectMsg(LeaderChanged(Some(bUp.address)))
       memberSubscriber.expectMsg(LeaderChanged(None))
     }
 
-    "not publish leader changed when not convergence" in {
+    "not publish leader changed when same leader" in {
       publisher ! PublishChanges(g4)
-      memberSubscriber.expectMsg(MemberUp(dUp))
-      memberSubscriber.expectMsg(MemberUp(bUp))
-      memberSubscriber.expectMsg(MemberUp(cUp))
-      memberSubscriber.expectNoMsg(1 second)
-    }
-
-    "not publish leader changed when changed convergence but still same leader" in {
-      publisher ! PublishChanges(g5)
       memberSubscriber.expectMsg(MemberUp(dUp))
       memberSubscriber.expectMsg(MemberUp(bUp))
       memberSubscriber.expectMsg(MemberUp(cUp))
       memberSubscriber.expectMsg(LeaderChanged(Some(dUp.address)))
-
-      publisher ! PublishChanges(g4)
-      memberSubscriber.expectNoMsg(1 second)
 
       publisher ! PublishChanges(g5)
       memberSubscriber.expectNoMsg(1 second)
