@@ -739,7 +739,7 @@ Please note, that the child actors are *still restarted*, but no new ``ActorRef`
 the same principles for the children, ensuring that their ``preStart()`` method is called only at the creation of their
 refs.
 
-For more information see :ref:`what-restarting-means-scala`.
+For more information see :ref:`supervision-restart`.
 
 Initialization via message passing
 ----------------------------------

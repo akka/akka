@@ -124,8 +124,21 @@ private[remote] class EndpointException(msg: String, cause: Throwable) extends A
 /**
  * INTERNAL API
  */
+@SerialVersionUID(1L)
 private[remote] case class InvalidAssociation(localAddress: Address, remoteAddress: Address, cause: Throwable)
   extends EndpointException("Invalid address: " + remoteAddress, cause)
+
+/**
+ * INTERNAL API
+ */
+@SerialVersionUID(1L)
+private[remote] class EndpointDisassociatedException(msg: String) extends EndpointException(msg)
+
+/**
+ * INTERNAL API
+ */
+@SerialVersionUID(1L)
+private[remote] class EndpointAssociationException(msg: String, cause: Throwable) extends EndpointException(msg, cause)
 
 /**
  * INTERNAL API
@@ -184,11 +197,9 @@ private[remote] class EndpointWriter(
       stash()
       stay()
     case Event(Status.Failure(e: InvalidAssociationException), _) ⇒
-      log.error("Tried to associate with invalid remote address [{}]. " +
-        "Address is now quarantined, all messages to this address will be delivered to dead letters.", remoteAddress)
       publishAndThrow(new InvalidAssociation(localAddress, remoteAddress, e))
     case Event(Status.Failure(e), _) ⇒
-      publishAndThrow(new EndpointException(s"Association failed with [$remoteAddress]", e))
+      publishAndThrow(new EndpointAssociationException(s"Association failed with [$remoteAddress]", e))
     case Event(inboundHandle: AssociationHandle, _) ⇒
       // Assert handle == None?
       handle = Some(inboundHandle)
@@ -246,7 +257,7 @@ private[remote] class EndpointWriter(
   }
 
   whenUnhandled {
-    case Event(Terminated(r), _) if Some(r) == reader ⇒ publishAndThrow(new EndpointException("Disassociated"))
+    case Event(Terminated(r), _) if r == reader.orNull ⇒ publishAndThrow(new EndpointDisassociatedException("Disassociated"))
     case Event(TakeOver(newHandle), _) ⇒
       // Shutdown old reader
       handle foreach { _.disassociate() }

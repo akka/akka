@@ -352,24 +352,34 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     Some(context.system.scheduler.schedule(pruneInterval, pruneInterval, self, Prune))
   else None
 
-  override val supervisorStrategy = OneForOneStrategy(settings.MaximumRetriesInWindow, settings.RetryWindow) {
-    case InvalidAssociation(localAddress, remoteAddress, e) ⇒
-      endpoints.markAsFailed(sender, Deadline.now + settings.UnknownAddressGateClosedFor)
-      Stop
-
-    case NonFatal(e) ⇒
-      // Retrying immediately if the retry gate is disabled, and it is an endpoint used for writing.
-      if (!retryGateEnabled && endpoints.isWritable(sender)) {
-        // This strategy keeps all the messages in the stash of the endpoint so restart will transfer the queue
-        // to the restarted endpoint -- thus no messages are lost
-        Restart
-      } else {
-        // This strategy throws away all the messages enqueued in the endpoint (in its stash), registers the time of failure,
-        // keeps throwing away messages until the retry gate becomes open (time specified in RetryGateClosedFor)
-        endpoints.markAsFailed(sender, Deadline.now + settings.RetryGateClosedFor)
+  override val supervisorStrategy =
+    OneForOneStrategy(settings.MaximumRetriesInWindow, settings.RetryWindow, loggingEnabled = false) {
+      case InvalidAssociation(localAddress, remoteAddress, _) ⇒
+        log.error("Tried to associate with invalid remote address [{}]. " +
+          "Address is now quarantined, all messages to this address will be delivered to dead letters.", remoteAddress)
+        endpoints.markAsFailed(sender, Deadline.now + settings.UnknownAddressGateClosedFor)
         Stop
-      }
-  }
+
+      case NonFatal(e) ⇒
+
+        // logging
+        e match {
+          case _: EndpointDisassociatedException | _: EndpointAssociationException ⇒ // no logging
+          case _ ⇒ log.error(e, e.getMessage)
+        }
+
+        // Retrying immediately if the retry gate is disabled, and it is an endpoint used for writing.
+        if (!retryGateEnabled && endpoints.isWritable(sender)) {
+          // This strategy keeps all the messages in the stash of the endpoint so restart will transfer the queue
+          // to the restarted endpoint -- thus no messages are lost
+          Restart
+        } else {
+          // This strategy throws away all the messages enqueued in the endpoint (in its stash), registers the time of failure,
+          // keeps throwing away messages until the retry gate becomes open (time specified in RetryGateClosedFor)
+          endpoints.markAsFailed(sender, Deadline.now + settings.RetryGateClosedFor)
+          Stop
+        }
+    }
 
   def receive = {
     case Listen(addressesPromise) ⇒

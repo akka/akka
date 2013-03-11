@@ -21,24 +21,30 @@ class RemoteConfigSpec extends AkkaSpec(
   // FIXME: These tests are ignored as it tests configuration specific to the old remoting.
   "Remoting" must {
 
-    "be able to parse generic remote config elements" in {
-      val settings = RARP(system).provider.remoteSettings
-      import settings._
+    "contain correct configuration values in reference.conf" in {
+      val remoteSettings = RARP(system).provider.remoteSettings
+      import remoteSettings._
 
-      StartupTimeout must be === Timeout(10.seconds)
-      ShutdownTimeout must be === Timeout(10.seconds)
-      FlushWait must be === 2.seconds
-      UsePassiveConnections must be(true)
-      UntrustedMode must be(false)
-      LogRemoteLifecycleEvents must be(false)
       LogReceive must be(false)
       LogSend must be(false)
-      RetryGateClosedFor must be === 0.seconds
-      UnknownAddressGateClosedFor must be === 60.seconds
-      MaximumRetriesInWindow must be === 5
-      RetryWindow must be === 3.seconds
-      BackoffPeriod must be === 10.milliseconds
-      CommandAckTimeout must be === Timeout(30.seconds)
+      UntrustedMode must be(false)
+      LogRemoteLifecycleEvents must be(true)
+      ShutdownTimeout.duration must be(10 seconds)
+      FlushWait must be(2 seconds)
+      StartupTimeout.duration must be(10 seconds)
+      RetryGateClosedFor must be(Duration.Zero)
+      UnknownAddressGateClosedFor must be(1 minute)
+      UsePassiveConnections must be(true)
+      MaximumRetriesInWindow must be(5)
+      RetryWindow must be(3 seconds)
+      BackoffPeriod must be(10 millis)
+      CommandAckTimeout.duration must be(30 seconds)
+      Transports.size must be(1)
+      Transports.head._1 must be(classOf[akka.remote.transport.netty.NettyTransport].getName)
+      Transports.head._2 must be(Nil)
+      Adapters must be(Map(
+        "gremlin" -> classOf[akka.remote.transport.FailureInjectorProvider].getName,
+        "trttl" -> classOf[akka.remote.transport.ThrottlerProvider].getName))
 
     }
 
@@ -56,33 +62,6 @@ class RemoteConfigSpec extends AkkaSpec(
       FailureDetectorConfig.getDouble("threshold") must be(7.0 plusOrMinus 0.0001)
       FailureDetectorConfig.getInt("max-sample-size") must be(100)
       Duration(FailureDetectorConfig.getMilliseconds("min-std-deviation"), MILLISECONDS) must be(100 millis)
-
-    }
-
-    "contain correct configuration values in reference.conf" in {
-      val remoteSettings = RARP(system).provider.remoteSettings
-      import remoteSettings._
-
-      LogReceive must be(false)
-      LogSend must be(false)
-      UntrustedMode must be(false)
-      LogRemoteLifecycleEvents must be(false)
-      ShutdownTimeout.duration must be(10 seconds)
-      FlushWait must be(2 seconds)
-      StartupTimeout.duration must be(10 seconds)
-      RetryGateClosedFor must be(Duration.Zero)
-      UnknownAddressGateClosedFor must be(1 minute)
-      UsePassiveConnections must be(true)
-      MaximumRetriesInWindow must be(5)
-      RetryWindow must be(3 seconds)
-      BackoffPeriod must be(10 millis)
-      CommandAckTimeout.duration must be(30 seconds)
-      Transports.size must be(1)
-      Transports.head._1 must be(classOf[akka.remote.transport.netty.NettyTransport].getName)
-      Transports.head._2 must be(Nil)
-      Adapters must be(Map(
-        "gremlin" -> classOf[akka.remote.transport.FailureInjectorProvider].getName,
-        "trttl" -> classOf[akka.remote.transport.ThrottlerProvider].getName))
 
     }
 
