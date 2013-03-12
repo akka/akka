@@ -304,6 +304,8 @@ private[akka] object ActorCell {
   final val emptyBehaviorStack: List[Actor.Receive] = Nil
 
   final val emptyActorRefSet: Set[ActorRef] = immutable.TreeSet.empty
+
+  final val terminatedProps: Props = Props(() ⇒ throw new IllegalActorStateException("This Actor has been terminated"))
 }
 
 //ACTORCELL IS 64bytes and should stay that way unless very good reason not to (machine sympathy, cache line fit)
@@ -521,36 +523,35 @@ private[akka] class ActorCell(
     case _                               ⇒
   }
 
+  @tailrec private final def lookupAndSetField(clazz: Class[_], instance: AnyRef, name: String, value: Any): Boolean = {
+    if (try {
+      val field = clazz.getDeclaredField(name)
+      field.setAccessible(true)
+      field.set(instance, value)
+      true
+    } catch {
+      case e: NoSuchFieldException ⇒ false
+    }) true
+    else if (clazz.getSuperclass eq null) false
+    else lookupAndSetField(clazz.getSuperclass, instance, name, value)
+  }
+
+  final protected def clearActorCellFields(cell: ActorCell): Unit =
+    if (!lookupAndSetField(cell.getClass, cell, "props", ActorCell.terminatedProps))
+      throw new IllegalArgumentException("ActorCell has no props field")
+
   final protected def clearActorFields(actorInstance: Actor): Unit = {
     setActorFields(actorInstance, context = null, self = system.deadLetters)
     currentMessage = null
     behaviorStack = emptyBehaviorStack
   }
 
-  final protected def setActorFields(actorInstance: Actor, context: ActorContext, self: ActorRef) {
-    @tailrec
-    def lookupAndSetField(clazz: Class[_], actor: Actor, name: String, value: Any): Boolean = {
-      val success = try {
-        val field = clazz.getDeclaredField(name)
-        field.setAccessible(true)
-        field.set(actor, value)
-        true
-      } catch {
-        case e: NoSuchFieldException ⇒ false
-      }
-
-      if (success) true
-      else {
-        val parent: Class[_] = clazz.getSuperclass
-        if (parent eq null) throw new IllegalActorStateException(actorInstance.getClass + " is not an Actor since it have not mixed in the 'Actor' trait")
-        lookupAndSetField(parent, actor, name, value)
-      }
-    }
+  final protected def setActorFields(actorInstance: Actor, context: ActorContext, self: ActorRef): Unit =
     if (actorInstance ne null) {
-      lookupAndSetField(actorInstance.getClass, actorInstance, "context", context)
-      lookupAndSetField(actorInstance.getClass, actorInstance, "self", self)
+      if (!lookupAndSetField(actorInstance.getClass, actorInstance, "context", context)
+        || !lookupAndSetField(actorInstance.getClass, actorInstance, "self", self))
+        throw new IllegalActorStateException(actorInstance.getClass + " is not an Actor since it have not mixed in the 'Actor' trait")
     }
-  }
 
   // logging is not the main purpose, and if it fails there’s nothing we can do
   protected final def publish(e: LogEvent): Unit = try system.eventStream.publish(e) catch { case NonFatal(_) ⇒ }
