@@ -78,8 +78,8 @@
                 <artifactId>maven-bundle-plugin</artifactId>
                 <configuration>
                     <instructions>
-                        <Private-Package>akka.osgi.sample.internal, akka.osgi.sample.service</Private-Package>
-                        <Bundle-Activator>akka.osgi.sample.activation.Activator</Bundle-Activator>
+                        <Private-Package>akka.sample.osgi.internal, akka.sample.osgi.service</Private-Package>
+                        <Bundle-Activator>akka.sample.osgi.activation.Activator</Bundle-Activator>
                     </instructions>
                 </configuration>
             </plugin>
