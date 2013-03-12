@@ -96,7 +96,8 @@ object ClusterEvent {
   }
 
   /**
-   * Leader of the cluster members changed. Only published after convergence.
+   * Leader of the cluster members changed. Published when the state change
+   * is first seen on a node.
    */
   case class LeaderChanged(leader: Option[Address]) extends ClusterDomainEvent {
     /**
@@ -210,8 +211,6 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   import InternalClusterAction._
 
   var latestGossip: Gossip = Gossip.empty
-  var latestConvergedGossip: Gossip = Gossip.empty
-  var bufferedEvents: immutable.IndexedSeq[ClusterDomainEvent] = Vector.empty
 
   override def preRestart(reason: Throwable, message: Option[Any]) {
     // don't postStop when restarted, no children to stop
@@ -243,7 +242,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
       members = latestGossip.members,
       unreachable = latestGossip.overview.unreachable,
       seenBy = latestGossip.seenBy,
-      leader = latestConvergedGossip.leader)
+      leader = latestGossip.leader)
     receiver match {
       case Some(ref) ⇒ ref ! state
       case None      ⇒ publish(state)
@@ -275,15 +274,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
         case _ ⇒ publish(event)
       }
     }
-    // buffer up the LeaderChanged waiting for convergence
-    bufferedEvents ++= diffLeader(oldGossip, newGossip)
-    // if we have convergence then publish the MemberEvents and LeaderChanged
-    if (newGossip.convergence) {
-      val previousConvergedGossip = latestConvergedGossip
-      latestConvergedGossip = newGossip
-      bufferedEvents foreach publish
-      bufferedEvents = Vector.empty
-    }
+    diffLeader(oldGossip, newGossip) foreach publish
     // publish internal SeenState for testing purposes
     diffSeen(oldGossip, newGossip) foreach publish
   }
@@ -293,13 +284,12 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   def publish(event: AnyRef): Unit = eventStream publish event
 
   def publishStart(): Unit =
-    if ((latestGossip ne Gossip.empty) || (latestConvergedGossip ne Gossip.empty)) {
+    if (latestGossip ne Gossip.empty) {
       clearState()
       publishCurrentClusterState(None)
     }
 
   def clearState(): Unit = {
     latestGossip = Gossip.empty
-    latestConvergedGossip = Gossip.empty
   }
 }
