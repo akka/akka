@@ -289,7 +289,6 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
   def initialized: Actor.Receive = {
     case msg: GossipEnvelope              ⇒ receiveGossip(msg)
-    case msg: GossipMergeConflict         ⇒ receiveGossipMerge(msg)
     case GossipTick                       ⇒ gossip()
     case ReapUnreachableTick              ⇒ reapUnreachableMembers()
     case LeaderActionsTick                ⇒ leaderActions()
@@ -506,35 +505,6 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
   }
 
   /**
-   * When conflicting versions of received and local [[akka.cluster.Gossip]] is detected
-   * it's forwarded to the leader for conflict resolution. Trying to simultaneously
-   * resolving conflicts at several nodes creates new conflicts. Therefore the leader resolves
-   * conflicts to limit divergence. To avoid overload there is also a configurable rate
-   * limit of how many conflicts that are handled by second. If the limit is
-   * exceeded the conflicting gossip messages are dropped and will reappear later.
-   */
-  def receiveGossipMerge(merge: GossipMergeConflict): Unit = {
-    stats = stats.incrementMergeConflictCount
-    val rate = mergeRate(stats.mergeConflictCount)
-    if (rate <= MaxGossipMergeRate) {
-      receiveGossip(merge.a.copy(conversation = false))
-      receiveGossip(merge.b.copy(conversation = false))
-
-      // use one-way gossip from leader to reduce load of leader
-      def sendBack(to: Address): Unit = {
-        if (to != selfAddress && !latestGossip.overview.unreachable.exists(_.address == to))
-          oneWayGossipTo(to)
-      }
-
-      sendBack(merge.a.from)
-      sendBack(merge.b.from)
-
-    } else {
-      log.debug("Dropping gossip merge conflict due to rate [{}] / s ", rate)
-    }
-  }
-
-  /**
    * Receive new gossip.
    */
   def receiveGossip(envelope: GossipEnvelope): Unit = {
@@ -547,70 +517,47 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
     } else if (localGossip.overview.isNonDownUnreachable(from)) {
       log.debug("Ignoring received gossip from unreachable [{}] ", from)
     } else {
-
-      // leader handles merge conflicts, or when they have different views of how is leader
-      val handleMerge = localGossip.leader == Some(selfAddress) || localGossip.leader != remoteGossip.leader
       val comparison = remoteGossip.version tryCompareTo localGossip.version
       val conflict = comparison.isEmpty
 
-      if (conflict && !handleMerge) {
-        // delegate merge resolution to leader to reduce number of simultaneous resolves,
-        // which will result in new conflicts
+      val (winningGossip, talkback, newStats) = comparison match {
+        case None ⇒
+          // conflicting versions, merge
+          (remoteGossip merge localGossip, true, stats.incrementMergeCount)
+        case Some(0) ⇒
+          // same version
+          (remoteGossip mergeSeen localGossip, !remoteGossip.seenByAddress(selfAddress), stats.incrementSameCount)
+        case Some(x) if x < 0 ⇒
+          // local is newer
+          (localGossip, true, stats.incrementNewerCount)
+        case _ ⇒
+          // remote is newer
+          (remoteGossip, !remoteGossip.seenByAddress(selfAddress), stats.incrementOlderCount)
+      }
 
-        stats = stats.incrementMergeDetectedCount
-        log.debug("Merge conflict [{}] detected [{}] <> [{}]", stats.mergeDetectedCount, selfAddress, from)
+      stats = newStats
+      latestGossip = winningGossip seen selfAddress
 
-        stats = stats.incrementMergeConflictCount
-        val rate = mergeRate(stats.mergeConflictCount)
+      // for all new joining nodes we remove them from the failure detector
+      latestGossip.members foreach {
+        node ⇒ if (node.status == Joining && !localGossip.members(node)) failureDetector.remove(node.address)
+      }
 
-        if (rate <= MaxGossipMergeRate)
-          localGossip.leader foreach { clusterCore(_) ! GossipMergeConflict(GossipEnvelope(selfAddress, localGossip), envelope) }
-        else
-          log.debug("Skipping gossip merge conflict due to rate [{}] / s ", rate)
+      log.debug("Cluster Node [{}] - Receiving gossip from [{}]", selfAddress, from)
 
-      } else {
+      if (conflict) {
+        log.debug(
+          """Couldn't establish a causal relationship between "remote" gossip and "local" gossip - Remote[{}] - Local[{}] - merged them into [{}]""",
+          remoteGossip, localGossip, winningGossip)
+      }
 
-        val (winningGossip, talkback, newStats) = comparison match {
-          case None ⇒
-            // conflicting versions, merge, and new version
-            ((remoteGossip merge localGossip) :+ vclockNode, true, stats)
-          case Some(0) ⇒
-            // same version
-            // TODO optimize talkback based on how the merged seen differs
-            (remoteGossip mergeSeen localGossip, !remoteGossip.hasSeen(selfAddress), stats.incrementSameCount)
-          case Some(x) if x < 0 ⇒
-            // local is newer
-            (localGossip, true, stats.incrementNewerCount)
-          case _ ⇒
-            // remote is newer
-            (remoteGossip, !remoteGossip.hasSeen(selfAddress), stats.incrementOlderCount)
-        }
+      stats = stats.incrementReceivedGossipCount
+      publish(latestGossip)
 
-        stats = newStats
-        latestGossip = winningGossip seen selfAddress
-
-        // for all new joining nodes we remove them from the failure detector
-        (latestGossip.members -- localGossip.members).foreach {
-          node ⇒ if (node.status == Joining) failureDetector.remove(node.address)
-        }
-
-        log.debug("Cluster Node [{}] - Receiving gossip from [{}]", selfAddress, from)
-
-        if (conflict) {
-          stats = stats.incrementMergeCount
-          log.debug(
-            """Couldn't establish a causal relationship between "remote" gossip and "local" gossip - Remote[{}] - Local[{}] - merged them into [{}]""",
-            remoteGossip, localGossip, winningGossip)
-        }
-
-        stats = stats.incrementReceivedGossipCount
-        publish(latestGossip)
-
-        if (envelope.conversation && talkback) {
-          // send back gossip to sender when sender had different view, i.e. merge, or sender had
-          // older or sender had newer
-          gossipTo(from)
-        }
+      if (envelope.conversation && talkback) {
+        // send back gossip to sender when sender had different view, i.e. merge, or sender had
+        // older or sender had newer
+        gossipTo(from)
       }
     }
   }
@@ -621,8 +568,6 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
    * Initiates a new round of gossip.
    */
   def gossip(): Unit = {
-    stats = stats.copy(mergeConflictCount = 0)
-
     log.debug("Cluster Node [{}] - Initiating new round of gossip", selfAddress)
 
     if (!isSingletonCluster && isAvailable) {
@@ -1053,9 +998,7 @@ private[cluster] class OnMemberUpListener(callback: Runnable) extends Actor with
  */
 private[cluster] case class ClusterStats(
   receivedGossipCount: Long = 0L,
-  mergeConflictCount: Long = 0L,
   mergeCount: Long = 0L,
-  mergeDetectedCount: Long = 0L,
   sameCount: Long = 0L,
   newerCount: Long = 0L,
   olderCount: Long = 0L) {
@@ -1063,14 +1006,8 @@ private[cluster] case class ClusterStats(
   def incrementReceivedGossipCount(): ClusterStats =
     copy(receivedGossipCount = receivedGossipCount + 1)
 
-  def incrementMergeConflictCount(): ClusterStats =
-    copy(mergeConflictCount = mergeConflictCount + 1)
-
   def incrementMergeCount(): ClusterStats =
     copy(mergeCount = mergeCount + 1)
-
-  def incrementMergeDetectedCount(): ClusterStats =
-    copy(mergeDetectedCount = mergeDetectedCount + 1)
 
   def incrementSameCount(): ClusterStats =
     copy(sameCount = sameCount + 1)
@@ -1084,9 +1021,7 @@ private[cluster] case class ClusterStats(
   def :+(that: ClusterStats): ClusterStats = {
     ClusterStats(
       this.receivedGossipCount + that.receivedGossipCount,
-      this.mergeConflictCount + that.mergeConflictCount,
       this.mergeCount + that.mergeCount,
-      this.mergeDetectedCount + that.mergeDetectedCount,
       this.sameCount + that.sameCount,
       this.newerCount + that.newerCount,
       this.olderCount + that.olderCount)
@@ -1095,9 +1030,7 @@ private[cluster] case class ClusterStats(
   def :-(that: ClusterStats): ClusterStats = {
     ClusterStats(
       this.receivedGossipCount - that.receivedGossipCount,
-      this.mergeConflictCount - that.mergeConflictCount,
       this.mergeCount - that.mergeCount,
-      this.mergeDetectedCount - that.mergeDetectedCount,
       this.sameCount - that.sameCount,
       this.newerCount - that.newerCount,
       this.olderCount - that.olderCount)

@@ -84,7 +84,7 @@ object StressMultiJvmSpec extends MultiNodeConfig {
       normal-throughput-duration = 30s
       high-throughput-duration = 10s
       supervision-duration = 10s
-      supervision-one-iteration = 1s
+      supervision-one-iteration = 2.5s
       expected-test-duration = 600s
       # actors are created in a tree structure defined
       # by tree-width (number of children for each actor) and
