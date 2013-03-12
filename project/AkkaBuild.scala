@@ -70,6 +70,50 @@ object AkkaBuild extends Build {
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples)
   )
 
+  // this detached pseudo-project is used for running the tests against a different Scala version than the one used for compilation
+  // usage:
+  //   all-tests/test (or test-only)
+  // customizing (on the SBT command line):
+  //   set scalaVersion in allTests := "2.11.0"
+  lazy val allTests = Project(
+    id = "all-tests",
+    base = file("all-tests"),
+    dependencies = (akka.aggregate: Seq[ProjectReference]) map (_ % "test->test"),
+    settings = defaultSettings ++ Seq(
+      scalaVersion := "2.10.1-RC3", // FIXME no hardcoded value, has to be passed in manually
+      publishArtifact := false,
+      definedTests in Test := Nil
+    ) ++ (
+      (akka.aggregate: Seq[ProjectReference])
+        filterNot {
+          case LocalProject(name) => name contains "slf4j"
+          case _                  => false
+        } map {
+          pr => definedTests in Test <++= definedTests in (pr, Test)
+        }
+      )
+  )
+
+  // in order to run (some) tests with atmos tracing you’ll have to put a valid credentials file into "lib_managed"
+  lazy val atmos = Project(
+    id = "atmos",
+    base = file("atmos"),
+    dependencies = Seq(allTests % "test->test"),
+    settings = defaultSettings ++ Seq(
+      fork in Test := true,
+      definedTests in Test <<= definedTests in allTests in Test,
+      libraryDependencies += "org.aspectj" % "aspectjweaver" % "1.7.1",
+      libraryDependencies += "com.typesafe.atmos" % "trace-akka-2.1.1" % "1.2.0-M3" excludeAll(ExclusionRule(organization = "com.typesafe.akka")),
+      resolvers += "Atmos Repo" at "http://repo.typesafe.com/typesafe/atmos-releases/",
+      credentials <+= (baseDirectory in LocalProject(akka.id)) map ((b) => Credentials(b / "lib_managed/credentials")),
+      javaOptions in Test <++= (update) map { (u) =>
+          val art = u.configuration("compile").get.modules.flatMap(_.artifacts)
+          val f = art.filter(_._1.name == "aspectjweaver").map(_._2).head
+          Seq("-javaagent:" + f.getAbsolutePath, "-Dorg.aspectj.tracing.factory=default")
+        }
+    )
+  )
+
   lazy val actor = Project(
     id = "akka-actor",
     base = file("akka-actor"),
