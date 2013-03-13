@@ -26,7 +26,8 @@ object ReliableProxy {
         } else {
           log.debug("received msg of {} from {} with wrong serial", msg.asInstanceOf[AnyRef].getClass, snd)
         }
-      case Terminated(`target`) ⇒ context stop self
+      //TODO use exact match of target when all actor references have uid, i.e. actorFor has been removed
+      case Terminated(a) if a.path == target.path ⇒ context stop self
     }
   }
 

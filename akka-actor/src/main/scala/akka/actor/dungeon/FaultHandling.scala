@@ -134,7 +134,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
   private def finishCreate(): Unit = {
     try resumeNonRecursive()
     finally clearFailed()
-    create(uid)
+    create()
   }
 
   protected def terminate() {

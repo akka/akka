@@ -254,7 +254,7 @@ object StressMultiJvmSpec extends MultiNodeConfig {
 
     def maxDuration = results.map(_.duration).max
 
-    def totalClusterStats = results.foldLeft(ClusterStats()){_ :+ _.clusterStats}
+    def totalClusterStats = results.foldLeft(ClusterStats()) { _ :+ _.clusterStats }
 
     def formatMetrics: String = {
       import akka.cluster.Member.addressOrdering
@@ -302,7 +302,7 @@ object StressMultiJvmSpec extends MultiNodeConfig {
       s"${monitor}\t${subject}\t${phi.count}\t${phi.countAboveOne}\t${phi.max.form}"
 
     def formatStats: String =
-      (clusterStatsObservedByNode map { case (monitor, stats) => s"${monitor}\t${stats}" }).
+      (clusterStatsObservedByNode map { case (monitor, stats) ⇒ s"${monitor}\t${stats}" }).
         mkString("ClusterStats\n", "\n", "")
   }
 
@@ -403,7 +403,7 @@ object StressMultiJvmSpec extends MultiNodeConfig {
     def receive = {
       case StatsTick ⇒
         val res = StatsResult(cluster.selfAddress, cluster.readView.latestStats :- startStats)
-        reportTo foreach { _ !  res }
+        reportTo foreach { _ ! res }
       case ReportTo(ref) ⇒
         reportTo = ref
       case Reset ⇒
@@ -553,7 +553,9 @@ object StressMultiJvmSpec extends MultiNodeConfig {
    * Used for remote death watch testing
    */
   class Watchee extends Actor {
-    def receive = Actor.emptyBehavior
+    def receive = {
+      case Ping ⇒ sender ! Pong
+    }
   }
 
   /**
@@ -620,6 +622,9 @@ object StressMultiJvmSpec extends MultiNodeConfig {
   case object GetChildrenCount
   case class ChildrenCount(numberOfChildren: Int, numberOfChildRestarts: Int)
   case object Reset
+
+  case object Ping
+  case object Pong
 
 }
 
@@ -700,7 +705,7 @@ abstract class StressSpec
     runOn(roles.head) {
       val r = clusterResultAggregator
       watch(r)
-      expectMsgPF(remaining) { case Terminated(`r`) ⇒ true }
+      expectMsgPF(remaining) { case Terminated(a) if a.path == r.path ⇒ true }
     }
     enterBarrier("cluster-result-done-" + step)
   }
@@ -773,7 +778,9 @@ abstract class StressSpec
     }
     enterBarrier("watchee-created-" + step)
     runOn(roles.head) {
-      watch(system.actorFor(node(removeRole) / "user" / "watchee"))
+      system.actorFor(node(removeRole) / "user" / "watchee") ! Ping
+      expectMsg(Pong)
+      watch(lastSender)
     }
     enterBarrier("watch-estabilished-" + step)
 
@@ -790,9 +797,9 @@ abstract class StressSpec
     }
 
     runOn(roles.head) {
-      val expectedRef = system.actorFor(RootActorPath(removeAddress) / "user" / "watchee")
+      val expectedPath = RootActorPath(removeAddress) / "user" / "watchee"
       expectMsgPF(remaining) {
-        case Terminated(`expectedRef`) ⇒ true
+        case Terminated(a) if a.path == expectedPath ⇒ true
       }
     }
     enterBarrier("watch-verified-" + step)
@@ -939,7 +946,7 @@ abstract class StressSpec
       workResult.jobsPerSecond.form,
       workResult.retryCount, workResult.sendCount)
     watch(m)
-    expectMsgPF(remaining) { case Terminated(`m`) ⇒ true }
+    expectMsgPF(remaining) { case Terminated(a) if a.path == m.path ⇒ true }
     workResult
   }
 
@@ -947,7 +954,7 @@ abstract class StressSpec
     within(duration + 10.seconds) {
       val rounds = (duration.toMillis / oneIteration.toMillis).max(1).toInt
       val supervisor = system.actorOf(Props[Supervisor], "supervisor")
-      for (count <- 0 until rounds) {
+      for (count ← 0 until rounds) {
         createResultAggregator(title, expectedResults = nbrUsedRoles, includeInHistory = false)
 
         reportResult {

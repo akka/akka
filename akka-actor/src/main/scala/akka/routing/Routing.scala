@@ -35,7 +35,7 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
         " is invalid - you can not use a 'BalancingDispatcher' as a Router's dispatcher, you can however use it for the routees.")
   } else _props.routerConfig.verifyConfig()
 
-  override def newCell(old: UnstartedCell): Cell = new RoutedActorCell(system, this, props, supervisor).init(old.uid, sendSupervise = false)
+  override def newCell(old: UnstartedCell): Cell = new RoutedActorCell(system, this, props, supervisor).init(sendSupervise = false)
 
 }
 
@@ -76,7 +76,7 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
 
   def applyRoute(sender: ActorRef, message: Any): immutable.Iterable[Destination] = message match {
     case _: AutoReceivedMessage                ⇒ Destination(sender, self) :: Nil
-    case CurrentRoutees                        ⇒ sender ! RouterRoutees(_routees); Nil
+    case CurrentRoutees                        ⇒ { sender ! RouterRoutees(_routees); Nil }
     case msg if route.isDefinedAt(sender, msg) ⇒ route(sender, message)
     case _                                     ⇒ Nil
   }
@@ -94,13 +94,13 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
   }
 
   /**
-   * Adds the routees to existing routees.
+   * Removes the abandoned routees from existing routees.
    * Removes death watch of the routees. Doesn't stop the routees.
    * Not thread safe, but intended to be called from protected points, such as
    * `Resizer.resize`
    */
   private[akka] def removeRoutees(abandonedRoutees: immutable.Iterable[ActorRef]): Unit = {
-    _routees = abandonedRoutees.foldLeft(_routees) { (xs, x) ⇒ unwatch(x); xs.filterNot(_ == x) }
+    _routees = abandonedRoutees.foldLeft(_routees) { (xs, x) ⇒ unwatch(x); xs.filterNot(_.path == x.path) }
   }
 
   /**

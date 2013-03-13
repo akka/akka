@@ -40,7 +40,7 @@ private[akka] trait Dispatch { this: ActorCell ⇒
    * reasonably different from the previous UID of a possible actor with the same path,
    * which can be achieved by using ThreadLocalRandom.current.nextInt().
    */
-  final def init(uid: Int, sendSupervise: Boolean): this.type = {
+  final def init(sendSupervise: Boolean): this.type = {
     /*
      * Create the mailbox and enqueue the Create() message to ensure that
      * this is processed before anything else.
@@ -49,11 +49,11 @@ private[akka] trait Dispatch { this: ActorCell ⇒
     mailbox.setActor(this)
 
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-    mailbox.systemEnqueue(self, Create(uid))
+    mailbox.systemEnqueue(self, Create())
 
     if (sendSupervise) {
       // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-      parent.sendSystemMessage(akka.dispatch.Supervise(self, async = false, uid))
+      parent.sendSystemMessage(akka.dispatch.Supervise(self, async = false))
       parent ! NullMessage // read ScalaDoc of NullMessage to see why
     }
     this

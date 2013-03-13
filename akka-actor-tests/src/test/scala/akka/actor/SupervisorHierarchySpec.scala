@@ -54,7 +54,7 @@ object SupervisorHierarchySpec {
   }
 
   case class Ready(ref: ActorRef)
-  case class Died(ref: ActorRef)
+  case class Died(path: ActorPath)
   case object Abort
   case object PingOfDeath
   case object PongOfDeath
@@ -112,17 +112,17 @@ object SupervisorHierarchySpec {
    * upon Restart or would have to be managed by the highest supervisor (which
    * is undesirable).
    */
-  case class HierarchyState(log: Vector[Event], kids: Map[ActorRef, Int], failConstr: Failure)
-  val stateCache = new ConcurrentHashMap[ActorRef, HierarchyState]()
+  case class HierarchyState(log: Vector[Event], kids: Map[ActorPath, Int], failConstr: Failure)
+  val stateCache = new ConcurrentHashMap[ActorPath, HierarchyState]()
 
   class Hierarchy(size: Int, breadth: Int, listener: ActorRef, myLevel: Int) extends Actor {
 
     var log = Vector.empty[Event]
 
-    stateCache.get(self) match {
+    stateCache.get(self.path) match {
       case hs @ HierarchyState(l: Vector[Event], _, f: Failure) if f.failConstr > 0 ⇒
         val log = l :+ Event("Failed in constructor", identityHashCode(this))
-        stateCache.put(self, hs.copy(log = log, failConstr = f.copy(failConstr = f.failConstr - 1)))
+        stateCache.put(self.path, hs.copy(log = log, failConstr = f.copy(failConstr = f.failConstr - 1)))
         throw f
       case _ ⇒
     }
@@ -149,7 +149,7 @@ object SupervisorHierarchySpec {
       log :+= Event("started", identityHashCode(this))
       listener ! Ready(self)
       val s = size - 1 // subtract myself
-      val kidInfo: Map[ActorRef, Int] =
+      val kidInfo: Map[ActorPath, Int] =
         if (s > 0) {
           val kids = Random.nextInt(Math.min(breadth, s)) + 1
           val sizes = s / kids
@@ -158,10 +158,10 @@ object SupervisorHierarchySpec {
           (1 to kids).map { (id) ⇒
             val kidSize = if (rest > 0) { rest -= 1; sizes + 1 } else sizes
             val props = propsTemplate.withCreator(new Hierarchy(kidSize, breadth, listener, myLevel + 1))
-            (context.watch(context.actorOf(props, id.toString)), kidSize)
+            (context.watch(context.actorOf(props, id.toString)).path, kidSize)
           }(collection.breakOut)
         } else Map()
-      stateCache.put(self, HierarchyState(log, kidInfo, null))
+      stateCache.put(self.path, HierarchyState(log, kidInfo, null))
     }
 
     var preRestartCalled = false
@@ -178,12 +178,12 @@ object SupervisorHierarchySpec {
               context.unwatch(child)
               context.stop(child)
             }
-            stateCache.put(self, stateCache.get(self).copy(log = log))
+            stateCache.put(self.path, stateCache.get(self.path).copy(log = log))
             if (f.failPre > 0) {
               f.failPre -= 1
               throw f
             }
-          case _ ⇒ stateCache.put(self, stateCache.get(self).copy(log = log))
+          case _ ⇒ stateCache.put(self.path, stateCache.get(self.path).copy(log = log))
         }
       }
     }
@@ -217,14 +217,14 @@ object SupervisorHierarchySpec {
     })
 
     override def postRestart(cause: Throwable) {
-      val state = stateCache.get(self)
+      val state = stateCache.get(self.path)
       log = state.log
       log :+= Event("restarted " + suspendCount + " " + cause, identityHashCode(this))
       state.kids foreach {
-        case (child, kidSize) ⇒
-          val name = child.path.name
-          if (context.actorFor(name).isTerminated) {
-            listener ! Died(child)
+        case (childPath, kidSize) ⇒
+          val name = childPath.name
+          if (context.child(name).isEmpty) {
+            listener ! Died(childPath)
             val props = Props(new Hierarchy(kidSize, breadth, listener, myLevel + 1)).withDispatcher("hierarchy")
             context.watch(context.actorOf(props, name))
           }
@@ -243,7 +243,7 @@ object SupervisorHierarchySpec {
       if (failed || suspended) {
         listener ! ErrorLog("not resumed (" + failed + ", " + suspended + ")", log)
       } else {
-        stateCache.put(self, HierarchyState(log, Map(), null))
+        stateCache.put(self.path, HierarchyState(log, Map(), null))
       }
     }
 
@@ -270,7 +270,7 @@ object SupervisorHierarchySpec {
       val handler: Receive = {
         case f: Failure ⇒
           setFlags(f.directive)
-          stateCache.put(self, stateCache.get(self).copy(failConstr = f.copy()))
+          stateCache.put(self.path, stateCache.get(self.path).copy(failConstr = f.copy()))
           throw f
         case "ping"      ⇒ { Thread.sleep((Random.nextFloat * 1.03).toLong); sender ! "pong" }
         case Dump(0)     ⇒ abort("dump")
@@ -281,9 +281,9 @@ object SupervisorHierarchySpec {
            * (if the unwatch() came too late), so just ignore in this case.
            */
           val name = ref.path.name
-          if (pongsToGo == 0 && context.actorFor(name).isTerminated) {
-            listener ! Died(ref)
-            val kids = stateCache.get(self).kids(ref)
+          if (pongsToGo == 0 && context.child(name).isEmpty) {
+            listener ! Died(ref.path)
+            val kids = stateCache.get(self.path).kids(ref.path)
             val props = Props(new Hierarchy(kids, breadth, listener, myLevel + 1)).withDispatcher("hierarchy")
             context.watch(context.actorOf(props, name))
           } else {
@@ -469,8 +469,8 @@ object SupervisorHierarchySpec {
       case x if x > 0.03 ⇒ 1
       case _             ⇒ 2
     }
-    private def bury(ref: ActorRef): Unit = {
-      val deadGuy = ref.path.elements
+    private def bury(path: ActorPath): Unit = {
+      val deadGuy = path.elements
       val deadGuySize = deadGuy.size
       val isChild = (other: ActorRef) ⇒ other.path.elements.take(deadGuySize) == deadGuy
       idleChildren = idleChildren filterNot isChild
@@ -499,8 +499,8 @@ object SupervisorHierarchySpec {
         else context.system.scheduler.scheduleOnce(workSchedule, self, Work)(context.dispatcher)
         stay using (x - 1)
       case Event(Work, _) ⇒ if (pingChildren.isEmpty) goto(LastPing) else goto(Finishing)
-      case Event(Died(ref), _) ⇒
-        bury(ref)
+      case Event(Died(path), _) ⇒
+        bury(path)
         stay
       case Event("pong", _) ⇒
         pingChildren -= sender
@@ -631,7 +631,7 @@ object SupervisorHierarchySpec {
         case l: LocalActorRef ⇒
           l.underlying.actor match {
             case h: Hierarchy ⇒ errors :+= target -> ErrorLog("forced", h.log)
-            case _            ⇒ errors :+= target -> ErrorLog("fetched", stateCache.get(target).log)
+            case _            ⇒ errors :+= target -> ErrorLog("fetched", stateCache.get(target.path).log)
           }
           if (depth > 0) {
             l.underlying.children foreach (getErrors(_, depth - 1))
@@ -644,7 +644,7 @@ object SupervisorHierarchySpec {
         case l: LocalActorRef ⇒
           l.underlying.actor match {
             case h: Hierarchy ⇒ errors :+= target -> ErrorLog("forced", h.log)
-            case _            ⇒ errors :+= target -> ErrorLog("fetched", stateCache.get(target).log)
+            case _            ⇒ errors :+= target -> ErrorLog("fetched", stateCache.get(target.path).log)
           }
           if (target != hierarchy) getErrorsUp(l.getParent)
       }

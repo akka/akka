@@ -241,7 +241,8 @@ private[akka] class RemoteActorRefProvider(
           } else {
             try {
               val localAddress = transport.localAddressForRemote(addr)
-              val rpath = RootActorPath(addr) / "remote" / localAddress.protocol / localAddress.hostPort / path.elements
+              val rpath = (RootActorPath(addr) / "remote" / localAddress.protocol / localAddress.hostPort / path.elements).
+                withUid(path.uid)
               new RemoteActorRef(transport, localAddress, rpath, supervisor, Some(props), Some(d))
             } catch {
               case NonFatal(e) ⇒
@@ -280,15 +281,19 @@ private[akka] class RemoteActorRefProvider(
    * Called in deserialization of incoming remote messages. In this case the correct local address is known, therefore
    * this method is faster than the actorFor above.
    */
-  def actorForWithLocalAddress(ref: InternalActorRef, path: String, localAddress: Address): InternalActorRef = path match {
-    case ActorPathExtractor(address, elems) ⇒
-      if (hasAddress(address)) actorFor(rootGuardian, elems)
-      else new RemoteActorRef(transport, localAddress,
-        new RootActorPath(address) / elems, Nobody, props = None, deploy = None)
-    case _ ⇒ local.actorFor(ref, path)
+  def actorForWithLocalAddress(ref: InternalActorRef, path: String, localAddress: Address): InternalActorRef = {
+    path match {
+      case ActorPathExtractor(address, elems) ⇒
+        if (hasAddress(address)) actorFor(rootGuardian, elems)
+        else new RemoteActorRef(transport, localAddress,
+          new RootActorPath(address) / elems, Nobody, props = None, deploy = None)
+      case _ ⇒
+        local.actorFor(ref, path)
+    }
   }
 
-  def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef = local.actorFor(ref, path)
+  def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
+    local.actorFor(ref, path)
 
   /**
    * Using (checking out) actor on a specific node.
@@ -297,7 +302,7 @@ private[akka] class RemoteActorRefProvider(
     log.debug("[{}] Instantiating Remote Actor [{}]", rootPath, path)
 
     // we don’t wait for the ACK, because the remote end will process this command before any other message to the new actor
-    actorFor(RootActorPath(path.address) / "remote") ! DaemonMsgCreate(props, deploy, path.toString, supervisor)
+    actorFor(RootActorPath(path.address) / "remote") ! DaemonMsgCreate(props, deploy, path.toSerializationFormat, supervisor)
   }
 
   def getExternalAddressFor(addr: Address): Option[Address] = {
