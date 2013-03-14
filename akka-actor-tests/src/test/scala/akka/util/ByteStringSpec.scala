@@ -39,7 +39,7 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
   implicit val arbitraryByteStringSlice: Arbitrary[ByteStringSlice] = Arbitrary {
     for {
       xs ← arbitraryByteString.arbitrary
-      from ← choose(0, xs.length)
+      from ← choose(0, xs.length - 1)
       until ← choose(from, xs.length)
     } yield (xs, from, until)
   }
