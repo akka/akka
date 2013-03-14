@@ -257,7 +257,7 @@ trait ActorRefFactory {
   def actorFor(path: Iterable[String]): ActorRef = provider.actorFor(lookupRoot, path)
 
   /**
-   * ''Java API'': Look-up an actor by applying the given path elements, starting from the
+   * Java API: Look-up an actor by applying the given path elements, starting from the
    * current context, where `".."` signifies the parent of an actor.
    *
    * Example:

@@ -103,7 +103,7 @@ class Agent[T](initialValue: T, refFactory: ActorRefFactory, system: ActorSystem
   def this(initialValue: T, system: ActorSystem) = this(initialValue, system, system)
 
   /**
-   * Read the internal state of the agent.
+   * Java API: Read the internal state of the agent.
    */
   def get(): T = ref.single.get
 

@@ -111,8 +111,6 @@ abstract class JavaPartialFunction[A, B] extends AbstractPartialFunction[A, B] {
  * This class represents optional values. Instances of <code>Option</code>
  * are either instances of case class <code>Some</code> or it is case
  * object <code>None</code>.
- * <p>
- * Java API
  */
 sealed abstract class Option[A] extends java.lang.Iterable[A] {
   def get: A
@@ -174,9 +172,20 @@ object Option {
  * This class hold common utilities for Java
  */
 object Util {
+
+  /**
+   * Returns a ClassTag describing the provided Class.
+   */
   def classTag[T](clazz: Class[T]): ClassTag[T] = ClassTag(clazz)
 
+  /**
+   * Turns an array into a Scala sequence.
+   */
   def arrayToSeq[T](arr: Array[T]): Seq[T] = arr.toSeq
 
+  /**
+   * Returns a Scala sequence representing the provided array of Classes,
+   * an overloading of the generic arrayToSeq in Util, to accommodate for erasure.
+   */
   def arrayToSeq(classes: Array[Class[_]]): Seq[Class[_]] = classes.toSeq
 }

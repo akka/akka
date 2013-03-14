@@ -26,27 +26,21 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
   def headers(names: Set[String]): Map[String, Any] = headers filterKeys names
 
   /**
-   * Returns those headers from this message whose name is contained in <code>names</code>.
+   * Java API: Returns those headers from this message whose name is contained in <code>names</code>.
    * The returned headers map is backed up by an immutable headers map. Any attempt to modify
    * the returned map will throw an exception.
-   * <p>
-   * Java API
    */
   def getHeaders(names: JSet[String]): JMap[String, Any] = headers(names.toSet)
 
   /**
-   * Returns all headers from this message. The returned headers map is backed up by this
+   * Java API: Returns all headers from this message. The returned headers map is backed up by this
    * message's immutable headers map. Any attempt to modify the returned map will throw an
    * exception.
-   * <p>
-   * Java API
    */
   def getHeaders: JMap[String, Any] = headers
 
   /**
-   * Creates a new CamelMessage with given <code>headers</code>. A copy of the headers map is made.
-   * <p>
-   * Java API
+   * Java API: Creates a new CamelMessage with given <code>headers</code>. A copy of the headers map is made.
    */
   def withHeaders[A](headers: JMap[String, A]): CamelMessage = copy(this.body, headers.toMap)
 
@@ -64,13 +58,11 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
     Try(headers.get(name).map(camelContext.getTypeConverter.mandatoryConvertTo[T](t.runtimeClass.asInstanceOf[Class[T]], _)).getOrElse(throw new NoSuchElementException(name)))
 
   /**
-   * Returns the header by given <code>name</code> parameter. The header is  converted to type <code>T</code> as defined by the <code>clazz</code> parameter.
+   * Java API: Returns the header by given <code>name</code> parameter. The header is  converted to type <code>T</code> as defined by the <code>clazz</code> parameter.
    * An exception is thrown when the conversion to the type <code>T</code> fails or when the header cannot be found.
    * <p>
    * The CamelContext is accessible in a [[akka.camel.javaapi.UntypedConsumerActor]] and [[akka.camel.javaapi.UntypedProducerActor]]
    * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
-   * <p>
-   * Java API
    */
   def getHeaderAs[T](name: String, clazz: Class[T], camelContext: CamelContext): T = headerAs[T](name)(ClassTag(clazz), camelContext).get
 
@@ -81,10 +73,8 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
   def mapBody[A, B](transformer: A ⇒ B): CamelMessage = copy(body = transformer(body.asInstanceOf[A]))
 
   /**
-   * Returns a new CamelMessage with a transformed body using a <code>transformer</code> function.
+   * Java API: Returns a new CamelMessage with a transformed body using a <code>transformer</code> function.
    * This method will throw a [[java.lang.ClassCastException]] if the body cannot be mapped to type A.
-   * <p>
-   * Java API
    */
   def mapBody[A, B](transformer: Mapper[A, B]): CamelMessage = copy(body = transformer(body.asInstanceOf[A]))
 
@@ -97,15 +87,12 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
   def bodyAs[T](implicit t: ClassTag[T], camelContext: CamelContext): T = getBodyAs(t.runtimeClass.asInstanceOf[Class[T]], camelContext)
 
   /**
-   * Returns the body of the message converted to the type as given by the <code>clazz</code>
+   * Java API: Returns the body of the message converted to the type as given by the <code>clazz</code>
    * parameter. Conversion is done using Camel's type converter. The type converter is obtained
    * from the CamelContext that is passed in.
    * <p>
    * The CamelContext is accessible in a [[akka.camel.javaapi.UntypedConsumerActor]] and [[akka.camel.javaapi.UntypedProducerActor]]
    * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
-   * <p>
-   * Java API
-   *
    */
   def getBodyAs[T](clazz: Class[T], camelContext: CamelContext): T = {
     val result = camelContext.getTypeConverter.mandatoryConvertTo[T](clazz, body)
@@ -124,9 +111,7 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
   }
 
   /**
-   * Returns a new CamelMessage with a new body, while keeping the same headers.
-   * <p>
-   * Java API
+   * Java API: Returns a new CamelMessage with a new body, while keeping the same headers.
    */
   def withBody[T](body: T) = this.copy(body = body)
   /**
@@ -137,12 +122,10 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
   def withBodyAs[T](implicit t: ClassTag[T], camelContext: CamelContext): CamelMessage = withBodyAs(t.runtimeClass.asInstanceOf[Class[T]])
 
   /**
-   * Creates a CamelMessage with current <code>body</code> converted to type <code>clazz</code>.
+   * Java API: Creates a CamelMessage with current <code>body</code> converted to type <code>clazz</code>.
    * <p>
    * The CamelContext is accessible in a [[akka.camel.javaapi.UntypedConsumerActor]] and [[akka.camel.javaapi.UntypedProducerActor]]
    * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
-   * <p>
-   * Java API
    */
   def withBodyAs[T](clazz: Class[T])(implicit camelContext: CamelContext): CamelMessage = copy(body = getBodyAs(clazz, camelContext))
 

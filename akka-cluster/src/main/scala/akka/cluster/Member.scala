@@ -99,32 +99,32 @@ object MemberStatus {
   case object Removed extends MemberStatus
 
   /**
-   * JAVA API
+   * Java API: retrieve the “joining” status singleton
    */
   def joining: MemberStatus = Joining
 
   /**
-   * JAVA API
+   * Java API: retrieve the “up” status singleton
    */
   def up: MemberStatus = Up
 
   /**
-   * JAVA API
+   * Java API: retrieve the “leaving” status singleton
    */
   def leaving: MemberStatus = Leaving
 
   /**
-   * JAVA API
+   * Java API: retrieve the “exiting” status singleton
    */
   def exiting: MemberStatus = Exiting
 
   /**
-   * JAVA API
+   * Java API: retrieve the “down” status singleton
    */
   def down: MemberStatus = Down
 
   /**
-   * JAVA API
+   * Java API: retrieve the “removed” status singleton
    */
   def removed: MemberStatus = Removed
 }

@@ -669,7 +669,7 @@ object TestKit {
   def now: Duration = System.nanoTime().nanos
 
   /**
-   * Java API. Scale timeouts (durations) during tests with the configured
+   * Java API: Scale timeouts (durations) during tests with the configured
    * 'akka.test.timefactor'.
    */
   def dilated(duration: Duration, system: ActorSystem): Duration =

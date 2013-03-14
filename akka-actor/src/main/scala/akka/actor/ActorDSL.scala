@@ -61,7 +61,7 @@ import java.util.concurrent.TimeUnit
  * }}}
  *
  * Note that `actor` can be used with an implicit [[akka.actor.ActorRefFactory]]
- * as shown with `"barney"` (where the [[akka.actor.ActorContext serves this
+ * as shown with `"barney"` (where the [[akka.actor.ActorContext]] serves this
  * purpose), but since nested declarations share the same
  * lexical context `"fred"`’s ActorContext would be ambiguous
  * if the [[akka.actor.ActorSystem]] were declared `implicit` (this could also
