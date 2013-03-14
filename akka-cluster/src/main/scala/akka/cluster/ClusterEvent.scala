@@ -35,7 +35,8 @@ object ClusterEvent {
     members: immutable.SortedSet[Member] = immutable.SortedSet.empty,
     unreachable: Set[Member] = Set.empty,
     seenBy: Set[Address] = Set.empty,
-    leader: Option[Address] = None) extends ClusterDomainEvent {
+    leader: Option[Address] = None,
+    roleLeaderMap: Map[String, Option[Address]] = Map.empty) extends ClusterDomainEvent {
 
     /**
      * Java API: get current member list.
@@ -61,6 +62,28 @@ object ClusterEvent {
      * Java API: get address of current leader, or null if none
      */
     def getLeader: Address = leader orNull
+
+    /**
+     * All node roles in the cluster
+     */
+    def allRoles: Set[String] = roleLeaderMap.keySet
+
+    /**
+     * Java API: All node roles in the cluster
+     */
+    def getAllRoles: java.util.Set[String] =
+      scala.collection.JavaConverters.setAsJavaSetConverter(allRoles).asJava
+
+    /**
+     * get address of current leader, if any, within the role set
+     */
+    def roleLeader(role: String): Option[Address] = roleLeaderMap.getOrElse(role, None)
+
+    /**
+     * Java API: get address of current leader within the role set,
+     * or null if no node with that role
+     */
+    def getRoleLeader(role: String): Address = roleLeaderMap.get(role).flatten.orNull
   }
 
   /**
@@ -100,6 +123,18 @@ object ClusterEvent {
    * is first seen on a node.
    */
   case class LeaderChanged(leader: Option[Address]) extends ClusterDomainEvent {
+    /**
+     * Java API
+     * @return address of current leader, or null if none
+     */
+    def getLeader: Address = leader orNull
+  }
+
+  /**
+   * First member (leader) of the members within a role set changed.
+   * Published when the state change is first seen on a node.
+   */
+  case class RoleLeaderChanged(role: String, leader: Option[Address]) extends ClusterDomainEvent {
     /**
      * Java API
      * @return address of current leader, or null if none
@@ -184,9 +219,22 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
-  private[cluster] def diffLeader(oldGossip: Gossip, newGossip: Gossip): immutable.Seq[LeaderChanged] =
-    if (newGossip.leader != oldGossip.leader) List(LeaderChanged(newGossip.leader))
+  private[cluster] def diffLeader(oldGossip: Gossip, newGossip: Gossip): immutable.Seq[LeaderChanged] = {
+    val newLeader = newGossip.leader
+    if (newLeader != oldGossip.leader) List(LeaderChanged(newLeader))
     else Nil
+  }
+
+  /**
+   * INTERNAL API
+   */
+  private[cluster] def diffRolesLeader(oldGossip: Gossip, newGossip: Gossip): Set[RoleLeaderChanged] = {
+    for {
+      role ← (oldGossip.allRoles ++ newGossip.allRoles)
+      newLeader = newGossip.roleLeader(role)
+      if newLeader != oldGossip.roleLeader(role)
+    } yield RoleLeaderChanged(role, newLeader)
+  }
 
   /**
    * INTERNAL API
@@ -242,7 +290,8 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
       members = latestGossip.members,
       unreachable = latestGossip.overview.unreachable,
       seenBy = latestGossip.seenBy,
-      leader = latestGossip.leader)
+      leader = latestGossip.leader,
+      roleLeaderMap = latestGossip.allRoles.map(r ⇒ r -> latestGossip.roleLeader(r))(collection.breakOut))
     receiver match {
       case Some(ref) ⇒ ref ! state
       case None      ⇒ publish(state)
@@ -275,6 +324,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
       }
     }
     diffLeader(oldGossip, newGossip) foreach publish
+    diffRolesLeader(oldGossip, newGossip) foreach publish
     // publish internal SeenState for testing purposes
     diffSeen(oldGossip, newGossip) foreach publish
   }

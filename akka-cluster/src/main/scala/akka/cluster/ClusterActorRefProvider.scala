@@ -116,11 +116,13 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
           if (deploy.routerConfig.isInstanceOf[RemoteRouterConfig])
             throw new ConfigurationException("Cluster deployment can't be combined with [%s]".format(deploy.routerConfig))
 
+          import ClusterRouterSettings.useRoleOption
           val clusterRouterSettings = ClusterRouterSettings(
             totalInstances = deploy.config.getInt("nr-of-instances"),
             maxInstancesPerNode = deploy.config.getInt("cluster.max-nr-of-instances-per-node"),
             allowLocalRoutees = deploy.config.getBoolean("cluster.allow-local-routees"),
-            routeesPath = deploy.config.getString("cluster.routees-path"))
+            routeesPath = deploy.config.getString("cluster.routees-path"),
+            useRole = useRoleOption(deploy.config.getString("cluster.use-role")))
 
           Some(deploy.copy(
             routerConfig = ClusterRouterConfig(deploy.routerConfig, clusterRouterSettings), scope = ClusterScope))

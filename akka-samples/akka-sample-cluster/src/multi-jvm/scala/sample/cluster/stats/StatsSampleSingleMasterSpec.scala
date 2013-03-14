@@ -31,6 +31,7 @@ object StatsSampleSingleMasterSpecConfig extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
+    akka.cluster.roles = [compute]
     akka.cluster.auto-join = off
     # don't use sigar for tests, native lib not in path
     akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
@@ -43,6 +44,7 @@ object StatsSampleSingleMasterSpecConfig extends MultiNodeConfig {
             enabled = on
             max-nr-of-instances-per-node = 3
             allow-local-routees = off
+            use-role = compute
           }
         }
     }
@@ -75,15 +77,15 @@ abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSing
       Cluster(system) join node(first).address
 
       expectMsgAllOf(
-        MemberUp(Member(node(first).address, MemberStatus.Up)),
-        MemberUp(Member(node(second).address, MemberStatus.Up)),
-        MemberUp(Member(node(third).address, MemberStatus.Up)))
+        MemberUp(Member(node(first).address, MemberStatus.Up, Set.empty)),
+        MemberUp(Member(node(second).address, MemberStatus.Up, Set.empty)),
+        MemberUp(Member(node(third).address, MemberStatus.Up, Set.empty)))
 
       Cluster(system).unsubscribe(testActor)
 
       system.actorOf(Props(new ClusterSingletonManager(
         singletonProps = _ ⇒ Props[StatsService], singletonName = "statsService",
-        terminationMessage = PoisonPill)), name = "singleton")
+        terminationMessage = PoisonPill, role = Some("compute"))), name = "singleton")
 
       system.actorOf(Props[StatsFacade], "statsFacade")
 

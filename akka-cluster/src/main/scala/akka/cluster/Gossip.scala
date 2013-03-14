@@ -185,11 +185,17 @@ private[cluster] case class Gossip(
 
   def isLeader(address: Address): Boolean = leader == Some(address)
 
-  def leader: Option[Address] = {
-    if (members.isEmpty) None
-    else members.find(m ⇒ m.status != Joining && m.status != Exiting && m.status != Down).
-      orElse(Some(members.min(Member.leaderStatusOrdering))).map(_.address)
+  def leader: Option[Address] = leaderOf(members)
+
+  def roleLeader(role: String): Option[Address] = leaderOf(members.filter(_.hasRole(role)))
+
+  private def leaderOf(mbrs: immutable.SortedSet[Member]): Option[Address] = {
+    if (mbrs.isEmpty) None
+    else mbrs.find(m ⇒ m.status != Joining && m.status != Exiting && m.status != Down).
+      orElse(Some(mbrs.min(Member.leaderStatusOrdering))).map(_.address)
   }
+
+  def allRoles: Set[String] = members.flatMap(_.roles)
 
   def isSingletonCluster: Boolean = members.size == 1
 
@@ -201,7 +207,7 @@ private[cluster] case class Gossip(
 
   def member(address: Address): Member = {
     members.find(_.address == address).orElse(overview.unreachable.find(_.address == address)).
-      getOrElse(Member(address, Removed))
+      getOrElse(Member(address, Removed, Set.empty))
   }
 
   override def toString =
