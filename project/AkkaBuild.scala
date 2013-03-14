@@ -194,7 +194,7 @@ object AkkaBuild extends Build {
     id = "akka-cluster-experimental",
     base = file("akka-cluster"),
     dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test"),
-    settings = defaultSettings ++ mimaSettings ++ javadocSettings ++ multiJvmSettings ++ OSGi.cluster ++ experimentalSettings ++ Seq(
+    settings = defaultSettings ++ javadocSettings ++ multiJvmSettings ++ OSGi.cluster ++ experimentalSettings ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -439,7 +439,7 @@ object AkkaBuild extends Build {
     id = "akka-contrib",
     base = file("akka-contrib"),
     dependencies = Seq(remote, remoteTests % "compile;test->test", cluster),
-    settings = defaultSettings ++ mimaSettings ++ javadocSettings ++ multiJvmSettings ++ Seq(
+    settings = defaultSettings ++ javadocSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.contrib,
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-v"),
       description := """|
