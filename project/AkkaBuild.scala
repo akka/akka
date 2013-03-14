@@ -165,15 +165,6 @@ object AkkaBuild extends Build {
     )
   )
 
-  lazy val multiNodeTestkit = Project(
-    id = "akka-multi-node-testkit",
-    base = file("akka-multi-node-testkit"),
-    dependencies = Seq(remote, testkit),
-    settings = defaultSettings ++ mimaSettings ++ javadocSettings ++ Seq(
-      previousArtifact := akkaPreviousArtifact("akka-multi-node-testkit")
-    )
-  )
-
   lazy val remoteTests = Project(
     id = "akka-remote-tests-experimental",
     base = file("akka-remote-tests"),
