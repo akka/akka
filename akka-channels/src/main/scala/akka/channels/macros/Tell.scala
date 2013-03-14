@@ -76,7 +76,7 @@ object Tell {
       import c.universe._
       replyChannel.tpe match {
         case TypeRef(_, _, param :: Nil) ⇒
-          (param, replyChannel, c.Expr(Select(replyChannel, "actorRef"))(c.universe.weakTypeTag[ActorRef]))
+          (param, replyChannel, c.Expr(Select(replyChannel, newTermName("actorRef")))(c.universe.weakTypeTag[ActorRef]))
       }
     } else abort(c, "no implicit sender ChannelRef found")
   }
@@ -89,12 +89,12 @@ object Tell {
       if (msg.nonEmpty) {
         val u: c.universe.type = c.universe
         val replies = msg map (m ⇒ m -> (replyChannels(u)(chT, m) map (t ⇒ ignoreUnknown(t))))
-        val missing = replies collect { case (k, v) if v.size == 0 ⇒ k }
+        val missing = replies collect { case (k, v) if v.isEmpty ⇒ k }
         if (missing.nonEmpty)
           error(c, s"target ChannelRef does not support messages of types ${missing mkString ", "} (at depth $depth)")
         else {
           val nextSend = replies.map(_._2).flatten map (m ⇒ m -> (replyChannels(u)(sndT, m) map (t ⇒ ignoreUnknown(t))))
-          val nextMissing = nextSend collect { case (k, v) if v.size == 0 ⇒ k }
+          val nextMissing = nextSend collect { case (k, v) if v.isEmpty ⇒ k }
           if (nextMissing.nonEmpty)
             error(c, s"implicit sender `$sender` does not support messages of the reply types ${nextMissing mkString ", "} (at depth $depth)")
           else {
