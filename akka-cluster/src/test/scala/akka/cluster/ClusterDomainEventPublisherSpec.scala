@@ -24,16 +24,16 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
   with BeforeAndAfterEach with ImplicitSender {
 
   var publisher: ActorRef = _
-  val aUp = Member(Address("akka.tcp", "sys", "a", 2552), Up)
+  val aUp = Member(Address("akka", "sys", "a", 2552), Up)
   val aLeaving = aUp.copy(status = Leaving)
   val aExiting = aUp.copy(status = Exiting)
   val aRemoved = aUp.copy(status = Removed)
-  val bUp = Member(Address("akka.tcp", "sys", "b", 2552), Up)
+  val bUp = Member(Address("akka", "sys", "b", 2552), Up)
   val bRemoved = bUp.copy(status = Removed)
-  val cJoining = Member(Address("akka.tcp", "sys", "c", 2552), Joining)
+  val cJoining = Member(Address("akka", "sys", "c", 2552), Joining)
   val cUp = cJoining.copy(status = Up)
   val cRemoved = cUp.copy(status = Removed)
-  val dUp = Member(Address("akka.tcp", "sys", "a", 2551), Up)
+  val dUp = Member(Address("akka", "sys", "a", 2551), Up)
 
   val g0 = Gossip(members = SortedSet(aUp)).seen(aUp.address)
   val g1 = Gossip(members = SortedSet(aUp, bUp, cJoining)).seen(aUp.address).seen(bUp.address).seen(cJoining.address)
