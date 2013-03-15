@@ -39,7 +39,7 @@ object AkkaBuild extends Build {
     organization := "com.typesafe.akka",
     version      := "2.2-SNAPSHOT",
     // Also change ScalaVersion in akka-sbt-plugin/sample/project/Build.scala
-    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0")
+    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.1")
   )
 
   lazy val akka = Project(
