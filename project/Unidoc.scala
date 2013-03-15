@@ -21,7 +21,7 @@ object Unidoc {
       artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar")
     ) ++ (if (GenJavaDocEnabled) Seq(
         libraryDependencies += Dependencies.Compile.genjavadoc,
-        scalacOptions <+= target map (t => "-P:genjavadoc:out=" + t + "/java")
+        scalacOptions <+= target map (t => "-P:genjavadoc:out=" + (t / "java"))
       ) else Nil)
 
   val unidocDirectory = SettingKey[File]("unidoc-directory")
