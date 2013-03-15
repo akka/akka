@@ -109,6 +109,8 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
   /** used in subclasses to start the common machinery above once a channel is connected */
   def completeConnect(commander: ActorRef, options: immutable.Traversable[SocketOption]): Unit = {
+    // Turn off Nagle's algorithm by default
+    channel.socket.setTcpNoDelay(true)
     options.foreach(_.afterConnect(channel.socket))
 
     commander ! Connected(
