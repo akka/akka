@@ -42,7 +42,7 @@ object TestEvent {
   }
   case class Mute(filters: Seq[EventFilter]) extends TestEvent with NoSerializationVerificationNeeded {
     /**
-     * Java API
+     * Java API: create a Mute command from a list of filters
      */
     def this(filters: JIterable[EventFilter]) = this(JavaConverters.iterableAsScalaIterableConverter(filters).asScala.toSeq)
   }
@@ -51,7 +51,7 @@ object TestEvent {
   }
   case class UnMute(filters: Seq[EventFilter]) extends TestEvent with NoSerializationVerificationNeeded {
     /**
-     * Java API
+     * Java API: create an UnMute command from a list of filters
      */
     def this(filters: JIterable[EventFilter]) = this(JavaConverters.iterableAsScalaIterableConverter(filters).asScala.toSeq)
   }
@@ -276,7 +276,7 @@ case class ErrorFilter(
   }
 
   /**
-   * Java API
+   * Java API: create an ErrorFilter
    *
    * @param source
    *   apply this filter only to events from the given source; do not filter on source if this is given as <code>null</code>
@@ -325,7 +325,7 @@ case class WarningFilter(
   }
 
   /**
-   * Java API
+   * Java API: create a WarningFilter
    *
    * @param source
    *   apply this filter only to events from the given source; do not filter on source if this is given as <code>null</code>
@@ -368,7 +368,7 @@ case class InfoFilter(
   }
 
   /**
-   * Java API
+   * Java API: create an InfoFilter
    *
    * @param source
    *   apply this filter only to events from the given source; do not filter on source if this is given as <code>null</code>
@@ -411,7 +411,7 @@ case class DebugFilter(
   }
 
   /**
-   * Java API
+   * Java API: create a DebugFilter
    *
    * @param source
    *   apply this filter only to events from the given source; do not filter on source if this is given as <code>null</code>

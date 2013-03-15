@@ -36,8 +36,7 @@ object ClusterEvent {
     leader: Option[Address] = None) extends ClusterDomainEvent {
 
     /**
-     * Java API
-     * Read only
+     * Java API: get current member list.
      */
     def getMembers: java.lang.Iterable[Member] = {
       import scala.collection.JavaConverters._
@@ -45,8 +44,7 @@ object ClusterEvent {
     }
 
     /**
-     * Java API
-     * Read only
+     * Java API: get current unreachable set.
      */
     def getUnreachable: java.util.Set[Member] = {
       import scala.collection.JavaConverters._
@@ -54,8 +52,7 @@ object ClusterEvent {
     }
 
     /**
-     * Java API
-     * Read only
+     * Java API: get current “seen-by” set.
      */
     def getSeenBy: java.util.Set[Address] = {
       import scala.collection.JavaConverters._
@@ -63,8 +60,7 @@ object ClusterEvent {
     }
 
     /**
-     * Java API
-     * @return address of current leader, or null if none
+     * Java API: get address of current leader, or null if none
      */
     def getLeader: Address = leader orNull
   }
@@ -139,8 +135,7 @@ object ClusterEvent {
     extends ClusterDomainEvent {
 
     /**
-     * Java API
-     * Read only
+     * Java API: get current member list
      */
     def getMembers: java.lang.Iterable[Member] = {
       import scala.collection.JavaConverters._

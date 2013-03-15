@@ -28,6 +28,8 @@ object CircuitBreaker {
   }
 
   /**
+   * Create a new CircuitBreaker.
+   *
    * Callbacks run in caller's thread when using withSyncCircuitBreaker, and in same ExecutionContext as the passed
    * in Future when using withCircuitBreaker. To use another ExecutionContext for the callbacks you can specify the
    * executor in the constructor.
@@ -41,10 +43,11 @@ object CircuitBreaker {
     new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout)(syncExecutionContext)
 
   /**
+   * Java API: Create a new CircuitBreaker.
+   *
    * Callbacks run in caller's thread when using withSyncCircuitBreaker, and in same ExecutionContext as the passed
    * in Future when using withCircuitBreaker. To use another ExecutionContext for the callbacks you can specify the
    * executor in the constructor.
-   * Java API alias for apply
    *
    * @param scheduler Reference to Akka scheduler
    * @param maxFailures Maximum number of failures before opening the circuit
@@ -117,7 +120,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
   def withCircuitBreaker[T](body: ⇒ Future[T]): Future[T] = currentState.invoke(body)
 
   /**
-   * Java API for withCircuitBreaker
+   * Java API for [[#withCircuitBreaker]]
    *
    * @param body Call needing protected
    * @tparam T return type from call
@@ -140,7 +143,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
       callTimeout)
 
   /**
-   * Java API for withSyncCircuitBreaker
+   * Java API for [[#withSyncCircuitBreaker]]
    *
    * @param body Call needing protected
    * @tparam T return type from call

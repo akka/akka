@@ -148,7 +148,7 @@ object TestActorRef {
   }), name)
 
   /**
-   * Java API
+   * Java API: create a TestActorRef in the given system for the given props
    */
   def create[T <: Actor](system: ActorSystem, props: Props, name: String): TestActorRef[T] = apply(props, name)(system)
 }
