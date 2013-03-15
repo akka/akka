@@ -3,27 +3,15 @@
 HTTP
 ####
 
-Play2 Mini
-==========
+Play
+====
 
-The Akka team recommends the `Play2 Mini <https://github.com/typesafehub/play2-mini>`_ framework when building RESTful
-service applications that integrates with Akka. It provides a REST API on top of `Play2 <https://github.com/playframework/Play20/>`_.
+The `Play framework <http://www.playframework.com>`_ is built using Akka, and is well suited for building both full web applications as well as REST services.
 
-Getting started
----------------
+Spray
+=====
 
-Easiest way to get started with `Play2 Mini <https://github.com/typesafehub/play2-mini>`_  is to use the
-G8 project templates, as described in the `Play2 Mini Documentation <https://github.com/typesafehub/play2-mini>`_.
-
-If you already have an Akka project and want to add Play2 Mini, you must first add the following to 
-your ``libraryDependencies``::
-
-  libraryDependencies += "com.typesafe" %% "play-mini" % "<version-number>"
-
-In case you need to start Play2 Mini programatically you can use::
-
-  play.core.server.NettyServer.main(Array())
-
+The `Spray toolkit <http://spray.io>`_ is built using Akka, and is a minimalistic HTTP/REST layer.
 
 Akka Mist
 =========
