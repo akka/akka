@@ -30,7 +30,9 @@ object Unidoc {
   val unidocSources = TaskKey[Seq[File]]("unidoc-sources")
   val unidocAllClasspaths = TaskKey[Seq[Classpath]]("unidoc-all-classpaths")
   val unidocClasspath = TaskKey[Seq[File]]("unidoc-classpath")
-  val unidoc = TaskKey[File]("unidoc", "Create unified scaladoc for all aggregates")
+  val unidoc = TaskKey[(File, File)]("unidoc", "Create unified scaladoc and javadoc for all aggregates")
+  val sunidoc = TaskKey[File]("sunidoc", "Create unified scaladoc for all aggregates")
+  val junidoc = TaskKey[File]("junidoc", "Create unified javadoc for all aggregates")
   val junidocAllSources = TaskKey[Seq[Seq[File]]]("junidoc-all-sources")
   val junidocSources = TaskKey[Seq[File]]("junidoc-sources")
 
@@ -43,7 +45,9 @@ object Unidoc {
     unidocClasspath <<= unidocAllClasspaths map { _.flatten.map(_.data).distinct },
     junidocAllSources <<= (thisProjectRef, buildStructure, unidocExclude) flatMap allSources(JavaDoc),
     junidocSources <<= junidocAllSources map { _.flatten },
-    unidoc <<= unidocTask
+    sunidoc <<= sunidocTask,
+    junidoc <<= (doc in JavaDoc),
+    unidoc <<= (sunidoc, junidoc) map ((s, t) ⇒ (s, t))
   )
 
   def allSources(conf: Configuration)(projectRef: ProjectRef, structure: Load.BuildStructure, exclude: Seq[String]): Task[Seq[Seq[File]]] = {
@@ -64,7 +68,7 @@ object Unidoc {
     }
   }
 
-  def unidocTask: Initialize[Task[File]] = {
+  def sunidocTask: Initialize[Task[File]] = {
     (compilers, cacheDirectory, unidocSources, unidocClasspath, unidocDirectory, scalacOptions in doc, streams) map {
       (compilers, cache, sources, classpath, target, options, s) => {
         val scaladoc = new Scaladoc(100, compilers.scalac)
