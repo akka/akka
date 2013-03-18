@@ -11,22 +11,8 @@ import akka.contrib.pattern.ClusterSingletonPropsFactory;
 public class StatsSampleOneMasterClientMain {
 
   public static void main(String[] args) throws Exception {
+    // note that client is not a compute node, role not defined
     ActorSystem system = ActorSystem.create("ClusterSystem");
-
-    // the client is also part of the cluster
-    system.actorOf(new Props(new UntypedActorFactory() {
-      @Override
-      public ClusterSingletonManager create() {
-        return new ClusterSingletonManager("statsService", PoisonPill.getInstance(),
-            new ClusterSingletonPropsFactory() {
-              @Override
-              public Props create(Object handOverData) {
-                return new Props(StatsService.class);
-              }
-            });
-      }
-    }), "singleton");
-
     system.actorOf(new Props(new UntypedActorFactory() {
       @Override
       public UntypedActor create() {

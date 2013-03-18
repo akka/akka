@@ -30,6 +30,7 @@ object StatsSampleJapiSpecConfig extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString("""
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
+    akka.cluster.roles = [compute]
     akka.cluster.auto-join = off
     # don't use sigar for tests, native lib not in path
     akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
@@ -41,6 +42,7 @@ object StatsSampleJapiSpecConfig extends MultiNodeConfig {
             enabled = on
             routees-path = "/user/statsWorker"
             allow-local-routees = on
+            use-role = compute
           }
         }
     }
@@ -81,9 +83,9 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
       system.actorOf(Props[StatsService], "statsService")
 
       expectMsgAllOf(
-        MemberUp(Member(firstAddress, MemberStatus.Up)),
-        MemberUp(Member(secondAddress, MemberStatus.Up)),
-        MemberUp(Member(thirdAddress, MemberStatus.Up)))
+        MemberUp(Member(firstAddress, MemberStatus.Up, Set.empty)),
+        MemberUp(Member(secondAddress, MemberStatus.Up, Set.empty)),
+        MemberUp(Member(thirdAddress, MemberStatus.Up, Set.empty)))
 
       Cluster(system).unsubscribe(testActor)
 

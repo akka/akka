@@ -77,14 +77,15 @@ public class StatsSampleClient extends UntypedActor {
       CurrentClusterState state = (CurrentClusterState) message;
       nodes.clear();
       for (Member member : state.getMembers()) {
-        if (member.status().equals(MemberStatus.up())) {
+        if (member.hasRole("compute") && member.status().equals(MemberStatus.up())) {
           nodes.add(member.address());
         }
       }
 
     } else if (message instanceof MemberUp) {
       MemberUp mUp = (MemberUp) message;
-      nodes.add(mUp.member().address());
+      if (mUp.member().hasRole("compute"))
+        nodes.add(mUp.member().address());
 
     } else if (message instanceof MemberEvent) {
       MemberEvent other = (MemberEvent) message;

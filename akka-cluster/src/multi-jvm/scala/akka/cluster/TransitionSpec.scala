@@ -230,7 +230,7 @@ abstract class TransitionSpec
       runOn(third) {
         markNodeAsUnavailable(second)
         reapUnreachable()
-        awaitCond(clusterView.unreachableMembers.contains(Member(second, Up)))
+        awaitCond(clusterView.unreachableMembers.contains(Member(second, Up, Set.empty)))
         awaitCond(seenLatestGossip == Set(third))
       }
 
@@ -239,7 +239,7 @@ abstract class TransitionSpec
       third gossipTo first
 
       runOn(first, third) {
-        awaitCond(clusterView.unreachableMembers.contains(Member(second, Up)))
+        awaitCond(clusterView.unreachableMembers.contains(Member(second, Up, Set.empty)))
       }
 
       runOn(first) {
@@ -251,7 +251,7 @@ abstract class TransitionSpec
       first gossipTo third
 
       runOn(first, third) {
-        awaitCond(clusterView.unreachableMembers.contains(Member(second, Down)))
+        awaitCond(clusterView.unreachableMembers.contains(Member(second, Down, Set.empty)))
         awaitMemberStatus(second, Down)
         awaitCond(seenLatestGossip == Set(first, third))
       }

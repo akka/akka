@@ -124,7 +124,7 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
     "deploy programatically defined routees to the member nodes in the cluster" taggedAs LongRunningTest in {
       runOn(first) {
         val router2 = system.actorOf(Props[Echo].withRouter(ClusterRouterConfig(local = ConsistentHashingRouter(),
-          settings = ClusterRouterSettings(totalInstances = 10, maxInstancesPerNode = 2))), "router2")
+          settings = ClusterRouterSettings(totalInstances = 10, maxInstancesPerNode = 2, useRole = None))), "router2")
         awaitCond {
           // it may take some time until router receives cluster member events
           currentRoutees(router2).size == 6
@@ -157,7 +157,7 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
 
         val router4 = system.actorOf(Props[Echo].withRouter(ClusterRouterConfig(
           local = ConsistentHashingRouter(hashMapping = hashMapping),
-          settings = ClusterRouterSettings(totalInstances = 10, maxInstancesPerNode = 1))), "router4")
+          settings = ClusterRouterSettings(totalInstances = 10, maxInstancesPerNode = 1, useRole = None))), "router4")
 
         assertHashMapping(router4)
       }

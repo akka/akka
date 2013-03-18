@@ -9,7 +9,7 @@ import akka.actor.UntypedActor;
 import akka.dispatch.Recover;
 import akka.cluster.Cluster;
 import akka.cluster.ClusterEvent.CurrentClusterState;
-import akka.cluster.ClusterEvent.LeaderChanged;
+import akka.cluster.ClusterEvent.RoleLeaderChanged;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.util.Timeout;
@@ -25,10 +25,10 @@ public class StatsFacade extends UntypedActor {
 
   Address currentMaster = null;
 
-  //subscribe to cluster changes, MemberEvent
+  //subscribe to cluster changes, RoleLeaderChanged
   @Override
   public void preStart() {
-    cluster.subscribe(getSelf(), LeaderChanged.class);
+    cluster.subscribe(getSelf(), RoleLeaderChanged.class);
   }
 
   //re-subscribe when restart
@@ -57,11 +57,12 @@ public class StatsFacade extends UntypedActor {
 
     } else if (message instanceof CurrentClusterState) {
       CurrentClusterState state = (CurrentClusterState) message;
-      currentMaster = state.getLeader();
+      currentMaster = state.getRoleLeader("compute");
 
-    } else if (message instanceof LeaderChanged) {
-      LeaderChanged leaderChanged = (LeaderChanged) message;
-      currentMaster = leaderChanged.getLeader();
+    } else if (message instanceof RoleLeaderChanged) {
+      RoleLeaderChanged leaderChanged = (RoleLeaderChanged) message;
+      if (leaderChanged.role().equals("compute"))
+        currentMaster = leaderChanged.getLeader();
 
     } else {
       unhandled(message);

@@ -71,9 +71,20 @@ object ClusterRoundRobinRoutedActorMultiJvmSpec extends MultiNodeConfig {
             routees-path = "/user/myservice"
           }
         }
+        /router5 {
+          router = round-robin
+          nr-of-instances = 10
+          cluster {
+            enabled = on
+            use-role = a
+          }
+        }
       }
       """)).
     withFallback(MultiNodeClusterSpec.clusterConfig))
+
+  nodeConfig(first, second)(ConfigFactory.parseString("""akka.cluster.roles =["a", "c"]"""))
+  nodeConfig(third)(ConfigFactory.parseString("""akka.cluster.roles =["b", "c"]"""))
 
 }
 
@@ -89,9 +100,10 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
 
   lazy val router1 = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "router1")
   lazy val router2 = system.actorOf(Props[SomeActor].withRouter(ClusterRouterConfig(RoundRobinRouter(),
-    ClusterRouterSettings(totalInstances = 3, maxInstancesPerNode = 1))), "router2")
+    ClusterRouterSettings(totalInstances = 3, maxInstancesPerNode = 1, useRole = None))), "router2")
   lazy val router3 = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "router3")
   lazy val router4 = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "router4")
+  lazy val router5 = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "router5")
 
   def receiveReplies(routeeType: RouteeType, expectedReplies: Int): Map[Address, Int] = {
     val zero = Map.empty[Address, Int] ++ roles.map(address(_) -> 0)
@@ -240,6 +252,28 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
       enterBarrier("after-6")
     }
 
+    "deploy routees to specified node role" taggedAs LongRunningTest in {
+
+      runOn(first) {
+        awaitCond(currentRoutees(router5).size == 2)
+
+        val iterationCount = 10
+        for (i ← 0 until iterationCount) {
+          router5 ! "hit"
+        }
+
+        val replies = receiveReplies(DeployRoutee, iterationCount)
+
+        replies(first) must be > (0)
+        replies(second) must be > (0)
+        replies(third) must be(0)
+        replies(fourth) must be(0)
+        replies.values.sum must be(iterationCount)
+      }
+
+      enterBarrier("after-7")
+    }
+
     "deploy programatically defined routees to the member nodes in the cluster" taggedAs LongRunningTest in {
 
       runOn(first) {
@@ -263,7 +297,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         replies.values.sum must be(iterationCount)
       }
 
-      enterBarrier("after-7")
+      enterBarrier("after-8")
     }
 
     "deploy programatically defined routees to other node when a node becomes down" taggedAs LongRunningTest in {
@@ -292,7 +326,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         replies.values.sum must be(iterationCount)
       }
 
-      enterBarrier("after-8")
+      enterBarrier("after-9")
     }
 
   }

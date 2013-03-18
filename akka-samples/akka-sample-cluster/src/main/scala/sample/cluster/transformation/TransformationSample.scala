@@ -3,7 +3,6 @@ package sample.cluster.transformation
 //#imports
 import language.postfixOps
 import scala.concurrent.duration._
-
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -17,6 +16,7 @@ import akka.cluster.Member
 import akka.cluster.MemberStatus
 import akka.pattern.ask
 import akka.util.Timeout
+import com.typesafe.config.ConfigFactory
 //#imports
 
 //#messages
@@ -28,11 +28,14 @@ case object BackendRegistration
 
 object TransformationFrontend {
   def main(args: Array[String]): Unit = {
-    // Override the configuration of the port
-    // when specified as program argument
-    if (args.nonEmpty) System.setProperty("akka.remote.netty.tcp.port", args(0))
+    // Override the configuration of the port when specified as program argument
+    val config =
+      (if (args.nonEmpty) ConfigFactory.parseString(s"akka.remote.netty.tcp.port=${args(0)}")
+      else ConfigFactory.empty).withFallback(
+        ConfigFactory.parseString("akka.cluster.roles = [frontend]")).
+        withFallback(ConfigFactory.load())
 
-    val system = ActorSystem("ClusterSystem")
+    val system = ActorSystem("ClusterSystem", config)
     val frontend = system.actorOf(Props[TransformationFrontend], name = "frontend")
 
     import system.dispatcher
@@ -41,7 +44,7 @@ object TransformationFrontend {
       (frontend ? TransformationJob("hello-" + n)) onSuccess {
         case result ⇒ println(result)
       }
-      // wait a while until next request, 
+      // wait a while until next request,
       // to avoid flooding the console with output
       Thread.sleep(2000)
     }
@@ -75,11 +78,14 @@ class TransformationFrontend extends Actor {
 
 object TransformationBackend {
   def main(args: Array[String]): Unit = {
-    // Override the configuration of the port
-    // when specified as program argument
-    if (args.nonEmpty) System.setProperty("akka.remote.netty.tcp.port", args(0))
+    // Override the configuration of the port when specified as program argument
+    val config =
+      (if (args.nonEmpty) ConfigFactory.parseString(s"akka.remote.netty.tcp.port=${args(0)}")
+      else ConfigFactory.empty).withFallback(
+        ConfigFactory.parseString("akka.cluster.roles = [backend]")).
+        withFallback(ConfigFactory.load())
 
-    val system = ActorSystem("ClusterSystem")
+    val system = ActorSystem("ClusterSystem", config)
     system.actorOf(Props[TransformationBackend], name = "backend")
   }
 }
@@ -101,10 +107,9 @@ class TransformationBackend extends Actor {
     case MemberUp(m) ⇒ register(m)
   }
 
-  // try to register to all nodes, even though there
-  // might not be any frontend on all nodes
   def register(member: Member): Unit =
-    context.actorFor(RootActorPath(member.address) / "user" / "frontend") !
-      BackendRegistration
+    if (member.hasRole("frontend"))
+      context.actorFor(RootActorPath(member.address) / "user" / "frontend") !
+        BackendRegistration
 }
 //#backend
