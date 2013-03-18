@@ -22,7 +22,7 @@ import ls.Plugin.{ lsSettings, LsKeys }
 import java.lang.Boolean.getBoolean
 import sbt.Tests
 import LsKeys.{ lsync, docsUrl => lsDocsUrl, tags => lsTags }
-import Unidoc.{ JavaDoc, javadocSettings, junidocSources, unidoc, unidocExclude }
+import Unidoc.{ JavaDoc, javadocSettings, junidocSources, unidocExclude }
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -44,7 +44,6 @@ object AkkaBuild extends Build {
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       unidocExclude := Seq(samples.id),
-      unidoc <<= (unidoc, doc in JavaDoc) map ((u, d) => u),
       sources in JavaDoc <<= junidocSources,
       javacOptions in JavaDoc := Seq(),
       artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar"),
