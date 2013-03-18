@@ -61,7 +61,7 @@ object SupervisorHierarchySpec {
   case class Event(msg: Any, identity: Long) { val time: Long = System.nanoTime }
   case class ErrorLog(msg: String, log: Vector[Event])
   case class Failure(directive: Directive, stop: Boolean, depth: Int, var failPre: Int, var failPost: Int, val failConstr: Int, stopKids: Int)
-    extends RuntimeException with NoStackTrace {
+    extends RuntimeException("Failure") with NoStackTrace {
     override def toString = productPrefix + productIterator.mkString("(", ",", ")")
   }
   case class Dump(level: Int)
@@ -844,6 +844,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
     "survive being stressed" in {
       system.eventStream.publish(Mute(
         EventFilter[Failure](),
+        EventFilter.warning("Failure"),
         EventFilter[ActorInitializationException](),
         EventFilter[NoSuchElementException]("head of empty list"),
         EventFilter.error(start = "changing Resume into Restart"),
