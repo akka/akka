@@ -73,6 +73,17 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         format(system, other.getClass.getName))
   }
 
+  /**
+   * roles that this member has
+   */
+  def selfRoles: Set[String] = settings.Roles
+
+  /**
+   * Java API: roles that this member has
+   */
+  def getSelfRoles: java.util.Set[String] =
+    scala.collection.JavaConverters.setAsJavaSetConverter(selfRoles).asJava
+
   private val _isTerminated = new AtomicBoolean(false)
   private val log = Logging(system, "Cluster")
 

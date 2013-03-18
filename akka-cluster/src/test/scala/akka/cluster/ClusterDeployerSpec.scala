@@ -53,7 +53,7 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
           service,
           deployment.get.config,
           ClusterRouterConfig(RoundRobinRouter(20), ClusterRouterSettings(
-            totalInstances = 20, maxInstancesPerNode = 3, allowLocalRoutees = false)),
+            totalInstances = 20, maxInstancesPerNode = 3, allowLocalRoutees = false, useRole = None)),
           ClusterScope)))
     }
 
@@ -67,7 +67,7 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
           service,
           deployment.get.config,
           ClusterRouterConfig(RoundRobinRouter(20), ClusterRouterSettings(
-            totalInstances = 20, routeesPath = "/user/myservice", allowLocalRoutees = false)),
+            totalInstances = 20, routeesPath = "/user/myservice", allowLocalRoutees = false, useRole = None)),
           ClusterScope)))
     }
 

@@ -115,7 +115,7 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
   def startRouter(name: String): ActorRef = {
     val router = system.actorOf(Props[Routee].withRouter(ClusterRouterConfig(
       local = AdaptiveLoadBalancingRouter(HeapMetricsSelector),
-      settings = ClusterRouterSettings(totalInstances = 10, maxInstancesPerNode = 1))), name)
+      settings = ClusterRouterSettings(totalInstances = 10, maxInstancesPerNode = 1, useRole = None))), name)
     awaitCond {
       // it may take some time until router receives cluster member events
       currentRoutees(router).size == roles.size

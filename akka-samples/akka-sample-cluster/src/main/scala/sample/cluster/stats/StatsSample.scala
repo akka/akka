@@ -95,9 +95,9 @@ class StatsFacade extends Actor with ActorLogging {
 
   var currentMaster: Option[Address] = None
 
-  // subscribe to cluster changes, LeaderChanged
+  // subscribe to cluster changes, RoleLeaderChanged
   // re-subscribe when restart
-  override def preStart(): Unit = cluster.subscribe(self, classOf[LeaderChanged])
+  override def preStart(): Unit = cluster.subscribe(self, classOf[RoleLeaderChanged])
   override def postStop(): Unit = cluster.unsubscribe(self)
 
   def receive = {
@@ -112,8 +112,11 @@ class StatsFacade extends Actor with ActorLogging {
           case _ ⇒ JobFailed("Service unavailable, try again later")
         } pipeTo sender
       }
-    case state: CurrentClusterState ⇒ currentMaster = state.leader
-    case LeaderChanged(leader)      ⇒ currentMaster = leader
+    case state: CurrentClusterState ⇒
+      currentMaster = state.roleLeader("compute")
+    case RoleLeaderChanged(role, leader) ⇒
+      if (role == "compute")
+        currentMaster = leader
   }
 
 }
@@ -121,58 +124,36 @@ class StatsFacade extends Actor with ActorLogging {
 
 object StatsSample {
   def main(args: Array[String]): Unit = {
-    // Override the configuration of the port
-    // when specified as program argument
-    if (args.nonEmpty) System.setProperty("akka.remote.netty.tcp.port", args(0))
+    // Override the configuration of the port when specified as program argument
+    val config =
+      (if (args.nonEmpty) ConfigFactory.parseString(s"akka.remote.netty.tcp.port=${args(0)}")
+      else ConfigFactory.empty).withFallback(
+        ConfigFactory.parseString("akka.cluster.roles = [compute]")).
+        withFallback(ConfigFactory.load())
 
-    //#start-router-lookup
-    val system = ActorSystem("ClusterSystem", ConfigFactory.parseString("""
-      akka.actor.deployment {
-        /statsService/workerRouter {
-            router = consistent-hashing
-            nr-of-instances = 100
-            cluster {
-              enabled = on
-              routees-path = "/user/statsWorker"
-              allow-local-routees = on
-            }
-          }
-      }
-      """).withFallback(ConfigFactory.load()))
+    val system = ActorSystem("ClusterSystem", config)
 
     system.actorOf(Props[StatsWorker], name = "statsWorker")
     system.actorOf(Props[StatsService], name = "statsService")
-    //#start-router-lookup
-
   }
 }
 
 object StatsSampleOneMaster {
   def main(args: Array[String]): Unit = {
-    // Override the configuration of the port
-    // when specified as program argument
-    if (args.nonEmpty) System.setProperty("akka.remote.netty.tcp.port", args(0))
+    // Override the configuration of the port when specified as program argument
+    val config =
+      (if (args.nonEmpty) ConfigFactory.parseString(s"akka.remote.netty.tcp.port=${args(0)}")
+      else ConfigFactory.empty).withFallback(
+        ConfigFactory.parseString("akka.cluster.roles = [compute]")).
+        withFallback(ConfigFactory.load())
 
-    //#start-router-deploy
-    val system = ActorSystem("ClusterSystem", ConfigFactory.parseString("""
-      akka.actor.deployment {
-        /singleton/statsService/workerRouter {
-            router = consistent-hashing
-            nr-of-instances = 100
-            cluster {
-              enabled = on
-              max-nr-of-instances-per-node = 3
-              allow-local-routees = off
-            }
-          }
-      }
-      """).withFallback(ConfigFactory.load()))
-    //#start-router-deploy
+    val system = ActorSystem("ClusterSystem", config)
 
     //#create-singleton-manager
     system.actorOf(Props(new ClusterSingletonManager(
       singletonProps = _ ⇒ Props[StatsService], singletonName = "statsService",
-      terminationMessage = PoisonPill)), name = "singleton")
+      terminationMessage = PoisonPill, role = Some("compute"))),
+      name = "singleton")
     //#create-singleton-manager
     system.actorOf(Props[StatsFacade], name = "statsFacade")
   }
@@ -180,6 +161,7 @@ object StatsSampleOneMaster {
 
 object StatsSampleClient {
   def main(args: Array[String]): Unit = {
+    // note that client is not a compute node, role not defined
     val system = ActorSystem("ClusterSystem")
     system.actorOf(Props(new StatsSampleClient("/user/statsService")), "client")
   }
@@ -187,13 +169,8 @@ object StatsSampleClient {
 
 object StatsSampleOneMasterClient {
   def main(args: Array[String]): Unit = {
+    // note that client is not a compute node, role not defined
     val system = ActorSystem("ClusterSystem")
-
-    // the client is also part of the cluster
-    system.actorOf(Props(new ClusterSingletonManager(
-      singletonProps = _ ⇒ Props[StatsService], singletonName = "statsService",
-      terminationMessage = PoisonPill)), name = "singleton")
-
     system.actorOf(Props(new StatsSampleClient("/user/statsFacade")), "client")
   }
 }
@@ -230,10 +207,12 @@ class StatsSampleClient(servicePath: String) extends Actor {
     case failed: JobFailed ⇒
       println(failed)
     case state: CurrentClusterState ⇒
-      nodes = state.members.collect { case m if m.status == MemberStatus.Up ⇒ m.address }
-    case MemberUp(m)          ⇒ nodes += m.address
-    case other: MemberEvent   ⇒ nodes -= other.member.address
-    case UnreachableMember(m) ⇒ nodes -= m.address
+      nodes = state.members.collect {
+        case m if m.hasRole("compute") && m.status == MemberStatus.Up ⇒ m.address
+      }
+    case MemberUp(m) if m.hasRole("compute") ⇒ nodes += m.address
+    case other: MemberEvent                  ⇒ nodes -= other.member.address
+    case UnreachableMember(m)                ⇒ nodes -= m.address
   }
 
 }
@@ -248,7 +227,7 @@ abstract class StatsService2 extends Actor {
   val workerRouter = context.actorOf(Props[StatsWorker].withRouter(
     ClusterRouterConfig(ConsistentHashingRouter(), ClusterRouterSettings(
       totalInstances = 100, routeesPath = "/user/statsWorker",
-      allowLocalRoutees = true))),
+      allowLocalRoutees = true, useRole = Some("compute")))),
     name = "workerRouter2")
   //#router-lookup-in-code
 }
@@ -263,7 +242,7 @@ abstract class StatsService3 extends Actor {
   val workerRouter = context.actorOf(Props[StatsWorker].withRouter(
     ClusterRouterConfig(ConsistentHashingRouter(), ClusterRouterSettings(
       totalInstances = 100, maxInstancesPerNode = 3,
-      allowLocalRoutees = false))),
+      allowLocalRoutees = false, useRole = None))),
     name = "workerRouter3")
   //#router-deploy-in-code
 }

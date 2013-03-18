@@ -60,10 +60,11 @@ abstract class StatsService2 extends UntypedActor {
   int totalInstances = 100;
   String routeesPath = "/user/statsWorker";
   boolean allowLocalRoutees = true;
+  String useRole = "compute";
   ActorRef workerRouter = getContext().actorOf(
       new Props(StatsWorker.class).withRouter(new ClusterRouterConfig(
           new ConsistentHashingRouter(0), new ClusterRouterSettings(
-              totalInstances, routeesPath, allowLocalRoutees))),
+              totalInstances, routeesPath, allowLocalRoutees, useRole))),
       "workerRouter2");
   //#router-lookup-in-code
 }
@@ -74,10 +75,11 @@ abstract class StatsService3 extends UntypedActor {
   int totalInstances = 100;
   int maxInstancesPerNode = 3;
   boolean allowLocalRoutees = false;
+  String useRole = "compute";
   ActorRef workerRouter = getContext().actorOf(
       new Props(StatsWorker.class).withRouter(new ClusterRouterConfig(
           new ConsistentHashingRouter(0), new ClusterRouterSettings(
-              totalInstances, maxInstancesPerNode, allowLocalRoutees))),
+              totalInstances, maxInstancesPerNode, allowLocalRoutees, useRole))),
       "workerRouter3");
   //#router-deploy-in-code
 }

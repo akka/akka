@@ -63,7 +63,7 @@ In the log output you see that the cluster node has been started and changed sta
 
 2552 corresponds to the port of the second seed-nodes element in the configuration.
 In the log output you see that the cluster node has been started and joins the other seed node
-and becomes a member of the cluster. It's status changed to 'Up'.
+and becomes a member of the cluster. Its status changed to 'Up'.
 
 Switch over to the first terminal window and see in the log output that the member joined.
 
@@ -210,8 +210,17 @@ frontend nodes and 3 backend nodes::
 
   run-main sample.cluster.transformation.TransformationFrontend
 
+Node Roles
+^^^^^^^^^^
 
-.. note:: The above example should probably be designed as two separate, frontend/backend, clusters, when there is a `cluster client for decoupling clusters <https://www.assembla.com/spaces/akka/tickets/1165>`_.
+Not all nodes of a cluster need to perform the same function: there might be one sub-set which runs the web front-end,
+one which runs the data access layer and one for the number-crunching. Deployment of actors—for example by cluster-aware
+routers—can take node roles into account to achieve this distribution of responsibilities.
+
+The roles of a node is defined in the configuration property named ``akka.cluster.roles``
+and it is typically defined in the start script as a system property or environment variable.
+
+The roles of the nodes is part of the membership information in ``MemberEvent`` that you can subscribe to.
 
 How To Startup when Cluster Size Reached
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -223,6 +232,11 @@ With a configuration option you can define required number of members
 before the leader changes member status of 'Joining' members to 'Up'.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/factorial.conf#min-nr-of-members
+
+In a similar way you can define required number of members of a certain role
+before the leader changes member status of 'Joining' members to 'Up'.
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/factorial.conf#role-min-nr-of-members
 
 You can start the actors in a ``registerOnMemberUp`` callback, which will 
 be invoked when the current member status is changed tp 'Up', i.e. the cluster
@@ -238,10 +252,10 @@ Cluster Singleton Pattern
 For some use cases it is convenient and sometimes also mandatory to ensure that
 you have exactly one actor of a certain type running somewhere in the cluster.
 
-This can be implemented by subscribing to ``LeaderChanged`` events, but there are
-several corner cases to consider. Therefore, this specific use case is made easily 
-accessible by the :ref:`cluster-singleton` in the contrib module. You can use it as is, 
-or adjust to fit your specific needs. 
+This can be implemented by subscribing to ``LeaderChanged`` or ``RoleLeaderChanged``
+events, but there are several corner cases to consider. Therefore, this specific use 
+case is made easily accessible by the :ref:`cluster-singleton` in the contrib module.
+You can use it as is, or adjust to fit your specific needs. 
 
 Failure Detector
 ^^^^^^^^^^^^^^^^
@@ -280,7 +294,7 @@ previous heartbeat.
 Phi is calculated from the mean and standard deviation of historical
 inter arrival times. The previous chart is an example for standard deviation
 of 200 ms. If the heartbeats arrive with less deviation the curve becomes steeper,
-i.e. it's possible to determine failure more quickly. The curve looks like this for
+i.e. it is possible to determine failure more quickly. The curve looks like this for
 a standard deviation of 100 ms.
 
 .. image:: images/phi2.png
@@ -321,7 +335,9 @@ are already running, the configuration for a router looks like this:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#router-lookup-config
 
-It's the relative actor path defined in ``routees-path`` that identify what actor to lookup.
+It is the relative actor path defined in ``routees-path`` that identify what actor to lookup. 
+It is possible to limit the lookup of routees to member nodes tagged with a certain role by
+specifying ``use-role``.
 
 ``nr-of-instances`` defines total number of routees in the cluster, but there will not be
 more than one per node. Setting ``nr-of-instances`` to a high value will result in new routees
@@ -336,6 +352,8 @@ the configuration for a router looks like this:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSingleMasterSpec.scala#router-deploy-config
 
+It is possible to limit the deployment of routees to member nodes tagged with a certain role by
+specifying ``use-role``.
 
 ``nr-of-instances`` defines total number of routees in the cluster, but the number of routees
 per node, ``max-nr-of-instances-per-node``, will not be exceeded. Setting ``nr-of-instances``
@@ -349,8 +367,8 @@ The same type of router could also have been defined in code:
 See :ref:`cluster_configuration_scala` section for further descriptions of the settings.
 
 
-Router Example with Remote Deployed Routees
--------------------------------------------
+Router Example with Lookup of Routees
+-------------------------------------
 
 Let's take a look at how to use cluster aware routers.
 
@@ -385,7 +403,7 @@ or with create and deploy of routees. Remember, routees are the workers in this 
 We start with the router setup with lookup of routees. All nodes start ``StatsService`` and
 ``StatsWorker`` actors and the router is configured with ``routees-path``:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#start-router-lookup
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf#config-router-lookup
 
 This means that user requests can be sent to ``StatsService`` on any node and it will use
 ``StatsWorker`` on all nodes. There can only be one worker per node, but that worker could easily
@@ -407,8 +425,8 @@ service nodes and 1 client::
 
   run-main sample.cluster.stats.StatsSample
 
-Router Example with Lookup of Routees
--------------------------------------
+Router Example with Remote Deployed Routees
+-------------------------------------------
 
 The above setup is nice for this example, but we will also take a look at how to use
 a single master node that creates and deploys workers. To keep track of a single
@@ -429,7 +447,7 @@ sorted first in the member ring, i.e. it can change when new nodes join or when 
 
 All nodes start ``StatsFacade`` and the ``ClusterSingletonManager``. The router is now configured like this:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#start-router-deploy
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf#config-router-deploy
 
 
 This example is included in ``akka-samples/akka-sample-cluster``
@@ -495,11 +513,11 @@ The frontend that receives user jobs and delegates to the backends via the route
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/factorial/FactorialSample.scala#frontend
 
 
-As you can see, the router is defined in the same way as other routers, and in this case it's configured as follows:
+As you can see, the router is defined in the same way as other routers, and in this case it is configured as follows:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf#adaptive-router
 
-It's only router type ``adaptive`` and the ``metrics-selector`` that is specific to this router, other things work 
+It is only router type ``adaptive`` and the ``metrics-selector`` that is specific to this router, other things work 
 in the same way as other routers.
 
 The same type of router could also have been defined in code:
@@ -528,7 +546,7 @@ Press ctrl-c in the terminal window of the frontend to stop the factorial calcul
 Subscribe to Metrics Events
 ---------------------------
 
-It's possible to subscribe to the metrics events directly to implement other functionality.
+It is possible to subscribe to the metrics events directly to implement other functionality.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/factorial/FactorialSample.scala#metrics-listener
 
@@ -560,7 +578,7 @@ implemented differently, but often they are the same and extend an abstract test
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#concrete-tests
 
 Note the naming convention of these classes. The name of the classes must end with ``MultiJvmNode1``, ``MultiJvmNode2``
-and so on. It's possible to define another suffix to be used by the ``sbt-multi-jvm``, but the default should be
+and so on. It is possible to define another suffix to be used by the ``sbt-multi-jvm``, but the default should be
 fine in most cases.
 
 Then the abstract ``MultiNodeSpec``, which takes the ``MultiNodeConfig`` as constructor parameter.

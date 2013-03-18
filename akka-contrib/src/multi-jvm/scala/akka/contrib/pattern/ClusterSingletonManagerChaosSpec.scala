@@ -90,7 +90,8 @@ class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonMan
     system.actorOf(Props(new ClusterSingletonManager(
       singletonProps = handOverData ⇒ Props(new Echo(testActor)),
       singletonName = "echo",
-      terminationMessage = PoisonPill)),
+      terminationMessage = PoisonPill,
+      role = None)),
       name = "singleton")
   }
 

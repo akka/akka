@@ -24,23 +24,24 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
   with BeforeAndAfterEach with ImplicitSender {
 
   var publisher: ActorRef = _
-  val aUp = Member(Address("akka.tcp", "sys", "a", 2552), Up)
+  val aUp = Member(Address("akka.tcp", "sys", "a", 2552), Up, Set.empty)
   val aLeaving = aUp.copy(status = Leaving)
   val aExiting = aUp.copy(status = Exiting)
   val aRemoved = aUp.copy(status = Removed)
-  val bUp = Member(Address("akka.tcp", "sys", "b", 2552), Up)
+  val bUp = Member(Address("akka.tcp", "sys", "b", 2552), Up, Set.empty)
   val bRemoved = bUp.copy(status = Removed)
-  val cJoining = Member(Address("akka.tcp", "sys", "c", 2552), Joining)
+  val cJoining = Member(Address("akka.tcp", "sys", "c", 2552), Joining, Set("GRP"))
   val cUp = cJoining.copy(status = Up)
   val cRemoved = cUp.copy(status = Removed)
-  val dUp = Member(Address("akka.tcp", "sys", "a", 2551), Up)
+  val a51Up = Member(Address("akka.tcp", "sys", "a", 2551), Up, Set.empty)
+  val dUp = Member(Address("akka.tcp", "sys", "d", 2552), Up, Set("GRP"))
 
   val g0 = Gossip(members = SortedSet(aUp)).seen(aUp.address)
   val g1 = Gossip(members = SortedSet(aUp, bUp, cJoining)).seen(aUp.address).seen(bUp.address).seen(cJoining.address)
   val g2 = Gossip(members = SortedSet(aUp, bUp, cUp)).seen(aUp.address)
   val g3 = g2.seen(bUp.address).seen(cUp.address)
-  val g4 = Gossip(members = SortedSet(dUp, aUp, bUp, cUp)).seen(aUp.address)
-  val g5 = Gossip(members = SortedSet(dUp, aUp, bUp, cUp)).seen(aUp.address).seen(bUp.address).seen(cUp.address).seen(dUp.address)
+  val g4 = Gossip(members = SortedSet(a51Up, aUp, bUp, cUp)).seen(aUp.address)
+  val g5 = Gossip(members = SortedSet(a51Up, aUp, bUp, cUp)).seen(aUp.address).seen(bUp.address).seen(cUp.address).seen(a51Up.address)
   val g6 = Gossip(members = SortedSet(aLeaving, bUp, cUp)).seen(aUp.address)
   val g7 = Gossip(members = SortedSet(aExiting, bUp, cUp)).seen(aUp.address)
 
@@ -69,10 +70,10 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
 
     "publish leader changed" in {
       publisher ! PublishChanges(g4)
-      memberSubscriber.expectMsg(MemberUp(dUp))
+      memberSubscriber.expectMsg(MemberUp(a51Up))
       memberSubscriber.expectMsg(MemberUp(bUp))
       memberSubscriber.expectMsg(MemberUp(cUp))
-      memberSubscriber.expectMsg(LeaderChanged(Some(dUp.address)))
+      memberSubscriber.expectMsg(LeaderChanged(Some(a51Up.address)))
       memberSubscriber.expectNoMsg(1 second)
     }
 
@@ -96,13 +97,23 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
 
     "not publish leader changed when same leader" in {
       publisher ! PublishChanges(g4)
-      memberSubscriber.expectMsg(MemberUp(dUp))
+      memberSubscriber.expectMsg(MemberUp(a51Up))
       memberSubscriber.expectMsg(MemberUp(bUp))
       memberSubscriber.expectMsg(MemberUp(cUp))
-      memberSubscriber.expectMsg(LeaderChanged(Some(dUp.address)))
+      memberSubscriber.expectMsg(LeaderChanged(Some(a51Up.address)))
 
       publisher ! PublishChanges(g5)
       memberSubscriber.expectNoMsg(1 second)
+    }
+
+    "publish role leader changed" in {
+      val subscriber = TestProbe()
+      publisher ! Subscribe(subscriber.ref, classOf[RoleLeaderChanged])
+      subscriber.expectMsgType[CurrentClusterState]
+      publisher ! PublishChanges(Gossip(members = SortedSet(cJoining, dUp)))
+      subscriber.expectMsg(RoleLeaderChanged("GRP", Some(dUp.address)))
+      publisher ! PublishChanges(Gossip(members = SortedSet(cUp, dUp)))
+      subscriber.expectMsg(RoleLeaderChanged("GRP", Some(cUp.address)))
     }
 
     "send CurrentClusterState when subscribe" in {
@@ -132,6 +143,7 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
       publisher ! PublishChanges(g3)
       subscriber.expectMsg(MemberUp(bUp))
       subscriber.expectMsg(MemberUp(cUp))
+      subscriber.expectMsg(RoleLeaderChanged("GRP", Some(cUp.address)))
       subscriber.expectMsgType[SeenChanged]
 
       publisher ! PublishStart

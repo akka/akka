@@ -57,7 +57,10 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
             // replace current member with new member (might have different status, only address is used in equals)
             state = state.copy(members = state.members - event.member + event.member,
               unreachable = state.unreachable - event.member)
-          case LeaderChanged(leader)        ⇒ state = state.copy(leader = leader)
+          case LeaderChanged(leader) ⇒
+            state = state.copy(leader = leader)
+          case RoleLeaderChanged(role, leader) ⇒
+            state = state.copy(roleLeaderMap = state.roleLeaderMap + (role -> leader))
           case s: CurrentClusterState       ⇒ state = s
           case CurrentInternalStats(stats)  ⇒ _latestStats = stats
           case ClusterMetricsChanged(nodes) ⇒ _clusterMetrics = nodes
@@ -68,7 +71,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
 
   def self: Member = {
     state.members.find(_.address == selfAddress).orElse(state.unreachable.find(_.address == selfAddress)).
-      getOrElse(Member(selfAddress, MemberStatus.Removed))
+      getOrElse(Member(selfAddress, MemberStatus.Removed, cluster.selfRoles))
   }
 
   /**
