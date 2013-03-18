@@ -96,8 +96,7 @@ object AkkaBuild extends Build {
       resolvers += "Atmos Repo" at "http://repo.typesafe.com/typesafe/atmos-releases/",
       credentials <+= (baseDirectory in LocalProject(akka.id)) map ((b) => Credentials(b / "lib_managed/credentials")),
       javaOptions in Test <++= (update) map { (u) =>
-          val art = u.configuration("compile").get.modules.flatMap(_.artifacts)
-          val f = art.filter(_._1.name == "aspectjweaver").map(_._2).head
+          val f = u.matching(configurationFilter("compile") && moduleFilter(name = "aspectjweaver")).head
           Seq("-javaagent:" + f.getAbsolutePath, "-Dorg.aspectj.tracing.factory=default")
         }
     )
