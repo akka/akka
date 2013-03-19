@@ -63,7 +63,7 @@ In the log output you see that the cluster node has been started and changed sta
 
 2552 corresponds to the port of the second seed-nodes element in the configuration.
 In the log output you see that the cluster node has been started and joins the other seed node
-and becomes a member of the cluster. It's status changed to 'Up'.
+and becomes a member of the cluster. Its status changed to 'Up'.
 
 Switch over to the first terminal window and see in the log output that the member joined.
 
@@ -338,8 +338,8 @@ The same type of router could also have been defined in code:
 See :ref:`cluster_configuration_scala` section for further descriptions of the settings.
 
 
-Router Example with Remote Deployed Routees
--------------------------------------------
+Router Example with Lookup of Routees
+-------------------------------------
 
 Let's take a look at how to use cluster aware routers.
 
@@ -396,8 +396,9 @@ service nodes and 1 client::
 
   run-main sample.cluster.stats.StatsSample
 
-Router Example with Lookup of Routees
--------------------------------------
+
+Router Example with Remote Deployed Routees
+-------------------------------------------
 
 The above setup is nice for this example, but we will also take a look at how to use
 a single master node that creates and deploys workers. To keep track of a single
