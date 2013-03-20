@@ -140,7 +140,7 @@ abstract class TransitionSpec
       runOn(first) {
         leaderActions()
         awaitMemberStatus(first, Up)
-        awaitMemberStatus(second, Joining)
+        awaitMemberStatus(second, Up)
       }
       enterBarrier("leader-actions-2")
 
