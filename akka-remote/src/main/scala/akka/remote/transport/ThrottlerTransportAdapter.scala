@@ -147,10 +147,10 @@ object ThrottlerTransportAdapter {
    * Management Command to force dissocation of an address.
    */
   @SerialVersionUID(1L)
-  case class ForceDissociate(address: Address)
+  case class ForceDisassociate(address: Address)
 
   @SerialVersionUID(1L)
-  case object ForceDissociateAck {
+  case object ForceDisassociateAck {
     /**
      * Java API: get the singleton instance
      */
@@ -174,8 +174,8 @@ class ThrottlerTransportAdapter(_wrappedTransport: Transport, _system: ExtendedA
     cmd match {
       case s: SetThrottle ⇒
         manager ? s map { case SetThrottleAck ⇒ true }
-      case f: ForceDissociate ⇒
-        manager ? f map { case ForceDissociateAck ⇒ true }
+      case f: ForceDisassociate ⇒
+        manager ? f map { case ForceDisassociateAck ⇒ true }
       case _ ⇒ wrappedTransport.managementCommand(cmd)
     }
   }
@@ -231,13 +231,13 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
         case _                 ⇒ ok
       }
       Future.sequence(allAcks).map(_ ⇒ SetThrottleAck) pipeTo sender
-    case ForceDissociate(address) ⇒
+    case ForceDisassociate(address) ⇒
       val naked = nakedAddress(address)
       handleTable.foreach {
         case (`naked`, handle) ⇒ handle.disassociate()
         case _                 ⇒
       }
-      sender ! ForceDissociateAck
+      sender ! ForceDisassociateAck
 
     case Checkin(origin, handle) ⇒
       val naked: Address = nakedAddress(origin)

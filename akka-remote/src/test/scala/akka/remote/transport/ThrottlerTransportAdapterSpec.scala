@@ -74,10 +74,10 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
     Await.result(transport.managementCommand(SetThrottle(rootBAddress, direction, mode)), 3.seconds)
   }
 
-  def dissociate(): Boolean = {
+  def disassociate(): Boolean = {
     val rootBAddress = Address("akka", "systemB", "localhost", rootB.address.port.get)
     val transport = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport
-    Await.result(transport.managementCommand(ForceDissociate(rootBAddress)), 3.seconds)
+    Await.result(transport.managementCommand(ForceDisassociate(rootBAddress)), 3.seconds)
   }
 
   "ThrottlerTransportAdapter" must {
@@ -99,7 +99,7 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
 
       here ! "Blackhole 2"
       expectNoMsg(1.seconds)
-      dissociate() must be(true)
+      disassociate() must be(true)
       expectNoMsg(1.seconds)
 
       throttle(Direction.Both, Unthrottled) must be(true)
