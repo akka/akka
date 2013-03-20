@@ -142,6 +142,20 @@ object ThrottlerTransportAdapter {
      */
     def getInstance = this
   }
+
+  /**
+   * Management Command to force dissocation of an address.
+   */
+  @SerialVersionUID(1L)
+  case class ForceDissociate(address: Address)
+
+  @SerialVersionUID(1L)
+  case object ForceDissociateAck {
+    /**
+     * Java API: get the singleton instance
+     */
+    def getInstance = this
+  }
 }
 
 class ThrottlerTransportAdapter(_wrappedTransport: Transport, _system: ExtendedActorSystem)
@@ -155,11 +169,15 @@ class ThrottlerTransportAdapter(_wrappedTransport: Transport, _system: ExtendedA
     Props(new ThrottlerManager(wt))
   }
 
-  override def managementCommand(cmd: Any): Future[Boolean] = cmd match {
-    case s: SetThrottle ⇒
-      import ActorTransportAdapter.AskTimeout
-      manager ? s map { case SetThrottleAck ⇒ true }
-    case _ ⇒ wrappedTransport.managementCommand(cmd)
+  override def managementCommand(cmd: Any): Future[Boolean] = {
+    import ActorTransportAdapter.AskTimeout
+    cmd match {
+      case s: SetThrottle ⇒
+        manager ? s map { case SetThrottleAck ⇒ true }
+      case f: ForceDissociate ⇒
+        manager ? f map { case ForceDissociateAck ⇒ true }
+      case _ ⇒ wrappedTransport.managementCommand(cmd)
+    }
   }
 }
 
@@ -212,8 +230,14 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
         case (`naked`, handle) ⇒ setMode(handle, mode, direction)
         case _                 ⇒ ok
       }
-
       Future.sequence(allAcks).map(_ ⇒ SetThrottleAck) pipeTo sender
+    case ForceDissociate(address) ⇒
+      val naked = nakedAddress(address)
+      handleTable.foreach {
+        case (`naked`, handle) ⇒ handle.disassociate()
+        case _                 ⇒
+      }
+      sender ! ForceDissociateAck
 
     case Checkin(origin, handle) ⇒
       val naked: Address = nakedAddress(origin)
@@ -247,7 +271,7 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
     import ActorTransportAdapter.AskTimeout
     if (direction.includes(Direction.Send))
       handle.outboundThrottleMode.set(mode)
-    if (direction.includes(Direction.Receive))
+    if (direction.includes(Direction.Receive) && !handle.throttlerActor.isTerminated)
       (handle.throttlerActor ? mode).mapTo[SetThrottleAck.type]
     else
       Future.successful(SetThrottleAck)
