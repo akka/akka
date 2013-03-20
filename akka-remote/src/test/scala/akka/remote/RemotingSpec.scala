@@ -5,12 +5,14 @@ package akka.remote
 
 import akka.actor._
 import akka.pattern.ask
+import akka.remote.transport.AssociationRegistry
 import akka.testkit._
+import akka.util.ByteString
 import com.typesafe.config._
+import java.io.NotSerializableException
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import akka.remote.transport.AssociationRegistry
 
 object RemotingSpec {
   class Echo1 extends Actor {
@@ -115,8 +117,9 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
   val conf = ConfigFactory.parseString(
     """
-      akka.remote {
-        test.local-address = "test://remote-sys@localhost:12346"
+      akka.remote.test {
+        local-address = "test://remote-sys@localhost:12346"
+        maximum-payload-bytes = 48000 bytes
       }
     """).withFallback(system.settings.config).resolve()
   val otherSystem = ActorSystem("remote-sys", conf)
@@ -138,6 +141,38 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
   val remote = otherSystem.actorOf(Props[Echo2], "echo")
 
   val here = system.actorFor("akka.test://remote-sys@localhost:12346/user/echo")
+
+  private def verifySend(msg: Any)(afterSend: ⇒ Unit) {
+    val bigBounceOther = otherSystem.actorOf(Props(new Actor {
+      def receive = {
+        case x: Int ⇒ sender ! byteStringOfSize(x)
+        case x      ⇒ sender ! x
+      }
+    }), "bigBounce")
+    val bigBounceHere = system.actorFor("akka.test://remote-sys@localhost:12346/user/bigBounce")
+
+    val eventForwarder = system.actorOf(Props(new Actor {
+      def receive = {
+        case x ⇒ testActor ! x
+      }
+    }))
+    system.eventStream.subscribe(eventForwarder, classOf[AssociationErrorEvent])
+    system.eventStream.subscribe(eventForwarder, classOf[DisassociatedEvent])
+    try {
+      bigBounceHere ! msg
+      afterSend
+      expectNoMsg(500.millis.dilated)
+    } finally {
+      system.eventStream.unsubscribe(eventForwarder, classOf[AssociationErrorEvent])
+      system.eventStream.unsubscribe(eventForwarder, classOf[DisassociatedEvent])
+      system.stop(eventForwarder)
+      otherSystem.stop(bigBounceOther)
+    }
+  }
+
+  private def byteStringOfSize(size: Int) = ByteString.fromArray(Array.fill(size)(42: Byte))
+
+  val maxPayloadBytes = system.settings.config.getBytes("akka.remote.test.maximum-payload-bytes").toInt
 
   override def afterTermination() {
     otherSystem.shutdown()
@@ -343,6 +378,41 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       expectMsg(42)
       system.stop(r)
       expectMsg("postStop")
+    }
+
+    "drop unserializable messages" in {
+      object Unserializable
+      verifySend(Unserializable) {
+        expectMsgPF(1.second) {
+          case AssociationErrorEvent(_: NotSerializableException, _, _, _) ⇒ ()
+        }
+      }
+    }
+
+    "allow messages up to payload size" in {
+      val maxProtocolOverhead = 500 // Make sure we're still under size after the message is serialized, etc
+      val big = byteStringOfSize(maxPayloadBytes - maxProtocolOverhead)
+      verifySend(big) {
+        expectMsg(1.second, big)
+      }
+    }
+
+    "drop sent messages over payload size" in {
+      val oversized = byteStringOfSize(maxPayloadBytes + 1)
+      verifySend(oversized) {
+        expectMsgPF(1.second) {
+          case AssociationErrorEvent(e: OversizedPayloadException, _, _, _) if e.getMessage.startsWith("Discarding oversized payload sent") ⇒ ()
+        }
+      }
+    }
+
+    "drop received messages over payload size" in {
+      // Receiver should reply with a message of size maxPayload + 1, which will be dropped and an error logged
+      verifySend(maxPayloadBytes + 1) {
+        expectMsgPF(1.second) {
+          case AssociationErrorEvent(e: OversizedPayloadException, _, _, _) if e.getMessage.startsWith("Discarding oversized payload received") ⇒ ()
+        }
+      }
     }
 
   }
