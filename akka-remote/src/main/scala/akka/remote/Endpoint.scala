@@ -15,8 +15,9 @@ import akka.remote.transport.AssociationHandle._
 import akka.remote.transport.{ AkkaPduCodec, Transport, AssociationHandle }
 import akka.serialization.Serialization
 import akka.util.ByteString
-import scala.util.control.{ NoStackTrace, NonFatal }
 import akka.remote.transport.Transport.InvalidAssociationException
+import java.io.NotSerializableException
+import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
  * INTERNAL API
@@ -167,10 +168,14 @@ private[remote] class EndpointWriter(
 
   var inbound = handle.isDefined
 
-  private def publishAndThrow(reason: Throwable): Nothing = {
+  private def publish(reason: Throwable): Unit = {
     try
       eventPublisher.notifyListeners(AssociationErrorEvent(reason, localAddress, remoteAddress, inbound))
     catch { case NonFatal(e) ⇒ log.error(e, "Unable to publish error event to EventStream.") }
+  }
+
+  private def publishAndThrow(reason: Throwable): Nothing = {
+    publish(reason)
     throw reason
   }
 
@@ -234,8 +239,9 @@ private[remote] class EndpointWriter(
             throw new EndpointException("Internal error: Endpoint is in state Writing, but no association handle is present.")
         }
       } catch {
-        case NonFatal(e: EndpointException) ⇒ publishAndThrow(e)
-        case NonFatal(e)                    ⇒ publishAndThrow(new EndpointException("Failed to write message to the transport", e))
+        case NonFatal(e: NotSerializableException) ⇒ publish(e); stay()
+        case NonFatal(e: EndpointException)        ⇒ publishAndThrow(e)
+        case NonFatal(e)                           ⇒ publishAndThrow(new EndpointException("Failed to write message to the transport", e))
       }
 
     // We are in Writing state, so stash is emtpy, safe to stop here

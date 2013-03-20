@@ -283,6 +283,22 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       expectMsg("postStop")
     }
 
+    "preserve association when serialization fails" in {
+      val eventForwarder = system.actorOf(Props(new Actor {
+        def receive = {
+          case x ⇒ testActor ! x
+        }
+      }))
+      system.eventStream.subscribe(eventForwarder, classOf[AssociationErrorEvent])
+      system.eventStream.subscribe(eventForwarder, classOf[DisassociatedEvent])
+
+      object Unserializable
+      here ! Unserializable
+      expectMsgType[AssociationErrorEvent]
+      here ! "ping"
+      expectMsg(("pong", testActor))
+    }
+
   }
 
   override def beforeTermination() {
