@@ -50,35 +50,50 @@ object RemotingSpec {
       enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
     }
 
+    common-netty-settings {
+      port = 0
+      hostname = "localhost"
+      server-socket-worker-pool.pool-size-max = 2
+      client-socket-worker-pool.pool-size-max = 2
+    }
+
     akka {
       actor.provider = "akka.remote.RemoteActorRefProvider"
-      remote.transport = "akka.remote.Remoting"
 
-      remote.retry-latch-closed-for = 1 s
-      remote.log-remote-lifecycle-events = on
+      remote {
+        transport = "akka.remote.Remoting"
 
-      remote.enabled-transports = [
-        "akka.remote.test",
-        "akka.remote.netty.tcp",
-        "akka.remote.netty.udp",
-        "akka.remote.netty.ssl"
-      ]
+        retry-latch-closed-for = 1 s
+        log-remote-lifecycle-events = on
 
-      remote.netty.tcp.port = 0
-      remote.netty.tcp.hostname = "localhost"
-      remote.netty.udp.port = 0
-      remote.netty.udp.hostname = "localhost"
-      remote.netty.ssl.port = 0
-      remote.netty.ssl.hostname = "localhost"
-      remote.netty.ssl.security = ${common-ssl-settings}
+        enabled-transports = [
+          "akka.remote.test",
+          "akka.remote.netty.tcp",
+          "akka.remote.netty.udp",
+          "akka.remote.netty.ssl"
+        ]
 
-      remote.test {
+        writer-dispatcher {
+          executor = "fork-join-executor"
+          fork-join-executor {
+            parallelism-min = 2
+            parallelism-max = 2
+          }
+        }
+
+        netty.tcp = ${common-netty-settings}
+        netty.udp = ${common-netty-settings}
+        netty.ssl = ${common-netty-settings}
+        netty.ssl.security = ${common-ssl-settings}
+
+        test {
           transport-class = "akka.remote.transport.TestTransport"
           applied-adapters = []
           registry-key = aX33k0jWKg
           local-address = "test://RemotingSpec@localhost:12345"
           maximum-payload-bytes = 32000 bytes
           scheme-identifier = test
+        }
       }
 
       actor.deployment {
@@ -157,7 +172,9 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     }
 
     "not be exhausted by sending to broken connections" in {
-      val moreSystems = Vector.fill(10)(ActorSystem(other.name, other.settings.config))
+      val tcpOnlyConfig = ConfigFactory.parseString("""akka.remote.enabled-transports = ["akka.remote.netty.tcp"]""").
+        withFallback(other.settings.config)
+      val moreSystems = Vector.fill(5)(ActorSystem(other.name, tcpOnlyConfig))
       moreSystems foreach (_.actorOf(Props[Echo2], name = "echo"))
       val moreRefs = moreSystems map (sys ⇒ system.actorFor(RootActorPath(addr(sys, "tcp")) / "user" / "echo"))
       val aliveEcho = system.actorFor(RootActorPath(addr(other, "tcp")) / "user" / "echo")
