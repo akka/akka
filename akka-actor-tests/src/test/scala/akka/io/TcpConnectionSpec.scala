@@ -44,7 +44,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       val clientSocketOnServer = acceptServerSideConnection(serverSocket)
       clientSocketOnServer.socket.setSoLinger(true, 0)
       clientSocketOnServer.close()
-      clientSocket.write(ByteBuffer.allocate(1))
+      clientSocket.read(ByteBuffer.allocate(1))
       null
     } catch {
       case NonFatal(e) ⇒ e.getMessage
