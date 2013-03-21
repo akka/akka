@@ -87,7 +87,7 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
 
       diffMemberEvents(g1, g2) must be(Seq.empty)
       diffUnreachable(g1, g2) must be(Seq.empty)
-      diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = false, seenBy = Set(aUp.address, bUp.address))))
+      diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = true, seenBy = Set(aUp.address, bUp.address))))
       diffMemberEvents(g2, g1) must be(Seq.empty)
       diffUnreachable(g2, g1) must be(Seq.empty)
       diffSeen(g2, g1) must be(Seq(SeenChanged(convergence = true, seenBy = Set(aUp.address, bUp.address, eJoining.address))))
