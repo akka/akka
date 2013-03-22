@@ -91,6 +91,26 @@ followed by the concatenation of the path elements, from root guardian to the
 designated actor; the path elements are the names of the traversed actors and
 are separated by slashes.
 
+What is the Difference Between Actor Reference and Path?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An actor reference designates a single actor and the life-cycle of the reference
+matches that actor’s life-cycle; an actor path represents a name which may or 
+may not be inhabited by an actor and the path itself does not have a life-cycle, 
+it never becomes invalid. You can create an actor path without creating an actor, 
+but you cannot create an actor reference without creating corresponding actor. 
+
+.. note::
+
+  That definition does not hold for ``actorFor``, which is one of the reasons why 
+  ``actorFor`` is deprecated in favor of ``actorSelection``.
+
+You can create an actor, terminate it, and then create a new actor with the same
+actor path. The newly created actor is a new incarnation of the actor. It is not
+the same actor. An actor reference to the old incarnation is not valid for the new
+incarnation. Messages sent to the old actor reference will not be delivered
+to the new incarnation even though they have the same path.
+
 Actor Path Anchors
 ^^^^^^^^^^^^^^^^^^
 
@@ -180,9 +200,9 @@ the whole lifetime of the actor. In the case of a local actor reference, the
 named actor needs to exist before the lookup, or else the acquired reference
 will be an :class:`EmptyLocalActorRef`. This will be true even if an actor with
 that exact path is created after acquiring the actor reference. For remote actor
-references the behaviour is different and sending messages to such a reference
-will under the hood look up the actor by path on the remote system for every
-message send.
+references acquired with `actorFor` the behaviour is different and sending messages 
+to such a reference will under the hood look up the actor by path on the remote
+system for every message send.
 
 Absolute vs. Relative Paths
 ```````````````````````````
@@ -246,18 +266,39 @@ Summary: ``actorOf`` vs. ``actorFor``
   - ``actorFor`` only ever looks up an existing actor, i.e. does not create
     one.
 
+Actor Reference and Path Equality
+---------------------------------
+
+Equality of ``ActorRef`` match the intention that an ``ActorRef`` corresponds to
+the target actor incarnation. Two actor references are compared equal when they have
+the same path and point to the same actor incarnation. A reference pointing to a
+terminated actor does not compare equal to a reference pointing to another (re-created)
+actor with the same path. Note that a restart of an actor caused by a failure still 
+means that it is the same actor incarnation, i.e. a restart is not visible for the 
+consumer of the ``ActorRef``.
+
+Remote actor references acquired with ``actorFor`` do not include the full
+information about the underlying actor identity and therefore such references 
+do not compare equal to references acquired with ``actorOf``, ``sender``, 
+or ``context.self``. Because of this ``actorFor`` is deprecated in favor of
+``actorSelection``.
+
+If you need to keep track of actor references in a collection and do not care about
+the exact actor incarnation you can use the ``ActorPath`` as key, because the identifier
+of the target actor is not taken into account when comparing actor paths.
+
 Reusing Actor Paths
 -------------------
 
-When an actor is terminated, its path will point to the dead letter mailbox,
+When an actor is terminated, its reference will point to the dead letter mailbox,
 DeathWatch will publish its final transition and in general it is not expected
 to come back to life again (since the actor life cycle does not allow this).
 While it is possible to create an actor at a later time with an identical
 path—simply due to it being impossible to enforce the opposite without keeping
 the set of all actors ever created available—this is not good practice: remote
-actor references which “died” suddenly start to work again, but without any
-guarantee of ordering between this transition and any other event, hence the
-new inhabitant of the path may receive messages which were destined for the
+actor references acquired with ``actorFor`` which “died” suddenly start to work
+again, but without any guarantee of ordering between this transition and any 
+other event, hence the new inhabitant of the path may receive messages which were destined for the
 previous tenant.
 
 It may be the right thing to do in very specific circumstances, but make sure

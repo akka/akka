@@ -208,14 +208,14 @@ class ActorDSLSpec extends AkkaSpec {
       // here we pass in the ActorRefFactory explicitly as an example
       val a = actor(system, "fred")(new Act {
         val b = actor("barney")(new Act {
-          whenStarting { context.parent ! ("hello from " + self) }
+          whenStarting { context.parent ! ("hello from " + self.path) }
         })
         become {
           case x ⇒ testActor ! x
         }
       })
       //#nested-actor
-      expectMsg("hello from Actor[akka://ActorDSLSpec/user/fred/barney]")
+      expectMsg("hello from akka://ActorDSLSpec/user/fred/barney")
       lastSender must be(a)
     }
 

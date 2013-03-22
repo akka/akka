@@ -10,7 +10,6 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 
 import scala.annotation.tailrec
-import scala.concurrent.forkjoin.ThreadLocalRandom
 
 import akka.actor.dungeon.ChildrenContainer
 import akka.event.Logging.Warning
@@ -73,10 +72,9 @@ private[akka] class RepointableActorRef(
   def initialize(async: Boolean): this.type =
     underlying match {
       case null ⇒
-        val uid = ThreadLocalRandom.current.nextInt()
-        swapCell(new UnstartedCell(system, this, props, supervisor, uid))
+        swapCell(new UnstartedCell(system, this, props, supervisor))
         swapLookup(underlying)
-        supervisor.sendSystemMessage(Supervise(this, async, uid))
+        supervisor.sendSystemMessage(Supervise(this, async))
         if (!async) point()
         this
       case other ⇒ throw new IllegalStateException("initialize called more than once!")
@@ -112,7 +110,7 @@ private[akka] class RepointableActorRef(
    * unstarted cell. The cell must be fully functional.
    */
   def newCell(old: UnstartedCell): Cell =
-    new ActorCell(system, this, props, supervisor).init(old.uid, sendSupervise = false)
+    new ActorCell(system, this, props, supervisor).init(sendSupervise = false)
 
   def start(): Unit = ()
 
@@ -144,9 +142,11 @@ private[akka] class RepointableActorRef(
         case ".." ⇒ getParent.getChild(name)
         case ""   ⇒ getChild(name)
         case other ⇒
-          lookup.getChildByName(other) match {
-            case Some(crs: ChildRestartStats) ⇒ crs.child.asInstanceOf[InternalActorRef].getChild(name)
-            case _                            ⇒ Nobody
+          val (childName, uid) = ActorCell.splitNameAndUid(other)
+          lookup.getChildByName(childName) match {
+            case Some(crs: ChildRestartStats) if uid == ActorCell.undefinedUid || uid == crs.uid ⇒
+              crs.child.asInstanceOf[InternalActorRef].getChild(name)
+            case _ ⇒ Nobody
           }
       }
     } else this
@@ -162,8 +162,7 @@ private[akka] class RepointableActorRef(
 private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
                                   val self: RepointableActorRef,
                                   val props: Props,
-                                  val supervisor: InternalActorRef,
-                                  val uid: Int) extends Cell {
+                                  val supervisor: InternalActorRef) extends Cell {
 
   /*
    * This lock protects all accesses to this cell’s queues. It also ensures
