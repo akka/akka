@@ -71,9 +71,31 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "find actors by looking up their string representation" in {
+      // this is only true for local actor references
       system.actorFor(c1.path.toString) must be === c1
       system.actorFor(c2.path.toString) must be === c2
       system.actorFor(c21.path.toString) must be === c21
+    }
+
+    "take actor incarnation into account when comparing actor references" in {
+      val name = "abcdefg"
+      val a1 = system.actorOf(p, name)
+      watch(a1)
+      a1 ! PoisonPill
+      expectMsgType[Terminated].actor must be === a1
+
+      // not equal because it's terminated
+      system.actorFor(a1.path.toString) must not be (a1)
+
+      val a2 = system.actorOf(p, name)
+      a2.path must be(a1.path)
+      a2.path.toString must be(a1.path.toString)
+      a2 must not be (a1)
+      a2.toString must not be (a1.toString)
+
+      watch(a2)
+      a2 ! PoisonPill
+      expectMsgType[Terminated].actor must be === a2
     }
 
     "find actors by looking up their root-anchored relative path" in {
@@ -163,6 +185,9 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
     "find actors by looking up their string representation" in {
       def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef) {
         Await.result(looker ? LookupString(pathOf.path.toString), timeout.duration) must be === result
+        // with uid
+        Await.result(looker ? LookupString(pathOf.path.toSerializationFormat), timeout.duration) must be === result
+        // with trailing /
         Await.result(looker ? LookupString(pathOf.path.toString + "/"), timeout.duration) must be === result
       }
       for {

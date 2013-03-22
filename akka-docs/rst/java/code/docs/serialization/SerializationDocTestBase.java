@@ -67,8 +67,8 @@ public class SerializationDocTestBase {
     // within a piece of code that sets it,
     // so either you need to supply your own,
     // or simply use the local path.
-    if (transportAddress == null) identifier = theActorRef.path().toString();
-    else identifier = theActorRef.path().toStringWithAddress(transportAddress);
+    if (transportAddress == null) identifier = theActorRef.path().toSerializationFormat();
+    else identifier = theActorRef.path().toSerializationFormatWithAddress(transportAddress);
     // Then just serialize the identifier however you like
 
 

@@ -8,6 +8,7 @@ import akka.actor.{ Terminated, InternalActorRef, ActorRef, ActorRefScope, Actor
 import akka.dispatch.{ ChildTerminated, Watch, Unwatch }
 import akka.event.Logging.{ Warning, Error, Debug }
 import scala.util.control.NonFatal
+import akka.actor.MinimalActorRef
 
 private[akka] trait DeathWatch { this: ActorCell ⇒
 
@@ -16,7 +17,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
 
   override final def watch(subject: ActorRef): ActorRef = subject match {
     case a: InternalActorRef ⇒
-      if (a != self && !watching.contains(a)) {
+      if (a != self && !watchingContains(a)) {
         maintainAddressTerminatedSubscription(a) {
           a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
           watching += a
@@ -27,10 +28,10 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
 
   override final def unwatch(subject: ActorRef): ActorRef = subject match {
     case a: InternalActorRef ⇒
-      if (a != self && watching.contains(a)) {
+      if (a != self && watchingContains(a)) {
         maintainAddressTerminatedSubscription(a) {
           a.sendSystemMessage(Unwatch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-          watching -= a
+          removeWatching(a)
         }
       }
       a
@@ -41,12 +42,27 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
    * it will be propagated to user's receive.
    */
   protected def watchedActorTerminated(t: Terminated): Unit =
-    if (watching.contains(t.actor)) {
+    if (watchingContains(t.actor)) {
       maintainAddressTerminatedSubscription(t.actor) {
-        watching -= t.actor
+        removeWatching(t.actor)
       }
       receiveMessage(t)
     }
+
+  // TODO this should be removed and be replaced with `watching.contains(subject)`
+  //   when all actor references have uid, i.e. actorFor is removed
+  private def watchingContains(subject: ActorRef): Boolean = {
+    watching.contains(subject) || (subject.path.uid != ActorCell.undefinedUid &&
+      watching.contains(new UndefinedUidActorRef(subject)))
+  }
+
+  // TODO this should be removed and be replaced with `watching -= subject`
+  //   when all actor references have uid, i.e. actorFor is removed
+  private def removeWatching(subject: ActorRef): Unit = {
+    watching -= subject
+    if (subject.path.uid != ActorCell.undefinedUid)
+      watching -= new UndefinedUidActorRef(subject)
+  }
 
   protected def tellWatchersWeDied(actor: Actor): Unit = {
     if (!watchedBy.isEmpty) {
@@ -167,4 +183,9 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
 
   private def subscribeAddressTerminated(): Unit = system.eventStream.subscribe(self, classOf[AddressTerminated])
 
+}
+
+private[akka] class UndefinedUidActorRef(ref: ActorRef) extends MinimalActorRef {
+  override val path = ref.path.withUid(ActorCell.undefinedUid)
+  override def provider = throw new UnsupportedOperationException("UndefinedUidActorRef does not provide")
 }

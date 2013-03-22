@@ -16,6 +16,7 @@ import akka.event.Logging.{ LogEvent, Debug, Error }
 import akka.japi.Procedure
 import akka.dispatch.NullMessage
 import scala.concurrent.ExecutionContext
+import scala.concurrent.forkjoin.ThreadLocalRandom
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -304,8 +305,26 @@ private[akka] object ActorCell {
   final val emptyBehaviorStack: List[Actor.Receive] = Nil
 
   final val emptyActorRefSet: Set[ActorRef] = immutable.TreeSet.empty
+  final val emptyActorRefMap: Map[ActorPath, ActorRef] = immutable.TreeMap.empty
 
   final val terminatedProps: Props = Props(() ⇒ throw new IllegalActorStateException("This Actor has been terminated"))
+
+  final val undefinedUid = 0
+
+  @tailrec final def newUid(): Int = {
+    // Note that this uid is also used as hashCode in ActorRef, so be careful
+    // to not break hashing if you change the way uid is generated
+    val uid = ThreadLocalRandom.current.nextInt()
+    if (uid == undefinedUid) newUid
+    else uid
+  }
+
+  final def splitNameAndUid(name: String): (String, Int) = {
+    val i = name.indexOf('#')
+    if (i < 0) (name, undefinedUid)
+    else (name.substring(0, i), Integer.valueOf(name.substring(i + 1)))
+  }
+
 }
 
 //ACTORCELL IS 64bytes and should stay that way unless very good reason not to (machine sympathy, cache line fit)
@@ -337,7 +356,7 @@ private[akka] class ActorCell(
   protected final def lookupRoot = self
   final def provider = system.provider
 
-  protected var uid: Int = 0
+  protected def uid: Int = self.path.uid
   private[this] var _actor: Actor = _
   def actor: Actor = _actor
   protected def actor_=(a: Actor): Unit = _actor = a
@@ -361,7 +380,7 @@ private[akka] class ActorCell(
     var todo = message.next
     try {
       message match {
-        case Create(uid)               ⇒ create(uid)
+        case Create()                  ⇒ create()
         case Watch(watchee, watcher)   ⇒ addWatcher(watchee, watcher)
         case Unwatch(watchee, watcher) ⇒ remWatcher(watchee, watcher)
         case Recreate(cause) ⇒
@@ -379,10 +398,10 @@ private[akka] class ActorCell(
             case null                  ⇒ faultResume(inRespToFailure)
             case w: WaitingForChildren ⇒ w.enqueue(message)
           }
-        case Terminate()                  ⇒ terminate()
-        case Supervise(child, async, uid) ⇒ supervise(child, async, uid)
-        case ChildTerminated(child)       ⇒ todo = handleChildTerminated(child)
-        case NoMessage                    ⇒ // only here to suppress warning
+        case Terminate()             ⇒ terminate()
+        case Supervise(child, async) ⇒ supervise(child, async)
+        case ChildTerminated(child)  ⇒ todo = handleChildTerminated(child)
+        case NoMessage               ⇒ // only here to suppress warning
       }
     } catch handleNonFatalOrInterruptedException { e ⇒
       handleInvokeFailure(Nil, e)
@@ -473,7 +492,7 @@ private[akka] class ActorCell(
     }
   }
 
-  protected def create(uid: Int): Unit = {
+  protected def create(): Unit = {
     def clearOutActorIfNonNull(): Unit = {
       if (actor != null) {
         clearActorFields(actor)
@@ -481,7 +500,6 @@ private[akka] class ActorCell(
       }
     }
     try {
-      this.uid = uid
       val created = newActor()
       actor = created
       created.preStart()
@@ -505,12 +523,11 @@ private[akka] class ActorCell(
     }
   }
 
-  private def supervise(child: ActorRef, async: Boolean, uid: Int): Unit =
+  private def supervise(child: ActorRef, async: Boolean): Unit =
     if (!isTerminating) {
       // Supervise is the first thing we get from a new child, so store away the UID for later use in handleFailure()
       initChild(child) match {
         case Some(crs) ⇒
-          crs.uid = uid
           handleSupervise(child, async)
           if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
         case None ⇒ publish(Error(self.path.toString, clazz(actor), "received Supervise from unregistered child " + child + ", this will not end well"))

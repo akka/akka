@@ -12,7 +12,6 @@ import akka.event.EventStream
 import scala.annotation.tailrec
 import java.util.concurrent.ConcurrentHashMap
 import akka.event.LoggingAdapter
-import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.collection.JavaConverters
 
 /**
@@ -73,6 +72,17 @@ import scala.collection.JavaConverters
  *
  * ActorRef does not have a method for terminating the actor it points to, use
  * [[akka.actor.ActorRefFactory]]`.stop(child)` for this purpose.
+ *
+ * Two actor references are compared equal when they have the same path and point to
+ * the same actor incarnation. A reference pointing to a terminated actor doesn't compare
+ * equal to a reference pointing to another (re-created) actor with the same path.
+ * Actor references acquired with `actorFor` do not always include the full information
+ * about the underlying actor identity and therefore such references do not always compare
+ * equal to references acquired with `actorOf`, `sender`, or `context.self`.
+ *
+ * If you need to keep track of actor references in a collection and do not care
+ * about the exact actor incarnation you can use the ``ActorPath`` as key because
+ * the unique id of the actor is not taken into account when comparing actor paths.
  */
 abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable {
   scalaRef: InternalActorRef ⇒
@@ -83,9 +93,13 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   def path: ActorPath
 
   /**
-   * Comparison only takes address into account.
+   * Comparison takes path and the unique id of the actor cell into account.
    */
-  final def compareTo(other: ActorRef) = this.path compareTo other.path
+  final def compareTo(other: ActorRef) = {
+    val x = this.path compareTo other.path
+    if (x == 0) this.path.uid compareTo other.path.uid
+    else x
+  }
 
   /**
    * Sends the specified message to the sender, i.e. fire-and-forget semantics.
@@ -122,15 +136,22 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    */
   def isTerminated: Boolean
 
-  // FIXME RK check if we should scramble the bits or whether they can stay the same
-  final override def hashCode: Int = path.hashCode
+  final override def hashCode: Int = {
+    if (path.uid == ActorCell.undefinedUid) path.hashCode
+    else path.uid
+  }
 
+  /**
+   * Equals takes path and the unique id of the actor cell into account.
+   */
   final override def equals(that: Any): Boolean = that match {
-    case other: ActorRef ⇒ path == other.path
+    case other: ActorRef ⇒ path.uid == other.path.uid && path == other.path
     case _               ⇒ false
   }
 
-  override def toString = "Actor[%s]".format(path)
+  override def toString: String =
+    if (path.uid == ActorCell.undefinedUid) s"Actor[${path}]"
+    else s"Actor[${path}#${path.uid}]"
 }
 
 /**
@@ -270,7 +291,7 @@ private[akka] class LocalActorRef private[akka] (
    * object from another thread as soon as we run init.
    */
   private val actorCell: ActorCell = newActorCell(_system, this, _props, _supervisor)
-  actorCell.init(ThreadLocalRandom.current.nextInt(), sendSupervise = true)
+  actorCell.init(sendSupervise = true)
 
   protected def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
     new ActorCell(system, ref, props, supervisor)
@@ -316,11 +337,14 @@ private[akka] class LocalActorRef private[akka] (
    * Method for looking up a single child beneath this actor. Override in order
    * to inject “synthetic” actor paths like “/temp”.
    */
-  protected def getSingleChild(name: String): InternalActorRef =
-    actorCell.getChildByName(name) match {
-      case Some(crs: ChildRestartStats) ⇒ crs.child.asInstanceOf[InternalActorRef]
-      case _                            ⇒ Nobody
+  protected def getSingleChild(name: String): InternalActorRef = {
+    val (childName, uid) = ActorCell.splitNameAndUid(name)
+    actorCell.getChildByName(childName) match {
+      case Some(crs: ChildRestartStats) if uid == ActorCell.undefinedUid || uid == crs.uid ⇒
+        crs.child.asInstanceOf[InternalActorRef]
+      case _ ⇒ Nobody
     }
+  }
 
   override def getChild(names: Iterator[String]): InternalActorRef = {
     /*
@@ -384,8 +408,8 @@ private[akka] case class SerializedActorRef private (path: String) {
 private[akka] object SerializedActorRef {
   def apply(path: ActorPath): SerializedActorRef = {
     Serialization.currentTransportAddress.value match {
-      case null ⇒ new SerializedActorRef(path.toString)
-      case addr ⇒ new SerializedActorRef(path.toStringWithAddress(addr))
+      case null ⇒ new SerializedActorRef(path.toSerializationFormat)
+      case addr ⇒ new SerializedActorRef(path.toSerializationFormatWithAddress(addr))
     }
   }
 }
