@@ -5,6 +5,7 @@
 package akka.actor
 
 import akka.dispatch._
+import akka.dispatch.sysmsg._
 import akka.util._
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.serialization.{ Serialization, JavaSerializer }

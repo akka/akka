@@ -15,6 +15,7 @@ import akka.actor.dungeon.ChildrenContainer
 import akka.event.Logging.Warning
 import akka.util.Unsafe
 import akka.dispatch._
+import akka.dispatch.sysmsg._
 import util.Try
 
 /**

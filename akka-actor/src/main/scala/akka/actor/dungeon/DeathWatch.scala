@@ -5,7 +5,7 @@
 package akka.actor.dungeon
 
 import akka.actor.{ Terminated, InternalActorRef, ActorRef, ActorRefScope, ActorCell, Actor, Address, AddressTerminated }
-import akka.dispatch.{ ChildTerminated, Watch, Unwatch }
+import akka.dispatch.sysmsg.{ ChildTerminated, Watch, Unwatch }
 import akka.event.Logging.{ Warning, Error, Debug }
 import scala.util.control.NonFatal
 import akka.actor.MinimalActorRef

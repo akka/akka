@@ -55,6 +55,15 @@ actors cannot be orphaned or attached to supervisors from the outside, which
 might otherwise catch them unawares. In addition, this yields a natural and
 clean shutdown procedure for (sub-trees of) actor applications.
 
+.. warning::
+
+  Supervision related parent-child communication happens by special system
+  messages that have their own mailboxes separate from user messages. This
+  implies that supervision related events are not deterministically
+  ordered relative to ordinary messages. In general, the user cannot influence
+  the order of normal messages and failure notifications. For details and
+  example see the :ref:`message-ordering` section.
+
 .. _toplevel-supervisors:
 
 The Top-Level Supervisors

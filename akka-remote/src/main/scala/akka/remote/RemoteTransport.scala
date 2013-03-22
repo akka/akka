@@ -4,12 +4,9 @@
 
 package akka.remote
 
-import akka.dispatch.SystemMessage
-import akka.event.{ LoggingAdapter, Logging }
 import akka.AkkaException
-import akka.serialization.Serialization
-import akka.remote.RemoteProtocol._
 import akka.actor._
+import akka.event.LoggingAdapter
 import scala.collection.immutable
 import scala.concurrent.Future
 

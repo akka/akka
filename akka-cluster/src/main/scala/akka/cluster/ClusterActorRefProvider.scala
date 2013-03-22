@@ -18,7 +18,7 @@ import akka.actor.Props
 import akka.actor.Scheduler
 import akka.actor.Scope
 import akka.actor.Terminated
-import akka.dispatch.ChildTerminated
+import akka.dispatch.sysmsg.ChildTerminated
 import akka.event.EventStream
 import akka.japi.Util.immutableSeq
 import akka.remote.RemoteActorRefProvider
