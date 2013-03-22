@@ -6,7 +6,7 @@ package akka.pattern
 
 import akka.actor._
 import akka.util.{ Timeout }
-import akka.dispatch.{ Unwatch, Watch }
+import akka.dispatch.sysmsg.{ Unwatch, Watch }
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scala.util.Success

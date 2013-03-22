@@ -5,7 +5,7 @@ package akka.remote
 
 import akka.{ OnlyCauseStackTrace, AkkaException }
 import akka.actor._
-import akka.dispatch.SystemMessage
+import akka.dispatch.sysmsg.SystemMessage
 import akka.event.LoggingAdapter
 import akka.pattern.pipe
 import akka.remote.EndpointManager.Send

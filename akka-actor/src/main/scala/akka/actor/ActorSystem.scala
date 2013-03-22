@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.event._
 import akka.dispatch._
+import akka.dispatch.sysmsg.{ SystemMessageList, EarliestFirstSystemMessageList, LatestFirstSystemMessageList, SystemMessage }
 import akka.japi.Util.immutableSeq
 import akka.actor.dungeon.ChildrenContainer
 import akka.util._
@@ -559,7 +560,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     becomeClosed()
     def systemEnqueue(receiver: ActorRef, handle: SystemMessage): Unit =
       deadLetters ! DeadLetter(handle, receiver, receiver)
-    def systemDrain(newContents: SystemMessage): SystemMessage = null
+    def systemDrain(newContents: LatestFirstSystemMessageList): EarliestFirstSystemMessageList = SystemMessageList.ENil
     def hasSystemMessages = false
   }
 

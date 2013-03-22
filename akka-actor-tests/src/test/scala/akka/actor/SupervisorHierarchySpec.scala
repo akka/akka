@@ -242,6 +242,8 @@ object SupervisorHierarchySpec {
     override def postStop {
       if (failed || suspended) {
         listener ! ErrorLog("not resumed (" + failed + ", " + suspended + ")", log)
+        val state = stateCache.get(self)
+        if (state ne null) stateCache.put(self.path, state.copy(log = log))
       } else {
         stateCache.put(self.path, HierarchyState(log, Map(), null))
       }
@@ -249,7 +251,7 @@ object SupervisorHierarchySpec {
 
     def check(msg: Any): Boolean = {
       suspended = false
-      log :+= Event(msg, identityHashCode(this))
+      log :+= Event(msg, identityHashCode(Hierarchy.this))
       if (failed) {
         abort("processing message while failed")
         failed = false
@@ -281,19 +283,24 @@ object SupervisorHierarchySpec {
            * (if the unwatch() came too late), so just ignore in this case.
            */
           val name = ref.path.name
-          if (pongsToGo == 0 && context.child(name).isEmpty) {
-            listener ! Died(ref.path)
-            val kids = stateCache.get(self.path).kids(ref.path)
-            val props = Props(new Hierarchy(kids, breadth, listener, myLevel + 1)).withDispatcher("hierarchy")
-            context.watch(context.actorOf(props, name))
+          if (pongsToGo == 0) {
+            if (!context.child(name).exists(_ != ref)) {
+              listener ! Died(ref.path)
+              val kids = stateCache.get(self.path).kids(ref.path)
+              val props = Props(new Hierarchy(kids, breadth, listener, myLevel + 1)).withDispatcher("hierarchy")
+              context.watch(context.actorOf(props, name))
+            }
+            // Otherwise it is a Terminated from an old child. Ignore.
           } else {
-            log :+= Event(sender + " terminated while pongOfDeath", identityHashCode(this))
+            // WARNING: The Terminated that is logged by this is logged by check() above, too. It is not
+            // an indication of duplicate Terminate messages
+            log :+= Event(sender + " terminated while pongOfDeath", identityHashCode(Hierarchy.this))
           }
         case Abort ⇒ abort("terminating")
         case PingOfDeath ⇒
           if (size > 1) {
             pongsToGo = context.children.size
-            log :+= Event("sending " + pongsToGo + " pingOfDeath", identityHashCode(this))
+            log :+= Event("sending " + pongsToGo + " pingOfDeath", identityHashCode(Hierarchy.this))
             context.children foreach (_ ! PingOfDeath)
           } else {
             context stop self

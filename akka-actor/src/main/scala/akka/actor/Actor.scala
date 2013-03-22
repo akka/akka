@@ -28,12 +28,6 @@ trait PossiblyHarmful
  */
 trait NoSerializationVerificationNeeded
 
-/**
- * INTERNAL API
- */
-@SerialVersionUID(2L)
-private[akka] case class Failed(cause: Throwable, uid: Int) extends AutoReceivedMessage with PossiblyHarmful
-
 abstract class PoisonPill extends AutoReceivedMessage with PossiblyHarmful
 
 /**

@@ -4,7 +4,8 @@
 
 package akka.actor
 
-import akka.dispatch._
+import akka.dispatch.sysmsg._
+import akka.dispatch.NullMessage
 import akka.routing._
 import akka.event._
 import akka.util.{ Switch, Helpers }
@@ -388,17 +389,17 @@ class LocalActorRefProvider private[akka] (
     override def isTerminated: Boolean = stopped.isOn
 
     override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = stopped.ifOff(message match {
-      case null                            ⇒ throw new InvalidMessageException("Message is null")
-      case Failed(ex, _) if sender ne null ⇒ { causeOfTermination = Some(ex); sender.asInstanceOf[InternalActorRef].stop() }
-      case NullMessage                     ⇒ // do nothing
-      case _                               ⇒ log.error(this + " received unexpected message [" + message + "]")
+      case null        ⇒ throw new InvalidMessageException("Message is null")
+      case NullMessage ⇒ // do nothing
+      case _           ⇒ log.error(this + " received unexpected message [" + message + "]")
     })
 
     override def sendSystemMessage(message: SystemMessage): Unit = stopped ifOff {
       message match {
-        case Supervise(_, _)    ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
-        case ChildTerminated(_) ⇒ stop()
-        case _                  ⇒ log.error(this + " received unexpected system message [" + message + "]")
+        case Failed(child, ex, _) ⇒ { causeOfTermination = Some(ex); child.asInstanceOf[InternalActorRef].stop() }
+        case Supervise(_, _)      ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
+        case ChildTerminated(_)   ⇒ stop()
+        case _                    ⇒ log.error(this + " received unexpected system message [" + message + "]")
       }
     }
   }
