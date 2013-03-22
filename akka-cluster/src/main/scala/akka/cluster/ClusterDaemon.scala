@@ -239,6 +239,8 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
   var seedNodeProcess: Option[ActorRef] = None
 
+  var tryingToJoinWith: Option[Address] = None
+
   /**
    * Looks up and returns the remote cluster command connection for the specific address.
    */
@@ -341,7 +343,6 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
       log.warning("Trying to join member with wrong ActorSystem name, but was ignored, expected [{}] but was [{}]",
         selfAddress.system, address.system)
     else if (!latestGossip.members.exists(_.address == address)) {
-
       // to support manual join when joining to seed nodes is stuck (no seed nodes available)
       val snd = sender
       seedNodeProcess match {
@@ -355,15 +356,18 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
         case None ⇒ // no seedNodeProcess in progress
       }
 
-      // wipe our state since a node that joins a cluster must be empty
-      latestGossip = Gossip.empty
-      // wipe the failure detector since we are starting fresh and shouldn't care about the past
-      failureDetector.reset()
-      // wipe the publisher since we are starting fresh
-      publisher ! PublishStart
+      // only wipe the state if we're not in the process of joining this address
+      if (tryingToJoinWith.forall(_ != address)) {
+        tryingToJoinWith = Some(address)
+        // wipe our state since a node that joins a cluster must be empty
+        latestGossip = Gossip.empty
+        // wipe the failure detector since we are starting fresh and shouldn't care about the past
+        failureDetector.reset()
+        // wipe the publisher since we are starting fresh
+        publisher ! PublishStart
 
-      publish(latestGossip)
-
+        publish(latestGossip)
+      }
       context.become(initialized)
       if (address == selfAddress)
         joining(address, cluster.selfRoles)
@@ -517,6 +521,10 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
     } else if (localGossip.overview.isNonDownUnreachable(from)) {
       log.debug("Ignoring received gossip from unreachable [{}] ", from)
     } else {
+      // if we're in the remote gossip and not Removed, then we're not joining
+      if (tryingToJoinWith.nonEmpty && remoteGossip.member(selfAddress).status != Removed)
+        tryingToJoinWith = None
+
       val comparison = remoteGossip.version tryCompareTo localGossip.version
       val conflict = comparison.isEmpty
 
