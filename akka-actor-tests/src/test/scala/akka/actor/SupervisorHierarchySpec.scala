@@ -283,11 +283,14 @@ object SupervisorHierarchySpec {
            * (if the unwatch() came too late), so just ignore in this case.
            */
           val name = ref.path.name
-          if (pongsToGo == 0 && context.child(name).isEmpty) {
-            listener ! Died(ref.path)
-            val kids = stateCache.get(self.path).kids(ref.path)
-            val props = Props(new Hierarchy(kids, breadth, listener, myLevel + 1)).withDispatcher("hierarchy")
-            context.watch(context.actorOf(props, name))
+          if (pongsToGo == 0) {
+            if (!context.child(name).exists(_ != ref)) {
+              listener ! Died(ref.path)
+              val kids = stateCache.get(self.path).kids(ref.path)
+              val props = Props(new Hierarchy(kids, breadth, listener, myLevel + 1)).withDispatcher("hierarchy")
+              context.watch(context.actorOf(props, name))
+            }
+            // Otherwise it is a Terminated from an old child. Ignore.
           } else {
             // WARNING: The Terminated that is logged by this is logged by check() above, too. It is not
             // an indication of duplicate Terminate messages
