@@ -8,8 +8,9 @@ import org.jboss.netty.handler.ssl.SslHandler
 import javax.net.ssl.{ KeyManagerFactory, TrustManager, TrustManagerFactory, SSLContext }
 import akka.remote.RemoteTransportException
 import akka.event.LoggingAdapter
-import java.io.{ IOException, FileNotFoundException, FileInputStream }
 import akka.remote.security.provider.AkkaProvider
+import scala.util.Try
+import java.io.{ IOException, FileNotFoundException, FileInputStream }
 import java.security._
 
 /**
@@ -68,7 +69,7 @@ private[akka] object NettySSLSupport {
           trustManagerFactory.init({
             val trustStore = KeyStore.getInstance(KeyStore.getDefaultType)
             val fin = new FileInputStream(trustStorePath)
-            try trustStore.load(fin, trustStorePassword.toCharArray) finally fin.close()
+            try trustStore.load(fin, trustStorePassword.toCharArray) finally Try(fin.close())
             trustStore
           })
           trustManagerFactory.getTrustManagers
@@ -109,17 +110,34 @@ private[akka] object NettySSLSupport {
   def initializeServerSSL(settings: NettySettings, log: LoggingAdapter): SslHandler = {
     log.debug("Server SSL is enabled, initialising ...")
 
-    def constructServerContext(settings: NettySettings, log: LoggingAdapter, keyStorePath: String, keyStorePassword: String, protocol: String): Option[SSLContext] =
+    def constructServerContext(settings: NettySettings,
+                               log: LoggingAdapter,
+                               keyStorePath: String,
+                               keyStorePassword: String,
+                               protocol: String): Option[SSLContext] =
       try {
         val rng = initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)
         val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
         factory.init({
           val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
           val fin = new FileInputStream(keyStorePath)
-          try keyStore.load(fin, keyStorePassword.toCharArray) finally fin.close()
+          try keyStore.load(fin, keyStorePassword.toCharArray) finally Try(fin.close())
           keyStore
         }, keyStorePassword.toCharArray)
-        Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(factory.getKeyManagers, null, rng); ctx }
+
+        val trustManagers: Option[Array[TrustManager]] = settings.SSLTrustStore map {
+          path ⇒
+            val pwd = settings.SSLTrustStorePassword.map(_.toCharArray).orNull
+            val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
+            trustManagerFactory.init({
+              val trustStore = KeyStore.getInstance(KeyStore.getDefaultType)
+              val fin = new FileInputStream(path)
+              try trustStore.load(fin, pwd) finally Try(fin.close())
+              trustStore
+            })
+            trustManagerFactory.getTrustManagers
+        }
+        Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(factory.getKeyManagers, trustManagers.orNull, rng); ctx }
       } catch {
         case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Server SSL connection could not be established because key store could not be loaded", e)
         case e: IOException              ⇒ throw new RemoteTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
