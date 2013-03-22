@@ -243,7 +243,7 @@ object SupervisorHierarchySpec {
       if (failed || suspended) {
         listener ! ErrorLog("not resumed (" + failed + ", " + suspended + ")", log)
         val state = stateCache.get(self)
-        stateCache.put(self.path, state.copy(log = log))
+        if (state ne null) stateCache.put(self.path, state.copy(log = log))
       } else {
         stateCache.put(self.path, HierarchyState(log, Map(), null))
       }

@@ -54,7 +54,7 @@ private[akka] trait Dispatch { this: ActorCell ⇒
 
     if (sendSupervise) {
       // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-      parent.sendSystemMessage(akka.dispatch.sysmsg.Supervise(self, async = false, uid))
+      parent.sendSystemMessage(akka.dispatch.sysmsg.Supervise(self, async = false))
       parent ! NullMessage // read ScalaDoc of NullMessage to see why
     }
     this

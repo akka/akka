@@ -8,22 +8,16 @@ import akka.actor.dungeon.ChildrenContainer
 import akka.dispatch.Envelope
 import akka.dispatch.NullMessage
 import akka.dispatch.sysmsg._
-import akka.event.Logging.Debug
-import akka.event.Logging.{ LogEvent, Error }
+import akka.dispatch.sysmsg.{ Watch, Unwatch, Terminate, SystemMessage, Suspend, Supervise, Resume, Recreate, NoMessage, Create, ChildTerminated }
+import akka.event.Logging.{ LogEvent, Debug, Error }
 import akka.japi.Procedure
 import java.io.{ ObjectOutputStream, NotSerializableException }
 import scala.annotation.{ switch, tailrec }
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
+import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.control.NonFatal
-import akka.actor.dungeon.ChildrenContainer
-import akka.actor.dungeon.ChildrenContainer.WaitingForChildren
-import akka.dispatch.{ Watch, Unwatch, Terminate, SystemMessage, Suspend, Supervise, Resume, Recreate, NoMessage, MessageDispatcher, Envelope, Create, ChildTerminated }
-import akka.event.Logging.{ LogEvent, Debug, Error }
-import akka.japi.Procedure
-import akka.dispatch.NullMessage
-import scala.concurrent.ExecutionContext
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -430,14 +424,14 @@ private[akka] class ActorCell(
         message match {
           case message: SystemMessage if shouldStash(message, currentState) ⇒ stash(message)
           case f: Failed ⇒ handleFailure(f)
-          case Create() ⇒ create(uid)
+          case Create() ⇒ create()
           case Watch(watchee, watcher) ⇒ addWatcher(watchee, watcher)
           case Unwatch(watchee, watcher) ⇒ remWatcher(watchee, watcher)
           case Recreate(cause) ⇒ faultRecreate(cause)
           case Suspend() ⇒ faultSuspend()
           case Resume(inRespToFailure) ⇒ faultResume(inRespToFailure)
           case Terminate() ⇒ terminate()
-          case Supervise(child, async) ⇒ supervise(child, async, uid)
+          case Supervise(child, async) ⇒ supervise(child, async)
           case ChildTerminated(child) ⇒ handleChildTerminated(child)
           case NoMessage ⇒ // only here to suppress warning
         }

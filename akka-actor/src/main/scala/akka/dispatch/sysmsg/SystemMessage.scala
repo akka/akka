@@ -201,7 +201,7 @@ trait StashWhenFailed
  * INTERNAL API
  */
 @SerialVersionUID(-4836972106317757555L)
-private[akka] case class Create(uid: Int) extends SystemMessage // send to self from Dispatcher.register
+private[akka] case class Create() extends SystemMessage // send to self from Dispatcher.register
 /**
  * INTERNAL API
  */
@@ -226,7 +226,7 @@ private[akka] case class Terminate() extends SystemMessage // sent to self from 
  * INTERNAL API
  */
 @SerialVersionUID(3245747602115485675L)
-private[akka] case class Supervise(child: ActorRef, async: Boolean, uid: Int) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
+private[akka] case class Supervise(child: ActorRef, async: Boolean) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
 /**
  * INTERNAL API
  */

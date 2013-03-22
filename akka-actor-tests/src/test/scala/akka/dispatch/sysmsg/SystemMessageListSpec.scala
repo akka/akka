@@ -18,9 +18,9 @@ class SystemMessageListSpec extends AkkaSpec {
     }
 
     "able to append messages" in {
-      val create0 = Create(0)
-      val create1 = Create(1)
-      val create2 = Create(2)
+      val create0 = Failed(null, null, 0)
+      val create1 = Failed(null, null, 1)
+      val create2 = Failed(null, null, 2)
       ((create0 :: LNil).head eq create0) must be(true)
       ((create1 :: create0 :: LNil).head eq create1) must be(true)
       ((create2 :: create1 :: create0 :: LNil).head eq create2) must be(true)
@@ -31,9 +31,9 @@ class SystemMessageListSpec extends AkkaSpec {
     }
 
     "able to deconstruct head and tail" in {
-      val create0 = Create(0)
-      val create1 = Create(1)
-      val create2 = Create(2)
+      val create0 = Failed(null, null, 0)
+      val create1 = Failed(null, null, 1)
+      val create2 = Failed(null, null, 2)
       val list = create2 :: create1 :: create0 :: LNil
 
       (list.head eq create2) must be(true)
@@ -43,9 +43,9 @@ class SystemMessageListSpec extends AkkaSpec {
     }
 
     "properly report size and emptyness" in {
-      val create0 = Create(0)
-      val create1 = Create(1)
-      val create2 = Create(2)
+      val create0 = Failed(null, null, 0)
+      val create1 = Failed(null, null, 1)
+      val create2 = Failed(null, null, 2)
       val list = create2 :: create1 :: create0 :: LNil
 
       list.size must be === 3
@@ -63,9 +63,9 @@ class SystemMessageListSpec extends AkkaSpec {
     }
 
     "properly reverse contents" in {
-      val create0 = Create(0)
-      val create1 = Create(1)
-      val create2 = Create(2)
+      val create0 = Failed(null, null, 0)
+      val create1 = Failed(null, null, 1)
+      val create2 = Failed(null, null, 2)
       val list = create2 :: create1 :: create0 :: LNil
       val listRev: EarliestFirstSystemMessageList = list.reverse
 
@@ -87,12 +87,12 @@ class SystemMessageListSpec extends AkkaSpec {
   "EarliestFirstSystemMessageList" must {
 
     "properly prepend reversed message lists to the front" in {
-      val create0 = Create(0)
-      val create1 = Create(1)
-      val create2 = Create(2)
-      val create3 = Create(3)
-      val create4 = Create(4)
-      val create5 = Create(5)
+      val create0 = Failed(null, null, 0)
+      val create1 = Failed(null, null, 1)
+      val create2 = Failed(null, null, 2)
+      val create3 = Failed(null, null, 3)
+      val create4 = Failed(null, null, 4)
+      val create5 = Failed(null, null, 5)
 
       val fwdList = create3 :: create4 :: create5 :: ENil
       val revList = create2 :: create1 :: create0 :: LNil

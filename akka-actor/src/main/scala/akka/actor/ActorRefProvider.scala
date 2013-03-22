@@ -397,7 +397,7 @@ class LocalActorRefProvider private[akka] (
     override def sendSystemMessage(message: SystemMessage): Unit = stopped ifOff {
       message match {
         case Failed(child, ex, _) ⇒ { causeOfTermination = Some(ex); child.asInstanceOf[InternalActorRef].stop() }
-        case Supervise(_, _)   ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
+        case Supervise(_, _)      ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
         case ChildTerminated(_)   ⇒ stop()
         case _                    ⇒ log.error(this + " received unexpected system message [" + message + "]")
       }
