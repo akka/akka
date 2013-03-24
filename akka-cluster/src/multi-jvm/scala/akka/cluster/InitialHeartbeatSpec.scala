@@ -48,9 +48,9 @@ abstract class InitialHeartbeatSpec
 
       runOn(first) {
         within(10 seconds) {
-          awaitCond {
+          awaitAssert {
             cluster.sendCurrentClusterState(testActor)
-            expectMsgType[CurrentClusterState].members.exists(_.address == secondAddress)
+            expectMsgType[CurrentClusterState].members.map(_.address) must contain(secondAddress)
           }
         }
       }

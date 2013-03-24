@@ -156,7 +156,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
   def startClusterNode(): Unit = {
     if (clusterView.members.isEmpty) {
       cluster join myself
-      awaitCond(clusterView.members.exists(_.address == address(myself)))
+      awaitAssert(clusterView.members.map(_.address) must contain(address(myself)))
     } else
       clusterView.self
   }
@@ -256,13 +256,12 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
     timeout: FiniteDuration = 20.seconds): Unit = {
     within(timeout) {
       if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
-        awaitCond(
-          canNotBePartOfMemberRing forall (address ⇒ !(clusterView.members exists (_.address == address))))
-      awaitCond(clusterView.members.size == numberOfMembers)
-      awaitCond(clusterView.members.forall(_.status == MemberStatus.Up))
+        awaitAssert(canNotBePartOfMemberRing foreach (a ⇒ clusterView.members.map(_.address) must not contain (a)))
+      awaitAssert(clusterView.members.size must be(numberOfMembers))
+      awaitAssert(clusterView.members.map(_.status) must be(Set(MemberStatus.Up)))
       // clusterView.leader is updated by LeaderChanged, await that to be updated also
       val expectedLeader = clusterView.members.headOption.map(_.address)
-      awaitCond(clusterView.leader == expectedLeader)
+      awaitAssert(clusterView.leader must be(expectedLeader))
     }
   }
 
@@ -270,7 +269,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
    * Wait until the specified nodes have seen the same gossip overview.
    */
   def awaitSeenSameState(addresses: Address*): Unit =
-    awaitCond((addresses.toSet -- clusterView.seenBy).isEmpty)
+    awaitAssert((addresses.toSet -- clusterView.seenBy) must be(Set.empty))
 
   /**
    * Leader according to the address ordering of the roles.

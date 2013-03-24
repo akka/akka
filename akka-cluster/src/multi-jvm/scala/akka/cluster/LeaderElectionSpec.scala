@@ -84,13 +84,13 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
 
           // detect failure
           markNodeAsUnavailable(leaderAddress)
-          awaitCond(clusterView.unreachableMembers.exists(_.address == leaderAddress))
+          awaitAssert(clusterView.unreachableMembers.map(_.address) must contain(leaderAddress))
           enterBarrier("after-unavailable" + n)
 
           // user marks the shutdown leader as DOWN
           cluster.down(leaderAddress)
           // removed
-          awaitCond(clusterView.unreachableMembers.forall(_.address != leaderAddress))
+          awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (leaderAddress))
           enterBarrier("after-down" + n, "completed" + n)
 
         case _ if remainingRoles.contains(myself) ⇒
@@ -98,7 +98,7 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
           val leaderAddress = address(leader)
           enterBarrier("before-shutdown" + n, "after-shutdown" + n)
 
-          awaitCond(clusterView.unreachableMembers.exists(_.address == leaderAddress))
+          awaitAssert(clusterView.unreachableMembers.map(_.address) must contain(leaderAddress))
           enterBarrier("after-unavailable" + n)
 
           enterBarrier("after-down" + n)

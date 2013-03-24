@@ -87,10 +87,8 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
 
     "create routees from configuration" in {
       runOn(first) {
-        awaitCond {
-          // it may take some time until router receives cluster member events
-          currentRoutees(router1).size == 4
-        }
+        // it may take some time until router receives cluster member events
+        awaitAssert { currentRoutees(router1).size must be(4) }
         currentRoutees(router1).map(fullAddress).toSet must be(Set(address(first), address(second)))
       }
       enterBarrier("after-2")
@@ -111,10 +109,8 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
       awaitClusterUp(first, second, third)
 
       runOn(first) {
-        awaitCond {
-          // it may take some time until router receives cluster member events
-          currentRoutees(router1).size == 6
-        }
+        // it may take some time until router receives cluster member events
+        awaitAssert { currentRoutees(router1).size must be(6) }
         currentRoutees(router1).map(fullAddress).toSet must be(roles.map(address).toSet)
       }
 
@@ -125,10 +121,8 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
       runOn(first) {
         val router2 = system.actorOf(Props[Echo].withRouter(ClusterRouterConfig(local = ConsistentHashingRouter(),
           settings = ClusterRouterSettings(totalInstances = 10, maxInstancesPerNode = 2, useRole = None))), "router2")
-        awaitCond {
-          // it may take some time until router receives cluster member events
-          currentRoutees(router2).size == 6
-        }
+        // it may take some time until router receives cluster member events
+        awaitAssert { currentRoutees(router2).size must be(6) }
         currentRoutees(router2).map(fullAddress).toSet must be(roles.map(address).toSet)
       }
 
@@ -166,10 +160,8 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
     }
 
     def assertHashMapping(router: ActorRef): Unit = {
-      awaitCond {
-        // it may take some time until router receives cluster member events
-        currentRoutees(router).size == 6
-      }
+      // it may take some time until router receives cluster member events
+      awaitAssert { currentRoutees(router).size must be(6) }
       currentRoutees(router).map(fullAddress).toSet must be(roles.map(address).toSet)
 
       router ! "a"

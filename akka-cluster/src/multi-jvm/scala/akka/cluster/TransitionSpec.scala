@@ -55,20 +55,18 @@ abstract class TransitionSpec
 
   def seenLatestGossip: Set[RoleName] = clusterView.seenBy flatMap roleName
 
-  def awaitSeen(addresses: Address*): Unit = awaitCond {
-    (seenLatestGossip map address) == addresses.toSet
+  def awaitSeen(addresses: Address*): Unit = awaitAssert {
+    (seenLatestGossip map address) must be(addresses.toSet)
   }
 
-  def awaitMembers(addresses: Address*): Unit = awaitCond {
-    val result = memberAddresses == addresses.toSet
+  def awaitMembers(addresses: Address*): Unit = awaitAssert {
     clusterView.refreshCurrentState()
-    result
+    memberAddresses must be(addresses.toSet)
   }
 
-  def awaitMemberStatus(address: Address, status: MemberStatus): Unit = awaitCond {
-    val result = memberStatus(address) == status
+  def awaitMemberStatus(address: Address, status: MemberStatus): Unit = awaitAssert {
     clusterView.refreshCurrentState()
-    result
+    memberStatus(address) must be(status)
   }
 
   def leaderActions(): Unit =
@@ -133,7 +131,7 @@ abstract class TransitionSpec
         awaitMembers(first, second)
         awaitMemberStatus(first, Up)
         awaitMemberStatus(second, Joining)
-        awaitCond(seenLatestGossip == Set(first, second))
+        awaitAssert(seenLatestGossip must be(Set(first, second)))
       }
       enterBarrier("convergence-joining-2")
 
@@ -148,7 +146,7 @@ abstract class TransitionSpec
       runOn(first, second) {
         // gossip chat will synchronize the views
         awaitMemberStatus(second, Up)
-        awaitCond(seenLatestGossip == Set(first, second))
+        awaitAssert(seenLatestGossip must be(Set(first, second)))
         awaitMemberStatus(first, Up)
       }
 
@@ -162,7 +160,7 @@ abstract class TransitionSpec
       }
       runOn(second, third) {
         // gossip chat from the join will synchronize the views
-        awaitCond(seenLatestGossip == Set(second, third))
+        awaitAssert(seenLatestGossip must be(Set(second, third)))
       }
       enterBarrier("third-joined-second")
 
@@ -172,7 +170,7 @@ abstract class TransitionSpec
         awaitMembers(first, second, third)
         awaitMemberStatus(third, Joining)
         awaitMemberStatus(second, Up)
-        awaitCond(seenLatestGossip == Set(first, second, third))
+        awaitAssert(seenLatestGossip must be(Set(first, second, third)))
       }
 
       first gossipTo third
@@ -181,7 +179,7 @@ abstract class TransitionSpec
         awaitMemberStatus(first, Up)
         awaitMemberStatus(second, Up)
         awaitMemberStatus(third, Joining)
-        awaitCond(seenLatestGossip == Set(first, second, third))
+        awaitAssert(seenLatestGossip must be(Set(first, second, third)))
       }
 
       enterBarrier("convergence-joining-3")
@@ -200,7 +198,7 @@ abstract class TransitionSpec
       leader12 gossipTo other1
       runOn(other1) {
         awaitMemberStatus(third, Up)
-        awaitCond(seenLatestGossip == Set(leader12, myself))
+        awaitAssert(seenLatestGossip must be(Set(leader12, myself)))
       }
 
       // first non-leader gossipTo the other non-leader
@@ -211,7 +209,7 @@ abstract class TransitionSpec
       }
       runOn(other2) {
         awaitMemberStatus(third, Up)
-        awaitCond(seenLatestGossip == Set(first, second, third))
+        awaitAssert(seenLatestGossip must be(Set(first, second, third)))
       }
 
       // first non-leader gossipTo the leader
@@ -220,7 +218,7 @@ abstract class TransitionSpec
         awaitMemberStatus(first, Up)
         awaitMemberStatus(second, Up)
         awaitMemberStatus(third, Up)
-        awaitCond(seenLatestGossip == Set(first, second, third))
+        awaitAssert(seenLatestGossip must be(Set(first, second, third)))
       }
 
       enterBarrier("after-3")
@@ -230,8 +228,8 @@ abstract class TransitionSpec
       runOn(third) {
         markNodeAsUnavailable(second)
         reapUnreachable()
-        awaitCond(clusterView.unreachableMembers.contains(Member(second, Up, Set.empty)))
-        awaitCond(seenLatestGossip == Set(third))
+        awaitAssert(clusterView.unreachableMembers must contain(Member(second, Up, Set.empty)))
+        awaitAssert(seenLatestGossip must be(Set(third)))
       }
 
       enterBarrier("after-second-unavailble")
@@ -239,7 +237,7 @@ abstract class TransitionSpec
       third gossipTo first
 
       runOn(first, third) {
-        awaitCond(clusterView.unreachableMembers.contains(Member(second, Up, Set.empty)))
+        awaitAssert(clusterView.unreachableMembers must contain(Member(second, Up, Set.empty)))
       }
 
       runOn(first) {
@@ -251,9 +249,9 @@ abstract class TransitionSpec
       first gossipTo third
 
       runOn(first, third) {
-        awaitCond(clusterView.unreachableMembers.contains(Member(second, Down, Set.empty)))
+        awaitAssert(clusterView.unreachableMembers must contain(Member(second, Down, Set.empty)))
         awaitMemberStatus(second, Down)
-        awaitCond(seenLatestGossip == Set(first, third))
+        awaitAssert(seenLatestGossip must be(Set(first, third)))
       }
 
       enterBarrier("after-6")
