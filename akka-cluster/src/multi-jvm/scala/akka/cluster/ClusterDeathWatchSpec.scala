@@ -82,11 +82,11 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("second-terminated")
 
         markNodeAsUnavailable(third)
-        awaitCond(clusterView.members.forall(_.address != address(third)))
-        awaitCond(clusterView.unreachableMembers.exists(_.address == address(third)))
+        awaitAssert(clusterView.members.map(_.address) must not contain (address(third)))
+        awaitAssert(clusterView.unreachableMembers.map(_.address) must contain(address(third)))
         cluster.down(third)
         // removed
-        awaitCond(clusterView.unreachableMembers.forall(_.address != address(third)))
+        awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (address(third)))
         expectMsg(path3)
         enterBarrier("third-terminated")
 
@@ -98,11 +98,11 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("watch-established")
         runOn(third) {
           markNodeAsUnavailable(second)
-          awaitCond(clusterView.members.forall(_.address != address(second)))
-          awaitCond(clusterView.unreachableMembers.exists(_.address == address(second)))
+          awaitAssert(clusterView.members.map(_.address) must not contain (address(second)))
+          awaitAssert(clusterView.unreachableMembers.map(_.address) must contain(address(second)))
           cluster.down(second)
           // removed
-          awaitCond(clusterView.unreachableMembers.forall(_.address != address(second)))
+          awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (address(second)))
         }
         enterBarrier("second-terminated")
         enterBarrier("third-terminated")
@@ -137,11 +137,11 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("hello-deployed")
 
         markNodeAsUnavailable(first)
-        awaitCond(clusterView.members.forall(_.address != address(first)))
-        awaitCond(clusterView.unreachableMembers.exists(_.address == address(first)))
+        awaitAssert(clusterView.members.map(_.address) must not contain (address(first)))
+        awaitAssert(clusterView.unreachableMembers.map(_.address) must contain(address(first)))
         cluster.down(first)
         // removed
-        awaitCond(clusterView.unreachableMembers.forall(_.address != address(first)))
+        awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (address(first)))
 
         val t = expectMsgType[Terminated]
         t.actor must be(hello)

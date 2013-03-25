@@ -137,7 +137,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         router1.isInstanceOf[RoutedActorRef] must be(true)
 
         // max-nr-of-instances-per-node=2 times 2 nodes
-        awaitCond(currentRoutees(router1).size == 4)
+        awaitAssert(currentRoutees(router1).size must be(4))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
@@ -165,7 +165,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
 
       runOn(first) {
         // 2 nodes, 1 routee on each node
-        awaitCond(currentRoutees(router4).size == 2)
+        awaitAssert(currentRoutees(router4).size must be(2))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
@@ -191,7 +191,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
 
       runOn(first) {
         // max-nr-of-instances-per-node=2 times 4 nodes
-        awaitCond(currentRoutees(router1).size == 8)
+        awaitAssert(currentRoutees(router1).size must be(8))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
@@ -213,7 +213,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
 
       runOn(first) {
         // 4 nodes, 1 routee on each node
-        awaitCond(currentRoutees(router4).size == 4)
+        awaitAssert(currentRoutees(router4).size must be(4))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
@@ -233,7 +233,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
 
       runOn(first) {
         // max-nr-of-instances-per-node=1 times 3 nodes
-        awaitCond(currentRoutees(router3).size == 3)
+        awaitAssert(currentRoutees(router3).size must be(3))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
@@ -255,7 +255,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
     "deploy routees to specified node role" taggedAs LongRunningTest in {
 
       runOn(first) {
-        awaitCond(currentRoutees(router5).size == 2)
+        awaitAssert(currentRoutees(router5).size must be(2))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
@@ -280,7 +280,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         router2.isInstanceOf[RoutedActorRef] must be(true)
 
         // totalInstances = 3, maxInstancesPerNode = 1
-        awaitCond(currentRoutees(router2).size == 3)
+        awaitAssert(currentRoutees(router2).size must be(3))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
@@ -311,8 +311,9 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
 
         val downAddress = routeeAddresses.find(_ != address(first)).get
         cluster.down(downAddress)
-        awaitCond {
-          routeeAddresses.contains(notUsedAddress) && !routeeAddresses.contains(downAddress)
+        awaitAssert {
+          routeeAddresses must contain(notUsedAddress)
+          routeeAddresses must not contain (downAddress)
         }
 
         val iterationCount = 10

@@ -38,8 +38,7 @@ object ClusterSpec {
 class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
   import ClusterSpec._
 
-  // FIXME: temporary workaround. See #2663
-  val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[ClusterActorRefProvider].transport.defaultAddress
+  val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
 
   val cluster = Cluster(system)
   def clusterView = cluster.readView
@@ -67,7 +66,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       awaitCond(clusterView.isSingletonCluster)
       clusterView.self.address must be(selfAddress)
       clusterView.members.map(_.address) must be(Set(selfAddress))
-      awaitCond(clusterView.status == MemberStatus.Up)
+      awaitAssert(clusterView.status must be(MemberStatus.Up))
     }
 
     "publish CurrentClusterState to subscribers when requested" in {

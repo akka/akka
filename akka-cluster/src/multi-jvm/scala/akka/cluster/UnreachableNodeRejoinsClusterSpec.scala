@@ -98,12 +98,12 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
         allButVictim.foreach(markNodeAsUnavailable(_))
         within(30 seconds) {
           // victim becomes all alone
-          awaitCond({
+          awaitAssert {
             val members = clusterView.members
-            clusterView.unreachableMembers.size == (roles.size - 1) &&
-              members.size == 1 &&
-              members.forall(_.status == MemberStatus.Up)
-          })
+            clusterView.unreachableMembers.size must be(roles.size - 1)
+            members.size must be(1)
+            members.map(_.status) must be(Set(MemberStatus.Up))
+          }
           clusterView.unreachableMembers.map(_.address) must be((allButVictim map address).toSet)
         }
       }
@@ -112,12 +112,12 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
         markNodeAsUnavailable(victim)
         within(30 seconds) {
           // victim becomes unreachable
-          awaitCond({
+          awaitAssert {
             val members = clusterView.members
-            clusterView.unreachableMembers.size == 1 &&
-              members.size == (roles.size - 1) &&
-              members.forall(_.status == MemberStatus.Up)
-          })
+            clusterView.unreachableMembers.size must be(1)
+            members.size must be(roles.size - 1)
+            members.map(_.status) must be(Set(MemberStatus.Up))
+          }
           awaitSeenSameState(allButVictim map address: _*)
           // still one unreachable
           clusterView.unreachableMembers.size must be(1)
@@ -136,7 +136,7 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
       runOn(allBut(victim): _*) {
         awaitMembersUp(roles.size - 1, Set(victim))
         // eventually removed
-        awaitCond(clusterView.unreachableMembers.isEmpty, 15 seconds)
+        awaitAssert(clusterView.unreachableMembers must be(Set.empty), 15 seconds)
 
       }
       endBarrier

@@ -77,19 +77,19 @@ abstract class LeaderLeavingSpec
           enterBarrier("leader-left")
 
           val expectedAddresses = roles.toSet map address
-          awaitCond(clusterView.members.map(_.address) == expectedAddresses)
+          awaitAssert(clusterView.members.map(_.address) must be(expectedAddresses))
 
           // verify that the LEADER is EXITING
           exitingLatch.await
 
           // verify that the LEADER is no longer part of the 'members' set
-          awaitCond(clusterView.members.forall(_.address != oldLeaderAddress))
+          awaitAssert(clusterView.members.map(_.address) must not contain (oldLeaderAddress))
 
           // verify that the LEADER is not part of the 'unreachable' set
-          awaitCond(clusterView.unreachableMembers.forall(_.address != oldLeaderAddress))
+          awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (oldLeaderAddress))
 
           // verify that we have a new LEADER
-          awaitCond(clusterView.leader != oldLeaderAddress)
+          awaitAssert(clusterView.leader must not be (oldLeaderAddress))
         }
 
         enterBarrier("finished")
