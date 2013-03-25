@@ -98,13 +98,13 @@ object Coroner {
                 #Heap usage: ${memMx.getHeapMemoryUsage()}
                 #Non-heap usage: ${memMx.getNonHeapMemoryUsage()}""".stripMargin('#'))
 
-    def dumpAllThreads(): Seq[ThreadInfo] = {
+    def dumpAllThreads: Seq[ThreadInfo] = {
       threadMx.dumpAllThreads(
-        threadMx.isObjectMonitorUsageSupported(),
-        threadMx.isSynchronizerUsageSupported())
+        threadMx.isObjectMonitorUsageSupported,
+        threadMx.isSynchronizerUsageSupported)
     }
 
-    def findDeadlockedThreads(): (Seq[ThreadInfo], String) = {
+    def findDeadlockedThreads: (Seq[ThreadInfo], String) = {
       val (ids, desc) = if (threadMx.isSynchronizerUsageSupported()) {
         (threadMx.findDeadlockedThreads(), "monitors and ownable synchronizers")
       } else {
@@ -118,20 +118,83 @@ object Coroner {
       }
     }
 
-    def printThreadInfo(threadInfos: Seq[ThreadInfo]) = {
+    def printThreadInfos(threadInfos: Seq[ThreadInfo]) = {
       if (threadInfos.isEmpty) {
         println("None")
       } else {
-        for (ti ← threadInfos.sortBy(_.getThreadName)) { println(ti) }
+        for (ti ← threadInfos.sortBy(_.getThreadName)) { println(threadInfoToString(ti)) }
       }
     }
 
-    println("All threads:")
-    printThreadInfo(dumpAllThreads())
+    def threadInfoToString(ti: ThreadInfo): String = {
+      val sb = new java.lang.StringBuilder
+      sb.append("\"")
+      sb.append(ti.getThreadName)
+      sb.append("\" Id=")
+      sb.append(ti.getThreadId)
+      sb.append(" ")
+      sb.append(ti.getThreadState)
 
-    val (deadlockedThreads, deadlockDesc) = findDeadlockedThreads()
+      if (ti.getLockName != null) {
+        sb.append(" on " + ti.getLockName)
+      }
+
+      if (ti.getLockOwnerName != null) {
+        sb.append(" owned by \"")
+        sb.append(ti.getLockOwnerName)
+        sb.append("\" Id=")
+        sb.append(ti.getLockOwnerId)
+      }
+
+      if (ti.isSuspended) {
+        sb.append(" (suspended)")
+      }
+
+      if (ti.isInNative) {
+        sb.append(" (in native)")
+      }
+
+      sb.append('\n')
+
+      def appendMsg(msg: String, o: Any) = {
+        sb.append(msg)
+        sb.append(o)
+        sb.append('\n')
+      }
+
+      val stackTrace = ti.getStackTrace
+      for (i ← 0 until stackTrace.length) {
+        val ste = stackTrace(i)
+        appendMsg("\tat ", ste)
+        if (i == 0 && ti.getLockInfo != null) {
+          import java.lang.Thread.State._
+          ti.getThreadState match {
+            case BLOCKED       ⇒ appendMsg("\t-  blocked on ", ti.getLockInfo)
+            case WAITING       ⇒ appendMsg("\t-  waiting on ", ti.getLockInfo)
+            case TIMED_WAITING ⇒ appendMsg("\t-  waiting on ", ti.getLockInfo)
+            case _             ⇒
+          }
+        }
+
+        for (mi ← ti.getLockedMonitors if mi.getLockedStackDepth == i)
+          appendMsg("\t-  locked ", mi)
+      }
+
+      val locks = ti.getLockedSynchronizers
+      if (locks.length > 0) {
+        appendMsg("\n\tNumber of locked synchronizers = ", locks.length)
+        for (li ← locks) appendMsg("\t- ", li)
+      }
+      sb.append('\n')
+      return sb.toString
+    }
+
+    println("All threads:")
+    printThreadInfos(dumpAllThreads)
+
+    val (deadlockedThreads, deadlockDesc) = findDeadlockedThreads
     println(s"Deadlocks found for $deadlockDesc:")
-    printThreadInfo(deadlockedThreads)
+    printThreadInfos(deadlockedThreads)
   }
 
 }
