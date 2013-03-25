@@ -22,7 +22,7 @@ import scala.math.min
 import scala.util.{ Success, Failure }
 import scala.util.control.NonFatal
 import scala.concurrent.duration._
-import akka.dispatch.{ Unwatch, Watch }
+import akka.dispatch.sysmsg.{ Unwatch, Watch }
 
 class ThrottlerProvider extends TransportAdapterProvider {
 
