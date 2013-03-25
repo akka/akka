@@ -187,6 +187,24 @@ public class TestKitDocTest {
     }};
     //#test-awaitCond
   }
+
+  @Test
+  public void demonstrateAwaitAssert() {
+    //#test-awaitAssert
+    new JavaTestKit(system) {{
+      getRef().tell(42, null);
+      new AwaitAssert(
+            duration("1 second"),  // maximum wait time
+            duration("100 millis") // interval at which to check the condition
+            ) {
+        // do not put code outside this method, will run afterwards
+        protected void check() {
+          assertEquals(msgAvailable(), true);
+        }
+      };
+    }};
+    //#test-awaitAssert
+  }
   
   @Test
   @SuppressWarnings("unchecked") // due to generic varargs

@@ -92,10 +92,9 @@ abstract class MinMembersBeforeUpBase(multiNodeConfig: MultiNodeConfig)
 
     runOn(first) {
       cluster join myself
-      awaitCond {
-        val result = clusterView.status == Joining
+      awaitAssert {
         clusterView.refreshCurrentState()
-        result
+        clusterView.status must be(Joining)
       }
     }
     enterBarrier("first-started")
@@ -107,10 +106,9 @@ abstract class MinMembersBeforeUpBase(multiNodeConfig: MultiNodeConfig)
     }
     runOn(first, second) {
       val expectedAddresses = Set(first, second) map address
-      awaitCond {
-        val result = clusterView.members.map(_.address) == expectedAddresses
+      awaitAssert {
         clusterView.refreshCurrentState()
-        result
+        clusterView.members.map(_.address) must be(expectedAddresses)
       }
       clusterView.members.map(_.status) must be(Set(Joining))
       // and it should not change

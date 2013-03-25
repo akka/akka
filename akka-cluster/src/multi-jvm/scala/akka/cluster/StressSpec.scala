@@ -965,19 +965,19 @@ abstract class StressSpec
           expectMsgType[ChildrenCount] must be(ChildrenCount(nbrUsedRoles, 0))
 
           1 to 5 foreach { _ ⇒ supervisor ! new RuntimeException("Simulated exception") }
-          awaitCond {
+          awaitAssert {
             supervisor ! GetChildrenCount
             val c = expectMsgType[ChildrenCount]
-            c == ChildrenCount(nbrUsedRoles, 5 * nbrUsedRoles)
+            c must be(ChildrenCount(nbrUsedRoles, 5 * nbrUsedRoles))
           }
 
           // after 5 restart attempts the children should be stopped
           supervisor ! new RuntimeException("Simulated exception")
-          awaitCond {
+          awaitAssert {
             supervisor ! GetChildrenCount
             val c = expectMsgType[ChildrenCount]
             // zero children
-            c == ChildrenCount(0, 6 * nbrUsedRoles)
+            c must be(ChildrenCount(0, 6 * nbrUsedRoles))
           }
           supervisor ! Reset
 

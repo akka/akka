@@ -282,6 +282,13 @@ code blocks:
     reception, the embedded condition can compute the boolean result from
     anything in scope.
 
+    * **AwaitAssert**
+
+    .. includecode:: code/docs/testkit/TestKitDocTest.java#test-awaitAssert
+
+    This general construct is not connected with the test kit’s message
+    reception, the embedded assert can check anything in scope.
+
 There are also cases where not all messages sent to the test kit are actually
 relevant to the test, but removing them would mean altering the actors under
 test. For this purpose it is possible to ignore certain messages:
