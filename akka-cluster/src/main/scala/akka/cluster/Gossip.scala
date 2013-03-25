@@ -19,6 +19,7 @@ private[cluster] object Gossip {
     if (members.isEmpty) empty else empty.copy(members = members)
 
   private val leaderMemberStatus = Set[MemberStatus](Up, Leaving)
+  private val convergenceMemberStatus = Set[MemberStatus](Up, Leaving, Exiting)
 }
 
 /**
@@ -179,11 +180,11 @@ private[cluster] case class Gossip(
     //   1. we don't have any members that are unreachable, or
     //   2. all unreachable members in the set have status DOWN
     // Else we can't continue to check for convergence
-    // When that is done we check that all memebers with a leader
+    // When that is done we check that all members with a convergence
     // status is in the seen table and has the latest vector clock
     // version
     overview.unreachable.forall(_.status == Down) &&
-      !members.exists(m ⇒ Gossip.leaderMemberStatus(m.status) && !seenByAddress(m.address))
+      !members.exists(m ⇒ Gossip.convergenceMemberStatus(m.status) && !seenByAddress(m.address))
   }
 
   def isLeader(address: Address): Boolean = leader == Some(address)
