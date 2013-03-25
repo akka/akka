@@ -54,22 +54,7 @@ ip-addresses or host names of the machines in ``application.conf`` instead of ``
 .. literalinclude:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/simple/japi/SimpleClusterApp.java
    :language: java
 
-3. Add `maven exec plugin <http://mojo.codehaus.org/exec-maven-plugin/introduction.html>`_ to your pom.xml::
-
-    <project>
-      <build>
-        <plugins>
-          <plugin>
-              <groupId>org.codehaus.mojo</groupId>
-              <artifactId>exec-maven-plugin</artifactId>
-              <version>1.2.1</version>
-          </plugin>
-        </plugins>
-      </build>
-    </project>
-
-
-4. Start the first seed node. Open a terminal window and run (one line)::
+3. Start the first seed node. Open a terminal window and run (one line)::
 
     mvn exec:java -Dexec.mainClass="sample.cluster.simple.japi.SimpleClusterApp" \
       -Dexec.args="2551"
@@ -77,7 +62,7 @@ ip-addresses or host names of the machines in ``application.conf`` instead of ``
 2551 corresponds to the port of the first seed-nodes element in the configuration.
 In the log output you see that the cluster node has been started and changed status to 'Up'.
 
-5. Start the second seed node. Open another terminal window and run::
+4. Start the second seed node. Open another terminal window and run::
 
     mvn exec:java -Dexec.mainClass="sample.cluster.simple.japi.SimpleClusterApp" \
       -Dexec.args="2552"
@@ -89,7 +74,7 @@ and becomes a member of the cluster. Its status changed to 'Up'.
 
 Switch over to the first terminal window and see in the log output that the member joined.
 
-6. Start another node. Open a maven session in yet another terminal window and run::
+5. Start another node. Open a maven session in yet another terminal window and run::
 
     mvn exec:java -Dexec.mainClass="sample.cluster.simple.japi.SimpleClusterApp"
 
