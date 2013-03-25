@@ -227,7 +227,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
           val cmdFuture = TestConductor().transport.managementCommand(SetThrottle(t.target, t.direction, mode))
 
           cmdFuture onSuccess {
-            case b: Boolean ⇒ self ! ToServer(Done)
+            case true ⇒ self ! ToServer(Done)
             case _ ⇒ throw new RuntimeException("Throttle was requested from the TestConductor, but no transport " +
               "adapters available that support throttling. Specify `testTransport(on = true)` in your MultiNodeConfig")
           }
