@@ -318,17 +318,20 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       val out = new ObjectOutputStream(baos)
 
       val sysImpl = system.asInstanceOf[ActorSystemImpl]
-      val addr = sysImpl.provider.rootPath.address
-      val serialized = SerializedActorRef(RootActorPath(addr, "/non-existing"))
+      val ref = system.actorOf(Props[ReplyActor], "non-existing")
+      val serialized = SerializedActorRef(ref)
 
       out.writeObject(serialized)
 
       out.flush
       out.close
 
+      ref ! PoisonPill
+      awaitCond(ref.isTerminated, 2 seconds)
+
       JavaSerializer.currentSystem.withValue(sysImpl) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
-        in.readObject must be === new EmptyLocalActorRef(sysImpl.provider, system.actorFor("/").path / "non-existing", system.eventStream)
+        in.readObject must be === new EmptyLocalActorRef(sysImpl.provider, ref.path, system.eventStream)
       }
     }
 
@@ -403,7 +406,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       Await.result(ffive, timeout.duration) must be("five")
       Await.result(fnull, timeout.duration) must be("null")
 
-      awaitCond(ref.isTerminated, 2000 millis)
+      awaitCond(ref.isTerminated, 2 seconds)
     }
 
     "restart when Kill:ed" in {

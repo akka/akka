@@ -165,14 +165,14 @@ package docs.serialization {
       // Serialize
       // (beneath toBinary)
 
-      // If there is no transportAddress,
-      // it means that either this Serializer isn't called
+      // If there is no SerializationInformation,
+      // it means that this Serializer isn't called
       // within a piece of code that sets it,
-      // so either you need to supply your own,
+      // so either you need to supply your own address,
       // or simply use the local path.
-      val identifier: String = Serialization.currentTransportAddress.value match {
-        case null    ⇒ theActorRef.path.toSerializationFormat
-        case address ⇒ theActorRef.path.toSerializationFormatWithAddress(address)
+      val identifier: String = Serialization.currentTransportInformation.value match {
+        case null                        ⇒ theActorRef.path.toSerializationFormat
+        case _: SerializationInformation ⇒ Serialization.serializedActorPath(theActorRef)
       }
       // Then just serialize the identifier however you like
 

@@ -6,14 +6,12 @@ package akka.actor
 
 import akka.dispatch._
 import akka.dispatch.sysmsg._
-import akka.util._
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.serialization.{ Serialization, JavaSerializer }
 import akka.event.EventStream
 import scala.annotation.tailrec
 import java.util.concurrent.ConcurrentHashMap
 import akka.event.LoggingAdapter
-import scala.collection.JavaConverters
 
 /**
  * Immutable and serializable handle to an actor, which may or may not reside
@@ -381,7 +379,7 @@ private[akka] class LocalActorRef private[akka] (
   override def restart(cause: Throwable): Unit = actorCell.restart(cause)
 
   @throws(classOf[java.io.ObjectStreamException])
-  protected def writeReplace(): AnyRef = SerializedActorRef(path)
+  protected def writeReplace(): AnyRef = SerializedActorRef(this)
 }
 
 /**
@@ -407,11 +405,8 @@ private[akka] case class SerializedActorRef private (path: String) {
  * INTERNAL API
  */
 private[akka] object SerializedActorRef {
-  def apply(path: ActorPath): SerializedActorRef = {
-    Serialization.currentTransportAddress.value match {
-      case null ⇒ new SerializedActorRef(path.toSerializationFormat)
-      case addr ⇒ new SerializedActorRef(path.toSerializationFormatWithAddress(addr))
-    }
+  def apply(actorRef: ActorRef): SerializedActorRef = {
+    new SerializedActorRef(Serialization.serializedActorPath(actorRef))
   }
 }
 
@@ -437,7 +432,7 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   override def restart(cause: Throwable): Unit = ()
 
   @throws(classOf[java.io.ObjectStreamException])
-  protected def writeReplace(): AnyRef = SerializedActorRef(path)
+  protected def writeReplace(): AnyRef = SerializedActorRef(this)
 }
 
 /**

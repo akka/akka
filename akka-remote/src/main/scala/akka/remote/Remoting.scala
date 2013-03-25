@@ -74,7 +74,7 @@ private[remote] object Remoting {
               null)
         }
       case None ⇒ throw new RemoteTransportException(
-        s"No transport is loaded for protocol: [${remote.protocol}], available protocols: [${transportMapping.keys.mkString}]", null)
+        s"No transport is loaded for protocol: [${remote.protocol}], available protocols: [${transportMapping.keys.mkString(", ")}]", null)
     }
   }
 

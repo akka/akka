@@ -157,7 +157,7 @@ private[akka] class RepointableActorRef(
   def sendSystemMessage(message: SystemMessage) = underlying.sendSystemMessage(message)
 
   @throws(classOf[java.io.ObjectStreamException])
-  protected def writeReplace(): AnyRef = SerializedActorRef(path)
+  protected def writeReplace(): AnyRef = SerializedActorRef(this)
 }
 
 private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,

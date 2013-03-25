@@ -5,7 +5,7 @@
 package akka.serialization
 
 import com.typesafe.config.Config
-import akka.actor.{ Extension, ExtendedActorSystem, Address }
+import akka.actor._
 import akka.event.Logging
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable.ArrayBuffer
@@ -21,10 +21,10 @@ object Serialization {
   type ClassSerializer = (Class[_], Serializer)
 
   /**
-   * This holds a reference to the current transport address to be inserted
-   * into local actor refs during serialization.
+   * This holds a reference to the current transport serialization information used for
+   * serializing local actor refs.
    */
-  val currentTransportAddress = new DynamicVariable[Address](null)
+  val currentTransportInformation = new DynamicVariable[SerializationInformation](null)
 
   class Settings(val config: Config) {
     val Serializers: Map[String, String] = configToMap("akka.actor.serializers")
@@ -35,7 +35,33 @@ object Serialization {
       config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) ⇒ (k -> v.toString) }
     }
   }
+
+  /**
+   * The serialized path of an actorRef, based on the current transport serialization information.
+   */
+  def serializedActorPath(actorRef: ActorRef): String = {
+    val path = actorRef.path
+    val originalSystem: ActorSystemImpl = actorRef match {
+      case a: ActorRefWithCell ⇒ a.underlying.systemImpl
+      case _                   ⇒ null
+    }
+    Serialization.currentTransportInformation.value match {
+      case null ⇒ path.toSerializationFormat
+      case SerializationInformation(address, system) ⇒
+        if (originalSystem == null || originalSystem == system)
+          path.toSerializationFormatWithAddress(address)
+        else {
+          val provider = originalSystem.provider
+          path.toSerializationFormatWithAddress(provider.getExternalAddressFor(address).getOrElse(provider.getDefaultAddress))
+        }
+    }
+  }
 }
+
+/**
+ * Serialization information needed for serializing local actor refs.
+ */
+case class SerializationInformation(val address: Address, val system: ActorSystem)
 
 /**
  * Serialization module. Contains methods for serialization and deserialization as well as

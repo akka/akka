@@ -7,7 +7,6 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 //#imports
 import akka.actor.*;
-import akka.remote.RemoteActorRefProvider;
 import akka.serialization.*;
 
 //#imports
@@ -58,19 +57,18 @@ public class SerializationDocTestBase {
     //#actorref-serializer
     // Serialize
     // (beneath toBinary)
-    final Address transportAddress =
-      Serialization.currentTransportAddress().value();
+    final SerializationInformation info = Serialization.currentTransportInformation().value();
+
     String identifier;
 
-    // If there is no transportAddress,
-    // it means that either this Serializer isn't called
+    // If there is no SerializationInformation,
+    // it means that this Serializer isn't called
     // within a piece of code that sets it,
     // so either you need to supply your own,
     // or simply use the local path.
-    if (transportAddress == null) identifier = theActorRef.path().toSerializationFormat();
-    else identifier = theActorRef.path().toSerializationFormatWithAddress(transportAddress);
+    if (info == null) identifier = theActorRef.path().toSerializationFormat();
+    else identifier = Serialization.serializedActorPath(theActorRef);
     // Then just serialize the identifier however you like
-
 
     // Deserialize
     // (beneath fromBinary)
