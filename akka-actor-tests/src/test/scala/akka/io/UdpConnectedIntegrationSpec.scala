@@ -10,21 +10,21 @@ import akka.util.ByteString
 import java.net.InetSocketAddress
 import akka.actor.ActorRef
 
-class UdpConnIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with ImplicitSender {
+class UdpConnectedIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with ImplicitSender {
 
   val addresses = temporaryServerAddresses(3)
 
   def bindUdp(address: InetSocketAddress, handler: ActorRef): ActorRef = {
     val commander = TestProbe()
-    commander.send(IO(UdpFF), UdpFF.Bind(handler, address))
-    commander.expectMsg(UdpFF.Bound)
+    commander.send(IO(Udp), Udp.Bind(handler, address))
+    commander.expectMsg(Udp.Bound)
     commander.sender
   }
 
   def connectUdp(localAddress: Option[InetSocketAddress], remoteAddress: InetSocketAddress, handler: ActorRef): ActorRef = {
     val commander = TestProbe()
-    commander.send(IO(UdpConn), UdpConn.Connect(handler, remoteAddress, localAddress, Nil))
-    commander.expectMsg(UdpConn.Connected)
+    commander.send(IO(UdpConnected), UdpConnected.Connect(handler, remoteAddress, localAddress, Nil))
+    commander.expectMsg(UdpConnected.Connected)
     commander.sender
   }
 
@@ -35,19 +35,19 @@ class UdpConnIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with Impli
       val server = bindUdp(serverAddress, testActor)
       val data1 = ByteString("To infinity and beyond!")
       val data2 = ByteString("All your datagram belong to us")
-      connectUdp(localAddress = None, serverAddress, testActor) ! UdpConn.Send(data1)
+      connectUdp(localAddress = None, serverAddress, testActor) ! UdpConnected.Send(data1)
 
       val clientAddress = expectMsgPF() {
-        case UdpFF.Received(d, a) ⇒
+        case Udp.Received(d, a) ⇒
           d must be === data1
           a
       }
 
-      server ! UdpFF.Send(data2, clientAddress)
+      server ! Udp.Send(data2, clientAddress)
 
       // FIXME: Currently this line fails
       expectMsgPF() {
-        case UdpConn.Received(d) ⇒ d must be === data2
+        case UdpConnected.Received(d) ⇒ d must be === data2
       }
     }
 
@@ -57,19 +57,19 @@ class UdpConnIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with Impli
       val server = bindUdp(serverAddress, testActor)
       val data1 = ByteString("To infinity and beyond!")
       val data2 = ByteString("All your datagram belong to us")
-      connectUdp(Some(clientAddress), serverAddress, testActor) ! UdpConn.Send(data1)
+      connectUdp(Some(clientAddress), serverAddress, testActor) ! UdpConnected.Send(data1)
 
       expectMsgPF() {
-        case UdpFF.Received(d, a) ⇒
+        case Udp.Received(d, a) ⇒
           d must be === data1
           a must be === clientAddress
       }
 
-      server ! UdpFF.Send(data2, clientAddress)
+      server ! Udp.Send(data2, clientAddress)
 
       // FIXME: Currently this line fails
       expectMsgPF() {
-        case UdpConn.Received(d) ⇒ d must be === data2
+        case UdpConnected.Received(d) ⇒ d must be === data2
       }
     }
 

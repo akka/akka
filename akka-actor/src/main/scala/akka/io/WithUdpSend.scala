@@ -4,14 +4,14 @@
 package akka.io
 
 import akka.actor.{ ActorRef, ActorLogging, Actor }
-import akka.io.UdpFF.{ CommandFailed, Send }
+import akka.io.Udp.{ CommandFailed, Send }
 import akka.io.SelectionHandler._
 import java.nio.channels.DatagramChannel
 
 /**
  * INTERNAL API
  */
-private[io] trait WithUdpFFSend {
+private[io] trait WithUdpSend {
   me: Actor with ActorLogging ⇒
 
   var pendingSend: Send = null
@@ -23,8 +23,8 @@ private[io] trait WithUdpFFSend {
 
   def selector: ActorRef
   def channel: DatagramChannel
-  def udpFF: UdpFFExt
-  val settings = udpFF.settings
+  def udp: UdpExt
+  val settings = udp.settings
 
   import settings._
 
@@ -49,7 +49,7 @@ private[io] trait WithUdpFFSend {
 
   final def doSend(): Unit = {
 
-    val buffer = udpFF.bufferPool.acquire()
+    val buffer = udp.bufferPool.acquire()
     try {
       buffer.clear()
       pendingSend.payload.copyToBuffer(buffer)
@@ -76,7 +76,7 @@ private[io] trait WithUdpFFSend {
       }
 
     } finally {
-      udpFF.bufferPool.release(buffer)
+      udp.bufferPool.release(buffer)
     }
 
   }
