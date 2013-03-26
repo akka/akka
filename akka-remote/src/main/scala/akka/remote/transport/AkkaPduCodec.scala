@@ -144,11 +144,11 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
     localAddress: Address): Message = {
     val msgPdu = RemoteMessageProtocol.parseFrom(raw.toArray)
     Message(
-      recipient = provider.actorForWithLocalAddress(provider.rootGuardian, msgPdu.getRecipient.getPath, localAddress),
+      recipient = provider.resolveActorRefWithLocalAddress(msgPdu.getRecipient.getPath, localAddress),
       recipientAddress = AddressFromURIString(msgPdu.getRecipient.getPath),
       serializedMessage = msgPdu.getMessage,
       senderOption = if (!msgPdu.hasSender) None
-      else Some(provider.actorForWithLocalAddress(provider.rootGuardian, msgPdu.getSender.getPath, localAddress)))
+      else Some(provider.resolveActorRefWithLocalAddress(msgPdu.getSender.getPath, localAddress)))
   }
 
   private def decodeControlPdu(controlPdu: RemoteControlProtocol): AkkaPdu = {

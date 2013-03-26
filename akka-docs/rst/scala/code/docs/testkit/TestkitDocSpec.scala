@@ -208,10 +208,13 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
   "demonstrate probe watch" in {
     import akka.testkit.TestProbe
-    val target = system.actorFor("/buh")
+    val target = system.actorOf(Props(new Actor {
+      def receive = Actor.emptyBehavior
+    }))
     //#test-probe-watch
     val probe = TestProbe()
     probe watch target
+    target ! PoisonPill
     probe.expectMsgType[Terminated].actor must be(target)
     //#test-probe-watch
   }

@@ -8,6 +8,7 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
+import akka.actor.ActorSelection
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.actor.PoisonPill
@@ -21,9 +22,6 @@ import akka.cluster.MemberStatus
 import akka.contrib.pattern.ClusterSingletonManager
 import akka.routing.FromConfig
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
-import akka.pattern.ask
-import akka.pattern.pipe
-import akka.util.Timeout
 //#imports
 
 //#messages
@@ -93,7 +91,7 @@ class StatsFacade extends Actor with ActorLogging {
   import context.dispatcher
   val cluster = Cluster(context.system)
 
-  var currentMaster: Option[Address] = None
+  var currentMaster: Option[ActorSelection] = None
 
   // subscribe to cluster changes, RoleLeaderChanged
   // re-subscribe when restart
@@ -104,19 +102,17 @@ class StatsFacade extends Actor with ActorLogging {
     case job: StatsJob if currentMaster.isEmpty ⇒
       sender ! JobFailed("Service unavailable, try again later")
     case job: StatsJob ⇒
-      implicit val timeout = Timeout(5.seconds)
-      currentMaster foreach { address ⇒
-        val service = context.actorFor(RootActorPath(address) /
-          "user" / "singleton" / "statsService")
-        service ? job recover {
-          case _ ⇒ JobFailed("Service unavailable, try again later")
-        } pipeTo sender
-      }
+      currentMaster foreach { _.tell(job, sender) }
     case state: CurrentClusterState ⇒
-      currentMaster = state.roleLeader("compute")
+      setCurrentMaster(state.roleLeader("compute"))
     case RoleLeaderChanged(role, leader) ⇒
       if (role == "compute")
-        currentMaster = leader
+        setCurrentMaster(leader)
+  }
+
+  def setCurrentMaster(address: Option[Address]): Unit = {
+    currentMaster = address.map(a ⇒ context.actorSelection(RootActorPath(a) /
+      "user" / "singleton" / "statsService"))
   }
 
 }
@@ -200,7 +196,7 @@ class StatsSampleClient(servicePath: String) extends Actor {
     case "tick" if nodes.nonEmpty ⇒
       // just pick any one
       val address = nodes.toIndexedSeq(ThreadLocalRandom.current.nextInt(nodes.size))
-      val service = context.actorFor(RootActorPath(address) / servicePathElements)
+      val service = context.actorSelection(RootActorPath(address) / servicePathElements)
       service ! StatsJob("this is the text that will be analyzed")
     case result: StatsResult ⇒
       println(result)

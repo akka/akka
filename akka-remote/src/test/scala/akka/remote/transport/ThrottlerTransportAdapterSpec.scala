@@ -66,7 +66,10 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
   val remote = systemB.actorOf(Props[Echo], "echo")
 
   val rootB = RootActorPath(systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress)
-  val here = system.actorFor(rootB / "user" / "echo")
+  val here = {
+    system.actorSelection(rootB / "user" / "echo") ! Identify(None)
+    expectMsgType[ActorIdentity].ref.get
+  }
 
   def throttle(direction: Direction, mode: ThrottleMode): Boolean = {
     val rootBAddress = Address("akka", "systemB", "localhost", rootB.address.port.get)

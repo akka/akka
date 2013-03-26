@@ -15,6 +15,7 @@ import akka.dispatch.Futures;
 import akka.dispatch.Mapper;
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
+import akka.testkit.AkkaSpec;
 import akka.util.Timeout;
 //#import-future
 
@@ -30,6 +31,12 @@ import akka.japi.Procedure;
 //#import-watch
 import akka.actor.Terminated;
 //#import-watch
+
+//#import-identify
+import akka.actor.ActorSelection;
+import akka.actor.Identify;
+import akka.actor.ActorIdentity;
+//#import-identify
 
 //#import-gracefulStop
 import static akka.pattern.Patterns.gracefulStop;
@@ -58,12 +65,27 @@ import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 
 import org.junit.Test;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import scala.Option;
 import java.lang.Object;
 import java.util.Iterator;
 import akka.pattern.Patterns;
 
 public class UntypedActorDocTestBase {
+
+  private static ActorSystem system;
+
+  @BeforeClass
+  public static void beforeAll() {
+    system = ActorSystem.create("MySystem", AkkaSpec.testConf());
+  }
+
+  @AfterClass
+  public static void afterAll() {
+    system.shutdown();
+    system = null;
+  }
 
   @Test
   public void createProps() {
@@ -96,86 +118,71 @@ public class UntypedActorDocTestBase {
   @Test
   public void contextActorOf() {
     //#context-actorOf
-    ActorSystem system = ActorSystem.create("MySystem");
-    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class), "myactor");
+    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class), "myactor2");
     //#context-actorOf
     myActor.tell("test", null);
-    system.shutdown();
   }
 
   @Test
   public void constructorActorOf() {
-    ActorSystem system = ActorSystem.create("MySystem");
     //#creating-constructor
     // allows passing in arguments to the MyActor constructor
     ActorRef myActor = system.actorOf(new Props(new UntypedActorFactory() {
       public UntypedActor create() {
         return new MyActor("...");
       }
-    }), "myactor");
+    }), "myactor3");
     //#creating-constructor
     myActor.tell("test", null);
-    system.shutdown();
   }
 
   @Test
   public void propsActorOf() {
-    ActorSystem system = ActorSystem.create("MySystem");
     //#creating-props
     ActorRef myActor = system.actorOf(
-      new Props(MyUntypedActor.class).withDispatcher("my-dispatcher"), "myactor");
+      new Props(MyUntypedActor.class).withDispatcher("my-dispatcher"), "myactor4");
     //#creating-props
     myActor.tell("test", null);
-    system.shutdown();
   }
 
   @Test
   public void usingAsk() throws Exception {
-    ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(new Props(new UntypedActorFactory() {
       public UntypedActor create() {
         return new MyAskActor();
       }
-    }), "myactor");
+    }), "myactor5");
 
     //#using-ask
     Future<Object> future = Patterns.ask(myActor, "Hello", 1000);
     Object result = Await.result(future, Duration.create(1, TimeUnit.SECONDS));
     //#using-ask
-    system.shutdown();
   }
 
   @Test
   public void receiveTimeout() {
-    ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(new Props(MyReceivedTimeoutUntypedActor.class));
     myActor.tell("Hello", null);
-    system.shutdown();
   }
 
   @Test
   public void usePoisonPill() {
-    ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class));
     //#poison-pill
     myActor.tell(PoisonPill.getInstance(), null);
     //#poison-pill
-    system.shutdown();
   }
 
   @Test
   public void useKill() {
-    ActorSystem system = ActorSystem.create("MySystem");
     ActorRef victim = system.actorOf(new Props(MyUntypedActor.class));
     //#kill
     victim.tell(Kill.getInstance(), null);
     //#kill
-    system.shutdown();
   }
 
   @Test
   public void useBecome() {
-    ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(new Props(new UntypedActorFactory() {
       public UntypedActor create() {
         return new HotSwapActor();
@@ -184,21 +191,24 @@ public class UntypedActorDocTestBase {
     myActor.tell("foo", null);
     myActor.tell("bar", null);
     myActor.tell("bar", null);
-    system.shutdown();
   }
 
   @Test
   public void useWatch() throws Exception {
-    ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(new Props(WatchActor.class));
     Future<Object> future = Patterns.ask(myActor, "kill", 1000);
     assert Await.result(future, Duration.create("1 second")).equals("finished");
-    system.shutdown();
+  }
+
+  @Test
+  public void useIdentify() throws Exception {
+    ActorRef a = system.actorOf(new Props(MyUntypedActor.class), "another");
+    ActorRef b = system.actorOf(new Props(Follower.class));
+    system.stop(a);
   }
 
   @Test
   public void usePatternsGracefulStop() throws Exception {
-    ActorSystem system = ActorSystem.create("MySystem");
     ActorRef actorRef = system.actorOf(new Props(MyUntypedActor.class));
     //#gracefulStop
     try {
@@ -210,7 +220,6 @@ public class UntypedActorDocTestBase {
       // the actor wasn't stopped within 5 seconds
     }
     //#gracefulStop
-    system.shutdown();
   }
 
   class Result {
@@ -225,7 +234,6 @@ public class UntypedActorDocTestBase {
 
   @Test
   public void usePatternsAskPipe() {
-    ActorSystem system = ActorSystem.create("MySystem");
     ActorRef actorA = system.actorOf(new Props(MyUntypedActor.class));
     ActorRef actorB = system.actorOf(new Props(MyUntypedActor.class));
     ActorRef actorC = system.actorOf(new Props(MyUntypedActor.class));
@@ -251,7 +259,6 @@ public class UntypedActorDocTestBase {
 
     pipe(transformed, system.dispatcher()).to(actorC);
     //#ask-pipe
-    system.shutdown();
   }
 
   public static class MyActor extends UntypedActor {
@@ -398,5 +405,41 @@ public class UntypedActorDocTestBase {
     }
   }
   //#watch
+
+  static
+  //#identify
+  public class Follower extends UntypedActor {
+    String identifyId = "1";
+    {
+      ActorSelection selection =
+        getContext().actorSelection("/user/another");
+      selection.tell(new Identify(identifyId), getSelf());
+    }
+    ActorRef another;
+
+    @Override
+    public void onReceive(Object message) {
+      if (message instanceof ActorIdentity) {
+        ActorIdentity identity = (ActorIdentity) message;
+        if (identity.correlationId().equals(identifyId)) {
+          ActorRef ref = identity.getRef();
+          if (ref == null)
+            getContext().stop(getSelf());
+          else {
+            another = ref;
+            getContext().watch(another);
+          }
+        }
+      } else if (message instanceof Terminated) {
+        final Terminated t = (Terminated) message;
+        if (t.getActor().equals(another)) {
+          getContext().stop(getSelf());
+        }
+      } else {
+        unhandled(message);
+      }
+    }
+  }
+  //#identify
 
 }

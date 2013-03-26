@@ -4,6 +4,7 @@
 
 package akka.actor
 
+import scala.collection.immutable
 import akka.dispatch.sysmsg._
 import akka.dispatch.NullMessage
 import akka.routing._
@@ -27,6 +28,13 @@ trait ActorRefProvider {
    * for anchoring absolute actor look-ups.
    */
   def rootGuardian: InternalActorRef
+
+  /**
+   * Reference to the supervisor of guardian and systemGuardian at the specified address;
+   * this is exposed so that the ActorRefFactory can use it as lookupRoot, i.e.
+   * for anchoring absolute actor selections.
+   */
+  def rootGuardianAt(address: Address): ActorRef
 
   /**
    * Reference to the supervisor used for all top-level user actors.
@@ -109,6 +117,7 @@ trait ActorRefProvider {
    * Create actor reference for a specified local or remote path. If no such
    * actor exists, it will be (equivalent to) a dead letter reference.
    */
+  @deprecated("use actorSelection instead of actorFor", "2.2")
   def actorFor(path: ActorPath): InternalActorRef
 
   /**
@@ -117,6 +126,7 @@ trait ActorRefProvider {
    * (equivalent to) a dead letter reference. If `s` is a relative URI, resolve
    * it relative to the given ref.
    */
+  @deprecated("use actorSelection instead of actorFor", "2.2")
   def actorFor(ref: InternalActorRef, s: String): InternalActorRef
 
   /**
@@ -125,7 +135,20 @@ trait ActorRefProvider {
    * i.e. it cannot be used to obtain a reference to an actor which is not
    * physically or logically attached to this actor system.
    */
+  @deprecated("use actorSelection instead of actorFor", "2.2")
   def actorFor(ref: InternalActorRef, p: Iterable[String]): InternalActorRef
+
+  /**
+   * Create actor reference for a specified path. If no such
+   * actor exists, it will be (equivalent to) a dead letter reference.
+   */
+  def resolveActorRef(path: String): ActorRef
+
+  /**
+   * Create actor reference for a specified path. If no such
+   * actor exists, it will be (equivalent to) a dead letter reference.
+   */
+  def resolveActorRef(path: ActorPath): ActorRef
 
   /**
    * This Future is completed upon termination of this ActorRefProvider, which
@@ -214,6 +237,7 @@ trait ActorRefFactory {
    * `watch(ref)` to be notified of the target’s termination, which is also
    * signaled if the queried path cannot be resolved.
    */
+  @deprecated("use actorSelection instead of actorFor", "2.2")
   def actorFor(path: ActorPath): ActorRef = provider.actorFor(path)
 
   /**
@@ -230,6 +254,7 @@ trait ActorRefFactory {
    * relative to the current context as described for look-ups by
    * `actorOf(Iterable[String])`
    */
+  @deprecated("use actorSelection instead of actorFor", "2.2")
   def actorFor(path: String): ActorRef = provider.actorFor(lookupRoot, path)
 
   /**
@@ -250,6 +275,7 @@ trait ActorRefFactory {
    *
    * For maximum performance use a collection with efficient head & tail operations.
    */
+  @deprecated("use actorSelection instead of actorFor", "2.2")
   def actorFor(path: Iterable[String]): ActorRef = provider.actorFor(lookupRoot, path)
 
   /**
@@ -273,6 +299,7 @@ trait ActorRefFactory {
    *
    * For maximum performance use a collection with efficient head & tail operations.
    */
+  @deprecated("use actorSelection instead of actorFor", "2.2")
   def actorFor(path: java.lang.Iterable[String]): ActorRef = provider.actorFor(lookupRoot, immutableSeq(path))
 
   /**
@@ -282,7 +309,26 @@ trait ActorRefFactory {
    * the supplied path, it is recommended to send a message and gather the
    * replies in order to resolve the matching set of actors.
    */
-  def actorSelection(path: String): ActorSelection = ActorSelection(lookupRoot, path)
+  def actorSelection(path: String): ActorSelection = path match {
+    case RelativeActorPath(elems) ⇒
+      if (elems.isEmpty) ActorSelection(provider.deadLetters, "")
+      else if (elems.head.isEmpty) ActorSelection(provider.rootGuardian, elems.tail)
+      else ActorSelection(lookupRoot, elems)
+    case ActorPathExtractor(address, elems) ⇒
+      ActorSelection(provider.rootGuardianAt(address), elems)
+    case _ ⇒
+      ActorSelection(provider.deadLetters, "")
+  }
+
+  /**
+   * Construct an [[akka.actor.ActorSelection]] from the given path, which is
+   * parsed for wildcards (these are replaced by regular expressions
+   * internally). No attempt is made to verify the existence of any part of
+   * the supplied path, it is recommended to send a message and gather the
+   * replies in order to resolve the matching set of actors.
+   */
+  def actorSelection(path: ActorPath): ActorSelection =
+    ActorSelection(provider.rootGuardianAt(path.address), path.elements)
 
   /**
    * Stop the actor pointed to by the given [[akka.actor.ActorRef]]; this is
@@ -505,7 +551,7 @@ private[akka] class LocalActorRefProvider private[akka] (
    */
   protected def systemGuardianStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
-  lazy val rootGuardian: LocalActorRef =
+  override lazy val rootGuardian: LocalActorRef =
     new LocalActorRef(system, Props(new Guardian(rootGuardianStrategy)), theOneWhoWalksTheBubblesOfSpaceTime, rootPath) {
       override def getParent: InternalActorRef = this
       override def getSingleChild(name: String): InternalActorRef = name match {
@@ -515,7 +561,11 @@ private[akka] class LocalActorRefProvider private[akka] (
       }
     }
 
-  lazy val guardian: LocalActorRef = {
+  override def rootGuardianAt(address: Address): ActorRef =
+    if (address == rootPath.address) rootGuardian
+    else deadLetters
+
+  override lazy val guardian: LocalActorRef = {
     val cell = rootGuardian.underlying
     cell.reserveChild("user")
     val ref = new LocalActorRef(system, Props(new Guardian(guardianStrategy)), rootGuardian, rootPath / "user")
@@ -524,7 +574,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     ref
   }
 
-  lazy val systemGuardian: LocalActorRef = {
+  override lazy val systemGuardian: LocalActorRef = {
     val cell = rootGuardian.underlying
     cell.reserveChild("system")
     val ref = new LocalActorRef(system, Props(new SystemGuardian(systemGuardianStrategy)), rootGuardian, rootPath / "system")
@@ -554,7 +604,8 @@ private[akka] class LocalActorRefProvider private[akka] (
     eventStream.startDefaultLoggers(_system)
   }
 
-  def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
+  @deprecated("use actorSelection instead of actorFor", "2.2")
+  override def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case RelativeActorPath(elems) ⇒
       if (elems.isEmpty) {
         log.debug("look-up of empty path string [{}] fails (per definition)", path)
@@ -567,14 +618,16 @@ private[akka] class LocalActorRefProvider private[akka] (
       deadLetters
   }
 
-  def actorFor(path: ActorPath): InternalActorRef =
+  @deprecated("use actorSelection instead of actorFor", "2.2")
+  override def actorFor(path: ActorPath): InternalActorRef =
     if (path.root == rootPath) actorFor(rootGuardian, path.elements)
     else {
       log.debug("look-up of foreign ActorPath [{}] failed", path)
       deadLetters
     }
 
-  def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
+  @deprecated("use actorSelection instead of actorFor", "2.2")
+  override def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
     if (path.isEmpty) {
       log.debug("look-up of empty path sequence fails (per definition)")
       deadLetters
@@ -582,6 +635,35 @@ private[akka] class LocalActorRefProvider private[akka] (
       case Nobody ⇒
         log.debug("look-up of path sequence [/{}] failed", path.mkString("/"))
         new EmptyLocalActorRef(system.provider, ref.path / path, eventStream)
+      case x ⇒ x
+    }
+
+  def resolveActorRef(path: String): ActorRef = path match {
+    case ActorPathExtractor(address, elems) if address == rootPath.address ⇒ resolveActorRef(rootGuardian, elems)
+    case _ ⇒
+      log.debug("resolve of unknown path [{}] failed", path)
+      deadLetters
+  }
+
+  def resolveActorRef(path: ActorPath): ActorRef = {
+    if (path.root == rootPath) resolveActorRef(rootGuardian, path.elements)
+    else {
+      log.debug("resolve of foreign ActorPath [{}] failed", path)
+      deadLetters
+    }
+  }
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def resolveActorRef(ref: InternalActorRef, pathElements: Iterable[String]): InternalActorRef =
+    if (pathElements.isEmpty) {
+      log.debug("resolve of empty path sequence fails (per definition)")
+      deadLetters
+    } else ref.getChild(pathElements.iterator) match {
+      case Nobody ⇒
+        log.debug("resolve of path sequence [/{}] failed", pathElements.mkString("/"))
+        new EmptyLocalActorRef(system.provider, ref.path / pathElements, eventStream)
       case x ⇒ x
     }
 

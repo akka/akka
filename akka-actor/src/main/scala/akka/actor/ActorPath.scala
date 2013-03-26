@@ -180,7 +180,7 @@ final case class RootActorPath(address: Address, name: String = "/") extends Act
    */
   override private[akka] def withUid(uid: Int): ActorPath =
     if (uid == ActorCell.undefinedUid) this
-    else throw new IllegalStateException("RootActorPath must not have uid")
+    else throw new IllegalStateException(s"RootActorPath must have undefinedUid, [$uid != ${ActorCell.undefinedUid}")
 
 }
 

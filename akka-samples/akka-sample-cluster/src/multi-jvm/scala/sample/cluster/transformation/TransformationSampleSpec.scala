@@ -115,17 +115,12 @@ abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSamp
   }
 
   def assertServiceOk(): Unit = {
-    val transformationFrontend = system.actorFor("akka://" + system.name + "/user/frontend")
+    val transformationFrontend = system.actorSelection("akka://" + system.name + "/user/frontend")
     // eventually the service should be ok,
     // backends might not have registered initially
-    awaitCond {
+    awaitAssert {
       transformationFrontend ! TransformationJob("hello")
-      expectMsgPF() {
-        case unavailble: JobFailed ⇒ false
-        case TransformationResult(result) ⇒
-          result must be("HELLO")
-          true
-      }
+      expectMsgType[TransformationResult](1.second).text must be("HELLO")
     }
   }
 

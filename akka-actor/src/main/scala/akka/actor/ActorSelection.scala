@@ -4,7 +4,7 @@
 package akka.actor
 
 import language.implicitConversions
-
+import scala.collection.immutable
 import java.util.regex.Pattern
 import akka.util.Helpers
 
@@ -12,13 +12,15 @@ import akka.util.Helpers
  * An ActorSelection is a logical view of a section of an ActorSystem's tree of Actors,
  * allowing for broadcasting of messages to that section.
  */
-abstract class ActorSelection {
+@SerialVersionUID(1L)
+abstract class ActorSelection extends Serializable {
   this: ScalaActorSelection ⇒
 
   protected def target: ActorRef
 
   protected def path: Array[AnyRef]
 
+  @deprecated("use the two-arg variant (typically getSelf() as second arg)", "2.2")
   def tell(msg: Any): Unit = target ! toMessage(msg, path)
 
   def tell(msg: Any, sender: ActorRef): Unit = target.tell(toMessage(msg, path), sender)
@@ -36,6 +38,23 @@ abstract class ActorSelection {
     }
     acc
   }
+
+  override def toString: String = {
+    val sb = new java.lang.StringBuilder
+    sb.append("ActorSelection[").
+      append(target.toString).
+      append(path.mkString("/", "/", "")).
+      append("]")
+    sb.toString
+  }
+
+  override def equals(obj: Any): Boolean = obj match {
+    case s: ActorSelection ⇒ this.target == s.target && this.path == s.path
+    case _                 ⇒ false
+  }
+
+  override def hashCode: Int =
+    37 * (37 * 17 + target.hashCode) + path.hashCode
 }
 
 /**
@@ -60,6 +79,23 @@ object ActorSelection {
       def path = compiled
     }
   }
+
+  /**
+   * Construct an ActorSelection from the given string representing a path
+   * relative to the given target. This operation has to create all the
+   * matching magic, so it is preferable to cache its result if the
+   * intention is to send messages frequently.
+   */
+  def apply(anchor: ActorRef, elements: immutable.Iterable[String]): ActorSelection = {
+    // TODO #3073 optimize/align compiled Array
+    val elems: Array[String] = elements.collect { case x if x.nonEmpty ⇒ x }(collection.breakOut)
+    val compiled: Array[AnyRef] = elems map (x ⇒ if ((x.indexOf('?') != -1) || (x.indexOf('*') != -1)) Helpers.makePattern(x) else x)
+    new ActorSelection with ScalaActorSelection {
+      override def target = anchor
+      override def path = compiled
+    }
+  }
+
 }
 
 /**

@@ -101,17 +101,12 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
     }
 
     def assertServiceOk(): Unit = {
-      val service = system.actorFor(node(third) / "user" / "statsService")
+      val service = system.actorSelection(node(third) / "user" / "statsService")
       // eventually the service should be ok,
       // first attempts might fail because worker actors not started yet
-      awaitCond {
+      awaitAssert {
         service ! new StatsJob("this is the text that will be analyzed")
-        expectMsgPF() {
-          case unavailble: JobFailed ⇒ false
-          case r: StatsResult ⇒
-            r.getMeanWordLength must be(3.875 plusOrMinus 0.001)
-            true
-        }
+        expectMsgType[StatsResult](1.second).getMeanWordLength must be(3.875 plusOrMinus 0.001)
       }
     }
     //#test-statsService

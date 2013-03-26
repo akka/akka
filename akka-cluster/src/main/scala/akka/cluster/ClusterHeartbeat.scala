@@ -7,7 +7,7 @@ import language.postfixOps
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import akka.actor.{ ActorLogging, ActorRef, Address, Actor, RootActorPath, Props }
+import akka.actor.{ ActorLogging, ActorRef, ActorSelection, Address, Actor, RootActorPath, Props }
 import akka.cluster.ClusterEvent._
 import akka.routing.MurmurHash
 
@@ -113,13 +113,14 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   /**
    * Looks up and returns the remote cluster heartbeat connection for the specific address.
    */
-  def heartbeatReceiver(address: Address): ActorRef =
-    context.actorFor(RootActorPath(address) / "system" / "cluster" / "heartbeatReceiver")
+  def heartbeatReceiver(address: Address): ActorSelection =
+    context.actorSelection(RootActorPath(address) / "system" / "cluster" / "heartbeatReceiver")
 
   /**
    * Looks up and returns the remote cluster heartbeat sender for the specific address.
    */
-  def heartbeatSender(address: Address): ActorRef = context.actorFor(self.path.toStringWithAddress(address))
+  def heartbeatSender(address: Address): ActorSelection =
+    context.actorSelection(self.path.toStringWithAddress(address))
 
   def receive = {
     case HeartbeatTick                ⇒ heartbeat()

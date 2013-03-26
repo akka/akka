@@ -4,7 +4,6 @@
 package akka.remote.testconductor
 
 import language.postfixOps
-
 import com.typesafe.config.ConfigFactory
 import akka.actor.Props
 import akka.actor.Actor
@@ -17,6 +16,8 @@ import java.net.InetSocketAddress
 import java.net.InetAddress
 import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeSpec, MultiNodeConfig }
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.actor.Identify
+import akka.actor.ActorIdentity
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false))
@@ -36,7 +37,10 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with ST
 
   def initialParticipants = 2
 
-  lazy val echo = system.actorFor(node(master) / "user" / "echo")
+  lazy val echo = {
+    system.actorSelection(node(master) / "user" / "echo") ! Identify(None)
+    expectMsgType[ActorIdentity].ref.get
+  }
 
   "A TestConductor" must {
 

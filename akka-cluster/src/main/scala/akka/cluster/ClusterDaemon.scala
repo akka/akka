@@ -20,6 +20,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import akka.cluster.MemberStatus._
 import akka.cluster.ClusterEvent._
+import akka.actor.ActorSelection
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -244,8 +245,8 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
   /**
    * Looks up and returns the remote cluster command connection for the specific address.
    */
-  private def clusterCore(address: Address): ActorRef =
-    context.actorFor(RootActorPath(address) / "system" / "cluster" / "core" / "daemon")
+  private def clusterCore(address: Address): ActorSelection =
+    context.actorSelection(RootActorPath(address) / "system" / "cluster" / "core" / "daemon")
 
   val heartbeatSender = context.actorOf(Props[ClusterHeartbeatSender].
     withDispatcher(UseDispatcher), name = "heartbeatSender")
@@ -890,7 +891,7 @@ private[cluster] final class FirstSeedNodeProcess(seedNodes: immutable.IndexedSe
     case JoinSeedNode ⇒
       if (timeout.hasTimeLeft) {
         // send InitJoin to remaining seed nodes (except myself)
-        remainingSeedNodes foreach { a ⇒ context.actorFor(context.parent.path.toStringWithAddress(a)) ! InitJoin }
+        remainingSeedNodes foreach { a ⇒ context.actorSelection(context.parent.path.toStringWithAddress(a)) ! InitJoin }
       } else {
         // no InitJoinAck received, initialize new cluster by joining myself
         context.parent ! JoinTo(selfAddress)
@@ -951,7 +952,7 @@ private[cluster] final class JoinSeedNodeProcess(seedNodes: immutable.IndexedSeq
     case JoinSeedNode ⇒
       // send InitJoin to all seed nodes (except myself)
       seedNodes.collect {
-        case a if a != selfAddress ⇒ context.actorFor(context.parent.path.toStringWithAddress(a))
+        case a if a != selfAddress ⇒ context.actorSelection(context.parent.path.toStringWithAddress(a))
       } foreach { _ ! InitJoin }
     case InitJoinAck(address) ⇒
       // first InitJoinAck reply

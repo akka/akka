@@ -252,7 +252,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     "shut down when /user fails" in {
       implicit val system = ActorSystem("Stop", AkkaSpec.testConf)
       EventFilter[ActorKilledException]() intercept {
-        system.actorFor("/user") ! Kill
+        system.actorSelection("/user") ! Kill
         awaitCond(system.isTerminated)
       }
     }

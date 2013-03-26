@@ -7,23 +7,26 @@ package sample.remote.calculator
  * comments like //#<tag> are there for inclusion into docs, please don’t remove
  */
 
-import akka.kernel.Bootable
 import scala.util.Random
-//#imports
+import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor.{ ActorRef, Props, Actor, ActorSystem }
+import akka.actor.Identify
+import akka.actor.ActorIdentity
+import akka.kernel.Bootable
+import akka.actor.ReceiveTimeout
 //#imports
 
 class LookupApplication extends Bootable {
   //#setup
   val system =
     ActorSystem("LookupApplication", ConfigFactory.load.getConfig("remotelookup"))
-  val actor = system.actorOf(Props[LookupActor], "lookupActor")
-  val remoteActor = system.actorFor(
-    "akka.tcp://CalculatorApplication@127.0.0.1:2552/user/simpleCalculator")
+  val remotePath =
+    "akka.tcp://CalculatorApplication@127.0.0.1:2552/user/simpleCalculator"
+  val actor = system.actorOf(Props(new LookupActor(remotePath)), "lookupActor")
 
   def doSomething(op: MathOp): Unit =
-    actor ! ((remoteActor, op))
+    actor ! op
   //#setup
 
   def startup() {
@@ -35,14 +38,30 @@ class LookupApplication extends Bootable {
 }
 
 //#actor
-class LookupActor extends Actor {
+class LookupActor(path: String) extends Actor {
+
+  context.setReceiveTimeout(3.seconds)
+  sendIdentifyRequest()
+
+  def sendIdentifyRequest(): Unit =
+    context.actorSelection(path) ! Identify(path)
+
   def receive = {
-    case (actor: ActorRef, op: MathOp) ⇒ actor ! op
+    case ActorIdentity(`path`, Some(actor)) ⇒
+      context.setReceiveTimeout(Duration.Undefined)
+      context.become(active(actor))
+    case ActorIdentity(`path`, None) ⇒ println(s"Remote actor not availible: $path")
+    case ReceiveTimeout              ⇒ sendIdentifyRequest()
+    case _                           ⇒ println("Not ready yet")
+  }
+
+  def active(actor: ActorRef): Actor.Receive = {
+    case op: MathOp ⇒ actor ! op
     case result: MathResult ⇒ result match {
       case AddResult(n1, n2, r) ⇒
-        println("Add result: %d + %d = %d".format(n1, n2, r))
+        printf("Add result: %d + %d = %d\n", n1, n2, r)
       case SubtractResult(n1, n2, r) ⇒
-        println("Sub result: %d - %d = %d".format(n1, n2, r))
+        printf("Sub result: %d - %d = %d\n", n1, n2, r)
     }
   }
 }

@@ -5,10 +5,29 @@ package akka.actor
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
+import java.net.MalformedURLException
 
 class ActorPathSpec extends WordSpec with MustMatchers {
 
-  "ActorPath" must {
+  "An ActorPath" must {
+
+    "support parsing its String rep" in {
+      val path = RootActorPath(Address("akka.tcp", "mysys")) / "user"
+      ActorPath.fromString(path.toString) must be(path)
+    }
+
+    "support parsing remote paths" in {
+      val remote = "akka://sys@host:1234/some/ref"
+      ActorPath.fromString(remote).toString must be(remote)
+    }
+
+    "throw exception upon malformed paths" in {
+      intercept[MalformedURLException] { ActorPath.fromString("") }
+      intercept[MalformedURLException] { ActorPath.fromString("://hallo") }
+      intercept[MalformedURLException] { ActorPath.fromString("s://dd@:12") }
+      intercept[MalformedURLException] { ActorPath.fromString("s://dd@h:hd") }
+      intercept[MalformedURLException] { ActorPath.fromString("a://l:1/b") }
+    }
 
     "create correct toString" in {
       val a = Address("akka.tcp", "mysys")
@@ -16,6 +35,10 @@ class ActorPathSpec extends WordSpec with MustMatchers {
       (RootActorPath(a) / "user").toString must be("akka.tcp://mysys/user")
       (RootActorPath(a) / "user" / "foo").toString must be("akka.tcp://mysys/user/foo")
       (RootActorPath(a) / "user" / "foo" / "bar").toString must be("akka.tcp://mysys/user/foo/bar")
+    }
+
+    "have correct path elements" in {
+      (RootActorPath(Address("akka.tcp", "mysys")) / "user" / "foo" / "bar").elements.toSeq must be(Seq("user", "foo", "bar"))
     }
 
     "create correct toStringWithAddress" in {

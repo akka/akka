@@ -15,13 +15,18 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 object RemotingSpec {
+
+  case class ActorForReq(s: String)
+  case class ActorSelReq(s: String)
+
   class Echo1 extends Actor {
     var target: ActorRef = context.system.deadLetters
 
     def receive = {
       case (p: Props, n: String) ⇒ sender ! context.actorOf(Props[Echo1], n)
       case ex: Exception         ⇒ throw ex
-      case s: String             ⇒ sender ! context.actorFor(s)
+      case ActorForReq(s)        ⇒ sender ! context.actorFor(s)
+      case ActorSelReq(s)        ⇒ sender ! context.actorSelection(s)
       case x                     ⇒ target = sender; sender ! x
     }
 
@@ -110,8 +115,10 @@ object RemotingSpec {
 
       actor.deployment {
         /blub.remote = "akka.test://remote-sys@localhost:12346"
-        /looker/child.remote = "akka.test://remote-sys@localhost:12346"
-        /looker/child/grandchild.remote = "akka.test://RemotingSpec@localhost:12345"
+        /looker1/child.remote = "akka.test://remote-sys@localhost:12346"
+        /looker1/child/grandchild.remote = "akka.test://RemotingSpec@localhost:12345"
+        /looker2/child.remote = "akka.test://remote-sys@localhost:12346"
+        /looker2/child/grandchild.remote = "akka.test://RemotingSpec@localhost:12345"
       }
     }
   """)
@@ -234,8 +241,8 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
           EventFilter.warning(pattern = "received dead letter.*")))
         sys.actorOf(Props[Echo2], name = "echo")
       }
-      val moreRefs = moreSystems map (sys ⇒ system.actorFor(RootActorPath(addr(sys, "tcp")) / "user" / "echo"))
-      val aliveEcho = system.actorFor(RootActorPath(addr(remoteSystem, "tcp")) / "user" / "echo")
+      val moreRefs = moreSystems map (sys ⇒ system.actorSelection(RootActorPath(addr(sys, "tcp")) / "user" / "echo"))
+      val aliveEcho = system.actorSelection(RootActorPath(addr(remoteSystem, "tcp")) / "user" / "echo")
       val n = 100
 
       // first everything is up and running
@@ -302,15 +309,21 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
       system.actorFor("akka.test://remote-sys@localhost:12346/user/otherEcho1") ! 76
       expectMsg(76)
+
+      remoteSystem.actorSelection("/user/otherEcho1") ! 77
+      expectMsg(77)
+
+      system.actorSelection("akka.test://remote-sys@localhost:12346/user/otherEcho1") ! 78
+      expectMsg(78)
     }
 
     "look-up actors across node boundaries" in {
       val l = system.actorOf(Props(new Actor {
         def receive = {
           case (p: Props, n: String) ⇒ sender ! context.actorOf(p, n)
-          case s: String             ⇒ sender ! context.actorFor(s)
+          case ActorForReq(s)        ⇒ sender ! context.actorFor(s)
         }
-      }), "looker")
+      }), "looker1")
       // child is configured to be deployed on remote-sys (remoteSystem)
       l ! ((Props[Echo1], "child"))
       val child = expectMsgType[ActorRef]
@@ -320,16 +333,16 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       grandchild.asInstanceOf[ActorRefScope].isLocal must be(true)
       grandchild ! 43
       expectMsg(43)
-      val myref = system.actorFor(system / "looker" / "child" / "grandchild")
+      val myref = system.actorFor(system / "looker1" / "child" / "grandchild")
       myref.isInstanceOf[RemoteActorRef] must be(true)
       myref ! 44
       expectMsg(44)
       lastSender must be(grandchild)
       lastSender must be theSameInstanceAs grandchild
       child.asInstanceOf[RemoteActorRef].getParent must be(l)
-      system.actorFor("/user/looker/child") must be theSameInstanceAs child
-      Await.result(l ? "child/..", timeout.duration).asInstanceOf[AnyRef] must be theSameInstanceAs l
-      Await.result(system.actorFor(system / "looker" / "child") ? "..", timeout.duration).asInstanceOf[AnyRef] must be theSameInstanceAs l
+      system.actorFor("/user/looker1/child") must be theSameInstanceAs child
+      Await.result(l ? ActorForReq("child/.."), timeout.duration).asInstanceOf[AnyRef] must be theSameInstanceAs l
+      Await.result(system.actorFor(system / "looker1" / "child") ? ActorForReq(".."), timeout.duration).asInstanceOf[AnyRef] must be theSameInstanceAs l
 
       watch(child)
       child ! PoisonPill
@@ -343,9 +356,66 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       child2.path.uid must not be (child.path.uid)
       child ! 46
       expectNoMsg(1.second)
-      system.actorFor(system / "looker" / "child") ! 47
+      system.actorFor(system / "looker1" / "child") ! 47
       expectMsg(47)
+    }
 
+    "select actors across node boundaries" in {
+      val l = system.actorOf(Props(new Actor {
+        def receive = {
+          case (p: Props, n: String) ⇒ sender ! context.actorOf(p, n)
+          case ActorSelReq(s)        ⇒ sender ! context.actorSelection(s)
+        }
+      }), "looker2")
+      // child is configured to be deployed on remoteSystem
+      l ! (Props[Echo1], "child")
+      val child = expectMsgType[ActorRef]
+      // grandchild is configured to be deployed on RemotingSpec (system)
+      child ! (Props[Echo1], "grandchild")
+      val grandchild = expectMsgType[ActorRef]
+      grandchild.asInstanceOf[ActorRefScope].isLocal must be(true)
+      grandchild ! 53
+      expectMsg(53)
+      val mysel = system.actorSelection(system / "looker2" / "child" / "grandchild")
+      mysel ! 54
+      expectMsg(54)
+      lastSender must be(grandchild)
+      lastSender must be theSameInstanceAs grandchild
+      mysel ! Identify(mysel)
+      val grandchild2 = expectMsgType[ActorIdentity].ref
+      grandchild2 must be === Some(grandchild)
+      system.actorSelection("/user/looker2/child") ! Identify(None)
+      expectMsgType[ActorIdentity].ref must be === Some(child)
+      l ! ActorSelReq("child/..")
+      expectMsgType[ActorSelection] ! Identify(None)
+      expectMsgType[ActorIdentity].ref.get must be theSameInstanceAs l
+      system.actorSelection(system / "looker2" / "child") ! ActorSelReq("..")
+      expectMsgType[ActorSelection] ! Identify(None)
+      expectMsgType[ActorIdentity].ref.get must be theSameInstanceAs l
+
+      child ! Identify("idReq1")
+      expectMsg(ActorIdentity("idReq1", Some(child)))
+      watch(child)
+      child ! PoisonPill
+      expectMsg("postStop")
+      expectMsgType[Terminated].actor must be === child
+      l ! (Props[Echo1], "child")
+      val child2 = expectMsgType[ActorRef]
+      child2 ! Identify("idReq2")
+      expectMsg(ActorIdentity("idReq2", Some(child2)))
+      system.actorSelection(child.path) ! Identify("idReq3")
+      expectMsg(ActorIdentity("idReq3", Some(child2)))
+      child ! Identify("idReq4")
+      expectMsg(ActorIdentity("idReq4", None))
+
+      child2 ! 55
+      expectMsg(55)
+      // msg to old ActorRef (different uid) should not get through
+      child2.path.uid must not be (child.path.uid)
+      child ! 56
+      expectNoMsg(1.second)
+      system.actorSelection(system / "looker2" / "child") ! 57
+      expectMsg(57)
     }
 
     "not fail ask across node boundaries" in {
@@ -455,8 +525,10 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         val otherGuyRemoteTest = otherGuy.path.toSerializationFormatWithAddress(addr(otherSystem, "test"))
         val remoteEchoHereSsl = system.actorFor(s"akka.ssl.tcp://remote-sys@localhost:${port(remoteSystem, "ssl.tcp")}/user/echo")
         val proxySsl = system.actorOf(Props(new Proxy(remoteEchoHereSsl, testActor)), "proxy-ssl")
-        proxySsl ! otherGuy
-        expectMsg(3.seconds, ("pong", otherGuyRemoteTest))
+        EventFilter[RemoteTransportException](start = "Error while resolving address", occurrences = 1).intercept {
+          proxySsl ! otherGuy
+          expectMsg(3.seconds, ("pong", otherGuyRemoteTest))
+        }(otherSystem)
       } finally {
         otherSystem.shutdown()
         otherSystem.awaitTermination(5.seconds.dilated)

@@ -75,7 +75,11 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
 
   val addressB = systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
   val rootB = RootActorPath(addressB)
-  val here = system.actorFor(rootB / "user" / "echo")
+  val here = {
+    val path =
+      system.actorSelection(rootB / "user" / "echo") ! Identify(None)
+    expectMsgType[ActorIdentity].ref.get
+  }
 
   "AkkaProtocolTransport" must {
     "guarantee at-most-once delivery and message ordering despite packet loss" taggedAs TimingTest in {

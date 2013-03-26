@@ -516,10 +516,10 @@ in case classes with proper type information. But one particular useful feature
 of Akka actors is that they have a stable identity by which they can be found,
 a unique name. This name is represented as a :class:`String` and naturally does
 not bear any type information concerning the actor’s channels. Thus, when
-looking up an actor with ``system.actorFor(...)`` you will only get an untyped
-:class:`ActorRef` and not a channel reference. This :class:`ActorRef` can of
-course manually be wrapped in a channel reference bearing the desired channels,
-but this is not a type-safe operation.
+looking up an actor with ``system.actorSelection(...)`` followed by an ``Identify``
+request you will only get an untyped :class:`ActorRef` and not a channel reference.
+This :class:`ActorRef` can of course manually be wrapped in a channel reference
+bearing the desired channels, but this is not a type-safe operation.
 
 The solution in this case must be a runtime check. There is an operation to
 “narrow” an :class:`ActorRef` to a channel reference of given type, which

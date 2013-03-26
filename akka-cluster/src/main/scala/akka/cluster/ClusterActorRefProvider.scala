@@ -70,11 +70,19 @@ private[akka] class ClusterActorRefProvider(
    * This method is overridden here to keep track of remote deployed actors to
    * be able to clean up corresponding child references.
    */
-  override def useActorOnNode(path: ActorPath, props: Props, deploy: Deploy, supervisor: ActorRef): Unit = {
-    super.useActorOnNode(path, props, deploy, supervisor)
-    remoteDeploymentWatcher ! ((actorFor(path), supervisor))
+  override def useActorOnNode(ref: ActorRef, props: Props, deploy: Deploy, supervisor: ActorRef): Unit = {
+    super.useActorOnNode(ref, props, deploy, supervisor)
+    import RemoteDeploymentWatcher.WatchRemote
+    remoteDeploymentWatcher ! WatchRemote(ref, supervisor)
   }
 
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] object RemoteDeploymentWatcher {
+  case class WatchRemote(actor: ActorRef, supervisor: ActorRef)
 }
 
 /**
@@ -84,10 +92,11 @@ private[akka] class ClusterActorRefProvider(
  * goes down (jvm crash, network failure), i.e. triggered by [[akka.actor.AddressTerminated]].
  */
 private[akka] class RemoteDeploymentWatcher extends Actor {
+  import RemoteDeploymentWatcher._
   var supervisors = Map.empty[ActorRef, InternalActorRef]
 
   def receive = {
-    case (a: ActorRef, supervisor: InternalActorRef) ⇒
+    case WatchRemote(a, supervisor: InternalActorRef) ⇒
       supervisors += (a -> supervisor)
       context.watch(a)
 

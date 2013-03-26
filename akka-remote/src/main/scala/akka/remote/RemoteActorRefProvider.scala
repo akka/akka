@@ -28,9 +28,8 @@ private[akka] object RemoteActorRefProvider {
   case object WaitTransportShutdown extends TerminatorState
   case object Finished extends TerminatorState
 
-  private class RemotingTerminator extends Actor with FSM[TerminatorState, Option[Internals]] {
+  private class RemotingTerminator(systemGuardian: ActorRef) extends Actor with FSM[TerminatorState, Option[Internals]] {
     import context.dispatcher
-    val systemGuardian = context.actorFor("/system")
 
     startWith(Uninitialized, None)
 
@@ -79,10 +78,10 @@ private[akka] object RemoteActorRefProvider {
       case _                                        ⇒ super.!(message)(sender)
     }
 
-    override def specialHandle(msg: Any): Boolean = msg match {
+    override def specialHandle(msg: Any, sender: ActorRef): Boolean = msg match {
       // unwrap again in case the original message was DeadLetter(EndpointManager.Send(m))
-      case EndpointManager.Send(m, _, _) ⇒ super.specialHandle(m)
-      case _                             ⇒ super.specialHandle(msg)
+      case EndpointManager.Send(m, _, _) ⇒ super.specialHandle(m, sender)
+      case _                             ⇒ super.specialHandle(msg, sender)
     }
 
     @throws(classOf[java.io.ObjectStreamException])
@@ -148,7 +147,7 @@ private[akka] class RemoteActorRefProvider(
   def init(system: ActorSystemImpl): Unit = {
     local.init(system)
 
-    remotingTerminator = system.systemActorOf(Props[RemotingTerminator], "remoting-terminator")
+    remotingTerminator = system.systemActorOf(Props(new RemotingTerminator(local.systemGuardian)), "remoting-terminator")
 
     val internals = Internals(
       remoteDaemon = {
@@ -244,7 +243,7 @@ private[akka] class RemoteActorRefProvider(
               new RemoteActorRef(transport, localAddress, rpath, supervisor, Some(props), Some(d))
             } catch {
               case NonFatal(e) ⇒
-                log.error(e, "Error while looking up address {}", addr)
+                log.error(e, "Error while looking up address [{}]", addr)
                 new EmptyLocalActorRef(this, path, eventStream)
             }
           }
@@ -254,6 +253,7 @@ private[akka] class RemoteActorRefProvider(
     }
   }
 
+  @deprecated("use actorSelection instead of actorFor", "2.2")
   def actorFor(path: ActorPath): InternalActorRef = {
     if (hasAddress(path.address)) actorFor(rootGuardian, path.elements)
     else try {
@@ -261,11 +261,12 @@ private[akka] class RemoteActorRefProvider(
         path, Nobody, props = None, deploy = None)
     } catch {
       case NonFatal(e) ⇒
-        log.error(e, "Error while looking up address {}", path.address)
+        log.error(e, "Error while looking up address [{}]", path.address)
         new EmptyLocalActorRef(this, path, eventStream)
     }
   }
 
+  @deprecated("use actorSelection instead of actorFor", "2.2")
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case ActorPathExtractor(address, elems) ⇒
       if (hasAddress(address)) actorFor(rootGuardian, elems)
@@ -276,40 +277,81 @@ private[akka] class RemoteActorRefProvider(
             rootPath, Nobody, props = None, deploy = None)
         } catch {
           case NonFatal(e) ⇒
-            log.error(e, "Error while looking up address {}", rootPath.address)
+            log.error(e, "Error while looking up address [{}]", rootPath.address)
             new EmptyLocalActorRef(this, rootPath, eventStream)
         }
       }
     case _ ⇒ local.actorFor(ref, path)
   }
 
+  @deprecated("use actorSelection instead of actorFor", "2.2")
+  def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
+    local.actorFor(ref, path)
+
+  def rootGuardianAt(address: Address): ActorRef =
+    if (hasAddress(address)) rootGuardian
+    else new RemoteActorRef(transport, transport.localAddressForRemote(address),
+      RootActorPath(address), Nobody, props = None, deploy = None)
+
   /**
    * INTERNAL API
-   * Called in deserialization of incoming remote messages. In this case the correct local address is known, therefore
-   * this method is faster than the actorFor above.
+   * Called in deserialization of incoming remote messages where the correct local address is known.
    */
-  def actorForWithLocalAddress(ref: InternalActorRef, path: String, localAddress: Address): InternalActorRef = {
+  private[akka] def resolveActorRefWithLocalAddress(path: String, localAddress: Address): InternalActorRef = {
     path match {
       case ActorPathExtractor(address, elems) ⇒
-        if (hasAddress(address)) actorFor(rootGuardian, elems)
-        else new RemoteActorRef(transport, localAddress,
-          new RootActorPath(address) / elems, Nobody, props = None, deploy = None)
+        if (hasAddress(address)) local.resolveActorRef(rootGuardian, elems)
+        else
+          new RemoteActorRef(transport, localAddress, RootActorPath(address) / elems,
+            Nobody, props = None, deploy = None)
       case _ ⇒
-        local.actorFor(ref, path)
+        log.debug("resolve of unknown path [{}] failed", path)
+        deadLetters
     }
   }
 
-  def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
-    local.actorFor(ref, path)
+  def resolveActorRef(path: String): ActorRef = path match {
+    case ActorPathExtractor(address, elems) ⇒
+      if (hasAddress(address)) local.resolveActorRef(rootGuardian, elems)
+      else {
+        val rootPath = RootActorPath(address) / elems
+        try {
+          new RemoteActorRef(transport, transport.localAddressForRemote(address),
+            rootPath, Nobody, props = None, deploy = None)
+        } catch {
+          case NonFatal(e) ⇒
+            log.error(e, "Error while resolving address [{}]", rootPath.address)
+            new EmptyLocalActorRef(this, rootPath, eventStream)
+        }
+      }
+    case _ ⇒
+      log.debug("resolve of unknown path [{}] failed", path)
+      deadLetters
+  }
+
+  def resolveActorRef(path: ActorPath): ActorRef = {
+    if (hasAddress(path.address)) local.resolveActorRef(rootGuardian, path.elements)
+    else try {
+      new RemoteActorRef(transport, transport.localAddressForRemote(path.address),
+        path, Nobody, props = None, deploy = None)
+    } catch {
+      case NonFatal(e) ⇒
+        log.error(e, "Error while resolving address [{}]", path.address)
+        new EmptyLocalActorRef(this, path, eventStream)
+    }
+  }
 
   /**
    * Using (checking out) actor on a specific node.
    */
-  def useActorOnNode(path: ActorPath, props: Props, deploy: Deploy, supervisor: ActorRef): Unit = {
-    log.debug("[{}] Instantiating Remote Actor [{}]", rootPath, path)
+  def useActorOnNode(ref: ActorRef, props: Props, deploy: Deploy, supervisor: ActorRef): Unit = {
+    log.debug("[{}] Instantiating Remote Actor [{}]", rootPath, ref.path)
 
     // we don’t wait for the ACK, because the remote end will process this command before any other message to the new actor
-    actorFor(RootActorPath(path.address) / "remote") ! DaemonMsgCreate(props, deploy, path.toSerializationFormat, supervisor)
+    // actorSelection can't be used here because then it is not guaranteed that the actor is created
+    // before someone can send messages to it
+    resolveActorRef(RootActorPath(ref.path.address) / "remote") !
+      DaemonMsgCreate(props, deploy, ref.path.toSerializationFormat, supervisor)
   }
 
   def getExternalAddressFor(addr: Address): Option[Address] = {
@@ -374,7 +416,7 @@ private[akka] class RemoteActorRef private[akka] (
   override def provider: RemoteActorRefProvider = remote.provider
 
   def start(): Unit =
-    if (props.isDefined && deploy.isDefined) remote.provider.useActorOnNode(path, props.get, deploy.get, getParent)
+    if (props.isDefined && deploy.isDefined) remote.provider.useActorOnNode(this, props.get, deploy.get, getParent)
 
   def suspend(): Unit = sendSystemMessage(Suspend())
 

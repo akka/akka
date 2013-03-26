@@ -152,6 +152,33 @@ available via the ``inbound`` boolean field of the event.
 
 New configuration settings are also available, see the remoting documentation for more detail: :ref:`remoting-scala`
 
+.. _migration_2.2_actorSelection:
+
+Use ``actorSelection`` instead of ``actorFor``
+==============================================
+
+``actorFor`` is deprecated in favor of ``actorSelection`` because actor references
+acquired with ``actorFor`` behave differently for local and remote actors.
+In the case of a local actor reference, the named actor needs to exist before the
+lookup, or else the acquired reference will be an :class:`EmptyLocalActorRef`.
+This will be true even if an actor with that exact path is created after acquiring
+the actor reference. For remote actor references acquired with `actorFor` the
+behaviour is different and sending messages to such a reference will under the hood
+look up the actor by path on the remote system for every message send.
+
+Messages can be sent via the :class:`ActorSelection` and the path of the
+:class:`ActorSelection` is looked up when delivering each message. If the selection
+does not match any actors the message will be dropped.
+
+To acquire an :class:`ActorRef` for an :class:`ActorSelection` you need to
+send a message to the selection and use the ``sender`` reference of the reply from
+the actor. There is a built-in ``Identify`` message that all Actors will understand
+and automatically reply to with a ``ActorIdentity`` message containing the
+:class:`ActorRef`.
+
+Read more about ``actorSelection`` in :ref:`docs for Java <actorSelection-java>` or
+:ref:`docs for Scala <actorSelection-scala>`.
+
 ActorRef equality and sending to remote actors
 ==============================================
 
@@ -159,15 +186,15 @@ Sending messages to an ``ActorRef`` must have the same semantics no matter if th
 on a remote host or in the same ``ActorSystem`` in the same JVM. This was not always the case. For example
 when the target actor is terminated and created again under the same path. Sending to local references
 of the previous incarnation of the actor will not be delivered to the new incarnation, but that was the case
-for remote references. The reason was that the target actor was looked up by its path on every message 
+for remote references. The reason was that the target actor was looked up by its path on every message
 delivery and the path didn't distinguish between the two incarnations of the actor. This has been fixed, and
-sending messages to remote references that points to a terminated actor will not be delivered to a new 
+sending messages to remote references that points to a terminated actor will not be delivered to a new
 actor with the same path.
 
 Equality of ``ActorRef`` has been changed to match the intention that an ``ActorRef`` corresponds to the target
 actor instance. Two actor references are compared equal when they have the same path and point to the same
 actor incarnation. A reference pointing to a terminated actor does not compare equal to a reference pointing
-to another (re-created) actor with the same path. Note that a restart of an actor caused by a failure still 
+to another (re-created) actor with the same path. Note that a restart of an actor caused by a failure still
 means that it's the same actor incarnation, i.e. a restart is not visible for the consumer of the ``ActorRef``.
 
 Equality in 2.1 was only based on the path of the ``ActorRef``. If you need to keep track of actor references
@@ -175,8 +202,8 @@ in a collection and do not care about the exact actor incarnation you can use th
 the identifier of the target actor is not taken into account when comparing actor paths.
 
 Remote actor references acquired with ``actorFor`` do not include the full information about the underlying actor
-identity and therefore such references do not compare equal to references acquired with ``actorOf``, 
-``sender``, or ``context.self``. Because of this ``actorFor`` is deprecated, as explained in 
+identity and therefore such references do not compare equal to references acquired with ``actorOf``,
+``sender``, or ``context.self``. Because of this ``actorFor`` is deprecated, as explained in
 :ref:`migration_2.2_actorSelection`.
 
 Note that when a parent actor is restarted its children are by default stopped and re-created, i.e. the child
@@ -187,9 +214,32 @@ messages to remote deployed children of a restarted parent.
 This may also have implications if you compare the ``ActorRef`` received in a ``Terminated`` message
 with an expected ``ActorRef``.
 
-.. _migration_2.2_actorSelection:
+The following will not match::
 
-Use ``actorSelection`` instead of ``actorFor``
-==============================================
+  val ref = context.actorFor("akka.tcp://actorSystemName@10.0.0.1:2552/user/actorName")
 
-FIXME: ticket #3074
+  def receive = {
+    case Terminated(`ref`) => // ...
+  }
+
+Instead, use actorSelection followed by identify request, and watch the verified actor reference::
+
+  val selection = context.actorSelection("akka.tcp://actorSystemName@10.0.0.1:2552/user/actorName")
+  selection ! Identify(None)
+  var ref: ActorRef = _
+
+  def receive = {
+    case ActorIdentity(_, Some(actorRef)) =>
+      ref = actorRef
+      context watch ref
+    case ActorIdentity(_, None) => // not alive
+    case Terminated(`ref`) => // ...
+  }
+
+
+
+Use ``watch`` instead of ``isTerminated``
+=========================================
+
+``ActorRef.isTerminated`` is deprecated in favor of ``ActorContext.watch`` because
+``isTerminated`` behaves differently for local and remote actors.

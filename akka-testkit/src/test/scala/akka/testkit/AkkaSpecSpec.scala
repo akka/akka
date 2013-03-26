@@ -53,7 +53,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
       val latch = new TestLatch(1)(system)
       system.registerOnTermination(latch.countDown())
 
-      system.actorFor("/") ! PoisonPill
+      system.actorSelection("/") ! PoisonPill
 
       Await.ready(latch, 2 seconds)
     }
