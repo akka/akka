@@ -4,7 +4,7 @@
 package akka.dispatch.sysmsg
 
 import scala.annotation.tailrec
-import akka.actor.{ ActorRef, PossiblyHarmful }
+import akka.actor.{ InternalActorRef, ActorRef, PossiblyHarmful }
 
 /**
  * INTERNAL API
@@ -230,13 +230,8 @@ private[akka] case class Supervise(child: ActorRef, async: Boolean) extends Syst
 /**
  * INTERNAL API
  */
-@SerialVersionUID(5513569382760799668L)
-private[akka] case class ChildTerminated(child: ActorRef) extends SystemMessage // sent to supervisor from ActorCell.doTerminate
-/**
- * INTERNAL API
- */
 @SerialVersionUID(3323205435124174788L)
-private[akka] case class Watch(watchee: ActorRef, watcher: ActorRef) extends SystemMessage // sent to establish a DeathWatch
+private[akka] case class Watch(watchee: InternalActorRef, watcher: InternalActorRef) extends SystemMessage // sent to establish a DeathWatch
 /**
  * INTERNAL API
  */
@@ -251,7 +246,13 @@ private[akka] case object NoMessage extends SystemMessage // switched into the m
 /**
  * INTERNAL API
  */
-@SerialVersionUID(3L)
+@SerialVersionUID(1L)
 private[akka] case class Failed(child: ActorRef, cause: Throwable, uid: Int) extends SystemMessage
   with StashWhenFailed
   with StashWhenWaitingForChildren
+
+@SerialVersionUID(1L)
+private[akka] case class DeathWatchNotification(
+  actor: ActorRef,
+  existenceConfirmed: Boolean,
+  addressTerminated: Boolean) extends SystemMessage

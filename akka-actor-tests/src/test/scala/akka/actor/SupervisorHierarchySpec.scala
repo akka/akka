@@ -345,7 +345,7 @@ object SupervisorHierarchySpec {
    * Execution happens in phases (which is the reason for FSM):
    *
    * Idle:
-   * - upon reception of Init message, construct hierary and go to Init state
+   * - upon reception of Init message, construct hierarchy and go to Init state
    *
    * Init:
    * - receive refs of all contained actors

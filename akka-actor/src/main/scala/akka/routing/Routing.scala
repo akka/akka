@@ -75,8 +75,8 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
    */
 
   def applyRoute(sender: ActorRef, message: Any): immutable.Iterable[Destination] = message match {
-    case _: AutoReceivedMessage ⇒ Destination(sender, self) :: Nil
-    case CurrentRoutees         ⇒ { sender ! RouterRoutees(_routees); Nil }
+    case _: AutoReceivedMessage | _: Terminated ⇒ Destination(sender, self) :: Nil
+    case CurrentRoutees                         ⇒ { sender ! RouterRoutees(_routees); Nil }
     case _ ⇒
       val payload = (sender, message)
       if (route isDefinedAt payload) route(payload) else Nil

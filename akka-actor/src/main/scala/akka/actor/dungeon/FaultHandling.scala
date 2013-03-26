@@ -8,7 +8,6 @@ import akka.actor.PostRestartException
 import akka.actor.PreRestartException
 import akka.actor.{ InternalActorRef, ActorRef, ActorInterruptedException, ActorCell, Actor }
 import akka.dispatch._
-import akka.dispatch.sysmsg.ChildTerminated
 import akka.dispatch.sysmsg._
 import akka.event.Logging
 import akka.event.Logging.Debug
@@ -202,7 +201,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     try if (a ne null) a.postStop()
     catch handleNonFatalOrInterruptedException { e ⇒ publish(Error(e, self.path.toString, clazz(a), e.getMessage)) }
     finally try dispatcher.detach(this)
-    finally try parent.sendSystemMessage(ChildTerminated(self))
+    finally try parent.sendSystemMessage(DeathWatchNotification(self, existenceConfirmed = true, addressTerminated = false))
     finally try parent ! NullMessage // read ScalaDoc of NullMessage to see why
     finally try tellWatchersWeDied(a)
     finally try unwatchWatchedActors(a) // stay here as we expect an emergency stop from handleInvokeFailure
