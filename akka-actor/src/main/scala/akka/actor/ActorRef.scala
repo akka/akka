@@ -390,6 +390,10 @@ private[akka] class LocalActorRef private[akka] (
 private[akka] case class SerializedActorRef private (path: String) {
   import akka.serialization.JavaSerializer.currentSystem
 
+  def this(actorRef: ActorRef) = {
+    this(Serialization.serializedActorPath(actorRef))
+  }
+
   @throws(classOf[java.io.ObjectStreamException])
   def readResolve(): AnyRef = currentSystem.value match {
     case null ⇒
@@ -406,7 +410,7 @@ private[akka] case class SerializedActorRef private (path: String) {
  */
 private[akka] object SerializedActorRef {
   def apply(actorRef: ActorRef): SerializedActorRef = {
-    new SerializedActorRef(Serialization.serializedActorPath(actorRef))
+    new SerializedActorRef(actorRef)
   }
 }
 

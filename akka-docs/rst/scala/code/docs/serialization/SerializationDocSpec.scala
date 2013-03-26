@@ -4,7 +4,6 @@
 
 package docs.serialization {
 
-  import org.scalatest.matchers.MustMatchers
   import akka.testkit._
   //#imports
   import akka.actor.{ ActorRef, ActorSystem }
@@ -16,7 +15,6 @@ package docs.serialization {
   import akka.actor.ExtendedActorSystem
   import akka.actor.Extension
   import akka.actor.Address
-  import akka.remote.RemoteActorRefProvider
 
   //#my-own-serializer
   class MyOwnSerializer extends Serializer {
@@ -164,16 +162,8 @@ package docs.serialization {
       //#actorref-serializer
       // Serialize
       // (beneath toBinary)
+      val identifier: String = Serialization.serializedActorPath(theActorRef)
 
-      // If there is no SerializationInformation,
-      // it means that this Serializer isn't called
-      // within a piece of code that sets it,
-      // so either you need to supply your own address,
-      // or simply use the local path.
-      val identifier: String = Serialization.currentTransportInformation.value match {
-        case null                        ⇒ theActorRef.path.toSerializationFormat
-        case _: SerializationInformation ⇒ Serialization.serializedActorPath(theActorRef)
-      }
       // Then just serialize the identifier however you like
 
       // Deserialize

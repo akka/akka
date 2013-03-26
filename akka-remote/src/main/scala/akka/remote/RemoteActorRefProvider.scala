@@ -271,14 +271,16 @@ private[akka] class RemoteActorRefProvider(
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case ActorPathExtractor(address, elems) ⇒
       if (hasAddress(address)) actorFor(rootGuardian, elems)
-      else try {
-        new RemoteActorRef(transport, transport.localAddressForRemote(address),
-          new RootActorPath(address) / elems, Nobody, props = None, deploy = None)
-      } catch {
-        case NonFatal(e) ⇒
-          val oldPath = RootActorPath(address) / elems
-          log.error(e, "Error while looking up address {}", oldPath.address)
-          new EmptyLocalActorRef(this, oldPath, eventStream)
+      else {
+        val rootPath = RootActorPath(address) / elems
+        try {
+          new RemoteActorRef(transport, transport.localAddressForRemote(address),
+            rootPath, Nobody, props = None, deploy = None)
+        } catch {
+          case NonFatal(e) ⇒
+            log.error(e, "Error while looking up address {}", rootPath.address)
+            new EmptyLocalActorRef(this, rootPath, eventStream)
+        }
       }
     case _ ⇒ local.actorFor(ref, path)
   }

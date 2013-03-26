@@ -13,11 +13,11 @@ import akka.remote.RemoteProtocol.MessageProtocol
 import akka.remote.transport.AkkaPduCodec._
 import akka.remote.transport.AssociationHandle._
 import akka.remote.transport.{ AkkaPduCodec, Transport, AssociationHandle }
-import akka.serialization.{ SerializationInformation, Serialization }
+import akka.serialization.Serialization
 import akka.util.ByteString
+import scala.util.control.NonFatal
 import akka.remote.transport.Transport.InvalidAssociationException
 import java.io.NotSerializableException
-import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
  * INTERNAL API
@@ -332,7 +332,7 @@ private[remote] class EndpointWriter(
 
   private def serializeMessage(msg: Any): MessageProtocol = handle match {
     case Some(h) ⇒
-      Serialization.currentTransportInformation.withValue(SerializationInformation(h.localAddress, context.system)) {
+      Serialization.currentTransportInformation.withValue(Serialization.Information(h.localAddress, context.system)) {
         (MessageSerializer.serialize(extendedSystem, msg.asInstanceOf[AnyRef]))
       }
     case None ⇒ throw new EndpointException("Internal error: No handle was present during serialization of" +

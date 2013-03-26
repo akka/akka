@@ -252,7 +252,6 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       moreSystems foreach { sys ⇒
         sys.shutdown()
         sys.awaitTermination(5.seconds.dilated)
-        sys.isTerminated must be(true)
       }
 
       1 to n foreach { x ⇒
@@ -449,19 +448,18 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         // check that we use the specified transport address instead of the default
         val otherGuyRemoteTcp = otherGuy.path.toSerializationFormatWithAddress(addr(otherSystem, "tcp"))
         val remoteEchoHereTcp = system.actorFor(s"akka.tcp://remote-sys@localhost:${port(remoteSystem, "tcp")}/user/echo")
-        val proxyTcp = system.actorOf(Props(new Proxy(remoteEchoHereTcp, self)), "proxy-tcp")
+        val proxyTcp = system.actorOf(Props(new Proxy(remoteEchoHereTcp, testActor)), "proxy-tcp")
         proxyTcp ! otherGuy
         expectMsg(3.seconds, ("pong", otherGuyRemoteTcp))
         // now check that we fall back to default when we haven't got a corresponding transport
         val otherGuyRemoteTest = otherGuy.path.toSerializationFormatWithAddress(addr(otherSystem, "test"))
         val remoteEchoHereSsl = system.actorFor(s"akka.ssl.tcp://remote-sys@localhost:${port(remoteSystem, "ssl.tcp")}/user/echo")
-        val proxySsl = system.actorOf(Props(new Proxy(remoteEchoHereSsl, self)), "proxy-ssl")
+        val proxySsl = system.actorOf(Props(new Proxy(remoteEchoHereSsl, testActor)), "proxy-ssl")
         proxySsl ! otherGuy
         expectMsg(3.seconds, ("pong", otherGuyRemoteTest))
       } finally {
         otherSystem.shutdown()
         otherSystem.awaitTermination(5.seconds.dilated)
-        otherSystem.isTerminated must be(true)
       }
     }
   }

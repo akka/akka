@@ -23,8 +23,9 @@ object Serialization {
   /**
    * This holds a reference to the current transport serialization information used for
    * serializing local actor refs.
+   * INTERNAL API
    */
-  val currentTransportInformation = new DynamicVariable[SerializationInformation](null)
+  private[akka] val currentTransportInformation = new DynamicVariable[Information](null)
 
   class Settings(val config: Config) {
     val Serializers: Map[String, String] = configToMap("akka.actor.serializers")
@@ -37,17 +38,25 @@ object Serialization {
   }
 
   /**
+   * Serialization information needed for serializing local actor refs.
+   * INTERNAL API
+   */
+  private[akka] case class Information(address: Address, system: ActorSystem)
+
+  /**
    * The serialized path of an actorRef, based on the current transport serialization information.
+   * If there is no external address available for the requested address then the systems default
+   * address will be used.
    */
   def serializedActorPath(actorRef: ActorRef): String = {
     val path = actorRef.path
-    val originalSystem: ActorSystemImpl = actorRef match {
-      case a: ActorRefWithCell ⇒ a.underlying.systemImpl
+    val originalSystem: ExtendedActorSystem = actorRef match {
+      case a: ActorRefWithCell ⇒ a.underlying.system.asInstanceOf[ExtendedActorSystem]
       case _                   ⇒ null
     }
     Serialization.currentTransportInformation.value match {
       case null ⇒ path.toSerializationFormat
-      case SerializationInformation(address, system) ⇒
+      case Information(address, system) ⇒
         if (originalSystem == null || originalSystem == system)
           path.toSerializationFormatWithAddress(address)
         else {
@@ -57,11 +66,6 @@ object Serialization {
     }
   }
 }
-
-/**
- * Serialization information needed for serializing local actor refs.
- */
-case class SerializationInformation(val address: Address, val system: ActorSystem)
 
 /**
  * Serialization module. Contains methods for serialization and deserialization as well as

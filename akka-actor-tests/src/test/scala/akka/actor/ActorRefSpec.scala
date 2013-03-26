@@ -6,9 +6,6 @@ package akka.actor
 
 import language.postfixOps
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-
 import akka.testkit._
 import akka.util.Timeout
 import scala.concurrent.duration._
@@ -17,6 +14,7 @@ import java.lang.IllegalStateException
 import scala.concurrent.Promise
 import akka.pattern.ask
 import akka.serialization.JavaSerializer
+import akka.TestUtils.verifyActorTermination
 
 object ActorRefSpec {
 
@@ -327,7 +325,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       out.close
 
       ref ! PoisonPill
-      awaitCond(ref.isTerminated, 2 seconds)
+
+      verifyActorTermination(ref)
 
       JavaSerializer.currentSystem.withValue(sysImpl) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
@@ -406,7 +405,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       Await.result(ffive, timeout.duration) must be("five")
       Await.result(fnull, timeout.duration) must be("null")
 
-      awaitCond(ref.isTerminated, 2 seconds)
+      verifyActorTermination(ref)
     }
 
     "restart when Kill:ed" in {
