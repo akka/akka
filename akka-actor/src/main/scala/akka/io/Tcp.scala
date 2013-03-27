@@ -76,10 +76,18 @@ object Tcp extends ExtensionKey[TcpExt] {
   case class Register(handler: ActorRef) extends Command
   case object Unbind extends Command
 
-  sealed trait CloseCommand extends Command
-  case object Close extends CloseCommand
-  case object ConfirmedClose extends CloseCommand
-  case object Abort extends CloseCommand
+  sealed trait CloseCommand extends Command {
+    def event: ConnectionClosed
+  }
+  case object Close extends CloseCommand {
+    override def event = Closed
+  }
+  case object ConfirmedClose extends CloseCommand {
+    override def event = ConfirmedClosed
+  }
+  case object Abort extends CloseCommand {
+    override def event = Aborted
+  }
 
   case class NoAck(token: Any)
   object NoAck extends NoAck(null)
