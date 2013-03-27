@@ -67,7 +67,7 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
   val sequenceNumber = Iterator.from(0)
   val selectorManagementDispatcher = context.system.dispatchers.lookup(SelectorDispatcher)
   val selector = SelectorProvider.provider.openSelector
-  val OP_READ_AND_WRITE = OP_READ | OP_WRITE // compile-time constant
+  final val OP_READ_AND_WRITE = OP_READ | OP_WRITE // compile-time constant
 
   def receive: Receive = {
     case WriteInterest       ⇒ execute(enableInterest(OP_WRITE, sender))
