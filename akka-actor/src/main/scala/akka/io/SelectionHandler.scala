@@ -113,7 +113,7 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
   override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
   def withCapacityProtection(cmd: WorkerForCommand, retriesLeft: Int)(body: ⇒ Unit): Unit = {
-    log.debug("Executing [{}]", cmd)
+    if (TraceLogging) log.debug("Executing [{}]", cmd)
     if (MaxChannelsPerSelector == -1 || childrenKeys.size < MaxChannelsPerSelector) {
       body
     } else {
