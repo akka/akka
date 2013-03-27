@@ -6,7 +6,7 @@ package akka.remote.serialization
 
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
-import akka.remote.RemoteProtocol.MessageProtocol
+import akka.remote.WireFormats.SerializedMessage
 import akka.remote.ProtobufProtocol.MyMessage
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -17,7 +17,7 @@ class ProtobufSerializerSpec extends AkkaSpec {
   "Serialization" must {
 
     "resolve protobuf serializer" in {
-      ser.serializerFor(classOf[MessageProtocol]).getClass must be(classOf[ProtobufSerializer])
+      ser.serializerFor(classOf[SerializedMessage]).getClass must be(classOf[ProtobufSerializer])
       ser.serializerFor(classOf[MyMessage]).getClass must be(classOf[ProtobufSerializer])
     }
 
