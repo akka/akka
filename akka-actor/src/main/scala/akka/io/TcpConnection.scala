@@ -68,7 +68,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
     case write: Write if writePending ⇒
       if (TraceLogging) log.debug("Dropping write because queue is full")
-      sender ! CommandFailed(write)
+      sender ! write.failureMessage
 
     case write: Write if write.data.isEmpty ⇒
       if (write.wantsAck)

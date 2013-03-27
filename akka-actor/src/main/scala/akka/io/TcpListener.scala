@@ -50,7 +50,7 @@ private[io] class TcpListener(val selectorRouter: ActorRef,
     try socket.bind(endpoint, backlog)
     catch {
       case NonFatal(e) ⇒
-        bindCommander ! CommandFailed(bind)
+        bindCommander ! bind.failureMessage
         log.error(e, "Bind failed for TCP channel on endpoint [{}]", endpoint)
         context.stop(self)
     }
