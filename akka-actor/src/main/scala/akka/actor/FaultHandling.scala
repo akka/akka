@@ -320,8 +320,8 @@ abstract class SupervisorStrategy {
   protected def logFailure(context: ActorContext, child: ActorRef, cause: Throwable, decision: Directive): Unit =
     if (loggingEnabled) {
       val logMessage = cause match {
-        case e: ActorInitializationException ⇒ e.getCause.getMessage
-        case e                               ⇒ e.getMessage
+        case e: ActorInitializationException if e.getCause ne null ⇒ e.getCause.getMessage
+        case e ⇒ e.getMessage
       }
       decision match {
         case Resume   ⇒ publish(context, Warning(child.path.toString, getClass, logMessage))
