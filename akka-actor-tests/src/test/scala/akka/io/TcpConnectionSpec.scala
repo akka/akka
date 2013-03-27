@@ -5,7 +5,7 @@
 package akka.io
 
 import java.io.IOException
-import java.net.{ Socket, ConnectException, InetSocketAddress, SocketException }
+import java.net.{ ConnectException, InetSocketAddress, SocketException }
 import java.nio.ByteBuffer
 import java.nio.channels.{ SelectionKey, Selector, ServerSocketChannel, SocketChannel }
 import java.nio.channels.spi.SelectorProvider
@@ -175,6 +175,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       buffer.flip()
       ByteString(buffer).take(10).decodeString("ASCII") must be("morestuff!")
     }
+
     "write data after not acknowledged data" in withEstablishedConnection() { setup ⇒
       import setup._
 
@@ -404,6 +405,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
       assertThisConnectionActorTerminated()
     }
+
     "report when peer closed the connection when trying to write" in withEstablishedConnection() { setup ⇒
       import setup._
 
@@ -431,8 +433,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
       EventFilter[SocketException](occurrences = 1) intercept {
         selector.send(connectionActor, ChannelConnectable)
-        val err = userHandler.expectMsgType[ErrorClosed]
-        err.cause must be(ConnectionResetByPeerMessage)
+        userHandler.expectMsg(CommandFailed(Connect(serverAddress)))
       }
 
       verifyActorTermination(connectionActor)
@@ -452,8 +453,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
         key.isConnectable must be(true)
         EventFilter[ConnectException](occurrences = 1) intercept {
           selector.send(connectionActor, ChannelConnectable)
-          val err = userHandler.expectMsgType[ErrorClosed]
-          err.cause.startsWith(ConnectionRefusedMessagePrefix) must be(true)
+          userHandler.expectMsg(CommandFailed(Connect(UnboundAddress)))
         }
 
         verifyActorTermination(connectionActor)

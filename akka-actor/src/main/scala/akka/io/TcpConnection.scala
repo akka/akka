@@ -318,5 +318,5 @@ private[io] object TcpConnection {
    */
   case class CloseInformation(
     notificationsTo: Set[ActorRef],
-    closedEvent: ConnectionClosed)
+    closedEvent: Event)
 }
