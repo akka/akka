@@ -329,8 +329,8 @@ class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyR
   val ser = SerializationExtension(system)
 
   "Cross-version serialization compatibility" must {
-    def verify(obj: Any, asExpected: String): Unit =
-      String.valueOf(encodeHex(ser.serialize(obj, obj.getClass).get)) must be(asExpected)
+    def verify(obj: SystemMessage, asExpected: String): Unit =
+      String.valueOf(ser.serialize((obj, obj.getClass)).map(encodeHex).get) must be === asExpected
 
     "be preserved for the Create SystemMessage" in {
       verify(Create(), "aced00057372000c7363616c612e5475706c6532bc7daadf46211a990200024c00025f317400124c6a6176612f6c616e672f4f626a6563743b4c00025f3271007e000178707372001b616b6b612e64697370617463682e7379736d73672e437265617465bcdf9f7f2675038d02000078707671007e0003")
@@ -388,9 +388,9 @@ class OverriddenSystemMessageSerializationSpec extends AkkaSpec(SerializationTes
   }
 }
 
-trait TestSerializable
+protected[akka] trait TestSerializable
 
-class TestSerializer extends Serializer {
+protected[akka] class TestSerializer extends Serializer {
   def includeManifest: Boolean = false
 
   def identifier = 9999
@@ -403,12 +403,12 @@ class TestSerializer extends Serializer {
 }
 
 @SerialVersionUID(1)
-case class FakeThrowable(msg: String) extends Throwable(msg) with Serializable {
+protected[akka] case class FakeThrowable(msg: String) extends Throwable(msg) with Serializable {
   override def fillInStackTrace = null
 }
 
 @SerialVersionUID(1)
-case class FakeActorRef(name: String) extends InternalActorRef with ActorRefScope {
+protected[akka] case class FakeActorRef(name: String) extends InternalActorRef with ActorRefScope {
   override def path = RootActorPath(Address("proto", "SomeSystem"), name)
   override def forward(message: Any)(implicit context: ActorContext) = ???
   override def isTerminated = ???

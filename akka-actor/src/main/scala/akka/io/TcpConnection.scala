@@ -276,7 +276,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
   override def postRestart(reason: Throwable): Unit =
     throw new IllegalStateException("Restarting not supported for connection actors.")
 
-  private[TcpConnection] case class PendingWrite(
+  private[io] case class PendingWrite(
     commander: ActorRef,
     ack: Any,
     remainingData: ByteString,

@@ -7,7 +7,7 @@ import language.postfixOps
 import akka.util.Timeout
 
 object Introduction {
-  def foo = {
+  def foo(): Unit = {
     //#Consumer-mina
     import akka.camel.{ CamelMessage, Consumer }
 
@@ -27,7 +27,7 @@ object Introduction {
     val mina = system.actorOf(Props[MyEndpoint])
     //#Consumer-mina
   }
-  def bar = {
+  def bar(): Unit = {
     //#Consumer
     import akka.camel.{ CamelMessage, Consumer }
 
@@ -41,7 +41,7 @@ object Introduction {
     }
     //#Consumer
   }
-  def baz = {
+  def baz(): Unit = {
     //#Producer
     import akka.actor.Actor
     import akka.camel.{ Producer, Oneway }

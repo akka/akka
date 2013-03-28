@@ -74,7 +74,7 @@ private[akka] object MessageDispatcher {
   // since this is a compile-time constant, scalac will elide code behind if (MessageDispatcher.debug) (RK checked with 2.9.1)
   final val debug = false // Deliberately without type ascription to make it a compile-time constant
   lazy val actors = new Index[MessageDispatcher, ActorRef](16, _ compareTo _)
-  def printActors: Unit =
+  def printActors(): Unit =
     if (debug) {
       for {
         d ← actors.keys
@@ -242,7 +242,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   /**
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
    */
-  def suspend(actor: ActorCell): Unit = {
+  protected[akka] def suspend(actor: ActorCell): Unit = {
     val mbox = actor.mailbox
     if ((mbox.actor eq actor) && (mbox.dispatcher eq this))
       mbox.suspend()
@@ -251,7 +251,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   /*
    * After the call to this method, the dispatcher must begin any new message processing for the specified reference
    */
-  def resume(actor: ActorCell): Unit = {
+  protected[akka] def resume(actor: ActorCell): Unit = {
     val mbox = actor.mailbox
     if ((mbox.actor eq actor) && (mbox.dispatcher eq this) && mbox.resume())
       registerForExecution(mbox, false, false)

@@ -26,7 +26,7 @@ object Helpers {
 
   def imp[T: c.WeakTypeTag](c: Context): c.Expr[T] = {
     import c.universe._
-    c.Expr[T](TypeApply(Ident("implicitly"), List(TypeTree().setType(weakTypeOf[T]))))
+    c.Expr[T](TypeApply(Ident(newTermName("implicitly")), List(TypeTree().setType(weakTypeOf[T]))))
   }
 
   def bool(c: Context, b: Boolean): c.Expr[Boolean] = c.Expr[Boolean](c.universe.Literal(c.universe.Constant(b)))

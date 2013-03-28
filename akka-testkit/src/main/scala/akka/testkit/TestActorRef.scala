@@ -47,7 +47,7 @@ class TestActorRef[T <: Actor](
 
   import TestActorRef.InternalGetActor
 
-  override def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
+  protected override def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
     new ActorCell(system, ref, props, supervisor) {
       override def autoReceiveMessage(msg: Envelope) {
         msg.message match {

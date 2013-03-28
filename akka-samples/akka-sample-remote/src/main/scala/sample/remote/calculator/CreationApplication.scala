@@ -20,9 +20,8 @@ class CreationApplication extends Bootable {
   val remoteActor =
     system.actorOf(Props[AdvancedCalculatorActor], "advancedCalculator")
 
-  def doSomething(op: MathOp) = {
-    localActor ! (remoteActor, op)
-  }
+  def doSomething(op: MathOp): Unit =
+    localActor ! ((remoteActor, op))
   //#setup
 
   def startup() {

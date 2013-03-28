@@ -191,7 +191,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
         case EnterBarrier(barrier, timeout) ⇒ barrier
         case GetAddress(node)               ⇒ node.name
       }
-      stay using d.copy(runningOp = Some(token, sender))
+      stay using d.copy(runningOp = Some(token -> sender))
     case Event(ToServer(op), Data(channel, Some((token, _)))) ⇒
       log.error("cannot write {} while waiting for {}", op, token)
       stay

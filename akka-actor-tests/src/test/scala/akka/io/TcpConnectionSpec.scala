@@ -637,7 +637,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     def interestsDesc(interests: Int): String =
       interestsNames.filter(i ⇒ (i._1 & interests) != 0).map(_._2).mkString(", ")
   }
-  def withUnacceptedConnection(
+  private[io] def withUnacceptedConnection(
     setServerSocketOptions: ServerSocketChannel ⇒ Unit = _ ⇒ (),
     connectionActorCons: (ActorRef, ActorRef) ⇒ TestActorRef[TcpOutgoingConnection] = createConnectionActor())(body: UnacceptedSetup ⇒ Any): Unit =
 

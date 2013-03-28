@@ -16,8 +16,6 @@ import scala.util.control.NonFatal
 import com.typesafe.config.Config
 import scala.concurrent.duration.FiniteDuration
 import akka.actor.DeadLetter
-import akka.dispatch.BoundedMailbox
-import akka.dispatch.BoundedDequeBasedMailbox
 
 /**
  * INTERNAL API

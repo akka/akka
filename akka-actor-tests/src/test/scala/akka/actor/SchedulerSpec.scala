@@ -142,7 +142,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
     }
 
     "be canceled if cancel is performed before execution" in {
-      val task = collectCancellable(system.scheduler.scheduleOnce(10 seconds)())
+      val task = collectCancellable(system.scheduler.scheduleOnce(10 seconds)(()))
       task.cancel() must be(true)
       task.isCancelled must be(true)
       task.cancel() must be(false)

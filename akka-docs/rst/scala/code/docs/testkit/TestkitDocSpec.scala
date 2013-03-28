@@ -186,7 +186,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     val probe1 = TestProbe()
     val probe2 = TestProbe()
     val actor = system.actorOf(Props[MyDoubleEcho])
-    actor ! (probe1.ref, probe2.ref)
+    actor ! ((probe1.ref, probe2.ref))
     actor ! "hello"
     probe1.expectMsg(500 millis, "hello")
     probe2.expectMsg(500 millis, "hello")

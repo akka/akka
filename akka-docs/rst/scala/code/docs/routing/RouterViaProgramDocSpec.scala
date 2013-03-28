@@ -16,7 +16,7 @@ object RouterViaProgramDocSpec {
 
   class ExampleActor1 extends Actor {
     def receive = {
-      case m @ Message1(nbr) ⇒ sender ! (self, m)
+      case m @ Message1(nbr) ⇒ sender ! ((self, m))
     }
   }
 

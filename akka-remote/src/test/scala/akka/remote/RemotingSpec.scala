@@ -290,10 +290,10 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         }
       }), "looker")
       // child is configured to be deployed on remote-sys (otherSystem)
-      l ! (Props[Echo1], "child")
+      l ! ((Props[Echo1], "child"))
       val child = expectMsgType[ActorRef]
       // grandchild is configured to be deployed on RemotingSpec (system)
-      child ! (Props[Echo1], "grandchild")
+      child ! ((Props[Echo1], "grandchild"))
       val grandchild = expectMsgType[ActorRef]
       grandchild.asInstanceOf[ActorRefScope].isLocal must be(true)
       grandchild ! 43
@@ -313,7 +313,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       child ! PoisonPill
       expectMsg("postStop")
       expectMsgType[Terminated].actor must be === child
-      l ! (Props[Echo1], "child")
+      l ! ((Props[Echo1], "child"))
       val child2 = expectMsgType[ActorRef]
       child2 ! 45
       expectMsg(45)

@@ -204,7 +204,7 @@ class CounterService extends Actor {
         if (backlog.size >= MaxBacklog)
           throw new ServiceUnavailable(
             "CounterService not available, lack of initial value")
-        backlog = backlog :+ (sender, msg)
+        backlog :+= (sender -> msg)
     }
   }
 

@@ -111,13 +111,13 @@ abstract class StatsSampleSpec extends MultiNodeSpec(StatsSampleSpecConfig)
     //#test-statsService
     "show usage of the statsService from one node" in within(15 seconds) {
       runOn(second) {
-        assertServiceOk
+        assertServiceOk()
       }
 
       testConductor.enter("done-2")
     }
 
-    def assertServiceOk: Unit = {
+    def assertServiceOk(): Unit = {
       val service = system.actorFor(node(third) / "user" / "statsService")
       // eventually the service should be ok,
       // first attempts might fail because worker actors not started yet
@@ -135,7 +135,7 @@ abstract class StatsSampleSpec extends MultiNodeSpec(StatsSampleSpecConfig)
     //#test-statsService
 
     "show usage of the statsService from all nodes" in within(15 seconds) {
-      assertServiceOk
+      assertServiceOk()
       testConductor.enter("done-3")
     }
 

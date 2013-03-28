@@ -109,9 +109,9 @@ class TestTransport(
     (_) ⇒ defaultShutdown,
     (_) ⇒ registry.logActivity(ShutdownAttempt(localAddress)))
 
-  override def listen: Future[(Address, Promise[AssociationEventListener])] = listenBehavior()
+  override def listen: Future[(Address, Promise[AssociationEventListener])] = listenBehavior(())
   override def associate(remoteAddress: Address): Future[AssociationHandle] = associateBehavior(remoteAddress)
-  override def shutdown(): Unit = shutdownBehavior()
+  override def shutdown(): Unit = shutdownBehavior(())
 
   private def defaultWrite(params: (TestAssociationHandle, ByteString)): Future[Boolean] = {
     registry.getRemoteReadHandlerFor(params._1) match {
