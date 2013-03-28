@@ -38,8 +38,8 @@ abstract class ClusterMetricsSpec extends MultiNodeSpec(ClusterMetricsMultiJvmSp
       "and gossip metrics around the node ring" taggedAs LongRunningTest in within(60 seconds) {
         awaitClusterUp(roles: _*)
         enterBarrier("cluster-started")
-        awaitCond(clusterView.members.filter(_.status == MemberStatus.Up).size == roles.size)
-        awaitCond(clusterView.clusterMetrics.size == roles.size)
+        awaitAssert(clusterView.members.count(_.status == MemberStatus.Up) must be(roles.size))
+        awaitAssert(clusterView.clusterMetrics.size must be(roles.size))
         val collector = MetricsCollector(cluster.system, cluster.settings)
         collector.sample.metrics.size must be > (3)
         enterBarrier("after")
@@ -50,7 +50,7 @@ abstract class ClusterMetricsSpec extends MultiNodeSpec(ClusterMetricsMultiJvmSp
       }
       enterBarrier("first-left")
       runOn(second, third, fourth, fifth) {
-        awaitCond(clusterView.clusterMetrics.size == (roles.size - 1))
+        awaitAssert(clusterView.clusterMetrics.size must be(roles.size - 1))
       }
       enterBarrier("finished")
     }

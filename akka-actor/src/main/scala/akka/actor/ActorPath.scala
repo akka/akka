@@ -6,6 +6,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.japi.Util.immutableSeq
 import java.net.MalformedURLException
+import java.lang.{ StringBuilder ⇒ JStringBuilder }
 
 object ActorPath {
   /**
@@ -35,6 +36,13 @@ object ActorPath {
  * as possible, which owing to the bottom-up recursive nature of ActorPath
  * is sorted by path elements FROM RIGHT TO LEFT, where RootActorPath >
  * ChildActorPath in case the number of elements is different.
+ *
+ * Two actor paths are compared equal when they have the same name and parent
+ * elements, including the root address information. That does not necessarily
+ * mean that they point to the same incarnation of the actor if the actor is
+ * re-created with the same path. In other words, in contrast to how actor
+ * references are compared the unique id of the actor is not taken into account
+ * when comparing actor paths.
  */
 @SerialVersionUID(1L)
 sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
@@ -96,6 +104,37 @@ sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
    * information.
    */
   def toStringWithAddress(address: Address): String
+
+  /**
+   * Generate full String representation including the
+   * uid for the actor cell instance as URI fragment.
+   * This representation should be used as serialized
+   * representation instead of `toString`.
+   */
+  def toSerializationFormat: String
+
+  /**
+   * Generate full String representation including the uid for the actor cell
+   * instance as URI fragment, replacing the Address in the RootActor Path
+   * with the given one unless this path’s address includes host and port
+   * information. This representation should be used as serialized
+   * representation instead of `toStringWithAddress`.
+   */
+  def toSerializationFormatWithAddress(address: Address): String
+
+  /**
+   * INTERNAL API
+   * Unique identifier of the actor. Used for distinguishing
+   * different incarnations of actors with same path (name elements).
+   */
+  private[akka] def uid: Int
+
+  /**
+   * INTERNAL API
+   * Creates a new ActorPath with same elements but with the specified `uid`.
+   */
+  private[akka] def withUid(uid: Int): ActorPath
+
 }
 
 /**
@@ -109,29 +148,55 @@ final case class RootActorPath(address: Address, name: String = "/") extends Act
 
   override def root: RootActorPath = this
 
-  override def /(child: String): ActorPath = new ChildActorPath(this, child)
+  override def /(child: String): ActorPath = {
+    val (childName, uid) = ActorCell.splitNameAndUid(child)
+    new ChildActorPath(this, childName, uid)
+  }
 
   override def elements: immutable.Iterable[String] = ActorPath.emptyActorPath
 
   override val toString: String = address + name
 
+  override val toSerializationFormat: String = toString
+
   override def toStringWithAddress(addr: Address): String =
     if (address.host.isDefined) address + name
     else addr + name
+
+  override def toSerializationFormatWithAddress(addr: Address): String = toStringWithAddress(addr)
 
   override def compareTo(other: ActorPath): Int = other match {
     case r: RootActorPath  ⇒ toString compareTo r.toString // FIXME make this cheaper by comparing address and name in isolation
     case c: ChildActorPath ⇒ 1
   }
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def uid: Int = ActorCell.undefinedUid
+
+  /**
+   * INTERNAL API
+   */
+  override private[akka] def withUid(uid: Int): ActorPath =
+    if (uid == ActorCell.undefinedUid) this
+    else throw new IllegalStateException("RootActorPath must not have uid")
+
 }
 
 @SerialVersionUID(1L)
-final class ChildActorPath(val parent: ActorPath, val name: String) extends ActorPath {
+final class ChildActorPath private[akka] (val parent: ActorPath, val name: String, override private[akka] val uid: Int) extends ActorPath {
   if (name.indexOf('/') != -1) throw new IllegalArgumentException("/ is a path separator and is not legal in ActorPath names: [%s]" format name)
+  if (name.indexOf('#') != -1) throw new IllegalArgumentException("# is a fragment separator and is not legal in ActorPath names: [%s]" format name)
+
+  def this(parent: ActorPath, name: String) = this(parent, name, ActorCell.undefinedUid)
 
   override def address: Address = root.address
 
-  override def /(child: String): ActorPath = new ChildActorPath(this, child)
+  override def /(child: String): ActorPath = {
+    val (childName, uid) = ActorCell.splitNameAndUid(child)
+    new ChildActorPath(this, childName, uid)
+  }
 
   override def elements: immutable.Iterable[String] = {
     @tailrec
@@ -151,28 +216,82 @@ final class ChildActorPath(val parent: ActorPath, val name: String) extends Acto
     rec(this)
   }
 
-  // TODO research whether this should be cached somehow (might be fast enough, but creates GC pressure)
-  /*
-   * idea: add one field which holds the total length (because that is known)
-   * so that only one String needs to be allocated before traversal; this is
-   * cheaper than any cache
+  /**
+   * INTERNAL API
    */
-  override def toString = {
-    @tailrec
-    def rec(p: ActorPath, s: StringBuilder): StringBuilder = p match {
-      case r: RootActorPath ⇒ s.insert(0, r.toString)
-      case _                ⇒ rec(p.parent, s.insert(0, '/').insert(0, p.name))
-    }
-    rec(parent, new StringBuilder(32).append(name)).toString
+  override private[akka] def withUid(uid: Int): ActorPath =
+    if (uid == this.uid) this
+    else new ChildActorPath(parent, name, uid)
+
+  override def toString: String = {
+    val length = toStringLength
+    buildToString(new JStringBuilder(length), length, 0, _.toString).toString
   }
 
-  override def toStringWithAddress(addr: Address) = {
+  override def toSerializationFormat: String = {
+    val length = toStringLength
+    val sb = buildToString(new JStringBuilder(length + 12), length, 0, _.toString)
+    appendUidFragment(sb).toString
+  }
+
+  private def toStringLength: Int = toStringOffset + name.length
+
+  private val toStringOffset: Int = parent match {
+    case r: RootActorPath  ⇒ r.address.toString.length + r.name.length
+    case c: ChildActorPath ⇒ c.toStringLength + 1
+  }
+
+  override def toStringWithAddress(addr: Address): String = {
+    val diff = addressStringLengthDiff(addr)
+    val length = toStringLength + diff
+    buildToString(new JStringBuilder(length), length, diff, _.toStringWithAddress(addr)).toString
+  }
+
+  override def toSerializationFormatWithAddress(addr: Address): String = {
+    val diff = addressStringLengthDiff(addr)
+    val length = toStringLength + diff
+    val sb = buildToString(new JStringBuilder(length + 12), length, diff, _.toStringWithAddress(addr))
+    appendUidFragment(sb).toString
+  }
+
+  private def addressStringLengthDiff(addr: Address): Int = {
+    val r = root
+    if (r.address.host.isDefined) 0
+    else (addr.toString.length - r.address.toString.length)
+  }
+
+  /**
+   * Optimized toString construction. Used by `toString`, `toSerializationFormat`,
+   * and friends `WithAddress`
+   * @param sb builder that will be modified (and same instance is returned)
+   * @param length pre-calculated length of the to be constructed String, not
+   *   necessarily same as sb.capacity because more things may be appended to the
+   *   sb afterwards
+   * @param diff difference in offset for each child element, due to different address
+   * @param rootString function to construct the root element string
+   */
+  private def buildToString(sb: JStringBuilder, length: Int, diff: Int, rootString: RootActorPath ⇒ String): JStringBuilder = {
     @tailrec
-    def rec(p: ActorPath, s: StringBuilder): StringBuilder = p match {
-      case r: RootActorPath ⇒ s.insert(0, r.toStringWithAddress(addr))
-      case _                ⇒ rec(p.parent, s.insert(0, '/').insert(0, p.name))
+    def rec(p: ActorPath): JStringBuilder = p match {
+      case r: RootActorPath ⇒
+        val rootStr = rootString(r)
+        sb.replace(0, rootStr.length, rootStr)
+      case c: ChildActorPath ⇒
+        val start = c.toStringOffset + diff
+        val end = start + c.name.length
+        sb.replace(start, end, c.name)
+        if (c ne this)
+          sb.replace(end, end + 1, "/")
+        rec(c.parent)
     }
-    rec(parent, new StringBuilder(32).append(name)).toString
+
+    sb.setLength(length)
+    rec(this)
+  }
+
+  private def appendUidFragment(sb: JStringBuilder): JStringBuilder = {
+    if (uid == ActorCell.undefinedUid) sb
+    else sb.append("#").append(uid)
   }
 
   override def equals(other: Any): Boolean = {

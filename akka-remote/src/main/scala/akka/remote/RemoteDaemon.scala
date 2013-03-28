@@ -8,10 +8,11 @@ import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import akka.actor.{ VirtualPathContainer, Terminated, Deploy, Props, Nobody, LocalActorRef, InternalActorRef, Address, ActorSystemImpl, ActorRef, ActorPathExtractor, ActorPath, Actor, AddressTerminated }
 import akka.event.LoggingAdapter
-import akka.dispatch.Watch
+import akka.dispatch.sysmsg.Watch
 import akka.actor.ActorRefWithCell
 import akka.actor.ActorRefScope
 import akka.util.Switch
+import akka.actor.RootActorPath
 
 /**
  * INTERNAL API
@@ -54,11 +55,14 @@ private[akka] class RemoteSystemDaemon(
 
     @tailrec
     def rec(s: String, n: Int): (InternalActorRef, Int) = {
-      getChild(s) match {
+      import akka.actor.ActorCell._
+      val (childName, uid) = splitNameAndUid(s)
+      getChild(childName) match {
         case null ⇒
           val last = s.lastIndexOf('/')
           if (last == -1) (Nobody, n)
           else rec(s.substring(0, last), n + 1)
+        case ref if uid != undefinedUid && uid != ref.path.uid ⇒ (Nobody, n)
         case ref ⇒ (ref, n)
       }
     }
@@ -82,15 +86,21 @@ private[akka] class RemoteSystemDaemon(
               // TODO RK currently the extracted “address” is just ignored, is that okay?
               // TODO RK canonicalize path so as not to duplicate it always #1446
               val subpath = elems.drop(1)
-              val path = this.path / subpath
+              val p = this.path / subpath
+              val childName = {
+                val s = subpath.mkString("/")
+                val i = s.indexOf('#')
+                if (i < 0) s
+                else s.substring(0, i)
+              }
               val isTerminating = !terminating.whileOff {
                 val actor = system.provider.actorOf(system, props, supervisor.asInstanceOf[InternalActorRef],
-                  path, systemService = false, Some(deploy), lookupDeploy = true, async = false)
-                addChild(subpath.mkString("/"), actor)
+                  p, systemService = false, Some(deploy), lookupDeploy = true, async = false)
+                addChild(childName, actor)
                 actor.sendSystemMessage(Watch(actor, this))
                 actor.start()
               }
-              if (isTerminating) log.error("Skipping [{}] to RemoteSystemDaemon on [{}] while terminating", message, path.address)
+              if (isTerminating) log.error("Skipping [{}] to RemoteSystemDaemon on [{}] while terminating", message, p.address)
             case _ ⇒
               log.debug("remote path does not match path from message [{}]", message)
           }

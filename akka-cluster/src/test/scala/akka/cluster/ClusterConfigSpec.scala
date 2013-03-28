@@ -39,10 +39,11 @@ class ClusterConfigSpec extends AkkaSpec {
       AutoJoin must be(true)
       AutoDown must be(false)
       MinNrOfMembers must be(1)
+      MinNrOfMembersOfRole must be === Map.empty
+      Roles must be === Set.empty
       JmxEnabled must be(true)
       UseDispatcher must be(Dispatchers.DefaultDispatcherId)
       GossipDifferentViewProbability must be(0.8 plusOrMinus 0.0001)
-      MaxGossipMergeRate must be(5.0 plusOrMinus 0.0001)
       SchedulerTickDuration must be(33 millis)
       SchedulerTicksPerWheel must be(512)
       MetricsEnabled must be(true)

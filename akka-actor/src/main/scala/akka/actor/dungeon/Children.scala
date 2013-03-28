@@ -182,7 +182,8 @@ private[akka] trait Children { this: ActorCell ⇒
       // this name will either be unreserved or overwritten with a real child below
       val actor =
         try {
-          cell.provider.actorOf(cell.systemImpl, props, cell.self, cell.self.path / name,
+          val childPath = (cell.self.path / name).withUid(ActorCell.newUid())
+          cell.provider.actorOf(cell.systemImpl, props, cell.self, childPath,
             systemService = systemService, deploy = None, lookupDeploy = true, async = async)
         } catch {
           case e: InterruptedException ⇒

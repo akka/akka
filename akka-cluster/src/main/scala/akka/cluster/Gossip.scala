@@ -17,6 +17,9 @@ private[cluster] object Gossip {
 
   def apply(members: immutable.SortedSet[Member]) =
     if (members.isEmpty) empty else empty.copy(members = members)
+
+  private val leaderMemberStatus = Set[MemberStatus](Up, Leaving)
+  private val convergenceMemberStatus = Set[MemberStatus](Up, Leaving, Exiting)
 }
 
 /**
@@ -43,7 +46,7 @@ private[cluster] object Gossip {
  * When a `Gossip` is received the version (vector clock) is used to determine if the
  * received `Gossip` is newer or older than the current local `Gossip`. The received `Gossip`
  * and local `Gossip` is merged in case of conflicting version, i.e. vector clocks without
- * same history. When merged the seen table is cleared.
+ * same history.
  *
  * When a node is told by the user to leave the cluster the leader will move it to `Leaving`
  * and then rebalance and repartition the cluster and start hand-off by migrating the actors
@@ -68,11 +71,11 @@ private[cluster] case class Gossip(
       throw new IllegalArgumentException("Same nodes in both members and unreachable is not allowed, got [%s]"
         format unreachableAndLive.mkString(", "))
 
-    val allowedLiveMemberStatuses: Set[MemberStatus] = Set(Joining, Up, Leaving, Exiting)
-    def hasNotAllowedLiveMemberStatus(m: Member) = !allowedLiveMemberStatuses.contains(m.status)
+    val allowedLiveMemberStatus: Set[MemberStatus] = Set(Joining, Up, Leaving, Exiting)
+    def hasNotAllowedLiveMemberStatus(m: Member) = !allowedLiveMemberStatus(m.status)
     if (members exists hasNotAllowedLiveMemberStatus)
       throw new IllegalArgumentException("Live members must have status [%s], got [%s]"
-        format (allowedLiveMemberStatuses.mkString(", "),
+        format (allowedLiveMemberStatus.mkString(", "),
           (members filter hasNotAllowedLiveMemberStatus).mkString(", ")))
 
     val seenButNotMember = overview.seen.keySet -- members.map(_.address) -- overview.unreachable.map(_.address)
@@ -100,7 +103,7 @@ private[cluster] case class Gossip(
    * Map with the VectorClock (version) for the new gossip.
    */
   def seen(address: Address): Gossip = {
-    if (hasSeen(address)) this
+    if (seenByAddress(address)) this
     else this copy (overview = overview copy (seen = overview.seen + (address -> version)))
   }
 
@@ -116,24 +119,33 @@ private[cluster] case class Gossip(
   /**
    * Has this Gossip been seen by this address.
    */
-  def hasSeen(address: Address): Boolean = {
+  def seenByAddress(address: Address): Boolean = {
     overview.seen.get(address).exists(_ == version)
+  }
+
+  private def mergeSeenTables(allowed: Set[Member], one: Map[Address, VectorClock], another: Map[Address, VectorClock]): Map[Address, VectorClock] = {
+    (Map.empty[Address, VectorClock] /: allowed) {
+      (merged, member) ⇒
+        val address = member.address
+        (one.get(address), another.get(address)) match {
+          case (None, None)     ⇒ merged
+          case (Some(v1), None) ⇒ merged.updated(address, v1)
+          case (None, Some(v2)) ⇒ merged.updated(address, v2)
+          case (Some(v1), Some(v2)) ⇒
+            v1 tryCompareTo v2 match {
+              case None             ⇒ merged
+              case Some(x) if x > 0 ⇒ merged.updated(address, v1)
+              case _                ⇒ merged.updated(address, v2)
+            }
+        }
+    }
   }
 
   /**
    * Merges the seen table of two Gossip instances.
    */
-  def mergeSeen(that: Gossip): Gossip = {
-    val mergedSeen = (overview.seen /: that.overview.seen) {
-      case (merged, (address, version)) ⇒
-        val curr = merged.getOrElse(address, version)
-        if (curr > version)
-          merged + (address -> curr)
-        else
-          merged + (address -> version)
-    }
-    this copy (overview = overview copy (seen = mergedSeen))
-  }
+  def mergeSeen(that: Gossip): Gossip =
+    this copy (overview = overview copy (seen = mergeSeenTables(members, overview.seen, that.overview.seen)))
 
   /**
    * Merges two Gossip instances including membership tables, and the VectorClock histories.
@@ -151,8 +163,8 @@ private[cluster] case class Gossip(
     //    and exclude unreachable
     val mergedMembers = Gossip.emptyMembers ++ Member.pickHighestPriority(this.members, that.members).filterNot(mergedUnreachable.contains)
 
-    // 4. fresh seen table
-    val mergedSeen = Map.empty[Address, VectorClock]
+    // 4. merge seen table
+    val mergedSeen = mergeSeenTables(mergedMembers, overview.seen, that.overview.seen)
 
     Gossip(mergedMembers, GossipOverview(mergedSeen, mergedUnreachable), mergedVClock)
   }
@@ -164,38 +176,30 @@ private[cluster] case class Gossip(
    * @return true if convergence have been reached and false if not
    */
   def convergence: Boolean = {
-    val unreachable = overview.unreachable
-    val seen = overview.seen
-
     // First check that:
     //   1. we don't have any members that are unreachable, or
     //   2. all unreachable members in the set have status DOWN
     // Else we can't continue to check for convergence
-    // When that is done we check that all the entries in the 'seen' table have the same vector clock version
-    // and that all members exists in seen table
-    val hasUnreachable = unreachable.nonEmpty && unreachable.exists { _.status != Down }
-    def allMembersInSeen = members.forall(m ⇒ seen.contains(m.address))
-
-    def seenSame: Boolean =
-      if (seen.isEmpty) {
-        // if both seen and members are empty, then every(no)body has seen the same thing
-        members.isEmpty
-      } else {
-        val values = seen.values
-        val seenHead = values.head
-        values.forall(_ == seenHead)
-      }
-
-    !hasUnreachable && allMembersInSeen && seenSame
+    // When that is done we check that all members with a convergence
+    // status is in the seen table and has the latest vector clock
+    // version
+    overview.unreachable.forall(_.status == Down) &&
+      !members.exists(m ⇒ Gossip.convergenceMemberStatus(m.status) && !seenByAddress(m.address))
   }
 
   def isLeader(address: Address): Boolean = leader == Some(address)
 
-  def leader: Option[Address] = {
-    if (members.isEmpty) None
-    else members.find(m ⇒ m.status != Joining && m.status != Exiting && m.status != Down).
-      orElse(Some(members.min(Member.leaderStatusOrdering))).map(_.address)
+  def leader: Option[Address] = leaderOf(members)
+
+  def roleLeader(role: String): Option[Address] = leaderOf(members.filter(_.hasRole(role)))
+
+  private def leaderOf(mbrs: immutable.SortedSet[Member]): Option[Address] = {
+    if (mbrs.isEmpty) None
+    else mbrs.find(m ⇒ Gossip.leaderMemberStatus(m.status)).
+      orElse(Some(mbrs.min(Member.leaderStatusOrdering))).map(_.address)
   }
+
+  def allRoles: Set[String] = members.flatMap(_.roles)
 
   def isSingletonCluster: Boolean = members.size == 1
 
@@ -207,7 +211,7 @@ private[cluster] case class Gossip(
 
   def member(address: Address): Member = {
     members.find(_.address == address).orElse(overview.unreachable.find(_.address == address)).
-      getOrElse(Member(address, Removed))
+      getOrElse(Member(address, Removed, Set.empty))
   }
 
   override def toString =
@@ -240,11 +244,3 @@ private[cluster] case class GossipOverview(
  * Envelope adding a sender address to the gossip.
  */
 private[cluster] case class GossipEnvelope(from: Address, gossip: Gossip, conversation: Boolean = true) extends ClusterMessage
-
-/**
- * INTERNAL API
- * When conflicting versions of received and local [[akka.cluster.Gossip]] is detected
- * it's forwarded to the leader for conflict resolution.
- */
-private[cluster] case class GossipMergeConflict(a: GossipEnvelope, b: GossipEnvelope) extends ClusterMessage
-

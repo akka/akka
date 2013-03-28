@@ -304,6 +304,15 @@ with message flows:
     maximum defaults to the time remaining in the innermost enclosing
     :ref:`within <TestKit.within>` block.
 
+  * :meth:`awaitAssert(a: => Any, max: Duration, interval: Duration)`
+
+    Poll the given assert function every :obj:`interval` until it does not throw
+    an exception or the :obj:`max` duration is used up. If the timeout expires the 
+    last exception is thrown. The interval defaults to 100 ms and the maximum defaults
+    to the time remaining in the innermost enclosing :ref:`within <TestKit.within>` 
+    block.The interval defaults to 100 ms and the maximum defaults to the time 
+    remaining in the innermost enclosing :ref:`within <TestKit.within>` block.  
+
   * :meth:`ignoreMsg(pf: PartialFunction[AnyRef, Boolean])`
 
     :meth:`ignoreNoMsg`

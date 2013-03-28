@@ -4,18 +4,20 @@
 
 package akka.actor
 
-import java.io.{ ObjectOutputStream, NotSerializableException }
-import scala.annotation.tailrec
-import scala.collection.immutable
-import scala.concurrent.duration.Duration
-import scala.util.control.NonFatal
 import akka.actor.dungeon.ChildrenContainer
-import akka.actor.dungeon.ChildrenContainer.WaitingForChildren
-import akka.dispatch.{ Watch, Unwatch, Terminate, SystemMessage, Suspend, Supervise, Resume, Recreate, NoMessage, MessageDispatcher, Envelope, Create, ChildTerminated }
+import akka.dispatch.Envelope
+import akka.dispatch.NullMessage
+import akka.dispatch.sysmsg._
+import akka.dispatch.sysmsg.{ Watch, Unwatch, Terminate, SystemMessage, Suspend, Supervise, Resume, Recreate, NoMessage, Create, ChildTerminated }
 import akka.event.Logging.{ LogEvent, Debug, Error }
 import akka.japi.Procedure
-import akka.dispatch.NullMessage
+import java.io.{ ObjectOutputStream, NotSerializableException }
+import scala.annotation.{ switch, tailrec }
+import scala.collection.immutable
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.Duration
+import scala.concurrent.forkjoin.ThreadLocalRandom
+import scala.util.control.NonFatal
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -304,6 +306,29 @@ private[akka] object ActorCell {
   final val emptyBehaviorStack: List[Actor.Receive] = Nil
 
   final val emptyActorRefSet: Set[ActorRef] = immutable.TreeSet.empty
+  final val emptyActorRefMap: Map[ActorPath, ActorRef] = immutable.TreeMap.empty
+
+  final val terminatedProps: Props = Props(() ⇒ throw new IllegalActorStateException("This Actor has been terminated"))
+
+  final val undefinedUid = 0
+
+  @tailrec final def newUid(): Int = {
+    // Note that this uid is also used as hashCode in ActorRef, so be careful
+    // to not break hashing if you change the way uid is generated
+    val uid = ThreadLocalRandom.current.nextInt()
+    if (uid == undefinedUid) newUid
+    else uid
+  }
+
+  final def splitNameAndUid(name: String): (String, Int) = {
+    val i = name.indexOf('#')
+    if (i < 0) (name, undefinedUid)
+    else (name.substring(0, i), Integer.valueOf(name.substring(i + 1)))
+  }
+
+  final val DefaultState = 0
+  final val SuspendedState = 1
+  final val SuspendedWaitForChildrenState = 2
 }
 
 //ACTORCELL IS 64bytes and should stay that way unless very good reason not to (machine sympathy, cache line fit)
@@ -335,18 +360,30 @@ private[akka] class ActorCell(
   protected final def lookupRoot = self
   final def provider = system.provider
 
-  protected var uid: Int = 0
+  protected def uid: Int = self.path.uid
   private[this] var _actor: Actor = _
   def actor: Actor = _actor
   protected def actor_=(a: Actor): Unit = _actor = a
   var currentMessage: Envelope = _
   private var behaviorStack: List[Actor.Receive] = emptyBehaviorStack
+  private[this] var sysmsgStash: LatestFirstSystemMessageList = SystemMessageList.LNil
+
+  protected def stash(msg: SystemMessage): Unit = {
+    assert(msg.unlinked)
+    sysmsgStash ::= msg
+  }
+
+  private def unstashAll(): LatestFirstSystemMessageList = {
+    val unstashed = sysmsgStash
+    sysmsgStash = SystemMessageList.LNil
+    unstashed
+  }
 
   /*
    * MESSAGE PROCESSING
    */
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
-  @tailrec final def systemInvoke(message: SystemMessage): Unit = {
+  final def systemInvoke(message: SystemMessage): Unit = {
     /*
      * When recreate/suspend/resume are received while restarting (i.e. between
      * preRestart and postRestart, waiting for children to terminate), these
@@ -356,36 +393,61 @@ private[akka] class ActorCell(
      * types (hence the overwrite further down). Mailbox sets message.next=null
      * before systemInvoke, so this will only be non-null during such a replay.
      */
-    var todo = message.next
-    try {
-      message match {
-        case Create(uid)               ⇒ create(uid)
-        case Watch(watchee, watcher)   ⇒ addWatcher(watchee, watcher)
-        case Unwatch(watchee, watcher) ⇒ remWatcher(watchee, watcher)
-        case Recreate(cause) ⇒
-          waitingForChildrenOrNull match {
-            case null                  ⇒ faultRecreate(cause)
-            case w: WaitingForChildren ⇒ w.enqueue(message)
-          }
-        case Suspend() ⇒
-          waitingForChildrenOrNull match {
-            case null                  ⇒ faultSuspend()
-            case w: WaitingForChildren ⇒ w.enqueue(message)
-          }
-        case Resume(inRespToFailure) ⇒
-          waitingForChildrenOrNull match {
-            case null                  ⇒ faultResume(inRespToFailure)
-            case w: WaitingForChildren ⇒ w.enqueue(message)
-          }
-        case Terminate()                  ⇒ terminate()
-        case Supervise(child, async, uid) ⇒ supervise(child, async, uid)
-        case ChildTerminated(child)       ⇒ todo = handleChildTerminated(child)
-        case NoMessage                    ⇒ // only here to suppress warning
+
+    def calculateState: Int =
+      if (waitingForChildrenOrNull ne null) SuspendedWaitForChildrenState
+      else if (mailbox.isSuspended) SuspendedState
+      else DefaultState
+
+    @tailrec def sendAllToDeadLetters(messages: EarliestFirstSystemMessageList): Unit =
+      if (messages.nonEmpty) {
+        val tail = messages.tail
+        val msg = messages.head
+        msg.unlink()
+        provider.deadLetters ! msg
+        sendAllToDeadLetters(tail)
       }
-    } catch handleNonFatalOrInterruptedException { e ⇒
-      handleInvokeFailure(Nil, e, "error while processing " + message)
+
+    def shouldStash(m: SystemMessage, state: Int): Boolean =
+      (state: @switch) match {
+        case DefaultState                  ⇒ false
+        case SuspendedState                ⇒ m.isInstanceOf[StashWhenFailed]
+        case SuspendedWaitForChildrenState ⇒ m.isInstanceOf[StashWhenWaitingForChildren]
+      }
+
+    @tailrec
+    def invokeAll(messages: EarliestFirstSystemMessageList, currentState: Int): Unit = {
+      val rest = messages.tail
+      val message = messages.head
+      message.unlink()
+      try {
+        message match {
+          case message: SystemMessage if shouldStash(message, currentState) ⇒ stash(message)
+          case f: Failed ⇒ handleFailure(f)
+          case Create() ⇒ create()
+          case Watch(watchee, watcher) ⇒ addWatcher(watchee, watcher)
+          case Unwatch(watchee, watcher) ⇒ remWatcher(watchee, watcher)
+          case Recreate(cause) ⇒ faultRecreate(cause)
+          case Suspend() ⇒ faultSuspend()
+          case Resume(inRespToFailure) ⇒ faultResume(inRespToFailure)
+          case Terminate() ⇒ terminate()
+          case Supervise(child, async) ⇒ supervise(child, async)
+          case ChildTerminated(child) ⇒ handleChildTerminated(child)
+          case NoMessage ⇒ // only here to suppress warning
+        }
+      } catch handleNonFatalOrInterruptedException { e ⇒
+        handleInvokeFailure(Nil, e)
+      }
+      val newState = calculateState
+      // As each state accepts a strict subset of another state, it is enough to unstash if we "walk up" the state
+      // chain
+      val todo = if (newState < currentState) unstashAll() reverse_::: rest else rest
+
+      if (isTerminated) sendAllToDeadLetters(todo)
+      else if (todo.nonEmpty) invokeAll(todo, newState)
     }
-    if (todo != null) systemInvoke(todo)
+
+    invokeAll(new EarliestFirstSystemMessageList(message), calculateState)
   }
 
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
@@ -398,7 +460,7 @@ private[akka] class ActorCell(
     }
     currentMessage = null // reset current message after successful invocation
   } catch handleNonFatalOrInterruptedException { e ⇒
-    handleInvokeFailure(Nil, e, e.getMessage)
+    handleInvokeFailure(Nil, e)
   } finally {
     checkReceiveTimeout // Reschedule receive timeout
   }
@@ -409,7 +471,6 @@ private[akka] class ActorCell(
         publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
       msg.message match {
-        case Failed(cause, uid)         ⇒ handleFailure(sender, cause, uid)
         case t: Terminated              ⇒ watchedActorTerminated(t)
         case AddressTerminated(address) ⇒ addressTerminated(address)
         case Kill                       ⇒ throw new ActorKilledException("Kill")
@@ -471,7 +532,7 @@ private[akka] class ActorCell(
     }
   }
 
-  protected def create(uid: Int): Unit = {
+  protected def create(): Unit = {
     def clearOutActorIfNonNull(): Unit = {
       if (actor != null) {
         clearActorFields(actor)
@@ -479,7 +540,6 @@ private[akka] class ActorCell(
       }
     }
     try {
-      this.uid = uid
       val created = newActor()
       actor = created
       created.preStart()
@@ -503,12 +563,11 @@ private[akka] class ActorCell(
     }
   }
 
-  private def supervise(child: ActorRef, async: Boolean, uid: Int): Unit =
+  private def supervise(child: ActorRef, async: Boolean): Unit =
     if (!isTerminating) {
       // Supervise is the first thing we get from a new child, so store away the UID for later use in handleFailure()
       initChild(child) match {
         case Some(crs) ⇒
-          crs.uid = uid
           handleSupervise(child, async)
           if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
         case None ⇒ publish(Error(self.path.toString, clazz(actor), "received Supervise from unregistered child " + child + ", this will not end well"))
@@ -521,36 +580,35 @@ private[akka] class ActorCell(
     case _                               ⇒
   }
 
+  @tailrec private final def lookupAndSetField(clazz: Class[_], instance: AnyRef, name: String, value: Any): Boolean = {
+    if (try {
+      val field = clazz.getDeclaredField(name)
+      field.setAccessible(true)
+      field.set(instance, value)
+      true
+    } catch {
+      case e: NoSuchFieldException ⇒ false
+    }) true
+    else if (clazz.getSuperclass eq null) false
+    else lookupAndSetField(clazz.getSuperclass, instance, name, value)
+  }
+
+  final protected def clearActorCellFields(cell: ActorCell): Unit =
+    if (!lookupAndSetField(cell.getClass, cell, "props", ActorCell.terminatedProps))
+      throw new IllegalArgumentException("ActorCell has no props field")
+
   final protected def clearActorFields(actorInstance: Actor): Unit = {
     setActorFields(actorInstance, context = null, self = system.deadLetters)
     currentMessage = null
     behaviorStack = emptyBehaviorStack
   }
 
-  final protected def setActorFields(actorInstance: Actor, context: ActorContext, self: ActorRef) {
-    @tailrec
-    def lookupAndSetField(clazz: Class[_], actor: Actor, name: String, value: Any): Boolean = {
-      val success = try {
-        val field = clazz.getDeclaredField(name)
-        field.setAccessible(true)
-        field.set(actor, value)
-        true
-      } catch {
-        case e: NoSuchFieldException ⇒ false
-      }
-
-      if (success) true
-      else {
-        val parent: Class[_] = clazz.getSuperclass
-        if (parent eq null) throw new IllegalActorStateException(actorInstance.getClass + " is not an Actor since it have not mixed in the 'Actor' trait")
-        lookupAndSetField(parent, actor, name, value)
-      }
-    }
+  final protected def setActorFields(actorInstance: Actor, context: ActorContext, self: ActorRef): Unit =
     if (actorInstance ne null) {
-      lookupAndSetField(actorInstance.getClass, actorInstance, "context", context)
-      lookupAndSetField(actorInstance.getClass, actorInstance, "self", self)
+      if (!lookupAndSetField(actorInstance.getClass, actorInstance, "context", context)
+        || !lookupAndSetField(actorInstance.getClass, actorInstance, "self", self))
+        throw new IllegalActorStateException(actorInstance.getClass + " is not an Actor since it have not mixed in the 'Actor' trait")
     }
-  }
 
   // logging is not the main purpose, and if it fails there’s nothing we can do
   protected final def publish(e: LogEvent): Unit = try system.eventStream.publish(e) catch { case NonFatal(_) ⇒ }

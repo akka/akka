@@ -12,15 +12,26 @@ import akka.actor.Address
 import MemberStatus._
 
 /**
- * Represents the address and the current status of a cluster member node.
+ * Represents the address, current status, and roles of a cluster member node.
  *
- * Note: `hashCode` and `equals` are solely based on the underlying `Address`, not its `MemberStatus`.
+ * Note: `hashCode` and `equals` are solely based on the underlying `Address`, not its `MemberStatus`
+ * and roles.
  */
-class Member(val address: Address, val status: MemberStatus) extends ClusterMessage {
+case class Member(val address: Address, val status: MemberStatus, roles: Set[String]) extends ClusterMessage {
   override def hashCode = address.##
-  override def equals(other: Any) = Member.unapply(this) == Member.unapply(other)
+  override def equals(other: Any) = other match {
+    case m: Member ⇒ address == m.address
+    case _         ⇒ false
+  }
   override def toString = "Member(address = %s, status = %s)" format (address, status)
-  def copy(address: Address = this.address, status: MemberStatus = this.status): Member = new Member(address, status)
+
+  def hasRole(role: String): Boolean = roles.contains(role)
+
+  /**
+   * Java API
+   */
+  def getRoles: java.util.Set[String] =
+    scala.collection.JavaConverters.setAsJavaSetConverter(roles).asJava
 }
 
 /**
@@ -63,13 +74,6 @@ object Member {
    */
   implicit val ordering: Ordering[Member] = new Ordering[Member] {
     def compare(a: Member, b: Member): Int = addressOrdering.compare(a.address, b.address)
-  }
-
-  def apply(address: Address, status: MemberStatus): Member = new Member(address, status)
-
-  def unapply(other: Any) = other match {
-    case m: Member ⇒ Some(m.address)
-    case _         ⇒ None
   }
 
   def pickHighestPriority(a: Set[Member], b: Set[Member]): Set[Member] = {

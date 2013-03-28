@@ -64,7 +64,7 @@ abstract class NodeLeavingAndExitingSpec
         enterBarrier("second-left")
 
         val expectedAddresses = roles.toSet map address
-        awaitCond(clusterView.members.map(_.address) == expectedAddresses)
+        awaitAssert(clusterView.members.map(_.address) must be(expectedAddresses))
 
         // Verify that 'second' node is set to EXITING
         exitingLatch.await

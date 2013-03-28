@@ -50,15 +50,22 @@ object MultiNodeClusterSpec {
     """)
 }
 
-trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeSpec ⇒
+trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner { self: MultiNodeSpec ⇒
 
   override def initialParticipants = roles.size
 
   private val cachedAddresses = new ConcurrentHashMap[RoleName, Address]
 
   override def atStartup(): Unit = {
+    startCoroner()
     muteLog()
   }
+
+  override def afterTermination(): Unit = {
+    stopCoroner()
+  }
+
+  override def expectedTestDuration = 60.seconds
 
   def muteLog(sys: ActorSystem = system): Unit = {
     if (!sys.log.isDebugEnabled) {
@@ -74,6 +81,9 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
 
       Seq(".*received dead letter from.*ClientDisconnected",
         ".*received dead letter from.*deadLetters.*PoisonPill",
+        ".*received dead letter from.*Disassociated",
+        ".*received dead letter from.*DisassociateUnderlying",
+        ".*received dead letter from.*HandleListenerRegistered",
         ".*installing context org.jboss.netty.channel.DefaultChannelPipeline.*") foreach { s ⇒
           sys.eventStream.publish(Mute(EventFilter.warning(pattern = s)))
         }
@@ -146,7 +156,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
   def startClusterNode(): Unit = {
     if (clusterView.members.isEmpty) {
       cluster join myself
-      awaitCond(clusterView.members.exists(_.address == address(myself)))
+      awaitAssert(clusterView.members.map(_.address) must contain(address(myself)))
     } else
       clusterView.self
   }
@@ -170,6 +180,27 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
       awaitMembersUp(numberOfMembers = roles.length)
     }
     enterBarrier(roles.map(_.name).mkString("-") + "-joined")
+  }
+
+  /**
+   * Join the specific node within the given period by sending repeated join
+   * requests at periodic intervals until we succeed.
+   */
+  def joinWithin(joinNode: RoleName, max: Duration = remaining, interval: Duration = 1.second): Unit = {
+    def memberInState(member: Address, status: Seq[MemberStatus]): Boolean =
+      clusterView.members.exists { m ⇒ (m.address == member) && status.contains(m.status) }
+
+    cluster join joinNode
+    awaitCond({
+      clusterView.refreshCurrentState()
+      if (memberInState(joinNode, List(MemberStatus.up)) &&
+        memberInState(myself, List(MemberStatus.Joining, MemberStatus.Up)))
+        true
+      else {
+        cluster join joinNode
+        false
+      }
+    }, max, interval)
   }
 
   /**
@@ -225,13 +256,12 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
     timeout: FiniteDuration = 20.seconds): Unit = {
     within(timeout) {
       if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
-        awaitCond(
-          canNotBePartOfMemberRing forall (address ⇒ !(clusterView.members exists (_.address == address))))
-      awaitCond(clusterView.members.size == numberOfMembers)
-      awaitCond(clusterView.members.forall(_.status == MemberStatus.Up))
+        awaitAssert(canNotBePartOfMemberRing foreach (a ⇒ clusterView.members.map(_.address) must not contain (a)))
+      awaitAssert(clusterView.members.size must be(numberOfMembers))
+      awaitAssert(clusterView.members.map(_.status) must be(Set(MemberStatus.Up)))
       // clusterView.leader is updated by LeaderChanged, await that to be updated also
       val expectedLeader = clusterView.members.headOption.map(_.address)
-      awaitCond(clusterView.leader == expectedLeader)
+      awaitAssert(clusterView.leader must be(expectedLeader))
     }
   }
 
@@ -239,7 +269,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
    * Wait until the specified nodes have seen the same gossip overview.
    */
   def awaitSeenSameState(addresses: Address*): Unit =
-    awaitCond((addresses.toSet -- clusterView.seenBy).isEmpty)
+    awaitAssert((addresses.toSet -- clusterView.seenBy) must be(Set.empty))
 
   /**
    * Leader according to the address ordering of the roles.

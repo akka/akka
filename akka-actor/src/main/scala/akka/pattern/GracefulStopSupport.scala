@@ -6,7 +6,7 @@ package akka.pattern
 
 import akka.actor._
 import akka.util.{ Timeout }
-import akka.dispatch.{ Unwatch, Watch }
+import akka.dispatch.sysmsg.{ Unwatch, Watch }
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scala.util.Success
@@ -55,13 +55,13 @@ trait GracefulStopSupport {
         internalTarget.sendSystemMessage(Watch(target, ref))
         val f = ref.result.future
         f onComplete { // Just making sure we're not leaking here
-          case Success(Terminated(`target`)) ⇒ ()
-          case _                             ⇒ internalTarget.sendSystemMessage(Unwatch(target, ref))
+          case Success(Terminated(a)) if a.path == target.path ⇒ ()
+          case _ ⇒ internalTarget.sendSystemMessage(Unwatch(target, ref))
         }
         target ! stopMessage
         f map {
-          case Terminated(`target`) ⇒ true
-          case _                    ⇒ false
+          case Terminated(a) if a.path == target.path ⇒ true
+          case _                                      ⇒ false
         }
       case s ⇒ throw new IllegalArgumentException("Unknown ActorSystem implementation: '" + s + "'")
     }

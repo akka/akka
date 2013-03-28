@@ -5,6 +5,7 @@ package akka.cluster
 
 import scala.collection.immutable
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigObject
 import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.ConfigurationException
@@ -50,16 +51,22 @@ class ClusterSettings(val config: Config, val systemName: String) {
   final val PublishStatsInterval: FiniteDuration = Duration(cc.getMilliseconds("publish-stats-interval"), MILLISECONDS)
   final val AutoJoin: Boolean = cc.getBoolean("auto-join")
   final val AutoDown: Boolean = cc.getBoolean("auto-down")
+  final val Roles: Set[String] = immutableSeq(cc.getStringList("roles")).toSet
   final val MinNrOfMembers: Int = {
     cc.getInt("min-nr-of-members")
   } requiring (_ > 0, "min-nr-of-members must be > 0")
+  final val MinNrOfMembersOfRole: Map[String, Int] = {
+    import scala.collection.JavaConverters._
+    cc.getConfig("role").root.asScala.collect {
+      case (key, value: ConfigObject) ⇒ (key -> value.toConfig.getInt("min-nr-of-members"))
+    }.toMap
+  }
   final val JmxEnabled: Boolean = cc.getBoolean("jmx.enabled")
   final val UseDispatcher: String = cc.getString("use-dispatcher") match {
     case "" ⇒ Dispatchers.DefaultDispatcherId
     case id ⇒ id
   }
   final val GossipDifferentViewProbability: Double = cc.getDouble("gossip-different-view-probability")
-  final val MaxGossipMergeRate: Double = cc.getDouble("max-gossip-merge-rate")
   final val SchedulerTickDuration: FiniteDuration = Duration(cc.getMilliseconds("scheduler.tick-duration"), MILLISECONDS)
   final val SchedulerTicksPerWheel: Int = cc.getInt("scheduler.ticks-per-wheel")
   final val MetricsEnabled: Boolean = cc.getBoolean("metrics.enabled")

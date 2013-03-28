@@ -4,15 +4,14 @@
 package akka.remote.transport
 
 import akka.actor._
-import akka.pattern.ask
-import akka.pattern.pipe
+import akka.pattern.{ PromiseActorRef, ask, pipe }
 import akka.remote.transport.ActorTransportAdapter.AssociateUnderlying
 import akka.remote.transport.AkkaPduCodec.Associate
 import akka.remote.transport.AssociationHandle.{ ActorHandleEventListener, Disassociated, InboundPayload, HandleEventListener }
 import akka.remote.transport.ThrottlerManager.Checkin
 import akka.remote.transport.ThrottlerTransportAdapter._
 import akka.remote.transport.Transport._
-import akka.util.ByteString
+import akka.util.{ Timeout, ByteString }
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
@@ -23,6 +22,7 @@ import scala.math.min
 import scala.util.{ Success, Failure }
 import scala.util.control.NonFatal
 import scala.concurrent.duration._
+import akka.dispatch.sysmsg.{ Unwatch, Watch }
 
 class ThrottlerProvider extends TransportAdapterProvider {
 
@@ -142,6 +142,20 @@ object ThrottlerTransportAdapter {
      */
     def getInstance = this
   }
+
+  /**
+   * Management Command to force dissocation of an address.
+   */
+  @SerialVersionUID(1L)
+  case class ForceDisassociate(address: Address)
+
+  @SerialVersionUID(1L)
+  case object ForceDisassociateAck {
+    /**
+     * Java API: get the singleton instance
+     */
+    def getInstance = this
+  }
 }
 
 class ThrottlerTransportAdapter(_wrappedTransport: Transport, _system: ExtendedActorSystem)
@@ -155,11 +169,15 @@ class ThrottlerTransportAdapter(_wrappedTransport: Transport, _system: ExtendedA
     Props(new ThrottlerManager(wt))
   }
 
-  override def managementCommand(cmd: Any): Future[Boolean] = cmd match {
-    case s: SetThrottle ⇒
-      import ActorTransportAdapter.AskTimeout
-      manager ? s map { case SetThrottleAck ⇒ true }
-    case _ ⇒ wrappedTransport.managementCommand(cmd)
+  override def managementCommand(cmd: Any): Future[Boolean] = {
+    import ActorTransportAdapter.AskTimeout
+    cmd match {
+      case s: SetThrottle ⇒
+        manager ? s map { case SetThrottleAck ⇒ true }
+      case f: ForceDisassociate ⇒
+        manager ? f map { case ForceDisassociateAck ⇒ true }
+      case _ ⇒ wrappedTransport.managementCommand(cmd)
+    }
   }
 }
 
@@ -212,8 +230,14 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
         case (`naked`, handle) ⇒ setMode(handle, mode, direction)
         case _                 ⇒ ok
       }
-
       Future.sequence(allAcks).map(_ ⇒ SetThrottleAck) pipeTo sender
+    case ForceDisassociate(address) ⇒
+      val naked = nakedAddress(address)
+      handleTable.foreach {
+        case (`naked`, handle) ⇒ handle.disassociate()
+        case _                 ⇒
+      }
+      sender ! ForceDisassociateAck
 
     case Checkin(origin, handle) ⇒
       val naked: Address = nakedAddress(origin)
@@ -248,7 +272,7 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
     if (direction.includes(Direction.Send))
       handle.outboundThrottleMode.set(mode)
     if (direction.includes(Direction.Receive))
-      (handle.throttlerActor ? mode).mapTo[SetThrottleAck.type]
+      askWithDeathCompletion(handle.throttlerActor, mode, SetThrottleAck).mapTo[SetThrottleAck.type]
     else
       Future.successful(SetThrottleAck)
   }
@@ -260,6 +284,24 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
     ThrottlerHandle(originalHandle, throttlerActor)
   }
 
+  private def askWithDeathCompletion(target: ActorRef, question: Any, answer: Any)(implicit timeout: Timeout): Future[Any] = {
+    if (target.isTerminated) Future successful answer
+    else {
+      val internalTarget = target.asInstanceOf[InternalActorRef]
+      val promiseActorRef = PromiseActorRef(context.system.asInstanceOf[ExtendedActorSystem].provider, timeout)
+      internalTarget.sendSystemMessage(Watch(target, promiseActorRef))
+      val future = promiseActorRef.result.future
+      future onComplete { // remember to unwatch if termination didn't complete
+        case Success(Terminated(`target`)) ⇒ ()
+        case _                             ⇒ internalTarget.sendSystemMessage(Unwatch(target, promiseActorRef))
+      }
+      target.tell(question, promiseActorRef)
+      future map {
+        case Terminated(`target`) ⇒ answer
+        case x                    ⇒ x
+      }
+    }
+  }
 }
 
 /**

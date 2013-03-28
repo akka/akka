@@ -25,7 +25,7 @@ import java.io.{PrintWriter, InputStreamReader, FileInputStream, File}
 import java.nio.charset.Charset
 import java.util.Properties
 import annotation.tailrec
-import Unidoc.{ JavaDoc, javadocSettings, junidocSources, unidoc, unidocExclude }
+import Unidoc.{ JavaDoc, javadocSettings, junidocSources, sunidoc, unidocExclude }
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -39,7 +39,7 @@ object AkkaBuild extends Build {
     organization := "com.typesafe.akka",
     version      := "2.2-SNAPSHOT",
     // Also change ScalaVersion in akka-sbt-plugin/sample/project/Build.scala
-    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0")
+    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.1")
   )
 
   lazy val akka = Project(
@@ -52,7 +52,6 @@ object AkkaBuild extends Build {
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       unidocExclude := Seq(samples.id, channelsTests.id, remoteTests.id),
-      unidoc <<= (unidoc, doc in JavaDoc) map ((u, d) => u),
       sources in JavaDoc <<= junidocSources,
       javacOptions in JavaDoc := Seq(),
       artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar"),
@@ -596,8 +595,8 @@ object AkkaBuild extends Build {
          |import com.typesafe.config.ConfigFactory
          |import scala.concurrent.duration._
          |import akka.util.Timeout
-         |val config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG,pinned{type=PinnedDispatcher,executor=thread-pool-executor,throughput=1000}")
-         |val remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=akka.remote.RemoteActorRefProvider").withFallback(config)
+         |var config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG,pinned{type=PinnedDispatcher,executor=thread-pool-executor,throughput=1000}")
+         |var remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=akka.remote.RemoteActorRefProvider").withFallback(config)
          |var system: ActorSystem = null
          |implicit def _system = system
          |def startSystem(remoting: Boolean = false) { system = ActorSystem("repl", if(remoting) remoteConfig else config); println("don’t forget to system.shutdown()!") }
@@ -719,7 +718,7 @@ object AkkaBuild extends Build {
   lazy val unidocScaladocSettings: Seq[sbt.Setting[_]]= {
     Seq(scalacOptions in doc ++= scaladocOptions) ++
       (if (scaladocDiagramsEnabled)
-        Seq(unidoc ~= scaladocVerifier)
+        Seq(sunidoc ~= scaladocVerifier)
       else Seq.empty)
   }
 
@@ -879,7 +878,7 @@ object Dependencies {
     val sigar       = "org.fusesource"                % "sigar"                        % "1.6.4"            // ApacheV2
 
     // Compiler plugins
-    val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.3" cross CrossVersion.full) // ApacheV2
+    val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.4" cross CrossVersion.full) // ApacheV2
 
     // Test
 

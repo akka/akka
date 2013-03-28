@@ -47,7 +47,7 @@ final case class Address private (protocol: String, system: String, host: Option
    */
   @transient
   override lazy val toString: String = {
-    val sb = (new StringBuilder(protocol)).append("://").append(system)
+    val sb = (new java.lang.StringBuilder(protocol)).append("://").append(system)
 
     if (host.isDefined) sb.append('@').append(host.get)
     if (port.isDefined) sb.append(':').append(port.get)
@@ -76,12 +76,14 @@ object Address {
 }
 
 private[akka] trait PathUtils {
-  protected def split(s: String): List[String] = {
+  protected def split(s: String, fragment: String): List[String] = {
     @tailrec
     def rec(pos: Int, acc: List[String]): List[String] = {
       val from = s.lastIndexOf('/', pos - 1)
       val sub = s.substring(from + 1, pos)
-      val l = sub :: acc
+      val l =
+        if ((fragment ne null) && acc.isEmpty) sub + "#" + fragment :: acc
+        else sub :: acc
       if (from == -1) l else rec(from, l)
     }
     rec(s.length, Nil)
@@ -93,7 +95,7 @@ object RelativeActorPath extends PathUtils {
     try {
       val uri = new URI(addr)
       if (uri.isAbsolute) None
-      else Some(split(uri.getRawPath))
+      else Some(split(uri.getRawPath, uri.getRawFragment))
     } catch {
       case _: URISyntaxException ⇒ None
     }
@@ -142,7 +144,7 @@ object ActorPathExtractor extends PathUtils {
       val uri = new URI(addr)
       uri.getRawPath match {
         case null ⇒ None
-        case path ⇒ AddressFromURIString.unapply(uri).map((_, split(path).drop(1)))
+        case path ⇒ AddressFromURIString.unapply(uri).map((_, split(path, uri.getRawFragment).drop(1)))
       }
     } catch {
       case _: URISyntaxException ⇒ None

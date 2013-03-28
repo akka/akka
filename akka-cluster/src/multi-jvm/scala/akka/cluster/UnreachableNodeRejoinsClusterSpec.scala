@@ -25,10 +25,14 @@ case class UnreachableNodeRejoinsClusterMultiNodeConfig(failureDetectorPuppet: B
 
   commonConfig(ConfigFactory.parseString(
     """
+      # this setting is here to limit the number of retries and failures while the
+      # node is being blackholed
+      akka.remote.failure-detector.retry-gate-closed-for = 500 ms
+
       akka.remote.log-remote-lifecycle-events = off
       akka.cluster.publish-stats-interval = 0s
       akka.loglevel = INFO
-    """).withFallback(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig)))
+    """).withFallback(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet))))
 
   testTransport(on = true)
 }
@@ -74,8 +78,7 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
       endBarrier
     }
 
-    // FIXME ignored due to ticket #2930 - timeout changing throttler mode
-    "mark a node as UNREACHABLE when we pull the network" taggedAs LongRunningTest ignore {
+    "mark a node as UNREACHABLE when we pull the network" taggedAs LongRunningTest in {
       // let them send at least one heartbeat to each other after the gossip convergence
       // because for new joining nodes we remove them from the failure detector when
       // receive gossip
@@ -95,12 +98,12 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
         allButVictim.foreach(markNodeAsUnavailable(_))
         within(30 seconds) {
           // victim becomes all alone
-          awaitCond({
+          awaitAssert {
             val members = clusterView.members
-            clusterView.unreachableMembers.size == (roles.size - 1) &&
-              members.size == 1 &&
-              members.forall(_.status == MemberStatus.Up)
-          })
+            clusterView.unreachableMembers.size must be(roles.size - 1)
+            members.size must be(1)
+            members.map(_.status) must be(Set(MemberStatus.Up))
+          }
           clusterView.unreachableMembers.map(_.address) must be((allButVictim map address).toSet)
         }
       }
@@ -109,12 +112,12 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
         markNodeAsUnavailable(victim)
         within(30 seconds) {
           // victim becomes unreachable
-          awaitCond({
+          awaitAssert {
             val members = clusterView.members
-            clusterView.unreachableMembers.size == 1 &&
-              members.size == (roles.size - 1) &&
-              members.forall(_.status == MemberStatus.Up)
-          })
+            clusterView.unreachableMembers.size must be(1)
+            members.size must be(roles.size - 1)
+            members.map(_.status) must be(Set(MemberStatus.Up))
+          }
           awaitSeenSameState(allButVictim map address: _*)
           // still one unreachable
           clusterView.unreachableMembers.size must be(1)
@@ -125,8 +128,7 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
       endBarrier
     }
 
-    // FIXME ignored due to ticket #2930 - timeout changing throttler mode
-    "mark the node as DOWN" taggedAs LongRunningTest ignore {
+    "mark the node as DOWN" taggedAs LongRunningTest in {
       runOn(master) {
         cluster down victim
       }
@@ -134,14 +136,13 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
       runOn(allBut(victim): _*) {
         awaitMembersUp(roles.size - 1, Set(victim))
         // eventually removed
-        awaitCond(clusterView.unreachableMembers.isEmpty, 15 seconds)
-      }
+        awaitAssert(clusterView.unreachableMembers must be(Set.empty), 15 seconds)
 
+      }
       endBarrier
     }
 
-    // FIXME ignored due to ticket #2930 - timeout changing throttler mode
-    "allow node to REJOIN when the network is plugged back in" taggedAs LongRunningTest ignore {
+    "allow node to REJOIN when the network is plugged back in" taggedAs LongRunningTest in {
       runOn(first) {
         // put the network back in
         allBut(victim).foreach { roleName ⇒
@@ -152,7 +153,7 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
       enterBarrier("plug_in_victim")
 
       runOn(victim) {
-        cluster join master
+        joinWithin(master, 10.seconds)
       }
 
       awaitMembersUp(roles.size)

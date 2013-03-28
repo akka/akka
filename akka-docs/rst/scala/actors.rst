@@ -359,6 +359,13 @@ that triggered the exception will not be received again. Any message
 sent to an actor while it is being restarted will be queued to its mailbox as
 usual.
 
+.. warning::
+
+  Be aware that the ordering of failure notifications relative to user messages
+  is not deterministic. In particular, a parent might restart its child before
+  it has processed the last messages sent by the child before the failure.
+  See :ref:`message-ordering` for details.
+
 Stop Hook
 ---------
 
@@ -882,7 +889,7 @@ Please note, that the child actors are *still restarted*, but no new ``ActorRef`
 the same principles for the children, ensuring that their ``preStart()`` method is called only at the creation of their
 refs.
 
-For more information see :ref:`what-restarting-means-scala`.
+For more information see :ref:`supervision-restart`.
 
 Initialization via message passing
 ----------------------------------

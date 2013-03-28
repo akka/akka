@@ -7,7 +7,7 @@ import language.implicitConversions
 
 import java.util.concurrent.TimeoutException
 import akka.actor._
-import akka.dispatch._
+import akka.dispatch.sysmsg._
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.concurrent.{ Future, Promise, ExecutionContext }

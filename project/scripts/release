@@ -290,9 +290,9 @@ fi
 # build the release
 echolog "Building the release..."
 if [ ! $dry_run ]; then
-  RELEASE_OPT="-Dpublish.maven.central=true"
+  RELEASE_OPT="-Dakka.genjavadoc.enabled=true -Dpublish.maven.central=true"
 else
-  RELEASE_OPT=""
+  RELEASE_OPT="-Dakka.genjavadoc.enabled=true"
 fi
 try sbt $RELEASE_OPT build-release
 echolog "Creating gzipped tar download..."

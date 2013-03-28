@@ -14,7 +14,8 @@ import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
 /**
- * Java API for the TestProbe. Proper JavaDocs to come once JavaDoccing is implemented.
+ * Java API for the TestProbe. Proper JavaDocs to come once JavaDoccing is
+ * implemented.
  */
 public class JavaTestKit {
   private final TestProbe p;
@@ -30,13 +31,15 @@ public class JavaTestKit {
   public ActorSystem getSystem() {
     return p.system();
   }
-  
+
   static public FiniteDuration duration(String s) {
     final Duration ret = Duration.apply(s);
-    if (ret instanceof FiniteDuration) return (FiniteDuration) ret;
-    else throw new IllegalArgumentException("duration() is only for finite durations, use Duration.Inf() and friends");
+    if (ret instanceof FiniteDuration)
+      return (FiniteDuration) ret;
+    else
+      throw new IllegalArgumentException("duration() is only for finite durations, use Duration.Inf() and friends");
   }
-  
+
   public Duration dilated(Duration d) {
     return d.mul(TestKitExtension.get(p.system()).TestTimeFactor());
   }
@@ -137,13 +140,34 @@ public class JavaTestKit {
         }
       }, max, interval, p.awaitCond$default$4());
     }
-    
+
     public AwaitCond(Duration max, Duration interval, String message) {
       p.awaitCond(new AbstractFunction0<Object>() {
         public Object apply() {
           return cond();
         }
       }, max, interval, message);
+    }
+  }
+
+  public abstract class AwaitAssert {
+    protected abstract void check();
+
+    public AwaitAssert() {
+      this(Duration.Undefined(), p.awaitAssert$default$3());
+    }
+
+    public AwaitAssert(Duration max) {
+      this(max, p.awaitAssert$default$3());
+    }
+
+    public AwaitAssert(Duration max, Duration interval) {
+      p.awaitAssert(new AbstractFunction0<Object>() {
+        public Object apply() {
+          check();
+          return null;
+        }
+      }, max, interval);
     }
   }
 
@@ -159,8 +183,7 @@ public class JavaTestKit {
       try {
         result = match(received);
       } catch (JavaPartialFunction.NoMatchException ex) {
-        throw new AssertionError("while expecting '" + hint
-            + "' received unexpected: " + received);
+        throw new AssertionError("while expecting '" + hint + "' received unexpected: " + received);
       }
     }
 
@@ -200,13 +223,11 @@ public class JavaTestKit {
   }
 
   public Object[] expectMsgAllOf(Object... msgs) {
-    return (Object[]) p.expectMsgAllOf(Util.immutableSeq(msgs)).toArray(
-        Util.classTag(Object.class));
+    return (Object[]) p.expectMsgAllOf(Util.immutableSeq(msgs)).toArray(Util.classTag(Object.class));
   }
 
   public Object[] expectMsgAllOf(FiniteDuration max, Object... msgs) {
-    return (Object[]) p.expectMsgAllOf(max, Util.immutableSeq(msgs)).toArray(
-        Util.classTag(Object.class));
+    return (Object[]) p.expectMsgAllOf(max, Util.immutableSeq(msgs)).toArray(Util.classTag(Object.class));
   }
 
   @SuppressWarnings("unchecked")
@@ -254,12 +275,11 @@ public class JavaTestKit {
 
     @SuppressWarnings("unchecked")
     public ReceiveWhile(Class<T> clazz, Duration max, Duration idle, int messages) {
-      results = p.receiveWhile(max, idle, messages,
-          new CachingPartialFunction<Object, T>() {
-            public T match(Object msg) throws Exception {
-                return ReceiveWhile.this.match(msg);
-            }
-          }).toArray(Util.classTag(clazz));
+      results = p.receiveWhile(max, idle, messages, new CachingPartialFunction<Object, T>() {
+        public T match(Object msg) throws Exception {
+          return ReceiveWhile.this.match(msg);
+        }
+      }).toArray(Util.classTag(clazz));
     }
 
     protected RuntimeException noMatch() {
@@ -274,16 +294,16 @@ public class JavaTestKit {
 
   public abstract class EventFilter<T> {
     abstract protected T run();
-    
+
     private final Class<? extends Logging.LogEvent> clazz;
-    
+
     private String source = null;
     private String message = null;
     private boolean pattern = false;
     private boolean complete = false;
     private int occurrences = Integer.MAX_VALUE;
     private Class<? extends Throwable> exceptionType = null;
-    
+
     @SuppressWarnings("unchecked")
     public EventFilter(Class<?> clazz) {
       if (Throwable.class.isAssignableFrom(clazz)) {
@@ -291,13 +311,15 @@ public class JavaTestKit {
         exceptionType = (Class<? extends Throwable>) clazz;
       } else if (Logging.LogEvent.class.isAssignableFrom(clazz)) {
         this.clazz = (Class<? extends LogEvent>) clazz;
-      } else throw new IllegalArgumentException("supplied class must either be LogEvent or Throwable");
+      } else
+        throw new IllegalArgumentException("supplied class must either be LogEvent or Throwable");
     }
 
     public T exec() {
       akka.testkit.EventFilter filter;
       if (clazz == Logging.Error.class) {
-        if (exceptionType == null) exceptionType = Logging.noCause().getClass();
+        if (exceptionType == null)
+          exceptionType = Logging.noCause().getClass();
         filter = new ErrorFilter(exceptionType, source, message, pattern, complete, occurrences);
       } else if (clazz == Logging.Warning.class) {
         filter = new WarningFilter(source, message, pattern, complete, occurrences);
@@ -305,39 +327,40 @@ public class JavaTestKit {
         filter = new InfoFilter(source, message, pattern, complete, occurrences);
       } else if (clazz == Logging.Debug.class) {
         filter = new DebugFilter(source, message, pattern, complete, occurrences);
-      } else throw new IllegalArgumentException("unknown LogLevel " + clazz);
+      } else
+        throw new IllegalArgumentException("unknown LogLevel " + clazz);
       return filter.intercept(new AbstractFunction0<T>() {
         public T apply() {
           return run();
         }
       }, p.system());
     }
-    
+
     public EventFilter<T> message(String msg) {
       message = msg;
       pattern = false;
       complete = true;
       return this;
     }
-    
+
     public EventFilter<T> startsWith(String msg) {
       message = msg;
       pattern = false;
       complete = false;
       return this;
     }
-    
+
     public EventFilter<T> matches(String regex) {
       message = regex;
       pattern = true;
       return this;
     }
-    
+
     public EventFilter<T> from(String source) {
       this.source = source;
       return this;
     }
-    
+
     public EventFilter<T> occurrences(int number) {
       occurrences = number;
       return this;

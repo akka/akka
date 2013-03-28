@@ -67,18 +67,22 @@ class ActorDSLSpec extends AkkaSpec {
     "have a maximum queue size" in {
       val i = inbox()
       system.eventStream.subscribe(testActor, classOf[Warning])
-      for (_ ← 1 to 1000) i.receiver ! 0
-      expectNoMsg(1 second)
-      EventFilter.warning(start = "dropping message", occurrences = 1) intercept {
+      try {
+        for (_ ← 1 to 1000) i.receiver ! 0
+        expectNoMsg(1 second)
+        EventFilter.warning(start = "dropping message", occurrences = 1) intercept {
+          i.receiver ! 42
+        }
+        expectMsgType[Warning]
         i.receiver ! 42
-      }
-      expectMsgType[Warning]
-      i.receiver ! 42
-      expectNoMsg(1 second)
-      val gotit = for (_ ← 1 to 1000) yield i.receive()
-      gotit must be((1 to 1000) map (_ ⇒ 0))
-      intercept[TimeoutException] {
-        i.receive(1 second)
+        expectNoMsg(1 second)
+        val gotit = for (_ ← 1 to 1000) yield i.receive()
+        gotit must be((1 to 1000) map (_ ⇒ 0))
+        intercept[TimeoutException] {
+          i.receive(1 second)
+        }
+      } finally {
+        system.eventStream.unsubscribe(testActor, classOf[Warning])
       }
     }
 
@@ -188,8 +192,8 @@ class ActorDSLSpec extends AkkaSpec {
         }
       })
       a ! testActor
-      EventFilter[Exception](occurrences = 1) intercept {
-        a ! new Exception
+      EventFilter.warning("hi", occurrences = 1) intercept {
+        a ! new Exception("hi")
       }
       expectNoMsg(1 second)
       EventFilter[Exception]("hello", occurrences = 1) intercept {
@@ -204,14 +208,14 @@ class ActorDSLSpec extends AkkaSpec {
       // here we pass in the ActorRefFactory explicitly as an example
       val a = actor(system, "fred")(new Act {
         val b = actor("barney")(new Act {
-          whenStarting { context.parent ! ("hello from " + self) }
+          whenStarting { context.parent ! ("hello from " + self.path) }
         })
         become {
           case x ⇒ testActor ! x
         }
       })
       //#nested-actor
-      expectMsg("hello from Actor[akka://ActorDSLSpec/user/fred/barney]")
+      expectMsg("hello from akka://ActorDSLSpec/user/fred/barney")
       lastSender must be(a)
     }
 

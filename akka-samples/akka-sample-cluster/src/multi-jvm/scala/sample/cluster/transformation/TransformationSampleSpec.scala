@@ -33,6 +33,11 @@ object TransformationSampleSpecConfig extends MultiNodeConfig {
     akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
     """))
 
+  nodeConfig(frontend1, frontend2)(
+    ConfigFactory.parseString("akka.cluster.roles =[frontend]"))
+
+  nodeConfig(backend1, backend2, backend3)(
+    ConfigFactory.parseString("akka.cluster.roles =[backend]"))
 }
 
 // need one concrete test class per node

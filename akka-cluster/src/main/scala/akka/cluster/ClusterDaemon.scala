@@ -37,7 +37,7 @@ object ClusterUserAction {
    * Command to join the cluster. Sent when a node (represented by 'address')
    * wants to join another node (the receiver).
    */
-  case class Join(address: Address) extends ClusterMessage
+  case class Join(address: Address, roles: Set[String]) extends ClusterMessage
 
   /**
    * Command to leave the cluster.
@@ -239,6 +239,8 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
   var seedNodeProcess: Option[ActorRef] = None
 
+  var tryingToJoinWith: Option[Address] = None
+
   /**
    * Looks up and returns the remote cluster command connection for the specific address.
    */
@@ -288,21 +290,20 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
   }
 
   def initialized: Actor.Receive = {
-    case msg: GossipEnvelope              ⇒ receiveGossip(msg)
-    case msg: GossipMergeConflict         ⇒ receiveGossipMerge(msg)
-    case GossipTick                       ⇒ gossip()
-    case ReapUnreachableTick              ⇒ reapUnreachableMembers()
-    case LeaderActionsTick                ⇒ leaderActions()
-    case PublishStatsTick                 ⇒ publishInternalStats()
-    case InitJoin                         ⇒ initJoin()
-    case JoinTo(address)                  ⇒ join(address)
-    case ClusterUserAction.Join(address)  ⇒ joining(address)
-    case ClusterUserAction.Down(address)  ⇒ downing(address)
-    case ClusterUserAction.Leave(address) ⇒ leaving(address)
-    case Exit(address)                    ⇒ exiting(address)
-    case Remove(address)                  ⇒ removing(address)
-    case SendGossipTo(address)            ⇒ gossipTo(address)
-    case msg: SubscriptionMessage         ⇒ publisher forward msg
+    case msg: GossipEnvelope                    ⇒ receiveGossip(msg)
+    case GossipTick                             ⇒ gossip()
+    case ReapUnreachableTick                    ⇒ reapUnreachableMembers()
+    case LeaderActionsTick                      ⇒ leaderActions()
+    case PublishStatsTick                       ⇒ publishInternalStats()
+    case InitJoin                               ⇒ initJoin()
+    case JoinTo(address)                        ⇒ join(address)
+    case ClusterUserAction.Join(address, roles) ⇒ joining(address, roles)
+    case ClusterUserAction.Down(address)        ⇒ downing(address)
+    case ClusterUserAction.Leave(address)       ⇒ leaving(address)
+    case Exit(address)                          ⇒ exiting(address)
+    case Remove(address)                        ⇒ removing(address)
+    case SendGossipTo(address)                  ⇒ gossipTo(address)
+    case msg: SubscriptionMessage               ⇒ publisher forward msg
 
   }
 
@@ -342,7 +343,6 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
       log.warning("Trying to join member with wrong ActorSystem name, but was ignored, expected [{}] but was [{}]",
         selfAddress.system, address.system)
     else if (!latestGossip.members.exists(_.address == address)) {
-
       // to support manual join when joining to seed nodes is stuck (no seed nodes available)
       val snd = sender
       seedNodeProcess match {
@@ -356,27 +356,30 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
         case None ⇒ // no seedNodeProcess in progress
       }
 
-      // wipe our state since a node that joins a cluster must be empty
-      latestGossip = Gossip.empty
-      // wipe the failure detector since we are starting fresh and shouldn't care about the past
-      failureDetector.reset()
-      // wipe the publisher since we are starting fresh
-      publisher ! PublishStart
+      // only wipe the state if we're not in the process of joining this address
+      if (tryingToJoinWith.forall(_ != address)) {
+        tryingToJoinWith = Some(address)
+        // wipe our state since a node that joins a cluster must be empty
+        latestGossip = Gossip.empty
+        // wipe the failure detector since we are starting fresh and shouldn't care about the past
+        failureDetector.reset()
+        // wipe the publisher since we are starting fresh
+        publisher ! PublishStart
 
-      publish(latestGossip)
-
+        publish(latestGossip)
+      }
       context.become(initialized)
       if (address == selfAddress)
-        joining(address)
+        joining(address, cluster.selfRoles)
       else
-        clusterCore(address) ! ClusterUserAction.Join(selfAddress)
+        clusterCore(address) ! ClusterUserAction.Join(selfAddress, cluster.selfRoles)
     }
   }
 
   /**
    * State transition to JOINING - new node joining.
    */
-  def joining(node: Address): Unit = {
+  def joining(node: Address, roles: Set[String]): Unit = {
     if (node.protocol != selfAddress.protocol)
       log.warning("Member with wrong protocol tried to join, but was ignored, expected [{}] but was [{}]",
         selfAddress.protocol, node.protocol)
@@ -397,7 +400,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
         // add joining node as Joining
         // add self in case someone else joins before self has joined (Set discards duplicates)
-        val newMembers = localMembers + Member(node, Joining) + Member(selfAddress, Joining)
+        val newMembers = localMembers + Member(node, Joining, roles) + Member(selfAddress, Joining, cluster.selfRoles)
         val newGossip = latestGossip copy (members = newMembers)
 
         val versionedGossip = newGossip :+ vclockNode
@@ -405,8 +408,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
         latestGossip = seenVersionedGossip
 
-        log.debug("Cluster Node [{}] - Node [{}] is JOINING", selfAddress, node)
-        // treat join as initial heartbeat, so that it becomes unavailable if nothing more happens
+        log.info("Cluster Node [{}] - Node [{}] is JOINING, roles [{}]", selfAddress, node, roles.mkString(", "))
         if (node != selfAddress) {
           gossipTo(node)
         }
@@ -421,7 +423,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
    */
   def leaving(address: Address): Unit = {
     if (latestGossip.members.exists(_.address == address)) { // only try to update if the node is available (in the member ring)
-      val newMembers = latestGossip.members map { member ⇒ if (member.address == address) Member(address, Leaving) else member } // mark node as LEAVING
+      val newMembers = latestGossip.members map { m ⇒ if (m.address == address) m.copy(status = Leaving) else m } // mark node as LEAVING
       val newGossip = latestGossip copy (members = newMembers)
 
       val versionedGossip = newGossip :+ vclockNode
@@ -429,7 +431,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
       latestGossip = seenVersionedGossip
 
-      log.info("Cluster Node [{}] - Marked address [{}] as LEAVING", selfAddress, address)
+      log.info("Cluster Node [{}] - Marked address [{}] as [{}]", selfAddress, address, Leaving)
       publish(latestGossip)
     }
   }
@@ -438,7 +440,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
    * State transition to EXITING.
    */
   def exiting(address: Address): Unit = {
-    log.info("Cluster Node [{}] - Marked node [{}] as EXITING", selfAddress, address)
+    log.info("Cluster Node [{}] - Marked node [{}] as [{}]", selfAddress, address, Exiting)
     // FIXME implement when we implement hand-off
   }
 
@@ -476,7 +478,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
     val newMembers = downedMember match {
       case Some(m) ⇒
-        log.info("Cluster Node [{}] - Marking node [{}] as DOWN", selfAddress, m.address)
+        log.info("Cluster Node [{}] - Marking node [{}] as [{}]", selfAddress, m.address, Down)
         localMembers - m
       case None ⇒ localMembers
     }
@@ -486,7 +488,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
       localUnreachableMembers.map { member ⇒
         // no need to DOWN members already DOWN
         if (member.address == address && member.status != Down) {
-          log.info("Cluster Node [{}] - Marking unreachable node [{}] as DOWN", selfAddress, member.address)
+          log.info("Cluster Node [{}] - Marking unreachable node [{}] as [{}]", selfAddress, member.address, Down)
           member copy (status = Down)
         } else member
       }
@@ -507,35 +509,6 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
   }
 
   /**
-   * When conflicting versions of received and local [[akka.cluster.Gossip]] is detected
-   * it's forwarded to the leader for conflict resolution. Trying to simultaneously
-   * resolving conflicts at several nodes creates new conflicts. Therefore the leader resolves
-   * conflicts to limit divergence. To avoid overload there is also a configurable rate
-   * limit of how many conflicts that are handled by second. If the limit is
-   * exceeded the conflicting gossip messages are dropped and will reappear later.
-   */
-  def receiveGossipMerge(merge: GossipMergeConflict): Unit = {
-    stats = stats.incrementMergeConflictCount
-    val rate = mergeRate(stats.mergeConflictCount)
-    if (rate <= MaxGossipMergeRate) {
-      receiveGossip(merge.a.copy(conversation = false))
-      receiveGossip(merge.b.copy(conversation = false))
-
-      // use one-way gossip from leader to reduce load of leader
-      def sendBack(to: Address): Unit = {
-        if (to != selfAddress && !latestGossip.overview.unreachable.exists(_.address == to))
-          oneWayGossipTo(to)
-      }
-
-      sendBack(merge.a.from)
-      sendBack(merge.b.from)
-
-    } else {
-      log.debug("Dropping gossip merge conflict due to rate [{}] / s ", rate)
-    }
-  }
-
-  /**
    * Receive new gossip.
    */
   def receiveGossip(envelope: GossipEnvelope): Unit = {
@@ -548,70 +521,51 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
     } else if (localGossip.overview.isNonDownUnreachable(from)) {
       log.debug("Ignoring received gossip from unreachable [{}] ", from)
     } else {
+      // if we're in the remote gossip and not Removed, then we're not joining
+      if (tryingToJoinWith.nonEmpty && remoteGossip.member(selfAddress).status != Removed)
+        tryingToJoinWith = None
 
-      // leader handles merge conflicts, or when they have different views of how is leader
-      val handleMerge = localGossip.leader == Some(selfAddress) || localGossip.leader != remoteGossip.leader
       val comparison = remoteGossip.version tryCompareTo localGossip.version
       val conflict = comparison.isEmpty
 
-      if (conflict && !handleMerge) {
-        // delegate merge resolution to leader to reduce number of simultaneous resolves,
-        // which will result in new conflicts
+      val (winningGossip, talkback, newStats) = comparison match {
+        case None ⇒
+          // conflicting versions, merge
+          (remoteGossip merge localGossip, true, stats.incrementMergeCount)
+        case Some(0) ⇒
+          // same version
+          (remoteGossip mergeSeen localGossip, !remoteGossip.seenByAddress(selfAddress), stats.incrementSameCount)
+        case Some(x) if x < 0 ⇒
+          // local is newer
+          (localGossip, true, stats.incrementNewerCount)
+        case _ ⇒
+          // remote is newer
+          (remoteGossip, !remoteGossip.seenByAddress(selfAddress), stats.incrementOlderCount)
+      }
 
-        stats = stats.incrementMergeDetectedCount
-        log.debug("Merge conflict [{}] detected [{}] <> [{}]", stats.mergeDetectedCount, selfAddress, from)
+      stats = newStats
+      latestGossip = winningGossip seen selfAddress
 
-        stats = stats.incrementMergeConflictCount
-        val rate = mergeRate(stats.mergeConflictCount)
+      // for all new joining nodes we remove them from the failure detector
+      latestGossip.members foreach {
+        node ⇒ if (node.status == Joining && !localGossip.members(node)) failureDetector.remove(node.address)
+      }
 
-        if (rate <= MaxGossipMergeRate)
-          localGossip.leader foreach { clusterCore(_) ! GossipMergeConflict(GossipEnvelope(selfAddress, localGossip), envelope) }
-        else
-          log.debug("Skipping gossip merge conflict due to rate [{}] / s ", rate)
+      log.debug("Cluster Node [{}] - Receiving gossip from [{}]", selfAddress, from)
 
-      } else {
+      if (conflict) {
+        log.debug(
+          """Couldn't establish a causal relationship between "remote" gossip and "local" gossip - Remote[{}] - Local[{}] - merged them into [{}]""",
+          remoteGossip, localGossip, winningGossip)
+      }
 
-        val (winningGossip, talkback, newStats) = comparison match {
-          case None ⇒
-            // conflicting versions, merge, and new version
-            ((remoteGossip merge localGossip) :+ vclockNode, true, stats)
-          case Some(0) ⇒
-            // same version
-            // TODO optimize talkback based on how the merged seen differs
-            (remoteGossip mergeSeen localGossip, !remoteGossip.hasSeen(selfAddress), stats.incrementSameCount)
-          case Some(x) if x < 0 ⇒
-            // local is newer
-            (localGossip, true, stats.incrementNewerCount)
-          case _ ⇒
-            // remote is newer
-            (remoteGossip, !remoteGossip.hasSeen(selfAddress), stats.incrementOlderCount)
-        }
+      stats = stats.incrementReceivedGossipCount
+      publish(latestGossip)
 
-        stats = newStats
-        latestGossip = winningGossip seen selfAddress
-
-        // for all new joining nodes we remove them from the failure detector
-        (latestGossip.members -- localGossip.members).foreach {
-          node ⇒ if (node.status == Joining) failureDetector.remove(node.address)
-        }
-
-        log.debug("Cluster Node [{}] - Receiving gossip from [{}]", selfAddress, from)
-
-        if (conflict) {
-          stats = stats.incrementMergeCount
-          log.debug(
-            """Couldn't establish a causal relationship between "remote" gossip and "local" gossip - Remote[{}] - Local[{}] - merged them into [{}]""",
-            remoteGossip, localGossip, winningGossip)
-        }
-
-        stats = stats.incrementReceivedGossipCount
-        publish(latestGossip)
-
-        if (envelope.conversation && talkback) {
-          // send back gossip to sender when sender had different view, i.e. merge, or sender had
-          // older or sender had newer
-          gossipTo(from)
-        }
+      if (envelope.conversation && talkback) {
+        // send back gossip to sender when sender had different view, i.e. merge, or sender had
+        // older or sender had newer
+        gossipTo(from)
       }
     }
   }
@@ -622,8 +576,6 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
    * Initiates a new round of gossip.
    */
   def gossip(): Unit = {
-    stats = stats.copy(mergeConflictCount = 0)
-
     log.debug("Cluster Node [{}] - Initiating new round of gossip", selfAddress)
 
     if (!isSingletonCluster && isAvailable) {
@@ -692,8 +644,12 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
         if (localGossip.convergence) {
           // we have convergence - so we can't have unreachable nodes
 
-          val numberOfMembers = localMembers.size
-          def isJoiningToUp(m: Member): Boolean = m.status == Joining && numberOfMembers >= MinNrOfMembers
+          def enoughMembers: Boolean = {
+            localMembers.size >= MinNrOfMembers && MinNrOfMembersOfRole.forall {
+              case (role, threshold) ⇒ localMembers.count(_.hasRole(role)) >= threshold
+            }
+          }
+          def isJoiningToUp(m: Member): Boolean = m.status == Joining && enoughMembers
 
           // transform the node member ring
           val newMembers = localMembers collect {
@@ -787,25 +743,30 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
         // ----------------------
 
         // log the move of members from joining to up
-        upMembers foreach { member ⇒ log.info("Cluster Node [{}] - Leader is moving node [{}] from JOINING to UP", selfAddress, member.address) }
+        upMembers foreach { member ⇒
+          log.info("Cluster Node [{}] - Leader is moving node [{}] from [{}] to [{}]",
+            selfAddress, member.address, member.status, Up)
+        }
 
         //  tell all removed members to remove and shut down themselves
         removedMembers foreach { member ⇒
           val address = member.address
-          log.info("Cluster Node [{}] - Leader is moving node [{}] from EXITING to REMOVED - and removing node from node ring", selfAddress, address)
+          log.info("Cluster Node [{}] - Leader is moving node [{}] from [{}] to [{}] - and removing node from node ring",
+            selfAddress, address, member.status, Removed)
           clusterCore(address) ! ClusterLeaderAction.Remove(address)
         }
 
         //  tell all exiting members to exit
         exitingMembers foreach { member ⇒
           val address = member.address
-          log.info("Cluster Node [{}] - Leader is moving node [{}] from LEAVING to EXITING", selfAddress, address)
+          log.info("Cluster Node [{}] - Leader is moving node [{}] from [{}] to [{}]",
+            selfAddress, address, member.status, Exiting)
           clusterCore(address) ! ClusterLeaderAction.Exit(address) // FIXME should use ? to await completion of handoff?
         }
 
         // log the auto-downing of the unreachable nodes
         unreachableButNotDownedMembers foreach { member ⇒
-          log.info("Cluster Node [{}] - Leader is marking unreachable node [{}] as DOWN", selfAddress, member.address)
+          log.info("Cluster Node [{}] - Leader is marking unreachable node [{}] as [{}]", selfAddress, member.address, Down)
         }
 
         publish(latestGossip)
@@ -1049,9 +1010,7 @@ private[cluster] class OnMemberUpListener(callback: Runnable) extends Actor with
  */
 private[cluster] case class ClusterStats(
   receivedGossipCount: Long = 0L,
-  mergeConflictCount: Long = 0L,
   mergeCount: Long = 0L,
-  mergeDetectedCount: Long = 0L,
   sameCount: Long = 0L,
   newerCount: Long = 0L,
   olderCount: Long = 0L) {
@@ -1059,14 +1018,8 @@ private[cluster] case class ClusterStats(
   def incrementReceivedGossipCount(): ClusterStats =
     copy(receivedGossipCount = receivedGossipCount + 1)
 
-  def incrementMergeConflictCount(): ClusterStats =
-    copy(mergeConflictCount = mergeConflictCount + 1)
-
   def incrementMergeCount(): ClusterStats =
     copy(mergeCount = mergeCount + 1)
-
-  def incrementMergeDetectedCount(): ClusterStats =
-    copy(mergeDetectedCount = mergeDetectedCount + 1)
 
   def incrementSameCount(): ClusterStats =
     copy(sameCount = sameCount + 1)
@@ -1080,9 +1033,7 @@ private[cluster] case class ClusterStats(
   def :+(that: ClusterStats): ClusterStats = {
     ClusterStats(
       this.receivedGossipCount + that.receivedGossipCount,
-      this.mergeConflictCount + that.mergeConflictCount,
       this.mergeCount + that.mergeCount,
-      this.mergeDetectedCount + that.mergeDetectedCount,
       this.sameCount + that.sameCount,
       this.newerCount + that.newerCount,
       this.olderCount + that.olderCount)
@@ -1091,9 +1042,7 @@ private[cluster] case class ClusterStats(
   def :-(that: ClusterStats): ClusterStats = {
     ClusterStats(
       this.receivedGossipCount - that.receivedGossipCount,
-      this.mergeConflictCount - that.mergeConflictCount,
       this.mergeCount - that.mergeCount,
-      this.mergeDetectedCount - that.mergeDetectedCount,
       this.sameCount - that.sameCount,
       this.newerCount - that.newerCount,
       this.olderCount - that.olderCount)

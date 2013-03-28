@@ -29,6 +29,7 @@ import akka.remote.FailureDetector
 import com.typesafe.config.Config
 import akka.event.LoggingAdapter
 import java.util.concurrent.ThreadFactory
+import scala.util.control.NonFatal
 
 /**
  * Cluster Extension Id and factory for creating Cluster extension.
@@ -73,8 +74,21 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         format(system, other.getClass.getName))
   }
 
+  /**
+   * roles that this member has
+   */
+  def selfRoles: Set[String] = settings.Roles
+
+  /**
+   * Java API: roles that this member has
+   */
+  def getSelfRoles: java.util.Set[String] =
+    scala.collection.JavaConverters.setAsJavaSetConverter(selfRoles).asJava
+
   private val _isTerminated = new AtomicBoolean(false)
   private val log = Logging(system, "Cluster")
+  // ClusterJmx is initialized as the last thing in the constructor
+  private var clusterJmx: Option[ClusterJmx] = None
 
   log.info("Cluster Node [{}] - is starting up...", selfAddress)
 
@@ -146,7 +160,14 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    */
   private[cluster] val clusterCore: ActorRef = {
     implicit val timeout = system.settings.CreationTimeout
-    Await.result((clusterDaemons ? InternalClusterAction.GetClusterCoreRef).mapTo[ActorRef], timeout.duration)
+    try {
+      Await.result((clusterDaemons ? InternalClusterAction.GetClusterCoreRef).mapTo[ActorRef], timeout.duration)
+    } catch {
+      case NonFatal(e) ⇒
+        log.error(e, "Failed to startup Cluster")
+        shutdown()
+        throw e
+    }
   }
 
   @volatile
@@ -159,11 +180,12 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   system.registerOnTermination(shutdown())
 
-  private val clusterJmx: Option[ClusterJmx] = {
-    val jmx = new ClusterJmx(this, log)
-    jmx.createMBean()
-    Some(jmx)
-  }
+  if (JmxEnabled)
+    clusterJmx = {
+      val jmx = new ClusterJmx(this, log)
+      jmx.createMBean()
+      Some(jmx)
+    }
 
   log.info("Cluster Node [{}] - has started up successfully", selfAddress)
 

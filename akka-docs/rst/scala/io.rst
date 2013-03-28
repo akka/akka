@@ -90,7 +90,7 @@ together they are both stored within the resulting ``ByteString`` instead of cop
 such as ``drop`` and ``take`` return ``ByteString``\s that still reference the original ``Array``, but just change the
 offset and length that is visible. Great care has also been taken to make sure that the internal ``Array`` cannot be
 modified. Whenever a potentially unsafe ``Array`` is used to create a new ``ByteString`` a defensive copy is created. If
-you require a ``ByteString`` that only blocks a much memory as necessary for it's content, use the ``compact`` method to
+you require a ``ByteString`` that only blocks as much memory as necessary for it's content, use the ``compact`` method to
 get a ``CompactByteString`` instance. If the ``ByteString`` represented only a slice of the original array, this will
 result in copying all bytes in that slice.
 
@@ -102,7 +102,7 @@ result in copying all bytes in that slice.
 Compatibility with java.io
 ..........................
 
-A ``ByteStringBuilder`` can be wrapped in a ``java.io.OutputStream`` via the ``asOutputStream`` method. Likewise, ``ByteIterator`` can we wrapped in a ``java.io.InputStream`` via ``asInputStream``. Using these, ``akka.io`` applications can integrate legacy code based on ``java.io`` streams.
+A ``ByteStringBuilder`` can be wrapped in a ``java.io.OutputStream`` via the ``asOutputStream`` method. Likewise, ``ByteIterator`` can be wrapped in a ``java.io.InputStream`` via ``asInputStream``. Using these, ``akka.io`` applications can integrate legacy code based on ``java.io`` streams.
 
 Encoding and decoding binary data
 ....................................
@@ -127,7 +127,7 @@ Decoding of such frames can be efficiently implemented in the following fashion:
 .. includecode:: code/docs/io/BinaryCoding.scala
    :include: decoding
 
-This implementation naturally follows the example data format. In a true Scala application, one might, of course, want use specialized immutable Short/Long/Double containers instead of mutable Arrays.
+This implementation naturally follows the example data format. In a true Scala application one might of course want to use specialized immutable ``Short``/``Long``/``Double`` containers instead of mutable Arrays.
 
 After extracting data from a ``ByteIterator``, the remaining content can also be turned back into a ``ByteString`` using
 the ``toSeq`` method. No bytes are copied. Because of immutability the underlying bytes can be shared between both the
@@ -136,7 +136,7 @@ the ``toSeq`` method. No bytes are copied. Because of immutability the underlyin
 .. includecode:: code/docs/io/BinaryCoding.scala
    :include: rest-to-seq
 
-In general, conversions from ByteString to ByteIterator and vice versa are O(1) for non-chunked ByteStrings and (at worst) O(nChunks) for chunked ByteStrings.
+In general, conversions from ``ByteString`` to ``ByteIterator`` and vice versa are O(1) for non-chunked ``ByteString``s and (at worst) O(nChunks) for chunked ``ByteString``s.
 
 Encoding of data also is very natural, using ``ByteStringBuilder``
 
@@ -176,6 +176,11 @@ When connecting, it is also possible to set various socket options or specify a 
 
   IO(Tcp) ! Connect(remoteSocketAddress, Some(localSocketAddress), List(SO.KeepAlive(true)))
 
+.. note::
+  The SO_NODELAY (TCP_NODELAY on Windows) socket option defaults to true in Akka, independently of the OS default
+  settings. This setting disables Nagle's algorithm considerably improving latency for most applications. This setting
+  could be overridden by passing ``SO.TcpNoDelay(false)`` in the list of socket options of the ``Connect`` message.
+
 After issuing the ``Connect`` command the TCP manager spawns a worker actor to handle commands related to the
 connection. This worker actor will reveal itself by replying with a ``Connected`` message to the actor who sent the
 ``Connect`` command.
@@ -210,7 +215,7 @@ connection close events, see :ref:`closing-connections-scala` below.
 Accepting connections
 ^^^^^^^^^^^^^^^^^^^^^
 
-To create a TCP server and listen for inbound connection, a ``Bind`` command has to be sent to the TCP manager.
+To create a TCP server and listen for inbound connections, a ``Bind`` command has to be sent to the TCP manager.
 This will instruct the TCP manager to listen for TCP connections on a particular address.
 
 .. code-block:: scala
@@ -237,7 +242,7 @@ has to be sent to the connection actor with the listener ``ActorRef`` as a param
   connectionActor ! Register(listener)
 
 Upon registration, the connection actor will watch the listener actor provided in the ``listener`` parameter.
-If the listener stops, the connection is closed, and all resources allocated for the connection released. During the
+If the listener stops, the connection is closed, and all resources allocated for the connection are released. During the
 connection lifetime the listener will receive various event notifications in the same way as in the outbound
 connection case.
 
@@ -412,7 +417,7 @@ will always be the endpoint we originally connected to.
 .. note::
   There is a small performance benefit in using connection based UDP API over the connectionless one.
   If there is a SecurityManager enabled on the system, every connectionless message send has to go through a security
-  check, while in the case of connection-based UDP the security check is cached after connect, thus writes does
+  check, while in the case of connection-based UDP the security check is cached after connect, thus writes do
   not suffer an additional performance penalty.
 
 Throttling Reads and Writes

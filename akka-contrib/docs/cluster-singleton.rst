@@ -19,12 +19,13 @@ such as single-point of bottleneck. Single-point of failure is also a relevant c
 but for some cases this feature takes care of that by making sure that another singleton 
 instance will eventually be started.
 
-The cluster singleton pattern is implemented by ``akka.contrib.pattern.ClusterSingletonManager``,
-which is an actor that is supposed to be started on all nodes in the cluster.
-The actual singleton actor is started by the ``ClusterSingletonManager`` on the 
-leader node of the cluster by creating a child actor from supplied ``Props``.
-``ClusterSingletonManager`` makes sure that at most one singleton instance is 
-running at any point in time.
+The cluster singleton pattern is implemented by ``akka.contrib.pattern.ClusterSingletonManager``.
+It manages singleton actor instance among all cluster nodes or a group of nodes tagged with 
+a specific role. ``ClusterSingletonManager`` is an actor that is supposed to be started on
+all nodes, or all nodes with specified role, in the cluster. The actual singleton actor is 
+started by the ``ClusterSingletonManager`` on the leader node by creating a child actor from
+supplied ``Props``. ``ClusterSingletonManager`` makes sure that at most one singleton instance
+is running at any point in time.
 
 The singleton actor is always running on the leader member, which is nothing more than 
 the address currently sorted first in the member ring. This can change when adding 
@@ -39,9 +40,9 @@ not be a graceful hand-over, but more than one active singletons is prevented by
 reasonable means. Some corner cases are eventually resolved by configurable timeouts.
 
 You access the singleton actor with ``actorFor`` using the names you have specified when 
-creating the ClusterSingletonManager. You can subscribe to cluster ``LeaderChanged`` events
-to keep track of which node it is supposed to be running on. Alternatively the singleton 
-actor may broadcast its existence when it is started.
+creating the ClusterSingletonManager. You can subscribe to cluster ``LeaderChanged`` or
+``RoleLeaderChanged`` events to keep track of which node it is supposed to be running on.
+Alternatively the singleton actor may broadcast its existence when it is started.
 
 An Example
 ----------
@@ -57,7 +58,12 @@ supply the ``Props`` of the singleton actor, in this case the JMS queue consumer
 
 .. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterSingletonManagerSpec.scala#create-singleton-manager
 
+Here we limit the singleton to nodes tagged with the ``"worker"`` role, but all nodes, independent of
+role, can be used by specifying ``None`` as ``role`` parameter.
+
 The corresponding Java API for the ``singeltonProps`` function is ``akka.contrib.pattern.ClusterSingletonPropsFactory``.
+The Java API constructor takes a plain String for the role parameter and ``null`` means that all nodes, independent of
+role, are used.
 
 Here we use an application specific ``terminationMessage`` to be able to close the
 resources before actually stopping the singleton actor. Note that ``PoisonPill`` is a 
@@ -72,12 +78,15 @@ This message will be sent over to the ``ClusterSingletonManager`` at the new lea
 will be passed to the ``singletonProps`` factory when creating the new singleton instance.
 
 With the names given above the path of singleton actor can be constructed by subscribing to 
-``LeaderChanged`` cluster event and the actor reference is then looked up using ``actorFor``:
+``RoleLeaderChanged`` cluster event and the actor reference is then looked up using ``actorFor``:
 
-.. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterSingletonManagerSpec.scala#singleton-proxy
+.. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterSingletonManagerSpec.scala#singleton-proxy2
+
+Subscribe to ``LeaderChanged`` instead of ``RoleLeaderChanged`` if you don't limit the singleton to
+the group of members tagged with a specific role.
 
 Note that the hand-over might still be in progress and the singleton actor might not be started yet 
-when you receive the ``LeaderChanged`` event.
+when you receive the ``LeaderChanged`` / ``RoleLeaderChanged`` event.
 
 To test scenarios where the cluster leader node is removed or shut down you can use :ref:`multi-node-testing` and 
 utilize the fact that the leader is supposed to be the first member when sorted by member address.

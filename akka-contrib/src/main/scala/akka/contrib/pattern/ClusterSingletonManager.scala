@@ -90,6 +90,11 @@ object ClusterSingletonManager {
     val TakeOverRetryTimer = "take-over-retry"
     val CleanupTimer = "cleanup"
 
+    def roleOption(role: String): Option[String] = role match {
+      case null | "" ⇒ None
+      case _         ⇒ Some(role)
+    }
+
     object LeaderChangedBuffer {
       /**
        * Request to deliver one more event.
@@ -110,7 +115,7 @@ object ClusterSingletonManager {
      * `GetNext` request is allowed. Incoming events are buffered and delivered
      * upon `GetNext` request.
      */
-    class LeaderChangedBuffer extends Actor {
+    class LeaderChangedBuffer(role: Option[String]) extends Actor {
       import LeaderChangedBuffer._
       import context.dispatcher
 
@@ -119,14 +124,23 @@ object ClusterSingletonManager {
       var memberCount = 0
 
       // subscribe to LeaderChanged, re-subscribe when restart
-      override def preStart(): Unit = cluster.subscribe(self, classOf[LeaderChanged])
+      override def preStart(): Unit = role match {
+        case None    ⇒ cluster.subscribe(self, classOf[LeaderChanged])
+        case Some(_) ⇒ cluster.subscribe(self, classOf[RoleLeaderChanged])
+      }
       override def postStop(): Unit = cluster.unsubscribe(self)
 
       def receive = {
         case state: CurrentClusterState ⇒
-          changes :+= InitialLeaderState(state.leader, state.members.size)
+          val initial = role match {
+            case None    ⇒ InitialLeaderState(state.leader, state.members.size)
+            case Some(r) ⇒ InitialLeaderState(state.roleLeader(r), state.members.count(_.hasRole(r)))
+          }
+          changes :+= initial
         case event: LeaderChanged ⇒
           changes :+= event
+        case RoleLeaderChanged(r, leader) ⇒
+          if (role.orNull == r) changes :+= LeaderChanged(leader)
         case GetNext if changes.isEmpty ⇒
           context.become(deliverNext, discardOld = false)
         case GetNext ⇒
@@ -138,11 +152,20 @@ object ClusterSingletonManager {
       // the buffer was empty when GetNext was received, deliver next event immediately
       def deliverNext: Actor.Receive = {
         case state: CurrentClusterState ⇒
-          context.parent ! InitialLeaderState(state.leader, state.members.size)
+          val initial = role match {
+            case None    ⇒ InitialLeaderState(state.leader, state.members.size)
+            case Some(r) ⇒ InitialLeaderState(state.roleLeader(r), state.members.count(_.hasRole(r)))
+          }
+          context.parent ! initial
           context.unbecome()
         case event: LeaderChanged ⇒
           context.parent ! event
           context.unbecome()
+        case RoleLeaderChanged(r, leader) ⇒
+          if (role.orNull == r) {
+            context.parent ! LeaderChanged(leader)
+            context.unbecome()
+          }
       }
 
     }
@@ -176,11 +199,13 @@ trait ClusterSingletonPropsFactory extends Serializable {
 class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(message, null)
 
 /**
- * Manages a cluster wide singleton actor instance, i.e.
- * at most one singleton instance is running at any point in time.
- * The ClusterSingletonManager is supposed to be started on all
- * nodes in the cluster with `actorOf`. The actual singleton is
- * started on the leader node of the cluster by creating a child
+ * Manages singleton actor instance among all cluster nodes or a group
+ * of nodes tagged with a specific role. At most one singleton instance
+ * is running at any point in time.
+ *
+ * The ClusterSingletonManager is supposed to be started on all nodes,
+ * or all nodes with specified role, in the cluster with `actorOf`.
+ * The actual singleton is started on the leader node by creating a child
  * actor from the supplied `singletonProps`.
  *
  * The singleton actor is always running on the leader member, which is
@@ -206,7 +231,8 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  *
  * You access the singleton actor with `actorFor` using the names you have
  * specified when creating the ClusterSingletonManager. You can subscribe to
- * [[akka.cluster.ClusterEvent.LeaderChanged]] to keep track of which node
+ * [[akka.cluster.ClusterEvent.LeaderChanged]] or
+ * [[akka.cluster.ClusterEvent.RoleLeaderChanged]] to keep track of which node
  * it is supposed to be running on. Alternatively the singleton actor may
  * broadcast its existence when it is started.
  *
@@ -231,6 +257,10 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  *   singleton actor is terminated.
  *   Note that [[akka.actor.PoisonPill]] is a perfectly fine
  *   `terminationMessage` if you only need to stop the actor.
+ *
+ * '''''role''''' Singleton among the nodes tagged with specified role.
+ *   If the role is not specified it's a singleton among all nodes in
+ *   the cluster.
  *
  * '''''maxHandOverRetries''''' When a node is becoming leader it sends
  *   hand-over request to previous leader. This is retried with the
@@ -262,6 +292,7 @@ class ClusterSingletonManager(
   singletonProps: Option[Any] ⇒ Props,
   singletonName: String,
   terminationMessage: Any,
+  role: Option[String],
   maxHandOverRetries: Int = 20,
   maxTakeOverRetries: Int = 15,
   retryInterval: FiniteDuration = 1.second,
@@ -278,13 +309,14 @@ class ClusterSingletonManager(
   def this(
     singletonName: String,
     terminationMessage: Any,
+    role: String,
     maxHandOverRetries: Int,
     maxTakeOverRetries: Int,
     retryInterval: FiniteDuration,
     loggingEnabled: Boolean,
     singletonPropsFactory: ClusterSingletonPropsFactory) =
     this(handOverData ⇒ singletonPropsFactory.create(handOverData.orNull), singletonName, terminationMessage,
-      maxHandOverRetries, maxTakeOverRetries, retryInterval)
+      ClusterSingletonManager.Internal.roleOption(role), maxHandOverRetries, maxTakeOverRetries, retryInterval)
 
   /**
    * Java API constructor with default values.
@@ -292,8 +324,10 @@ class ClusterSingletonManager(
   def this(
     singletonName: String,
     terminationMessage: Any,
+    role: String,
     singletonPropsFactory: ClusterSingletonPropsFactory) =
-    this(handOverData ⇒ singletonPropsFactory.create(handOverData.orNull), singletonName, terminationMessage)
+    this(handOverData ⇒ singletonPropsFactory.create(handOverData.orNull), singletonName, terminationMessage,
+      ClusterSingletonManager.Internal.roleOption(role))
 
   import ClusterSingletonManager._
   import ClusterSingletonManager.Internal._
@@ -301,6 +335,12 @@ class ClusterSingletonManager(
 
   val cluster = Cluster(context.system)
   val selfAddressOption = Some(cluster.selfAddress)
+
+  role match {
+    case None    ⇒
+    case Some(r) ⇒ require(cluster.selfRoles.contains(r), s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
+  }
+
   // started when when self member is Up
   var leaderChangedBuffer: ActorRef = _
   // Previous GetNext request delivered event and new GetNext is to be sent
@@ -357,7 +397,7 @@ class ClusterSingletonManager(
 
   when(Start) {
     case Event(StartLeaderChangedBuffer, _) ⇒
-      leaderChangedBuffer = context.actorOf(Props[LeaderChangedBuffer].withDispatcher(context.props.dispatcher))
+      leaderChangedBuffer = context.actorOf(Props(new LeaderChangedBuffer(role)).withDispatcher(context.props.dispatcher))
       getNextLeaderChanged()
       stay
 
@@ -422,7 +462,7 @@ class ClusterSingletonManager(
     case Event(MemberRemoved(m), BecomingLeaderData(Some(previousLeader))) if m.address == previousLeader ⇒
       logInfo("Previous leader [{}] removed", previousLeader)
       addRemoved(m.address)
-      gotoLeader(None)
+      stay
 
     case Event(TakeOverFromMe, BecomingLeaderData(None)) ⇒
       sender ! HandOverToMe
@@ -439,10 +479,10 @@ class ClusterSingletonManager(
         logInfo("Retry [{}], sending HandOverToMe to [{}]", count, previousLeaderOption)
         previousLeaderOption foreach { peer(_) ! HandOverToMe }
         setTimer(HandOverRetryTimer, HandOverRetry(count + 1), retryInterval, repeat = false)
-      } else if (previousLeaderOption.isEmpty) {
+      } else if (previousLeaderOption forall removed.contains) {
         // can't send HandOverToMe, previousLeader unknown for new node (or restart)
         // previous leader might be down or removed, so no TakeOverFromMe message is received
-        logInfo("Timeout in BecomingLeader. Previous leader unknown and no TakeOver request.")
+        logInfo("Timeout in BecomingLeader. Previous leader unknown, removed and no TakeOver request.")
         gotoLeader(None)
       } else
         throw new ClusterSingletonManagerIsStuck(

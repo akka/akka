@@ -127,6 +127,11 @@ When connecting, it is also possible to set various socket options or specify a 
 
 .. includecode:: code/docs/io/IODocTest.java#connect-with-options
 
+.. note::
+  The SO_NODELAY (TCP_NODELAY on Windows) socket option defaults to true in Akka, independently of the OS default
+  settings. This setting disables Nagle's algorithm considerably improving latency for most applications. This setting
+  could be overridden by passing ``SO.TcpNoDelay(false)`` in the list of socket options of the ``Connect`` message.
+
 After issuing the ``Connect`` command the TCP manager spawns a worker actor to handle commands related to the
 connection. This worker actor will reveal itself by replying with a ``Connected`` message to the actor who sent the
 ``Connect`` command.

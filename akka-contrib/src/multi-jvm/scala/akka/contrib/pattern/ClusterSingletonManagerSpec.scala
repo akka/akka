@@ -27,6 +27,7 @@ import akka.actor.Terminated
 
 object ClusterSingletonManagerSpec extends MultiNodeConfig {
   val controller = role("controller")
+  val observer = role("observer")
   val first = role("first")
   val second = role("second")
   val third = role("third")
@@ -41,6 +42,9 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
     akka.cluster.auto-join = off
     akka.cluster.auto-down = on
     """))
+
+  nodeConfig(first, second, third, fourth, fifth, sixth)(
+    ConfigFactory.parseString("akka.cluster.roles =[worker]"))
 
   object PointToPointChannel {
     case object RegisterConsumer
@@ -162,6 +166,30 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
   }
   //#singleton-proxy
 
+  // documentation of how to keep track of the role leader address in user land
+  //#singleton-proxy2
+  class ConsumerProxy2 extends Actor {
+    // subscribe to RoleLeaderChanged, re-subscribe when restart
+    override def preStart(): Unit =
+      Cluster(context.system).subscribe(self, classOf[RoleLeaderChanged])
+    override def postStop(): Unit =
+      Cluster(context.system).unsubscribe(self)
+
+    val role = "worker"
+    var leaderAddress: Option[Address] = None
+
+    def receive = {
+      case state: CurrentClusterState   ⇒ leaderAddress = state.roleLeader(role)
+      case RoleLeaderChanged(r, leader) ⇒ if (r == role) leaderAddress = leader
+      case other                        ⇒ consumer foreach { _ forward other }
+    }
+
+    def consumer: Option[ActorRef] =
+      leaderAddress map (a ⇒ context.actorFor(RootActorPath(a) /
+        "user" / "singleton" / "consumer"))
+  }
+  //#singleton-proxy2
+
 }
 
 class ClusterSingletonManagerMultiJvmNode1 extends ClusterSingletonManagerSpec
@@ -171,6 +199,7 @@ class ClusterSingletonManagerMultiJvmNode4 extends ClusterSingletonManagerSpec
 class ClusterSingletonManagerMultiJvmNode5 extends ClusterSingletonManagerSpec
 class ClusterSingletonManagerMultiJvmNode6 extends ClusterSingletonManagerSpec
 class ClusterSingletonManagerMultiJvmNode7 extends ClusterSingletonManagerSpec
+class ClusterSingletonManagerMultiJvmNode8 extends ClusterSingletonManagerSpec
 
 class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerSpec) with STMultiNodeSpec with ImplicitSender {
   import ClusterSingletonManagerSpec._
@@ -181,13 +210,13 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
 
   //#sort-cluster-roles
   // Sort the roles in the order used by the cluster.
-  lazy val sortedClusterRoles: immutable.IndexedSeq[RoleName] = {
+  lazy val sortedWorkerNodes: immutable.IndexedSeq[RoleName] = {
     implicit val clusterOrdering: Ordering[RoleName] = new Ordering[RoleName] {
       import Member.addressOrdering
       def compare(x: RoleName, y: RoleName) =
         addressOrdering.compare(node(x).address, node(y).address)
     }
-    roles.filterNot(_ == controller).toVector.sorted
+    roles.filterNot(r ⇒ r == controller || r == observer).toVector.sorted
   }
   //#sort-cluster-roles
 
@@ -196,7 +225,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
       Cluster(system) join node(to).address
-      createSingleton()
+      if (Cluster(system).selfRoles.contains("worker")) createSingleton()
     }
   }
 
@@ -206,7 +235,8 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       singletonProps = handOverData ⇒
         Props(new Consumer(handOverData, queue, testActor)),
       singletonName = "consumer",
-      terminationMessage = End)),
+      terminationMessage = End,
+      role = Some("worker"))),
       name = "singleton")
     //#create-singleton-manager
   }
@@ -231,7 +261,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
     runOn(leader) {
       expectMsg(msg)
     }
-    runOn(sortedClusterRoles.filterNot(_ == leader): _*) {
+    runOn(sortedWorkerNodes.filterNot(_ == leader): _*) {
       expectNoMsg(1 second)
     }
     enterBarrier(leader.name + "-verified")
@@ -251,7 +281,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
   "A ClusterSingletonManager" must {
 
     "startup in single member cluster" in within(10 seconds) {
-      log.info("Sorted cluster nodes [{}]", sortedClusterRoles.map(node(_).address).mkString(", "))
+      log.info("Sorted cluster nodes [{}]", sortedWorkerNodes.map(node(_).address).mkString(", "))
 
       runOn(controller) {
         // watch that it is not terminated, which would indicate misbehaviour
@@ -259,44 +289,48 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       }
       enterBarrier("queue-started")
 
-      join(sortedClusterRoles.last, sortedClusterRoles.last)
-      verify(sortedClusterRoles.last, msg = 1, expectedCurrent = 0)
+      join(sortedWorkerNodes.last, sortedWorkerNodes.last)
+      verify(sortedWorkerNodes.last, msg = 1, expectedCurrent = 0)
+
+      // join the observer node as well, which should not influence since it doesn't have the "worker" role
+      join(observer, sortedWorkerNodes.last)
+      enterBarrier("after-1")
     }
 
     "hand over when new leader joins to 1 node cluster" in within(15 seconds) {
-      val newLeaderRole = sortedClusterRoles(4)
-      join(newLeaderRole, sortedClusterRoles.last)
+      val newLeaderRole = sortedWorkerNodes(4)
+      join(newLeaderRole, sortedWorkerNodes.last)
       verify(newLeaderRole, msg = 2, expectedCurrent = 1)
     }
 
     "hand over when new leader joins to 2 nodes cluster" in within(15 seconds) {
-      val newLeaderRole = sortedClusterRoles(3)
-      join(newLeaderRole, sortedClusterRoles.last)
+      val newLeaderRole = sortedWorkerNodes(3)
+      join(newLeaderRole, sortedWorkerNodes.last)
       verify(newLeaderRole, msg = 3, expectedCurrent = 2)
     }
 
     "hand over when new leader joins to 3 nodes cluster" in within(15 seconds) {
-      val newLeaderRole = sortedClusterRoles(2)
-      join(newLeaderRole, sortedClusterRoles.last)
+      val newLeaderRole = sortedWorkerNodes(2)
+      join(newLeaderRole, sortedWorkerNodes.last)
       verify(newLeaderRole, msg = 4, expectedCurrent = 3)
     }
 
     "hand over when new leader joins to 4 nodes cluster" in within(15 seconds) {
-      val newLeaderRole = sortedClusterRoles(1)
-      join(newLeaderRole, sortedClusterRoles.last)
+      val newLeaderRole = sortedWorkerNodes(1)
+      join(newLeaderRole, sortedWorkerNodes.last)
       verify(newLeaderRole, msg = 5, expectedCurrent = 4)
     }
 
     "hand over when new leader joins to 5 nodes cluster" in within(15 seconds) {
-      val newLeaderRole = sortedClusterRoles(0)
-      join(newLeaderRole, sortedClusterRoles.last)
+      val newLeaderRole = sortedWorkerNodes(0)
+      join(newLeaderRole, sortedWorkerNodes.last)
       verify(newLeaderRole, msg = 6, expectedCurrent = 5)
     }
 
     "hand over when leader leaves in 6 nodes cluster " in within(30 seconds) {
       //#test-leave
-      val leaveRole = sortedClusterRoles(0)
-      val newLeaderRole = sortedClusterRoles(1)
+      val leaveRole = sortedWorkerNodes(0)
+      val newLeaderRole = sortedWorkerNodes(1)
 
       runOn(leaveRole) {
         Cluster(system) leave node(leaveRole).address
@@ -314,24 +348,24 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       enterBarrier("after-leave")
     }
 
-    "take over when leader crashes in 5 nodes cluster" in within(35 seconds) {
+    "take over when leader crashes in 5 nodes cluster" in within(60 seconds) {
       system.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*")))
       system.eventStream.publish(Mute(EventFilter.error(pattern = ".*Disassociated.*")))
       system.eventStream.publish(Mute(EventFilter.error(pattern = ".*Association failed.*")))
       enterBarrier("logs-muted")
 
-      crash(sortedClusterRoles(1))
-      verify(sortedClusterRoles(2), msg = 8, expectedCurrent = 0)
+      crash(sortedWorkerNodes(1))
+      verify(sortedWorkerNodes(2), msg = 8, expectedCurrent = 0)
     }
 
-    "take over when two leaders crash in 3 nodes cluster" in within(45 seconds) {
-      crash(sortedClusterRoles(2), sortedClusterRoles(3))
-      verify(sortedClusterRoles(4), msg = 9, expectedCurrent = 0)
+    "take over when two leaders crash in 3 nodes cluster" in within(60 seconds) {
+      crash(sortedWorkerNodes(2), sortedWorkerNodes(3))
+      verify(sortedWorkerNodes(4), msg = 9, expectedCurrent = 0)
     }
 
-    "take over when leader crashes in 2 nodes cluster" in within(25 seconds) {
-      crash(sortedClusterRoles(4))
-      verify(sortedClusterRoles(5), msg = 10, expectedCurrent = 0)
+    "take over when leader crashes in 2 nodes cluster" in within(60 seconds) {
+      crash(sortedWorkerNodes(4))
+      verify(sortedWorkerNodes(5), msg = 10, expectedCurrent = 0)
     }
 
   }

@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 import scala.annotation.{ tailrec, switch }
+import akka.dispatch.AbstractNodeQueue
 
 private[akka] object SerializedSuspendableExecutionContext {
   final val Off = 0
@@ -31,7 +32,7 @@ private[akka] object SerializedSuspendableExecutionContext {
  * @param context the underlying context which will be used to actually execute the submitted tasks
  */
 private[akka] final class SerializedSuspendableExecutionContext(throughput: Int)(val context: ExecutionContext)
-  extends ConcurrentLinkedQueue[Runnable] with Runnable with ExecutionContext {
+  extends AbstractNodeQueue[Runnable] with Runnable with ExecutionContext {
   import SerializedSuspendableExecutionContext._
   require(throughput > 0, s"SerializedSuspendableExecutionContext.throughput must be greater than 0 but was $throughput")
 
@@ -71,9 +72,16 @@ private[akka] final class SerializedSuspendableExecutionContext(throughput: Int)
     try run(0) finally remState(On)
   }
 
-  final def attach(): Unit = if (!isEmpty && state.compareAndSet(Off, On)) context execute this
+  final def attach(): Unit = if (!isEmpty() && state.compareAndSet(Off, On)) context execute this
   override final def execute(task: Runnable): Unit = try add(task) finally attach()
   override final def reportFailure(t: Throwable): Unit = context reportFailure t
+
+  final def size(): Int = {
+    @tailrec def count(node: AbstractNodeQueue.Node[Runnable], c: Int): Int = if (node eq null) c else count(node.next(), c + 1)
+    count(peek(), 0)
+  }
+
+  final def isEmpty(): Boolean = peek() eq null
 
   override final def toString: String = (state.get: @switch) match {
     case 0 ⇒ "Off"

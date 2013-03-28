@@ -14,18 +14,18 @@ class GossipSpec extends WordSpec with MustMatchers {
 
   import MemberStatus._
 
-  val a1 = Member(Address("akka.tcp", "sys", "a", 2552), Up)
-  val a2 = Member(Address("akka.tcp", "sys", "a", 2552), Joining)
-  val b1 = Member(Address("akka.tcp", "sys", "b", 2552), Up)
-  val b2 = Member(Address("akka.tcp", "sys", "b", 2552), Removed)
-  val c1 = Member(Address("akka.tcp", "sys", "c", 2552), Leaving)
-  val c2 = Member(Address("akka.tcp", "sys", "c", 2552), Up)
-  val c3 = Member(Address("akka.tcp", "sys", "c", 2552), Exiting)
-  val d1 = Member(Address("akka.tcp", "sys", "d", 2552), Leaving)
-  val d2 = Member(Address("akka.tcp", "sys", "d", 2552), Removed)
-  val e1 = Member(Address("akka.tcp", "sys", "e", 2552), Joining)
-  val e2 = Member(Address("akka.tcp", "sys", "e", 2552), Up)
-  val e3 = Member(Address("akka.tcp", "sys", "e", 2552), Down)
+  val a1 = Member(Address("akka.tcp", "sys", "a", 2552), Up, Set.empty)
+  val a2 = a1.copy(status = Joining)
+  val b1 = Member(Address("akka.tcp", "sys", "b", 2552), Up, Set.empty)
+  val b2 = b1.copy(status = Removed)
+  val c1 = Member(Address("akka.tcp", "sys", "c", 2552), Leaving, Set.empty)
+  val c2 = c1.copy(status = Up)
+  val c3 = c1.copy(status = Exiting)
+  val d1 = Member(Address("akka.tcp", "sys", "d", 2552), Leaving, Set.empty)
+  val d2 = d1.copy(status = Removed)
+  val e1 = Member(Address("akka.tcp", "sys", "e", 2552), Joining, Set.empty)
+  val e2 = e1.copy(status = Up)
+  val e3 = e1.copy(status = Down)
 
   "A Gossip" must {
 
@@ -79,18 +79,6 @@ class GossipSpec extends WordSpec with MustMatchers {
 
     }
 
-    "start with fresh seen table after merge" in {
-      val g1 = Gossip(members = SortedSet(a1, e1)).seen(a1.address).seen(e1.address)
-      val g2 = Gossip(members = SortedSet(a2, e2)).seen(a2.address).seen(e2.address)
-
-      val merged1 = g1 merge g2
-      merged1.overview.seen.isEmpty must be(true)
-
-      val merged2 = g2 merge g1
-      merged2.overview.seen.isEmpty must be(true)
-
-    }
-
     "not have node in both members and unreachable" in intercept[IllegalArgumentException] {
       Gossip(members = SortedSet(a1, b1), overview = GossipOverview(unreachable = Set(b2)))
     }
@@ -121,17 +109,17 @@ class GossipSpec extends WordSpec with MustMatchers {
         keys.length must be(4)
         keys.toSet must be(Set(a1.address, b1.address, c1.address, d1.address))
 
-        merged hasSeen (a1.address) must be(true)
-        merged hasSeen (b1.address) must be(false)
-        merged hasSeen (c1.address) must be(true)
-        merged hasSeen (d1.address) must be(true)
-        merged hasSeen (e1.address) must be(false)
+        merged seenByAddress (a1.address) must be(true)
+        merged seenByAddress (b1.address) must be(false)
+        merged seenByAddress (c1.address) must be(true)
+        merged seenByAddress (d1.address) must be(true)
+        merged seenByAddress (e1.address) must be(false)
 
         merged.overview.seen(b1.address) must be(g1.version)
       }
 
-      checkMerged(g3 mergeSeen g2)
-      checkMerged(g2 mergeSeen g3)
+      checkMerged(g3 merge g2)
+      checkMerged(g2 merge g3)
     }
   }
 }

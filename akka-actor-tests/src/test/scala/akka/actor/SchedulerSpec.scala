@@ -324,6 +324,8 @@ class DefaultSchedulerSpec extends AkkaSpec(SchedulerSpec.testConf) with Schedul
       }
     }
   }
+
+  override def expectedTestDuration = 5 minutes
 }
 
 class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRevolver) with SchedulerSpec {
