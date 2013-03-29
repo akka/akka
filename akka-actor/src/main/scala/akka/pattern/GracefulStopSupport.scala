@@ -45,25 +45,20 @@ trait GracefulStopSupport {
    *   }
    * }}}
    */
-  def gracefulStop(target: ActorRef, timeout: FiniteDuration, stopMessage: Any = PoisonPill)(implicit system: ActorSystem): Future[Boolean] = {
+  def gracefulStop(target: ActorRef, timeout: FiniteDuration, stopMessage: Any = PoisonPill): Future[Boolean] = {
     if (target.isTerminated) Future successful true
-    else system match {
-      case e: ExtendedActorSystem ⇒
-        import e.dispatcher // TODO take implicit ExecutionContext/MessageDispatcher in method signature?
-        val internalTarget = target.asInstanceOf[InternalActorRef]
-        val ref = PromiseActorRef(e.provider, Timeout(timeout))
-        internalTarget.sendSystemMessage(Watch(target, ref))
-        val f = ref.result.future
-        f onComplete { // Just making sure we're not leaking here
-          case Success(Terminated(a)) if a.path == target.path ⇒ ()
-          case _ ⇒ internalTarget.sendSystemMessage(Unwatch(target, ref))
-        }
-        target ! stopMessage
-        f map {
-          case Terminated(a) if a.path == target.path ⇒ true
-          case _                                      ⇒ false
-        }
-      case s ⇒ throw new IllegalArgumentException("Unknown ActorSystem implementation: '" + s + "'")
+    else {
+      val internalTarget = target.asInstanceOf[InternalActorRef]
+      val ref = PromiseActorRef(internalTarget.provider, Timeout(timeout))
+      internalTarget.sendSystemMessage(Watch(target, ref))
+      target.tell(stopMessage, ref)
+      implicit val ec = ref.internalCallingThreadExecutionContext
+      ref.result.future.transform(
+        {
+          case Terminated(`target`) ⇒ true
+          case _                    ⇒ { internalTarget.sendSystemMessage(Unwatch(target, ref)); false }
+        },
+        t ⇒ { internalTarget.sendSystemMessage(Unwatch(target, ref)); t })
     }
   }
 }

@@ -334,7 +334,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     import scala.concurrent.Await
 
     try {
-      val stopped: Future[Boolean] = gracefulStop(actorRef, 5 seconds)(system)
+      val stopped: Future[Boolean] = gracefulStop(actorRef, 5 seconds)
       Await.result(stopped, 6 seconds)
       // the actor has been stopped
     } catch {

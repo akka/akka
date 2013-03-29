@@ -172,11 +172,9 @@ class ThrottlerTransportAdapter(_wrappedTransport: Transport, _system: ExtendedA
   override def managementCommand(cmd: Any): Future[Boolean] = {
     import ActorTransportAdapter.AskTimeout
     cmd match {
-      case s: SetThrottle ⇒
-        manager ? s map { case SetThrottleAck ⇒ true }
-      case f: ForceDisassociate ⇒
-        manager ? f map { case ForceDisassociateAck ⇒ true }
-      case _ ⇒ wrappedTransport.managementCommand(cmd)
+      case s: SetThrottle       ⇒ manager ? s map { case SetThrottleAck ⇒ true }
+      case f: ForceDisassociate ⇒ manager ? f map { case ForceDisassociateAck ⇒ true }
+      case _                    ⇒ wrappedTransport.managementCommand(cmd)
     }
   }
 }
@@ -268,39 +266,20 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
   }
 
   private def setMode(handle: ThrottlerHandle, mode: ThrottleMode, direction: Direction): Future[SetThrottleAck.type] = {
-    import ActorTransportAdapter.AskTimeout
+    import akka.pattern.gracefulStop
     if (direction.includes(Direction.Send))
       handle.outboundThrottleMode.set(mode)
     if (direction.includes(Direction.Receive))
-      askWithDeathCompletion(handle.throttlerActor, mode, SetThrottleAck).mapTo[SetThrottleAck.type]
+      gracefulStop(handle.throttlerActor, ActorTransportAdapter.AskTimeout.duration, mode) map { _ ⇒ SetThrottleAck }
     else
       Future.successful(SetThrottleAck)
   }
 
   private def wrapHandle(originalHandle: AssociationHandle, listener: AssociationEventListener, inbound: Boolean): ThrottlerHandle = {
     val managerRef = self
-    val throttlerActor = context.actorOf(Props(new ThrottledAssociation(managerRef, listener, originalHandle, inbound)),
-      "throttler" + nextId())
-    ThrottlerHandle(originalHandle, throttlerActor)
-  }
-
-  private def askWithDeathCompletion(target: ActorRef, question: Any, answer: Any)(implicit timeout: Timeout): Future[Any] = {
-    if (target.isTerminated) Future successful answer
-    else {
-      val internalTarget = target.asInstanceOf[InternalActorRef]
-      val promiseActorRef = PromiseActorRef(context.system.asInstanceOf[ExtendedActorSystem].provider, timeout)
-      internalTarget.sendSystemMessage(Watch(target, promiseActorRef))
-      val future = promiseActorRef.result.future
-      future onComplete { // remember to unwatch if termination didn't complete
-        case Success(Terminated(`target`)) ⇒ ()
-        case _                             ⇒ internalTarget.sendSystemMessage(Unwatch(target, promiseActorRef))
-      }
-      target.tell(question, promiseActorRef)
-      future map {
-        case Terminated(`target`) ⇒ answer
-        case x                    ⇒ x
-      }
-    }
+    ThrottlerHandle(
+      originalHandle,
+      context.actorOf(Props(new ThrottledAssociation(managerRef, listener, originalHandle, inbound)), "throttler" + nextId()))
   }
 }
 

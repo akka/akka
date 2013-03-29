@@ -203,7 +203,7 @@ public class UntypedActorDocTestBase {
     //#gracefulStop
     try {
       Future<Boolean> stopped =
-        gracefulStop(actorRef, Duration.create(5, TimeUnit.SECONDS), system);
+        gracefulStop(actorRef, Duration.create(5, TimeUnit.SECONDS));
       Await.result(stopped, Duration.create(6, TimeUnit.SECONDS));
       // the actor has been stopped
     } catch (AskTimeoutException e) {

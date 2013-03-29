@@ -538,7 +538,6 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
       classOf[String] -> name,
       classOf[Settings] -> settings,
       classOf[EventStream] -> eventStream,
-      classOf[Scheduler] -> scheduler,
       classOf[DynamicAccess] -> dynamicAccess)
 
     dynamicAccess.createInstanceFor[ActorRefProvider](ProviderClass, arguments).get
@@ -547,16 +546,14 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   def deadLetters: ActorRef = provider.deadLetters
 
   //FIXME Why do we need this at all?
-  val deadLetterQueue: MessageQueue = new MessageQueue {
+  val deadLetterMailbox: Mailbox = new Mailbox(new MessageQueue {
     def enqueue(receiver: ActorRef, envelope: Envelope): Unit =
       deadLetters.tell(DeadLetter(envelope.message, envelope.sender, receiver), envelope.sender)
     def dequeue() = null
     def hasMessages = false
     def numberOfMessages = 0
     def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = ()
-  }
-  //FIXME Why do we need this at all?
-  val deadLetterMailbox: Mailbox = new Mailbox(deadLetterQueue) {
+  }) {
     becomeClosed()
     def systemEnqueue(receiver: ActorRef, handle: SystemMessage): Unit =
       deadLetters ! DeadLetter(handle, receiver, receiver)
@@ -568,6 +565,13 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     threadFactory, eventStream, deadLetterMailbox, scheduler, dynamicAccess, settings))
 
   val dispatcher: ExecutionContext = dispatchers.defaultGlobalDispatcher
+
+  val internalCallingThreadExecutionContext: ExecutionContext =
+    dynamicAccess.getObjectFor("scala.concurrent.Future$InternalCallbackExecutor$").getOrElse(
+      new ExecutionContext with BatchingExecutor {
+        override protected def unbatchedExecute(r: Runnable): Unit = r.run()
+        override def reportFailure(t: Throwable): Unit = dispatcher reportFailure t
+      })
 
   def terminationFuture: Future[Unit] = provider.terminationFuture
   def lookupRoot: InternalActorRef = provider.rootGuardian
