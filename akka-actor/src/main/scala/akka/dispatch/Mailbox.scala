@@ -15,7 +15,6 @@ import scala.concurrent.duration.FiniteDuration
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import com.typesafe.config.Config
-
 /**
  * INTERNAL API
  */
