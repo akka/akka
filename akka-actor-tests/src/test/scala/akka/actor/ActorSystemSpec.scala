@@ -125,6 +125,10 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
   "An ActorSystem" must {
 
+    "use scala.concurrent.Future's InternalCallbackEC" in {
+      system.asInstanceOf[ActorSystemImpl].internalCallingThreadExecutionContext.getClass.getName must be === "scala.concurrent.Future$InternalCallbackExecutor$"
+    }
+
     "reject invalid names" in {
       for (
         n ← Seq(

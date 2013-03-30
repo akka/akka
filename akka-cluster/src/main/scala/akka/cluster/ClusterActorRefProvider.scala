@@ -46,9 +46,8 @@ private[akka] class ClusterActorRefProvider(
   _systemName: String,
   _settings: ActorSystem.Settings,
   _eventStream: EventStream,
-  _scheduler: Scheduler,
   _dynamicAccess: DynamicAccess) extends RemoteActorRefProvider(
-  _systemName, _settings, _eventStream, _scheduler, _dynamicAccess) {
+  _systemName, _settings, _eventStream, _dynamicAccess) {
 
   @volatile private var remoteDeploymentWatcher: ActorRef = _
 

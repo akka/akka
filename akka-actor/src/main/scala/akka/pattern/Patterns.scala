@@ -104,8 +104,8 @@ object Patterns {
    * If the target actor isn't terminated within the timeout the [[scala.concurrent.Future]]
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
-  def gracefulStop(target: ActorRef, timeout: FiniteDuration, system: ActorSystem): Future[java.lang.Boolean] =
-    scalaGracefulStop(target, timeout)(system).asInstanceOf[Future[java.lang.Boolean]]
+  def gracefulStop(target: ActorRef, timeout: FiniteDuration): Future[java.lang.Boolean] =
+    scalaGracefulStop(target, timeout).asInstanceOf[Future[java.lang.Boolean]]
 
   /**
    * Returns a [[scala.concurrent.Future]] that will be completed with the success or failure of the provided Callable
