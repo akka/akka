@@ -257,8 +257,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
       channel.close()
   }
 
-  initialize
-
+  initialize()
 }
 
 /**

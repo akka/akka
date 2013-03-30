@@ -25,7 +25,7 @@ object FSMTransitionSpec {
     whenUnhandled {
       case Event("reply", _) ⇒ stay replying "reply"
     }
-    initialize
+    initialize()
     override def preRestart(reason: Throwable, msg: Option[Any]) { target ! "restarted" }
   }
 
