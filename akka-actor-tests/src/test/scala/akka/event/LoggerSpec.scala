@@ -9,7 +9,8 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.{ ActorRef, Actor, ActorSystem }
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import akka.event.Logging.{ LogEvent, LoggerInitialized, InitializeLogger }
+import akka.serialization.SerializationExtension
+import akka.event.Logging.{ Warning, LogEvent, LoggerInitialized, InitializeLogger }
 
 object LoggerSpec {
 
@@ -34,6 +35,21 @@ object LoggerSpec {
         stdout-loglevel = "OFF"
         loglevel = "WARNING"
         loggers = ["akka.event.LoggerSpec$TestLogger1", "akka.event.LoggerSpec$TestLogger2"]
+      }
+    """).withFallback(AkkaSpec.testConf)
+
+  val ticket3165Config = ConfigFactory.parseString("""
+      akka {
+        stdout-loglevel = "WARNING"
+        loglevel = "DEBUG"
+        loggers = ["akka.event.LoggerSpec$TestLogger1"]
+        actor {
+          serialize-messages = on
+          serialization-bindings {
+            "akka.event.Logging$LogEvent" = bytes
+            "java.io.Serializable" = java
+          }
+        }
       }
     """).withFallback(AkkaSpec.testConf)
 
@@ -124,6 +140,18 @@ class LoggerSpec extends WordSpec with MustMatchers {
           system.shutdown()
           system.awaitTermination(5.seconds.dilated)
         }
+      }
+    }
+  }
+
+  "Ticket 3165 - serialize-messages and dual-entry serialization of LogEvent" must {
+    "not cause StackOverflowError" in {
+      implicit val s = ActorSystem("foo", ticket3165Config)
+      try {
+        SerializationExtension(s).serialize(Warning("foo", classOf[String]))
+      } finally {
+        s.shutdown()
+        s.awaitTermination(5.seconds.dilated)
       }
     }
   }
