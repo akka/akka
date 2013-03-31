@@ -215,7 +215,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
     case _ ⇒
   }
 
-  override def isTerminated: Boolean = state match {
+  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") override def isTerminated: Boolean = state match {
     case Stopped | _: StoppedWithPath ⇒ true
     case _                            ⇒ false
   }

@@ -386,7 +386,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     def provider: ActorRefProvider = LocalActorRefProvider.this
 
     override def stop(): Unit = stopped switchOn { terminationPromise.complete(causeOfTermination.map(Failure(_)).getOrElse(Success(()))) }
-    override def isTerminated: Boolean = stopped.isOn
+    @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") override def isTerminated: Boolean = stopped.isOn
 
     override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = stopped.ifOff(message match {
       case null        ⇒ throw new InvalidMessageException("Message is null")

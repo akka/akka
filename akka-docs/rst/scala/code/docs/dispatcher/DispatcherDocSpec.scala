@@ -11,7 +11,7 @@ import akka.testkit.AkkaSpec
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import scala.concurrent.duration._
-import akka.actor.{ Props, Actor, PoisonPill, ActorSystem }
+import akka.actor._
 
 object DispatcherDocSpec {
   val config = """
@@ -227,7 +227,8 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
     */
     //#prio-dispatcher
 
-    awaitCond(a.isTerminated, 5 seconds)
+    watch(a)
+    expectMsgPF() { case Terminated(`a`) ⇒ () }
   }
 
   "defining balancing dispatcher" in {
