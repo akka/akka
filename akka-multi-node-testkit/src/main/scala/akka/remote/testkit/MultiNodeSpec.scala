@@ -293,12 +293,12 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
   /**
    * Override this method to do something when the whole test is starting up.
    */
-  protected def atStartup(): Unit = {}
+  protected def atStartup(): Unit = ()
 
   /**
    * Override this method to do something when the whole test is terminating.
    */
-  protected def afterTermination(): Unit = {}
+  protected def afterTermination(): Unit = ()
 
   /**
    * All registered roles
