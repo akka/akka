@@ -476,6 +476,7 @@ trait Actor {
    * Actors are automatically started asynchronously when created.
    * Empty default implementation.
    */
+  @throws(classOf[Exception])
   def preStart() {}
 
   /**
@@ -484,6 +485,7 @@ trait Actor {
    * Is called asynchronously after 'actor.stop()' is invoked.
    * Empty default implementation.
    */
+  @throws(classOf[Exception])
   def postStop() {}
 
   /**
@@ -494,6 +496,7 @@ trait Actor {
    * Is called on a crashed Actor right BEFORE it is restarted to allow clean
    * up of resources before Actor is terminated.
    */
+  @throws(classOf[Exception])
   def preRestart(reason: Throwable, message: Option[Any]) {
     context.children foreach context.stop
     postStop()
@@ -505,6 +508,7 @@ trait Actor {
    * <p/>
    * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
    */
+  @throws(classOf[Exception])
   def postRestart(reason: Throwable) { preStart() }
 
   /**

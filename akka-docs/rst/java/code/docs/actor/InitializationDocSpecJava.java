@@ -33,7 +33,8 @@ public class InitializationDocSpecJava {
         // of the actor. To opt-out from stopping the children, we
         // have to override preRestart()
         @Override
-        public void preRestart(Throwable reason, Option<Object> message) {
+        public void preRestart(Throwable reason, Option<Object> message) 
+              throws Exception {
             // Keep the call to postStop(), but no stopping of children
             postStop();
         }
