@@ -61,25 +61,16 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
   }
 
   /** normal connected state */
-  def connected(handler: ActorRef): Receive = {
-    case StopReading     ⇒ selector ! DisableReadInterest
-    case ResumeReading   ⇒ selector ! ReadInterest
-    case ChannelReadable ⇒ doRead(handler, None)
+  def connected(handler: ActorRef): Receive = handleWriteMessages(handler) orElse {
+    case StopReading       ⇒ selector ! DisableReadInterest
+    case ResumeReading     ⇒ selector ! ReadInterest
+    case ChannelReadable   ⇒ doRead(handler, None)
 
-    case write: Write if writePending ⇒
-      if (TraceLogging) log.debug("Dropping write because queue is full")
-      sender ! write.failureMessage
+    case cmd: CloseCommand ⇒ handleClose(handler, Some(sender), cmd.event)
+  }
 
-    case write: Write if write.data.isEmpty ⇒
-      if (write.wantsAck)
-        sender ! write.ack
-
-    case write: Write ⇒
-      pendingWrite = createWrite(write)
-      doWrite(handler)
-
-    case ChannelWritable   ⇒ if (writePending) doWrite(handler)
-
+  /** the peer sent EOF first, but we may still want to send */
+  def peerSentEOF(handler: ActorRef): Receive = handleWriteMessages(handler) orElse {
     case cmd: CloseCommand ⇒ handleClose(handler, Some(sender), cmd.event)
   }
 
@@ -103,6 +94,22 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
     case ResumeReading   ⇒ selector ! ReadInterest
     case ChannelReadable ⇒ doRead(handler, closeCommander)
     case Abort           ⇒ handleClose(handler, Some(sender), Aborted)
+  }
+
+  def handleWriteMessages(handler: ActorRef): Receive = {
+    case ChannelWritable ⇒ if (writePending) doWrite(handler)
+
+    case write: Write if writePending ⇒
+      if (TraceLogging) log.debug("Dropping write because queue is full")
+      sender ! write.failureMessage
+
+    case write: Write if write.data.isEmpty ⇒
+      if (write.wantsAck)
+        sender ! write.ack
+
+    case write: Write ⇒
+      pendingWrite = createWrite(write)
+      doWrite(handler)
   }
 
   // AUXILIARIES and IMPLEMENTATION
@@ -147,9 +154,12 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
     try innerRead(buffer, ReceivedMessageSizeLimit) match {
       case AllRead         ⇒ selector ! ReadInterest
       case MoreDataWaiting ⇒ self ! ChannelReadable
+      case EndOfStream if channel.socket.isOutputShutdown ⇒
+        if (TraceLogging) log.debug("Read returned end-of-stream, our side already closed")
+        doCloseConnection(handler, closeCommander, ConfirmedClosed)
       case EndOfStream ⇒
-        if (TraceLogging) log.debug("Read returned end-of-stream")
-        doCloseConnection(handler, closeCommander, closeReason)
+        if (TraceLogging) log.debug("Read returned end-of-stream, our side not yet closed")
+        handleClose(handler, closeCommander, PeerClosed)
     } catch {
       case e: IOException ⇒ handleError(handler, e)
     } finally bufferPool.release(buffer)
@@ -190,7 +200,12 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
     if (closedEvent == Aborted) { // close instantly
       if (TraceLogging) log.debug("Got Abort command. RESETing connection.")
       doCloseConnection(handler, closeCommander, closedEvent)
-
+    } else if (closedEvent == PeerClosed) {
+      // report that peer closed the connection
+      handler ! PeerClosed
+      // used to check if peer already closed its side later
+      channel.socket().shutdownInput()
+      context.become(peerSentEOF(handler))
     } else if (writePending) { // finish writing first
       if (TraceLogging) log.debug("Got Close command but write is still pending.")
       context.become(closingWithPendingWrite(handler, closeCommander, closedEvent))
@@ -198,8 +213,10 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
     } else if (closedEvent == ConfirmedClosed) { // shutdown output and wait for confirmation
       if (TraceLogging) log.debug("Got ConfirmedClose command, sending FIN.")
       channel.socket.shutdownOutput()
-      context.become(closing(handler, closeCommander))
 
+      if (channel.socket().isInputShutdown) // if peer closed first, the socket is now fully closed
+        doCloseConnection(handler, closeCommander, closedEvent)
+      else context.become(closing(handler, closeCommander))
     } else { // close now
       if (TraceLogging) log.debug("Got Close command, closing connection.")
       doCloseConnection(handler, closeCommander, closedEvent)

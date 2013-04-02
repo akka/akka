@@ -389,6 +389,39 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
       selector.send(connectionActor, ChannelReadable)
       connectionHandler.expectMsg(PeerClosed)
+      connectionHandler.send(connectionActor, Close)
+
+      assertThisConnectionActorTerminated()
+    }
+    "report when peer closed the connection but allow further writes and acknowledge normal close" in withEstablishedConnection() { setup ⇒
+      import setup._
+
+      closeServerSideAndWaitForClientReadable(fullClose = false) // send EOF (fin) from the server side
+
+      selector.send(connectionActor, ChannelReadable)
+      connectionHandler.expectMsg(PeerClosed)
+      object Ack
+      connectionHandler.send(connectionActor, writeCmd(Ack))
+      pullFromServerSide(TestSize)
+      connectionHandler.expectMsg(Ack)
+      connectionHandler.send(connectionActor, Close)
+      connectionHandler.expectMsg(Closed)
+
+      assertThisConnectionActorTerminated()
+    }
+    "report when peer closed the connection but allow further writes and acknowledge confirmed close" in withEstablishedConnection() { setup ⇒
+      import setup._
+
+      closeServerSideAndWaitForClientReadable(fullClose = false) // send EOF (fin) from the server side
+
+      selector.send(connectionActor, ChannelReadable)
+      connectionHandler.expectMsg(PeerClosed)
+      object Ack
+      connectionHandler.send(connectionActor, writeCmd(Ack))
+      pullFromServerSide(TestSize)
+      connectionHandler.expectMsg(Ack)
+      connectionHandler.send(connectionActor, ConfirmedClose)
+      connectionHandler.expectMsg(ConfirmedClosed)
 
       assertThisConnectionActorTerminated()
     }
@@ -535,8 +568,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     val clientSelectionKey = registerChannel(clientSideChannel, "client")
     val serverSelectionKey = registerChannel(serverSideChannel, "server")
 
-    def closeServerSideAndWaitForClientReadable(): Unit = {
-      serverSideChannel.close()
+    def closeServerSideAndWaitForClientReadable(fullClose: Boolean = true): Unit = {
+      if (fullClose) serverSideChannel.close() else serverSideChannel.socket.shutdownOutput()
       checkFor(clientSelectionKey, SelectionKey.OP_READ, 3.seconds.toMillis.toInt) must be(true)
     }
 
