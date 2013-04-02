@@ -196,31 +196,30 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
     if (channel.socket.isOutputShutdown) ConfirmedClosed
     else PeerClosed
 
-  def handleClose(handler: ActorRef, closeCommander: Option[ActorRef], closedEvent: ConnectionClosed): Unit =
-    if (closedEvent == Aborted) { // close instantly
+  def handleClose(handler: ActorRef, closeCommander: Option[ActorRef], closedEvent: ConnectionClosed): Unit = closedEvent match {
+    case Aborted ⇒
       if (TraceLogging) log.debug("Got Abort command. RESETing connection.")
       doCloseConnection(handler, closeCommander, closedEvent)
-    } else if (closedEvent == PeerClosed) {
+    case PeerClosed ⇒
       // report that peer closed the connection
       handler ! PeerClosed
       // used to check if peer already closed its side later
       channel.socket().shutdownInput()
       context.become(peerSentEOF(handler))
-    } else if (writePending) { // finish writing first
+    case _ if writePending ⇒ // finish writing first
       if (TraceLogging) log.debug("Got Close command but write is still pending.")
       context.become(closingWithPendingWrite(handler, closeCommander, closedEvent))
-
-    } else if (closedEvent == ConfirmedClosed) { // shutdown output and wait for confirmation
+    case ConfirmedClosed ⇒ // shutdown output and wait for confirmation
       if (TraceLogging) log.debug("Got ConfirmedClose command, sending FIN.")
       channel.socket.shutdownOutput()
 
       if (channel.socket().isInputShutdown) // if peer closed first, the socket is now fully closed
         doCloseConnection(handler, closeCommander, closedEvent)
       else context.become(closing(handler, closeCommander))
-    } else { // close now
+    case _ ⇒ // close now
       if (TraceLogging) log.debug("Got Close command, closing connection.")
       doCloseConnection(handler, closeCommander, closedEvent)
-    }
+  }
 
   def doCloseConnection(handler: ActorRef, closeCommander: Option[ActorRef], closedEvent: ConnectionClosed): Unit = {
     if (closedEvent == Aborted) abort()
