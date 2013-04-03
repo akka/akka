@@ -88,8 +88,7 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
     case ref: InternalActorRef ⇒
       if (timeout.duration.length <= 0) Future.failed[Any](new IllegalArgumentException("Timeout length for an `ask` must be greater or equal to 1.  Question not sent to [%s]" format actorRef))
       else {
-        val provider = ref.provider
-        val a = PromiseActorRef(provider, timeout)
+        val a = PromiseActorRef(ref.provider, timeout)
         actorRef.tell(message, a)
         a.result.future
       }
@@ -165,6 +164,9 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
   private[this] def setState(newState: AnyRef): Unit = Unsafe.instance.putObjectVolatile(this, stateOffset, newState)
 
   override def getParent: InternalActorRef = provider.tempContainer
+
+  def internalCallingThreadExecutionContext: ExecutionContext =
+    provider.guardian.underlying.systemImpl.internalCallingThreadExecutionContext
 
   /**
    * Contract of this method:
@@ -250,10 +252,11 @@ private[akka] object PromiseActorRef {
   private case class StoppedWithPath(path: ActorPath)
 
   def apply(provider: ActorRefProvider, timeout: Timeout): PromiseActorRef = {
-    implicit val ec = provider.dispatcher // TODO should we take an ExecutionContext in the method signature?
     val result = Promise[Any]()
+    val scheduler = provider.guardian.underlying.system.scheduler
     val a = new PromiseActorRef(provider, result)
-    val f = provider.scheduler.scheduleOnce(timeout.duration) { result tryComplete Failure(new AskTimeoutException("Timed out")) }
+    implicit val ec = a.internalCallingThreadExecutionContext
+    val f = scheduler.scheduleOnce(timeout.duration) { result tryComplete Failure(new AskTimeoutException("Timed out")) }
     result.future onComplete { _ ⇒ try a.stop() finally f.cancel() }
     a
   }

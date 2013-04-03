@@ -341,7 +341,7 @@ class CallingThreadMailbox(_receiver: akka.actor.Cell, val mailboxType: MailboxT
       val qq = queue
       CallingThreadDispatcherQueues(actor.system).gatherFromAllOtherQueues(this, qq)
       super.cleanUp()
-      qq.cleanUp(actor.self, actor.systemImpl.deadLetterQueue)
+      qq.cleanUp(actor.self, actor.systemImpl.deadLetterMailbox.messageQueue)
       q.remove()
     }
   }

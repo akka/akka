@@ -101,7 +101,6 @@ private[akka] class RemoteActorRefProvider(
   val systemName: String,
   val settings: ActorSystem.Settings,
   val eventStream: EventStream,
-  val scheduler: Scheduler,
   val dynamicAccess: DynamicAccess) extends ActorRefProvider {
   import RemoteActorRefProvider._
 
@@ -115,7 +114,7 @@ private[akka] class RemoteActorRefProvider(
    */
   protected def createDeployer: RemoteDeployer = new RemoteDeployer(settings, dynamicAccess)
 
-  private val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, dynamicAccess, deployer,
+  private val local = new LocalActorRefProvider(systemName, settings, eventStream, dynamicAccess, deployer,
     Some(deadLettersPath ⇒ new RemoteDeadLetterActorRef(this, deadLettersPath, eventStream)))
 
   @volatile
@@ -130,7 +129,6 @@ private[akka] class RemoteActorRefProvider(
   override def guardian: LocalActorRef = local.guardian
   override def systemGuardian: LocalActorRef = local.systemGuardian
   override def terminationFuture: Future[Unit] = local.terminationFuture
-  override def dispatcher: ExecutionContext = local.dispatcher
   override def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit = local.registerTempActor(actorRef, path)
   override def unregisterTempActor(path: ActorPath): Unit = local.unregisterTempActor(path)
   override def tempPath(): ActorPath = local.tempPath()

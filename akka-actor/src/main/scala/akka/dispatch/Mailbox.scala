@@ -309,7 +309,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       }
 
       if (messageQueue ne null) // needed for CallingThreadDispatcher, which never calls Mailbox.run()
-        messageQueue.cleanUp(actor.self, actor.systemImpl.deadLetterQueue)
+        messageQueue.cleanUp(actor.self, actor.systemImpl.deadLetterMailbox.messageQueue)
     }
 }
 
