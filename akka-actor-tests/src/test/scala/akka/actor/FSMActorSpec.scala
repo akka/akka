@@ -91,7 +91,7 @@ object FSMActorSpec {
     }
 
     // initialize the lock
-    initialize
+    initialize()
 
     private def doLock() {
       lockedLatch.open

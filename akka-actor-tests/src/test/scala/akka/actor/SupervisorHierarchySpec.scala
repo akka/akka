@@ -698,8 +698,7 @@ object SupervisorHierarchySpec {
         stop
     }
 
-    initialize
-
+    initialize()
   }
 
 }

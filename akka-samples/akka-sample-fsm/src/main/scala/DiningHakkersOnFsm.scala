@@ -55,7 +55,7 @@ class Chopstick extends Actor with FSM[ChopstickState, TakenBy] {
   }
 
   // Initialze the chopstick
-  initialize
+  initialize()
 }
 
 /**
@@ -155,7 +155,7 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
   }
 
   // Initialize the hakker
-  initialize
+  initialize()
 
   private def startThinking(duration: FiniteDuration): State = {
     goto(Thinking) using TakenChopsticks(None, None) forMax duration

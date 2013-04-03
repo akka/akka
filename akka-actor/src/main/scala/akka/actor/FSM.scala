@@ -451,7 +451,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
    * Verify existence of initial state and setup timers. This should be the
    * last call within the constructor.
    */
-  final def initialize: Unit = makeTransition(currentState)
+  final def initialize(): Unit = makeTransition(currentState)
 
   /**
    * Return current state name (i.e. object of type S)
