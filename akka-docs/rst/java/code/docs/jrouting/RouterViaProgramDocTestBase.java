@@ -3,12 +3,7 @@
  */
 package docs.jrouting;
 
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Kill;
-import akka.actor.PoisonPill;
-import akka.actor.Props;
-import akka.actor.UntypedActor;
+import akka.actor.*;
 import akka.remote.routing.RemoteRouterConfig;
 import akka.routing.Broadcast;
 import akka.routing.RoundRobinRouter;
@@ -83,11 +78,11 @@ public class RouterViaProgramDocTestBase {
   public void demonstratePoisonPill() {
     new JavaTestKitWithSelf(system) {{
       ActorRef router = system.actorOf(new Props(Echo.class).withRouter(new RoundRobinRouter(5)));
+      watch(router);
       //#poisonPill
       router.tell(PoisonPill.getInstance(), getSelf());
       //#poisonPill
-      expectNoMsg(duration("1 seconds"));
-      Assert.assertTrue(router.isTerminated());
+      expectMsgClass(Terminated.class);
     }};
   }
 
@@ -95,11 +90,11 @@ public class RouterViaProgramDocTestBase {
   public void demonstrateBroadcastOfPoisonPill() {
     new JavaTestKitWithSelf(system) {{
       ActorRef router = system.actorOf(new Props(Echo.class).withRouter(new RoundRobinRouter(5)));
+      watch(router);
       //#broadcastPoisonPill
       router.tell(new Broadcast(PoisonPill.getInstance()), getSelf());
       //#broadcastPoisonPill
-      expectNoMsg(duration("1 seconds"));
-      Assert.assertTrue(router.isTerminated());
+        expectMsgClass(Terminated.class);
     }};
   }
 
@@ -107,11 +102,11 @@ public class RouterViaProgramDocTestBase {
   public void demonstrateKill() {
     new JavaTestKitWithSelf(system) {{
       ActorRef router = system.actorOf(new Props(Echo.class).withRouter(new RoundRobinRouter(5)));
+      watch(router);
       //#kill
       router.tell(Kill.getInstance(), getSelf());
       //#kill
-      expectNoMsg(duration("1 seconds"));
-      Assert.assertTrue(router.isTerminated());
+      expectMsgClass(Terminated.class);
     }};
   }
 
@@ -119,11 +114,11 @@ public class RouterViaProgramDocTestBase {
   public void demonstrateBroadcastOfKill() {
     new JavaTestKitWithSelf(system) {{
       ActorRef router = system.actorOf(new Props(Echo.class).withRouter(new RoundRobinRouter(5)));
+      watch(router);
       //#broadcastKill
       router.tell(new Broadcast(Kill.getInstance()), getSelf());
       //#broadcastKill
-      expectNoMsg(duration("1 seconds"));
-      Assert.assertTrue(router.isTerminated());
+      expectMsgClass(Terminated.class);
     }};
   }
 

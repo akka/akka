@@ -115,10 +115,7 @@ class FaultHandlingDocSpec extends AkkaSpec with ImplicitSender {
         //#stop
         watch(child) // have testActor watch “child”
         child ! new IllegalArgumentException // break it
-        expectMsgPF() {
-          case t @ Terminated(`child`) if t.existenceConfirmed ⇒ ()
-        }
-        child.isTerminated must be(true)
+        expectMsgPF() { case Terminated(`child`) ⇒ () }
         //#stop
       }
       EventFilter[Exception]("CRASH", occurrences = 2) intercept {
