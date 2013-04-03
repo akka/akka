@@ -336,7 +336,7 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
       stay
   }
 
-  initialize
+  initialize()
 }
 
 /**
@@ -574,7 +574,7 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
       throw BarrierTimeout(d)
   }
 
-  initialize
+  initialize()
 
   def handleBarrier(data: Data): State = {
     log.debug("handleBarrier({})", data)

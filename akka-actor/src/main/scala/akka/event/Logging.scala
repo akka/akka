@@ -570,7 +570,7 @@ object Logging {
   /**
    * Base type of LogEvents
    */
-  sealed trait LogEvent {
+  sealed trait LogEvent extends NoSerializationVerificationNeeded {
     /**
      * The thread that created this log event
      */

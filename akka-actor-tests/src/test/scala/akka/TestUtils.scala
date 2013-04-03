@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.io
+package akka
 
 import scala.collection.immutable
 import java.net.InetSocketAddress

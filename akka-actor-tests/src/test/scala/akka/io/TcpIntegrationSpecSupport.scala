@@ -10,6 +10,7 @@ import akka.actor.ActorRef
 import scala.collection.immutable
 import akka.io.Inet.SocketOption
 import Tcp._
+import akka.TestUtils
 import TestUtils._
 
 trait TcpIntegrationSpecSupport { _: AkkaSpec ⇒
