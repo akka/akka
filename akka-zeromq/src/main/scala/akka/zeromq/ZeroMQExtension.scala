@@ -62,7 +62,7 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
    * @return the [[akka.actor.Props]]
    */
   def newSocketProps(socketParameters: SocketOption*): Props = {
-    verifyZeroMQVersion
+    verifyZeroMQVersion()
     require(socketParameters exists {
       case s: SocketType.ZMQSocketType ⇒ true
       case _                           ⇒ false
@@ -239,7 +239,7 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
   def newRepSocket(socketParameters: Array[SocketOption]): ActorRef = newSocket((SocketType.Rep +: socketParameters): _*)
 
   private val zeromqGuardian: ActorRef = {
-    verifyZeroMQVersion
+    verifyZeroMQVersion()
 
     system.actorOf(Props(new Actor {
       import SupervisorStrategy._
@@ -257,7 +257,7 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
     }), "zeromq")
   }
 
-  private def verifyZeroMQVersion = {
+  private def verifyZeroMQVersion(): Unit = {
     require(
       JZMQ.getFullVersion > ZeroMQExtension.minVersion,
       "Unsupported ZeroMQ version: %s, akka needs at least: %s".format(JZMQ.getVersionString, ZeroMQExtension.minVersionString))

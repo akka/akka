@@ -248,7 +248,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyVar: AtomVar[R], createInstance: ⇒ T) extends Actor {
     val me = withContext[T](createInstance)
 
-    override def supervisorStrategy(): SupervisorStrategy = me match {
+    override def supervisorStrategy: SupervisorStrategy = me match {
       case l: Supervisor ⇒ l.supervisorStrategy
       case _             ⇒ super.supervisorStrategy
     }

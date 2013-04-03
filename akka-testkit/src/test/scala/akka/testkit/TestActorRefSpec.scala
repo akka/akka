@@ -109,13 +109,9 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
   import TestActorRefSpec._
 
-  override def beforeEach {
-    otherthread = null
-  }
+  override def beforeEach(): Unit = otherthread = null
 
-  private def assertThread {
-    otherthread must (be(null) or equal(thread))
-  }
+  private def assertThread(): Unit = otherthread must (be(null) or equal(thread))
 
   "A TestActorRef must be an ActorRef, hence it" must {
 
@@ -167,7 +163,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
       counter must be(0)
 
-      assertThread
+      assertThread()
     }
 
     "stop when sent a poison pill" in {
@@ -185,7 +181,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
           case WrappedTerminated(Terminated(`a`)) ⇒ true
         }
         a.isTerminated must be(true)
-        assertThread
+        assertThread()
       }
     }
 
@@ -209,7 +205,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
         boss ! "sendKill"
 
         counter must be(0)
-        assertThread
+        assertThread()
       }
     }
 

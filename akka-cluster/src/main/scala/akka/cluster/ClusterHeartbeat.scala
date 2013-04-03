@@ -229,9 +229,9 @@ private[cluster] case class ClusterHeartbeatSenderState private (
   heartbeatRequest: Map[Address, Deadline] = Map.empty) {
 
   // FIXME can be disabled as optimization
-  assertInvariants
+  assertInvariants()
 
-  private def assertInvariants: Unit = {
+  private def assertInvariants(): Unit = {
     val currentAndEnding = current.intersect(ending.keySet)
     require(currentAndEnding.isEmpty,
       s"Same nodes in current and ending not allowed, got [${currentAndEnding}]")

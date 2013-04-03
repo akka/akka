@@ -63,9 +63,9 @@ private[cluster] case class Gossip(
   with Versioned[Gossip] {
 
   // FIXME can be disabled as optimization
-  assertInvariants
+  assertInvariants()
 
-  private def assertInvariants: Unit = {
+  private def assertInvariants(): Unit = {
     val unreachableAndLive = members.intersect(overview.unreachable)
     if (unreachableAndLive.nonEmpty)
       throw new IllegalArgumentException("Same nodes in both members and unreachable is not allowed, got [%s]"

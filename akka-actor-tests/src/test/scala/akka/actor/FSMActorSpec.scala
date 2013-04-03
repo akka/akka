@@ -46,7 +46,7 @@ object FSMActorSpec {
           case incomplete if incomplete.length < code.length ⇒
             stay using CodeState(incomplete, code)
           case codeTry if (codeTry == code) ⇒ {
-            doUnlock
+            doUnlock()
             goto(Open) using CodeState("", code) forMax timeout
           }
           case wrong ⇒ {
@@ -60,7 +60,7 @@ object FSMActorSpec {
 
     when(Open) {
       case Event(StateTimeout, _) ⇒ {
-        doLock
+        doLock()
         goto(Locked)
       }
     }
@@ -87,19 +87,15 @@ object FSMActorSpec {
     onTermination {
       case StopEvent(FSM.Shutdown, Locked, _) ⇒
         // stop is called from lockstate with shutdown as reason...
-        terminatedLatch.open
+        terminatedLatch.open()
     }
 
     // initialize the lock
     initialize()
 
-    private def doLock() {
-      lockedLatch.open
-    }
+    private def doLock(): Unit = lockedLatch.open()
 
-    private def doUnlock = {
-      unlockedLatch.open
-    }
+    private def doUnlock(): Unit = unlockedLatch.open()
   }
 
   case class CodeState(soFar: String, code: String)

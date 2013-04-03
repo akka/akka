@@ -104,7 +104,7 @@ object Chameneos {
     }
   }
 
-  def run {
+  def run(): Unit = {
     //    System.setProperty("akka.config", "akka.conf")
     Chameneos.start = System.currentTimeMillis
     val system = ActorSystem()
@@ -114,5 +114,5 @@ object Chameneos {
     system.shutdown()
   }
 
-  def main(args: Array[String]): Unit = run
+  def main(args: Array[String]): Unit = run()
 }

@@ -47,14 +47,4 @@ package object testkit {
    * Corresponding Java API is available in TestKit.dilated
    */
   implicit def duration2TestDuration(duration: FiniteDuration) = new TestDuration(duration)
-
-  /**
-   * Wrapper for implicit conversion to add dilated function to Duration.
-   */
-  class TestDuration(duration: FiniteDuration) {
-    def dilated(implicit system: ActorSystem): FiniteDuration = {
-      // this cast will succeed unless TestTimeFactor is non-finite (which would be a misconfiguration)
-      (duration * TestKitExtension(system).TestTimeFactor).asInstanceOf[FiniteDuration]
-    }
-  }
 }

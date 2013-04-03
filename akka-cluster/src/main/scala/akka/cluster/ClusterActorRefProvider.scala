@@ -73,7 +73,7 @@ private[akka] class ClusterActorRefProvider(
    */
   override def useActorOnNode(path: ActorPath, props: Props, deploy: Deploy, supervisor: ActorRef): Unit = {
     super.useActorOnNode(path, props, deploy, supervisor)
-    remoteDeploymentWatcher ! (actorFor(path), supervisor)
+    remoteDeploymentWatcher ! ((actorFor(path), supervisor))
   }
 
 }

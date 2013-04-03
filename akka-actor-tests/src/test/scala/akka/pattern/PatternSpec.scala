@@ -44,7 +44,7 @@ class PatternSpec extends AkkaSpec {
     "complete Future with AskTimeoutException when actor not terminated within timeout" in {
       val target = system.actorOf(Props[TargetActor])
       val latch = TestLatch()
-      target ! (latch, remaining)
+      target ! ((latch, remaining))
       intercept[AskTimeoutException] { Await.result(gracefulStop(target, 500 millis), remaining) }
       latch.open()
     }
