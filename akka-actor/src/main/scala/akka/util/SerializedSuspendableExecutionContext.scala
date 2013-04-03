@@ -76,12 +76,11 @@ private[akka] final class SerializedSuspendableExecutionContext(throughput: Int)
   override final def execute(task: Runnable): Unit = try add(task) finally attach()
   override final def reportFailure(t: Throwable): Unit = context reportFailure t
 
-  final def size(): Int = {
-    @tailrec def count(node: AbstractNodeQueue.Node[Runnable], c: Int): Int = if (node eq null) c else count(node.next(), c + 1)
-    count(peek(), 0)
-  }
-
-  final def isEmpty(): Boolean = peek() eq null
+  /**
+   * O(N)
+   * @return the number of Runnable's currently enqueued
+   */
+  final def size(): Int = count()
 
   override final def toString: String = (state.get: @switch) match {
     case 0 ⇒ "Off"

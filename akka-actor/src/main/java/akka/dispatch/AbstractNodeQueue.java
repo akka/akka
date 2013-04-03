@@ -31,6 +31,17 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
         getAndSet(n).setNext(n);
     }
 
+    public final boolean isEmpty() {
+        return peek() == null;
+    }
+
+    public final int count() {
+        int count = 0;
+        for(Node<T> n = peek();n != null; n = n.next())
+          ++count;
+        return count;
+    }
+
     @SuppressWarnings("unchecked")
     public final T poll() {
         final Node<T> next = peek();

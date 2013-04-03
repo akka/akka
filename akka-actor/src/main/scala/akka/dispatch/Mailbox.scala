@@ -353,12 +353,9 @@ class NodeMessageQueue extends AbstractNodeQueue[Envelope] with MessageQueue {
 
   final def dequeue(): Envelope = poll()
 
-  final def numberOfMessages: Int = {
-    @tailrec def count(node: AbstractNodeQueue.Node[Envelope], c: Int): Int = if (node eq null) c else count(node.next(), c + 1)
-    count(peek(), 0)
-  }
+  final def numberOfMessages: Int = count()
 
-  final def hasMessages: Boolean = peek() ne null
+  final def hasMessages: Boolean = !isEmpty()
 
   @tailrec final def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = {
     val envelope = dequeue()
@@ -535,11 +532,11 @@ case class UnboundedMailbox() extends MailboxType {
 }
 
 /**
- * MPSCUnboundedMailbox is a high-performance unbounded MailboxType,
+ * SingleConsumerOnlyUnboundedMailbox is a high-performance, multiple producer—single consumer, unbounded MailboxType,
  * the only drawback is that you can't have multiple consumers,
  * which rules out using it with BalancingDispatcher for instance.
  */
-case class MPSCUnboundedMailbox() extends MailboxType {
+case class SingleConsumerOnlyUnboundedMailbox() extends MailboxType {
 
   def this(settings: ActorSystem.Settings, config: Config) = this()
 
