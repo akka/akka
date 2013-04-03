@@ -7,6 +7,7 @@ package akka.io
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
 import Tcp._
+import akka.TestUtils
 import TestUtils._
 import akka.testkit.EventFilter
 import java.io.IOException

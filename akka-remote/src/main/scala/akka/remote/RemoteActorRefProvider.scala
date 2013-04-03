@@ -271,8 +271,17 @@ private[akka] class RemoteActorRefProvider(
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case ActorPathExtractor(address, elems) ⇒
       if (hasAddress(address)) actorFor(rootGuardian, elems)
-      else new RemoteActorRef(transport, transport.localAddressForRemote(address),
-        new RootActorPath(address) / elems, Nobody, props = None, deploy = None)
+      else {
+        val rootPath = RootActorPath(address) / elems
+        try {
+          new RemoteActorRef(transport, transport.localAddressForRemote(address),
+            rootPath, Nobody, props = None, deploy = None)
+        } catch {
+          case NonFatal(e) ⇒
+            log.error(e, "Error while looking up address {}", rootPath.address)
+            new EmptyLocalActorRef(this, rootPath, eventStream)
+        }
+      }
     case _ ⇒ local.actorFor(ref, path)
   }
 
@@ -378,5 +387,5 @@ private[akka] class RemoteActorRef private[akka] (
   def restart(cause: Throwable): Unit = sendSystemMessage(Recreate(cause))
 
   @throws(classOf[java.io.ObjectStreamException])
-  private def writeReplace(): AnyRef = SerializedActorRef(path)
+  private def writeReplace(): AnyRef = SerializedActorRef(this)
 }
