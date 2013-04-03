@@ -6,6 +6,7 @@ package akka.io
 
 import akka.testkit.{ TestProbe, AkkaSpec }
 import Tcp._
+import akka.TestUtils
 import TestUtils._
 
 class CapacityLimitSpec extends AkkaSpec("akka.loglevel = ERROR\nakka.io.tcp.max-channels = 4")

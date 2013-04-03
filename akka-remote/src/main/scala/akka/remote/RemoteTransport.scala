@@ -22,7 +22,7 @@ class RemoteTransportException(message: String, cause: Throwable) extends AkkaEx
  *
  * The remote transport is responsible for sending and receiving messages.
  * Each transport has an address, which it should provide in
- * Serialization.currentTransportAddress (thread-local) while serializing
+ * Serialization.currentTransportInformation (thread-local) while serializing
  * actor references (which might also be part of messages). This address must
  * be available (i.e. fully initialized) by the time the first message is
  * received or when the start() method returns, whatever happens first.

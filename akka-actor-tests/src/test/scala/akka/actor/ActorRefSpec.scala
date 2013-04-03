@@ -6,9 +6,6 @@ package akka.actor
 
 import language.postfixOps
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-
 import akka.testkit._
 import akka.util.Timeout
 import scala.concurrent.duration._
@@ -17,6 +14,7 @@ import java.lang.IllegalStateException
 import scala.concurrent.Promise
 import akka.pattern.ask
 import akka.serialization.JavaSerializer
+import akka.TestUtils.verifyActorTermination
 
 object ActorRefSpec {
 
@@ -318,17 +316,21 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       val out = new ObjectOutputStream(baos)
 
       val sysImpl = system.asInstanceOf[ActorSystemImpl]
-      val addr = sysImpl.provider.rootPath.address
-      val serialized = SerializedActorRef(RootActorPath(addr, "/non-existing"))
+      val ref = system.actorOf(Props[ReplyActor], "non-existing")
+      val serialized = SerializedActorRef(ref)
 
       out.writeObject(serialized)
 
       out.flush
       out.close
 
+      ref ! PoisonPill
+
+      verifyActorTermination(ref)
+
       JavaSerializer.currentSystem.withValue(sysImpl) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
-        in.readObject must be === new EmptyLocalActorRef(sysImpl.provider, system.actorFor("/").path / "non-existing", system.eventStream)
+        in.readObject must be === new EmptyLocalActorRef(sysImpl.provider, ref.path, system.eventStream)
       }
     }
 
@@ -403,7 +405,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       Await.result(ffive, timeout.duration) must be("five")
       Await.result(fnull, timeout.duration) must be("null")
 
-      awaitCond(ref.isTerminated, 2000 millis)
+      verifyActorTermination(ref)
     }
 
     "restart when Kill:ed" in {
