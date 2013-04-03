@@ -68,8 +68,8 @@ object ActorModelSpec {
 
     def interceptor = context.dispatcher.asInstanceOf[MessageDispatcherInterceptor]
 
-    def ack {
-      if (!busy.switchOn()) {
+    def ack(): Unit = {
+      if (!busy.switchOn(())) {
         throw new Exception("isolation violated")
       } else {
         interceptor.getStats(self).msgsProcessed.incrementAndGet()
@@ -81,21 +81,21 @@ object ActorModelSpec {
     }
 
     def receive = {
-      case AwaitLatch(latch)            ⇒ { ack; latch.await(); busy.switchOff() }
-      case Meet(sign, wait)             ⇒ { ack; sign.countDown(); wait.await(); busy.switchOff() }
-      case Wait(time)                   ⇒ { ack; Thread.sleep(time); busy.switchOff() }
-      case WaitAck(time, l)             ⇒ { ack; Thread.sleep(time); l.countDown(); busy.switchOff() }
-      case Reply(msg)                   ⇒ { ack; sender ! msg; busy.switchOff() }
-      case TryReply(msg)                ⇒ { ack; sender.tell(msg, null); busy.switchOff() }
-      case Forward(to, msg)             ⇒ { ack; to.forward(msg); busy.switchOff() }
-      case CountDown(latch)             ⇒ { ack; latch.countDown(); busy.switchOff() }
-      case Increment(count)             ⇒ { ack; count.incrementAndGet(); busy.switchOff() }
-      case CountDownNStop(l)            ⇒ { ack; l.countDown(); context.stop(self); busy.switchOff() }
-      case Restart                      ⇒ { ack; busy.switchOff(); throw new Exception("Restart requested") }
-      case Interrupt                    ⇒ { ack; sender ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"))); busy.switchOff(); throw new InterruptedException("Ping!") }
-      case InterruptNicely(msg)         ⇒ { ack; sender ! msg; busy.switchOff(); Thread.currentThread().interrupt() }
-      case ThrowException(e: Throwable) ⇒ { ack; busy.switchOff(); throw e }
-      case DoubleStop                   ⇒ { ack; context.stop(self); context.stop(self); busy.switchOff }
+      case AwaitLatch(latch)            ⇒ { ack(); latch.await(); busy.switchOff(()) }
+      case Meet(sign, wait)             ⇒ { ack(); sign.countDown(); wait.await(); busy.switchOff(()) }
+      case Wait(time)                   ⇒ { ack(); Thread.sleep(time); busy.switchOff(()) }
+      case WaitAck(time, l)             ⇒ { ack(); Thread.sleep(time); l.countDown(); busy.switchOff(()) }
+      case Reply(msg)                   ⇒ { ack(); sender ! msg; busy.switchOff(()) }
+      case TryReply(msg)                ⇒ { ack(); sender.tell(msg, null); busy.switchOff(()) }
+      case Forward(to, msg)             ⇒ { ack(); to.forward(msg); busy.switchOff(()) }
+      case CountDown(latch)             ⇒ { ack(); latch.countDown(); busy.switchOff(()) }
+      case Increment(count)             ⇒ { ack(); count.incrementAndGet(); busy.switchOff(()) }
+      case CountDownNStop(l)            ⇒ { ack(); l.countDown(); context.stop(self); busy.switchOff(()) }
+      case Restart                      ⇒ { ack(); busy.switchOff(()); throw new Exception("Restart requested") }
+      case Interrupt                    ⇒ { ack(); sender ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"))); busy.switchOff(()); throw new InterruptedException("Ping!") }
+      case InterruptNicely(msg)         ⇒ { ack(); sender ! msg; busy.switchOff(()); Thread.currentThread().interrupt() }
+      case ThrowException(e: Throwable) ⇒ { ack(); busy.switchOff(()); throw e }
+      case DoubleStop                   ⇒ { ack(); context.stop(self); context.stop(self); busy.switchOff }
     }
   }
 
@@ -124,12 +124,12 @@ object ActorModelSpec {
       }
     }
 
-    abstract override def suspend(actor: ActorCell) {
+    protected[akka] abstract override def suspend(actor: ActorCell) {
       getStats(actor.self).suspensions.incrementAndGet()
       super.suspend(actor)
     }
 
-    abstract override def resume(actor: ActorCell) {
+    protected[akka] abstract override def resume(actor: ActorCell) {
       super.resume(actor)
       getStats(actor.self).resumes.incrementAndGet()
     }
@@ -330,16 +330,12 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
     }
 
     def spawn(f: ⇒ Unit) {
-      val thread = new Thread {
-        override def run {
-          try {
-            f
-          } catch {
-            case e ⇒ system.eventStream.publish(Error(e, "spawn", this.getClass, "error in spawned thread"))
+      (new Thread {
+        override def run(): Unit =
+          try f catch {
+            case e: Throwable ⇒ system.eventStream.publish(Error(e, "spawn", this.getClass, "error in spawned thread"))
           }
-        }
-      }
-      thread.start()
+      }).start()
     }
 
     "not process messages for a suspended actor" in {
@@ -380,7 +376,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         try {
           assertCountDown(cachedMessage.latch, waitTime, "Counting down from " + num)
         } catch {
-          case e ⇒
+          case e: Throwable ⇒
             dispatcher match {
               case dispatcher: BalancingDispatcher ⇒
                 val team = dispatcher.team

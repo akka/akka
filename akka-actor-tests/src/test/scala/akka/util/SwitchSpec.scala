@@ -17,17 +17,17 @@ class SwitchSpec extends WordSpec with MustMatchers {
       s.isOff must be(true)
       s.isOn must be(false)
 
-      s.switchOn("hello") must be(true)
+      s.switchOn(()) must be(true)
       s.isOn must be(true)
       s.isOff must be(false)
-      s.switchOn("hello") must be(false)
+      s.switchOn(()) must be(false)
       s.isOn must be(true)
       s.isOff must be(false)
 
-      s.switchOff("hello") must be(true)
+      s.switchOff(()) must be(true)
       s.isOff must be(true)
       s.isOn must be(false)
-      s.switchOff("hello") must be(false)
+      s.switchOff(()) must be(false)
       s.isOff must be(true)
       s.isOn must be(false)
     }
@@ -44,34 +44,34 @@ class SwitchSpec extends WordSpec with MustMatchers {
       val s = new Switch(false)
       s.ifOffYield("yes") must be(Some("yes"))
       s.ifOnYield("no") must be(None)
-      s.ifOff("yes") must be(true)
-      s.ifOn("no") must be(false)
+      s.ifOff(()) must be(true)
+      s.ifOn(()) must be(false)
 
-      s.switchOn()
+      s.switchOn(())
       s.ifOnYield("yes") must be(Some("yes"))
       s.ifOffYield("no") must be(None)
-      s.ifOn("yes") must be(true)
-      s.ifOff("no") must be(false)
+      s.ifOn(()) must be(true)
+      s.ifOff(()) must be(false)
     }
 
     "run action with locking" in {
       val s = new Switch(false)
       s.whileOffYield("yes") must be(Some("yes"))
       s.whileOnYield("no") must be(None)
-      s.whileOff("yes") must be(true)
-      s.whileOn("no") must be(false)
+      s.whileOff(()) must be(true)
+      s.whileOn(()) must be(false)
 
-      s.switchOn()
+      s.switchOn(())
       s.whileOnYield("yes") must be(Some("yes"))
       s.whileOffYield("no") must be(None)
-      s.whileOn("yes") must be(true)
-      s.whileOff("no") must be(false)
+      s.whileOn(()) must be(true)
+      s.whileOff(()) must be(false)
     }
 
     "run first or second action depending on state" in {
       val s = new Switch(false)
       s.fold("on")("off") must be("off")
-      s.switchOn()
+      s.switchOn(())
       s.fold("on")("off") must be("on")
     }
 
@@ -80,14 +80,14 @@ class SwitchSpec extends WordSpec with MustMatchers {
 
       s.locked {
         Thread.sleep(500)
-        s.switchOn()
+        s.switchOn(())
         s.isOn must be(true)
       }
 
       val latch = new CountDownLatch(1)
       new Thread {
         override def run(): Unit = {
-          s.switchOff()
+          s.switchOff(())
           latch.countDown()
         }
       }.start()

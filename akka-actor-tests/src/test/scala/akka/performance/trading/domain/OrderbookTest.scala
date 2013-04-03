@@ -11,7 +11,7 @@ class OrderbookTest extends JUnitSuite {
   var tradeObserverMock: TradeObserver = null
 
   @Before
-  def setUp = {
+  def setUp(): Unit = {
     tradeObserverMock = mock(classOf[TradeObserver])
     orderbook = new Orderbook("ERI") with TradeObserver {
       def trade(bid: Bid, ask: Ask) = tradeObserverMock.trade(bid, ask)
@@ -19,7 +19,7 @@ class OrderbookTest extends JUnitSuite {
   }
 
   @Test
-  def shouldTradeSamePrice = {
+  def shouldTradeSamePrice(): Unit = {
     val bid = new Bid("ERI", 100, 1000)
     val ask = new Ask("ERI", 100, 1000)
     orderbook.addOrder(bid)
@@ -33,7 +33,7 @@ class OrderbookTest extends JUnitSuite {
   }
 
   @Test
-  def shouldTradeTwoLevels = {
+  def shouldTradeTwoLevels(): Unit = {
     val bid1 = new Bid("ERI", 101, 1000)
     val bid2 = new Bid("ERI", 100, 1000)
     val bid3 = new Bid("ERI", 99, 1000)
@@ -62,7 +62,7 @@ class OrderbookTest extends JUnitSuite {
   }
 
   @Test
-  def shouldSplitBid = {
+  def shouldSplitBid(): Unit = {
     val bid = new Bid("ERI", 100, 300)
     val ask = new Ask("ERI", 100, 1000)
     orderbook.addOrder(bid)
@@ -77,7 +77,7 @@ class OrderbookTest extends JUnitSuite {
   }
 
   @Test
-  def shouldSplitAsk = {
+  def shouldSplitAsk(): Unit = {
     val bid = new Bid("ERI", 100, 1000)
     val ask = new Ask("ERI", 100, 600)
     orderbook.addOrder(bid)

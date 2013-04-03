@@ -48,7 +48,7 @@ private[testkit] class CallingThreadDispatcherQueues extends Extension {
   private var lastGC = 0l
 
   // we have to forget about long-gone threads sometime
-  private def gc {
+  private def gc(): Unit = {
     queues = (Map.newBuilder[CallingThreadMailbox, Set[WeakReference[MessageQueue]]] /: queues) {
       case (m, (k, v)) ⇒
         val nv = v filter (_.get ne null)
@@ -66,7 +66,7 @@ private[testkit] class CallingThreadDispatcherQueues extends Extension {
     val now = System.nanoTime
     if (now - lastGC > 1000000000l) {
       lastGC = now
-      gc
+      gc()
     }
   }
 
@@ -165,16 +165,14 @@ class CallingThreadDispatcher(
     mbox foreach CallingThreadDispatcherQueues(actor.system).unregisterQueues
   }
 
-  override def suspend(actor: ActorCell) {
+  protected[akka] override def suspend(actor: ActorCell) {
     actor.mailbox match {
-      case m: CallingThreadMailbox ⇒
-        m.suspendSwitch.switchOn; m.suspend()
-      case m ⇒
-        m.systemEnqueue(actor.self, Suspend())
+      case m: CallingThreadMailbox ⇒ { m.suspendSwitch.switchOn; m.suspend() }
+      case m                       ⇒ m.systemEnqueue(actor.self, Suspend())
     }
   }
 
-  override def resume(actor: ActorCell) {
+  protected[akka] override def resume(actor: ActorCell) {
     actor.mailbox match {
       case mbox: CallingThreadMailbox ⇒
         val queue = mbox.queue

@@ -77,7 +77,7 @@ class Context(numIoThreads: Int) extends SocketMeta {
 
   def poller: Poller = context.poller
 
-  def term: Unit = context.term
+  def term(): Unit = context.term()
 }
 
 /**

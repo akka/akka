@@ -282,7 +282,7 @@ object ProducerFeatureTest {
     }
 
     override def postStop() {
-      for (msg ← lastMessage; aref ← lastSender) context.parent ! (aref, msg)
+      for (msg ← lastMessage; aref ← lastSender) context.parent ! ((aref, msg))
       super.postStop()
     }
   }

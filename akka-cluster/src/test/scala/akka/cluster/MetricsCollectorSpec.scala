@@ -128,5 +128,5 @@ trait MetricsCollectorFactory { this: AkkaSpec ⇒
           new JmxMetricsCollector(selfAddress, defaultDecayFactor)
       }.get
 
-  def isSigar(collector: MetricsCollector): Boolean = collector.isInstanceOf[SigarMetricsCollector]
+  private[cluster] def isSigar(collector: MetricsCollector): Boolean = collector.isInstanceOf[SigarMetricsCollector]
 }

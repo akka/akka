@@ -57,10 +57,9 @@ object Agent {
      * Internal helper method
      */
     private final def withinTransaction(run: Runnable): Unit = {
-      def dispatch = updater.execute(run)
       Txn.findCurrent match {
-        case Some(txn) ⇒ Txn.afterCommit(status ⇒ dispatch)(txn)
-        case _         ⇒ dispatch
+        case Some(txn) ⇒ Txn.afterCommit(_ ⇒ updater.execute(run))(txn)
+        case _         ⇒ updater.execute(run)
       }
     }
 

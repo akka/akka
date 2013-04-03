@@ -340,12 +340,12 @@ class FutureDocSpec extends AkkaSpec {
     def loadPage(s: String) = s
     val url = "foo bar"
     def log(cause: Throwable) = ()
-    def watchSomeTV = ()
+    def watchSomeTV(): Unit = ()
     //#and-then
     val result = Future { loadPage(url) } andThen {
       case Failure(exception) ⇒ log(exception)
     } andThen {
-      case _ ⇒ watchSomeTV
+      case _ ⇒ watchSomeTV()
     }
     result foreach println
     //#and-then

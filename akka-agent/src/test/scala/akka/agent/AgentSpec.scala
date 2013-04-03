@@ -4,6 +4,7 @@ import language.postfixOps
 
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
 import akka.util.Timeout
 import akka.testkit._
 import scala.concurrent.stm._
@@ -112,7 +113,7 @@ class AgentSpec extends AkkaSpec {
           agent send (_ * 2)
           throw new RuntimeException("Expected failure")
         }
-      } catch { case _ ⇒ }
+      } catch { case NonFatal(_) ⇒ }
 
       agent send countDown
 

@@ -35,8 +35,8 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
   val eUp = Member(Address("akka.tcp", "sys", "e", 2552), Up, eRoles)
   val eDown = Member(Address("akka.tcp", "sys", "e", 2552), Down, eRoles)
 
-  def converge(gossip: Gossip): (Gossip, Set[Address]) =
-    ((gossip, Set.empty[Address]) /: gossip.members) { (gs, m) ⇒ (gs._1.seen(m.address), gs._2 + m.address) }
+  private[cluster] def converge(gossip: Gossip): (Gossip, Set[Address]) =
+    ((gossip, Set.empty[Address]) /: gossip.members) { case ((gs, as), m) ⇒ (gs.seen(m.address), as + m.address) }
 
   "Domain events" must {
 

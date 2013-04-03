@@ -613,7 +613,7 @@ private[akka] class ContinuousCancellable extends AtomicReference[HWTimeout](Con
     case some                     ⇒ if (!compareAndSet(some, newTimeout)) swap(newTimeout)
   }
 
-  def isCancelled(): Boolean = get().isCancelled()
+  override def isCancelled: Boolean = get().isCancelled()
   def cancel(): Boolean = getAndSet(ContinuousCancellable.cancelled).cancel()
 }
 

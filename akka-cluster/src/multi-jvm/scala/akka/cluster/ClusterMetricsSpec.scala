@@ -31,7 +31,7 @@ class ClusterMetricsMultiJvmNode5 extends ClusterMetricsSpec
 abstract class ClusterMetricsSpec extends MultiNodeSpec(ClusterMetricsMultiJvmSpec) with MultiNodeClusterSpec {
   import ClusterMetricsMultiJvmSpec._
 
-  def isSigar(collector: MetricsCollector): Boolean = collector.isInstanceOf[SigarMetricsCollector]
+  private[cluster] def isSigar(collector: MetricsCollector): Boolean = collector.isInstanceOf[SigarMetricsCollector]
 
   "Cluster metrics" must {
     "periodically collect metrics on each node, publish ClusterMetricsChanged to the event stream, " +

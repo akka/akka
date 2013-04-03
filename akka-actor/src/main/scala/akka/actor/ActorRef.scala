@@ -469,7 +469,7 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
                                        override val path: ActorPath,
                                        val eventStream: EventStream) extends MinimalActorRef {
 
-  override def isTerminated(): Boolean = true
+  override def isTerminated: Boolean = true
 
   override def sendSystemMessage(message: SystemMessage): Unit = {
     if (Mailbox.debug) println(s"ELAR $path having enqueued $message")

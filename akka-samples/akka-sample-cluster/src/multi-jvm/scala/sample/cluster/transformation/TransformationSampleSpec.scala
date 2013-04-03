@@ -84,7 +84,7 @@ abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSamp
       testConductor.enter("backend1-started")
 
       runOn(frontend1) {
-        assertServiceOk
+        assertServiceOk()
       }
 
       testConductor.enter("frontend1-backend1-ok")
@@ -105,7 +105,7 @@ abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSamp
       testConductor.enter("all-started")
 
       runOn(frontend1, frontend2) {
-        assertServiceOk
+        assertServiceOk()
       }
 
       testConductor.enter("all-ok")
@@ -114,7 +114,7 @@ abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSamp
 
   }
 
-  def assertServiceOk: Unit = {
+  def assertServiceOk(): Unit = {
     val transformationFrontend = system.actorFor("akka://" + system.name + "/user/frontend")
     // eventually the service should be ok,
     // backends might not have registered initially

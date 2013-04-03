@@ -159,7 +159,7 @@ class ActorDSLSpec extends AkkaSpec {
         become {
           case "die" ⇒ throw new Exception
         }
-        whenFailing { (cause, msg) ⇒ testActor ! (cause, msg) }
+        whenFailing { case m @ (cause, msg) ⇒ testActor ! m }
         whenRestarted { cause ⇒ testActor ! cause }
       })
       //#failing-actor

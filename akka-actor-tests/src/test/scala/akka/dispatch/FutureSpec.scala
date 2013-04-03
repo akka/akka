@@ -573,11 +573,11 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
 
       "should not deadlock with nested await (ticket 1313)" in {
-        val simple = Future() map (_ ⇒ Await.result((Future(()) map (_ ⇒ ())), timeout.duration))
+        val simple = Future(()) map (_ ⇒ Await.result((Future(()) map (_ ⇒ ())), timeout.duration))
         FutureSpec.ready(simple, timeout.duration) must be('completed)
 
         val l1, l2 = new TestLatch
-        val complex = Future() map { _ ⇒
+        val complex = Future(()) map { _ ⇒
           val nested = Future(())
           nested foreach (_ ⇒ l1.open())
           FutureSpec.ready(l1, TestLatch.DefaultTimeout) // make sure nested is completed
@@ -589,7 +589,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
       "re-use the same thread for nested futures with batching ExecutionContext" in {
         val failCount = new java.util.concurrent.atomic.AtomicInteger
-        val f = Future() flatMap { _ ⇒
+        val f = Future(()) flatMap { _ ⇒
           val originalThread = Thread.currentThread
           // run some nested futures
           val nested =

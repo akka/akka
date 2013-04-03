@@ -210,30 +210,29 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
     case AssociateUnderlying(remoteAddress, statusPromise) ⇒
       wrappedTransport.associate(remoteAddress) onComplete {
         // Slight modification of pipe, only success is sent, failure is propagated to a separate future
-        case Success(handle) ⇒ self ! (handle, statusPromise)
+        case Success(handle) ⇒ self ! ((handle, statusPromise))
         case Failure(e)      ⇒ statusPromise.failure(e)
       }
     // Finished outbound association and got back the handle
-    case (handle: AssociationHandle, statusPromise: Promise[AssociationHandle]) ⇒
+    case (handle: AssociationHandle, statusPromise: Promise[AssociationHandle]) ⇒ //FIXME switch to a real message iso Tuple2
       val wrappedHandle = wrapHandle(handle, associationListener, inbound = false)
       val naked = nakedAddress(handle.remoteAddress)
       val inMode = getInboundMode(naked)
       wrappedHandle.outboundThrottleMode.set(getOutboundMode(naked))
-      wrappedHandle.readHandlerPromise.future.map { (_, inMode) } pipeTo wrappedHandle.throttlerActor
+      wrappedHandle.readHandlerPromise.future map { _ -> inMode } pipeTo wrappedHandle.throttlerActor
       handleTable ::= naked -> wrappedHandle
       statusPromise.success(wrappedHandle)
     case SetThrottle(address, direction, mode) ⇒
       val naked = nakedAddress(address)
-      throttlingModes += naked -> (mode, direction)
+      throttlingModes = throttlingModes.updated(naked, (mode, direction))
       val ok = Future.successful(SetThrottleAck)
-      val allAcks = handleTable.map {
+      Future.sequence(handleTable map {
         case (`naked`, handle) ⇒ setMode(handle, mode, direction)
         case _                 ⇒ ok
-      }
-      Future.sequence(allAcks).map(_ ⇒ SetThrottleAck) pipeTo sender
+      }).map(_ ⇒ SetThrottleAck) pipeTo sender
     case ForceDisassociate(address) ⇒
       val naked = nakedAddress(address)
-      handleTable.foreach {
+      handleTable foreach {
         case (`naked`, handle) ⇒ handle.disassociate()
         case _                 ⇒
       }
