@@ -53,12 +53,9 @@ trait ActorRefProvider {
    */
   def settings: ActorSystem.Settings
 
-  //FIXME Only here because of AskSupport, should be dealt with
-  def dispatcher: ExecutionContext
-
   /**
    * Initialization of an ActorRefProvider happens in two steps: first
-   * construction of the object with settings, eventStream, scheduler, etc.
+   * construction of the object with settings, eventStream, etc.
    * and then—when the ActorSystem is constructed—the second phase during
    * which actors may be created (e.g. the guardians).
    */
@@ -68,9 +65,6 @@ trait ActorRefProvider {
    * The Deployer associated with this ActorRefProvider
    */
   def deployer: Deployer
-
-  //FIXME WHY IS THIS HERE?
-  def scheduler: Scheduler
 
   /**
    * Generates and returns a unique actor path below “/temp”.
@@ -333,7 +327,6 @@ private[akka] class LocalActorRefProvider private[akka] (
   _systemName: String,
   override val settings: ActorSystem.Settings,
   val eventStream: EventStream,
-  override val scheduler: Scheduler,
   val dynamicAccess: DynamicAccess,
   override val deployer: Deployer,
   _deadLetters: Option[ActorPath ⇒ InternalActorRef])
@@ -343,12 +336,10 @@ private[akka] class LocalActorRefProvider private[akka] (
   def this(_systemName: String,
            settings: ActorSystem.Settings,
            eventStream: EventStream,
-           scheduler: Scheduler,
            dynamicAccess: DynamicAccess) =
     this(_systemName,
       settings,
       eventStream,
-      scheduler,
       dynamicAccess,
       new Deployer(settings, dynamicAccess),
       None)
@@ -476,8 +467,6 @@ private[akka] class LocalActorRefProvider private[akka] (
    */
   @volatile
   private var system: ActorSystemImpl = _
-
-  def dispatcher: ExecutionContext = system.dispatcher
 
   lazy val terminationPromise: Promise[Unit] = Promise[Unit]()
 
