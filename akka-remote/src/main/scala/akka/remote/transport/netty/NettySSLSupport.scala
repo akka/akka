@@ -14,6 +14,7 @@ import java.io.{ IOException, FileNotFoundException, FileInputStream }
 import java.security._
 import javax.net.ssl.{ KeyManagerFactory, TrustManager, TrustManagerFactory, SSLContext }
 import org.jboss.netty.handler.ssl.SslHandler
+import scala.util.Try
 
 /**
  * INTERNAL API
@@ -92,7 +93,7 @@ private[akka] object NettySSLSupport {
           trustManagerFactory.init({
             val trustStore = KeyStore.getInstance(KeyStore.getDefaultType)
             val fin = new FileInputStream(trustStorePath)
-            try trustStore.load(fin, trustStorePassword.toCharArray) finally fin.close()
+            try trustStore.load(fin, trustStorePassword.toCharArray) finally Try(fin.close())
             trustStore
           })
           trustManagerFactory.getTrustManagers
@@ -140,10 +141,23 @@ private[akka] object NettySSLSupport {
         factory.init({
           val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
           val fin = new FileInputStream(keyStorePath)
-          try keyStore.load(fin, keyStorePassword.toCharArray) finally fin.close()
+          try keyStore.load(fin, keyStorePassword.toCharArray) finally Try(fin.close())
           keyStore
         }, keyStorePassword.toCharArray)
-        Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(factory.getKeyManagers, null, rng); ctx }
+
+        val trustManagers: Option[Array[TrustManager]] = settings.SSLTrustStore map {
+          path ⇒
+            val pwd = settings.SSLTrustStorePassword.map(_.toCharArray).orNull
+            val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
+            trustManagerFactory.init({
+              val trustStore = KeyStore.getInstance(KeyStore.getDefaultType)
+              val fin = new FileInputStream(path)
+              try trustStore.load(fin, pwd) finally Try(fin.close())
+              trustStore
+            })
+            trustManagerFactory.getTrustManagers
+        }
+        Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(factory.getKeyManagers, trustManagers.orNull, rng); ctx }
       } catch {
         case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Server SSL connection could not be established because key store could not be loaded", e)
         case e: IOException              ⇒ throw new RemoteTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
