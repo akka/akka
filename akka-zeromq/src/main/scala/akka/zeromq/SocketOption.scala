@@ -534,10 +534,10 @@ object FileDescriptor extends SocketOptionQuery
  * The timeout value for the recv method in blocking mode
  * @param duration
  */
-case class ReceiveTimeout(duration: FiniteDuration = 100 millis) extends SocketOption
+case class ReceiveTimeout(duration: FiniteDuration) extends SocketOption
 
 /**
  * The timeout value for the send method in blocking mode
  * @param duration
  */
-case class SendTimeout(duration: FiniteDuration = 100 millis) extends SocketOption
+case class SendTimeout(duration: FiniteDuration) extends SocketOption

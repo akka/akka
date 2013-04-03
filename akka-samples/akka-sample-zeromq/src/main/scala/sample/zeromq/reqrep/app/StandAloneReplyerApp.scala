@@ -13,6 +13,7 @@ object StandAloneReplyerApp extends App {
   val socket = context.socket(ZMQ.REP)
   socket.bind(host)
 
+  println("CTRL+C to quit.")
   while (true) {
     val res = socket.recv(0)
     socket.send(res, 0)

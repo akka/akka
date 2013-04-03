@@ -16,8 +16,19 @@ class PublisherActor extends Actor {
 
   val random = new Random()
   val maxMessageSize = 100
-
+  val modulo = 256
   var counter = 0
+
+  private def publishMessage() = {
+    if (counter % modulo == 0) {
+      val message = Util.randomString(random, maxMessageSize)
+      self ! ZMQMessage(ByteString(message))
+    } else {
+      self ! PublishMessage()
+    }
+
+    counter = if (counter >= 2999) 0 else counter + 1
+  }
 
   override def preStart() = {
     publishMessage()
@@ -26,22 +37,6 @@ class PublisherActor extends Actor {
   def receive = {
     case m: ZMQMessage     ⇒ publisherSocket ! m; publishMessage()
     case p: PublishMessage ⇒ publishMessage()
-    case _                 ⇒ throw new Exception("unknown command")
-  }
-
-  private def publishMessage() = {
-    val modulo = 256
-    if (counter % modulo == 0) {
-      val message = Util.randomString(random, maxMessageSize)
-      self ! ZMQMessage(ByteString(message))
-    } else {
-      self ! PublishMessage()
-    }
-
-    counter += 1
-    if (counter >= 3000) {
-      counter = 0
-    }
   }
 
 }

@@ -6,7 +6,7 @@ package akka.zeromq
 import org.zeromq.ZMQ.{ Socket, Poller }
 import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
-import scala.collection.immutable.Seq
+import scala.collection.immutable
 import scala.annotation.tailrec
 import scala.concurrent.{ Promise, Future }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
@@ -28,7 +28,7 @@ private[zeromq] object ConcurrentSocketActor {
 
   private val DefaultContext = Context()
 }
-private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends Actor {
+private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption]) extends Actor {
 
   import ConcurrentSocketActor._
   private val zmqContext = params collectFirst { case c: Context ⇒ c } getOrElse DefaultContext
@@ -50,7 +50,7 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     case Req | Rep                           ⇒ ReqRepPoll
   }
 
-  private val pendingSends = new ListBuffer[Seq[ByteString]]
+  private val pendingSends = new ListBuffer[immutable.Seq[ByteString]]
 
   def receive = {
     case m: PollMsg         ⇒ doPoll(m)
@@ -147,8 +147,8 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
   }
 
   private def setupTimeout(): Unit = {
-    self ! ReceiveTimeout(recvTimeoutValue)
-    self ! SendTimeout(sendTimeoutValue)
+    self ! ReceiveTimeout(recvTimeout)
+    self ! SendTimeout(sendTimeout)
   }
 
   private def setupSocket() = params foreach {
@@ -167,7 +167,7 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     }
   } finally notifyListener(Closed)
 
-  @tailrec private def flushMessage(i: Seq[ByteString]): Boolean =
+  @tailrec private def flushMessage(i: immutable.Seq[ByteString]): Boolean =
     if (i.isEmpty) {
       if (pollingMode == ReqRepPoll) {
         doPoll(ReqRepPoll)
@@ -189,16 +189,14 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
   @tailrec private def flush(): Unit =
     if (pendingSends.nonEmpty && flushMessage(pendingSends.remove(0))) flush() // Flush while things are going well
 
-  private val recvTimeoutValue: FiniteDuration = {
+  private val recvTimeout: FiniteDuration = {
     val ext = ZeroMQExtension(context.system)
-    val fromConfig = params collectFirst { case ReceiveTimeout(duration) ⇒ duration }
-    fromConfig getOrElse ext.DefaultRecvTimeout
+    params collectFirst { case ReceiveTimeout(duration) ⇒ duration } getOrElse ext.DefaultRecvTimeout
   }
 
-  private val sendTimeoutValue: FiniteDuration = {
+  private val sendTimeout: FiniteDuration = {
     val ext = ZeroMQExtension(context.system)
-    val fromConfig = params collectFirst { case SendTimeout(duration) ⇒ duration }
-    fromConfig getOrElse ext.DefaultSendTimeout
+    params collectFirst { case SendTimeout(duration) ⇒ duration } getOrElse ext.DefaultSendTimeout
   }
 
   /**
@@ -206,12 +204,10 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
    * Depending on the sign of the timeout, we either schedule a poll or send the message immediately.
    */
   private val doPollTimeoutIfNeeded = {
-    val duration = recvTimeoutValue
-
-    if (duration.toMillis > 0) {
+    if (recvTimeout.toMillis > 0) {
       (msg: PollMsg) ⇒ self ! msg
     } else {
-      val d = -duration
+      val d = -recvTimeout
       import context.dispatcher
       (msg: PollMsg) ⇒ context.system.scheduler.scheduleOnce(d, self, msg)
     }
@@ -221,10 +217,9 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     if (togo <= 0) self ! mode
     else receiveMessage() match {
       case Seq() ⇒ doPollTimeoutIfNeeded(mode)
-      case frames ⇒ {
+      case frames ⇒
         notifyListener(deserializer(frames))
         if (mode == Poll) doPoll(mode, togo - 1)
-      }
     }
   }
 
@@ -233,15 +228,12 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
    * @param currentFrames
    * @return A vector of frames read from the ZeroMQ socket if any, en empty vector otherwhise.
    */
-  @tailrec private def receiveMessage(currentFrames: Seq[ByteString] = Vector.empty): Seq[ByteString] =
+  @tailrec private def receiveMessage(currentFrames: immutable.Seq[ByteString] = Vector.empty): immutable.Seq[ByteString] =
     socket.recv(0) match {
       case null ⇒ /*EAGAIN*/
         if (currentFrames.isEmpty) currentFrames else receiveMessage(currentFrames)
       case bytes ⇒
-        val frames = currentFrames :+ (bytes.isEmpty match {
-          case true  ⇒ ByteString("")
-          case false ⇒ ByteString(bytes)
-        })
+        val frames = currentFrames :+ ByteString(bytes)
         if (socket.hasReceiveMore) receiveMessage(frames) else frames
     }
 

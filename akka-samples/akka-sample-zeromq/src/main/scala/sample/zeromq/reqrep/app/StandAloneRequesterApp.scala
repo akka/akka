@@ -2,7 +2,6 @@ package sample.zeromq.reqrep.app
 
 import util.Random
 import org.zeromq.ZMQ
-import compat.Platform
 import sample.zeromq.Util
 
 /**
@@ -19,7 +18,7 @@ object StandAloneRequesterApp extends App {
   val socket = context.socket(ZMQ.REQ)
   socket.connect(host)
 
-  val startTime = Platform.currentTime
+  val startTime = System.nanoTime
   for (_ ← 0 to numMessages) {
     val message = Util.randomString(random, maxMessageSize)
     socket.send(message.getBytes("UTF-8"), 0)
@@ -28,7 +27,7 @@ object StandAloneRequesterApp extends App {
       throw new Exception("Message not received properly")
     }
   }
-  val endTime = Platform.currentTime
+  val endTime = System.nanoTime
 
   val durationInSeconds = (endTime - startTime).toDouble / 1000
   println("Duration: " + durationInSeconds.toString)

@@ -6,10 +6,9 @@ import akka.zeromq._
 import util.Random
 import scala.Array
 import sample.zeromq.Util
-import compat.Platform
 
-class RequestActor extends Actor {
-  println("Connecting...")
+class RequestActor extends Actor with ActorLogging {
+  log.info("Connecting...")
 
   private val requestSocket = ZeroMQExtension(context.system).newReqSocket(
     Array(
@@ -22,7 +21,7 @@ class RequestActor extends Actor {
 
   var requestCount = 0
   var currentMessage = ""
-  var startTime = Platform.currentTime
+  var startTime = System.nanoTime
 
   def receive = {
     case m: ZMQMessage ⇒ {
@@ -34,15 +33,14 @@ class RequestActor extends Actor {
       if (requestCount < numMessages) {
         sendRequest()
       } else {
-        val endTime = Platform.currentTime
+        val endTime = System.nanoTime
         val durationInSeconds = (endTime - startTime).toDouble / 1000
-        println("Duration: " + durationInSeconds.toString)
-        println("Throughput: " + (numMessages.toDouble / durationInSeconds).toString)
+        log.info("Duration: " + durationInSeconds.toString)
+        log.info("Throughput: " + (numMessages.toDouble / durationInSeconds).toString)
         context.system.shutdown()
       }
     }
-    case Connecting ⇒ startTime = Platform.currentTime; sendRequest()
-    case _          ⇒ ()
+    case Connecting ⇒ startTime = System.nanoTime; sendRequest()
   }
 
   private def sendRequest() = {

@@ -3,13 +3,12 @@ package sample.zeromq.reqrep.actor
 import akka.actor.Actor
 import akka.zeromq.ZMQMessage
 
-class ReplyActor extends Actor {
+class ReplyActor extends Actor with ActorLogging {
 
-  println("Listening..")
+  log.info("Listening..")
 
   def receive = {
     case m: ZMQMessage ⇒ sender ! m
-    case _             ⇒ ()
   }
 
 }
