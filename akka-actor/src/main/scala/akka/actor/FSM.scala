@@ -553,12 +553,12 @@ trait FSM[S, D] extends Listeners with ActorLogging {
         processMsg(msg, t)
       }
     case SubscribeTransitionCallBack(actorRef) ⇒
-      // TODO use DeathWatch to clean up list
+      // TODO Use context.watch(actor) and receive Terminated(actor) to clean up list
       listeners.add(actorRef)
       // send current state back as reference point
       actorRef ! CurrentState(self, currentState.stateName)
     case Listen(actorRef) ⇒
-      // TODO use DeathWatch to clean up list
+      // TODO Use context.watch(actor) and receive Terminated(actor) to clean up list
       listeners.add(actorRef)
       // send current state back as reference point
       actorRef ! CurrentState(self, currentState.stateName)

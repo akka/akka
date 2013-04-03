@@ -16,6 +16,7 @@ import akka.event.LoggingAdapter;
 //#imports-prio-mailbox
 import akka.dispatch.PriorityGenerator;
 import akka.dispatch.UnboundedPriorityMailbox;
+import akka.testkit.JavaTestKit;
 import com.typesafe.config.Config;
 
 //#imports-prio-mailbox
@@ -83,6 +84,7 @@ public class DispatcherDocTestBase {
 
   @Test
   public void priorityDispatcher() throws Exception {
+    JavaTestKit probe = new JavaTestKit(system);
     //#prio-dispatcher
 
     // We create a new Actor that just prints out what it processes
@@ -93,14 +95,17 @@ public class DispatcherDocTestBase {
               LoggingAdapter log =
                       Logging.getLogger(getContext().system(), this);
               {
-                getSelf().tell("lowpriority", getSelf());
-                getSelf().tell("lowpriority", getSelf());
-                getSelf().tell("highpriority", getSelf());
-                getSelf().tell("pigdog", getSelf());
-                getSelf().tell("pigdog2", getSelf());
-                getSelf().tell("pigdog3", getSelf());
-                getSelf().tell("highpriority", getSelf());
-                getSelf().tell(PoisonPill.getInstance(), getSelf());
+                for(Object msg : new Object[] {
+                  "lowpriority",
+                  "lowpriority",
+                  "highpriority",
+                  "pigdog",
+                  "pigdog2",
+                  "pigdog3",
+                  "highpriority",
+                  PoisonPill.getInstance() }) {
+                    getSelf().tell(msg, getSelf());
+                }
               }
 
               public void onReceive(Object message) {
@@ -122,11 +127,8 @@ public class DispatcherDocTestBase {
     */
     //#prio-dispatcher
 
-    for (int i = 0; i < 10; i++) {
-      if (myActor.isTerminated())
-        break;
-      Thread.sleep(100);
-    }
+    probe.watch(myActor);
+    probe.expectMsgClass(Terminated.class);
   }
 
   static
