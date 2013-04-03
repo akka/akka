@@ -22,8 +22,13 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
     }
 
     @SuppressWarnings("unchecked")
-    public final Node<T> peek() {
+    protected final Node<T> peekNode() {
         return ((Node<T>)Unsafe.instance.getObjectVolatile(this, tailOffset)).next();
+    }
+
+    public final T peek() {
+        final Node<T> n = peekNode();
+        return (n != null) ? n.value : null;
     }
 
     public final void add(final T value) {
@@ -37,14 +42,14 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
 
     public final int count() {
         int count = 0;
-        for(Node<T> n = peek();n != null; n = n.next())
+        for(Node<T> n = peekNode();n != null; n = n.next())
           ++count;
         return count;
     }
 
     @SuppressWarnings("unchecked")
     public final T poll() {
-        final Node<T> next = peek();
+        final Node<T> next = peekNode();
         if (next == null) return null;
         else {
             final T ret = next.value;
