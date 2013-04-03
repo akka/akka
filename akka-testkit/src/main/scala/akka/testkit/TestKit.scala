@@ -788,3 +788,13 @@ private[testkit] abstract class CachingPartialFunction[A, B <: AnyRef] extends s
   final def isDefinedAt(x: A): Boolean = try { cache = `match`(x); true } catch { case NoMatch ⇒ cache = null.asInstanceOf[B]; false }
   final override def apply(x: A): B = cache
 }
+
+/**
+ * Wrapper for implicit conversion to add dilated function to Duration.
+ */
+class TestDuration(duration: FiniteDuration) {
+  def dilated(implicit system: ActorSystem): FiniteDuration = {
+    // this cast will succeed unless TestTimeFactor is non-finite (which would be a misconfiguration)
+    (duration * TestKitExtension(system).TestTimeFactor).asInstanceOf[FiniteDuration]
+  }
+}

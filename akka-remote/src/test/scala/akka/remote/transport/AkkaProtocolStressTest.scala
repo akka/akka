@@ -54,7 +54,7 @@ object AkkaProtocolStressTest {
           losses += seq - maxSeq - 1
           maxSeq = seq
           if (seq > limit * 0.9) {
-            controller ! (maxSeq, losses)
+            controller ! ((maxSeq, losses))
           }
         } else {
           controller ! s"Received out of order message. Previous: ${maxSeq} Received: ${seq}"

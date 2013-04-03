@@ -16,6 +16,7 @@ import scala.util.control.NonFatal
 import org.scalatest.matchers._
 import akka.io.Tcp._
 import akka.io.SelectionHandler._
+import akka.TestUtils
 import TestUtils._
 import akka.actor.{ ActorRef, PoisonPill, Terminated }
 import akka.testkit.{ AkkaSpec, EventFilter, TestActorRef, TestProbe }
@@ -637,7 +638,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     def interestsDesc(interests: Int): String =
       interestsNames.filter(i ⇒ (i._1 & interests) != 0).map(_._2).mkString(", ")
   }
-  def withUnacceptedConnection(
+  private[io] def withUnacceptedConnection(
     setServerSocketOptions: ServerSocketChannel ⇒ Unit = _ ⇒ (),
     connectionActorCons: (ActorRef, ActorRef) ⇒ TestActorRef[TcpOutgoingConnection] = createConnectionActor())(body: UnacceptedSetup ⇒ Any): Unit =
 

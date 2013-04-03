@@ -51,7 +51,7 @@ import akka.testkit.TestEvent._
  * 8. while nodes are removed remote death watch is also exercised
  * 9. while nodes are removed a few cluster aware routers are also working
  */
-object StressMultiJvmSpec extends MultiNodeConfig {
+private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
 
   // Note that this test uses default configuration,
   // not MultiNodeClusterSpec.clusterConfig
@@ -521,14 +521,14 @@ object StressMultiJvmSpec extends MultiNodeConfig {
         log.info("Creating [{}] actors in a tree structure of [{}] levels and each actor has [{}] children",
           totalActors, levels, width)
         val tree = context.actorOf(Props(new TreeNode(levels, width)), "tree")
-        tree forward (idx, SimpleJob(id, payload))
+        tree forward ((idx, SimpleJob(id, payload)))
         context.become(treeWorker(tree))
     }
 
     def treeWorker(tree: ActorRef): Receive = {
       case SimpleJob(id, payload) ⇒ sender ! Ack(id)
       case TreeJob(id, payload, idx, _, _) ⇒
-        tree forward (idx, SimpleJob(id, payload))
+        tree forward ((idx, SimpleJob(id, payload)))
     }
   }
 
@@ -539,7 +539,7 @@ object StressMultiJvmSpec extends MultiNodeConfig {
       0 until width map { i ⇒ context.actorOf(Props(createChild()), name = i.toString) } toVector
 
     def receive = {
-      case (idx: Int, job: SimpleJob) if idx < width ⇒ indexedChildren(idx) forward (idx, job)
+      case (idx: Int, job: SimpleJob) if idx < width ⇒ indexedChildren(idx) forward ((idx, job))
     }
   }
 
@@ -701,7 +701,7 @@ abstract class StressSpec
 
   lazy val statsObserver = system.actorOf(Props[StatsObserver], "statsObserver")
 
-  def awaitClusterResult: Unit = {
+  def awaitClusterResult(): Unit = {
     runOn(roles.head) {
       val r = clusterResultAggregator
       watch(r)
@@ -734,7 +734,7 @@ abstract class StressSpec
       }
 
     }
-    awaitClusterResult
+    awaitClusterResult()
     enterBarrier("join-one-" + step)
   }
 
@@ -754,7 +754,7 @@ abstract class StressSpec
         }
 
       }
-      awaitClusterResult
+      awaitClusterResult()
       enterBarrier("join-several-" + step)
     }
 
@@ -804,7 +804,7 @@ abstract class StressSpec
     }
     enterBarrier("watch-verified-" + step)
 
-    awaitClusterResult
+    awaitClusterResult()
     enterBarrier("remove-one-" + step)
   }
 
@@ -828,7 +828,7 @@ abstract class StressSpec
           awaitMembersUp(currentRoles.size, timeout = remaining)
         }
       }
-      awaitClusterResult
+      awaitClusterResult()
       enterBarrier("remove-several-" + step)
     }
 
@@ -885,7 +885,7 @@ abstract class StressSpec
             (nextAS, nextAddresses)
           }
         }
-        awaitClusterResult
+        awaitClusterResult()
 
         step += 1
         loop(counter + 1, nextAS, nextAddresses)
@@ -936,7 +936,7 @@ abstract class StressSpec
         }
       }
 
-      awaitClusterResult
+      awaitClusterResult()
     }
 
   def awaitWorkResult: WorkResult = {
@@ -983,7 +983,7 @@ abstract class StressSpec
 
         }
 
-        awaitClusterResult
+        awaitClusterResult()
         step += 1
       }
     }
@@ -1004,7 +1004,7 @@ abstract class StressSpec
         }
       }
 
-      awaitClusterResult
+      awaitClusterResult()
 
       nbrUsedRoles += size
       enterBarrier("after-" + step)

@@ -42,21 +42,11 @@ object Crypt {
 }
 
 print("""
-# This config imports the Akka reference configuration.
-include "akka-reference.conf"
-
-# In this file you can override any option defined in the 'akka-reference.conf' file.
-# Copy in all or parts of the 'akka-reference.conf' file and modify as you please.
-
 akka {
   remote {
-    netty {
-      secure-cookie = """")
-print(Crypt.generateSecureCookie)
-print(""""
-      require-cookie = on
-    }
+    secure-cookie = "%s"
+    require-cookie = on
   }
 }
-""")
+""".format(Crypt.generateSecureCookie))
 

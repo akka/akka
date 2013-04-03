@@ -133,9 +133,9 @@ class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
 object DiningHakkers {
   val system = ActorSystem()
 
-  def main(args: Array[String]): Unit = run
+  def main(args: Array[String]): Unit = run()
 
-  def run {
+  def run(): Unit = {
     //Create 5 chopsticks
     val chopsticks = for (i ← 1 to 5) yield system.actorOf(Props[Chopstick], "Chopstick" + i)
 

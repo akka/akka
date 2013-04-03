@@ -6,10 +6,8 @@ package akka.remote.serialization
 
 import akka.serialization.{ Serializer, Serialization }
 import com.google.protobuf.Message
-import akka.actor.DynamicAccess
+import akka.actor.{ ActorSystem, ActorRef }
 import akka.remote.RemoteProtocol.ActorRefProtocol
-import akka.actor.ActorSystem
-import akka.actor.ActorRef
 
 object ProtobufSerializer {
 
@@ -18,11 +16,7 @@ object ProtobufSerializer {
    * protobuf representation.
    */
   def serializeActorRef(ref: ActorRef): ActorRefProtocol = {
-    val identifier: String = Serialization.currentTransportAddress.value match {
-      case null    ⇒ ref.path.toSerializationFormat
-      case address ⇒ ref.path.toSerializationFormatWithAddress(address)
-    }
-    ActorRefProtocol.newBuilder.setPath(identifier).build
+    ActorRefProtocol.newBuilder.setPath(Serialization.serializedActorPath(ref)).build
   }
 
   /**

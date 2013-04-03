@@ -61,7 +61,7 @@ class JavaLoggerSpec extends AkkaSpec(JavaLoggerSpec.config) {
     }
 
     "log info without stackTrace" in {
-      producer ! ("{} is the magic number", 3)
+      producer ! (("{} is the magic number", 3))
 
       val record = expectMsgType[logging.LogRecord]
 

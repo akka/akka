@@ -55,7 +55,7 @@ class Chopstick extends Actor with FSM[ChopstickState, TakenBy] {
   }
 
   // Initialze the chopstick
-  initialize
+  initialize()
 }
 
 /**
@@ -155,7 +155,7 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
   }
 
   // Initialize the hakker
-  initialize
+  initialize()
 
   private def startThinking(duration: FiniteDuration): State = {
     goto(Thinking) using TakenChopsticks(None, None) forMax duration
@@ -169,9 +169,9 @@ object DiningHakkersOnFsm {
 
   val system = ActorSystem()
 
-  def main(args: Array[String]): Unit = run
+  def main(args: Array[String]): Unit = run()
 
-  def run = {
+  def run(): Unit = {
     // Create 5 chopsticks
     val chopsticks = for (i ← 1 to 5) yield system.actorOf(Props[Chopstick], "Chopstick" + i)
     // Create 5 awesome fsm hakkers and assign them their left and right chopstick

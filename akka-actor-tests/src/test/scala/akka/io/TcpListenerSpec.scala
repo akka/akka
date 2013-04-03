@@ -13,6 +13,7 @@ import Tcp._
 import akka.testkit.EventFilter
 import akka.io.SelectionHandler._
 import akka.io.TcpListener.{ RegisterIncoming, FailedRegisterIncoming }
+import akka.TestUtils
 
 class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
 

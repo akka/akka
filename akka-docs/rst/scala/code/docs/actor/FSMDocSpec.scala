@@ -81,7 +81,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
       //#unhandled-elided
       //#fsm-body
 
-      initialize
+      initialize()
     }
     //#simple-fsm
     object DemoCode {

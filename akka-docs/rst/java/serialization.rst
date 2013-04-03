@@ -109,14 +109,33 @@ list which classes that should be serialized using it.
 Serializing ActorRefs
 ---------------------
 
-All ActorRefs are serializable using JavaSerializer, but in case you are writing your own serializer,
-you might want to know how to serialize and deserialize them properly, here's the magic incantation:
+All ActorRefs are serializable using JavaSerializer, but in case you are writing your
+own serializer, you might want to know how to serialize and deserialize them properly.
+In the general case, the local address to be used depends on the type of remote
+address which shall be the recipient of the serialized information. Use
+:meth:`Serialization.serializedActorPath(actorRef)` like this:
 
 .. includecode:: code/docs/serialization/SerializationDocTestBase.java
    :include: imports
 
 .. includecode:: code/docs/serialization/SerializationDocTestBase.java
    :include: actorref-serializer
+
+This assumes that serialization happens in the context of sending a message
+through the remote transport. There are other uses of serialization, though,
+e.g. storing actor references outside of an actor application (database,
+durable mailbox, etc.). In this case, it is important to keep in mind that the
+address part of an actor’s path determines how that actor is communicated with.
+Storing a local actor path might be the right choice if the retrieval happens
+in the same logical context, but it is not enough when deserializing it on a
+different network host: for that it would need to include the system’s remote
+transport address. An actor system is not limited to having just one remote
+transport per se, which makes this question a bit more interesting. To find out
+the appropriate address to use when sending to ``remoteAddr`` you can use
+:meth:`ActorRefProvider.getExternalAddressFor(remoteAddr)` like this:
+
+.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+   :include: external-address
 
 .. note::
   
@@ -131,25 +150,6 @@ you might want to know how to serialize and deserialize them properly, here's th
   storage of the reference, you can use ``toStringWithAddress``, which does not
   include the unique id.
 
-
-This assumes that serialization happens in the context of sending a message
-through the remote transport. There are other uses of serialization, though,
-e.g. storing actor references outside of an actor application (database,
-durable mailbox, etc.). In this case, it is important to keep in mind that the
-address part of an actor’s path determines how that actor is communicated with.
-Storing a local actor path might be the right choice if the retrieval happens
-in the same logical context, but it is not enough when deserializing it on a
-different network host: for that it would need to include the system’s remote
-transport address. An actor system is not limited to having just one remote
-transport per se, which makes this question a bit more interesting.
-
-In the general case, the local address to be used depends on the type of remote
-address which shall be the recipient of the serialized information. Use
-:meth:`ActorRefProvider.getExternalAddressFor(remoteAddr)` to query the system
-for the appropriate address to use when sending to ``remoteAddr``:
-
-.. includecode:: code/docs/serialization/SerializationDocTestBase.java
-   :include: external-address
 
 This requires that you know at least which type of address will be supported by
 the system which will deserialize the resulting actor reference; if you have no

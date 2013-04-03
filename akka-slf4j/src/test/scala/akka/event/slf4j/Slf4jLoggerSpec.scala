@@ -81,7 +81,7 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
     }
 
     "log info with parameters" in {
-      producer ! ("test x={} y={}", 3, 17)
+      producer ! (("test x={} y={}", 3, 17))
 
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString

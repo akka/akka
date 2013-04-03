@@ -4,6 +4,7 @@
 package akka.io
 
 import akka.testkit.{ TestProbe, ImplicitSender, AkkaSpec }
+import akka.TestUtils
 import TestUtils._
 import akka.util.ByteString
 import java.net.InetSocketAddress

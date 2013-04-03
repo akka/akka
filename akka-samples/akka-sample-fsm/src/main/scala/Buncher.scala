@@ -76,7 +76,7 @@ abstract class GenericBuncher[A: ClassTag, B](val singleTimeout: FiniteDuration,
       stop
   }
 
-  initialize
+  initialize()
 }
 
 object Buncher {

@@ -66,7 +66,7 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
   lazy val victim = sortedRoles(1)
 
   var endBarrierNumber = 0
-  def endBarrier: Unit = {
+  def endBarrier(): Unit = {
     endBarrierNumber += 1
     enterBarrier("after_" + endBarrierNumber)
   }
@@ -75,7 +75,7 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
 
     "reach initial convergence" taggedAs LongRunningTest in {
       awaitClusterUp(roles: _*)
-      endBarrier
+      endBarrier()
     }
 
     "mark a node as UNREACHABLE when we pull the network" taggedAs LongRunningTest in {
@@ -125,7 +125,7 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
         }
       }
 
-      endBarrier
+      endBarrier()
     }
 
     "mark the node as DOWN" taggedAs LongRunningTest in {
@@ -139,7 +139,7 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
         awaitAssert(clusterView.unreachableMembers must be(Set.empty), 15 seconds)
 
       }
-      endBarrier
+      endBarrier()
     }
 
     "allow node to REJOIN when the network is plugged back in" taggedAs LongRunningTest in {
@@ -158,7 +158,7 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
 
       awaitMembersUp(roles.size)
 
-      endBarrier
+      endBarrier()
     }
   }
 }
