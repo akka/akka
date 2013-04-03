@@ -19,6 +19,10 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
   def factory: MailboxType ⇒ MessageQueue
 
+  def supportsBeingBounded = true
+
+  def maxConsumers = 4
+
   name should {
     "create an unbounded mailbox" in {
       val config = UnboundedMailbox()
@@ -122,7 +126,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
       r
     }
 
-    val consumers = for (i ← (1 to 4).toList) yield createConsumer
+    val consumers = List.fill(maxConsumers)(createConsumer)
 
     val ps = producers.map(Await.result(_, within))
     val cs = consumers.map(Await.result(_, within))
@@ -185,5 +189,14 @@ class CustomMailboxSpec extends AkkaSpec(CustomMailboxSpec.config) {
       val queue = actor.asInstanceOf[ActorRefWithCell].underlying.asInstanceOf[ActorCell].mailbox.messageQueue
       queue.getClass must be(classOf[CustomMailboxSpec.MyMailbox])
     }
+  }
+}
+
+class SingleConsumerOnlyMailboxSpec extends MailboxSpec {
+  lazy val name = "The single-consumer-only mailbox implementation"
+  override def maxConsumers = 1
+  def factory = {
+    case u: UnboundedMailbox ⇒ SingleConsumerOnlyUnboundedMailbox().create(None, None)
+    case b: BoundedMailbox   ⇒ pending; null
   }
 }
