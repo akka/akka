@@ -1,9 +1,8 @@
 package sample.zeromq.reqrep.actor
 
-import akka.actor.{ Terminated, ActorSystem, Props, Actor }
+import akka.actor.{ Terminated, ActorSystem, Props, Actor, ActorLogging }
 import akka.util.ByteString
 import akka.zeromq._
-import util.Random
 import scala.Array
 import sample.zeromq.Util
 
@@ -15,7 +14,6 @@ class RequestActor extends Actor with ActorLogging {
       Connect("tcp://127.0.0.1:1234"),
       Listener(self)))
 
-  val random = new Random()
   val maxMessageSize = 10
   val numMessages = 20000
 
@@ -44,7 +42,7 @@ class RequestActor extends Actor with ActorLogging {
   }
 
   private def sendRequest() = {
-    currentMessage = Util.randomString(random, maxMessageSize)
+    currentMessage = Util.randomString(maxMessageSize)
     requestSocket ! ZMQMessage(ByteString(currentMessage))
   }
 

@@ -1,6 +1,5 @@
 package sample.zeromq.reqrep.app
 
-import util.Random
 import org.zeromq.ZMQ
 import sample.zeromq.Util
 
@@ -9,7 +8,6 @@ import sample.zeromq.Util
  * is the same that has been sent.
  */
 object StandAloneRequesterApp extends App {
-  val random = new Random()
   val maxMessageSize = 1000
   val numMessages = 20000
   val host = "tcp://127.0.0.1:1234"
@@ -20,7 +18,7 @@ object StandAloneRequesterApp extends App {
 
   val startTime = System.nanoTime
   for (_ ← 0 to numMessages) {
-    val message = Util.randomString(random, maxMessageSize)
+    val message = Util.randomString(maxMessageSize)
     socket.send(message.getBytes("UTF-8"), 0)
     val res = socket.recv(0)
     if (!message.equals(new String(res, "UTF-8"))) {

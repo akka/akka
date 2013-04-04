@@ -417,7 +417,7 @@ object AkkaBuild extends Build {
   lazy val zeromqSample = Project(
     id = "akka-sample-zeromq",
     base = file("akka-samples/akka-sample-zeromq"),
-    dependencies = Seq(kernel, actor, zeroMQ),
+    dependencies = Seq(actor, zeroMQ),
     settings = sampleSettings
   )
 

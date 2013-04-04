@@ -102,7 +102,7 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
     case MulticastHops(value)        ⇒ socket.setMulticastHops(value)
     case SendBufferSize(value)       ⇒ socket.setSendBufferSize(value)
     case ReceiveBufferSize(value)    ⇒ socket.setReceiveBufferSize(value)
-    case ReceiveTimeout(duration)    ⇒ socket.setReceiveTimeOut(duration.toMillis.toInt)
+    case RecvTimeout(duration)       ⇒ socket.setReceiveTimeOut(duration.toMillis.toInt)
     case SendTimeout(duration)       ⇒ socket.setSendTimeOut(duration.toMillis.toInt)
     case d: Deserializer             ⇒ deserializer = d
   }
@@ -147,7 +147,7 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
   }
 
   private def setupTimeout(): Unit = {
-    self ! ReceiveTimeout(recvTimeout)
+    self ! RecvTimeout(recvTimeout)
     self ! SendTimeout(sendTimeout)
   }
 
@@ -191,7 +191,7 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
 
   private val recvTimeout: FiniteDuration = {
     val ext = ZeroMQExtension(context.system)
-    params collectFirst { case ReceiveTimeout(duration) ⇒ duration } getOrElse ext.DefaultRecvTimeout
+    params collectFirst { case RecvTimeout(duration) ⇒ duration } getOrElse ext.DefaultRecvTimeout
   }
 
   private val sendTimeout: FiniteDuration = {

@@ -11,7 +11,7 @@ object StandAloneSubscriberApp extends App {
   socket.connect(host)
   socket.subscribe(Array[Byte]())
 
-  var startTime = Platform.currentTime
+  var startTime = System.nanoTime
   var counter = 0
   while (true) {
     socket.recv(0)

@@ -1,14 +1,26 @@
 package sample.zeromq
 
-import akka.jsr166y.ThreadLocalRandom
+import scala.concurrent.forkjoin.ThreadLocalRandom
 
+/**
+ * Some helper methods for the sample code
+ */
 object Util {
-  val generator = new ThreadLocalRandom()
 
-  def randomString(random: Random, maxMessageSize: Int) = {
-    val size = random.nextInt(maxMessageSize) + 1
-    val bytes = Array[Byte](size)
-    generator.nextBytes(bytes)
-    new String(bytes, "UTF-8")
+  /**
+   * Generates a random, printable char
+   */
+  def randomPrintableChar(): Char = {
+    val low = 33
+    val high = 127
+    (ThreadLocalRandom.current.nextInt(high - low) + low).toChar
+  }
+
+  /**
+   * Generates a random, printable string of specified maximum length
+   */
+  def randomString(maxMessageSize: Int) = {
+    val size = ThreadLocalRandom.current.nextInt(maxMessageSize) + 1
+    (for (i ← 0 until size) yield randomPrintableChar()).mkString
   }
 }

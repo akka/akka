@@ -1,10 +1,9 @@
 package sample.zeromq.pushpull.actor
 
-import akka.actor.Actor
+import akka.actor.{ Actor, ActorLogging }
 import akka.event.Logging
 import akka.util.ByteString
 import akka.zeromq._
-import util.Random
 import sample.zeromq.Util
 
 private case class PushMessage()
@@ -17,7 +16,6 @@ class PusherActor extends Actor with ActorLogging {
       Bind("tcp://127.0.0.1:1234"),
       Listener(self)))
 
-  val random = new Random()
   val maxMessageSize = 100
 
   var counter = 0
@@ -25,7 +23,7 @@ class PusherActor extends Actor with ActorLogging {
 
   private def pushMessage() = {
     if (counter % modulo == 0) {
-      val message = Util.randomString(random, maxMessageSize)
+      val message = Util.randomString(maxMessageSize)
       self ! ZMQMessage(ByteString(message))
     } else {
       self ! PushMessage()
@@ -33,7 +31,7 @@ class PusherActor extends Actor with ActorLogging {
 
     counter = if (counter >= 2999) 0 else counter + 1
   }
-    
+
   def receive = {
     case m: ZMQMessage  ⇒ pusherActor ! m; pushMessage()
     case p: PushMessage ⇒ pushMessage()

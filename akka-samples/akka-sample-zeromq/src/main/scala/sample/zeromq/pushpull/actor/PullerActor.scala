@@ -1,12 +1,12 @@
 package sample.zeromq.pushpull.actor
 
-import akka.actor.Actor
+import akka.actor.{ Actor, ActorLogging }
 import akka.zeromq.ZMQMessage
 
 class PullerActor extends Actor with ActorLogging {
   log.info("Connecting..")
 
-  var startTime = Platform.currentTime
+  var startTime = System.nanoTime
   var counter = 0
 
   def receive = {
