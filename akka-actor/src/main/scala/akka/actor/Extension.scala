@@ -81,7 +81,7 @@ trait ExtensionIdProvider {
  * {{{
  * object MyExt extends ExtensionKey[Ext]
  *
- * class Ext(system: ExtendedActorSystem) extends MyExt {
+ * class Ext(system: ExtendedActorSystem) extends Extension {
  *   ...
  * }
  * }}}
