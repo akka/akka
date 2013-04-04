@@ -8,7 +8,7 @@ The 2.2 release contains several structural changes that require some
 simple, mechanical source-level changes in client code.
 
 When migrating from 1.3.x to 2.1.x you should first follow the instructions for
-migrating `1.3.x to 2.0.x <http://doc.akka.io/docs/akka/2.0.3/project/migration-guide-1.3.x-2.0.x.html>`_ and then :ref:`2.0.x to 2.1.x <migration-2.1>`.
+migrating :ref:`1.3.x to 2.0.x <migration-2.0>` and then :ref:`2.0.x to 2.1.x <migration-2.1>`.
 
 Immutable everywhere
 ====================
