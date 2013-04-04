@@ -5,15 +5,12 @@ package akka.cluster
 
 import language.postfixOps
 import scala.collection.immutable
-import scala.collection.immutable.{ VectorBuilder, SortedSet }
+import scala.collection.immutable.VectorBuilder
 import akka.actor.{ Actor, ActorLogging, ActorRef, Address }
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus._
 import akka.event.EventStream
 import akka.actor.AddressTerminated
-import java.lang.Iterable
-import akka.japi.Util.immutableSeq
-import akka.util.Collections.EmptyImmutableSeq
 
 /**
  * Domain events published to the event bus.
