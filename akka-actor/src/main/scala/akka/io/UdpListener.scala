@@ -5,7 +5,7 @@ package akka.io
 
 import akka.actor.{ ActorLogging, Actor, ActorRef }
 import akka.io.SelectionHandler._
-import akka.io.UdpFF._
+import akka.io.Udp._
 import akka.util.ByteString
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
@@ -17,14 +17,14 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-private[io] class UdpFFListener(val udpFF: UdpFFExt,
-                                val bindCommander: ActorRef,
-                                val bind: Bind)
-  extends Actor with ActorLogging with WithUdpFFSend {
+private[io] class UdpListener(val udp: UdpExt,
+                              val bindCommander: ActorRef,
+                              val bind: Bind)
+  extends Actor with ActorLogging with WithUdpSend {
 
   import bind._
-  import udpFF.bufferPool
-  import udpFF.settings._
+  import udp.bufferPool
+  import udp.settings._
 
   def selector: ActorRef = context.parent
 

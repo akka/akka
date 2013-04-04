@@ -136,7 +136,7 @@ the ``toSeq`` method. No bytes are copied. Because of immutability the underlyin
 .. includecode:: code/docs/io/BinaryCoding.scala
    :include: rest-to-seq
 
-In general, conversions from ``ByteString`` to ``ByteIterator`` and vice versa are O(1) for non-chunked ``ByteString``s and (at worst) O(nChunks) for chunked ``ByteString``s.
+In general, conversions from ``ByteString`` to ``ByteIterator`` and vice versa are O(1) for non-chunked ByteStrings and (at worst) O(nChunks) for chunked ByteStrings.
 
 Encoding of data also is very natural, using ``ByteStringBuilder``
 
@@ -283,21 +283,21 @@ Using UDP
 UDP support comes in two flavors: connectionless and connection-based. With connectionless UDP, workers can send datagrams
 to any remote address. Connection-based UDP workers are linked to a single remote address.
 
-The connectionless UDP manager is accessed through ``UdpFF``. ``UdpFF`` refers to the "fire-and-forget" style of sending
+The connectionless UDP manager is accessed through ``Udp``. ``Udp`` refers to the "fire-and-forget" style of sending
 UDP datagrams.
 
 .. code-block:: scala
 
   import akka.io.IO
-  import akka.io.UdpFF
-  val connectionLessUdp = IO(UdpFF)
+  import akka.io.Udp
+  val connectionLessUdp = IO(Udp)
 
-The connection-based UDP manager is accessed through ``UdpConn``.
+The connection-based UDP manager is accessed through ``UdpConnected``.
 
 .. code-block:: scala
 
-  import akka.io.UdpConn
-  val connectionBasedUdp = IO(UdpConn)
+  import akka.io.UdpConnected
+  val connectionBasedUdp = IO(UdpConnected)
 
 UDP servers can be only implemented by the connectionless API, but clients can use both.
 
@@ -308,14 +308,14 @@ Simple Send
 ............
 
 To simply send a UDP datagram without listening to an answer one needs to send the ``SimpleSender`` command to the
-``UdpFF`` manager:
+``Udp`` manager:
 
 .. code-block:: scala
 
-  IO(UdpFF) ! SimpleSender
+  IO(Udp) ! SimpleSender
   // or with socket options:
   import akka.io.Udp._
-  IO(UdpFF) ! SimpleSender(List(SO.Broadcast(true)))
+  IO(Udp) ! SimpleSender(List(SO.Broadcast(true)))
 
 The manager will create a worker for sending, and the worker will reply with a ``SimpleSendReady`` message:
 
@@ -340,7 +340,7 @@ manager
 
 .. code-block:: scala
 
-  IO(UdpFF) ! Bind(handler, localAddress)
+  IO(Udp) ! Bind(handler, localAddress)
 
 After the bind succeeds, the sender of the ``Bind`` command will be notified with a ``Bound`` message. The sender of
 this message is the worker for the UDP channel bound to the local address.
@@ -380,13 +380,13 @@ Connecting is similar to what we have seen in the previous section:
 
 .. code-block:: scala
 
-  IO(UdpConn) ! Connect(handler, remoteAddress)
+  IO(UdpConnected) ! Connect(handler, remoteAddress)
 
 Or, with more options:
 
 .. code-block:: scala
 
-  IO(UdpConn) ! Connect(handler, Some(localAddress), remoteAddress, List(SO.Broadcast(true)))
+  IO(UdpConnected) ! Connect(handler, Some(localAddress), remoteAddress, List(SO.Broadcast(true)))
 
 After the connect succeeds, the sender of the ``Connect`` command will be notified with a ``Connected`` message. The sender of
 this message is the worker for the UDP connection.

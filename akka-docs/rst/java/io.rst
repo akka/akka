@@ -216,14 +216,14 @@ Using UDP
 UDP support comes in two flavors: connectionless and connection-based. With connectionless UDP, workers can send datagrams
 to any remote address. Connection-based UDP workers are linked to a single remote address.
 
-The connectionless UDP manager is accessed through ``UdpFF``. ``UdpFF`` refers to the "fire-and-forget" style of sending
+The connectionless UDP manager is accessed through ``Udp``. ``Udp`` refers to the "fire-and-forget" style of sending
 UDP datagrams.
  
-.. includecode:: code/docs/io/IOUdpFFDocTest.java#manager
+.. includecode:: code/docs/io/UdpDocTest.java#manager
 
-The connection-based UDP manager is accessed through ``UdpConn``.
+The connection-based UDP manager is accessed through ``UdpConnected``.
 
-.. includecode:: code/docs/io/UdpConnDocTest.java#manager
+.. includecode:: code/docs/io/UdpConnectedDocTest.java#manager
 
 UDP servers can be only implemented by the connectionless API, but clients can use both.
 
@@ -232,24 +232,24 @@ Connectionless UDP
 
 The following imports are assumed in the following sections:
 
-.. includecode:: code/docs/io/IOUdpFFDocTest.java#imports
+.. includecode:: code/docs/io/UdpDocTest.java#imports
 
 Simple Send
 ............
 
 To simply send a UDP datagram without listening to an answer one needs to send the ``SimpleSender`` command to the
-``UdpFF`` manager:
+``Udp`` manager:
 
-.. includecode:: code/docs/io/IOUdpFFDocTest.java#simplesend
+.. includecode:: code/docs/io/UdpDocTest.java#simplesend
 
 The manager will create a worker for sending, and the worker will reply with a ``SimpleSendReady`` message:
 
-.. includecode:: code/docs/io/IOUdpFFDocTest.java#simplesend-finish
+.. includecode:: code/docs/io/UdpDocTest.java#simplesend-finish
 
 After saving the sender of the ``SimpleSendReady`` message it is possible to send out UDP datagrams with a simple
 message send:
 
-.. includecode:: code/docs/io/IOUdpFFDocTest.java#simplesend-send
+.. includecode:: code/docs/io/UdpDocTest.java#simplesend-send
 
 
 Bind (and Send)
@@ -258,22 +258,22 @@ Bind (and Send)
 To listen for UDP datagrams arriving on a given port, the ``Bind`` command has to be sent to the connectionless UDP
 manager
 
-.. includecode:: code/docs/io/IOUdpFFDocTest.java#bind
+.. includecode:: code/docs/io/UdpDocTest.java#bind
 
 After the bind succeeds, the sender of the ``Bind`` command will be notified with a ``Bound`` message. The sender of
 this message is the worker for the UDP channel bound to the local address.
 
-.. includecode:: code/docs/io/IOUdpFFDocTest.java#bind-finish
+.. includecode:: code/docs/io/UdpDocTest.java#bind-finish
 
 The actor passed in the ``handler`` parameter will receive inbound UDP datagrams sent to the bound address:
 
-.. includecode:: code/docs/io/IOUdpFFDocTest.java#bind-receive
+.. includecode:: code/docs/io/UdpDocTest.java#bind-receive
 
 The ``Received`` message contains the payload of the datagram and the address of the sender.
 
 It is also possible to send UDP datagrams using the ``ActorRef`` of the worker:
 
-.. includecode:: code/docs/io/IOUdpFFDocTest.java#bind-send
+.. includecode:: code/docs/io/UdpDocTest.java#bind-send
 
 
 .. note::
@@ -290,27 +290,27 @@ receive datagrams only from that address.
 
 Connecting is similar to what we have seen in the previous section:
 
-.. includecode:: code/docs/io/UdpConnDocTest.java#connect
+.. includecode:: code/docs/io/UdpConnectedDocTest.java#connect
 
 Or, with more options:
 
-.. includecode:: code/docs/io/UdpConnDocTest.java#connect-with-options
+.. includecode:: code/docs/io/UdpConnectedDocTest.java#connect-with-options
 
 After the connect succeeds, the sender of the ``Connect`` command will be notified with a ``Connected`` message. The sender of
 this message is the worker for the UDP connection.
 
-.. includecode:: code/docs/io/UdpConnDocTest.java#connected
+.. includecode:: code/docs/io/UdpConnectedDocTest.java#connected
 
 The actor passed in the ``handler`` parameter will receive inbound UDP datagrams sent to the bound address:
 
-.. includecode:: code/docs/io/UdpConnDocTest.java#received
+.. includecode:: code/docs/io/UdpConnectedDocTest.java#received
 
 The ``Received`` message contains the payload of the datagram but unlike in the connectionless case, no sender address
 is provided, as a UDP connection only receives messages from the endpoint it has been connected to.
 
 It is also possible to send UDP datagrams using the ``ActorRef`` of the worker:
 
-.. includecode:: code/docs/io/UdpConnDocTest.java#send
+.. includecode:: code/docs/io/UdpConnectedDocTest.java#send
 
 Again, like the ``Received`` message, the ``Send`` message does not contain a remote address. This is because the address
 will always be the endpoint we originally connected to.
