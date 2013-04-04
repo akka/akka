@@ -5,17 +5,17 @@ package akka.io
 
 import akka.actor.Props
 import akka.io.IO.SelectorBasedManager
-import akka.io.UdpConn.Connect
+import akka.io.UdpConnected.Connect
 
 /**
  * INTERNAL API
  */
-private[io] class UdpConnManager(udpConn: UdpConnExt) extends SelectorBasedManager(udpConn.settings, udpConn.settings.NrOfSelectors) {
+private[io] class UdpConnectedManager(udpConn: UdpConnectedExt) extends SelectorBasedManager(udpConn.settings, udpConn.settings.NrOfSelectors) {
 
   def receive = workerForCommandHandler {
     case c: Connect ⇒
       val commander = sender
-      Props(new UdpConnection(udpConn, commander, c))
+      Props(new UdpConnectedection(udpConn, commander, c))
   }
 
 }

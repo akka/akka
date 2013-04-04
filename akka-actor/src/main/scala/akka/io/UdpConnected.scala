@@ -11,11 +11,11 @@ import java.net.InetSocketAddress
 import scala.collection.immutable
 import java.lang.{ Iterable ⇒ JIterable }
 
-object UdpConn extends ExtensionKey[UdpConnExt] {
+object UdpConnected extends ExtensionKey[UdpConnectedExt] {
   /**
-   * Java API: retrieve the UdpConn extension for the given system.
+   * Java API: retrieve the UdpConnected extension for the given system.
    */
-  override def get(system: ActorSystem): UdpConnExt = super.get(system)
+  override def get(system: ActorSystem): UdpConnectedExt = super.get(system)
 
   trait Command extends IO.HasFailureMessage {
     def failureMessage = CommandFailed(this)
@@ -58,13 +58,13 @@ object UdpConn extends ExtensionKey[UdpConnExt] {
 
 }
 
-class UdpConnExt(system: ExtendedActorSystem) extends IO.Extension {
+class UdpConnectedExt(system: ExtendedActorSystem) extends IO.Extension {
 
-  val settings: UdpSettings = new UdpSettings(system.settings.config.getConfig("akka.io.udp-fire-and-forget"))
+  val settings: UdpSettings = new UdpSettings(system.settings.config.getConfig("akka.io.udp-connected"))
 
   val manager: ActorRef = {
     system.asInstanceOf[ActorSystemImpl].systemActorOf(
-      props = Props(new UdpConnManager(this)),
+      props = Props(new UdpConnectedManager(this)),
       name = "IO-UDP-CONN")
   }
 
@@ -73,11 +73,11 @@ class UdpConnExt(system: ExtendedActorSystem) extends IO.Extension {
 }
 
 /**
- * Java API: factory methods for the message types used when communicating with the UdpConn service.
+ * Java API: factory methods for the message types used when communicating with the UdpConnected service.
  */
-object UdpConnMessage {
+object UdpConnectedMessage {
   import language.implicitConversions
-  import UdpConn._
+  import UdpConnected._
 
   def connect(handler: ActorRef,
               remoteAddress: InetSocketAddress,

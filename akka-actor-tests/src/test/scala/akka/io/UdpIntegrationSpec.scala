@@ -4,27 +4,26 @@
 package akka.io
 
 import akka.testkit.{ TestProbe, ImplicitSender, AkkaSpec }
-import akka.io.UdpFF._
-import akka.TestUtils
-import TestUtils._
+import akka.io.Udp._
+import akka.TestUtils._
 import akka.util.ByteString
 import java.net.InetSocketAddress
 import akka.actor.ActorRef
 
-class UdpFFIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with ImplicitSender {
+class UdpIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with ImplicitSender {
 
   val addresses = temporaryServerAddresses(3)
 
   def bindUdp(address: InetSocketAddress, handler: ActorRef): ActorRef = {
     val commander = TestProbe()
-    commander.send(IO(UdpFF), Bind(handler, address))
+    commander.send(IO(Udp), Bind(handler, address))
     commander.expectMsg(Bound)
     commander.sender
   }
 
   val simpleSender: ActorRef = {
     val commander = TestProbe()
-    commander.send(IO(UdpFF), SimpleSender)
+    commander.send(IO(Udp), SimpleSender)
     commander.expectMsg(SimpleSendReady)
     commander.sender
   }

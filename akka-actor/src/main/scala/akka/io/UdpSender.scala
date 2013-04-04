@@ -5,7 +5,7 @@ package akka.io
 
 import akka.actor._
 import java.nio.channels.DatagramChannel
-import akka.io.UdpFF._
+import akka.io.Udp._
 import akka.io.SelectionHandler.{ ChannelRegistered, RegisterChannel }
 import scala.collection.immutable
 import akka.io.Inet.SocketOption
@@ -16,8 +16,8 @@ import scala.util.control.NonFatal
  *
  * INTERNAL API
  */
-private[io] class UdpFFSender(val udpFF: UdpFFExt, options: immutable.Traversable[SocketOption], val commander: ActorRef)
-  extends Actor with ActorLogging with WithUdpFFSend {
+private[io] class UdpSender(val udp: UdpExt, options: immutable.Traversable[SocketOption], val commander: ActorRef)
+  extends Actor with ActorLogging with WithUdpSend {
 
   def selector: ActorRef = context.parent
 
