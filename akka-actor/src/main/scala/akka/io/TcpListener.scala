@@ -4,14 +4,11 @@
 
 package akka.io
 
-import java.net.InetSocketAddress
 import java.nio.channels.{ SocketChannel, SelectionKey, ServerSocketChannel }
 import scala.annotation.tailrec
-import scala.collection.immutable
 import scala.util.control.NonFatal
 import akka.actor.{ Props, ActorLogging, ActorRef, Actor }
 import akka.io.SelectionHandler._
-import akka.io.Inet.SocketOption
 import akka.io.Tcp._
 import akka.io.IO.HasFailureMessage
 
@@ -50,7 +47,7 @@ private[io] class TcpListener(val selectorRouter: ActorRef,
     try socket.bind(endpoint, backlog)
     catch {
       case NonFatal(e) ⇒
-        bindCommander ! CommandFailed(bind)
+        bindCommander ! bind.failureMessage
         log.error(e, "Bind failed for TCP channel on endpoint [{}]", endpoint)
         context.stop(self)
     }
