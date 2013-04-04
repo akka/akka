@@ -49,7 +49,10 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
         log.debug("Connection established")
         completeConnect(commander, options)
       } catch {
-        case e: IOException ⇒ handleError(commander, e)
+        case e: IOException ⇒
+          if (tcp.Settings.TraceLogging) log.debug("Could not establish connection due to {}", e)
+          closedMessage = TcpConnection.CloseInformation(Set(commander), connect.failureMessage)
+          throw e
       }
   }
 

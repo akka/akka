@@ -51,7 +51,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
       context.become(connected(handler))
 
     case cmd: CloseCommand ⇒
-      handleClose(commander, Some(sender), closeResponse(cmd))
+      handleClose(commander, Some(sender), cmd.event)
 
     case ReceiveTimeout ⇒
       // after sending `Register` user should watch this actor to make sure
@@ -68,7 +68,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
     case write: Write if writePending ⇒
       if (TraceLogging) log.debug("Dropping write because queue is full")
-      sender ! CommandFailed(write)
+      sender ! write.failureMessage
 
     case write: Write if write.data.isEmpty ⇒
       if (write.wantsAck)
@@ -80,7 +80,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
     case ChannelWritable   ⇒ if (writePending) doWrite(handler)
 
-    case cmd: CloseCommand ⇒ handleClose(handler, Some(sender), closeResponse(cmd))
+    case cmd: CloseCommand ⇒ handleClose(handler, Some(sender), cmd.event)
   }
 
   /** connection is closing but a write has to be finished first */
@@ -225,13 +225,6 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
     context.stop(self)
   }
 
-  def closeResponse(closeCommand: CloseCommand): ConnectionClosed =
-    closeCommand match {
-      case Close          ⇒ Closed
-      case Abort          ⇒ Aborted
-      case ConfirmedClose ⇒ ConfirmedClosed
-    }
-
   def handleError(handler: ActorRef, exception: IOException): Unit = {
     closedMessage = CloseInformation(Set(handler), ErrorClosed(extractMsg(exception)))
 
@@ -318,5 +311,5 @@ private[io] object TcpConnection {
    */
   case class CloseInformation(
     notificationsTo: Set[ActorRef],
-    closedEvent: ConnectionClosed)
+    closedEvent: Event)
 }

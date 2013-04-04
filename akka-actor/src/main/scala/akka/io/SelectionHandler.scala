@@ -67,7 +67,7 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
   val sequenceNumber = Iterator.from(0)
   val selectorManagementDispatcher = context.system.dispatchers.lookup(SelectorDispatcher)
   val selector = SelectorProvider.provider.openSelector
-  val OP_READ_AND_WRITE = OP_READ | OP_WRITE // compile-time constant
+  final val OP_READ_AND_WRITE = OP_READ | OP_WRITE // compile-time constant
 
   def receive: Receive = {
     case WriteInterest       ⇒ execute(enableInterest(OP_WRITE, sender))
@@ -113,7 +113,7 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
   override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
   def withCapacityProtection(cmd: WorkerForCommand, retriesLeft: Int)(body: ⇒ Unit): Unit = {
-    log.debug("Executing [{}]", cmd)
+    if (TraceLogging) log.debug("Executing [{}]", cmd)
     if (MaxChannelsPerSelector == -1 || childrenKeys.size < MaxChannelsPerSelector) {
       body
     } else {
