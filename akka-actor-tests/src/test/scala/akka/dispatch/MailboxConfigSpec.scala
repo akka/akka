@@ -10,7 +10,7 @@ import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll }
 import com.typesafe.config.Config
 import akka.actor.{ RepointableRef, Props, DeadLetter, ActorSystem, ActorRefWithCell, ActorRef, ActorCell }
 import akka.testkit.AkkaSpec
-import scala.concurrent.{ Future, Promise, Await }
+import scala.concurrent.{ Future, Promise, Await, ExecutionContext }
 import scala.concurrent.duration._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -23,15 +23,22 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
   def maxConsumers = 4
 
+  private val exampleMessage = createMessageInvocation("test")
+
   name should {
+
     "create an unbounded mailbox" in {
       val config = UnboundedMailbox()
       val q = factory(config)
       ensureInitialMailboxState(config, q)
+    }
 
-      val f = spawn { q.dequeue }
+    "UnboundedMailbox.numberOfMessages must be consistent with queue size" in {
+      ensureSingleConsumerEnqueueDequeue(UnboundedMailbox())
+    }
 
-      Await.result(f, 1 second) must be(null)
+    "BoundedMailbox.numberOfMessages must be consistent with queue size" in {
+      ensureSingleConsumerEnqueueDequeue(BoundedMailbox(1000, 10 milliseconds))
     }
 
     "create a bounded mailbox with 10 capacity and with push timeout" in {
@@ -39,9 +46,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
       val q = factory(config)
       ensureInitialMailboxState(config, q)
 
-      val exampleMessage = createMessageInvocation("test")
-
-      for (i ← 1 to config.capacity) q.enqueue(null, exampleMessage)
+      for (i ← 1 to config.capacity) q.enqueue(testActor, exampleMessage)
 
       q.numberOfMessages must be === config.capacity
       q.hasMessages must be === true
@@ -70,20 +75,37 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
   }
 
   //CANDIDATE FOR TESTKIT
-  def spawn[T <: AnyRef](fun: ⇒ T): Future[T] = {
-    val result = Promise[T]()
-    val t = new Thread(new Runnable {
-      def run = try {
-        result.success(fun)
-      } catch {
-        case e: Throwable ⇒ result.failure(e)
-      }
-    })
-    t.start
-    result.future
-  }
+  def spawn[T <: AnyRef](fun: ⇒ T): Future[T] = Future(fun)(ExecutionContext.global)
 
   def createMessageInvocation(msg: Any): Envelope = Envelope(msg, system.deadLetters, system)
+
+  def ensureMailboxSize(q: MessageQueue, expected: Int): Unit = q.numberOfMessages match {
+    case -1 | `expected` ⇒
+      q.hasMessages must be === (expected != 0)
+    case other ⇒
+      other must be === expected
+      q.hasMessages must be === (expected != 0)
+  }
+
+  def ensureSingleConsumerEnqueueDequeue(config: MailboxType) {
+    val q = factory(config)
+    ensureMailboxSize(q, 0)
+    q.dequeue must be === null
+    for (i ← 1 to 100) {
+      q.enqueue(testActor, exampleMessage)
+      ensureMailboxSize(q, i)
+    }
+
+    ensureMailboxSize(q, 100)
+
+    for (i ← 99 to 0 by -1) {
+      q.dequeue() must be === exampleMessage
+      ensureMailboxSize(q, i)
+    }
+
+    q.dequeue must be === null
+    ensureMailboxSize(q, 0)
+  }
 
   def ensureInitialMailboxState(config: MailboxType, q: MessageQueue) {
     q must not be null
