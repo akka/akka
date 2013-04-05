@@ -15,17 +15,17 @@ class GossipSpec extends WordSpec with MustMatchers {
   import MemberStatus._
 
   val a1 = Member(Address("akka.tcp", "sys", "a", 2552), Up, Set.empty)
-  val a2 = a1.copy(status = Joining)
+  val a2 = Member(a1.address, Joining, Set.empty)
   val b1 = Member(Address("akka.tcp", "sys", "b", 2552), Up, Set.empty)
-  val b2 = b1.copy(status = Removed)
+  val b2 = Member(b1.address, Removed, Set.empty)
   val c1 = Member(Address("akka.tcp", "sys", "c", 2552), Leaving, Set.empty)
-  val c2 = c1.copy(status = Up)
-  val c3 = c1.copy(status = Exiting)
+  val c2 = Member(c1.address, Up, Set.empty)
+  val c3 = Member(c1.address, Exiting, Set.empty)
   val d1 = Member(Address("akka.tcp", "sys", "d", 2552), Leaving, Set.empty)
-  val d2 = d1.copy(status = Removed)
+  val d2 = Member(d1.address, Removed, Set.empty)
   val e1 = Member(Address("akka.tcp", "sys", "e", 2552), Joining, Set.empty)
-  val e2 = e1.copy(status = Up)
-  val e3 = e1.copy(status = Down)
+  val e2 = Member(e1.address, Up, Set.empty)
+  val e3 = Member(e1.address, Down, Set.empty)
 
   "A Gossip" must {
 
