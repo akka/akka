@@ -14,8 +14,30 @@ import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
 /**
- * Java API for the TestProbe. Proper JavaDocs to come once JavaDoccing is
- * implemented.
+ * Java API: Test kit for testing actors. Inheriting from this class enables
+ * reception of replies from actors, which are queued by an internal actor and
+ * can be examined using the <code>expectMsg...</code> methods. Assertions and
+ * bounds concerning timing are available in the form of <code>Within</code>
+ * blocks.
+ * <p>
+ * 
+ * Beware of two points:
+ * <p>
+ * 
+ * <ul>
+ * <li>the ActorSystem passed into the constructor needs to be shutdown,
+ * otherwise thread pools and memory will be leaked - this trait is not
+ * thread-safe (only one actor with one queue, one stack of <code>Within</code>
+ * blocks); take care not to run tests within a single test class instance in
+ * parallel.</li>
+ * 
+ * <li>It should be noted that for CI servers and the like all maximum Durations
+ * are scaled using the <code>dilated</code> method, which uses the
+ * TestKitExtension.Settings.TestTimeFactor settable via akka.conf entry
+ * "akka.test.timefactor".</li>
+ * </ul>
+ * 
+ * 
  */
 public class JavaTestKit {
   private final TestProbe p;
@@ -24,8 +46,19 @@ public class JavaTestKit {
     p = new TestProbe(system);
   }
 
+  /**
+   * ActorRef of the test actor. Access is provided to enable e.g. registration
+   * as message target.
+   */
+  public ActorRef getTestActor() {
+    return p.testActor();
+  }
+
+  /**
+   * Shorthand to get the testActor.
+   */
   public ActorRef getRef() {
-    return p.ref();
+    return getTestActor();
   }
 
   public ActorSystem getSystem() {
@@ -44,6 +77,9 @@ public class JavaTestKit {
     return d.mul(TestKitExtension.get(p.system()).TestTimeFactor());
   }
 
+  /**
+   * Query queue status.
+   */
   public boolean msgAvailable() {
     return p.msgAvailable();
   }
@@ -72,14 +108,26 @@ public class JavaTestKit {
     return p.remainingOr(def);
   }
 
+  /**
+   * Have the testActor watch someone (i.e.
+   * <code>getContext().getWatch(...)</code> ).
+   */
   public ActorRef watch(ActorRef ref) {
     return p.watch(ref);
   }
 
+  /**
+   * Have the testActor stop watching someone (i.e.
+   * <code>getContext.unwatch(...)</code>).
+   */
   public ActorRef unwatch(ActorRef ref) {
     return p.unwatch(ref);
   }
 
+  /**
+   * Ignore all messages in the test actor for which the given function returns
+   * true.
+   */
   public abstract class IgnoreMsg {
     abstract protected boolean ignore(Object msg);
 
@@ -92,14 +140,63 @@ public class JavaTestKit {
     }
   }
 
+  /**
+   * Stop ignoring messages in the test actor.
+   */
   public void ignoreNoMsg() {
     p.ignoreNoMsg();
   }
 
+  /**
+   * Install an AutoPilot to drive the testActor: the AutoPilot will be run for
+   * each received message and can be used to send or forward messages, etc.
+   * Each invocation must return the AutoPilot for the next round.
+   */
   public void setAutoPilot(TestActor.AutoPilot pilot) {
     p.setAutoPilot(pilot);
   }
 
+  /**
+   * Obtain time remaining for execution of the innermost enclosing
+   * <code>Within</code> block or missing that it returns the properly dilated
+   * default for this case from settings (key
+   * "akka.test.single-expect-default").
+   */
+  public FiniteDuration remaining() {
+    return p.remaining();
+  }
+
+  /**
+   * Obtain time remaining for execution of the innermost enclosing
+   * <code>Within</code> block or missing that it returns the given duration.
+   */
+  public FiniteDuration remainingOr(FiniteDuration duration) {
+    return p.remainingOr(duration);
+  }
+
+  /**
+   * Execute code block while bounding its execution time between
+   * <code>min</code> and <code>max</code>. <code>Within</code> blocks may be
+   * nested. All methods in this trait which take maximum wait times are
+   * available in a version which implicitly uses the remaining time governed by
+   * the innermost enclosing <code>Within</code> block.
+   * <p>
+   * 
+   * Note that the timeout is scaled using <code>dilated</code>, which uses the
+   * configuration entry "akka.test.timefactor", while the min Duration is not.
+   * <p>
+   * 
+   * <pre>
+   * <code>
+   * // the run() method needs to finish within 3 seconds
+   * new Within(duration("3 seconds")) {
+   *   protected void run() {
+   *     // ...
+   *   }
+   * }
+   * </code>
+   * </pre>
+   */
   public abstract class Within {
     protected abstract void run();
 
@@ -122,6 +219,18 @@ public class JavaTestKit {
     }
   }
 
+  /**
+   * Await until the given condition evaluates to <code>true</code> or the
+   * timeout expires, whichever comes first.
+   * <p>
+   * 
+   * If no timeout is given, take it from the innermost enclosing
+   * <code>Within</code> block.
+   * <p>
+   * 
+   * Note that the timeout is scaled using Duration.dilated, which uses the
+   * configuration entry "akka.test.timefactor".
+   */
   public abstract class AwaitCond {
     protected abstract boolean cond();
 
@@ -150,6 +259,19 @@ public class JavaTestKit {
     }
   }
 
+  /**
+   * Await until the given assert does not throw an exception or the timeout
+   * expires, whichever comes first. If the timeout expires the last exception
+   * is thrown.
+   * <p>
+   * 
+   * If no timeout is given, take it from the innermost enclosing
+   * <code>Within</code> block.
+   * <p>
+   * 
+   * Note that the timeout is scaled using Duration.dilated, which uses the
+   * configuration entry "akka.test.timefactor".
+   */
   public abstract class AwaitAssert {
     protected abstract void check();
 
@@ -171,6 +293,30 @@ public class JavaTestKit {
     }
   }
 
+  /**
+   * Receive one message from the test actor and assert that the given matching
+   * function accepts it. Wait time is bounded by the given duration, with an
+   * AssertionFailure being thrown in case of timeout.
+   * <p>
+   * The received object as transformed by the matching function can be
+   * retrieved with the <code>get</code> method.
+   * 
+   * Use this variant to implement more complicated or conditional processing.
+   * <p>
+   * 
+   * <pre>
+   * <code>
+   * final String out = new ExpectMsg<String>("match hint") {
+   *   protected String match(Object in) {
+   *     if (in instanceof Integer)
+   *       return "match";
+   *     else
+   *       throw noMatch();
+   *   }
+   * }.get(); // this extracts the received message
+   * </code>
+   * </pre>
+   */
   public abstract class ExpectMsg<T> {
     private final T result;
 
@@ -198,64 +344,158 @@ public class JavaTestKit {
     }
   }
 
+  /**
+   * Same as <code>expectMsgEquals(remaining(), obj)</code>, but correctly
+   * treating the timeFactor.
+   */
   public <T> T expectMsgEquals(T msg) {
     return p.expectMsg(msg);
   }
 
+  /**
+   * Receive one message from the test actor and assert that it equals the given
+   * object. Wait time is bounded by the given duration, with an
+   * AssertionFailure being thrown in case of timeout.
+   * 
+   * @return the received object
+   */
   public <T> T expectMsgEquals(FiniteDuration max, T msg) {
     return p.expectMsg(max, msg);
   }
 
+  /**
+   * Same as <code>expectMsgClass(remaining(), clazz)</code>, but correctly
+   * treating the timeFactor.
+   */
   public <T> T expectMsgClass(Class<T> clazz) {
     return p.expectMsgClass(clazz);
   }
 
+  /**
+   * Receive one message from the test actor and assert that it conforms to the
+   * given class. Wait time is bounded by the given duration, with an
+   * AssertionFailure being thrown in case of timeout.
+   * 
+   * @return the received object
+   */
   public <T> T expectMsgClass(FiniteDuration max, Class<T> clazz) {
     return p.expectMsgClass(max, clazz);
   }
 
+  /**
+   * Same as <code>expectMsgAnyOf(remaining(), obj...)</code>, but correctly
+   * treating the timeFactor.
+   */
   public Object expectMsgAnyOf(Object... msgs) {
     return p.expectMsgAnyOf(Util.immutableSeq(msgs));
   }
 
+  /**
+   * Receive one message from the test actor and assert that it equals one of
+   * the given objects. Wait time is bounded by the given duration, with an
+   * AssertionFailure being thrown in case of timeout.
+   * 
+   * @return the received object
+   */
   public Object expectMsgAnyOf(FiniteDuration max, Object... msgs) {
     return p.expectMsgAnyOf(max, Util.immutableSeq(msgs));
   }
 
+  /**
+   * Same as <code>expectMsgAllOf(remaining(), obj...)</code>, but correctly
+   * treating the timeFactor.
+   */
   public Object[] expectMsgAllOf(Object... msgs) {
     return (Object[]) p.expectMsgAllOf(Util.immutableSeq(msgs)).toArray(Util.classTag(Object.class));
   }
 
+  /**
+   * Receive a number of messages from the test actor matching the given number
+   * of objects and assert that for each given object one is received which
+   * equals it and vice versa. This construct is useful when the order in which
+   * the objects are received is not fixed. Wait time is bounded by the given
+   * duration, with an AssertionFailure being thrown in case of timeout.
+   */
   public Object[] expectMsgAllOf(FiniteDuration max, Object... msgs) {
     return (Object[]) p.expectMsgAllOf(max, Util.immutableSeq(msgs)).toArray(Util.classTag(Object.class));
   }
 
+  /**
+   * Same as <code>expectMsgAnyClassOf(remaining(), obj...)</code>, but
+   * correctly treating the timeFactor.
+   */
   @SuppressWarnings("unchecked")
   public <T> T expectMsgAnyClassOf(Class<? extends T>... classes) {
     final Object result = p.expectMsgAnyClassOf(Util.immutableSeq(classes));
     return (T) result;
   }
 
+  /**
+   * Receive one message from the test actor and assert that it conforms to one
+   * of the given classes. Wait time is bounded by the given duration, with an
+   * AssertionFailure being thrown in case of timeout.
+   * 
+   * @return the received object
+   */
   public Object expectMsgAnyClassOf(FiniteDuration max, Class<?>... classes) {
     return p.expectMsgAnyClassOf(max, Util.immutableSeq(classes));
   }
 
+  /**
+   * Same as <code>expectNoMsg(remaining())</code>, but correctly treating the
+   * timeFactor.
+   */
   public void expectNoMsg() {
     p.expectNoMsg();
   }
 
+  /**
+   * Assert that no message is received for the specified time.
+   */
   public void expectNoMsg(FiniteDuration max) {
     p.expectNoMsg(max);
   }
 
+  /**
+   * Same as <code>receiveN(n, remaining())</code>, but correctly treating the
+   * timeFactor.
+   */
   public Object[] receiveN(int n) {
     return (Object[]) p.receiveN(n).toArray(Util.classTag(Object.class));
   }
 
+  /**
+   * Receive N messages in a row before the given deadline.
+   */
   public Object[] receiveN(int n, FiniteDuration max) {
     return (Object[]) p.receiveN(n, max).toArray(Util.classTag(Object.class));
   }
 
+  /**
+   * Receive one message from the internal queue of the TestActor. If the given
+   * duration is zero, the queue is polled (non-blocking).
+   * <p>
+   * 
+   * This method does NOT automatically scale its Duration parameter!
+   */
+  public Object receiveOne(Duration max) {
+    return p.receiveOne(max);
+  }
+
+  /**
+   * Receive a series of messages until one does not match the given
+   * <code>match</code> function or the idle timeout is met (disabled by
+   * default) or the overall maximum duration is elapsed. Returns the sequence
+   * of messages.
+   * <p>
+   * 
+   * Note that it is not an error to hit the <code>max</code> duration in this
+   * case.
+   * <p>
+   * 
+   * One possible use of this method is for testing whether messages of certain
+   * characteristics are generated at a certain rate.
+   */
   public abstract class ReceiveWhile<T> {
     abstract protected T match(Object msg) throws Exception;
 
@@ -292,6 +532,15 @@ public class JavaTestKit {
     }
   }
 
+  /**
+   * Facilities for selectively filtering out expected events from logging so
+   * that you can keep your test run’s console output clean and do not miss real
+   * error messages.
+   * <p>
+   * 
+   * If the <code>occurrences</code> is set to <code>Integer.MAX_VALUE</code>,
+   * no tracking is done.
+   */
   public abstract class EventFilter<T> {
     abstract protected T run();
 
