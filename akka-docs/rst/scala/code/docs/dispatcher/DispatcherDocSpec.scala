@@ -103,6 +103,14 @@ object DispatcherDocSpec {
       //Other dispatcher configuration goes here
     }
     //#prio-dispatcher-config-java
+
+    //#dispatcher-deployment-config
+    akka.actor.deployment {
+      /myactor {
+        dispatcher = my-dispatcher
+      }
+    }
+    //#dispatcher-deployment-config
   """
 
   //#prio-mailbox
@@ -165,13 +173,21 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
 
   import DispatcherDocSpec.MyActor
 
-  "defining dispatcher" in {
+  "defining dispatcher in config" in {
     val context = system
-    //#defining-dispatcher
+    //#defining-dispatcher-in-config
+    import akka.actor.Props
+    val myActor = context.actorOf(Props[MyActor], "myactor")
+    //#defining-dispatcher-in-config
+  }
+
+  "defining dispatcher in code" in {
+    val context = system
+    //#defining-dispatcher-in-code
     import akka.actor.Props
     val myActor =
       context.actorOf(Props[MyActor].withDispatcher("my-dispatcher"), "myactor1")
-    //#defining-dispatcher
+    //#defining-dispatcher-in-code
   }
 
   "defining dispatcher with bounded queue" in {
