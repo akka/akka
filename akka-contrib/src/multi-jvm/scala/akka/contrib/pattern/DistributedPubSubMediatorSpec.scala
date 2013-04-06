@@ -1,0 +1,258 @@
+/**
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.contrib.pattern
+
+import language.postfixOps
+import scala.concurrent.duration._
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.PoisonPill
+import akka.actor.Props
+import akka.cluster.Cluster
+import akka.cluster.ClusterEvent._
+import akka.remote.testconductor.RoleName
+import akka.remote.testkit.MultiNodeConfig
+import akka.remote.testkit.MultiNodeSpec
+import akka.remote.testkit.STMultiNodeSpec
+import akka.testkit._
+
+object DistributedPubSubMediatorSpec extends MultiNodeConfig {
+  val first = role("first")
+  val second = role("second")
+  val third = role("third")
+
+  commonConfig(ConfigFactory.parseString("""
+    akka.loglevel = INFO
+    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.remote.log-remote-lifecycle-events = off
+    akka.cluster.auto-join = off
+    akka.cluster.auto-down = on
+    """))
+
+  object TestChatUser {
+    case class Whisper(path: String, msg: Any)
+    case class Talk(path: String, msg: Any)
+    case class Shout(topic: String, msg: Any)
+  }
+
+  class TestChatUser(mediator: ActorRef, testActor: ActorRef) extends Actor {
+    import TestChatUser._
+    import DistributedPubSubMediator._
+
+    def receive = {
+      case Whisper(path, msg) ⇒ mediator ! Send(path, msg, localAffinity = true)
+      case Talk(path, msg)    ⇒ mediator ! SendToAll(path, msg)
+      case Shout(topic, msg)  ⇒ mediator ! Publish(topic, msg)
+      case msg                ⇒ testActor ! msg
+    }
+  }
+
+}
+
+class DistributedPubSubMediatorMultiJvmNode1 extends DistributedPubSubMediatorSpec
+class DistributedPubSubMediatorMultiJvmNode2 extends DistributedPubSubMediatorSpec
+class DistributedPubSubMediatorMultiJvmNode3 extends DistributedPubSubMediatorSpec
+
+class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMediatorSpec) with STMultiNodeSpec with ImplicitSender {
+  import DistributedPubSubMediatorSpec._
+  import DistributedPubSubMediatorSpec.TestChatUser._
+  import DistributedPubSubMediator._
+
+  override def initialParticipants = roles.size
+
+  def join(from: RoleName, to: RoleName): Unit = {
+    runOn(from) {
+      Cluster(system) join node(to).address
+      createMediator()
+    }
+    enterBarrier(from.name + "-joined")
+  }
+
+  def createMediator(): ActorRef = mediator
+  lazy val mediator: ActorRef = system.actorOf(Props(new DistributedPubSubMediator(role = None)), name = "mediator")
+
+  def createChatUser(name: String): ActorRef =
+    system.actorOf(Props(new TestChatUser(mediator, testActor)), name)
+
+  def chatUser(name: String): ActorRef = system.actorFor("/user/" + name)
+
+  def awaitCount(expected: Int): Unit = {
+    awaitAssert {
+      mediator ! Count
+      expectMsgType[Int] must be(expected)
+    }
+  }
+
+  "A DistributedPubSubMediator" must {
+
+    "startup 2 node cluster" in within(15 seconds) {
+      join(first, first)
+      join(second, first)
+      enterBarrier("after-1")
+    }
+
+    "keep track of added users" in within(15 seconds) {
+      runOn(first) {
+        val u1 = createChatUser("u1")
+        mediator ! Put(u1)
+
+        val u2 = createChatUser("u2")
+        mediator ! Put(u2)
+
+        awaitCount(2)
+
+        // send to actor at same node
+        u1 ! Whisper("/user/u2", "hello")
+        expectMsg("hello")
+        lastSender must be(u2)
+      }
+
+      runOn(second) {
+        val u3 = createChatUser("u3")
+        mediator ! Put(u3)
+      }
+
+      runOn(first, second) {
+        awaitCount(3)
+      }
+      enterBarrier("3-registered")
+
+      runOn(second) {
+        val u4 = createChatUser("u4")
+        mediator ! Put(u4)
+      }
+
+      runOn(first, second) {
+        awaitCount(4)
+      }
+      enterBarrier("4-registered")
+
+      runOn(first) {
+        // send to actor on another node
+        chatUser("u1") ! Whisper("/user/u4", "hi there")
+      }
+
+      runOn(second) {
+        expectMsg("hi there")
+        lastSender.path.name must be("u4")
+      }
+
+      enterBarrier("after-2")
+    }
+
+    "replicate users to new node" in within(20 seconds) {
+      join(third, first)
+
+      runOn(third) {
+        val u5 = createChatUser("u5")
+        mediator ! Put(u5)
+      }
+
+      awaitCount(5)
+      enterBarrier("5-registered")
+
+      runOn(third) {
+        chatUser("u5") ! Whisper("/user/u4", "go")
+      }
+
+      runOn(second) {
+        expectMsg("go")
+        lastSender.path.name must be("u4")
+      }
+
+      enterBarrier("after-3")
+    }
+
+    "keep track of removed users" in within(15 seconds) {
+      runOn(first) {
+        val u6 = createChatUser("u6")
+        mediator ! Put(u6)
+      }
+      awaitCount(6)
+      enterBarrier("6-registered")
+
+      runOn(first) {
+        mediator ! Remove("/user/u6")
+      }
+      awaitCount(5)
+
+      enterBarrier("after-4")
+    }
+
+    "remove terminated users" in within(5 seconds) {
+      runOn(second) {
+        chatUser("u3") ! PoisonPill
+      }
+
+      awaitCount(4)
+      enterBarrier("after-5")
+    }
+
+    "publish" in within(15 seconds) {
+      runOn(first) {
+        val u7 = createChatUser("u7")
+        mediator ! Put(u7)
+      }
+      runOn(second) {
+        val u7 = createChatUser("u7")
+        mediator ! Put(u7)
+      }
+      awaitCount(6)
+      enterBarrier("7-registered")
+
+      runOn(third) {
+        chatUser("u5") ! Talk("/user/u7", "hi")
+      }
+
+      runOn(first, second) {
+        expectMsg("hi")
+        lastSender.path.name must be("u7")
+      }
+      runOn(third) {
+        expectNoMsg(2.seconds)
+      }
+
+      enterBarrier("after-6")
+    }
+
+    "publish to topic" in within(15 seconds) {
+      runOn(first) {
+        val u8 = createChatUser("u8")
+        mediator ! Subscribe("topic1", u8)
+        val u9 = createChatUser("u9")
+        mediator ! Subscribe("topic1", u9)
+      }
+      runOn(second) {
+        val u10 = createChatUser("u10")
+        mediator ! Subscribe("topic1", u10)
+      }
+      // one topic on two nodes
+      awaitCount(8)
+      enterBarrier("topic1-registered")
+
+      runOn(third) {
+        chatUser("u5") ! Shout("topic1", "hello all")
+      }
+
+      runOn(first) {
+        expectMsg("hello all")
+        lastSender.path.name must (equal("u8") or equal("u9"))
+        expectMsg("hello all")
+        lastSender.path.name must (equal("u8") or equal("u9"))
+      }
+      runOn(second) {
+        expectMsg("hello all")
+        lastSender.path.name must be("u10")
+      }
+      runOn(third) {
+        expectNoMsg(2.seconds)
+      }
+
+      enterBarrier("after-7")
+    }
+
+  }
+}
