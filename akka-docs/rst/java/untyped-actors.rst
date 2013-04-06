@@ -185,6 +185,9 @@ the whole functionality):
 
 It should be noted that the :class:`Terminated` message is generated
 independent of the order in which registration and termination occur.
+In particular, the watching actor will receive a :class:`Terminated` message even if the 
+watched actor has already been terminated at the time of registration.
+
 Registering multiple times does not necessarily lead to multiple messages being
 generated, but there is no guarantee that only exactly one such message is
 received: if termination of the watched actor has generated and queued the
