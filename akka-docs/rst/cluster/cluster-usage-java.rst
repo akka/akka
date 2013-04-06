@@ -269,6 +269,11 @@ events, but there are several corner cases to consider. Therefore, this specific
 case is made easily accessible by the :ref:`cluster-singleton` in the contrib module.
 You can use it as is, or adjust to fit your specific needs. 
 
+Distributed Publish Subscribe Pattern
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+See :ref:`distributed-pub-sub` in the contrib module.
+
 Failure Detector
 ^^^^^^^^^^^^^^^^
 

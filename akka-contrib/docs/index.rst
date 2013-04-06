@@ -35,6 +35,7 @@ The Current List of Modules
    jul
    peek-mailbox
    cluster-singleton
+   distributed-pub-sub
 
 Suggested Way of Using these Contributions
 ------------------------------------------
