@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<features name="akka.features-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.0.0">
+
+    <feature name='osgi-compendium' description='OSGi compendium feature' version='${osgi.version}' resolver='(obr)'>
+        <bundle start-level="10">mvn:org.osgi/org.osgi.compendium/${osgi.version}</bundle>
+    </feature>
+
+    <feature name='scala' description='Scala' version='${scala.version}' resolver='(obr)'>
+      <bundle start-level="15">mvn:org.scala-lang/scala-library/${scala.version}</bundle>
+    </feature>
+
+    <feature name='uncommons-maths' description='Uncommons Maths' version='1.2.2' resolver='(obr)'>
+        <!-- TODO replace this with upstream uncommons maths 1.2.3 which is OSGi enabled -->
+        <bundle start-level="20">mvn:com.typesafe.akka.akka-sample.dining-hakkers/uncommons/1.2.2</bundle>
+    </feature>
+
+    <feature name='protobuf' description='Protobuf feature' version='${protobuf.version}' resolver='(obr)'>
+        <bundle start-level="20">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.protobuf-java/${protobuf.version}_1</bundle>
+    </feature>
+
+    <feature name='netty' description='Netty feature' version='${netty.version}' resolver='(obr)'>
+        <bundle start-level="20">mvn:io.netty/netty/${netty.version}</bundle>
+    </feature>
+
+    <feature name='typesafe-config' description='Typesafe config' version='${typesafe.config.version}' resolver='(obr)'>
+        <feature version="[${scala.version},2.11.0)">scala</feature>
+        <bundle start-level="25">mvn:com.typesafe/config/${typesafe.config.version}</bundle>
+    </feature>
+
+    <feature name='akka' description='Akka' version='${akka.version}' resolver='(obr)'>
+        <feature version="[${scala.version},2.11.0)">scala</feature>
+        <feature version="[${netty.version},4.0.0)">netty</feature>
+        <feature version="[1.2.2,3.0.0)">uncommons-maths</feature>
+        <feature version="[${protobuf.version},3.0.0)">protobuf</feature>
+        <feature version="[${typesafe.config.version},2.0.0)">typesafe-config</feature>
+        <bundle start-level="30">mvn:com.typesafe.akka/akka-cluster-experimental_${scala.dep.version}/${akka.version}</bundle>
+        <bundle start-level="30">mvn:com.typesafe.akka/akka-remote_${scala.dep.version}/${akka.version}</bundle>
+        <bundle start-level="30">mvn:com.typesafe.akka/akka-osgi_${scala.dep.version}/${akka.version}</bundle>
+    </feature>
+
+    <feature name='dining-hakker' description='Akka Dining Hakker Sample' version='${project.version}' resolver='(obr)'>
+        <feature version="[${akka.version},3.0.0)">akka</feature>
+        <bundle start-level="50">mvn:com.typesafe.akka.akka-sample.dining-hakkers/api/${project.version}</bundle>
+        <bundle start-level="50">mvn:com.typesafe.akka.akka-sample.dining-hakkers/core/${project.version}</bundle>
+        <bundle start-level="50">mvn:com.typesafe.akka.akka-sample.dining-hakkers/command/${project.version}</bundle>
+    </feature>
+</features>

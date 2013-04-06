@@ -54,7 +54,8 @@ abstract class ActorSystemActivator extends BundleActivator {
     val logServiceListner = new ServiceListener {
       def serviceChanged(event: ServiceEvent) {
         event.getType match {
-          case ServiceEvent.REGISTERED    ⇒ system.eventStream.publish(serviceForReference[LogService](context, event.getServiceReference))
+          case ServiceEvent.REGISTERED ⇒
+            system.eventStream.publish(serviceForReference[LogService](context, event.getServiceReference))
           case ServiceEvent.UNREGISTERING ⇒ system.eventStream.publish(UnregisteringLogService)
         }
       }
