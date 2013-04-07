@@ -87,7 +87,7 @@ trait Conductor { this: TestConductorExt ⇒
    * according to the given rate, the previous packet completion and the current
    * packet length. In case of large packets they are split up if the calculated
    * send pause would exceed `akka.testconductor.packet-split-threshold`
-   * (roughly). All of this uses the system’s HashedWheelTimer, which is not
+   * (roughly). All of this uses the system’s scheduler, which is not
    * terribly precise and will execute tasks later than they are schedule (even
    * on average), but that is countered by using the actual execution time for
    * determining how much to send, leading to the correct output rate, but with

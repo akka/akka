@@ -513,6 +513,7 @@ object LightArrayRevolverScheduler {
  * if it does not enqueue a task. Once a task is queued, it MUST be executed or
  * returned from stop().
  */
+@deprecated("use LightArrayRevolverScheduler", "2.2")
 class DefaultScheduler(config: Config,
                        log: LoggingAdapter,
                        threadFactory: ThreadFactory) extends Scheduler with Closeable {
@@ -577,6 +578,7 @@ class DefaultScheduler(config: Config,
   override def maxFrequency: Double = 1.second / TickDuration
 }
 
+@deprecated("use LightArrayRevolverScheduler", "2.2")
 private[akka] object ContinuousCancellable {
   private class NullHWTimeout extends HWTimeout {
     override def getTimer: HWTimer = null
@@ -602,6 +604,7 @@ private[akka] object ContinuousCancellable {
  * methods. Needed to be able to cancel continuous tasks,
  * since they create new Timeout for each tick.
  */
+@deprecated("use LightArrayRevolverScheduler", "2.2")
 private[akka] class ContinuousCancellable extends AtomicReference[HWTimeout](ContinuousCancellable.initial) with Cancellable {
   private[akka] def init(initialTimeout: HWTimeout): this.type = {
     compareAndSet(ContinuousCancellable.initial, initialTimeout)
@@ -617,6 +620,7 @@ private[akka] class ContinuousCancellable extends AtomicReference[HWTimeout](Con
   def cancel(): Boolean = getAndSet(ContinuousCancellable.cancelled).cancel()
 }
 
+@deprecated("use LightArrayRevolverScheduler", "2.2")
 private[akka] class DefaultCancellable(timeout: HWTimeout) extends AtomicReference[HWTimeout](timeout) with Cancellable {
   @tailrec final override def cancel(): Boolean = {
     get match {
