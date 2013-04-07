@@ -63,11 +63,10 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
     enterBarrier(from.name + "-joined")
   }
 
-  def createReceptionist(): ActorRef = receptionist
+  def createReceptionist(): ActorRef = ClusterReceptionistExtension(system).receptionist
 
-  lazy val mediator: ActorRef = system.actorOf(Props(new DistributedPubSubMediator(role = None)), name = "mediator")
-  lazy val receptionist: ActorRef =
-    system.actorOf(Props(new ClusterReceptionist(mediator, role = None)), name = "receptionist")
+  def mediator: ActorRef = ClusterReceptionistExtension(system).pubSubMediator
+  def receptionist: ActorRef = ClusterReceptionistExtension(system).receptionist
 
   def awaitCount(expected: Int): Unit = {
     awaitAssert {
@@ -145,6 +144,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       enterBarrier("verifed-3")
       receiveWhile(2 seconds) {
         case "hi again" ⇒
+        case other      ⇒ fail("unexpected message: " + other)
       }
       enterBarrier("after-3")
     }

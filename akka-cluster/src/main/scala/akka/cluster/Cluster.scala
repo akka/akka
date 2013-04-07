@@ -33,10 +33,6 @@ import scala.util.control.NonFatal
 
 /**
  * Cluster Extension Id and factory for creating Cluster extension.
- * Example:
- * {{{
- *  if (Cluster(system).isLeader) { ... }
- * }}}
  */
 object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
   override def get(system: ActorSystem): Cluster = super.get(system)
