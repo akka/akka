@@ -68,7 +68,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
   }
 
   "An outgoing connection" must {
-    info("Connecition reset by peer message expected is " + ConnectionResetByPeerMessage)
+    info("Connection reset by peer message expected is " + ConnectionResetByPeerMessage)
     info("Connection refused message prefix expected is " + ConnectionRefusedMessagePrefix)
     // common behavior
 
@@ -389,11 +389,10 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
       selector.send(connectionActor, ChannelReadable)
       connectionHandler.expectMsg(PeerClosed)
-      connectionHandler.send(connectionActor, Close)
 
       assertThisConnectionActorTerminated()
     }
-    "report when peer closed the connection but allow further writes and acknowledge normal close" in withEstablishedConnection() { setup ⇒
+    "report when peer closed the connection but allow further writes and acknowledge normal close" in withEstablishedConnection(keepOpenOnPeerClosed = true) { setup ⇒
       import setup._
 
       closeServerSideAndWaitForClientReadable(fullClose = false) // send EOF (fin) from the server side
@@ -409,7 +408,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
       assertThisConnectionActorTerminated()
     }
-    "report when peer closed the connection but allow further writes and acknowledge confirmed close" in withEstablishedConnection() { setup ⇒
+    "report when peer closed the connection but allow further writes and acknowledge confirmed close" in withEstablishedConnection(keepOpenOnPeerClosed = true) { setup ⇒
       import setup._
 
       closeServerSideAndWaitForClientReadable(fullClose = false) // send EOF (fin) from the server side
@@ -695,7 +694,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     }
   def withEstablishedConnection(
     setServerSocketOptions: ServerSocketChannel ⇒ Unit = _ ⇒ (),
-    clientSocketOptions: immutable.Seq[SocketOption] = Nil)(body: RegisteredSetup ⇒ Any): Unit = withUnacceptedConnection(setServerSocketOptions, createConnectionActor(options = clientSocketOptions)) { unregisteredSetup ⇒
+    clientSocketOptions: immutable.Seq[SocketOption] = Nil,
+    keepOpenOnPeerClosed: Boolean = false)(body: RegisteredSetup ⇒ Any): Unit = withUnacceptedConnection(setServerSocketOptions, createConnectionActor(options = clientSocketOptions)) { unregisteredSetup ⇒
     import unregisteredSetup._
 
     val serverSideChannel = acceptServerSideConnection(localServer)
@@ -706,7 +706,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
 
     val connectionHandler = TestProbe()
-    userHandler.send(connectionActor, Register(connectionHandler.ref))
+    userHandler.send(connectionActor, Register(connectionHandler.ref, keepOpenOnPeerClosed))
     selector.expectMsg(ReadInterest)
 
     body {

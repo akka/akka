@@ -23,8 +23,6 @@ class TcpIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with TcpIntegr
       clientHandler.send(clientConnection, Close)
       clientHandler.expectMsg(Closed)
       serverHandler.expectMsg(PeerClosed)
-      serverHandler.send(serverConnection, Close)
-      serverHandler.expectMsg(Closed)
       verifyActorTermination(clientConnection)
       verifyActorTermination(serverConnection)
     }
@@ -54,8 +52,6 @@ class TcpIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with TcpIntegr
       serverHandler.send(serverConnection, Close)
       serverHandler.expectMsg(Closed)
       clientHandler.expectMsg(PeerClosed)
-      clientHandler.send(clientConnection, Close)
-      clientHandler.expectMsg(Closed)
 
       verifyActorTermination(clientConnection)
       verifyActorTermination(serverConnection)

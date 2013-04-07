@@ -33,6 +33,8 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
   // Needed to send the ConnectionClosed message in the postStop handler.
   var closedMessage: CloseInformation = null
 
+  var keepOpenOnPeerClosed: Boolean = false
+
   def writePending = pendingWrite ne null
 
   def selector = context.parent
@@ -41,8 +43,10 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
   /** connection established, waiting for registration from user handler */
   def waitingForRegistration(commander: ActorRef): Receive = {
-    case Register(handler) ⇒
+    case Register(handler, keepOpenOnPeerClosed) ⇒
       if (TraceLogging) log.debug("[{}] registered as connection handler", handler)
+      this.keepOpenOnPeerClosed = keepOpenOnPeerClosed
+
       doRead(handler, None) // immediately try reading
 
       context.setReceiveTimeout(Duration.Undefined)
@@ -200,7 +204,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
     case Aborted ⇒
       if (TraceLogging) log.debug("Got Abort command. RESETing connection.")
       doCloseConnection(handler, closeCommander, closedEvent)
-    case PeerClosed ⇒
+    case PeerClosed if keepOpenOnPeerClosed ⇒
       // report that peer closed the connection
       handler ! PeerClosed
       // used to check if peer already closed its side later

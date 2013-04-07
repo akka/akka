@@ -73,7 +73,7 @@ object Tcp extends ExtensionKey[TcpExt] {
                   backlog: Int = 100,
                   options: immutable.Traversable[SocketOption] = Nil) extends Command
 
-  case class Register(handler: ActorRef) extends Command
+  case class Register(handler: ActorRef, keepOpenOnPeerClosed: Boolean = false) extends Command
   case object Unbind extends Command
 
   sealed trait CloseCommand extends Command {
