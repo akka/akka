@@ -71,8 +71,8 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
     enterBarrier(from.name + "-joined")
   }
 
-  def createMediator(): ActorRef = mediator
-  lazy val mediator: ActorRef = system.actorOf(Props(new DistributedPubSubMediator(role = None)), name = "mediator")
+  def createMediator(): ActorRef = DistributedPubSubExtension(system).mediator
+  def mediator: ActorRef = DistributedPubSubExtension(system).mediator
 
   def createChatUser(name: String): ActorRef =
     system.actorOf(Props(new TestChatUser(mediator, testActor)), name)
@@ -192,11 +192,7 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
     }
 
     "publish" in within(15 seconds) {
-      runOn(first) {
-        val u7 = createChatUser("u7")
-        mediator ! Put(u7)
-      }
-      runOn(second) {
+      runOn(first, second) {
         val u7 = createChatUser("u7")
         mediator ! Put(u7)
       }
@@ -220,14 +216,17 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
 
     "publish to topic" in within(15 seconds) {
       runOn(first) {
-        val u8 = createChatUser("u8")
-        mediator ! Subscribe("topic1", u8)
-        val u9 = createChatUser("u9")
-        mediator ! Subscribe("topic1", u9)
+        val s8 = Subscribe("topic1", createChatUser("u8"))
+        mediator ! s8
+        expectMsg(SubscribeAck(s8))
+        val s9 = Subscribe("topic1", createChatUser("u9"))
+        mediator ! s9
+        expectMsg(SubscribeAck(s9))
       }
       runOn(second) {
-        val u10 = createChatUser("u10")
-        mediator ! Subscribe("topic1", u10)
+        val s10 = Subscribe("topic1", createChatUser("u10"))
+        mediator ! s10
+        expectMsg(SubscribeAck(s10))
       }
       // one topic on two nodes
       awaitCount(8)
@@ -238,10 +237,10 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
       }
 
       runOn(first) {
-        expectMsg("hello all")
-        lastSender.path.name must (equal("u8") or equal("u9"))
-        expectMsg("hello all")
-        lastSender.path.name must (equal("u8") or equal("u9"))
+        val names = receiveWhile(messages = 2) {
+          case "hello all" ⇒ lastSender.path.name
+        }
+        names.toSet must be(Set("u8", "u9"))
       }
       runOn(second) {
         expectMsg("hello all")

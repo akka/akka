@@ -7,12 +7,18 @@ package akka.contrib.pattern
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.net.URLEncoder
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorPath
 import akka.actor.ActorRef
+import akka.actor.ActorSystem
 import akka.actor.Address
+import akka.actor.ExtendedActorSystem
+import akka.actor.Extension
+import akka.actor.ExtensionId
+import akka.actor.ExtensionIdProvider
 import akka.actor.Props
 import akka.actor.Terminated
 import akka.cluster.Cluster
@@ -21,12 +27,23 @@ import akka.cluster.Member
 import akka.cluster.MemberStatus
 
 object DistributedPubSubMediator {
+  @SerialVersionUID(1L)
   case class Put(ref: ActorRef)
+  @SerialVersionUID(1L)
   case class Remove(path: String)
+  @SerialVersionUID(1L)
   case class Subscribe(topic: String, ref: ActorRef)
+  @SerialVersionUID(1L)
   case class Unsubscribe(topic: String, ref: ActorRef)
+  @SerialVersionUID(1L)
+  case class SubscribeAck(subscribe: Subscribe)
+  @SerialVersionUID(1L)
+  case class UnsubscribeAck(unsubscribe: Unsubscribe)
+  @SerialVersionUID(1L)
   case class Send(path: String, msg: Any, localAffinity: Boolean)
+  @SerialVersionUID(1L)
   case class SendToAll(path: String, msg: Any)
+  @SerialVersionUID(1L)
   case class Publish(topic: String, msg: Any)
 
   // Only for testing purposes, to poll/await replication
@@ -38,14 +55,18 @@ object DistributedPubSubMediator {
   private[pattern] object Internal {
     case object Prune
 
+    @SerialVersionUID(1L)
     case class Bucket(
       owner: Address,
       version: Long,
       content: Map[String, ValueHolder])
 
+    @SerialVersionUID(1L)
     case class ValueHolder(version: Long, ref: Option[ActorRef])
 
+    @SerialVersionUID(1L)
     case class Status(versions: Map[Address, Long])
+    @SerialVersionUID(1L)
     case class Delta(buckets: immutable.Iterable[Bucket])
 
     case object GossipTick
@@ -63,34 +84,36 @@ object DistributedPubSubMediator {
 
       var subscribers = Set.empty[ActorRef]
 
-      override def postStop: Unit = {
+      override def postStop(): Unit = {
+        super.postStop()
         pruneTask.cancel()
       }
 
       def receive = {
-        case Subscribe(_, ref) ⇒
+        case msg @ Subscribe(_, ref) ⇒
           context watch ref
           subscribers += ref
           pruneDeadline = None
-        case Unsubscribe(_, ref) ⇒
+          sender.tell(SubscribeAck(msg), context.parent)
+        case msg @ Unsubscribe(_, ref) ⇒
           context unwatch ref
-          leave(ref)
+          remove(ref)
+          sender.tell(UnsubscribeAck(msg), context.parent)
         case Terminated(ref) ⇒
-          leave(ref)
+          remove(ref)
         case Prune ⇒
-          pruneDeadline match {
-            case Some(d) if d.isOverdue ⇒ context stop self
-            case _                      ⇒
-          }
+          for (d ← pruneDeadline if d.isOverdue) context stop self
         case msg ⇒
           subscribers foreach { _ forward msg }
       }
 
-      def leave(ref: ActorRef): Unit = {
-        subscribers -= ref
-        if (subscribers.isEmpty)
-          pruneDeadline = Some(Deadline.now + emptyTimeToLive)
-      }
+      def remove(ref: ActorRef): Unit =
+        if (subscribers.contains(ref)) {
+          subscribers -= ref
+          if (subscribers.isEmpty)
+            pruneDeadline = Some(Deadline.now + emptyTimeToLive)
+        }
+
     }
   }
 }
@@ -101,7 +124,8 @@ object DistributedPubSubMediator {
  * tagged with a specific role.
  *
  * The `DistributedPubSubMediator` is supposed to be started on all nodes,
- * or all nodes with specified role, in the cluster.
+ * or all nodes with specified role, in the cluster. The mediator can be
+ * started with the [[DistributedPubSubExtension]] or as an ordinary actor.
  *
  * Changes are only performed in the own part of the registry and those changes
  * are versioned. Deltas are disseminated in a scalable way to other nodes with
@@ -140,10 +164,15 @@ object DistributedPubSubMediator {
  *
  * You register actors to the local mediator with [[DistributedPubSubMediator.Put]] or
  * [[DistributedPubSubMediator.Subscribe]]. `Put` is used together with `Send` and
- * `SendToAll` message delivery modes. `Subscribe` is used together with `Publish`.
+ * `SendToAll` message delivery modes. The `ActorRef` in `Put` must belong to the same
+ * local actor system as the mediator. `Subscribe` is used together with `Publish`.
  * Actors are automatically removed from the registry when they are terminated, or you
  * can explicitly remove entries with [[DistributedPubSubMediator.Remove]] or
  * [[DistributedPubSubMediator.Unsubscribe]].
+ *
+ * Successful `Subscribe` and `Unsubscribe` is acknowledged with
+ * [[DistributedPubSubMediator.SubscribeAck]] and [[DistributedPubSubMediator.UnsubscribeAck]]
+ * replies.
  */
 class DistributedPubSubMediator(
   role: Option[String],
@@ -162,11 +191,8 @@ class DistributedPubSubMediator(
   val cluster = Cluster(context.system)
   import cluster.selfAddress
 
-  role match {
-    case None ⇒
-    case Some(r) ⇒ require(cluster.selfRoles.contains(r),
-      s"This cluster member [${selfAddress}] doesn't have the role [$role]")
-  }
+  require(role.forall(cluster.selfRoles.contains),
+    s"This cluster member [${selfAddress}] doesn't have the role [$role]")
 
   val removedTimeToLiveMillis = removedTimeToLive.toMillis
 
@@ -180,11 +206,13 @@ class DistributedPubSubMediator(
   var nodes: Set[Address] = Set.empty
 
   // the version is a timestamp because it is also used when pruning removed entries
-  var version = 0L
-  def nextVersion(): Long = {
-    val current = System.currentTimeMillis
-    version = if (current > version) current else version + 1
-    version
+  val nextVersion = {
+    var version = 0L
+    () ⇒ {
+      val current = System.currentTimeMillis
+      version = if (current > version) current else version + 1
+      version
+    }
   }
 
   override def preStart(): Unit = {
@@ -193,16 +221,14 @@ class DistributedPubSubMediator(
     cluster.subscribe(self, classOf[MemberEvent])
   }
 
-  override def postStop: Unit = {
+  override def postStop(): Unit = {
+    super.postStop()
     cluster unsubscribe self
     gossipTask.cancel()
     pruneTask.cancel()
   }
 
-  def matchingRole(m: Member): Boolean = role match {
-    case None    ⇒ true
-    case Some(r) ⇒ m.hasRole(r)
-  }
+  def matchingRole(m: Member): Boolean = role.forall(m.hasRole)
 
   def receive = {
 
@@ -217,14 +243,15 @@ class DistributedPubSubMediator(
             ref ← valueHolder.ref
           } yield ref).toVector
 
-          refs(ThreadLocalRandom.current.nextInt(refs.size)) forward msg
+          if (refs.nonEmpty)
+            refs(ThreadLocalRandom.current.nextInt(refs.size)) forward msg
       }
 
     case SendToAll(path, msg) ⇒
       publish(path, msg)
 
     case Publish(topic, msg) ⇒
-      publish(mkKey(self.path / topic), msg)
+      publish(mkKey(self.path / URLEncoder.encode(topic, "utf-8")), msg)
 
     case Put(ref: ActorRef) ⇒
       if (ref.path.address.hasGlobalScope)
@@ -244,17 +271,18 @@ class DistributedPubSubMediator(
 
     case msg @ Subscribe(topic, _) ⇒
       // each topic is managed by a child actor with the same name as the topic
-      context.child(topic) match {
-        case Some(t) ⇒ t ! msg
+      val encTopic = URLEncoder.encode(topic, "utf-8")
+      context.child(encTopic) match {
+        case Some(t) ⇒ t forward msg
         case None ⇒
-          val t = context.actorOf(Props(new Topic(removedTimeToLive)), name = topic)
-          t ! msg
+          val t = context.actorOf(Props(new Topic(removedTimeToLive)), name = encTopic)
+          t forward msg
           put(mkKey(t), Some(t))
           context.watch(t)
       }
 
     case msg @ Unsubscribe(topic, _) ⇒
-      context.child(topic) match {
+      context.child(URLEncoder.encode(topic, "utf-8")) match {
         case Some(g) ⇒ g ! msg
         case None    ⇒ // no such topic here
       }
@@ -330,7 +358,7 @@ class DistributedPubSubMediator(
 
   def put(key: String, valueOption: Option[ActorRef]): Unit = {
     val bucket = registry(selfAddress)
-    val v = nextVersion
+    val v = nextVersion()
     registry += (selfAddress -> bucket.copy(version = v,
       content = bucket.content + (key -> ValueHolder(v, valueOption))))
   }
@@ -372,14 +400,56 @@ class DistributedPubSubMediator(
     if (addresses.isEmpty) None else Some(addresses(ThreadLocalRandom.current nextInt addresses.size))
 
   def prune(): Unit = {
-    val now = System.currentTimeMillis
     registry foreach {
       case (owner, bucket) ⇒
         val oldRemoved = bucket.content.collect {
-          case (key, ValueHolder(version, None)) if (now - version > removedTimeToLiveMillis) ⇒ key
+          case (key, ValueHolder(version, None)) if (bucket.version - version > removedTimeToLiveMillis) ⇒ key
         }
         if (oldRemoved.nonEmpty)
           registry += owner -> bucket.copy(content = bucket.content -- oldRemoved)
+    }
+  }
+}
+
+/**
+ * Extension that starts a [[DistributedPubSubMediator]] actor
+ * with settings defined in config section `akka.contrib.cluster.pub-sub`.
+ */
+object DistributedPubSubExtension extends ExtensionId[DistributedPubSubExtension] with ExtensionIdProvider {
+  override def get(system: ActorSystem): DistributedPubSubExtension = super.get(system)
+
+  override def lookup = DistributedPubSubExtension
+
+  override def createExtension(system: ExtendedActorSystem): DistributedPubSubExtension =
+    new DistributedPubSubExtension(system)
+}
+
+class DistributedPubSubExtension(system: ExtendedActorSystem) extends Extension {
+
+  private val config = system.settings.config.getConfig("akka.contrib.cluster.pub-sub")
+  private val role: Option[String] = config.getString("role") match {
+    case "" ⇒ None
+    case r  ⇒ Some(r)
+  }
+
+  /**
+   * Returns true if this member is not tagged with the role configured for the
+   * mediator.
+   */
+  def isTerminated: Boolean = Cluster(system).isTerminated || !role.forall(Cluster(system).selfRoles.contains)
+
+  /**
+   * The [[DistributedPubSubMediator]]
+   */
+  val mediator: ActorRef = {
+    if (isTerminated)
+      system.deadLetters
+    else {
+      val gossipInterval = Duration(config.getMilliseconds("gossip-interval"), MILLISECONDS)
+      val removedTimeToLive = Duration(config.getMilliseconds("removed-time-to-live"), MILLISECONDS)
+      val name = config.getString("name")
+      system.actorOf(Props(new DistributedPubSubMediator(role, gossipInterval, removedTimeToLive)),
+        name)
     }
   }
 }
