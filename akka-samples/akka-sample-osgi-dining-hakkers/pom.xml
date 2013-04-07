@@ -3,11 +3,12 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.typesafe.akka.akka-sample.dining-hakkers</groupId>
-    <artifactId>parent</artifactId>
+    <groupId>com.typesafe.akka.akka-sample-osgi-dining-hakkers</groupId>
+    <artifactId>project</artifactId>
     <version>2.2.0-SNAPSHOT</version>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <akka.version>2.2-SNAPSHOT</akka.version>
         <karaf.version>2.3.0</karaf.version>
         <karaf.tooling.exam.version>${karaf.version}</karaf.tooling.exam.version>
@@ -16,7 +17,7 @@
         <paxexam.version>2.6.0</paxexam.version>
         <paxswissbox.version>1.6.0</paxswissbox.version>
         <protobuf.version>2.4.1</protobuf.version>
-        <scala.version>2.10.0</scala.version>
+        <scala.version>2.10.1</scala.version>
         <scala.dep.version>2.10</scala.dep.version>
         <scalatest.version>1.9.1</scalatest.version>
         <typesafe.config.version>1.0.0</typesafe.config.version>
@@ -33,7 +34,7 @@
         <module>integration-test</module>
     </modules>
     <packaging>pom</packaging>
-    <name>com.typesafe.akka.akka-sample.akka-sample-osgi-dining-hakkers.sample</name>
+    <name>akka-sample-osgi-dining-hakkers</name>
 
     <dependencyManagement>
         <dependencies>
@@ -62,6 +63,12 @@
                 <groupId>${project.groupId}</groupId>
                 <artifactId>command</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>akka-sample-osgi-dining-hakkers</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
             </dependency>
 
             <dependency>

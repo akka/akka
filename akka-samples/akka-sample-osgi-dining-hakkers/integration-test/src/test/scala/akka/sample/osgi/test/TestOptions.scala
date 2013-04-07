@@ -53,7 +53,8 @@ object TestOptions {
   }
 
   def akkaFeature(feature: String): PaxOption = {
-    scanFeatures(maven.groupId("com.typesafe.akka.akka-sample.akka-sample-osgi-dining-hakkers").artifactId("assembly-features").`type`("xml").classifier("features")
+    scanFeatures(maven.groupId("com.typesafe.akka.akka-sample-osgi-dining-hakkers")
+      .artifactId("akka-sample-osgi-dining-hakkers") .`type`("xml").classifier("features")
       .version(System.getProperty("project.version")), feature)
   }
 

@@ -11,7 +11,7 @@
 
     <feature name='uncommons-maths' description='Uncommons Maths' version='1.2.2' resolver='(obr)'>
         <!-- TODO replace this with upstream uncommons maths 1.2.3 which is OSGi enabled -->
-        <bundle start-level="20">mvn:com.typesafe.akka.akka-sample.dining-hakkers/uncommons/1.2.2</bundle>
+        <bundle start-level="20">mvn:com.typesafe.akka.akka-sample-osgi-dining-hakkers/uncommons/1.2.2</bundle>
     </feature>
 
     <feature name='protobuf' description='Protobuf feature' version='${protobuf.version}' resolver='(obr)'>
@@ -40,8 +40,8 @@
 
     <feature name='dining-hakker' description='Akka Dining Hakker Sample' version='${project.version}' resolver='(obr)'>
         <feature version="[${akka.version},3.0.0)">akka</feature>
-        <bundle start-level="50">mvn:com.typesafe.akka.akka-sample.dining-hakkers/api/${project.version}</bundle>
-        <bundle start-level="50">mvn:com.typesafe.akka.akka-sample.dining-hakkers/core/${project.version}</bundle>
-        <bundle start-level="50">mvn:com.typesafe.akka.akka-sample.dining-hakkers/command/${project.version}</bundle>
+        <bundle start-level="50">mvn:com.typesafe.akka.akka-sample-osgi-dining-hakkers/api/${project.version}</bundle>
+        <bundle start-level="50">mvn:com.typesafe.akka.akka-sample-osgi-dining-hakkers/core/${project.version}</bundle>
+        <bundle start-level="50">mvn:com.typesafe.akka.akka-sample-osgi-dining-hakkers/command/${project.version}</bundle>
     </feature>
 </features>

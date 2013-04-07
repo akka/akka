@@ -5,15 +5,20 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.typesafe.akka.akka-sample.dining-hakkers</groupId>
-        <artifactId>parent</artifactId>
+        <groupId>com.typesafe.akka.akka-sample-osgi-dining-hakkers</groupId>
+        <artifactId>project</artifactId>
         <version>2.2.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>assembly-dist</artifactId>
+    <artifactId>akka-sample-osgi-dining-hakkers-dist</artifactId>
     <name>Dining Hakkers :: Distribution</name>
 
     <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>akka-sample-osgi-dining-hakkers</artifactId>
+            <type>pom</type>
+        </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>api</artifactId>
@@ -54,7 +59,7 @@
                             <descriptors>
                                 <descriptor>mvn:org.apache.karaf.assemblies.features/standard/${karaf.version}/xml/features</descriptor>
                                 <descriptor>mvn:org.apache.karaf.assemblies.features/enterprise/${karaf.version}/xml/features</descriptor>
-                                <descriptor>mvn:com.typesafe.akka.akka-sample.akka-sample-osgi-dining-hakkers/assembly-features/${project.version}/xml/features</descriptor>
+                                <descriptor>mvn:com.typesafe.akka.akka-sample-osgi-dining-hakkers/akka-sample-osgi-dining-hakkers/${project.version}/xml/features</descriptor>
                             </descriptors>
                             <repository>target/generated-features-repo</repository>
                         </configuration>

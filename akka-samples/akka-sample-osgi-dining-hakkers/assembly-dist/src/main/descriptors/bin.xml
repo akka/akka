@@ -9,7 +9,7 @@
     </formats>
 
     <includeBaseDirectory>true</includeBaseDirectory>
-    <baseDirectory>akka-osgi-sample-${project.version}</baseDirectory>
+    <baseDirectory>akka-sample-osgi-dining-hakkers-${project.version}</baseDirectory>
 
     <fileSets>
         <!-- Copy over jar files -->
