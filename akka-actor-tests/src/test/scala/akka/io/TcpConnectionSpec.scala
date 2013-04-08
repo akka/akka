@@ -108,25 +108,26 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       expectReceivedString("testdata2testdata3")
     }
 
-    "bundle incoming Received messages as long as more data is available" in withEstablishedConnection(
+    "forward incoming data as Received messages instantly as long as more data is available" in withEstablishedConnection(
       clientSocketOptions = List(Inet.SO.ReceiveBufferSize(1000000)) // to make sure enough data gets through
       ) { setup ⇒
         import setup._
 
-        val DataSize = 1000000
+        val bufferSize = Tcp(system).Settings.DirectBufferSize
+        val DataSize = bufferSize + 1500
         val bigData = new Array[Byte](DataSize)
         val buffer = ByteBuffer.wrap(bigData)
 
         serverSideChannel.socket.setSendBufferSize(150000)
         val wrote = serverSideChannel.write(buffer)
-        wrote must be > 140000
+        wrote must be(DataSize)
 
         expectNoMsg(1000.millis) // data should have been transferred fully by now
 
         selector.send(connectionActor, ChannelReadable)
 
-        // 140000 is more than the direct buffer size
-        connectionHandler.expectMsgType[Received].data.length must be > 140000
+        connectionHandler.expectMsgType[Received].data.length must be(bufferSize)
+        connectionHandler.expectMsgType[Received].data.length must be(1500)
       }
 
     "receive data directly when the connection is established" in withUnacceptedConnection() { unregisteredSetup ⇒
