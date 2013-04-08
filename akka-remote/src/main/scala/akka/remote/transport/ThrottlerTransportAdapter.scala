@@ -434,11 +434,15 @@ private[transport] class ThrottledAssociation(
   }
 
   whenUnhandled {
+    // we should always set the throttling mode
+    case Event(mode: ThrottleMode, _) ⇒
+      inboundThrottleMode = mode
+      sender ! SetThrottleAck
+      stay()
     case Event(Disassociated, _) ⇒
       if (upstreamListener ne null) upstreamListener notify Disassociated
       originalHandle.disassociate()
       stop()
-
   }
 
   // This method captures ASSOCIATE packets and extracts the origin address
