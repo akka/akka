@@ -344,7 +344,7 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(camelSample, fsmSample, helloSample, helloKernelSample, remoteSample, clusterSample, multiNodeSample)
+    aggregate = Seq(camelSample, fsmSample, helloSample, helloKernelSample, remoteSample, clusterSample, multiNodeSample, zeromqSample)
   )
 
   lazy val camelSample = Project(
@@ -413,6 +413,13 @@ object AkkaBuild extends Build {
       }
     )
   ) configs (MultiJvm)
+
+  lazy val zeromqSample = Project(
+    id = "akka-sample-zeromq",
+    base = file("akka-samples/akka-sample-zeromq"),
+    dependencies = Seq(actor, zeroMQ),
+    settings = sampleSettings
+  )
 
   lazy val docs = Project(
     id = "akka-docs",

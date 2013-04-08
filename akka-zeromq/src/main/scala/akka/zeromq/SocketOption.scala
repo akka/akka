@@ -153,12 +153,6 @@ case class Listener(listener: ActorRef) extends SocketMeta
 case class PollDispatcher(name: String) extends SocketMeta
 
 /**
- * An option containing the duration a poll cycle should wait for a message before it loops
- * @param duration
- */
-case class PollTimeoutDuration(duration: FiniteDuration = 100 millis) extends SocketMeta
-
-/**
  * Start listening with this server socket on the specified address
  *
  * @param endpoint
@@ -535,3 +529,15 @@ object ReceiveBufferSize extends SocketOptionQuery
  * Gets the file descriptor associated with the ZeroMQ socket
  */
 object FileDescriptor extends SocketOptionQuery
+
+/**
+ * The timeout value for the recv method in blocking mode
+ * @param duration
+ */
+case class RecvTimeout(duration: FiniteDuration) extends SocketOption
+
+/**
+ * The timeout value for the send method in blocking mode
+ * @param duration
+ */
+case class SendTimeout(duration: FiniteDuration) extends SocketOption

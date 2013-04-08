@@ -9,7 +9,7 @@ import akka.actor._
 import scala.collection.immutable
 import scala.annotation.tailrec
 import scala.concurrent.{ Promise, Future }
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.collection.mutable.ListBuffer
 import scala.util.control.NonFatal
 import akka.event.Logging
@@ -19,7 +19,8 @@ import akka.util.ByteString
 private[zeromq] object ConcurrentSocketActor {
   private sealed trait PollMsg
   private case object Poll extends PollMsg
-  private case object PollCareful extends PollMsg
+  private case object NoPoll extends PollMsg
+  private case object ReqRepPoll extends PollMsg
 
   private case object Flush
 
@@ -40,6 +41,14 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
 
   private val socket: Socket = zmqContext.socket(socketType)
   private val poller: Poller = zmqContext.poller
+
+  import SocketType._
+
+  private val pollingMode = socketType match {
+    case Pub | Push                          ⇒ NoPoll
+    case Sub | Pull | Pair | Dealer | Router ⇒ Poll
+    case Req | Rep                           ⇒ ReqRepPoll
+  }
 
   private val pendingSends = new ListBuffer[immutable.Seq[ByteString]]
 
@@ -64,7 +73,7 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
 
   private def handleConnectOption(msg: SocketConnectOption): Unit = msg match {
     case Connect(endpoint) ⇒ socket.connect(endpoint); notifyListener(Connecting)
-    case Bind(endpoint)    ⇒ socket.bind(endpoint)
+    case Bind(endpoint)    ⇒ socket.bind(endpoint); notifyListener(Binding)
   }
 
   private def handlePubSubOption(msg: PubSubOption): Unit = msg match {
@@ -93,6 +102,8 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
     case MulticastHops(value)        ⇒ socket.setMulticastHops(value)
     case SendBufferSize(value)       ⇒ socket.setSendBufferSize(value)
     case ReceiveBufferSize(value)    ⇒ socket.setReceiveBufferSize(value)
+    case RecvTimeout(duration)       ⇒ socket.setReceiveTimeOut(duration.toMillis.toInt)
+    case SendTimeout(duration)       ⇒ socket.setSendTimeOut(duration.toMillis.toInt)
     case d: Deserializer             ⇒ deserializer = d
   }
 
@@ -120,20 +131,24 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
   override def preStart {
     watchListener()
     setupSocket()
-    poller.register(socket, Poller.POLLIN)
+    setupTimeout()
     setupConnection()
 
-    import SocketType._
-    socketType match {
-      case Pub | Push                          ⇒ // don’t poll
-      case Sub | Pull | Pair | Dealer | Router ⇒ self ! Poll
-      case Req | Rep                           ⇒ self ! PollCareful
+    pollingMode match {
+      case Poll       ⇒ self ! Poll
+      case ReqRepPoll ⇒ if (socketType == Rep) self ! ReqRepPoll
+      case NoPoll     ⇒ ()
     }
   }
 
   private def setupConnection(): Unit = {
     params filter (_.isInstanceOf[SocketConnectOption]) foreach { self ! _ }
     params filter (_.isInstanceOf[PubSubOption]) foreach { self ! _ }
+  }
+
+  private def setupTimeout(): Unit = {
+    self ! RecvTimeout(recvTimeout)
+    self ! SendTimeout(sendTimeout)
   }
 
   private def setupSocket() = params foreach {
@@ -153,12 +168,17 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
   } finally notifyListener(Closed)
 
   @tailrec private def flushMessage(i: immutable.Seq[ByteString]): Boolean =
-    if (i.isEmpty)
+    if (i.isEmpty) {
+      if (pollingMode == ReqRepPoll) {
+        doPoll(ReqRepPoll)
+      }
       true
-    else {
+    } else {
       val head = i.head
       val tail = i.tail
-      if (socket.send(head.toArray, if (tail.nonEmpty) JZMQ.SNDMORE else 0)) flushMessage(tail)
+
+      if (socket.send(head.toArray, if (tail.nonEmpty) JZMQ.SNDMORE else 0))
+        flushMessage(tail)
       else {
         pendingSends.prepend(i) // Reenqueue the rest of the message so the next flush takes care of it
         self ! Flush
@@ -169,47 +189,52 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
   @tailrec private def flush(): Unit =
     if (pendingSends.nonEmpty && flushMessage(pendingSends.remove(0))) flush() // Flush while things are going well
 
-  // this is a “PollMsg=>Unit” which either polls or schedules Poll, depending on the sign of the timeout
-  private val doPollTimeout = {
+  private val recvTimeout: FiniteDuration = {
     val ext = ZeroMQExtension(context.system)
-    val fromConfig = params collectFirst { case PollTimeoutDuration(duration) ⇒ duration }
-    val duration = (fromConfig getOrElse ext.DefaultPollTimeout)
-    if (duration > Duration.Zero) {
-      // for positive timeout values, do poll (i.e. block this thread)
-      val pollLength = duration.toUnit(ext.pollTimeUnit).toLong
-      (msg: PollMsg) ⇒
-        poller.poll(pollLength)
-        self ! msg
-    } else {
-      val d = -duration
+    params collectFirst { case RecvTimeout(duration) ⇒ duration } getOrElse ext.DefaultRecvTimeout
+  }
 
-      { (msg: PollMsg) ⇒
-        // for negative timeout values, schedule Poll token -duration into the future
-        import context.dispatcher
-        context.system.scheduler.scheduleOnce(d, self, msg)
-        ()
-      }
+  private val sendTimeout: FiniteDuration = {
+    val ext = ZeroMQExtension(context.system)
+    params collectFirst { case SendTimeout(duration) ⇒ duration } getOrElse ext.DefaultSendTimeout
+  }
+
+  /**
+   * Compiles the methods that will deal with polling.
+   * Depending on the sign of the timeout, we either schedule a poll or send the message immediately.
+   */
+  private val doPollTimeoutIfNeeded = {
+    if (recvTimeout.toMillis > 0) {
+      (msg: PollMsg) ⇒ self ! msg
+    } else {
+      val d = -recvTimeout
+      import context.dispatcher
+      (msg: PollMsg) ⇒ context.system.scheduler.scheduleOnce(d, self, msg)
     }
   }
 
-  @tailrec private def doPoll(mode: PollMsg, togo: Int = 10): Unit =
+  @tailrec private def doPoll(mode: PollMsg, togo: Int = 10): Unit = {
     if (togo <= 0) self ! mode
-    else receiveMessage(mode) match {
-      case Seq()  ⇒ doPollTimeout(mode)
-      case frames ⇒ notifyListener(deserializer(frames)); doPoll(mode, togo - 1)
+    else receiveMessage() match {
+      case Seq() ⇒ doPollTimeoutIfNeeded(mode)
+      case frames ⇒
+        notifyListener(deserializer(frames))
+        if (mode == Poll) doPoll(mode, togo - 1)
     }
+  }
 
-  @tailrec private def receiveMessage(mode: PollMsg, currentFrames: Vector[ByteString] = Vector.empty): immutable.Seq[ByteString] =
-    if (mode == PollCareful && (poller.poll(0) <= 0)) {
-      if (currentFrames.isEmpty) currentFrames else throw new IllegalStateException("Received partial transmission!")
-    } else {
-      socket.recv(if (mode == Poll) JZMQ.NOBLOCK else 0) match {
-        case null ⇒ /*EAGAIN*/
-          if (currentFrames.isEmpty) currentFrames else receiveMessage(mode, currentFrames)
-        case bytes ⇒
-          val frames = currentFrames :+ ByteString(bytes)
-          if (socket.hasReceiveMore) receiveMessage(mode, frames) else frames
-      }
+  /**
+   * Does nothing if waiting for a reply from the actor, reads the ZeroMQ socket otherwhise
+   * @param currentFrames
+   * @return A vector of frames read from the ZeroMQ socket if any, en empty vector otherwhise.
+   */
+  @tailrec private def receiveMessage(currentFrames: immutable.Seq[ByteString] = Vector.empty): immutable.Seq[ByteString] =
+    socket.recv(0) match {
+      case null ⇒ /*EAGAIN*/
+        if (currentFrames.isEmpty) currentFrames else receiveMessage(currentFrames)
+      case bytes ⇒
+        val frames = currentFrames :+ ByteString(bytes)
+        if (socket.hasReceiveMore) receiveMessage(frames) else frames
     }
 
   private val listenerOpt = params collectFirst { case Listener(l) ⇒ l }
