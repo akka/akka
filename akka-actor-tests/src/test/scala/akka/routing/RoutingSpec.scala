@@ -100,6 +100,26 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       }
     }
 
+    "not terminate when resizer is used" in {
+      val latch = TestLatch(1)
+      val resizer = new Resizer {
+        def isTimeForResize(messageCounter: Long): Boolean = messageCounter == 0
+        def resize(routeeProvider: RouteeProvider): Unit = {
+          routeeProvider.createRoutees(nrOfInstances = 2)
+          latch.countDown()
+        }
+      }
+      val router = system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(resizer = Some(resizer))))
+      watch(router)
+      Await.ready(latch, remaining)
+      router ! CurrentRoutees
+      val routees = expectMsgType[RouterRoutees].routees
+      routees.size must be(2)
+      routees foreach system.stop
+      // expect no Terminated
+      expectNoMsg(2.seconds)
+    }
+
     "be able to send their routees" in {
       case class TestRun(id: String, names: immutable.Iterable[String], actors: Int)
       val actor = system.actorOf(Props(new Actor {

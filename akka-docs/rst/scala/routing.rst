@@ -151,7 +151,8 @@ direct children of their grand-parent instead.
 
   If the child of a router terminates, the router will not automatically spawn
   a new child. In the event that all children of a router have terminated the
-  router will terminate itself.
+  router will terminate itself unless it is a dynamic router, e.g. using
+  a resizer.
 
 Router usage
 ^^^^^^^^^^^^
@@ -396,7 +397,8 @@ routees aren't children of the router, i.e. even routees programmatically provid
 With the code shown above, each routee will receive a ``PoisonPill`` message. Each routee will
 continue to process its messages as normal, eventually processing the ``PoisonPill``. This will
 cause the routee to stop. After all routees have stopped the router will itself be :ref:`stopped
-automatically <note-router-terminated-children-scala>`.
+automatically <note-router-terminated-children-scala>` unless it is a dynamic router, e.g. using
+a resizer.
 
 .. note::
 

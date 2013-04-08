@@ -60,6 +60,8 @@ final case class ClusterRouterConfig(local: RouterConfig, settings: ClusterRoute
 
   override def resizer: Option[Resizer] = local.resizer
 
+  override def stopRouterWhenAllRouteesRemoved: Boolean = false
+
   override def withFallback(other: RouterConfig): RouterConfig = other match {
     case ClusterRouterConfig(_: RemoteRouterConfig, _) ⇒ throw new IllegalStateException(
       "ClusterRouterConfig is not allowed to wrap a RemoteRouterConfig")

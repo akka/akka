@@ -149,7 +149,8 @@ direct children of their grand-parent instead.
 
   If the child of a router terminates, the router will not automatically spawn
   a new child. In the event that all children of a router have terminated the
-  router will terminate itself.
+  router will terminate itself, unless it is a dynamic router, e.g. using
+  a resizer.
 
 Router usage
 ^^^^^^^^^^^^
@@ -378,7 +379,7 @@ documentation for details.
 
 .. includecode:: code/docs/jrouting/RouterViaProgramDocTestBase.java#poisonPill
 
-For a router, which normally passes on messages to routees, it is important to realised that
+For a router, which normally passes on messages to routees, it is important to realise that
 ``PoisonPill`` messages are processed by the router only. ``PoisonPill`` messages sent to a router
 will *not* be sent on to routees.
 
@@ -399,7 +400,8 @@ routees aren't children of the router, i.e. even routees programmatically provid
 With the code shown above, each routee will receive a ``PoisonPill`` message. Each routee will
 continue to process its messages as normal, eventually processing the ``PoisonPill``. This will
 cause the routee to stop. After all routees have stopped the router will itself be :ref:`stopped
-automatically <note-router-terminated-children-java>`.
+automatically <note-router-terminated-children-java>` unless it is a dynamic router, e.g. using
+a resizer.
 
 .. note::
 
