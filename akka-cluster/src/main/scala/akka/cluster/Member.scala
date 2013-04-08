@@ -17,7 +17,7 @@ import MemberStatus._
  * Note: `hashCode` and `equals` are solely based on the underlying `Address`, not its `MemberStatus`
  * and roles.
  */
-case class Member(val address: Address, val status: MemberStatus, roles: Set[String]) extends ClusterMessage {
+class Member(val address: Address, val status: MemberStatus, val roles: Set[String]) extends ClusterMessage with Serializable {
   override def hashCode = address.##
   override def equals(other: Any) = other match {
     case m: Member ⇒ address == m.address
@@ -32,6 +32,16 @@ case class Member(val address: Address, val status: MemberStatus, roles: Set[Str
    */
   def getRoles: java.util.Set[String] =
     scala.collection.JavaConverters.setAsJavaSetConverter(roles).asJava
+
+  def copy(status: MemberStatus): Member = {
+    val oldStatus = this.status
+    if (status == oldStatus) this
+    else {
+      require(allowedTransitions(oldStatus)(status),
+        s"Invalid member status transition [ ${this} -> ${status}]")
+      new Member(address, status, roles)
+    }
+  }
 }
 
 /**
@@ -40,6 +50,9 @@ case class Member(val address: Address, val status: MemberStatus, roles: Set[Str
 object Member {
 
   val none = Set.empty[Member]
+
+  def apply(address: Address, status: MemberStatus, roles: Set[String]): Member =
+    new Member(address, status, roles)
 
   /**
    * `Address` ordering type class, sorts addresses by host and port.
@@ -149,4 +162,16 @@ object MemberStatus {
    * Java API: retrieve the “removed” status singleton
    */
   def removed: MemberStatus = Removed
+
+  /**
+   * INTERNAL API
+   */
+  private[cluster] val allowedTransitions: Map[MemberStatus, Set[MemberStatus]] =
+    Map(
+      Joining -> Set(Up, Down, Removed),
+      Up -> Set(Leaving, Down, Removed),
+      Leaving -> Set(Exiting, Down, Removed),
+      Down -> Set(Removed),
+      Exiting -> Set(Removed, Down),
+      Removed -> Set.empty[MemberStatus])
 }
