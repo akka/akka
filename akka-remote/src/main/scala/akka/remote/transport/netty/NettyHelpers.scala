@@ -13,15 +13,15 @@ import scala.util.control.NonFatal
  */
 private[netty] trait NettyHelpers {
 
-  protected def onConnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = {}
+  protected def onConnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = ()
 
-  protected def onDisconnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = {}
+  protected def onDisconnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = ()
 
-  protected def onOpen(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = {}
+  protected def onOpen(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = ()
 
-  protected def onMessage(ctx: ChannelHandlerContext, e: MessageEvent): Unit = {}
+  protected def onMessage(ctx: ChannelHandlerContext, e: MessageEvent): Unit = ()
 
-  protected def onException(ctx: ChannelHandlerContext, e: ExceptionEvent): Unit = {}
+  protected def onException(ctx: ChannelHandlerContext, e: ExceptionEvent): Unit = ()
 
   final protected def transformException(ctx: ChannelHandlerContext, ev: ExceptionEvent): Unit = {
     val cause = if (ev.getCause ne null) ev.getCause else new AkkaException("Unknown cause")
