@@ -258,6 +258,9 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
    */
   def unregisterRoutees(routees: java.lang.Iterable[ActorRef]): Unit = unregisterRoutees(immutableSeq(routees))
 
+  // TODO replace all usages of actorFor in routing with actorSelection. Not possible until
+  //      major refactoring of routing because of demand for synchronous registration of routees.
+
   /**
    * Looks up routes with specified paths and registers them.
    */

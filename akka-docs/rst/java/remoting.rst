@@ -70,17 +70,24 @@ reference file for more information:
 Looking up Remote Actors
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-``actorFor(path)`` will obtain an ``ActorRef`` to an Actor on a remote node::
+``actorSelection(path)`` will obtain an ``ActorSelection`` to an Actor on a remote node::
 
-  ActorRef actor = context.actorFor("akka.tcp://app@10.0.0.1:2552/user/serviceA/worker");
+  ActorSelection selection =
+    context.actorSelection("akka.tcp://app@10.0.0.1:2552/user/serviceA/worker");
 
-As you can see from the example above the following pattern is used to find an ``ActorRef`` on a remote node::
+As you can see from the example above the following pattern is used to find an actor on a remote node::
 
   akka.<protocol>://<actorsystemname>@<hostname>:<port>/<actor path>
 
-Once you obtained a reference to the actor you can interact with it they same way you would with a local actor, e.g.::
+Once you obtained a selection to the actor you can interact with it they same way you would with a local actor, e.g.::
 
-  actor.tell("Pretty awesome feature", getSelf());
+  selection.tell("Pretty awesome feature", getSelf());
+
+To acquire an :class:`ActorRef` for an :class:`ActorSelection` you need to
+send a message to the selection and use the ``getSender`` reference of the reply from
+the actor. There is a built-in ``Identify`` message that all Actors will understand
+and automatically reply to with a ``ActorIdentity`` message containing the
+:class:`ActorRef`.
 
 .. note::
 
@@ -264,9 +271,9 @@ and it is created from an actor system using the aforementioned client’s confi
 .. includecode:: ../../../akka-samples/akka-sample-remote/src/main/java/sample/remote/calculator/java/JLookupApplication.java
    :include: setup
 
-Requests which come in via ``doSomething`` will be sent to the client actor
-along with the reference which was looked up earlier. Observe how the actor
-system name using in ``actorFor`` matches the remote system’s name, as do IP
+Requests which come in via ``doSomething`` will be sent to the client actor,
+which will use the actor reference that was identified earlier. Observe how the actor
+system name using in ``actorSelection`` matches the remote system’s name, as do IP
 and port number. Top-level actors are always created below the ``"/user"``
 guardian, which supervises them.
 
@@ -481,14 +488,14 @@ SSL can be used as the remote transport by adding ``akka.remote.netty.ssl``
 to the ``enabled-transport`` configuration section. See a description of the settings
 in the :ref:`remoting-java-configuration` section.
 
-The SSL support is implemented with Java Secure Socket Extension, please consult the offical 
+The SSL support is implemented with Java Secure Socket Extension, please consult the offical
 `Java Secure Socket Extension documentation <http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html>`_
 and related resources for troubleshooting.
-  
+
 .. note::
 
-  When using SHA1PRNG on Linux it's recommended specify ``-Djava.security.egd=file:/dev/./urandom`` as argument 
+  When using SHA1PRNG on Linux it's recommended specify ``-Djava.security.egd=file:/dev/./urandom`` as argument
   to the JVM to prevent blocking. It is NOT as secure because it reuses the seed.
-  Use '/dev/./urandom', not '/dev/urandom' as that doesn't work according to 
+  Use '/dev/./urandom', not '/dev/urandom' as that doesn't work according to
   `Bug ID: 6202721 <http://bugs.sun.com/view_bug.do?bug_id=6202721>`_.
-  
+

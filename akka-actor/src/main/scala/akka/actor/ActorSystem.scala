@@ -259,7 +259,7 @@ abstract class ActorSystem extends ActorRefFactory {
   def logConfiguration(): Unit
 
   /**
-   * Construct a path below the application guardian to be used with [[ActorSystem.actorFor]].
+   * Construct a path below the application guardian to be used with [[ActorSystem.actorSelection]].
    */
   def /(name: String): ActorPath
 
@@ -269,7 +269,7 @@ abstract class ActorSystem extends ActorRefFactory {
   def child(child: String): ActorPath = /(child)
 
   /**
-   * Construct a path below the application guardian to be used with [[ActorSystem.actorFor]].
+   * Construct a path below the application guardian to be used with [[ActorSystem.actorSelection]].
    */
   def /(name: Iterable[String]): ActorPath
 
@@ -725,7 +725,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
           indent + node.path.name + " " + Logging.simpleName(node)
       }
     }
-    printNode(actorFor("/"), "")
+    printNode(lookupRoot, "")
   }
 
   final class TerminationCallbacks extends Runnable with Awaitable[Unit] {

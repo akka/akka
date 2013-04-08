@@ -5,7 +5,6 @@
 package akka.contrib.pattern
 
 import language.postfixOps
-
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
@@ -18,6 +17,8 @@ import scala.concurrent.duration._
 import akka.actor.FSM
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
+import akka.actor.ActorIdentity
+import akka.actor.Identify
 
 object ReliableProxySpec extends MultiNodeConfig {
   val local = role("local")
@@ -68,7 +69,8 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
         //#demo
         import akka.contrib.pattern.ReliableProxy
 
-        target = system.actorFor(node(remote) / "user" / "echo")
+        system.actorSelection(node(remote) / "user" / "echo") ! Identify("echo")
+        target = expectMsgType[ActorIdentity].ref.get
         proxy = system.actorOf(Props(new ReliableProxy(target, 100.millis)), "proxy")
         //#demo
         proxy ! FSM.SubscribeTransitionCallBack(testActor)

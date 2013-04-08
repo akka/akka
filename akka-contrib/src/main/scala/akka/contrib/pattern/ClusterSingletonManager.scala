@@ -9,6 +9,7 @@ import akka.actor.Actor
 import akka.actor.Actor.Receive
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
+import akka.actor.ActorSelection
 import akka.actor.Address
 import akka.actor.FSM
 import akka.actor.Props
@@ -229,7 +230,7 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  * is prevented by all reasonable means. Some corner cases are eventually
  * resolved by configurable timeouts.
  *
- * You access the singleton actor with `actorFor` using the names you have
+ * You access the singleton actor with `actorSelection` using the names you have
  * specified when creating the ClusterSingletonManager. You can subscribe to
  * [[akka.cluster.ClusterEvent.LeaderChanged]] or
  * [[akka.cluster.ClusterEvent.RoleLeaderChanged]] to keep track of which node
@@ -385,7 +386,7 @@ class ClusterSingletonManager(
     super.postStop()
   }
 
-  def peer(at: Address): ActorRef = context.actorFor(self.path.toStringWithAddress(at))
+  def peer(at: Address): ActorSelection = context.actorSelection(self.path.toStringWithAddress(at))
 
   def getNextLeaderChanged(): Unit =
     if (leaderChangedReceived) {

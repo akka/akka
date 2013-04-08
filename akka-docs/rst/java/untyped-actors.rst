@@ -27,8 +27,7 @@ Creating Actors
   Since Akka enforces parental supervision every actor is supervised and
   (potentially) the supervisor of its children, it is advisable that you
   familiarize yourself with :ref:`actor-systems` and :ref:`supervision` and it
-  may also help to read :ref:`actorOf-vs-actorFor` (the whole of
-  :ref:`addressing` is recommended reading in any case).
+  may also help to read :ref:`addressing`.
 
 Defining an Actor class
 -----------------------
@@ -130,7 +129,7 @@ The :class:`UntypedActor` class defines only one abstract method, the above ment
 If the current actor behavior does not match a received message, it's recommended that
 you call the :meth:`unhandled` method, which by default publishes a ``new
 akka.actor.UnhandledMessage(message, sender, recipient)`` on the actor system’s
-event stream (set configuration item ``akka.actor.debug.unhandled`` to ``on`` 
+event stream (set configuration item ``akka.actor.debug.unhandled`` to ``on``
 to have them converted into actual Debug messages).
 
 In addition, it offers:
@@ -230,7 +229,7 @@ mentioned above:
    in turn by its supervisor, or if an actor is restarted due to a sibling’s
    failure. If the message is available, then that message’s sender is also
    accessible in the usual way (i.e. by calling ``getSender()``).
-   
+
    This method is the best place for cleaning up, preparing hand-over to the
    fresh actor instance, etc.  By default it stops all children and calls
    :meth:`postStop`.
@@ -267,8 +266,10 @@ sent to a stopped actor will be redirected to the :obj:`deadLetters` of the
 :obj:`ActorSystem`.
 
 
-Identifying Actors
-==================
+.. _actorSelection-java:
+
+Identifying Actors via Actor Selection
+======================================
 
 As described in :ref:`addressing`, each actor has a unique logical path, which
 is obtained by following the chain of actors from child to parent until
@@ -277,11 +278,13 @@ differ if the supervision chain includes any remote supervisors. These paths
 are used by the system to look up actors, e.g. when a remote message is
 received and the recipient is searched, but they are also useful more directly:
 actors may look up other actors by specifying absolute or relative
-paths—logical or physical—and receive back an :class:`ActorRef` with the
+paths—logical or physical—and receive back an :class:`ActorSelection` with the
 result::
 
-  getContext().actorFor("/user/serviceA/actor") // will look up this absolute path
-  getContext().actorFor("../joe") // will look up sibling beneath same supervisor
+  // will look up this absolute path
+  getContext().actorSelection("/user/serviceA/actor");
+  // will look up sibling beneath same supervisor
+  getContext().actorSelection("../joe");
 
 The supplied path is parsed as a :class:`java.net.URI`, which basically means
 that it is split on ``/`` into path elements. If the path starts with ``/``, it
@@ -292,18 +295,43 @@ currently traversed actor, otherwise it will step “down” to the named child.
 It should be noted that the ``..`` in actor paths here always means the logical
 structure, i.e. the supervisor.
 
-If the path being looked up does not exist, a special actor reference is
-returned which behaves like the actor system’s dead letter queue but retains
-its identity (i.e. the path which was looked up).
+The path elements of an actor selection may contain wildcard patterns allowing for
+broadcasting of messages to that section::
 
-Remote actor addresses may also be looked up, if remoting is enabled::
+  // will look all children to serviceB with names starting with worker
+  getContext().actorSelection("/user/serviceB/worker*");
+  // will look up all siblings beneath same supervisor
+  getContext().actorSelection("../*");
 
-  getContext().actorFor("akka.tcp://app@otherhost:1234/user/serviceB")
+Messages can be sent via the :class:`ActorSelection` and the path of the
+:class:`ActorSelection` is looked up when delivering each message. If the selection
+does not match any actors the message will be dropped.
 
-These look-ups return a (possibly remote) actor reference immediately, so you
-will have to send to it and await a reply in order to verify that ``serviceB``
-is actually reachable and running. An example demonstrating actor look-up is
-given in :ref:`remote-lookup-sample-java`.
+To acquire an :class:`ActorRef` for an :class:`ActorSelection` you need to
+send a message to the selection and use the ``getSender`` reference of the reply from
+the actor. There is a built-in ``Identify`` message that all Actors will understand
+and automatically reply to with a ``ActorIdentity`` message containing the
+:class:`ActorRef`.
+
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java
+   :include: identify-imports,identify
+
+Remote actor addresses may also be looked up, if :ref:`remoting <remoting-java>` is enabled::
+
+  getContext().actorSelection("akka.tcp://app@otherhost:1234/user/serviceB");
+
+An example demonstrating remote actor look-up is given in :ref:`remote-lookup-sample-java`.
+
+.. note::
+
+  ``actorFor`` is deprecated in favor of ``actorSelection`` because actor references
+  acquired with ``actorFor`` behave differently for local and remote actors.
+  In the case of a local actor reference, the named actor needs to exist before the
+  lookup, or else the acquired reference will be an :class:`EmptyLocalActorRef`.
+  This will be true even if an actor with that exact path is created after acquiring
+  the actor reference. For remote actor references acquired with `actorFor` the
+  behaviour is different and sending messages to such a reference will under the hood
+  look up the actor by path on the remote system for every message send.
 
 Messages and immutability
 =========================
@@ -606,7 +634,7 @@ The other way of using :meth:`become` does not replace but add to the top of
 the behavior stack. In this case care must be taken to ensure that the number
 of “pop” operations (i.e. :meth:`unbecome`) matches the number of “push” ones
 in the long run, otherwise this amounts to a memory leak (which is why this
-behavior is not the default). 
+behavior is not the default).
 
 .. includecode:: code/docs/actor/UntypedActorSwapper.java#swapper
 

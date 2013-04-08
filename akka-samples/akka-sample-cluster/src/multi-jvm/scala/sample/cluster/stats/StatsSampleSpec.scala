@@ -118,17 +118,12 @@ abstract class StatsSampleSpec extends MultiNodeSpec(StatsSampleSpecConfig)
     }
 
     def assertServiceOk(): Unit = {
-      val service = system.actorFor(node(third) / "user" / "statsService")
+      val service = system.actorSelection(node(third) / "user" / "statsService")
       // eventually the service should be ok,
       // first attempts might fail because worker actors not started yet
-      awaitCond {
+      awaitAssert {
         service ! StatsJob("this is the text that will be analyzed")
-        expectMsgPF() {
-          case unavailble: JobFailed ⇒ false
-          case StatsResult(meanWordLength) ⇒
-            meanWordLength must be(3.875 plusOrMinus 0.001)
-            true
-        }
+        expectMsgType[StatsResult](1.second).meanWordLength must be(3.875 plusOrMinus 0.001)
       }
 
     }

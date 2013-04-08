@@ -116,7 +116,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * there is nobody to reply to).
    *
    * <pre>
-   * actor.tell(message, context);
+   * actor.tell(message, getSelf());
    * </pre>
    */
   final def tell(msg: Any, sender: ActorRef): Unit = this.!(msg)(sender)
@@ -341,8 +341,9 @@ private[akka] class LocalActorRef private[akka] (
   /**
    * Method for looking up a single child beneath this actor. Override in order
    * to inject “synthetic” actor paths like “/temp”.
+   * It is racy if called from the outside.
    */
-  protected def getSingleChild(name: String): InternalActorRef = {
+  def getSingleChild(name: String): InternalActorRef = {
     val (childName, uid) = ActorCell.splitNameAndUid(name)
     actorCell.getChildByName(childName) match {
       case Some(crs: ChildRestartStats) if uid == ActorCell.undefinedUid || uid == crs.uid ⇒
@@ -407,7 +408,7 @@ private[akka] case class SerializedActorRef private (path: String) {
         "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
           " Use 'akka.serialization.Serialization.currentSystem.withValue(system) { ... }'")
     case someSystem ⇒
-      someSystem.actorFor(path)
+      someSystem.provider.resolveActorRef(path)
   }
 }
 
@@ -479,25 +480,31 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
 
   override def sendSystemMessage(message: SystemMessage): Unit = {
     if (Mailbox.debug) println(s"ELAR $path having enqueued $message")
-    specialHandle(message)
+    specialHandle(message, provider.deadLetters)
   }
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = message match {
     case null ⇒ throw new InvalidMessageException("Message is null")
     case d: DeadLetter ⇒
-      specialHandle(d.message) // do NOT form endless loops, since deadLetters will resend!
-    case _ if !specialHandle(message) ⇒
+      specialHandle(d.message, d.sender) // do NOT form endless loops, since deadLetters will resend!
+    case _ if !specialHandle(message, sender) ⇒
       eventStream.publish(DeadLetter(message, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
     case _ ⇒
   }
 
-  protected def specialHandle(msg: Any): Boolean = msg match {
+  protected def specialHandle(msg: Any, sender: ActorRef): Boolean = msg match {
     case w: Watch ⇒
       if (w.watchee == this && w.watcher != this)
         w.watcher ! Terminated(w.watchee)(existenceConfirmed = false, addressTerminated = false)
       true
     case _: Unwatch ⇒ true // Just ignore
-    case _          ⇒ false
+    case Identify(messageId) ⇒
+      sender ! ActorIdentity(messageId, None)
+      true
+    case s: SelectChildName ⇒
+      s.identifyRequest foreach { x ⇒ sender ! ActorIdentity(x.messageId, None) }
+      true
+    case _ ⇒ false
   }
 }
 
@@ -512,18 +519,25 @@ private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
                                        _eventStream: EventStream) extends EmptyLocalActorRef(_provider, _path, _eventStream) {
 
   override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
-    case null          ⇒ throw new InvalidMessageException("Message is null")
-    case d: DeadLetter ⇒ if (!specialHandle(d.message)) eventStream.publish(d)
-    case _ ⇒ if (!specialHandle(message))
+    case null                ⇒ throw new InvalidMessageException("Message is null")
+    case Identify(messageId) ⇒ sender ! ActorIdentity(messageId, Some(this))
+    case d: DeadLetter       ⇒ if (!specialHandle(d.message, d.sender)) eventStream.publish(d)
+    case _ ⇒ if (!specialHandle(message, sender))
       eventStream.publish(DeadLetter(message, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
   }
 
-  override protected def specialHandle(msg: Any): Boolean = msg match {
+  override protected def specialHandle(msg: Any, sender: ActorRef): Boolean = msg match {
     case w: Watch ⇒
       if (w.watchee != this && w.watcher != this)
         w.watcher ! Terminated(w.watchee)(existenceConfirmed = false, addressTerminated = false)
       true
-    case w: Unwatch  ⇒ true // Just ignore
+    case w: Unwatch ⇒ true // Just ignore
+    case Identify(messageId) ⇒
+      sender ! ActorIdentity(messageId, None)
+      true
+    case s: SelectChildName ⇒
+      s.identifyRequest foreach { x ⇒ sender ! ActorIdentity(x.messageId, None) }
+      true
     case NullMessage ⇒ true
     case _           ⇒ false
   }

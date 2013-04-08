@@ -25,6 +25,7 @@ import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import akka.testkit.TestEvent._
 import akka.actor.Terminated
+import akka.actor.ActorSelection
 
 object ClusterSingletonManagerChaosSpec extends MultiNodeConfig {
   val controller = role("controller")
@@ -104,8 +105,8 @@ class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonMan
     }
   }
 
-  def echo(leader: RoleName): ActorRef =
-    system.actorFor(RootActorPath(node(leader).address) / "user" / "singleton" / "echo")
+  def echo(leader: RoleName): ActorSelection =
+    system.actorSelection(RootActorPath(node(leader).address) / "user" / "singleton" / "echo")
 
   def verify(leader: RoleName): Unit = {
     enterBarrier("before-" + leader.name + "-verified")

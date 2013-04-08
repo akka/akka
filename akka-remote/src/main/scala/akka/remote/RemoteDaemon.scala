@@ -13,6 +13,11 @@ import akka.actor.ActorRefWithCell
 import akka.actor.ActorRefScope
 import akka.util.Switch
 import akka.actor.RootActorPath
+import akka.actor.SelectParent
+import akka.actor.SelectChildName
+import akka.actor.SelectChildPattern
+import akka.actor.Identify
+import akka.actor.ActorIdentity
 
 /**
  * INTERNAL API
@@ -105,6 +110,21 @@ private[akka] class RemoteSystemDaemon(
               log.debug("remote path does not match path from message [{}]", message)
           }
       }
+
+    case SelectParent(m) ⇒ getParent.tell(m, sender)
+
+    case s @ SelectChildName(name, m) ⇒
+      getChild(s.allChildNames.iterator) match {
+        case Nobody ⇒
+          s.identifyRequest foreach { x ⇒ sender ! ActorIdentity(x.messageId, None) }
+        case child ⇒
+          child.tell(s.wrappedMessage, sender)
+      }
+
+    case SelectChildPattern(p, m) ⇒
+      log.error("SelectChildPattern not allowed in actorSelection of remote deployed actors")
+
+    case Identify(messageId) ⇒ sender ! ActorIdentity(messageId, Some(this))
 
     case Terminated(child: ActorRefWithCell) if child.asInstanceOf[ActorRefScope].isLocal ⇒
       terminating.locked {

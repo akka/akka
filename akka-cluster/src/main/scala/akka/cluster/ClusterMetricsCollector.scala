@@ -157,7 +157,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
     sendGossip(address, MetricsGossipEnvelope(selfAddress, latestGossip, reply = true))
 
   def sendGossip(address: Address, envelope: MetricsGossipEnvelope): Unit =
-    context.actorFor(self.path.toStringWithAddress(address)) ! envelope
+    context.actorSelection(self.path.toStringWithAddress(address)) ! envelope
 
   def selectRandomNode(addresses: immutable.IndexedSeq[Address]): Option[Address] =
     if (addresses.isEmpty) None else Some(addresses(ThreadLocalRandom.current nextInt addresses.size))

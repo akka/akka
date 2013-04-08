@@ -56,7 +56,7 @@ public class TransformationBackend extends UntypedActor {
 
   void register(Member member) {
     if (member.hasRole("frontend"))
-      getContext().actorFor(member.address() + "/user/frontend").tell(
+      getContext().actorSelection(member.address() + "/user/frontend").tell(
         BACKEND_REGISTRATION, getSelf());
   }
 }

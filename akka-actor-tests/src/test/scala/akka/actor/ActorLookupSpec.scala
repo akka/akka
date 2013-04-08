@@ -9,7 +9,6 @@ import akka.testkit._
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import akka.pattern.ask
-import java.net.MalformedURLException
 
 object ActorLookupSpec {
 
@@ -281,58 +280,6 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       Await.result(f, timeout.duration) must be === 42
       // clean-up is run as onComplete callback, i.e. dispatched on another thread
       awaitCond(Await.result(c2 ? LookupPath(a.path), timeout.duration).asInstanceOf[ActorRef].isTerminated, 1 second)
-    }
-
-  }
-
-  "An ActorSelection" must {
-
-    "send messages directly" in {
-      ActorSelection(c1, "") ! GetSender(testActor)
-      expectMsg(system.deadLetters)
-      lastSender must be === c1
-    }
-
-    "send messages with correct sender" in {
-      implicit val sender = c1
-      ActorSelection(c21, "../../*") ! GetSender(testActor)
-      val actors = Set() ++ receiveWhile(messages = 2) {
-        case `c1` ⇒ lastSender
-      }
-      actors must be === Set(c1, c2)
-      expectNoMsg(1 second)
-    }
-
-    "drop messages which cannot be delivered" in {
-      implicit val sender = c2
-      ActorSelection(c21, "../../*/c21") ! GetSender(testActor)
-      val actors = receiveWhile(messages = 2) {
-        case `c2` ⇒ lastSender
-      }
-      actors must be === Seq(c21)
-      expectNoMsg(1 second)
-    }
-
-  }
-
-  "An ActorPath" must {
-
-    "support parsing its String rep" in {
-      val path = system.actorFor("user").path
-      ActorPath.fromString(path.toString) must be(path)
-    }
-
-    "support parsing remote paths" in {
-      val remote = "akka://sys@host:1234/some/ref"
-      ActorPath.fromString(remote).toString must be(remote)
-    }
-
-    "throw exception upon malformed paths" in {
-      intercept[MalformedURLException] { ActorPath.fromString("") }
-      intercept[MalformedURLException] { ActorPath.fromString("://hallo") }
-      intercept[MalformedURLException] { ActorPath.fromString("s://dd@:12") }
-      intercept[MalformedURLException] { ActorPath.fromString("s://dd@h:hd") }
-      intercept[MalformedURLException] { ActorPath.fromString("a://l:1/b") }
     }
 
   }

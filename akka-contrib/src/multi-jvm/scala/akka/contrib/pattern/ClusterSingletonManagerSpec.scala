@@ -24,6 +24,9 @@ import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import akka.testkit.TestEvent._
 import akka.actor.Terminated
+import akka.actor.Identify
+import akka.actor.ActorIdentity
+import akka.actor.ActorSelection
 
 object ClusterSingletonManagerSpec extends MultiNodeConfig {
   val controller = role("controller")
@@ -157,11 +160,11 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
     def receive = {
       case state: CurrentClusterState ⇒ leaderAddress = state.leader
       case LeaderChanged(leader)      ⇒ leaderAddress = leader
-      case other                      ⇒ consumer foreach { _ forward other }
+      case other                      ⇒ consumer foreach { _.tell(other, sender) }
     }
 
-    def consumer: Option[ActorRef] =
-      leaderAddress map (a ⇒ context.actorFor(RootActorPath(a) /
+    def consumer: Option[ActorSelection] =
+      leaderAddress map (a ⇒ context.actorSelection(RootActorPath(a) /
         "user" / "singleton" / "consumer"))
   }
   //#singleton-proxy
@@ -181,11 +184,11 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
     def receive = {
       case state: CurrentClusterState   ⇒ leaderAddress = state.roleLeader(role)
       case RoleLeaderChanged(r, leader) ⇒ if (r == role) leaderAddress = leader
-      case other                        ⇒ consumer foreach { _ forward other }
+      case other                        ⇒ consumer foreach { _.tell(other, sender) }
     }
 
-    def consumer: Option[ActorRef] =
-      leaderAddress map (a ⇒ context.actorFor(RootActorPath(a) /
+    def consumer: Option[ActorSelection] =
+      leaderAddress map (a ⇒ context.actorSelection(RootActorPath(a) /
         "user" / "singleton" / "consumer"))
   }
   //#singleton-proxy2
@@ -208,6 +211,8 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
 
   override def initialParticipants = roles.size
 
+  val identifyProbe = TestProbe()
+
   //#sort-cluster-roles
   // Sort the roles in the order used by the cluster.
   lazy val sortedWorkerNodes: immutable.IndexedSeq[RoleName] = {
@@ -220,7 +225,10 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
   }
   //#sort-cluster-roles
 
-  def queue: ActorRef = system.actorFor(node(controller) / "user" / "queue")
+  def queue: ActorRef = {
+    system.actorSelection(node(controller) / "user" / "queue").tell(Identify("queue"), identifyProbe.ref)
+    identifyProbe.expectMsgType[ActorIdentity].ref.get
+  }
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
@@ -241,8 +249,8 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
     //#create-singleton-manager
   }
 
-  def consumer(leader: RoleName): ActorRef =
-    system.actorFor(RootActorPath(node(leader).address) / "user" / "singleton" / "consumer")
+  def consumer(leader: RoleName): ActorSelection =
+    system.actorSelection(RootActorPath(node(leader).address) / "user" / "singleton" / "consumer")
 
   def verify(leader: RoleName, msg: Int, expectedCurrent: Int): Unit = {
     enterBarrier("before-" + leader.name + "-verified")
@@ -340,9 +348,13 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       verify(newLeaderRole, msg = 7, expectedCurrent = 6)
 
       runOn(leaveRole) {
-        val singleton = system.actorFor("/user/singleton")
-        watch(singleton)
-        expectMsgType[Terminated].actor must be(singleton)
+        system.actorSelection("/user/singleton").tell(Identify("singleton"), identifyProbe.ref)
+        identifyProbe.expectMsgPF() {
+          case ActorIdentity("singleton", None) ⇒ // already terminated
+          case ActorIdentity("singleton", Some(singleton)) ⇒
+            watch(singleton)
+            expectMsgType[Terminated].actor must be(singleton)
+        }
       }
 
       enterBarrier("after-leave")

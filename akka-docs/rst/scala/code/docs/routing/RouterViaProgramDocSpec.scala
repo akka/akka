@@ -10,13 +10,15 @@ import akka.routing.RoundRobinRouter
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
+import akka.actor.ActorPath
 
 object RouterViaProgramDocSpec {
   case class Message1(nbr: Int)
+  case class Reply1(name: String, m: Message1)
 
   class ExampleActor1 extends Actor {
     def receive = {
-      case m @ Message1(nbr) ⇒ sender ! ((self, m))
+      case m @ Message1(nbr) ⇒ sender ! Reply1(self.path.name, m)
     }
   }
 
@@ -43,9 +45,9 @@ class RouterViaProgramDocSpec extends AkkaSpec with ImplicitSender {
     1 to 6 foreach { i ⇒ router ! Message1(i) }
     val received = receiveN(6, 5.seconds.dilated)
     1 to 6 foreach { i ⇒
-      val expectedActor = system.actorFor(routees((i - 1) % routees.length))
+      val expectedName = (routees((i - 1) % routees.length)).split("/").last
       val expectedMsg = Message1(i)
-      received must contain[AnyRef]((expectedActor, expectedMsg))
+      received must contain[AnyRef](Reply1(expectedName, expectedMsg))
     }
   }
 

@@ -354,7 +354,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
    * return that as an ActorPath for easy composition:
    *
    * {{{
-   * val serviceA = system.actorFor(node("master") / "user" / "serviceA")
+   * val serviceA = system.actorSelection(node("master") / "user" / "serviceA")
    * }}}
    */
   def node(role: RoleName): ActorPath = RootActorPath(testConductor.getAddressFor(role).await)

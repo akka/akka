@@ -157,7 +157,7 @@ package docs.serialization {
 
     "demonstrate serialization of ActorRefs" in {
       val theActorRef: ActorRef = system.deadLetters
-      val theActorSystem: ActorSystem = system
+      val extendedSystem: ExtendedActorSystem = system.asInstanceOf[ExtendedActorSystem]
 
       //#actorref-serializer
       // Serialize
@@ -168,7 +168,7 @@ package docs.serialization {
 
       // Deserialize
       // (beneath fromBinary)
-      val deserializedActorRef = theActorSystem actorFor identifier
+      val deserializedActorRef = extendedSystem.provider.resolveActorRef(identifier)
       // Then just use the ActorRef
       //#actorref-serializer
 
@@ -182,7 +182,7 @@ package docs.serialization {
       }
 
       def serializeTo(ref: ActorRef, remote: Address): String =
-        ref.path.toSerializationFormatWithAddress(ExternalAddress(theActorSystem).addressFor(remote))
+        ref.path.toSerializationFormatWithAddress(ExternalAddress(extendedSystem).addressFor(remote))
       //#external-address
     }
 
