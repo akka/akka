@@ -344,7 +344,7 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(camelSample, fsmSample, helloSample, helloKernelSample, remoteSample, clusterSample, multiNodeSample)
+    aggregate = Seq(camelSample, fsmSample, helloSample, helloKernelSample, remoteSample, clusterSample, multiNodeSample, osgiDiningHakkersSample)
   )
 
   lazy val camelSample = Project(
@@ -413,6 +413,44 @@ object AkkaBuild extends Build {
       }
     )
   ) configs (MultiJvm)
+
+  lazy val osgiDiningHakkersSample = Project(id = "akka-sample-osgi-dining-hakkers",
+    base = file("akka-samples/akka-sample-osgi-dining-hakkers"),
+    settings = sampleSettings ++ Seq(
+      test in Test ~= { x => {
+        if({List("sh", "-c", "cd akka-samples/akka-sample-osgi-dining-hakkers; mvn clean install") !} != 0 ) {throw new Exception("Osgi sample Dining hakkers failed")}
+      } }
+    )
+  ) aggregate(osgiDiningHakkersSampleApi, osgiDiningHakkersSampleCommand, osgiDiningHakkersSampleCore, uncommons)
+
+  lazy val osgiDiningHakkersSampleApi = Project(id = "akka-sample-osgi-dining-hakkers-api",
+    base = file("akka-samples/akka-sample-osgi-dining-hakkers/api"),
+    settings = sampleSettings ++ OSGi.osgiDiningHakkersSampleApi
+  )dependsOn(actor)
+
+  lazy val osgiDiningHakkersSampleCommand = Project(id = "akka-sample-osgi-dining-hakkers-command",
+    base = file("akka-samples/akka-sample-osgi-dining-hakkers/command"),
+    settings = sampleSettings ++ OSGi.osgiDiningHakkersSampleCommand ++ Seq(
+      libraryDependencies ++= Dependencies.osgiDiningHakkerSampleCommand
+    )
+  ) dependsOn (osgiDiningHakkersSampleApi, actor)
+
+
+  lazy val osgiDiningHakkersSampleCore = Project(id = "akka-sample-osgi-dining-hakkers-core",
+    base = file("akka-samples/akka-sample-osgi-dining-hakkers/core"),
+    settings = sampleSettings ++ OSGi.osgiDiningHakkersSampleCore ++ Seq(
+      libraryDependencies ++= Dependencies.osgiDiningHakkerSampleCore
+    )
+  ) dependsOn (osgiDiningHakkersSampleApi, actor, remote, cluster, osgi)
+
+  //TODO to remove it as soon as the uncommons gets OSGified, see ticket #2990
+  lazy val uncommons = Project(id = "akka-sample-osgi-dining-hakkers-uncommons",
+    base = file("akka-samples/akka-sample-osgi-dining-hakkers//uncommons"),
+    settings = sampleSettings ++ OSGi.osgiDiningHakkersSampleUncommons ++ Seq(
+      libraryDependencies ++= Dependencies.uncommons,
+      version := "1.2.2"
+    )
+  )
 
   lazy val docs = Project(
     id = "akka-docs",
@@ -804,6 +842,14 @@ object AkkaBuild extends Build {
       OsgiKeys.importPackage := (osgiOptionalImports map optionalResolution) ++ Seq("!sun.misc", scalaImport(),configImport(), "*") 
      )
 
+    val osgiDiningHakkersSampleApi = exports(Seq("akka.sample.osgi.api"))
+
+    val osgiDiningHakkersSampleCommand = osgiSettings ++ Seq(OsgiKeys.bundleActivator := Option("akka.sample.osgi.command.Activator"), OsgiKeys.privatePackage := Seq("akka.sample.osgi.command"))
+
+    val osgiDiningHakkersSampleCore = exports(Seq("")) ++ Seq(OsgiKeys.bundleActivator := Option("akka.sample.osgi.activation.Activator"), OsgiKeys.privatePackage := Seq("akka.sample.osgi.internal", "akka.sample.osgi.activation", "akka.sample.osgi.service"))
+
+    val osgiDiningHakkersSampleUncommons = exports(Seq("org.uncommons.maths.random")) ++ Seq(OsgiKeys.privatePackage := Seq("org.uncommons.maths.binary", "org.uncommons.maths", "org.uncommons.maths.number"))
+
     val osgiAries = exports() ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.aries.*"))
 
     val remote = exports(Seq("akka.remote.*"), imports = Seq(protobufImport()))
@@ -875,7 +921,7 @@ object Dependencies {
     val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
 
     // Cluster Sample
-    val sigar       = "org.fusesource"                % "sigar"                        % "1.6.4"            // ApacheV2
+    val sigar       = "org.fusesource"                   % "sigar"                        % "1.6.4"            // ApacheV2
 
     // Compiler plugins
     val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.4" cross CrossVersion.full) // ApacheV2
@@ -932,7 +978,13 @@ object Dependencies {
 
   val osgi = Seq(osgiCore, osgiCompendium, Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
 
-  val osgiAries = Seq(osgiCore, ariesBlueprint, Test.ariesProxy)
+  val osgiDiningHakkerSampleCore = Seq(config, osgiCore, osgiCompendium)
+
+  val osgiDiningHakkerSampleCommand = Seq(osgiCore, osgiCompendium)
+
+  val uncommons = Seq(uncommonsMath)
+
+  val osgiAries = Seq(osgiCore, osgiCompendium, ariesBlueprint, Test.ariesProxy)
 
   val docs = Seq(Test.scalatest, Test.junit, Test.junitIntf)
 
