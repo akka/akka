@@ -28,6 +28,7 @@ import util.{ Failure, Success }
 private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends Serializer {
   import ProtobufSerializer.serializeActorRef
   import ProtobufSerializer.deserializeActorRef
+  import Deploy.NoDispatcherGiven
 
   def includeManifest: Boolean = false
   def identifier = 3
@@ -44,6 +45,8 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
           builder.setRouterConfig(serialize(d.routerConfig))
         if (d.scope != NoScopeGiven)
           builder.setScope(serialize(d.scope))
+        if (d.dispatcher != NoDispatcherGiven)
+          builder.setDispatcher(d.dispatcher)
         builder.build
       }
 
@@ -85,7 +88,10 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
       val scope =
         if (protoDeploy.hasScope) deserialize(protoDeploy.getScope, classOf[Scope])
         else NoScopeGiven
-      Deploy(protoDeploy.getPath, config, routerConfig, scope)
+      val dispatcher =
+        if (protoDeploy.hasDispatcher) protoDeploy.getDispatcher
+        else NoDispatcherGiven
+      Deploy(protoDeploy.getPath, config, routerConfig, scope, dispatcher)
     }
 
     def props = {

@@ -110,4 +110,5 @@ message DeployProtocol {
   optional bytes config = 2;
   optional bytes routerConfig = 3;
   optional bytes scope = 4;
+  optional string dispatcher = 5;
 }

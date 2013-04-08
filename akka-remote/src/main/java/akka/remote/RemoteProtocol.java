@@ -5805,6 +5805,10 @@ public final class RemoteProtocol {
     // optional bytes scope = 4;
     boolean hasScope();
     com.google.protobuf.ByteString getScope();
+    
+    // optional string dispatcher = 5;
+    boolean hasDispatcher();
+    String getDispatcher();
   }
   public static final class DeployProtocol extends
       com.google.protobuf.GeneratedMessage
@@ -5897,11 +5901,44 @@ public final class RemoteProtocol {
       return scope_;
     }
     
+    // optional string dispatcher = 5;
+    public static final int DISPATCHER_FIELD_NUMBER = 5;
+    private java.lang.Object dispatcher_;
+    public boolean hasDispatcher() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    public String getDispatcher() {
+      java.lang.Object ref = dispatcher_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          dispatcher_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getDispatcherBytes() {
+      java.lang.Object ref = dispatcher_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        dispatcher_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+    
     private void initFields() {
       path_ = "";
       config_ = com.google.protobuf.ByteString.EMPTY;
       routerConfig_ = com.google.protobuf.ByteString.EMPTY;
       scope_ = com.google.protobuf.ByteString.EMPTY;
+      dispatcher_ = "";
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -5931,6 +5968,9 @@ public final class RemoteProtocol {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeBytes(4, scope_);
       }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeBytes(5, getDispatcherBytes());
+      }
       getUnknownFields().writeTo(output);
     }
     
@@ -5955,6 +5995,10 @@ public final class RemoteProtocol {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(4, scope_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(5, getDispatcherBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -6088,6 +6132,8 @@ public final class RemoteProtocol {
         bitField0_ = (bitField0_ & ~0x00000004);
         scope_ = com.google.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000008);
+        dispatcher_ = "";
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
       
@@ -6142,6 +6188,10 @@ public final class RemoteProtocol {
           to_bitField0_ |= 0x00000008;
         }
         result.scope_ = scope_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.dispatcher_ = dispatcher_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -6169,6 +6219,9 @@ public final class RemoteProtocol {
         }
         if (other.hasScope()) {
           setScope(other.getScope());
+        }
+        if (other.hasDispatcher()) {
+          setDispatcher(other.getDispatcher());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -6223,6 +6276,11 @@ public final class RemoteProtocol {
             case 34: {
               bitField0_ |= 0x00000008;
               scope_ = input.readBytes();
+              break;
+            }
+            case 42: {
+              bitField0_ |= 0x00000010;
+              dispatcher_ = input.readBytes();
               break;
             }
           }
@@ -6339,6 +6397,42 @@ public final class RemoteProtocol {
         return this;
       }
       
+      // optional string dispatcher = 5;
+      private java.lang.Object dispatcher_ = "";
+      public boolean hasDispatcher() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      public String getDispatcher() {
+        java.lang.Object ref = dispatcher_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          dispatcher_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
+      }
+      public Builder setDispatcher(String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
+        dispatcher_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearDispatcher() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        dispatcher_ = getDefaultInstance().getDispatcher();
+        onChanged();
+        return this;
+      }
+      void setDispatcher(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000010;
+        dispatcher_ = value;
+        onChanged();
+      }
+      
       // @@protoc_insertion_point(builder_scope:DeployProtocol)
     }
     
@@ -6432,11 +6526,11 @@ public final class RemoteProtocol {
       "psProtocol\022\022\n\ndispatcher\030\001 \002(\t\022\037\n\006deploy" +
       "\030\002 \002(\0132\017.DeployProtocol\022\030\n\020fromClassCrea" +
       "tor\030\003 \001(\t\022\017\n\007creator\030\004 \001(\014\022\024\n\014routerConf" +
-      "ig\030\005 \001(\014\"S\n\016DeployProtocol\022\014\n\004path\030\001 \002(\t" +
+      "ig\030\005 \001(\014\"g\n\016DeployProtocol\022\014\n\004path\030\001 \002(\t" +
       "\022\016\n\006config\030\002 \001(\014\022\024\n\014routerConfig\030\003 \001(\014\022\r" +
-      "\n\005scope\030\004 \001(\014*7\n\013CommandType\022\013\n\007CONNECT\020" +
-      "\001\022\014\n\010SHUTDOWN\020\002\022\r\n\tHEARTBEAT\020\003B\017\n\013akka.r" +
-      "emoteH\001"
+      "\n\005scope\030\004 \001(\014\022\022\n\ndispatcher\030\005 \001(\t*7\n\013Com" +
+      "mandType\022\013\n\007CONNECT\020\001\022\014\n\010SHUTDOWN\020\002\022\r\n\tH" +
+      "EARTBEAT\020\003B\017\n\013akka.remoteH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -6520,7 +6614,7 @@ public final class RemoteProtocol {
           internal_static_DeployProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_DeployProtocol_descriptor,
-              new java.lang.String[] { "Path", "Config", "RouterConfig", "Scope", },
+              new java.lang.String[] { "Path", "Config", "RouterConfig", "Scope", "Dispatcher", },
               akka.remote.RemoteProtocol.DeployProtocol.class,
               akka.remote.RemoteProtocol.DeployProtocol.Builder.class);
           return null;

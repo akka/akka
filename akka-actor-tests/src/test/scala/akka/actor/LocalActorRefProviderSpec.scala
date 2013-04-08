@@ -66,12 +66,13 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
       })))
       a.tell(GetChild, testActor)
       val child = expectMsgType[ActorRef]
-      child.asInstanceOf[LocalActorRef].underlying.props must be theSameInstanceAs Props.empty
+      val childProps1 = child.asInstanceOf[LocalActorRef].underlying.props
+      childProps1 must be(Props.empty)
       system stop a
       expectMsgType[Terminated]
-      val childProps = child.asInstanceOf[LocalActorRef].underlying.props
-      childProps must not be theSameInstanceAs(Props.empty)
-      childProps must be theSameInstanceAs ActorCell.terminatedProps
+      val childProps2 = child.asInstanceOf[LocalActorRef].underlying.props
+      childProps2 must not be theSameInstanceAs(childProps1)
+      childProps2 must be theSameInstanceAs ActorCell.terminatedProps
     }
   }
 
