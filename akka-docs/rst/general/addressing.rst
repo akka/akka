@@ -95,14 +95,14 @@ What is the Difference Between Actor Reference and Path?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 An actor reference designates a single actor and the life-cycle of the reference
-matches that actor’s life-cycle; an actor path represents a name which may or 
-may not be inhabited by an actor and the path itself does not have a life-cycle, 
-it never becomes invalid. You can create an actor path without creating an actor, 
-but you cannot create an actor reference without creating corresponding actor. 
+matches that actor’s life-cycle; an actor path represents a name which may or
+may not be inhabited by an actor and the path itself does not have a life-cycle,
+it never becomes invalid. You can create an actor path without creating an actor,
+but you cannot create an actor reference without creating corresponding actor.
 
 .. note::
 
-  That definition does not hold for ``actorFor``, which is one of the reasons why 
+  That definition does not hold for ``actorFor``, which is one of the reasons why
   ``actorFor`` is deprecated in favor of ``actorSelection``.
 
 You can create an actor, terminate it, and then create a new actor with the same
@@ -194,34 +194,43 @@ Looking up Actors by Concrete Path
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In addition, actor references may be looked up using the
-:meth:`ActorSystem.actorFor` method, which returns a local or remote actor
-reference. The reference can be reused for communicating with said actor during
-the whole lifetime of the actor. In the case of a local actor reference, the
-named actor needs to exist before the lookup, or else the acquired reference
-will be an :class:`EmptyLocalActorRef`. This will be true even if an actor with
-that exact path is created after acquiring the actor reference. For remote actor
-references acquired with `actorFor` the behaviour is different and sending messages 
-to such a reference will under the hood look up the actor by path on the remote
-system for every message send.
+:meth:`ActorSystem.actorSelection` method. The selection can be used for
+communicating with said actor and the actor corresponding to the selection
+is looked up when delivering each message.
+
+To acquire an :class:`ActorRef` that is bound to the life-cycle of a specific actor
+you need to send a message, such as the built-in :class:`Identify` message, to the actor
+and use the ``sender`` reference of a reply from the actor.
+
+.. note::
+
+  ``actorFor`` is deprecated in favor of ``actorSelection`` because actor references
+  acquired with ``actorFor`` behave differently for local and remote actors.
+  In the case of a local actor reference, the named actor needs to exist before the
+  lookup, or else the acquired reference will be an :class:`EmptyLocalActorRef`.
+  This will be true even if an actor with that exact path is created after acquiring
+  the actor reference. For remote actor references acquired with `actorFor` the
+  behaviour is different and sending messages to such a reference will under the hood
+  look up the actor by path on the remote system for every message send.
 
 Absolute vs. Relative Paths
 ```````````````````````````
 
-In addition to :meth:`ActorSystem.actorFor` there is also
-:meth:`ActorContext.actorFor`, which is available inside any actor as
-``context.actorFor``. This yields an actor reference much like its twin on
+In addition to :meth:`ActorSystem.actorSelection` there is also
+:meth:`ActorContext.actorSelection`, which is available inside any actor as
+``context.actorSelection``. This yields an actor selection much like its twin on
 :class:`ActorSystem`, but instead of looking up the path starting from the root
 of the actor tree it starts out on the current actor. Path elements consisting
 of two dots (``".."``) may be used to access the parent actor. You can for
 example send a message to a specific sibling::
 
-  context.actorFor("../brother") ! msg
+  context.actorSelection("../brother") ! msg
 
 Absolute paths may of course also be looked up on `context` in the usual way, i.e.
 
 .. code-block:: scala
 
-  context.actorFor("/user/serviceA") ! msg
+  context.actorSelection("/user/serviceA") ! msg
 
 will work as expected.
 
@@ -249,10 +258,10 @@ extracting the sender references, and then watch all discovered concrete
 actors. This scheme of resolving a selection may be improved upon in a future
 release.
 
-.. _actorOf-vs-actorFor:
+.. _actorOf-vs-actorSelection:
 
-Summary: ``actorOf`` vs. ``actorFor``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Summary: ``actorOf`` vs. ``actorSelection`` vs. ``actorFor``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note::
 
@@ -263,8 +272,12 @@ Summary: ``actorOf`` vs. ``actorFor``
     child of the context on which this method is invoked (which may be any
     actor or actor system).
 
-  - ``actorFor`` only ever looks up an existing actor, i.e. does not create
-    one.
+  - ``actorSelection`` only ever looks up existing actors when messages are
+    delivered, i.e. does not create actors, or verify existence of actors
+    when the selection is created.
+
+  - ``actorFor`` (deprecated in favor of actorSelection) only ever looks up an
+    existing actor, i.e. does not create one.
 
 Actor Reference and Path Equality
 ---------------------------------
@@ -273,13 +286,13 @@ Equality of ``ActorRef`` match the intention that an ``ActorRef`` corresponds to
 the target actor incarnation. Two actor references are compared equal when they have
 the same path and point to the same actor incarnation. A reference pointing to a
 terminated actor does not compare equal to a reference pointing to another (re-created)
-actor with the same path. Note that a restart of an actor caused by a failure still 
-means that it is the same actor incarnation, i.e. a restart is not visible for the 
+actor with the same path. Note that a restart of an actor caused by a failure still
+means that it is the same actor incarnation, i.e. a restart is not visible for the
 consumer of the ``ActorRef``.
 
 Remote actor references acquired with ``actorFor`` do not include the full
-information about the underlying actor identity and therefore such references 
-do not compare equal to references acquired with ``actorOf``, ``sender``, 
+information about the underlying actor identity and therefore such references
+do not compare equal to references acquired with ``actorOf``, ``sender``,
 or ``context.self``. Because of this ``actorFor`` is deprecated in favor of
 ``actorSelection``.
 
@@ -297,7 +310,7 @@ While it is possible to create an actor at a later time with an identical
 path—simply due to it being impossible to enforce the opposite without keeping
 the set of all actors ever created available—this is not good practice: remote
 actor references acquired with ``actorFor`` which “died” suddenly start to work
-again, but without any guarantee of ordering between this transition and any 
+again, but without any guarantee of ordering between this transition and any
 other event, hence the new inhabitant of the path may receive messages which were destined for the
 previous tenant.
 

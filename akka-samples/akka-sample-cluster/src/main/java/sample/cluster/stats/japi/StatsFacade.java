@@ -1,21 +1,16 @@
 package sample.cluster.stats.japi;
 
-import scala.concurrent.Future;
 import sample.cluster.stats.japi.StatsMessages.JobFailed;
 import sample.cluster.stats.japi.StatsMessages.StatsJob;
-import akka.actor.ActorRef;
+import akka.actor.ActorSelection;
 import akka.actor.Address;
 import akka.actor.UntypedActor;
-import akka.dispatch.Recover;
 import akka.cluster.Cluster;
 import akka.cluster.ClusterEvent.CurrentClusterState;
 import akka.cluster.ClusterEvent.RoleLeaderChanged;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
-import akka.util.Timeout;
-import static akka.pattern.Patterns.ask;
-import static akka.pattern.Patterns.pipe;
-import static java.util.concurrent.TimeUnit.SECONDS;
+
 
 //#facade
 public class StatsFacade extends UntypedActor {
@@ -23,7 +18,7 @@ public class StatsFacade extends UntypedActor {
   LoggingAdapter log = Logging.getLogger(getContext().system(), this);
   Cluster cluster = Cluster.get(getContext().system());
 
-  Address currentMaster = null;
+  ActorSelection currentMaster = null;
 
   //subscribe to cluster changes, RoleLeaderChanged
   @Override
@@ -44,29 +39,28 @@ public class StatsFacade extends UntypedActor {
           getSelf());
 
     } else if (message instanceof StatsJob) {
-      StatsJob job = (StatsJob) message;
-      ActorRef service = getContext().actorFor(currentMaster +
-          "/user/singleton/statsService");
-      Future<Object> f = ask(service, job, new Timeout(5, SECONDS)).recover(
-          new Recover<Object>() {
-            public Object recover(Throwable t) {
-              return new JobFailed("Service unavailable, try again later");
-            }
-          }, getContext().dispatcher());
-      pipe(f, getContext().dispatcher()).to(getSender());
+      currentMaster.tell(message, getSender());
 
     } else if (message instanceof CurrentClusterState) {
       CurrentClusterState state = (CurrentClusterState) message;
-      currentMaster = state.getRoleLeader("compute");
+      setCurrentMaster(state.getRoleLeader("compute"));
 
     } else if (message instanceof RoleLeaderChanged) {
       RoleLeaderChanged leaderChanged = (RoleLeaderChanged) message;
       if (leaderChanged.role().equals("compute"))
-        currentMaster = leaderChanged.getLeader();
+        setCurrentMaster(leaderChanged.getLeader());
 
     } else {
       unhandled(message);
     }
+  }
+
+  void setCurrentMaster(Address address) {
+    if (address == null)
+      currentMaster = null;
+    else
+      currentMaster = getContext().actorSelection(address +
+          "/user/singleton/statsService");
   }
 
 }

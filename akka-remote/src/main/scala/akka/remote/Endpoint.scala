@@ -58,11 +58,7 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
         if (UntrustedMode) log.debug("dropping daemon message in untrusted mode")
         else {
           if (LogReceive) log.debug("received daemon message {}", msgLog)
-          payload match {
-            case m @ (_: DaemonMsg | _: Terminated) ⇒
-              remoteDaemon ! m
-            case x ⇒ log.debug("remoteDaemon received illegal message {} from {}", x, sender)
-          }
+          remoteDaemon ! payload
         }
 
       case l @ (_: LocalRef | _: RepointableRef) if l.isLocal ⇒

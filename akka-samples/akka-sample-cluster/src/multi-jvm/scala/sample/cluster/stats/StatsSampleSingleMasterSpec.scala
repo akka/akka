@@ -93,18 +93,13 @@ abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSing
     }
 
     "show usage of the statsFacade" in within(40 seconds) {
-      val facade = system.actorFor(RootActorPath(node(third).address) / "user" / "statsFacade")
+      val facade = system.actorSelection(RootActorPath(node(third).address) / "user" / "statsFacade")
 
       // eventually the service should be ok,
       // service and worker nodes might not be up yet
-      awaitCond {
+      awaitAssert {
         facade ! StatsJob("this is the text that will be analyzed")
-        expectMsgPF() {
-          case unavailble: JobFailed ⇒ false
-          case StatsResult(meanWordLength) ⇒
-            meanWordLength must be(3.875 plusOrMinus 0.001)
-            true
-        }
+        expectMsgType[StatsResult](1.second).meanWordLength must be(3.875 plusOrMinus 0.001)
       }
 
       testConductor.enter("done")

@@ -83,7 +83,7 @@ abstract class RestartFirstSeedNodeSpec
         enterBarrier("seed1-address-receiver-ready")
         seedNode1Address = Cluster(seed1System).selfAddress
         List(seed2, seed3) foreach { r ⇒
-          system.actorFor(RootActorPath(r) / "user" / "address-receiver") ! seedNode1Address
+          system.actorSelection(RootActorPath(r) / "user" / "address-receiver") ! seedNode1Address
           expectMsg(5 seconds, "ok")
         }
       }

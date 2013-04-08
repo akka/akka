@@ -12,7 +12,7 @@ import sample.cluster.stats.japi.StatsMessages.StatsResult;
 import scala.concurrent.forkjoin.ThreadLocalRandom;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
-import akka.actor.ActorRef;
+import akka.actor.ActorSelection;
 import akka.actor.Address;
 import akka.actor.Cancellable;
 import akka.actor.UntypedActor;
@@ -61,7 +61,7 @@ public class StatsSampleClient extends UntypedActor {
       List<Address> nodesList = new ArrayList<Address>(nodes);
       Address address = nodesList.get(ThreadLocalRandom.current().nextInt(
           nodesList.size()));
-      ActorRef service = getContext().actorFor(address + servicePath);
+      ActorSelection service = getContext().actorSelection(address + servicePath);
       service.tell(new StatsJob("this is the text that will be analyzed"),
           getSelf());
 

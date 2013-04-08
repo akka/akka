@@ -60,7 +60,8 @@ trait DurableMessageSerialization { this: DurableMessageQueue ⇒
    */
   def deserialize(bytes: Array[Byte]): Envelope = {
 
-    def deserializeActorRef(refProtocol: ActorRefProtocol): ActorRef = system.actorFor(refProtocol.getPath)
+    def deserializeActorRef(refProtocol: ActorRefProtocol): ActorRef =
+      system.provider.resolveActorRef(refProtocol.getPath)
 
     val durableMessage = RemoteMessageProtocol.parseFrom(bytes)
     val message = MessageSerializer.deserialize(system, durableMessage.getMessage)

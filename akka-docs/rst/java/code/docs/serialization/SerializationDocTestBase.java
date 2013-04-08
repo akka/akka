@@ -49,10 +49,10 @@ public class SerializationDocTestBase {
 //#my-own-serializer
 
   @Test public void serializeActorRefs() {
-    final ActorSystem theActorSystem =
+    final ExtendedActorSystem extendedSystem = (ExtendedActorSystem)
       ActorSystem.create("whatever");
     final ActorRef theActorRef =
-      theActorSystem.deadLetters(); // Of course this should be you
+      extendedSystem.deadLetters(); // Of course this should be you
 
     //#actorref-serializer
     // Serialize
@@ -63,10 +63,10 @@ public class SerializationDocTestBase {
 
     // Deserialize
     // (beneath fromBinary)
-    final ActorRef deserializedActorRef = theActorSystem.actorFor(identifier);
+    final ActorRef deserializedActorRef = extendedSystem.provider().resolveActorRef(identifier);
     // Then just use the ActorRef
     //#actorref-serializer
-    theActorSystem.shutdown();
+    extendedSystem.shutdown();
   }
 
   static
@@ -150,7 +150,7 @@ public class SerializationDocTestBase {
       return new DefaultAddressExt(system);
     }
   }
-  
+
   //#external-address-default
 
   public void demonstrateDefaultAddress() {

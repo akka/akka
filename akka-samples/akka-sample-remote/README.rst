@@ -96,6 +96,8 @@ Now you should see something like this::
     [INFO] [01/25/2013 15:05:53.954] [run-main] [Remoting] Starting remoting
     [INFO] [01/25/2013 15:05:54.769] [run-main] [Remoting] Remoting started; listening on addresses :[akka.tcp://LookupApplication@127.0.0.1:2553]
     Started Lookup Application
+    Not ready yet
+    Not ready yet
     Add result: 0 + 22 = 22
     Add result: 41 + 71 = 112
     Add result: 61 + 14 = 75

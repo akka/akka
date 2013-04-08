@@ -103,12 +103,12 @@ trait ActorContext extends ActorRefFactory {
   /**
    * Returns all supervised children; this method returns a view (i.e. a lazy
    * collection) onto the internal collection of children. Targeted lookups
-   * should be using `actorFor` instead for performance reasons:
+   * should be using `child` instead for performance reasons:
    *
    * {{{
    * val badLookup = context.children find (_.path.name == "kid")
    * // should better be expressed as:
-   * val goodLookup = context.actorFor("kid")
+   * val goodLookup = context.child("kid")
    * }}}
    */
   def children: immutable.Iterable[ActorRef]
@@ -475,9 +475,27 @@ private[akka] class ActorCell(
         case AddressTerminated(address) ⇒ addressTerminated(address)
         case Kill                       ⇒ throw new ActorKilledException("Kill")
         case PoisonPill                 ⇒ self.stop()
-        case SelectParent(m)            ⇒ parent.tell(m, msg.sender)
-        case SelectChildName(name, m)   ⇒ getChildByName(name) match { case Some(c: ChildRestartStats) ⇒ c.child.tell(m, msg.sender); case _ ⇒ }
-        case SelectChildPattern(p, m)   ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
+        case SelectParent(m) ⇒
+          if (self == system.provider.rootGuardian) self.tell(m, msg.sender)
+          else parent.tell(m, msg.sender)
+        case s @ SelectChildName(name, m) ⇒
+          def selectChild(): Unit = {
+            getChildByName(name) match {
+              case Some(c: ChildRestartStats) ⇒ c.child.tell(m, msg.sender)
+              case _ ⇒
+                s.identifyRequest foreach { x ⇒ sender ! ActorIdentity(x.messageId, None) }
+            }
+          }
+          // need this special case because of extraNames handled by rootGuardian
+          if (self == system.provider.rootGuardian) {
+            self.asInstanceOf[LocalActorRef].getSingleChild(name) match {
+              case Nobody ⇒ selectChild()
+              case child  ⇒ child.tell(m, msg.sender)
+            }
+          } else
+            selectChild()
+        case SelectChildPattern(p, m) ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
+        case Identify(messageId)      ⇒ sender ! ActorIdentity(messageId, Some(self))
       }
     }
 
