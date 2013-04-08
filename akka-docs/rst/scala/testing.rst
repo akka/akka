@@ -82,11 +82,10 @@ Due to a limitation in Scala’s type inference, there is only the factory metho
 shown above, so you will probably write code like ``TestFSMRef(new MyFSM)``
 instead of the hypothetical :class:`ActorRef`-inspired ``TestFSMRef[MyFSM]``.
 All methods shown above directly access the FSM state without any
-synchronization; this is perfectly alright if the
-:class:`CallingThreadDispatcher` is used (which is the default for
-:class:`TestFSMRef`) and no other threads are involved, but it may lead to
-surprises if you were to actually exercise timer events, because those are
-executed on the :obj:`Scheduler` thread.
+synchronization; this is perfectly alright if the :class:`CallingThreadDispatcher` 
+is used and no other threads are involved, but it may lead to surprises if you
+were to actually exercise timer events, because those are executed on the 
+:obj:`Scheduler` thread.
 
 Testing the Actor's Behavior
 ----------------------------
