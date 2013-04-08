@@ -31,6 +31,7 @@ import scala.concurrent.duration.FiniteDuration;
  * @apiviz.has org.jboss.netty.util.TimerTask oneway - - executes
  * @apiviz.has org.jboss.netty.util.Timeout oneway - - creates
  */
+@Deprecated
 public interface Timer {
 
     /**

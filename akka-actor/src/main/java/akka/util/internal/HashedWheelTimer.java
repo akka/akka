@@ -86,6 +86,7 @@ import akka.util.Unsafe;
  * cannot be queued. If no such exception is thrown, the job must be executed
  * (or returned upon stop()).
  */
+@Deprecated
 public class HashedWheelTimer implements Timer {
     private final Worker worker = new Worker();
     final Thread workerThread;
