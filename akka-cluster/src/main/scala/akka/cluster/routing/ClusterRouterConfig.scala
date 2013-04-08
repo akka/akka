@@ -199,6 +199,14 @@ private[akka] class ClusterRouteeProvider(
 
   private[routing] def createRoutees(): Unit = createRoutees(settings.totalInstances)
 
+  override def unregisterRoutees(routees: immutable.Iterable[ActorRef]): Unit = {
+    super.unregisterRoutees(routees)
+    if (!settings.isRouteesPathDefined) {
+      // stop remote deployed routees
+      routees foreach context.stop
+    }
+  }
+
   private def selectDeploymentTarget: Option[Address] = {
     val currentRoutees = routees
     val currentNodes = availableNodes
@@ -286,8 +294,8 @@ private[akka] class ClusterRouterActor extends Router {
     routeeProvider.nodes -= address
 
     // unregister routees that live on that node
-    val affectedRoutes = routeeProvider.routees.filter(fullAddress(_) == address)
-    routeeProvider.unregisterRoutees(affectedRoutes)
+    val affectedRoutees = routeeProvider.routees.filter(fullAddress(_) == address)
+    routeeProvider.unregisterRoutees(affectedRoutees)
 
     // createRoutees will not create more than createRoutees and maxInstancesPerNode
     // this is useful when totalInstances < upNodes.size

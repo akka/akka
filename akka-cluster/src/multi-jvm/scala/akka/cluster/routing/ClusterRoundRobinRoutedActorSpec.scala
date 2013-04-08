@@ -7,11 +7,11 @@ import language.postfixOps
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
-
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Address
 import akka.actor.Props
+import akka.actor.Terminated
 import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
 import akka.remote.testkit.MultiNodeConfig
@@ -307,10 +307,13 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         def routees = currentRoutees(router2)
         def routeeAddresses = (routees map fullAddress).toSet
 
+        routees foreach watch
         val notUsedAddress = ((roles map address).toSet -- routeeAddresses).head
-
         val downAddress = routeeAddresses.find(_ != address(first)).get
+        val downRoutee = routees.find(_.path.address == downAddress).get
+
         cluster.down(downAddress)
+        expectMsgType[Terminated].actor must be(downRoutee)
         awaitAssert {
           routeeAddresses must contain(notUsedAddress)
           routeeAddresses must not contain (downAddress)
