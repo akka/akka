@@ -4,7 +4,6 @@
 package akka.actor.dispatch
 
 import language.postfixOps
-
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import scala.reflect.ClassTag
 import akka.dispatch._
@@ -15,6 +14,7 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.Props
 import scala.concurrent.duration._
+import akka.actor.ActorRef
 
 object DispatchersSpec {
   val config = """
@@ -33,6 +33,14 @@ object DispatchersSpec {
         type = BalancingDispatcher
       }
     }
+    akka.actor.deployment {
+      /echo1 {
+        dispatcher = myapp.mydispatcher
+      }
+      /echo2 {
+        dispatcher = myapp.mydispatcher
+      }
+     }
     """
 
   class ThreadNameEcho extends Actor {
@@ -71,6 +79,14 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
   lazy val allDispatchers: Map[String, MessageDispatcher] = {
     validTypes.map(t ⇒ (t, from(ConfigFactory.parseMap(Map(tipe -> t, id -> t).asJava).
       withFallback(defaultDispatcherConfig)))).toMap
+  }
+
+  def assertMyDispatcherIsUsed(actor: ActorRef): Unit = {
+    actor ! "what's the name?"
+    val Expected = "(DispatchersSpec-myapp.mydispatcher-[1-9][0-9]*)".r
+    expectMsgPF(remaining) {
+      case Expected(x) ⇒
+    }
   }
 
   "Dispatchers" must {
@@ -115,11 +131,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
     }
 
     "include system name and dispatcher id in thread names for fork-join-executor" in {
-      system.actorOf(Props[ThreadNameEcho].withDispatcher("myapp.mydispatcher")) ! "what's the name?"
-      val Expected = "(DispatchersSpec-myapp.mydispatcher-[1-9][0-9]*)".r
-      expectMsgPF(remaining) {
-        case Expected(x) ⇒
-      }
+      assertMyDispatcherIsUsed(system.actorOf(Props[ThreadNameEcho].withDispatcher("myapp.mydispatcher")))
     }
 
     "include system name and dispatcher id in thread names for thread-pool-executor" in {
@@ -152,6 +164,15 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
       expectMsgPF(remaining) {
         case Expected(x) ⇒
       }
+    }
+
+    "use dispatcher in deployment config" in {
+      assertMyDispatcherIsUsed(system.actorOf(Props[ThreadNameEcho], name = "echo1"))
+    }
+
+    "use dispatcher in deployment config, trumps code" in {
+      assertMyDispatcherIsUsed(
+        system.actorOf(Props[ThreadNameEcho].withDispatcher("myapp.my-pinned-dispatcher"), name = "echo2"))
     }
 
   }

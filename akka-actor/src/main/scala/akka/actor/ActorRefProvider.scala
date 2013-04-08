@@ -671,11 +671,23 @@ private[akka] class LocalActorRefProvider private[akka] (
               systemService: Boolean, deploy: Option[Deploy], lookupDeploy: Boolean, async: Boolean): InternalActorRef = {
     props.routerConfig match {
       case NoRouter ⇒
-        if (settings.DebugRouterMisconfiguration && deployer.lookup(path).isDefined)
-          log.warning("Configuration says that {} should be a router, but code disagrees. Remove the config or add a routerConfig to its Props.")
+        if (settings.DebugRouterMisconfiguration) {
+          deployer.lookup(path) foreach { d ⇒
+            if (d.routerConfig != NoRouter)
+              log.warning("Configuration says that [{}] should be a router, but code disagrees. Remove the config or add a routerConfig to its Props.", path)
+          }
+        }
 
-        if (async) new RepointableActorRef(system, props, supervisor, path).initialize(async)
-        else new LocalActorRef(system, props, supervisor, path)
+        val props2 =
+          if (lookupDeploy) deployer.lookup(path) match {
+            case Some(d) if d.dispatcher != Deploy.NoDispatcherGiven ⇒ props.withDispatcher(d.dispatcher)
+            case _ ⇒ props // dispatcher not specified in deployment config
+          }
+          else props
+
+        if (async) new RepointableActorRef(system, props2, supervisor, path).initialize(async)
+        else new LocalActorRef(system, props2, supervisor, path)
+
       case router ⇒
         val lookup = if (lookupDeploy) deployer.lookup(path) else None
         val fromProps = Iterator(props.deploy.copy(routerConfig = props.deploy.routerConfig withFallback router))

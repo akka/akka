@@ -30,8 +30,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 //#imports-custom
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.Option;
 import scala.concurrent.ExecutionContext;
@@ -43,27 +43,37 @@ import akka.testkit.AkkaSpec;
 
 public class DispatcherDocTestBase {
 
-  ActorSystem system;
+  static ActorSystem system;
 
-  @Before
-  public void setUp() {
+  @BeforeClass
+  public static void beforeAll() {
     system = ActorSystem.create("MySystem",
         ConfigFactory.parseString(
           DispatcherDocSpec.config()).withFallback(AkkaSpec.testConf()));
   }
 
-  @After
-  public void tearDown() {
+  @AfterClass
+  public static void afterAll() {
     system.shutdown();
+    system = null;
   }
 
   @Test
-  public void defineDispatcher() {
-    //#defining-dispatcher
+  public void defineDispatcherInConfig() {
+    //#defining-dispatcher-in-config
+    ActorRef myActor =
+      system.actorOf(new Props(MyUntypedActor.class),
+        "myactor");
+    //#defining-dispatcher-in-config
+  }
+
+  @Test
+  public void defineDispatcherInCode() {
+    //#defining-dispatcher-in-code
     ActorRef myActor =
       system.actorOf(new Props(MyUntypedActor.class).withDispatcher("my-dispatcher"),
         "myactor3");
-    //#defining-dispatcher
+    //#defining-dispatcher-in-code
   }
 
   @Test

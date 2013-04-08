@@ -22,6 +22,7 @@ object ClusterDeployerSpec {
           cluster.allow-local-routees = off
         }
         /user/service2 {
+          dispatcher = mydispatcher
           router = round-robin
           nr-of-instances = 20
           cluster.enabled = on
@@ -54,7 +55,8 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
           deployment.get.config,
           ClusterRouterConfig(RoundRobinRouter(20), ClusterRouterSettings(
             totalInstances = 20, maxInstancesPerNode = 3, allowLocalRoutees = false, useRole = None)),
-          ClusterScope)))
+          ClusterScope,
+          Deploy.NoDispatcherGiven)))
     }
 
     "be able to parse 'akka.actor.deployment._' with specified cluster deploy routee settings" in {
@@ -68,7 +70,8 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
           deployment.get.config,
           ClusterRouterConfig(RoundRobinRouter(20), ClusterRouterSettings(
             totalInstances = 20, routeesPath = "/user/myservice", allowLocalRoutees = false, useRole = None)),
-          ClusterScope)))
+          ClusterScope,
+          "mydispatcher")))
     }
 
   }
