@@ -422,7 +422,8 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
    * State transition to LEAVING.
    */
   def leaving(address: Address): Unit = {
-    if (latestGossip.members.exists(_.address == address)) { // only try to update if the node is available (in the member ring)
+    // only try to update if the node is available (in the member ring)
+    if (latestGossip.members.exists(m ⇒ m.address == address && m.status == Up)) {
       val newMembers = latestGossip.members map { m ⇒ if (m.address == address) m.copy(status = Leaving) else m } // mark node as LEAVING
       val newGossip = latestGossip copy (members = newMembers)
 
