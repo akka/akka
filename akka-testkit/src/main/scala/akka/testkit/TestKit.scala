@@ -343,6 +343,17 @@ trait TestKitBase {
   }
 
   /**
+   * Receive one message from the test actor and assert that it is the Terminated message of the given ActorRef.
+   * Wait time is bounded by the given duration, with an AssertionFailure being thrown in case of timeout.
+   *
+   * @return the received Terminated message
+   */
+  def expectTerminated(target: ActorRef, max: Duration = Duration.Undefined): Terminated =
+    expectMsgPF(max, "Terminated " + target) {
+      case t @ Terminated(`target`) ⇒ t
+    }
+
+  /**
    * Hybrid of expectMsgPF and receiveWhile: receive messages while the
    * partial function matches and returns false. Use it to ignore certain
    * messages while waiting for a specific message.

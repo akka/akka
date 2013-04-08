@@ -151,8 +151,7 @@ abstract class ClusterDeathWatchSpec
         // removed
         awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (address(first)))
 
-        val t = expectMsgType[Terminated]
-        t.actor must be(hello)
+        expectTerminated(hello)
 
         enterBarrier("first-unavailable")
 

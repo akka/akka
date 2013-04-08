@@ -3,6 +3,8 @@
  */
 package akka.testkit;
 
+import akka.actor.Terminated;
+import akka.japi.Option;
 import scala.runtime.AbstractFunction0;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -456,10 +458,29 @@ public class JavaTestKit {
     p.expectNoMsg(max);
   }
 
+
+  /**
+   * Assert that the given ActorRef is Terminated within the specified time.
+   * Don't forget to 'watch' it first!
+   */
+  public Terminated expectTerminated(Duration max, ActorRef target) {
+      return p.expectTerminated(target, max);
+  }
+
+  /**
+   * Same as <code>expectTerminated(remaining(), target)</code>,
+   * but correctly treating the timeFactor.
+   * Don't forget to 'watch' it first!
+   */
+  public Terminated expectTerminated(ActorRef target) {
+      return expectTerminated(Duration.Undefined(), target);
+  }
+
   /**
    * Same as <code>receiveN(n, remaining())</code>, but correctly treating the
    * timeFactor.
    */
+
   public Object[] receiveN(int n) {
     return (Object[]) p.receiveN(n).toArray(Util.classTag(Object.class));
   }

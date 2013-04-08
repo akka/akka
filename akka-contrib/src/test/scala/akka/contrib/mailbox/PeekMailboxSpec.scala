@@ -84,7 +84,7 @@ class PeekMailboxSpec extends AkkaSpec("""
       }
       expectMsg("DIE")
       expectMsgType[DeadLetter].message must be("DIE")
-      expectMsgType[Terminated].actor must be(a)
+      expectTerminated(a)
     }
 
   }
