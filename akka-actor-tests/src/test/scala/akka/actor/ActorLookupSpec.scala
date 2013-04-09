@@ -81,7 +81,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       val a1 = system.actorOf(p, name)
       watch(a1)
       a1 ! PoisonPill
-      expectMsgType[Terminated].actor must be === a1
+      expectTerminated(a1)
 
       // not equal because it's terminated
       system.actorFor(a1.path.toString) must not be (a1)
@@ -94,7 +94,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
 
       watch(a2)
       a2 ! PoisonPill
-      expectMsgType[Terminated].actor must be === a2
+      expectTerminated(a2)
     }
 
     "find actors by looking up their root-anchored relative path" in {

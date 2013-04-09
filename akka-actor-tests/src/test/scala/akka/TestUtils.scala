@@ -29,7 +29,7 @@ object TestUtils {
   def verifyActorTermination(actor: ActorRef)(implicit system: ActorSystem): Unit = {
     val watcher = TestProbe()
     watcher.watch(actor)
-    assert(watcher.expectMsgType[Terminated].actor == actor)
+    watcher.expectTerminated(actor)
   }
 
 }
