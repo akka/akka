@@ -194,7 +194,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
   override def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = endpointManager match {
     case Some(manager) ⇒ manager.tell(Send(message, senderOption, recipient), sender = senderOption getOrElse Actor.noSender)
-    case None          ⇒ throw new IllegalStateException("Attempted to send remote message but Remoting is not running.")
+    case None          ⇒ throw new RemoteTransportExceptionNoStackTrace("Attempted to send remote message but Remoting is not running.", null)
   }
 
   override def managementCommand(cmd: Any): Future[Boolean] = endpointManager match {
@@ -202,7 +202,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
       import system.dispatcher
       implicit val timeout = CommandAckTimeout
       manager ? ManagementCommand(cmd) map { case ManagementCommandAck(status) ⇒ status }
-    case None ⇒ throw new IllegalStateException("Attempted to send management command but Remoting is not running.")
+    case None ⇒ throw new RemoteTransportExceptionNoStackTrace("Attempted to send management command but Remoting is not running.", null)
   }
 
   // Not used anywhere only to keep compatibility with RemoteTransport interface

@@ -9,6 +9,7 @@ import akka.actor._
 import akka.event.LoggingAdapter
 import scala.collection.immutable
 import scala.concurrent.Future
+import scala.util.control.NoStackTrace
 
 /**
  * RemoteTransportException represents a general failure within a RemoteTransport,
@@ -16,6 +17,13 @@ import scala.concurrent.Future
  */
 @SerialVersionUID(1L)
 class RemoteTransportException(message: String, cause: Throwable) extends AkkaException(message, cause)
+
+/**
+ * [[RemoteTransportException]] without stack trace.
+ */
+@SerialVersionUID(1L)
+class RemoteTransportExceptionNoStackTrace(message: String, cause: Throwable)
+  extends RemoteTransportException(message, cause) with NoStackTrace
 
 /**
  * INTERNAL API
