@@ -4,8 +4,8 @@
 
 package akka.io
 
-import java.io.IOException
-import java.net.{ ConnectException, InetSocketAddress, SocketException }
+import java.io.{ FileOutputStream, File, IOException }
+import java.net.{ URLClassLoader, ConnectException, InetSocketAddress, SocketException }
 import java.nio.ByteBuffer
 import java.nio.channels.{ SelectionKey, Selector, ServerSocketChannel, SocketChannel }
 import java.nio.channels.spi.SelectorProvider
@@ -187,6 +187,29 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       writer.expectNoMsg(500.millis)
 
       writer.send(connectionActor, Write(ByteString.empty, Ack))
+      writer.expectMsg(Ack)
+    }
+
+    "write file to network" in withEstablishedConnection() { setup ⇒
+      import setup._
+
+      // hacky: we need a file for testing purposes, so try to get the biggest one from our own classpath
+      val testFile =
+        classOf[TcpConnectionSpec].getClassLoader.asInstanceOf[URLClassLoader]
+          .getURLs
+          .filter(_.getProtocol == "file")
+          .map(url ⇒ new File(url.toURI))
+          .filter(_.exists)
+          .sortBy(-_.length)
+          .head
+
+      // maximum of 100 MB
+      val size = math.min(testFile.length(), 100000000).toInt
+
+      object Ack
+      val writer = TestProbe()
+      writer.send(connectionActor, WriteFile(testFile.getAbsolutePath, 0, size, Ack))
+      pullFromServerSide(size, 1000000)
       writer.expectMsg(Ack)
     }
 
@@ -603,7 +626,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
      */
     @tailrec final def pullFromServerSide(remaining: Int, remainingTries: Int = 1000): Unit =
       if (remainingTries <= 0)
-        throw new AssertionError("Pulling took too many loops")
+        throw new AssertionError("Pulling took too many loops,  remaining data: " + remaining)
       else if (remaining > 0) {
         if (selector.msgAvailable) {
           selector.expectMsg(WriteInterest)

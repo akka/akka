@@ -110,6 +110,12 @@ object Tcp extends ExtensionKey[TcpExt] {
       if (data.isEmpty) Empty else Write(data, NoAck)
   }
 
+  /**
+   * Write `count` bytes starting at `position` from file at `filePath` to the connection.
+   * When write is finished acknowledge with `ack`. If no ack is needed use `NoAck`.
+   */
+  case class WriteFile(filePath: String, position: Long, count: Long, ack: Any) extends WriteCommand
+
   case object StopReading extends Command
   case object ResumeReading extends Command
 
@@ -168,6 +174,7 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
       case x           ⇒ getIntBytes("received-message-size-limit")
     }
     val ManagementDispatcher = getString("management-dispatcher")
+    val FileIODispatcher = getString("file-io-dispatcher")
 
     require(NrOfSelectors > 0, "nr-of-selectors must be > 0")
     require(MaxChannels == -1 || MaxChannels > 0, "max-channels must be > 0 or 'unlimited'")
@@ -191,6 +198,7 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
   }
 
   val bufferPool: BufferPool = new DirectByteBufferPool(Settings.DirectBufferSize, Settings.MaxDirectBufferPoolSize)
+  val fileIoDispatcher = system.dispatchers.lookup(Settings.FileIODispatcher)
 }
 
 object TcpSO extends SoJavaFactories {
