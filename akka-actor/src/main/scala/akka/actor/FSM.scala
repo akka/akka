@@ -242,8 +242,7 @@ object FSM {
  *   isTimerActive("tock")
  * </pre>
  */
-trait FSM[S, D] extends Listeners with ActorLogging {
-  this: Actor ⇒
+trait FSM[S, D] extends Actor with Listeners with ActorLogging {
 
   import FSM._
 
@@ -638,6 +637,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
      * since the new instance will initialize fresh using startWith()
      */
     terminate(stay withStopReason Shutdown)
+    super.postStop()
   }
 
   private def terminate(nextState: State): Unit = {
