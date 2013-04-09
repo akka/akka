@@ -9,6 +9,7 @@ import java.util.Date
 import java.util.concurrent.CountDownLatch
 import org.scalatest.{ BeforeAndAfterAll, Suite }
 import scala.annotation.tailrec
+import scala.concurrent.{ Awaitable, CanAwait, Await }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
@@ -28,8 +29,9 @@ object Coroner {
 
   /**
    * Used to cancel the Coroner after calling `watch`.
+   * The result of this Awaitable will be `true` if it has been cancelled.
    */
-  trait WatchHandle {
+  trait WatchHandle extends Awaitable[Boolean] {
     def cancel(): Unit
   }
 
@@ -38,44 +40,29 @@ object Coroner {
    * The returned handle can be used to perform the cancellation.
    */
   def watch(deadline: Deadline, reportTitle: String, out: PrintStream): WatchHandle = {
+    val cancelLatch = new CountDownLatch(1) with WatchHandle {
+      override def cancel(): Unit = countDown()
+      override def ready(atMost: Duration)(implicit permit: CanAwait): this.type = {
+        result(atMost)
+        this
+      }
+      override def result(atMost: Duration)(implicit permit: CanAwait): Boolean = await(atMost.length, atMost.unit)
+    }
+
+    def triggerReportIfOverdue(duration: Duration): Unit =
+      if (!Await.result(cancelLatch, duration)) {
+        out.println(s"Coroner not cancelled after ${duration.toMillis}ms. Looking for signs of foul play...")
+        try printReport(reportTitle, out) catch {
+          case NonFatal(ex) ⇒ {
+            out.println("Error displaying Coroner's Report")
+            ex.printStackTrace(out)
+          }
+        } finally out.flush()
+      }
     val duration = deadline.timeLeft // Store for later reporting
-    val cancelLatch = new CountDownLatch(1)
-
-    @tailrec def watchLoop() {
-      if (deadline.isOverdue) {
-        triggerReport()
-      } else {
-        val cancelled = try {
-          cancelLatch.await(deadline.timeLeft.length, deadline.timeLeft.unit)
-        } catch {
-          case _: InterruptedException ⇒ false
-        }
-        if (cancelled) {
-          // Our job is finished, let the thread stop
-        } else {
-          watchLoop()
-        }
-      }
-    }
-
-    def triggerReport() {
-      out.println(s"Coroner not cancelled after ${duration.toMillis}ms. Looking for signs of foul play...")
-      try {
-        printReport(reportTitle, out)
-      } catch {
-        case NonFatal(ex) ⇒ {
-          out.println("Error displaying Coroner's Report")
-          ex.printStackTrace(out)
-        }
-      }
-    }
-
-    val thread = new Thread(new Runnable { def run = watchLoop() }, "Coroner")
+    val thread = new Thread(new Runnable { def run = triggerReportIfOverdue(duration) }, "Coroner")
     thread.start() // Must store thread in val to work around SI-7203
-
-    new WatchHandle {
-      def cancel() { cancelLatch.countDown() }
-    }
+    cancelLatch
   }
 
   /**
