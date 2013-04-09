@@ -19,7 +19,7 @@ object ThrottlerTransportAdapterSpec {
       actor.provider = "akka.remote.RemoteActorRefProvider"
 
       remote.netty.tcp.hostname = "localhost"
-      remote.retry-latch-closed-for = 0 s
+      remote.retry-gate-closed-for = 0 s
       remote.log-remote-lifecycle-events = on
 
       remote.netty.tcp.applied-adapters = ["trttl"]
