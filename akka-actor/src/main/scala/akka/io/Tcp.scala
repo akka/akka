@@ -217,6 +217,7 @@ object TcpMessage {
            backlog: Int): Command = Bind(handler, endpoint, backlog, Nil)
 
   def register(handler: ActorRef): Command = Register(handler)
+  def register(handler: ActorRef, keepOpenOnPeerClosed: Boolean): Command = Register(handler, keepOpenOnPeerClosed)
   def unbind: Command = Unbind
 
   def close: Command = Close
