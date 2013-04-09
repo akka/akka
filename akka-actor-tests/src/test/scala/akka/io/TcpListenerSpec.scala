@@ -69,7 +69,7 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
       unbindCommander.send(listener, Unbind)
 
       unbindCommander.expectMsg(Unbound)
-      parent.expectMsgType[Terminated].actor must be(listener)
+      parent.expectTerminated(listener)
     }
 
     "drop an incoming connection if it cannot be registered with a selector" in new TestSetup {

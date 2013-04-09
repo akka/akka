@@ -353,7 +353,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
           case ActorIdentity("singleton", None) ⇒ // already terminated
           case ActorIdentity("singleton", Some(singleton)) ⇒
             watch(singleton)
-            expectMsgType[Terminated].actor must be(singleton)
+            expectTerminated(singleton)
         }
       }
 
