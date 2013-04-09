@@ -215,7 +215,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     val probe = TestProbe()
     probe watch target
     target ! PoisonPill
-    probe.expectMsgType[Terminated].actor must be(target)
+    probe.expectTerminated(target)
     //#test-probe-watch
   }
 

@@ -347,7 +347,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       watch(child)
       child ! PoisonPill
       expectMsg("postStop")
-      expectMsgType[Terminated].actor must be === child
+      expectTerminated(child)
       l ! ((Props[Echo1], "child"))
       val child2 = expectMsgType[ActorRef]
       child2 ! 45
