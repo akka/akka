@@ -485,7 +485,10 @@ successful, the listener will be notified with ``ConfirmedClosed``.
 ``Abort`` will immediately terminate the connection by sending a ``RST`` message to the remote endpoint. Pending
 writes will be not flushed. If the close is successful, the listener will be notified with ``Aborted``.
 
-``PeerClosed`` will be sent to the listener if the connection has been closed by the remote endpoint.
+``PeerClosed`` will be sent to the listener if the connection has been closed by the remote endpoint. Per default, the
+connection will then automatically be closed from this endpoint as well. To support half-closed connections set the
+``keepOpenOnPeerClosed`` member of the ``Register`` message to ``true`` in which case the connection stays open until
+it receives one of the above close commands.
 
 ``ErrorClosed`` will be sent to the listener whenever an error happened that forced the connection to be closed.
 
