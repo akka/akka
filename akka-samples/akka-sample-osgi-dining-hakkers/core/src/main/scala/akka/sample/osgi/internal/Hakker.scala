@@ -7,15 +7,12 @@ import language.postfixOps
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{ CurrentClusterState, LeaderChanged }
 import akka.event.Logging
+import scala.concurrent.duration._
 import akka.sample.osgi.api._
+import akka.actor.{ RootActorPath, Address, ActorRef, Actor }
 
 //Akka adaptation of
 //http://www.dalnefre.com/wp/2010/08/dining-philosophers-in-humus/
-
-import akka.actor._
-import scala.concurrent.duration._
-
-import akka.sample.osgi.api._
 
 /*
 * A Chopstick is an actor, it can be taken, and put back
