@@ -1,10 +1,8 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote
-
-import language.existentials
 
 import akka.remote.RemoteProtocol._
 import com.google.protobuf.ByteString
@@ -12,6 +10,8 @@ import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializationExtension
 
 /**
+ * INTERNAL API
+ *
  * MessageSerializer is a helper for serializing and deserialize messages
  */
 private[akka] object MessageSerializer {

@@ -8,6 +8,7 @@ Scala API
 
    actors
    typed-actors
+   typed-channels
    logging
    event-bus
    scheduler
@@ -28,4 +29,5 @@ Scala API
    zeromq
    microkernel
    camel
+   durable-mailbox
    howto

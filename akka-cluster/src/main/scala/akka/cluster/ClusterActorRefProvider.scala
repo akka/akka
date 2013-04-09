@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -18,7 +18,7 @@ import akka.actor.Props
 import akka.actor.Scheduler
 import akka.actor.Scope
 import akka.actor.Terminated
-import akka.dispatch.ChildTerminated
+import akka.dispatch.sysmsg.ChildTerminated
 import akka.event.EventStream
 import akka.japi.Util.immutableSeq
 import akka.remote.RemoteActorRefProvider
@@ -42,13 +42,12 @@ import akka.cluster.routing.MetricsSelector
  * extension, i.e. the cluster will automatically be started when
  * the `ClusterActorRefProvider` is used.
  */
-class ClusterActorRefProvider(
+private[akka] class ClusterActorRefProvider(
   _systemName: String,
   _settings: ActorSystem.Settings,
   _eventStream: EventStream,
-  _scheduler: Scheduler,
   _dynamicAccess: DynamicAccess) extends RemoteActorRefProvider(
-  _systemName, _settings, _eventStream, _scheduler, _dynamicAccess) {
+  _systemName, _settings, _eventStream, _dynamicAccess) {
 
   @volatile private var remoteDeploymentWatcher: ActorRef = _
 
@@ -71,11 +70,19 @@ class ClusterActorRefProvider(
    * This method is overridden here to keep track of remote deployed actors to
    * be able to clean up corresponding child references.
    */
-  override def useActorOnNode(path: ActorPath, props: Props, deploy: Deploy, supervisor: ActorRef): Unit = {
-    super.useActorOnNode(path, props, deploy, supervisor)
-    remoteDeploymentWatcher ! (actorFor(path), supervisor)
+  override def useActorOnNode(ref: ActorRef, props: Props, deploy: Deploy, supervisor: ActorRef): Unit = {
+    super.useActorOnNode(ref, props, deploy, supervisor)
+    import RemoteDeploymentWatcher.WatchRemote
+    remoteDeploymentWatcher ! WatchRemote(ref, supervisor)
   }
 
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] object RemoteDeploymentWatcher {
+  case class WatchRemote(actor: ActorRef, supervisor: ActorRef)
 }
 
 /**
@@ -85,16 +92,17 @@ class ClusterActorRefProvider(
  * goes down (jvm crash, network failure), i.e. triggered by [[akka.actor.AddressTerminated]].
  */
 private[akka] class RemoteDeploymentWatcher extends Actor {
+  import RemoteDeploymentWatcher._
   var supervisors = Map.empty[ActorRef, InternalActorRef]
 
   def receive = {
-    case (a: ActorRef, supervisor: InternalActorRef) ⇒
+    case WatchRemote(a, supervisor: InternalActorRef) ⇒
       supervisors += (a -> supervisor)
       context.watch(a)
 
     case t @ Terminated(a) if supervisors isDefinedAt a ⇒
       // send extra ChildTerminated to the supervisor so that it will remove the child
-      if (t.addressTerminated) supervisors(a).sendSystemMessage(ChildTerminated(a))
+      supervisors(a).sendSystemMessage(ChildTerminated(a))
       supervisors -= a
 
     case _: Terminated ⇒
@@ -116,11 +124,13 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
           if (deploy.routerConfig.isInstanceOf[RemoteRouterConfig])
             throw new ConfigurationException("Cluster deployment can't be combined with [%s]".format(deploy.routerConfig))
 
+          import ClusterRouterSettings.useRoleOption
           val clusterRouterSettings = ClusterRouterSettings(
             totalInstances = deploy.config.getInt("nr-of-instances"),
             maxInstancesPerNode = deploy.config.getInt("cluster.max-nr-of-instances-per-node"),
             allowLocalRoutees = deploy.config.getBoolean("cluster.allow-local-routees"),
-            routeesPath = deploy.config.getString("cluster.routees-path"))
+            routeesPath = deploy.config.getString("cluster.routees-path"),
+            useRole = useRoleOption(deploy.config.getString("cluster.use-role")))
 
           Some(deploy.copy(
             routerConfig = ClusterRouterConfig(deploy.routerConfig, clusterRouterSettings), scope = ClusterScope))

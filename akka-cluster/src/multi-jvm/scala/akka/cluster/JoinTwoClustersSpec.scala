@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -52,7 +52,7 @@ abstract class JoinTwoClustersSpec
         cluster.join(c1)
       }
 
-      awaitUpConvergence(numberOfMembers = 2)
+      awaitMembersUp(numberOfMembers = 2)
 
       assertLeader(a1, a2)
       assertLeader(b1, b2)
@@ -65,7 +65,7 @@ abstract class JoinTwoClustersSpec
       }
 
       runOn(a1, a2, b1, b2) {
-        awaitUpConvergence(numberOfMembers = 4)
+        awaitMembersUp(numberOfMembers = 4)
       }
 
       assertLeader(a1, a2, b1, b2)
@@ -80,7 +80,7 @@ abstract class JoinTwoClustersSpec
         cluster.join(c1)
       }
 
-      awaitUpConvergence(numberOfMembers = 6)
+      awaitMembersUp(numberOfMembers = 6)
 
       assertLeader(a1, a2, b1, b2, c1, c2)
 

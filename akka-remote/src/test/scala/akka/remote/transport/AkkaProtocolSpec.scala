@@ -19,6 +19,8 @@ object AkkaProtocolSpec {
   class TestFailureDetector extends FailureDetector {
     @volatile var isAvailable: Boolean = true
 
+    def isMonitoring: Boolean = called
+
     @volatile var called: Boolean = false
 
     def heartbeat(): Unit = called = true
@@ -31,16 +33,16 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
   val conf = ConfigFactory.parseString(
     """
-      akka.remoting {
+      akka.remote {
 
         failure-detector {
+          implementation-class = "akka.remote.PhiAccrualFailureDetector"
           threshold = 7.0
           max-sample-size = 100
           min-std-deviation = 100 ms
           acceptable-heartbeat-pause = 3 s
+          heartbeat-interval = 0.1 s
         }
-
-       heartbeat-interval = 0.1 s
 
         wait-activity-enabled = on
 
@@ -61,10 +63,10 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
   """)
 
   val localAddress = Address("test", "testsystem", "testhost", 1234)
-  val localAkkaAddress = Address("test.akka", "testsystem", "testhost", 1234)
+  val localAkkaAddress = Address("akka.test", "testsystem", "testhost", 1234)
 
   val remoteAddress = Address("test", "testsystem2", "testhost2", 1234)
-  val remoteAkkaAddress = Address("test.akka", "testsystem2", "testhost2", 1234)
+  val remoteAkkaAddress = Address("akka.test", "testsystem2", "testhost2", 1234)
 
   val codec = AkkaPduProtobufCodec
 
@@ -88,32 +90,35 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
     (new TestFailureDetector, registry, transport, handle)
   }
 
-  def lastActivityIsHeartbeat(registry: AssociationRegistry) = if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
-    case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
-      codec.decodePdu(payload) match {
-        case Heartbeat ⇒ true
-        case _         ⇒ false
-      }
-    case _ ⇒ false
-  }
+  def lastActivityIsHeartbeat(registry: AssociationRegistry) =
+    if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
+      case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
+        codec.decodePdu(payload) match {
+          case Heartbeat ⇒ true
+          case _         ⇒ false
+        }
+      case _ ⇒ false
+    }
 
-  def lastActivityIsAssociate(registry: AssociationRegistry, cookie: Option[String]) = if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
-    case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
-      codec.decodePdu(payload) match {
-        case Associate(c, origin) if c == cookie && origin == localAddress ⇒ true
-        case _ ⇒ false
-      }
-    case _ ⇒ false
-  }
+  def lastActivityIsAssociate(registry: AssociationRegistry, cookie: Option[String]) =
+    if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
+      case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
+        codec.decodePdu(payload) match {
+          case Associate(c, origin) if c == cookie && origin == localAddress ⇒ true
+          case _ ⇒ false
+        }
+      case _ ⇒ false
+    }
 
-  def lastActivityIsDisassociate(registry: AssociationRegistry) = if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
-    case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
-      codec.decodePdu(payload) match {
-        case Disassociate ⇒ true
-        case _            ⇒ false
-      }
-    case _ ⇒ false
-  }
+  def lastActivityIsDisassociate(registry: AssociationRegistry) =
+    if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
+      case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
+        codec.decodePdu(payload) match {
+          case Disassociate ⇒ true
+          case _            ⇒ false
+        }
+      case _ ⇒ false
+    }
 
   "ProtocolStateActor" must {
 
@@ -198,7 +203,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         remoteAddress,
         statusPromise,
         transport,
-        new AkkaProtocolSettings(ConfigFactory.parseString("akka.remoting.wait-activity-enabled = off").withFallback(conf)),
+        new AkkaProtocolSettings(ConfigFactory.parseString("akka.remote.wait-activity-enabled = off").withFallback(conf)),
         codec,
         failureDetector)))
 
@@ -258,7 +263,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         localAddress,
         handle,
         ActorAssociationEventListener(testActor),
-        new AkkaProtocolSettings(ConfigFactory.parseString("akka.remoting.require-cookie = on").withFallback(conf)),
+        new AkkaProtocolSettings(ConfigFactory.parseString("akka.remote.require-cookie = on").withFallback(conf)),
         codec,
         failureDetector)))
 
@@ -277,7 +282,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         localAddress,
         handle,
         ActorAssociationEventListener(testActor),
-        new AkkaProtocolSettings(ConfigFactory.parseString("akka.remoting.require-cookie = on").withFallback(conf)),
+        new AkkaProtocolSettings(ConfigFactory.parseString("akka.remote.require-cookie = on").withFallback(conf)),
         codec,
         failureDetector)))
 
@@ -309,8 +314,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         transport,
         new AkkaProtocolSettings(ConfigFactory.parseString(
           """
-             akka.remoting.require-cookie = on
-             akka.remoting.wait-activity-enabled = off
+             akka.remote.require-cookie = on
+             akka.remote.wait-activity-enabled = off
           """).withFallback(conf)),
         codec,
         failureDetector)))
@@ -337,7 +342,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         remoteAddress,
         statusPromise,
         transport,
-        new AkkaProtocolSettings(ConfigFactory.parseString("akka.remoting.wait-activity-enabled = off").withFallback(conf)),
+        new AkkaProtocolSettings(ConfigFactory.parseString("akka.remote.wait-activity-enabled = off").withFallback(conf)),
         codec,
         failureDetector)))
 
@@ -390,8 +395,6 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
 
-      Thread.sleep(100) //FIXME: Remove this
-
       reader ! Disassociated
 
       expectMsg(Disassociated)
@@ -408,7 +411,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         remoteAddress,
         statusPromise,
         transport,
-        new AkkaProtocolSettings(ConfigFactory.parseString("akka.remoting.wait-activity-enabled = off").withFallback(conf)),
+        new AkkaProtocolSettings(ConfigFactory.parseString("akka.remote.wait-activity-enabled = off").withFallback(conf)),
         codec,
         failureDetector)))
 
@@ -444,7 +447,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         remoteAddress,
         statusPromise,
         transport,
-        new AkkaProtocolSettings(ConfigFactory.parseString("akka.remoting.wait-activity-enabled = off").withFallback(conf)),
+        new AkkaProtocolSettings(ConfigFactory.parseString("akka.remote.wait-activity-enabled = off").withFallback(conf)),
         codec,
         failureDetector)))
 

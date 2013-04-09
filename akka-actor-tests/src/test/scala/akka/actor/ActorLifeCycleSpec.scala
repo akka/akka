@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -117,6 +117,16 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
       expectMsg(("postStop", id, 0))
       expectNoMsg(1 seconds)
       system.stop(supervisor)
+    }
+
+    "log failues in postStop" in {
+      val a = system.actorOf(Props(new Actor {
+        def receive = Actor.emptyBehavior
+        override def postStop { throw new Exception("hurrah") }
+      }))
+      EventFilter[Exception]("hurrah", occurrences = 1) intercept {
+        a ! PoisonPill
+      }
     }
 
     "clear the behavior stack upon restart" in {

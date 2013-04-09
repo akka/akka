@@ -23,6 +23,7 @@ package akka.util.internal;
  * @author <a href="http://gleamynode.net/">Trustin Lee</a>
  * @version $Rev: 2080 $, $Date: 2010-01-26 18:04:19 +0900 (Tue, 26 Jan 2010) $
  */
+@Deprecated
 public interface Timeout {
 
     /**
@@ -51,6 +52,10 @@ public interface Timeout {
      * Cancels the {@link TimerTask} associated with this handle.  It the
      * task has been executed or cancelled already, it will return with no
      * side effect.
+     * 
+     * @return whether the caller was the one who actually cancelled this
+     * timeout (there can be at most one; never returns true if the Timeout
+     * expired)
      */
-    void cancel();
+    boolean cancel();
 }

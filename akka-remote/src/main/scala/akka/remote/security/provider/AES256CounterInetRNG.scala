@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote.security.provider
 
@@ -7,7 +7,7 @@ import org.uncommons.maths.random.{ AESCounterRNG }
 import SeedSize.Seed256
 
 /**
- * Internal API
+ * INTERNAL API
  * This class is a wrapper around the 256-bit AESCounterRNG algorithm provided by http://maths.uncommons.org/
  * It uses the default seed generator which uses one of the following 3 random seed sources:
  * Depending on availability: random.org, /dev/random, and SecureRandom (provided by Java)

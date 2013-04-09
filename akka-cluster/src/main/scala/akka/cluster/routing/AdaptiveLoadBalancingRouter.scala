@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster.routing
@@ -79,16 +79,16 @@ case class AdaptiveLoadBalancingRouter(
   extends RouterConfig with AdaptiveLoadBalancingRouterLike {
 
   /**
-   * Constructor that sets nrOfInstances to be created.
-   * Java API
+   * Java API: Constructor that sets nrOfInstances to be created.
+   *
    * @param selector the selector is responsible for producing weighted mix of routees from the node metrics
    * @param nr number of routees to create
    */
   def this(selector: MetricsSelector, nr: Int) = this(metricsSelector = selector, nrOfInstances = nr)
 
   /**
-   * Constructor that sets the routees to be used.
-   * Java API
+   * Java API: Constructor that sets the routees to be used.
+   *
    * @param selector the selector is responsible for producing weighted mix of routees from the node metrics
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
@@ -97,8 +97,8 @@ case class AdaptiveLoadBalancingRouter(
     this(metricsSelector = selector, routees = immutableSeq(routeePaths))
 
   /**
-   * Constructor that sets the resizer to be used.
-   * Java API
+   * Java API: Constructor that sets the resizer to be used.
+   *
    * @param selector the selector is responsible for producing weighted mix of routees from the node metrics
    */
   def this(selector: MetricsSelector, resizer: Resizer) =
@@ -138,7 +138,7 @@ case class AdaptiveLoadBalancingRouter(
  * INTERNAL API.
  *
  * This strategy is a metrics-aware router which performs load balancing of messages to
- * cluster nodes based on cluster metric data. It consumes [[akka.cluster.ClusterMetricsChanged]]
+ * cluster nodes based on cluster metric data. It consumes [[akka.cluster.ClusterEvent.ClusterMetricsChanged]]
  * events and the [[akka.cluster.routing.MetricsSelector]] creates an mix of
  * weighted routees based on the node metrics. Messages are routed randomly to the
  * weighted routees, i.e. nodes with lower load are more likely to be used than nodes with
@@ -307,7 +307,7 @@ abstract class MixMetricsSelectorBase(selectors: immutable.IndexedSeq[CapacityMe
   extends CapacityMetricsSelector {
 
   /**
-   * Java API
+   * Java API: construct a mix-selector from a sequence of selectors
    */
   def this(selectors: java.lang.Iterable[CapacityMetricsSelector]) = this(immutableSeq(selectors).toVector)
 
@@ -317,7 +317,7 @@ abstract class MixMetricsSelectorBase(selectors: immutable.IndexedSeq[CapacityMe
     combined.foldLeft(Map.empty[Address, (Double, Int)].withDefaultValue((0.0, 0))) {
       case (acc, (address, capacity)) ⇒
         val (sum, count) = acc(address)
-        acc + (address -> (sum + capacity, count + 1))
+        acc + (address -> ((sum + capacity, count + 1)))
     }.map {
       case (addr, (sum, count)) ⇒ (addr -> sum / count)
     }

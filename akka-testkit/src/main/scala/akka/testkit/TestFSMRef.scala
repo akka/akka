@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.testkit
@@ -34,10 +34,10 @@ import scala.concurrent.duration.FiniteDuration
  * @since 1.2
  */
 class TestFSMRef[S, D, T <: Actor](
-  system: ActorSystemImpl,
+  system: ActorSystem,
   _prerequisites: DispatcherPrerequisites,
   props: Props,
-  supervisor: InternalActorRef,
+  supervisor: ActorRef,
   name: String)(implicit ev: T <:< FSM[S, D])
   extends TestActorRef(system, _prerequisites, props, supervisor, name) {
 

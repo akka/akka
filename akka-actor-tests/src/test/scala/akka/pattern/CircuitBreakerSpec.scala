@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.pattern
@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import akka.testkit._
 import org.scalatest.BeforeAndAfter
 import akka.actor.{ ActorSystem, Scheduler }
-import concurrent.{ ExecutionContext, Future, Await }
+import scala.concurrent.{ ExecutionContext, Future, Await }
 
 object CircuitBreakerSpec {
 

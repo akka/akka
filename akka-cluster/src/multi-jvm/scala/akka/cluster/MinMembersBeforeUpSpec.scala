@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -7,6 +7,7 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfter
 import scala.collection.immutable.SortedSet
 import scala.concurrent.duration._
+import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
@@ -20,62 +21,113 @@ object MinMembersBeforeUpMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
-          # turn off unreachable reaper
-          akka.cluster.min-nr-of-members = 3""")).
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(
+    "akka.cluster.min-nr-of-members = 3")).
     withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
+}
+
+object MinMembersOfRoleBeforeUpMultiJvmSpec extends MultiNodeConfig {
+  val first = role("first")
+  val second = role("second")
+  val third = role("third")
+
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(
+    "akka.cluster.role.backend.min-nr-of-members = 2")).
+    withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
+
+  nodeConfig(first)(
+    ConfigFactory.parseString("akka.cluster.roles =[frontend]"))
+
+  nodeConfig(second, third)(
+    ConfigFactory.parseString("akka.cluster.roles =[backend]"))
 }
 
 class MinMembersBeforeUpMultiJvmNode1 extends MinMembersBeforeUpSpec
 class MinMembersBeforeUpMultiJvmNode2 extends MinMembersBeforeUpSpec
 class MinMembersBeforeUpMultiJvmNode3 extends MinMembersBeforeUpSpec
 
-abstract class MinMembersBeforeUpSpec
-  extends MultiNodeSpec(MinMembersBeforeUpMultiJvmSpec)
-  with MultiNodeClusterSpec {
+class MinMembersOfRoleBeforeUpMultiJvmNode1 extends MinMembersOfRoleBeforeUpSpec
+class MinMembersOfRoleBeforeUpMultiJvmNode2 extends MinMembersOfRoleBeforeUpSpec
+class MinMembersOfRoleBeforeUpMultiJvmNode3 extends MinMembersOfRoleBeforeUpSpec
 
-  import MinMembersBeforeUpMultiJvmSpec._
-  import ClusterEvent._
+abstract class MinMembersBeforeUpSpec extends MinMembersBeforeUpBase(MinMembersBeforeUpMultiJvmSpec) {
+
+  override def first: RoleName = MinMembersBeforeUpMultiJvmSpec.first
+  override def second: RoleName = MinMembersBeforeUpMultiJvmSpec.second
+  override def third: RoleName = MinMembersBeforeUpMultiJvmSpec.third
 
   "Cluster leader" must {
     "wait with moving members to UP until minimum number of members have joined" taggedAs LongRunningTest in {
-
-      val onUpLatch = TestLatch(1)
-      cluster.registerOnMemberUp(onUpLatch.countDown())
-
-      runOn(first) {
-        startClusterNode()
-        awaitCond(clusterView.status == Joining)
-      }
-      enterBarrier("first-started")
-
-      onUpLatch.isOpen must be(false)
-
-      runOn(second) {
-        cluster.join(first)
-      }
-      runOn(first, second) {
-        val expectedAddresses = Set(first, second) map address
-        awaitCond(clusterView.members.map(_.address) == expectedAddresses)
-        clusterView.members.map(_.status) must be(Set(Joining))
-        // and it should not change
-        1 to 5 foreach { _ ⇒
-          Thread.sleep(1000)
-          clusterView.members.map(_.address) must be(expectedAddresses)
-          clusterView.members.map(_.status) must be(Set(Joining))
-        }
-      }
-      enterBarrier("second-joined")
-
-      runOn(third) {
-        cluster.join(first)
-      }
-      awaitClusterUp(first, second, third)
-
-      onUpLatch.await
-
-      enterBarrier("after-1")
+      testWaitMovingMembersToUp()
     }
-
   }
+}
+
+abstract class MinMembersOfRoleBeforeUpSpec extends MinMembersBeforeUpBase(MinMembersOfRoleBeforeUpMultiJvmSpec) {
+
+  override def first: RoleName = MinMembersOfRoleBeforeUpMultiJvmSpec.first
+  override def second: RoleName = MinMembersOfRoleBeforeUpMultiJvmSpec.second
+  override def third: RoleName = MinMembersOfRoleBeforeUpMultiJvmSpec.third
+
+  "Cluster leader" must {
+    "wait with moving members to UP until minimum number of members with specific role have joined" taggedAs LongRunningTest in {
+      testWaitMovingMembersToUp()
+    }
+  }
+}
+
+abstract class MinMembersBeforeUpBase(multiNodeConfig: MultiNodeConfig)
+  extends MultiNodeSpec(multiNodeConfig)
+  with MultiNodeClusterSpec {
+
+  import ClusterEvent._
+
+  def first: RoleName
+  def second: RoleName
+  def third: RoleName
+
+  def testWaitMovingMembersToUp(): Unit = {
+    val onUpLatch = TestLatch(1)
+    cluster.registerOnMemberUp(onUpLatch.countDown())
+
+    runOn(first) {
+      cluster join myself
+      awaitAssert {
+        clusterView.refreshCurrentState()
+        clusterView.status must be(Joining)
+      }
+    }
+    enterBarrier("first-started")
+
+    onUpLatch.isOpen must be(false)
+
+    runOn(second) {
+      cluster.join(first)
+    }
+    runOn(first, second) {
+      val expectedAddresses = Set(first, second) map address
+      awaitAssert {
+        clusterView.refreshCurrentState()
+        clusterView.members.map(_.address) must be(expectedAddresses)
+      }
+      clusterView.members.map(_.status) must be(Set(Joining))
+      // and it should not change
+      1 to 5 foreach { _ ⇒
+        Thread.sleep(1000)
+        clusterView.members.map(_.address) must be(expectedAddresses)
+        clusterView.members.map(_.status) must be(Set(Joining))
+      }
+    }
+    enterBarrier("second-joined")
+
+    runOn(third) {
+      cluster.join(first)
+    }
+    awaitClusterUp(first, second, third)
+
+    onUpLatch.await
+
+    enterBarrier("after-1")
+  }
+
 }

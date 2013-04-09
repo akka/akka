@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -131,6 +131,7 @@ abstract class UntypedActor extends Actor {
    * Actor are automatically started asynchronously when created.
    * Empty default implementation.
    */
+  @throws(classOf[Exception])
   override def preStart(): Unit = super.preStart()
 
   /**
@@ -139,6 +140,7 @@ abstract class UntypedActor extends Actor {
    * Is called asynchronously after 'actor.stop()' is invoked.
    * Empty default implementation.
    */
+  @throws(classOf[Exception])
   override def postStop(): Unit = super.postStop()
 
   /**
@@ -147,6 +149,7 @@ abstract class UntypedActor extends Actor {
    * Is called on a crashed Actor right BEFORE it is restarted to allow clean
    * up of resources before Actor is terminated.
    */
+  @throws(classOf[Exception])
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = super.preRestart(reason, message)
 
   /**
@@ -154,6 +157,7 @@ abstract class UntypedActor extends Actor {
    * <p/>
    * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
    */
+  @throws(classOf[Exception])
   override def postRestart(reason: Throwable): Unit = super.postRestart(reason)
 
   final def receive = { case msg ⇒ onReceive(msg) }

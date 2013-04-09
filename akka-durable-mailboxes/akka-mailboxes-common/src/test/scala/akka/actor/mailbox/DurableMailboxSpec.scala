@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor.mailbox
 
@@ -40,7 +40,7 @@ object DurableMailboxSpecActorFactory {
 object DurableMailboxSpec {
   def fallbackConfig: Config = ConfigFactory.parseString("""
       akka {
-        event-handlers = ["akka.testkit.TestEventListener"]
+        loggers = ["akka.testkit.TestEventListener"]
         loglevel = "WARNING"
         stdout-loglevel = "WARNING"
       }

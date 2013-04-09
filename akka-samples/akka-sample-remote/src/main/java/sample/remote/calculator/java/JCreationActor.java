@@ -1,39 +1,37 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package sample.remote.calculator.java;
 
+import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
-
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 
 //#actor
 public class JCreationActor extends UntypedActor {
-  private static final NumberFormat formatter = new DecimalFormat("#0.00");
+
+  private final ActorRef remoteActor;
+
+  public JCreationActor(ActorRef remoteActor) {
+    this.remoteActor = remoteActor;
+  }
 
   @Override
   public void onReceive(Object message) throws Exception {
 
-    if (message instanceof InternalMsg.MathOpMsg) {
-      // forward math op to server actor
-      InternalMsg.MathOpMsg msg = (InternalMsg.MathOpMsg) message;
-      msg.getActor().tell(msg.getMathOp(), getSelf());
+    if (message instanceof Op.MathOp) {
+      // send message to server actor
+      remoteActor.tell(message, getSelf());
 
-    } else if (message instanceof Op.MathResult) {
+    } else if (message instanceof Op.MultiplicationResult) {
+      Op.MultiplicationResult result = (Op.MultiplicationResult) message;
+      System.out.printf("Mul result: %d * %d = %d\n",
+          result.getN1(), result.getN2(), result.getResult());
 
-      // receive reply from server actor
+    } else if (message instanceof Op.DivisionResult) {
+      Op.DivisionResult result = (Op.DivisionResult) message;
+      System.out.printf("Div result: %.0f / %d = %.2f\n",
+          result.getN1(), result.getN2(), result.getResult());
 
-      if (message instanceof Op.MultiplicationResult) {
-        Op.MultiplicationResult result = (Op.MultiplicationResult) message;
-        System.out.println("Mul result: " + result.getN1() + " * " +
-          result.getN2() + " = " + result.getResult());
-
-      } else if (message instanceof Op.DivisionResult) {
-        Op.DivisionResult result = (Op.DivisionResult) message;
-        System.out.println("Div result: " + result.getN1() + " / " +
-          result.getN2() + " = " + formatter.format(result.getResult()));
-      }
     } else {
       unhandled(message);
     }

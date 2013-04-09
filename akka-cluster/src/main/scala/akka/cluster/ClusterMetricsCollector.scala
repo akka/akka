@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -84,11 +84,13 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   def receive = {
     case GossipTick                 ⇒ gossip()
     case MetricsTick                ⇒ collect()
+    case msg: MetricsGossipEnvelope ⇒ receiveGossip(msg)
     case state: CurrentClusterState ⇒ receiveState(state)
     case MemberUp(m)                ⇒ addMember(m)
-    case e: MemberEvent             ⇒ removeMember(e.member)
+    case MemberRemoved(m)           ⇒ removeMember(m)
     case UnreachableMember(m)       ⇒ removeMember(m)
-    case msg: MetricsGossipEnvelope ⇒ receiveGossip(msg)
+    case _: MemberEvent             ⇒ // not interested in other types of MemberEvent
+
   }
 
   override def postStop: Unit = {
@@ -155,7 +157,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
     sendGossip(address, MetricsGossipEnvelope(selfAddress, latestGossip, reply = true))
 
   def sendGossip(address: Address, envelope: MetricsGossipEnvelope): Unit =
-    context.actorFor(self.path.toStringWithAddress(address)) ! envelope
+    context.actorSelection(self.path.toStringWithAddress(address)) ! envelope
 
   def selectRandomNode(addresses: immutable.IndexedSeq[Address]): Option[Address] =
     if (addresses.isEmpty) None else Some(addresses(ThreadLocalRandom.current nextInt addresses.size))
@@ -289,8 +291,8 @@ private[cluster] case class EWMA(value: Double, alpha: Double) extends ClusterMe
  * Equality of Metric is based on its name.
  *
  * @param name the metric name
- * @param value the metric value, which may or may not be defined, it must be a valid numerical value,
- *   see [[akka.cluster.MetricNumericConverter.defined()]]
+ * @param value the metric value, which must be a valid numerical value,
+ *   a valid value is neither negative nor NaN/Infinite.
  * @param average the data stream of the metric value, for trending over time. Metrics that are already
  *   averages (e.g. system load average) or finite (e.g. as number of processors), are not trended.
  */
@@ -300,15 +302,16 @@ case class Metric private (name: String, value: Number, private val average: Opt
   require(defined(value), s"Invalid Metric [$name] value [$value]")
 
   /**
-   * If defined ( [[akka.cluster.MetricNumericConverter.defined()]] ), updates the new
-   * data point, and if defined, updates the data stream. Returns the updated metric.
+   * Updates the data point, and if defined, updates the data stream (average).
+   * Returns the updated metric.
    */
-  def :+(latest: Metric): Metric = if (this sameAs latest) average match {
-    case Some(avg)                        ⇒ copy(value = latest.value, average = Some(avg :+ latest.value.doubleValue))
-    case None if latest.average.isDefined ⇒ copy(value = latest.value, average = latest.average)
-    case _                                ⇒ copy(value = latest.value)
-  }
-  else this
+  def :+(latest: Metric): Metric =
+    if (this sameAs latest) average match {
+      case Some(avg)                        ⇒ copy(value = latest.value, average = Some(avg :+ latest.value.doubleValue))
+      case None if latest.average.isDefined ⇒ copy(value = latest.value, average = latest.average)
+      case _                                ⇒ copy(value = latest.value)
+    }
+    else this
 
   /**
    * The numerical value of the average, if defined, otherwise the latest value

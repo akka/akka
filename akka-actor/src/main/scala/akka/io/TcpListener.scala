@@ -1,20 +1,20 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.io
 
-import java.net.InetSocketAddress
 import java.nio.channels.{ SocketChannel, SelectionKey, ServerSocketChannel }
 import scala.annotation.tailrec
-import scala.collection.immutable
 import scala.util.control.NonFatal
 import akka.actor.{ Props, ActorLogging, ActorRef, Actor }
 import akka.io.SelectionHandler._
-import akka.io.Inet.SocketOption
 import akka.io.Tcp._
 import akka.io.IO.HasFailureMessage
 
+/**
+ * INTERNAL API
+ */
 private[io] object TcpListener {
 
   case class RegisterIncoming(channel: SocketChannel) extends HasFailureMessage {
@@ -25,6 +25,9 @@ private[io] object TcpListener {
 
 }
 
+/**
+ * INTERNAL API
+ */
 private[io] class TcpListener(val selectorRouter: ActorRef,
                               val tcp: TcpExt,
                               val bindCommander: ActorRef,
@@ -44,7 +47,7 @@ private[io] class TcpListener(val selectorRouter: ActorRef,
     try socket.bind(endpoint, backlog)
     catch {
       case NonFatal(e) ⇒
-        bindCommander ! CommandFailed(bind)
+        bindCommander ! bind.failureMessage
         log.error(e, "Bind failed for TCP channel on endpoint [{}]", endpoint)
         context.stop(self)
     }
@@ -78,20 +81,21 @@ private[io] class TcpListener(val selectorRouter: ActorRef,
       context.stop(self)
   }
 
-  @tailrec final def acceptAllPending(limit: Int): Unit =
-    if (limit > 0) {
-      val socketChannel =
+  @tailrec final def acceptAllPending(limit: Int): Unit = {
+    val socketChannel =
+      if (limit > 0) {
         try channel.accept()
         catch {
           case NonFatal(e) ⇒ log.error(e, "Accept error: could not accept new connection due to {}", e); null
         }
-      if (socketChannel != null) {
-        log.debug("New connection accepted")
-        socketChannel.configureBlocking(false)
-        selectorRouter ! WorkerForCommand(RegisterIncoming(socketChannel), self, Props(new TcpIncomingConnection(socketChannel, tcp, handler, options)))
-        acceptAllPending(limit - 1)
-      }
+      } else null
+    if (socketChannel != null) {
+      log.debug("New connection accepted")
+      socketChannel.configureBlocking(false)
+      selectorRouter ! WorkerForCommand(RegisterIncoming(socketChannel), self, Props(new TcpIncomingConnection(socketChannel, tcp, handler, options)))
+      acceptAllPending(limit - 1)
     } else context.parent ! AcceptInterest
+  }
 
   override def postStop() {
     try {

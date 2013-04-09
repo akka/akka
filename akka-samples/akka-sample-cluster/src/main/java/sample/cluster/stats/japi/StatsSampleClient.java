@@ -12,7 +12,7 @@ import sample.cluster.stats.japi.StatsMessages.StatsResult;
 import scala.concurrent.forkjoin.ThreadLocalRandom;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
-import akka.actor.ActorRef;
+import akka.actor.ActorSelection;
 import akka.actor.Address;
 import akka.actor.Cancellable;
 import akka.actor.UntypedActor;
@@ -61,7 +61,7 @@ public class StatsSampleClient extends UntypedActor {
       List<Address> nodesList = new ArrayList<Address>(nodes);
       Address address = nodesList.get(ThreadLocalRandom.current().nextInt(
           nodesList.size()));
-      ActorRef service = getContext().actorFor(address + servicePath);
+      ActorSelection service = getContext().actorSelection(address + servicePath);
       service.tell(new StatsJob("this is the text that will be analyzed"),
           getSelf());
 
@@ -77,14 +77,15 @@ public class StatsSampleClient extends UntypedActor {
       CurrentClusterState state = (CurrentClusterState) message;
       nodes.clear();
       for (Member member : state.getMembers()) {
-        if (member.status().equals(MemberStatus.up())) {
+        if (member.hasRole("compute") && member.status().equals(MemberStatus.up())) {
           nodes.add(member.address());
         }
       }
 
     } else if (message instanceof MemberUp) {
       MemberUp mUp = (MemberUp) message;
-      nodes.add(mUp.member().address());
+      if (mUp.member().hasRole("compute"))
+        nodes.add(mUp.member().address());
 
     } else if (message instanceof MemberEvent) {
       MemberEvent other = (MemberEvent) message;

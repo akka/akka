@@ -8,9 +8,9 @@ object SimpleClusterApp {
 
   def main(args: Array[String]): Unit = {
 
-    // Override the configuration of the port 
+    // Override the configuration of the port
     // when specified as program argument
-    if (args.nonEmpty) System.setProperty("akka.remote.netty.port", args(0))
+    if (args.nonEmpty) System.setProperty("akka.remote.netty.tcp.port", args(0))
 
     // Create an Akka system
     val system = ActorSystem("ClusterSystem")
@@ -18,8 +18,6 @@ object SimpleClusterApp {
       def receive = {
         case state: CurrentClusterState ⇒
           log.info("Current members: {}", state.members)
-        case MemberJoined(member) ⇒
-          log.info("Member joined: {}", member)
         case MemberUp(member) ⇒
           log.info("Member is Up: {}", member)
         case UnreachableMember(member) ⇒

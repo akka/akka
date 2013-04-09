@@ -1,65 +1,38 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
 
-import akka.actor.{ Address, ActorSystem }
-import akka.event.{ Logging, LogSource }
+import java.util.concurrent.atomic.AtomicReference
 import akka.remote.testkit.MultiNodeConfig
+import akka.remote.FailureDetector
+import com.typesafe.config.Config
 
 /**
  * User controllable "puppet" failure detector.
  */
-class FailureDetectorPuppet(system: ActorSystem, settings: ClusterSettings) extends FailureDetector {
-  import java.util.concurrent.ConcurrentHashMap
+class FailureDetectorPuppet(config: Config) extends FailureDetector {
 
   trait Status
   object Up extends Status
   object Down extends Status
+  object Unknown extends Status
 
-  implicit private val logSource: LogSource[AnyRef] = new LogSource[AnyRef] {
-    def genString(o: AnyRef): String = o.getClass.getName
-    override def getClazz(o: AnyRef): Class[_] = o.getClass
+  private val status: AtomicReference[Status] = new AtomicReference(Unknown)
+
+  def markNodeAsUnavailable(): Unit = status.set(Down)
+
+  def markNodeAsAvailable(): Unit = status.set(Up)
+
+  override def isAvailable: Boolean = status.get match {
+    case Unknown | Up ⇒ true
+    case Down         ⇒ false
   }
 
-  private val log = Logging(system, this)
+  override def isMonitoring: Boolean = status.get != Unknown
 
-  private val connections = new ConcurrentHashMap[Address, Status]
+  override def heartbeat(): Unit = status.compareAndSet(Unknown, Up)
 
-  def markNodeAsUnavailable(connection: Address): this.type = {
-    connections.put(connection, Down)
-    this
-  }
-
-  def markNodeAsAvailable(connection: Address): this.type = {
-    connections.put(connection, Up)
-    this
-  }
-
-  def isAvailable(connection: Address): Boolean = connections.get(connection) match {
-    case null ⇒
-      log.debug("Adding cluster node [{}]", connection)
-      connections.put(connection, Up)
-      true
-    case Up ⇒
-      log.debug("isAvailable: Cluster node IS NOT available [{}]", connection)
-      true
-    case Down ⇒
-      log.debug("isAvailable: Cluster node IS available [{}]", connection)
-      false
-  }
-
-  def heartbeat(connection: Address): Unit = log.debug("Heart beat from cluster node[{}]", connection)
-
-  def remove(connection: Address): Unit = {
-    log.debug("Removing cluster node [{}]", connection)
-    connections.remove(connection)
-  }
-
-  def reset(): Unit = {
-    log.debug("Resetting failure detector")
-    connections.clear()
-  }
 }
 

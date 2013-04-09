@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
@@ -10,7 +10,7 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import akka.actor._
 import com.typesafe.config.ConfigFactory
-import concurrent.Await
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.actor.DeadLetter
 import akka.pattern.ask
@@ -53,7 +53,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
       val latch = new TestLatch(1)(system)
       system.registerOnTermination(latch.countDown())
 
-      system.actorFor("/") ! PoisonPill
+      system.actorSelection("/") ! PoisonPill
 
       Await.ready(latch, 2 seconds)
     }

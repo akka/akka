@@ -1,20 +1,20 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.dispatch
 
 import java.util.{ Comparator, PriorityQueue, Queue, Deque }
 import java.util.concurrent._
 import akka.AkkaException
+import akka.dispatch.sysmsg._
 import akka.actor.{ ActorCell, ActorRef, Cell, ActorSystem, InternalActorRef, DeadLetter }
 import akka.util.{ Unsafe, BoundedBlockingQueue }
 import akka.event.Logging.Error
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import com.typesafe.config.Config
-import scala.concurrent.duration.FiniteDuration
-
 /**
  * INTERNAL API
  */
@@ -23,15 +23,15 @@ private[akka] object Mailbox {
   type Status = Int
 
   /*
-   * the following assigned numbers CANNOT be changed without looking at the code which uses them!
+   * The following assigned numbers CANNOT be changed without looking at the code which uses them!
    */
 
-  // primary status
+  // Primary status
   final val Open = 0 // _status is not initialized in AbstractMailbox, so default must be zero! Deliberately without type ascription to make it a compile-time constant
   final val Closed = 1 // Deliberately without type ascription to make it a compile-time constant
-  // secondary status: Scheduled bit may be added to Open/Suspended
+  // Secondary status: Scheduled bit may be added to Open/Suspended
   final val Scheduled = 2 // Deliberately without type ascription to make it a compile-time constant
-  // shifted by 2: the suspend count!
+  // Shifted by 2: the suspend count!
   final val shouldScheduleMask = 3
   final val shouldNotProcessMask = ~2
   final val suspendMask = ~3
@@ -57,11 +57,11 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    * This is needed for actually executing the mailbox, i.e. invoking the
    * ActorCell. There are situations (e.g. RepointableActorRef) where a Mailbox
    * is constructed but we know that we will not execute it, in which case this
-   * will be null. It must be a var to support switching into an “active” 
+   * will be null. It must be a var to support switching into an “active”
    * mailbox, should the owning ActorRef turn local.
-   * 
+   *
    * ANOTHER THING, IMPORTANT:
-   * 
+   *
    * actorCell.start() publishes actorCell & self to the dispatcher, which
    * means that messages may be processed theoretically before self’s constructor
    * ends. The JMM guarantees visibility for final fields only after the end
@@ -136,7 +136,8 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    */
   @tailrec
   final def resume(): Boolean = status match {
-    case Closed ⇒ setStatus(Closed); false
+    case Closed ⇒
+      setStatus(Closed); false
     case s ⇒
       val next = if (s < suspendUnit) s else s - suspendUnit
       if (updateStatus(s, next)) next < suspendUnit
@@ -151,7 +152,8 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    */
   @tailrec
   final def suspend(): Boolean = status match {
-    case Closed ⇒ setStatus(Closed); false
+    case Closed ⇒
+      setStatus(Closed); false
     case s ⇒
       if (updateStatus(s, s + suspendUnit)) s < suspendUnit
       else suspend()
@@ -163,8 +165,9 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    */
   @tailrec
   final def becomeClosed(): Boolean = status match {
-    case Closed ⇒ setStatus(Closed); false
-    case s      ⇒ updateStatus(s, Closed) || becomeClosed()
+    case Closed ⇒
+      setStatus(Closed); false
+    case s ⇒ updateStatus(s, Closed) || becomeClosed()
   }
 
   /**
@@ -174,8 +177,8 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
   final def setAsScheduled(): Boolean = {
     val s = status
     /*
-     * only try to add Scheduled bit if pure Open/Suspended, not Closed or with
-     * Scheduled bit already set
+     * Only try to add Scheduled bit if pure Open/Suspended, not Closed or with
+     * Scheduled bit already set.
      */
     if ((s & shouldScheduleMask) != Open) false
     else updateStatus(s, s | Scheduled) || setAsScheduled()
@@ -189,15 +192,19 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
     val s = status
     updateStatus(s, s & ~Scheduled) || setAsIdle()
   }
-
   /*
-   * AtomicReferenceFieldUpdater for system queue
+   * AtomicReferenceFieldUpdater for system queue.
    */
-  protected final def systemQueueGet: SystemMessage =
-    Unsafe.instance.getObjectVolatile(this, AbstractMailbox.systemMessageOffset).asInstanceOf[SystemMessage]
+  protected final def systemQueueGet: LatestFirstSystemMessageList =
+    // Note: contrary how it looks, there is no allocation here, as SystemMessageList is a value class and as such
+    // it just exists as a typed view during compile-time. The actual return type is still SystemMessage.
+    new LatestFirstSystemMessageList(Unsafe.instance.getObjectVolatile(this, AbstractMailbox.systemMessageOffset).asInstanceOf[SystemMessage])
 
-  protected final def systemQueuePut(_old: SystemMessage, _new: SystemMessage): Boolean =
-    Unsafe.instance.compareAndSwapObject(this, AbstractMailbox.systemMessageOffset, _old, _new)
+  protected final def systemQueuePut(_old: LatestFirstSystemMessageList, _new: LatestFirstSystemMessageList): Boolean =
+    // Note: calling .head is not actually existing on the bytecode level as the parameters _old and _new
+    // are SystemMessage instances hidden during compile time behind the SystemMessageList value class.
+    // Without calling .head the parameters would be boxed in SystemMessageList wrapper.
+    Unsafe.instance.compareAndSwapObject(this, AbstractMailbox.systemMessageOffset, _old.head, _new.head)
 
   final def canBeScheduledForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = status match {
     case Open | Scheduled ⇒ hasMessageHint || hasSystemMessageHint || hasSystemMessages || hasMessages
@@ -228,12 +235,11 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       if (next ne null) {
         if (Mailbox.debug) println(actor.self + " processing message " + next)
         actor invoke next
-        processAllSystemMessages()
-        if ((left > 1) && ((dispatcher.isThroughputDeadlineTimeDefined == false) || (System.nanoTime - deadlineNs) < 0)) {
-          processMailbox(left - 1, deadlineNs)
-        } else if (Thread.interrupted()) {
+        if (Thread.interrupted())
           throw new InterruptedException("Interrupted while processing actor messages")
-        }
+        processAllSystemMessages()
+        if ((left > 1) && ((dispatcher.isThroughputDeadlineTimeDefined == false) || (System.nanoTime - deadlineNs) < 0))
+          processMailbox(left - 1, deadlineNs)
       }
     }
 
@@ -246,30 +252,28 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    */
   final def processAllSystemMessages() {
     var interruption: Throwable = null
-    var nextMessage = systemDrain(null)
-    while ((nextMessage ne null) && !isClosed) {
-      val msg = nextMessage
-      nextMessage = nextMessage.next
-      msg.next = null
+    var messageList = systemDrain(SystemMessageList.LNil)
+    while ((messageList.nonEmpty) && !isClosed) {
+      val msg = messageList.head
+      messageList = messageList.tail
+      msg.unlink()
       if (debug) println(actor.self + " processing system message " + msg + " with " + actor.childrenRefs)
-      try {
-        actor systemInvoke msg
-      } catch {
-        // we know here that systemInvoke ensures that only InterruptedException and "fatal" exceptions get rethrown
-        case e: InterruptedException ⇒ interruption = e
-      }
+      // we know here that systemInvoke ensures that only "fatal" exceptions get rethrown
+      actor systemInvoke msg
+      if (Thread.interrupted())
+        interruption = new InterruptedException("Interrupted while processing system messages")
       // don’t ever execute normal message when system message present!
-      if ((nextMessage eq null) && !isClosed) nextMessage = systemDrain(null)
+      if ((messageList.isEmpty) && !isClosed) messageList = systemDrain(SystemMessageList.LNil)
     }
     /*
      * if we closed the mailbox, we must dump the remaining system messages
-     * to deadLetters (this is essential for DeathWatch) 
+     * to deadLetters (this is essential for DeathWatch)
      */
     val dlm = actor.systemImpl.deadLetterMailbox
-    while (nextMessage ne null) {
-      val msg = nextMessage
-      nextMessage = nextMessage.next
-      msg.next = null
+    while (messageList.nonEmpty) {
+      val msg = messageList.head
+      messageList = messageList.tail
+      msg.unlink()
       try dlm.systemEnqueue(actor.self, msg)
       catch {
         case e: InterruptedException ⇒ interruption = e
@@ -292,24 +296,24 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
   protected[dispatch] def cleanUp(): Unit =
     if (actor ne null) { // actor is null for the deadLetterMailbox
       val dlm = actor.systemImpl.deadLetterMailbox
-      var message = systemDrain(NoMessage)
-      while (message ne null) {
+      var messageList = systemDrain(new LatestFirstSystemMessageList(NoMessage))
+      while (messageList.nonEmpty) {
         // message must be “virgin” before being able to systemEnqueue again
-        val next = message.next
-        message.next = null
-        dlm.systemEnqueue(actor.self, message)
-        message = next
+        val msg = messageList.head
+        messageList = messageList.tail
+        msg.unlink()
+        dlm.systemEnqueue(actor.self, msg)
       }
 
       if (messageQueue ne null) // needed for CallingThreadDispatcher, which never calls Mailbox.run()
-        messageQueue.cleanUp(actor.self, actor.systemImpl.deadLetterQueue)
+        messageQueue.cleanUp(actor.self, actor.systemImpl.deadLetterMailbox.messageQueue)
     }
 }
 
 /**
  * A MessageQueue is one of the core components in forming an Akka Mailbox.
  * The MessageQueue is where the normal messages that are sent to Actors will be enqueued (and subsequently dequeued)
- * It needs to atleast support N producers and 1 consumer thread-safely.
+ * It needs to at least support N producers and 1 consumer thread-safely.
  */
 trait MessageQueue {
   /**
@@ -343,8 +347,27 @@ trait MessageQueue {
   def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit
 }
 
+class NodeMessageQueue extends AbstractNodeQueue[Envelope] with MessageQueue {
+
+  final def enqueue(receiver: ActorRef, handle: Envelope): Unit = add(handle)
+
+  final def dequeue(): Envelope = poll()
+
+  final def numberOfMessages: Int = count()
+
+  final def hasMessages: Boolean = !isEmpty()
+
+  @tailrec final def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = {
+    val envelope = dequeue()
+    if (envelope ne null) {
+      deadLetters.enqueue(owner, envelope)
+      cleanUp(owner, deadLetters)
+    }
+  }
+}
+
 /**
- * INTERNAL USE ONLY
+ * INTERNAL API
  */
 private[akka] trait SystemMessageQueue {
   /**
@@ -355,50 +378,48 @@ private[akka] trait SystemMessageQueue {
   /**
    * Dequeue all messages from system queue and return them as single-linked list.
    */
-  def systemDrain(newContents: SystemMessage): SystemMessage
+  def systemDrain(newContents: LatestFirstSystemMessageList): EarliestFirstSystemMessageList
 
   def hasSystemMessages: Boolean
 }
 
 /**
- * INTERNAL USE ONLY
+ * INTERNAL API
  */
 private[akka] trait DefaultSystemMessageQueue { self: Mailbox ⇒
 
   @tailrec
   final def systemEnqueue(receiver: ActorRef, message: SystemMessage): Unit = {
-    assert(message.next eq null)
+    assert(message.unlinked)
     if (Mailbox.debug) println(receiver + " having enqueued " + message)
-    val head = systemQueueGet
-    if (head == NoMessage) {
+    val currentList = systemQueueGet
+    if (currentList.head == NoMessage) {
       if (actor ne null) actor.systemImpl.deadLetterMailbox.systemEnqueue(receiver, message)
     } else {
-      /*
-       * this write is safely published by the compareAndSet contained within
-       * systemQueuePut; “Intra-Thread Semantics” on page 12 of the JSR133 spec
-       * guarantees that “head” uses the value obtained from systemQueueGet above.
-       * Hence, SystemMessage.next does not need to be volatile.
-       */
-      message.next = head
-      if (!systemQueuePut(head, message)) {
-        message.next = null
+      if (!systemQueuePut(currentList, message :: currentList)) {
+        message.unlink()
         systemEnqueue(receiver, message)
       }
     }
   }
 
   @tailrec
-  final def systemDrain(newContents: SystemMessage): SystemMessage = {
-    val head = systemQueueGet
-    if (systemQueuePut(head, newContents)) SystemMessage.reverse(head) else systemDrain(newContents)
+  final def systemDrain(newContents: LatestFirstSystemMessageList): EarliestFirstSystemMessageList = {
+    val currentList = systemQueueGet
+    if (currentList.head == NoMessage) new EarliestFirstSystemMessageList(null)
+    else if (systemQueuePut(currentList, newContents)) currentList.reverse
+    else systemDrain(newContents)
   }
 
-  def hasSystemMessages: Boolean = systemQueueGet ne null
+  def hasSystemMessages: Boolean = systemQueueGet.head match {
+    case null | NoMessage ⇒ false
+    case _                ⇒ true
+  }
 
 }
 
 /**
- * A QueueBasedMessageQueue is a MessageQueue backed by a java.util.Queue
+ * A QueueBasedMessageQueue is a MessageQueue backed by a java.util.Queue.
  */
 trait QueueBasedMessageQueue extends MessageQueue {
   def queue: Queue[Envelope]
@@ -426,7 +447,7 @@ trait UnboundedMessageQueueSemantics extends QueueBasedMessageQueue {
 
 /**
  * BoundedMessageQueueSemantics adds bounded semantics to a QueueBasedMessageQueue,
- * i.e. blocking enqueue with timeout
+ * i.e. blocking enqueue with timeout.
  */
 trait BoundedMessageQueueSemantics extends QueueBasedMessageQueue {
   def pushTimeOut: Duration
@@ -435,14 +456,15 @@ trait BoundedMessageQueueSemantics extends QueueBasedMessageQueue {
   def enqueue(receiver: ActorRef, handle: Envelope): Unit =
     if (pushTimeOut.length > 0) {
       if (!queue.offer(handle, pushTimeOut.length, pushTimeOut.unit))
-        receiver.asInstanceOf[InternalActorRef].provider.deadLetters ! DeadLetter(handle.message, handle.sender, receiver)
+        receiver.asInstanceOf[InternalActorRef].provider.deadLetters.tell(
+          DeadLetter(handle.message, handle.sender, receiver), handle.sender)
     } else queue put handle
 
   def dequeue(): Envelope = queue.poll()
 }
 
 /**
- * DequeBasedMessageQueue refines QueueBasedMessageQueue to be backed by a java.util.Deque
+ * DequeBasedMessageQueue refines QueueBasedMessageQueue to be backed by a java.util.Deque.
  */
 trait DequeBasedMessageQueue extends QueueBasedMessageQueue {
   def queue: Deque[Envelope]
@@ -461,7 +483,7 @@ trait UnboundedDequeBasedMessageQueueSemantics extends DequeBasedMessageQueue {
 
 /**
  * BoundedMessageQueueSemantics adds bounded semantics to a DequeBasedMessageQueue,
- * i.e. blocking enqueue with timeout
+ * i.e. blocking enqueue with timeout.
  */
 trait BoundedDequeBasedMessageQueueSemantics extends DequeBasedMessageQueue {
   def pushTimeOut: Duration
@@ -470,13 +492,15 @@ trait BoundedDequeBasedMessageQueueSemantics extends DequeBasedMessageQueue {
   def enqueue(receiver: ActorRef, handle: Envelope): Unit =
     if (pushTimeOut.length > 0) {
       if (!queue.offer(handle, pushTimeOut.length, pushTimeOut.unit))
-        receiver.asInstanceOf[InternalActorRef].provider.deadLetters ! DeadLetter(handle.message, handle.sender, receiver)
+        receiver.asInstanceOf[InternalActorRef].provider.deadLetters.tell(
+          DeadLetter(handle.message, handle.sender, receiver), handle.sender)
     } else queue put handle
 
   def enqueueFirst(receiver: ActorRef, handle: Envelope): Unit =
     if (pushTimeOut.length > 0) {
       if (!queue.offerFirst(handle, pushTimeOut.length, pushTimeOut.unit))
-        receiver.asInstanceOf[InternalActorRef].provider.deadLetters ! DeadLetter(handle.message, handle.sender, receiver)
+        receiver.asInstanceOf[InternalActorRef].provider.deadLetters.tell(
+          DeadLetter(handle.message, handle.sender, receiver), handle.sender)
     } else queue putFirst handle
 
   def dequeue(): Envelope = queue.poll()
@@ -510,6 +534,18 @@ case class UnboundedMailbox() extends MailboxType {
     new ConcurrentLinkedQueue[Envelope]() with QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
       final def queue: Queue[Envelope] = this
     }
+}
+
+/**
+ * SingleConsumerOnlyUnboundedMailbox is a high-performance, multiple producer—single consumer, unbounded MailboxType,
+ * the only drawback is that you can't have multiple consumers,
+ * which rules out using it with BalancingDispatcher for instance.
+ */
+case class SingleConsumerOnlyUnboundedMailbox() extends MailboxType {
+
+  def this(settings: ActorSystem.Settings, config: Config) = this()
+
+  final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue = new NodeMessageQueue()
 }
 
 /**

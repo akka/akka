@@ -1,12 +1,11 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote
 
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
-import akka.remote.netty.NettyRemoteTransport
 import akka.actor.Actor
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -53,13 +53,14 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
           case UnreachableMember(member) ⇒
             // replace current member with new member (might have different status, only address is used in equals)
             state = state.copy(members = state.members - member, unreachable = state.unreachable - member + member)
-          case MemberDowned(member) ⇒
-            // replace current member with new member (might have different status, only address is used in equals)
-            state = state.copy(members = state.members - member, unreachable = state.unreachable - member + member)
           case event: MemberEvent ⇒
             // replace current member with new member (might have different status, only address is used in equals)
-            state = state.copy(members = state.members - event.member + event.member)
-          case LeaderChanged(leader)        ⇒ state = state.copy(leader = leader)
+            state = state.copy(members = state.members - event.member + event.member,
+              unreachable = state.unreachable - event.member)
+          case LeaderChanged(leader) ⇒
+            state = state.copy(leader = leader)
+          case RoleLeaderChanged(role, leader) ⇒
+            state = state.copy(roleLeaderMap = state.roleLeaderMap + (role -> leader))
           case s: CurrentClusterState       ⇒ state = s
           case CurrentInternalStats(stats)  ⇒ _latestStats = stats
           case ClusterMetricsChanged(nodes) ⇒ _clusterMetrics = nodes
@@ -70,7 +71,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
 
   def self: Member = {
     state.members.find(_.address == selfAddress).orElse(state.unreachable.find(_.address == selfAddress)).
-      getOrElse(Member(selfAddress, MemberStatus.Removed))
+      getOrElse(Member(selfAddress, MemberStatus.Removed, cluster.selfRoles))
   }
 
   /**
@@ -130,6 +131,12 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
 
   /**
    * INTERNAL API
+   */
+  private[cluster] def refreshCurrentState(): Unit =
+    cluster.sendCurrentClusterState(eventBusListener)
+
+  /**
+   * INTERNAL API
    * The nodes that has seen current version of the Gossip.
    */
   private[cluster] def seenBy: Set[Address] = state.seenBy
@@ -142,8 +149,8 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   /**
    * Unsubscribe to cluster events.
    */
-  def close(): Unit = if (!eventBusListener.isTerminated) {
-    eventBusListener ! PoisonPill
-  }
+  def close(): Unit =
+    if (!eventBusListener.isTerminated)
+      eventBusListener ! PoisonPill
 
 }

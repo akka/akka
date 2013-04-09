@@ -27,8 +27,7 @@ Creating Actors
   Since Akka enforces parental supervision every actor is supervised and
   (potentially) the supervisor of its children, it is advisable that you
   familiarize yourself with :ref:`actor-systems` and :ref:`supervision` and it
-  may also help to read :ref:`actorOf-vs-actorFor` (the whole of
-  :ref:`addressing` is recommended reading in any case).
+  may also help to read :ref:`addressing`.
 
 Defining an Actor class
 -----------------------
@@ -162,8 +161,9 @@ infrastructure is bundled in the following import:
 
 .. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#import
 
-This import is assumed for all code samples throughout this section. To define
-a simple actor, the following is sufficient:
+This import is assumed for all code samples throughout this section. The
+implicit actor system serves as :class:`ActorRefFactory` for all examples
+below. To define a simple actor, the following is sufficient:
 
 .. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#simple-actor
 
@@ -219,7 +219,7 @@ detects if the runtime class of the statically given actor subtype extends the
 :class:`Stash` trait (this is a complicated way of saying that ``new Act with
 Stash`` would not work because its runtime erased type is just an anonymous
 subtype of ``Act``). The purpose is to automatically use a dispatcher with the
-appropriate deque-based mailbox, ``akka.actor.default-stash-dispatcher``. 
+appropriate deque-based mailbox, ``akka.actor.default-stash-dispatcher``.
 If you want to use this magic, simply extend :class:`ActWithStash`:
 
 .. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#act-with-stash
@@ -240,8 +240,20 @@ actual Debug messages).
 In addition, it offers:
 
 * :obj:`self` reference to the :class:`ActorRef` of the actor
+
 * :obj:`sender` reference sender Actor of the last received message, typically used as described in :ref:`Actor.Reply`
+
 * :obj:`supervisorStrategy` user overridable definition the strategy to use for supervising child actors
+
+  This strategy is typically declared inside the actor in order to have access
+  to the actor’s internal state within the decider function: since failure is
+  communicated as a message sent to the supervisor and processed like other
+  messages (albeit outside of the normal behavior), all values and variables
+  within the actor are available, as is the ``sender`` reference (which will
+  be the immediate child reporting the failure; if the original failure
+  occurred within a distant descendant it is still reported one level up at a
+  time).
+
 * :obj:`context` exposes contextual information for the actor and the current message, such as:
 
   * factory methods to create child actors (:meth:`actorOf`)
@@ -286,6 +298,9 @@ Registering a monitor is easy:
 
 It should be noted that the :class:`Terminated` message is generated
 independent of the order in which registration and termination occur.
+In particular, the watching actor will receive a :class:`Terminated` message even if the 
+watched actor has already been terminated at the time of registration.
+
 Registering multiple times does not necessarily lead to multiple messages being
 generated, but there is no guarantee that only exactly one such message is
 received: if termination of the watched actor has generated and queued the
@@ -324,15 +339,20 @@ mentioned above:
    which caused the restart and the message which triggered that exception; the
    latter may be ``None`` if the restart was not caused by processing a
    message, e.g. when a supervisor does not trap the exception and is restarted
-   in turn by its supervisor. This method is the best place for cleaning up,
-   preparing hand-over to the fresh actor instance, etc.
-   By default it stops all children and calls :meth:`postStop`.
+   in turn by its supervisor, or if an actor is restarted due to a sibling’s
+   failure. If the message is available, then that message’s sender is also
+   accessible in the usual way (i.e. by calling ``sender``).
+
+   This method is the best place for cleaning up, preparing hand-over to the
+   fresh actor instance, etc.  By default it stops all children and calls
+   :meth:`postStop`.
+
 2. The initial factory from the ``actorOf`` call is used
    to produce the fresh instance.
+
 3. The new actor’s :meth:`postRestart` method is invoked with the exception
    which caused the restart. By default the :meth:`preStart`
    is called, just as in the normal start-up case.
-
 
 An actor restart replaces only the actual actor object; the contents of the
 mailbox is unaffected by the restart, so processing of messages will resume
@@ -340,6 +360,13 @@ after the :meth:`postRestart` hook returns. The message
 that triggered the exception will not be received again. Any message
 sent to an actor while it is being restarted will be queued to its mailbox as
 usual.
+
+.. warning::
+
+  Be aware that the ordering of failure notifications relative to user messages
+  is not deterministic. In particular, a parent might restart its child before
+  it has processed the last messages sent by the child before the failure.
+  See :ref:`message-ordering` for details.
 
 Stop Hook
 ---------
@@ -350,8 +377,10 @@ to run after message queuing has been disabled for this actor, i.e. messages
 sent to a stopped actor will be redirected to the :obj:`deadLetters` of the
 :obj:`ActorSystem`.
 
-Identifying Actors
-==================
+.. _actorSelection-scala:
+
+Identifying Actors via Actor Selection
+======================================
 
 As described in :ref:`addressing`, each actor has a unique logical path, which
 is obtained by following the chain of actors from child to parent until
@@ -360,11 +389,13 @@ differ if the supervision chain includes any remote supervisors. These paths
 are used by the system to look up actors, e.g. when a remote message is
 received and the recipient is searched, but they are also useful more directly:
 actors may look up other actors by specifying absolute or relative
-paths—logical or physical—and receive back an :class:`ActorRef` with the
+paths—logical or physical—and receive back an :class:`ActorSelection` with the
 result::
 
-  context.actorFor("/user/serviceA/aggregator") // will look up this absolute path
-  context.actorFor("../joe") // will look up sibling beneath same supervisor
+  // will look up this absolute path
+  context.actorSelection("/user/serviceA/aggregator")
+  // will look up sibling beneath same supervisor
+  context.actorSelection("../joe")
 
 The supplied path is parsed as a :class:`java.net.URI`, which basically means
 that it is split on ``/`` into path elements. If the path starts with ``/``, it
@@ -375,18 +406,42 @@ currently traversed actor, otherwise it will step “down” to the named child.
 It should be noted that the ``..`` in actor paths here always means the logical
 structure, i.e. the supervisor.
 
-If the path being looked up does not exist, a special actor reference is
-returned which behaves like the actor system’s dead letter queue but retains
-its identity (i.e. the path which was looked up).
+The path elements of an actor selection may contain wildcard patterns allowing for
+broadcasting of messages to that section::
 
-Remote actor addresses may also be looked up, if remoting is enabled::
+  // will look all children to serviceB with names starting with worker
+  context.actorSelection("/user/serviceB/worker*")
+  // will look up all siblings beneath same supervisor
+  context.actorSelection("../*")
 
-  context.actorFor("akka://app@otherhost:1234/user/serviceB")
+Messages can be sent via the :class:`ActorSelection` and the path of the
+:class:`ActorSelection` is looked up when delivering each message. If the selection
+does not match any actors the message will be dropped.
 
-These look-ups return a (possibly remote) actor reference immediately, so you
-will have to send to it and await a reply in order to verify that ``serviceB``
-is actually reachable and running. An example demonstrating actor look-up is
-given in :ref:`remote-lookup-sample-scala`.
+To acquire an :class:`ActorRef` for an :class:`ActorSelection` you need to
+send a message to the selection and use the ``sender`` reference of the reply from
+the actor. There is a built-in ``Identify`` message that all Actors will understand
+and automatically reply to with a ``ActorIdentity`` message containing the
+:class:`ActorRef`.
+
+.. includecode:: code/docs/actor/ActorDocSpec.scala#identify
+
+Remote actor addresses may also be looked up, if :ref:`remoting <remoting-scala>` is enabled::
+
+  context.actorSelection("akka.tcp://app@otherhost:1234/user/serviceB")
+
+An example demonstrating actor look-up is given in :ref:`remote-lookup-sample-scala`.
+
+.. note::
+
+  ``actorFor`` is deprecated in favor of ``actorSelection`` because actor references
+  acquired with ``actorFor`` behaves different for local and remote actors.
+  In the case of a local actor reference, the named actor needs to exist before the
+  lookup, or else the acquired reference will be an :class:`EmptyLocalActorRef`.
+  This will be true even if an actor with that exact path is created after acquiring
+  the actor reference. For remote actor references acquired with `actorFor` the
+  behaviour is different and sending messages to such a reference will under the hood
+  look up the actor by path on the remote system for every message send.
 
 Messages and immutability
 =========================
@@ -440,6 +495,8 @@ message. This gives the best concurrency and scalability characteristics.
 .. code-block:: scala
 
   actor ! "hello"
+
+.. _actors-tell-sender-scala:
 
 If invoked from within an Actor, then the sending actor reference will be
 implicitly passed along with the message and available to the receiving Actor
@@ -626,6 +683,8 @@ enables cleaning up of resources:
   actor and create its replacement in response to the :class:`Terminated`
   message which will eventually arrive.
 
+.. _poison-pill-scala:
+
 PoisonPill
 ----------
 
@@ -689,7 +748,7 @@ The other way of using :meth:`become` does not replace but add to the top of
 the behavior stack. In this case care must be taken to ensure that the number
 of “pop” operations (i.e. :meth:`unbecome`) matches the number of “push” ones
 in the long run, otherwise this amounts to a memory leak (which is why this
-behavior is not the default). 
+behavior is not the default).
 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#swapper
 
@@ -756,18 +815,22 @@ actor's state which have the same property. The :class:`Stash` trait’s
 implementation of :meth:`preRestart` will call ``unstashAll()``, which is
 usually the desired behavior.
 
+.. _killing-actors-scala:
 
 Killing an Actor
 ================
 
-You can kill an actor by sending a ``Kill`` message. This will restart the actor
-through regular supervisor semantics.
+You can kill an actor by sending a ``Kill`` message. This will cause the actor
+to throw a :class:`ActorKilledException`, triggering a failure. The actor will
+suspend operation and its supervisor will be asked how to handle the failure,
+which may mean resuming the actor, restarting it or terminating it completely.
+See :ref:`supervision-directives` for more information.
 
-Use it like this:
+Use ``Kill`` like this:
 
 .. code-block:: scala
 
-  // kill the actor called 'victim'
+  // kill the 'victim' actor
   victim ! Kill
 
 
@@ -780,29 +843,29 @@ kind of exception is thrown, e.g. a database exception.
 What happens to the Message
 ---------------------------
 
-If an exception is thrown while a message is being processed (so taken of his
-mailbox and handed over to the receive), then this message will be lost. It is
-important to understand that it is not put back on the mailbox. So if you want
-to retry processing of a message, you need to deal with it yourself by catching
-the exception and retry your flow. Make sure that you put a bound on the number
-of retries since you don't want a system to livelock (so consuming a lot of cpu
-cycles without making progress).
+If an exception is thrown while a message is being processed (i.e. taken out of
+its mailbox and handed over to the current behavior), then this message will be
+lost. It is important to understand that it is not put back on the mailbox. So
+if you want to retry processing of a message, you need to deal with it yourself
+by catching the exception and retry your flow. Make sure that you put a bound
+on the number of retries since you don't want a system to livelock (so
+consuming a lot of cpu cycles without making progress). Another possibility
+would be to have a look at the :ref:`PeekMailbox pattern <mailbox-acking>`.
 
 What happens to the mailbox
 ---------------------------
 
 If an exception is thrown while a message is being processed, nothing happens to
 the mailbox. If the actor is restarted, the same mailbox will be there. So all
-messages on that mailbox, will be there as well.
+messages on that mailbox will be there as well.
 
 What happens to the actor
 -------------------------
 
-If an exception is thrown, the actor instance is discarded and a new instance is
-created. This new instance will now be used in the actor references to this actor
-(so this is done invisible to the developer). Note that this means that current
-state of the failing actor instance is lost if you don't store and restore it in
-``preRestart`` and ``postRestart`` callbacks.
+If code within an actor throws an exception, that actor is suspended and the
+supervision process is started (see :ref:`supervision`). Depending on the
+supervisor’s decision the actor is resumed (as if nothing happened), restarted
+(wiping out its internal state and starting from scratch) or terminated.
 
 
 Extending Actors using PartialFunction chaining
@@ -817,3 +880,63 @@ extend that, either through inheritance or delegation, is to use
 Or:
 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#receive-orElse2
+
+Initialization patterns
+=======================
+
+The rich lifecycle hooks of Actors provide a useful toolkit to implement various initialization patterns. During the
+lifetime of an ``ActorRef``, an actor can potentially go through several restarts, where the old instance is replaced by
+a fresh one, invisibly to the outside observer who only sees the ``ActorRef``.
+
+One may think about the new instances as "incarnations". Initialization might be necessary for every incarnation
+of an actor, but sometimes one needs initialization to happen only at the birth of the first instance when the
+``ActorRef`` is created. The following sections provide patterns for different initialization needs.
+
+Initialization via constructor
+------------------------------
+
+Using the constructor for initialization has various benefits. First of all, it makes it possible to use ``val`` fields to store
+any state that does not change during the life of the actor instance, making the implementation of the actor more robust.
+The constructor is invoked for every incarnation of the actor, therefore the internals of the actor can always assume
+that proper initialization happened. This is also the drawback of this approach, as there are cases when one would
+like to avoid reinitializing internals on restart. For example, it is often useful to preserve child actors across
+restarts. The following section provides a pattern for this case.
+
+Initialization via preStart
+---------------------------
+
+The method ``preStart()`` of an actor is only called once directly during the initialization of the first instance, that
+is, at creation of its ``ActorRef``. In the case of restarts, ``preStart()`` is called from ``postRestart()``, therefore
+if not overridden, ``preStart()`` is called on every incarnation. However, overriding ``postRestart()`` one can disable
+this behavior, and ensure that there is only one call to ``preStart()``.
+
+One useful usage of this pattern is to disable creation of new ``ActorRefs`` for children during restarts. This can be
+achieved by overriding ``preRestart()``:
+
+.. includecode:: code/docs/actor/InitializationDocSpec.scala#preStartInit
+
+Please note, that the child actors are *still restarted*, but no new ``ActorRef`` is created. One can recursively apply
+the same principles for the children, ensuring that their ``preStart()`` method is called only at the creation of their
+refs.
+
+For more information see :ref:`supervision-restart`.
+
+Initialization via message passing
+----------------------------------
+
+There are cases when it is impossible to pass all the information needed for actor initialization in the constructor,
+for example in the presence of circular dependencies. In this case the actor should listen for an initialization message,
+and use ``become()`` or a finite state-machine state transition to encode the initialized and uninitialized states
+of the actor.
+
+.. includecode:: code/docs/actor/InitializationDocSpec.scala#messageInit
+
+If the actor may receive messages before it has been initialized, a useful tool can be the ``Stash`` to save messages
+until the initialization finishes, and replaying them after the actor became initialized.
+
+.. warning::
+
+  This pattern should be used with care, and applied only when none of the patterns above are applicable. One of
+  the potential issues is that messages might be lost when sent to remote actors. Also, publishing an ``ActorRef`` in
+  an uninitialized state might lead to the condition that it receives a user message before the initialization has been
+  done.

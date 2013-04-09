@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor.dungeon
@@ -7,7 +7,7 @@ package akka.actor.dungeon
 import scala.collection.immutable
 
 import akka.actor.{ InvalidActorNameException, ChildStats, ChildRestartStats, ChildNameReserved, ActorRef }
-import akka.dispatch.SystemMessage
+import akka.dispatch.sysmsg.{ EarliestFirstSystemMessageList, SystemMessageList, LatestFirstSystemMessageList, SystemMessage }
 import akka.util.Collections.{ EmptyImmutableSeq, PartialImmutableValuesIterable }
 
 /**
@@ -62,11 +62,7 @@ private[akka] object ChildrenContainer {
     override final def valuesIterator = stats.valuesIterator
   }
 
-  trait WaitingForChildren {
-    private var todo: SystemMessage = null
-    def enqueue(message: SystemMessage) = { message.next = todo; todo = message }
-    def dequeueAll(): SystemMessage = { val ret = SystemMessage.reverse(todo); todo = null; ret }
-  }
+  trait WaitingForChildren
 
   trait EmptyChildrenContainer extends ChildrenContainer {
     val emptyStats = immutable.TreeMap.empty[String, ChildStats]
@@ -131,7 +127,7 @@ private[akka] object ChildrenContainer {
 
     override def reserve(name: String): ChildrenContainer =
       if (c contains name)
-        throw new InvalidActorNameException("actor name " + name + " is not unique!")
+        throw new InvalidActorNameException(s"actor name [$name] is not unique!")
       else new NormalChildrenContainer(c.updated(name, ChildNameReserved))
 
     override def unreserve(name: String): ChildrenContainer = c.get(name) match {
@@ -193,7 +189,7 @@ private[akka] object ChildrenContainer {
       case Termination ⇒ throw new IllegalStateException("cannot reserve actor name '" + name + "': terminating")
       case _ ⇒
         if (c contains name)
-          throw new InvalidActorNameException("actor name " + name + " is not unique!")
+          throw new InvalidActorNameException(s"actor name [$name] is not unique!")
         else copy(c = c.updated(name, ChildNameReserved))
     }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -22,8 +22,11 @@ object DeployerSpec {
         }
         /service-direct2 {
           router = from-code
-          # nr-of-instances ignored when router = direct
+          # nr-of-instances ignored when router = from-code
           nr-of-instances = 2
+        }
+        /service3 {
+          dispatcher = my-dispatcher
         }
         /service-round-robin {
           router = round-robin
@@ -70,20 +73,33 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
     "be able to parse 'akka.actor.deployment._' with all default values" in {
       val service = "/service1"
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
-      deployment must be('defined)
 
       deployment must be(Some(
         Deploy(
           service,
           deployment.get.config,
           NoRouter,
-          NoScopeGiven)))
+          NoScopeGiven,
+          Deploy.NoDispatcherGiven)))
     }
 
     "use None deployment for undefined service" in {
       val service = "/undefined"
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
       deployment must be(None)
+    }
+
+    "be able to parse 'akka.actor.deployment._' with dispatcher config" in {
+      val service = "/service3"
+      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
+
+      deployment must be(Some(
+        Deploy(
+          service,
+          deployment.get.config,
+          NoRouter,
+          NoScopeGiven,
+          dispatcher = "my-dispatcher")))
     }
 
     "detect invalid number-of-instances" in {
@@ -101,11 +117,11 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       }
     }
 
-    "be able to parse 'akka.actor.deployment._' with direct router" in {
+    "be able to parse 'akka.actor.deployment._' with from-code router" in {
       assertRouting("/service-direct", NoRouter, "/service-direct")
     }
 
-    "ignore nr-of-instances with direct router" in {
+    "ignore nr-of-instances with from-code router" in {
       assertRouting("/service-direct2", NoRouter, "/service-direct2")
     }
 

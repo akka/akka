@@ -15,6 +15,8 @@ import scala.collection.immutable
 /**
  * An actor handling the connection state machine for an outgoing connection
  * to be established.
+ *
+ * INTERNAL API
  */
 private[io] class TcpOutgoingConnection(_tcp: TcpExt,
                                         commander: ActorRef,
@@ -47,13 +49,19 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
         log.debug("Connection established")
         completeConnect(commander, options)
       } catch {
-        case e: IOException ⇒ handleError(commander, e)
+        case e: IOException ⇒
+          if (tcp.Settings.TraceLogging) log.debug("Could not establish connection due to {}", e)
+          closedMessage = TcpConnection.CloseInformation(Set(commander), connect.failureMessage)
+          throw e
       }
   }
 
 }
 
-object TcpOutgoingConnection {
+/**
+ * INTERNAL API
+ */
+private[io] object TcpOutgoingConnection {
   private def newSocketChannel() = {
     val channel = SocketChannel.open()
     channel.configureBlocking(false)

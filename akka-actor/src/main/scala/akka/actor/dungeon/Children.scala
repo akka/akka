@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor.dungeon
@@ -182,9 +182,14 @@ private[akka] trait Children { this: ActorCell ⇒
       // this name will either be unreserved or overwritten with a real child below
       val actor =
         try {
-          cell.provider.actorOf(cell.systemImpl, props, cell.self, cell.self.path / name,
+          val childPath = (cell.self.path / name).withUid(ActorCell.newUid())
+          cell.provider.actorOf(cell.systemImpl, props, cell.self, childPath,
             systemService = systemService, deploy = None, lookupDeploy = true, async = async)
         } catch {
+          case e: InterruptedException ⇒
+            unreserveChild(name)
+            Thread.interrupted() // clear interrupted flag before throwing according to java convention
+            throw e
           case NonFatal(e) ⇒
             unreserveChild(name)
             throw e

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -11,8 +11,8 @@ import akka.actor.Address
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class NodeMetricsSpec extends WordSpec with MustMatchers {
 
-  val node1 = Address("tcp.akka", "sys", "a", 2554)
-  val node2 = Address("tcp.akka", "sys", "a", 2555)
+  val node1 = Address("akka.tcp", "sys", "a", 2554)
+  val node2 = Address("akka.tcp", "sys", "a", 2555)
 
   "NodeMetrics must" must {
 

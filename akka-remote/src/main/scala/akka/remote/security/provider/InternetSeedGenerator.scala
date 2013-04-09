@@ -19,7 +19,7 @@ import org.uncommons.maths.random.{ SeedGenerator, SeedException, SecureRandomSe
 import scala.collection.immutable
 
 /**
- * Internal API
+ * INTERNAL API
  * Seed generator that maintains multiple strategies for seed
  * generation and will delegate to the best one available for the
  * current operating environment.

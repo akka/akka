@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote.transport
 
 import FailureInjectorTransportAdapter._
@@ -12,31 +15,45 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NoStackTrace
 
+@SerialVersionUID(1L)
 case class FailureInjectorException(msg: String) extends AkkaException(msg) with NoStackTrace
 
 class FailureInjectorProvider extends TransportAdapterProvider {
 
-  def apply(wrappedTransport: Transport, system: ExtendedActorSystem): Transport =
+  override def create(wrappedTransport: Transport, system: ExtendedActorSystem): Transport =
     new FailureInjectorTransportAdapter(wrappedTransport, system)
 
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] object FailureInjectorTransportAdapter {
   val FailureInjectorSchemeIdentifier = "gremlin"
 
   trait FailureInjectorCommand
+  @SerialVersionUID(1L)
   case class All(mode: GremlinMode)
+  @SerialVersionUID(1L)
   case class One(remoteAddress: Address, mode: GremlinMode)
 
   sealed trait GremlinMode
-  case object PassThru extends GremlinMode
+  @SerialVersionUID(1L)
+  case object PassThru extends GremlinMode {
+    /**
+     * Java API: get the singleton instance
+     */
+    def getInstance = this
+  }
+  @SerialVersionUID(1L)
   case class Drop(outboundDropP: Double, inboundDropP: Double) extends GremlinMode
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transport, val extendedSystem: ExtendedActorSystem)
   extends AbstractTransportAdapter(wrappedTransport)(extendedSystem.dispatcher) with AssociationEventListener {
-
-  import extendedSystem.dispatcher
 
   private def rng = ThreadLocalRandom.current()
   private val log = Logging(extendedSystem, "FailureInjector (gremlin)")
@@ -48,15 +65,15 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
   override val addedSchemeIdentifier = FailureInjectorSchemeIdentifier
   protected def maximumOverhead = 0
 
-  override def managementCommand(cmd: Any, statusPromise: Promise[Boolean]): Unit = cmd match {
+  override def managementCommand(cmd: Any): Future[Boolean] = cmd match {
     case All(mode) ⇒
       allMode = mode
-      statusPromise.success(true)
+      Future.successful(true)
     case One(address, mode) ⇒
       //  don't care about the protocol part - we are injected in the stack anyway!
       addressChaosTable.put(address.copy(protocol = "", system = ""), mode)
-      statusPromise.success(true)
-    case _ ⇒ wrappedTransport.managementCommand(cmd, statusPromise)
+      Future.successful(true)
+    case _ ⇒ wrappedTransport.managementCommand(cmd)
   }
 
   protected def interceptListen(listenAddress: Address,
@@ -111,6 +128,9 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
   }
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] case class FailureInjectorHandle(_wrappedHandle: AssociationHandle,
                                                  private val gremlinAdapter: FailureInjectorTransportAdapter)
   extends AbstractTransportAdapterHandle(_wrappedHandle, FailureInjectorSchemeIdentifier)
@@ -132,7 +152,8 @@ private[remote] case class FailureInjectorHandle(_wrappedHandle: AssociationHand
 
   override def disassociate(): Unit = wrappedHandle.disassociate()
 
-  override def notify(ev: HandleEvent): Unit = if (!gremlinAdapter.shouldDropInbound(wrappedHandle.remoteAddress))
-    upstreamListener notify ev
+  override def notify(ev: HandleEvent): Unit =
+    if (!gremlinAdapter.shouldDropInbound(wrappedHandle.remoteAddress))
+      upstreamListener notify ev
 
 }

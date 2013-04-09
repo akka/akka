@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.event
 
@@ -67,19 +67,24 @@ trait LoggingBus extends ActorEventBus {
     _logLevel = level
   }
 
-  /**
-   * Internal Akka use only
-   */
-  private[akka] def startStdoutLogger(config: Settings) {
+  private def setUpStdoutLogger(config: Settings) {
     val level = levelFor(config.StdoutLogLevel) getOrElse {
-      StandardOutLogger.print(Error(new EventHandlerException, simpleName(this), this.getClass, "unknown akka.stdout-loglevel " + config.StdoutLogLevel))
+      // only log initialization errors directly with StandardOutLogger.print
+      StandardOutLogger.print(Error(new LoggerException, simpleName(this), this.getClass, "unknown akka.stdout-loglevel " + config.StdoutLogLevel))
       ErrorLevel
     }
     AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(StandardOutLogger, classFor(l)))
     guard.withGuard {
-      loggers = Seq(StandardOutLogger)
+      loggers :+= StandardOutLogger
       _logLevel = level
     }
+  }
+
+  /**
+   * Internal Akka use only
+   */
+  private[akka] def startStdoutLogger(config: Settings) {
+    setUpStdoutLogger(config)
     publish(Debug(simpleName(this), this.getClass, "StandardOutLogger started"))
   }
 
@@ -89,13 +94,19 @@ trait LoggingBus extends ActorEventBus {
   private[akka] def startDefaultLoggers(system: ActorSystemImpl) {
     val logName = simpleName(this) + "(" + system + ")"
     val level = levelFor(system.settings.LogLevel) getOrElse {
-      StandardOutLogger.print(Error(new EventHandlerException, logName, this.getClass, "unknown akka.stdout-loglevel " + system.settings.LogLevel))
+      // only log initialization errors directly with StandardOutLogger.print
+      StandardOutLogger.print(Error(new LoggerException, logName, this.getClass, "unknown akka.loglevel " + system.settings.LogLevel))
       ErrorLevel
     }
     try {
       val defaultLoggers = system.settings.EventHandlers match {
-        case Nil     ⇒ "akka.event.Logging$DefaultLogger" :: Nil
-        case loggers ⇒ loggers
+        case Nil ⇒ system.settings.Loggers match {
+          case Nil     ⇒ classOf[DefaultLogger].getName :: Nil
+          case loggers ⇒ loggers
+        }
+        case loggers ⇒
+          publish(Warning(logName, this.getClass, "[akka.event-handlers] config is deprecated, use [akka.loggers]"))
+          loggers
       }
       val myloggers =
         for {
@@ -106,7 +117,7 @@ trait LoggingBus extends ActorEventBus {
             case actorClass ⇒ addLogger(system, actorClass, level, logName)
           }).recover({
             case e ⇒ throw new ConfigurationException(
-              "Event Handler specified in config can't be loaded [" + loggerName +
+              "Logger specified in config can't be loaded [" + loggerName +
                 "] due to [" + e.toString + "]", e)
           }).get
         }
@@ -140,10 +151,10 @@ trait LoggingBus extends ActorEventBus {
   /**
    * Internal Akka use only
    */
-  private[akka] def stopDefaultLoggers() {
+  private[akka] def stopDefaultLoggers(system: ActorSystem) {
     val level = _logLevel // volatile access before reading loggers
     if (!(loggers contains StandardOutLogger)) {
-      AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(StandardOutLogger, classFor(l)))
+      setUpStdoutLogger(system.settings)
       publish(Debug(simpleName(this), this.getClass, "shutting down: StandardOutLogger started"))
     }
     for {
@@ -166,7 +177,13 @@ trait LoggingBus extends ActorEventBus {
   private def addLogger(system: ActorSystemImpl, clazz: Class[_ <: Actor], level: LogLevel, logName: String): ActorRef = {
     val name = "log" + Extension(system).id() + "-" + simpleName(clazz)
     val actor = system.systemActorOf(Props(clazz), name)
-    implicit def timeout = system.settings.EventHandlerStartTimeout
+    implicit def timeout =
+      if (system.settings.EventHandlerStartTimeout.duration >= Duration.Zero) {
+        publish(Warning(logName, this.getClass,
+          "[akka.event-handler-startup-timeout] config is deprecated, use [akka.logger-startup-timeout]"))
+        system.settings.EventHandlerStartTimeout
+      } else system.settings.LoggerStartTimeout
+
     import akka.pattern.ask
     val response = try Await.result(actor ? InitializeLogger(this), timeout.duration) catch {
       case _: TimeoutException ⇒
@@ -353,8 +370,8 @@ object LogSource {
  *
  * <pre><code>
  * akka {
- *   event-handlers = ["akka.slf4j.Slf4jEventHandler"] # for example
- *   loglevel = "INFO"        # used when normal logging ("event-handlers") has been started
+ *   loggers = ["akka.slf4j.Slf4jLogger"] # for example
+ *   loglevel = "INFO"        # used when normal logging ("loggers") has been started
  *   stdout-loglevel = "WARN" # used during application start-up until normal logging is available
  * }
  * </code></pre>
@@ -414,16 +431,25 @@ object Logging {
   final val DebugLevel = LogLevel(4)
 
   /**
+   * Internal Akka use only
+   *
+   * Don't include the OffLevel in the AllLogLevels since we should never subscribe
+   * to some kind of OffEvent.
+   */
+  private final val OffLevel = LogLevel(Int.MinValue)
+
+  /**
    * Returns the LogLevel associated with the given string,
    * valid inputs are upper or lowercase (not mixed) versions of:
    * "error", "warning", "info" and "debug"
    */
-  def levelFor(s: String): Option[LogLevel] = s match {
-    case "ERROR" | "error"     ⇒ Some(ErrorLevel)
-    case "WARNING" | "warning" ⇒ Some(WarningLevel)
-    case "INFO" | "info"       ⇒ Some(InfoLevel)
-    case "DEBUG" | "debug"     ⇒ Some(DebugLevel)
-    case unknown               ⇒ None
+  def levelFor(s: String): Option[LogLevel] = s.toLowerCase match {
+    case "off"     ⇒ Some(OffLevel)
+    case "error"   ⇒ Some(ErrorLevel)
+    case "warning" ⇒ Some(WarningLevel)
+    case "info"    ⇒ Some(InfoLevel)
+    case "debug"   ⇒ Some(DebugLevel)
+    case unknown   ⇒ None
   }
 
   /**
@@ -531,7 +557,7 @@ object Logging {
    * Artificial exception injected into Error events if no Throwable is
    * supplied; used for getting a stack dump of error locations.
    */
-  class EventHandlerException extends AkkaException("")
+  class LoggerException extends AkkaException("")
 
   /**
    * Exception that wraps a LogEvent.
@@ -544,7 +570,7 @@ object Logging {
   /**
    * Base type of LogEvents
    */
-  sealed trait LogEvent {
+  sealed trait LogEvent extends NoSerializationVerificationNeeded {
     /**
      * The thread that created this log event
      */
@@ -709,14 +735,17 @@ object Logging {
     val path: ActorPath = new RootActorPath(Address("akka", "all-systems"), "/StandardOutLogger")
     def provider: ActorRefProvider = throw new UnsupportedOperationException("StandardOutLogger does not provide")
     override val toString = "StandardOutLogger"
-    override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = print(message)
+    override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
+      if (message == null) throw new InvalidMessageException("Message is null")
+      print(message)
+    }
   }
 
   val StandardOutLogger = new StandardOutLogger
 
   /**
    * Actor wrapper around the standard output logger. If
-   * <code>akka.event-handlers</code> is not set, it defaults to just this
+   * <code>akka.loggers</code> is not set, it defaults to just this
    * logger.
    */
   class DefaultLogger extends Actor with StdOutLogger {
@@ -843,7 +872,7 @@ trait LoggingAdapter {
   }
 
   def format(t: String, arg: Any*): String = {
-    val sb = new StringBuilder(64)
+    val sb = new java.lang.StringBuilder(64)
     var p = 0
     var rest = t
     while (p < arg.length) {

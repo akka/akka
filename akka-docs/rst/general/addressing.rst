@@ -29,11 +29,11 @@ There are several different types of actor references that are supported
 depending on the configuration of the actor system:
 
 - Purely local actor references are used by actor systems which are not
-  configured to support networking functions. These actor references cannot
-  ever be sent across a network connection while retaining their functionality.
+  configured to support networking functions. These actor references will not
+  function if sent across a network connection to a remote JVM.
 - Local actor references when remoting is enabled are used by actor systems
   which support networking functions for those references which represent
-  actors within the same JVM. In order to be recognizable also when sent to
+  actors within the same JVM. In order to also be reachable when sent to
   other network nodes, these references include protocol and remote addressing
   information.
 - There is a subtype of local actor references which is used for routers (i.e.
@@ -42,21 +42,21 @@ depending on the configuration of the actor system:
   them dispatches to one of their children directly instead.
 - Remote actor references represent actors which are reachable using remote
   communication, i.e. sending messages to them will serialize the messages
-  transparently and send them to the other JVM.
+  transparently and send them to the remote JVM.
 - There are several special types of actor references which behave like local
   actor references for all practical purposes:
 
-  - :class:`PromiseActorRef` is the special representation of a :meth:`Promise` for
-    the purpose of being completed by the response from an actor; it is created
-    by the :meth:`ActorRef.ask` invocation.
+  - :class:`PromiseActorRef` is the special representation of a :meth:`Promise`
+    for the purpose of being completed by the response from an actor.
+    :meth:`akka.pattern.ask` creates this actor reference.
   - :class:`DeadLetterActorRef` is the default implementation of the dead
-    letters service, where all messages are re-routed whose routees are shut
-    down or non-existent.
-  - :class:`EmptyLocalActorRef` is what is returned when looking up a
-    non-existing local actor path: it is equivalent to a
-    :class:`DeadLetterActorRef`, but it retains its path so that it can be sent
-    over the network and compared to other existing actor refs for that path,
-    some of which might have been obtained before the actor stopped existing.
+    letters service to which Akka routes all messages whose destinations
+    are shut down or non-existent.
+  - :class:`EmptyLocalActorRef` is what Akka returns when looking up a
+    non-existent local actor path: it is equivalent to a
+    :class:`DeadLetterActorRef`, but it retains its path so that Akka can send
+    it over the network and compare it to other existing actor references for
+    that path, some of which might have been obtained before the actor died.
 
 - And then there are some one-off internal implementations which you should
   never really see:
@@ -91,6 +91,26 @@ followed by the concatenation of the path elements, from root guardian to the
 designated actor; the path elements are the names of the traversed actors and
 are separated by slashes.
 
+What is the Difference Between Actor Reference and Path?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An actor reference designates a single actor and the life-cycle of the reference
+matches that actor’s life-cycle; an actor path represents a name which may or
+may not be inhabited by an actor and the path itself does not have a life-cycle,
+it never becomes invalid. You can create an actor path without creating an actor,
+but you cannot create an actor reference without creating corresponding actor.
+
+.. note::
+
+  That definition does not hold for ``actorFor``, which is one of the reasons why
+  ``actorFor`` is deprecated in favor of ``actorSelection``.
+
+You can create an actor, terminate it, and then create a new actor with the same
+actor path. The newly created actor is a new incarnation of the actor. It is not
+the same actor. An actor reference to the old incarnation is not valid for the new
+incarnation. Messages sent to the old actor reference will not be delivered
+to the new incarnation even though they have the same path.
+
 Actor Path Anchors
 ^^^^^^^^^^^^^^^^^^
 
@@ -98,14 +118,14 @@ Each actor path has an address component, describing the protocol and location
 by which the corresponding actor is reachable, followed by the names of the
 actors in the hierarchy from the root up. Examples are::
 
-  "akka://my-sys/user/service-a/worker1"               // purely local
-  "akka://my-sys@host.example.com:5678/user/service-b" // local or remote
-  "cluster://my-cluster/service-c"                     // clustered (Future Extension)
+  "akka://my-sys/user/service-a/worker1"                   // purely local
+  "akka.tcp://my-sys@host.example.com:5678/user/service-b" // remote
+  "cluster://my-cluster/service-c"                         // clustered (Future Extension)
 
-Here, ``akka`` is the default remote protocol for the 2.0 release, and others
-are pluggable. The interpretation of the host & port part (i.e.
-``serv.example.com:5678`` in the example) depends on the transport mechanism
-used, but it must abide by the URI structural rules.
+Here, ``akka.tcp`` is the default remote transport for the 2.2 release; other transports
+are pluggable. A remote host using UDP would be accessible by using ``akka.udp``.
+The interpretation of the host and port part (i.e.``serv.example.com:5678`` in the example)
+depends on the transport mechanism used, but it must abide by the URI structural rules.
 
 Logical Actor Paths
 ^^^^^^^^^^^^^^^^^^^
@@ -121,7 +141,7 @@ Physical Actor Paths
 
 While the logical actor path describes the functional location within one actor
 system, configuration-based remote deployment means that an actor may be
-created on a different network host as its parent, i.e. within a different
+created on a different network host than its parent, i.e. within a different
 actor system. In this case, following the actor path from the root guardian up
 entails traversing the network, which is a costly operation. Therefore, each
 actor also has a physical path, starting at the root guardian of the actor
@@ -143,7 +163,7 @@ therefore provides a translation from virtual paths to physical paths which may
 change in reaction to node failures, cluster rebalancing, etc.
 
 *This area is still under active development, expect updates in this section
-for the 2.1 release.*
+for the Akka release code named Rollins .*
 
 How are Actor References obtained?
 ----------------------------------
@@ -157,7 +177,7 @@ querying the logical actor hierarchy.
 concerning the facilities mentioned below, the exact semantics of clustered
 actor references and their paths—while certainly as similar as possible—may
 differ in certain aspects, owing to the virtual nature of those paths. Expect
-updates for the 2.1 release.*
+updates for the Akka release code named Rollins.*
 
 Creating Actors
 ^^^^^^^^^^^^^^^
@@ -174,35 +194,43 @@ Looking up Actors by Concrete Path
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In addition, actor references may be looked up using the
-:meth:`ActorSystem.actorFor` method, which returns an (unverified) local,
-remote or clustered actor reference. Sending messages to such a reference or
-attempting to observe its liveness will traverse the actor hierarchy of the
-actor system from top to bottom by passing messages from parent to child until
-either the target is reached or failure is certain, i.e. a name in the path
-does not exist (in practice this process will be optimized using caches, but it
-still has added cost compared to using the physical actor path, which can for
-example be obtained from the sender reference included in replies from that
-actor). The messages passed are handled automatically by Akka, so this process
-is not visible to client code.
+:meth:`ActorSystem.actorSelection` method. The selection can be used for
+communicating with said actor and the actor corresponding to the selection
+is looked up when delivering each message.
+
+To acquire an :class:`ActorRef` that is bound to the life-cycle of a specific actor
+you need to send a message, such as the built-in :class:`Identify` message, to the actor
+and use the ``sender`` reference of a reply from the actor.
+
+.. note::
+
+  ``actorFor`` is deprecated in favor of ``actorSelection`` because actor references
+  acquired with ``actorFor`` behave differently for local and remote actors.
+  In the case of a local actor reference, the named actor needs to exist before the
+  lookup, or else the acquired reference will be an :class:`EmptyLocalActorRef`.
+  This will be true even if an actor with that exact path is created after acquiring
+  the actor reference. For remote actor references acquired with `actorFor` the
+  behaviour is different and sending messages to such a reference will under the hood
+  look up the actor by path on the remote system for every message send.
 
 Absolute vs. Relative Paths
 ```````````````````````````
 
-In addition to :meth:`ActorSystem.actorFor` there is also
-:meth:`ActorContext.actorFor`, which is available inside any actor as
-``context.actorFor``. This yields an actor reference much like its twin on
+In addition to :meth:`ActorSystem.actorSelection` there is also
+:meth:`ActorContext.actorSelection`, which is available inside any actor as
+``context.actorSelection``. This yields an actor selection much like its twin on
 :class:`ActorSystem`, but instead of looking up the path starting from the root
 of the actor tree it starts out on the current actor. Path elements consisting
 of two dots (``".."``) may be used to access the parent actor. You can for
 example send a message to a specific sibling::
 
-  context.actorFor("../brother") ! msg
+  context.actorSelection("../brother") ! msg
 
 Absolute paths may of course also be looked up on `context` in the usual way, i.e.
 
 .. code-block:: scala
 
-  context.actorFor("/user/serviceA") ! msg
+  context.actorSelection("/user/serviceA") ! msg
 
 will work as expected.
 
@@ -230,10 +258,10 @@ extracting the sender references, and then watch all discovered concrete
 actors. This scheme of resolving a selection may be improved upon in a future
 release.
 
-.. _actorOf-vs-actorFor:
+.. _actorOf-vs-actorSelection:
 
-Summary: ``actorOf`` vs. ``actorFor``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Summary: ``actorOf`` vs. ``actorSelection`` vs. ``actorFor``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note::
 
@@ -244,21 +272,46 @@ Summary: ``actorOf`` vs. ``actorFor``
     child of the context on which this method is invoked (which may be any
     actor or actor system).
 
-  - ``actorFor`` only ever looks up an existing actor, i.e. does not create
-    one.
+  - ``actorSelection`` only ever looks up existing actors when messages are
+    delivered, i.e. does not create actors, or verify existence of actors
+    when the selection is created.
+
+  - ``actorFor`` (deprecated in favor of actorSelection) only ever looks up an
+    existing actor, i.e. does not create one.
+
+Actor Reference and Path Equality
+---------------------------------
+
+Equality of ``ActorRef`` match the intention that an ``ActorRef`` corresponds to
+the target actor incarnation. Two actor references are compared equal when they have
+the same path and point to the same actor incarnation. A reference pointing to a
+terminated actor does not compare equal to a reference pointing to another (re-created)
+actor with the same path. Note that a restart of an actor caused by a failure still
+means that it is the same actor incarnation, i.e. a restart is not visible for the
+consumer of the ``ActorRef``.
+
+Remote actor references acquired with ``actorFor`` do not include the full
+information about the underlying actor identity and therefore such references
+do not compare equal to references acquired with ``actorOf``, ``sender``,
+or ``context.self``. Because of this ``actorFor`` is deprecated in favor of
+``actorSelection``.
+
+If you need to keep track of actor references in a collection and do not care about
+the exact actor incarnation you can use the ``ActorPath`` as key, because the identifier
+of the target actor is not taken into account when comparing actor paths.
 
 Reusing Actor Paths
 -------------------
 
-When an actor is terminated, its path will point to the dead letter mailbox,
+When an actor is terminated, its reference will point to the dead letter mailbox,
 DeathWatch will publish its final transition and in general it is not expected
 to come back to life again (since the actor life cycle does not allow this).
 While it is possible to create an actor at a later time with an identical
 path—simply due to it being impossible to enforce the opposite without keeping
 the set of all actors ever created available—this is not good practice: remote
-actor references which “died” suddenly start to work again, but without any
-guarantee of ordering between this transition and any other event, hence the
-new inhabitant of the path may receive messages which were destined for the
+actor references acquired with ``actorFor`` which “died” suddenly start to work
+again, but without any guarantee of ordering between this transition and any
+other event, hence the new inhabitant of the path may receive messages which were destined for the
 previous tenant.
 
 It may be the right thing to do in very specific circumstances, but make sure

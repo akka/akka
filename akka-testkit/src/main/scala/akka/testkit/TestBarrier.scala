@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.testkit
@@ -38,5 +38,5 @@ class TestBarrier(count: Int) {
     }
   }
 
-  def reset = barrier.reset
+  def reset(): Unit = barrier.reset()
 }

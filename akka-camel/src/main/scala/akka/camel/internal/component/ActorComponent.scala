@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.camel.internal.component
@@ -162,6 +162,8 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
           case Failure(e: TimeoutException)    ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
           case Failure(throwable)              ⇒ exchange.setFailure(FailureResult(throwable))
         }
+
+      // FIXME #3074 how do we solve this with actorSelection?
       val async = try actorFor(endpoint.path).ask(messageFor(exchange))(Timeout(endpoint.replyTimeout)) catch { case NonFatal(e) ⇒ Future.failed(e) }
       implicit val ec = camel.system.dispatcher // FIXME which ExecutionContext should be used here?
       async.onComplete(action andThen { _ ⇒ callback.done(false) })
@@ -170,6 +172,7 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
 
   }
 
+  // FIXME #3074 how do we solve this with actorSelection?
   private def fireAndForget(message: CamelMessage, exchange: CamelExchangeAdapter): Unit =
     try { actorFor(endpoint.path) ! message } catch { case NonFatal(e) ⇒ exchange.setFailure(new FailureResult(e)) }
 
@@ -205,6 +208,7 @@ private[camel] case class ActorEndpointPath private (actorPath: String) {
   require(actorPath.startsWith("akka://"))
 
   def findActorIn(system: ActorSystem): Option[ActorRef] = {
+    // FIXME #3074 how do we solve this with actorSelection?
     val ref = system.actorFor(actorPath)
     if (ref.isTerminated) None else Some(ref)
   }

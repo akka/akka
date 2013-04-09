@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.camel.internal
 
 import akka.actor._
@@ -147,7 +150,7 @@ private[camel] class ProducerRegistrar(activationTracker: ActorRef) extends Acto
         try {
           val endpoint = camelContext.getEndpoint(endpointUri)
           val processor = new SendProcessor(endpoint)
-          camelObjects += producer -> (endpoint, processor)
+          camelObjects = camelObjects.updated(producer, endpoint -> processor)
           // if this throws, the supervisor stops the producer and de-registers it on termination
           processor.start()
           producer ! CamelProducerObjects(endpoint, processor)
@@ -156,10 +159,10 @@ private[camel] class ProducerRegistrar(activationTracker: ActorRef) extends Acto
           case NonFatal(e) ⇒ throw new ActorActivationException(producer, e)
         }
       } else {
-        camelObjects.get(producer).foreach { case (endpoint, processor) ⇒ producer ! CamelProducerObjects(endpoint, processor) }
+        camelObjects.get(producer) foreach { case (endpoint, processor) ⇒ producer ! CamelProducerObjects(endpoint, processor) }
       }
     case DeRegister(producer) ⇒
-      camelObjects.get(producer).foreach {
+      camelObjects.get(producer) foreach {
         case (_, processor) ⇒
           try {
             camelObjects.get(producer).foreach(_._2.stop())

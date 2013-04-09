@@ -1,16 +1,20 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor.dungeon
 
 import scala.annotation.tailrec
-import akka.actor.{ ActorRef, ActorCell }
-import akka.dispatch.{ Terminate, SystemMessage, Suspend, Resume, Recreate, MessageDispatcher, Mailbox, Envelope, Create }
+import akka.dispatch.{ MessageDispatcher, Mailbox, Envelope }
+import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
 import akka.util.Unsafe
-import scala.util.control.NonFatal
 import akka.dispatch.NullMessage
+import akka.actor.{ NoSerializationVerificationNeeded, InvalidMessageException, ActorRef, ActorCell }
+import akka.serialization.SerializationExtension
+import scala.util.control.NonFatal
+import scala.util.control.Exception.Catcher
+import scala.concurrent.ExecutionContext
 
 private[akka] trait Dispatch { this: ActorCell ⇒
 
@@ -30,11 +34,6 @@ private[akka] trait Dispatch { this: ActorCell ⇒
 
   val dispatcher: MessageDispatcher = system.dispatchers.lookup(props.dispatcher)
 
-  /**
-   * UntypedActorContext impl
-   */
-  final def getDispatcher(): MessageDispatcher = dispatcher
-
   final def isTerminated: Boolean = mailbox.isClosed
 
   /**
@@ -42,7 +41,7 @@ private[akka] trait Dispatch { this: ActorCell ⇒
    * reasonably different from the previous UID of a possible actor with the same path,
    * which can be achieved by using ThreadLocalRandom.current.nextInt().
    */
-  final def init(uid: Int, sendSupervise: Boolean): this.type = {
+  final def init(sendSupervise: Boolean): this.type = {
     /*
      * Create the mailbox and enqueue the Create() message to ensure that
      * this is processed before anything else.
@@ -51,11 +50,11 @@ private[akka] trait Dispatch { this: ActorCell ⇒
     mailbox.setActor(this)
 
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-    mailbox.systemEnqueue(self, Create(uid))
+    mailbox.systemEnqueue(self, Create())
 
     if (sendSupervise) {
       // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-      parent.sendSystemMessage(akka.dispatch.Supervise(self, async = false, uid))
+      parent.sendSystemMessage(akka.dispatch.sysmsg.Supervise(self, async = false))
       parent ! NullMessage // read ScalaDoc of NullMessage to see why
     }
     this
@@ -70,50 +69,36 @@ private[akka] trait Dispatch { this: ActorCell ⇒
     this
   }
 
-  // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def suspend(): Unit =
-    try dispatcher.systemDispatch(this, Suspend())
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
-    }
+  private def handleException: Catcher[Unit] = {
+    case e: InterruptedException ⇒
+      system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "interrupted during message send"))
+      Thread.currentThread.interrupt()
+    case NonFatal(e) ⇒
+      system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
+  }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def resume(causedByFailure: Throwable): Unit =
-    try dispatcher.systemDispatch(this, Resume(causedByFailure))
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
-    }
+  final def suspend(): Unit = try dispatcher.systemDispatch(this, Suspend()) catch handleException
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def restart(cause: Throwable): Unit =
-    try dispatcher.systemDispatch(this, Recreate(cause))
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
-    }
+  final def resume(causedByFailure: Throwable): Unit = try dispatcher.systemDispatch(this, Resume(causedByFailure)) catch handleException
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def stop(): Unit =
-    try dispatcher.systemDispatch(this, Terminate())
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
-    }
+  final def restart(cause: Throwable): Unit = try dispatcher.systemDispatch(this, Recreate(cause)) catch handleException
 
-  def tell(message: Any, sender: ActorRef): Unit =
-    try dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender, system))
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
-    }
+  // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+  final def stop(): Unit = try dispatcher.systemDispatch(this, Terminate()) catch handleException
 
-  override def sendSystemMessage(message: SystemMessage): Unit =
-    try dispatcher.systemDispatch(this, message)
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
-    }
+  def sendMessage(msg: Envelope): Unit =
+    try {
+      val m = msg.message.asInstanceOf[AnyRef]
+      if (system.settings.SerializeAllMessages && !m.isInstanceOf[NoSerializationVerificationNeeded]) {
+        val s = SerializationExtension(system)
+        s.deserialize(s.serialize(m).get, m.getClass).get
+      }
+      dispatcher.dispatch(this, msg)
+    } catch handleException
+
+  override def sendSystemMessage(message: SystemMessage): Unit = try dispatcher.systemDispatch(this, message) catch handleException
 
 }

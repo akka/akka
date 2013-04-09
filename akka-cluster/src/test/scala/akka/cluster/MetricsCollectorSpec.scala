@@ -1,6 +1,6 @@
 /*
 
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -128,5 +128,5 @@ trait MetricsCollectorFactory { this: AkkaSpec ⇒
           new JmxMetricsCollector(selfAddress, defaultDecayFactor)
       }.get
 
-  def isSigar(collector: MetricsCollector): Boolean = collector.isInstanceOf[SigarMetricsCollector]
+  private[cluster] def isSigar(collector: MetricsCollector): Boolean = collector.isInstanceOf[SigarMetricsCollector]
 }

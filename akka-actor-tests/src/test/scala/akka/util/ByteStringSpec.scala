@@ -39,7 +39,7 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
   implicit val arbitraryByteStringSlice: Arbitrary[ByteStringSlice] = Arbitrary {
     for {
       xs ← arbitraryByteString.arbitrary
-      from ← choose(0, xs.length)
+      from ← choose(0, xs.length - 1)
       until ← choose(from, xs.length)
     } yield (xs, from, until)
   }
@@ -89,7 +89,7 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
     val (bsAIt, bsBIt) = (a.iterator, b.iterator)
     val (vecAIt, vecBIt) = (Vector(a: _*).iterator.buffered, Vector(b: _*).iterator.buffered)
     (body(bsAIt, bsBIt) == body(vecAIt, vecBIt)) &&
-      (!strict || (bsAIt.toSeq, bsBIt.toSeq) == (vecAIt.toSeq, vecBIt.toSeq))
+      (!strict || (bsAIt.toSeq -> bsBIt.toSeq) == (vecAIt.toSeq -> vecBIt.toSeq))
   }
 
   def likeVecBld(body: Builder[Byte, _] ⇒ Unit): Boolean = {
@@ -269,9 +269,19 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
             (b.compact eq b)
         }
       }
+
+      "asByteBuffers" in {
+        check { (a: ByteString) ⇒ if (a.isCompact) a.asByteBuffers.size == 1 && a.asByteBuffers.head == a.asByteBuffer else a.asByteBuffers.size > 0 }
+        check { (a: ByteString) ⇒ a.asByteBuffers.foldLeft(ByteString.empty) { (bs, bb) ⇒ bs ++ ByteString(bb) } == a }
+        check { (a: ByteString) ⇒ a.asByteBuffers.forall(_.isReadOnly) }
+        check { (a: ByteString) ⇒
+          import scala.collection.JavaConverters.iterableAsScalaIterableConverter;
+          a.asByteBuffers.zip(a.getByteBuffers().asScala).forall(x ⇒ x._1 == x._2)
+        }
+      }
     }
     "behave like a Vector" when {
-      "concatenating" in { check { (a: ByteString, b: ByteString) ⇒ likeVectors(a, b) { (a, b) ⇒ (a ++ b) } } }
+      "concatenating" in { check { (a: ByteString, b: ByteString) ⇒ likeVectors(a, b) { _ ++ _ } } }
 
       "calling apply" in {
         check { slice: ByteStringSlice ⇒

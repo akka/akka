@@ -1,24 +1,28 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote.transport
 
-import akka.{ OnlyCauseStackTrace, AkkaException }
+import akka.ConfigurationException
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
 import akka.pattern.pipe
+import akka.remote._
+import akka.remote.transport.ActorTransportAdapter._
 import akka.remote.transport.AkkaPduCodec._
 import akka.remote.transport.AkkaProtocolTransport._
 import akka.remote.transport.AssociationHandle._
 import akka.remote.transport.ProtocolStateActor._
 import akka.remote.transport.Transport._
-import akka.remote.{ AddressUrlEncoder, PhiAccrualFailureDetector, FailureDetector, RemoteActorRefProvider }
 import akka.util.ByteString
+import akka.{ OnlyCauseStackTrace, AkkaException }
 import com.typesafe.config.Config
-import scala.concurrent.duration.{ Duration, FiniteDuration, MILLISECONDS }
+import scala.collection.immutable
+import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
-import scala.util.{ Success, Failure }
-import scala.collection.immutable
-import akka.remote.transport.ActorTransportAdapter._
 
+@SerialVersionUID(1L)
 class AkkaProtocolException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with OnlyCauseStackTrace {
   def this(msg: String) = this(msg, null)
 }
@@ -27,24 +31,21 @@ private[remote] class AkkaProtocolSettings(config: Config) {
 
   import config._
 
-  val FailureDetectorThreshold: Double = getDouble("akka.remoting.failure-detector.threshold")
+  val FailureDetectorConfig: Config = getConfig("akka.remote.failure-detector")
 
-  val FailureDetectorMaxSampleSize: Int = getInt("akka.remoting.failure-detector.max-sample-size")
-
-  val FailureDetectorStdDeviation: FiniteDuration =
-    Duration(getMilliseconds("akka.remoting.failure-detector.min-std-deviation"), MILLISECONDS)
+  val FailureDetectorImplementationClass: String = FailureDetectorConfig.getString("implementation-class")
 
   val AcceptableHeartBeatPause: FiniteDuration =
-    Duration(getMilliseconds("akka.remoting.failure-detector.acceptable-heartbeat-pause"), MILLISECONDS)
+    Duration(FailureDetectorConfig.getMilliseconds("acceptable-heartbeat-pause"), MILLISECONDS)
 
   val HeartBeatInterval: FiniteDuration =
-    Duration(getMilliseconds("akka.remoting.heartbeat-interval"), MILLISECONDS)
+    Duration(FailureDetectorConfig.getMilliseconds("heartbeat-interval"), MILLISECONDS)
 
-  val WaitActivityEnabled: Boolean = getBoolean("akka.remoting.wait-activity-enabled")
+  val WaitActivityEnabled: Boolean = getBoolean("akka.remote.wait-activity-enabled")
 
-  val RequireCookie: Boolean = getBoolean("akka.remoting.require-cookie")
+  val RequireCookie: Boolean = getBoolean("akka.remote.require-cookie")
 
-  val SecureCookie: String = getString("akka.remoting.secure-cookie")
+  val SecureCookie: String = getString("akka.remote.secure-cookie")
 }
 
 private[remote] object AkkaProtocolTransport { //Couldn't these go into the Remoting Extension/ RemoteSettings instead?
@@ -86,8 +87,7 @@ private[remote] class AkkaProtocolTransport(
 
   override val addedSchemeIdentifier: String = AkkaScheme
 
-  override def managementCommand(cmd: Any, statusPromise: Promise[Boolean]): Unit =
-    wrappedTransport.managementCommand(cmd, statusPromise)
+  override def managementCommand(cmd: Any): Future[Boolean] = wrappedTransport.managementCommand(cmd)
 
   override val maximumOverhead: Int = AkkaProtocolTransport.AkkaOverhead
   protected def managerName = s"akkaprotocolmanager.${wrappedTransport.schemeIdentifier}${UniqueId.getAndIncrement}"
@@ -141,12 +141,14 @@ private[transport] class AkkaProtocolManager(
         failureDetector)), actorNameFor(remoteAddress)) // Why don't we watch this one?
   }
 
-  private def createFailureDetector(): FailureDetector = new PhiAccrualFailureDetector(
-    settings.FailureDetectorThreshold,
-    settings.FailureDetectorMaxSampleSize,
-    settings.FailureDetectorStdDeviation,
-    settings.AcceptableHeartBeatPause,
-    settings.HeartBeatInterval)
+  private def createFailureDetector(): FailureDetector = {
+    import settings.{ FailureDetectorImplementationClass ⇒ fqcn }
+    context.system.asInstanceOf[ExtendedActorSystem].dynamicAccess.createInstanceFor[FailureDetector](
+      fqcn, List(classOf[Config] -> settings.FailureDetectorConfig)).recover({
+        case e ⇒ throw new ConfigurationException(
+          s"Could not create custom remote failure detector [$fqcn] due to: ${e.toString}", e)
+      }).get
+  }
 
   override def postStop() {
     wrappedTransport.shutdown()
@@ -273,15 +275,20 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
       stop()
 
     case Event(wrappedHandle: AssociationHandle, OutboundUnassociated(_, statusPromise, _)) ⇒
-      wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(self))
-      sendAssociate(wrappedHandle)
-      failureDetector.heartbeat()
-      initTimers()
+      wrappedHandle.readHandlerPromise.trySuccess(ActorHandleEventListener(self))
+      if (sendAssociate(wrappedHandle)) {
+        failureDetector.heartbeat()
+        initTimers()
 
-      if (settings.WaitActivityEnabled)
-        goto(WaitActivity) using OutboundUnderlyingAssociated(statusPromise, wrappedHandle)
-      else
-        goto(Open) using AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, immutable.Queue.empty)
+        if (settings.WaitActivityEnabled)
+          goto(WaitActivity) using OutboundUnderlyingAssociated(statusPromise, wrappedHandle)
+        else
+          goto(Open) using AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, immutable.Queue.empty)
+      } else {
+        // Underlying transport was busy -- Associate could not be sent
+        setTimer("associate-retry", wrappedHandle, RARP(context.system).provider.remoteSettings.BackoffPeriod, repeat = false)
+        stay()
+      }
 
     case Event(DisassociateUnderlying, _) ⇒
       stop()
@@ -354,7 +361,8 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
         case Disassociate ⇒
           stop()
 
-        case Heartbeat ⇒ failureDetector.heartbeat(); stay()
+        case Heartbeat ⇒
+          failureDetector.heartbeat(); stay()
 
         case Payload(payload) ⇒ stateData match {
           case AssociatedWaitHandler(handlerFuture, wrappedHandle, queue) ⇒
@@ -483,8 +491,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
     case NonFatal(e) ⇒ throw new AkkaProtocolException("Error writing DISASSOCIATE to transport", e)
   }
 
-  // Associate should be the first message, so backoff is not needed
-  private def sendAssociate(wrappedHandle: AssociationHandle): Unit = try {
+  private def sendAssociate(wrappedHandle: AssociationHandle): Boolean = try {
     val cookie = if (settings.RequireCookie) Some(settings.SecureCookie) else None
     wrappedHandle.write(codec.constructAssociate(cookie, localAddress))
   } catch {

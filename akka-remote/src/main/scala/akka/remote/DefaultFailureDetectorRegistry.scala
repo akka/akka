@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote
@@ -16,18 +16,19 @@ import java.util.concurrent.locks.{ ReentrantLock, Lock }
  *   By-name parameter that returns the failure detector instance to be used by a newly registered resource
  *
  */
-class DefaultFailureDetectorRegistry[A](val detectorFactory: () ⇒ FailureDetector) extends FailureDetectorRegistry[A] {
+class DefaultFailureDetectorRegistry[A](detectorFactory: () ⇒ FailureDetector) extends FailureDetectorRegistry[A] {
 
   private val resourceToFailureDetector = new AtomicReference[Map[A, FailureDetector]](Map())
   private final val failureDetectorCreationLock: Lock = new ReentrantLock
 
-  /**
-   * Returns true if the resource is considered to be up and healthy and returns false otherwise. For unregistered
-   * resources it returns true.
-   */
   final override def isAvailable(resource: A): Boolean = resourceToFailureDetector.get.get(resource) match {
     case Some(r) ⇒ r.isAvailable
     case _       ⇒ true
+  }
+
+  final override def isMonitoring(resource: A): Boolean = resourceToFailureDetector.get.get(resource) match {
+    case Some(r) ⇒ r.isMonitoring
+    case _       ⇒ false
   }
 
   final override def heartbeat(resource: A): Unit = {
@@ -72,5 +73,13 @@ class DefaultFailureDetectorRegistry[A](val detectorFactory: () ⇒ FailureDetec
     if (!resourceToFailureDetector.compareAndSet(oldTable, Map.empty[A, FailureDetector])) reset() // recur
 
   }
+
+  /**
+   * INTERNAL API
+   * Get the underlying FailureDetector for a resource.
+   */
+  private[akka] def failureDetector(resource: A): Option[FailureDetector] =
+    resourceToFailureDetector.get.get(resource)
+
 }
 

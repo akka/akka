@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -43,16 +43,15 @@ abstract class NodeLeavingAndExitingAndBeingRemovedSpec
 
       runOn(first, third) {
         // verify that the 'second' node is no longer part of the 'members' set
-        awaitCond(clusterView.members.forall(_.address != address(second)), reaperWaitingTime)
+        awaitAssert(clusterView.members.map(_.address) must not contain (address(second)), reaperWaitingTime)
 
         // verify that the 'second' node is not part of the 'unreachable' set
-        awaitCond(clusterView.unreachableMembers.forall(_.address != address(second)), reaperWaitingTime)
+        awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (address(second)), reaperWaitingTime)
       }
 
       runOn(second) {
-        // verify that the second node is shut down and has status REMOVED
+        // verify that the second node is shut down
         awaitCond(cluster.isTerminated, reaperWaitingTime)
-        awaitCond(clusterView.status == MemberStatus.Removed, reaperWaitingTime)
       }
 
       enterBarrier("finished")

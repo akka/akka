@@ -1,18 +1,20 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
 
 import akka.AkkaException
+import scala.collection.immutable
+import scala.annotation.tailrec
 import scala.reflect.BeanProperty
 import scala.util.control.NoStackTrace
 import java.util.regex.Pattern
-import scala.annotation.tailrec
 
 /**
+ * INTERNAL API
+ *
  * Marker trait to show which Messages are automatically handled by Akka
- * Internal use only
  */
 private[akka] trait AutoReceivedMessage extends Serializable
 
@@ -26,12 +28,6 @@ trait PossiblyHarmful
  * Marker trait to signal that this class should not be verified for serializability.
  */
 trait NoSerializationVerificationNeeded
-
-/**
- * Internal use only
- */
-@SerialVersionUID(2L)
-private[akka] case class Failed(cause: Throwable, uid: Int) extends AutoReceivedMessage with PossiblyHarmful
 
 abstract class PoisonPill extends AutoReceivedMessage with PossiblyHarmful
 
@@ -57,6 +53,30 @@ case object Kill extends Kill {
    * Java API: get the singleton instance
    */
   def getInstance = this
+}
+
+/**
+ * A message all Actors will understand, that when processed will reply with
+ * [[akka.actor.ActorIdentity]] containing the `ActorRef`. The `messageId`
+ * is returned in the `ActorIdentity` message as `correlationId`.
+ */
+@SerialVersionUID(1L)
+case class Identify(messageId: Any) extends AutoReceivedMessage
+
+/**
+ * Reply to [[akka.actor.Identify]]. Contains
+ * `Some(ref)` with the `ActorRef` of the actor replying to the request or
+ * `None` if no actor matched the request.
+ * The `correlationId` is taken from the `messageId` in
+ * the `Identify` message.
+ */
+@SerialVersionUID(1L)
+case class ActorIdentity(correlationId: Any, ref: Option[ActorRef]) {
+  /**
+   * Java API: `ActorRef` of the actor replying to the request or
+   * null if no actor matched the request.
+   */
+  def getRef: ActorRef = ref.orNull
 }
 
 /**
@@ -105,26 +125,54 @@ case object ReceiveTimeout extends ReceiveTimeout {
 }
 
 /**
+ * INTERNAL API
  * ActorRefFactory.actorSelection returns a special ref which sends these
  * nested path descriptions whenever using ! on them, the idea being that the
  * message is delivered by active routing of the various actors involved.
  */
-sealed trait SelectionPath extends AutoReceivedMessage with PossiblyHarmful
+private[akka] sealed trait SelectionPath extends AutoReceivedMessage with PossiblyHarmful
 
 /**
- * Internal use only
+ * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] case class SelectChildName(name: String, next: Any) extends SelectionPath
+private[akka] case class SelectChildName(name: String, next: Any) extends SelectionPath {
+
+  def wrappedMessage: Any = {
+    @tailrec def rec(nx: Any): Any = nx match {
+      case SelectChildName(_, n)    ⇒ rec(n)
+      case SelectChildPattern(_, n) ⇒ rec(n)
+      case SelectParent(n)          ⇒ rec(n)
+      case x                        ⇒ x
+    }
+    rec(next)
+  }
+
+  def identifyRequest: Option[Identify] = wrappedMessage match {
+    case x: Identify ⇒ Some(x)
+    case _           ⇒ None
+  }
+
+  def allChildNames: immutable.Iterable[String] = {
+    @tailrec def rec(nx: Any, acc: List[String]): List[String] = nx match {
+      case SelectChildName(name, n)       ⇒ rec(n, name :: acc)
+      case SelectChildPattern(_, n)       ⇒ throw new IllegalArgumentException("SelectChildPattern not allowed")
+      case SelectParent(n) if acc.isEmpty ⇒ rec(n, acc)
+      case SelectParent(n)                ⇒ rec(n, acc.tail)
+      case _                              ⇒ acc
+    }
+    rec(this, Nil).reverse
+  }
+}
 
 /**
- * Internal use only
+ * INTERNAL API
  */
 @SerialVersionUID(1L)
 private[akka] case class SelectChildPattern(pattern: Pattern, next: Any) extends SelectionPath
 
 /**
- * Internal use only
+ * INTERNAL API
  */
 @SerialVersionUID(1L)
 private[akka] case class SelectParent(next: Any) extends SelectionPath
@@ -321,6 +369,8 @@ object Actor {
  * `context`. The only abstract method is `receive` which shall return the
  * initial behavior of the actor as a partial function (behavior can be changed
  * using `context.become` and `context.unbecome`).
+ * 
+ * This is the Scala API (hence the Scala code below), for the Java API see [[akka.actor.UntypedActor]].
  *
  * {{{
  * class ExampleActor extends Actor {
@@ -428,6 +478,7 @@ trait Actor {
    * Actors are automatically started asynchronously when created.
    * Empty default implementation.
    */
+  @throws(classOf[Exception])
   def preStart() {}
 
   /**
@@ -436,6 +487,7 @@ trait Actor {
    * Is called asynchronously after 'actor.stop()' is invoked.
    * Empty default implementation.
    */
+  @throws(classOf[Exception])
   def postStop() {}
 
   /**
@@ -446,6 +498,7 @@ trait Actor {
    * Is called on a crashed Actor right BEFORE it is restarted to allow clean
    * up of resources before Actor is terminated.
    */
+  @throws(classOf[Exception])
   def preRestart(reason: Throwable, message: Option[Any]) {
     context.children foreach context.stop
     postStop()
@@ -457,6 +510,7 @@ trait Actor {
    * <p/>
    * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
    */
+  @throws(classOf[Exception])
   def postRestart(reason: Throwable) { preStart() }
 
   /**

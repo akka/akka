@@ -1,23 +1,28 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote.transport
 
-import scala.language.postfixOps
 import akka.actor._
 import akka.pattern.{ ask, pipe }
 import akka.remote.Remoting.RegisterTransportActor
-import akka.remote.transport.ActorTransportAdapter.ListenUnderlying
-import akka.remote.transport.ActorTransportAdapter.ListenerRegistered
 import akka.remote.transport.Transport._
-import akka.remote.{ RARP, RemotingSettings }
+import akka.remote.RARP
 import akka.util.Timeout
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Promise, Future }
 import scala.util.Success
 
-trait TransportAdapterProvider extends ((Transport, ExtendedActorSystem) ⇒ Transport)
+trait TransportAdapterProvider {
+  /**
+   * Create the transport adapter that wraps an underlying transport.
+   */
+  def create(wrappedTransport: Transport, system: ExtendedActorSystem): Transport
+}
 
 class TransportAdapters(system: ExtendedActorSystem) extends Extension {
-  val settings = new RemotingSettings(RARP(system).provider.remoteSettings.config)
+  val settings = RARP(system).provider.remoteSettings
 
   private val adaptersTable: Map[String, TransportAdapterProvider] = for ((name, fqn) ← settings.Adapters) yield {
     name -> system.dynamicAccess.createInstanceFor[TransportAdapterProvider](fqn, immutable.Seq.empty).recover({
@@ -41,13 +46,14 @@ object TransportAdaptersExtension extends ExtensionId[TransportAdapters] with Ex
 trait SchemeAugmenter {
   protected def addedSchemeIdentifier: String
 
-  protected def augmentScheme(originalScheme: String): String = s"$originalScheme.$addedSchemeIdentifier"
+  protected def augmentScheme(originalScheme: String): String = s"$addedSchemeIdentifier.$originalScheme"
 
   protected def augmentScheme(address: Address): Address = address.copy(protocol = augmentScheme(address.protocol))
 
-  protected def removeScheme(scheme: String): String = if (scheme.endsWith(s".$addedSchemeIdentifier"))
-    scheme.take(scheme.length - addedSchemeIdentifier.length - 1)
-  else scheme
+  protected def removeScheme(scheme: String): String =
+    if (scheme.startsWith(s"$addedSchemeIdentifier."))
+      scheme.drop(addedSchemeIdentifier.length + 1)
+    else scheme
 
   protected def removeScheme(address: Address): Address = address.copy(protocol = removeScheme(address.protocol))
 }
@@ -73,11 +79,13 @@ abstract class AbstractTransportAdapter(protected val wrappedTransport: Transpor
 
   override def listen: Future[(Address, Promise[AssociationEventListener])] = {
     val upstreamListenerPromise: Promise[AssociationEventListener] = Promise()
-    wrappedTransport.listen andThen {
-      case Success((listenAddress, listenerPromise)) ⇒
-        // Register to downstream
-        listenerPromise.tryCompleteWith(interceptListen(listenAddress, upstreamListenerPromise.future))
-    } map { case (listenAddress, _) ⇒ (augmentScheme(listenAddress), upstreamListenerPromise) }
+
+    for {
+      (listenAddress, listenerPromise) ← wrappedTransport.listen
+      // Enforce ordering between the signalling of "listen ready" to upstream
+      // and initialization happening in interceptListen
+      _ ← listenerPromise.tryCompleteWith(interceptListen(listenAddress, upstreamListenerPromise.future)).future
+    } yield (augmentScheme(listenAddress), upstreamListenerPromise)
   }
 
   override def associate(remoteAddress: Address): Future[AssociationHandle] = {
@@ -118,6 +126,8 @@ object ActorTransportAdapter {
   case class ListenUnderlying(listenAddress: Address,
                               upstreamListener: Future[AssociationEventListener]) extends TransportOperation
   case object DisassociateUnderlying extends TransportOperation
+
+  implicit val AskTimeout = Timeout(5.seconds)
 }
 
 abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorSystem)
@@ -125,13 +135,12 @@ abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorS
 
   import ActorTransportAdapter._
 
-  private implicit val timeout = new Timeout(3 seconds)
-
   protected def managerName: String
   protected def managerProps: Props
   // Write once variable initialized when Listen is called.
   @volatile protected var manager: ActorRef = _
 
+  // FIXME #3074 how to replace actorFor here?
   private def registerManager(): Future[ActorRef] =
     (system.actorFor("/system/transports") ? RegisterTransportActor(managerProps, managerName)).mapTo[ActorRef]
 
@@ -154,6 +163,8 @@ abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorS
 }
 
 abstract class ActorTransportAdapterManager extends Actor {
+  import ActorTransportAdapter.{ ListenUnderlying, ListenerRegistered }
+
   private var delayedEvents = immutable.Queue.empty[Any]
 
   protected var associationListener: AssociationEventListener = _

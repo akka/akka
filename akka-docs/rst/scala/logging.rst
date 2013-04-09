@@ -4,6 +4,12 @@
  Logging (Scala)
 #################
 
+Logging in Akka is not tied to a specific logging backend. By default
+log messages are printed to STDOUT, but you can plug-in a SLF4J logger or 
+your own logger. Logging is performed asynchronously to ensure that logging
+has minimal performance impact. Logging generally means IO and locks,
+which can slow down the operations of your code if it was performed 
+synchronously.
 
 How to Log
 ==========
@@ -57,7 +63,7 @@ You almost definitely need to have logging set to DEBUG to use any of the option
 .. code-block:: ruby
 
     akka {
-      loglevel = DEBUG
+      loglevel = "DEBUG"
     }
 
 This config option is very good if you want to know what config settings are loaded by Akka:
@@ -70,8 +76,8 @@ This config option is very good if you want to know what config settings are loa
       log-config-on-start = on
     }
 
-If you want very detailed logging of all user-level messages that are processed
-by Actors that use akka.event.LoggingReceive:
+If you want very detailed logging of user-level messages then wrap your actors' behaviors with
+``akka.event.LoggingReceive`` and enable the ``receive`` option:
 
 .. code-block:: ruby
 
@@ -196,26 +202,46 @@ purposes as it contains exactly the default behavior.
   to look up the logger instance to use instead of the class’ name), and you
   might want to do this also in case you implement your own logging adapter.
 
-Event Handler
-=============
+Turn Off Logging
+----------------
 
-Logging is performed asynchronously through an event bus. You can configure
-which event handlers that should subscribe to the logging events. That is done
-using the ``event-handlers`` element in the :ref:`configuration`.  Here you can
-also define the log level.
+To turn off logging you can configure the log levels to be ``OFF`` like this.
 
 .. code-block:: ruby
 
   akka {
-    # Event handlers to register at boot time (Logging$DefaultLogger logs to STDOUT)
-    event-handlers = ["akka.event.Logging$DefaultLogger"]
-    # Options: ERROR, WARNING, INFO, DEBUG
+    stdout-loglevel = "OFF"
+    loglevel = "OFF"
+  }
+
+The ``stdout-loglevel`` is only in effect during system startup and shutdown, and setting
+it to ``OFF`` as well, ensures that nothing gets logged during system startup or shutdown.
+
+Loggers
+=======
+
+Logging is performed asynchronously through an event bus. Log events are processed by an event handler actor
+and it will receive the log events in the same order as they were emitted. 
+
+One gotcha is that currently the timestamp is attributed in the event handler, not when actually doing the logging.
+
+You can configure which event handlers are created at system start-up and listen to logging events. That is done using the 
+``loggers`` element in the :ref:`configuration`.
+Here you can also define the log level.
+
+.. code-block:: ruby
+
+  akka {
+    # Loggers to register at boot time (akka.event.Logging$DefaultLogger logs
+    # to STDOUT)
+    loggers = ["akka.event.Logging$DefaultLogger"]
+    # Options: OFF, ERROR, WARNING, INFO, DEBUG
     loglevel = "DEBUG"
   }
 
 The default one logs to STDOUT and is registered by default. It is not intended
 to be used for production. There is also an :ref:`slf4j-scala`
-event handler available in the 'akka-slf4j' module.
+logger available in the 'akka-slf4j' module.
 
 Example of creating a listener:
 
@@ -227,7 +253,7 @@ Example of creating a listener:
 SLF4J
 =====
 
-Akka provides an event handler for `SL4FJ <http://www.slf4j.org/>`_. This module is available in the 'akka-slf4j.jar'.
+Akka provides a logger for `SL4FJ <http://www.slf4j.org/>`_. This module is available in the 'akka-slf4j.jar'.
 It has one single dependency; the slf4j-api jar. In runtime you also need a SLF4J backend, we recommend `Logback <http://logback.qos.ch/>`_:
 
   .. code-block:: scala
@@ -235,7 +261,7 @@ It has one single dependency; the slf4j-api jar. In runtime you also need a SLF4
      lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.7"
 
 
-You need to enable the Slf4jEventHandler in the 'event-handlers' element in
+You need to enable the Slf4jLogger in the 'loggers' element in
 the :ref:`configuration`. Here you can also define the log level of the event bus.
 More fine grained log levels can be defined in the configuration of the SLF4J backend
 (e.g. logback.xml).
@@ -243,7 +269,7 @@ More fine grained log levels can be defined in the configuration of the SLF4J ba
 .. code-block:: ruby
 
   akka {
-    event-handlers = ["akka.event.slf4j.Slf4jEventHandler"]
+    loggers = ["akka.event.slf4j.Slf4jLogger"]
     loglevel = "DEBUG"
   }
 

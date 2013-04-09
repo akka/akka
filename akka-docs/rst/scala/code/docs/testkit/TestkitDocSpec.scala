@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.testkit
 
@@ -186,7 +186,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     val probe1 = TestProbe()
     val probe2 = TestProbe()
     val actor = system.actorOf(Props[MyDoubleEcho])
-    actor ! (probe1.ref, probe2.ref)
+    actor ! ((probe1.ref, probe2.ref))
     actor ! "hello"
     probe1.expectMsg(500 millis, "hello")
     probe2.expectMsg(500 millis, "hello")
@@ -204,6 +204,19 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       }
     }
     //#test-special-probe
+  }
+
+  "demonstrate probe watch" in {
+    import akka.testkit.TestProbe
+    val target = system.actorOf(Props(new Actor {
+      def receive = Actor.emptyBehavior
+    }))
+    //#test-probe-watch
+    val probe = TestProbe()
+    probe watch target
+    target ! PoisonPill
+    probe.expectMsgType[Terminated].actor must be(target)
+    //#test-probe-watch
   }
 
   "demonstrate probe reply" in {
@@ -245,7 +258,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     import com.typesafe.config.ConfigFactory
 
     implicit val system = ActorSystem("testsystem", ConfigFactory.parseString("""
-      akka.event-handlers = ["akka.testkit.TestEventListener"]
+      akka.loggers = ["akka.testkit.TestEventListener"]
       """))
     try {
       val actor = system.actorOf(Props.empty)

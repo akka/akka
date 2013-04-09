@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.dispatcher
 
@@ -11,7 +11,7 @@ import akka.testkit.AkkaSpec
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import scala.concurrent.duration._
-import akka.actor.{ Props, Actor, PoisonPill, ActorSystem }
+import akka.actor._
 
 object DispatcherDocSpec {
   val config = """
@@ -103,6 +103,14 @@ object DispatcherDocSpec {
       //Other dispatcher configuration goes here
     }
     //#prio-dispatcher-config-java
+
+    //#dispatcher-deployment-config
+    akka.actor.deployment {
+      /myactor {
+        dispatcher = my-dispatcher
+      }
+    }
+    //#dispatcher-deployment-config
   """
 
   //#prio-mailbox
@@ -165,13 +173,21 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
 
   import DispatcherDocSpec.MyActor
 
-  "defining dispatcher" in {
+  "defining dispatcher in config" in {
     val context = system
-    //#defining-dispatcher
+    //#defining-dispatcher-in-config
+    import akka.actor.Props
+    val myActor = context.actorOf(Props[MyActor], "myactor")
+    //#defining-dispatcher-in-config
+  }
+
+  "defining dispatcher in code" in {
+    val context = system
+    //#defining-dispatcher-in-code
     import akka.actor.Props
     val myActor =
       context.actorOf(Props[MyActor].withDispatcher("my-dispatcher"), "myactor1")
-    //#defining-dispatcher
+    //#defining-dispatcher-in-code
   }
 
   "defining dispatcher with bounded queue" in {
@@ -227,7 +243,8 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
     */
     //#prio-dispatcher
 
-    awaitCond(a.isTerminated, 5 seconds)
+    watch(a)
+    expectMsgPF() { case Terminated(`a`) ⇒ () }
   }
 
   "defining balancing dispatcher" in {

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
  *
  * {{{
  * import ActorDSL._
- * import concurrent.util.duration._
+ * import scala.concurrent.util.duration._
  *
  * implicit val system: ActorSystem = ...
  *
@@ -61,7 +61,7 @@ import java.util.concurrent.TimeUnit
  * }}}
  *
  * Note that `actor` can be used with an implicit [[akka.actor.ActorRefFactory]]
- * as shown with `"barney"` (where the [[akka.actor.ActorContext serves this
+ * as shown with `"barney"` (where the [[akka.actor.ActorContext]] serves this
  * purpose), but since nested declarations share the same
  * lexical context `"fred"`’s ActorContext would be ambiguous
  * if the [[akka.actor.ActorSystem]] were declared `implicit` (this could also

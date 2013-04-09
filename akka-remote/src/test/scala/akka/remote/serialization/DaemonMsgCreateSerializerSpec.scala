@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote.serialization
@@ -65,12 +65,14 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec {
           path = "path1",
           config = ConfigFactory.parseString("a=1"),
           routerConfig = RoundRobinRouter(nrOfInstances = 5, supervisorStrategy = supervisorStrategy),
-          scope = RemoteScope(Address("akka", "Test", "host1", 1921)))
+          scope = RemoteScope(Address("akka", "Test", "host1", 1921)),
+          dispatcher = "mydispatcher")
         val deploy2 = Deploy(
           path = "path2",
           config = ConfigFactory.parseString("a=2"),
           routerConfig = FromConfig,
-          scope = RemoteScope(Address("akka", "Test", "host2", 1922)))
+          scope = RemoteScope(Address("akka", "Test", "host2", 1922)),
+          dispatcher = Deploy.NoDispatcherGiven)
         DaemonMsgCreate(
           props = Props[MyActor].withDispatcher("my-disp").withDeploy(deploy1),
           deploy = deploy2,

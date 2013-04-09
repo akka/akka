@@ -82,11 +82,10 @@ Due to a limitation in Scala’s type inference, there is only the factory metho
 shown above, so you will probably write code like ``TestFSMRef(new MyFSM)``
 instead of the hypothetical :class:`ActorRef`-inspired ``TestFSMRef[MyFSM]``.
 All methods shown above directly access the FSM state without any
-synchronization; this is perfectly alright if the
-:class:`CallingThreadDispatcher` is used (which is the default for
-:class:`TestFSMRef`) and no other threads are involved, but it may lead to
-surprises if you were to actually exercise timer events, because those are
-executed on the :obj:`Scheduler` thread.
+synchronization; this is perfectly alright if the :class:`CallingThreadDispatcher` 
+is used and no other threads are involved, but it may lead to surprises if you
+were to actually exercise timer events, because those are executed on the 
+:obj:`Scheduler` thread.
 
 Testing the Actor's Behavior
 ----------------------------
@@ -304,6 +303,15 @@ with message flows:
     maximum defaults to the time remaining in the innermost enclosing
     :ref:`within <TestKit.within>` block.
 
+  * :meth:`awaitAssert(a: => Any, max: Duration, interval: Duration)`
+
+    Poll the given assert function every :obj:`interval` until it does not throw
+    an exception or the :obj:`max` duration is used up. If the timeout expires the 
+    last exception is thrown. The interval defaults to 100 ms and the maximum defaults
+    to the time remaining in the innermost enclosing :ref:`within <TestKit.within>` 
+    block.The interval defaults to 100 ms and the maximum defaults to the time 
+    remaining in the innermost enclosing :ref:`within <TestKit.within>` block.  
+
   * :meth:`ignoreMsg(pf: PartialFunction[AnyRef, Boolean])`
 
     :meth:`ignoreNoMsg`
@@ -337,11 +345,11 @@ test fails.
 
 .. note::
 
-   Be sure to exchange the default event handler with the
+   Be sure to exchange the default logger with the
    :class:`TestEventListener` in your ``application.conf`` to enable this
    function::
 
-     akka.event-handlers = [akka.testkit.TestEventListener]
+     akka.loggers = [akka.testkit.TestEventListener]
 
 .. _TestKit.within:
 
@@ -445,6 +453,23 @@ You have complete flexibility here in mixing and matching the :class:`TestKit`
 facilities with your own checks and choosing an intuitive name for it. In real
 life your code will probably be a bit more complicated than the example given
 above; just use the power!
+
+.. warning::
+
+  Any message send from a ``TestProbe`` to another actor which runs on the
+  CallingThreadDispatcher runs the risk of dead-lock, if that other actor might
+  also send to this probe. The implementation of :meth:`TestProbe.watch` and
+  :meth:`TestProbe.unwatch` will also send a message to the watchee, which
+  means that it is dangerous to try watching e.g. :class:`TestActorRef` from a
+  :meth:`TestProbe`.
+
+Watching Other Actors from Probes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A :class:`TestKit` can register itself for DeathWatch of any other actor:
+
+.. includecode:: code/docs/testkit/TestkitDocSpec.scala
+   :include: test-probe-watch
 
 Replying to Messages Received by Probes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -597,6 +622,28 @@ production.
    scenarios, but keep in mind that it has may give false negatives as well as
    false positives.
 
+Thread Interruptions
+--------------------
+
+If the CallingThreadDispatcher sees that the current thread has its
+``isInterrupted()`` flag set when message processing returns, it will throw an
+:class:`InterruptedException` after finishing all its processing (i.e. all
+messages which need processing as described above are processed before this
+happens). As :meth:`tell` cannot throw exceptions due to its contract, this
+exception will then be caught and logged, and the thread’s interrupted status
+will be set again.
+
+If during message processing an :class:`InterruptedException` is thrown then it
+will be caught inside the CallingThreadDispatcher’s message handling loop, the
+thread’s interrupted flag will be set and processing continues normally.
+
+.. note::
+
+  The summary of these two paragraphs is that if the current thread is
+  interrupted while doing work under the CallingThreadDispatcher, then that
+  will result in the ``isInterrupted`` flag to be ``true`` when the message
+  send returns and no :class:`InterruptedException` will be thrown.
+
 Benefits
 --------
 
@@ -640,8 +687,7 @@ options:
 
   The logging feature is coupled to this specific local mark-up because
   enabling it uniformly on all actors is not usually what you need, and it
-  would lead to endless loops if it were applied to :class:`EventHandler`
-  listeners.
+  would lead to endless loops if it were applied to event bus logger listeners.
 
 * *Logging of special messages*
 
@@ -660,7 +706,7 @@ All these messages are logged at ``DEBUG`` level. To summarize, you can enable
 full logging of actor activities using this configuration fragment::
 
   akka {
-    loglevel = DEBUG
+    loglevel = "DEBUG"
     actor {
       debug {
         receive = on

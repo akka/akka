@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.event
@@ -16,7 +16,7 @@ import scala.collection.immutable
  * Represents the base type for EventBuses
  * Internally has an Event type, a Classifier type and a Subscriber type
  *
- * For the Java API, @see akka.event.japi.*
+ * For the Java API, see akka.event.japi.*
  */
 trait EventBus {
   type Event

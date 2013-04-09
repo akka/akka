@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -84,7 +84,7 @@ trait ClusterNodeMBean {
 }
 
 /**
- * Internal API
+ * INTERNAL API
  */
 private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
 

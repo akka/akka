@@ -20,15 +20,16 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
   val addressATest: Address = Address("test", "testsytemA", "testhostA", 4321)
   val addressBTest: Address = Address("test", "testsytemB", "testhostB", 5432)
 
-  val addressA: Address = addressATest.copy(protocol = s"${addressATest.protocol}.$schemeIdentifier")
-  val addressB: Address = addressBTest.copy(protocol = s"${addressBTest.protocol}.$schemeIdentifier")
-  val nonExistingAddress = Address("test." + schemeIdentifier, "nosystem", "nohost", 0)
+  val addressA: Address = addressATest.copy(protocol = s"$schemeIdentifier.${addressATest.protocol}")
+  val addressB: Address = addressBTest.copy(protocol = s"$schemeIdentifier.${addressATest.protocol}")
+  val nonExistingAddress = Address(schemeIdentifier + ".test", "nosystem", "nohost", 0)
 
   def freshTransport(testTransport: TestTransport): Transport
-  def wrapTransport(transport: Transport): Transport = if (withAkkaProtocol) {
-    val provider = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider]
-    new AkkaProtocolTransport(transport, system, new AkkaProtocolSettings(provider.remoteSettings.config), AkkaPduProtobufCodec)
-  } else transport
+  def wrapTransport(transport: Transport): Transport =
+    if (withAkkaProtocol) {
+      val provider = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider]
+      new AkkaProtocolTransport(transport, system, new AkkaProtocolSettings(provider.remoteSettings.config), AkkaPduProtobufCodec)
+    } else transport
 
   def newTransportA(registry: AssociationRegistry): Transport =
     wrapTransport(freshTransport(new TestTransport(addressATest, registry)))
@@ -115,8 +116,7 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
       }
 
       registry.logSnapshot.exists {
-        case WriteAttempt(sender, recipient, sentPdu) ⇒
-          sender == addressATest && recipient == addressBTest && sentPdu == pdu
+        case WriteAttempt(`addressATest`, `addressBTest`, sentPdu) ⇒ sentPdu == pdu
         case _ ⇒ false
       } must be(true)
     }
@@ -152,10 +152,12 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
 
       awaitCond(!registry.existsAssociation(addressATest, addressBTest))
 
-      registry.logSnapshot exists {
-        case DisassociateAttempt(requester, remote) if requester == addressATest && remote == addressBTest ⇒ true
-        case _ ⇒ false
-      } must be(true)
+      awaitCond {
+        registry.logSnapshot exists {
+          case DisassociateAttempt(`addressATest`, `addressBTest`) ⇒ true
+          case _ ⇒ false
+        }
+      }
     }
 
   }

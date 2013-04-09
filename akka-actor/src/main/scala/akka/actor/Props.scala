@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -121,14 +121,14 @@ case class Props(
     dispatcher = Dispatchers.DefaultDispatcherId)
 
   /**
-   * Java API.
+   * Java API: create Props from an [[UntypedActorFactory]]
    */
   def this(factory: UntypedActorFactory) = this(
     creator = () ⇒ factory.create(),
     dispatcher = Dispatchers.DefaultDispatcherId)
 
   /**
-   * Java API.
+   * Java API: create Props from a given [[Class]]
    */
   def this(actorClass: Class[_ <: Actor]) = this(
     creator = FromClassCreator(actorClass),
@@ -136,27 +136,21 @@ case class Props(
     routerConfig = Props.defaultRoutedProps)
 
   /**
-   * Returns a new Props with the specified creator set.
+   * Scala API: Returns a new Props with the specified creator set.
    *
    * The creator must not return the same instance multiple times.
-   *
-   * Scala API.
    */
   def withCreator(c: ⇒ Actor): Props = copy(creator = () ⇒ c)
 
   /**
-   * Returns a new Props with the specified creator set.
+   * Java API: Returns a new Props with the specified creator set.
    *
    * The creator must not return the same instance multiple times.
-   *
-   * Java API.
    */
   def withCreator(c: Creator[Actor]): Props = copy(creator = () ⇒ c.create)
 
   /**
-   * Returns a new Props with the specified creator set.
-   *
-   * Java API.
+   * Java API: Returns a new Props with the specified creator set.
    */
   def withCreator(c: Class[_ <: Actor]): Props = copy(creator = FromClassCreator(c))
 

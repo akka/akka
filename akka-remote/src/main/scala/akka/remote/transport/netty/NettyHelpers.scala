@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote.transport.netty
 
 import akka.AkkaException
@@ -5,17 +8,20 @@ import java.nio.channels.ClosedChannelException
 import org.jboss.netty.channel._
 import scala.util.control.NonFatal
 
+/**
+ * INTERNAL API
+ */
 private[netty] trait NettyHelpers {
 
-  protected def onConnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = {}
+  protected def onConnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = ()
 
-  protected def onDisconnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = {}
+  protected def onDisconnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = ()
 
-  protected def onOpen(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = {}
+  protected def onOpen(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = ()
 
-  protected def onMessage(ctx: ChannelHandlerContext, e: MessageEvent): Unit = {}
+  protected def onMessage(ctx: ChannelHandlerContext, e: MessageEvent): Unit = ()
 
-  protected def onException(ctx: ChannelHandlerContext, e: ExceptionEvent): Unit = {}
+  protected def onException(ctx: ChannelHandlerContext, e: ExceptionEvent): Unit = ()
 
   final protected def transformException(ctx: ChannelHandlerContext, ev: ExceptionEvent): Unit = {
     val cause = if (ev.getCause ne null) ev.getCause else new AkkaException("Unknown cause")
@@ -27,6 +33,9 @@ private[netty] trait NettyHelpers {
   }
 }
 
+/**
+ * INTERNAL API
+ */
 private[netty] trait NettyServerHelpers extends SimpleChannelUpstreamHandler with NettyHelpers {
 
   final override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent): Unit = {
@@ -52,6 +61,9 @@ private[netty] trait NettyServerHelpers extends SimpleChannelUpstreamHandler wit
   }
 }
 
+/**
+ * INTERNAL API
+ */
 private[netty] trait NettyClientHelpers extends SimpleChannelHandler with NettyHelpers {
   final override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent): Unit = {
     super.messageReceived(ctx, e)

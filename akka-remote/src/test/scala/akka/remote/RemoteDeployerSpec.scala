@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -16,9 +16,10 @@ object RemoteDeployerSpec {
           router = round-robin
           nr-of-instances = 3
           remote = "akka://sys@wallace:2552"
+          dispatcher = mydispatcher
         }
       }
-      akka.remoting.transports.tcp.port = 0
+      akka.remote.netty.tcp.port = 0
       """, ConfigParseOptions.defaults)
 
   class RecipeActor extends Actor {
@@ -35,14 +36,14 @@ class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) {
     "be able to parse 'akka.actor.deployment._' with specified remote nodes" in {
       val service = "/user/service2"
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
-      deployment must be('defined)
 
       deployment must be(Some(
         Deploy(
           service,
           deployment.get.config,
           RoundRobinRouter(3),
-          RemoteScope(Address("akka", "sys", "wallace", 2552)))))
+          RemoteScope(Address("akka", "sys", "wallace", 2552)),
+          "mydispatcher")))
     }
 
   }

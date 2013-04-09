@@ -30,6 +30,7 @@ object StatsSampleJapiSpecConfig extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString("""
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
+    akka.cluster.roles = [compute]
     akka.cluster.auto-join = off
     # don't use sigar for tests, native lib not in path
     akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
@@ -41,6 +42,7 @@ object StatsSampleJapiSpecConfig extends MultiNodeConfig {
             enabled = on
             routees-path = "/user/statsWorker"
             allow-local-routees = on
+            use-role = compute
           }
         }
     }
@@ -81,9 +83,9 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
       system.actorOf(Props[StatsService], "statsService")
 
       expectMsgAllOf(
-        MemberUp(Member(firstAddress, MemberStatus.Up)),
-        MemberUp(Member(secondAddress, MemberStatus.Up)),
-        MemberUp(Member(thirdAddress, MemberStatus.Up)))
+        MemberUp(Member(firstAddress, MemberStatus.Up, Set.empty)),
+        MemberUp(Member(secondAddress, MemberStatus.Up, Set.empty)),
+        MemberUp(Member(thirdAddress, MemberStatus.Up, Set.empty)))
 
       Cluster(system).unsubscribe(testActor)
 
@@ -92,30 +94,25 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
 
     "show usage of the statsService from one node" in within(15 seconds) {
       runOn(second) {
-        assertServiceOk
+        assertServiceOk()
       }
 
       testConductor.enter("done-2")
     }
 
-    def assertServiceOk: Unit = {
-      val service = system.actorFor(node(third) / "user" / "statsService")
+    def assertServiceOk(): Unit = {
+      val service = system.actorSelection(node(third) / "user" / "statsService")
       // eventually the service should be ok,
       // first attempts might fail because worker actors not started yet
-      awaitCond {
+      awaitAssert {
         service ! new StatsJob("this is the text that will be analyzed")
-        expectMsgPF() {
-          case unavailble: JobFailed ⇒ false
-          case r: StatsResult ⇒
-            r.getMeanWordLength must be(3.875 plusOrMinus 0.001)
-            true
-        }
+        expectMsgType[StatsResult](1.second).getMeanWordLength must be(3.875 plusOrMinus 0.001)
       }
     }
     //#test-statsService
 
     "show usage of the statsService from all nodes" in within(15 seconds) {
-      assertServiceOk
+      assertServiceOk()
 
       testConductor.enter("done-3")
     }

@@ -54,22 +54,7 @@ ip-addresses or host names of the machines in ``application.conf`` instead of ``
 .. literalinclude:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/simple/japi/SimpleClusterApp.java
    :language: java
 
-3. Add `maven exec plugin <http://mojo.codehaus.org/exec-maven-plugin/introduction.html>`_ to your pom.xml::
-
-    <project>
-      <build>
-        <plugins>
-          <plugin>
-              <groupId>org.codehaus.mojo</groupId>
-              <artifactId>exec-maven-plugin</artifactId>
-              <version>1.2.1</version>
-          </plugin>
-        </plugins>
-      </build>
-    </project>
-
-
-4. Start the first seed node. Open a terminal window and run (one line)::
+3. Start the first seed node. Open a terminal window and run (one line)::
 
     mvn exec:java -Dexec.mainClass="sample.cluster.simple.japi.SimpleClusterApp" \
       -Dexec.args="2551"
@@ -77,7 +62,7 @@ ip-addresses or host names of the machines in ``application.conf`` instead of ``
 2551 corresponds to the port of the first seed-nodes element in the configuration.
 In the log output you see that the cluster node has been started and changed status to 'Up'.
 
-5. Start the second seed node. Open another terminal window and run::
+4. Start the second seed node. Open another terminal window and run::
 
     mvn exec:java -Dexec.mainClass="sample.cluster.simple.japi.SimpleClusterApp" \
       -Dexec.args="2552"
@@ -85,11 +70,11 @@ In the log output you see that the cluster node has been started and changed sta
 
 2552 corresponds to the port of the second seed-nodes element in the configuration.
 In the log output you see that the cluster node has been started and joins the other seed node
-and becomes a member of the cluster. It's status changed to 'Up'.
+and becomes a member of the cluster. Its status changed to 'Up'.
 
 Switch over to the first terminal window and see in the log output that the member joined.
 
-6. Start another node. Open a sbt session in yet another terminal window and run::
+5. Start another node. Open a maven session in yet another terminal window and run::
 
     mvn exec:java -Dexec.mainClass="sample.cluster.simple.japi.SimpleClusterApp"
 
@@ -118,16 +103,17 @@ sends a message to all seed nodes and then sends join command to the one that
 answers first. If no one of the seed nodes replied (might not be started yet)
 it retries this procedure until successful or shutdown.
 
-There is one thing to be aware of regarding the seed node configured as the
-first element in the ``seed-nodes`` configuration list.
 The seed nodes can be started in any order and it is not necessary to have all
-seed nodes running, but the first seed node must be started when initially
-starting a cluster, otherwise the other seed-nodes will not become initialized
-and no other node can join the cluster. Once more than two seed nodes have been
-started it is no problem to shut down the first seed node. If it goes down it
-must be manually joined to the cluster again.
-Automatic joining of the first seed node is not possible, it would only join
-itself. It is only the first seed node that has this restriction.
+seed nodes running, but the node configured as the first element in the ``seed-nodes``
+configuration list must be started when initially starting a cluster, otherwise the 
+other seed-nodes will not become initialized and no other node can join the cluster. 
+It is quickest to start all configured seed nodes at the same time (order doesn't matter), 
+otherwise it can take up to the configured ``seed-node-timeout`` until the nodes
+can join.
+
+Once more than two seed nodes have been started it is no problem to shut down the first
+seed node. If the first seed node is restarted it will first try join the other 
+seed nodes in the existing cluster.
 
 You can disable automatic joining with configuration::
 
@@ -236,8 +222,17 @@ frontend nodes and 3 backend nodes::
   mvn exec:java \
     -Dexec.mainClass="sample.cluster.transformation.japi.TransformationFrontendMain"
 
+Node Roles
+^^^^^^^^^^
 
-.. note:: The above example should probably be designed as two separate, frontend/backend, clusters, when there is a `cluster client for decoupling clusters <https://www.assembla.com/spaces/akka/tickets/1165>`_.
+Not all nodes of a cluster need to perform the same function: there might be one sub-set which runs the web front-end,
+one which runs the data access layer and one for the number-crunching. Deployment of actors—for example by cluster-aware
+routers—can take node roles into account to achieve this distribution of responsibilities.
+
+The roles of a node is defined in the configuration property named ``akka.cluster.roles``
+and it is typically defined in the start script as a system property or environment variable.
+
+The roles of the nodes is part of the membership information in ``MemberEvent`` that you can subscribe to.
 
 How To Startup when Cluster Size Reached
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -250,6 +245,11 @@ before the leader changes member status of 'Joining' members to 'Up'.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/factorial.conf#min-nr-of-members
 
+In a similar way you can define required number of members of a certain role
+before the leader changes member status of 'Joining' members to 'Up'.
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/factorial.conf#role-min-nr-of-members
+
 You can start the actors in a ``registerOnMemberUp`` callback, which will 
 be invoked when the current member status is changed tp 'Up', i.e. the cluster
 has at least the defined number of members.
@@ -257,6 +257,17 @@ has at least the defined number of members.
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/factorial/japi/FactorialFrontendMain.java#registerOnUp
 
 This callback can be used for other things than starting actors.
+
+Cluster Singleton Pattern
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For some use cases it is convenient and sometimes also mandatory to ensure that
+you have exactly one actor of a certain type running somewhere in the cluster.
+
+This can be implemented by subscribing to ``LeaderChanged`` or ``RoleLeaderChanged``
+events, but there are several corner cases to consider. Therefore, this specific use 
+case is made easily accessible by the :ref:`cluster-singleton` in the contrib module.
+You can use it as is, or adjust to fit your specific needs. 
 
 Failure Detector
 ^^^^^^^^^^^^^^^^
@@ -295,7 +306,7 @@ previous heartbeat.
 Phi is calculated from the mean and standard deviation of historical
 inter arrival times. The previous chart is an example for standard deviation
 of 200 ms. If the heartbeats arrive with less deviation the curve becomes steeper,
-i.e. it's possible to determine failure more quickly. The curve looks like this for
+i.e. it is possible to determine failure more quickly. The curve looks like this for
 a standard deviation of 100 ms.
 
 .. image:: images/phi2.png
@@ -308,6 +319,16 @@ This is how the curve looks like for ``acceptable-heartbeat-pause`` configured t
 3 seconds.
 
 .. image:: images/phi3.png
+
+Death watch uses the cluster failure detector for nodes in the cluster, i.e. it 
+generates ``Terminated`` message from network failures and JVM crashes, in addition 
+to graceful termination of watched actor. 
+
+.. warning::
+
+  Creating a remote deployed child actor with the same name as the terminated 
+  actor is not fully supported. There is a race condition that potentially removes the new 
+  actor.
 
 Cluster Aware Routers
 ^^^^^^^^^^^^^^^^^^^^^
@@ -323,7 +344,9 @@ are already running, the configuration for a router looks like this:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#router-lookup-config
 
-It's the relative actor path defined in ``routees-path`` that identify what actor to lookup.
+It is the relative actor path defined in ``routees-path`` that identify what actor to lookup. 
+It is possible to limit the lookup of routees to member nodes tagged with a certain role by
+specifying ``use-role``.
 
 ``nr-of-instances`` defines total number of routees in the cluster, but there will not be
 more than one per node. Setting ``nr-of-instances`` to a high value will result in new routees
@@ -339,6 +362,9 @@ the configuration for a router looks like this:
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSingleMasterSpec.scala#router-deploy-config
 
 
+It is possible to limit the deployment of routees to member nodes tagged with a certain role by
+specifying ``use-role``.
+
 ``nr-of-instances`` defines total number of routees in the cluster, but the number of routees
 per node, ``max-nr-of-instances-per-node``, will not be exceeded. Setting ``nr-of-instances``
 to a high value will result in creating and deploying additional routees when new nodes join
@@ -351,8 +377,8 @@ The same type of router could also have been defined in code:
 See :ref:`cluster_configuration_java` section for further descriptions of the settings.
 
 
-Router Example
---------------
+Router Example with Lookup of Routees
+-------------------------------------
 
 Let's take a look at how to use cluster aware routers.
 
@@ -389,7 +415,7 @@ or with create and deploy of routees. Remember, routees are the workers in this 
 We start with the router setup with lookup of routees. All nodes start ``StatsService`` and
 ``StatsWorker`` actors and the router is configured with ``routees-path``:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsSampleMain.java#start-router-lookup
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf#config-router-lookup
 
 This means that user requests can be sent to ``StatsService`` on any node and it will use
 ``StatsWorker`` on all nodes. There can only be one worker per node, but that worker could easily
@@ -402,39 +428,49 @@ Run it by starting nodes in different terminal windows. For example, starting 3
 service nodes and 1 client::
 
   mvn exec:java \
-    -Dexec.mainClass="run-main sample.cluster.stats.japi.StatsSampleMain" \
+    -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleMain" \
     -Dexec.args="2551"
 
   mvn exec:java \
-    -Dexec.mainClass="run-main sample.cluster.stats.japi.StatsSampleMain" \
+    -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleMain" \
     -Dexec.args="2552"
 
   mvn exec:java \
-    -Dexec.mainClass="run-main sample.cluster.stats.japi.StatsSampleMain"
+    -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleMain"
 
   mvn exec:java \
-    -Dexec.mainClass="run-main sample.cluster.stats.japi.StatsSampleMain"
+    -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleMain"
 
+
+Router Example with Remote Deployed Routees
+-------------------------------------------
 
 The above setup is nice for this example, but we will also take a look at how to use
 a single master node that creates and deploys workers. To keep track of a single
-master we need one additional actor:
+master we use the :ref:`cluster-singleton` in the contrib module. The ``ClusterSingletonManager``
+is started on each node.
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsSampleOneMasterMain.java#create-singleton-manager
+
+We also need an actor on each node that keeps track of where current single master exists and
+delegates jobs to the ``StatsService``.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsFacade.java#facade
 
 The ``StatsFacade`` receives text from users and delegates to the current ``StatsService``, the single
-master. It listens to cluster events to create or lookup the ``StatsService`` depending on if
-it is on the same same node or on another node. We run the master on the same node as the leader of
-the cluster members, which is nothing more than the address currently sorted first in the member ring,
-i.e. it can change when new nodes join or when current leader leaves.
+master. It listens to cluster events to lookup the ``StatsService`` on the leader node. The master runs 
+on the same node as the leader of the cluster members, which is nothing more than the address currently 
+sorted first in the member ring, i.e. it can change when new nodes join or when current leader leaves.
 
-All nodes start ``StatsFacade`` and the router is now configured like this:
+All nodes start ``StatsFacade`` and the ``ClusterSingletonManager``. The router is now configured like this:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsSampleOneMasterMain.java#start-router-deploy
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf#config-router-deploy
 
 This example is included in ``akka-samples/akka-sample-cluster`` and you can try it by copying the 
 `source <@github@/akka-samples/akka-sample-cluster>`_ to your
-maven project, defined as in :ref:`cluster_simple_example_java`.
+maven project, defined as in :ref:`cluster_simple_example_java`. Also add the `akka-contrib` dependency
+to your pom.xml.
+
 Run it by starting nodes in different terminal windows. For example, starting 3
 service nodes and 1 client::
 
@@ -453,7 +489,7 @@ service nodes and 1 client::
     -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleOneMasterMain"
 
 
-.. note:: The above example, especially the last part, will be simplified when the cluster handles automatic actor partitioning.
+.. note:: The above example will be simplified when the cluster handles automatic actor partitioning.
 
 Cluster Metrics
 ^^^^^^^^^^^^^^^
@@ -470,12 +506,12 @@ Sigar is using a native OS library. To enable usage of Sigar you need to add the
 ``-Djava.libarary.path=<path_of_sigar_libs>`` add the following dependency::
 
   <dependency>
-    <groupId>org.hyperic</groupId>
+    <groupId>org.fusesource</groupId>
     <artifactId>sigar</artifactId>
     <version>@sigarVersion@</version>
   </dependency>
 
- 
+Download the native Sigar libraries from `Maven Central <http://repo1.maven.org/maven2/org/fusesource/sigar/@sigarVersion@/>`_
 
 Adaptive Load Balancing
 -----------------------
@@ -507,11 +543,11 @@ The frontend that receives user jobs and delegates to the backends via the route
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/factorial/japi/FactorialFrontend.java#frontend
 
 
-As you can see, the router is defined in the same way as other routers, and in this case it's configured as follows:
+As you can see, the router is defined in the same way as other routers, and in this case it is configured as follows:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf#adaptive-router
 
-It's only router type ``adaptive`` and the ``metrics-selector`` that is specific to this router, other things work 
+It is only router type ``adaptive`` and the ``metrics-selector`` that is specific to this router, other things work 
 in the same way as other routers.
 
 The same type of router could also have been defined in code:
@@ -527,18 +563,18 @@ Run it by starting nodes in different terminal windows. For example, starting 3 
 one frontend::
 
   mvn exec:java \
-    -Dexec.mainClass="sample.cluster.factorial.FactorialBackendMain" \
+    -Dexec.mainClass="sample.cluster.factorial.japi.FactorialBackendMain" \
     -Dexec.args="2551"
 
   mvn exec:java \
-    -Dexec.mainClass="sample.cluster.factorial.FactorialBackendMain" \
+    -Dexec.mainClass="sample.cluster.factorial.japi.FactorialBackendMain" \
     -Dexec.args="2552"
 
   mvn exec:java \
-    -Dexec.mainClass="sample.cluster.factorial.FactorialBackendMain"
+    -Dexec.mainClass="sample.cluster.factorial.japi.FactorialBackendMain"
 
   mvn exec:java \
-    -Dexec.mainClass="sample.cluster.factorial.FactorialFrontendMain"
+    -Dexec.mainClass="sample.cluster.factorial.japi.FactorialFrontendMain"
 
 Press ctrl-c in the terminal window of the frontend to stop the factorial calculations.
 
@@ -546,7 +582,7 @@ Press ctrl-c in the terminal window of the frontend to stop the factorial calcul
 Subscribe to Metrics Events
 ---------------------------
 
-It's possible to subscribe to the metrics events directly to implement other functionality.
+It is possible to subscribe to the metrics events directly to implement other functionality.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/factorial/japi/MetricsListener.java#metrics-listener
 
@@ -573,7 +609,7 @@ From JMX you can:
 * mark any node in the cluster as down
 * tell any node in the cluster to leave
 
-Member nodes are identified with their address, in format `akka://actor-system-name@hostname:port`.
+Member nodes are identified by their address, in format `akka.<protocol>://<actor-system-name>@<hostname>:<port>`.
 
 .. _cluster_command_line_java:
 
@@ -601,10 +637,10 @@ Run it without parameters to see instructions about how to use the script::
                                node cluster)
                 is-available - Checks if the member node is available
   Where the <node-url> should be on the format of 
-    'akka://actor-system-name@hostname:port'
+    'akka.<protocol>://<actor-system-name>@<hostname>:<port>'
 
   Examples: bin/akka-cluster localhost:9999 is-available
-            bin/akka-cluster localhost:9999 join akka://MySystem@darkstar:2552
+            bin/akka-cluster localhost:9999 join akka.tcp://MySystem@darkstar:2552
             bin/akka-cluster localhost:9999 cluster-status
 
 

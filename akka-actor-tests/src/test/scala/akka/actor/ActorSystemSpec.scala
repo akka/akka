@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
@@ -125,6 +125,10 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
   "An ActorSystem" must {
 
+    "use scala.concurrent.Future's InternalCallbackEC" in {
+      system.asInstanceOf[ActorSystemImpl].internalCallingThreadExecutionContext.getClass.getName must be === "scala.concurrent.Future$InternalCallbackExecutor$"
+    }
+
     "reject invalid names" in {
       for (
         n ← Seq(
@@ -248,7 +252,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     "shut down when /user fails" in {
       implicit val system = ActorSystem("Stop", AkkaSpec.testConf)
       EventFilter[ActorKilledException]() intercept {
-        system.actorFor("/user") ! Kill
+        system.actorSelection("/user") ! Kill
         awaitCond(system.isTerminated)
       }
     }
@@ -270,6 +274,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       val t = probe.expectMsg(Terminated(a)(existenceConfirmed = true, addressTerminated = false))
       t.existenceConfirmed must be(true)
       t.addressTerminated must be(false)
+      system.shutdown()
     }
 
     "shut down when /user escalates" in {

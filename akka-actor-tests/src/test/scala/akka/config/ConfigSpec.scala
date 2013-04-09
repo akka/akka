@@ -1,16 +1,16 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.config
 
 import language.postfixOps
-
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import akka.actor.{ IOManager, ActorSystem }
+import akka.event.Logging.DefaultLogger
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.findClassLoader())) {
@@ -32,10 +32,8 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         settings.SerializeAllMessages must equal(false)
 
         getInt("akka.scheduler.ticks-per-wheel") must equal(512)
-        settings.SchedulerTicksPerWheel must equal(512)
-
         getMilliseconds("akka.scheduler.tick-duration") must equal(100)
-        settings.SchedulerTickDuration must equal(100 millis)
+        getString("akka.scheduler.implementation") must equal("akka.actor.LightArrayRevolverScheduler")
 
         getBoolean("akka.daemonic") must be(false)
         settings.Daemonicity must be(false)
@@ -48,6 +46,13 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
 
         getMilliseconds("akka.actor.unstarted-push-timeout") must be(10.seconds.toMillis)
         settings.UnstartedPushTimeout.duration must be(10.seconds)
+
+        settings.Loggers.size must be(1)
+        settings.Loggers.head must be(classOf[DefaultLogger].getName)
+        getStringList("akka.loggers").get(0) must be(classOf[DefaultLogger].getName)
+
+        getMilliseconds("akka.logger-startup-timeout") must be(5.seconds.toMillis)
+        settings.LoggerStartTimeout.duration must be(5.seconds)
       }
 
       {

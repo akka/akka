@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.testkit
@@ -19,10 +19,10 @@ import akka.pattern.ask
  * @since 1.1
  */
 class TestActorRef[T <: Actor](
-  _system: ActorSystemImpl,
+  _system: ActorSystem,
   _prerequisites: DispatcherPrerequisites,
   _props: Props,
-  _supervisor: InternalActorRef,
+  _supervisor: ActorRef,
   name: String)
   extends {
     private val disregard = _supervisor match {
@@ -35,11 +35,11 @@ class TestActorRef[T <: Actor](
       case s ⇒ _system.log.error("trying to attach child {} to unknown type of supervisor {}, this is not going to end well", name, s.getClass)
     }
   } with LocalActorRef(
-    _system,
+    _system.asInstanceOf[ActorSystemImpl],
     _props.withDispatcher(
       if (_props.dispatcher == Dispatchers.DefaultDispatcherId) CallingThreadDispatcher.Id
       else _props.dispatcher),
-    _supervisor,
+    _supervisor.asInstanceOf[InternalActorRef],
     _supervisor.path / name) {
 
   // we need to start ourselves since the creation of an actor has been split into initialization and starting
@@ -47,7 +47,7 @@ class TestActorRef[T <: Actor](
 
   import TestActorRef.InternalGetActor
 
-  override def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
+  protected override def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
     new ActorCell(system, ref, props, supervisor) {
       override def autoReceiveMessage(msg: Envelope) {
         msg.message match {
@@ -148,7 +148,7 @@ object TestActorRef {
   }), name)
 
   /**
-   * Java API
+   * Java API: create a TestActorRef in the given system for the given props
    */
   def create[T <: Actor](system: ActorSystem, props: Props, name: String): TestActorRef[T] = apply(props, name)(system)
 }

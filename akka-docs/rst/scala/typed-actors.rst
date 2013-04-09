@@ -204,7 +204,7 @@ Proxying
 --------
 
 You can use the ``typedActorOf`` that takes a TypedProps and an ActorRef to proxy the given ActorRef as a TypedActor.
-This is usable if you want to communicate remotely with TypedActors on other machines, just look them up with ``actorFor`` and pass the ``ActorRef`` to ``typedActorOf``.
+This is usable if you want to communicate remotely with TypedActors on other machines, just pass the ``ActorRef`` to ``typedActorOf``.
 
 .. note::
 
@@ -213,7 +213,7 @@ This is usable if you want to communicate remotely with TypedActors on other mac
 Lookup & Remoting
 -----------------
 
-Since ``TypedActors`` are backed by ``Akka Actors``, you can use ``actorFor`` together with ``typedActorOf`` to proxy ``ActorRefs`` potentially residing on remote nodes.
+Since ``TypedActors`` are backed by ``Akka Actors``, you can use ``typedActorOf`` to proxy ``ActorRefs`` potentially residing on remote nodes.
 
 .. includecode:: code/docs/actor/TypedActorDocSpec.scala#typed-actor-remote
 

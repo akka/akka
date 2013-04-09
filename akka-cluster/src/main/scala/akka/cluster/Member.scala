@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -12,15 +12,36 @@ import akka.actor.Address
 import MemberStatus._
 
 /**
- * Represents the address and the current status of a cluster member node.
+ * Represents the address, current status, and roles of a cluster member node.
  *
- * Note: `hashCode` and `equals` are solely based on the underlying `Address`, not its `MemberStatus`.
+ * Note: `hashCode` and `equals` are solely based on the underlying `Address`, not its `MemberStatus`
+ * and roles.
  */
-class Member(val address: Address, val status: MemberStatus) extends ClusterMessage {
+class Member(val address: Address, val status: MemberStatus, val roles: Set[String]) extends ClusterMessage with Serializable {
   override def hashCode = address.##
-  override def equals(other: Any) = Member.unapply(this) == Member.unapply(other)
+  override def equals(other: Any) = other match {
+    case m: Member ⇒ address == m.address
+    case _         ⇒ false
+  }
   override def toString = "Member(address = %s, status = %s)" format (address, status)
-  def copy(address: Address = this.address, status: MemberStatus = this.status): Member = new Member(address, status)
+
+  def hasRole(role: String): Boolean = roles.contains(role)
+
+  /**
+   * Java API
+   */
+  def getRoles: java.util.Set[String] =
+    scala.collection.JavaConverters.setAsJavaSetConverter(roles).asJava
+
+  def copy(status: MemberStatus): Member = {
+    val oldStatus = this.status
+    if (status == oldStatus) this
+    else {
+      require(allowedTransitions(oldStatus)(status),
+        s"Invalid member status transition [ ${this} -> ${status}]")
+      new Member(address, status, roles)
+    }
+  }
 }
 
 /**
@@ -30,13 +51,35 @@ object Member {
 
   val none = Set.empty[Member]
 
+  def apply(address: Address, status: MemberStatus, roles: Set[String]): Member =
+    new Member(address, status, roles)
+
   /**
    * `Address` ordering type class, sorts addresses by host and port.
    */
   implicit val addressOrdering: Ordering[Address] = Ordering.fromLessThan[Address] { (a, b) ⇒
+    // cluster node identifier is the host and port of the address; protocol and system is assumed to be the same
     if (a.host != b.host) a.host.getOrElse("").compareTo(b.host.getOrElse("")) < 0
     else if (a.port != b.port) a.port.getOrElse(0) < b.port.getOrElse(0)
     else false
+  }
+
+  /**
+   * INTERNAL API
+   * Orders the members by their address except that members with status
+   * Joining, Exiting and Down are ordered last (in that order).
+   */
+  private[cluster] val leaderStatusOrdering: Ordering[Member] = Ordering.fromLessThan[Member] { (a, b) ⇒
+    (a.status, b.status) match {
+      case (as, bs) if as == bs ⇒ ordering.compare(a, b) <= 0
+      case (Down, _)            ⇒ false
+      case (_, Down)            ⇒ true
+      case (Exiting, _)         ⇒ false
+      case (_, Exiting)         ⇒ true
+      case (Joining, _)         ⇒ false
+      case (_, Joining)         ⇒ true
+      case _                    ⇒ ordering.compare(a, b) <= 0
+    }
   }
 
   /**
@@ -44,13 +87,6 @@ object Member {
    */
   implicit val ordering: Ordering[Member] = new Ordering[Member] {
     def compare(a: Member, b: Member): Int = addressOrdering.compare(a.address, b.address)
-  }
-
-  def apply(address: Address, status: MemberStatus): Member = new Member(address, status)
-
-  def unapply(other: Any) = other match {
-    case m: Member ⇒ Some(m.address)
-    case _         ⇒ None
   }
 
   def pickHighestPriority(a: Set[Member], b: Set[Member]): Set[Member] = {
@@ -98,32 +134,44 @@ object MemberStatus {
   case object Removed extends MemberStatus
 
   /**
-   * JAVA API
+   * Java API: retrieve the “joining” status singleton
    */
   def joining: MemberStatus = Joining
 
   /**
-   * JAVA API
+   * Java API: retrieve the “up” status singleton
    */
   def up: MemberStatus = Up
 
   /**
-   * JAVA API
+   * Java API: retrieve the “leaving” status singleton
    */
   def leaving: MemberStatus = Leaving
 
   /**
-   * JAVA API
+   * Java API: retrieve the “exiting” status singleton
    */
   def exiting: MemberStatus = Exiting
 
   /**
-   * JAVA API
+   * Java API: retrieve the “down” status singleton
    */
   def down: MemberStatus = Down
 
   /**
-   * JAVA API
+   * Java API: retrieve the “removed” status singleton
    */
   def removed: MemberStatus = Removed
+
+  /**
+   * INTERNAL API
+   */
+  private[cluster] val allowedTransitions: Map[MemberStatus, Set[MemberStatus]] =
+    Map(
+      Joining -> Set(Up, Down, Removed),
+      Up -> Set(Leaving, Down, Removed),
+      Leaving -> Set(Exiting, Down, Removed),
+      Down -> Set(Removed),
+      Exiting -> Set(Removed, Down),
+      Removed -> Set.empty[MemberStatus])
 }

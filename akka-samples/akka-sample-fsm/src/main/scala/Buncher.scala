@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2010 Typesafe Inc. <http://www.typesafe.com>.
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>.
  */
 package sample.fsm.buncher
 
@@ -76,7 +76,7 @@ abstract class GenericBuncher[A: ClassTag, B](val singleTimeout: FiniteDuration,
       stop
   }
 
-  initialize
+  initialize()
 }
 
 object Buncher {

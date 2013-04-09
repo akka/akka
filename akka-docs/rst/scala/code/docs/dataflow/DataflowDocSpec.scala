@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.dataflow
 
@@ -50,7 +50,7 @@ class DataflowDocSpec extends WordSpec with MustMatchers {
     val v1, v2 = Promise[Int]()
     flow {
       // v1 will become the value of v2 + 10 when v2 gets a value
-      v1 << v2() + 10
+      v1 << 10 + v2()
       v1() + v2()
     } onComplete println
     flow { v2 << 5 } // As you can see, no blocking above!

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -20,6 +20,8 @@ import akka.actor.Address
 import akka.remote.RemoteActorRef
 import java.util.concurrent.TimeoutException
 import akka.actor.ActorSystemImpl
+import akka.actor.ActorIdentity
+import akka.actor.Identify
 
 object ClusterDeathWatchMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -65,13 +67,19 @@ abstract class ClusterDeathWatchSpec
 
         val path2 = RootActorPath(second) / "user" / "subject"
         val path3 = RootActorPath(third) / "user" / "subject"
-        val watchEstablished = TestLatch(1)
+        val watchEstablished = TestLatch(2)
         system.actorOf(Props(new Actor {
-          context.watch(context.actorFor(path2))
-          context.watch(context.actorFor(path3))
-          watchEstablished.countDown
+          context.actorSelection(path2) ! Identify(path2)
+          context.actorSelection(path3) ! Identify(path3)
+
           def receive = {
-            case t: Terminated ⇒ testActor ! t.actor.path
+            case ActorIdentity(`path2`, Some(ref)) ⇒
+              context.watch(ref)
+              watchEstablished.countDown
+            case ActorIdentity(`path3`, Some(ref)) ⇒
+              context.watch(ref)
+              watchEstablished.countDown
+            case Terminated(actor) ⇒ testActor ! actor.path
           }
         }), name = "observer1")
 
@@ -82,8 +90,11 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("second-terminated")
 
         markNodeAsUnavailable(third)
-        awaitCond(clusterView.unreachableMembers.exists(_.address == address(third)))
+        awaitAssert(clusterView.members.map(_.address) must not contain (address(third)))
+        awaitAssert(clusterView.unreachableMembers.map(_.address) must contain(address(third)))
         cluster.down(third)
+        // removed
+        awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (address(third)))
         expectMsg(path3)
         enterBarrier("third-terminated")
 
@@ -95,8 +106,11 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("watch-established")
         runOn(third) {
           markNodeAsUnavailable(second)
-          awaitCond(clusterView.unreachableMembers.exists(_.address == address(second)))
+          awaitAssert(clusterView.members.map(_.address) must not contain (address(second)))
+          awaitAssert(clusterView.unreachableMembers.map(_.address) must contain(address(second)))
           cluster.down(second)
+          // removed
+          awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (address(second)))
         }
         enterBarrier("second-terminated")
         enterBarrier("third-terminated")
@@ -104,22 +118,6 @@ abstract class ClusterDeathWatchSpec
 
       enterBarrier("after-1")
 
-    }
-
-    "receive Terminated when watched node is unknown host" taggedAs LongRunningTest in {
-      runOn(first) {
-        val path = RootActorPath(Address("akka", system.name, "unknownhost", 2552)) / "user" / "subject"
-        system.actorOf(Props(new Actor {
-          context.watch(context.actorFor(path))
-          def receive = {
-            case t: Terminated ⇒ testActor ! t.actor.path
-          }
-        }), name = "observer2")
-
-        expectMsg(path)
-      }
-
-      enterBarrier("after-2")
     }
 
     "receive Terminated when watched path doesn't exist" taggedAs LongRunningTest in {
@@ -135,7 +133,7 @@ abstract class ClusterDeathWatchSpec
         expectMsg(path)
       }
 
-      enterBarrier("after-3")
+      enterBarrier("after-2")
     }
 
     "be able to shutdown system when using remote deployed actor on node that crash" taggedAs LongRunningTest in within(20 seconds) {
@@ -147,8 +145,11 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("hello-deployed")
 
         markNodeAsUnavailable(first)
-        awaitCond(clusterView.unreachableMembers.exists(_.address == address(first)))
+        awaitAssert(clusterView.members.map(_.address) must not contain (address(first)))
+        awaitAssert(clusterView.unreachableMembers.map(_.address) must contain(address(first)))
         cluster.down(first)
+        // removed
+        awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (address(first)))
 
         val t = expectMsgType[Terminated]
         t.actor must be(hello)
@@ -172,7 +173,7 @@ abstract class ClusterDeathWatchSpec
           testConductor.removeNode(fourth)
         }
 
-        enterBarrier("after-4")
+        enterBarrier("after-3")
       }
 
     }

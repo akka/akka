@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -45,16 +45,12 @@ abstract class NodeLeavingAndExitingSpec
 
       runOn(first, third) {
         val secondAddess = address(second)
-        val leavingLatch = TestLatch()
         val exitingLatch = TestLatch()
         cluster.subscribe(system.actorOf(Props(new Actor {
           def receive = {
             case state: CurrentClusterState ⇒
-              if (state.members.exists(m ⇒ m.address == secondAddess && m.status == Leaving))
-                leavingLatch.countDown()
               if (state.members.exists(m ⇒ m.address == secondAddess && m.status == Exiting))
                 exitingLatch.countDown()
-            case MemberLeft(m) if m.address == secondAddess   ⇒ leavingLatch.countDown()
             case MemberExited(m) if m.address == secondAddess ⇒ exitingLatch.countDown()
             case MemberRemoved(m)                             ⇒ // not tested here
 
@@ -68,10 +64,7 @@ abstract class NodeLeavingAndExitingSpec
         enterBarrier("second-left")
 
         val expectedAddresses = roles.toSet map address
-        awaitCond(clusterView.members.map(_.address) == expectedAddresses)
-
-        // Verify that 'second' node is set to LEAVING
-        leavingLatch.await
+        awaitAssert(clusterView.members.map(_.address) must be(expectedAddresses))
 
         // Verify that 'second' node is set to EXITING
         exitingLatch.await

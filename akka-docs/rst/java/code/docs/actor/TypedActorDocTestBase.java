@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.actor;
 
@@ -176,12 +176,13 @@ public class TypedActorDocTestBase {
 
   @Test public void proxyAnyActorRef() {
     try {
+    final ActorRef actorRefToRemoteActor = system.deadLetters();
     //#typed-actor-remote
     Squarer typedActor =
       TypedActor.get(system).
         typedActorOf(
           new TypedProps<Squarer>(Squarer.class),
-          system.actorFor("akka://SomeSystem@somehost:2552/user/some/foobar")
+          actorRefToRemoteActor
         );
     //Use "typedActor" as a FooBar
     //#typed-actor-remote

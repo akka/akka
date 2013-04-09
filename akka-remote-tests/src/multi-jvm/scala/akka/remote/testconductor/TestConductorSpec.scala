@@ -1,10 +1,9 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote.testconductor
 
 import language.postfixOps
-
 import com.typesafe.config.ConfigFactory
 import akka.actor.Props
 import akka.actor.Actor
@@ -17,6 +16,8 @@ import java.net.InetSocketAddress
 import java.net.InetAddress
 import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeSpec, MultiNodeConfig }
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.actor.Identify
+import akka.actor.ActorIdentity
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false))
@@ -36,7 +37,10 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with ST
 
   def initialParticipants = 2
 
-  lazy val echo = system.actorFor(node(master) / "user" / "echo")
+  lazy val echo = {
+    system.actorSelection(node(master) / "user" / "echo") ! Identify(None)
+    expectMsgType[ActorIdentity].ref.get
+  }
 
   "A TestConductor" must {
 
@@ -90,8 +94,8 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with ST
       }
 
       val (min, max) =
-        if(isNode(master))(0 seconds, 500 millis)
-        else (0.3 seconds, 2 seconds)
+        if (isNode(master)) (0 seconds, 500 millis)
+        else (0.3 seconds, 3 seconds)
 
       within(min, max) {
         expectMsg(500 millis, 10)

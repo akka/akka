@@ -1,10 +1,11 @@
 /**
- *    Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *    Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
 
 import akka.actor.{ ActorCell, ActorRef }
+import akka.dispatch.sysmsg._
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import akka.util.Helpers
@@ -39,7 +40,7 @@ class BalancingDispatcher(
   extends Dispatcher(_prerequisites, _id, throughput, throughputDeadlineTime, mailboxType, _executorServiceFactoryProvider, _shutdownTimeout) {
 
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   private[akka] val team = new ConcurrentSkipListSet[ActorCell](
     Helpers.identityHashComparator(new Comparator[ActorCell] {
@@ -47,7 +48,7 @@ class BalancingDispatcher(
     }))
 
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   private[akka] val messageQueue: MessageQueue = mailboxType.create(None, None)
 
@@ -56,13 +57,13 @@ class BalancingDispatcher(
     override def cleanUp(): Unit = {
       val dlq = system.deadLetterMailbox
       //Don't call the original implementation of this since it scraps all messages, and we don't want to do that
-      var message = systemDrain(NoMessage)
-      while (message ne null) {
+      var messages = systemDrain(new LatestFirstSystemMessageList(NoMessage))
+      while (messages.nonEmpty) {
         // message must be “virgin” before being able to systemEnqueue again
-        val next = message.next
-        message.next = null
+        val message = messages.head
+        messages = messages.tail
+        message.unlink()
         dlq.systemEnqueue(system.deadLetters, message)
-        message = next
       }
     }
   }
@@ -85,17 +86,18 @@ class BalancingDispatcher(
     if (!registerForExecution(receiver.mailbox, false, false)) teamWork()
   }
 
-  protected def teamWork(): Unit = if (attemptTeamWork) {
-    @tailrec def scheduleOne(i: Iterator[ActorCell] = team.iterator): Unit =
-      if (messageQueue.hasMessages
-        && i.hasNext
-        && (executorService.executor match {
-          case lm: LoadMetrics ⇒ lm.atFullThrottle == false
-          case other           ⇒ true
-        })
-        && !registerForExecution(i.next.mailbox, false, false))
-        scheduleOne(i)
+  protected def teamWork(): Unit =
+    if (attemptTeamWork) {
+      @tailrec def scheduleOne(i: Iterator[ActorCell] = team.iterator): Unit =
+        if (messageQueue.hasMessages
+          && i.hasNext
+          && (executorService.executor match {
+            case lm: LoadMetrics ⇒ lm.atFullThrottle == false
+            case other           ⇒ true
+          })
+          && !registerForExecution(i.next.mailbox, false, false))
+          scheduleOne(i)
 
-    scheduleOne()
-  }
+      scheduleOne()
+    }
 }

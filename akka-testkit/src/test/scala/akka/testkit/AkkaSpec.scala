@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
@@ -19,7 +19,7 @@ import akka.pattern.ask
 object AkkaSpec {
   val testConf: Config = ConfigFactory.parseString("""
       akka {
-        event-handlers = ["akka.testkit.TestEventListener"]
+        loggers = ["akka.testkit.TestEventListener"]
         loglevel = "WARNING"
         stdout-loglevel = "WARNING"
         actor {
@@ -52,7 +52,7 @@ object AkkaSpec {
 }
 
 abstract class AkkaSpec(_system: ActorSystem)
-  extends TestKit(_system) with WordSpec with MustMatchers with BeforeAndAfterAll {
+  extends TestKit(_system) with WordSpec with MustMatchers with BeforeAndAfterAll with WatchedByCoroner {
 
   def this(config: Config) = this(ActorSystem(AkkaSpec.getCallerName(getClass),
     ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
@@ -66,6 +66,7 @@ abstract class AkkaSpec(_system: ActorSystem)
   val log: LoggingAdapter = Logging(system, this.getClass)
 
   final override def beforeAll {
+    startCoroner
     atStartup()
   }
 
@@ -78,6 +79,7 @@ abstract class AkkaSpec(_system: ActorSystem)
         println(system.asInstanceOf[ActorSystemImpl].printTree)
     }
     afterTermination()
+    stopCoroner()
   }
 
   protected def atStartup() {}
@@ -88,4 +90,7 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   def spawn(dispatcherId: String = Dispatchers.DefaultDispatcherId)(body: ⇒ Unit): Unit =
     Future(body)(system.dispatchers.lookup(dispatcherId))
+
+  override def expectedTestDuration: FiniteDuration = 60 seconds
+
 }

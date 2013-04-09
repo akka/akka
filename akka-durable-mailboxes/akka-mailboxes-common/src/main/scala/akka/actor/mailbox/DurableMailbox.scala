@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor.mailbox
 
@@ -21,6 +21,13 @@ abstract class DurableMessageQueue(val owner: ActorRef, val system: ExtendedActo
   val name: String = "mailbox_" + Name.replaceAllIn(ownerPathString, "_")
 
 }
+
+/**
+ * Java API
+ * DurableMessageQueue with functionality to serialize and deserialize Envelopes (messages)
+ */
+abstract class DurableMessageQueueWithSerialization(_owner: ActorRef, _system: ExtendedActorSystem)
+  extends DurableMessageQueue(_owner, _system) with DurableMessageSerialization
 
 /**
  * DurableMessageSerialization can be mixed into a DurableMessageQueue and adds functionality
@@ -53,7 +60,8 @@ trait DurableMessageSerialization { this: DurableMessageQueue ⇒
    */
   def deserialize(bytes: Array[Byte]): Envelope = {
 
-    def deserializeActorRef(refProtocol: ActorRefProtocol): ActorRef = system.actorFor(refProtocol.getPath)
+    def deserializeActorRef(refProtocol: ActorRefProtocol): ActorRef =
+      system.provider.resolveActorRef(refProtocol.getPath)
 
     val durableMessage = RemoteMessageProtocol.parseFrom(bytes)
     val message = MessageSerializer.deserialize(system, durableMessage.getMessage)

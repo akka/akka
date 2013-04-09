@@ -8,6 +8,7 @@ import akka.actor.UntypedActorFactory;
 public class StatsSampleClientMain {
 
   public static void main(String[] args) throws Exception {
+    // note that client is not a compute node, role not defined
     ActorSystem system = ActorSystem.create("ClusterSystem");
     system.actorOf(new Props(new UntypedActorFactory() {
       @Override

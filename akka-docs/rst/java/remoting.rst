@@ -25,8 +25,8 @@ to your ``application.conf`` file::
       provider = "akka.remote.RemoteActorRefProvider"
     }
     remote {
-      transport = "akka.remote.netty.NettyRemoteTransport"
-      netty {
+      enabled-transports = ["akka.remote.netty.tcp"]
+      netty.tcp {
         hostname = "127.0.0.1"
         port = 2552
       }
@@ -70,17 +70,24 @@ reference file for more information:
 Looking up Remote Actors
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-``actorFor(path)`` will obtain an ``ActorRef`` to an Actor on a remote node::
+``actorSelection(path)`` will obtain an ``ActorSelection`` to an Actor on a remote node::
 
-  ActorRef actor = context.actorFor("akka://app@10.0.0.1:2552/user/serviceA/worker");
+  ActorSelection selection =
+    context.actorSelection("akka.tcp://app@10.0.0.1:2552/user/serviceA/worker");
 
-As you can see from the example above the following pattern is used to find an ``ActorRef`` on a remote node::
+As you can see from the example above the following pattern is used to find an actor on a remote node::
 
-  akka://<actorsystemname>@<hostname>:<port>/<actor path>
+  akka.<protocol>://<actorsystemname>@<hostname>:<port>/<actor path>
 
-Once you obtained a reference to the actor you can interact with it they same way you would with a local actor, e.g.::
+Once you obtained a selection to the actor you can interact with it they same way you would with a local actor, e.g.::
 
-  actor.tell("Pretty awesome feature", getSelf());
+  selection.tell("Pretty awesome feature", getSelf());
+
+To acquire an :class:`ActorRef` for an :class:`ActorSelection` you need to
+send a message to the selection and use the ``getSender`` reference of the reply from
+the actor. There is a built-in ``Identify`` message that all Actors will understand
+and automatically reply to with a ``ActorIdentity`` message containing the
+:class:`ActorRef`.
 
 .. note::
 
@@ -96,7 +103,7 @@ If you want to use the creation functionality in Akka remoting you have to furth
     actor {
       deployment {
         /sampleActor {
-          remote = "akka://sampleActorSystem@127.0.0.1:2553"
+          remote = "akka.tcp://sampleActorSystem@127.0.0.1:2553"
         }
       }
     }
@@ -130,6 +137,8 @@ actor systems has to have a JAR containing the class.
   ``/someParent/*``. Non-wildcard matches always have higher priority to match than wildcards, so:
   ``/foo/bar`` is considered **more specific** than ``/foo/*`` and only the highest priority match is used.
   Please note that it **cannot** be used to partially match section, like this: ``/foo*/bar``, ``/f*o/bar`` etc.
+
+.. _remote-deployment-warnings-java:
 
 .. warning::
 
@@ -187,7 +196,7 @@ This is also done via configuration::
           router = "round-robin"
           nr-of-instances = 10
           target {
-            nodes = ["akka://app@10.0.0.2:2552", "akka://app@10.0.0.3:2552"]
+            nodes = ["akka.tcp://app@10.0.0.2:2552", "akka://app@10.0.0.3:2552"]
           }
         }
       }
@@ -262,9 +271,9 @@ and it is created from an actor system using the aforementioned client’s confi
 .. includecode:: ../../../akka-samples/akka-sample-remote/src/main/java/sample/remote/calculator/java/JLookupApplication.java
    :include: setup
 
-Requests which come in via ``doSomething`` will be sent to the client actor
-along with the reference which was looked up earlier. Observe how the actor
-system name using in ``actorFor`` matches the remote system’s name, as do IP
+Requests which come in via ``doSomething`` will be sent to the client actor,
+which will use the actor reference that was identified earlier. Observe how the actor
+system name using in ``actorSelection`` matches the remote system’s name, as do IP
 and port number. Top-level actors are always created below the ``"/user"``
 guardian, which supervises them.
 
@@ -302,6 +311,58 @@ Observe how the name of the server actor matches the deployment given in the
 configuration file, which will transparently delegate the actor creation to the
 remote node.
 
+Pluggable transport support
+---------------------------
+
+Akka can be configured to use various transports to communicate with remote systems. The core
+component of this feature is the :meth:`akka.remote.Transport` SPI. Transport implementations must extend this trait.
+Transports can be loaded by setting the ``akka.remote.enabled-transports`` configuration key to point to one or
+more configuration sections containing driver descriptions.
+
+An example of setting up the default Netty based SSL driver as default::
+
+  akka {
+    remote {
+      enabled-transports = [akka.remote.netty.ssl]
+
+      netty.ssl.security {
+        key-store = "mykeystore"
+        trust-store = "mytruststore"
+        key-store-password = "changeme"
+        trust-store-password = "changeme"
+        protocol = "TLSv1"
+        random-number-generator = "AES128CounterSecureRNG"
+        enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
+      }
+    }
+  }
+
+An example of setting up a custom transport implementation::
+
+  akka {
+    remote {
+      applied-transports = ["akka.remote.mytransport"]
+
+      mytransport {
+        # The transport-class configuration entry is required, and
+        # it must contain the fully qualified name of the transport
+        # implementation
+        transport-class = "my.package.MyTransport"
+
+        # It is possible to decorate Transports with additional services.
+        # Adapters should be registered in the "adapters" sections to
+        # be able to apply them to transports
+        applied-adapters = []
+
+        # Driver specific configuration options has to be in the same
+        # section:
+        some-config = foo
+        another-config = bar
+      }
+
+
+
+
 Remote Events
 -------------
 
@@ -309,9 +370,18 @@ It is possible to listen to events that occur in Akka Remote, and to subscribe/u
 you simply register as listener to the below described types in on the ``ActorSystem.eventStream``.
 
 .. note::
-    To subscribe to any outbound-related events, subscribe to ``RemoteClientLifeCycleEvent``
-    To subscribe to any inbound-related events, subscribe to ``RemoteServerLifeCycleEvent``
-    To subscribe to any remote events, subscribe to ``RemoteLifeCycleEvent``
+
+    To subscribe to any remote event, subscribe to
+    :meth:`RemotingLifecycleEvent`.  To subscribe to events related only to the
+    lifecycle of associations, subscribe to
+    :meth:`akka.remote.AssociationEvent`.
+
+.. note::
+
+    The use of term "Association" instead of "Connection" reflects that the
+    remoting subsystem may use connectionless transports, but an association
+    similar to transport layer connections is maintained between endpoints by
+    the Akka protocol.
 
 By default an event listener is registered which logs all of the events
 described below. This default was chosen to help setting up a system, but it is
@@ -319,39 +389,27 @@ quite common to switch this logging off once that phase of the project is
 finished.
 
 .. note::
+
   In order to switch off the logging, set
   ``akka.remote.log-remote-lifecycle-events = off`` in your
   ``application.conf``.
 
-To intercept when an outbound connection is disconnected, you listen to ``RemoteClientDisconnected`` which
-holds the transport used (RemoteTransport) and the outbound address that was disconnected (Address).
+To be notified when an association is over ("disconnected") listen to ``DisassociatedEvent`` which
+holds the direction of the association (inbound or outbound) and the addresses of the involved parties.
 
-To intercept when an outbound connection is connected, you listen to ``RemoteClientConnected`` which
-holds the transport used (RemoteTransport) and the outbound address that was connected to (Address).
+To be notified  when an association is successfully established ("connected") listen to ``AssociatedEvent`` which
+holds the direction of the association (inbound or outbound) and the addresses of the involved parties.
 
-To intercept when an outbound client is started you listen to ``RemoteClientStarted``
-which holds the transport used (RemoteTransport) and the outbound address that it is connected to (Address).
+To intercept errors directly related to associations, listen to ``AssociationErrorEvent`` which
+holds the direction of the association (inbound or outbound), the addresses of the involved parties and the
+``Throwable`` cause.
 
-To intercept when an outbound client is shut down you listen to ``RemoteClientShutdown``
-which holds the transport used (RemoteTransport) and the outbound address that it was connected to (Address).
+To be notified  when the remoting subsystem is ready to accept associations, listen to ``RemotingListenEvent`` which
+contains the addresses the remoting listens on.
 
-For general outbound-related errors, that do not classify as any of the others, you can listen to ``RemoteClientError``,
-which holds the cause (Throwable), the transport used (RemoteTransport) and the outbound address (Address).
+To be notified  when the remoting subsystem has been shut down, listen to ``RemotingShutdownEvent``.
 
-To intercept when an inbound server is started (typically only once) you listen to ``RemoteServerStarted``
-which holds the transport that it will use (RemoteTransport).
-
-To intercept when an inbound server is shut down (typically only once) you listen to ``RemoteServerShutdown``
-which holds the transport that it used (RemoteTransport).
-
-To intercept when an inbound connection has been established you listen to ``RemoteServerClientConnected``
-which holds the transport used (RemoteTransport) and optionally the address that connected (Option<Address>).
-
-To intercept when an inbound connection has been disconnected you listen to ``RemoteServerClientDisconnected``
-which holds the transport used (RemoteTransport) and optionally the address that disconnected (Option<Address>).
-
-To intercept when an inbound remote client has been closed you listen to ``RemoteServerClientClosed``
-which holds the transport used (RemoteTransport) and optionally the address of the remote client that was closed (Option<Address>).
+To intercept generic remoting related errors, listen to ``RemotingErrorEvent`` which holds the ``Throwable`` cause.
 
 Remote Security
 ^^^^^^^^^^^^^^^
@@ -418,7 +476,7 @@ as the ``require-cookie`` option turned on.
 
 Here is an example config::
 
-    akka.remote.netty {
+    akka.remote {
       secure-cookie = "090A030E0F0A05010900000A0C0E0C0B03050D05"
       require-cookie = on
     }
@@ -426,17 +484,18 @@ Here is an example config::
 SSL
 ---
 
-SSL can be used for the remote transport by activating the ``akka.remote.netty.ssl``
-configuration section. See description of the settings in the :ref:`remoting-java-configuration`.
+SSL can be used as the remote transport by adding ``akka.remote.netty.ssl``
+to the ``enabled-transport`` configuration section. See a description of the settings
+in the :ref:`remoting-java-configuration` section.
 
-The SSL support is implemented with Java Secure Socket Extension, please consult the offical 
+The SSL support is implemented with Java Secure Socket Extension, please consult the offical
 `Java Secure Socket Extension documentation <http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html>`_
 and related resources for troubleshooting.
-  
+
 .. note::
 
-  When using SHA1PRNG on Linux it's recommended specify ``-Djava.security.egd=file:/dev/./urandom`` as argument 
+  When using SHA1PRNG on Linux it's recommended specify ``-Djava.security.egd=file:/dev/./urandom`` as argument
   to the JVM to prevent blocking. It is NOT as secure because it reuses the seed.
-  Use '/dev/./urandom', not '/dev/urandom' as that doesn't work according to 
+  Use '/dev/./urandom', not '/dev/urandom' as that doesn't work according to
   `Bug ID: 6202721 <http://bugs.sun.com/view_bug.do?bug_id=6202721>`_.
-  
+

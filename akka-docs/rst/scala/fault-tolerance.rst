@@ -49,6 +49,13 @@ The match statement which forms the bulk of the body is of type ``Decider``,
 which is a ``PartialFunction[Throwable, Directive]``. This
 is the piece which maps child failure types to their corresponding directives.
 
+.. note::
+
+  If the strategy is declared inside the supervising actor (as opposed to
+  within a companion object) its decider has access to all internal state of
+  the actor in a thread-safe fashion, including obtaining a reference to the
+  currently failed child (available as the ``sender`` of the failure message).
+
 Default Supervisor Strategy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -74,6 +81,22 @@ loss of the child. This strategy is also provided pre-packaged as
 :obj:`SupervisorStrategy.stoppingStrategy` with an accompanying
 :class:`StoppingSupervisorStrategy` configurator to be used when you want the
 ``"/user"`` guardian to apply it.
+
+Logging of Actor Failures
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+By default the ``SupervisorStrategy`` logs failures unless they are escalated.
+Escalated failures are supposed to be handled, and potentially logged, at a level
+higher in the hierarchy.
+
+You can mute the default logging of a ``SupervisorStrategy`` by setting
+``loggingEnabled`` to ``false`` when instantiating it. Customized logging
+can be done inside the ``Decider``. Note that the reference to the currently
+failed child is available as the ``sender`` when the ``SupervisorStrategy`` is
+declared inside the supervising actor.
+
+You may also customize the logging in your own ``SupervisorStrategy`` implementation
+by overriding the ``logFailure`` method.
 
 Supervision of Top-Level Actors
 -------------------------------

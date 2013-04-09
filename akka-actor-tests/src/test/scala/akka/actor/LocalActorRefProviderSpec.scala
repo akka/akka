@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -55,6 +55,25 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
       b.path.name must be(childName)
     }
 
+  }
+
+  "A LocalActorRef's ActorCell" must {
+    "not retain its original Props when terminated" in {
+      val GetChild = "GetChild"
+      val a = watch(system.actorOf(Props(new Actor {
+        val child = context.actorOf(Props.empty)
+        def receive = { case `GetChild` ⇒ sender ! child }
+      })))
+      a.tell(GetChild, testActor)
+      val child = expectMsgType[ActorRef]
+      val childProps1 = child.asInstanceOf[LocalActorRef].underlying.props
+      childProps1 must be(Props.empty)
+      system stop a
+      expectMsgType[Terminated]
+      val childProps2 = child.asInstanceOf[LocalActorRef].underlying.props
+      childProps2 must not be theSameInstanceAs(childProps1)
+      childProps2 must be theSameInstanceAs ActorCell.terminatedProps
+    }
   }
 
   "An ActorRefFactory" must {

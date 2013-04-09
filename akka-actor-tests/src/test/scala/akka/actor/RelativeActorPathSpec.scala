@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
@@ -22,6 +22,9 @@ class RelativeActorPathSpec extends WordSpec with MustMatchers {
     "match url encoded name" in {
       val name = URLEncoder.encode("akka://ClusterSystem@127.0.0.1:2552", "UTF-8")
       elements(name) must be(List(name))
+    }
+    "match path with uid fragment" in {
+      elements("foo/bar/baz#1234") must be(List("foo", "bar", "baz#1234"))
     }
   }
 }

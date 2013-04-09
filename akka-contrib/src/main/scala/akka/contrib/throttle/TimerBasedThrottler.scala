@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.contrib.throttle
@@ -276,7 +276,7 @@ class TimerBasedThrottler(var rate: Rate) extends Actor with Throttler with FSM[
     case Active -> Idle ⇒ stopTimer()
   }
 
-  initialize
+  initialize()
 
   private def startTimer(rate: Rate) = setTimer("morePermits", Tick, rate.duration, true)
   private def stopTimer() = cancelTimer("morePermits")

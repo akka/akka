@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
@@ -80,12 +80,12 @@ object FSM {
   case object StateTimeout
 
   /**
-   * Internal API
+   * INTERNAL API
    */
   private case class TimeoutMarker(generation: Long)
 
   /**
-   * Internal API
+   * INTERNAL API
    */
   private[akka] case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(context: ActorContext) {
     private var ref: Option[Cancellable] = _
@@ -97,10 +97,11 @@ object FSM {
         if (repeat) scheduler.schedule(timeout, timeout, actor, this)
         else scheduler.scheduleOnce(timeout, actor, this))
 
-    def cancel(): Unit = if (ref.isDefined) {
-      ref.get.cancel()
-      ref = None
-    }
+    def cancel(): Unit =
+      if (ref.isDefined) {
+        ref.get.cancel()
+        ref = None
+      }
   }
 
   /**
@@ -153,7 +154,7 @@ object FSM {
     }
 
     /**
-     * Internal API.
+     * INTERNAL API.
      */
     private[akka] def withStopReason(reason: Reason): State[S, D] = {
       copy(stopReason = Some(reason))
@@ -389,7 +390,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
   final def setStateTimeout(state: S, timeout: Timeout): Unit = stateTimeouts(state) = timeout
 
   /**
-   * Internal API, used for testing.
+   * INTERNAL API, used for testing.
    */
   private[akka] final def isStateTimerActive = timeoutFuture.isDefined
 
@@ -450,7 +451,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
    * Verify existence of initial state and setup timers. This should be the
    * last call within the constructor.
    */
-  final def initialize: Unit = makeTransition(currentState)
+  final def initialize(): Unit = makeTransition(currentState)
 
   /**
    * Return current state name (i.e. object of type S)
@@ -552,12 +553,12 @@ trait FSM[S, D] extends Listeners with ActorLogging {
         processMsg(msg, t)
       }
     case SubscribeTransitionCallBack(actorRef) ⇒
-      // TODO use DeathWatch to clean up list
+      // TODO Use context.watch(actor) and receive Terminated(actor) to clean up list
       listeners.add(actorRef)
       // send current state back as reference point
       actorRef ! CurrentState(self, currentState.stateName)
     case Listen(actorRef) ⇒
-      // TODO use DeathWatch to clean up list
+      // TODO Use context.watch(actor) and receive Terminated(actor) to clean up list
       listeners.add(actorRef)
       // send current state back as reference point
       actorRef ! CurrentState(self, currentState.stateName)

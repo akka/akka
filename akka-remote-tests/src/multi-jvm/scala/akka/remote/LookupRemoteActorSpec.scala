@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -7,8 +7,10 @@ import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.pattern.ask
-import testkit.{STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec}
+import testkit.{ STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec }
 import akka.testkit._
+import akka.actor.Identify
+import akka.actor.ActorIdentity
 
 object LookupRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
@@ -41,7 +43,10 @@ class LookupRemoteActorSpec extends MultiNodeSpec(LookupRemoteActorMultiJvmSpec)
   "Remoting" must {
     "lookup remote actor" taggedAs LongRunningTest in {
       runOn(slave) {
-        val hello = system.actorFor(node(master) / "user" / "service-hello")
+        val hello = {
+          system.actorSelection(node(master) / "user" / "service-hello") ! Identify("id1")
+          expectMsgType[ActorIdentity].ref.get
+        }
         hello.isInstanceOf[RemoteActorRef] must be(true)
         val masterAddress = testConductor.getAddressFor(master).await
         (hello ? "identify").await.asInstanceOf[ActorRef].path.address must equal(masterAddress)

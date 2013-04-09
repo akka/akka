@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.actor
 
@@ -23,7 +23,7 @@ object FaultHandlingDocSample extends App {
   import Worker._
 
   val config = ConfigFactory.parseString("""
-    akka.loglevel = DEBUG
+    akka.loglevel = "DEBUG"
     akka.actor.debug {
       receive = on
       lifecycle = on
@@ -204,7 +204,7 @@ class CounterService extends Actor {
         if (backlog.size >= MaxBacklog)
           throw new ServiceUnavailable(
             "CounterService not available, lack of initial value")
-        backlog = backlog :+ (sender, msg)
+        backlog :+= (sender -> msg)
     }
   }
 

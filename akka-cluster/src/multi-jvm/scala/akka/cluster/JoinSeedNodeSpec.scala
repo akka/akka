@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -48,7 +48,7 @@ abstract class JoinSeedNodeSpec
 
       runOn(seed1, seed2, seed3) {
         cluster.joinSeedNodes(seedNodes)
-        awaitUpConvergence(3)
+        awaitMembersUp(3)
       }
       enterBarrier("after-1")
     }
@@ -57,7 +57,7 @@ abstract class JoinSeedNodeSpec
       runOn(ordinary1, ordinary2) {
         cluster.joinSeedNodes(seedNodes)
       }
-      awaitUpConvergence(roles.size)
+      awaitMembersUp(roles.size)
       enterBarrier("after-2")
     }
   }

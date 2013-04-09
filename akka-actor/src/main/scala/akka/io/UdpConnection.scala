@@ -5,7 +5,7 @@ package akka.io
 
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.io.SelectionHandler._
-import akka.io.UdpConn._
+import akka.io.UdpConnected._
 import akka.util.ByteString
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
@@ -13,9 +13,12 @@ import java.nio.channels.SelectionKey._
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 
-private[io] class UdpConnection(val udpConn: UdpConnExt,
-                                val commander: ActorRef,
-                                val connect: Connect) extends Actor with ActorLogging {
+/**
+ * INTERNAL API
+ */
+private[io] class UdpConnectedection(val udpConn: UdpConnectedExt,
+                                     val commander: ActorRef,
+                                     val connect: Connect) extends Actor with ActorLogging {
 
   def selector: ActorRef = context.parent
 

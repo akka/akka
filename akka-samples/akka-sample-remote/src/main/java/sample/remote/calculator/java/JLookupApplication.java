@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package sample.remote.calculator.java;
 
@@ -7,6 +7,8 @@ package sample.remote.calculator.java;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import akka.actor.UntypedActor;
+import akka.actor.UntypedActorFactory;
 import akka.kernel.Bootable;
 import com.typesafe.config.ConfigFactory;
 //#imports
@@ -15,18 +17,19 @@ import com.typesafe.config.ConfigFactory;
 public class JLookupApplication implements Bootable {
   private ActorSystem system;
   private ActorRef actor;
-  private ActorRef remoteActor;
 
   public JLookupApplication() {
-    system = ActorSystem.create("LookupApplication", ConfigFactory.load()
-        .getConfig("remotelookup"));
-    actor = system.actorOf(new Props(JLookupActor.class));
-    remoteActor = system.actorFor(
-      "akka://CalculatorApplication@127.0.0.1:2552/user/simpleCalculator");
+    system = ActorSystem.create("LookupApplication", ConfigFactory.load().getConfig("remotelookup"));
+    final String path = "akka.tcp://CalculatorApplication@127.0.0.1:2552/user/simpleCalculator";
+    actor = system.actorOf(new Props().withCreator(new UntypedActorFactory() {
+      public UntypedActor create() {
+        return new JLookupActor(path);
+      }
+    }), "lookupActor");
   }
 
   public void doSomething(Op.MathOp mathOp) {
-    actor.tell(new InternalMsg.MathOpMsg(remoteActor, mathOp), null);
+    actor.tell(mathOp, null);
   }
 
   @Override

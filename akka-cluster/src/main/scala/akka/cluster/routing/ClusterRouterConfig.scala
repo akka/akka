@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster.routing
 
@@ -60,6 +60,8 @@ final case class ClusterRouterConfig(local: RouterConfig, settings: ClusterRoute
 
   override def resizer: Option[Resizer] = local.resizer
 
+  override def stopRouterWhenAllRouteesRemoved: Boolean = false
+
   override def withFallback(other: RouterConfig): RouterConfig = other match {
     case ClusterRouterConfig(_: RemoteRouterConfig, _) ⇒ throw new IllegalStateException(
       "ClusterRouterConfig is not allowed to wrap a RemoteRouterConfig")
@@ -74,26 +76,31 @@ object ClusterRouterSettings {
   /**
    * Settings for create and deploy of the routees
    */
-  def apply(totalInstances: Int, maxInstancesPerNode: Int, allowLocalRoutees: Boolean): ClusterRouterSettings =
-    new ClusterRouterSettings(totalInstances, maxInstancesPerNode, allowLocalRoutees)
+  def apply(totalInstances: Int, maxInstancesPerNode: Int, allowLocalRoutees: Boolean, useRole: Option[String]): ClusterRouterSettings =
+    new ClusterRouterSettings(totalInstances, maxInstancesPerNode, routeesPath = "", allowLocalRoutees, useRole)
 
   /**
    * Settings for remote deployment of the routees, allowed to use routees on own node
    */
-  def apply(totalInstances: Int, maxInstancesPerNode: Int): ClusterRouterSettings =
-    apply(totalInstances, maxInstancesPerNode, allowLocalRoutees = true)
+  def apply(totalInstances: Int, maxInstancesPerNode: Int, useRole: Option[String]): ClusterRouterSettings =
+    apply(totalInstances, maxInstancesPerNode, allowLocalRoutees = true, useRole)
 
   /**
    * Settings for lookup of the routees
    */
-  def apply(totalInstances: Int, routeesPath: String, allowLocalRoutees: Boolean): ClusterRouterSettings =
-    new ClusterRouterSettings(totalInstances, routeesPath, allowLocalRoutees)
+  def apply(totalInstances: Int, routeesPath: String, allowLocalRoutees: Boolean, useRole: Option[String]): ClusterRouterSettings =
+    new ClusterRouterSettings(totalInstances, maxInstancesPerNode = 1, routeesPath, allowLocalRoutees, useRole)
 
   /**
    * Settings for lookup of the routees, allowed to use routees on own node
    */
-  def apply(totalInstances: Int, routeesPath: String): ClusterRouterSettings =
-    apply(totalInstances, routeesPath, allowLocalRoutees = true)
+  def apply(totalInstances: Int, routeesPath: String, useRole: Option[String]): ClusterRouterSettings =
+    apply(totalInstances, routeesPath, allowLocalRoutees = true, useRole)
+
+  def useRoleOption(role: String): Option[String] = role match {
+    case null | "" ⇒ None
+    case _         ⇒ Some(role)
+  }
 }
 
 /**
@@ -106,21 +113,22 @@ case class ClusterRouterSettings private[akka] (
   totalInstances: Int,
   maxInstancesPerNode: Int,
   routeesPath: String,
-  allowLocalRoutees: Boolean) {
+  allowLocalRoutees: Boolean,
+  useRole: Option[String]) {
 
   /**
-   * Settings for create and deploy of the routees
-   * JAVA API
+   * Java API: Settings for create and deploy of the routees
    */
-  def this(totalInstances: Int, maxInstancesPerNode: Int, allowLocalRoutees: Boolean) =
-    this(totalInstances, maxInstancesPerNode, routeesPath = "", allowLocalRoutees)
+  def this(totalInstances: Int, maxInstancesPerNode: Int, allowLocalRoutees: Boolean, useRole: String) =
+    this(totalInstances, maxInstancesPerNode, routeesPath = "", allowLocalRoutees,
+      ClusterRouterSettings.useRoleOption(useRole))
 
   /**
-   * Settings for lookup of the routees
-   * JAVA API
+   * Java API: Settings for lookup of the routees
    */
-  def this(totalInstances: Int, routeesPath: String, allowLocalRoutees: Boolean) =
-    this(totalInstances, maxInstancesPerNode = 1, routeesPath, allowLocalRoutees)
+  def this(totalInstances: Int, routeesPath: String, allowLocalRoutees: Boolean, useRole: String) =
+    this(totalInstances, maxInstancesPerNode = 1, routeesPath, allowLocalRoutees,
+      ClusterRouterSettings.useRoleOption(useRole))
 
   if (totalInstances <= 0) throw new IllegalArgumentException("totalInstances of cluster router must be > 0")
   if (maxInstancesPerNode <= 0) throw new IllegalArgumentException("maxInstancesPerNode of cluster router must be > 0")
@@ -191,6 +199,14 @@ private[akka] class ClusterRouteeProvider(
 
   private[routing] def createRoutees(): Unit = createRoutees(settings.totalInstances)
 
+  override def unregisterRoutees(routees: immutable.Iterable[ActorRef]): Unit = {
+    super.unregisterRoutees(routees)
+    if (!settings.isRouteesPathDefined) {
+      // stop remote deployed routees
+      routees foreach context.stop
+    }
+  }
+
   private def selectDeploymentTarget: Option[Address] = {
     val currentRoutees = routees
     val currentNodes = availableNodes
@@ -222,7 +238,7 @@ private[akka] class ClusterRouteeProvider(
   private[routing] def availableNodes: immutable.SortedSet[Address] = {
     import Member.addressOrdering
     val currentNodes = nodes
-    if (currentNodes.isEmpty && settings.allowLocalRoutees)
+    if (currentNodes.isEmpty && settings.allowLocalRoutees && satisfiesRole(cluster.selfRoles))
       //use my own node, cluster information not updated yet
       immutable.SortedSet(cluster.selfAddress)
     else
@@ -238,7 +254,14 @@ private[akka] class ClusterRouteeProvider(
   }
 
   private[routing] def isAvailable(m: Member): Boolean =
-    m.status == MemberStatus.Up && (settings.allowLocalRoutees || m.address != cluster.selfAddress)
+    m.status == MemberStatus.Up &&
+      satisfiesRole(m.roles) &&
+      (settings.allowLocalRoutees || m.address != cluster.selfAddress)
+
+  private def satisfiesRole(memberRoles: Set[String]): Boolean = settings.useRole match {
+    case None    ⇒ true
+    case Some(r) ⇒ memberRoles.contains(r)
+  }
 
 }
 
@@ -271,8 +294,8 @@ private[akka] class ClusterRouterActor extends Router {
     routeeProvider.nodes -= address
 
     // unregister routees that live on that node
-    val affectedRoutes = routeeProvider.routees.filter(fullAddress(_) == address)
-    routeeProvider.unregisterRoutees(affectedRoutes)
+    val affectedRoutees = routeeProvider.routees.filter(fullAddress(_) == address)
+    routeeProvider.unregisterRoutees(affectedRoutees)
 
     // createRoutees will not create more than createRoutees and maxInstancesPerNode
     // this is useful when totalInstances < upNodes.size

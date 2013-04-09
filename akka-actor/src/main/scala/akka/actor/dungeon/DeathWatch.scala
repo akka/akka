@@ -1,13 +1,14 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor.dungeon
 
 import akka.actor.{ Terminated, InternalActorRef, ActorRef, ActorRefScope, ActorCell, Actor, Address, AddressTerminated }
-import akka.dispatch.{ Watch, Unwatch }
+import akka.dispatch.sysmsg.{ ChildTerminated, Watch, Unwatch }
 import akka.event.Logging.{ Warning, Error, Debug }
 import scala.util.control.NonFatal
+import akka.actor.MinimalActorRef
 
 private[akka] trait DeathWatch { this: ActorCell ⇒
 
@@ -16,7 +17,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
 
   override final def watch(subject: ActorRef): ActorRef = subject match {
     case a: InternalActorRef ⇒
-      if (a != self && !watching.contains(a)) {
+      if (a != self && !watchingContains(a)) {
         maintainAddressTerminatedSubscription(a) {
           a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
           watching += a
@@ -27,10 +28,10 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
 
   override final def unwatch(subject: ActorRef): ActorRef = subject match {
     case a: InternalActorRef ⇒
-      if (a != self && watching.contains(a)) {
+      if (a != self && watchingContains(a)) {
         maintainAddressTerminatedSubscription(a) {
           a.sendSystemMessage(Unwatch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-          watching -= a
+          removeWatching(a)
         }
       }
       a
@@ -40,11 +41,27 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
    * When this actor is watching the subject of [[akka.actor.Terminated]] message
    * it will be propagated to user's receive.
    */
-  protected def watchedActorTerminated(t: Terminated): Unit = if (watching.contains(t.actor)) {
-    maintainAddressTerminatedSubscription(t.actor) {
-      watching -= t.actor
+  protected def watchedActorTerminated(t: Terminated): Unit =
+    if (watchingContains(t.actor)) {
+      maintainAddressTerminatedSubscription(t.actor) {
+        removeWatching(t.actor)
+      }
+      receiveMessage(t)
     }
-    receiveMessage(t)
+
+  // TODO this should be removed and be replaced with `watching.contains(subject)`
+  //   when all actor references have uid, i.e. actorFor is removed
+  private def watchingContains(subject: ActorRef): Boolean = {
+    watching.contains(subject) || (subject.path.uid != ActorCell.undefinedUid &&
+      watching.contains(new UndefinedUidActorRef(subject)))
+  }
+
+  // TODO this should be removed and be replaced with `watching -= subject`
+  //   when all actor references have uid, i.e. actorFor is removed
+  private def removeWatching(subject: ActorRef): Unit = {
+    watching -= subject
+    if (subject.path.uid != ActorCell.undefinedUid)
+      watching -= new UndefinedUidActorRef(subject)
   }
 
   protected def tellWatchersWeDied(actor: Actor): Unit = {
@@ -77,9 +94,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
     if (!watching.isEmpty) {
       try {
         watching foreach { // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-          case watchee: InternalActorRef ⇒ try watchee.sendSystemMessage(Unwatch(watchee, self)) catch {
-            case NonFatal(t) ⇒ publish(Error(t, self.path.toString, clazz(actor), "deathwatch"))
-          }
+          case watchee: InternalActorRef ⇒ watchee.sendSystemMessage(Unwatch(watchee, self))
         }
       } finally {
         watching = ActorCell.emptyActorRefSet
@@ -129,7 +144,11 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
     // send Terminated to self for all matching subjects
     // existenceConfirmed = false because we could have been watching a
     // non-local ActorRef that had never resolved before the other node went down
+    // When a parent is watching a child and it terminates due to AddressTerminated
+    // it is removed by sending ChildTerminated to support immediate creation of child
+    // with same name.
     for (a ← watching; if a.path.address == address) {
+      childrenRefs.getByRef(a) foreach { _ ⇒ self.sendSystemMessage(ChildTerminated(a)) }
       self ! Terminated(a)(existenceConfirmed = false, addressTerminated = true)
     }
   }
@@ -164,4 +183,9 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
 
   private def subscribeAddressTerminated(): Unit = system.eventStream.subscribe(self, classOf[AddressTerminated])
 
+}
+
+private[akka] class UndefinedUidActorRef(ref: ActorRef) extends MinimalActorRef {
+  override val path = ref.path.withUid(ActorCell.undefinedUid)
+  override def provider = throw new UnsupportedOperationException("UndefinedUidActorRef does not provide")
 }

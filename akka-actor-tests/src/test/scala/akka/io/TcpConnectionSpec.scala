@@ -1,11 +1,11 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.io
 
-import java.io.IOException
-import java.net.{ Socket, ConnectException, InetSocketAddress, SocketException }
+import java.io.{ FileOutputStream, File, IOException }
+import java.net.{ URLClassLoader, ConnectException, InetSocketAddress, SocketException }
 import java.nio.ByteBuffer
 import java.nio.channels.{ SelectionKey, Selector, ServerSocketChannel, SocketChannel }
 import java.nio.channels.spi.SelectorProvider
@@ -16,6 +16,7 @@ import scala.util.control.NonFatal
 import org.scalatest.matchers._
 import akka.io.Tcp._
 import akka.io.SelectionHandler._
+import akka.TestUtils
 import TestUtils._
 import akka.actor.{ ActorRef, PoisonPill, Terminated }
 import akka.testkit.{ AkkaSpec, EventFilter, TestActorRef, TestProbe }
@@ -35,7 +36,40 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     }
   }
 
+  lazy val ConnectionResetByPeerMessage: String = {
+    val serverSocket = ServerSocketChannel.open()
+    serverSocket.socket.bind(new InetSocketAddress("127.0.0.1", 0))
+
+    try {
+      val clientSocket = SocketChannel.open(new InetSocketAddress("127.0.0.1", serverSocket.socket().getLocalPort))
+      val clientSocketOnServer = acceptServerSideConnection(serverSocket)
+      clientSocketOnServer.socket.setSoLinger(true, 0)
+      clientSocketOnServer.close()
+      clientSocket.read(ByteBuffer.allocate(1))
+      null
+    } catch {
+      case NonFatal(e) ⇒ e.getMessage
+    }
+  }
+
+  lazy val ConnectionRefusedMessagePrefix: String = {
+    val serverSocket = ServerSocketChannel.open()
+    serverSocket.socket.bind(new InetSocketAddress("127.0.0.1", 0))
+
+    try {
+      serverSocket.close()
+      val clientSocket = SocketChannel.open(new InetSocketAddress("127.0.0.1", serverSocket.socket().getLocalPort))
+      clientSocket.finishConnect()
+      clientSocket.write(ByteBuffer.allocate(1))
+      null
+    } catch {
+      case NonFatal(e) ⇒ e.getMessage.substring(0, 15)
+    }
+  }
+
   "An outgoing connection" must {
+    info("Connecition reset by peer message expected is " + ConnectionResetByPeerMessage)
+    info("Connection refused message prefix expected is " + ConnectionRefusedMessagePrefix)
     // common behavior
 
     "set socket options before connecting" in withLocalServer() { localServer ⇒
@@ -74,33 +108,33 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       expectReceivedString("testdata2testdata3")
     }
 
-    "bundle incoming Received messages as long as more data is available" in withEstablishedConnection(
+    "forward incoming data as Received messages instantly as long as more data is available" in withEstablishedConnection(
       clientSocketOptions = List(Inet.SO.ReceiveBufferSize(1000000)) // to make sure enough data gets through
       ) { setup ⇒
         import setup._
 
-        val DataSize = 1000000
+        val bufferSize = Tcp(system).Settings.DirectBufferSize
+        val DataSize = bufferSize + 1500
         val bigData = new Array[Byte](DataSize)
         val buffer = ByteBuffer.wrap(bigData)
 
         serverSideChannel.socket.setSendBufferSize(150000)
         val wrote = serverSideChannel.write(buffer)
-        wrote must be > 140000
+        wrote must be(DataSize)
 
         expectNoMsg(1000.millis) // data should have been transferred fully by now
 
         selector.send(connectionActor, ChannelReadable)
 
-        // 140000 is more than the direct buffer size
-        connectionHandler.expectMsgType[Received].data.length must be > 140000
+        connectionHandler.expectMsgType[Received].data.length must be(bufferSize)
+        connectionHandler.expectMsgType[Received].data.length must be(1500)
       }
 
     "receive data directly when the connection is established" in withUnacceptedConnection() { unregisteredSetup ⇒
       import unregisteredSetup._
 
-      localServer.configureBlocking(true)
-      val serverSideChannel = localServer.accept()
-      serverSideChannel must not be (null)
+      val serverSideChannel = acceptServerSideConnection(localServer)
+
       serverSideChannel.write(ByteBuffer.wrap("immediatedata".getBytes("ASCII")))
       serverSideChannel.configureBlocking(false)
 
@@ -143,6 +177,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       buffer.flip()
       ByteString(buffer).take(10).decodeString("ASCII") must be("morestuff!")
     }
+
     "write data after not acknowledged data" in withEstablishedConnection() { setup ⇒
       import setup._
 
@@ -152,6 +187,29 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       writer.expectNoMsg(500.millis)
 
       writer.send(connectionActor, Write(ByteString.empty, Ack))
+      writer.expectMsg(Ack)
+    }
+
+    "write file to network" in withEstablishedConnection() { setup ⇒
+      import setup._
+
+      // hacky: we need a file for testing purposes, so try to get the biggest one from our own classpath
+      val testFile =
+        classOf[TcpConnectionSpec].getClassLoader.asInstanceOf[URLClassLoader]
+          .getURLs
+          .filter(_.getProtocol == "file")
+          .map(url ⇒ new File(url.toURI))
+          .filter(_.exists)
+          .sortBy(-_.length)
+          .head
+
+      // maximum of 100 MB
+      val size = math.min(testFile.length(), 100000000).toInt
+
+      object Ack
+      val writer = TestProbe()
+      writer.send(connectionActor, WriteFile(testFile.getAbsolutePath, 0, size, Ack))
+      pullFromServerSide(size, 1000000)
       writer.expectMsg(Ack)
     }
 
@@ -259,7 +317,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       connectionHandler.expectNoMsg(500.millis)
     }
 
-    "abort the connection and reply with `Aborted` upong reception of an `Abort` command (simplified)" in withEstablishedConnection() { setup ⇒
+    "abort the connection and reply with `Aborted` upon reception of an `Abort` command" in withEstablishedConnection() { setup ⇒
       import setup._
 
       connectionHandler.send(connectionActor, Abort)
@@ -269,20 +327,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
       val buffer = ByteBuffer.allocate(1)
       val thrown = evaluating { serverSideChannel.read(buffer) } must produce[IOException]
-    }
-
-    "abort the connection and reply with `Aborted` upong reception of an `Abort` command" in withEstablishedConnection() { setup ⇒
-      ignoreIfWindows()
-      import setup._
-
-      connectionHandler.send(connectionActor, Abort)
-      connectionHandler.expectMsg(Aborted)
-
-      assertThisConnectionActorTerminated()
-
-      val buffer = ByteBuffer.allocate(1)
-      val thrown = evaluating { serverSideChannel.read(buffer) } must produce[IOException]
-      thrown.getMessage must be("Connection reset by peer")
+      thrown.getMessage must be(ConnectionResetByPeerMessage)
     }
 
     /*
@@ -297,7 +342,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
      * has hit the network medium. The only exception is when you disable the Winsock buffering by setting
      * SO_SNDBUF to 0."
      */
-    "close the connection and reply with `ConfirmedClosed` upong reception of an `ConfirmedClose` command (simplified)" in withEstablishedConnection(setSmallRcvBuffer) { setup ⇒
+    "close the connection and reply with `ConfirmedClosed` upon reception of an `ConfirmedClose` command (simplified)" in withEstablishedConnection(setSmallRcvBuffer) { setup ⇒
       import setup._
 
       // we should test here that a pending write command is properly finished first
@@ -318,7 +363,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       val buffer = ByteBuffer.allocate(1)
       serverSelectionKey must be(selectedAs(SelectionKey.OP_READ, 2.seconds))
       serverSideChannel.read(buffer) must be(-1)
-      serverSideChannel.close()
+
+      closeServerSideAndWaitForClientReadable()
 
       selector.send(connectionActor, ChannelReadable)
       connectionHandler.expectMsg(ConfirmedClosed)
@@ -326,7 +372,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       assertThisConnectionActorTerminated()
     }
 
-    "close the connection and reply with `ConfirmedClosed` upong reception of an `ConfirmedClose` command" in withEstablishedConnection(setSmallRcvBuffer) { setup ⇒
+    "close the connection and reply with `ConfirmedClosed` upon reception of an `ConfirmedClose` command" in withEstablishedConnection(setSmallRcvBuffer) { setup ⇒
       ignoreIfWindows()
       import setup._
 
@@ -350,7 +396,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       val buffer = ByteBuffer.allocate(1)
       serverSelectionKey must be(selectedAs(SelectionKey.OP_READ, 2.seconds))
       serverSideChannel.read(buffer) must be(-1)
-      serverSideChannel.close()
+
+      closeServerSideAndWaitForClientReadable()
 
       selector.send(connectionActor, ChannelReadable)
       connectionHandler.expectMsg(ConfirmedClosed)
@@ -361,41 +408,29 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     "report when peer closed the connection" in withEstablishedConnection() { setup ⇒
       import setup._
 
-      serverSideChannel.close()
+      closeServerSideAndWaitForClientReadable()
+
       selector.send(connectionActor, ChannelReadable)
       connectionHandler.expectMsg(PeerClosed)
-
-      assertThisConnectionActorTerminated()
-    }
-    "report when peer aborted the connection (simplified)" in withEstablishedConnection() { setup ⇒
-      import setup._
-
-      EventFilter[IOException](occurrences = 1) intercept {
-        abortClose(serverSideChannel)
-        selector.send(connectionActor, ChannelReadable)
-        val err = connectionHandler.expectMsgType[ErrorClosed]
-      }
-      // wait a while
-      connectionHandler.expectNoMsg(200.millis)
 
       assertThisConnectionActorTerminated()
     }
 
     "report when peer aborted the connection" in withEstablishedConnection() { setup ⇒
       import setup._
-      ignoreIfWindows()
 
       EventFilter[IOException](occurrences = 1) intercept {
         abortClose(serverSideChannel)
         selector.send(connectionActor, ChannelReadable)
         val err = connectionHandler.expectMsgType[ErrorClosed]
-        err.cause must be("Connection reset by peer")
+        err.cause must be(ConnectionResetByPeerMessage)
       }
       // wait a while
       connectionHandler.expectNoMsg(200.millis)
 
       assertThisConnectionActorTerminated()
     }
+
     "report when peer closed the connection when trying to write" in withEstablishedConnection() { setup ⇒
       import setup._
 
@@ -416,42 +451,24 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     // no TCP level connection has been established with the client does not hold.
     "report failed connection attempt while not accepted" in withUnacceptedConnection() { setup ⇒
       import setup._
-      ignoreIfWindows()
+      ignoreIfWindows
+
       // close instead of accept
       localServer.close()
 
       EventFilter[SocketException](occurrences = 1) intercept {
         selector.send(connectionActor, ChannelConnectable)
-        val err = userHandler.expectMsgType[ErrorClosed]
-        err.cause must be("Connection reset by peer")
+        userHandler.expectMsg(CommandFailed(Connect(serverAddress)))
       }
 
       verifyActorTermination(connectionActor)
     }
 
     val UnboundAddress = temporaryServerAddress()
-    "report failed connection attempt when target is unreachable (simplified)" in
-      withUnacceptedConnection(connectionActorCons = createConnectionActor(serverAddress = UnboundAddress)) { setup ⇒
-        import setup._
-
-        val sel = SelectorProvider.provider().openSelector()
-        val key = clientSideChannel.register(sel, SelectionKey.OP_CONNECT | SelectionKey.OP_READ)
-        // This timeout should be large enough to work on Windows
-        sel.select(3000)
-
-        key.isConnectable must be(true)
-        EventFilter[ConnectException](occurrences = 1) intercept {
-          selector.send(connectionActor, ChannelConnectable)
-          val err = userHandler.expectMsgType[ErrorClosed]
-        }
-
-        verifyActorTermination(connectionActor)
-      }
 
     "report failed connection attempt when target is unreachable" in
       withUnacceptedConnection(connectionActorCons = createConnectionActor(serverAddress = UnboundAddress)) { setup ⇒
         import setup._
-        ignoreIfWindows()
 
         val sel = SelectorProvider.provider().openSelector()
         val key = clientSideChannel.register(sel, SelectionKey.OP_CONNECT | SelectionKey.OP_READ)
@@ -461,8 +478,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
         key.isConnectable must be(true)
         EventFilter[ConnectException](occurrences = 1) intercept {
           selector.send(connectionActor, ChannelConnectable)
-          val err = userHandler.expectMsgType[ErrorClosed]
-          err.cause must be("Connection refused")
+          userHandler.expectMsg(CommandFailed(Connect(UnboundAddress)))
         }
 
         verifyActorTermination(connectionActor)
@@ -497,10 +513,19 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       watch(connectionActor)
       EventFilter[DeathPactException](occurrences = 1) intercept {
         system.stop(connectionHandler.ref)
-        expectMsgType[Terminated].actor must be(connectionHandler.ref)
-        expectMsgType[Terminated].actor must be(connectionActor)
+        val deaths = Set(expectMsgType[Terminated].actor, expectMsgType[Terminated].actor)
+        deaths must be(Set(connectionHandler.ref, connectionActor))
       }
     }
+  }
+
+  def acceptServerSideConnection(localServer: ServerSocketChannel): SocketChannel = {
+    @volatile var serverSideChannel: SocketChannel = null
+    awaitCond {
+      serverSideChannel = localServer.accept()
+      serverSideChannel != null
+    }
+    serverSideChannel
   }
 
   def withLocalServer(setServerSocketOptions: ServerSocketChannel ⇒ Unit = _ ⇒ ())(body: ServerSocketChannel ⇒ Any): Unit = {
@@ -533,6 +558,11 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     val clientSelectionKey = registerChannel(clientSideChannel, "client")
     val serverSelectionKey = registerChannel(serverSideChannel, "server")
 
+    def closeServerSideAndWaitForClientReadable(): Unit = {
+      serverSideChannel.close()
+      checkFor(clientSelectionKey, SelectionKey.OP_READ, 3.seconds.toMillis.toInt) must be(true)
+    }
+
     def registerChannel(channel: SocketChannel, name: String): SelectionKey = {
       val res = channel.register(nioSelector, 0)
       res.attach(name)
@@ -564,7 +594,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
      */
     @tailrec final def pullFromServerSide(remaining: Int, remainingTries: Int = 1000): Unit =
       if (remainingTries <= 0)
-        throw new AssertionError("Pulling took too many loops")
+        throw new AssertionError("Pulling took too many loops,  remaining data: " + remaining)
       else if (remaining > 0) {
         if (selector.msgAvailable) {
           selector.expectMsg(WriteInterest)
@@ -632,7 +662,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     def interestsDesc(interests: Int): String =
       interestsNames.filter(i ⇒ (i._1 & interests) != 0).map(_._2).mkString(", ")
   }
-  def withUnacceptedConnection(
+  private[io] def withUnacceptedConnection(
     setServerSocketOptions: ServerSocketChannel ⇒ Unit = _ ⇒ (),
     connectionActorCons: (ActorRef, ActorRef) ⇒ TestActorRef[TcpOutgoingConnection] = createConnectionActor())(body: UnacceptedSetup ⇒ Any): Unit =
 
@@ -658,8 +688,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     clientSocketOptions: immutable.Seq[SocketOption] = Nil)(body: RegisteredSetup ⇒ Any): Unit = withUnacceptedConnection(setServerSocketOptions, createConnectionActor(options = clientSocketOptions)) { unregisteredSetup ⇒
     import unregisteredSetup._
 
-    localServer.configureBlocking(true)
-    val serverSideChannel = localServer.accept()
+    val serverSideChannel = acceptServerSideConnection(localServer)
     serverSideChannel.configureBlocking(false)
 
     serverSideChannel must not be (null)

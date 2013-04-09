@@ -34,6 +34,12 @@ object TransformationSampleJapiSpecConfig extends MultiNodeConfig {
     akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
     """))
 
+  nodeConfig(frontend1, frontend2)(
+    ConfigFactory.parseString("akka.cluster.roles =[frontend]"))
+
+  nodeConfig(backend1, backend2, backend3)(
+    ConfigFactory.parseString("akka.cluster.roles =[backend]"))
+
 }
 
 // need one concrete test class per node
@@ -72,7 +78,7 @@ abstract class TransformationSampleJapiSpec extends MultiNodeSpec(Transformation
       testConductor.enter("frontend1-started")
     }
 
-    "illustrate how a backend automatically registers" in within(20 seconds) {
+    "illustrate how a backend automatically registers" in within(15 seconds) {
       runOn(backend1) {
         Cluster(system) join node(frontend1).address
         system.actorOf(Props[TransformationBackend], name = "backend")
@@ -80,13 +86,13 @@ abstract class TransformationSampleJapiSpec extends MultiNodeSpec(Transformation
       testConductor.enter("backend1-started")
 
       runOn(frontend1) {
-        assertServiceOk
+        assertServiceOk()
       }
 
       testConductor.enter("frontend1-backend1-ok")
     }
 
-    "illustrate how more nodes registers" in within(15 seconds) {
+    "illustrate how more nodes registers" in within(20 seconds) {
       runOn(frontend2) {
         Cluster(system) join node(frontend1).address
         system.actorOf(Props[TransformationFrontend], name = "frontend")
@@ -100,7 +106,7 @@ abstract class TransformationSampleJapiSpec extends MultiNodeSpec(Transformation
       testConductor.enter("all-started")
 
       runOn(frontend1, frontend2) {
-        assertServiceOk
+        assertServiceOk()
       }
 
       testConductor.enter("all-ok")
@@ -109,18 +115,13 @@ abstract class TransformationSampleJapiSpec extends MultiNodeSpec(Transformation
 
   }
 
-  def assertServiceOk: Unit = {
-    val transformationFrontend = system.actorFor("akka://" + system.name + "/user/frontend")
+  def assertServiceOk(): Unit = {
+    val transformationFrontend = system.actorSelection("akka://" + system.name + "/user/frontend")
     // eventually the service should be ok,
     // backends might not have registered initially
-    awaitCond {
+    awaitAssert {
       transformationFrontend ! new TransformationJob("hello")
-      expectMsgPF() {
-        case unavailble: JobFailed ⇒ false
-        case r: TransformationResult ⇒
-          r.getText must be("HELLO")
-          true
-      }
+      expectMsgType[TransformationResult](1.second).getText must be("HELLO")
     }
   }
 

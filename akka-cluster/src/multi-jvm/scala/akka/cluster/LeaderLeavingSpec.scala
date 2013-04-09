@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -59,22 +59,15 @@ abstract class LeaderLeavingSpec
           // verify that the LEADER is shut down
           awaitCond(cluster.isTerminated)
 
-          // verify that the LEADER is REMOVED
-          awaitCond(clusterView.status == Removed)
-
         } else {
 
-          val leavingLatch = TestLatch()
           val exitingLatch = TestLatch()
 
           cluster.subscribe(system.actorOf(Props(new Actor {
             def receive = {
               case state: CurrentClusterState ⇒
-                if (state.members.exists(m ⇒ m.address == oldLeaderAddress && m.status == Leaving))
-                  leavingLatch.countDown()
                 if (state.members.exists(m ⇒ m.address == oldLeaderAddress && m.status == Exiting))
                   exitingLatch.countDown()
-              case MemberLeft(m) if m.address == oldLeaderAddress ⇒ leavingLatch.countDown()
               case MemberExited(m) if m.address == oldLeaderAddress ⇒ exitingLatch.countDown()
               case _ ⇒ // ignore
             }
@@ -84,22 +77,19 @@ abstract class LeaderLeavingSpec
           enterBarrier("leader-left")
 
           val expectedAddresses = roles.toSet map address
-          awaitCond(clusterView.members.map(_.address) == expectedAddresses)
-
-          // verify that the LEADER is LEAVING
-          leavingLatch.await
+          awaitAssert(clusterView.members.map(_.address) must be(expectedAddresses))
 
           // verify that the LEADER is EXITING
           exitingLatch.await
 
           // verify that the LEADER is no longer part of the 'members' set
-          awaitCond(clusterView.members.forall(_.address != oldLeaderAddress))
+          awaitAssert(clusterView.members.map(_.address) must not contain (oldLeaderAddress))
 
           // verify that the LEADER is not part of the 'unreachable' set
-          awaitCond(clusterView.unreachableMembers.forall(_.address != oldLeaderAddress))
+          awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (oldLeaderAddress))
 
           // verify that we have a new LEADER
-          awaitCond(clusterView.leader != oldLeaderAddress)
+          awaitAssert(clusterView.leader must not be (oldLeaderAddress))
         }
 
         enterBarrier("finished")

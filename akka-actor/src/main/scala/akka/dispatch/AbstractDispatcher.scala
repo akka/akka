@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
@@ -7,28 +7,23 @@ package akka.dispatch
 import java.util.concurrent._
 import akka.event.Logging.{ Error, LogEventException }
 import akka.actor._
+import akka.dispatch.sysmsg._
 import akka.event.EventStream
 import com.typesafe.config.Config
-import akka.serialization.SerializationExtension
 import akka.util.{ Unsafe, Index }
 import scala.annotation.tailrec
 import scala.concurrent.forkjoin.{ ForkJoinTask, ForkJoinPool }
 import scala.concurrent.duration.Duration
-import scala.concurrent.{ ExecutionContext, Await, Awaitable }
-import scala.util.control.NonFatal
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NonFatal
 
 final case class Envelope private (val message: Any, val sender: ActorRef)
 
 object Envelope {
   def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope = {
-    val msg = message.asInstanceOf[AnyRef]
-    if (msg eq null) throw new InvalidMessageException("Message is null")
-    if (system.settings.SerializeAllMessages && !msg.isInstanceOf[NoSerializationVerificationNeeded]) {
-      val ser = SerializationExtension(system)
-      ser.deserialize(ser.serialize(msg).get, msg.getClass).get
-    }
-    new Envelope(message, sender)
+    if (message == null) throw new InvalidMessageException("Message is null")
+    new Envelope(message, if (sender ne Actor.noSender) sender else system.deadLetters)
   }
 }
 
@@ -46,85 +41,6 @@ object Envelope {
  * to turning its attention to the next real message.
  */
 case object NullMessage extends AutoReceivedMessage
-
-/**
- * INTERNAL API
- */
-private[akka] object SystemMessage {
-  @tailrec
-  final def size(list: SystemMessage, acc: Int = 0): Int = {
-    if (list eq null) acc else size(list.next, acc + 1)
-  }
-
-  @tailrec
-  final def reverse(list: SystemMessage, acc: SystemMessage = null): SystemMessage = {
-    if (list eq null) acc else {
-      val next = list.next
-      list.next = acc
-      reverse(next, list)
-    }
-  }
-}
-
-/**
- * System messages are handled specially: they form their own queue within
- * each actor’s mailbox. This queue is encoded in the messages themselves to
- * avoid extra allocations and overhead. The next pointer is a normal var, and
- * it does not need to be volatile because in the enqueuing method its update
- * is immediately succeeded by a volatile write and all reads happen after the
- * volatile read in the dequeuing thread. Afterwards, the obtained list of
- * system messages is handled in a single thread only and not ever passed around,
- * hence no further synchronization is needed.
- *
- * INTERNAL API
- *
- * ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
- */
-private[akka] sealed trait SystemMessage extends PossiblyHarmful {
-  @transient
-  var next: SystemMessage = _
-}
-
-/**
- * INTERNAL API
- */
-private[akka] case class Create(uid: Int) extends SystemMessage // send to self from Dispatcher.register
-/**
- * INTERNAL API
- */
-private[akka] case class Recreate(cause: Throwable) extends SystemMessage // sent to self from ActorCell.restart
-/**
- * INTERNAL API
- */
-private[akka] case class Suspend() extends SystemMessage // sent to self from ActorCell.suspend
-/**
- * INTERNAL API
- */
-private[akka] case class Resume(causedByFailure: Throwable) extends SystemMessage // sent to self from ActorCell.resume
-/**
- * INTERNAL API
- */
-private[akka] case class Terminate() extends SystemMessage // sent to self from ActorCell.stop
-/**
- * INTERNAL API
- */
-private[akka] case class Supervise(child: ActorRef, async: Boolean, uid: Int) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
-/**
- * INTERNAL API
- */
-private[akka] case class ChildTerminated(child: ActorRef) extends SystemMessage // sent to supervisor from ActorCell.doTerminate
-/**
- * INTERNAL API
- */
-private[akka] case class Watch(watchee: ActorRef, watcher: ActorRef) extends SystemMessage // sent to establish a DeathWatch
-/**
- * INTERNAL API
- */
-private[akka] case class Unwatch(watchee: ActorRef, watcher: ActorRef) extends SystemMessage // sent to tear down a DeathWatch
-/**
- * INTERNAL API
- */
-private[akka] case object NoMessage extends SystemMessage // switched into the mailbox to signal termination
 
 final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cleanup: () ⇒ Unit) extends Batchable {
   final override def isBatchable: Boolean = runnable match {
@@ -158,25 +74,24 @@ private[akka] object MessageDispatcher {
   // since this is a compile-time constant, scalac will elide code behind if (MessageDispatcher.debug) (RK checked with 2.9.1)
   final val debug = false // Deliberately without type ascription to make it a compile-time constant
   lazy val actors = new Index[MessageDispatcher, ActorRef](16, _ compareTo _)
-  def printActors: Unit = if (debug) {
-    for {
-      d ← actors.keys
-      a ← { println(d + " inhabitants: " + d.inhabitants); actors.valueIterator(d) }
-    } {
-      val status = if (a.isTerminated) " (terminated)" else " (alive)"
-      val messages = a match {
-        case r: ActorRefWithCell ⇒ " " + r.underlying.numberOfMessages + " messages"
-        case _                   ⇒ " " + a.getClass
+  def printActors(): Unit =
+    if (debug) {
+      for {
+        d ← actors.keys
+        a ← { println(d + " inhabitants: " + d.inhabitants); actors.valueIterator(d) }
+      } {
+        val status = if (a.isTerminated) " (terminated)" else " (alive)"
+        val messages = a match {
+          case r: ActorRefWithCell ⇒ " " + r.underlying.numberOfMessages + " messages"
+          case _                   ⇒ " " + a.getClass
+        }
+        val parent = a match {
+          case i: InternalActorRef ⇒ ", parent: " + i.getParent
+          case _                   ⇒ ""
+        }
+        println(" -> " + a + status + messages + parent)
       }
-      val parent = a match {
-        case i: InternalActorRef ⇒ ", parent: " + i.getParent
-        case _                   ⇒ ""
-      }
-      println(" -> " + a + status + messages + parent)
     }
-  }
-
-  implicit def defaultDispatcher(implicit system: ActorSystem): MessageDispatcher = system.dispatcher
 }
 
 abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) extends AbstractMessageDispatcher with BatchingExecutor with ExecutionContext {
@@ -191,6 +106,13 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   @tailrec private final def addInhabitants(add: Long): Long = {
     val c = inhabitants
     val r = c + add
+    if (r < 0) {
+      // We haven't succeeded in decreasing the inhabitants yet but the simple fact that we're trying to
+      // go below zero means that there is an imbalance and we might as well throw the exception
+      val e = new IllegalStateException("ACTOR SYSTEM CORRUPTED!!! A dispatcher can't have less than 0 inhabitants!")
+      reportFailure(e)
+      throw e
+    }
     if (Unsafe.instance.compareAndSwapLong(this, inhabitantsOffset, c, r)) r else addInhabitants(add)
   }
 
@@ -243,18 +165,16 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   }
 
   @tailrec
-  private final def ifSensibleToDoSoThenScheduleShutdown(): Unit = inhabitants match {
-    case 0 ⇒
-      shutdownSchedule match {
-        case UNSCHEDULED ⇒
-          if (updateShutdownSchedule(UNSCHEDULED, SCHEDULED)) scheduleShutdownAction()
-          else ifSensibleToDoSoThenScheduleShutdown()
-        case SCHEDULED ⇒
-          if (updateShutdownSchedule(SCHEDULED, RESCHEDULED)) ()
-          else ifSensibleToDoSoThenScheduleShutdown()
-        case RESCHEDULED ⇒
-      }
-    case _ ⇒
+  private final def ifSensibleToDoSoThenScheduleShutdown(): Unit = {
+    if (inhabitants <= 0) shutdownSchedule match {
+      case UNSCHEDULED ⇒
+        if (updateShutdownSchedule(UNSCHEDULED, SCHEDULED)) scheduleShutdownAction()
+        else ifSensibleToDoSoThenScheduleShutdown()
+      case SCHEDULED ⇒
+        if (updateShutdownSchedule(SCHEDULED, RESCHEDULED)) ()
+        else ifSensibleToDoSoThenScheduleShutdown()
+      case RESCHEDULED ⇒
+    }
   }
 
   private def scheduleShutdownAction(): Unit = {
@@ -322,7 +242,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   /**
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
    */
-  def suspend(actor: ActorCell): Unit = {
+  protected[akka] def suspend(actor: ActorCell): Unit = {
     val mbox = actor.mailbox
     if ((mbox.actor eq actor) && (mbox.dispatcher eq this))
       mbox.suspend()
@@ -331,7 +251,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   /*
    * After the call to this method, the dispatcher must begin any new message processing for the specified reference
    */
-  def resume(actor: ActorCell): Unit = {
+  protected[akka] def resume(actor: ActorCell): Unit = {
     val mbox = actor.mailbox
     if ((mbox.actor eq actor) && (mbox.dispatcher eq this) && mbox.resume())
       registerForExecution(mbox, false, false)
@@ -484,10 +404,8 @@ object ForkJoinExecutorConfigurator {
                                threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
                                unhandledExceptionHandler: Thread.UncaughtExceptionHandler)
     extends ForkJoinPool(parallelism, threadFactory, unhandledExceptionHandler, true) with LoadMetrics {
-    override def execute(r: Runnable): Unit = r match {
-      case m: Mailbox ⇒ super.execute(new MailboxExecutionTask(m))
-      case other      ⇒ super.execute(other)
-    }
+    override def execute(r: Runnable): Unit =
+      if (r eq null) throw new NullPointerException else super.execute(new AkkaForkJoinTask(r))
 
     def atFullThrottle(): Boolean = this.getActiveThreadCount() >= this.getParallelism()
   }
@@ -495,10 +413,11 @@ object ForkJoinExecutorConfigurator {
   /**
    * INTERNAL AKKA USAGE ONLY
    */
-  final class MailboxExecutionTask(mailbox: Mailbox) extends ForkJoinTask[Unit] {
-    final override def setRawResult(u: Unit): Unit = ()
-    final override def getRawResult(): Unit = ()
-    final override def exec(): Boolean = try { mailbox.run; true } catch {
+  @SerialVersionUID(1L)
+  final class AkkaForkJoinTask(runnable: Runnable) extends ForkJoinTask[Unit] {
+    override def getRawResult(): Unit = ()
+    override def setRawResult(unit: Unit): Unit = ()
+    final override def exec(): Boolean = try { runnable.run(); true } catch {
       case anything: Throwable ⇒
         val t = Thread.currentThread
         t.getUncaughtExceptionHandler match {

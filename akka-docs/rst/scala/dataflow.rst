@@ -5,7 +5,7 @@ Description
 -----------
 
 Akka implements `Oz-style dataflow concurrency <http://www.mozart-oz.org/documentation/tutorial/node8.html#chapter.concurrency>`_
-by using a special API for :ref:`futures-scala` that enables a complimentary way of writing synchronous-looking code that in reality is asynchronous.
+by using a special API for :ref:`futures-scala` that enables a complementary way of writing synchronous-looking code that in reality is asynchronous.
 
 The benefit of Dataflow concurrency is that it is deterministic; that means that it will always behave the same.
 If you run it once and it yields output 5 then it will do that **every time**, run it 10 million times - same result.

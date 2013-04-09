@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
@@ -23,6 +23,7 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.io.ObjectStreamException
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
+import akka.pattern.AskTimeoutException
 
 /**
  * A TypedActorFactory is something that can created TypedActor instances.
@@ -167,9 +168,9 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   }
 
   /**
-   * Represents the serialized form of a MethodCall, uses readResolve and writeReplace to marshall the call
+   * INTERNAL API
    *
-   * INTERNAL USE ONLY
+   * Represents the serialized form of a MethodCall, uses readResolve and writeReplace to marshall the call
    */
   private[akka] case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], serializedParameters: Array[(Int, Class[_], Array[Byte])]) {
 
@@ -240,14 +241,14 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   implicit def dispatcher = context.dispatcher
 
   /**
-   * Implementation of TypedActor as an Actor
+   * INTERNAL API
    *
-   * INTERNAL USE ONLY
+   * Implementation of TypedActor as an Actor
    */
   private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyVar: AtomVar[R], createInstance: ⇒ T) extends Actor {
     val me = withContext[T](createInstance)
 
-    override def supervisorStrategy(): SupervisorStrategy = me match {
+    override def supervisorStrategy: SupervisorStrategy = me match {
       case l: Supervisor ⇒ l.supervisorStrategy
       case _             ⇒ super.supervisorStrategy
     }
@@ -398,7 +399,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   }
 
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   private[akka] class TypedActorInvocationHandler(@transient val extension: TypedActorExtension, @transient val actorVar: AtomVar[ActorRef], @transient val timeout: Timeout) extends InvocationHandler with Serializable {
 
@@ -412,7 +413,8 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
         implicit val dispatcher = extension.system.dispatcher
         import akka.pattern.ask
         MethodCall(method, args) match {
-          case m if m.isOneWay ⇒ actor ! m; null //Null return value
+          case m if m.isOneWay ⇒
+            actor ! m; null //Null return value
           case m if m.returnsFuture ⇒ ask(actor, m)(timeout) map {
             case NullResponse ⇒ null
             case other        ⇒ other
@@ -420,8 +422,10 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           case m if m.returnsJOption || m.returnsOption ⇒
             val f = ask(actor, m)(timeout)
             (try { Await.ready(f, timeout.duration).value } catch { case _: TimeoutException ⇒ None }) match {
-              case None | Some(Success(NullResponse)) ⇒ if (m.returnsJOption) JOption.none[Any] else None
-              case Some(t: Try[_])                    ⇒ t.get.asInstanceOf[AnyRef]
+              case None | Some(Success(NullResponse)) | Some(Failure(_: AskTimeoutException)) ⇒
+                if (m.returnsJOption) JOption.none[Any] else None
+              case Some(t: Try[_]) ⇒
+                t.get.asInstanceOf[AnyRef]
             }
           case m ⇒ Await.result(ask(actor, m)(timeout), timeout.duration) match {
             case NullResponse ⇒ null
@@ -433,7 +437,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   }
 
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   private[akka] case class SerializedTypedActorInvocationHandler(val actor: ActorRef, val timeout: FiniteDuration) {
     @throws(classOf[ObjectStreamException]) private def readResolve(): AnyRef = JavaSerializer.currentSystem.value match {
@@ -528,24 +532,20 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
       creator = instantiator(implementation))
 
   /**
-   * Uses the supplied Creator as the factory for the TypedActor implementation,
+   * Java API: Uses the supplied Creator as the factory for the TypedActor implementation,
    * and that has the specified interface,
    * or if the interface class is not an interface, all the interfaces it implements,
    * appended in the sequence of interfaces.
-   *
-   * Java API.
    */
   def this(interface: Class[_ >: T], implementation: Creator[T]) =
     this(interfaces = TypedProps.extractInterfaces(interface),
       creator = implementation.create _)
 
   /**
-   * Uses the supplied class as the factory for the TypedActor implementation,
+   * Java API: Uses the supplied class as the factory for the TypedActor implementation,
    * and that has the specified interface,
    * or if the interface class is not an interface, all the interfaces it implements,
    * appended in the sequence of interfaces.
-   *
-   * Java API.
    */
   def this(interface: Class[_ >: T], implementation: Class[T]) =
     this(interfaces = TypedProps.extractInterfaces(interface),
@@ -562,15 +562,13 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def withDeploy(d: Deploy): TypedProps[T] = copy(deploy = d)
 
   /**
-   * @return a new TypedProps that will use the specified ClassLoader to create its proxy class in
+   * Java API: return a new TypedProps that will use the specified ClassLoader to create its proxy class in
    * If loader is null, it will use the bootstrap classloader.
-   *
-   * Java API
    */
   def withLoader(loader: ClassLoader): TypedProps[T] = withLoader(Option(loader))
 
   /**
-   * @return a new TypedProps that will use the specified ClassLoader to create its proxy class in
+   * Scala API: return a new TypedProps that will use the specified ClassLoader to create its proxy class in
    * If loader is null, it will use the bootstrap classloader.
    *
    * Scala API
@@ -578,18 +576,16 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def withLoader(loader: Option[ClassLoader]): TypedProps[T] = this.copy(loader = loader)
 
   /**
-   * @return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
+   * Java API: return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
    * if null is specified, it will use the default timeout as specified in the configuration.
-   *
-   * Java API
    */
   def withTimeout(timeout: Timeout): TypedProps[T] = this.copy(timeout = Option(timeout))
 
   /**
-   * @return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
+   * Scala API: return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
    * if None is specified, it will use the default timeout as specified in the configuration.
    *
-   * Scala API
+   *
    */
   def withTimeout(timeout: Option[Timeout]): TypedProps[T] = this.copy(timeout = timeout)
 
@@ -650,7 +646,7 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
 
   // Private API
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   private[akka] def createActorRefProxy[R <: AnyRef, T <: R](props: TypedProps[T], proxyVar: AtomVar[R], actorRef: ⇒ ActorRef): R = {
     //Warning, do not change order of the following statements, it's some elaborate chicken-n-egg handling
@@ -671,10 +667,10 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
   }
 
   /**
-   * INTERNAL USE ONLY
+   * INTERNAL API
    */
   private[akka] def invocationHandlerFor(@deprecatedName('typedActor_?) typedActor: AnyRef): TypedActorInvocationHandler =
-    if ((typedActor ne null) && Proxy.isProxyClass(typedActor.getClass)) typedActor match {
+    if ((typedActor ne null) && classOf[Proxy].isAssignableFrom(typedActor.getClass) && Proxy.isProxyClass(typedActor.getClass)) typedActor match {
       case null ⇒ null
       case other ⇒ Proxy.getInvocationHandler(other) match {
         case null                                 ⇒ null

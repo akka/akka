@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.pattern
 
@@ -7,7 +7,7 @@ import language.implicitConversions
 
 import java.util.concurrent.TimeoutException
 import akka.actor._
-import akka.dispatch._
+import akka.dispatch.sysmsg._
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.concurrent.{ Future, Promise, ExecutionContext }
@@ -88,8 +88,7 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
     case ref: InternalActorRef ⇒
       if (timeout.duration.length <= 0) Future.failed[Any](new IllegalArgumentException("Timeout length for an `ask` must be greater or equal to 1.  Question not sent to [%s]" format actorRef))
       else {
-        val provider = ref.provider
-        val a = PromiseActorRef(provider, timeout)
+        val a = PromiseActorRef(ref.provider, timeout)
         actorRef.tell(message, a)
         a.result.future
       }
@@ -166,6 +165,9 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
 
   override def getParent: InternalActorRef = provider.tempContainer
 
+  def internalCallingThreadExecutionContext: ExecutionContext =
+    provider.guardian.underlying.systemImpl.internalCallingThreadExecutionContext
+
   /**
    * Contract of this method:
    * Must always return the same ActorPath, which must have
@@ -193,12 +195,14 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = state match {
     case Stopped | _: StoppedWithPath ⇒ provider.deadLetters ! message
-    case _ ⇒ if (!(result.tryComplete(
-      message match {
-        case Status.Success(r) ⇒ Success(r)
-        case Status.Failure(f) ⇒ Failure(f)
-        case other             ⇒ Success(other)
-      }))) provider.deadLetters ! message
+    case _ ⇒
+      if (message == null) throw new InvalidMessageException("Message is null")
+      if (!(result.tryComplete(
+        message match {
+          case Status.Success(r) ⇒ Success(r)
+          case Status.Failure(f) ⇒ Failure(f)
+          case other             ⇒ Success(other)
+        }))) provider.deadLetters ! message
   }
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {
@@ -213,7 +217,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
     case _ ⇒
   }
 
-  override def isTerminated: Boolean = state match {
+  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") override def isTerminated: Boolean = state match {
     case Stopped | _: StoppedWithPath ⇒ true
     case _                            ⇒ false
   }
@@ -248,10 +252,11 @@ private[akka] object PromiseActorRef {
   private case class StoppedWithPath(path: ActorPath)
 
   def apply(provider: ActorRefProvider, timeout: Timeout): PromiseActorRef = {
-    implicit val ec = provider.dispatcher // TODO should we take an ExecutionContext in the method signature?
     val result = Promise[Any]()
+    val scheduler = provider.guardian.underlying.system.scheduler
     val a = new PromiseActorRef(provider, result)
-    val f = provider.scheduler.scheduleOnce(timeout.duration) { result tryComplete Failure(new AskTimeoutException("Timed out")) }
+    implicit val ec = a.internalCallingThreadExecutionContext
+    val f = scheduler.scheduleOnce(timeout.duration) { result tryComplete Failure(new AskTimeoutException("Timed out")) }
     result.future onComplete { _ ⇒ try a.stop() finally f.cancel() }
     a
   }

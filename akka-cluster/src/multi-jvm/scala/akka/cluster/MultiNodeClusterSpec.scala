@@ -1,13 +1,11 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
 import language.implicitConversions
-
 import org.scalatest.Suite
 import org.scalatest.exceptions.TestFailedException
-
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.remote.testconductor.RoleName
@@ -19,6 +17,7 @@ import akka.event.Logging.ErrorLevel
 import scala.concurrent.duration._
 import scala.collection.immutable
 import java.util.concurrent.ConcurrentHashMap
+import akka.remote.DefaultFailureDetectorRegistry
 
 object MultiNodeClusterSpec {
 
@@ -44,22 +43,29 @@ object MultiNodeClusterSpec {
     }
     akka.loglevel = INFO
     akka.remote.log-remote-lifecycle-events = off
-    akka.event-handlers = ["akka.testkit.TestEventListener"]
+    akka.loggers = ["akka.testkit.TestEventListener"]
     akka.test {
       single-expect-default = 5 s
     }
     """)
 }
 
-trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeSpec ⇒
+trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner { self: MultiNodeSpec ⇒
 
   override def initialParticipants = roles.size
 
   private val cachedAddresses = new ConcurrentHashMap[RoleName, Address]
 
   override def atStartup(): Unit = {
+    startCoroner()
     muteLog()
   }
+
+  override def afterTermination(): Unit = {
+    stopCoroner()
+  }
+
+  override def expectedTestDuration = 60.seconds
 
   def muteLog(sys: ActorSystem = system): Unit = {
     if (!sys.log.isDebugEnabled) {
@@ -69,26 +75,28 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
         ".*Cluster Node.* - is starting up.*",
         ".*Shutting down cluster Node.*",
         ".*Cluster node successfully shut down.*",
-        ".*Using a dedicated scheduler for cluster.*",
-        ".*Phi value.* for connection.*") foreach { s ⇒
+        ".*Using a dedicated scheduler for cluster.*") foreach { s ⇒
           sys.eventStream.publish(Mute(EventFilter.info(pattern = s)))
         }
 
       Seq(".*received dead letter from.*ClientDisconnected",
         ".*received dead letter from.*deadLetters.*PoisonPill",
+        ".*received dead letter from.*Disassociated",
+        ".*received dead letter from.*DisassociateUnderlying",
+        ".*received dead letter from.*HandleListenerRegistered",
         ".*installing context org.jboss.netty.channel.DefaultChannelPipeline.*") foreach { s ⇒
           sys.eventStream.publish(Mute(EventFilter.warning(pattern = s)))
         }
     }
   }
 
-  def muteMarkingAsUnreachable(sys: ActorSystem = system): Unit = if (!sys.log.isDebugEnabled) {
-    sys.eventStream.publish(Mute(EventFilter.error(pattern = ".*Marking.* as UNREACHABLE.*")))
-  }
+  def muteMarkingAsUnreachable(sys: ActorSystem = system): Unit =
+    if (!sys.log.isDebugEnabled)
+      sys.eventStream.publish(Mute(EventFilter.error(pattern = ".*Marking.* as UNREACHABLE.*")))
 
-  def muteDeadLetters(sys: ActorSystem = system): Unit = if (!sys.log.isDebugEnabled) {
-    sys.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*")))
-  }
+  def muteDeadLetters(sys: ActorSystem = system): Unit =
+    if (!sys.log.isDebugEnabled)
+      sys.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*")))
 
   override def afterAll(): Unit = {
     if (!log.isDebugEnabled) {
@@ -148,17 +156,10 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
   def startClusterNode(): Unit = {
     if (clusterView.members.isEmpty) {
       cluster join myself
-      awaitCond(clusterView.members.exists(_.address == address(myself)))
+      awaitAssert(clusterView.members.map(_.address) must contain(address(myself)))
     } else
       clusterView.self
   }
-
-  /**
-   * Initialize the cluster with the specified member
-   * nodes (roles). First node will be started first
-   * and others will join the first.
-   */
-  def startCluster(roles: RoleName*): Unit = awaitStartCluster(false, roles.to[immutable.Seq])
 
   /**
    * Initialize the cluster of the specified member
@@ -166,9 +167,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
    * First node will be started first  and others will join
    * the first.
    */
-  def awaitClusterUp(roles: RoleName*): Unit = awaitStartCluster(true, roles.to[immutable.Seq])
-
-  private def awaitStartCluster(upConvergence: Boolean = true, roles: immutable.Seq[RoleName]): Unit = {
+  def awaitClusterUp(roles: RoleName*): Unit = {
     runOn(roles.head) {
       // make sure that the node-to-join is started before other join
       startClusterNode()
@@ -177,10 +176,31 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
     if (roles.tail.contains(myself)) {
       cluster.join(roles.head)
     }
-    if (upConvergence && roles.contains(myself)) {
-      awaitUpConvergence(numberOfMembers = roles.length)
+    if (roles.contains(myself)) {
+      awaitMembersUp(numberOfMembers = roles.length)
     }
     enterBarrier(roles.map(_.name).mkString("-") + "-joined")
+  }
+
+  /**
+   * Join the specific node within the given period by sending repeated join
+   * requests at periodic intervals until we succeed.
+   */
+  def joinWithin(joinNode: RoleName, max: Duration = remaining, interval: Duration = 1.second): Unit = {
+    def memberInState(member: Address, status: Seq[MemberStatus]): Boolean =
+      clusterView.members.exists { m ⇒ (m.address == member) && status.contains(m.status) }
+
+    cluster join joinNode
+    awaitCond({
+      clusterView.refreshCurrentState()
+      if (memberInState(joinNode, List(MemberStatus.up)) &&
+        memberInState(myself, List(MemberStatus.Joining, MemberStatus.Up)))
+        true
+      else {
+        cluster join joinNode
+        false
+      }
+    }, max, interval)
   }
 
   /**
@@ -194,6 +214,13 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
     expectedAddresses.sorted.zipWithIndex.foreach { case (a, i) ⇒ members(i).address must be(a) }
   }
 
+  /**
+   * Note that this can only be used for a cluster with all members
+   * in Up status, i.e. use `awaitMembersUp` before using this method.
+   * The reason for that is that the cluster leader is preferably a
+   * member with status Up or Leaving and that information can't
+   * be determined from the `RoleName`.
+   */
   def assertLeader(nodesInCluster: RoleName*): Unit =
     if (nodesInCluster.contains(myself)) assertLeaderIn(nodesInCluster.to[immutable.Seq])
 
@@ -201,34 +228,40 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
    * Assert that the cluster has elected the correct leader
    * out of all nodes in the cluster. First
    * member in the cluster ring is expected leader.
+   *
+   * Note that this can only be used for a cluster with all members
+   * in Up status, i.e. use `awaitMembersUp` before using this method.
+   * The reason for that is that the cluster leader is preferably a
+   * member with status Up or Leaving and that information can't
+   * be determined from the `RoleName`.
    */
-  def assertLeaderIn(nodesInCluster: immutable.Seq[RoleName]): Unit = if (nodesInCluster.contains(myself)) {
-    nodesInCluster.length must not be (0)
-    val expectedLeader = roleOfLeader(nodesInCluster)
-    val leader = clusterView.leader
-    val isLeader = leader == Some(clusterView.selfAddress)
-    assert(isLeader == isNode(expectedLeader),
-      "expectedLeader [%s], got leader [%s], members [%s]".format(expectedLeader, leader, clusterView.members))
-    clusterView.status must (be(MemberStatus.Up) or be(MemberStatus.Leaving))
-  }
+  def assertLeaderIn(nodesInCluster: immutable.Seq[RoleName]): Unit =
+    if (nodesInCluster.contains(myself)) {
+      nodesInCluster.length must not be (0)
+      val expectedLeader = roleOfLeader(nodesInCluster)
+      val leader = clusterView.leader
+      val isLeader = leader == Some(clusterView.selfAddress)
+      assert(isLeader == isNode(expectedLeader),
+        "expectedLeader [%s], got leader [%s], members [%s]".format(expectedLeader, leader, clusterView.members))
+      clusterView.status must (be(MemberStatus.Up) or be(MemberStatus.Leaving))
+    }
 
   /**
-   * Wait until the expected number of members has status Up and convergence has been reached.
+   * Wait until the expected number of members has status Up has been reached.
    * Also asserts that nodes in the 'canNotBePartOfMemberRing' are *not* part of the cluster ring.
    */
-  def awaitUpConvergence(
+  def awaitMembersUp(
     numberOfMembers: Int,
     canNotBePartOfMemberRing: Set[Address] = Set.empty,
     timeout: FiniteDuration = 20.seconds): Unit = {
     within(timeout) {
       if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
-        awaitCond(
-          canNotBePartOfMemberRing forall (address ⇒ !(clusterView.members exists (_.address == address))))
-      awaitCond(clusterView.members.size == numberOfMembers)
-      awaitCond(clusterView.members.forall(_.status == MemberStatus.Up))
+        awaitAssert(canNotBePartOfMemberRing foreach (a ⇒ clusterView.members.map(_.address) must not contain (a)))
+      awaitAssert(clusterView.members.size must be(numberOfMembers))
+      awaitAssert(clusterView.members.map(_.status) must be(Set(MemberStatus.Up)))
       // clusterView.leader is updated by LeaderChanged, await that to be updated also
       val expectedLeader = clusterView.members.headOption.map(_.address)
-      awaitCond(clusterView.leader == expectedLeader)
+      awaitAssert(clusterView.leader must be(expectedLeader))
     }
   }
 
@@ -236,15 +269,23 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
    * Wait until the specified nodes have seen the same gossip overview.
    */
   def awaitSeenSameState(addresses: Address*): Unit =
-    awaitCond((addresses.toSet -- clusterView.seenBy).isEmpty)
+    awaitAssert((addresses.toSet -- clusterView.seenBy) must be(Set.empty))
 
+  /**
+   * Leader according to the address ordering of the roles.
+   * Note that this can only be used for a cluster with all members
+   * in Up status, i.e. use `awaitMembersUp` before using this method.
+   * The reason for that is that the cluster leader is preferably a
+   * member with status Up or Leaving and that information can't
+   * be determined from the `RoleName`.
+   */
   def roleOfLeader(nodesInCluster: immutable.Seq[RoleName] = roles): RoleName = {
     nodesInCluster.length must not be (0)
     nodesInCluster.sorted.head
   }
 
   /**
-   * Sort the roles in the order used by the cluster.
+   * Sort the roles in the address order used by the cluster node ring.
    */
   implicit val clusterOrdering: Ordering[RoleName] = new Ordering[RoleName] {
     import Member.addressOrdering
@@ -258,20 +299,32 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
    * [[akka.cluster.FailureDetectorPuppet]] is used as
    * failure detector.
    */
-  def markNodeAsAvailable(address: Address): Unit = cluster.failureDetector match {
-    case puppet: FailureDetectorPuppet ⇒ puppet.markNodeAsAvailable(address)
-    case _                             ⇒
-  }
+  def markNodeAsAvailable(address: Address): Unit =
+    failureDetectorPuppet(address) foreach (_.markNodeAsAvailable())
 
   /**
    * Marks a node as unavailable in the failure detector if
    * [[akka.cluster.FailureDetectorPuppet]] is used as
    * failure detector.
    */
-  def markNodeAsUnavailable(address: Address): Unit = cluster.failureDetector match {
-    case puppet: FailureDetectorPuppet ⇒ puppet.markNodeAsUnavailable(address)
-    case _                             ⇒
+  def markNodeAsUnavailable(address: Address): Unit = {
+    if (isFailureDetectorPuppet) {
+      // before marking it as unavailble there must be at least one heartbeat
+      // to create the FailureDetectorPuppet in the FailureDetectorRegistry
+      cluster.failureDetector.heartbeat(address)
+      failureDetectorPuppet(address) foreach (_.markNodeAsUnavailable())
+    }
   }
+
+  private def isFailureDetectorPuppet: Boolean =
+    cluster.settings.FailureDetectorImplementationClass == classOf[FailureDetectorPuppet].getName
+
+  private def failureDetectorPuppet(address: Address): Option[FailureDetectorPuppet] =
+    cluster.failureDetector match {
+      case reg: DefaultFailureDetectorRegistry[Address] ⇒
+        reg.failureDetector(address) collect { case p: FailureDetectorPuppet ⇒ p }
+      case _ ⇒ None
+    }
 
 }
 

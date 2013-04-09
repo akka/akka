@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.camel.internal.component
@@ -25,7 +25,7 @@ import akka.actor.ActorSystem.Settings
 import akka.event.LoggingAdapter
 import akka.testkit.{ TestLatch, TimingTest, TestKit, TestProbe }
 import org.apache.camel.impl.DefaultCamelContext
-import concurrent.{ Await, Promise, Future }
+import scala.concurrent.{ Await, Promise, Future }
 import akka.util.Timeout
 import akka.actor._
 import akka.testkit._
@@ -147,7 +147,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
 
     "asynchronous" when {
 
-      def verifyFailureIsSet {
+      def verifyFailureIsSet(): Unit = {
         producer.processExchangeAdapter(exchange, asyncCallback)
         asyncCallback.awaitCalled()
         verify(exchange).setFailure(any[FailureResult])
@@ -158,7 +158,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
         "consumer actor doesnt exist" must {
           "set failure message on exchange" in {
             producer = given(actor = null, outCapable = true)
-            verifyFailureIsSet
+            verifyFailureIsSet()
           }
         }
 
@@ -226,7 +226,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
         "consumer actor doesnt exist" must {
           "set failure message on exchange" in {
             producer = given(actor = null, outCapable = false)
-            verifyFailureIsSet
+            verifyFailureIsSet()
           }
         }
 
@@ -325,7 +325,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
   }
 }
 
-trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach { self: TestKit with MustMatchers with Suite ⇒
+private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach { self: TestKit with MustMatchers with Suite ⇒
   var camel: Camel = _
   var exchange: CamelExchangeAdapter = _
   var callback: AsyncCallback = _
@@ -427,9 +427,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
   }
 
   def echoActor = system.actorOf(Props(new Actor {
-    def receive = {
-      case msg ⇒ sender ! "received " + msg
-    }
+    def receive = { case msg ⇒ sender ! "received " + msg }
   }), name = "echoActor")
 
 }

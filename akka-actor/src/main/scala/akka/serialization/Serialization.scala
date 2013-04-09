@@ -1,11 +1,11 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.serialization
 
 import com.typesafe.config.Config
-import akka.actor.{ Extension, ExtendedActorSystem, Address }
+import akka.actor._
 import akka.event.Logging
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable.ArrayBuffer
@@ -21,10 +21,11 @@ object Serialization {
   type ClassSerializer = (Class[_], Serializer)
 
   /**
-   * This holds a reference to the current transport address to be inserted
-   * into local actor refs during serialization.
+   * This holds a reference to the current transport serialization information used for
+   * serializing local actor refs.
+   * INTERNAL API
    */
-  val currentTransportAddress = new DynamicVariable[Address](null)
+  private[akka] val currentTransportInformation = new DynamicVariable[Information](null)
 
   class Settings(val config: Config) {
     val Serializers: Map[String, String] = configToMap("akka.actor.serializers")
@@ -33,6 +34,35 @@ object Serialization {
     private final def configToMap(path: String): Map[String, String] = {
       import scala.collection.JavaConverters._
       config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) ⇒ (k -> v.toString) }
+    }
+  }
+
+  /**
+   * Serialization information needed for serializing local actor refs.
+   * INTERNAL API
+   */
+  private[akka] case class Information(address: Address, system: ActorSystem)
+
+  /**
+   * The serialized path of an actorRef, based on the current transport serialization information.
+   * If there is no external address available for the requested address then the systems default
+   * address will be used.
+   */
+  def serializedActorPath(actorRef: ActorRef): String = {
+    val path = actorRef.path
+    val originalSystem: ExtendedActorSystem = actorRef match {
+      case a: ActorRefWithCell ⇒ a.underlying.system.asInstanceOf[ExtendedActorSystem]
+      case _                   ⇒ null
+    }
+    Serialization.currentTransportInformation.value match {
+      case null ⇒ path.toSerializationFormat
+      case Information(address, system) ⇒
+        if (originalSystem == null || originalSystem == system)
+          path.toSerializationFormatWithAddress(address)
+        else {
+          val provider = originalSystem.provider
+          path.toSerializationFormatWithAddress(provider.getExternalAddressFor(address).getOrElse(provider.getDefaultAddress))
+        }
     }
   }
 }

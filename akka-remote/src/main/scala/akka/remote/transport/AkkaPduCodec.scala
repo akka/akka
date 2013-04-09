@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote.transport
 
 import akka.AkkaException
@@ -9,10 +12,14 @@ import akka.util.ByteString
 import com.google.protobuf.InvalidProtocolBufferException
 import com.google.protobuf.{ ByteString ⇒ PByteString }
 
-class PduCodecException(msg: String, cause: Throwable) extends AkkaException(msg, cause)
+/**
+ * INTERNAL API
+ */
+@SerialVersionUID(1L)
+private[remote] class PduCodecException(msg: String, cause: Throwable) extends AkkaException(msg, cause)
 
 /**
- * Internal API
+ * INTERNAL API
  *
  * Companion object of the [[akka.remote.transport.AkkaPduCodec]] trait. Contains the representation case classes
  * of decoded Akka Protocol Data Units (PDUs).
@@ -36,6 +43,8 @@ private[remote] object AkkaPduCodec {
 }
 
 /**
+ * INTERNAL API
+ *
  * A Codec that is able to convert Akka PDUs (Protocol Data Units) from and to [[akka.util.ByteString]]s.
  */
 private[remote] trait AkkaPduCodec {
@@ -86,6 +95,9 @@ private[remote] trait AkkaPduCodec {
     senderOption: Option[ActorRef]): ByteString
 }
 
+/**
+ * INTERNAL API
+ */
 private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
 
   override def constructMessage(
@@ -132,11 +144,11 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
     localAddress: Address): Message = {
     val msgPdu = RemoteMessageProtocol.parseFrom(raw.toArray)
     Message(
-      recipient = provider.actorForWithLocalAddress(provider.rootGuardian, msgPdu.getRecipient.getPath, localAddress),
+      recipient = provider.resolveActorRefWithLocalAddress(msgPdu.getRecipient.getPath, localAddress),
       recipientAddress = AddressFromURIString(msgPdu.getRecipient.getPath),
       serializedMessage = msgPdu.getMessage,
       senderOption = if (!msgPdu.hasSender) None
-      else Some(provider.actorForWithLocalAddress(provider.rootGuardian, msgPdu.getSender.getPath, localAddress)))
+      else Some(provider.resolveActorRefWithLocalAddress(msgPdu.getSender.getPath, localAddress)))
   }
 
   private def decodeControlPdu(controlPdu: RemoteControlProtocol): AkkaPdu = {
@@ -170,7 +182,7 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
 
   private def serializeActorRef(defaultAddress: Address, ref: ActorRef): ActorRefProtocol = {
     ActorRefProtocol.newBuilder.setPath(
-      if (ref.path.address.host.isDefined) ref.path.toString else ref.path.toStringWithAddress(defaultAddress)).build()
+      if (ref.path.address.host.isDefined) ref.path.toSerializationFormat else ref.path.toSerializationFormatWithAddress(defaultAddress)).build()
   }
 
   private def serializeAddress(address: Address): Option[AddressProtocol] = {

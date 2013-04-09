@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.routing
 
@@ -100,6 +100,26 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       }
     }
 
+    "not terminate when resizer is used" in {
+      val latch = TestLatch(1)
+      val resizer = new Resizer {
+        def isTimeForResize(messageCounter: Long): Boolean = messageCounter == 0
+        def resize(routeeProvider: RouteeProvider): Unit = {
+          routeeProvider.createRoutees(nrOfInstances = 2)
+          latch.countDown()
+        }
+      }
+      val router = system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(resizer = Some(resizer))))
+      watch(router)
+      Await.ready(latch, remaining)
+      router ! CurrentRoutees
+      val routees = expectMsgType[RouterRoutees].routees
+      routees.size must be(2)
+      routees foreach system.stop
+      // expect no Terminated
+      expectNoMsg(2.seconds)
+    }
+
     "be able to send their routees" in {
       case class TestRun(id: String, names: immutable.Iterable[String], actors: Int)
       val actor = system.actorOf(Props(new Actor {
@@ -169,14 +189,14 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         RoundRobinRouter(1, supervisorStrategy = escalator)))
       //#supervision
       router ! CurrentRoutees
-      EventFilter[ActorKilledException](occurrences = 2) intercept {
+      EventFilter[ActorKilledException](occurrences = 1) intercept {
         expectMsgType[RouterRoutees].routees.head ! Kill
       }
       expectMsgType[ActorKilledException]
 
       val router2 = system.actorOf(Props.empty.withRouter(RoundRobinRouter(1).withSupervisorStrategy(escalator)))
       router2 ! CurrentRoutees
-      EventFilter[ActorKilledException](occurrences = 2) intercept {
+      EventFilter[ActorKilledException](occurrences = 1) intercept {
         expectMsgType[RouterRoutees].routees.head ! Kill
       }
       expectMsgType[ActorKilledException]
@@ -194,7 +214,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         override def postRestart(reason: Throwable): Unit = testActor ! "restarted"
       }).withRouter(RoundRobinRouter(3))
       val router = expectMsgType[ActorRef]
-      EventFilter[Exception]("die", occurrences = 2) intercept {
+      EventFilter[Exception]("die", occurrences = 1) intercept {
         router ! "die"
       }
       expectMsgType[Exception].getMessage must be("die")
@@ -379,19 +399,19 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
       val busy = TestLatch(1)
       val received0 = TestLatch(1)
-      router ! (busy, received0)
+      router ! ((busy, received0))
       Await.ready(received0, TestLatch.DefaultTimeout)
 
       val received1 = TestLatch(1)
-      router ! (1, received1)
+      router ! ((1, received1))
       Await.ready(received1, TestLatch.DefaultTimeout)
 
       val received2 = TestLatch(1)
-      router ! (2, received2)
+      router ! ((2, received2))
       Await.ready(received2, TestLatch.DefaultTimeout)
 
       val received3 = TestLatch(1)
-      router ! (3, received3)
+      router ! ((3, received3))
       Await.ready(received3, TestLatch.DefaultTimeout)
 
       busy.countDown()

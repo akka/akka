@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.util
@@ -32,7 +32,7 @@ object Crypt {
   }
 
   def hexify(bytes: Array[Byte]): String = {
-    val builder = new StringBuilder(bytes.length * 2)
+    val builder = new java.lang.StringBuilder(bytes.length * 2)
     bytes.foreach { byte ⇒ builder.append(hex.charAt((byte & 0xF0) >> 4)).append(hex.charAt(byte & 0xF)) }
     builder.toString
   }

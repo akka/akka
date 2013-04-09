@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.camel
 
@@ -70,8 +70,8 @@ class ConcurrentActivationTest extends WordSpec with MustMatchers with NonShared
         }
         val (activatedConsumerNames, activatedProducerNames) = partitionNames(activations)
         val (deactivatedConsumerNames, deactivatedProducerNames) = partitionNames(deactivations)
-        assertContainsSameElements(activatedConsumerNames, deactivatedConsumerNames)
-        assertContainsSameElements(activatedProducerNames, deactivatedProducerNames)
+        assertContainsSameElements(activatedConsumerNames -> deactivatedConsumerNames)
+        assertContainsSameElements(activatedProducerNames -> deactivatedProducerNames)
       } finally {
         system.eventStream.publish(TestEvent.UnMute(eventFilter))
       }
@@ -97,7 +97,7 @@ class ConsumerBroadcast(promise: Promise[(Future[List[List[ActorRef]]], Future[L
         allDeactivationFutures = allDeactivationFutures :+ deactivationListFuture
         context.actorOf(Props(new Registrar(i, number, activationListPromise, deactivationListPromise)), "registrar-" + i)
       }
-      promise.success((Future.sequence(allActivationFutures)), Future.sequence(allDeactivationFutures))
+      promise.success(Future.sequence(allActivationFutures) -> Future.sequence(allDeactivationFutures))
 
       broadcaster = Some(context.actorOf(Props[Registrar] withRouter (BroadcastRouter(routees)), "registrarRouter"))
     case reg: Any ⇒

@@ -1,16 +1,16 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote.security.provider
 
 /**
- * Internal API
+ * INTERNAL API
  * From AESCounterRNG API docs:
  * Valid values are 16 (128 bits), 24 (192 bits) and 32 (256 bits).
  * Any other values will result in an exception from the AES implementation.
  *
- * Internal API
+ * INTERNAL API
  */
 private[provider] object SeedSize {
   val Seed128 = 16

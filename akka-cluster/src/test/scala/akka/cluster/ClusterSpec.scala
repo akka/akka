@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -27,7 +27,7 @@ object ClusterSpec {
     }
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
-    akka.remote.netty.port = 0
+    akka.remote.netty.tcp.port = 0
     # akka.loglevel = DEBUG
     """
 
@@ -38,8 +38,7 @@ object ClusterSpec {
 class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
   import ClusterSpec._
 
-  // FIXME: temporary workaround. See #2663
-  val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[ClusterActorRefProvider].transport.defaultAddress
+  val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
 
   val cluster = Cluster(system)
   def clusterView = cluster.readView
@@ -63,23 +62,21 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     "initially become singleton cluster when joining itself and reach convergence" in {
       clusterView.members.size must be(0) // auto-join = off
       cluster.join(selfAddress)
-      Thread.sleep(5000)
+      leaderActions() // Joining -> Up
       awaitCond(clusterView.isSingletonCluster)
       clusterView.self.address must be(selfAddress)
       clusterView.members.map(_.address) must be(Set(selfAddress))
-      clusterView.status must be(MemberStatus.Joining)
-      leaderActions()
-      awaitCond(clusterView.status == MemberStatus.Up)
+      awaitAssert(clusterView.status must be(MemberStatus.Up))
     }
 
     "publish CurrentClusterState to subscribers when requested" in {
       try {
         cluster.subscribe(testActor, classOf[ClusterEvent.ClusterDomainEvent])
         // first, is in response to the subscription
-        expectMsgClass(classOf[ClusterEvent.ClusterDomainEvent])
+        expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
 
         cluster.publishCurrentClusterState()
-        expectMsgClass(classOf[ClusterEvent.ClusterDomainEvent])
+        expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
       } finally {
         cluster.unsubscribe(testActor)
       }
@@ -87,7 +84,17 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
 
     "send CurrentClusterState to one receiver when requested" in {
       cluster.sendCurrentClusterState(testActor)
-      expectMsgClass(classOf[ClusterEvent.ClusterDomainEvent])
+      expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
+    }
+
+    // this must be the last test step, since the cluster is shutdown
+    "publish MemberRemoved when shutdown" in {
+      cluster.subscribe(testActor, classOf[ClusterEvent.MemberRemoved])
+      // first, is in response to the subscription
+      expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
+
+      cluster.shutdown()
+      expectMsgType[ClusterEvent.MemberRemoved].member.address must be(selfAddress)
     }
 
   }

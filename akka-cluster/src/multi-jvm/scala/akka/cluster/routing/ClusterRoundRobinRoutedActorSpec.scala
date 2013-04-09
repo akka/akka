@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster.routing
 
@@ -7,11 +7,11 @@ import language.postfixOps
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
-
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Address
 import akka.actor.Props
+import akka.actor.Terminated
 import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
 import akka.remote.testkit.MultiNodeConfig
@@ -71,9 +71,20 @@ object ClusterRoundRobinRoutedActorMultiJvmSpec extends MultiNodeConfig {
             routees-path = "/user/myservice"
           }
         }
+        /router5 {
+          router = round-robin
+          nr-of-instances = 10
+          cluster {
+            enabled = on
+            use-role = a
+          }
+        }
       }
       """)).
     withFallback(MultiNodeClusterSpec.clusterConfig))
+
+  nodeConfig(first, second)(ConfigFactory.parseString("""akka.cluster.roles =["a", "c"]"""))
+  nodeConfig(third)(ConfigFactory.parseString("""akka.cluster.roles =["b", "c"]"""))
 
 }
 
@@ -89,9 +100,10 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
 
   lazy val router1 = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "router1")
   lazy val router2 = system.actorOf(Props[SomeActor].withRouter(ClusterRouterConfig(RoundRobinRouter(),
-    ClusterRouterSettings(totalInstances = 3, maxInstancesPerNode = 1))), "router2")
+    ClusterRouterSettings(totalInstances = 3, maxInstancesPerNode = 1, useRole = None))), "router2")
   lazy val router3 = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "router3")
   lazy val router4 = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "router4")
+  lazy val router5 = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "router5")
 
   def receiveReplies(routeeType: RouteeType, expectedReplies: Int): Map[Address, Int] = {
     val zero = Map.empty[Address, Int] ++ roles.map(address(_) -> 0)
@@ -125,7 +137,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         router1.isInstanceOf[RoutedActorRef] must be(true)
 
         // max-nr-of-instances-per-node=2 times 2 nodes
-        awaitCond(currentRoutees(router1).size == 4)
+        awaitAssert(currentRoutees(router1).size must be(4))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
@@ -153,7 +165,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
 
       runOn(first) {
         // 2 nodes, 1 routee on each node
-        awaitCond(currentRoutees(router4).size == 2)
+        awaitAssert(currentRoutees(router4).size must be(2))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
@@ -179,7 +191,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
 
       runOn(first) {
         // max-nr-of-instances-per-node=2 times 4 nodes
-        awaitCond(currentRoutees(router1).size == 8)
+        awaitAssert(currentRoutees(router1).size must be(8))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
@@ -201,7 +213,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
 
       runOn(first) {
         // 4 nodes, 1 routee on each node
-        awaitCond(currentRoutees(router4).size == 4)
+        awaitAssert(currentRoutees(router4).size must be(4))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
@@ -221,7 +233,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
 
       runOn(first) {
         // max-nr-of-instances-per-node=1 times 3 nodes
-        awaitCond(currentRoutees(router3).size == 3)
+        awaitAssert(currentRoutees(router3).size must be(3))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
@@ -240,13 +252,35 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
       enterBarrier("after-6")
     }
 
+    "deploy routees to specified node role" taggedAs LongRunningTest in {
+
+      runOn(first) {
+        awaitAssert(currentRoutees(router5).size must be(2))
+
+        val iterationCount = 10
+        for (i ← 0 until iterationCount) {
+          router5 ! "hit"
+        }
+
+        val replies = receiveReplies(DeployRoutee, iterationCount)
+
+        replies(first) must be > (0)
+        replies(second) must be > (0)
+        replies(third) must be(0)
+        replies(fourth) must be(0)
+        replies.values.sum must be(iterationCount)
+      }
+
+      enterBarrier("after-7")
+    }
+
     "deploy programatically defined routees to the member nodes in the cluster" taggedAs LongRunningTest in {
 
       runOn(first) {
         router2.isInstanceOf[RoutedActorRef] must be(true)
 
         // totalInstances = 3, maxInstancesPerNode = 1
-        awaitCond(currentRoutees(router2).size == 3)
+        awaitAssert(currentRoutees(router2).size must be(3))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
@@ -263,7 +297,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         replies.values.sum must be(iterationCount)
       }
 
-      enterBarrier("after-7")
+      enterBarrier("after-8")
     }
 
     "deploy programatically defined routees to other node when a node becomes down" taggedAs LongRunningTest in {
@@ -273,12 +307,16 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         def routees = currentRoutees(router2)
         def routeeAddresses = (routees map fullAddress).toSet
 
+        routees foreach watch
         val notUsedAddress = ((roles map address).toSet -- routeeAddresses).head
-
         val downAddress = routeeAddresses.find(_ != address(first)).get
+        val downRoutee = routees.find(_.path.address == downAddress).get
+
         cluster.down(downAddress)
-        awaitCond {
-          routeeAddresses.contains(notUsedAddress) && !routeeAddresses.contains(downAddress)
+        expectMsgType[Terminated].actor must be(downRoutee)
+        awaitAssert {
+          routeeAddresses must contain(notUsedAddress)
+          routeeAddresses must not contain (downAddress)
         }
 
         val iterationCount = 10
@@ -292,7 +330,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         replies.values.sum must be(iterationCount)
       }
 
-      enterBarrier("after-8")
+      enterBarrier("after-9")
     }
 
   }

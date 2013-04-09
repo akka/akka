@@ -1,7 +1,7 @@
 package akka.serialization
 
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream }
@@ -103,7 +103,8 @@ object JavaSerializer {
   val currentSystem = new CurrentSystem
   final class CurrentSystem extends DynamicVariable[ExtendedActorSystem](null) {
     /**
-     * Java API
+     * Java API: invoke the callable with the current system being set to the given value for this thread.
+     *
      * @param value - the current value under the call to callable.call()
      * @param callable - the operation to be performed
      * @tparam S - the return type

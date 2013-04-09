@@ -31,16 +31,55 @@ Modules
 
 Akka is very modular and consists of several JARs containing different features.
 
-- ``akka-actor`` -- Classic Actors, Typed Actors, IO Actor etc.
-- ``akka-remote`` -- Remote Actors
-- ``akka-testkit`` -- Toolkit for testing Actor systems
-- ``akka-kernel`` -- Akka microkernel for running a bare-bones mini application server
-- ``akka-transactor`` -- Transactors - transactional actors, integrated with Scala STM
-- ``akka-agent`` -- Agents, integrated with Scala STM
-- ``akka-camel`` -- Apache Camel integration
-- ``akka-zeromq`` -- ZeroMQ integration
-- ``akka-slf4j`` -- SLF4J Event Handler Listener
-- ``akka-filebased-mailbox`` -- Akka durable mailbox (find more among community projects)
+- ``akka-actor`` – Classic Actors, Typed Actors, IO Actor etc.
+
+- ``akka-agent`` – Agents, integrated with Scala STM
+
+- ``akka-camel`` – Apache Camel integration
+
+- ``akka-dataflow`` – add-on to SIP-14 futures supporting implicit
+  continuation-passing style
+
+- ``akka-file-mailbox`` – Akka durable mailbox (find more among community
+  projects)
+
+- ``akka-kernel`` – Akka microkernel for running a bare-bones mini application
+  server
+
+- ``akka-mailboxes-common`` – common infrastructure for implementing durable
+  mailboxes
+
+- ``akka-osgi`` – base bundle for using Akka in OSGi containers, containing the
+  ``akka-actor`` classes
+
+- ``akka-osgi-aries`` – Aries blueprint for provisioning actor systems
+
+- ``akka-remote`` – Remote Actors
+
+- ``akka-slf4j`` – SLF4J Logger (event bus listener)
+
+- ``akka-testkit`` – Toolkit for testing Actor systems
+
+- ``akka-transactor`` – Transactors - transactional actors, integrated with
+  Scala STM
+
+- ``akka-zeromq`` – ZeroMQ integration
+
+In addition to these stable modules there are several which are on their way
+into the stable core but are still marked “experimental” at this point. This
+does not mean that they do not function as intended, it primarily means that
+their API has not yet solidified enough in order to be considered frozen. You
+can help accelerating this process by giving feedback on these modules on our
+mailing list.
+
+- ``akka-channels-experimental`` – Typed Channels on top of untyped Actors,
+  using Scala 2.10 macros
+
+- ``akka-cluster-experimental`` – Cluster membership management, leader
+  election, elastic routers.
+
+- ``akka-contrib`` – an assortment of contributions which may or may not be
+  moved into core modules, see :ref:`akka-contrib` for more details.
 
 The filename of the actual JAR is for example ``@jarName@`` (and analog for
 the other modules).
@@ -62,6 +101,10 @@ version to work with and can decide when to update to a newer version. The Akka
 snapshots repository is also proxied through http://repo.typesafe.com/typesafe/snapshots/
 which includes proxies for several other repositories that Akka modules depend on.
 
+.. warning::
+
+  The use of Akka SNAPSHOTs, nightlies and milestone releases is discouraged unless you know what you are doing.
+
 Microkernel
 -----------
 
@@ -75,10 +118,19 @@ More information is available in the documentation of the
 Using a build tool
 ------------------
 
-Akka can be used with build tools that support Maven repositories. The Akka
-Maven repository can be found at http://repo.akka.io/releases/ and Typesafe provides
-http://repo.typesafe.com/typesafe/releases/ that proxies several other
-repositories, including akka.io.
+Akka can be used with build tools that support Maven repositories.
+
+Maven repositories
+------------------
+
+For Akka version 2.1-M2 and onwards:
+
+`Maven Central <http://repo1.maven.org/maven2/>`_
+
+For previous Akka versions:
+
+`Akka Repo <http://repo.akka.io/releases/>`_
+`Typesafe Repo <http://repo.typesafe.com/typesafe/releases/>`_
 
 Using Akka with Maven
 ---------------------
@@ -127,6 +179,41 @@ SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <htt
 
     libraryDependencies +=
       "com.typesafe.akka" %% "akka-actor" % "@version@" @crossString@
+
+**Note**: the libraryDependencies setting above is specific to SBT v0.12.x and higher.  If you are using an older version of SBT, the libraryDependencies should look like this:
+
+.. parsed-literal::
+
+    libraryDependencies +=
+      "com.typesafe.akka" % "akka-actor_@binVersion@" % "@version@"
+
+
+Using Akka with Gradle
+----------------------
+
+Requires at least `Gradle <http://gradle.org>`_ 1.4
+Uses the `Scala plugin <http://gradle.org/docs/current/userguide/scala_plugin.html>`_
+
+.. parsed-literal::
+
+    apply plugin: 'scala'
+
+    repositories {
+      mavenCentral()
+    }
+
+    dependencies {
+      compile 'org.scala-lang:scala-library:@scalaVersion@'
+    }
+
+    tasks.withType(ScalaCompile) {
+      scalaCompileOptions.useAnt = false
+    }
+
+    dependencies {
+      compile group: 'com.typesafe.akka', name: 'akka-actor_@binVersion@', version: '@version@'
+      compile group: 'org.scala-lang', name: 'scala-library', version: '@scalaVersion@'
+    }
 
 
 Using Akka with Eclipse

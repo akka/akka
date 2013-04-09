@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.pattern
 
@@ -13,6 +13,7 @@ import scala.concurrent.{ ExecutionContext, Future, Promise, Await }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.Success
+import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 
 /**
  * Companion object providing factory methods for Circuit Breaker which runs callbacks in caller's thread
@@ -20,14 +21,8 @@ import scala.util.Success
 object CircuitBreaker {
 
   /**
-   * Synchronous execution context to run in caller's thread - used by companion object factory methods
-   */
-  private[CircuitBreaker] val syncExecutionContext = new ExecutionContext {
-    override def execute(runnable: Runnable): Unit = runnable.run()
-    override def reportFailure(t: Throwable): Unit = ()
-  }
-
-  /**
+   * Create a new CircuitBreaker.
+   *
    * Callbacks run in caller's thread when using withSyncCircuitBreaker, and in same ExecutionContext as the passed
    * in Future when using withCircuitBreaker. To use another ExecutionContext for the callbacks you can specify the
    * executor in the constructor.
@@ -38,13 +33,14 @@ object CircuitBreaker {
    * @param resetTimeout [[scala.concurrent.duration.FiniteDuration]] of time after which to attempt to close the circuit
    */
   def apply(scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration): CircuitBreaker =
-    new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout)(syncExecutionContext)
+    new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout)(sameThreadExecutionContext)
 
   /**
+   * Java API: Create a new CircuitBreaker.
+   *
    * Callbacks run in caller's thread when using withSyncCircuitBreaker, and in same ExecutionContext as the passed
    * in Future when using withCircuitBreaker. To use another ExecutionContext for the callbacks you can specify the
    * executor in the constructor.
-   * Java API alias for apply
    *
    * @param scheduler Reference to Akka scheduler
    * @param maxFailures Maximum number of failures before opening the circuit
@@ -117,7 +113,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
   def withCircuitBreaker[T](body: ⇒ Future[T]): Future[T] = currentState.invoke(body)
 
   /**
-   * Java API for withCircuitBreaker
+   * Java API for [[#withCircuitBreaker]]
    *
    * @param body Call needing protected
    * @tparam T return type from call
@@ -140,7 +136,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
       callTimeout)
 
   /**
-   * Java API for withSyncCircuitBreaker
+   * Java API for [[#withSyncCircuitBreaker]]
    *
    * @param body Call needing protected
    * @tparam T return type from call
@@ -301,7 +297,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
       bodyFuture.onComplete({
         case s: Success[_] if !deadline.isOverdue() ⇒ callSucceeds()
         case _                                      ⇒ callFails()
-      })(CircuitBreaker.syncExecutionContext)
+      })(sameThreadExecutionContext)
       bodyFuture
     }
 

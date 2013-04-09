@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -22,6 +22,7 @@ object ClusterDeployerSpec {
           cluster.allow-local-routees = off
         }
         /user/service2 {
+          dispatcher = mydispatcher
           router = round-robin
           nr-of-instances = 20
           cluster.enabled = on
@@ -29,7 +30,7 @@ object ClusterDeployerSpec {
           cluster.routees-path = "/user/myservice"
         }
       }
-      akka.remote.netty.port = 0
+      akka.remote.netty.tcp.port = 0
       """, ConfigParseOptions.defaults)
 
   class RecipeActor extends Actor {
@@ -53,8 +54,9 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
           service,
           deployment.get.config,
           ClusterRouterConfig(RoundRobinRouter(20), ClusterRouterSettings(
-            totalInstances = 20, maxInstancesPerNode = 3, allowLocalRoutees = false)),
-          ClusterScope)))
+            totalInstances = 20, maxInstancesPerNode = 3, allowLocalRoutees = false, useRole = None)),
+          ClusterScope,
+          Deploy.NoDispatcherGiven)))
     }
 
     "be able to parse 'akka.actor.deployment._' with specified cluster deploy routee settings" in {
@@ -67,8 +69,9 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
           service,
           deployment.get.config,
           ClusterRouterConfig(RoundRobinRouter(20), ClusterRouterSettings(
-            totalInstances = 20, routeesPath = "/user/myservice", allowLocalRoutees = false)),
-          ClusterScope)))
+            totalInstances = 20, routeesPath = "/user/myservice", allowLocalRoutees = false, useRole = None)),
+          ClusterScope,
+          "mydispatcher")))
     }
 
   }

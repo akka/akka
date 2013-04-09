@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.future;
 
@@ -556,7 +556,7 @@ public class FutureDocTestBase {
     //#after
     final ExecutionContext ec = system.dispatcher();
     Future<String> failExc = Futures.failed(new IllegalStateException("OHNOES1"));
-    Future<String> delayed = Patterns.after(Duration.create(500, "millis"),
+    Future<String> delayed = Patterns.after(Duration.create(200, "millis"),
       system.scheduler(), ec,  failExc);
     Future<String> future = future(new Callable<String>() {
       public String call() throws InterruptedException {
@@ -564,7 +564,7 @@ public class FutureDocTestBase {
         return "foo";
       }
     }, ec);
-    Future<String> result = Futures.firstCompletedOf(Arrays.asList(future, delayed), ec);
+    Future<String> result = Futures.firstCompletedOf(Arrays.<Future<String>>asList(future, delayed), ec);
     //#after
     Await.result(result, Duration.create(2, SECONDS));
   }

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -21,8 +21,14 @@ import scala.collection.immutable
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
-import akka.util.internal.HashedWheelTimer
-import concurrent.{ ExecutionContext, Await }
+import scala.concurrent.{ ExecutionContext, Await }
+import com.typesafe.config.ConfigFactory
+import akka.remote.DefaultFailureDetectorRegistry
+import akka.remote.FailureDetector
+import com.typesafe.config.Config
+import akka.event.LoggingAdapter
+import java.util.concurrent.ThreadFactory
+import scala.util.control.NonFatal
 
 /**
  * Cluster Extension Id and factory for creating Cluster extension.
@@ -67,17 +73,35 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         format(system, other.getClass.getName))
   }
 
+  /**
+   * roles that this member has
+   */
+  def selfRoles: Set[String] = settings.Roles
+
+  /**
+   * Java API: roles that this member has
+   */
+  def getSelfRoles: java.util.Set[String] =
+    scala.collection.JavaConverters.setAsJavaSetConverter(selfRoles).asJava
+
   private val _isTerminated = new AtomicBoolean(false)
   private val log = Logging(system, "Cluster")
+  // ClusterJmx is initialized as the last thing in the constructor
+  private var clusterJmx: Option[ClusterJmx] = None
 
   log.info("Cluster Node [{}] - is starting up...", selfAddress)
 
-  val failureDetector: FailureDetector = {
-    import settings.{ FailureDetectorImplementationClass ⇒ fqcn }
-    system.dynamicAccess.createInstanceFor[FailureDetector](
-      fqcn, List(classOf[ActorSystem] -> system, classOf[ClusterSettings] -> settings)).recover({
-        case e ⇒ throw new ConfigurationException("Could not create custom failure detector [" + fqcn + "] due to:" + e.toString)
-      }).get
+  val failureDetector: FailureDetectorRegistry[Address] = {
+    def createFailureDetector(): FailureDetector = {
+      import settings.{ FailureDetectorImplementationClass ⇒ fqcn }
+      system.dynamicAccess.createInstanceFor[FailureDetector](
+        fqcn, List(classOf[Config] -> settings.FailureDetectorConfig)).recover({
+          case e ⇒ throw new ConfigurationException(
+            s"Could not create custom cluster failure detector [$fqcn] due to: ${e.toString}", e)
+        }).get
+    }
+
+    new DefaultFailureDetectorRegistry(() ⇒ createFailureDetector())
   }
 
   // ========================================================
@@ -87,32 +111,31 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * INTERNAL API
    */
-  private[cluster] val scheduler: Scheduler with Closeable = {
-    if (system.settings.SchedulerTickDuration > SchedulerTickDuration) {
+  private[cluster] val scheduler: Scheduler = {
+    if (system.scheduler.maxFrequency < 1.second / SchedulerTickDuration) {
+      import scala.collection.JavaConverters._
       log.info("Using a dedicated scheduler for cluster. Default scheduler can be used if configured " +
         "with 'akka.scheduler.tick-duration' [{} ms] <=  'akka.cluster.scheduler.tick-duration' [{} ms].",
-        system.settings.SchedulerTickDuration.toMillis, SchedulerTickDuration.toMillis)
-      new DefaultScheduler(
-        new HashedWheelTimer(log,
-          system.threadFactory match {
-            case tf: MonitorableThreadFactory ⇒ tf.withName(tf.name + "-cluster-scheduler")
-            case tf                           ⇒ tf
-          },
-          SchedulerTickDuration,
-          SchedulerTicksPerWheel),
-        log)
+        (1000 / system.scheduler.maxFrequency).toInt, SchedulerTickDuration.toMillis)
+
+      val cfg = ConfigFactory.parseString(
+        s"akka.scheduler.tick-duration=${SchedulerTickDuration.toMillis}ms").withFallback(
+          system.settings.config)
+      val threadFactory = system.threadFactory match {
+        case tf: MonitorableThreadFactory ⇒ tf.withName(tf.name + "-cluster-scheduler")
+        case tf                           ⇒ tf
+      }
+      system.dynamicAccess.createInstanceFor[Scheduler](system.settings.SchedulerClass, immutable.Seq(
+        classOf[Config] -> cfg,
+        classOf[LoggingAdapter] -> log,
+        classOf[ThreadFactory] -> threadFactory)).get
     } else {
       // delegate to system.scheduler, but don't close over system
       val systemScheduler = system.scheduler
       new Scheduler with Closeable {
         override def close(): Unit = () // we are using system.scheduler, which we are not responsible for closing
 
-        override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration,
-                              receiver: ActorRef, message: Any)(implicit executor: ExecutionContext, sender: ActorRef = Actor.noSender): Cancellable =
-          systemScheduler.schedule(initialDelay, interval, receiver, message)
-
-        override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
-          systemScheduler.schedule(initialDelay, interval)(f)
+        override def maxFrequency: Double = systemScheduler.maxFrequency
 
         override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration,
                               runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
@@ -121,13 +144,6 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         override def scheduleOnce(delay: FiniteDuration,
                                   runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
           systemScheduler.scheduleOnce(delay, runnable)
-
-        override def scheduleOnce(delay: FiniteDuration, receiver: ActorRef,
-                                  message: Any)(implicit executor: ExecutionContext): Cancellable =
-          systemScheduler.scheduleOnce(delay, receiver, message)
-
-        override def scheduleOnce(delay: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
-          systemScheduler.scheduleOnce(delay)(f)
       }
     }
   }
@@ -143,7 +159,14 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    */
   private[cluster] val clusterCore: ActorRef = {
     implicit val timeout = system.settings.CreationTimeout
-    Await.result((clusterDaemons ? InternalClusterAction.GetClusterCoreRef).mapTo[ActorRef], timeout.duration)
+    try {
+      Await.result((clusterDaemons ? InternalClusterAction.GetClusterCoreRef).mapTo[ActorRef], timeout.duration)
+    } catch {
+      case NonFatal(e) ⇒
+        log.error(e, "Failed to startup Cluster")
+        shutdown()
+        throw e
+    }
   }
 
   @volatile
@@ -156,11 +179,12 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   system.registerOnTermination(shutdown())
 
-  private val clusterJmx: Option[ClusterJmx] = {
-    val jmx = new ClusterJmx(this, log)
-    jmx.createMBean()
-    Some(jmx)
-  }
+  if (JmxEnabled)
+    clusterJmx = {
+      val jmx = new ClusterJmx(this, log)
+      jmx.createMBean()
+      Some(jmx)
+    }
 
   log.info("Cluster Node [{}] - has started up successfully", selfAddress)
 
@@ -176,8 +200,10 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * Subscribe to cluster domain events.
    * The `to` Class can be [[akka.cluster.ClusterEvent.ClusterDomainEvent]]
-   * or subclass. A snapshot of [[akka.cluster.ClusterEvent.CurrentClusterState]]
-   * will also be sent to the subscriber.
+   * or subclass.
+   *
+   * A snapshot of [[akka.cluster.ClusterEvent.CurrentClusterState]]
+   * will be sent to the subscriber as the first event.
    */
   def subscribe(subscriber: ActorRef, to: Class[_]): Unit =
     clusterCore ! InternalClusterAction.Subscribe(subscriber, to)
@@ -242,11 +268,10 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     registerOnMemberUp(new Runnable { def run = code })
 
   /**
-   * The supplied callback will be run, once, when current cluster member is `Up`.
+   * Java API: The supplied callback will be run, once, when current cluster member is `Up`.
    * Typically used together with configuration option `akka.cluster.min-nr-of-members'
    * to defer some action, such as starting actors, until the cluster has reached
    * a certain size.
-   * JAVA API
    */
   def registerOnMemberUp(callback: Runnable): Unit = clusterDaemons ! InternalClusterAction.AddOnMemberUpListener(callback)
 
@@ -277,12 +302,17 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
       system.stop(clusterDaemons)
       if (readViewStarted) readView.close()
 
-      scheduler.close()
+      closeScheduler()
 
       clusterJmx foreach { _.unregisterMBean() }
 
       log.info("Cluster Node [{}] - Cluster node successfully shut down", selfAddress)
     }
+  }
+
+  private def closeScheduler(): Unit = scheduler match {
+    case x: Closeable ⇒ x.close()
+    case _            ⇒
   }
 
 }

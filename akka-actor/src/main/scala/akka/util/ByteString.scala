@@ -1,13 +1,15 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.util
 
 import java.nio.{ ByteBuffer, ByteOrder }
+import java.lang.{ Iterable ⇒ JIterable }
 
 import scala.collection.IndexedSeqOptimized
 import scala.collection.mutable.{ Builder, WrappedArray }
+import scala.collection.immutable
 import scala.collection.immutable.{ IndexedSeq, VectorBuilder }
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
@@ -67,6 +69,11 @@ object ByteString {
    */
   def fromString(string: String, charset: String): ByteString = apply(string, charset)
 
+  /**
+   * Creates a new ByteString by copying bytes out of a ByteBuffer.
+   */
+  def fromByteBuffer(buffer: ByteBuffer): ByteString = apply(buffer)
+
   val empty: ByteString = CompactByteString(Array.empty[Byte])
 
   def newBuilder: ByteStringBuilder = new ByteStringBuilder
@@ -94,10 +101,12 @@ object ByteString {
 
     private[akka] def toByteString1: ByteString1 = ByteString1(bytes)
 
-    def asByteBuffer: ByteBuffer =
-      toByteString1.asByteBuffer
+    def asByteBuffer: ByteBuffer = toByteString1.asByteBuffer
 
-    def decodeString(charset: String): String = new String(bytes, charset)
+    def asByteBuffers: scala.collection.immutable.Iterable[ByteBuffer] = List(asByteBuffer)
+
+    def decodeString(charset: String): String =
+      if (isEmpty) "" else new String(bytes, charset)
 
     def ++(that: ByteString): ByteString =
       if (that.isEmpty) this
@@ -110,9 +119,10 @@ object ByteString {
   }
 
   private[akka] object ByteString1 {
-    def apply(bytes: Array[Byte]): ByteString1 = new ByteString1(bytes)
+    val empty: ByteString1 = new ByteString1(Array.empty[Byte])
+    def apply(bytes: Array[Byte]): ByteString1 = ByteString1(bytes, 0, bytes.length)
     def apply(bytes: Array[Byte], startIndex: Int, length: Int): ByteString1 =
-      new ByteString1(bytes, startIndex, length)
+      if (length == 0) empty else new ByteString1(bytes, startIndex, length)
   }
 
   /**
@@ -144,6 +154,8 @@ object ByteString {
       if (buffer.remaining < bytes.length) buffer.slice
       else buffer
     }
+
+    def asByteBuffers: scala.collection.immutable.Iterable[ByteBuffer] = List(asByteBuffer)
 
     def decodeString(charset: String): String =
       new String(if (length == bytes.length) bytes else toArray, charset)
@@ -250,6 +262,8 @@ object ByteString {
 
     def asByteBuffer: ByteBuffer = compact.asByteBuffer
 
+    def asByteBuffers: scala.collection.immutable.Iterable[ByteBuffer] = bytestrings map { _.asByteBuffer }
+
     def decodeString(charset: String): String = compact.decodeString(charset)
   }
 
@@ -298,7 +312,8 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   override def indexOf[B >: Byte](elem: B): Int = iterator.indexOf(elem)
 
   /**
-   * JAVA API
+   * Java API: copy this ByteString into a fresh byte array
+   *
    * @return this ByteString copied into a byte array
    */
   protected[ByteString] def toArray: Array[Byte] = toArray[Byte] // protected[ByteString] == public to Java but hidden to Scala * fnizz *
@@ -313,6 +328,11 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
    * Efficiently concatenate another ByteString.
    */
   def ++(that: ByteString): ByteString
+
+  /**
+   * Java API: efficiently concatenate another ByteString.
+   */
+  def concat(that: ByteString): ByteString = this ++ that
 
   /**
    * Copy as many bytes as possible to a ByteBuffer, starting from it's
@@ -344,6 +364,21 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
    * if it is not fragmented.
    */
   def asByteBuffer: ByteBuffer
+
+  /**
+   * Scala API: Returns an immutable Iterable of read-only ByteBuffers that directly wraps this ByteStrings
+   * all fragments. Will always have at least one entry.
+   */
+  def asByteBuffers: immutable.Iterable[ByteBuffer]
+
+  /**
+   * Java API: Returns an Iterable of read-only ByteBuffers that directly wraps this ByteStrings
+   * all fragments. Will always have at least one entry.
+   */
+  def getByteBuffers(): JIterable[ByteBuffer] = {
+    import scala.collection.JavaConverters.asJavaIterableConverter
+    asByteBuffers.asJava
+  }
 
   /**
    * Creates a new ByteBuffer with a copy of all bytes contained in this
@@ -546,6 +581,11 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
   }
 
   /**
+   * Java API: append a ByteString to this builder.
+   */
+  def append(bs: ByteString): this.type = this ++= bs
+
+  /**
    * Add a single Byte to this builder.
    */
   def putByte(x: Byte): this.type = this += x
@@ -567,19 +607,18 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
    * Add a single Int to this builder.
    */
   def putInt(x: Int)(implicit byteOrder: ByteOrder): this.type = {
-    fillArray(4) {
-      case (target, offset) ⇒
-        if (byteOrder == ByteOrder.BIG_ENDIAN) {
-          target(offset + 0) = (x >>> 24).toByte
-          target(offset + 1) = (x >>> 16).toByte
-          target(offset + 2) = (x >>> 8).toByte
-          target(offset + 3) = (x >>> 0).toByte
-        } else if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
-          target(offset + 0) = (x >>> 0).toByte
-          target(offset + 1) = (x >>> 8).toByte
-          target(offset + 2) = (x >>> 16).toByte
-          target(offset + 3) = (x >>> 24).toByte
-        } else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
+    fillArray(4) { (target, offset) ⇒
+      if (byteOrder == ByteOrder.BIG_ENDIAN) {
+        target(offset + 0) = (x >>> 24).toByte
+        target(offset + 1) = (x >>> 16).toByte
+        target(offset + 2) = (x >>> 8).toByte
+        target(offset + 3) = (x >>> 0).toByte
+      } else if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
+        target(offset + 0) = (x >>> 0).toByte
+        target(offset + 1) = (x >>> 8).toByte
+        target(offset + 2) = (x >>> 16).toByte
+        target(offset + 3) = (x >>> 24).toByte
+      } else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
     }
     this
   }
@@ -588,29 +627,43 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
    * Add a single Long to this builder.
    */
   def putLong(x: Long)(implicit byteOrder: ByteOrder): this.type = {
-    fillArray(8) {
-      case (target, offset) ⇒
-        if (byteOrder == ByteOrder.BIG_ENDIAN) {
-          target(offset + 0) = (x >>> 56).toByte
-          target(offset + 1) = (x >>> 48).toByte
-          target(offset + 2) = (x >>> 40).toByte
-          target(offset + 3) = (x >>> 32).toByte
-          target(offset + 4) = (x >>> 24).toByte
-          target(offset + 5) = (x >>> 16).toByte
-          target(offset + 6) = (x >>> 8).toByte
-          target(offset + 7) = (x >>> 0).toByte
-        } else if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
-          target(offset + 0) = (x >>> 0).toByte
-          target(offset + 1) = (x >>> 8).toByte
-          target(offset + 2) = (x >>> 16).toByte
-          target(offset + 3) = (x >>> 24).toByte
-          target(offset + 4) = (x >>> 32).toByte
-          target(offset + 5) = (x >>> 40).toByte
-          target(offset + 6) = (x >>> 48).toByte
-          target(offset + 7) = (x >>> 56).toByte
-        } else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
+    fillArray(8) { (target, offset) ⇒
+      if (byteOrder == ByteOrder.BIG_ENDIAN) {
+        target(offset + 0) = (x >>> 56).toByte
+        target(offset + 1) = (x >>> 48).toByte
+        target(offset + 2) = (x >>> 40).toByte
+        target(offset + 3) = (x >>> 32).toByte
+        target(offset + 4) = (x >>> 24).toByte
+        target(offset + 5) = (x >>> 16).toByte
+        target(offset + 6) = (x >>> 8).toByte
+        target(offset + 7) = (x >>> 0).toByte
+      } else if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
+        target(offset + 0) = (x >>> 0).toByte
+        target(offset + 1) = (x >>> 8).toByte
+        target(offset + 2) = (x >>> 16).toByte
+        target(offset + 3) = (x >>> 24).toByte
+        target(offset + 4) = (x >>> 32).toByte
+        target(offset + 5) = (x >>> 40).toByte
+        target(offset + 6) = (x >>> 48).toByte
+        target(offset + 7) = (x >>> 56).toByte
+      } else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
     }
     this
+  }
+
+  /**
+   * Add the `n` least significant bytes of the given Long to this builder.
+   */
+  def putLongPart(x: Long, n: Int)(implicit byteOrder: ByteOrder): this.type = {
+    fillArray(n) { (target, offset) ⇒
+      if (byteOrder == ByteOrder.BIG_ENDIAN) {
+        val start = n * 8 - 8
+        (0 until n) foreach (i ⇒ target(offset + i) = (x >>> start - 8 * i).toByte)
+      } else if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
+        val end = offset + n - 1
+        (0 until n) foreach (i ⇒ target(end - i) = (x >>> 8 * i).toByte)
+      } else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
+    }
   }
 
   /**

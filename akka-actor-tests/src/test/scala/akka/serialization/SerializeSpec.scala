@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.serialization
@@ -8,17 +8,20 @@ import language.postfixOps
 
 import akka.testkit.{ AkkaSpec, EventFilter }
 import akka.actor._
+import akka.dispatch.sysmsg._
 import java.io._
 import scala.concurrent.Await
 import akka.util.Timeout
 import scala.concurrent.duration._
 import scala.reflect.BeanInfo
 import com.google.protobuf.Message
+import com.typesafe.config._
 import akka.pattern.ask
+import org.apache.commons.codec.binary.Hex.{ encodeHex, decodeHex }
 
-object SerializeSpec {
+object SerializationTests {
 
-  val config = """
+  val serializeConf = """
     akka {
       actor {
         serializers {
@@ -26,13 +29,13 @@ object SerializeSpec {
         }
 
         serialization-bindings {
-          "akka.serialization.SerializeSpec$Person" = java
-          "akka.serialization.SerializeSpec$Address" = java
-          "akka.serialization.TestSerializble" = test
-          "akka.serialization.SerializeSpec$PlainMessage" = test
-          "akka.serialization.SerializeSpec$A" = java
-          "akka.serialization.SerializeSpec$B" = test
-          "akka.serialization.SerializeSpec$D" = test
+          "akka.serialization.SerializationTests$Person" = java
+          "akka.serialization.SerializationTests$Address" = java
+          "akka.serialization.TestSerializable" = test
+          "akka.serialization.SerializationTests$PlainMessage" = test
+          "akka.serialization.SerializationTests$A" = java
+          "akka.serialization.SerializationTests$B" = test
+          "akka.serialization.SerializationTests$D" = test
         }
       }
     }
@@ -45,11 +48,11 @@ object SerializeSpec {
 
   case class Record(id: Int, person: Person)
 
-  class SimpleMessage(s: String) extends TestSerializble
+  class SimpleMessage(s: String) extends TestSerializable
 
   class ExtendedSimpleMessage(s: String, i: Int) extends SimpleMessage(s)
 
-  trait AnotherInterface extends TestSerializble
+  trait AnotherInterface extends TestSerializable
 
   class AnotherMessage extends AnotherInterface
 
@@ -67,11 +70,68 @@ object SerializeSpec {
   class D extends A
   class E extends D
 
+  val verifySerializabilityConf = """
+    akka {
+      actor {
+        serialize-messages = on
+        serialize-creators = on
+      }
+    }
+  """
+
+  class FooActor extends Actor {
+    def receive = {
+      case s: String ⇒ sender ! s
+    }
+  }
+
+  class FooUntypedActor extends UntypedActor {
+    def onReceive(message: Any) {}
+  }
+
+  class NonSerializableActor(system: ActorSystem) extends Actor {
+    def receive = {
+      case s: String ⇒ sender ! s
+    }
+  }
+
+  def mostlyReferenceSystem: ActorSystem = {
+    val referenceConf = ConfigFactory.defaultReference()
+    val mostlyReferenceConf = AkkaSpec.testConf.withFallback(referenceConf)
+    ActorSystem("SerializationSystem", mostlyReferenceConf)
+  }
+
+  val systemMessageMultiSerializerConf = """
+    akka {
+      actor {
+        serializers {
+          test = "akka.serialization.TestSerializer"
+        }
+
+        serialization-bindings {
+          "akka.dispatch.sysmsg.SystemMessage" = test
+        }
+      }
+    }
+  """
+
+  val systemMessageClasses = List[Class[_]](
+    classOf[Create],
+    classOf[Recreate],
+    classOf[Suspend],
+    classOf[Resume],
+    classOf[Terminate],
+    classOf[Supervise],
+    classOf[ChildTerminated],
+    classOf[Watch],
+    classOf[Unwatch],
+    classOf[Failed],
+    NoMessage.getClass)
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class SerializeSpec extends AkkaSpec(SerializeSpec.config) {
-  import SerializeSpec._
+class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
+  import SerializationTests._
 
   val ser = SerializationExtension(system)
   import ser._
@@ -156,7 +216,7 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.config) {
 
     "give warning for message with several bindings" in {
       EventFilter.warning(start = "Multiple serializers found", occurrences = 1) intercept {
-        ser.serializerFor(classOf[Both]).getClass must be(classOf[TestSerializer])
+        ser.serializerFor(classOf[Both]).getClass must (be(classOf[TestSerializer]) or be(classOf[JavaSerializer]))
       }
     }
 
@@ -164,7 +224,7 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.config) {
       ser.serializerFor(classOf[A]).getClass must be(classOf[JavaSerializer])
       ser.serializerFor(classOf[B]).getClass must be(classOf[TestSerializer])
       EventFilter.warning(start = "Multiple serializers found", occurrences = 1) intercept {
-        ser.serializerFor(classOf[C]).getClass must be(classOf[JavaSerializer])
+        ser.serializerFor(classOf[C]).getClass must (be(classOf[TestSerializer]) or be(classOf[JavaSerializer]))
       }
     }
 
@@ -194,36 +254,9 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.config) {
   }
 }
 
-object VerifySerializabilitySpec {
-  val conf = """
-    akka {
-      actor {
-        serialize-messages = on
-        serialize-creators = on
-      }
-    }
-  """
-
-  class FooActor extends Actor {
-    def receive = {
-      case s: String ⇒ sender ! s
-    }
-  }
-
-  class FooUntypedActor extends UntypedActor {
-    def onReceive(message: Any) {}
-  }
-
-  class NonSerializableActor(system: ActorSystem) extends Actor {
-    def receive = {
-      case s: String ⇒ sender ! s
-    }
-  }
-}
-
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class VerifySerializabilitySpec extends AkkaSpec(VerifySerializabilitySpec.conf) {
-  import VerifySerializabilitySpec._
+class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerializabilityConf) {
+  import SerializationTests._
   implicit val timeout = Timeout(5 seconds)
 
   "verify config" in {
@@ -260,9 +293,104 @@ class VerifySerializabilitySpec extends AkkaSpec(VerifySerializabilitySpec.conf)
   }
 }
 
-trait TestSerializble
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class ReferenceSerializationSpec extends AkkaSpec(SerializationTests.mostlyReferenceSystem) {
+  import SerializationTests._
 
-class TestSerializer extends Serializer {
+  val ser = SerializationExtension(system)
+  def serializerMustBe(toSerialize: Class[_], expectedSerializer: Class[_]) =
+    ser.serializerFor(toSerialize).getClass must be(expectedSerializer)
+
+  "Serialization settings from reference.conf" must {
+
+    "declare Serializable classes to be use JavaSerializer" in {
+      serializerMustBe(classOf[Serializable], classOf[JavaSerializer])
+      serializerMustBe(classOf[String], classOf[JavaSerializer])
+      for (smc ← systemMessageClasses) {
+        serializerMustBe(smc, classOf[JavaSerializer])
+      }
+    }
+
+    "declare Array[Byte] to use ByteArraySerializer" in {
+      serializerMustBe(classOf[Array[Byte]], classOf[ByteArraySerializer])
+    }
+
+    "not support serialization for other classes" in {
+      intercept[NotSerializableException] { ser.serializerFor(classOf[Object]) }
+    }
+
+  }
+}
+
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyReferenceSystem) {
+  import SerializationTests._
+
+  val ser = SerializationExtension(system)
+
+  "Cross-version serialization compatibility" must {
+    def verify(obj: SystemMessage, asExpected: String): Unit =
+      String.valueOf(ser.serialize((obj, obj.getClass)).map(encodeHex).get) must be === asExpected
+
+    "be preserved for the Create SystemMessage" in {
+      verify(Create(), "aced00057372000c7363616c612e5475706c6532bc7daadf46211a990200024c00025f317400124c6a6176612f6c616e672f4f626a6563743b4c00025f3271007e000178707372001b616b6b612e64697370617463682e7379736d73672e437265617465bcdf9f7f2675038d02000078707671007e0003")
+    }
+    "be preserved for the Recreate SystemMessage" in {
+      verify(Recreate(null), "aced00057372000c7363616c612e5475706c6532bc7daadf46211a990200024c00025f317400124c6a6176612f6c616e672f4f626a6563743b4c00025f3271007e000178707372001d616b6b612e64697370617463682e7379736d73672e52656372656174650987c65c8d378a800200014c000563617573657400154c6a6176612f6c616e672f5468726f7761626c653b7870707671007e0003")
+    }
+    "be preserved for the Suspend SystemMessage" in {
+      verify(Suspend(), "aced00057372000c7363616c612e5475706c6532bc7daadf46211a990200024c00025f317400124c6a6176612f6c616e672f4f626a6563743b4c00025f3271007e000178707372001c616b6b612e64697370617463682e7379736d73672e53757370656e6464e531d5d134b59902000078707671007e0003")
+    }
+    "be preserved for the Resume SystemMessage" in {
+      verify(Resume(null), "aced00057372000c7363616c612e5475706c6532bc7daadf46211a990200024c00025f317400124c6a6176612f6c616e672f4f626a6563743b4c00025f3271007e000178707372001b616b6b612e64697370617463682e7379736d73672e526573756d65dc5e646d445fcb010200014c000f63617573656442794661696c7572657400154c6a6176612f6c616e672f5468726f7761626c653b7870707671007e0003")
+    }
+    "be preserved for the Terminate SystemMessage" in {
+      verify(Terminate(), "aced00057372000c7363616c612e5475706c6532bc7daadf46211a990200024c00025f317400124c6a6176612f6c616e672f4f626a6563743b4c00025f3271007e000178707372001e616b6b612e64697370617463682e7379736d73672e5465726d696e61746509d66ca68318700f02000078707671007e0003")
+    }
+    "be preserved for the Supervise SystemMessage" in {
+      verify(Supervise(FakeActorRef("child"), true), "aced00057372000c7363616c612e5475706c6532bc7daadf46211a990200024c00025f317400124c6a6176612f6c616e672f4f626a6563743b4c00025f3271007e000178707372001e616b6b612e64697370617463682e7379736d73672e5375706572766973652d0b363f56ab5feb0200025a00056173796e634c00056368696c647400154c616b6b612f6163746f722f4163746f725265663b7870017372001f616b6b612e73657269616c697a6174696f6e2e46616b654163746f7252656600000000000000010200014c00046e616d657400124c6a6176612f6c616e672f537472696e673b7872001b616b6b612e6163746f722e496e7465726e616c4163746f72526566869e6c3669e60e5f02000078720013616b6b612e6163746f722e4163746f72526566c3585dde655f469402000078707400056368696c647671007e0003")
+    }
+    "be preserved for the ChildTerminated SystemMessage" in {
+      verify(ChildTerminated(FakeActorRef("child")), "aced00057372000c7363616c612e5475706c6532bc7daadf46211a990200024c00025f317400124c6a6176612f6c616e672f4f626a6563743b4c00025f3271007e0001787073720024616b6b612e64697370617463682e7379736d73672e4368696c645465726d696e617465644c84222437ed5db40200014c00056368696c647400154c616b6b612f6163746f722f4163746f725265663b78707372001f616b6b612e73657269616c697a6174696f6e2e46616b654163746f7252656600000000000000010200014c00046e616d657400124c6a6176612f6c616e672f537472696e673b7872001b616b6b612e6163746f722e496e7465726e616c4163746f72526566869e6c3669e60e5f02000078720013616b6b612e6163746f722e4163746f72526566c3585dde655f469402000078707400056368696c647671007e0003")
+    }
+    "be preserved for the Watch SystemMessage" in {
+      verify(Watch(FakeActorRef("watchee"), FakeActorRef("watcher")), "aced00057372000c7363616c612e5475706c6532bc7daadf46211a990200024c00025f317400124c6a6176612f6c616e672f4f626a6563743b4c00025f3271007e000178707372001a616b6b612e64697370617463682e7379736d73672e57617463682e1e65bc74394fc40200024c0007776174636865657400154c616b6b612f6163746f722f4163746f725265663b4c00077761746368657271007e000478707372001f616b6b612e73657269616c697a6174696f6e2e46616b654163746f7252656600000000000000010200014c00046e616d657400124c6a6176612f6c616e672f537472696e673b7872001b616b6b612e6163746f722e496e7465726e616c4163746f72526566869e6c3669e60e5f02000078720013616b6b612e6163746f722e4163746f72526566c3585dde655f46940200007870740007776174636865657371007e0006740007776174636865727671007e0003")
+    }
+    "be preserved for the Unwatch SystemMessage" in {
+      verify(Unwatch(FakeActorRef("watchee"), FakeActorRef("watcher")), "aced00057372000c7363616c612e5475706c6532bc7daadf46211a990200024c00025f317400124c6a6176612f6c616e672f4f626a6563743b4c00025f3271007e000178707372001c616b6b612e64697370617463682e7379736d73672e556e776174636858501f7ee63dc2100200024c0007776174636865657400154c616b6b612f6163746f722f4163746f725265663b4c00077761746368657271007e000478707372001f616b6b612e73657269616c697a6174696f6e2e46616b654163746f7252656600000000000000010200014c00046e616d657400124c6a6176612f6c616e672f537472696e673b7872001b616b6b612e6163746f722e496e7465726e616c4163746f72526566869e6c3669e60e5f02000078720013616b6b612e6163746f722e4163746f72526566c3585dde655f46940200007870740007776174636865657371007e0006740007776174636865727671007e0003")
+    }
+    "be preserved for the NoMessage SystemMessage" in {
+      verify(NoMessage, "aced00057372000c7363616c612e5475706c6532bc7daadf46211a990200024c00025f317400124c6a6176612f6c616e672f4f626a6563743b4c00025f3271007e000178707372001f616b6b612e64697370617463682e7379736d73672e4e6f4d65737361676524b401a3610ccb70dd02000078707671007e0003")
+    }
+    "be preserved for the Failed SystemMessage" in {
+      // Using null as the cause to avoid a large serialized message
+      verify(Failed(FakeActorRef("child"), cause = null, uid = 0), "aced00057372000c7363616c612e5475706c6532bc7daadf46211a990200024c00025f317400124c6a6176612f6c616e672f4f626a6563743b4c00025f3271007e000178707372001b616b6b612e64697370617463682e7379736d73672e4661696c656400000000000000030200034900037569644c000563617573657400154c6a6176612f6c616e672f5468726f7761626c653b4c00056368696c647400154c616b6b612f6163746f722f4163746f725265663b787000000000707372001f616b6b612e73657269616c697a6174696f6e2e46616b654163746f7252656600000000000000010200014c00046e616d657400124c6a6176612f6c616e672f537472696e673b7872001b616b6b612e6163746f722e496e7465726e616c4163746f72526566869e6c3669e60e5f02000078720013616b6b612e6163746f722e4163746f72526566c3585dde655f469402000078707400056368696c647671007e0003")
+    }
+  }
+}
+
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class OverriddenSystemMessageSerializationSpec extends AkkaSpec(SerializationTests.systemMessageMultiSerializerConf) {
+  import SerializationTests._
+
+  val ser = SerializationExtension(system)
+
+  "Overridden SystemMessage serialization" must {
+
+    "resolve to a single serializer" in {
+      EventFilter.warning(start = "Multiple serializers found", occurrences = 0) intercept {
+        for (smc ← systemMessageClasses) {
+          ser.serializerFor(smc).getClass must be(classOf[TestSerializer])
+        }
+      }
+    }
+
+  }
+}
+
+protected[akka] trait TestSerializable
+
+protected[akka] class TestSerializer extends Serializer {
   def includeManifest: Boolean = false
 
   def identifier = 9999
@@ -272,4 +400,27 @@ class TestSerializer extends Serializer {
   }
 
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = null
+}
+
+@SerialVersionUID(1)
+protected[akka] case class FakeThrowable(msg: String) extends Throwable(msg) with Serializable {
+  override def fillInStackTrace = null
+}
+
+@SerialVersionUID(1)
+protected[akka] case class FakeActorRef(name: String) extends InternalActorRef with ActorRefScope {
+  override def path = RootActorPath(Address("proto", "SomeSystem"), name)
+  override def forward(message: Any)(implicit context: ActorContext) = ???
+  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") override def isTerminated = ???
+  override def start() = ???
+  override def resume(causedByFailure: Throwable) = ???
+  override def suspend() = ???
+  override def restart(cause: Throwable) = ???
+  override def stop() = ???
+  override def sendSystemMessage(message: SystemMessage) = ???
+  override def provider = ???
+  override def getParent = ???
+  override def getChild(name: Iterator[String]) = ???
+  override def isLocal = ???
+  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender) = ???
 }

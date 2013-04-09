@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -12,6 +12,10 @@ import java.util.concurrent.{ TimeUnit }
 import akka.util.WildcardTree
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
+
+object Deploy {
+  final val NoDispatcherGiven = ""
+}
 
 /**
  * This class represents deployment configuration for a given actor path. It is
@@ -33,7 +37,8 @@ final case class Deploy(
   path: String = "",
   config: Config = ConfigFactory.empty,
   routerConfig: RouterConfig = NoRouter,
-  scope: Scope = NoScopeGiven) {
+  scope: Scope = NoScopeGiven,
+  dispatcher: String = Deploy.NoDispatcherGiven) {
 
   /**
    * Java API to create a Deploy with the given RouterConfig
@@ -55,8 +60,10 @@ final case class Deploy(
    * precedence. The “path” of the other Deploy is not taken into account. All
    * other members are merged using ``<X>.withFallback(other.<X>)``.
    */
-  def withFallback(other: Deploy): Deploy =
-    Deploy(path, config.withFallback(other.config), routerConfig.withFallback(other.routerConfig), scope.withFallback(other.scope))
+  def withFallback(other: Deploy): Deploy = {
+    val disp = if (dispatcher == Deploy.NoDispatcherGiven) other.dispatcher else dispatcher
+    Deploy(path, config.withFallback(other.config), routerConfig.withFallback(other.routerConfig), scope.withFallback(other.scope), disp)
+  }
 }
 
 /**
@@ -141,7 +148,8 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
   def parseConfig(key: String, config: Config): Option[Deploy] = {
     val deployment = config.withFallback(default)
     val router = createRouterConfig(deployment.getString("router"), key, config, deployment)
-    Some(Deploy(key, deployment, router, NoScopeGiven))
+    val dispatcher = deployment.getString("dispatcher")
+    Some(Deploy(key, deployment, router, NoScopeGiven, dispatcher))
   }
 
   /**

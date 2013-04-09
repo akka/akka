@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.camel
@@ -13,7 +13,7 @@ import akka.actor._
 import TestSupport._
 import org.scalatest.WordSpec
 import akka.testkit.TestLatch
-import concurrent.Await
+import scala.concurrent.Await
 import java.util.concurrent.TimeoutException
 import akka.util.Timeout
 
