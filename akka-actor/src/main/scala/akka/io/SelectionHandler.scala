@@ -6,7 +6,7 @@ package akka.io
 
 import java.lang.Runnable
 import java.nio.channels.spi.SelectorProvider
-import java.nio.channels.{ SelectableChannel, SelectionKey }
+import java.nio.channels.{ SelectableChannel, SelectionKey, CancelledKeyException, ClosedSelectorException }
 import java.nio.channels.SelectionKey._
 import scala.util.control.NonFatal
 import scala.collection.immutable
@@ -189,19 +189,25 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
         while (iterator.hasNext) {
           val key = iterator.next
           if (key.isValid) {
-            // Cache because the performance implications of calling this on different platforms are not clear
-            val readyOps = key.readyOps()
-            key.interestOps(key.interestOps & ~readyOps) // prevent immediate reselection by always clearing
-            val connection = key.attachment.asInstanceOf[ActorRef]
-            readyOps match {
-              case OP_READ                   ⇒ connection ! ChannelReadable
-              case OP_WRITE                  ⇒ connection ! ChannelWritable
-              case OP_READ_AND_WRITE         ⇒ connection ! ChannelWritable; connection ! ChannelReadable
-              case x if (x & OP_ACCEPT) > 0  ⇒ connection ! ChannelAcceptable
-              case x if (x & OP_CONNECT) > 0 ⇒ connection ! ChannelConnectable
-              case x                         ⇒ log.warning("Invalid readyOps: [{}]", x)
+            try {
+              // Cache because the performance implications of calling this on different platforms are not clear
+              val readyOps = key.readyOps()
+              key.interestOps(key.interestOps & ~readyOps) // prevent immediate reselection by always clearing
+              val connection = key.attachment.asInstanceOf[ActorRef]
+              readyOps match {
+                case OP_READ                   ⇒ connection ! ChannelReadable
+                case OP_WRITE                  ⇒ connection ! ChannelWritable
+                case OP_READ_AND_WRITE         ⇒ connection ! ChannelWritable; connection ! ChannelReadable
+                case x if (x & OP_ACCEPT) > 0  ⇒ connection ! ChannelAcceptable
+                case x if (x & OP_CONNECT) > 0 ⇒ connection ! ChannelConnectable
+                case x                         ⇒ log.warning("Invalid readyOps: [{}]", x)
+              }
+            } catch {
+              case _: CancelledKeyException ⇒
+              // can be ignored because this exception is triggered when the key becomes invalid
+              // because `channel.close()` in `TcpConnection.postStop` is called from another thread
             }
-          } else log.warning("Invalid selection key: [{}]", key)
+          }
         }
         keys.clear() // we need to remove the selected keys from the set, otherwise they remain selected
       }
@@ -217,8 +223,9 @@ private[io] class SelectionHandler(manager: ActorRef, settings: SelectionHandler
     def run() {
       try tryRun()
       catch {
-        case _: java.nio.channels.ClosedSelectorException ⇒ // ok, expected during shutdown
-        case NonFatal(e)                                  ⇒ log.error(e, "Error during selector management task: [{}]", e)
+        case _: CancelledKeyException   ⇒ // ok, can be triggered in `enableInterest` or `disableInterest`
+        case _: ClosedSelectorException ⇒ // ok, expected during shutdown
+        case NonFatal(e)                ⇒ log.error(e, "Error during selector management task: [{}]", e)
       }
     }
   }
