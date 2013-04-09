@@ -82,9 +82,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       watch(router)
       watch(c2)
       system.stop(c2)
-      expectMsgPF() {
-        case t @ Terminated(`c2`) if t.existenceConfirmed == true ⇒ t
-      }
+      expectTerminated(c2).existenceConfirmed must be === true
       // it might take a while until the Router has actually processed the Terminated message
       awaitCond {
         router ! ""
@@ -95,9 +93,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         res == Seq(c1, c1)
       }
       system.stop(c1)
-      expectMsgPF() {
-        case t @ Terminated(`router`) if t.existenceConfirmed == true ⇒ t
-      }
+      expectTerminated(router).existenceConfirmed must be === true
     }
 
     "not terminate when resizer is used" in {
@@ -152,7 +148,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       expectMsgType[RouterRoutees].routees.size must be(3)
       watch(router)
       system.stop(router)
-      expectMsgType[Terminated]
+      expectTerminated(router)
     }
 
     "use configured nr-of-instances when router is specified" in {

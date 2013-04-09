@@ -19,7 +19,7 @@ class JavaTestKitSpec extends AkkaSpec with DefaultTimeout {
       new JavaTestKit(system) {
         val sent = List(1, 2, 3, 4, 5)
         for (m ← sent) { getRef() ! m }
-        val received = receiveN(sent.size, 5 seconds);
+        val received = receiveN(sent.size, 5 seconds)
         sent.toSet must be(received.toSet)
       }
     }
@@ -28,8 +28,22 @@ class JavaTestKitSpec extends AkkaSpec with DefaultTimeout {
       new JavaTestKit(system) {
         val sent = List(1, 2, 3)
         for (m ← sent) { getRef() ! m }
-        val received = receiveN(sent.size);
+        val received = receiveN(sent.size)
         sent.toSet must be(received.toSet)
+      }
+    }
+
+    "be able to expectTerminated" in {
+      new JavaTestKit(system) {
+        val actor = system.actorOf(Props(new Actor { def receive = { case _ ⇒ } }))
+
+        system stop actor
+
+        watch(actor)
+        expectTerminated(actor).existenceConfirmed must be === true
+
+        watch(actor)
+        expectTerminated(5 seconds, actor).actor must be === actor
       }
     }
 
