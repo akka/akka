@@ -92,15 +92,18 @@ object Tcp extends ExtensionKey[TcpExt] {
   case class NoAck(token: Any)
   object NoAck extends NoAck(null)
 
+  sealed trait WriteCommand extends Command {
+    require(ack != null, "ack must be non-null. Use NoAck if you don't want acks.")
+
+    def ack: Any
+    def wantsAck: Boolean = !ack.isInstanceOf[NoAck]
+  }
+
   /**
    * Write data to the TCP connection. If no ack is needed use the special
    * `NoAck` object.
    */
-  case class Write(data: ByteString, ack: Any) extends Command {
-    require(ack != null, "ack must be non-null. Use NoAck if you don't want acks.")
-
-    def wantsAck: Boolean = !ack.isInstanceOf[NoAck]
-  }
+  case class Write(data: ByteString, ack: Any) extends WriteCommand
   object Write {
     val Empty: Write = Write(ByteString.empty, NoAck)
     def apply(data: ByteString): Write =

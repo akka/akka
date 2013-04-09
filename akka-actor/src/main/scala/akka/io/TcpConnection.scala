@@ -103,7 +103,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
   def handleWriteMessages(handler: ActorRef): Receive = {
     case ChannelWritable ⇒ if (writePending) doWrite(handler)
 
-    case write: Write if writePending ⇒
+    case write: WriteCommand if writePending ⇒
       if (TraceLogging) log.debug("Dropping write because queue is full")
       sender ! write.failureMessage
 
@@ -111,7 +111,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
       if (write.wantsAck)
         sender ! write.ack
 
-    case write: Write ⇒
+    case write: WriteCommand ⇒
       pendingWrite = createWrite(write)
       doWrite(handler)
   }
@@ -297,12 +297,13 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
         copy(remainingData = remainingData.drop(copied))
       } else this
   }
-  def createWrite(write: Write): PendingWrite = {
-    val buffer = bufferPool.acquire()
-    val copied = write.data.copyToBuffer(buffer)
-    buffer.flip()
+  def createWrite(write: WriteCommand): PendingWrite = write match {
+    case write: Write ⇒
+      val buffer = bufferPool.acquire()
+      val copied = write.data.copyToBuffer(buffer)
+      buffer.flip()
 
-    PendingBufferWrite(sender, write.ack, write.data.drop(copied), buffer)
+      PendingBufferWrite(sender, write.ack, write.data.drop(copied), buffer)
   }
 }
 
