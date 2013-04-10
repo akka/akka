@@ -56,7 +56,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
         startup-timeout = 5 s
 
-        retry-latch-closed-for = 0 s
+        retry-gate-closed-for = 0 s
 
         use-passive-connections = on
       }
