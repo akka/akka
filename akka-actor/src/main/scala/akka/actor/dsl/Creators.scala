@@ -151,7 +151,7 @@ trait Creators { this: ActorDSL.type ⇒
    * since just using `actor()(new Act with Stash{})` will not be able to see the
    * Stash component due to type erasure.
    */
-  trait ActWithStash extends Act with Stash
+  trait ActWithStash extends Actor with Stash with Act
 
   private def mkProps(classOfActor: Class[_], ctor: () ⇒ Actor): Props =
     if (classOf[Stash].isAssignableFrom(classOfActor))
