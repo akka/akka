@@ -80,7 +80,7 @@ object RemotingSpec {
       remote {
         transport = "akka.remote.Remoting"
 
-        retry-latch-closed-for = 1 s
+        retry-gate-closed-for = 1 s
         log-remote-lifecycle-events = on
 
         enabled-transports = [
@@ -212,7 +212,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     }
 
     "send error message for wrong address" in {
-      filterEvents(EventFilter.error(start = "Association", occurrences = 6),
+      filterEvents(EventFilter.error(start = "AssociationError", occurrences = 1),
         EventFilter.warning(pattern = ".*dead letter.*echo.*", occurrences = 1)) {
           system.actorFor("akka.test://nonexistingsystem@localhost:12346/user/echo") ! "ping"
         }
