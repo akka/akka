@@ -8,7 +8,6 @@ import akka.actor.dungeon.ChildrenContainer
 import akka.dispatch.Envelope
 import akka.dispatch.NullMessage
 import akka.dispatch.sysmsg._
-import akka.dispatch.sysmsg.{ Watch, Unwatch, Terminate, SystemMessage, Suspend, Supervise, Resume, Recreate, NoMessage, Create, ChildTerminated }
 import akka.event.Logging.{ LogEvent, Debug, Error }
 import akka.japi.Procedure
 import java.io.{ ObjectOutputStream, NotSerializableException }
@@ -424,6 +423,7 @@ private[akka] class ActorCell(
         message match {
           case message: SystemMessage if shouldStash(message, currentState) ⇒ stash(message)
           case f: Failed ⇒ handleFailure(f)
+          case DeathWatchNotification(a, ec, at) ⇒ watchedActorTerminated(a, ec, at)
           case Create() ⇒ create()
           case Watch(watchee, watcher) ⇒ addWatcher(watchee, watcher)
           case Unwatch(watchee, watcher) ⇒ remWatcher(watchee, watcher)
@@ -432,7 +432,6 @@ private[akka] class ActorCell(
           case Resume(inRespToFailure) ⇒ faultResume(inRespToFailure)
           case Terminate() ⇒ terminate()
           case Supervise(child, async) ⇒ supervise(child, async)
-          case ChildTerminated(child) ⇒ handleChildTerminated(child)
           case NoMessage ⇒ // only here to suppress warning
         }
       } catch handleNonFatalOrInterruptedException { e ⇒
@@ -471,7 +470,6 @@ private[akka] class ActorCell(
         publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
       msg.message match {
-        case t: Terminated              ⇒ watchedActorTerminated(t)
         case AddressTerminated(address) ⇒ addressTerminated(address)
         case Kill                       ⇒ throw new ActorKilledException("Kill")
         case PoisonPill                 ⇒ self.stop()

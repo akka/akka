@@ -96,7 +96,7 @@ case class ActorIdentity(correlationId: Any, ref: Option[ActorRef]) {
 @SerialVersionUID(1L)
 case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
   @BeanProperty val existenceConfirmed: Boolean,
-  @BeanProperty val addressTerminated: Boolean) extends AutoReceivedMessage with PossiblyHarmful
+  @BeanProperty val addressTerminated: Boolean) extends PossiblyHarmful
 
 /**
  * INTERNAL API
@@ -500,7 +500,10 @@ trait Actor {
    */
   @throws(classOf[Exception])
   def preRestart(reason: Throwable, message: Option[Any]) {
-    context.children foreach context.stop
+    context.children foreach { child ⇒
+      context.unwatch(child)
+      context.stop(child)
+    }
     postStop()
   }
 

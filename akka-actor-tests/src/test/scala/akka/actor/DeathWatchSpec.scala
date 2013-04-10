@@ -5,7 +5,7 @@
 package akka.actor
 
 import language.postfixOps
-import akka.dispatch.sysmsg.Failed
+import akka.dispatch.sysmsg.{ DeathWatchNotification, Failed }
 import akka.pattern.ask
 import akka.testkit._
 import scala.concurrent.duration._
@@ -176,13 +176,11 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡
 
     "only notify when watching" in {
       val subject = system.actorOf(Props(new Actor { def receive = Actor.emptyBehavior }))
-      val observer = system.actorOf(Props(new Actor {
-        context.watch(subject)
-        def receive = { case x â‡’ testActor forward x }
-      }))
 
-      subject ! PoisonPill
-      // the testActor is not watching subject and will discard Terminated msg
+      testActor.asInstanceOf[InternalActorRef]
+        .sendSystemMessage(DeathWatchNotification(subject, existenceConfirmed = true, addressTerminated = false))
+
+      // the testActor is not watching subject and will not receive a Terminated msg
       expectNoMsg
     }
   }

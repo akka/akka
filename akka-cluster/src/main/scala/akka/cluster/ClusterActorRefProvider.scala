@@ -18,7 +18,7 @@ import akka.actor.Props
 import akka.actor.Scheduler
 import akka.actor.Scope
 import akka.actor.Terminated
-import akka.dispatch.sysmsg.ChildTerminated
+import akka.dispatch.sysmsg.DeathWatchNotification
 import akka.event.EventStream
 import akka.japi.Util.immutableSeq
 import akka.remote.RemoteActorRefProvider
@@ -101,8 +101,8 @@ private[akka] class RemoteDeploymentWatcher extends Actor {
       context.watch(a)
 
     case t @ Terminated(a) if supervisors isDefinedAt a ⇒
-      // send extra ChildTerminated to the supervisor so that it will remove the child
-      supervisors(a).sendSystemMessage(ChildTerminated(a))
+      // send extra DeathWatchNotification to the supervisor so that it will remove the child
+      supervisors(a).sendSystemMessage(DeathWatchNotification(a, existenceConfirmed = false, addressTerminated = true))
       supervisors -= a
 
     case _: Terminated ⇒

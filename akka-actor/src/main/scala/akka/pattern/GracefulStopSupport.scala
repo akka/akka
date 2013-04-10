@@ -50,7 +50,7 @@ trait GracefulStopSupport {
     else {
       val internalTarget = target.asInstanceOf[InternalActorRef]
       val ref = PromiseActorRef(internalTarget.provider, Timeout(timeout))
-      internalTarget.sendSystemMessage(Watch(target, ref))
+      internalTarget.sendSystemMessage(Watch(internalTarget, ref))
       target.tell(stopMessage, Actor.noSender)
       ref.result.future.transform(
         {

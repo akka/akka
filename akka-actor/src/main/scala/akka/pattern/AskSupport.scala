@@ -206,10 +206,13 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
   }
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {
-    case _: Terminate ⇒ stop()
+    case _: Terminate                      ⇒ stop()
+    case DeathWatchNotification(a, ec, at) ⇒ this.!(Terminated(a)(existenceConfirmed = ec, addressTerminated = at))
     case Watch(watchee, watcher) ⇒
       if (watchee == this && watcher != this) {
-        if (!addWatcher(watcher)) watcher ! Terminated(watchee)(existenceConfirmed = true, addressTerminated = false)
+        if (!addWatcher(watcher))
+          // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+          watcher.sendSystemMessage(DeathWatchNotification(watchee, existenceConfirmed = true, addressTerminated = false))
       } else System.err.println("BUG: illegal Watch(%s,%s) for %s".format(watchee, watcher, this))
     case Unwatch(watchee, watcher) ⇒
       if (watchee == this && watcher != this) remWatcher(watcher)
@@ -228,8 +231,11 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
       result tryComplete Failure(new ActorKilledException("Stopped"))
       val watchers = clearWatchers()
       if (!watchers.isEmpty) {
-        val termination = Terminated(this)(existenceConfirmed = true, addressTerminated = false)
-        watchers foreach { _.tell(termination, this) }
+        watchers foreach { watcher ⇒
+          // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+          watcher.asInstanceOf[InternalActorRef]
+            .sendSystemMessage(DeathWatchNotification(watcher, existenceConfirmed = true, addressTerminated = false))
+        }
       }
     }
     state match {

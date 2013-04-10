@@ -276,7 +276,7 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
     else {
       val internalTarget = target.asInstanceOf[InternalActorRef]
       val ref = PromiseActorRef(internalTarget.provider, timeout)
-      internalTarget.sendSystemMessage(Watch(target, ref))
+      internalTarget.sendSystemMessage(Watch(internalTarget, ref))
       target.tell(mode, ref)
       ref.result.future.transform({
         case Terminated(t) if t.path == target.path ⇒ SetThrottleAck
