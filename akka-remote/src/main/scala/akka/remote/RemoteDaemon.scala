@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import akka.actor.{ VirtualPathContainer, Terminated, Deploy, Props, Nobody, LocalActorRef, InternalActorRef, Address, ActorSystemImpl, ActorRef, ActorPathExtractor, ActorPath, Actor, AddressTerminated }
 import akka.event.LoggingAdapter
-import akka.dispatch.sysmsg.Watch
+import akka.dispatch.sysmsg.{ DeathWatchNotification, SystemMessage, Watch }
 import akka.actor.ActorRefWithCell
 import akka.actor.ActorRefScope
 import akka.util.Switch
@@ -80,6 +80,15 @@ private[akka] class RemoteSystemDaemon(
     }
   }
 
+  override def sendSystemMessage(message: SystemMessage): Unit = message match {
+    case DeathWatchNotification(child: ActorRefWithCell with ActorRefScope, _, _) if child.isLocal ⇒
+      terminating.locked {
+        removeChild(child.path.elements.drop(1).mkString("/"))
+        terminationHookDoneWhenNoChildren()
+      }
+    case _ ⇒ super.sendSystemMessage(message)
+  }
+
   override def !(msg: Any)(implicit sender: ActorRef = Actor.noSender): Unit = try msg match {
     case message: DaemonMsg ⇒
       log.debug("Received command [{}] to RemoteSystemDaemon on [{}]", message, path.address)
@@ -125,12 +134,6 @@ private[akka] class RemoteSystemDaemon(
       log.error("SelectChildPattern not allowed in actorSelection of remote deployed actors")
 
     case Identify(messageId) ⇒ sender ! ActorIdentity(messageId, Some(this))
-
-    case Terminated(child: ActorRefWithCell) if child.asInstanceOf[ActorRefScope].isLocal ⇒
-      terminating.locked {
-        removeChild(child.path.elements.drop(1).mkString("/"))
-        terminationHookDoneWhenNoChildren()
-      }
 
     case t: Terminated ⇒
 
