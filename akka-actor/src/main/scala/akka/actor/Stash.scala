@@ -47,8 +47,7 @@ import akka.AkkaException
  *  any trait/class that overrides the `preRestart` callback. This means it's not possible to write
  *  `Actor with MyActor with Stash` if `MyActor` overrides `preRestart`.
  */
-trait Stash {
-  this: Actor ⇒
+trait Stash extends Actor {
 
   /* The private stash of the actor. It is only accessible using `stash()` and
    * `unstashAll()`.
@@ -116,10 +115,7 @@ An (unbounded) deque-based mailbox can be configured as follows:
    *  clears the stash, stops all children and invokes the postStop() callback.
    */
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    try unstashAll() finally {
-      context.children foreach context.stop
-      postStop()
-    }
+    try unstashAll() finally super.preRestart(reason, message)
   }
 
   /**
@@ -127,7 +123,7 @@ An (unbounded) deque-based mailbox can be configured as follows:
    *  Must be called when overriding this method, otherwise stashed messages won't be propagated to DeadLetters
    *  when actor stops.
    */
-  override def postStop(): Unit = unstashAll()
+  override def postStop(): Unit = try unstashAll() finally super.postStop()
 
 }
 
