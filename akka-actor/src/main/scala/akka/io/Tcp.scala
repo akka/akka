@@ -105,16 +105,30 @@ object Tcp extends ExtensionKey[TcpExt] {
    */
   case class Write(data: ByteString, ack: Any) extends WriteCommand
   object Write {
-    val Empty: Write = Write(ByteString.empty, NoAck)
+    /**
+     * The empty Write doesn't write anything and isn't acknowledged.
+     * It will, however, be denied and sent back with `CommandFailed` if the
+     * connection isn't currently ready to send any data (because another WriteCommand
+     * is still pending).
+     */
+    val empty: Write = Write(ByteString.empty, NoAck)
+
+    /**
+     * Create a new unacknowledged Write command with the given data.
+     */
     def apply(data: ByteString): Write =
-      if (data.isEmpty) Empty else Write(data, NoAck)
+      if (data.isEmpty) empty else Write(data, NoAck)
   }
 
   /**
    * Write `count` bytes starting at `position` from file at `filePath` to the connection.
-   * When write is finished acknowledge with `ack`. If no ack is needed use `NoAck`.
+   * When write is finished acknowledge with `ack`. If no ack is needed use `NoAck`. The
+   * count must be > 0.
    */
-  case class WriteFile(filePath: String, position: Long, count: Long, ack: Any) extends WriteCommand
+  case class WriteFile(filePath: String, position: Long, count: Long, ack: Any) extends WriteCommand {
+    require(position >= 0, "WriteFile.position must be >= 0")
+    require(count > 0, "WriteFile.count must be > 0")
+  }
 
   case object StopReading extends Command
   case object ResumeReading extends Command

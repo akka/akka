@@ -305,20 +305,23 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
       try innerWrite(this)
       catch { case e: IOException ⇒ handleError(handler, e) }
     }
-    def hasData = buffer.remaining() > 0 || remainingData.size > 0
+    def hasData = buffer.hasRemaining || remainingData.nonEmpty
     def consume(writtenBytes: Int): PendingBufferWrite =
-      if (buffer.remaining() == 0) {
+      if (buffer.hasRemaining) this
+      else {
         buffer.clear()
         val copied = remainingData.copyToBuffer(buffer)
         buffer.flip()
         copy(remainingData = remainingData.drop(copied))
-      } else this
+      }
   }
+
   private[io] case class PendingWriteFile(
     commander: ActorRef,
     write: WriteFile,
     fileChannel: FileChannel,
     alreadyWritten: Long) extends PendingWrite {
+
     def doWrite(handler: ActorRef): PendingWrite = {
       tcp.fileIoDispatcher.execute(writeFileRunnable(this))
       this

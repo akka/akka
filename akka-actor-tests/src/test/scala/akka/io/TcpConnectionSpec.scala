@@ -258,8 +258,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
         writer.expectMsg(CommandFailed(secondWrite))
 
         // reject even empty writes
-        writer.send(connectionActor, Write.Empty)
-        writer.expectMsg(CommandFailed(Write.Empty))
+        writer.send(connectionActor, Write.empty)
+        writer.expectMsg(CommandFailed(Write.empty))
 
         // there will be immediately more space in the send buffer because
         // some data will have been sent by now, so we assume we can write
