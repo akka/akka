@@ -369,7 +369,7 @@ object Actor {
  * `context`. The only abstract method is `receive` which shall return the
  * initial behavior of the actor as a partial function (behavior can be changed
  * using `context.become` and `context.unbecome`).
- * 
+ *
  * This is the Scala API (hence the Scala code below), for the Java API see [[akka.actor.UntypedActor]].
  *
  * {{{
