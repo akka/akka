@@ -12,8 +12,6 @@ import akka.io.Inet.SocketOption
 import scala.util.control.NonFatal
 
 /**
- * Base class for TcpIncomingConnection and TcpOutgoingConnection.
- *
  * INTERNAL API
  */
 private[io] class UdpSender(val udp: UdpExt, options: immutable.Traversable[SocketOption], val commander: ActorRef)
@@ -45,9 +43,5 @@ private[io] class UdpSender(val udp: UdpExt, options: immutable.Traversable[Sock
       case NonFatal(e) ⇒ log.error(e, "Error closing DatagramChannel")
     }
   }
-
-  override def postRestart(reason: Throwable): Unit =
-    throw new IllegalStateException("Restarting not supported for connection actors.")
-
 }
 

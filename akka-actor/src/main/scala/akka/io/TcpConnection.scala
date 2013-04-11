@@ -33,7 +33,8 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
   // Needed to send the ConnectionClosed message in the postStop handler.
   var closedMessage: CloseInformation = null
 
-  var keepOpenOnPeerClosed: Boolean = false
+  private[this] var peerClosed = false
+  private[this] var keepOpenOnPeerClosed = false
 
   def writePending = pendingWrite ne null
 
@@ -44,14 +45,17 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
   /** connection established, waiting for registration from user handler */
   def waitingForRegistration(commander: ActorRef): Receive = {
     case Register(handler, keepOpenOnPeerClosed) ⇒
+      // up to this point we've been watching the commander,
+      // but since registration is now complete we only need to watch the handler from here on
+      if (handler != commander) {
+        context.unwatch(commander)
+        context.watch(handler)
+      }
       if (TraceLogging) log.debug("[{}] registered as connection handler", handler)
       this.keepOpenOnPeerClosed = keepOpenOnPeerClosed
 
       doRead(handler, None) // immediately try reading
-
       context.setReceiveTimeout(Duration.Undefined)
-      context.watch(handler) // sign death pact
-
       context.become(connected(handler))
 
     case cmd: CloseCommand ⇒
@@ -208,7 +212,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
       // report that peer closed the connection
       handler ! PeerClosed
       // used to check if peer already closed its side later
-      channel.socket().shutdownInput()
+      peerClosed = true
       context.become(peerSentEOF(handler))
     case _ if writePending ⇒ // finish writing first
       if (TraceLogging) log.debug("Got Close command but write is still pending.")
@@ -217,7 +221,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
       if (TraceLogging) log.debug("Got ConfirmedClose command, sending FIN.")
       channel.socket.shutdownOutput()
 
-      if (channel.socket().isInputShutdown) // if peer closed first, the socket is now fully closed
+      if (peerClosed) // if peer closed first, the socket is now fully closed
         doCloseConnection(handler, closeCommander, closedEvent)
       else context.become(closing(handler, closeCommander))
     case _ ⇒ // close now
