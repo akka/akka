@@ -44,6 +44,7 @@ object Configuration {
           trust-store = "%s"
           key-store = "%s"
           key-store-password = "changeme"
+          key-password = "changeme"
           trust-store-password = "changeme"
           protocol = "TLSv1"
           random-number-generator = "%s"
