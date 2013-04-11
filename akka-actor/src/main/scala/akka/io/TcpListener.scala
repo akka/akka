@@ -32,8 +32,6 @@ private[io] class TcpListener(val selectorRouter: ActorRef,
                               val tcp: TcpExt,
                               val bindCommander: ActorRef,
                               val bind: Bind) extends Actor with ActorLogging {
-
-  def selector: ActorRef = context.parent
   import TcpListener._
   import tcp.Settings._
   import bind._

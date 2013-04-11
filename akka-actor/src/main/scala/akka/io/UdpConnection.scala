@@ -16,9 +16,9 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-private[io] class UdpConnectedection(val udpConn: UdpConnectedExt,
-                                     val commander: ActorRef,
-                                     val connect: Connect) extends Actor with ActorLogging {
+private[io] class UdpConnection(val udpConn: UdpConnectedExt,
+                                val commander: ActorRef,
+                                val connect: Connect) extends Actor with ActorLogging {
 
   def selector: ActorRef = context.parent
 
