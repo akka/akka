@@ -26,6 +26,7 @@ import java.nio.charset.Charset
 import java.util.Properties
 import annotation.tailrec
 import Unidoc.{ JavaDoc, javadocSettings, junidocSources, sunidoc, unidocExclude }
+import scalabuff.ScalaBuffPlugin._
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -180,7 +181,8 @@ object AkkaBuild extends Build {
     id = "akka-cluster-experimental",
     base = file("akka-cluster"),
     dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test"),
-    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ multiJvmSettings ++ OSGi.cluster ++ experimentalSettings ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ multiJvmSettings ++ OSGi.cluster ++ experimentalSettings ++
+      scalabuffSettings ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -190,7 +192,7 @@ object AkkaBuild extends Build {
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
       previousArtifact := akkaPreviousArtifact("akka-cluster-experimental")
     )
-  ) configs (MultiJvm)
+  ) configs (MultiJvm, ScalaBuff)
 
   lazy val slf4j = Project(
     id = "akka-slf4j",

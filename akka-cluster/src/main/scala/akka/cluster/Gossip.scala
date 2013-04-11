@@ -55,12 +55,12 @@ private[cluster] object Gossip {
  * `Removed` by removing it from the `members` set and sending a `Removed` command to the
  * removed node telling it to shut itself down.
  */
+@SerialVersionUID(1L)
 private[cluster] case class Gossip(
   members: immutable.SortedSet[Member], // sorted set of members with their status, sorted by address
   overview: GossipOverview = GossipOverview(),
   version: VectorClock = VectorClock()) // vector clock version
-  extends ClusterMessage // is a serializable cluster message
-  with Versioned[Gossip] {
+  extends Versioned[Gossip] {
 
   // FIXME can be disabled as optimization
   assertInvariants()
@@ -226,6 +226,7 @@ private[cluster] case class Gossip(
  * INTERNAL API
  * Represents the overview of the cluster, holds the cluster convergence table and set with unreachable nodes.
  */
+@SerialVersionUID(1L)
 private[cluster] case class GossipOverview(
   seen: Map[Address, VectorClock] = Map.empty,
   unreachable: Set[Member] = Set.empty) {
@@ -243,4 +244,5 @@ private[cluster] case class GossipOverview(
  * INTERNAL API
  * Envelope adding a sender address to the gossip.
  */
+@SerialVersionUID(1L)
 private[cluster] case class GossipEnvelope(from: Address, gossip: Gossip, conversation: Boolean = true) extends ClusterMessage

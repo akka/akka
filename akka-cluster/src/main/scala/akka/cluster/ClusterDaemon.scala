@@ -12,20 +12,13 @@ import scala.util.control.NonFatal
 import java.util.UUID
 import akka.actor.{ Actor, ActorLogging, ActorRef, Address, Cancellable, Props, PoisonPill, ReceiveTimeout, RootActorPath, Scheduler }
 import akka.actor.OneForOneStrategy
-import akka.actor.Status.Failure
 import akka.actor.SupervisorStrategy.Stop
-import akka.actor.Terminated
-import akka.event.EventStream
-import akka.pattern.ask
-import akka.util.Timeout
 import akka.cluster.MemberStatus._
 import akka.cluster.ClusterEvent._
 import akka.actor.ActorSelection
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
- *
- * FIXME Protobuf all ClusterMessages
  */
 trait ClusterMessage extends Serializable
 
@@ -38,16 +31,19 @@ object ClusterUserAction {
    * Command to join the cluster. Sent when a node (represented by 'address')
    * wants to join another node (the receiver).
    */
+  @SerialVersionUID(1L)
   case class Join(address: Address, roles: Set[String]) extends ClusterMessage
 
   /**
    * Command to leave the cluster.
    */
+  @SerialVersionUID(1L)
   case class Leave(address: Address) extends ClusterMessage
 
   /**
    * Command to mark node as temporary down.
    */
+  @SerialVersionUID(1L)
   case class Down(address: Address) extends ClusterMessage
 
 }
@@ -61,7 +57,7 @@ private[cluster] object InternalClusterAction {
    * Command to initiate join another node (represented by 'address').
    * Join will be sent to the other node.
    */
-  case class JoinTo(address: Address) extends ClusterMessage
+  case class JoinTo(address: Address)
 
   /**
    * Command to initiate the process to join the specified
@@ -77,21 +73,24 @@ private[cluster] object InternalClusterAction {
    * If a node is uninitialized it will reply to `InitJoin` with
    * `InitJoinNack`.
    */
-  case object JoinSeedNode extends ClusterMessage
+  case object JoinSeedNode
 
   /**
    * @see JoinSeedNode
    */
+  @SerialVersionUID(1L)
   case object InitJoin extends ClusterMessage
 
   /**
    * @see JoinSeedNode
    */
+  @SerialVersionUID(1L)
   case class InitJoinAck(address: Address) extends ClusterMessage
 
   /**
    * @see JoinSeedNode
    */
+  @SerialVersionUID(1L)
   case class InitJoinNack(address: Address) extends ClusterMessage
 
   /**
@@ -149,11 +148,13 @@ private[cluster] object ClusterLeaderAction {
    * Command to mark a node to be removed from the cluster immediately.
    * Can only be sent by the leader.
    */
+  @SerialVersionUID(1L)
   case class Exit(address: Address) extends ClusterMessage
 
   /**
    * Command to remove a node from the cluster immediately.
    */
+  @SerialVersionUID(1L)
   case class Remove(address: Address) extends ClusterMessage
 }
 
@@ -1010,6 +1011,7 @@ private[cluster] class OnMemberUpListener(callback: Runnable) extends Actor with
 /**
  * INTERNAL API
  */
+@SerialVersionUID(1L)
 private[cluster] case class ClusterStats(
   receivedGossipCount: Long = 0L,
   mergeCount: Long = 0L,

@@ -1,0 +1,224 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+option java_package = "akka.cluster.protobuf.msg";
+option optimize_for = SPEED;
+
+/****************************************
+ * Cluster User Messages
+ ****************************************/
+
+/**
+ * Join
+ */
+message Join {
+  required Address address = 1;
+  repeated string roles = 2;
+}
+
+/**
+ * Leave
+ * Sends an Address
+ */
+
+/**
+ * Down
+ * Sends an Address
+ */
+
+/****************************************
+ * Internal Cluster Action Messages
+ ****************************************/
+
+/**
+ * InitJoin
+ * Sends Empty
+ */
+
+/**
+ * InitJoinAck
+ * Sends an Address
+ */
+
+/**
+ * InitJoinNack
+ * Sends an Address
+ */
+
+/****************************************
+ * Cluster Leader Action Messages
+ ****************************************/
+
+/**
+ * Exit
+ * Sends an Address
+ */
+
+/**
+ * Remove
+ * Sends an Address
+ */
+
+
+/****************************************
+ * Cluster Heartbeat Messages
+ ****************************************/
+
+/**
+ * Heartbeat
+ * Sends an Address
+ */
+
+/**
+ * EndHeartbeat
+ * Sends an Address
+ */
+
+/**
+ * HeartbeatRequest
+ * Sends an Address
+ */
+
+/****************************************
+ * Cluster Gossip Messages
+ ****************************************/
+
+/**
+ * Gossip Envelope
+ */
+message GossipEnvelope {
+  required Address from = 1;
+  required Gossip gossip = 2;
+  required bool conversation = 3;
+}
+
+/**
+ * Gossip
+ */
+message Gossip {
+  repeated Address allAddresses = 1;
+  repeated string allRoles = 2;
+  repeated string allHashes = 3;
+  repeated Member members = 4;
+  required GossipOverview overview = 5;
+  required VectorClock version = 6;
+}
+
+/**
+ * Gossip Overview
+ */
+message GossipOverview {
+  message Seen {
+    required int32 addressIndex = 1;
+    required VectorClock version = 2;
+  }
+  repeated Seen seen = 1;
+  repeated Member unreachable = 2;
+}
+
+/**
+ * Member
+ */
+message Member {
+  required int32 addressIndex = 1;
+  required MemberStatus status = 2;
+  repeated int32 rolesIndexes = 3 [packed = true];
+}
+
+/**
+ * Member Status
+ */
+enum MemberStatus {
+  Joining = 0;
+  Up = 1;
+  Leaving = 2;
+  Exiting = 3;
+  Down = 4;
+  Removed = 5;
+}
+
+/**
+ * Vector Clock
+ */
+message VectorClock {
+  message Version {
+    required int32 hashIndex = 1;
+    required int64 timestamp = 2;
+  }
+  required int64 timestamp = 1;
+  repeated Version versions = 2;
+}
+
+/****************************************
+ * Metrics Gossip Messages
+ ****************************************/
+
+/**
+ * Metrics Gossip Envelope
+ */
+message MetricsGossipEnvelope {
+  required Address from = 1;
+  required MetricsGossip gossip = 2;
+  required bool reply = 3;
+}
+
+/**
+ * Metrics Gossip
+ */
+message MetricsGossip {
+  repeated Address allAddresses = 1;
+  repeated string allMetricNames = 2;
+  repeated NodeMetrics nodeMetrics = 3;
+}
+
+/**
+ * Node Metrics
+ */
+message NodeMetrics {
+  enum NumberType {
+    Serialized = 0;
+    Double = 1;
+    Float = 2;
+    Integer = 3;
+    Long = 4;
+  }
+  message Number {
+    required NumberType type = 1;
+    optional uint32 value32 = 2;
+    optional uint64 value64 = 3;
+    optional bytes serialized = 4;
+  }
+  message EWMA {
+    required double value = 1;
+    required double alpha = 2;
+  }
+  message Metric {
+    required int32 nameIndex = 1;
+    required Number number = 2;
+    optional EWMA ewma = 3;
+  }
+  required int32 addressIndex = 1;
+  required int64 timestamp = 2;
+  repeated Metric metrics = 3;
+}
+
+/****************************************
+ * Common Datatypes and Messages
+ ****************************************/
+
+/**
+ * An empty message
+ */
+ message Empty {
+ }
+
+/**
+ * Defines a remote address.
+ */
+message Address {
+  required string system = 1;
+  required string hostname = 2;
+  required uint32 port = 3;
+  optional string protocol = 4;
+}

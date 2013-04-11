@@ -17,7 +17,8 @@ import MemberStatus._
  * Note: `hashCode` and `equals` are solely based on the underlying `Address`, not its `MemberStatus`
  * and roles.
  */
-class Member(val address: Address, val status: MemberStatus, val roles: Set[String]) extends ClusterMessage with Serializable {
+@SerialVersionUID(1L)
+class Member(val address: Address, val status: MemberStatus, val roles: Set[String]) extends Serializable {
   override def hashCode = address.##
   override def equals(other: Any) = other match {
     case m: Member ⇒ address == m.address
@@ -123,15 +124,15 @@ object Member {
  *
  * Can be one of: Joining, Up, Leaving, Exiting and Down.
  */
-abstract class MemberStatus extends ClusterMessage
+abstract class MemberStatus
 
 object MemberStatus {
-  case object Joining extends MemberStatus
-  case object Up extends MemberStatus
-  case object Leaving extends MemberStatus
-  case object Exiting extends MemberStatus
-  case object Down extends MemberStatus
-  case object Removed extends MemberStatus
+  @SerialVersionUID(1L) case object Joining extends MemberStatus
+  @SerialVersionUID(1L) case object Up extends MemberStatus
+  @SerialVersionUID(1L) case object Leaving extends MemberStatus
+  @SerialVersionUID(1L) case object Exiting extends MemberStatus
+  @SerialVersionUID(1L) case object Down extends MemberStatus
+  @SerialVersionUID(1L) case object Removed extends MemberStatus
 
   /**
    * Java API: retrieve the “joining” status singleton
