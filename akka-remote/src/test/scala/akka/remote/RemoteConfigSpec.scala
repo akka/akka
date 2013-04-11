@@ -91,6 +91,7 @@ class RemoteConfigSpec extends AkkaSpec(
       val sslSettings = new SSLSettings(system.settings.config.getConfig("akka.remote.netty.ssl.security"))
       sslSettings.SSLKeyStore must be(Some("keystore"))
       sslSettings.SSLKeyStorePassword must be(Some("changeme"))
+      sslSettings.SSLKeyPassword must be(Some("changeme"))
       sslSettings.SSLTrustStore must be(Some("truststore"))
       sslSettings.SSLTrustStorePassword must be(Some("changeme"))
       sslSettings.SSLProtocol must be(Some("TLSv1"))

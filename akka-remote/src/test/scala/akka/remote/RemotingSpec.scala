@@ -61,6 +61,7 @@ object RemotingSpec {
       key-store = "${getClass.getClassLoader.getResource("keystore").getPath}"
       trust-store = "${getClass.getClassLoader.getResource("truststore").getPath}"
       key-store-password = "changeme"
+      key-password = "changeme"
       trust-store-password = "changeme"
       protocol = "TLSv1"
       random-number-generator = "AES128CounterSecureRNG"
