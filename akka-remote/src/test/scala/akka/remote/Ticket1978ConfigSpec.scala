@@ -20,6 +20,7 @@ class Ticket1978ConfigSpec extends AkkaSpec("""
 
       settings.SSLKeyStore must be(Some("keystore"))
       settings.SSLKeyStorePassword must be(Some("changeme"))
+      settings.SSLKeyPassword must be(Some("changeme"))
       settings.SSLTrustStore must be(Some("truststore"))
       settings.SSLTrustStorePassword must be(Some("changeme"))
       settings.SSLProtocol must be(Some("TLSv1"))
