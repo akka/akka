@@ -416,12 +416,9 @@ object AkkaBuild extends Build {
 
   lazy val osgiDiningHakkersSample = Project(id = "akka-sample-osgi-dining-hakkers",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers"),
-    settings = sampleSettings ++ Seq(
-      test in Test ~= { x => {
-        if({List("sh", "-c", "cd akka-samples/akka-sample-osgi-dining-hakkers; mvn clean install") !} != 0 ) {throw new Exception("Osgi sample Dining hakkers failed")}
-      } }
-    )
-  ) aggregate(osgiDiningHakkersSampleApi, osgiDiningHakkersSampleCommand, osgiDiningHakkersSampleCore, uncommons)
+    settings = parentSettings
+  ) aggregate(osgiDiningHakkersSampleApi, osgiDiningHakkersSampleCommand, osgiDiningHakkersSampleCore,
+      osgiDiningHakkersSampleIntegrationTest, uncommons)
 
   lazy val osgiDiningHakkersSampleApi = Project(id = "akka-sample-osgi-dining-hakkers-api",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers/api"),
@@ -434,7 +431,6 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.osgiDiningHakkerSampleCommand
     )
   ) dependsOn (osgiDiningHakkersSampleApi, actor)
-
 
   lazy val osgiDiningHakkersSampleCore = Project(id = "akka-sample-osgi-dining-hakkers-core",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers/core"),
@@ -451,6 +447,24 @@ object AkkaBuild extends Build {
       version := "1.2.2"
     )
   )
+
+  def executeMvnCommands(failureMessage: String, commands: String*) = {
+    if ({List("sh", "-c", commands.mkString("cd akka-samples/akka-sample-osgi-dining-hakkers; mvn ", " ", "")) !} != 0)
+      throw new Exception(failureMessage)
+  }
+
+  lazy val osgiDiningHakkersSampleIntegrationTest = Project(id = "akka-sample-osgi-dining-hakkers-integration",
+    base = file("akka-samples/akka-sample-osgi-dining-hakkers-integration"),
+    settings = sampleSettings ++ (
+      if (System.getProperty("akka.osgi.sample.test", "false").toBoolean) Seq(
+        test in Test ~= { x => {
+          executeMvnCommands("Osgi sample Dining hakkers test failed", "clean", "install")
+        }})
+      else Seq.empty
+      )
+  ) dependsOn(osgiDiningHakkersSampleApi, osgiDiningHakkersSampleCommand, osgiDiningHakkersSampleCore, uncommons)
+
+
 
   lazy val docs = Project(
     id = "akka-docs",
