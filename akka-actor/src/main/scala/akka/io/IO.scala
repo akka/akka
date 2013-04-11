@@ -4,9 +4,11 @@
 
 package akka.io
 
+import scala.util.control.NonFatal
 import akka.actor._
 import akka.routing.RandomRouter
 import akka.io.SelectionHandler.WorkerForCommand
+import akka.event.Logging
 
 object IO {
 
@@ -21,6 +23,8 @@ object IO {
   }
 
   abstract class SelectorBasedManager(selectorSettings: SelectionHandlerSettings, nrOfSelectors: Int) extends Actor {
+
+    override def supervisorStrategy = connectionSupervisorStrategy
 
     val selectorPool = context.actorOf(
       props = Props(new SelectionHandler(self, selectorSettings)).withRouter(RandomRouter(nrOfSelectors)),
@@ -38,4 +42,18 @@ object IO {
     }
   }
 
+  /**
+   * Special supervisor strategy for parents of TCP connection and listener actors.
+   * Stops the child on all errors and logs DeathPactExceptions only at debug level.
+   */
+  private[io] final val connectionSupervisorStrategy: SupervisorStrategy =
+    new OneForOneStrategy()(SupervisorStrategy.stoppingStrategy.decider) {
+      override protected def logFailure(context: ActorContext, child: ActorRef, cause: Throwable,
+                                        decision: SupervisorStrategy.Directive): Unit =
+        if (cause.isInstanceOf[DeathPactException]) {
+          try context.system.eventStream.publish {
+            Logging.Debug(child.path.toString, getClass, "Closed after handler termination")
+          } catch { case NonFatal(_) ⇒ }
+        } else super.logFailure(context, child, cause, decision)
+    }
 }

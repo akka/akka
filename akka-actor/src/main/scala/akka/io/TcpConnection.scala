@@ -44,14 +44,17 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
   /** connection established, waiting for registration from user handler */
   def waitingForRegistration(commander: ActorRef): Receive = {
     case Register(handler, keepOpenOnPeerClosed) ⇒
+      // up to this point we've been watching the commander,
+      // but since registration is now complete we only need to watch the handler from here on
+      if (handler != commander) {
+        context.unwatch(commander)
+        context.watch(handler)
+      }
       if (TraceLogging) log.debug("[{}] registered as connection handler", handler)
       this.keepOpenOnPeerClosed = keepOpenOnPeerClosed
 
       doRead(handler, None) // immediately try reading
-
       context.setReceiveTimeout(Duration.Undefined)
-      context.watch(handler) // sign death pact
-
       context.become(connected(handler))
 
     case cmd: CloseCommand ⇒

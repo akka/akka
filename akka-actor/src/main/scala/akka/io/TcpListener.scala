@@ -56,6 +56,8 @@ private[io] class TcpListener(val selectorRouter: ActorRef,
   context.parent ! RegisterChannel(channel, SelectionKey.OP_ACCEPT)
   log.debug("Successfully bound to {}", endpoint)
 
+  override def supervisorStrategy = IO.connectionSupervisorStrategy
+
   def receive: Receive = {
     case ChannelRegistered ⇒
       bindCommander ! Bound
