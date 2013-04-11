@@ -5,6 +5,7 @@ import org.ops4j.pax.exam.options.DefaultCompositeOption
 import org.ops4j.pax.exam.{Option => PaxOption}
 import org.apache.karaf.tooling.exam.options.LogLevelOption
 import org.apache.karaf.tooling.exam.options.KarafDistributionOption._
+import java.io.File
 
 /**
  * Re-usable PAX Exam option groups.
@@ -13,11 +14,12 @@ object TestOptions {
 
   val scalaDepVersion = System.getProperty("scala.dep.version")
 
-  def karafOptions(useDeployFolder: Boolean = false): PaxOption = {
-    new DefaultCompositeOption(
-      karafDistributionConfiguration.frameworkUrl(
-        maven.groupId("org.apache.karaf").artifactId("apache-karaf").`type`("zip").version(System.getProperty("karaf.version")))
-        .karafVersion(System.getProperty("karaf.version")).name("Apache Karaf").useDeployFolder(useDeployFolder),
+  def karafOptions(useDeployFolder: Boolean = false, extractInTargetFolder: Boolean = true): PaxOption = {
+    val kdc = karafDistributionConfiguration.frameworkUrl(
+      maven.groupId("org.apache.karaf").artifactId("apache-karaf").`type`("zip").version(System.getProperty("karaf.version")))
+      .karafVersion(System.getProperty("karaf.version")).name("Apache Karaf").useDeployFolder(useDeployFolder)
+
+    new DefaultCompositeOption(if (extractInTargetFolder) kdc.unpackDirectory(new File("target/paxexam/unpack/")) else kdc,
       editConfigurationFilePut("etc/config.properties", "karaf.framework", "equinox")
     )
   }
@@ -41,9 +43,9 @@ object TestOptions {
     )
   }
 
-  def karafOptionsWithTestBundles(useDeployFolder: Boolean = false): PaxOption = {
+  def karafOptionsWithTestBundles(useDeployFolder: Boolean = false, extractInTargetFolder: Boolean = true): PaxOption = {
     new DefaultCompositeOption(
-      karafOptions(useDeployFolder),
+      karafOptions(useDeployFolder, extractInTargetFolder),
       testBundles()
     )
   }
