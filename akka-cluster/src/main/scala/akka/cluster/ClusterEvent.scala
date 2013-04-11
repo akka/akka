@@ -187,7 +187,7 @@ object ClusterEvent {
     if (newGossip eq oldGossip) Nil
     else {
       val newMembers = newGossip.members -- oldGossip.members
-      val membersGroupedByAddress = List(newGossip.members, oldGossip.members).flatten.groupBy(_.address)
+      val membersGroupedByAddress = List(newGossip.members, oldGossip.members).flatten.groupBy(_.uniqueAddress)
       val changedMembers = membersGroupedByAddress collect {
         case (_, newMember :: oldMember :: Nil) if newMember.status != oldMember.status ⇒ newMember
       }
@@ -200,7 +200,7 @@ object ClusterEvent {
       val allNewUnreachable = newGossip.overview.unreachable -- oldGossip.overview.unreachable
 
       val unreachableGroupedByAddress =
-        List(newGossip.overview.unreachable, oldGossip.overview.unreachable).flatten.groupBy(_.address)
+        List(newGossip.overview.unreachable, oldGossip.overview.unreachable).flatten.groupBy(_.uniqueAddress)
       val unreachableDownMembers = unreachableGroupedByAddress collect {
         case (_, newMember :: oldMember :: Nil) if newMember.status == Down && newMember.status != oldMember.status ⇒
           newMember
@@ -218,7 +218,7 @@ object ClusterEvent {
    */
   private[cluster] def diffLeader(oldGossip: Gossip, newGossip: Gossip): immutable.Seq[LeaderChanged] = {
     val newLeader = newGossip.leader
-    if (newLeader != oldGossip.leader) List(LeaderChanged(newLeader))
+    if (newLeader != oldGossip.leader) List(LeaderChanged(newLeader.map(_.address)))
     else Nil
   }
 
@@ -230,7 +230,7 @@ object ClusterEvent {
       role ← (oldGossip.allRoles ++ newGossip.allRoles)
       newLeader = newGossip.roleLeader(role)
       if newLeader != oldGossip.roleLeader(role)
-    } yield RoleLeaderChanged(role, newLeader)
+    } yield RoleLeaderChanged(role, newLeader.map(_.address))
   }
 
   /**
@@ -242,7 +242,7 @@ object ClusterEvent {
       val newConvergence = newGossip.convergence
       val newSeenBy = newGossip.seenBy
       if (newConvergence != oldGossip.convergence || newSeenBy != oldGossip.seenBy)
-        List(SeenChanged(newConvergence, newSeenBy))
+        List(SeenChanged(newConvergence, newSeenBy.map(_.address)))
       else Nil
     }
 }
@@ -273,7 +273,6 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     case Subscribe(subscriber, to)            ⇒ subscribe(subscriber, to)
     case Unsubscribe(subscriber, to)          ⇒ unsubscribe(subscriber, to)
     case PublishEvent(event)                  ⇒ publish(event)
-    case PublishStart                         ⇒ publishStart()
   }
 
   def eventStream: EventStream = context.system.eventStream
@@ -286,9 +285,9 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     val state = CurrentClusterState(
       members = latestGossip.members,
       unreachable = latestGossip.overview.unreachable,
-      seenBy = latestGossip.seenBy,
-      leader = latestGossip.leader,
-      roleLeaderMap = latestGossip.allRoles.map(r ⇒ r -> latestGossip.roleLeader(r))(collection.breakOut))
+      seenBy = latestGossip.seenBy.map(_.address),
+      leader = latestGossip.leader.map(_.address),
+      roleLeaderMap = latestGossip.allRoles.map(r ⇒ r -> latestGossip.roleLeader(r).map(_.address))(collection.breakOut))
     receiver match {
       case Some(ref) ⇒ ref ! state
       case None      ⇒ publish(state)

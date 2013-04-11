@@ -25,6 +25,7 @@ class ClusterConfigSpec extends AkkaSpec {
       FailureDetectorImplementationClass must be(classOf[PhiAccrualFailureDetector].getName)
       SeedNodes must be(Seq.empty[String])
       SeedNodeTimeout must be(5 seconds)
+      RetryUnsuccessfulJoinAfter must be(10 seconds)
       PeriodicTasksInitialDelay must be(1 seconds)
       GossipInterval must be(1 second)
       HeartbeatInterval must be(1 second)

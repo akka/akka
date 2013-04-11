@@ -11,6 +11,7 @@ import com.typesafe.config.Config
 import scala.concurrent.duration._
 import scala.collection.immutable
 import akka.util.ByteString
+import akka.util.Helpers.Requiring
 import akka.actor._
 import java.lang.{ Iterable ⇒ JIterable }
 
@@ -173,33 +174,27 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
   class Settings private[TcpExt] (_config: Config) extends SelectionHandlerSettings(_config) {
     import _config._
 
-    val NrOfSelectors = getInt("nr-of-selectors")
+    val NrOfSelectors: Int = getInt("nr-of-selectors") requiring (_ > 0, "nr-of-selectors must be > 0")
 
-    val BatchAcceptLimit = getInt("batch-accept-limit")
-    val DirectBufferSize = getIntBytes("direct-buffer-size")
-    val MaxDirectBufferPoolSize = getInt("direct-buffer-pool-limit")
-    val RegisterTimeout = getString("register-timeout") match {
+    val BatchAcceptLimit: Int = getInt("batch-accept-limit") requiring (_ > 0, "batch-accept-limit must be > 0")
+    val DirectBufferSize: Int = getIntBytes("direct-buffer-size")
+    val MaxDirectBufferPoolSize: Int = getInt("direct-buffer-pool-limit")
+    val RegisterTimeout: Duration = getString("register-timeout") match {
       case "infinite" ⇒ Duration.Undefined
-      case x          ⇒ Duration(x)
+      case x          ⇒ Duration(getMilliseconds("register-timeout"), MILLISECONDS)
     }
-    val ReceivedMessageSizeLimit = getString("max-received-message-size") match {
+    val ReceivedMessageSizeLimit: Int = getString("max-received-message-size") match {
       case "unlimited" ⇒ Int.MaxValue
       case x           ⇒ getIntBytes("received-message-size-limit")
     }
-    val ManagementDispatcher = getString("management-dispatcher")
+    val ManagementDispatcher: String = getString("management-dispatcher")
     val FileIODispatcher = getString("file-io-dispatcher")
     val TransferToLimit = getString("file-io-transferTo-limit") match {
       case "unlimited" ⇒ Int.MaxValue
       case _           ⇒ getIntBytes("file-io-transferTo-limit")
     }
 
-    require(NrOfSelectors > 0, "nr-of-selectors must be > 0")
-    require(MaxChannels == -1 || MaxChannels > 0, "max-channels must be > 0 or 'unlimited'")
-    require(SelectTimeout >= Duration.Zero, "select-timeout must not be negative")
-    require(SelectorAssociationRetries >= 0, "selector-association-retries must be >= 0")
-    require(BatchAcceptLimit > 0, "batch-accept-limit must be > 0")
-
-    val MaxChannelsPerSelector = if (MaxChannels == -1) -1 else math.max(MaxChannels / NrOfSelectors, 1)
+    val MaxChannelsPerSelector: Int = if (MaxChannels == -1) -1 else math.max(MaxChannels / NrOfSelectors, 1)
 
     private[this] def getIntBytes(path: String): Int = {
       val size = getBytes(path)

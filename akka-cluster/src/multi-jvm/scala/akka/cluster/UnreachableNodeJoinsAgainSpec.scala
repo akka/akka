@@ -4,20 +4,22 @@
 package akka.cluster
 
 import language.postfixOps
-
-import org.scalatest.BeforeAndAfter
+import scala.collection.immutable
+import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
+import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
+import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import akka.actor.Address
-import akka.remote.testconductor.RoleName
-import scala.concurrent.duration._
-import scala.collection.immutable
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.testkit._
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.Props
+import akka.actor.RootActorPath
 
-case class UnreachableNodeRejoinsClusterMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
+object UnreachableNodeJoinsAgainMultiNodeConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
@@ -31,29 +33,25 @@ case class UnreachableNodeRejoinsClusterMultiNodeConfig(failureDetectorPuppet: B
 
       akka.remote.log-remote-lifecycle-events = off
       akka.cluster.publish-stats-interval = 0s
-      akka.loglevel = INFO
-    """).withFallback(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet))))
+    """).withFallback(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig)))
 
   testTransport(on = true)
+
+  class EndActor(testActor: ActorRef) extends Actor {
+    def receive = { case msg ⇒ testActor forward msg }
+  }
 }
 
-class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode1 extends UnreachableNodeRejoinsClusterSpec(failureDetectorPuppet = true)
-class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode2 extends UnreachableNodeRejoinsClusterSpec(failureDetectorPuppet = true)
-class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode3 extends UnreachableNodeRejoinsClusterSpec(failureDetectorPuppet = true)
-class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode4 extends UnreachableNodeRejoinsClusterSpec(failureDetectorPuppet = true)
+class UnreachableNodeJoinsAgainMultiJvmNode1 extends UnreachableNodeJoinsAgainSpec
+class UnreachableNodeJoinsAgainMultiJvmNode2 extends UnreachableNodeJoinsAgainSpec
+class UnreachableNodeJoinsAgainMultiJvmNode3 extends UnreachableNodeJoinsAgainSpec
+class UnreachableNodeJoinsAgainMultiJvmNode4 extends UnreachableNodeJoinsAgainSpec
 
-class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode1 extends UnreachableNodeRejoinsClusterSpec(failureDetectorPuppet = false)
-class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode2 extends UnreachableNodeRejoinsClusterSpec(failureDetectorPuppet = false)
-class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode3 extends UnreachableNodeRejoinsClusterSpec(failureDetectorPuppet = false)
-class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode4 extends UnreachableNodeRejoinsClusterSpec(failureDetectorPuppet = false)
-
-abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNodeRejoinsClusterMultiNodeConfig)
-  extends MultiNodeSpec(multiNodeConfig)
+abstract class UnreachableNodeJoinsAgainSpec
+  extends MultiNodeSpec(UnreachableNodeJoinsAgainMultiNodeConfig)
   with MultiNodeClusterSpec {
 
-  def this(failureDetectorPuppet: Boolean) = this(UnreachableNodeRejoinsClusterMultiNodeConfig(failureDetectorPuppet))
-
-  import multiNodeConfig._
+  import UnreachableNodeJoinsAgainMultiNodeConfig._
 
   muteMarkingAsUnreachable()
 
@@ -139,10 +137,21 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
         awaitAssert(clusterView.unreachableMembers must be(Set.empty), 15 seconds)
 
       }
+
       endBarrier()
     }
 
-    "allow node to REJOIN when the network is plugged back in" taggedAs LongRunningTest in {
+    "allow fresh node with same host:port to join again when the network is plugged back in" taggedAs LongRunningTest in {
+      val expectedNumberOfMembers = roles.size
+
+      // victim actor system will be shutdown, not part of testConductor any more
+      // so we can't use barriers to synchronize with it
+      val masterAddress = address(master)
+      runOn(master) {
+        system.actorOf(Props(classOf[EndActor], testActor), "end")
+      }
+      enterBarrier("end-actor-created")
+
       runOn(first) {
         // put the network back in
         allBut(victim).foreach { roleName ⇒
@@ -152,13 +161,48 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
 
       enterBarrier("plug_in_victim")
 
-      runOn(victim) {
-        joinWithin(master, 10.seconds)
+      runOn(first) {
+        // will shutdown ActorSystem of victim
+        testConductor.removeNode(victim)
       }
 
-      awaitMembersUp(roles.size)
+      runOn(victim) {
+        val victimAddress = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+        system.shutdown()
+        system.awaitTermination(10 seconds)
+        // create new ActorSystem with same host:port
+        val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
+            akka.remote.netty.tcp {
+              hostname = ${victimAddress.host.get}
+              port = ${victimAddress.port.get}
+            }
+            """).withFallback(system.settings.config))
 
-      endBarrier()
+        try {
+          Cluster(freshSystem).join(masterAddress)
+          Thread.sleep(5000)
+          within(15 seconds) {
+            awaitAssert(Cluster(freshSystem).readView.members.map(_.address) must contain(victimAddress))
+            awaitAssert(Cluster(freshSystem).readView.members.size must be(expectedNumberOfMembers))
+            awaitAssert(clusterView.members.map(_.status) must be(Set(MemberStatus.Up)))
+          }
+          freshSystem.actorSelection(RootActorPath(master) / "user" / "end") ! "done"
+        } finally {
+          freshSystem.shutdown()
+          freshSystem.awaitTermination(10 seconds)
+        }
+        // no barrier here, because it is not part of testConductor roles any more
+      }
+
+      runOn(allBut(victim): _*) {
+        awaitMembersUp(expectedNumberOfMembers)
+        // don't end the test until the freshSystem is done
+        runOn(master) {
+          expectMsg("done")
+        }
+        endBarrier()
+      }
+
     }
   }
 }

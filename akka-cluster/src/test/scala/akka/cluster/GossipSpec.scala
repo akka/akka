@@ -14,18 +14,18 @@ class GossipSpec extends WordSpec with MustMatchers {
 
   import MemberStatus._
 
-  val a1 = Member(Address("akka.tcp", "sys", "a", 2552), Up, Set.empty)
-  val a2 = Member(a1.address, Joining, Set.empty)
-  val b1 = Member(Address("akka.tcp", "sys", "b", 2552), Up, Set.empty)
-  val b2 = Member(b1.address, Removed, Set.empty)
-  val c1 = Member(Address("akka.tcp", "sys", "c", 2552), Leaving, Set.empty)
-  val c2 = Member(c1.address, Up, Set.empty)
-  val c3 = Member(c1.address, Exiting, Set.empty)
-  val d1 = Member(Address("akka.tcp", "sys", "d", 2552), Leaving, Set.empty)
-  val d2 = Member(d1.address, Removed, Set.empty)
-  val e1 = Member(Address("akka.tcp", "sys", "e", 2552), Joining, Set.empty)
-  val e2 = Member(e1.address, Up, Set.empty)
-  val e3 = Member(e1.address, Down, Set.empty)
+  val a1 = TestMember(Address("akka.tcp", "sys", "a", 2552), Up)
+  val a2 = TestMember(a1.address, Joining)
+  val b1 = TestMember(Address("akka.tcp", "sys", "b", 2552), Up)
+  val b2 = TestMember(b1.address, Removed)
+  val c1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Leaving)
+  val c2 = TestMember(c1.address, Up)
+  val c3 = TestMember(c1.address, Exiting)
+  val d1 = TestMember(Address("akka.tcp", "sys", "d", 2552), Leaving)
+  val d2 = TestMember(d1.address, Removed)
+  val e1 = TestMember(Address("akka.tcp", "sys", "e", 2552), Joining)
+  val e2 = TestMember(e1.address, Up)
+  val e3 = TestMember(e1.address, Down)
 
   "A Gossip" must {
 
@@ -89,33 +89,33 @@ class GossipSpec extends WordSpec with MustMatchers {
     }
 
     "not have non cluster members in seen table" in intercept[IllegalArgumentException] {
-      Gossip(members = SortedSet(a1, e1)).seen(a1.address).seen(e1.address).seen(b1.address)
+      Gossip(members = SortedSet(a1, e1)).seen(a1.uniqueAddress).seen(e1.uniqueAddress).seen(b1.uniqueAddress)
     }
 
     "have leader as first member based on ordering, except Exiting status" in {
-      Gossip(members = SortedSet(c2, e2)).leader must be(Some(c2.address))
-      Gossip(members = SortedSet(c3, e2)).leader must be(Some(e2.address))
-      Gossip(members = SortedSet(c3)).leader must be(Some(c3.address))
+      Gossip(members = SortedSet(c2, e2)).leader must be(Some(c2.uniqueAddress))
+      Gossip(members = SortedSet(c3, e2)).leader must be(Some(e2.uniqueAddress))
+      Gossip(members = SortedSet(c3)).leader must be(Some(c3.uniqueAddress))
     }
 
     "merge seen table correctly" in {
       val vclockNode = VectorClock.Node("something")
-      val g1 = (Gossip(members = SortedSet(a1, b1, c1, d1)) :+ vclockNode).seen(a1.address).seen(b1.address)
-      val g2 = (Gossip(members = SortedSet(a1, b1, c1, d1)) :+ vclockNode).seen(a1.address).seen(c1.address)
-      val g3 = (g1 copy (version = g2.version)).seen(d1.address)
+      val g1 = (Gossip(members = SortedSet(a1, b1, c1, d1)) :+ vclockNode).seen(a1.uniqueAddress).seen(b1.uniqueAddress)
+      val g2 = (Gossip(members = SortedSet(a1, b1, c1, d1)) :+ vclockNode).seen(a1.uniqueAddress).seen(c1.uniqueAddress)
+      val g3 = (g1 copy (version = g2.version)).seen(d1.uniqueAddress)
 
       def checkMerged(merged: Gossip) {
         val keys = merged.overview.seen.keys.toSeq
         keys.length must be(4)
-        keys.toSet must be(Set(a1.address, b1.address, c1.address, d1.address))
+        keys.toSet must be(Set(a1.uniqueAddress, b1.uniqueAddress, c1.uniqueAddress, d1.uniqueAddress))
 
-        merged seenByAddress (a1.address) must be(true)
-        merged seenByAddress (b1.address) must be(false)
-        merged seenByAddress (c1.address) must be(true)
-        merged seenByAddress (d1.address) must be(true)
-        merged seenByAddress (e1.address) must be(false)
+        merged seenByNode (a1.uniqueAddress) must be(true)
+        merged seenByNode (b1.uniqueAddress) must be(false)
+        merged seenByNode (c1.uniqueAddress) must be(true)
+        merged seenByNode (d1.uniqueAddress) must be(true)
+        merged seenByNode (e1.uniqueAddress) must be(false)
 
-        merged.overview.seen(b1.address) must be(g1.version)
+        merged.overview.seen(b1.uniqueAddress) must be(g1.version)
       }
 
       checkMerged(g3 merge g2)

@@ -70,8 +70,9 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   }
 
   def self: Member = {
-    state.members.find(_.address == selfAddress).orElse(state.unreachable.find(_.address == selfAddress)).
-      getOrElse(Member(selfAddress, MemberStatus.Removed, cluster.selfRoles))
+    import cluster.selfUniqueAddress
+    state.members.find(_.uniqueAddress == selfUniqueAddress).orElse(state.unreachable.find(_.uniqueAddress == selfUniqueAddress)).
+      getOrElse(Member(selfUniqueAddress, cluster.selfRoles).copy(status = MemberStatus.Removed))
   }
 
   /**
