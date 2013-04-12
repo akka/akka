@@ -408,7 +408,6 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
       val latch = TestLatch()
       parent ! latch
-      parent ! "testchild"
       EventFilter[IllegalStateException]("OHNOES", occurrences = 1) intercept {
         latch.countDown()
       }
