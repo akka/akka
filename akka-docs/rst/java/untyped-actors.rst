@@ -196,9 +196,10 @@ monitoring of an already terminated actor leads to the immediate generation of
 the :class:`Terminated` message.
 
 It is also possible to deregister from watching another actor’s liveliness
-using ``context.unwatch(target)``, but obviously this cannot guarantee
-non-reception of the :class:`Terminated` message because that may already have
-been queued.
+using ``getContext().unwatch(target)``. This works even if the
+:class:`Terminated` message has already been enqueued in the mailbox; after
+calling :meth:`unwatch` no :class:`Terminated` message for that actor will be
+processed anymore.
 
 Start Hook
 ----------

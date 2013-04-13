@@ -236,10 +236,39 @@ Instead, use actorSelection followed by identify request, and watch the verified
     case Terminated(`ref`) => // ...
   }
 
-
-
 Use ``watch`` instead of ``isTerminated``
 =========================================
 
 ``ActorRef.isTerminated`` is deprecated in favor of ``ActorContext.watch`` because
 ``isTerminated`` behaves differently for local and remote actors.
+
+DeathWatch Semantics are Simplified
+===================================
+
+DeathPactException is now Fatal
+-------------------------------
+
+Previously an unhandled :class:`Terminated` message which led to a
+:class:`DeathPactException` to the thrown would be answered with a ``Restart``
+directive by the default supervisor strategy. This is not intuitive given the
+name of the exception and the Erlang linking feature by which it was inspired.
+The default strategy has thus be changed to return ``Stop`` in this case.
+
+It can be argued that previously the actor would likely run into a restart loop
+because watching a terminated actor would lead to a :class:`DeathPactException`
+immediately again.
+
+Unwatching now Prevents Reception of Terminated
+-----------------------------------------------
+
+Previously calling :meth:`ActorContext.unwatch` would unregister lifecycle
+monitoring interest, but if the target actor had terminated already the
+:class:`Terminated` message had already been enqueued and would be received
+later—possibly leading to a :class:`DeathPactException`. This behavior has been
+modified such that the :class:`Terminated` message will be silently discarded
+if :meth:`unwatch` is called before processing the :class:`Terminated`
+message. Therefore the following is now safe::
+
+  context.stop(target)
+  context.unwatch(target)
+

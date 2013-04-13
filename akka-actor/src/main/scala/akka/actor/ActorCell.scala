@@ -470,6 +470,7 @@ private[akka] class ActorCell(
         publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
       msg.message match {
+        case t: Terminated              ⇒ receivedTerminated(t)
         case AddressTerminated(address) ⇒ addressTerminated(address)
         case Kill                       ⇒ throw new ActorKilledException("Kill")
         case PoisonPill                 ⇒ self.stop()
