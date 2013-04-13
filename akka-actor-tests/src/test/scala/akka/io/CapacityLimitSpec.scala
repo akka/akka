@@ -22,7 +22,7 @@ class CapacityLimitSpec extends AkkaSpec("akka.loglevel = ERROR\nakka.io.tcp.max
       val commander = TestProbe()
       val addresses = temporaryServerAddresses(2)
       commander.send(IO(Tcp), Bind(bindHandler.ref, addresses(0)))
-      commander.expectMsg(Bound)
+      commander.expectMsg(Bound(addresses(0)))
 
       // we are now at the configured max-channel capacity of 4
 

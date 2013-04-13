@@ -11,6 +11,7 @@ import akka.actor.{ Props, ActorLogging, ActorRef, Actor }
 import akka.io.SelectionHandler._
 import akka.io.Tcp._
 import akka.io.IO.HasFailureMessage
+import java.net.InetSocketAddress
 
 /**
  * INTERNAL API
@@ -42,8 +43,11 @@ private[io] class TcpListener(val selectorRouter: ActorRef,
     serverSocketChannel.configureBlocking(false)
     val socket = serverSocketChannel.socket
     options.foreach(_.beforeServerSocketBind(socket))
-    try socket.bind(endpoint, backlog)
-    catch {
+    try {
+      socket.bind(endpoint, backlog)
+      require(socket.getLocalSocketAddress.isInstanceOf[InetSocketAddress],
+        s"bound to unknown SocketAddress [${socket.getLocalSocketAddress}]")
+    } catch {
       case NonFatal(e) ⇒
         bindCommander ! bind.failureMessage
         log.error(e, "Bind failed for TCP channel on endpoint [{}]", endpoint)
@@ -58,7 +62,7 @@ private[io] class TcpListener(val selectorRouter: ActorRef,
 
   def receive: Receive = {
     case ChannelRegistered ⇒
-      bindCommander ! Bound
+      bindCommander ! Bound(channel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress])
       context.become(bound)
   }
 

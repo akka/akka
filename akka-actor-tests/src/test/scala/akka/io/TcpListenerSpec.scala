@@ -23,7 +23,7 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
 
     "let the Bind commander know when binding is completed" in new TestSetup {
       listener ! ChannelRegistered
-      bindCommander.expectMsg(Bound)
+      bindCommander.expectMsgType[Bound]
     }
 
     "accept acceptable connections and register them with its parent" in new TestSetup {
@@ -102,7 +102,7 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
 
     def bindListener() {
       listener ! ChannelRegistered
-      bindCommander.expectMsg(Bound)
+      bindCommander.expectMsgType[Bound]
     }
 
     def attemptConnectionToEndpoint(): Unit = new Socket(endpoint.getHostName, endpoint.getPort)
