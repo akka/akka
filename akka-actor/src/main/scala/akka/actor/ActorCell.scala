@@ -609,9 +609,11 @@ private[akka] class ActorCell(
     else lookupAndSetField(clazz.getSuperclass, instance, name, value)
   }
 
-  final protected def clearActorCellFields(cell: ActorCell): Unit =
+  final protected def clearActorCellFields(cell: ActorCell): Unit = {
+    cell.unstashAll()
     if (!lookupAndSetField(cell.getClass, cell, "props", ActorCell.terminatedProps))
       throw new IllegalArgumentException("ActorCell has no props field")
+  }
 
   final protected def clearActorFields(actorInstance: Actor): Unit = {
     setActorFields(actorInstance, context = null, self = system.deadLetters)
