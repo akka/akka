@@ -44,8 +44,8 @@ object CustomRouteExample {
     // example from a MicroKernel
     val system = ActorSystem("some-system")
     val producer = system.actorOf(Props[Producer1])
-    val mediator = system.actorOf(Props(new Transformer(producer)))
-    val consumer = system.actorOf(Props(new Consumer3(mediator)))
+    val mediator = system.actorOf(Props(classOf[Transformer], producer))
+    val consumer = system.actorOf(Props(classOf[Consumer3], mediator))
     CamelExtension(system).context.addRoutes(new CustomRouteBuilder)
     //#CustomRouteExample
   }

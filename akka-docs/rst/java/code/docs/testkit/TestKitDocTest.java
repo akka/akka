@@ -20,7 +20,6 @@ import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.Terminated;
 import akka.actor.UntypedActor;
-import akka.actor.UntypedActorFactory;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import akka.testkit.CallingThreadDispatcher;
@@ -63,7 +62,7 @@ public class TestKitDocTest {
   //#test-actor-ref
   @Test
   public void demonstrateTestActorRef() {
-    final Props props = new Props(MyActor.class);
+    final Props props = Props.create(MyActor.class);
     final TestActorRef<MyActor> ref = TestActorRef.create(system, props, "testA");
     final MyActor actor = ref.underlyingActor();
     assertTrue(actor.testMe());
@@ -73,7 +72,7 @@ public class TestKitDocTest {
   @Test
   public void demonstrateAsk() throws Exception {
     //#test-behavior
-    final Props props = new Props(MyActor.class);
+    final Props props = Props.create(MyActor.class);
     final TestActorRef<MyActor> ref = TestActorRef.create(system, props, "testB");
     final Future<Object> future = akka.pattern.Patterns.ask(ref, "say42", 3000);
     assertTrue(future.isCompleted());
@@ -84,7 +83,7 @@ public class TestKitDocTest {
   @Test
   public void demonstrateExceptions() {
     //#test-expecting-exceptions
-    final Props props = new Props(MyActor.class);
+    final Props props = Props.create(MyActor.class);
     final TestActorRef<MyActor> ref = TestActorRef.create(system, props, "myActor");
     try {
       ref.receive(new Exception("expected"));
@@ -208,7 +207,7 @@ public class TestKitDocTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked") // due to generic varargs
+  @SuppressWarnings({ "unchecked", "unused" }) // due to generic varargs
   public void demonstrateExpect() {
     new JavaTestKit(system) {{
       getRef().tell("hello", null);
@@ -273,28 +272,24 @@ public class TestKitDocTest {
   @Test
   public void demonstrateProbe() {
     //#test-probe
-    // simple actor which just forwards messages
-    class Forwarder extends UntypedActor {
-      final ActorRef target;
-      public Forwarder(ActorRef target) {
-        this.target = target;
-      }
-      public void onReceive(Object msg) {
-        target.forward(msg, getContext());
-      }
-    }
-
     new JavaTestKit(system) {{
+      // simple actor which just forwards messages
+      class Forwarder extends UntypedActor {
+        final ActorRef target;
+        @SuppressWarnings("unused")
+        public Forwarder(ActorRef target) {
+          this.target = target;
+        }
+        public void onReceive(Object msg) {
+          target.forward(msg, getContext());
+        }
+      }
+      
       // create a test probe
       final JavaTestKit probe = new JavaTestKit(system);
 
       // create a forwarder, injecting the probe’s testActor
-      final Props props = new Props(new UntypedActorFactory() {
-        private static final long serialVersionUID = 8927158735963950216L;
-        public UntypedActor create() {
-          return new Forwarder(probe.getRef());
-        }
-      });
+      final Props props = Props.create(Forwarder.class, this, probe.getRef());
       final ActorRef forwarder = system.actorOf(props, "forwarder");
 
       // verify correct forwarding
@@ -327,7 +322,7 @@ public class TestKitDocTest {
 
   @Test
   public void demonstrateWatch() {
-    final ActorRef target = system.actorOf(new Props(MyActor.class));
+    final ActorRef target = system.actorOf(Props.create(MyActor.class));
     //#test-probe-watch
     new JavaTestKit(system) {{
       final JavaTestKit probe = new JavaTestKit(system);
@@ -411,7 +406,7 @@ public class TestKitDocTest {
   public void demonstrateCTD() {
     //#calling-thread-dispatcher
     system.actorOf(
-      new Props(MyActor.class)
+      Props.create(MyActor.class)
         .withDispatcher(CallingThreadDispatcher.Id()));
     //#calling-thread-dispatcher
   }

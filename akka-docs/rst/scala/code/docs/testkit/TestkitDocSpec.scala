@@ -208,9 +208,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
   "demonstrate probe watch" in {
     import akka.testkit.TestProbe
-    val target = system.actorOf(Props(new Actor {
-      def receive = Actor.emptyBehavior
-    }))
+    val target = system.actorOf(Props.empty)
     //#test-probe-watch
     val probe = TestProbe()
     probe watch target
@@ -237,7 +235,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     import akka.actor.Props
     //#test-probe-forward
     val probe = TestProbe()
-    val source = system.actorOf(Props(new Source(probe.ref)))
+    val source = system.actorOf(Props(classOf[Source], probe.ref))
     val dest = system.actorOf(Props[Destination])
     source ! "start"
     probe.expectMsg("work")

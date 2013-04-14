@@ -78,7 +78,7 @@ public class InitializationDocSpecJava {
     public void testIt() {
 
         new JavaTestKit(system) {{
-            ActorRef testactor = system.actorOf(new Props(MessageInitExample.class), "testactor");
+            ActorRef testactor = system.actorOf(Props.create(MessageInitExample.class), "testactor");
             String probe = "U OK?";
 
             testactor.tell(probe, getRef());

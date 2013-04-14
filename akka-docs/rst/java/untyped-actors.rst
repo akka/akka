@@ -32,7 +32,7 @@ Creating Actors
 Defining an Actor class
 -----------------------
 
-Actor in Java are implemented by extending the ``UntypedActor`` class and implementing the
+Actors in Java are implemented by extending the ``UntypedActor`` class and implementing the
 :meth:`onReceive` method. This method takes the message as a parameter.
 
 Here is an example:
@@ -42,83 +42,131 @@ Here is an example:
 Props
 -----
 
-``Props`` is a configuration class to specify options for the creation
-of actors. Here are some examples on how to create a ``Props`` instance.
+:class:`Props` is a configuration class to specify options for the creation
+of actors, think of it as an immutable and thus freely shareable recipe for
+creating an actor including associated deployment information (e.g. which
+dispatcher to use, see more below). Here are some examples of how to create a
+:class:`Props` instance.
 
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#import-props
 .. includecode:: code/docs/actor/UntypedActorDocTestBase.java#creating-props-config
 
+The last line shows how to pass constructor arguments to the :class:`Actor`
+being created. The presence of a matching constructor is verified during
+construction of the :class:`Props` object, resulting in an
+:class:`IllegalArgumentEception` if no or multiple matching constructors are
+found.
+
+Deprecated Variants
+^^^^^^^^^^^^^^^^^^^
+
+Up to Akka 2.1 there were also the following possibilities (which are retained
+for a migration period):
+
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#import-untypedActor
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#creating-props-deprecated
+
+The last two are deprecated because their functionality is available in full
+through :meth:`Props.create()`.
+
+The first two are deprecated because the resulting :class:`UntypedActorFactory`
+is typically a local class which means that it implicitly carries a reference
+to the enclosing class. This can easily make the resulting :class:`Props`
+non-serializable, e.g. when the enclosing class is an :class:`Actor`. Akka
+advocates location transparency, meaning that an application written with
+actors should just work when it is deployed over multiple network nodes, and
+non-serializable actor factories would break this principle. In case indirect
+actor creation is needed—for example when using dependency injection—there is
+the possibility to use an :class:`IndirectActorProducer` as described below.
+
+There were two use-cases for these methods: passing constructor arguments to
+the actor—which is solved by the newly introduced :meth:`Props.create()` method
+above—and creating actors “on the spot” as anonymous classes. The latter should
+be solved by making these actors named inner classes instead (if they are not
+``static`` then the enclosing instance’s ``this`` reference needs to be passed
+as the first argument).
+
+.. warning::
+
+  Declaring one actor within another is very dangerous and breaks actor
+  encapsulation unless the nested actor is a static inner class. Never pass an
+  actor’s ``this`` reference into :class:`Props`!
+
+Recommended Practices
+^^^^^^^^^^^^^^^^^^^^^
+
+It is a good idea to provide static factory methods on the
+:class:`UntypedActor` which help keeping the creation of suitable
+:class:`Props` as close to the actor definition as possible, thus containing
+the gap in type-safety introduced by reflective instantiation within a single
+class instead of spreading it out across a whole code-base. This helps
+especially when refactoring the actor’s constructor signature at a later point,
+where compiler checks will allow this modification to be done with greater
+confidence than without.
+
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#props-factory
 
 Creating Actors with Props
 --------------------------
 
-Actors are created by passing in a ``Props`` instance into the ``actorOf`` factory method.
+Actors are created by passing a :class:`Props` instance into the
+:meth:`actorOf` factory method which is available on :class:`ActorSystem` and
+:class:`ActorContext`.
 
-.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#creating-props
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#import-actorRef
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#system-actorOf
 
+Using the :class:`ActorSystem` will create top-level actors, supervised by the
+actor system’s provided guardian actor, while using an actor’s context will
+create a child actor.
 
-Creating Actors with default constructor
-----------------------------------------
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#context-actorOf
+   :exclude: plus-some-behavior
 
-.. includecode:: code/docs/actor/UntypedActorDocTestBase.java
-   :include: imports
+It is recommended to create a hierarchy of children, grand-children and so on
+such that it fits the logical failure-handling structure of the application,
+see :ref:`actor-systems`.
 
-.. includecode:: code/docs/actor/UntypedActorDocTestBase.java
-   :include: system-actorOf
+The call to :meth:`actorOf` returns an instance of :class:`ActorRef`. This is a
+handle to the actor instance and the only way to interact with it. The
+:class:`ActorRef` is immutable and has a one to one relationship with the Actor
+it represents. The :class:`ActorRef` is also serializable and network-aware.
+This means that you can serialize it, send it over the wire and use it on a
+remote host and it will still be representing the same Actor on the original
+node, across the network.
 
-The call to :meth:`actorOf` returns an instance of ``ActorRef``. This is a handle to
-the ``UntypedActor`` instance which you can use to interact with the ``UntypedActor``. The
-``ActorRef`` is immutable and has a one to one relationship with the Actor it
-represents. The ``ActorRef`` is also serializable and network-aware. This means
-that you can serialize it, send it over the wire and use it on a remote host and
-it will still be representing the same Actor on the original node, across the
-network.
-
-In the above example the actor was created from the system. It is also possible
-to create actors from other actors with the actor ``context``. The difference is
-how the supervisor hierarchy is arranged. When using the context the current actor
-will be supervisor of the created child actor. When using the system it will be
-a top level actor, that is supervised by the system (internal guardian actor).
-
-.. includecode:: code/docs/actor/FirstUntypedActor.java#context-actorOf
-
-The name parameter is optional, but you should preferably name your actors, since
-that is used in log messages and for identifying actors. The name must not be empty
-or start with ``$``, but it may contain URL encoded characters (eg. ``%20`` for a blank space).
-If the given name is already in use by another child to the
-same parent actor an `InvalidActorNameException` is thrown.
+The name parameter is optional, but you should preferably name your actors,
+since that is used in log messages and for identifying actors. The name must
+not be empty or start with ``$``, but it may contain URL encoded characters
+(eg. ``%20`` for a blank space).  If the given name is already in use by
+another child to the same parent an `InvalidActorNameException` is thrown.
 
 Actors are automatically started asynchronously when created.
-When you create the ``UntypedActor`` then it will automatically call the ``preStart``
-callback method on the ``UntypedActor`` class. This is an excellent place to
-add initialization code for the actor.
 
-.. code-block:: java
+.. _actor-create-factory:
 
-  @Override
-  public void preStart() {
-    ... // initialization code
-  }
+Creating Actors with Factory Methods
+------------------------------------
 
-Creating Actors with non-default constructor
---------------------------------------------
+If your UntypedActor has a constructor that takes parameters then those need to
+be part of the :class:`Props` as well, as described `above <Props>`_. But there
+are cases when a factory method must be used, for example when the actual
+constructor arguments are determined by a dependency injection framework.
 
-If your UntypedActor has a constructor that takes parameters then you can't create it using
-'actorOf(new Props(clazz))'. Then you can instead pass in 'new Props(new UntypedActorFactory() {..})'
-in which you can create the Actor in any way you like.
-
-Here is an example:
-
-.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#creating-constructor
-
-This way of creating the Actor is also great for integrating with Dependency Injection
-(DI) frameworks like Guice or Spring.
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#import-indirect
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java
+   :include: creating-indirectly
+   :exclude: obtain-fresh-Actor-instance-from-DI-framework
 
 .. warning::
 
-  You might be tempted at times to offer an ``UntypedActor`` factory which
-  always returns the same instance, e.g. by using a static field. This is not
-  supported, as it goes against the meaning of an actor restart, which is
+  You might be tempted at times to offer an :class:`IndirectActorProducer`
+  which always returns the same instance, e.g. by using a static field. This is
+  not supported, as it goes against the meaning of an actor restart, which is
   described here: :ref:`supervision-restart`.
+
+  When using a dependency injection framework, actor beans *MUST NOT* have
+  singleton scope.
 
 UntypedActor API
 ================
@@ -180,6 +228,7 @@ termination (see `Stopping Actors`_). This service is provided by the
 Registering a monitor is easy (see fourth line, the rest is for demonstrating
 the whole functionality):
 
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#import-terminated
 .. includecode:: code/docs/actor/UntypedActorDocTestBase.java#watch
 
 It should be noted that the :class:`Terminated` message is generated
@@ -205,14 +254,15 @@ Start Hook
 
 Right after starting the actor, its :meth:`preStart` method is invoked.
 
-::
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#preStart
 
-  @Override
-  public void preStart() {
-    // registering with other actors
-    someService.tell(Register(getSelf());
-  }
-
+This method is called when the actor is first created. During restarts it is
+called by the default implementation of :meth:`postRestart`, which means that
+by overriding that method you can choose whether the initialization code in
+this method is called only exactly once for this actor or for every restart.
+Initialization code which is part of the actor’s constructor will always be
+called when an instance of the actor class is created, which happens at every
+restart.
 
 Restart Hooks
 -------------
@@ -279,12 +329,9 @@ are used by the system to look up actors, e.g. when a remote message is
 received and the recipient is searched, but they are also useful more directly:
 actors may look up other actors by specifying absolute or relative
 paths—logical or physical—and receive back an :class:`ActorSelection` with the
-result::
+result:
 
-  // will look up this absolute path
-  getContext().actorSelection("/user/serviceA/actor");
-  // will look up sibling beneath same supervisor
-  getContext().actorSelection("../joe");
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#selection-local
 
 The supplied path is parsed as a :class:`java.net.URI`, which basically means
 that it is split on ``/`` into path elements. If the path starts with ``/``, it
@@ -296,12 +343,9 @@ It should be noted that the ``..`` in actor paths here always means the logical
 structure, i.e. the supervisor.
 
 The path elements of an actor selection may contain wildcard patterns allowing for
-broadcasting of messages to that section::
+broadcasting of messages to that section:
 
-  // will look all children to serviceB with names starting with worker
-  getContext().actorSelection("/user/serviceB/worker*");
-  // will look up all siblings beneath same supervisor
-  getContext().actorSelection("../*");
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#selection-wildcard
 
 Messages can be sent via the :class:`ActorSelection` and the path of the
 :class:`ActorSelection` is looked up when delivering each message. If the selection
@@ -314,11 +358,11 @@ and automatically reply to with a ``ActorIdentity`` message containing the
 :class:`ActorRef`.
 
 .. includecode:: code/docs/actor/UntypedActorDocTestBase.java
-   :include: identify-imports,identify
+   :include: import-identify,identify
 
-Remote actor addresses may also be looked up, if :ref:`remoting <remoting-java>` is enabled::
+Remote actor addresses may also be looked up, if :ref:`remoting <remoting-java>` is enabled:
 
-  getContext().actorSelection("akka.tcp://app@otherhost:1234/user/serviceB");
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#selection-remote
 
 An example demonstrating remote actor look-up is given in :ref:`remote-lookup-sample-java`.
 
@@ -368,28 +412,24 @@ In all these methods you have the option of passing along your own ``ActorRef``.
 Make it a practice of doing so because it will allow the receiver actors to be able to respond
 to your message, since the sender reference is sent along with the message.
 
+.. _actors-tell-sender-java:
+
 Tell: Fire-forget
 -----------------
 
 This is the preferred way of sending messages. No blocking waiting for a
 message. This gives the best concurrency and scalability characteristics.
 
-.. code-block:: java
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#tell
 
-  actor.tell("Hello");
-
-.. _actors-tell-sender-java:
-
-Or with the sender reference passed along with the message and available to the receiving Actor
-in its ``getSender: ActorRef`` member field. The target actor can use this
-to reply to the original sender, by using ``getSender().tell(replyMsg)``.
-
-.. code-block:: java
-
-  actor.tell("Hello", getSelf());
-
-If invoked without the sender parameter the sender will be
-:obj:`deadLetters` actor reference in the target actor.
+The sender reference is passed along with the message and available within the
+receiving actor via its :meth:`getSender()` method while processing this
+message. Inside of an actor it is usually :meth:`getSelf` who shall be the
+sender, but there can be cases where replies shall be routed to some other
+actor—e.g. the parent—in which the second argument to :meth:`tell` would be a
+different one. Outside of an actor and if no reply is needed the second
+argument can be ``null``; if a reply is needed outside of an actor you can use
+the ask-pattern described next..
 
 Ask: Send-And-Receive-Future
 ----------------------------
@@ -397,8 +437,7 @@ Ask: Send-And-Receive-Future
 The ``ask`` pattern involves actors as well as futures, hence it is offered as
 a use pattern rather than a method on :class:`ActorRef`:
 
-.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#import-askPipe
-
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#import-ask
 .. includecode:: code/docs/actor/UntypedActorDocTestBase.java#ask-pipe
 
 This example demonstrates ``ask`` together with the ``pipe`` pattern on
@@ -453,9 +492,7 @@ through a 'mediator'. This can be useful when writing actors that work as
 routers, load-balancers, replicators etc.
 You need to pass along your context variable as well.
 
-.. code-block:: java
-
-  myActor.forward(message, getContext());
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#forward
 
 Receive messages
 ================
@@ -483,12 +520,8 @@ for replying later, or passing on to other actors. If there is no sender (a
 message was sent without an actor or future context) then the sender
 defaults to a 'dead-letter' actor ref.
 
-.. code-block:: java
-
-  public void onReceive(Object request) {
-    String result = process(request);
-    getSender().tell(result);       // will have dead-letter actor as default
-  }
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#reply
+   :exclude: calculate-result
 
 Receive timeout
 ===============
@@ -505,7 +538,7 @@ timeout there must have been an idle period beforehand as configured via this me
 Once set, the receive timeout stays in effect (i.e. continues firing repeatedly after inactivity
 periods). Pass in `Duration.Undefined` to switch off this feature.
 
-.. includecode:: code/docs/actor/MyReceivedTimeoutUntypedActor.java#receive-timeout
+.. includecode:: code/docs/actor/MyReceiveTimeoutUntypedActor.java#receive-timeout
 
 .. _stopping-actors-java:
 
@@ -542,12 +575,8 @@ whole system.
 The :meth:`postStop()` hook is invoked after an actor is fully stopped. This
 enables cleaning up of resources:
 
-.. code-block:: java
-
-  @Override
-  public void postStop() {
-    // close some file or database connection
-  }
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#postStop
+   :exclude: clean-up-resources-here
 
 .. note::
 
@@ -568,9 +597,6 @@ ordinary messages and will be handled after messages that were already queued
 in the mailbox.
 
 Use it like this:
-
-.. includecode:: code/docs/actor/UntypedActorDocTestBase.java
-   :include: import-actors
 
 .. includecode:: code/docs/actor/UntypedActorDocTestBase.java
    :include: poison-pill
@@ -658,6 +684,7 @@ order as they have been received originally.
 
 Here is an example of the ``UntypedActorWithStash`` class in action:
 
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#import-stash
 .. includecode:: code/docs/actor/UntypedActorDocTestBase.java#stash
 
 Invoking ``stash()`` adds the current message (the message that the
@@ -700,9 +727,6 @@ which may mean resuming the actor, restarting it or terminating it completely.
 See :ref:`supervision-directives` for more information.
 
 Use ``Kill`` like this:
-
-.. includecode:: code/docs/actor/UntypedActorDocTestBase.java
-   :include: import-actors
 
 .. includecode:: code/docs/actor/UntypedActorDocTestBase.java
    :include: kill

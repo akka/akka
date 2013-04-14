@@ -39,11 +39,20 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
 
 }
 
+private[akka] object RoutedActorCell {
+  class RouterCreator(routerConfig: RouterConfig) extends IndirectActorProducer {
+    override def actorClass = classOf[Router]
+    override def produce() = routerConfig.createActor()
+  }
+}
+
 private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActorRef, _props: Props, _supervisor: InternalActorRef)
   extends ActorCell(
     _system,
     _ref,
-    _props.copy(creator = () ⇒ _props.routerConfig.createActor(), dispatcher = _props.routerConfig.routerDispatcher),
+    _props.copy(
+      deploy = _props.deploy.copy(dispatcher = _props.routerConfig.routerDispatcher),
+      classOf[RoutedActorCell.RouterCreator], Vector(_props.routerConfig)),
     _supervisor) {
 
   private[akka] val routerConfig = _props.routerConfig
@@ -59,7 +68,7 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
   def routeeProvider = _routeeProvider
 
   val route = {
-    val routeeProps = _props.copy(routerConfig = NoRouter)
+    val routeeProps = _props.withRouter(NoRouter)
     _routeeProvider = routerConfig.createRouteeProvider(this, routeeProps)
     val r = routerConfig.createRoute(routeeProvider)
     // initial resize, before message send

@@ -66,6 +66,7 @@ public class ConsistentHashingRouterDocTestBase {
   static
   //#cache-actor
   public final class Evict implements Serializable {
+    private static final long serialVersionUID = 1L;
     public final String key;
     public Evict(String key) {
       this.key = key;
@@ -76,6 +77,7 @@ public class ConsistentHashingRouterDocTestBase {
   static
   //#cache-actor
   public final class Get implements Serializable, ConsistentHashable {
+    private static final long serialVersionUID = 1L;
     public final String key;
     public Get(String key) {
       this.key = key;
@@ -89,6 +91,7 @@ public class ConsistentHashingRouterDocTestBase {
   static
   //#cache-actor
   public final class Entry implements Serializable {
+    private static final long serialVersionUID = 1L;
     public final String key;
     public final String value;
     public Entry(String key, String value) {
@@ -122,7 +125,7 @@ public class ConsistentHashingRouterDocTestBase {
         }
       };
 
-      ActorRef cache = system.actorOf(new Props(Cache.class).withRouter(
+      ActorRef cache = system.actorOf(Props.create(Cache.class).withRouter(
         new ConsistentHashingRouter(10).withHashMapper(hashMapper)), 
         "cache");
 

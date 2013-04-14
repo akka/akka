@@ -36,7 +36,7 @@ public class DurableMailboxDocTestBase {
   @Test
   public void configDefinedDispatcher() {
     //#dispatcher-config-use
-    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class).
+    ActorRef myActor = system.actorOf(Props.create(MyUntypedActor.class).
         withDispatcher("my-dispatcher"), "myactor");
     //#dispatcher-config-use
     myActor.tell("test", null);

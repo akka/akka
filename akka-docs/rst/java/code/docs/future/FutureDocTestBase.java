@@ -110,7 +110,7 @@ public class FutureDocTestBase {
 
   @Test
   public void useBlockingFromActor() throws Exception {
-    ActorRef actor = system.actorOf(new Props(MyActor.class));
+    ActorRef actor = system.actorOf(Props.create(MyActor.class));
     String msg = "hello";
     //#ask-blocking
     Timeout timeout = new Timeout(Duration.create(5, "seconds"));

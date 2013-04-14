@@ -43,7 +43,7 @@ public class UntypedActorSwapper {
 
   public static void main(String... args) {
     ActorSystem system = ActorSystem.create("MySystem");
-    ActorRef swap = system.actorOf(new Props(Swapper.class));
+    ActorRef swap = system.actorOf(Props.create(Swapper.class));
     swap.tell(SWAP, null); // logs Hi
     swap.tell(SWAP, null); // logs Ho
     swap.tell(SWAP, null); // logs Hi

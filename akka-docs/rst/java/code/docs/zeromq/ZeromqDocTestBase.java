@@ -68,6 +68,7 @@ public class ZeromqDocTestBase {
     system.shutdown();
   }
 
+  @SuppressWarnings("unused")
   @Test
   public void demonstrateCreateSocket() {
     Assume.assumeTrue(checkZeroMQInstallation());
@@ -78,7 +79,7 @@ public class ZeromqDocTestBase {
     //#pub-socket
 
     //#sub-socket
-    ActorRef listener = system.actorOf(new Props(ListenerActor.class));
+    ActorRef listener = system.actorOf(Props.create(ListenerActor.class));
     ActorRef subSocket = ZeroMQExtension.get(system).newSubSocket(
       new Connect("tcp://127.0.0.1:1233"),
       new Listener(listener), Subscribe.all());
@@ -115,17 +116,17 @@ public class ZeromqDocTestBase {
 
     //#health2
 
-    system.actorOf(new Props(HealthProbe.class), "health");
+    system.actorOf(Props.create(HealthProbe.class), "health");
     //#health2
 
     //#logger2
 
-    system.actorOf(new Props(Logger.class), "logger");
+    system.actorOf(Props.create(Logger.class), "logger");
     //#logger2
 
     //#alerter2
 
-    system.actorOf(new Props(HeapAlerter.class), "alerter");
+    system.actorOf(Props.create(HeapAlerter.class), "alerter");
     //#alerter2
 
     // Let it run for a while to see some output.
@@ -159,6 +160,7 @@ public class ZeromqDocTestBase {
   static
   //#health
   public class Heap implements Serializable {
+    private static final long serialVersionUID = 1L;
     public final long timestamp;
     public final long used;
     public final long max;
@@ -174,6 +176,7 @@ public class ZeromqDocTestBase {
   static
   //#health
   public class Load implements Serializable {
+    private static final long serialVersionUID = 1L;
     public final long timestamp;
     public final double loadAverage;
 

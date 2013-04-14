@@ -10,33 +10,31 @@ import java.util.concurrent.locks.ReentrantLock
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import scala.concurrent.duration._
+import scala.concurrent.Await
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class CoronerSpec extends WordSpec with MustMatchers {
 
   private def captureOutput[A](f: PrintStream ⇒ A): (A, String) = {
     val bytes = new ByteArrayOutputStream()
-    val out = new PrintStream(bytes)
+    val out = new PrintStream(bytes, true, "UTF-8")
     val result = f(out)
-    (result, new String(bytes.toByteArray()))
+    (result, new String(bytes.toByteArray(), "UTF-8"))
   }
 
   "A Coroner" must {
 
-    "generate a report if enough time passes" in {
-      val (_, report) = captureOutput(out ⇒ {
-        val handle = Coroner.watch(500.milliseconds.fromNow, "XXXX", out)
-        Thread.sleep(1000.milliseconds.toMillis)
-      })
+    "generate a report if enough time passes" taggedAs TimingTest in {
+      val (_, report) = captureOutput(out ⇒ Await.ready(Coroner.watch(100.milliseconds.fromNow, "XXXX", out), 1.second))
       report must include("Coroner's Report")
       report must include("XXXX")
     }
 
-    "not generate a report if cancelled early" in {
+    "not generate a report if cancelled early" taggedAs TimingTest in {
       val (_, report) = captureOutput(out ⇒ {
-        val coroner = Coroner.watch(500.milliseconds.fromNow, "XXXX", out)
+        val coroner = Coroner.watch(100.milliseconds.fromNow, "XXXX", out)
         coroner.cancel()
-        Thread.sleep(1000.milliseconds.toMillis)
+        Await.ready(coroner, 1.second)
       })
       report must be("")
     }

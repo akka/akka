@@ -13,12 +13,10 @@ import org.junit.Test;
 
 import scala.concurrent.duration.Duration;
 
-import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.PoisonPill;
 import akka.actor.Props;
-import akka.actor.UntypedActorFactory;
 import akka.io.AbstractPipelineContext;
 import akka.io.PipelineFactory;
 import akka.io.PipelineInjector;
@@ -117,25 +115,23 @@ public class PipelineTest {
   public void testTick() {
     new JavaTestKit(system) {
       {
-        final ActorRef proc = system.actorOf(new Props(
-            new UntypedActorFactory() {
-              private static final long serialVersionUID = 1L;
+        class P extends Processor {
+          public P(ActorRef cmds, ActorRef evts) throws Exception {
+            super(cmds, evts);
+          }
 
-              @Override
-              public Actor create() throws Exception {
-                return new Processor(getRef(), getRef()) {
-
-                  @Override
-                  public void onReceive(Object obj) throws Exception {
-                    if (obj.equals("fail!")) {
-                      throw new RuntimeException("FAIL!");
-                    }
-                    super.onReceive(obj);
-                  }
-                  
-                };
-              }
-            }), "processor");
+          @Override
+          public void onReceive(Object obj) throws Exception {
+            if (obj.equals("fail!")) {
+              throw new RuntimeException("FAIL!");
+            }
+            super.onReceive(obj);
+          }
+          
+        }
+        
+        final ActorRef proc = system.actorOf(Props.create(
+            P.class, this, getRef(), getRef()), "processor");
         expectMsgClass(TickGenerator.Tick.class);
         proc.tell(msg, null);
         final ByteString encoded = expectMsgClass(ByteString.class);

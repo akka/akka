@@ -121,13 +121,7 @@ public class SchedulerPatternTest {
   public void scheduleInConstructor() {
     new TestSchedule(system) {{
       final JavaTestKit probe = new JavaTestKit(system);
-
-      final Props props = new Props(new UntypedActorFactory() {
-        public UntypedActor create() {
-          return new ScheduleInConstructor(probe.getRef());
-        }
-      });
-
+      final Props props = Props.create(ScheduleInConstructor.class, probe.getRef());
       testSchedule(probe, props, duration("3000 millis"), duration("2000 millis"));
     }};
   }
@@ -135,16 +129,9 @@ public class SchedulerPatternTest {
   @Test
   @Ignore // no way to tag this as timing sensitive
   public void scheduleInReceive() {
-
     new TestSchedule(system) {{
       final JavaTestKit probe = new JavaTestKit(system);
-
-      final Props props = new Props(new UntypedActorFactory() {
-        public UntypedActor create() {
-          return new ScheduleInReceive(probe.getRef());
-        }
-      });
-
+      final Props props = Props.create(ScheduleInReceive.class, probe.getRef());
       testSchedule(probe, props, duration("3000 millis"), duration("2500 millis"));
     }};
   }

@@ -30,7 +30,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static akka.japi.Util.immutableSeq;
 import akka.japi.Function;
 import scala.Option;
-import scala.collection.JavaConverters;
 import scala.collection.immutable.Seq;
 
 import org.junit.Test;
@@ -171,10 +170,10 @@ public class FaultHandlingTestBase {
     system.eventStream().publish(new TestEvent.Mute(ignoreExceptions));
 
     //#create
-    Props superprops = new Props(Supervisor.class);
+    Props superprops = Props.create(Supervisor.class);
     ActorRef supervisor = system.actorOf(superprops, "supervisor");
     ActorRef child = (ActorRef) Await.result(ask(supervisor,
-      new Props(Child.class), 5000), timeout);
+      Props.create(Child.class), 5000), timeout);
     //#create
 
     //#resume
@@ -198,7 +197,7 @@ public class FaultHandlingTestBase {
 
     //#escalate-kill
     child = (ActorRef) Await.result(ask(supervisor,
-      new Props(Child.class), 5000), timeout);
+      Props.create(Child.class), 5000), timeout);
     probe.watch(child);
     assert Await.result(ask(child, "get", 5000), timeout).equals(0);
     child.tell(new Exception(), null);
@@ -206,10 +205,10 @@ public class FaultHandlingTestBase {
     //#escalate-kill
 
     //#escalate-restart
-    superprops = new Props(Supervisor2.class);
+    superprops = Props.create(Supervisor2.class);
     supervisor = system.actorOf(superprops);
     child = (ActorRef) Await.result(ask(supervisor,
-      new Props(Child.class), 5000), timeout);
+      Props.create(Child.class), 5000), timeout);
     child.tell(23, null);
     assert Await.result(ask(child, "get", 5000), timeout).equals(23);
     child.tell(new Exception(), null);
@@ -219,6 +218,7 @@ public class FaultHandlingTestBase {
   }
 
   //#testkit
+  @SuppressWarnings("unchecked")
   public <A> Seq<A> seq(A... args) {
     return immutableSeq(args);
   }

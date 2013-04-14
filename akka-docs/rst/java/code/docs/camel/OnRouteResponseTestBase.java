@@ -7,14 +7,10 @@ public class OnRouteResponseTestBase {
   public void onRouteResponse(){
     //#RouteResponse
     ActorSystem system = ActorSystem.create("some-system");
-    Props receiverProps = new Props(ResponseReceiver.class);
+    Props receiverProps = Props.create(ResponseReceiver.class);
     final ActorRef receiver = system.actorOf(receiverProps,"responseReceiver");
-    UntypedActorFactory factory = new UntypedActorFactory() {
-      public Actor create() {
-        return new Forwarder("http://localhost:8080/news/akka", receiver);
-      }
-    };
-    ActorRef forwardResponse = system.actorOf(new Props(factory));
+    ActorRef forwardResponse = system.actorOf(Props.create(
+        Forwarder.class, "http://localhost:8080/news/akka", receiver));
     // the Forwarder sends out a request to the web page and forwards the response to
     // the ResponseReceiver
     forwardResponse.tell("some request", null);

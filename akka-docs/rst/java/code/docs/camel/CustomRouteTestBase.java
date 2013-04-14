@@ -11,7 +11,7 @@ public class CustomRouteTestBase {
     //#CustomRoute
     ActorSystem system = ActorSystem.create("some-system");
     Camel camel = CamelExtension.get(system);
-    ActorRef responder = system.actorOf(new Props(Responder.class), "TestResponder");
+    ActorRef responder = system.actorOf(Props.create(Responder.class), "TestResponder");
     camel.context().addRoutes(new CustomRouteBuilder(responder));
     //#CustomRoute
     system.stop(responder);

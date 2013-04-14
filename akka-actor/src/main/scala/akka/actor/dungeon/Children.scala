@@ -168,9 +168,11 @@ private[akka] trait Children { this: ActorCell ⇒
   }
 
   private def makeChild(cell: ActorCell, props: Props, name: String, async: Boolean, systemService: Boolean): ActorRef = {
-    if (cell.system.settings.SerializeAllCreators && !props.creator.isInstanceOf[NoSerializationVerificationNeeded]) {
+    if (cell.system.settings.SerializeAllCreators) {
       val ser = SerializationExtension(cell.system)
-      ser.deserialize(ser.serialize(props.creator).get, props.creator.getClass).get
+      props.args forall (arg ⇒
+        arg.isInstanceOf[NoSerializationVerificationNeeded] ||
+          ser.deserialize(ser.serialize(arg.asInstanceOf[AnyRef]).get, arg.getClass).get != null)
     }
     /*
      * in case we are currently terminating, fail external attachChild requests

@@ -31,18 +31,12 @@ import scala.util.control.NonFatal
  * context.actorOf(props)
  *
  * // Scala
- * context.actorOf(Props[MyActor]("name")
- * context.actorOf(Props[MyActor]
- * context.actorOf(Props(new MyActor(...))
+ * context.actorOf(Props[MyActor])
+ * context.actorOf(Props(classOf[MyActor], arg1, arg2), "name")
  *
  * // Java
- * context.actorOf(classOf[MyActor]);
- * context.actorOf(Props(new Creator<MyActor>() {
- *   public MyActor create() { ... }
- * });
- * context.actorOf(Props(new Creator<MyActor>() {
- *   public MyActor create() { ... }
- * }, "name");
+ * getContext().actorOf(Props.create(MyActor.class));
+ * getContext().actorOf(Props.create(MyActor.class, arg1, arg2), "name");
  * }}}
  *
  * Where no name is given explicitly, one will be automatically generated.
@@ -533,7 +527,7 @@ private[akka] class ActorCell(
     contextStack.set(this :: contextStack.get)
     try {
       behaviorStack = emptyBehaviorStack
-      val instance = props.creator.apply()
+      val instance = props.newActor()
 
       if (instance eq null)
         throw ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
