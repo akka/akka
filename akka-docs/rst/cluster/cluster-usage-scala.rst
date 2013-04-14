@@ -262,6 +262,11 @@ Distributed Publish Subscribe Pattern
 
 See :ref:`distributed-pub-sub` in the contrib module.
 
+Cluster Client
+^^^^^^^^^^^^^^
+
+See :ref:`cluster-client` in the contrib module.
+
 Failure Detector
 ^^^^^^^^^^^^^^^^
 
