@@ -529,11 +529,11 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
   def getLongPart(n: Int)(implicit byteOrder: ByteOrder): Long = {
     if (byteOrder == ByteOrder.BIG_ENDIAN) {
       var x = 0L
-      (1 to n) foreach (_ ⇒ x = (x << 8) | next())
+      (1 to n) foreach (_ ⇒ x = (x << 8) | (next() & 0xff))
       x
     } else if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
       var x = 0L
-      (0 until n) foreach (i ⇒ x |= next() << 8 * i)
+      (0 until n) foreach (i ⇒ x |= (next() & 0xff) << 8 * i)
       x
     } else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
   }
