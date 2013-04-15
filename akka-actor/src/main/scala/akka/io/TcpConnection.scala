@@ -344,7 +344,8 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
     new Runnable {
       def run() {
         import pendingWrite._
-        val writtenBytes = fileChannel.transferTo(currentPosition, remainingBytes, channel)
+        val toWrite = math.min(remainingBytes, tcp.Settings.TransferToLimit)
+        val writtenBytes = fileChannel.transferTo(currentPosition, toWrite, channel)
 
         if (writtenBytes < remainingBytes) self ! SendBufferFull(pendingWrite.updatedWrite(alreadyWritten + writtenBytes))
         else { // finished

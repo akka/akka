@@ -189,6 +189,10 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
     }
     val ManagementDispatcher = getString("management-dispatcher")
     val FileIODispatcher = getString("file-io-dispatcher")
+    val TransferToLimit = getString("file-io-transferTo-limit") match {
+      case "unlimited" ⇒ Int.MaxValue
+      case _           ⇒ getIntBytes("file-io-transferTo-limit")
+    }
 
     require(NrOfSelectors > 0, "nr-of-selectors must be > 0")
     require(MaxChannels == -1 || MaxChannels > 0, "max-channels must be > 0 or 'unlimited'")
