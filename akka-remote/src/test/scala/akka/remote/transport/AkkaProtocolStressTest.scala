@@ -19,7 +19,7 @@ object AkkaProtocolStressTest {
       remote.retry-gate-closed-for = 0 s
       remote.log-remote-lifecycle-events = on
 
-      remote.failure-detector {
+      remote.transport-failure-detector {
         threshold = 1.0
         max-sample-size = 2
         min-std-deviation = 1 ms

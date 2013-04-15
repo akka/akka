@@ -35,7 +35,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
     """
       akka.remote {
 
-        failure-detector {
+        transport-failure-detector {
           implementation-class = "akka.remote.PhiAccrualFailureDetector"
           threshold = 7.0
           max-sample-size = 100

@@ -22,12 +22,15 @@ import java.util.concurrent.TimeoutException
 import akka.actor.ActorSystemImpl
 import akka.actor.ActorIdentity
 import akka.actor.Identify
+import akka.actor.ActorRef
+import akka.remote.RemoteWatcher
 
 object ClusterDeathWatchMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
   val fourth = role("fourth")
+  val fifth = role("fifth")
 
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 
@@ -42,10 +45,11 @@ class ClusterDeathWatchMultiJvmNode1 extends ClusterDeathWatchSpec
 class ClusterDeathWatchMultiJvmNode2 extends ClusterDeathWatchSpec
 class ClusterDeathWatchMultiJvmNode3 extends ClusterDeathWatchSpec
 class ClusterDeathWatchMultiJvmNode4 extends ClusterDeathWatchSpec
+class ClusterDeathWatchMultiJvmNode5 extends ClusterDeathWatchSpec
 
 abstract class ClusterDeathWatchSpec
   extends MultiNodeSpec(ClusterDeathWatchMultiJvmSpec)
-  with MultiNodeClusterSpec {
+  with MultiNodeClusterSpec with ImplicitSender {
 
   import ClusterDeathWatchMultiJvmSpec._
 
@@ -57,9 +61,14 @@ abstract class ClusterDeathWatchSpec
     }
   }
 
+  lazy val remoteWatcher: ActorRef = {
+    system.actorSelection("/system/remote-watcher") ! Identify(None)
+    expectMsgType[ActorIdentity].ref.get
+  }
+
   "An actor watching a remote actor in the cluster" must {
     "receive Terminated when watched node becomes Down" taggedAs LongRunningTest in within(20 seconds) {
-      awaitClusterUp(roles: _*)
+      awaitClusterUp(first, second, third, fourth)
       enterBarrier("cluster-up")
 
       runOn(first) {
@@ -116,6 +125,13 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("third-terminated")
       }
 
+      runOn(fifth) {
+        enterBarrier("subjected-started")
+        enterBarrier("watch-established")
+        enterBarrier("second-terminated")
+        enterBarrier("third-terminated")
+      }
+
       enterBarrier("after-1")
 
     }
@@ -134,6 +150,58 @@ abstract class ClusterDeathWatchSpec
       }
 
       enterBarrier("after-2")
+    }
+
+    "be able to watch actor before node joins cluster, ClusterRemoteWatcher takes over from RemoteWatcher" taggedAs LongRunningTest in within(20 seconds) {
+      runOn(fifth) {
+        system.actorOf(Props(new Actor { def receive = Actor.emptyBehavior }), name = "subject5")
+      }
+      enterBarrier("subjected-started")
+
+      runOn(first) {
+        system.actorSelection(RootActorPath(fifth) / "user" / "subject5") ! Identify("subject5")
+        val subject5 = expectMsgType[ActorIdentity].ref.get
+        watch(subject5)
+
+        // fifth is not cluster member, so the watch is handled by the RemoteWatcher
+        awaitAssert {
+          remoteWatcher ! RemoteWatcher.Stats
+          expectMsgType[RemoteWatcher.Stats].watchingRefs must contain((subject5, testActor))
+        }
+      }
+      enterBarrier("remote-watch")
+
+      // second and third are already removed
+      awaitClusterUp(first, fourth, fifth)
+
+      runOn(first) {
+        // fifth is member, so the watch is handled by the ClusterRemoteWatcher,
+        // and cleaned up from RemoteWatcher
+        awaitAssert {
+          remoteWatcher ! RemoteWatcher.Stats
+          expectMsgType[RemoteWatcher.Stats].watchingRefs.map {
+            case (watchee, watcher) ⇒ watchee.path.name
+          } must not contain ("subject5")
+        }
+      }
+
+      enterBarrier("cluster-watch")
+
+      runOn(fourth) {
+        markNodeAsUnavailable(fifth)
+        awaitAssert(clusterView.members.map(_.address) must not contain (address(fifth)))
+        awaitAssert(clusterView.unreachableMembers.map(_.address) must contain(address(fifth)))
+        cluster.down(fifth)
+        // removed
+        awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (address(fifth)))
+      }
+
+      enterBarrier("fifth-terminated")
+      runOn(first) {
+        expectMsgType[Terminated].actor.path.name must be("subject5")
+      }
+
+      enterBarrier("after-3")
     }
 
     "be able to shutdown system when using remote deployed actor on node that crash" taggedAs LongRunningTest in within(20 seconds) {
@@ -164,7 +232,7 @@ abstract class ClusterDeathWatchSpec
         }
       }
 
-      runOn(first, second, third) {
+      runOn(first, second, third, fifth) {
         enterBarrier("hello-deployed")
         enterBarrier("first-unavailable")
         runOn(first) {
@@ -172,7 +240,7 @@ abstract class ClusterDeathWatchSpec
           testConductor.removeNode(fourth)
         }
 
-        enterBarrier("after-3")
+        enterBarrier("after-4")
       }
 
     }

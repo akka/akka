@@ -8,6 +8,7 @@ import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.util.Timeout
 import scala.collection.immutable
+import akka.util.Helpers.Requiring
 import akka.japi.Util._
 
 class RemoteSettings(val config: Config) {
@@ -43,6 +44,21 @@ class RemoteSettings(val config: Config) {
 
   val CommandAckTimeout: Timeout =
     Timeout(Duration(getMilliseconds("akka.remote.command-ack-timeout"), MILLISECONDS))
+
+  val WatchFailureDetectorConfig: Config = getConfig("akka.remote.watch-failure-detector")
+  val WatchFailureDetectorImplementationClass: String = WatchFailureDetectorConfig.getString("implementation-class")
+  val WatchHeartBeatInterval: FiniteDuration = {
+    Duration(WatchFailureDetectorConfig.getMilliseconds("heartbeat-interval"), MILLISECONDS)
+  } requiring (_ > Duration.Zero, "watch-failure-detector.heartbeat-interval must be > 0")
+  val WatchUnreachableReaperInterval: FiniteDuration = {
+    Duration(WatchFailureDetectorConfig.getMilliseconds("unreachable-nodes-reaper-interval"), MILLISECONDS)
+  } requiring (_ > Duration.Zero, "watch-failure-detector.unreachable-nodes-reaper-interval must be > 0")
+  val WatchNumberOfEndHeartbeatRequests: Int = {
+    WatchFailureDetectorConfig.getInt("nr-of-end-heartbeats")
+  } requiring (_ > 0, "watch-failure-detector.nr-of-end-heartbeats must be > 0")
+  val WatchHeartbeatExpectedResponseAfter: FiniteDuration = {
+    Duration(WatchFailureDetectorConfig.getMilliseconds("expected-response-after"), MILLISECONDS)
+  } requiring (_ > Duration.Zero, "watch-failure-detector.expected-response-after > 0")
 
   val Transports: immutable.Seq[(String, immutable.Seq[String], Config)] = transportNames.map { name ⇒
     val transportConfig = transportConfigFor(name)

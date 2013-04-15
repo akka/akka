@@ -89,9 +89,6 @@ There are a few gotchas to be aware of when creating routers:
   :class:`Props`, as it does not need to create routees. However, if you use a :ref:`resizable
   router <resizable-routers-java>` then the routee :class:`Props` will be used whenever the
   resizer creates new routees.
-* The same issues that apply to remotely-deployed actors also apply to remotely-deployed routees.
-  Read about :ref:`the limitations of remote deployment <remote-deployment-warnings-java>` for
-  more information.
 
 Routers, Routees and Senders
 ****************************
