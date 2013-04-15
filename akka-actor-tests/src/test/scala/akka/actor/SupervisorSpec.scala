@@ -403,15 +403,19 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
           case l: TestLatch                          ⇒ child ! l
           case "test"                                ⇒ sender ! "green"
           case "testchild"                           ⇒ child forward "test"
+          case "testchildAndAck"                     ⇒ child forward "test"; sender ! "ack"
         }
       }))
 
       val latch = TestLatch()
       parent ! latch
-      parent ! "testchild"
-      EventFilter[IllegalStateException]("OHNOES", occurrences = 1) intercept {
-        latch.countDown()
-      }
+      parent ! "testchildAndAck"
+      expectMsg("ack")
+      filterEvents(
+        EventFilter[IllegalStateException]("OHNOES", occurrences = 1),
+        EventFilter.warning(pattern = "dead.*test", occurrences = 1)) {
+          latch.countDown()
+        }
       expectMsg("parent restarted")
       expectMsg("child terminated")
       parent ! "test"
