@@ -90,6 +90,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
         handleClose(handler, closeCommander, closedEvent)
     case SendBufferFull(remaining) ⇒ pendingWrite = remaining; selector ! WriteInterest
     case WriteFileFinished         ⇒ pendingWrite = null; handleClose(handler, closeCommander, closedEvent)
+    case WriteFileFailed(e)        ⇒ handleError(handler, e) // rethrow exception from dispatcher task
 
     case Abort                     ⇒ handleClose(handler, Some(sender), Aborted)
   }
@@ -119,6 +120,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
     case SendBufferFull(remaining) ⇒ pendingWrite = remaining; selector ! WriteInterest
     case WriteFileFinished         ⇒ pendingWrite = null
+    case WriteFileFailed(e)        ⇒ handleError(handler, e) // rethrow exception from dispatcher task
   }
 
   // AUXILIARIES and IMPLEMENTATION
@@ -349,7 +351,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
   }
   private[io] def writeFileRunnable(pendingWrite: PendingWriteFile): Runnable =
     new Runnable {
-      def run() {
+      def run(): Unit = try {
         import pendingWrite._
         val toWrite = math.min(remainingBytes, tcp.Settings.TransferToLimit)
         val writtenBytes = fileChannel.transferTo(currentPosition, toWrite, channel)
@@ -361,6 +363,8 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
           pendingWrite.release()
         }
+      } catch {
+        case e: IOException ⇒ self ! WriteFileFailed(e)
       }
     }
 }
@@ -388,6 +392,8 @@ private[io] object TcpConnection {
   case class SendBufferFull(remainingWrite: PendingWrite)
   /** Informs actor that a pending file write has finished */
   case object WriteFileFinished
+  /** Informs actor that a pending WriteFile failed */
+  case class WriteFileFailed(e: IOException)
 
   /** Abstraction over pending writes */
   trait PendingWrite {
