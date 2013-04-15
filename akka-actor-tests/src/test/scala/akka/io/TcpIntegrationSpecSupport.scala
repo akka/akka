@@ -24,7 +24,7 @@ trait TcpIntegrationSpecSupport { _: AkkaSpec ⇒
     def bindServer(): Unit = {
       val bindCommander = TestProbe()
       bindCommander.send(IO(Tcp), Bind(bindHandler.ref, endpoint, options = bindOptions))
-      bindCommander.expectMsg(Bound)
+      bindCommander.expectMsg(Bound(endpoint))
     }
 
     def establishNewClientConnection(): (TestProbe, ActorRef, TestProbe, ActorRef) = {

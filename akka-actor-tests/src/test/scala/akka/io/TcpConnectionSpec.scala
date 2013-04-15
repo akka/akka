@@ -456,14 +456,18 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       assertThisConnectionActorTerminated()
     }
 
-    // This tets is disabled on windows, as the assumption that not calling accept on a server socket means that
+    // This test is disabled on windows, as the assumption that not calling accept on a server socket means that
     // no TCP level connection has been established with the client does not hold.
+    // RK: I think Windows is no different than any other OS in this regard, there was just a sleep() missing.
     "report failed connection attempt while not accepted" in withUnacceptedConnection() { setup ⇒
       import setup._
       ignoreIfWindows
 
       // close instead of accept
       localServer.close()
+
+      // must give the OS some time to send RST from server to client
+      Thread.sleep(100)
 
       EventFilter[SocketException](occurrences = 1) intercept {
         selector.send(connectionActor, ChannelConnectable)
@@ -679,6 +683,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       val userHandler = TestProbe()
       val selector = TestProbe()
       val connectionActor = connectionActorCons(selector.ref, userHandler.ref)
+      // calling .underlyingActor ensures that the actor is actually created at this point
       val clientSideChannel = connectionActor.underlyingActor.channel
 
       selector.expectMsg(RegisterChannel(clientSideChannel, OP_CONNECT))

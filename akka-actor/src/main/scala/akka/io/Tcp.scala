@@ -117,8 +117,7 @@ object Tcp extends ExtensionKey[TcpExt] {
   case class Connected(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress) extends Event
   case class CommandFailed(cmd: Command) extends Event
 
-  sealed trait Bound extends Event
-  case object Bound extends Bound
+  case class Bound(localAddress: InetSocketAddress) extends Event
   sealed trait Unbound extends Event
   case object Unbound extends Unbound
 

@@ -34,8 +34,11 @@ private[io] class UdpListener(val udp: UdpExt,
     datagramChannel.configureBlocking(false)
     val socket = datagramChannel.socket
     options.foreach(_.beforeDatagramBind(socket))
-    try socket.bind(endpoint)
-    catch {
+    try {
+      socket.bind(endpoint)
+      require(socket.getLocalSocketAddress.isInstanceOf[InetSocketAddress],
+        s"bound to unknown SocketAddress [${socket.getLocalSocketAddress}]")
+    } catch {
       case NonFatal(e) ⇒
         bindCommander ! CommandFailed(bind)
         log.error(e, "Failed to bind UDP channel to endpoint [{}]", endpoint)
@@ -48,7 +51,7 @@ private[io] class UdpListener(val udp: UdpExt,
 
   def receive: Receive = {
     case ChannelRegistered ⇒
-      bindCommander ! Bound
+      bindCommander ! Bound(channel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress])
       context.become(readHandlers orElse sendHandlers, discardOld = true)
   }
 

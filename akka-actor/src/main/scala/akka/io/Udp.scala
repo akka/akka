@@ -54,8 +54,7 @@ object Udp extends ExtensionKey[UdpExt] {
   case class Received(data: ByteString, sender: InetSocketAddress) extends Event
   case class CommandFailed(cmd: Command) extends Event
 
-  sealed trait Bound extends Event
-  case object Bound extends Bound
+  case class Bound(localAddress: InetSocketAddress) extends Event
 
   sealed trait SimpleSendReady extends Event
   case object SimpleSendReady extends SimpleSendReady
