@@ -262,10 +262,17 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
   private[io] def createWrite(write: WriteCommand): PendingWrite = write match {
     case write: Write ⇒
       val buffer = bufferPool.acquire()
-      val copied = write.data.copyToBuffer(buffer)
-      buffer.flip()
 
-      PendingBufferWrite(sender, write.ack, write.data.drop(copied), buffer)
+      try {
+        val copied = write.data.copyToBuffer(buffer)
+        buffer.flip()
+
+        PendingBufferWrite(sender, write.ack, write.data.drop(copied), buffer)
+      } catch {
+        case NonFatal(e) ⇒
+          bufferPool.release(buffer)
+          throw e
+      }
     case write: WriteFile ⇒
       PendingWriteFile(sender, write, new FileInputStream(write.filePath).getChannel, 0L)
   }
