@@ -17,7 +17,7 @@ class UdpIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with ImplicitS
   def bindUdp(address: InetSocketAddress, handler: ActorRef): ActorRef = {
     val commander = TestProbe()
     commander.send(IO(Udp), Bind(handler, address))
-    commander.expectMsg(Bound)
+    commander.expectMsg(Bound(address))
     commander.sender
   }
 
