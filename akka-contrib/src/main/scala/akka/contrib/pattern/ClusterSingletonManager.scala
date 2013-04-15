@@ -337,10 +337,8 @@ class ClusterSingletonManager(
   val cluster = Cluster(context.system)
   val selfAddressOption = Some(cluster.selfAddress)
 
-  role match {
-    case None    ⇒
-    case Some(r) ⇒ require(cluster.selfRoles.contains(r), s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
-  }
+  require(role.forall(cluster.selfRoles.contains),
+    s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
 
   // started when when self member is Up
   var leaderChangedBuffer: ActorRef = _

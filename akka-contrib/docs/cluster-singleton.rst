@@ -88,6 +88,10 @@ the group of members tagged with a specific role.
 Note that the hand-over might still be in progress and the singleton actor might not be started yet
 when you receive the ``LeaderChanged`` / ``RoleLeaderChanged`` event.
 
+A nice alternative to the above proxy is to use :ref:`distributed-pub-sub`. Let the singleton
+actor register itself to the mediator with ``DistributedPubSubMediator.Put`` message when it is
+started. Send messages to the singleton actor via the mediator with ``DistributedPubSubMediator.SendToAll``.
+
 To test scenarios where the cluster leader node is removed or shut down you can use :ref:`multi-node-testing` and
 utilize the fact that the leader is supposed to be the first member when sorted by member address.
 
