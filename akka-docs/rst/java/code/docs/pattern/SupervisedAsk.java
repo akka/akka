@@ -45,7 +45,7 @@ public class SupervisedAsk {
     public void onReceive(Object message) throws Exception {
       if (message instanceof AskParam) {
         ActorRef supervisor = getContext().actorOf(
-            Props.apply(AskSupervisor.class));
+            Props.create(AskSupervisor.class));
         supervisor.forward(message, getContext());
       } else {
         unhandled(message);
@@ -104,6 +104,6 @@ public class SupervisedAsk {
 
   synchronized public static ActorRef createSupervisorCreator(
       ActorRefFactory factory) {
-    return factory.actorOf(Props.apply(AskSupervisorCreator.class));
+    return factory.actorOf(Props.create(AskSupervisorCreator.class));
   }
 }

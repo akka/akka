@@ -210,11 +210,11 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
   }
 
   "defining priority dispatcher" in {
-    //#prio-dispatcher
+    new AnyRef {
+      //#prio-dispatcher
 
-    // We create a new Actor that just prints out what it processes
-    val a = system.actorOf(
-      Props(new Actor {
+      // We create a new Actor that just prints out what it processes
+      class Logger extends Actor {
         val log: LoggingAdapter = Logging(context.system, this)
 
         self ! 'lowpriority
@@ -229,22 +229,24 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
         def receive = {
           case x ⇒ log.info(x.toString)
         }
-      }).withDispatcher("prio-dispatcher"))
+      }
+      val a = system.actorOf(Props(classOf[Logger], this).withDispatcher("prio-dispatcher"))
 
-    /*
-    Logs:
-      'highpriority
-      'highpriority
-      'pigdog
-      'pigdog2
-      'pigdog3
-      'lowpriority
-      'lowpriority
-    */
-    //#prio-dispatcher
+      /*
+       * Logs:
+       * 'highpriority
+       * 'highpriority
+       * 'pigdog
+       * 'pigdog2
+       * 'pigdog3
+       * 'lowpriority
+       * 'lowpriority
+       */
+      //#prio-dispatcher
 
-    watch(a)
-    expectMsgPF() { case Terminated(`a`) ⇒ () }
+      watch(a)
+      expectMsgPF() { case Terminated(`a`) ⇒ () }
+    }
   }
 
   "defining balancing dispatcher" in {

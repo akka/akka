@@ -12,9 +12,10 @@ public class MyUntypedActor extends UntypedActor {
   LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
   public void onReceive(Object message) throws Exception {
-    if (message instanceof String)
+    if (message instanceof String) {
       log.info("Received String message: {}", message);
-    else
+      getSender().tell(message, getSelf());
+    } else
       unhandled(message);
   }
 }

@@ -9,7 +9,7 @@ import language.postfixOps
 import akka.serialization.SerializationExtension
 import com.typesafe.config.ConfigFactory
 import akka.testkit.AkkaSpec
-import akka.actor.{ Actor, Address, Props, Deploy, OneForOneStrategy, SupervisorStrategy, FromClassCreator }
+import akka.actor.{ Actor, Address, Props, Deploy, OneForOneStrategy, SupervisorStrategy }
 import akka.remote.{ DaemonMsgCreate, RemoteScope }
 import akka.routing.{ RoundRobinRouter, FromConfig }
 import scala.concurrent.duration._
@@ -87,11 +87,13 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec {
 
     def assertDaemonMsgCreate(expected: DaemonMsgCreate, got: DaemonMsgCreate): Unit = {
       // can't compare props.creator when function
-      if (expected.props.creator.isInstanceOf[FromClassCreator])
-        assert(got.props.creator === expected.props.creator)
-      assert(got.props.dispatcher === expected.props.dispatcher)
-      assert(got.props.dispatcher === expected.props.dispatcher)
-      assert(got.props.routerConfig === expected.props.routerConfig)
+      assert(got.props.clazz === expected.props.clazz)
+      assert(got.props.args.length === expected.props.args.length)
+      got.props.args zip expected.props.args foreach {
+        case (g, e) ⇒
+          if (e.isInstanceOf[Function0[_]]) ()
+          else assert(g === e)
+      }
       assert(got.props.deploy === expected.props.deploy)
       assert(got.deploy === expected.deploy)
       assert(got.path === expected.path)

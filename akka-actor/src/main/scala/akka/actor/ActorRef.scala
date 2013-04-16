@@ -46,7 +46,7 @@ import akka.event.LoggingAdapter
  *
  * public class ExampleActor Extends UntypedActor {
  *   // this child will be destroyed and re-created upon restart by default
- *   final ActorRef other = getContext().actorOf(new Props(OtherActor.class), "childName");
+ *   final ActorRef other = getContext().actorOf(Props.create(OtherActor.class), "childName");
  *
  *   @Override
  *   public void onReceive(Object o) {

@@ -29,7 +29,7 @@ object Deploy {
  * not needed when just doing deploy-as-you-go:
  *
  * {{{
- * context.actorOf(someProps, "someName", Deploy(scope = RemoteScope("someOtherNodeName")))
+ * val remoteProps = someProps.withDeploy(Deploy(scope = RemoteScope("someOtherNodeName")))
  * }}}
  */
 @SerialVersionUID(1L)
@@ -62,7 +62,12 @@ final case class Deploy(
    */
   def withFallback(other: Deploy): Deploy = {
     val disp = if (dispatcher == Deploy.NoDispatcherGiven) other.dispatcher else dispatcher
-    Deploy(path, config.withFallback(other.config), routerConfig.withFallback(other.routerConfig), scope.withFallback(other.scope), disp)
+    Deploy(
+      path,
+      config.withFallback(other.config),
+      routerConfig.withFallback(other.routerConfig),
+      scope.withFallback(other.scope),
+      disp)
   }
 }
 

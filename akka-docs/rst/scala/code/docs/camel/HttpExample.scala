@@ -43,8 +43,8 @@ object HttpExample {
     // to your boot class.
     val system = ActorSystem("some-system")
     val httpTransformer = system.actorOf(Props[HttpTransformer])
-    val httpProducer = system.actorOf(Props(new HttpProducer(httpTransformer)))
-    val httpConsumer = system.actorOf(Props(new HttpConsumer(httpProducer)))
+    val httpProducer = system.actorOf(Props(classOf[HttpProducer], httpTransformer))
+    val httpConsumer = system.actorOf(Props(classOf[HttpConsumer], httpProducer))
     //#HttpExample
 
   }

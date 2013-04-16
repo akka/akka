@@ -408,34 +408,38 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
     }
 
     "continue to process messages when a thread gets interrupted and throws an exception" in {
-      filterEvents(EventFilter[InterruptedException](), EventFilter[akka.event.Logging.LoggerException]()) {
-        implicit val dispatcher = interceptedDispatcher()
-        val a = newTestActor(dispatcher.id)
-        val f1 = a ? Reply("foo")
-        val f2 = a ? Reply("bar")
-        val f3 = a ? Interrupt
-        Thread.interrupted() // CallingThreadDispatcher may necessitate this
-        val f4 = a ? Reply("foo2")
-        val f5 = a ? Interrupt
-        Thread.interrupted() // CallingThreadDispatcher may necessitate this
-        val f6 = a ? Reply("bar2")
+      filterEvents(
+        EventFilter[InterruptedException](),
+        EventFilter[ActorInterruptedException](),
+        EventFilter[akka.event.Logging.LoggerException]()) {
+          implicit val dispatcher = interceptedDispatcher()
+          val a = newTestActor(dispatcher.id)
+          val f1 = a ? Reply("foo")
+          val f2 = a ? Reply("bar")
+          val f3 = a ? Interrupt
+          Thread.interrupted() // CallingThreadDispatcher may necessitate this
+          val f4 = a ? Reply("foo2")
+          val f5 = a ? Interrupt
+          Thread.interrupted() // CallingThreadDispatcher may necessitate this
+          val f6 = a ? Reply("bar2")
 
-        val c = system.scheduler.scheduleOnce(2.seconds) {
-          import collection.JavaConverters._
-          Thread.getAllStackTraces().asScala foreach {
-            case (thread, stack) ⇒
-              println(s"$thread:")
-              stack foreach (s ⇒ println(s"\t$s"))
+          val c = system.scheduler.scheduleOnce(2.seconds) {
+            import collection.JavaConverters._
+            Thread.getAllStackTraces().asScala foreach {
+              case (thread, stack) ⇒
+                println(s"$thread:")
+                stack foreach (s ⇒ println(s"\t$s"))
+            }
           }
+          assert(Await.result(f1, remaining) === "foo")
+          assert(Await.result(f2, remaining) === "bar")
+          assert(Await.result(f4, remaining) === "foo2")
+          assert(intercept[ActorInterruptedException](Await.result(f3, remaining)).getCause.getMessage === "Ping!")
+          assert(Await.result(f6, remaining) === "bar2")
+          assert(intercept[ActorInterruptedException](Await.result(f5, remaining)).getCause.getMessage === "Ping!")
+          c.cancel()
+          Thread.sleep(300) // give the EventFilters a chance of catching all messages
         }
-        assert(Await.result(f1, remaining) === "foo")
-        assert(Await.result(f2, remaining) === "bar")
-        assert(Await.result(f4, remaining) === "foo2")
-        assert(intercept[ActorInterruptedException](Await.result(f3, remaining)).getCause.getMessage === "Ping!")
-        assert(Await.result(f6, remaining) === "bar2")
-        assert(intercept[ActorInterruptedException](Await.result(f5, remaining)).getCause.getMessage === "Ping!")
-        c.cancel()
-      }
     }
 
     "continue to process messages without failure when a thread gets interrupted and doesn't throw an exception" in {

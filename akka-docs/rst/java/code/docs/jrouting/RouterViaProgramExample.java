@@ -41,25 +41,26 @@ public class RouterViaProgramExample {
     }
   }
 
+  @SuppressWarnings("unused")
   public static void main(String... args) {
     ActorSystem system = ActorSystem.create("RPE");
     //#programmaticRoutingNrOfInstances
     int nrOfInstances = 5;
     ActorRef router1 = system.actorOf(
-      new Props(ExampleActor.class).withRouter(new RoundRobinRouter(nrOfInstances)));
+      Props.create(ExampleActor.class).withRouter(new RoundRobinRouter(nrOfInstances)));
     //#programmaticRoutingNrOfInstances
     for (int i = 1; i <= 6; i++) {
       router1.tell(new ExampleActor.Message(i), null);
     }
 
     //#programmaticRoutingRoutees
-    ActorRef actor1 = system.actorOf(new Props(ExampleActor.class));
-    ActorRef actor2 = system.actorOf(new Props(ExampleActor.class));
-    ActorRef actor3 = system.actorOf(new Props(ExampleActor.class));
+    ActorRef actor1 = system.actorOf(Props.create(ExampleActor.class));
+    ActorRef actor2 = system.actorOf(Props.create(ExampleActor.class));
+    ActorRef actor3 = system.actorOf(Props.create(ExampleActor.class));
     Iterable<ActorRef> routees = Arrays.asList(
       new ActorRef[] { actor1, actor2, actor3 });
     ActorRef router2 = system.actorOf(
-      new Props().withRouter(RoundRobinRouter.create(routees)));
+      Props.empty().withRouter(RoundRobinRouter.create(routees)));
     //#programmaticRoutingRoutees
     for (int i = 1; i <= 6; i++) {
       router2.tell(new ExampleActor.Message(i), null);
@@ -70,7 +71,7 @@ public class RouterViaProgramExample {
     int upperBound = 15;
     DefaultResizer resizer = new DefaultResizer(lowerBound, upperBound);
     ActorRef router3 = system.actorOf(
-      new Props(ExampleActor.class).withRouter(new RoundRobinRouter(resizer)));
+      Props.create(ExampleActor.class).withRouter(new RoundRobinRouter(resizer)));
     //#programmaticRoutingWithResizer
     for (int i = 1; i <= 6; i++) {
       router3.tell(new ExampleActor.Message(i), null);
@@ -80,11 +81,12 @@ public class RouterViaProgramExample {
     Address addr1 = new Address("akka", "remotesys", "otherhost", 1234);
     Address addr2 = AddressFromURIString.parse("akka://othersys@anotherhost:1234");
     Address[] addresses = new Address[] { addr1, addr2 };
-    ActorRef routerRemote = system.actorOf(new Props(ExampleActor.class)
+    ActorRef routerRemote = system.actorOf(Props.create(ExampleActor.class)
       .withRouter(new RemoteRouterConfig(new RoundRobinRouter(5), addresses)));
     //#remoteRoutees
   }
   
+  @SuppressWarnings("unused")
   private class CompileCheckJavaDocsForRouting extends UntypedActor {
 
     @Override

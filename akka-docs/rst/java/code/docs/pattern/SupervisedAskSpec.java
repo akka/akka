@@ -18,7 +18,7 @@ public class SupervisedAskSpec {
       ActorRef supervisorCreator = SupervisedAsk
           .createSupervisorCreator(actorSystem);
       Future<Object> finished = SupervisedAsk.askOf(supervisorCreator,
-          Props.apply(someActor), message, timeout);
+          Props.create(someActor), message, timeout);
       return Await.result(finished, timeout.duration());
     } catch (Exception e) {
       // exception propagated by supervision

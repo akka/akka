@@ -168,7 +168,7 @@ class CounterService extends Actor {
 
     case Entry(k, v) if k == key && counter == None ⇒
       // Reply from Storage of the initial value, now we can create the Counter
-      val c = context.actorOf(Props(new Counter(key, v)))
+      val c = context.actorOf(Props(classOf[Counter], key, v))
       counter = Some(c)
       // Tell the counter to use current storage
       c ! UseStorage(storage)

@@ -71,11 +71,11 @@ import akka.japi.{ Creator }
  *
  *        } else if (msg.equals("ErrorKernelWithDirectReply")) {
  *          // Send work to one-off child which will reply directly to original sender
- *          getContext().actorOf(new Props(Worker.class)).tell("DoSomeDangerousWork", getSender());
+ *          getContext().actorOf(Props.create(Worker.class)).tell("DoSomeDangerousWork", getSender());
  *
  *        } else if (msg.equals("ErrorKernelWithReplyHere")) {
  *          // Send work to one-off child and collect the answer, reply handled further down
- *          getContext().actorOf(new Props(Worker.class)).tell("DoWorkAndReplyToMe");
+ *          getContext().actorOf(Props.create(Worker.class)).tell("DoWorkAndReplyToMe", getSelf());
  *
  *        } else throw new IllegalArgumentException("Unknown message: " + message);
  *
@@ -166,4 +166,5 @@ abstract class UntypedActor extends Actor {
 /**
  * Factory closure for an UntypedActor, to be used with 'Actors.actorOf(factory)'.
  */
+@deprecated("use Props.create(clazz, args) instead", "2.2")
 trait UntypedActorFactory extends Creator[Actor] with Serializable

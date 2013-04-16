@@ -167,37 +167,8 @@ class PipelinesDocSpec extends AkkaSpec {
     }
 
     "demonstrate management port and context" in {
-      //#actor
-      class Processor(cmds: ActorRef, evts: ActorRef) extends Actor {
-
-        val ctx = new HasActorContext with HasByteOrder {
-          def getContext = Processor.this.context
-          def byteOrder = java.nio.ByteOrder.BIG_ENDIAN
-        }
-
-        val pipeline = PipelineFactory.buildWithSinkFunctions(ctx,
-          new TickGenerator(1000.millis) >>
-            new MessageStage >>
-            new LengthFieldFrame(10000) //
-            )(
-            // failure in the pipeline will fail this actor
-            cmd ⇒ cmds ! cmd.get,
-            evt ⇒ evts ! evt.get)
-
-        def receive = {
-          case m: Message               ⇒ pipeline.injectCommand(m)
-          case b: ByteString            ⇒ pipeline.injectEvent(b)
-          case t: TickGenerator.Trigger ⇒ pipeline.managementCommand(t)
-        }
-      }
-      //#actor
-
       import TickGenerator.Tick
-      val proc = system.actorOf(Props(new Processor(testActor, testActor) {
-        override def receive = ({
-          case "fail!" ⇒ throw new RuntimeException("FAIL!")
-        }: Receive) orElse super.receive
-      }), "processor")
+      val proc = system.actorOf(Props(classOf[P], this, testActor, testActor), "processor")
       expectMsgType[Tick]
       proc ! msg
       val encoded = expectMsgType[ByteString]
@@ -220,6 +191,37 @@ class PipelinesDocSpec extends AkkaSpec {
       }
     }
 
+  }
+
+  //#actor
+  class Processor(cmds: ActorRef, evts: ActorRef) extends Actor {
+
+    val ctx = new HasActorContext with HasByteOrder {
+      def getContext = Processor.this.context
+      def byteOrder = java.nio.ByteOrder.BIG_ENDIAN
+    }
+
+    val pipeline = PipelineFactory.buildWithSinkFunctions(ctx,
+      new TickGenerator(1000.millis) >>
+        new MessageStage >>
+        new LengthFieldFrame(10000) //
+        )(
+        // failure in the pipeline will fail this actor
+        cmd ⇒ cmds ! cmd.get,
+        evt ⇒ evts ! evt.get)
+
+    def receive = {
+      case m: Message               ⇒ pipeline.injectCommand(m)
+      case b: ByteString            ⇒ pipeline.injectEvent(b)
+      case t: TickGenerator.Trigger ⇒ pipeline.managementCommand(t)
+    }
+  }
+  //#actor
+
+  class P(cmds: ActorRef, evts: ActorRef) extends Processor(cmds, evts) {
+    override def receive = ({
+      case "fail!" ⇒ throw new RuntimeException("FAIL!")
+    }: Receive) orElse super.receive
   }
 
 }

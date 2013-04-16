@@ -217,17 +217,11 @@ object ActorSystem {
  *
  * // Scala
  * system.actorOf(Props[MyActor], "name")
- * system.actorOf(Props[MyActor])
- * system.actorOf(Props(new MyActor(...)))
+ * system.actorOf(Props(classOf[MyActor], arg1, arg2), "name")
  *
  * // Java
- * system.actorOf(MyActor.class);
- * system.actorOf(Props(new Creator<MyActor>() {
- *   public MyActor create() { ... }
- * });
- * system.actorOf(Props(new Creator<MyActor>() {
- *   public MyActor create() { ... }
- * }, "name");
+ * system.actorOf(Props.create(MyActor.class), "name");
+ * system.actorOf(Props.create(MyActor.class, arg1, arg2), "name");
  * }}}
  *
  * Where no name is given explicitly, one will be automatically generated.

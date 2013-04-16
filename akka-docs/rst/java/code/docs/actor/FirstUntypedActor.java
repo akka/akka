@@ -10,7 +10,7 @@ import akka.actor.UntypedActor;
 
 //#context-actorOf
 public class FirstUntypedActor extends UntypedActor {
-  ActorRef myActor = getContext().actorOf(new Props(MyActor.class), "myactor");
+  ActorRef myActor = getContext().actorOf(Props.create(MyActor.class), "myactor");
 
   //#context-actorOf
 

@@ -43,114 +43,145 @@ Here is an example:
 .. includecode:: code/docs/actor/ActorDocSpec.scala
    :include: imports1,my-actor
 
-Please note that the Akka Actor ``receive`` message loop is exhaustive, which is
-different compared to Erlang and Scala Actors. This means that you need to
-provide a pattern match for all messages that it can accept and if you want to
-be able to handle unknown messages then you need to have a default case as in
-the example above. Otherwise an ``akka.actor.UnhandledMessage(message, sender, recipient)`` will be
-published to the ``ActorSystem``'s ``EventStream``.
+Please note that the Akka Actor ``receive`` message loop is exhaustive, which
+is different compared to Erlang and the late Scala Actors. This means that you
+need to provide a pattern match for all messages that it can accept and if you
+want to be able to handle unknown messages then you need to have a default case
+as in the example above. Otherwise an ``akka.actor.UnhandledMessage(message,
+sender, recipient)`` will be published to the ``ActorSystem``'s
+``EventStream``.
+
+Note further that the return type of the behavior defined above is ``Unit``; if
+the actor shall reply to the received message then this must be done explicitly
+as explained below.
 
 The result of the :meth:`receive` method is a partial function object, which is
 stored within the actor as its “initial behavior”, see `Become/Unbecome`_ for
 further information on changing the behavior of an actor after its
 construction.
 
-Creating Actors with default constructor
-----------------------------------------
-
-.. includecode:: code/docs/actor/ActorDocSpec.scala
-   :include: imports2,system-actorOf
-
-The call to :meth:`actorOf` returns an instance of ``ActorRef``. This is a handle to
-the ``Actor`` instance which you can use to interact with the ``Actor``. The
-``ActorRef`` is immutable and has a one to one relationship with the Actor it
-represents. The ``ActorRef`` is also serializable and network-aware. This means
-that you can serialize it, send it over the wire and use it on a remote host and
-it will still be representing the same Actor on the original node, across the
-network.
-
-In the above example the actor was created from the system. It is also possible
-to create actors from other actors with the actor ``context``. The difference is
-how the supervisor hierarchy is arranged. When using the context the current actor
-will be supervisor of the created child actor. When using the system it will be
-a top level actor, that is supervised by the system (internal guardian actor).
-
-.. includecode:: code/docs/actor/ActorDocSpec.scala#context-actorOf
-
-The name parameter is optional, but you should preferably name your actors, since
-that is used in log messages and for identifying actors. The name must not be empty
-or start with ``$``, but it may contain URL encoded characters (eg. ``%20`` for a blank space).
-If the given name is already in use by another child to the
-same parent actor an `InvalidActorNameException` is thrown.
-
-Actors are automatically started asynchronously when created.
-When you create the ``Actor`` then it will automatically call the ``preStart``
-callback method on the ``Actor`` trait. This is an excellent place to
-add initialization code for the actor.
-
-.. code-block:: scala
-
-  override def preStart() = {
-    ... // initialization code
-  }
-
-Creating Actors with non-default constructor
---------------------------------------------
-
-If your Actor has a constructor that takes parameters then you can't create it
-using ``actorOf(Props[TYPE])``. Instead you can use a variant of ``actorOf`` that takes
-a call-by-name block in which you can create the Actor in any way you like.
-
-Here is an example:
-
-.. includecode:: code/docs/actor/ActorDocSpec.scala#creating-constructor
-
-.. warning::
-
-  You might be tempted at times to offer an ``Actor`` factory which always
-  returns the same instance, e.g. by using a ``lazy val`` or an
-  ``object ... extends Actor``. This is not supported, as it goes against the
-  meaning of an actor restart, which is described here:
-  :ref:`supervision-restart`.
-
-.. warning::
-
-  Also avoid passing mutable state into the constructor of the Actor, since
-  the call-by-name block can be executed by another thread.
-
 Props
 -----
 
-``Props`` is a configuration class to specify options for the creation
-of actors. Here are some examples on how to create a ``Props`` instance.
+:class:`Props` is a configuration class to specify options for the creation
+of actors, think of it as an immutable and thus freely shareable recipe for
+creating an actor including associated deployment information (e.g. which
+dispatcher to use, see more below). Here are some examples of how to create a
+:class:`Props` instance.
 
-.. includecode:: code/docs/actor/ActorDocSpec.scala#creating-props-config
+.. includecode:: code/docs/actor/ActorDocSpec.scala#creating-props
 
+The last line shows how to pass constructor arguments to the :class:`Actor`
+being created. The presence of a matching constructor is verified during
+construction of the :class:`Props` object, resulting in an
+:class:`IllegalArgumentEception` if no or multiple matching constructors are
+found.
+
+Deprecated Variants
+^^^^^^^^^^^^^^^^^^^
+
+Up to Akka 2.1 there were also the following possibilities (which are retained
+for a migration period):
+
+.. includecode:: code/docs/actor/ActorDocSpec.scala#creating-props-deprecated
+
+The last one is deprecated because its functionality is available in full
+through :meth:`Props.apply()`.
+
+The first three are deprecated because the captured closure is a local class
+which means that it implicitly carries a reference to the enclosing class. This
+can easily make the resulting :class:`Props` non-serializable, e.g. when the
+enclosing class is an :class:`Actor`. Akka advocates location transparency,
+meaning that an application written with actors should just work when it is
+deployed over multiple network nodes, and non-serializable actor factories
+would break this principle. In case indirect actor creation is needed—for
+example when using dependency injection—there is the possibility to use an
+:class:`IndirectActorProducer` as described below.
+
+There were two use-cases for these methods: passing constructor arguments to
+the actor—which is solved by the newly introduced
+:meth:`Props.apply(clazz, args)` method above—and creating actors “on the spot”
+as anonymous classes. The latter should be solved by making these actors named
+inner classes instead (if they are not declared within a top-level ``object``
+then the enclosing instance’s ``this`` reference needs to be passed as the
+first argument).
+
+.. warning::
+
+  Declaring one actor within another is very dangerous and breaks actor
+  encapsulation. Never pass an actor’s ``this`` reference into :class:`Props`!
+
+Recommended Practices
+^^^^^^^^^^^^^^^^^^^^^
+
+It is a good idea to provide factory methods on the companion object of each
+:class:`Actor` which help keeping the creation of suitable :class:`Props` as
+close to the actor definition as possible, thus containing the gap in
+type-safety introduced by reflective instantiation within a single class
+instead of spreading it out across a whole code-base. This helps especially
+when refactoring the actor’s constructor signature at a later point, where
+compiler checks will allow this modification to be done with greater confidence
+than without.
+
+.. includecode:: code/docs/actor/ActorDocSpec.scala#props-factory
 
 Creating Actors with Props
 --------------------------
 
-Actors are created by passing in a ``Props`` instance into the ``actorOf`` factory method.
+Actors are created by passing a :class:`Props` instance into the
+:meth:`actorOf` factory method which is available on :class:`ActorSystem` and
+:class:`ActorContext`.
 
-.. includecode:: code/docs/actor/ActorDocSpec.scala#creating-props
+.. includecode:: code/docs/actor/ActorDocSpec.scala#system-actorOf
 
+Using the :class:`ActorSystem` will create top-level actors, supervised by the
+actor system’s provided guardian actor, while using an actor’s context will
+create a child actor.
 
-Creating Actors using anonymous classes
----------------------------------------
+.. includecode:: code/docs/actor/ActorDocSpec.scala#context-actorOf
+   :exclude: plus-some-behavior
 
-When spawning actors for specific sub-tasks from within an actor, it may be convenient to include the code to be executed directly in place, using an anonymous class.
+It is recommended to create a hierarchy of children, grand-children and so on
+such that it fits the logical failure-handling structure of the application,
+see :ref:`actor-systems`.
 
-.. includecode:: code/docs/actor/ActorDocSpec.scala#anonymous-actor
+The call to :meth:`actorOf` returns an instance of :class:`ActorRef`. This is a
+handle to the actor instance and the only way to interact with it. The
+:class:`ActorRef` is immutable and has a one to one relationship with the Actor
+it represents. The :class:`ActorRef` is also serializable and network-aware.
+This means that you can serialize it, send it over the wire and use it on a
+remote host and it will still be representing the same Actor on the original
+node, across the network.
+
+The name parameter is optional, but you should preferably name your actors,
+since that is used in log messages and for identifying actors. The name must
+not be empty or start with ``$``, but it may contain URL encoded characters
+(eg. ``%20`` for a blank space).  If the given name is already in use by
+another child to the same parent an `InvalidActorNameException` is thrown.
+
+Actors are automatically started asynchronously when created.
+
+Creating Actors with Factory Methods
+------------------------------------
+
+If your UntypedActor has a constructor that takes parameters then those need to
+be part of the :class:`Props` as well, as described `above <Props>`_. But there
+are cases when a factory method must be used, for example when the actual
+constructor arguments are determined by a dependency injection framework.
+
+.. includecode:: code/docs/actor/ActorDocSpec.scala
+   :include: creating-indirectly
+   :exclude: obtain-fresh-Actor-instance-from-DI-framework
 
 .. warning::
 
-  In this case you need to carefully avoid closing over the containing actor’s
-  reference, i.e. do not call methods on the enclosing actor from within the
-  anonymous Actor class. This would break the actor encapsulation and may
-  introduce synchronization bugs and race conditions because the other actor’s
-  code will be scheduled concurrently to the enclosing actor. Unfortunately
-  there is not yet a way to detect these illegal accesses at compile time.
-  See also: :ref:`jmm-shared-state`
+  You might be tempted at times to offer an :class:`IndirectActorProducer`
+  which always returns the same instance, e.g. by using a ``lazy val``. This is
+  not supported, as it goes against the meaning of an actor restart, which is
+  described here: :ref:`supervision-restart`.
+
+  When using a dependency injection framework, actor beans *MUST NOT* have
+  singleton scope.
 
 The Actor DSL
 -------------
@@ -268,15 +299,9 @@ You can import the members in the :obj:`context` to avoid prefixing access with 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#import-context
 
 The remaining visible methods are user-overridable life-cycle hooks which are
-described in the following::
+described in the following:
 
-  def preStart() {}
-  def preRestart(reason: Throwable, message: Option[Any]) {
-    context.children foreach (context.stop(_))
-    postStop()
-  }
-  def postRestart(reason: Throwable) { preStart() }
-  def postStop() {}
+.. includecode:: ../../../akka-actor/src/main/scala/akka/actor/Actor.scala#lifecycle-hooks
 
 The implementations shown above are the defaults provided by the :class:`Actor`
 trait.
@@ -319,13 +344,15 @@ Start Hook
 
 Right after starting the actor, its :meth:`preStart` method is invoked.
 
-::
+.. includecode:: code/docs/actor/ActorDocSpec.scala#preStart
 
-  override def preStart() {
-    // registering with other actors
-    someService ! Register(self)
-  }
-
+This method is called when the actor is first created. During restarts it is
+called by the default implementation of :meth:`postRestart`, which means that
+by overriding that method you can choose whether the initialization code in
+this method is called only exactly once for this actor or for every restart.
+Initialization code which is part of the actor’s constructor will always be
+called when an instance of the actor class is created, which happens at every
+restart.
 
 Restart Hooks
 -------------
@@ -390,12 +417,9 @@ are used by the system to look up actors, e.g. when a remote message is
 received and the recipient is searched, but they are also useful more directly:
 actors may look up other actors by specifying absolute or relative
 paths—logical or physical—and receive back an :class:`ActorSelection` with the
-result::
+result:
 
-  // will look up this absolute path
-  context.actorSelection("/user/serviceA/aggregator")
-  // will look up sibling beneath same supervisor
-  context.actorSelection("../joe")
+.. includecode:: code/docs/actor/ActorDocSpec.scala#selection-local
 
 The supplied path is parsed as a :class:`java.net.URI`, which basically means
 that it is split on ``/`` into path elements. If the path starts with ``/``, it
@@ -407,12 +431,9 @@ It should be noted that the ``..`` in actor paths here always means the logical
 structure, i.e. the supervisor.
 
 The path elements of an actor selection may contain wildcard patterns allowing for
-broadcasting of messages to that section::
+broadcasting of messages to that section:
 
-  // will look all children to serviceB with names starting with worker
-  context.actorSelection("/user/serviceB/worker*")
-  // will look up all siblings beneath same supervisor
-  context.actorSelection("../*")
+.. includecode:: code/docs/actor/ActorDocSpec.scala#selection-wildcard
 
 Messages can be sent via the :class:`ActorSelection` and the path of the
 :class:`ActorSelection` is looked up when delivering each message. If the selection
@@ -426,9 +447,9 @@ and automatically reply to with a ``ActorIdentity`` message containing the
 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#identify
 
-Remote actor addresses may also be looked up, if :ref:`remoting <remoting-scala>` is enabled::
+Remote actor addresses may also be looked up, if :ref:`remoting <remoting-scala>` is enabled:
 
-  context.actorSelection("akka.tcp://app@otherhost:1234/user/serviceB")
+.. includecode:: code/docs/actor/ActorDocSpec.scala#selection-remote
 
 An example demonstrating actor look-up is given in :ref:`remote-lookup-sample-scala`.
 
@@ -463,10 +484,6 @@ Here is an example:
   // create a new case class message
   val message = Register(user)
 
-Other good messages types are ``scala.Tuple2``, ``scala.List``, ``scala.Map``
-which are all immutable and great for pattern matching.
-
-
 Send messages
 =============
 
@@ -486,17 +503,15 @@ Message ordering is guaranteed on a per-sender basis.
     a ``Promise`` into an ``ActorRef`` and it also needs to be reachable through
     remoting. So always prefer ``tell`` for performance, and only ``ask`` if you must.
 
+.. _actors-tell-sender-scala:
+
 Tell: Fire-forget
 -----------------
 
 This is the preferred way of sending messages. No blocking waiting for a
 message. This gives the best concurrency and scalability characteristics.
 
-.. code-block:: scala
-
-  actor ! "hello"
-
-.. _actors-tell-sender-scala:
+.. includecode:: code/docs/actor/ActorDocSpec.scala#tell
 
 If invoked from within an Actor, then the sending actor reference will be
 implicitly passed along with the message and available to the receiving Actor
@@ -573,25 +588,16 @@ original sender address/reference is maintained even though the message is going
 through a 'mediator'. This can be useful when writing actors that work as
 routers, load-balancers, replicators etc.
 
-.. code-block:: scala
-
-  myActor.forward(message)
-
+.. includecode:: code/docs/actor/ActorDocSpec.scala#forward
 
 Receive messages
 ================
 
 An Actor has to implement the ``receive`` method to receive messages:
 
-.. code-block:: scala
+.. includecode:: ../../../akka-actor/src/main/scala/akka/actor/Actor.scala#receive
 
-  def receive: PartialFunction[Any, Unit]
-
-Note: Akka has an alias to the ``PartialFunction[Any, Unit]`` type called
-``Receive`` (``akka.actor.Actor.Receive``), so you can use this type instead for
-clarity. But most often you don't need to spell it out.
-
-This method should return a ``PartialFunction``, e.g. a ‘match/case’ clause in
+This method returns a ``PartialFunction``, e.g. a ‘match/case’ clause in
 which the message can be matched against the different case clauses using Scala
 pattern matching. Here is an example:
 
@@ -669,11 +675,8 @@ whole system.
 The :meth:`postStop()` hook is invoked after an actor is fully stopped. This
 enables cleaning up of resources:
 
-.. code-block:: scala
-
-  override def postStop() = {
-    // close some file or database connection
-  }
+.. includecode:: code/docs/actor/ActorDocSpec.scala#postStop
+   :exclude: clean-up-some-resources
 
 .. note::
 

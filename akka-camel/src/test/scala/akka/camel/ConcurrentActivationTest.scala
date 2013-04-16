@@ -99,7 +99,7 @@ class ConsumerBroadcast(promise: Promise[(Future[List[List[ActorRef]]], Future[L
       }
       promise.success(Future.sequence(allActivationFutures) -> Future.sequence(allDeactivationFutures))
 
-      broadcaster = Some(context.actorOf(Props[Registrar] withRouter (BroadcastRouter(routees)), "registrarRouter"))
+      broadcaster = Some(context.actorOf(Props.empty withRouter (BroadcastRouter(routees)), "registrarRouter"))
     case reg: Any ⇒
       broadcaster.foreach(_.forward(reg))
   }

@@ -45,8 +45,8 @@ object Producers {
     }
     val system = ActorSystem("some-system")
     val receiver = system.actorOf(Props[ResponseReceiver])
-    val forwardResponse = system.actorOf(Props(
-      new Forwarder("http://localhost:8080/news/akka", receiver)))
+    val forwardResponse = system.actorOf(
+      Props(classOf[Forwarder], this, "http://localhost:8080/news/akka", receiver))
     // the Forwarder sends out a request to the web page and forwards the response to
     // the ResponseReceiver
     forwardResponse ! "some request"
@@ -81,7 +81,7 @@ object Producers {
     }
 
     val system = ActorSystem("some-system")
-    val producer = system.actorOf(Props(new OnewaySender("activemq:FOO.BAR")))
+    val producer = system.actorOf(Props(classOf[OnewaySender], this, "activemq:FOO.BAR"))
     producer ! "Some message"
     //#Oneway
 

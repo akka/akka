@@ -57,7 +57,7 @@ public class CustomRouterDocTestBase {
   @Test
   public void demonstrateDispatchers() {
     //#dispatchers
-    final ActorRef router = system.actorOf(new Props(MyActor.class)
+    final ActorRef router = system.actorOf(Props.create(MyActor.class)
       // “head” router will run on "head" dispatcher
       .withRouter(new RoundRobinRouter(5).withDispatcher("head"))
       // MyActor “workers” will run on "workers" dispatcher
@@ -71,7 +71,7 @@ public class CustomRouterDocTestBase {
     final SupervisorStrategy strategy =
       new OneForOneStrategy(5, Duration.create("1 minute"),
          Collections.<Class<? extends Throwable>>singletonList(Exception.class));
-    final ActorRef router = system.actorOf(new Props(MyActor.class)
+    final ActorRef router = system.actorOf(Props.create(MyActor.class)
         .withRouter(new RoundRobinRouter(5).withSupervisorStrategy(strategy)));
     //#supervision
   }
@@ -80,7 +80,7 @@ public class CustomRouterDocTestBase {
   @Test
   public void countVotesAsIntendedNotAsInFlorida() throws Exception {
     ActorRef routedActor = system.actorOf(
-      new Props().withRouter(new VoteCountRouter()));
+      Props.empty().withRouter(new VoteCountRouter()));
     routedActor.tell(DemocratVote, null);
     routedActor.tell(DemocratVote, null);
     routedActor.tell(RepublicanVote, null);
@@ -167,9 +167,9 @@ public class CustomRouterDocTestBase {
     @Override
     public CustomRoute createCustomRoute(RouteeProvider routeeProvider) {
       final ActorRef democratActor =
-        routeeProvider.context().actorOf(new Props(DemocratActor.class), "d");
+        routeeProvider.context().actorOf(Props.create(DemocratActor.class), "d");
       final ActorRef republicanActor =
-        routeeProvider.context().actorOf(new Props(RepublicanActor.class), "r");
+        routeeProvider.context().actorOf(Props.create(RepublicanActor.class), "r");
       List<ActorRef> routees =
         Arrays.asList(new ActorRef[] { democratActor, republicanActor });
 

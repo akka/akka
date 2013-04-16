@@ -47,8 +47,8 @@ public class FaultHandlingDocSample {
       "akka.actor.debug.lifecycle = on");
 
     ActorSystem system = ActorSystem.create("FaultToleranceSample", config);
-    ActorRef worker = system.actorOf(new Props(Worker.class), "worker");
-    ActorRef listener = system.actorOf(new Props(Listener.class), "listener");
+    ActorRef worker = system.actorOf(Props.create(Worker.class), "worker");
+    ActorRef listener = system.actorOf(Props.create(Listener.class), "listener");
     // start the work and listen on progress
     // note that the listener is used as sender of the tell,
     // i.e. it will receive replies from the worker
@@ -121,7 +121,7 @@ public class FaultHandlingDocSample {
     // about progress
     ActorRef progressListener;
     final ActorRef counterService = getContext().actorOf(
-      new Props(CounterService.class), "counter");
+      Props.create(CounterService.class), "counter");
     final int totalCount = 51;
 
     // Stop the CounterService child if it throws ServiceUnavailable
@@ -202,6 +202,7 @@ public class FaultHandlingDocSample {
     }
 
     public static class ServiceUnavailable extends RuntimeException {
+      private static final long serialVersionUID = 1L;
       public ServiceUnavailable(String msg) {
         super(msg);
       }
@@ -271,7 +272,7 @@ public class FaultHandlingDocSample {
      */
     void initStorage() {
       storage = getContext().watch(getContext().actorOf(
-        new Props(Storage.class), "storage"));
+        Props.create(Storage.class), "storage"));
       // Tell the counter, if any, to use the new storage
       if (counter != null)
         counter.tell(new UseStorage(storage), getSelf());
@@ -286,12 +287,7 @@ public class FaultHandlingDocSample {
         counter == null) {
         // Reply from Storage of the initial value, now we can create the Counter
         final long value = ((Entry) msg).value;
-        counter = getContext().actorOf(new Props().withCreator(
-          new UntypedActorFactory() {
-            public Actor create() {
-              return new Counter(key, value);
-            }
-          }));
+        counter = getContext().actorOf(Props.create(Counter.class, key, value));
         // Tell the counter to use current storage
         counter.tell(new UseStorage(storage), getSelf());
         // and send the buffered backlog to the counter
@@ -435,6 +431,7 @@ public class FaultHandlingDocSample {
     }
 
     public static class StorageException extends RuntimeException {
+      private static final long serialVersionUID = 1L;
       public StorageException(String msg) {
         super(msg);
       }

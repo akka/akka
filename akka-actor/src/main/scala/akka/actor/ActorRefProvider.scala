@@ -362,6 +362,73 @@ private[akka] object SystemGuardian {
   case object TerminationHookDone
 }
 
+private[akka] object LocalActorRefProvider {
+
+  /*
+   * Root and user guardian
+   */
+  private class Guardian(override val supervisorStrategy: SupervisorStrategy) extends Actor {
+
+    def receive = {
+      case Terminated(_)    ⇒ context.stop(self)
+      case StopChild(child) ⇒ context.stop(child)
+      case m                ⇒ context.system.deadLetters forward DeadLetter(m, sender, self)
+    }
+
+    // guardian MUST NOT lose its children during restart
+    override def preRestart(cause: Throwable, msg: Option[Any]) {}
+  }
+
+  /**
+   * System guardian
+   */
+  private class SystemGuardian(override val supervisorStrategy: SupervisorStrategy, val guardian: ActorRef) extends Actor {
+    import SystemGuardian._
+
+    var terminationHooks = Set.empty[ActorRef]
+
+    def receive = {
+      case Terminated(`guardian`) ⇒
+        // time for the systemGuardian to stop, but first notify all the
+        // termination hooks, they will reply with TerminationHookDone
+        // and when all are done the systemGuardian is stopped
+        context.become(terminating)
+        terminationHooks foreach { _ ! TerminationHook }
+        stopWhenAllTerminationHooksDone()
+      case Terminated(a) ⇒
+        // a registered, and watched termination hook terminated before
+        // termination process of guardian has started
+        terminationHooks -= a
+      case StopChild(child) ⇒ context.stop(child)
+      case RegisterTerminationHook if sender != context.system.deadLetters ⇒
+        terminationHooks += sender
+        context watch sender
+      case m ⇒ context.system.deadLetters forward DeadLetter(m, sender, self)
+    }
+
+    def terminating: Receive = {
+      case Terminated(a)       ⇒ stopWhenAllTerminationHooksDone(a)
+      case TerminationHookDone ⇒ stopWhenAllTerminationHooksDone(sender)
+      case m                   ⇒ context.system.deadLetters forward DeadLetter(m, sender, self)
+    }
+
+    def stopWhenAllTerminationHooksDone(remove: ActorRef): Unit = {
+      terminationHooks -= remove
+      stopWhenAllTerminationHooksDone()
+    }
+
+    def stopWhenAllTerminationHooksDone(): Unit =
+      if (terminationHooks.isEmpty) {
+        context.system.eventStream.stopDefaultLoggers(context.system)
+        context.stop(self)
+      }
+
+    // guardian MUST NOT lose its children during restart
+    override def preRestart(cause: Throwable, msg: Option[Any]) {}
+  }
+
+}
+
 /**
  * Local ActorRef provider.
  *
@@ -428,80 +495,20 @@ private[akka] class LocalActorRefProvider private[akka] (
     override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = stopped.ifOff(message match {
       case null        ⇒ throw new InvalidMessageException("Message is null")
       case NullMessage ⇒ // do nothing
-      case _           ⇒ log.error(this + " received unexpected message [" + message + "]")
+      case _           ⇒ log.error(s"$this received unexpected message [$message]")
     })
 
     override def sendSystemMessage(message: SystemMessage): Unit = stopped ifOff {
       message match {
-        case Failed(child, ex, _)      ⇒ { causeOfTermination = Some(ex); child.asInstanceOf[InternalActorRef].stop() }
-        case _: Supervise              ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
+        case Failed(child, ex, _) ⇒
+          log.error(ex, s"guardian $child failed, shutting down!")
+          causeOfTermination = Some(ex)
+          child.asInstanceOf[InternalActorRef].stop()
+        case Supervise(_, _)           ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
         case _: DeathWatchNotification ⇒ stop()
-        case _                         ⇒ log.error(this + " received unexpected system message [" + message + "]")
+        case _                         ⇒ log.error(s"$this received unexpected system message [$message]")
       }
     }
-  }
-
-  /*
-   * Root and user guardian
-   */
-  private class Guardian(override val supervisorStrategy: SupervisorStrategy) extends Actor {
-
-    def receive = {
-      case Terminated(_)    ⇒ context.stop(self)
-      case StopChild(child) ⇒ context.stop(child)
-      case m                ⇒ deadLetters forward DeadLetter(m, sender, self)
-    }
-
-    // guardian MUST NOT lose its children during restart
-    override def preRestart(cause: Throwable, msg: Option[Any]) {}
-  }
-
-  /**
-   * System guardian
-   */
-  private class SystemGuardian(override val supervisorStrategy: SupervisorStrategy) extends Actor {
-    import SystemGuardian._
-
-    var terminationHooks = Set.empty[ActorRef]
-
-    def receive = {
-      case Terminated(`guardian`) ⇒
-        // time for the systemGuardian to stop, but first notify all the
-        // termination hooks, they will reply with TerminationHookDone
-        // and when all are done the systemGuardian is stopped
-        context.become(terminating)
-        terminationHooks foreach { _ ! TerminationHook }
-        stopWhenAllTerminationHooksDone()
-      case Terminated(a) ⇒
-        // a registered, and watched termination hook terminated before
-        // termination process of guardian has started
-        terminationHooks -= a
-      case StopChild(child) ⇒ context.stop(child)
-      case RegisterTerminationHook if sender != context.system.deadLetters ⇒
-        terminationHooks += sender
-        context watch sender
-      case m ⇒ deadLetters forward DeadLetter(m, sender, self)
-    }
-
-    def terminating: Receive = {
-      case Terminated(a)       ⇒ stopWhenAllTerminationHooksDone(a)
-      case TerminationHookDone ⇒ stopWhenAllTerminationHooksDone(sender)
-      case m                   ⇒ deadLetters forward DeadLetter(m, sender, self)
-    }
-
-    def stopWhenAllTerminationHooksDone(remove: ActorRef): Unit = {
-      terminationHooks -= remove
-      stopWhenAllTerminationHooksDone()
-    }
-
-    def stopWhenAllTerminationHooksDone(): Unit =
-      if (terminationHooks.isEmpty) {
-        eventStream.stopDefaultLoggers(system)
-        context.stop(self)
-      }
-
-    // guardian MUST NOT lose its children during restart
-    override def preRestart(cause: Throwable, msg: Option[Any]) {}
   }
 
   /*
@@ -552,7 +559,11 @@ private[akka] class LocalActorRefProvider private[akka] (
   protected def systemGuardianStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
   override lazy val rootGuardian: LocalActorRef =
-    new LocalActorRef(system, Props(new Guardian(rootGuardianStrategy)), theOneWhoWalksTheBubblesOfSpaceTime, rootPath) {
+    new LocalActorRef(
+      system,
+      Props(classOf[LocalActorRefProvider.Guardian], rootGuardianStrategy),
+      theOneWhoWalksTheBubblesOfSpaceTime,
+      rootPath) {
       override def getParent: InternalActorRef = this
       override def getSingleChild(name: String): InternalActorRef = name match {
         case "temp"        ⇒ tempContainer
@@ -568,7 +579,8 @@ private[akka] class LocalActorRefProvider private[akka] (
   override lazy val guardian: LocalActorRef = {
     val cell = rootGuardian.underlying
     cell.reserveChild("user")
-    val ref = new LocalActorRef(system, Props(new Guardian(guardianStrategy)), rootGuardian, rootPath / "user")
+    val ref = new LocalActorRef(system, Props(classOf[LocalActorRefProvider.Guardian], guardianStrategy),
+      rootGuardian, rootPath / "user")
     cell.initChild(ref)
     ref.start()
     ref
@@ -577,7 +589,9 @@ private[akka] class LocalActorRefProvider private[akka] (
   override lazy val systemGuardian: LocalActorRef = {
     val cell = rootGuardian.underlying
     cell.reserveChild("system")
-    val ref = new LocalActorRef(system, Props(new SystemGuardian(systemGuardianStrategy)), rootGuardian, rootPath / "system")
+    val ref = new LocalActorRef(
+      system, Props(classOf[LocalActorRefProvider.SystemGuardian], systemGuardianStrategy, guardian),
+      rootGuardian, rootPath / "system")
     cell.initChild(ref)
     ref.start()
     ref
@@ -669,7 +683,7 @@ private[akka] class LocalActorRefProvider private[akka] (
 
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath,
               systemService: Boolean, deploy: Option[Deploy], lookupDeploy: Boolean, async: Boolean): InternalActorRef = {
-    props.routerConfig match {
+    props.deploy.routerConfig match {
       case NoRouter ⇒
         if (settings.DebugRouterMisconfiguration) {
           deployer.lookup(path) foreach { d ⇒

@@ -3,74 +3,82 @@
  */
 package docs.actor;
 
-//#imports
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
-//#imports
-
-//#import-future
-import scala.concurrent.Future;
-import akka.dispatch.Futures;
-import akka.dispatch.Mapper;
-import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
-import akka.testkit.AkkaSpec;
-import akka.util.Timeout;
-//#import-future
-
-//#import-actors
-import akka.actor.PoisonPill;
-import akka.actor.Kill;
-//#import-actors
-
-//#import-procedure
-import akka.japi.Procedure;
-//#import-procedure
-
-//#import-watch
-import akka.actor.Terminated;
-//#import-watch
-
-//#import-identify
-import akka.actor.ActorSelection;
-import akka.actor.Identify;
-import akka.actor.ActorIdentity;
-//#import-identify
-
-//#import-gracefulStop
-import static akka.pattern.Patterns.gracefulStop;
-import scala.concurrent.Future;
-import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
-import akka.pattern.AskTimeoutException;
-//#import-gracefulStop
-
-//#import-askPipe
+//#import-ask
 import static akka.pattern.Patterns.ask;
 import static akka.pattern.Patterns.pipe;
-import scala.concurrent.Future;
-import akka.dispatch.Futures;
-import scala.concurrent.duration.Duration;
-import akka.util.Timeout;
-import java.util.concurrent.TimeUnit;
-import java.util.ArrayList;
-//#import-askPipe
+//#import-ask
+//#import-gracefulStop
+import static akka.pattern.Patterns.gracefulStop;
+//#import-gracefulStop
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+//#import-gracefulStop
+import scala.concurrent.Await;
+//#import-ask
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
+//#import-ask
+//#import-gracefulStop
+//#import-indirect
+import akka.actor.Actor;
+//#import-indirect
+//#import-identify
+import akka.actor.ActorIdentity;
+//#import-identify
+import akka.actor.ActorKilledException;
+//#import-identify
+import akka.actor.ActorSelection;
+//#import-identify
+//#import-actorRef
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+//#import-actorRef
+//#import-identify
+import akka.actor.Identify;
+//#import-identify
+//#import-indirect
+import akka.actor.IndirectActorProducer;
+//#import-indirect
+import akka.actor.OneForOneStrategy;
+//#import-props
+import akka.actor.Props;
+//#import-props
+import akka.actor.SupervisorStrategy;
+import akka.actor.SupervisorStrategy.Directive;
+//#import-terminated
+import akka.actor.Terminated;
+//#import-terminated
+//#import-untypedActor
+import akka.actor.UntypedActor;
+import akka.actor.UntypedActorFactory;
+//#import-untypedActor
 //#import-stash
 import akka.actor.UntypedActorWithStash;
 //#import-stash
-
-import akka.actor.UntypedActor;
-import akka.actor.UntypedActorFactory;
-
-import org.junit.Test;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import scala.Option;
-import java.lang.Object;
-import java.util.Iterator;
+//#import-ask
+import akka.dispatch.Futures;
+import akka.dispatch.Mapper;
+//#import-ask
+import akka.japi.Function;
+//#import-procedure
+import akka.japi.Procedure;
+//#import-procedure
+//#import-gracefulStop
+import akka.pattern.AskTimeoutException;
+//#import-gracefulStop
 import akka.pattern.Patterns;
+import akka.testkit.AkkaSpec;
+import akka.testkit.JavaTestKit;
+//#import-ask
+import akka.util.Timeout;
+//#import-ask
 
 public class UntypedActorDocTestBase {
 
@@ -87,71 +95,148 @@ public class UntypedActorDocTestBase {
     system = null;
   }
 
+  @SuppressWarnings("unused")
   @Test
   public void createProps() {
     //#creating-props-config
-    Props props1 = new Props();
-    Props props2 = new Props(MyUntypedActor.class);
-    Props props3 = new Props(new UntypedActorFactory() {
-      public UntypedActor create() {
-        return new MyUntypedActor();
-      }
-    });
-    Props props4 = props1.withCreator(new UntypedActorFactory() {
-      public UntypedActor create() {
-        return new MyUntypedActor();
-      }
-    });
+    Props props1 = Props.create(MyUntypedActor.class);
+    Props props2 = Props.create(MyActor.class, "...");
     //#creating-props-config
+  }
+
+  @SuppressWarnings("deprecation")
+  @Test
+  public void createPropsDeprecated() {
+    //#creating-props-deprecated
+    // DEPRECATED: encourages to close over enclosing class
+    final Props props1 = new Props(new UntypedActorFactory() {
+      private static final long serialVersionUID = 1L;
+      @Override
+      public UntypedActor create() throws Exception {
+        return new MyUntypedActor();
+      }
+    });
+
+    // DEPRECATED: encourages to close over enclosing class
+    final Props props2 = new Props().withCreator(new UntypedActorFactory() {
+      private static final long serialVersionUID = 1L;
+      @Override
+      public UntypedActor create() throws Exception {
+        return new MyUntypedActor();
+      }
+    });
+
+    // these are DEPRECATED due to duplicate functionality with Props.create()
+    final Props props3 = new Props(MyUntypedActor.class);
+    final Props props4 = new Props().withCreator(MyUntypedActor.class);
+    //#creating-props-deprecated
+    new JavaTestKit(system) {
+      {
+        for (Props props : new Props[] { props1, props2, props3, props4 }) {
+          final ActorRef a = system.actorOf(props);
+          a.tell("hello", getRef());
+          expectMsgEquals("hello");
+        }
+      }
+    };
   }
 
   @Test
   public void systemActorOf() {
     //#system-actorOf
-    ActorSystem system = ActorSystem.create("MySystem");
-    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class), "myactor");
+    // ActorSystem is a heavy object: create only one per application
+    final ActorSystem system = ActorSystem.create("MySystem");
+    final ActorRef myActor = system.actorOf(Props.create(MyUntypedActor.class), "myactor");
     //#system-actorOf
-    myActor.tell("test", null);
-    system.shutdown();
+    try {
+      new JavaTestKit(system) {
+        {
+          myActor.tell("hello", getRef());
+          expectMsgEquals("hello");
+        }
+      };
+    } finally {
+      system.shutdown();
+    }
   }
 
   @Test
   public void contextActorOf() {
-    //#context-actorOf
-    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class), "myactor2");
-    //#context-actorOf
-    myActor.tell("test", null);
-  }
-
-  @Test
-  public void constructorActorOf() {
-    //#creating-constructor
-    // allows passing in arguments to the MyActor constructor
-    ActorRef myActor = system.actorOf(new Props(new UntypedActorFactory() {
-      public UntypedActor create() {
-        return new MyActor("...");
+    new JavaTestKit(system) {
+      {
+        //#context-actorOf
+        class A extends UntypedActor {
+          final ActorRef child =
+              getContext().actorOf(Props.create(MyUntypedActor.class), "myChild");
+          //#plus-some-behavior
+          @Override
+          public void onReceive(Object msg) {
+            getSender().tell(child, getSelf());
+          }
+          //#plus-some-behavior
+        }
+        //#context-actorOf
+        final ActorRef top = system.actorOf(Props.create(A.class, this));
+        top.tell("hello", getRef());
+        final ActorRef child = expectMsgClass(ActorRef.class);
+        child.tell("hello", getRef());
+        expectMsgEquals("hello");
       }
-    }), "myactor3");
-    //#creating-constructor
-    myActor.tell("test", null);
+    };
+  }
+  
+  // this is just to make the test below a tiny fraction nicer
+  private ActorSystem getContext() {
+    return system;
   }
 
+  static
+  //#creating-indirectly
+  class DependencyInjector implements IndirectActorProducer {
+    final Object applicationContext;
+    final String beanName;
+    
+    public DependencyInjector(Object applicationContext, String beanName) {
+      this.applicationContext = applicationContext;
+      this.beanName = beanName;
+    }
+    
+    @Override
+    public Class<? extends Actor> actorClass() {
+      return MyActor.class;
+    }
+    
+    @Override
+    public MyActor produce() {
+      MyActor result;
+      //#obtain-fresh-Actor-instance-from-DI-framework
+      result = new MyActor((String) applicationContext);
+      //#obtain-fresh-Actor-instance-from-DI-framework
+      return result;
+    }
+  }
+  //#creating-indirectly
+  
   @Test
-  public void propsActorOf() {
-    //#creating-props
-    ActorRef myActor = system.actorOf(
-      new Props(MyUntypedActor.class).withDispatcher("my-dispatcher"), "myactor4");
-    //#creating-props
-    myActor.tell("test", null);
+  public void indirectActorOf() {
+    final String applicationContext = "...";
+    //#creating-indirectly
+    
+    final ActorRef myActor = getContext().actorOf(
+      Props.create(DependencyInjector.class, applicationContext, "MyActor"), "myactor3");
+    //#creating-indirectly
+    new JavaTestKit(system) {
+      {
+        myActor.tell("hello", getRef());
+        expectMsgEquals("...");
+      }
+    };
   }
 
+  @SuppressWarnings("unused")
   @Test
   public void usingAsk() throws Exception {
-    ActorRef myActor = system.actorOf(new Props(new UntypedActorFactory() {
-      public UntypedActor create() {
-        return new MyAskActor();
-      }
-    }), "myactor5");
+    ActorRef myActor = system.actorOf(Props.create(MyAskActor.class, this), "myactor5");
 
     //#using-ask
     Future<Object> future = Patterns.ask(myActor, "Hello", 1000);
@@ -161,55 +246,181 @@ public class UntypedActorDocTestBase {
 
   @Test
   public void receiveTimeout() {
-    ActorRef myActor = system.actorOf(new Props(MyReceivedTimeoutUntypedActor.class));
-    myActor.tell("Hello", null);
+    final ActorRef myActor = system.actorOf(Props.create(MyReceiveTimeoutUntypedActor.class));
+    new JavaTestKit(system) {
+      {
+        new Within(Duration.create(1, TimeUnit.SECONDS), Duration.create(1500,
+            TimeUnit.MILLISECONDS)) {
+          @Override
+          protected void run() {
+            myActor.tell("Hello", getRef());
+            expectMsgEquals("Hello world");
+            expectMsgEquals("timeout");
+          }
+        };
+      }
+    };
   }
 
   @Test
   public void usePoisonPill() {
-    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class));
-    //#poison-pill
-    myActor.tell(PoisonPill.getInstance(), null);
-    //#poison-pill
+    final ActorRef myActor = system.actorOf(Props.create(MyUntypedActor.class));
+    new JavaTestKit(system) {
+      {
+        final ActorRef sender = getRef();
+        //#poison-pill
+        myActor.tell(akka.actor.PoisonPill.getInstance(), sender);
+        //#poison-pill
+        watch(myActor);
+        expectTerminated(myActor);
+      }
+    };
   }
 
   @Test
   public void useKill() {
-    ActorRef victim = system.actorOf(new Props(MyUntypedActor.class));
-    //#kill
-    victim.tell(Kill.getInstance(), null);
-    //#kill
+    new JavaTestKit(system) {
+      {
+        class Master extends UntypedActor {
+          private SupervisorStrategy strategy = new OneForOneStrategy(-1,
+              Duration.Undefined(), new Function<Throwable, Directive>() {
+            @Override
+            public Directive apply(Throwable thr) {
+              if (thr instanceof ActorKilledException) {
+                target.tell("killed", getSelf());
+                getContext().stop(getSelf());
+                return SupervisorStrategy.stop();
+              }
+              return SupervisorStrategy.escalate();
+            }
+          });
+          final ActorRef target;
+          ActorRef child;
+
+          //#preStart
+          @Override
+          public void preStart() {
+            child = getContext().actorOf(Props.empty());
+          }
+          //#preStart
+          
+          @SuppressWarnings("unused")
+          public Master(ActorRef target) {
+            this.target = target;
+
+            /*
+             * Only compilation of `forward` is verified here.
+             */
+            final Object result = "";
+            //#forward
+            target.forward(result, getContext());
+            //#forward
+          }
+          
+          @Override
+          public SupervisorStrategy supervisorStrategy() {
+            return strategy;
+          }
+
+          //#reply
+          @Override
+          public void onReceive(Object msg) {
+            Object result =
+                //#calculate-result
+                child;
+                //#calculate-result
+            
+            // do not forget the second argument!
+            getSender().tell(result, getSelf());
+          }
+          //#reply
+          
+          //#postStop
+          @Override
+          public void postStop() {
+            //#clean-up-resources-here
+            final String message = "stopped";
+            //#tell
+            // don’t forget to think about who is the sender (2nd argument)
+            target.tell(message, getSelf());
+            //#tell
+            //#clean-up-resources-here
+          }
+          //#postStop
+        }
+        final ActorRef master = system.actorOf(Props.create(Master.class, this, getRef()));
+        expectMsgEquals("");
+        master.tell("", getRef());
+        final ActorRef victim = expectMsgClass(ActorRef.class);
+        //#kill
+        victim.tell(akka.actor.Kill.getInstance(), null);
+        //#kill
+        expectMsgEquals("killed");
+        expectMsgEquals("stopped");
+        assert getLastSender().equals(master);
+      }
+    };
   }
 
   @Test
   public void useBecome() {
-    ActorRef myActor = system.actorOf(new Props(new UntypedActorFactory() {
-      public UntypedActor create() {
-        return new HotSwapActor();
+    new JavaTestKit(system) {
+      {
+        ActorRef myActor = system.actorOf(Props.create(HotSwapActor.class));
+        myActor.tell("foo", getRef());
+        myActor.tell("bar", getRef());
+        expectMsgEquals("I am already happy :-)");
+        myActor.tell("bar", getRef());
+        expectMsgEquals("I am already happy :-)");
       }
-    }));
-    myActor.tell("foo", null);
-    myActor.tell("bar", null);
-    myActor.tell("bar", null);
+    };
   }
 
   @Test
   public void useWatch() throws Exception {
-    ActorRef myActor = system.actorOf(new Props(WatchActor.class));
+    ActorRef myActor = system.actorOf(Props.create(WatchActor.class));
     Future<Object> future = Patterns.ask(myActor, "kill", 1000);
     assert Await.result(future, Duration.create("1 second")).equals("finished");
+  }
+  
+  // compilation test only
+  public void compileSelections() {
+    //#selection-local
+    // will look up this absolute path
+    getContext().actorSelection("/user/serviceA/actor");
+    // will look up sibling beneath same supervisor
+    getContext().actorSelection("../joe");
+    //#selection-local
+
+    //#selection-wildcard
+    // will look all children to serviceB with names starting with worker
+    getContext().actorSelection("/user/serviceB/worker*");
+    // will look up all siblings beneath same supervisor
+    getContext().actorSelection("../*");
+    //#selection-wildcard
+    
+    //#selection-remote
+    getContext().actorSelection("akka.tcp://app@otherhost:1234/user/serviceB");
+    //#selection-remote
   }
 
   @Test
   public void useIdentify() throws Exception {
-    ActorRef a = system.actorOf(new Props(MyUntypedActor.class), "another");
-    ActorRef b = system.actorOf(new Props(Follower.class));
-    system.stop(a);
+    new JavaTestKit(system) {
+      {
+        ActorRef a = system.actorOf(Props.create(MyUntypedActor.class), "another");
+        ActorRef b = system.actorOf(Props.create(Follower.class, getRef()));
+        expectMsgEquals(a);
+        system.stop(a);
+        watch(b);
+        expectTerminated(b);
+      }
+    };
   }
 
   @Test
   public void usePatternsGracefulStop() throws Exception {
-    ActorRef actorRef = system.actorOf(new Props(MyUntypedActor.class));
+    ActorRef actorRef = system.actorOf(Props.create(MyUntypedActor.class));
     //#gracefulStop
     try {
       Future<Boolean> stopped =
@@ -223,68 +434,143 @@ public class UntypedActorDocTestBase {
   }
 
   class Result {
-    final int x;
+    final String x;
     final String s;
 
-    public Result(int x, String s) {
+    public Result(String x, String s) {
       this.x = x;
       this.s = s;
+    }
+
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + ((s == null) ? 0 : s.hashCode());
+      result = prime * result + ((x == null) ? 0 : x.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj)
+        return true;
+      if (obj == null)
+        return false;
+      if (getClass() != obj.getClass())
+        return false;
+      Result other = (Result) obj;
+      if (s == null) {
+        if (other.s != null)
+          return false;
+      } else if (!s.equals(other.s))
+        return false;
+      if (x == null) {
+        if (other.x != null)
+          return false;
+      } else if (!x.equals(other.x))
+        return false;
+      return true;
     }
   }
 
   @Test
   public void usePatternsAskPipe() {
-    ActorRef actorA = system.actorOf(new Props(MyUntypedActor.class));
-    ActorRef actorB = system.actorOf(new Props(MyUntypedActor.class));
-    ActorRef actorC = system.actorOf(new Props(MyUntypedActor.class));
-    //#ask-pipe
-    final Timeout t = new Timeout(Duration.create(5, TimeUnit.SECONDS));
+    new JavaTestKit(system) {
+      {
+        ActorRef actorA = system.actorOf(Props.create(MyUntypedActor.class));
+        ActorRef actorB = system.actorOf(Props.create(MyUntypedActor.class));
+        ActorRef actorC = getRef();
 
-    final ArrayList<Future<Object>> futures = new ArrayList<Future<Object>>();
-    futures.add(ask(actorA, "request", 1000)); // using 1000ms timeout
-    futures.add(ask(actorB, "another request", t)); // using timeout from above
+        //#ask-pipe
+        final Timeout t = new Timeout(Duration.create(5, TimeUnit.SECONDS));
 
-    final Future<Iterable<Object>> aggregate =
-      Futures.sequence(futures, system.dispatcher());
+        final ArrayList<Future<Object>> futures = new ArrayList<Future<Object>>();
+        futures.add(ask(actorA, "request", 1000)); // using 1000ms timeout
+        futures.add(ask(actorB, "another request", t)); // using timeout from
+                                                        // above
 
-    final Future<Result> transformed = aggregate.map(
-      new Mapper<Iterable<Object>, Result>() {
-        public Result apply(Iterable<Object> coll) {
-          final Iterator<Object> it = coll.iterator();
-          final String s = (String) it.next();
-          final int x = (Integer) it.next();
-          return new Result(x, s);
-        }
-      }, system.dispatcher());
+        final Future<Iterable<Object>> aggregate = Futures.sequence(futures,
+            system.dispatcher());
 
-    pipe(transformed, system.dispatcher()).to(actorC);
-    //#ask-pipe
+        final Future<Result> transformed = aggregate.map(
+            new Mapper<Iterable<Object>, Result>() {
+              public Result apply(Iterable<Object> coll) {
+                final Iterator<Object> it = coll.iterator();
+                final String x = (String) it.next();
+                final String s = (String) it.next();
+                return new Result(x, s);
+              }
+            }, system.dispatcher());
+
+        pipe(transformed, system.dispatcher()).to(actorC);
+        //#ask-pipe
+        
+        expectMsgEquals(new Result("request", "another request"));
+      }
+    };
+  }
+
+  //#props-factory
+  public static class DemoActor extends UntypedActor {
+    
+    /**
+     * Create Props for an actor of this type.
+     * @param name The name to be passed to this actor’s constructor.
+     * @return a Props for creating this actor, which can then be further configured
+     *         (e.g. calling `.withDispatcher()` on it)
+     */
+    public static Props mkProps(String name) {
+      return Props.create(DemoActor.class, name);
+    }
+    
+    final String name;
+
+    public DemoActor(String name) {
+      this.name = name;
+    }
+    
+    @Override
+    public void onReceive(Object msg) {
+      // some behavior here
+    }
+    
+  }
+  
+  //#props-factory
+  {
+    if (system != null)
+      //#props-factory
+      system.actorOf(DemoActor.mkProps("hello"));
+    //#props-factory
   }
 
   public static class MyActor extends UntypedActor {
 
+    final String s;
+    
     public MyActor(String s) {
+      this.s = s;
     }
 
-    public void onReceive(Object message) throws Exception {
-      try {
-        operation();
-      } catch (Exception e) {
-        getSender().tell(new akka.actor.Status.Failure(e), getSelf());
-        throw e;
-      }
+    public void onReceive(Object message) {
+      getSender().tell(s, getSelf());
     }
 
-    private void operation() {
-    }
-
+    /*
+     * This section must be kept in sync with the actual Actor trait.
+     * 
+     * BOYSCOUT RULE: whenever you read this, verify that!
+     */
     //#lifecycle-callbacks
     public void preStart() {
     }
 
-    public void preRestart(Throwable reason, Option<Object> message) {
-      for (ActorRef each : getContext().getChildren())
+    public void preRestart(Throwable reason, scala.Option<Object> message) {
+      for (ActorRef each : getContext().getChildren()) {
+        getContext().unwatch(each);
         getContext().stop(each);
+      }
       postStop();
     }
 
@@ -297,7 +583,7 @@ public class UntypedActorDocTestBase {
     //#lifecycle-callbacks
   }
 
-  public static class MyAskActor extends UntypedActor {
+  public class MyAskActor extends UntypedActor {
 
     public void onReceive(Object message) throws Exception {
       //#reply-exception
@@ -409,13 +695,20 @@ public class UntypedActorDocTestBase {
   static
   //#identify
   public class Follower extends UntypedActor {
-    String identifyId = "1";
+    final String identifyId = "1";
     {
       ActorSelection selection =
         getContext().actorSelection("/user/another");
       selection.tell(new Identify(identifyId), getSelf());
     }
     ActorRef another;
+    
+    //#test-omitted
+    final ActorRef probe;
+    public Follower(ActorRef probe) {
+      this.probe = probe;
+    }
+    //#test-omitted
 
     @Override
     public void onReceive(Object message) {
@@ -428,6 +721,9 @@ public class UntypedActorDocTestBase {
           else {
             another = ref;
             getContext().watch(another);
+            //#test-omitted
+            probe.tell(ref, getSelf());
+            //#test-omitted
           }
         }
       } else if (message instanceof Terminated) {

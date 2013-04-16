@@ -10,6 +10,26 @@ simple, mechanical source-level changes in client code.
 When migrating from 1.3.x to 2.1.x you should first follow the instructions for
 migrating :ref:`1.3.x to 2.0.x <migration-2.0>` and then :ref:`2.0.x to 2.1.x <migration-2.1>`.
 
+Deprecated Closure-Taking Props
+===============================
+
+:class:`Props` instances used to contain a closure which produces an
+:class:`Actor` instance when invoked. This approach is flawed in that closures
+are usually created in-line and thus carry a reference to their enclosing
+object; this is not well known among programmers, in particular it can be
+surprising that innocent-looking actor creation should not be serializable if
+the e.g. the enclosing class is an actor.
+
+Thus we have decided to deprecate ``Props(new MyActor(...))`` and
+:class:`UntypedActorFactory` in favor of basing :class:`Props` on a
+:class:`Class` and a sequence of constructor arguments. This has the added
+benefit of allowing easier integration with dependency injection frameworks,
+see :ref:`actor-create-factory`.
+
+The deprecated methods will be retained until the possibility of reintroducing
+a similar syntax in a safe fashion has been properly researched (in case of
+Scala it might be possible to use macros to this effect).
+
 Immutable everywhere
 ====================
 

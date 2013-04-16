@@ -22,7 +22,7 @@ public class ParentActor extends UntypedActor {
     if (msg.equals("rrr")) {
       //#roundRobinRouter
       ActorRef roundRobinRouter = getContext().actorOf(
-          new Props(PrintlnActor.class).withRouter(new RoundRobinRouter(5)),
+          Props.create(PrintlnActor.class).withRouter(new RoundRobinRouter(5)),
         "router");
       for (int i = 1; i <= 10; i++) {
         roundRobinRouter.tell(i, getSelf());
@@ -31,7 +31,7 @@ public class ParentActor extends UntypedActor {
     } else if (msg.equals("rr")) {
       //#randomRouter
       ActorRef randomRouter = getContext().actorOf(
-        new Props(PrintlnActor.class).withRouter(new RandomRouter(5)),
+        Props.create(PrintlnActor.class).withRouter(new RandomRouter(5)),
           "router");
       for (int i = 1; i <= 10; i++) {
         randomRouter.tell(i, getSelf());
@@ -40,7 +40,7 @@ public class ParentActor extends UntypedActor {
     } else if (msg.equals("smr")) {
       //#smallestMailboxRouter
       ActorRef smallestMailboxRouter = getContext().actorOf(
-          new Props(PrintlnActor.class).withRouter(new SmallestMailboxRouter(5)),
+          Props.create(PrintlnActor.class).withRouter(new SmallestMailboxRouter(5)),
         "router");
       for (int i = 1; i <= 10; i++) {
         smallestMailboxRouter.tell(i, getSelf());
@@ -49,13 +49,13 @@ public class ParentActor extends UntypedActor {
     } else if (msg.equals("br")) {
       //#broadcastRouter
       ActorRef broadcastRouter = getContext().actorOf(
-        new Props(PrintlnActor.class).withRouter(new BroadcastRouter(5)), "router");
+        Props.create(PrintlnActor.class).withRouter(new BroadcastRouter(5)), "router");
       broadcastRouter.tell("this is a broadcast message", getSelf());
       //#broadcastRouter
     } else if (msg.equals("sgfcr")) {
       //#scatterGatherFirstCompletedRouter
       ActorRef scatterGatherFirstCompletedRouter = getContext().actorOf(
-          new Props(FibonacciActor.class).withRouter(
+          Props.create(FibonacciActor.class).withRouter(
             new ScatterGatherFirstCompletedRouter(5, Duration.create(2, "seconds"))),
         "router");
       Timeout timeout = new Timeout(Duration.create(5, "seconds"));

@@ -299,7 +299,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -886,7 +886,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -1882,7 +1882,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -2432,7 +2432,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -2841,7 +2841,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -3315,7 +3315,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -3858,7 +3858,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -4486,7 +4486,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -5034,26 +5034,24 @@ public final class RemoteProtocol {
   public interface PropsProtocolOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
     
-    // required string dispatcher = 1;
-    boolean hasDispatcher();
-    String getDispatcher();
-    
     // required .DeployProtocol deploy = 2;
     boolean hasDeploy();
     akka.remote.RemoteProtocol.DeployProtocol getDeploy();
     akka.remote.RemoteProtocol.DeployProtocolOrBuilder getDeployOrBuilder();
     
-    // optional string fromClassCreator = 3;
-    boolean hasFromClassCreator();
-    String getFromClassCreator();
+    // required string clazz = 3;
+    boolean hasClazz();
+    String getClazz();
     
-    // optional bytes creator = 4;
-    boolean hasCreator();
-    com.google.protobuf.ByteString getCreator();
+    // repeated bytes args = 4;
+    java.util.List<com.google.protobuf.ByteString> getArgsList();
+    int getArgsCount();
+    com.google.protobuf.ByteString getArgs(int index);
     
-    // optional bytes routerConfig = 5;
-    boolean hasRouterConfig();
-    com.google.protobuf.ByteString getRouterConfig();
+    // repeated string classes = 5;
+    java.util.List<String> getClassesList();
+    int getClassesCount();
+    String getClasses(int index);
   }
   public static final class PropsProtocol extends
       com.google.protobuf.GeneratedMessage
@@ -5084,43 +5082,11 @@ public final class RemoteProtocol {
     }
     
     private int bitField0_;
-    // required string dispatcher = 1;
-    public static final int DISPATCHER_FIELD_NUMBER = 1;
-    private java.lang.Object dispatcher_;
-    public boolean hasDispatcher() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
-    }
-    public String getDispatcher() {
-      java.lang.Object ref = dispatcher_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          dispatcher_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getDispatcherBytes() {
-      java.lang.Object ref = dispatcher_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        dispatcher_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
     // required .DeployProtocol deploy = 2;
     public static final int DEPLOY_FIELD_NUMBER = 2;
     private akka.remote.RemoteProtocol.DeployProtocol deploy_;
     public boolean hasDeploy() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     public akka.remote.RemoteProtocol.DeployProtocol getDeploy() {
       return deploy_;
@@ -5129,14 +5095,14 @@ public final class RemoteProtocol {
       return deploy_;
     }
     
-    // optional string fromClassCreator = 3;
-    public static final int FROMCLASSCREATOR_FIELD_NUMBER = 3;
-    private java.lang.Object fromClassCreator_;
-    public boolean hasFromClassCreator() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+    // required string clazz = 3;
+    public static final int CLAZZ_FIELD_NUMBER = 3;
+    private java.lang.Object clazz_;
+    public boolean hasClazz() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    public String getFromClassCreator() {
-      java.lang.Object ref = fromClassCreator_;
+    public String getClazz() {
+      java.lang.Object ref = clazz_;
       if (ref instanceof String) {
         return (String) ref;
       } else {
@@ -5144,60 +5110,67 @@ public final class RemoteProtocol {
             (com.google.protobuf.ByteString) ref;
         String s = bs.toStringUtf8();
         if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          fromClassCreator_ = s;
+          clazz_ = s;
         }
         return s;
       }
     }
-    private com.google.protobuf.ByteString getFromClassCreatorBytes() {
-      java.lang.Object ref = fromClassCreator_;
+    private com.google.protobuf.ByteString getClazzBytes() {
+      java.lang.Object ref = clazz_;
       if (ref instanceof String) {
         com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        fromClassCreator_ = b;
+        clazz_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
     }
     
-    // optional bytes creator = 4;
-    public static final int CREATOR_FIELD_NUMBER = 4;
-    private com.google.protobuf.ByteString creator_;
-    public boolean hasCreator() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
+    // repeated bytes args = 4;
+    public static final int ARGS_FIELD_NUMBER = 4;
+    private java.util.List<com.google.protobuf.ByteString> args_;
+    public java.util.List<com.google.protobuf.ByteString>
+        getArgsList() {
+      return args_;
     }
-    public com.google.protobuf.ByteString getCreator() {
-      return creator_;
+    public int getArgsCount() {
+      return args_.size();
+    }
+    public com.google.protobuf.ByteString getArgs(int index) {
+      return args_.get(index);
     }
     
-    // optional bytes routerConfig = 5;
-    public static final int ROUTERCONFIG_FIELD_NUMBER = 5;
-    private com.google.protobuf.ByteString routerConfig_;
-    public boolean hasRouterConfig() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
+    // repeated string classes = 5;
+    public static final int CLASSES_FIELD_NUMBER = 5;
+    private com.google.protobuf.LazyStringList classes_;
+    public java.util.List<String>
+        getClassesList() {
+      return classes_;
     }
-    public com.google.protobuf.ByteString getRouterConfig() {
-      return routerConfig_;
+    public int getClassesCount() {
+      return classes_.size();
+    }
+    public String getClasses(int index) {
+      return classes_.get(index);
     }
     
     private void initFields() {
-      dispatcher_ = "";
       deploy_ = akka.remote.RemoteProtocol.DeployProtocol.getDefaultInstance();
-      fromClassCreator_ = "";
-      creator_ = com.google.protobuf.ByteString.EMPTY;
-      routerConfig_ = com.google.protobuf.ByteString.EMPTY;
+      clazz_ = "";
+      args_ = java.util.Collections.emptyList();;
+      classes_ = com.google.protobuf.LazyStringArrayList.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
       
-      if (!hasDispatcher()) {
+      if (!hasDeploy()) {
         memoizedIsInitialized = 0;
         return false;
       }
-      if (!hasDeploy()) {
+      if (!hasClazz()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -5213,19 +5186,16 @@ public final class RemoteProtocol {
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getDispatcherBytes());
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeMessage(2, deploy_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeBytes(3, getFromClassCreatorBytes());
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeBytes(3, getClazzBytes());
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeBytes(4, creator_);
+      for (int i = 0; i < args_.size(); i++) {
+        output.writeBytes(4, args_.get(i));
       }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeBytes(5, routerConfig_);
+      for (int i = 0; i < classes_.size(); i++) {
+        output.writeBytes(5, classes_.getByteString(i));
       }
       getUnknownFields().writeTo(output);
     }
@@ -5238,23 +5208,29 @@ public final class RemoteProtocol {
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(1, getDispatcherBytes());
+          .computeMessageSize(2, deploy_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(2, deploy_);
+          .computeBytesSize(3, getClazzBytes());
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(3, getFromClassCreatorBytes());
+      {
+        int dataSize = 0;
+        for (int i = 0; i < args_.size(); i++) {
+          dataSize += com.google.protobuf.CodedOutputStream
+            .computeBytesSizeNoTag(args_.get(i));
+        }
+        size += dataSize;
+        size += 1 * getArgsList().size();
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(4, creator_);
-      }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(5, routerConfig_);
+      {
+        int dataSize = 0;
+        for (int i = 0; i < classes_.size(); i++) {
+          dataSize += com.google.protobuf.CodedOutputStream
+            .computeBytesSizeNoTag(classes_.getByteString(i));
+        }
+        size += dataSize;
+        size += 1 * getClassesList().size();
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -5366,7 +5342,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -5381,20 +5357,18 @@ public final class RemoteProtocol {
       
       public Builder clear() {
         super.clear();
-        dispatcher_ = "";
-        bitField0_ = (bitField0_ & ~0x00000001);
         if (deployBuilder_ == null) {
           deploy_ = akka.remote.RemoteProtocol.DeployProtocol.getDefaultInstance();
         } else {
           deployBuilder_.clear();
         }
+        bitField0_ = (bitField0_ & ~0x00000001);
+        clazz_ = "";
         bitField0_ = (bitField0_ & ~0x00000002);
-        fromClassCreator_ = "";
+        args_ = java.util.Collections.emptyList();;
         bitField0_ = (bitField0_ & ~0x00000004);
-        creator_ = com.google.protobuf.ByteString.EMPTY;
+        classes_ = com.google.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000008);
-        routerConfig_ = com.google.protobuf.ByteString.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
       
@@ -5436,27 +5410,26 @@ public final class RemoteProtocol {
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
           to_bitField0_ |= 0x00000001;
         }
-        result.dispatcher_ = dispatcher_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
-          to_bitField0_ |= 0x00000002;
-        }
         if (deployBuilder_ == null) {
           result.deploy_ = deploy_;
         } else {
           result.deploy_ = deployBuilder_.build();
         }
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
-          to_bitField0_ |= 0x00000004;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
         }
-        result.fromClassCreator_ = fromClassCreator_;
-        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
-          to_bitField0_ |= 0x00000008;
+        result.clazz_ = clazz_;
+        if (((bitField0_ & 0x00000004) == 0x00000004)) {
+          args_ = java.util.Collections.unmodifiableList(args_);
+          bitField0_ = (bitField0_ & ~0x00000004);
         }
-        result.creator_ = creator_;
-        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
-          to_bitField0_ |= 0x00000010;
+        result.args_ = args_;
+        if (((bitField0_ & 0x00000008) == 0x00000008)) {
+          classes_ = new com.google.protobuf.UnmodifiableLazyStringList(
+              classes_);
+          bitField0_ = (bitField0_ & ~0x00000008);
         }
-        result.routerConfig_ = routerConfig_;
+        result.classes_ = classes_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -5473,31 +5446,42 @@ public final class RemoteProtocol {
       
       public Builder mergeFrom(akka.remote.RemoteProtocol.PropsProtocol other) {
         if (other == akka.remote.RemoteProtocol.PropsProtocol.getDefaultInstance()) return this;
-        if (other.hasDispatcher()) {
-          setDispatcher(other.getDispatcher());
-        }
         if (other.hasDeploy()) {
           mergeDeploy(other.getDeploy());
         }
-        if (other.hasFromClassCreator()) {
-          setFromClassCreator(other.getFromClassCreator());
+        if (other.hasClazz()) {
+          setClazz(other.getClazz());
         }
-        if (other.hasCreator()) {
-          setCreator(other.getCreator());
+        if (!other.args_.isEmpty()) {
+          if (args_.isEmpty()) {
+            args_ = other.args_;
+            bitField0_ = (bitField0_ & ~0x00000004);
+          } else {
+            ensureArgsIsMutable();
+            args_.addAll(other.args_);
+          }
+          onChanged();
         }
-        if (other.hasRouterConfig()) {
-          setRouterConfig(other.getRouterConfig());
+        if (!other.classes_.isEmpty()) {
+          if (classes_.isEmpty()) {
+            classes_ = other.classes_;
+            bitField0_ = (bitField0_ & ~0x00000008);
+          } else {
+            ensureClassesIsMutable();
+            classes_.addAll(other.classes_);
+          }
+          onChanged();
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
       
       public final boolean isInitialized() {
-        if (!hasDispatcher()) {
+        if (!hasDeploy()) {
           
           return false;
         }
-        if (!hasDeploy()) {
+        if (!hasClazz()) {
           
           return false;
         }
@@ -5531,11 +5515,6 @@ public final class RemoteProtocol {
               }
               break;
             }
-            case 10: {
-              bitField0_ |= 0x00000001;
-              dispatcher_ = input.readBytes();
-              break;
-            }
             case 18: {
               akka.remote.RemoteProtocol.DeployProtocol.Builder subBuilder = akka.remote.RemoteProtocol.DeployProtocol.newBuilder();
               if (hasDeploy()) {
@@ -5546,18 +5525,18 @@ public final class RemoteProtocol {
               break;
             }
             case 26: {
-              bitField0_ |= 0x00000004;
-              fromClassCreator_ = input.readBytes();
+              bitField0_ |= 0x00000002;
+              clazz_ = input.readBytes();
               break;
             }
             case 34: {
-              bitField0_ |= 0x00000008;
-              creator_ = input.readBytes();
+              ensureArgsIsMutable();
+              args_.add(input.readBytes());
               break;
             }
             case 42: {
-              bitField0_ |= 0x00000010;
-              routerConfig_ = input.readBytes();
+              ensureClassesIsMutable();
+              classes_.add(input.readBytes());
               break;
             }
           }
@@ -5566,48 +5545,12 @@ public final class RemoteProtocol {
       
       private int bitField0_;
       
-      // required string dispatcher = 1;
-      private java.lang.Object dispatcher_ = "";
-      public boolean hasDispatcher() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
-      }
-      public String getDispatcher() {
-        java.lang.Object ref = dispatcher_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          dispatcher_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setDispatcher(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        dispatcher_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearDispatcher() {
-        bitField0_ = (bitField0_ & ~0x00000001);
-        dispatcher_ = getDefaultInstance().getDispatcher();
-        onChanged();
-        return this;
-      }
-      void setDispatcher(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000001;
-        dispatcher_ = value;
-        onChanged();
-      }
-      
       // required .DeployProtocol deploy = 2;
       private akka.remote.RemoteProtocol.DeployProtocol deploy_ = akka.remote.RemoteProtocol.DeployProtocol.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
           akka.remote.RemoteProtocol.DeployProtocol, akka.remote.RemoteProtocol.DeployProtocol.Builder, akka.remote.RemoteProtocol.DeployProtocolOrBuilder> deployBuilder_;
       public boolean hasDeploy() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       public akka.remote.RemoteProtocol.DeployProtocol getDeploy() {
         if (deployBuilder_ == null) {
@@ -5626,7 +5569,7 @@ public final class RemoteProtocol {
         } else {
           deployBuilder_.setMessage(value);
         }
-        bitField0_ |= 0x00000002;
+        bitField0_ |= 0x00000001;
         return this;
       }
       public Builder setDeploy(
@@ -5637,12 +5580,12 @@ public final class RemoteProtocol {
         } else {
           deployBuilder_.setMessage(builderForValue.build());
         }
-        bitField0_ |= 0x00000002;
+        bitField0_ |= 0x00000001;
         return this;
       }
       public Builder mergeDeploy(akka.remote.RemoteProtocol.DeployProtocol value) {
         if (deployBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+          if (((bitField0_ & 0x00000001) == 0x00000001) &&
               deploy_ != akka.remote.RemoteProtocol.DeployProtocol.getDefaultInstance()) {
             deploy_ =
               akka.remote.RemoteProtocol.DeployProtocol.newBuilder(deploy_).mergeFrom(value).buildPartial();
@@ -5653,7 +5596,7 @@ public final class RemoteProtocol {
         } else {
           deployBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
+        bitField0_ |= 0x00000001;
         return this;
       }
       public Builder clearDeploy() {
@@ -5663,11 +5606,11 @@ public final class RemoteProtocol {
         } else {
           deployBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000002);
+        bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
       public akka.remote.RemoteProtocol.DeployProtocol.Builder getDeployBuilder() {
-        bitField0_ |= 0x00000002;
+        bitField0_ |= 0x00000001;
         onChanged();
         return getDeployFieldBuilder().getBuilder();
       }
@@ -5692,88 +5635,147 @@ public final class RemoteProtocol {
         return deployBuilder_;
       }
       
-      // optional string fromClassCreator = 3;
-      private java.lang.Object fromClassCreator_ = "";
-      public boolean hasFromClassCreator() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+      // required string clazz = 3;
+      private java.lang.Object clazz_ = "";
+      public boolean hasClazz() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      public String getFromClassCreator() {
-        java.lang.Object ref = fromClassCreator_;
+      public String getClazz() {
+        java.lang.Object ref = clazz_;
         if (!(ref instanceof String)) {
           String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          fromClassCreator_ = s;
+          clazz_ = s;
           return s;
         } else {
           return (String) ref;
         }
       }
-      public Builder setFromClassCreator(String value) {
+      public Builder setClazz(String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000004;
-        fromClassCreator_ = value;
+  bitField0_ |= 0x00000002;
+        clazz_ = value;
         onChanged();
         return this;
       }
-      public Builder clearFromClassCreator() {
+      public Builder clearClazz() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        clazz_ = getDefaultInstance().getClazz();
+        onChanged();
+        return this;
+      }
+      void setClazz(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000002;
+        clazz_ = value;
+        onChanged();
+      }
+      
+      // repeated bytes args = 4;
+      private java.util.List<com.google.protobuf.ByteString> args_ = java.util.Collections.emptyList();;
+      private void ensureArgsIsMutable() {
+        if (!((bitField0_ & 0x00000004) == 0x00000004)) {
+          args_ = new java.util.ArrayList<com.google.protobuf.ByteString>(args_);
+          bitField0_ |= 0x00000004;
+         }
+      }
+      public java.util.List<com.google.protobuf.ByteString>
+          getArgsList() {
+        return java.util.Collections.unmodifiableList(args_);
+      }
+      public int getArgsCount() {
+        return args_.size();
+      }
+      public com.google.protobuf.ByteString getArgs(int index) {
+        return args_.get(index);
+      }
+      public Builder setArgs(
+          int index, com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureArgsIsMutable();
+        args_.set(index, value);
+        onChanged();
+        return this;
+      }
+      public Builder addArgs(com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureArgsIsMutable();
+        args_.add(value);
+        onChanged();
+        return this;
+      }
+      public Builder addAllArgs(
+          java.lang.Iterable<? extends com.google.protobuf.ByteString> values) {
+        ensureArgsIsMutable();
+        super.addAll(values, args_);
+        onChanged();
+        return this;
+      }
+      public Builder clearArgs() {
+        args_ = java.util.Collections.emptyList();;
         bitField0_ = (bitField0_ & ~0x00000004);
-        fromClassCreator_ = getDefaultInstance().getFromClassCreator();
         onChanged();
         return this;
       }
-      void setFromClassCreator(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000004;
-        fromClassCreator_ = value;
-        onChanged();
-      }
       
-      // optional bytes creator = 4;
-      private com.google.protobuf.ByteString creator_ = com.google.protobuf.ByteString.EMPTY;
-      public boolean hasCreator() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
+      // repeated string classes = 5;
+      private com.google.protobuf.LazyStringList classes_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+      private void ensureClassesIsMutable() {
+        if (!((bitField0_ & 0x00000008) == 0x00000008)) {
+          classes_ = new com.google.protobuf.LazyStringArrayList(classes_);
+          bitField0_ |= 0x00000008;
+         }
       }
-      public com.google.protobuf.ByteString getCreator() {
-        return creator_;
+      public java.util.List<String>
+          getClassesList() {
+        return java.util.Collections.unmodifiableList(classes_);
       }
-      public Builder setCreator(com.google.protobuf.ByteString value) {
+      public int getClassesCount() {
+        return classes_.size();
+      }
+      public String getClasses(int index) {
+        return classes_.get(index);
+      }
+      public Builder setClasses(
+          int index, String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000008;
-        creator_ = value;
+  ensureClassesIsMutable();
+        classes_.set(index, value);
         onChanged();
         return this;
       }
-      public Builder clearCreator() {
+      public Builder addClasses(String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureClassesIsMutable();
+        classes_.add(value);
+        onChanged();
+        return this;
+      }
+      public Builder addAllClasses(
+          java.lang.Iterable<String> values) {
+        ensureClassesIsMutable();
+        super.addAll(values, classes_);
+        onChanged();
+        return this;
+      }
+      public Builder clearClasses() {
+        classes_ = com.google.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000008);
-        creator_ = getDefaultInstance().getCreator();
         onChanged();
         return this;
       }
-      
-      // optional bytes routerConfig = 5;
-      private com.google.protobuf.ByteString routerConfig_ = com.google.protobuf.ByteString.EMPTY;
-      public boolean hasRouterConfig() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
-      }
-      public com.google.protobuf.ByteString getRouterConfig() {
-        return routerConfig_;
-      }
-      public Builder setRouterConfig(com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000010;
-        routerConfig_ = value;
+      void addClasses(com.google.protobuf.ByteString value) {
+        ensureClassesIsMutable();
+        classes_.add(value);
         onChanged();
-        return this;
-      }
-      public Builder clearRouterConfig() {
-        bitField0_ = (bitField0_ & ~0x00000010);
-        routerConfig_ = getDefaultInstance().getRouterConfig();
-        onChanged();
-        return this;
       }
       
       // @@protoc_insertion_point(builder_scope:PropsProtocol)
@@ -6110,7 +6112,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -6522,11 +6524,10 @@ public final class RemoteProtocol {
       "l\030\004 \001(\t\"\216\001\n\027DaemonMsgCreateProtocol\022\035\n\005p" +
       "rops\030\001 \002(\0132\016.PropsProtocol\022\037\n\006deploy\030\002 \002" +
       "(\0132\017.DeployProtocol\022\014\n\004path\030\003 \002(\t\022%\n\nsup" +
-      "ervisor\030\004 \002(\0132\021.ActorRefProtocol\"\205\001\n\rPro",
-      "psProtocol\022\022\n\ndispatcher\030\001 \002(\t\022\037\n\006deploy" +
-      "\030\002 \002(\0132\017.DeployProtocol\022\030\n\020fromClassCrea" +
-      "tor\030\003 \001(\t\022\017\n\007creator\030\004 \001(\014\022\024\n\014routerConf" +
-      "ig\030\005 \001(\014\"g\n\016DeployProtocol\022\014\n\004path\030\001 \002(\t" +
+      "ervisor\030\004 \002(\0132\021.ActorRefProtocol\"^\n\rProp",
+      "sProtocol\022\037\n\006deploy\030\002 \002(\0132\017.DeployProtoc" +
+      "ol\022\r\n\005clazz\030\003 \002(\t\022\014\n\004args\030\004 \003(\014\022\017\n\007class" +
+      "es\030\005 \003(\t\"g\n\016DeployProtocol\022\014\n\004path\030\001 \002(\t" +
       "\022\016\n\006config\030\002 \001(\014\022\024\n\014routerConfig\030\003 \001(\014\022\r" +
       "\n\005scope\030\004 \001(\014\022\022\n\ndispatcher\030\005 \001(\t*7\n\013Com" +
       "mandType\022\013\n\007CONNECT\020\001\022\014\n\010SHUTDOWN\020\002\022\r\n\tH" +
@@ -6606,7 +6607,7 @@ public final class RemoteProtocol {
           internal_static_PropsProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_PropsProtocol_descriptor,
-              new java.lang.String[] { "Dispatcher", "Deploy", "FromClassCreator", "Creator", "RouterConfig", },
+              new java.lang.String[] { "Deploy", "Clazz", "Args", "Classes", },
               akka.remote.RemoteProtocol.PropsProtocol.class,
               akka.remote.RemoteProtocol.PropsProtocol.Builder.class);
           internal_static_DeployProtocol_descriptor =
