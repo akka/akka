@@ -154,6 +154,7 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
     def defaultDecider: Decider = {
       case _: ActorInitializationException ⇒ Stop
       case _: ActorKilledException         ⇒ Stop
+      case _: DeathPactException           ⇒ Stop
       case _: Exception                    ⇒ Restart
     }
     OneForOneStrategy()(defaultDecider)

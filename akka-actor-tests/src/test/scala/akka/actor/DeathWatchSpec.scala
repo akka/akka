@@ -127,7 +127,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡
     "fail a monitor which does not handle Terminated()" in {
       filterEvents(EventFilter[ActorKilledException](), EventFilter[DeathPactException]()) {
         case class FF(fail: Failed)
-        val strategy = new OneForOneStrategy(maxNrOfRetries = 0)(SupervisorStrategy.makeDecider(List(classOf[Exception]))) {
+        val strategy = new OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider) {
           override def handleFailure(context: ActorContext, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]) = {
             testActor.tell(FF(Failed(child, cause, 0)), child)
             super.handleFailure(context, child, cause, stats, children)
@@ -182,6 +182,43 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡
 
       // the testActor is not watching subject and will not receive a Terminated msg
       expectNoMsg
+    }
+
+    "discard Terminated when unwatched between sysmsg and processing" in {
+      case class W(ref: ActorRef)
+      case class U(ref: ActorRef)
+      class Watcher extends Actor {
+        def receive = {
+          case W(ref) â‡’ context watch ref
+          case U(ref) â‡’ context unwatch ref
+          case (t1: TestLatch, t2: TestLatch) â‡’
+            t1.countDown()
+            Await.ready(t2, 3.seconds)
+        }
+      }
+
+      val t1, t2 = TestLatch()
+      val w = system.actorOf(Props(new Watcher), "myDearWatcher")
+      val p = TestProbe()
+      w ! W(p.ref)
+      w ! ((t1, t2))
+      Await.ready(t1, 3.seconds)
+      watch(p.ref)
+      system stop p.ref
+      expectTerminated(p.ref)
+      w ! U(p.ref)
+      t2.countDown()
+      /*
+       * now the Watcher will
+       * - process the DeathWatchNotification and enqueue Terminated
+       * - process the unwatch command
+       * - process the Terminated
+       * If it receives the Terminated it will die, which in fact it should not
+       */
+      w ! Identify(())
+      expectMsg(ActorIdentity((), Some(w)))
+      w ! Identify(())
+      expectMsg(ActorIdentity((), Some(w)))
     }
   }
 
