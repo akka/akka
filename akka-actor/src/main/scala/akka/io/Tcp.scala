@@ -92,19 +92,42 @@ object Tcp extends ExtensionKey[TcpExt] {
   case class NoAck(token: Any)
   object NoAck extends NoAck(null)
 
+  sealed trait WriteCommand extends Command {
+    require(ack != null, "ack must be non-null. Use NoAck if you don't want acks.")
+
+    def ack: Any
+    def wantsAck: Boolean = !ack.isInstanceOf[NoAck]
+  }
+
   /**
    * Write data to the TCP connection. If no ack is needed use the special
    * `NoAck` object.
    */
-  case class Write(data: ByteString, ack: Any) extends Command {
-    require(ack != null, "ack must be non-null. Use NoAck if you don't want acks.")
-
-    def wantsAck: Boolean = !ack.isInstanceOf[NoAck]
-  }
+  case class Write(data: ByteString, ack: Any) extends WriteCommand
   object Write {
-    val Empty: Write = Write(ByteString.empty, NoAck)
+    /**
+     * The empty Write doesn't write anything and isn't acknowledged.
+     * It will, however, be denied and sent back with `CommandFailed` if the
+     * connection isn't currently ready to send any data (because another WriteCommand
+     * is still pending).
+     */
+    val empty: Write = Write(ByteString.empty, NoAck)
+
+    /**
+     * Create a new unacknowledged Write command with the given data.
+     */
     def apply(data: ByteString): Write =
-      if (data.isEmpty) Empty else Write(data, NoAck)
+      if (data.isEmpty) empty else Write(data, NoAck)
+  }
+
+  /**
+   * Write `count` bytes starting at `position` from file at `filePath` to the connection.
+   * When write is finished acknowledge with `ack`. If no ack is needed use `NoAck`. The
+   * count must be > 0.
+   */
+  case class WriteFile(filePath: String, position: Long, count: Long, ack: Any) extends WriteCommand {
+    require(position >= 0, "WriteFile.position must be >= 0")
+    require(count > 0, "WriteFile.count must be > 0")
   }
 
   case object StopReading extends Command
@@ -164,6 +187,11 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
       case x           ⇒ getIntBytes("received-message-size-limit")
     }
     val ManagementDispatcher = getString("management-dispatcher")
+    val FileIODispatcher = getString("file-io-dispatcher")
+    val TransferToLimit = getString("file-io-transferTo-limit") match {
+      case "unlimited" ⇒ Int.MaxValue
+      case _           ⇒ getIntBytes("file-io-transferTo-limit")
+    }
 
     require(NrOfSelectors > 0, "nr-of-selectors must be > 0")
     require(MaxChannels == -1 || MaxChannels > 0, "max-channels must be > 0 or 'unlimited'")
@@ -187,6 +215,7 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
   }
 
   val bufferPool: BufferPool = new DirectByteBufferPool(Settings.DirectBufferSize, Settings.MaxDirectBufferPoolSize)
+  val fileIoDispatcher = system.dispatchers.lookup(Settings.FileIODispatcher)
 }
 
 object TcpSO extends SoJavaFactories {
