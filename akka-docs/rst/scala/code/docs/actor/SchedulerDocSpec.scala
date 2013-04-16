@@ -38,27 +38,30 @@ class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   }
 
   "schedule a recurring task" in {
-    //#schedule-recurring
-    val Tick = "tick"
-    val tickActor = system.actorOf(Props(new Actor {
-      def receive = {
-        case Tick ⇒ //Do something
+    new AnyRef {
+      //#schedule-recurring
+      val Tick = "tick"
+      class TickActor extends Actor {
+        def receive = {
+          case Tick ⇒ //Do something
+        }
       }
-    }))
-    //Use system's dispatcher as ExecutionContext
-    import system.dispatcher
+      val tickActor = system.actorOf(Props(classOf[TickActor], this))
+      //Use system's dispatcher as ExecutionContext
+      import system.dispatcher
 
-    //This will schedule to send the Tick-message
-    //to the tickActor after 0ms repeating every 50ms
-    val cancellable =
-      system.scheduler.schedule(0 milliseconds,
-        50 milliseconds,
-        tickActor,
-        Tick)
+      //This will schedule to send the Tick-message
+      //to the tickActor after 0ms repeating every 50ms
+      val cancellable =
+        system.scheduler.schedule(0 milliseconds,
+          50 milliseconds,
+          tickActor,
+          Tick)
 
-    //This cancels further Ticks to be sent
-    cancellable.cancel()
-    //#schedule-recurring
-    system.stop(tickActor)
+      //This cancels further Ticks to be sent
+      cancellable.cancel()
+      //#schedule-recurring
+      system.stop(tickActor)
+    }
   }
 }

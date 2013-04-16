@@ -23,8 +23,8 @@ public class TransactorDocTest {
         //#coordinated-example
         ActorSystem system = ActorSystem.create("CoordinatedExample");
 
-        ActorRef counter1 = system.actorOf(new Props(CoordinatedCounter.class));
-        ActorRef counter2 = system.actorOf(new Props(CoordinatedCounter.class));
+        ActorRef counter1 = system.actorOf(Props.create(CoordinatedCounter.class));
+        ActorRef counter2 = system.actorOf(Props.create(CoordinatedCounter.class));
 
         Timeout timeout = new Timeout(5, SECONDS);
 
@@ -47,7 +47,7 @@ public class TransactorDocTest {
         //#create-coordinated
 
         ActorSystem system = ActorSystem.create("CoordinatedApi");
-        ActorRef actor = system.actorOf(new Props(Coordinator.class));
+        ActorRef actor = system.actorOf(Props.create(Coordinator.class));
 
         //#send-coordinated
         actor.tell(new Coordinated(new Message(), timeout), null);
@@ -65,7 +65,7 @@ public class TransactorDocTest {
     @Test
     public void counterTransactor() throws Exception {
         ActorSystem system = ActorSystem.create("CounterTransactor");
-        ActorRef counter = system.actorOf(new Props(Counter.class));
+        ActorRef counter = system.actorOf(Props.create(Counter.class));
 
         Timeout timeout = new Timeout(5, SECONDS);
         Coordinated coordinated = new Coordinated(timeout);
@@ -81,8 +81,8 @@ public class TransactorDocTest {
     @Test
     public void friendlyCounterTransactor() throws Exception {
         ActorSystem system = ActorSystem.create("FriendlyCounterTransactor");
-        ActorRef friend = system.actorOf(new Props(Counter.class));
-        ActorRef friendlyCounter = system.actorOf(new Props(FriendlyCounter.class));
+        ActorRef friend = system.actorOf(Props.create(Counter.class));
+        ActorRef friendlyCounter = system.actorOf(Props.create(FriendlyCounter.class));
 
         Timeout timeout = new Timeout(5, SECONDS);
         Coordinated coordinated = new Coordinated(timeout);

@@ -3,21 +3,23 @@
  */
 package docs.jrouting;
 
-import akka.actor.*;
-import akka.remote.routing.RemoteRouterConfig;
+import java.util.Arrays;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Kill;
+import akka.actor.PoisonPill;
+import akka.actor.Props;
+import akka.actor.Terminated;
 import akka.routing.Broadcast;
 import akka.routing.RoundRobinRouter;
 import akka.testkit.JavaTestKit;
 import docs.jrouting.RouterViaProgramExample.ExampleActor;
 import docs.routing.RouterViaProgramDocSpec.Echo;
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 public class RouterViaProgramDocTestBase {
 
@@ -45,17 +47,18 @@ public class RouterViaProgramDocTestBase {
     }
   }
 
+  @SuppressWarnings("unused")
   @Test
   public void demonstrateRouteesFromPaths() {
     new JavaTestKit(system) {{
       //#programmaticRoutingRouteePaths      
-      ActorRef actor1 = system.actorOf(new Props(ExampleActor.class), "actor1");
-      ActorRef actor2 = system.actorOf(new Props(ExampleActor.class), "actor2");
-      ActorRef actor3 = system.actorOf(new Props(ExampleActor.class), "actor3");
+      ActorRef actor1 = system.actorOf(Props.create(ExampleActor.class), "actor1");
+      ActorRef actor2 = system.actorOf(Props.create(ExampleActor.class), "actor2");
+      ActorRef actor3 = system.actorOf(Props.create(ExampleActor.class), "actor3");
       Iterable<String> routees = Arrays.asList(
         new String[] { "/user/actor1", "/user/actor2", "/user/actor3" });
       ActorRef router = system.actorOf(
-        new Props().withRouter(new RoundRobinRouter(routees)));
+        Props.empty().withRouter(new RoundRobinRouter(routees)));
       //#programmaticRoutingRouteePaths
       for (int i = 1; i <= 6; i++) {
         router.tell(new ExampleActor.Message(i), null);
@@ -66,7 +69,7 @@ public class RouterViaProgramDocTestBase {
   @Test
   public void demonstrateBroadcast() {
     new JavaTestKitWithSelf(system) {{
-      ActorRef router = system.actorOf(new Props(Echo.class).withRouter(new RoundRobinRouter(5)));
+      ActorRef router = system.actorOf(Props.create(Echo.class).withRouter(new RoundRobinRouter(5)));
       //#broadcastDavyJonesWarning
       router.tell(new Broadcast("Watch out for Davy Jones' locker"), getSelf());
       //#broadcastDavyJonesWarning
@@ -77,7 +80,7 @@ public class RouterViaProgramDocTestBase {
   @Test
   public void demonstratePoisonPill() {
     new JavaTestKitWithSelf(system) {{
-      ActorRef router = system.actorOf(new Props(Echo.class).withRouter(new RoundRobinRouter(5)));
+      ActorRef router = system.actorOf(Props.create(Echo.class).withRouter(new RoundRobinRouter(5)));
       watch(router);
       //#poisonPill
       router.tell(PoisonPill.getInstance(), getSelf());
@@ -89,7 +92,7 @@ public class RouterViaProgramDocTestBase {
   @Test
   public void demonstrateBroadcastOfPoisonPill() {
     new JavaTestKitWithSelf(system) {{
-      ActorRef router = system.actorOf(new Props(Echo.class).withRouter(new RoundRobinRouter(5)));
+      ActorRef router = system.actorOf(Props.create(Echo.class).withRouter(new RoundRobinRouter(5)));
       watch(router);
       //#broadcastPoisonPill
       router.tell(new Broadcast(PoisonPill.getInstance()), getSelf());
@@ -101,7 +104,7 @@ public class RouterViaProgramDocTestBase {
   @Test
   public void demonstrateKill() {
     new JavaTestKitWithSelf(system) {{
-      ActorRef router = system.actorOf(new Props(Echo.class).withRouter(new RoundRobinRouter(5)));
+      ActorRef router = system.actorOf(Props.create(Echo.class).withRouter(new RoundRobinRouter(5)));
       watch(router);
       //#kill
       router.tell(Kill.getInstance(), getSelf());
@@ -113,7 +116,7 @@ public class RouterViaProgramDocTestBase {
   @Test
   public void demonstrateBroadcastOfKill() {
     new JavaTestKitWithSelf(system) {{
-      ActorRef router = system.actorOf(new Props(Echo.class).withRouter(new RoundRobinRouter(5)));
+      ActorRef router = system.actorOf(Props.create(Echo.class).withRouter(new RoundRobinRouter(5)));
       watch(router);
       //#broadcastKill
       router.tell(new Broadcast(Kill.getInstance()), getSelf());

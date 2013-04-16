@@ -74,16 +74,17 @@ import ReliableProxy._
  * situations or other VM errors).
  *
  * You can create a reliable connection like this:
+ *
+ * In Scala:
+ *
  * {{{
- * val proxy = context.actorOf(Props(new ReliableProxy(target)))
+ * val proxy = context.actorOf(Props(classOf[ReliableProxy], target))
  * }}}
- * or in Java:
+ *
+ * In Java:
+ *
  * {{{
- * final ActorRef proxy = getContext().actorOf(new Props(new UntypedActorFactory() {
- *   public Actor create() {
- *     return new ReliableProxy(target);
- *   }
- * }));
+ * final ActorRef proxy = getContext().actorOf(Props.create(ReliableProxy.class target));
  * }}}
  *
  * '''''Please note:''''' the tunnel is uni-directional, and original sender

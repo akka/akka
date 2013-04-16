@@ -199,6 +199,7 @@ class TransactorDocSpec extends AkkaSpec {
 
     val system = ActorSystem("transactors")
 
+    // FIXME, or remove the whole transactor module, srsly
     lazy val underlyingCounter = new Counter
     val counter = system.actorOf(Props(underlyingCounter), name = "counter")
     val coordinated = Coordinated()(Timeout(5 seconds))

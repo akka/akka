@@ -58,32 +58,36 @@ public class DispatcherDocTestBase {
     system = null;
   }
 
+  @SuppressWarnings("unused")
   @Test
   public void defineDispatcherInConfig() {
     //#defining-dispatcher-in-config
     ActorRef myActor =
-      system.actorOf(new Props(MyUntypedActor.class),
+      system.actorOf(Props.create(MyUntypedActor.class),
         "myactor");
     //#defining-dispatcher-in-config
   }
 
+  @SuppressWarnings("unused")
   @Test
   public void defineDispatcherInCode() {
     //#defining-dispatcher-in-code
     ActorRef myActor =
-      system.actorOf(new Props(MyUntypedActor.class).withDispatcher("my-dispatcher"),
+      system.actorOf(Props.create(MyUntypedActor.class).withDispatcher("my-dispatcher"),
         "myactor3");
     //#defining-dispatcher-in-code
   }
 
+  @SuppressWarnings("unused")
   @Test
   public void definePinnedDispatcher() {
     //#defining-pinned-dispatcher
-    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class)
+    ActorRef myActor = system.actorOf(Props.create(MyUntypedActor.class)
         .withDispatcher("my-pinned-dispatcher"));
     //#defining-pinned-dispatcher
   }
   
+  @SuppressWarnings("unused")
   public void compileLookup() {
     //#lookup
     // this is scala.concurrent.ExecutionContext
@@ -97,33 +101,24 @@ public class DispatcherDocTestBase {
     JavaTestKit probe = new JavaTestKit(system);
     //#prio-dispatcher
 
-    // We create a new Actor that just prints out what it processes
-    ActorRef myActor = system.actorOf(
-        new Props().withCreator(new UntypedActorFactory() {
-          public UntypedActor create() {
-            return new UntypedActor() {
-              LoggingAdapter log =
-                      Logging.getLogger(getContext().system(), this);
-              {
-                for(Object msg : new Object[] {
-                  "lowpriority",
-                  "lowpriority",
-                  "highpriority",
-                  "pigdog",
-                  "pigdog2",
-                  "pigdog3",
-                  "highpriority",
-                  PoisonPill.getInstance() }) {
-                    getSelf().tell(msg, getSelf());
-                }
-              }
+    class Demo extends UntypedActor {
+      LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+      {
+        for (Object msg : new Object[] { "lowpriority", "lowpriority",
+            "highpriority", "pigdog", "pigdog2", "pigdog3", "highpriority",
+            PoisonPill.getInstance() }) {
+          getSelf().tell(msg, getSelf());
+        }
+      }
 
-              public void onReceive(Object message) {
-                log.info(message.toString());
-              }
-            };
-          }
-        }).withDispatcher("prio-dispatcher"));
+      public void onReceive(Object message) {
+        log.info(message.toString());
+      }
+    }
+
+    // We create a new Actor that just prints out what it processes
+    ActorRef myActor = system.actorOf(Props.create(Demo.class, this)
+        .withDispatcher("prio-dispatcher"));
 
     /*
     Logs:

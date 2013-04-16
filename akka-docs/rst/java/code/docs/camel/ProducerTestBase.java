@@ -14,17 +14,18 @@ public class ProducerTestBase {
   public void tellJmsProducer() {
     //#TellProducer
     ActorSystem system = ActorSystem.create("some-system");
-    Props props = new Props(Orders.class);
+    Props props = Props.create(Orders.class);
     ActorRef producer = system.actorOf(props, "jmsproducer");
     producer.tell("<order amount=\"100\" currency=\"PLN\" itemId=\"12345\"/>", null);
     //#TellProducer
     system.shutdown();
   }
 
+  @SuppressWarnings("unused")
   public void askProducer() {
     //#AskProducer
     ActorSystem system = ActorSystem.create("some-system");
-    Props props = new Props(FirstProducer.class);
+    Props props = Props.create(FirstProducer.class);
     ActorRef producer = system.actorOf(props,"myproducer");
     Future<Object> future = Patterns.ask(producer, "some request", 1000);
     //#AskProducer
@@ -35,7 +36,7 @@ public class ProducerTestBase {
   public void correlate(){
     //#Correlate
     ActorSystem system = ActorSystem.create("some-system");
-    Props props = new Props(Orders.class);
+    Props props = Props.create(Orders.class);
     ActorRef producer = system.actorOf(props,"jmsproducer");
     Map<String,Object> headers = new HashMap<String, Object>();
     headers.put(CamelMessage.MessageExchangeId(),"123");

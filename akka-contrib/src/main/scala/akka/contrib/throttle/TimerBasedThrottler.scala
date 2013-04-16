@@ -160,13 +160,17 @@ object TimerBasedThrottler {
  * sending out further messages:
  * {{{
  *   // A simple actor that prints whatever it receives
- *   val printer = system.actorOf(Props(new Actor {
+ *   class Printer extends Actor {
  *     def receive = {
  *       case x => println(x)
  *     }
- *   }))
+ *   }
+ *
+ *   val printer = system.actorOf(Props[Printer], "printer")
+ *
  *   // The throttler for this example, setting the rate
- *   val throttler = system.actorOf(Props(new TimerBasedThrottler(3 msgsPer (1.second))))
+ *   val throttler = system.actorOf(Props(classOf[TimerBasedThrottler], 3 msgsPer 1.second))
+ *
  *   // Set the target
  *   throttler ! SetTarget(Some(printer))
  *   // These three messages will be sent to the printer immediately

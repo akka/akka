@@ -115,7 +115,8 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
 
   /**
    * Escalates the failure to the supervisor of the supervisor,
-   * by rethrowing the cause of the failure.
+   * by rethrowing the cause of the failure, i.e. the supervisor fails with
+   * the same exception as the child.
    */
   case object Escalate extends Directive
 
@@ -132,14 +133,13 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
 
   /**
    * Java API: Returning this directive stops the Actor
-   * Java API
    */
   def stop = Stop
 
   /**
    * Java API: Returning this directive escalates the failure to the supervisor of the supervisor,
-   * by rethrowing the cause of the failure.
-   * Java API
+   * by rethrowing the cause of the failure, i.e. the supervisor fails with
+   * the same exception as the child.
    */
   def escalate = Escalate
 

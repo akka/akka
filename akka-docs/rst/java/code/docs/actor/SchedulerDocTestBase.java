@@ -10,9 +10,7 @@ import java.util.concurrent.TimeUnit;
 //#imports1
 
 //#imports2
-import akka.actor.Actor;
 import akka.actor.UntypedActor;
-import akka.actor.UntypedActorFactory;
 import akka.actor.Cancellable;
 //#imports2
 
@@ -32,7 +30,7 @@ public class SchedulerDocTestBase {
   @Before
   public void setUp() {
     system = ActorSystem.create("MySystem", AkkaSpec.testConf());
-    testActor = system.actorOf(new Props(MyUntypedActor.class));
+    testActor = system.actorOf(Props.create(MyUntypedActor.class));
   }
 
   @After
@@ -61,20 +59,18 @@ public class SchedulerDocTestBase {
   @Test
   public void scheduleRecurringTask() {
     //#schedule-recurring
-    ActorRef tickActor = system.actorOf(new Props().withCreator(
-      new UntypedActorFactory() {
-        public UntypedActor create() {
-          return new UntypedActor() {
-            public void onReceive(Object message) {
-              if (message.equals("Tick")) {
-                // Do someting
-              } else {
-                unhandled(message);
-              }
-            }
-          };
+    class Ticker extends UntypedActor {
+      @Override
+      public void onReceive(Object message) {
+        if (message.equals("Tick")) {
+          // Do someting
+        } else {
+          unhandled(message);
         }
-      }));
+      }
+    }
+    
+    ActorRef tickActor = system.actorOf(Props.create(Ticker.class, this));
 
     //This will schedule to send the Tick-message
     //to the tickActor after 0ms repeating every 50ms

@@ -22,7 +22,6 @@ import org.junit.Test;
 
 import scala.Option;
 
-import akka.actor.UntypedActorFactory;
 //#imports-deadletter
 import akka.actor.Props;
 import akka.actor.ActorRef;
@@ -36,11 +35,7 @@ public class LoggingDocTestBase {
   @Test
   public void useLoggingActor() {
     ActorSystem system = ActorSystem.create("MySystem");
-    ActorRef myActor = system.actorOf(new Props(new UntypedActorFactory() {
-      public UntypedActor create() {
-        return new MyActor();
-      }
-    }));
+    ActorRef myActor = system.actorOf(Props.create(MyActor.class, this));
     myActor.tell("test", null);
     system.shutdown();
   }
@@ -49,7 +44,7 @@ public class LoggingDocTestBase {
   public void subscribeToDeadLetters() {
     //#deadletters
     final ActorSystem system = ActorSystem.create("DeadLetters");
-    final ActorRef actor = system.actorOf(new Props(DeadLetterActor.class));
+    final ActorRef actor = system.actorOf(Props.create(DeadLetterActor.class));
     system.eventStream().subscribe(actor, DeadLetter.class);
     //#deadletters
     system.shutdown();

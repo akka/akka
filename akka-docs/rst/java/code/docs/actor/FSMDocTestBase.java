@@ -186,7 +186,7 @@ public class FSMDocTestBase {
 
   @org.junit.Test
   public void mustBunch() {
-    final ActorRef buncher = system.actorOf(new Props(MyFSM.class));
+    final ActorRef buncher = system.actorOf(Props.create(MyFSM.class));
     final TestProbe probe = new TestProbe(system);
     buncher.tell(new SetTarget(probe.ref()), null);
     buncher.tell(new Queue(1), null);
