@@ -11,7 +11,12 @@ and `spray.io`_ teams. Its design combines experiences from the
 ``spray-io`` module with improvements that were jointly developed for
 more general consumption as an actor-based service.
 
-This documentation is in progress and some sections may be incomplete. More will be coming.
+The guiding design goal for this I/O implementation was to reach extreme
+scalability, make no compromises in providing an API correctly matching the
+underlying transport mechanism and to be fully event-driven, non-blocking and
+asynchronous.  The API is meant to be a solid foundation for the implementation
+of network protocols and building higher abstractions; it is not meant to be a
+full-service high-level NIO wrapper for end users.
 
 Terminology, Concepts
 ---------------------
@@ -21,7 +26,7 @@ as an entry point for the API. I/O is broken into several drivers. The manager f
 is accessible by querying an ``ActorSystem``. For example the following code
 looks up the TCP manager and returns its ``ActorRef``:
 
-.. includecode:: code/docs/io/IODocTest.java#manager
+.. includecode:: code/docs/io/japi/EchoManager.java#manager
 
 The manager receives I/O command messages and instantiates worker actors in response. The worker actors present
 themselves to the API user in the reply to the command that was sent. For example after a ``Connect`` command sent to
@@ -346,84 +351,92 @@ this must be modeled either as a command or event, i.e. it will be part of the
 Using TCP
 ---------
 
-The following imports are assumed throughout this section:
+The code snippets through-out this section assume the following imports:
 
-.. includecode:: code/docs/io/IODocTest.java#imports
+.. includecode:: code/docs/io/japi/IODocTest.java#imports
 
 All of the Akka I/O APIs are accessed through manager objects. When using an I/O API, the first step is to acquire a
 reference to the appropriate manager. The code below shows how to acquire a reference to the ``Tcp`` manager.
 
-.. includecode:: code/docs/io/IODocTest.java#manager
+.. includecode:: code/docs/io/japi/EchoManager.java#manager
 
 The manager is an actor that handles the underlying low level I/O resources (selectors, channels) and instantiates
 workers for specific tasks, such as listening to incoming connections.
 
-.. _connecting-java:
-
 Connecting
 ^^^^^^^^^^
 
-The first step of connecting to a remote address is sending a ``Connect`` message to the TCP manager:
+.. includecode:: code/docs/io/japi/IODocTest.java#client
 
-.. includecode:: code/docs/io/IODocTest.java#connect
-
-When connecting, it is also possible to set various socket options or specify a local address:
-
-.. includecode:: code/docs/io/IODocTest.java#connect-with-options
+The first step of connecting to a remote address is sending a :class:`Connect`
+message to the TCP manager; in addition to the simplest form shown above there
+is also the possibility to specify a local :class:`InetSocketAddress` to bind
+to and a list of socket options to apply.
 
 .. note::
-  The SO_NODELAY (TCP_NODELAY on Windows) socket option defaults to true in Akka, independently of the OS default
-  settings. This setting disables Nagle's algorithm considerably improving latency for most applications. This setting
-  could be overridden by passing ``SO.TcpNoDelay(false)`` in the list of socket options of the ``Connect`` message.
 
-After issuing the ``Connect`` command the TCP manager spawns a worker actor to handle commands related to the
-connection. This worker actor will reveal itself by replying with a ``Connected`` message to the actor who sent the
-``Connect`` command.
+  The SO_NODELAY (TCP_NODELAY on Windows) socket option defaults to true in
+  Akka, independently of the OS default settings. This setting disables Nagle's
+  algorithm, considerably improving latency for most applications. This setting
+  could be overridden by passing ``SO.TcpNoDelay(false)`` in the list of socket
+  options of the ``Connect`` message.
 
-.. includecode:: code/docs/io/IODocTest.java#connected
+The TCP manager will then reply either with a :class:`CommandFailed` or it will
+spawn an internal actor representing the new connection. This new actor will
+then send a :class:`Connected` message to the original sender of the
+:class:`Connect` message.
 
-When receiving the :class:`Connected` message there is still no listener
-associated with the connection. To finish the connection setup a ``Register``
-has to be sent to the connection actor with the listener ``ActorRef`` as a
-parameter, which therefore done in the last line above.
+In order to activate the new connection a :class:`Register` message must be
+sent to the connection actor, informing that one about who shall receive data
+from the socket. Before this step is done the connection cannot be used, and
+there is an internal timeout after which the connection actor will shut itself
+down if no :class:`Register` message is received.
 
-Upon registration, the connection actor will watch the listener actor provided in the ``listener`` parameter.
-If the listener actor stops, the connection is closed, and all resources allocated for the connection released. During the
-lifetime of the connection the listener may receive various event notifications:
+The connection actor watches the registered handler and closes the connection
+when that one terminates, thereby cleaning up all internal resources associated
+with that connection.
 
-.. includecode:: code/docs/io/IODocTest.java#received
-
-``ConnectionClosed`` is a trait, which the different connection close events all implement.
-The last line handles all connection close events in the same way. It is possible to listen for more fine-grained
-connection close events, see :ref:`closing-connections-java` below.
-
+The actor in the example above uses :meth:`become` to switch from unconnected
+to connected operation, demonstrating the commands and events which are
+observed in that state. For a discussion on :class:`CommandFailed` see
+`Throttling Reads and Writes`_ below. :class:`ConnectionClosed` is a trait,
+which marks the different connection close events. The last line handles all
+connection close events in the same way. It is possible to listen for more
+fine-grained connection close events, see `Closing Connections`_ below.
 
 Accepting connections
 ^^^^^^^^^^^^^^^^^^^^^
 
-To create a TCP server and listen for inbound connection, a ``Bind`` command has to be sent to the TCP manager.
-This will instruct the TCP manager to listen for TCP connections on a particular address.
+.. includecode:: code/docs/io/japi/IODocTest.java#server
 
-.. includecode:: code/docs/io/IODocTest.java#bind
+To create a TCP server and listen for inbound connections, a :class:`Bind`
+command has to be sent to the TCP manager.  This will instruct the TCP manager
+to listen for TCP connections on a particular :class:`InetSocketAddress`; the
+port may be specified as ``0`` in order to bind to a random port.
 
-The actor sending the ``Bind`` message will receive a ``Bound`` message signalling that the server is ready to accept
-incoming connections. The process for accepting connections is similar to the process for making :ref:`outgoing
-connections <connecting-java>`: when an incoming connection is established, the actor provided as ``handler`` will
-receive a ``Connected`` message whose sender is the connection actor.
+The actor sending the :class:`Bind` message will receive a :class:`Bound`
+message signalling that the server is ready to accept incoming connections;
+this message also contains the :class:`InetSocketAddress` to which the socket
+was actually bound (i.e. resolved IP address and correct port number). 
 
-.. includecode:: code/docs/io/IODocTest.java#connected
+From this point forward the process of handling connections is the same as for
+outgoing connections. The example demonstrates that handling the reads from a
+certain connection can be delegated to another actor by naming it as the
+handler when sending the :class:`Register` message. Writes can be sent from any
+actor in the system to the connection actor (i.e. the actor which sent the
+:class:`Connected` message). The simplistic handler is defined as:
 
-When receiving the :class:`Connected` message there is still no listener
-associated with the connection. To finish the connection setup a ``Register``
-has to be sent to the connection actor with the listener ``ActorRef`` as a
-parameter, which therefore done in the last line above.
+.. includecode:: code/docs/io/japi/IODocTest.java#simplistic-handler
 
-Upon registration, the connection actor will watch the listener actor provided in the ``listener`` parameter.
-If the listener stops, the connection is closed, and all resources allocated for the connection released. During the
-connection lifetime the listener will receive various event notifications in the same way as in the outbound
-connection case.
+For a more complete sample which also takes into account the possibility of
+failures when sending please see `Throttling Reads and Writes`_ below.
 
-.. _closing-connections-java:
+The only difference to outgoing connections is that the internal actor managing
+the listen port—the sender of the :class:`Bound` message—watches the actor
+which was named as the recipient for :class:`Connected` messages in the
+:class:`Bind` message. When that actor terminates the listen port will be
+closed and all resources associated with it will be released; existing
+connections will not be terminated at this point.
 
 Closing connections
 ^^^^^^^^^^^^^^^^^^^
@@ -435,8 +448,8 @@ actor.
 the remote endpoint. Pending writes will be flushed. If the close is successful, the listener will be notified with
 ``Closed``.
 
-``ConfirmedClose`` will close the sending direction of the connection by sending a ``FIN`` message, but receives
-will continue until the remote endpoint closes the connection, too. Pending writes will be flushed. If the close is
+``ConfirmedClose`` will close the sending direction of the connection by sending a ``FIN`` message, but data 
+will continue to be received until the remote endpoint closes the connection, too. Pending writes will be flushed. If the close is
 successful, the listener will be notified with ``ConfirmedClosed``.
 
 ``Abort`` will immediately terminate the connection by sending a ``RST`` message to the remote endpoint. Pending
@@ -449,13 +462,126 @@ it receives one of the above close commands.
 
 ``ErrorClosed`` will be sent to the listener whenever an error happened that forced the connection to be closed.
 
-All close notifications are subclasses of ``ConnectionClosed`` so listeners who do not need fine-grained close events
+All close notifications are sub-types of ``ConnectionClosed`` so listeners who do not need fine-grained close events
 may handle all close events in the same way.
 
 Throttling Reads and Writes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-*This section is not yet ready. More coming soon*
+The basic model of the TCP connection actor is that it has no internal
+buffering (i.e. it can only process one write at a time, meaning it can buffer
+one write until it has been passed on to the O/S kernel in full). Congestion
+needs to be handled at the user level, for which there are three modes of
+operation:
+
+* *ACK-based:* every :class:`Write` command carries an arbitrary object, and if
+  this object is not ``Tcp.NoAck`` then it will be returned to the sender of
+  the :class:`Write` upon successfully writing all contained data to the
+  socket. If no other write is initiated before having received this
+  acknowledgement then no failures can happen due to buffer overrun.
+
+* *NACK-based:* every write which arrives while a previous write is not yet
+  completed will be replied to with a :class:`CommandFailed` message containing
+  the failed write. Just relying on this mechanism requires the implemented
+  protocol to tolerate skipping writes (e.g. if each write is a valid message
+  on its own and it is not required that all are delivered). This mode is
+  enabled by setting the ``useResumeWriting`` flag to ``false`` within the
+  :class:`Register` message during connection activation.
+
+* *NACK-based with write suspending:* this mode is very similar to the
+  NACK-based one, but once a single write has failed no further writes will
+  succeed until a :class:`ResumeWriting` message is received. This message will
+  be answered with a :class:`WritingResumed` message once the last accepted
+  write has completed. If the actor driving the connection implements buffering
+  and resends the NACK’ed messages after having awaited the
+  :class:`WritingResumed` signal then every message is delivered exactly once
+  to the network socket.
+
+These models (with the exception of the second which is rather specialised) are
+demonstrated in complete examples below. The full and contiguous source is
+available `on github <@github@/akka-docs/rst/java/code/io/japi>`_.
+
+.. note::
+
+   It should be obvious that all these flow control schemes only work between
+   one writer and one connection actor; as soon as multiple actors send write
+   commands to a single connection no consistent result can be achieved.
+
+ACK-Based Back-Pressure
+^^^^^^^^^^^^^^^^^^^^^^^
+
+For proper function of the following example it is important to configure the
+connection to remain half-open when the remote side closed its writing end:
+this allows the example :class:`EchoHandler` to write all outstanding data back
+to the client before fully closing the connection. This is enabled using a flag
+upon connection activation (observe the :class:`Register` message):
+
+.. includecode:: code/docs/io/japi/EchoManager.java#echo-manager
+
+With this preparation let us dive into the handler itself:
+
+.. includecode:: code/docs/io/japi/SimpleEchoHandler.java#simple-echo-handler
+   :exclude: storage-omitted
+
+The principle is simple: when having written a chunk always wait for the
+``Ack`` to come back before sending the next chunk. While waiting we switch
+behavior such that new incoming data are buffered. The helper functions used
+are a bit lengthy but not complicated:
+
+.. includecode:: code/docs/io/japi/SimpleEchoHandler.java#simple-helpers
+
+The most interesting part is probably the last: an ``Ack`` removes the oldest
+data chunk from the buffer, and if that was the last chunk then we either close
+the connection (if the peer closed its half already) or return to the idle
+behavior; otherwise we just send the next buffered chunk and stay waiting for
+the next ``Ack``.
+
+Back-pressure can be propagated also across the reading side back to the writer
+on the other end of the connection by sending the :class:`SuspendReading`
+command to the connection actor. This will lead to no data being read from the
+socket anymore (although this does happen after a delay because it takes some
+time until the connection actor processes this command, hence appropriate
+head-room in the buffer should be present), which in turn will lead to the O/S
+kernel buffer filling up on our end, then the TCP window mechanism will stop
+the remote side from writing, filling up its write buffer, until finally the
+writer on the other side cannot push any data into the socket anymore. This is
+how end-to-end back-pressure is realized across a TCP connection.
+
+NACK-Based Back-Pressure with Write Suspending
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. includecode:: code/docs/io/japi/EchoHandler.java#echo-handler
+   :exclude: buffering,closing,storage-omitted
+
+The principle here is to keep writing until a :class:`CommandFailed` is
+received, using acknowledgements only to prune the resend buffer. When a such a
+failure was received, transition into a different state for handling and handle
+resending of all queued data:
+
+.. includecode:: code/docs/io/japi/EchoHandler.java#buffering
+
+It should be noted that all writes which are currently buffered have also been
+sent to the connection actor upon entering this state, which means that the
+:class:`ResumeWriting` message is enqueued after those writes, leading to the
+reception of all outstanding :class:`CommandFailre` messages (which are ignored
+in this state) before receiving the :class:`WritingResumed` signal. That latter
+message is sent by the connection actor only once the internally queued write
+has been fully completed, meaning that a subsequent write will not fail. This
+is exploited by the :class:`EchoHandler` to switch to an ACK-based approach for
+the first ten writes after a failure before resuming the optimistic
+write-through behavior.
+
+.. includecode:: code/docs/io/japi/EchoHandler.java#closing
+
+Closing the connection while still sending all data is a bit more involved than
+in the ACK-based approach: the idea is to always send all outstanding messages
+and acknowledge all successful writes, and if a failure happens then switch
+behavior to await the :class:`WritingResumed` event and start over.
+
+The helper functions are very similar to the ACK-based case:
+
+.. includecode:: code/docs/io/japi/EchoHandler.java#helpers
+
 
 Using UDP
 ---------
@@ -567,12 +693,6 @@ will always be the endpoint we originally connected to.
   If there is a SecurityManager enabled on the system, every connectionless message send has to go through a security
   check, while in the case of connection-based UDP the security check is cached after connect, thus writes does
   not suffer an additional performance penalty.
-
-Throttling Reads and Writes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-*This section is not yet ready. More coming soon*
-
 
 Architecture in-depth
 ---------------------

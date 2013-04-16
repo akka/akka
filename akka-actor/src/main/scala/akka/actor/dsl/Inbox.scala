@@ -43,6 +43,7 @@ trait Inbox { this: ActorDSL.type ⇒
   private case class Select(deadline: Deadline, predicate: PartialFunction[Any, Any], client: ActorRef = null) extends Query {
     def withClient(c: ActorRef) = copy(client = c)
   }
+  private case class StartWatch(target: ActorRef)
   private case object Kick
   private implicit val deadlineOrder: Ordering[Query] = new Ordering[Query] {
     def compare(left: Query, right: Query): Int = left.deadline.time compare right.deadline.time
@@ -96,6 +97,7 @@ trait Inbox { this: ActorDSL.type ⇒
           }
           currentSelect = null
         }
+      case StartWatch(target) ⇒ context watch target
       case Kick ⇒
         val now = Deadline.now
         val pred = (q: Query) ⇒ q.deadline.time < now.time
@@ -112,7 +114,7 @@ trait Inbox { this: ActorDSL.type ⇒
         else {
           currentMsg = msg
           clients.dequeueFirst(clientPredicate) match {
-            case Some(q) ⇒ clientsByTimeout -= q; q.client ! msg
+            case Some(q) ⇒ { clientsByTimeout -= q; q.client ! msg }
             case None    ⇒ enqueueMessage(msg)
           }
           currentMsg = null
@@ -151,9 +153,14 @@ trait Inbox { this: ActorDSL.type ⇒
    */
   def inbox()(implicit system: ActorSystem): Inbox = new Inbox(system)
 
-  class Inbox(system: ActorSystem) {
+  class Inbox(system: ActorSystem) extends akka.actor.Inbox {
 
     val receiver: ActorRef = Extension(system).newReceiver
+
+    // Java API
+    def getRef: ActorRef = receiver
+    def send(target: ActorRef, msg: AnyRef): Unit = target.tell(msg, receiver)
+
     private val defaultTimeout: FiniteDuration = Extension(system).DSLDefaultTimeout
 
     /**
@@ -187,6 +194,12 @@ trait Inbox { this: ActorDSL.type ⇒
       implicit val t = Timeout(timeout + extraTime)
       predicate(Await.result(receiver ? Select(Deadline.now + timeout, predicate), Duration.Inf))
     }
+
+    /**
+     * Make the inbox’s actor watch the target actor such that reception of the
+     * Terminated message can then be awaited.
+     */
+    def watch(target: ActorRef): Unit = receiver ! StartWatch(target)
 
     /**
      * Overridden finalizer which will try to stop the actor once this Inbox
