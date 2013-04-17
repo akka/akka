@@ -13,7 +13,7 @@ public class TransformationBackendMain {
 
     ActorSystem system = ActorSystem.create("ClusterSystem");
 
-    system.actorOf(new Props(TransformationBackend.class), "backend");
+    system.actorOf(Props.create(TransformationBackend.class), "backend");
 
   }
 

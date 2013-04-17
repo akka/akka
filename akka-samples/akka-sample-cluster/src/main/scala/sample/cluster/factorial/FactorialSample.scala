@@ -29,7 +29,7 @@ object FactorialFrontend {
     system.log.info("Factorials will start when 2 backend members in the cluster.")
     //#registerOnUp
     Cluster(system) registerOnMemberUp {
-      system.actorOf(Props(new FactorialFrontend(upToN, repeat = true)),
+      system.actorOf(Props(classOf[FactorialFrontend], upToN, true),
         name = "factorialFrontend")
     }
     //#registerOnUp

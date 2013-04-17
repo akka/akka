@@ -18,9 +18,9 @@ public class FactorialBackendMain {
 
     ActorSystem system = ActorSystem.create("ClusterSystem", config);
 
-    system.actorOf(new Props(FactorialBackend.class), "factorialBackend");
+    system.actorOf(Props.create(FactorialBackend.class), "factorialBackend");
 
-    system.actorOf(new Props(MetricsListener.class), "metricsListener");
+    system.actorOf(Props.create(MetricsListener.class), "metricsListener");
 
   }
 

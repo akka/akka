@@ -85,9 +85,9 @@ abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSing
 
       Cluster(system).unsubscribe(testActor)
 
-      system.actorOf(Props(new ClusterSingletonManager(
+      system.actorOf(ClusterSingletonManager.props(
         singletonProps = _ ⇒ Props[StatsService], singletonName = "statsService",
-        terminationMessage = PoisonPill, role = Some("compute"))), name = "singleton")
+        terminationMessage = PoisonPill, role = Some("compute")), name = "singleton")
 
       system.actorOf(Props[StatsFacade], "statsFacade")
 

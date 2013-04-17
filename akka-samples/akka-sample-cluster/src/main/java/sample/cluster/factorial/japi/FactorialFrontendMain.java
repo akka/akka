@@ -4,8 +4,6 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.actor.UntypedActor;
-import akka.actor.UntypedActorFactory;
 import akka.cluster.Cluster;
 
 public class FactorialFrontendMain {
@@ -22,12 +20,7 @@ public class FactorialFrontendMain {
     Cluster.get(system).registerOnMemberUp(new Runnable() {
       @Override
       public void run() {
-        system.actorOf(new Props(new UntypedActorFactory() {
-          @Override
-          public UntypedActor create() {
-            return new FactorialFrontend(upToN, true);
-          }
-        }), "factorialFrontend");
+        system.actorOf(Props.create(FactorialFrontend.class, upToN, true), "factorialFrontend");
       }
     });
     //#registerOnUp

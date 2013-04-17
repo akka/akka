@@ -18,8 +18,8 @@ public class StatsSampleMain {
 
     ActorSystem system = ActorSystem.create("ClusterSystem", config);
 
-    system.actorOf(new Props(StatsWorker.class), "statsWorker");
-    system.actorOf(new Props(StatsService.class), "statsService");
+    system.actorOf(Props.create(StatsWorker.class), "statsWorker");
+    system.actorOf(Props.create(StatsService.class), "statsService");
 
   }
 }

@@ -21,6 +21,48 @@ import akka.AkkaException
 object ClusterSingletonManager {
 
   /**
+   * Scala API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]].
+   */
+  def props(
+    singletonProps: Option[Any] ⇒ Props,
+    singletonName: String,
+    terminationMessage: Any,
+    role: Option[String],
+    maxHandOverRetries: Int = 20,
+    maxTakeOverRetries: Int = 15,
+    retryInterval: FiniteDuration = 1.second,
+    loggingEnabled: Boolean = true): Props =
+    Props(classOf[ClusterSingletonManager], singletonProps, singletonName, terminationMessage, role,
+      maxHandOverRetries, maxTakeOverRetries, retryInterval, loggingEnabled)
+
+  /**
+   * Java API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]].
+   */
+  def props(
+    singletonName: String,
+    terminationMessage: Any,
+    role: String,
+    maxHandOverRetries: Int,
+    maxTakeOverRetries: Int,
+    retryInterval: FiniteDuration,
+    loggingEnabled: Boolean,
+    singletonPropsFactory: ClusterSingletonPropsFactory): Props =
+    props(handOverData ⇒ singletonPropsFactory.create(handOverData.orNull), singletonName, terminationMessage,
+      ClusterSingletonManager.Internal.roleOption(role), maxHandOverRetries, maxTakeOverRetries, retryInterval)
+
+  /**
+   * Java API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]]
+   * with default values.
+   */
+  def defaultProps(
+    singletonName: String,
+    terminationMessage: Any,
+    role: String,
+    singletonPropsFactory: ClusterSingletonPropsFactory): Props =
+    props(handOverData ⇒ singletonPropsFactory.create(handOverData.orNull), singletonName, terminationMessage,
+      ClusterSingletonManager.Internal.roleOption(role))
+
+  /**
    * INTERNAL API
    * public due to the `with FSM` type parameters
    */
@@ -237,6 +279,9 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  * it is supposed to be running on. Alternatively the singleton actor may
  * broadcast its existence when it is started.
  *
+ * Use factory method [[ClusterSingletonManager#props] to create the
+ * [[akka.actor.Props]] for the actor.
+ *
  * ==Arguments==
  *
  * '''''singletonProps''''' Factory for [[akka.actor.Props]] of the
@@ -294,41 +339,15 @@ class ClusterSingletonManager(
   singletonName: String,
   terminationMessage: Any,
   role: Option[String],
-  maxHandOverRetries: Int = 20,
-  maxTakeOverRetries: Int = 15,
-  retryInterval: FiniteDuration = 1.second,
-  loggingEnabled: Boolean = true)
+  maxHandOverRetries: Int,
+  maxTakeOverRetries: Int,
+  retryInterval: FiniteDuration,
+  loggingEnabled: Boolean)
   extends Actor with FSM[ClusterSingletonManager.State, ClusterSingletonManager.Data] {
 
   // to ensure that new leader doesn't start singleton actor before previous is stopped for certain corner cases
   require(maxTakeOverRetries < maxHandOverRetries,
     s"maxTakeOverRetries [${maxTakeOverRetries}]must be < maxHandOverRetries [${maxHandOverRetries}]")
-
-  /**
-   * Full Java API constructor.
-   */
-  def this(
-    singletonName: String,
-    terminationMessage: Any,
-    role: String,
-    maxHandOverRetries: Int,
-    maxTakeOverRetries: Int,
-    retryInterval: FiniteDuration,
-    loggingEnabled: Boolean,
-    singletonPropsFactory: ClusterSingletonPropsFactory) =
-    this(handOverData ⇒ singletonPropsFactory.create(handOverData.orNull), singletonName, terminationMessage,
-      ClusterSingletonManager.Internal.roleOption(role), maxHandOverRetries, maxTakeOverRetries, retryInterval)
-
-  /**
-   * Java API constructor with default values.
-   */
-  def this(
-    singletonName: String,
-    terminationMessage: Any,
-    role: String,
-    singletonPropsFactory: ClusterSingletonPropsFactory) =
-    this(handOverData ⇒ singletonPropsFactory.create(handOverData.orNull), singletonName, terminationMessage,
-      ClusterSingletonManager.Internal.roleOption(role))
 
   import ClusterSingletonManager._
   import ClusterSingletonManager.Internal._
@@ -396,7 +415,8 @@ class ClusterSingletonManager(
 
   when(Start) {
     case Event(StartLeaderChangedBuffer, _) ⇒
-      leaderChangedBuffer = context.actorOf(Props(new LeaderChangedBuffer(role)).withDispatcher(context.props.dispatcher))
+      leaderChangedBuffer = context.actorOf(Props(classOf[LeaderChangedBuffer], role).
+        withDispatcher(context.props.dispatcher))
       getNextLeaderChanged()
       stay
 

@@ -88,11 +88,11 @@ class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonMan
   }
 
   def createSingleton(): ActorRef = {
-    system.actorOf(Props(new ClusterSingletonManager(
-      singletonProps = handOverData ⇒ Props(new Echo(testActor)),
+    system.actorOf(ClusterSingletonManager.props(
+      singletonProps = handOverData ⇒ Props(classOf[Echo], testActor),
       singletonName = "echo",
       terminationMessage = PoisonPill,
-      role = None)),
+      role = None),
       name = "singleton")
   }
 

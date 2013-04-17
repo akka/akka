@@ -5,7 +5,6 @@ import sample.cluster.stats.japi.StatsMessages.StatsJob;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
-import akka.actor.UntypedActorFactory;
 import akka.cluster.routing.ClusterRouterConfig;
 import akka.cluster.routing.ClusterRouterSettings;
 import akka.routing.ConsistentHashingRouter;
@@ -17,7 +16,7 @@ import akka.routing.FromConfig;
 public class StatsService extends UntypedActor {
 
   ActorRef workerRouter = getContext().actorOf(
-      new Props(StatsWorker.class).withRouter(FromConfig.getInstance()),
+      Props.create(StatsWorker.class).withRouter(FromConfig.getInstance()),
       "workerRouter");
 
   @Override
@@ -32,12 +31,7 @@ public class StatsService extends UntypedActor {
 
         // create actor that collects replies from workers
         ActorRef aggregator = getContext().actorOf(
-            new Props(new UntypedActorFactory() {
-              @Override
-              public UntypedActor create() {
-                return new StatsAggregator(words.length, replyTo);
-              }
-            }));
+            Props.create(StatsAggregator.class, words.length, replyTo));
 
         // send each word to a worker
         for (String word : words) {
@@ -62,7 +56,7 @@ abstract class StatsService2 extends UntypedActor {
   boolean allowLocalRoutees = true;
   String useRole = "compute";
   ActorRef workerRouter = getContext().actorOf(
-      new Props(StatsWorker.class).withRouter(new ClusterRouterConfig(
+      Props.create(StatsWorker.class).withRouter(new ClusterRouterConfig(
           new ConsistentHashingRouter(0), new ClusterRouterSettings(
               totalInstances, routeesPath, allowLocalRoutees, useRole))),
       "workerRouter2");
@@ -77,7 +71,7 @@ abstract class StatsService3 extends UntypedActor {
   boolean allowLocalRoutees = false;
   String useRole = "compute";
   ActorRef workerRouter = getContext().actorOf(
-      new Props(StatsWorker.class).withRouter(new ClusterRouterConfig(
+      Props.create(StatsWorker.class).withRouter(new ClusterRouterConfig(
           new ConsistentHashingRouter(0), new ClusterRouterSettings(
               totalInstances, maxInstancesPerNode, allowLocalRoutees, useRole))),
       "workerRouter3");
