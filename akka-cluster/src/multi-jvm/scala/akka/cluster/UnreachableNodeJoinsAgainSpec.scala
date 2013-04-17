@@ -59,9 +59,8 @@ abstract class UnreachableNodeJoinsAgainSpec
     roles.filterNot(_ == role)
   }
 
-  lazy val sortedRoles = roles.sorted
-  lazy val master = sortedRoles(0)
-  lazy val victim = sortedRoles(1)
+  lazy val master = second
+  lazy val victim = fourth
 
   var endBarrierNumber = 0
   def endBarrier(): Unit = {
@@ -91,7 +90,7 @@ abstract class UnreachableNodeJoinsAgainSpec
 
       enterBarrier("unplug_victim")
 
-      val allButVictim = allBut(victim, sortedRoles)
+      val allButVictim = allBut(victim, roles)
       runOn(victim) {
         allButVictim.foreach(markNodeAsUnavailable(_))
         within(30 seconds) {
