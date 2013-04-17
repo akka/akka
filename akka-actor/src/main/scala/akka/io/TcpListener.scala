@@ -90,7 +90,7 @@ private[io] class TcpListener(val selectorRouter: ActorRef,
       if (limit > 0) {
         try channel.accept()
         catch {
-          case NonFatal(e) ⇒ log.error(e, "Accept error: could not accept new connection due to {}", e); null
+          case NonFatal(e) ⇒ { log.error(e, "Accept error: could not accept new connection due to {}", e); null }
         }
       } else null
     if (socketChannel != null) {

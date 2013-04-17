@@ -18,13 +18,20 @@ import MemberStatus._
  * and roles.
  */
 @SerialVersionUID(1L)
-class Member(val address: Address, val status: MemberStatus, val roles: Set[String]) extends Serializable {
-  override def hashCode = address.##
+class Member private[cluster] (
+  /** INTERNAL API **/
+  private[cluster] val uniqueAddress: UniqueAddress,
+  val status: MemberStatus,
+  val roles: Set[String]) extends Serializable {
+
+  def address: Address = uniqueAddress.address
+
+  override def hashCode = uniqueAddress.##
   override def equals(other: Any) = other match {
-    case m: Member ⇒ address == m.address
+    case m: Member ⇒ uniqueAddress == m.uniqueAddress
     case _         ⇒ false
   }
-  override def toString = "Member(address = %s, status = %s)" format (address, status)
+  override def toString = s"{Member(address = ${address}, status = ${status})"
 
   def hasRole(role: String): Boolean = roles.contains(role)
 
@@ -40,7 +47,7 @@ class Member(val address: Address, val status: MemberStatus, val roles: Set[Stri
     else {
       require(allowedTransitions(oldStatus)(status),
         s"Invalid member status transition [ ${this} -> ${status}]")
-      new Member(address, status, roles)
+      new Member(uniqueAddress, status, roles)
     }
   }
 }
@@ -52,8 +59,17 @@ object Member {
 
   val none = Set.empty[Member]
 
-  def apply(address: Address, status: MemberStatus, roles: Set[String]): Member =
-    new Member(address, status, roles)
+  /**
+   * INTERNAL API
+   * Create a new member with status Joining.
+   */
+  private[cluster] def apply(uniqueAddress: UniqueAddress, roles: Set[String]): Member =
+    new Member(uniqueAddress, Joining, roles)
+
+  /**
+   * INTERNAL API
+   */
+  private[cluster] def removed(node: UniqueAddress): Member = new Member(node, Removed, Set.empty)
 
   /**
    * `Address` ordering type class, sorts addresses by host and port.
@@ -87,12 +103,20 @@ object Member {
    * `Member` ordering type class, sorts members by host and port.
    */
   implicit val ordering: Ordering[Member] = new Ordering[Member] {
-    def compare(a: Member, b: Member): Int = addressOrdering.compare(a.address, b.address)
+    def compare(a: Member, b: Member): Int = {
+      val result = addressOrdering.compare(a.address, b.address)
+      if (result == 0) {
+        val aUid = a.uniqueAddress.uid
+        val bUid = b.uniqueAddress.uid
+        if (aUid < bUid) -1 else if (aUid == bUid) 0 else 1
+      } else
+        result
+    }
   }
 
   def pickHighestPriority(a: Set[Member], b: Set[Member]): Set[Member] = {
     // group all members by Address => Seq[Member]
-    val groupedByAddress = (a.toSeq ++ b.toSeq).groupBy(_.address)
+    val groupedByAddress = (a.toSeq ++ b.toSeq).groupBy(_.uniqueAddress)
     // pick highest MemberStatus
     (Member.none /: groupedByAddress) {
       case (acc, (_, members)) ⇒ acc + members.reduceLeft(highestPriorityOf)
@@ -176,3 +200,9 @@ object MemberStatus {
       Exiting -> Set(Removed, Down),
       Removed -> Set.empty[MemberStatus])
 }
+
+/**
+ * INTERNAL API
+ */
+@SerialVersionUID(1L)
+private[cluster] case class UniqueAddress(address: Address, uid: Int)

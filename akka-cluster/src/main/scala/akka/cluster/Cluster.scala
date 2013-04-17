@@ -32,10 +32,6 @@ import scala.util.control.NonFatal
 
 /**
  * Cluster Extension Id and factory for creating Cluster extension.
- * Example:
- * {{{
- *  if (Cluster(system).isLeader) { ... }
- * }}}
  */
 object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
   override def get(system: ActorSystem): Cluster = super.get(system)
@@ -53,11 +49,6 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
  * During each round of gossip exchange it sends Gossip to random node with
  * newer or older state information, if any, based on the current gossip overview,
  * with some probability. Otherwise Gossip to any random live node.
- *
- * Example:
- * {{{
- *  if (Cluster(system).isLeader) { ... }
- * }}}
  */
 class Cluster(val system: ExtendedActorSystem) extends Extension {
 
@@ -66,12 +57,20 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   val settings = new ClusterSettings(system.settings.config, system.name)
   import settings._
 
-  val selfAddress: Address = system.provider match {
-    case c: ClusterActorRefProvider ⇒ c.transport.defaultAddress
+  /**
+   * INTERNAL API
+   */
+  private[cluster] val selfUniqueAddress: UniqueAddress = system.provider match {
+    case c: ClusterActorRefProvider ⇒
+      UniqueAddress(c.transport.defaultAddress, AddressUidExtension(system).addressUid)
     case other ⇒ throw new ConfigurationException(
-      "ActorSystem [%s] needs to have a 'ClusterActorRefProvider' enabled in the configuration, currently uses [%s]".
-        format(system, other.getClass.getName))
+      s"ActorSystem [${system}] needs to have a 'ClusterActorRefProvider' enabled in the configuration, currently uses [${other.getClass.getName}]")
   }
+
+  /**
+   * The address of this cluster member.
+   */
+  def selfAddress: Address = selfUniqueAddress.address
 
   /**
    * roles that this member has
@@ -241,10 +240,10 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   /**
    * Try to join this cluster node with the node specified by 'address'.
-   * A 'Join(thisNodeAddress)' command is sent to the node to join.
+   * A 'Join(selfAddress)' command is sent to the node to join.
    */
   def join(address: Address): Unit =
-    clusterCore ! InternalClusterAction.JoinTo(address)
+    clusterCore ! ClusterUserAction.JoinTo(address)
 
   /**
    * Send command to issue state transition to LEAVING for the node specified by 'address'.

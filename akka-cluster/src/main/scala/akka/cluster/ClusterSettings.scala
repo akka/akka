@@ -44,11 +44,24 @@ class ClusterSettings(val config: Config, val systemName: String) {
   final val SeedNodes: immutable.IndexedSeq[Address] =
     immutableSeq(cc.getStringList("seed-nodes")).map { case AddressFromURIString(addr) ⇒ addr }.toVector
   final val SeedNodeTimeout: FiniteDuration = Duration(cc.getMilliseconds("seed-node-timeout"), MILLISECONDS)
+  final val RetryUnsuccessfulJoinAfter: Duration = {
+    val key = "retry-unsuccessful-join-after"
+    cc.getString(key).toLowerCase match {
+      case "off" ⇒ Duration.Undefined
+      case _     ⇒ Duration(cc.getMilliseconds(key), MILLISECONDS) requiring (_ > Duration.Zero, key + " > 0s, or off")
+    }
+  }
   final val PeriodicTasksInitialDelay: FiniteDuration = Duration(cc.getMilliseconds("periodic-tasks-initial-delay"), MILLISECONDS)
   final val GossipInterval: FiniteDuration = Duration(cc.getMilliseconds("gossip-interval"), MILLISECONDS)
   final val LeaderActionsInterval: FiniteDuration = Duration(cc.getMilliseconds("leader-actions-interval"), MILLISECONDS)
   final val UnreachableNodesReaperInterval: FiniteDuration = Duration(cc.getMilliseconds("unreachable-nodes-reaper-interval"), MILLISECONDS)
-  final val PublishStatsInterval: FiniteDuration = Duration(cc.getMilliseconds("publish-stats-interval"), MILLISECONDS)
+  final val PublishStatsInterval: Duration = {
+    val key = "publish-stats-interval"
+    cc.getString(key).toLowerCase match {
+      case "off" ⇒ Duration.Undefined
+      case _     ⇒ Duration(cc.getMilliseconds(key), MILLISECONDS) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
+    }
+  }
   final val AutoJoin: Boolean = cc.getBoolean("auto-join")
   final val AutoDown: Boolean = cc.getBoolean("auto-down")
   final val Roles: Set[String] = immutableSeq(cc.getStringList("roles")).toSet
@@ -78,5 +91,6 @@ class ClusterSettings(val config: Config, val systemName: String) {
   final val MetricsMovingAverageHalfLife: FiniteDuration = {
     Duration(cc.getMilliseconds("metrics.moving-average-half-life"), MILLISECONDS)
   } requiring (_ > Duration.Zero, "metrics.moving-average-half-life must be > 0")
+
 }
 

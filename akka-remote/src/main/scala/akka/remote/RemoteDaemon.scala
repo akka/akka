@@ -135,8 +135,6 @@ private[akka] class RemoteSystemDaemon(
 
     case Identify(messageId) ⇒ sender ! ActorIdentity(messageId, Some(this))
 
-    case t: Terminated       ⇒
-
     case TerminationHook ⇒
       terminating.switchOn {
         terminationHookDoneWhenNoChildren()
