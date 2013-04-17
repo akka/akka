@@ -310,15 +310,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     latestGossip = newGossip
     // first publish the diffUnreachable between the last two gossips
     diffUnreachable(oldGossip, newGossip) foreach publish
-    diffMemberEvents(oldGossip, newGossip) foreach { event ⇒
-      event match {
-        case MemberRemoved(m) ⇒
-          publish(event)
-          // notify DeathWatch about downed node
-          publish(AddressTerminated(m.address))
-        case _ ⇒ publish(event)
-      }
-    }
+    diffMemberEvents(oldGossip, newGossip) foreach publish
     diffLeader(oldGossip, newGossip) foreach publish
     diffRolesLeader(oldGossip, newGossip) foreach publish
     // publish internal SeenState for testing purposes

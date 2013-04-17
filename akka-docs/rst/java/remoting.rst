@@ -48,24 +48,8 @@ As you can see in the example above there are four things you need to add to get
   systems have different names. This is because each actor system has its own network subsystem
   listening for connections and handling messages as not to interfere with other actor systems.
 
-.. _remoting-java-configuration:
-
-Remote Configuration
-^^^^^^^^^^^^^^^^^^^^
-
 The example above only illustrates the bare minimum of properties you have to add to enable remoting.
-There are lots of more properties that are related to remoting in Akka. We refer to the following
-reference file for more information:
-
-.. literalinclude:: ../../../akka-remote/src/main/resources/reference.conf
-   :language: none
-
-.. note::
-
-   Setting properties like the listening IP and port number programmatically is
-   best done by using something like the following:
-
-   .. includecode:: code/docs/remoting/RemoteDeploymentDocTestBase.java#programmatic
+All settings are described in :ref:`remote-configuration-java`.
 
 Looking up Remote Actors
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -138,22 +122,6 @@ actor systems has to have a JAR containing the class.
   ``/foo/bar`` is considered **more specific** than ``/foo/*`` and only the highest priority match is used.
   Please note that it **cannot** be used to partially match section, like this: ``/foo*/bar``, ``/f*o/bar`` etc.
 
-.. _remote-deployment-warnings-java:
-
-.. warning::
-
-  *Caveat:* Remote deployment ties both systems together in a tight fashion,
-  where it may become impossible to shut down one system after the other has
-  become unreachable. This is due to a missing feature—which will be part of
-  the clustering support—that hooks up network failure detection with
-  DeathWatch. If you want to avoid this strong coupling, do not remote-deploy
-  but send ``Props`` to a remotely looked-up actor and have that create a
-  child, returning the resulting actor reference.
-
-.. warning::
-
-  *Caveat:* Akka Remoting does not trigger Death Watch for lost connections.
-
 Programmatic Remote Deployment
 ------------------------------
 
@@ -174,6 +142,72 @@ and a remote address like this:
 you can advise the system to create a child on that remote node like so:
 
 .. includecode:: code/docs/remoting/RemoteDeploymentDocTestBase.java#deploy
+
+Watching Remote Actors
+^^^^^^^^^^^^^^^^^^^^^^
+
+Watching a remote actor is not different than watching a local actor, as described in
+:ref:`deathwatch-java`.
+
+.. warning::
+
+  *Caveat:* Watching an ``ActorRef`` acquired with ``actorFor`` does not trigger
+  ``Terminated`` for lost connections. ``actorFor`` is deprecated in favor of 
+  ``actorSelection``. Acquire the ``ActorRef`` to watch with ``Identify`` and 
+  ``ActorIdentity`` as described in :ref:`actorSelection-java`.
+
+Failure Detector
+----------------
+
+Under the hood remote death watch uses heartbeat messages and a failure detector to generate ``Terminated``
+message from network failures and JVM crashes, in addition to graceful termination of watched
+actor.
+
+The heartbeat arrival times is interpreted by an implementation of
+`The Phi Accrual Failure Detector <http://ddg.jaist.ac.jp/pub/HDY+04.pdf>`_.
+
+The suspicion level of failure is given by a value called *phi*.
+The basic idea of the phi failure detector is to express the value of *phi* on a scale that
+is dynamically adjusted to reflect current network conditions.
+
+The value of *phi* is calculated as::
+
+  phi = -log10(1 - F(timeSinceLastHeartbeat))
+
+where F is the cumulative distribution function of a normal distribution with mean
+and standard deviation estimated from historical heartbeat inter-arrival times.
+
+In the :ref:`remote-configuration-java` you can adjust the ``akka.remote.watch-failure-detector.threshold``
+to define when a *phi* value is considered to be a failure.
+
+A low ``threshold`` is prone to generate many false positives but ensures
+a quick detection in the event of a real crash. Conversely, a high ``threshold``
+generates fewer mistakes but needs more time to detect actual crashes. The
+default ``threshold`` is 10 and is appropriate for most situations. However in
+cloud environments, such as Amazon EC2, the value could be increased to 12 in
+order to account for network issues that sometimes occur on such platforms.
+
+The following chart illustrates how *phi* increase with increasing time since the
+previous heartbeat.
+
+.. image:: ../cluster/images/phi1.png
+
+Phi is calculated from the mean and standard deviation of historical
+inter arrival times. The previous chart is an example for standard deviation
+of 200 ms. If the heartbeats arrive with less deviation the curve becomes steeper,
+i.e. it is possible to determine failure more quickly. The curve looks like this for
+a standard deviation of 100 ms.
+
+.. image:: ../cluster/images/phi2.png
+
+To be able to survive sudden abnormalities, such as garbage collection pauses and
+transient network failures the failure detector is configured with a margin,
+``akka.remote.watch-failure-detector.acceptable-heartbeat-pause``. You may want to
+adjust the :ref:`remote-configuration-java` of this depending on you environment.
+This is how the curve looks like for ``acceptable-heartbeat-pause`` configured to
+3 seconds.
+
+.. image:: ../cluster/images/phi3.png
 
 Serialization
 ^^^^^^^^^^^^^
@@ -487,7 +521,7 @@ SSL
 
 SSL can be used as the remote transport by adding ``akka.remote.netty.ssl``
 to the ``enabled-transport`` configuration section. See a description of the settings
-in the :ref:`remoting-java-configuration` section.
+in the :ref:`remote-configuration-java` section.
 
 The SSL support is implemented with Java Secure Socket Extension, please consult the offical
 `Java Secure Socket Extension documentation <http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html>`_
@@ -500,3 +534,20 @@ and related resources for troubleshooting.
   Use '/dev/./urandom', not '/dev/urandom' as that doesn't work according to
   `Bug ID: 6202721 <http://bugs.sun.com/view_bug.do?bug_id=6202721>`_.
 
+.. _remote-configuration-java:
+
+Remote Configuration
+^^^^^^^^^^^^^^^^^^^^
+
+There are lots of configuration properties that are related to remoting in Akka. We refer to the following
+reference file for more information:
+
+.. literalinclude:: ../../../akka-remote/src/main/resources/reference.conf
+   :language: none
+
+.. note::
+
+   Setting properties like the listening IP and port number programmatically is
+   best done by using something like the following:
+
+   .. includecode:: code/docs/remoting/RemoteDeploymentDocTestBase.java#programmatic
