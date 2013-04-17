@@ -46,6 +46,16 @@ class RemoteConfigSpec extends AkkaSpec(
         "gremlin" -> classOf[akka.remote.transport.FailureInjectorProvider].getName,
         "trttl" -> classOf[akka.remote.transport.ThrottlerProvider].getName))
 
+      WatchFailureDetectorImplementationClass must be(classOf[PhiAccrualFailureDetector].getName)
+      WatchHeartBeatInterval must be(1 seconds)
+      WatchNumberOfEndHeartbeatRequests must be(8)
+      WatchHeartbeatExpectedResponseAfter must be(3 seconds)
+      WatchUnreachableReaperInterval must be(1 second)
+      WatchFailureDetectorConfig.getDouble("threshold") must be(10.0 plusOrMinus 0.0001)
+      WatchFailureDetectorConfig.getInt("max-sample-size") must be(200)
+      Duration(WatchFailureDetectorConfig.getMilliseconds("acceptable-heartbeat-pause"), MILLISECONDS) must be(4 seconds)
+      Duration(WatchFailureDetectorConfig.getMilliseconds("min-std-deviation"), MILLISECONDS) must be(100 millis)
+
     }
 
     "be able to parse AkkaProtocol related config elements" in {
@@ -53,15 +63,15 @@ class RemoteConfigSpec extends AkkaSpec(
       import settings._
 
       WaitActivityEnabled must be(true)
-      FailureDetectorImplementationClass must be(classOf[PhiAccrualFailureDetector].getName)
-      AcceptableHeartBeatPause must be === 3.seconds
-      HeartBeatInterval must be === 1.seconds
       RequireCookie must be(false)
       SecureCookie must be === ""
 
-      FailureDetectorConfig.getDouble("threshold") must be(7.0 plusOrMinus 0.0001)
-      FailureDetectorConfig.getInt("max-sample-size") must be(100)
-      Duration(FailureDetectorConfig.getMilliseconds("min-std-deviation"), MILLISECONDS) must be(100 millis)
+      TransportFailureDetectorImplementationClass must be(classOf[PhiAccrualFailureDetector].getName)
+      TransportHeartBeatInterval must be === 1.seconds
+      TransportFailureDetectorConfig.getDouble("threshold") must be(7.0 plusOrMinus 0.0001)
+      TransportFailureDetectorConfig.getInt("max-sample-size") must be(100)
+      Duration(TransportFailureDetectorConfig.getMilliseconds("acceptable-heartbeat-pause"), MILLISECONDS) must be(3 seconds)
+      Duration(TransportFailureDetectorConfig.getMilliseconds("min-std-deviation"), MILLISECONDS) must be(100 millis)
 
     }
 

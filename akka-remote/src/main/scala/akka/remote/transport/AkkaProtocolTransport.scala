@@ -15,6 +15,7 @@ import akka.remote.transport.AssociationHandle._
 import akka.remote.transport.ProtocolStateActor._
 import akka.remote.transport.Transport._
 import akka.util.ByteString
+import akka.util.Helpers.Requiring
 import akka.{ OnlyCauseStackTrace, AkkaException }
 import com.typesafe.config.Config
 import scala.collection.immutable
@@ -31,15 +32,11 @@ private[remote] class AkkaProtocolSettings(config: Config) {
 
   import config._
 
-  val FailureDetectorConfig: Config = getConfig("akka.remote.failure-detector")
-
-  val FailureDetectorImplementationClass: String = FailureDetectorConfig.getString("implementation-class")
-
-  val AcceptableHeartBeatPause: FiniteDuration =
-    Duration(FailureDetectorConfig.getMilliseconds("acceptable-heartbeat-pause"), MILLISECONDS)
-
-  val HeartBeatInterval: FiniteDuration =
-    Duration(FailureDetectorConfig.getMilliseconds("heartbeat-interval"), MILLISECONDS)
+  val TransportFailureDetectorConfig: Config = getConfig("akka.remote.transport-failure-detector")
+  val TransportFailureDetectorImplementationClass: String = TransportFailureDetectorConfig.getString("implementation-class")
+  val TransportHeartBeatInterval: FiniteDuration = {
+    Duration(TransportFailureDetectorConfig.getMilliseconds("heartbeat-interval"), MILLISECONDS)
+  } requiring (_ > Duration.Zero, "transport-failure-detector.heartbeat-interval must be > 0")
 
   val WaitActivityEnabled: Boolean = getBoolean("akka.remote.wait-activity-enabled")
 
@@ -117,7 +114,7 @@ private[transport] class AkkaProtocolManager(
       val stateActorLocalAddress = localAddress
       val stateActorAssociationHandler = associationListener
       val stateActorSettings = settings
-      val failureDetector = createFailureDetector()
+      val failureDetector = createTransportFailureDetector()
       context.actorOf(Props(new ProtocolStateActor(
         stateActorLocalAddress,
         handle,
@@ -130,7 +127,7 @@ private[transport] class AkkaProtocolManager(
       val stateActorLocalAddress = localAddress
       val stateActorSettings = settings
       val stateActorWrappedTransport = wrappedTransport
-      val failureDetector = createFailureDetector()
+      val failureDetector = createTransportFailureDetector()
       context.actorOf(Props(new ProtocolStateActor(
         stateActorLocalAddress,
         remoteAddress,
@@ -141,10 +138,10 @@ private[transport] class AkkaProtocolManager(
         failureDetector)), actorNameFor(remoteAddress)) // Why don't we watch this one?
   }
 
-  private def createFailureDetector(): FailureDetector = {
-    import settings.{ FailureDetectorImplementationClass ⇒ fqcn }
+  private def createTransportFailureDetector(): FailureDetector = {
+    import settings.{ TransportFailureDetectorImplementationClass ⇒ fqcn }
     context.system.asInstanceOf[ExtendedActorSystem].dynamicAccess.createInstanceFor[FailureDetector](
-      fqcn, List(classOf[Config] -> settings.FailureDetectorConfig)).recover({
+      fqcn, List(classOf[Config] -> settings.TransportFailureDetectorConfig)).recover({
         case e ⇒ throw new ConfigurationException(
           s"Could not create custom remote failure detector [$fqcn] due to: ${e.toString}", e)
       }).get
@@ -397,7 +394,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
   }
 
   private def initTimers(): Unit = {
-    setTimer("heartbeat-timer", HeartbeatTimer, settings.HeartBeatInterval, repeat = true)
+    setTimer("heartbeat-timer", HeartbeatTimer, settings.TransportHeartBeatInterval, repeat = true)
   }
 
   private def handleTimers(wrappedHandle: AssociationHandle): State = {
