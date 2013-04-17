@@ -12,6 +12,7 @@ import akka.actor.ActorRef
 import akka.actor.ExtensionKey
 import akka.actor.ActorSystem
 import akka.util.ByteString
+import akka.util.Helpers.Requiring
 import java.net.InetSocketAddress
 import scala.collection.immutable
 
@@ -80,17 +81,14 @@ object Udp extends ExtensionKey[UdpExt] {
   private[io] class UdpSettings(_config: Config) extends SelectionHandlerSettings(_config) {
     import _config._
 
-    val NrOfSelectors = getInt("nr-of-selectors")
-    val DirectBufferSize = getIntBytes("direct-buffer-size")
-    val MaxDirectBufferPoolSize = getInt("direct-buffer-pool-limit")
-    val BatchReceiveLimit = getInt("receive-throughput")
+    val NrOfSelectors: Int = getInt("nr-of-selectors") requiring (_ > 0, "nr-of-selectors must be > 0")
+    val DirectBufferSize: Int = getIntBytes("direct-buffer-size")
+    val MaxDirectBufferPoolSize: Int = getInt("direct-buffer-pool-limit")
+    val BatchReceiveLimit: Int = getInt("receive-throughput")
 
-    val ManagementDispatcher = getString("management-dispatcher")
+    val ManagementDispatcher: String = getString("management-dispatcher")
 
-    // FIXME: Use new requiring
-    require(NrOfSelectors > 0, "nr-of-selectors must be > 0")
-
-    override val MaxChannelsPerSelector = if (MaxChannels == -1) -1 else math.max(MaxChannels / NrOfSelectors, 1)
+    override val MaxChannelsPerSelector: Int = if (MaxChannels == -1) -1 else math.max(MaxChannels / NrOfSelectors, 1)
 
     private[this] def getIntBytes(path: String): Int = {
       val size = getBytes(path)

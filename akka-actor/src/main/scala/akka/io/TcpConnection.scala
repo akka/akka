@@ -92,8 +92,8 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
       doWrite(handler)
       if (!writePending) // writing is now finished
         handleClose(handler, closeCommander, closedEvent)
-    case SendBufferFull(remaining) ⇒ pendingWrite = remaining; selector ! WriteInterest
-    case WriteFileFinished         ⇒ pendingWrite = null; handleClose(handler, closeCommander, closedEvent)
+    case SendBufferFull(remaining) ⇒ { pendingWrite = remaining; selector ! WriteInterest }
+    case WriteFileFinished         ⇒ { pendingWrite = null; handleClose(handler, closeCommander, closedEvent) }
     case WriteFileFailed(e)        ⇒ handleError(handler, e) // rethrow exception from dispatcher task
 
     case Abort                     ⇒ handleClose(handler, Some(sender), Aborted)
@@ -122,7 +122,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
       pendingWrite = createWrite(write)
       doWrite(handler)
 
-    case SendBufferFull(remaining) ⇒ pendingWrite = remaining; selector ! WriteInterest
+    case SendBufferFull(remaining) ⇒ { pendingWrite = remaining; selector ! WriteInterest }
     case WriteFileFinished         ⇒ pendingWrite = null
     case WriteFileFailed(e)        ⇒ handleError(handler, e) // rethrow exception from dispatcher task
   }

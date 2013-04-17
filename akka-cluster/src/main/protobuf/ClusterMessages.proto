@@ -10,14 +10,6 @@ option optimize_for = SPEED;
  ****************************************/
 
 /**
- * Join
- */
-message Join {
-  required Address address = 1;
-  repeated string roles = 2;
-}
-
-/**
  * Leave
  * Sends an Address
  */
@@ -30,6 +22,22 @@ message Join {
 /****************************************
  * Internal Cluster Action Messages
  ****************************************/
+
+/**
+ * Join
+ */
+message Join {
+  required UniqueAddress node = 1;
+  repeated string roles = 2;
+}
+
+/**
+ * Welcome, reply to Join
+ */
+message Welcome {
+  required UniqueAddress from = 1;
+  required Gossip gossip = 2;
+}
 
 /**
  * InitJoin
@@ -52,12 +60,12 @@ message Join {
 
 /**
  * Exit
- * Sends an Address
+ * Sends a UniqueAddress
  */
 
 /**
- * Remove
- * Sends an Address
+ * Shutdown
+ * Sends a UniqueAddress
  */
 
 
@@ -88,16 +96,17 @@ message Join {
  * Gossip Envelope
  */
 message GossipEnvelope {
-  required Address from = 1;
-  required Gossip gossip = 2;
-  required bool conversation = 3;
+  required UniqueAddress from = 1;
+  required UniqueAddress to = 2;
+  required Gossip gossip = 3;
+  required bool conversation = 4;
 }
 
 /**
  * Gossip
  */
 message Gossip {
-  repeated Address allAddresses = 1;
+  repeated UniqueAddress allAddresses = 1;
   repeated string allRoles = 2;
   repeated string allHashes = 3;
   repeated Member members = 4;
@@ -221,4 +230,12 @@ message Address {
   required string hostname = 2;
   required uint32 port = 3;
   optional string protocol = 4;
+}
+
+/**
+ * Defines a remote address with uid.
+ */
+message UniqueAddress {
+  required Address address = 1;
+  required uint32 uid = 2;
 }

@@ -119,6 +119,17 @@ seed nodes at all.
 
 Joining can also be performed programatically with ``Cluster(system).join(address)``.
 
+Unsuccessful join attempts are automatically retried after the time period defined in 
+configuration property ``retry-unsuccessful-join-after``. When using auto-joining with
+``seed-nodes`` this means that a new seed node is picked. When joining manually or
+programatically this means that the last join request is retried. Retries can be disabled by
+setting the property to ``off``.
+
+An actor system can only join a cluster once. Additional attempts will be ignored.
+When it has successfully joined it must be restarted to be able to join another
+cluster or to join the same cluster again. It can use the same host name and port
+after the restart, but it must have been removed from the cluster before the join
+request is accepted.
 
 Automatic vs. Manual Downing
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

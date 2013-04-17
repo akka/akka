@@ -16,27 +16,27 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
   import ClusterEvent._
 
   val aRoles = Set("AA", "AB")
-  val aJoining = Member(Address("akka.tcp", "sys", "a", 2552), Joining, aRoles)
-  val aUp = Member(Address("akka.tcp", "sys", "a", 2552), Up, aRoles)
-  val aRemoved = Member(Address("akka.tcp", "sys", "a", 2552), Removed, aRoles)
+  val aJoining = TestMember(Address("akka.tcp", "sys", "a", 2552), Joining, aRoles)
+  val aUp = TestMember(Address("akka.tcp", "sys", "a", 2552), Up, aRoles)
+  val aRemoved = TestMember(Address("akka.tcp", "sys", "a", 2552), Removed, aRoles)
   val bRoles = Set("AB", "BB")
-  val bUp = Member(Address("akka.tcp", "sys", "b", 2552), Up, bRoles)
-  val bDown = Member(Address("akka.tcp", "sys", "b", 2552), Down, bRoles)
-  val bRemoved = Member(Address("akka.tcp", "sys", "b", 2552), Removed, bRoles)
+  val bUp = TestMember(Address("akka.tcp", "sys", "b", 2552), Up, bRoles)
+  val bDown = TestMember(Address("akka.tcp", "sys", "b", 2552), Down, bRoles)
+  val bRemoved = TestMember(Address("akka.tcp", "sys", "b", 2552), Removed, bRoles)
   val cRoles = Set.empty[String]
-  val cUp = Member(Address("akka.tcp", "sys", "c", 2552), Up, cRoles)
-  val cLeaving = Member(Address("akka.tcp", "sys", "c", 2552), Leaving, cRoles)
+  val cUp = TestMember(Address("akka.tcp", "sys", "c", 2552), Up, cRoles)
+  val cLeaving = TestMember(Address("akka.tcp", "sys", "c", 2552), Leaving, cRoles)
   val dRoles = Set("DD", "DE")
-  val dLeaving = Member(Address("akka.tcp", "sys", "d", 2552), Leaving, dRoles)
-  val dExiting = Member(Address("akka.tcp", "sys", "d", 2552), Exiting, dRoles)
-  val dRemoved = Member(Address("akka.tcp", "sys", "d", 2552), Removed, dRoles)
+  val dLeaving = TestMember(Address("akka.tcp", "sys", "d", 2552), Leaving, dRoles)
+  val dExiting = TestMember(Address("akka.tcp", "sys", "d", 2552), Exiting, dRoles)
+  val dRemoved = TestMember(Address("akka.tcp", "sys", "d", 2552), Removed, dRoles)
   val eRoles = Set("EE", "DE")
-  val eJoining = Member(Address("akka.tcp", "sys", "e", 2552), Joining, eRoles)
-  val eUp = Member(Address("akka.tcp", "sys", "e", 2552), Up, eRoles)
-  val eDown = Member(Address("akka.tcp", "sys", "e", 2552), Down, eRoles)
+  val eJoining = TestMember(Address("akka.tcp", "sys", "e", 2552), Joining, eRoles)
+  val eUp = TestMember(Address("akka.tcp", "sys", "e", 2552), Up, eRoles)
+  val eDown = TestMember(Address("akka.tcp", "sys", "e", 2552), Down, eRoles)
 
-  private[cluster] def converge(gossip: Gossip): (Gossip, Set[Address]) =
-    ((gossip, Set.empty[Address]) /: gossip.members) { case ((gs, as), m) ⇒ (gs.seen(m.address), as + m.address) }
+  private[cluster] def converge(gossip: Gossip): (Gossip, Set[UniqueAddress]) =
+    ((gossip, Set.empty[UniqueAddress]) /: gossip.members) { case ((gs, as), m) ⇒ (gs.seen(m.uniqueAddress), as + m.uniqueAddress) }
 
   "Domain events" must {
 
@@ -52,7 +52,7 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
 
       diffMemberEvents(g1, g2) must be(Seq(MemberUp(bUp)))
       diffUnreachable(g1, g2) must be(Seq.empty)
-      diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = true, seenBy = s2)))
+      diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
     }
 
     "be produced for changed status of members" in {
@@ -61,7 +61,7 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
 
       diffMemberEvents(g1, g2) must be(Seq(MemberUp(aUp)))
       diffUnreachable(g1, g2) must be(Seq.empty)
-      diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = true, seenBy = s2)))
+      diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
     }
 
     "be produced for members in unreachable" in {
@@ -78,12 +78,12 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
 
       diffMemberEvents(g1, g2) must be(Seq(MemberRemoved(dRemoved)))
       diffUnreachable(g1, g2) must be(Seq.empty)
-      diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = true, seenBy = s2)))
+      diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
     }
 
     "be produced for convergence changes" in {
-      val g1 = Gossip(members = SortedSet(aUp, bUp, eJoining)).seen(aUp.address).seen(bUp.address).seen(eJoining.address)
-      val g2 = Gossip(members = SortedSet(aUp, bUp, eJoining)).seen(aUp.address).seen(bUp.address)
+      val g1 = Gossip(members = SortedSet(aUp, bUp, eJoining)).seen(aUp.uniqueAddress).seen(bUp.uniqueAddress).seen(eJoining.uniqueAddress)
+      val g2 = Gossip(members = SortedSet(aUp, bUp, eJoining)).seen(aUp.uniqueAddress).seen(bUp.uniqueAddress)
 
       diffMemberEvents(g1, g2) must be(Seq.empty)
       diffUnreachable(g1, g2) must be(Seq.empty)
@@ -99,7 +99,7 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
 
       diffMemberEvents(g1, g2) must be(Seq(MemberRemoved(aRemoved)))
       diffUnreachable(g1, g2) must be(Seq.empty)
-      diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = true, seenBy = s2)))
+      diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
       diffLeader(g1, g2) must be(Seq(LeaderChanged(Some(bUp.address))))
     }
 

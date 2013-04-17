@@ -74,12 +74,14 @@ abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSing
       Cluster(system).subscribe(testActor, classOf[MemberUp])
       expectMsgClass(classOf[CurrentClusterState])
 
-      Cluster(system) join node(first).address
+      val firstAddress = node(first).address
+      val secondAddress = node(second).address
+      val thirdAddress = node(third).address
 
-      expectMsgAllOf(
-        MemberUp(Member(node(first).address, MemberStatus.Up, Set.empty)),
-        MemberUp(Member(node(second).address, MemberStatus.Up, Set.empty)),
-        MemberUp(Member(node(third).address, MemberStatus.Up, Set.empty)))
+      Cluster(system) join firstAddress
+
+      receiveN(3).collect { case MemberUp(m) => m.address }.toSet must be (
+          Set(firstAddress, secondAddress, thirdAddress))
 
       Cluster(system).unsubscribe(testActor)
 

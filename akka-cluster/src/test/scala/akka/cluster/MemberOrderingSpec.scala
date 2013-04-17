@@ -17,7 +17,7 @@ class MemberOrderingSpec extends WordSpec with MustMatchers {
   import Member.addressOrdering
   import MemberStatus._
 
-  def m(address: Address, status: MemberStatus): Member = Member(address, status, Set.empty)
+  def m(address: Address, status: MemberStatus): Member = TestMember(address, status)
 
   "An Ordering[Member]" must {
 
@@ -52,7 +52,9 @@ class MemberOrderingSpec extends WordSpec with MustMatchers {
     "have stable equals and hashCode" in {
       val address = Address("akka.tcp", "sys1", "host1", 9000)
       val m1 = m(address, Joining)
-      val m2 = m(address, Up)
+      val m11 = Member(UniqueAddress(address, -3), Set.empty)
+      val m2 = m1.copy(status = Up)
+      val m22 = m11.copy(status = Up)
       val m3 = m(address.copy(port = Some(10000)), Up)
 
       m1 must be(m2)
@@ -60,6 +62,13 @@ class MemberOrderingSpec extends WordSpec with MustMatchers {
 
       m3 must not be (m2)
       m3 must not be (m1)
+
+      m11 must be(m22)
+      m11.hashCode must be(m22.hashCode)
+
+      // different uid
+      m1 must not be (m11)
+      m2 must not be (m22)
     }
 
     "have consistent ordering and equals" in {
@@ -71,6 +80,13 @@ class MemberOrderingSpec extends WordSpec with MustMatchers {
       val z = m(address2, Up)
       Member.ordering.compare(x, y) must be(0)
       Member.ordering.compare(x, z) must be(Member.ordering.compare(y, z))
+
+      // different uid
+      val a = m(address1, Joining)
+      val b = Member(UniqueAddress(address1, -3), Set.empty)
+      Member.ordering.compare(a, b) must be(1)
+      Member.ordering.compare(b, a) must be(-1)
+
     }
 
     "work with SortedSet" in {
@@ -84,6 +100,7 @@ class MemberOrderingSpec extends WordSpec with MustMatchers {
       (SortedSet(m(address2, Up), m(address3, Joining), m(address1, Exiting)) - m(address1, Removed)) must be(
         SortedSet(m(address2, Up), m(address3, Joining)))
     }
+
   }
 
   "An Ordering[Address]" must {
