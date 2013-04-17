@@ -14,6 +14,9 @@ import akka.cluster.ClusterEvent.MemberRemoved
 import akka.remote.FailureDetectorRegistry
 import akka.remote.RemoteWatcher
 
+/**
+ * INTERNAL API
+ */
 private[cluster] object ClusterRemoteWatcher {
   /**
    * Factory method for `ClusterRemoteWatcher` [[akka.actor.Props]].
