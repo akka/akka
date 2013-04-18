@@ -82,6 +82,7 @@ private[cluster] class ClusterRemoteWatcher(
       takeOverResponsibility(m.address)
     case MemberRemoved(m) ⇒
       clusterNodes -= m.address
+      quarantine(m.address, m.uniqueAddress.uid)
       publishAddressTerminated(m.address)
   }
 
