@@ -42,6 +42,12 @@ class RemoteSettings(val config: Config) {
 
   val BackoffPeriod: FiniteDuration = Duration(getMilliseconds("akka.remote.backoff-interval"), MILLISECONDS)
 
+  val SysMsgAckTimeout: FiniteDuration = Duration(getMilliseconds("akka.remote.system-message-ack-piggyback-timeout"), MILLISECONDS)
+
+  val SysResendTimeout: FiniteDuration = Duration(getMilliseconds("akka.remote.resend-interval"), MILLISECONDS)
+
+  val SysMsgBufferSize: Int = getInt("akka.remote.system-message-buffer-size")
+
   val CommandAckTimeout: Timeout =
     Timeout(Duration(getMilliseconds("akka.remote.command-ack-timeout"), MILLISECONDS))
 

@@ -5,7 +5,7 @@ package akka.actor.mailbox
 
 import akka.dispatch.{ Envelope, MessageQueue }
 import akka.remote.MessageSerializer
-import akka.remote.RemoteProtocol.{ ActorRefProtocol, RemoteMessageProtocol }
+import akka.remote.WireFormats.{ ActorRefData, RemoteEnvelope }
 import com.typesafe.config.Config
 import akka.actor._
 
@@ -43,10 +43,10 @@ trait DurableMessageSerialization { this: DurableMessageQueue ⇒
     // It's alright to use ref.path.toString here
     // When the sender is a LocalActorRef it should be local when deserialized also.
     // When the sender is a RemoteActorRef the path.toString already contains remote address information.
-    def serializeActorRef(ref: ActorRef): ActorRefProtocol = ActorRefProtocol.newBuilder.setPath(ref.path.toString).build
+    def serializeActorRef(ref: ActorRef): ActorRefData = ActorRefData.newBuilder.setPath(ref.path.toString).build
 
     val message = MessageSerializer.serialize(system, durableMessage.message.asInstanceOf[AnyRef])
-    val builder = RemoteMessageProtocol.newBuilder
+    val builder = RemoteEnvelope.newBuilder
       .setMessage(message)
       .setRecipient(serializeActorRef(owner))
       .setSender(serializeActorRef(durableMessage.sender))
@@ -60,10 +60,10 @@ trait DurableMessageSerialization { this: DurableMessageQueue ⇒
    */
   def deserialize(bytes: Array[Byte]): Envelope = {
 
-    def deserializeActorRef(refProtocol: ActorRefProtocol): ActorRef =
+    def deserializeActorRef(refProtocol: ActorRefData): ActorRef =
       system.provider.resolveActorRef(refProtocol.getPath)
 
-    val durableMessage = RemoteMessageProtocol.parseFrom(bytes)
+    val durableMessage = RemoteEnvelope.parseFrom(bytes)
     val message = MessageSerializer.deserialize(system, durableMessage.getMessage)
     val sender = deserializeActorRef(durableMessage.getSender)
 

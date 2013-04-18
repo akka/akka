@@ -1,0 +1,136 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+option java_package = "akka.remote";
+option optimize_for = SPEED;
+
+/******************************************
+  Compile with:
+  cd ./akka-remote/src/main/protocol
+  protoc WireFormats.proto --java_out ../java
+  cd ../../../..
+  ./scripts/fix-protobuf.sh
+*******************************************/
+
+/******************************************
+ * Remoting message formats
+ ******************************************/
+
+
+message AckAndEnvelopeContainer {
+  optional AcknowledgementInfo ack = 1;
+  optional RemoteEnvelope envelope = 2;
+}
+
+/**
+ * Defines a remote message.
+ */
+message RemoteEnvelope {
+  required ActorRefData recipient = 1;
+  required SerializedMessage message = 2;
+  optional ActorRefData sender = 4;
+  optional fixed64 seq = 5;
+}
+
+message AcknowledgementInfo {
+  required fixed64 cumulativeAck = 1;
+  repeated fixed64 nacks = 2;
+}
+
+/**
+ * Defines a remote ActorRef that "remembers" and uses its original Actor instance
+ * on the original node.
+ */
+message ActorRefData {
+  required string path = 1;
+}
+
+/**
+ * Defines a message.
+ */
+message SerializedMessage {
+  required bytes message = 1;
+  required int32 serializerId = 2;
+  optional bytes messageManifest = 3;
+}
+
+/**
+ * Defines akka.remote.DaemonMsgCreate
+ */
+message DaemonMsgCreateData {
+  required PropsData props = 1;
+  required DeployData deploy = 2;
+  required string path = 3;
+  required ActorRefData supervisor = 4;
+}
+
+/**
+ * Serialization of akka.actor.Props
+ */
+message PropsData {
+  required DeployData deploy = 2;
+  required string clazz = 3;
+  repeated bytes args = 4;
+  repeated string classes = 5;
+}
+
+/**
+ * Serialization of akka.actor.Deploy
+ */
+message DeployData {
+  required string path = 1;
+  optional bytes config = 2;
+  optional bytes routerConfig = 3;
+  optional bytes scope = 4;
+  optional string dispatcher = 5;
+}
+
+
+/******************************************
+ * Akka Protocol message formats
+ ******************************************/
+
+/**
+ * Message format of Akka Protocol.
+ * Message contains either a payload or an instruction.
+ */
+message AkkaProtocolMessage {
+  optional bytes payload = 1;
+  optional AkkaControlMessage instruction = 2;
+}
+
+/**
+ * Defines some control messages for the remoting
+ */
+message AkkaControlMessage {
+  required CommandType commandType = 1;
+  optional AkkaHandshakeInfo handshakeInfo = 2;
+}
+
+message AkkaHandshakeInfo {
+  required AddressData origin = 1;
+  required fixed64 uid = 2;
+  optional string cookie = 3;
+
+}
+
+/**
+ * Defines the type of the AkkaControlMessage command type
+ */
+enum CommandType {
+  CONNECT = 1;
+  SHUTDOWN = 2;
+  HEARTBEAT = 3;
+}
+
+
+/**
+ * Defines a remote address.
+ */
+message AddressData {
+  required string system = 1;
+  required string hostname = 2;
+  required uint32 port = 3;
+  optional string protocol = 4;
+}

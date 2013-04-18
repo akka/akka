@@ -4,7 +4,7 @@
 
 package akka.remote
 
-import akka.remote.RemoteProtocol._
+import akka.remote.WireFormats._
 import com.google.protobuf.ByteString
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializationExtension
@@ -19,7 +19,7 @@ private[akka] object MessageSerializer {
   /**
    * Uses Akka Serialization for the specified ActorSystem to transform the given MessageProtocol to a message
    */
-  def deserialize(system: ExtendedActorSystem, messageProtocol: MessageProtocol): AnyRef = {
+  def deserialize(system: ExtendedActorSystem, messageProtocol: SerializedMessage): AnyRef = {
     SerializationExtension(system).deserialize(
       messageProtocol.getMessage.toByteArray,
       messageProtocol.getSerializerId,
@@ -29,10 +29,10 @@ private[akka] object MessageSerializer {
   /**
    * Uses Akka Serialization for the specified ActorSystem to transform the given message to a MessageProtocol
    */
-  def serialize(system: ExtendedActorSystem, message: AnyRef): MessageProtocol = {
+  def serialize(system: ExtendedActorSystem, message: AnyRef): SerializedMessage = {
     val s = SerializationExtension(system)
     val serializer = s.findSerializerFor(message)
-    val builder = MessageProtocol.newBuilder
+    val builder = SerializedMessage.newBuilder
     builder.setMessage(ByteString.copyFrom(serializer.toBinary(message)))
     builder.setSerializerId(serializer.identifier)
     if (serializer.includeManifest)

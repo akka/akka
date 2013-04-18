@@ -7,7 +7,7 @@ import akka.actor.SupervisorStrategy._
 import akka.actor._
 import akka.event.{ Logging, LoggingAdapter }
 import akka.japi.Util.immutableSeq
-import akka.pattern.{ gracefulStop, pipe, ask }
+import akka.pattern.{ AskTimeoutException, gracefulStop, pipe, ask }
 import akka.remote.EndpointManager._
 import akka.remote.Remoting.TransportSupervisor
 import akka.remote.transport.Transport.{ ActorAssociationEventListener, AssociationEventListener, InboundAssociation }
@@ -21,6 +21,8 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Promise, Await, Future }
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success }
+import akka.remote.transport.AkkaPduCodec.Message
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * INTERNAL API
@@ -223,8 +225,13 @@ private[remote] object EndpointManager {
   case class Listen(addressesPromise: Promise[Seq[(Transport, Address)]]) extends RemotingCommand
   case object StartupFinished extends RemotingCommand
   case object ShutdownAndFlush extends RemotingCommand
-  case class Send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef) extends RemotingCommand {
+  case class Send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef, seqOpt: Option[SeqNo] = None)
+    extends RemotingCommand with HasSequenceNumber {
     override def toString = s"Remote message $senderOption -> $recipient"
+
+    // This MUST throw an exception to indicate that we attempted to put a nonsequenced message in one of the
+    // acknowledged delivery buffers
+    def seq = seqOpt.get
   }
   case class ManagementCommand(cmd: Any) extends RemotingCommand
   case class ManagementCommandAck(status: Boolean)
@@ -233,6 +240,9 @@ private[remote] object EndpointManager {
   case object Prune
   case class ListensResult(addressesPromise: Promise[Seq[(Transport, Address)]],
                            results: Seq[(Transport, Address, Promise[AssociationEventListener])])
+
+  // Helper class to store address pairs
+  case class Link(localAddress: Address, remoteAddress: Address)
 
   sealed trait EndpointPolicy {
 
@@ -358,28 +368,28 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         log.error("Tried to associate with invalid remote address [{}]. " +
           "Address is now quarantined, all messages to this address will be delivered to dead letters.", remoteAddress)
         endpoints.markAsFailed(sender, Deadline.now + settings.UnknownAddressGateClosedFor)
+        context.system.eventStream.publish(AddressTerminated(remoteAddress))
+        Stop
+
+      case e @ HopelessAssociation(localAddress, remoteAddress, uid, _) ⇒
+        log.error("Association with [{}] having uid [{}] is irrecoverably failed. UID is now quarantined and all " +
+          "messages to this UID will be delivered to dead letters. Remote actorsystem must be restarted to recover" +
+          "from this situation.", remoteAddress, uid)
+        endpoints.markAsQuarantined(remoteAddress, e) // TODO: quarantine uid
+        context.system.eventStream.publish(AddressTerminated(remoteAddress))
         Stop
 
       case NonFatal(e) ⇒
-
         // logging
         e match {
           case _: EndpointDisassociatedException | _: EndpointAssociationException ⇒ // no logging
           case _ ⇒ log.error(e, e.getMessage)
         }
-
-        // Retrying immediately if the retry gate is disabled, and it is an endpoint used for writing.
-        if (!retryGateEnabled && endpoints.isWritable(sender)) {
-          // This strategy keeps all the messages in the stash of the endpoint so restart will transfer the queue
-          // to the restarted endpoint -- thus no messages are lost
-          Restart
-        } else {
-          // This strategy throws away all the messages enqueued in the endpoint (in its stash), registers the time of failure,
-          // keeps throwing away messages until the retry gate becomes open (time specified in RetryGateClosedFor)
-          endpoints.markAsFailed(sender, Deadline.now + settings.RetryGateClosedFor)
-          Stop
-        }
+        Stop
     }
+
+  // Structure for saving reliable delivery state across restarts of Endpoints
+  val receiveBuffers = new ConcurrentHashMap[Link, AckedReceiveBuffer[Message]]()
 
   def receive = {
     case Listen(addressesPromise) ⇒
@@ -415,7 +425,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       }
       Future.fold(allStatuses)(true)(_ && _) map ManagementCommandAck pipeTo sender
 
-    case s @ Send(message, senderOption, recipientRef) ⇒
+    case s @ Send(message, senderOption, recipientRef, _) ⇒
       val recipientAddress = recipientRef.path.address
 
       def createAndRegisterWritingEndpoint(): ActorRef = endpoints.registerWritableEndpoint(recipientAddress, createEndpoint(
@@ -423,34 +433,37 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         recipientRef.localAddressToUse,
         transportMapping(recipientRef.localAddressToUse),
         settings,
-        None))
+        None,
+        writing = true))
 
       endpoints.writableEndpointWithPolicyFor(recipientAddress) match {
         case Some(Pass(endpoint)) ⇒
           endpoint ! s
         case Some(Gated(timeOfRelease)) ⇒
           if (timeOfRelease.isOverdue()) createAndRegisterWritingEndpoint() ! s
-          else forwardToDeadLetters(s)
+          else extendedSystem.deadLetters ! s
         case Some(Quarantined(_)) ⇒
-          forwardToDeadLetters(s)
+          extendedSystem.deadLetters ! s
         case None ⇒
           createAndRegisterWritingEndpoint() ! s
 
       }
 
-    case InboundAssociation(handle) ⇒ endpoints.readOnlyEndpointFor(handle.remoteAddress) match {
+    case InboundAssociation(handle: AkkaProtocolHandle) ⇒ endpoints.readOnlyEndpointFor(handle.remoteAddress) match {
       case Some(endpoint) ⇒ endpoint ! EndpointWriter.TakeOver(handle)
       case None ⇒
         if (endpoints.isQuarantined(handle.remoteAddress)) handle.disassociate()
         else {
+          val writing = settings.UsePassiveConnections && !endpoints.hasWritableEndpointFor(handle.remoteAddress)
           eventPublisher.notifyListeners(AssociatedEvent(handle.localAddress, handle.remoteAddress, true))
           val endpoint = createEndpoint(
             handle.remoteAddress,
             handle.localAddress,
             transportMapping(handle.localAddress),
             settings,
-            Some(handle))
-          if (settings.UsePassiveConnections && !endpoints.hasWritableEndpointFor(handle.remoteAddress))
+            Some(handle),
+            writing)
+          if (writing)
             endpoints.registerWritableEndpoint(handle.remoteAddress, endpoint)
           else
             endpoints.registerReadOnlyEndpoint(handle.remoteAddress, endpoint)
@@ -465,20 +478,17 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       val sys = context.system // Avoid closing over context
       Future sequence endpoints.allEndpoints.map {
         gracefulStop(_, settings.FlushWait, EndpointWriter.FlushAndStop)
-      } map { _.foldLeft(true) { _ && _ } } pipeTo sender
+      } map { _.foldLeft(true) { _ && _ } } recover {
+        case _: AskTimeoutException ⇒ false
+      } pipeTo sender
       // Ignore all other writes
       context.become(flushing)
   }
 
   def flushing: Receive = {
-    case s: Send               ⇒ forwardToDeadLetters(s)
+    case s: Send               ⇒ extendedSystem.deadLetters ! s
     case InboundAssociation(h) ⇒ h.disassociate()
     case Terminated(_)         ⇒ // why should we care now?
-  }
-
-  private def forwardToDeadLetters(s: Send): Unit = {
-    val sender = s.senderOption.getOrElse(extendedSystem.deadLetters)
-    extendedSystem.deadLetters.tell(DeadLetter(s.message, sender, s.recipient), sender)
   }
 
   private def listens: Future[Seq[(Transport, Address, Promise[AssociationEventListener])]] = {
@@ -532,18 +542,28 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
                              localAddress: Address,
                              transport: Transport,
                              endpointSettings: RemoteSettings,
-                             handleOption: Option[AssociationHandle]): ActorRef = {
+                             handleOption: Option[AkkaProtocolHandle],
+                             writing: Boolean): ActorRef = {
     assert(transportMapping contains localAddress)
 
-    context.watch(context.actorOf(Props(
-      new EndpointWriter(
-        handleOption,
-        localAddress,
-        remoteAddress,
-        transport,
-        endpointSettings,
-        AkkaPduProtobufCodec))
-      .withDispatcher("akka.remote.writer-dispatcher"),
+    if (writing) context.watch(context.actorOf(ReliableDeliverySupervisor(
+      handleOption,
+      localAddress,
+      remoteAddress,
+      transport,
+      endpointSettings,
+      AkkaPduProtobufCodec,
+      receiveBuffers).withDispatcher("akka.remote.writer-dispatcher"),
+      "reliableEndpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()))
+    else context.watch(context.actorOf(EndpointWriter(
+      handleOption,
+      localAddress,
+      remoteAddress,
+      transport,
+      endpointSettings,
+      AkkaPduProtobufCodec,
+      receiveBuffers,
+      reliableDeliverySupervisor = None).withDispatcher("akka.remote.writer-dispatcher"),
       "endpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()))
   }
 

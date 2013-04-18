@@ -14,6 +14,7 @@ import scala.util.control.NonFatal
 import akka.actor.SystemGuardian.{ TerminationHookDone, TerminationHook, RegisterTerminationHook }
 import scala.util.control.Exception.Catcher
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.forkjoin.ThreadLocalRandom
 import com.typesafe.config.Config
 import akka.ConfigurationException
 
@@ -74,16 +75,18 @@ private[akka] object RemoteActorRefProvider {
   private class RemoteDeadLetterActorRef(_provider: ActorRefProvider,
                                          _path: ActorPath,
                                          _eventStream: EventStream) extends DeadLetterActorRef(_provider, _path, _eventStream) {
+    import EndpointManager.Send
 
     override def !(message: Any)(implicit sender: ActorRef): Unit = message match {
-      case EndpointManager.Send(m, senderOption, _) ⇒ super.!(m)(senderOption.orNull)
-      case _                                        ⇒ super.!(message)(sender)
-    }
-
-    override def specialHandle(msg: Any, sender: ActorRef): Boolean = msg match {
-      // unwrap again in case the original message was DeadLetter(EndpointManager.Send(m))
-      case EndpointManager.Send(m, _, _) ⇒ super.specialHandle(m, sender)
-      case _                             ⇒ super.specialHandle(msg, sender)
+      case Send(m, senderOption, _, seqOpt) ⇒
+        // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved
+        // the dead letter status
+        if (seqOpt.isEmpty) super.!(m)(senderOption.orNull)
+      case DeadLetter(Send(m, senderOption, recipient, seqOpt), _, _) ⇒
+        // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved
+        // the dead letter status
+        if (seqOpt.isEmpty) super.!(m)(senderOption.orNull)
+      case _ ⇒ super.!(message)(sender)
     }
 
     @throws(classOf[java.io.ObjectStreamException])

@@ -80,8 +80,8 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
       Await.result(transportA.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
       awaitCond(registry.transportsReady(addressATest))
 
-      // TestTransport throws IllegalArgumentException when trying to associate with non-existing system
-      intercept[IllegalArgumentException] { Await.result(transportA.associate(nonExistingAddress), timeout.duration) }
+      // TestTransport throws InvalidAssociationException when trying to associate with non-existing system
+      intercept[InvalidAssociationException] { Await.result(transportA.associate(nonExistingAddress), timeout.duration) }
     }
 
     "successfully send PDUs" in {
