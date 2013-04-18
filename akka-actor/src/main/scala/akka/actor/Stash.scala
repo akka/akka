@@ -3,7 +3,7 @@
  */
 package akka.actor
 
-import akka.dispatch.{ Envelope, DequeBasedMessageQueue }
+import akka.dispatch.{ RequiresMessageQueue, Envelope, DequeBasedMessageQueue }
 import akka.AkkaException
 
 /**
@@ -47,7 +47,7 @@ import akka.AkkaException
  *  any trait/class that overrides the `preRestart` callback. This means it's not possible to write
  *  `Actor with MyActor with Stash` if `MyActor` overrides `preRestart`.
  */
-trait Stash extends Actor {
+trait Stash extends Actor with RequiresMessageQueue[DequeBasedMessageQueue] {
 
   /* The private stash of the actor. It is only accessible using `stash()` and
    * `unstashAll()`.

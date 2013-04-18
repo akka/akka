@@ -34,10 +34,11 @@ class BalancingDispatcher(
   throughput: Int,
   throughputDeadlineTime: Duration,
   mailboxType: MailboxType,
+  _mailBoxTypeConfigured: Boolean,
   _executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
   _shutdownTimeout: FiniteDuration,
   attemptTeamWork: Boolean)
-  extends Dispatcher(_prerequisites, _id, throughput, throughputDeadlineTime, mailboxType, _executorServiceFactoryProvider, _shutdownTimeout) {
+  extends Dispatcher(_prerequisites, _id, throughput, throughputDeadlineTime, mailboxType, _mailBoxTypeConfigured, _executorServiceFactoryProvider, _shutdownTimeout) {
 
   /**
    * INTERNAL API

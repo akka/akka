@@ -14,6 +14,8 @@ import scala.concurrent.forkjoin.ForkJoinPool
 import scala.concurrent.duration.Duration
 import scala.concurrent.Awaitable
 import scala.concurrent.duration.FiniteDuration
+import scala.annotation.tailrec
+import java.lang.reflect.ParameterizedType
 
 /**
  * The event-based ``Dispatcher`` binds a set of Actors to a thread pool backed up by a
@@ -33,6 +35,7 @@ class Dispatcher(
   val throughput: Int,
   val throughputDeadlineTime: Duration,
   val mailboxType: MailboxType,
+  val mailboxTypeConfigured: Boolean,
   executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
   val shutdownTimeout: FiniteDuration)
   extends MessageDispatcher(_prerequisites) {
@@ -86,8 +89,9 @@ class Dispatcher(
   /**
    * INTERNAL API
    */
-  protected[akka] def createMailbox(actor: akka.actor.Cell): Mailbox =
-    new Mailbox(mailboxType.create(Some(actor.self), Some(actor.system))) with DefaultSystemMessageQueue
+  protected[akka] def createMailbox(actor: akka.actor.Cell): Mailbox = {
+    new Mailbox(getMailboxType(actor, mailboxType, mailboxTypeConfigured).create(Some(actor.self), Some(actor.system))) with DefaultSystemMessageQueue
+  }
 
   /**
    * INTERNAL API

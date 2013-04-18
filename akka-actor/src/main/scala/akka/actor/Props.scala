@@ -10,7 +10,7 @@ import scala.reflect.ClassTag
 import akka.routing._
 import akka.util.Reflect
 import scala.annotation.varargs
-import Deploy.NoDispatcherGiven
+import Deploy.{ NoDispatcherGiven, NoMailboxGiven }
 import scala.collection.immutable
 
 /**
@@ -178,6 +178,15 @@ case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]) {
   }
 
   /**
+   * Convenience method for extracting the mailbox information from the
+   * contained [[Deploy]] instance.
+   */
+  def mailbox: Option[String] = deploy.mailbox match {
+    case NoMailboxGiven ⇒ None
+    case x              ⇒ Some(x)
+  }
+
+  /**
    * Convenience method for extracting the router configuration from the
    * contained [[Deploy]] instance.
    */
@@ -217,6 +226,11 @@ case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]) {
    * Returns a new Props with the specified dispatcher set.
    */
   def withDispatcher(d: String): Props = copy(deploy = deploy.copy(dispatcher = d))
+
+  /**
+   * Returns a new Props with the specified mailbox set.
+   */
+  def withMailbox(m: String): Props = copy(deploy = deploy.copy(mailbox = m))
 
   /**
    * Returns a new Props with the specified router config set.
@@ -308,4 +322,12 @@ private[akka] class CreatorFunctionConsumer(creator: () ⇒ Actor) extends Indir
 private[akka] class CreatorConsumer(creator: Creator[Actor]) extends IndirectActorProducer {
   override def actorClass = classOf[Actor]
   override def produce() = creator.create()
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] class TypedCreatorFunctionConsumer(clz: Class[_ <: Actor], creator: () ⇒ Actor) extends IndirectActorProducer {
+  override def actorClass = clz
+  override def produce() = creator()
 }

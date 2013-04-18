@@ -127,6 +127,17 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   protected[akka] def createMailbox(actor: Cell): Mailbox //FIXME should this really be private[akka]?
 
   /**
+   * Finds out the mailbox type for an actor based on configuration, props and requirements.
+   */
+  protected[akka] def getMailboxType(actor: Cell, mailboxType: MailboxType, mailboxTypeConfigured: Boolean): MailboxType =
+    actor.props.mailbox.flatMap(id ⇒ actor.system.mailboxes.lookup(id)) match {
+      case Some(x)                       ⇒ x
+      case None if mailboxTypeConfigured ⇒ mailboxType
+      case None ⇒ actor.system.mailboxes.getRequiredType(actor.props.actorClass).
+        flatMap(c ⇒ actor.system.mailboxes.lookupByQueueType(c)).getOrElse(mailboxType)
+    }
+
+  /**
    * Identifier of this dispatcher, corresponds to the full key
    * of the dispatcher configuration.
    */
@@ -350,6 +361,11 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
         }).get
     }
   }
+
+  /**
+   * Was the mailbox type configured or derived?
+   */
+  def mailBoxTypeConfigured: Boolean = config.getString("mailbox-type") != Deploy.NoMailboxGiven
 
   def configureExecutor(): ExecutorServiceConfigurator = {
     config.getString("executor") match {

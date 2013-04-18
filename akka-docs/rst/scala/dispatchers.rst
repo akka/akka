@@ -204,6 +204,56 @@ And then an example on how you would use it:
 
 .. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#prio-dispatcher
 
+It is also possible to configure a mailbox type directly like this:
+
+.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala
+   :include: prio-mailbox-config,mailbox-deployment-config
+
+And then use it either from deployment like this:
+
+.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#defining-mailbox-in-config
+
+Or code like this:
+
+.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#defining-mailbox-in-code
+
+
+Requiring a message queue type for an Actor
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It is possible to require a certain type of message queue for a certain type of actor
+by having that actor extend the parameterized trait :class:`RequiresMessageQueue`. Here is
+an example:
+
+.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#required-mailbox-class
+
+The type parameter to the :class:`RequiresMessageQueue` trait needs to be mapped to a mailbox in
+configuration like this:
+
+.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala
+   :include: bounded-mailbox-config,required-mailbox-config
+
+Now every time you create an actor of type :class:`MyBoundedActor` it will try to get a bounded
+mailbox. If the actor has a different mailbox configured in deployment, either directly or via
+a dispatcher with a specified mailbox type, then that will override this mapping.
+
+.. note::
+
+  The type of the queue in the mailbox created for an actor will be checked against the required type in the
+  trait and if the queue doesn't implement the required type an error will be logged.
+
+
+Mailbox configuration precedence
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The order of precedence for the mailbox type of an actor, where lower numbers override higher, is:
+
+1. Mailbox type configured in the deployment of the actor
+2. Mailbox type configured on the dispatcher of the actor
+3. Mailbox type configured on the Props of the actor
+4. Mailbox type configured via message queue requirement
+
+
 Creating your own Mailbox type
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -211,7 +261,8 @@ An example is worth a thousand quacks:
 
 .. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#mailbox-implementation-example
 
-And then you just specify the FQCN of your MailboxType as the value of the "mailbox-type" in the dispatcher configuration.
+And then you just specify the FQCN of your MailboxType as the value of the "mailbox-type" in the dispatcher
+configuration, or the mailbox configuration.
 
 .. note::
 
@@ -219,8 +270,10 @@ And then you just specify the FQCN of your MailboxType as the value of the "mail
   ``akka.actor.ActorSystem.Settings`` and ``com.typesafe.config.Config``
   arguments, as this constructor is invoked reflectively to construct your
   mailbox type. The config passed in as second argument is that section from
-  the configuration which describes the dispatcher using this mailbox type; the
-  mailbox type will be instantiated once for each dispatcher using it.
+  the configuration which describes the dispatcher or mailbox setting using
+  this mailbox type; the mailbox type will be instantiated once for each
+  dispatcher or mailbox setting using it.
+
 
 Special Semantics of ``system.actorOf``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

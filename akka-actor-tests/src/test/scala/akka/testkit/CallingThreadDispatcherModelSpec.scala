@@ -32,7 +32,7 @@ object CallingThreadDispatcherModelSpec {
     extends MessageDispatcherConfigurator(config, prerequisites) {
 
     private val instance: MessageDispatcher =
-      new CallingThreadDispatcher(prerequisites, UnboundedMailbox()) with MessageDispatcherInterceptor {
+      new CallingThreadDispatcher(prerequisites, UnboundedMailbox(), false) with MessageDispatcherInterceptor {
         override def id: String = config.getString("id")
       }
 

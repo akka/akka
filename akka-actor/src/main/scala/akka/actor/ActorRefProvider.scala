@@ -693,11 +693,20 @@ private[akka] class LocalActorRefProvider private[akka] (
         }
 
         val props2 =
-          if (lookupDeploy) deployer.lookup(path) match {
-            case Some(d) if d.dispatcher != Deploy.NoDispatcherGiven ⇒ props.withDispatcher(d.dispatcher)
-            case _ ⇒ props // dispatcher not specified in deployment config
-          }
-          else props
+          if (lookupDeploy) {
+            // mailbox and dispatcher defined in deploy should override props
+            deployer.lookup(path) match {
+              case Some(d) ⇒
+                (d.dispatcher, d.mailbox) match {
+                  case (Deploy.NoDispatcherGiven, Deploy.NoMailboxGiven) ⇒ props
+                  case (dsp, Deploy.NoMailboxGiven)                      ⇒ props.withDispatcher(dsp)
+                  case (Deploy.NoMailboxGiven, mbx)                      ⇒ props.withMailbox(mbx)
+                  case (dsp, mbx)                                        ⇒ props.withDispatcher(dsp).withMailbox(mbx)
+                }
+              case _ ⇒ props // no deployment config found
+            }
+
+          } else props
 
         if (async) new RepointableActorRef(system, props2, supervisor, path).initialize(async)
         else new LocalActorRef(system, props2, supervisor, path)

@@ -129,6 +129,7 @@ object CallingThreadDispatcher {
 class CallingThreadDispatcher(
   _prerequisites: DispatcherPrerequisites,
   val mailboxType: MailboxType,
+  val mailboxTypeConfigured: Boolean,
   val name: String = "calling-thread") extends MessageDispatcher(_prerequisites) {
   import CallingThreadDispatcher._
 
@@ -136,7 +137,8 @@ class CallingThreadDispatcher(
 
   override def id: String = Id
 
-  protected[akka] override def createMailbox(actor: akka.actor.Cell) = new CallingThreadMailbox(actor, mailboxType)
+  protected[akka] override def createMailbox(actor: akka.actor.Cell) =
+    new CallingThreadMailbox(actor, getMailboxType(actor, mailboxType, mailboxTypeConfigured))
 
   protected[akka] override def shutdown() {}
 
@@ -302,7 +304,7 @@ class CallingThreadDispatcher(
 class CallingThreadDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
   extends MessageDispatcherConfigurator(config, prerequisites) {
 
-  private val instance = new CallingThreadDispatcher(prerequisites, mailboxType())
+  private val instance = new CallingThreadDispatcher(prerequisites, mailboxType(), mailBoxTypeConfigured)
 
   override def dispatcher(): MessageDispatcher = instance
 }
