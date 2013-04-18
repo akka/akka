@@ -115,7 +115,7 @@ private[transport] class AkkaProtocolManager(
       val stateActorSettings = settings
       val failureDetector = createTransportFailureDetector()
       context.actorOf(Props(new ProtocolStateActor(
-        HandshakeInfo(stateActorLocalAddress, RARP(context.system).provider.addressUid, stateActorSettings.SecureCookie),
+        HandshakeInfo(stateActorLocalAddress, AddressUidExtension(context.system).addressUid, stateActorSettings.SecureCookie),
         handle,
         stateActorAssociationHandler,
         stateActorSettings,
@@ -128,7 +128,7 @@ private[transport] class AkkaProtocolManager(
       val stateActorWrappedTransport = wrappedTransport
       val failureDetector = createTransportFailureDetector()
       context.actorOf(Props(new ProtocolStateActor(
-        HandshakeInfo(stateActorLocalAddress, RARP(context.system).provider.addressUid, stateActorSettings.SecureCookie),
+        HandshakeInfo(stateActorLocalAddress, AddressUidExtension(context.system).addressUid, stateActorSettings.SecureCookie),
         remoteAddress,
         statusPromise,
         stateActorWrappedTransport,

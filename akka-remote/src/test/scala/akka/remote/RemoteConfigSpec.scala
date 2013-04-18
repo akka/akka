@@ -64,10 +64,6 @@ class RemoteConfigSpec extends AkkaSpec(
       val settings = new AkkaProtocolSettings(RARP(system).provider.remoteSettings.config)
       import settings._
 
-      WaitActivityEnabled must be(true)
-      FailureDetectorImplementationClass must be(classOf[PhiAccrualFailureDetector].getName)
-      AcceptableHeartBeatPause must be === 3.seconds
-      HeartBeatInterval must be === 1.seconds
       RequireCookie must be(false)
       SecureCookie must be === None
 
