@@ -168,6 +168,23 @@ constructor arguments are determined by a dependency injection framework.
   When using a dependency injection framework, actor beans *MUST NOT* have
   singleton scope.
 
+The Inbox
+---------
+
+When writing code outside of actors which shall communicate with actors, the
+``ask`` pattern can be a solution (see below), but there are two thing it
+cannot do: receiving multiple replies (e.g. by subscribing an :class:`ActorRef`
+to a notification service) and watching other actors’ lifecycle. For these
+purposes there is the :class:`Inbox` class:
+
+.. includecode:: code/docs/actor/InboxDocTest.java#inbox
+
+The :meth:`send` method wraps a normal :meth:`tell` and supplies the internal
+actor’s reference as the sender. This allows the reply to be received on the
+last line.  Watching an actor is quite simple as well:
+
+.. includecode:: code/docs/actor/InboxDocTest.java#watch
+
 UntypedActor API
 ================
 

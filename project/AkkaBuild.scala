@@ -494,7 +494,7 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.docs,
       publishArtifact in Compile := false,
       unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
-      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")
+      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a")
     )
   )
 

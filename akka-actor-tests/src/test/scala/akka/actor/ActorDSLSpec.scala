@@ -33,9 +33,24 @@ class ActorDSLSpec extends AkkaSpec {
   "An Inbox" must {
 
     "function as implicit sender" in {
+      //#inbox
       implicit val i = inbox()
       echo ! "hello"
       i.receive() must be("hello")
+      //#inbox
+    }
+
+    "support watch" in {
+      //#watch
+      val target = // some actor
+        //#watch
+        actor(new Act {})
+      //#watch
+      val i = inbox()
+      i watch target
+      //#watch
+      target ! PoisonPill
+      i receive 1.second must be(Terminated(target)(true, false))
     }
 
     "support queueing multiple queries" in {

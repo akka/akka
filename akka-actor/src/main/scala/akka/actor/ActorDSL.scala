@@ -97,3 +97,46 @@ object ActorDSL extends dsl.Inbox with dsl.Creators {
   }
 
 }
+
+/**
+ * An Inbox is an actor-like object which is interrogated from the outside.
+ * It contains an actor whose reference can be passed to other actors as
+ * usual and it can watch other actors’ lifecycle.
+ */
+abstract class Inbox {
+
+  /**
+   * Receive the next message from this Inbox. This call will return immediately
+   * if the internal actor previously received a message, or it will block for
+   * up to the specified duration to await reception of a message. If no message
+   * is received a [[TimeoutException]] will be raised.
+   */
+  def receive(max: FiniteDuration): Any
+
+  /**
+   * Have the internal actor watch the target actor. When the target actor
+   * terminates a [[Terminated]] message will be received.
+   */
+  def watch(target: ActorRef): Unit
+
+  /**
+   * Obtain a reference to the internal actor, which can then for example be
+   * registered with the event stream or whatever else you may want to do with
+   * an [[ActorRef]].
+   */
+  def getRef(): ActorRef
+
+  /**
+   * Have the internal actor act as the sender of the given message which will
+   * be sent to the given target. This means that should the target actor reply
+   * then those replies will be received by this Inbox.
+   */
+  def send(target: ActorRef, msg: AnyRef): Unit
+}
+
+object Inbox {
+  /**
+   * Create a new Inbox within the given system.
+   */
+  def create(system: ActorSystem): Inbox = ActorDSL.inbox()(system)
+}
