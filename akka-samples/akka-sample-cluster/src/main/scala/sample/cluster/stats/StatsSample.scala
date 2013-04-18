@@ -41,7 +41,7 @@ class StatsService extends Actor {
       val replyTo = sender // important to not close over sender
       // create actor that collects replies from workers
       val aggregator = context.actorOf(Props(
-        new StatsAggregator(words.size, replyTo)))
+        classOf[StatsAggregator], words.size, replyTo))
       words foreach { word ⇒
         workerRouter.tell(
           ConsistentHashableEnvelope(word, word), aggregator)
@@ -146,9 +146,9 @@ object StatsSampleOneMaster {
     val system = ActorSystem("ClusterSystem", config)
 
     //#create-singleton-manager
-    system.actorOf(Props(new ClusterSingletonManager(
+    system.actorOf(ClusterSingletonManager.props(
       singletonProps = _ ⇒ Props[StatsService], singletonName = "statsService",
-      terminationMessage = PoisonPill, role = Some("compute"))),
+      terminationMessage = PoisonPill, role = Some("compute")),
       name = "singleton")
     //#create-singleton-manager
     system.actorOf(Props[StatsFacade], name = "statsFacade")
@@ -159,7 +159,7 @@ object StatsSampleClient {
   def main(args: Array[String]): Unit = {
     // note that client is not a compute node, role not defined
     val system = ActorSystem("ClusterSystem")
-    system.actorOf(Props(new StatsSampleClient("/user/statsService")), "client")
+    system.actorOf(Props(classOf[StatsSampleClient], "/user/statsService"), "client")
   }
 }
 
@@ -167,7 +167,7 @@ object StatsSampleOneMasterClient {
   def main(args: Array[String]): Unit = {
     // note that client is not a compute node, role not defined
     val system = ActorSystem("ClusterSystem")
-    system.actorOf(Props(new StatsSampleClient("/user/statsFacade")), "client")
+    system.actorOf(Props(classOf[StatsSampleClient], "/user/statsFacade"), "client")
   }
 }
 

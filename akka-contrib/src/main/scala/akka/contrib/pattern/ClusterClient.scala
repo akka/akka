@@ -7,6 +7,7 @@ import java.net.URLEncoder
 import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.actor.Actor
+import akka.actor.ActorIdentity
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.ActorSelection
@@ -16,6 +17,7 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
+import akka.actor.Identify
 import akka.actor.Props
 import akka.actor.ReceiveTimeout
 import akka.actor.Terminated
@@ -26,12 +28,44 @@ import akka.cluster.MemberStatus
 import akka.routing.ConsistentHash
 import akka.routing.MurmurHash
 
-/**
- * INTERNAL API
- */
-private object ClusterClient {
-  case object PingTick
-  case object RefreshContactsTick
+object ClusterClient {
+
+  /**
+   * Scala API: Factory method for `ClusterClient` [[akka.actor.Props]].
+   */
+  def props(
+    initialContacts: Set[ActorSelection],
+    pingInterval: FiniteDuration = 3.second,
+    refreshContactsInterval: FiniteDuration = 1.minute): Props =
+    Props(classOf[ClusterClient], initialContacts, pingInterval, refreshContactsInterval)
+
+  /**
+   * Java API: Factory method for `ClusterClient` [[akka.actor.Props]].
+   */
+  def props(
+    initialContacts: java.util.Set[ActorSelection],
+    pingInterval: FiniteDuration,
+    refreshContactsInterval: FiniteDuration): Props = {
+    import scala.collection.JavaConverters._
+    props(initialContacts.asScala.toSet, pingInterval, refreshContactsInterval)
+  }
+
+  /**
+   * Java API: Factory method for `ClusterClient` [[akka.actor.Props]] with
+   * default values.
+   */
+  def defaultProps(initialContacts: java.util.Set[ActorSelection]): Props = {
+    import scala.collection.JavaConverters._
+    props(initialContacts.asScala.toSet)
+  }
+
+  /**
+   * INTERNAL API
+   */
+  private[pattern] object Internal {
+    case object PingTick
+    case object RefreshContactsTick
+  }
 }
 
 /**
@@ -49,15 +83,19 @@ private object ClusterClient {
  * Messages are wrapped in [[DistributedPubSubMediator.Send]], [[DistributedPubSubMediator.SendToAll]]
  * or [[DistributedPubSubMediator.Publish]] with the semantics described in
  * [[DistributedPubSubMediator]].
+ *
+ *  Use the factory method [[ClusterClient#props]]) to create the
+ * [[akka.actor.Props]] for the actor.
  */
 class ClusterClient(
   initialContacts: Set[ActorSelection],
-  pingInterval: FiniteDuration = 3.second,
-  refreshContactsInterval: FiniteDuration = 1.minute)
+  pingInterval: FiniteDuration,
+  refreshContactsInterval: FiniteDuration)
   extends Actor with ActorLogging {
 
   import ClusterClient._
-  import ClusterReceptionist._
+  import ClusterClient.Internal._
+  import ClusterReceptionist.Internal._
   import DistributedPubSubMediator.{ Send, SendToAll, Publish }
 
   var contacts: immutable.IndexedSeq[ActorSelection] = initialContacts.toVector
@@ -177,46 +215,72 @@ class ClusterReceptionistExtension(system: ExtendedActorSystem) extends Extensio
       val name = config.getString("name")
       // important to use val mediator here to activate it outside of ClusterReceptionist constructor
       val mediator = pubSubMediator
-      system.actorOf(Props(new ClusterReceptionist(mediator, role, numberOfContacts,
-        responseTunnelReceiveTimeout)), name)
+      system.actorOf(ClusterReceptionist.props(mediator, role, numberOfContacts,
+        responseTunnelReceiveTimeout), name)
     }
   }
 }
 
-/**
- * INTERNAL API
- */
-private[pattern] object ClusterReceptionist {
-  @SerialVersionUID(1L)
-  case object GetContacts
-  @SerialVersionUID(1L)
-  case class Contacts(contactPoints: immutable.IndexedSeq[ActorSelection])
-  @SerialVersionUID(1L)
-  case object Ping
-  @SerialVersionUID(1L)
-  case object Pong
-
-  // FIXME change to akka.actor.Identify when that is in master
-  @SerialVersionUID(1L)
-  case class Identify(messageId: Any)
-  @SerialVersionUID(1L)
-  case class ActorIdentity(correlationId: Any, ref: Option[ActorRef])
-
-  def roleOption(role: String): Option[String] = role match {
-    case null | "" ⇒ None
-    case _         ⇒ Some(role)
-  }
+object ClusterReceptionist {
 
   /**
-   * Replies are tunneled via this actor, child of the receptionist, to avoid
-   * inbound connections from other cluster nodes to the client.
+   * Scala API: Factory method for `ClusterReceptionist` [[akka.actor.Props]].
    */
-  class ClientResponseTunnel(client: ActorRef, timeout: FiniteDuration) extends Actor {
-    context.setReceiveTimeout(timeout)
-    def receive = {
-      case Ping           ⇒ // keep alive from client
-      case ReceiveTimeout ⇒ context stop self
-      case msg            ⇒ client forward msg
+  def props(
+    pubSubMediator: ActorRef,
+    role: Option[String],
+    numberOfContacts: Int = 3,
+    responseTunnelReceiveTimeout: FiniteDuration = 30.seconds): Props =
+    Props(classOf[ClusterReceptionist], pubSubMediator, role, numberOfContacts, responseTunnelReceiveTimeout)
+
+  /**
+   * Java API: Factory method for `ClusterReceptionist` [[akka.actor.Props]].
+   */
+  def props(
+    pubSubMediator: ActorRef,
+    role: String,
+    numberOfContacts: Int,
+    responseTunnelReceiveTimeout: FiniteDuration): Props =
+    props(pubSubMediator, Internal.roleOption(role), numberOfContacts, responseTunnelReceiveTimeout)
+
+  /**
+   * Java API: Factory method for `ClusterReceptionist` [[akka.actor.Props]]
+   * with default values.
+   */
+  def props(
+    pubSubMediator: ActorRef,
+    role: String): Props =
+    props(pubSubMediator, Internal.roleOption(role))
+
+  /**
+   * INTERNAL API
+   */
+  private[pattern] object Internal {
+    @SerialVersionUID(1L)
+    case object GetContacts
+    @SerialVersionUID(1L)
+    case class Contacts(contactPoints: immutable.IndexedSeq[ActorSelection])
+    @SerialVersionUID(1L)
+    case object Ping
+    @SerialVersionUID(1L)
+    case object Pong
+
+    def roleOption(role: String): Option[String] = role match {
+      case null | "" ⇒ None
+      case _         ⇒ Some(role)
+    }
+
+    /**
+     * Replies are tunneled via this actor, child of the receptionist, to avoid
+     * inbound connections from other cluster nodes to the client.
+     */
+    class ClientResponseTunnel(client: ActorRef, timeout: FiniteDuration) extends Actor {
+      context.setReceiveTimeout(timeout)
+      def receive = {
+        case Ping           ⇒ // keep alive from client
+        case ReceiveTimeout ⇒ context stop self
+        case msg            ⇒ client forward msg
+      }
     }
   }
 
@@ -226,7 +290,7 @@ private[pattern] object ClusterReceptionist {
  * [[ClusterClient]] connects to this actor to retrieve. The `ClusterReceptionist` is
  * supposed to be started on all nodes, or all nodes with specified role, in the cluster.
  * The receptionist can be started with the [[ClusterReceptionistExtension]] or as an
- * ordinary actor.
+ * ordinary actor (use the factory method [[ClusterReceptionist#props]]).
  *
  * The receptionist forwards messages from the client to the associated [[DistributedPubSubMediator]],
  * i.e. the client can send messages to any actor in the cluster that is registered in the
@@ -245,19 +309,13 @@ private[pattern] object ClusterReceptionist {
 class ClusterReceptionist(
   pubSubMediator: ActorRef,
   role: Option[String],
-  numberOfContacts: Int = 3,
-  responseTunnelReceiveTimeout: FiniteDuration = 30.seconds)
+  numberOfContacts: Int,
+  responseTunnelReceiveTimeout: FiniteDuration)
   extends Actor with ActorLogging {
 
   import DistributedPubSubMediator.{ Send, SendToAll, Publish }
 
-  /**
-   * Java API constructor with default values.
-   */
-  def this(pubSubMediator: ActorRef, role: String) =
-    this(pubSubMediator, ClusterReceptionist.roleOption(role))
-
-  import ClusterReceptionist._
+  import ClusterReceptionist.Internal._
 
   val cluster = Cluster(context.system)
   import cluster.selfAddress
@@ -300,7 +358,7 @@ class ClusterReceptionist(
     context.child(encName) match {
       case Some(tunnel) ⇒ tunnel
       case None ⇒
-        context.actorOf(Props(new ClientResponseTunnel(client, responseTunnelReceiveTimeout)), encName)
+        context.actorOf(Props(classOf[ClientResponseTunnel], client, responseTunnelReceiveTimeout), encName)
     }
   }
 
@@ -311,10 +369,6 @@ class ClusterReceptionist(
     case Ping ⇒
       responseTunnel(sender) ! Ping // keep alive
       sender ! Pong
-
-    // FIXME remove when akka.actor.Identify when is in master
-    case Identify(messageId) ⇒
-      sender ! ActorIdentity(messageId, Some(self))
 
     case GetContacts ⇒
       // Consistent hashing is used to ensure that the reply to GetContacts

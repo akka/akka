@@ -95,7 +95,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       join(third, first)
       join(fourth, first)
       runOn(fourth) {
-        val service = system.actorOf(Props(new TestService(testActor)), "testService")
+        val service = system.actorOf(Props(classOf[TestService], testActor), "testService")
         mediator ! Put(service)
       }
       runOn(first, second, third, fourth) {
@@ -107,7 +107,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
     "communicate to actor on any node in cluster" in within(10 seconds) {
       runOn(client) {
-        val c = system.actorOf(Props(new ClusterClient(initialContacts)))
+        val c = system.actorOf(ClusterClient.props(initialContacts))
 
         awaitAssert {
           c ! Send("/user/testService", "hello", localAffinity = true)
@@ -142,7 +142,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
       //#client
       runOn(client) {
-        val c = system.actorOf(Props(new ClusterClient(initialContacts)))
+        val c = system.actorOf(ClusterClient.props(initialContacts))
         c ! DistributedPubSubMediator.Send("/user/serviceA", "hello", localAffinity = true)
         c ! DistributedPubSubMediator.SendToAll("/user/serviceB", "hi")
       }
@@ -163,14 +163,14 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
     "re-establish connection to receptionist when connection is lost" in within(30 seconds) {
       runOn(first, second, third, fourth) {
-        val service2 = system.actorOf(Props(new TestService(testActor)), "service2")
+        val service2 = system.actorOf(Props(classOf[TestService], testActor), "service2")
         mediator ! Put(service2)
         awaitCount(8)
       }
       enterBarrier("service2-replicated")
 
       runOn(client) {
-        val c = system.actorOf(Props(new ClusterClient(initialContacts)))
+        val c = system.actorOf(ClusterClient.props(initialContacts))
 
         awaitAssert {
           c ! Send("/user/service2", "bonjour", localAffinity = true)

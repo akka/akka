@@ -110,7 +110,7 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
   var chatUsers: Map[String, ActorRef] = Map.empty
 
   def createChatUser(name: String): ActorRef = {
-    var a = system.actorOf(Props(new TestChatUser(mediator, testActor)), name)
+    var a = system.actorOf(Props(classOf[TestChatUser], mediator, testActor), name)
     chatUsers += (name -> a)
     a
   }

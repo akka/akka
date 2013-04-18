@@ -22,7 +22,7 @@ public class TransformationFrontendMain {
 
     ActorSystem system = ActorSystem.create("ClusterSystem");
 
-    ActorRef frontend = system.actorOf(new Props(
+    ActorRef frontend = system.actorOf(Props.create(
         TransformationFrontend.class), "frontend");
     Timeout timeout = new Timeout(Duration.create(5, TimeUnit.SECONDS));
     final ExecutionContext ec = system.dispatcher();
