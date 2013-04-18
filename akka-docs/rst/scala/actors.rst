@@ -255,6 +255,24 @@ If you want to use this magic, simply extend :class:`ActWithStash`:
 
 .. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#act-with-stash
 
+The Inbox
+---------
+
+When writing code outside of actors which shall communicate with actors, the
+``ask`` pattern can be a solution (see below), but there are two thing it
+cannot do: receiving multiple replies (e.g. by subscribing an :class:`ActorRef`
+to a notification service) and watching other actors’ lifecycle. For these
+purposes there is the :class:`Inbox` class:
+
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#inbox
+
+There is an implicit conversion from inbox to actor reference which means that
+in this example the sender reference will be that of the actor hidden away
+within the inbox. This allows the reply to be received on the last line.
+Watching an actor is quite simple as well:
+
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#watch
+
 Actor API
 =========
 

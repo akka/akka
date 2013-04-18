@@ -17,7 +17,9 @@ import java.lang.{ Iterable ⇒ JIterable }
 
 object Tcp extends ExtensionKey[TcpExt] {
 
-  // Java API
+  /**
+   * Java API: retrieve Tcp extension for the given system.
+   */
   override def get(system: ActorSystem): TcpExt = super.get(system)
 
   // shared socket options
@@ -62,10 +64,20 @@ object Tcp extends ExtensionKey[TcpExt] {
   }
 
   /// COMMANDS
+
+  /**
+   * This is the common trait for all commands understood by TCP actors.
+   */
   trait Command extends IO.HasFailureMessage {
     def failureMessage = CommandFailed(this)
   }
 
+  /**
+   * The Connect message is sent to the [[TcpManager]], which is obtained via
+   * [[TcpExt#getManager]]. Either the manager replies with a [[CommandFailed]]
+   * or the actor handling the new connection replies with a [[Connected]]
+   * message.
+   */
   case class Connect(remoteAddress: InetSocketAddress,
                      localAddress: Option[InetSocketAddress] = None,
                      options: immutable.Traversable[SocketOption] = Nil) extends Command
@@ -74,7 +86,7 @@ object Tcp extends ExtensionKey[TcpExt] {
                   backlog: Int = 100,
                   options: immutable.Traversable[SocketOption] = Nil) extends Command
 
-  case class Register(handler: ActorRef, keepOpenOnPeerClosed: Boolean = false) extends Command
+  case class Register(handler: ActorRef, keepOpenOnPeerClosed: Boolean = false, useResumeWriting: Boolean = true) extends Command
   case object Unbind extends Command
 
   sealed trait CloseCommand extends Command {
@@ -131,7 +143,9 @@ object Tcp extends ExtensionKey[TcpExt] {
     require(count > 0, "WriteFile.count must be > 0")
   }
 
-  case object StopReading extends Command
+  case object ResumeWriting extends Command
+
+  case object SuspendReading extends Command
   case object ResumeReading extends Command
 
   /// EVENTS
@@ -140,6 +154,9 @@ object Tcp extends ExtensionKey[TcpExt] {
   case class Received(data: ByteString) extends Event
   case class Connected(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress) extends Event
   case class CommandFailed(cmd: Command) extends Event
+
+  sealed trait WritingResumed extends Event
+  case object WritingResumed extends WritingResumed
 
   case class Bound(localAddress: InetSocketAddress) extends Event
   sealed trait Unbound extends Event
@@ -209,6 +226,11 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
       name = "IO-TCP")
   }
 
+  /**
+   * Java API: retrieve a reference to the manager actor.
+   */
+  def getManager: ActorRef = manager
+
   val bufferPool: BufferPool = new DirectByteBufferPool(Settings.DirectBufferSize, Settings.MaxDirectBufferPoolSize)
   val fileIoDispatcher = system.dispatchers.lookup(Settings.FileIODispatcher)
 }
@@ -240,7 +262,8 @@ object TcpMessage {
            backlog: Int): Command = Bind(handler, endpoint, backlog, Nil)
 
   def register(handler: ActorRef): Command = Register(handler)
-  def register(handler: ActorRef, keepOpenOnPeerClosed: Boolean): Command = Register(handler, keepOpenOnPeerClosed)
+  def register(handler: ActorRef, keepOpenOnPeerClosed: Boolean, useResumeWriting: Boolean): Command =
+    Register(handler, keepOpenOnPeerClosed, useResumeWriting)
   def unbind: Command = Unbind
 
   def close: Command = Close
@@ -253,8 +276,10 @@ object TcpMessage {
   def write(data: ByteString): Command = Write(data)
   def write(data: ByteString, ack: AnyRef): Command = Write(data, ack)
 
-  def stopReading: Command = StopReading
+  def suspendReading: Command = SuspendReading
   def resumeReading: Command = ResumeReading
+
+  def resumeWriting: Command = ResumeWriting
 
   implicit private def fromJava[T](coll: JIterable[T]): immutable.Traversable[T] = {
     import scala.collection.JavaConverters._

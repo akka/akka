@@ -274,7 +274,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
     "respect StopReading and ResumeReading" in withEstablishedConnection() { setup ⇒
       import setup._
-      connectionHandler.send(connectionActor, StopReading)
+      connectionHandler.send(connectionActor, SuspendReading)
 
       // the selector interprets StopReading to deregister interest
       // for reading
@@ -553,6 +553,135 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
         deaths must be(Set(connectionHandler.ref, connectionActor))
       }
     }
+
+    "support ResumeWriting (backed up)" in withEstablishedConnection() { setup ⇒
+      import setup._
+
+      val writer = TestProbe()
+      val write = writeCmd(NoAck)
+
+      // fill up the write buffer until NACK
+      var written = 0
+      while (!writer.msgAvailable) {
+        writer.send(connectionActor, write)
+        written += 1
+      }
+      // dump the NACKs
+      writer.receiveWhile(1.second) {
+        case CommandFailed(write) ⇒ written -= 1
+      }
+      writer.msgAvailable must be(false)
+
+      // writes must fail now
+      writer.send(connectionActor, write)
+      writer.expectMsg(CommandFailed(write))
+      writer.send(connectionActor, Write.empty)
+      writer.expectMsg(CommandFailed(Write.empty))
+
+      // resuming must not immediately work (queue still full)
+      writer.send(connectionActor, ResumeWriting)
+      writer.expectNoMsg(1.second)
+
+      // so drain the queue until it works again
+      while (!writer.msgAvailable) pullFromServerSide(TestSize)
+      writer.expectMsg(Duration.Zero, WritingResumed)
+
+      // now write should work again
+      writer.send(connectionActor, writeCmd("works"))
+      writer.expectMsg("works")
+    }
+
+    "support ResumeWriting (queue flushed)" in withEstablishedConnection() { setup ⇒
+      import setup._
+
+      val writer = TestProbe()
+      val write = writeCmd(NoAck)
+
+      // fill up the write buffer until NACK
+      var written = 0
+      while (!writer.msgAvailable) {
+        writer.send(connectionActor, write)
+        written += 1
+      }
+      // dump the NACKs
+      writer.receiveWhile(1.second) {
+        case CommandFailed(write) ⇒ written -= 1
+      }
+
+      // drain the queue until it works again
+      pullFromServerSide(TestSize * written)
+
+      // writes must still fail
+      writer.send(connectionActor, write)
+      writer.expectMsg(CommandFailed(write))
+      writer.send(connectionActor, Write.empty)
+      writer.expectMsg(CommandFailed(Write.empty))
+
+      // resuming must work immediately
+      writer.send(connectionActor, ResumeWriting)
+      writer.expectMsg(1.second, WritingResumed)
+
+      // now write should work again
+      writer.send(connectionActor, writeCmd("works"))
+      writer.expectMsg("works")
+    }
+
+    "support useResumeWriting==false (backed up)" in withEstablishedConnection(useResumeWriting = false) { setup ⇒
+      import setup._
+
+      val writer = TestProbe()
+      val write = writeCmd(NoAck)
+
+      // fill up the write buffer until NACK
+      var written = 0
+      while (!writer.msgAvailable) {
+        writer.send(connectionActor, write)
+        written += 1
+      }
+      // dump the NACKs
+      writer.receiveWhile(1.second) {
+        case CommandFailed(write) ⇒ written -= 1
+      }
+      writer.msgAvailable must be(false)
+
+      // writes must fail now
+      writer.send(connectionActor, write)
+      writer.expectMsg(CommandFailed(write))
+      writer.send(connectionActor, Write.empty)
+      writer.expectMsg(CommandFailed(Write.empty))
+
+      // so drain the queue until it works again
+      pullFromServerSide(TestSize * written)
+
+      // now write should work again
+      writer.send(connectionActor, writeCmd("works"))
+      writer.expectMsg("works")
+    }
+
+    "support useResumeWriting==false (queue flushed)" in withEstablishedConnection(useResumeWriting = false) { setup ⇒
+      import setup._
+
+      val writer = TestProbe()
+      val write = writeCmd(NoAck)
+
+      // fill up the write buffer until NACK
+      var written = 0
+      while (!writer.msgAvailable) {
+        writer.send(connectionActor, write)
+        written += 1
+      }
+      // dump the NACKs
+      writer.receiveWhile(1.second) {
+        case CommandFailed(write) ⇒ written -= 1
+      }
+
+      // drain the queue until it works again
+      pullFromServerSide(TestSize * written)
+
+      // now write should work again
+      writer.send(connectionActor, writeCmd("works"))
+      writer.expectMsg("works")
+    }
   }
 
   def acceptServerSideConnection(localServer: ServerSocketChannel): SocketChannel = {
@@ -580,6 +709,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     selector: TestProbe,
     connectionActor: TestActorRef[TcpOutgoingConnection],
     clientSideChannel: SocketChannel)
+
   case class RegisteredSetup(
     unregisteredSetup: UnacceptedSetup,
     connectionHandler: TestProbe,
@@ -698,6 +828,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     def interestsDesc(interests: Int): String =
       interestsNames.filter(i ⇒ (i._1 & interests) != 0).map(_._2).mkString(", ")
   }
+
   private[io] def withUnacceptedConnection(
     setServerSocketOptions: ServerSocketChannel ⇒ Unit = _ ⇒ (),
     connectionActorCons: (ActorRef, ActorRef) ⇒ TestActorRef[TcpOutgoingConnection] = createConnectionActor())(body: UnacceptedSetup ⇒ Any): Unit =
@@ -720,30 +851,33 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
           clientSideChannel)
       }
     }
+
   def withEstablishedConnection(
     setServerSocketOptions: ServerSocketChannel ⇒ Unit = _ ⇒ (),
     clientSocketOptions: immutable.Seq[SocketOption] = Nil,
-    keepOpenOnPeerClosed: Boolean = false)(body: RegisteredSetup ⇒ Any): Unit = withUnacceptedConnection(setServerSocketOptions, createConnectionActor(options = clientSocketOptions)) { unregisteredSetup ⇒
-    import unregisteredSetup._
+    keepOpenOnPeerClosed: Boolean = false,
+    useResumeWriting: Boolean = true)(body: RegisteredSetup ⇒ Any): Unit =
+    withUnacceptedConnection(setServerSocketOptions, createConnectionActor(options = clientSocketOptions)) { unregisteredSetup ⇒
+      import unregisteredSetup._
 
-    val serverSideChannel = acceptServerSideConnection(localServer)
-    serverSideChannel.configureBlocking(false)
+      val serverSideChannel = acceptServerSideConnection(localServer)
+      serverSideChannel.configureBlocking(false)
 
-    serverSideChannel must not be (null)
-    selector.send(connectionActor, ChannelConnectable)
-    userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
+      serverSideChannel must not be (null)
+      selector.send(connectionActor, ChannelConnectable)
+      userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
 
-    val connectionHandler = TestProbe()
-    userHandler.send(connectionActor, Register(connectionHandler.ref, keepOpenOnPeerClosed))
-    selector.expectMsg(ReadInterest)
+      val connectionHandler = TestProbe()
+      userHandler.send(connectionActor, Register(connectionHandler.ref, keepOpenOnPeerClosed, useResumeWriting))
+      selector.expectMsg(ReadInterest)
 
-    body {
-      RegisteredSetup(
-        unregisteredSetup,
-        connectionHandler,
-        serverSideChannel)
+      body {
+        RegisteredSetup(
+          unregisteredSetup,
+          connectionHandler,
+          serverSideChannel)
+      }
     }
-  }
 
   val TestSize = 10000
 

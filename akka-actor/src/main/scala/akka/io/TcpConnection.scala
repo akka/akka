@@ -44,7 +44,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
   /** connection established, waiting for registration from user handler */
   def waitingForRegistration(commander: ActorRef): Receive = {
-    case Register(handler, keepOpenOnPeerClosed) ⇒
+    case Register(handler, keepOpenOnPeerClosed, useResumeWriting) ⇒
       // up to this point we've been watching the commander,
       // but since registration is now complete we only need to watch the handler from here on
       if (handler != commander) {
@@ -53,6 +53,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
       }
       if (TraceLogging) log.debug("[{}] registered as connection handler", handler)
       this.keepOpenOnPeerClosed = keepOpenOnPeerClosed
+      this.useResumeWriting = useResumeWriting
 
       doRead(handler, None) // immediately try reading
       context.setReceiveTimeout(Duration.Undefined)
@@ -70,7 +71,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
   /** normal connected state */
   def connected(handler: ActorRef): Receive = handleWriteMessages(handler) orElse {
-    case StopReading       ⇒ selector ! DisableReadInterest
+    case SuspendReading    ⇒ selector ! DisableReadInterest
     case ResumeReading     ⇒ selector ! ReadInterest
     case ChannelReadable   ⇒ doRead(handler, None)
 
@@ -84,7 +85,7 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
   /** connection is closing but a write has to be finished first */
   def closingWithPendingWrite(handler: ActorRef, closeCommander: Option[ActorRef], closedEvent: ConnectionClosed): Receive = {
-    case StopReading     ⇒ selector ! DisableReadInterest
+    case SuspendReading  ⇒ selector ! DisableReadInterest
     case ResumeReading   ⇒ selector ! ReadInterest
     case ChannelReadable ⇒ doRead(handler, closeCommander)
 
@@ -101,26 +102,61 @@ private[io] abstract class TcpConnection(val channel: SocketChannel,
 
   /** connection is closed on our side and we're waiting from confirmation from the other side */
   def closing(handler: ActorRef, closeCommander: Option[ActorRef]): Receive = {
-    case StopReading     ⇒ selector ! DisableReadInterest
+    case SuspendReading  ⇒ selector ! DisableReadInterest
     case ResumeReading   ⇒ selector ! ReadInterest
     case ChannelReadable ⇒ doRead(handler, closeCommander)
     case Abort           ⇒ handleClose(handler, Some(sender), Aborted)
   }
 
+  private[this] var useResumeWriting = false
+  private[this] var writingSuspended = false
+  private[this] var interestedInResume: Option[ActorRef] = None
+
   def handleWriteMessages(handler: ActorRef): Receive = {
-    case ChannelWritable ⇒ if (writePending) doWrite(handler)
-
-    case write: WriteCommand if writePending ⇒
-      if (TraceLogging) log.debug("Dropping write because queue is full")
-      sender ! write.failureMessage
-
-    case write: Write if write.data.isEmpty ⇒
-      if (write.wantsAck)
-        sender ! write.ack
+    case ChannelWritable ⇒
+      if (writePending) {
+        doWrite(handler)
+        if (!writePending && interestedInResume.nonEmpty) {
+          interestedInResume.get ! WritingResumed
+          interestedInResume = None
+        }
+      }
 
     case write: WriteCommand ⇒
-      pendingWrite = createWrite(write)
-      doWrite(handler)
+      if (writingSuspended) {
+        if (TraceLogging) log.debug("Dropping write because writing is suspended")
+        sender ! write.failureMessage
+
+      } else if (writePending) {
+        if (TraceLogging) log.debug("Dropping write because queue is full")
+        sender ! write.failureMessage
+        if (useResumeWriting) writingSuspended = true
+
+      } else write match {
+        case Write(data, ack) if data.isEmpty ⇒
+          if (ack != NoAck) sender ! ack
+
+        case _ ⇒
+          pendingWrite = createWrite(write)
+          doWrite(handler)
+      }
+
+    case ResumeWriting ⇒
+      /*
+       * If more than one actor sends Writes then the first to send this 
+       * message might resume too early for the second, leading to a Write of
+       * the second to go through although it has not been resumed yet; there
+       * is nothing we can do about this apart from all actors needing to 
+       * register themselves and us keeping track of them, which sounds bad.
+       *
+       * Thus it is documented that useResumeWriting is incompatible with
+       * multiple writers. But we fail as gracefully as we can.
+       */
+      writingSuspended = false
+      if (writePending) {
+        if (interestedInResume.isEmpty) interestedInResume = Some(sender)
+        else sender ! CommandFailed(ResumeWriting)
+      } else sender ! WritingResumed
 
     case SendBufferFull(remaining) ⇒ { pendingWrite = remaining; selector ! WriteInterest }
     case WriteFileFinished         ⇒ pendingWrite = null
