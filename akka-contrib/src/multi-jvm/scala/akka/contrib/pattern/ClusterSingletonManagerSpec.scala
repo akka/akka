@@ -239,12 +239,12 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
 
   def createSingleton(): ActorRef = {
     //#create-singleton-manager
-    system.actorOf(Props(new ClusterSingletonManager(
+    system.actorOf(ClusterSingletonManager.props(
       singletonProps = handOverData ⇒
-        Props(new Consumer(handOverData, queue, testActor)),
+        Props(classOf[Consumer], handOverData, queue, testActor),
       singletonName = "consumer",
       terminationMessage = End,
-      role = Some("worker"))),
+      role = Some("worker")),
       name = "singleton")
     //#create-singleton-manager
   }

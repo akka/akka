@@ -27,6 +27,31 @@ import akka.cluster.Member
 import akka.cluster.MemberStatus
 
 object DistributedPubSubMediator {
+
+  /**
+   * Scala API: Factory method for `DistributedPubSubMediator` [[akka.actor.Props]].
+   */
+  def props(
+    role: Option[String],
+    gossipInterval: FiniteDuration = 1.second,
+    removedTimeToLive: FiniteDuration = 2.minutes): Props =
+    Props(classOf[DistributedPubSubMediator], role, gossipInterval, removedTimeToLive)
+
+  /**
+   * Java API: Factory method for `DistributedPubSubMediator` [[akka.actor.Props]].
+   */
+  def props(
+    role: String,
+    gossipInterval: FiniteDuration,
+    removedTimeToLive: FiniteDuration): Props =
+    props(Internal.roleOption(role), gossipInterval, removedTimeToLive)
+
+  /**
+   * Java API: Factory method for `DistributedPubSubMediator` [[akka.actor.Props]]
+   * with default values.
+   */
+  def defaultProps(role: String): Props = props(Internal.roleOption(role))
+
   @SerialVersionUID(1L)
   case class Put(ref: ActorRef)
   @SerialVersionUID(1L)
@@ -176,14 +201,9 @@ object DistributedPubSubMediator {
  */
 class DistributedPubSubMediator(
   role: Option[String],
-  gossipInterval: FiniteDuration = 1.second,
-  removedTimeToLive: FiniteDuration = 2.minutes)
+  gossipInterval: FiniteDuration,
+  removedTimeToLive: FiniteDuration)
   extends Actor with ActorLogging {
-
-  /**
-   * Java API constructor with default values.
-   */
-  def this(role: String) = this(DistributedPubSubMediator.Internal.roleOption(role))
 
   import DistributedPubSubMediator._
   import DistributedPubSubMediator.Internal._
@@ -275,7 +295,7 @@ class DistributedPubSubMediator(
       context.child(encTopic) match {
         case Some(t) ⇒ t forward msg
         case None ⇒
-          val t = context.actorOf(Props(new Topic(removedTimeToLive)), name = encTopic)
+          val t = context.actorOf(Props(classOf[Topic], removedTimeToLive), name = encTopic)
           t forward msg
           put(mkKey(t), Some(t))
           context.watch(t)
@@ -448,7 +468,7 @@ class DistributedPubSubExtension(system: ExtendedActorSystem) extends Extension 
       val gossipInterval = Duration(config.getMilliseconds("gossip-interval"), MILLISECONDS)
       val removedTimeToLive = Duration(config.getMilliseconds("removed-time-to-live"), MILLISECONDS)
       val name = config.getString("name")
-      system.actorOf(Props(new DistributedPubSubMediator(role, gossipInterval, removedTimeToLive)),
+      system.actorOf(DistributedPubSubMediator.props(role, gossipInterval, removedTimeToLive),
         name)
     }
   }

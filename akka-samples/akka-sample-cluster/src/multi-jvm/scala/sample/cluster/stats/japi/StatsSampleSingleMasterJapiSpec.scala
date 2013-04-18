@@ -85,13 +85,13 @@ abstract class StatsSampleSingleMasterJapiSpec extends MultiNodeSpec(StatsSample
 
       Cluster(system).unsubscribe(testActor)
 
-      system.actorOf(Props(new ClusterSingletonManager(
+      system.actorOf(ClusterSingletonManager.defaultProps(
         singletonName = "statsService",
         terminationMessage = PoisonPill,
         role = null,
         singletonPropsFactory = new ClusterSingletonPropsFactory {
           def create(handOverData: Any) = Props[StatsService]
-        })), name = "singleton")
+        }), name = "singleton")
 
       system.actorOf(Props[StatsFacade], "statsFacade")
 

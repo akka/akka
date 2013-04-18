@@ -62,7 +62,7 @@ Here we limit the singleton to nodes tagged with the ``"worker"`` role, but all 
 role, can be used by specifying ``None`` as ``role`` parameter.
 
 The corresponding Java API for the ``singeltonProps`` function is ``akka.contrib.pattern.ClusterSingletonPropsFactory``.
-The Java API constructor takes a plain String for the role parameter and ``null`` means that all nodes, independent of
+The Java API takes a plain String for the role parameter and ``null`` means that all nodes, independent of
 role, are used.
 
 Here we use an application specific ``terminationMessage`` to be able to close the

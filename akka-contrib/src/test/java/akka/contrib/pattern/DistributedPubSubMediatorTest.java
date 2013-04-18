@@ -32,15 +32,15 @@ public class DistributedPubSubMediatorTest {
   @Test
   public void demonstrateUsage() {
     //#start-subscribers
-    system.actorOf(new Props(Subscriber.class), "subscriber1");
+    system.actorOf(Props.create(Subscriber.class), "subscriber1");
     //another node
-    system.actorOf(new Props(Subscriber.class), "subscriber2");
-    system.actorOf(new Props(Subscriber.class), "subscriber3");
+    system.actorOf(Props.create(Subscriber.class), "subscriber2");
+    system.actorOf(Props.create(Subscriber.class), "subscriber3");
     //#start-subscribers
 
     //#publish-message
     //somewhere else
-    ActorRef publisher = system.actorOf(new Props(Publisher.class), "publisher");
+    ActorRef publisher = system.actorOf(Props.create(Publisher.class), "publisher");
     // after a while the subscriptions are replicated
     publisher.tell("hello", null);
     //#publish-message
@@ -51,11 +51,9 @@ public class DistributedPubSubMediatorTest {
     LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
     public Subscriber() {
-      ActorRef mediator =
-        DistributedPubSubExtension.get(getContext().system()).mediator();
+      ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
       // subscribe to the topic named "content"
-      mediator.tell(new DistributedPubSubMediator.Subscribe("content", getSelf()),
-        getSelf());
+      mediator.tell(new DistributedPubSubMediator.Subscribe("content", getSelf()), getSelf());
     }
 
     public void onReceive(Object msg) {
@@ -74,15 +72,13 @@ public class DistributedPubSubMediatorTest {
   public class Publisher extends UntypedActor {
 
     // activate the extension
-    ActorRef mediator =
-      DistributedPubSubExtension.get(getContext().system()).mediator();
+    ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
 
     public void onReceive(Object msg) {
       if (msg instanceof String) {
         String in = (String) msg;
         String out = in.toUpperCase();
-        mediator.tell(new DistributedPubSubMediator.Publish("content", out),
-          getSelf());
+        mediator.tell(new DistributedPubSubMediator.Publish("content", out), getSelf());
       } else {
         unhandled(msg);
       }
