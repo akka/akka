@@ -40,6 +40,7 @@ class RemoteConfigSpec extends AkkaSpec(
       SysMsgAckTimeout must be(0.3 seconds)
       SysResendTimeout must be(1 seconds)
       SysMsgBufferSize must be(1000)
+      QuarantineDuration must be(60 seconds)
       CommandAckTimeout.duration must be(30 seconds)
       Transports.size must be(1)
       Transports.head._1 must be(classOf[akka.remote.transport.netty.NettyTransport].getName)
