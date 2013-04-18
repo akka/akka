@@ -18,7 +18,6 @@ class RemoteConfigSpec extends AkkaSpec(
     akka.remote.netty.tcp.port = 0
   """) {
 
-  // FIXME: These tests are ignored as it tests configuration specific to the old remoting.
   "Remoting" must {
 
     "contain correct configuration values in reference.conf" in {
@@ -38,6 +37,9 @@ class RemoteConfigSpec extends AkkaSpec(
       MaximumRetriesInWindow must be(5)
       RetryWindow must be(3 seconds)
       BackoffPeriod must be(10 millis)
+      SysMsgAckTimeout must be(0.3 seconds)
+      SysResendTimeout must be(1 seconds)
+      SysMsgBufferSize must be(1000)
       CommandAckTimeout.duration must be(30 seconds)
       Transports.size must be(1)
       Transports.head._1 must be(classOf[akka.remote.transport.netty.NettyTransport].getName)
@@ -62,9 +64,8 @@ class RemoteConfigSpec extends AkkaSpec(
       val settings = new AkkaProtocolSettings(RARP(system).provider.remoteSettings.config)
       import settings._
 
-      WaitActivityEnabled must be(true)
       RequireCookie must be(false)
-      SecureCookie must be === ""
+      SecureCookie must be === None
 
       TransportFailureDetectorImplementationClass must be(classOf[PhiAccrualFailureDetector].getName)
       TransportHeartBeatInterval must be === 1.seconds

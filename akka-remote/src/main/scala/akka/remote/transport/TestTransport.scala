@@ -75,7 +75,7 @@ class TestTransport(
         remoteHandlerFuture.map { _ ⇒ localHandle }
 
       case None ⇒
-        Future.failed(new IllegalArgumentException(s"No registered transport: $remoteAddress"))
+        Future.failed(new InvalidAssociationException(s"No registered transport: $remoteAddress", null))
     }
   }
 

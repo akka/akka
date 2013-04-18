@@ -342,7 +342,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * @param repeat send once if false, scheduleAtFixedRate if true
    * @return current state descriptor
    */
-  final def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean): State = {
+  final def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean): Unit = {
     if (debugEvent)
       log.debug("setting " + (if (repeat) "repeating " else "") + "timer '" + name + "'/" + timeout + ": " + msg)
     if (timers contains name) {
@@ -351,7 +351,6 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
     val timer = Timer(name, msg, repeat, timerGen.next)(context)
     timer.schedule(self, timeout)
     timers(name) = timer
-    stay
   }
 
   /**

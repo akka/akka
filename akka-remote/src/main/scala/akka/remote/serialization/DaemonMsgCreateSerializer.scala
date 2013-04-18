@@ -10,7 +10,7 @@ import com.google.protobuf.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.{ Actor, ActorRef, Deploy, ExtendedActorSystem, NoScopeGiven, Props, Scope }
 import akka.remote.DaemonMsgCreate
-import akka.remote.RemoteProtocol.{ DaemonMsgCreateProtocol, DeployProtocol, PropsProtocol }
+import akka.remote.WireFormats.{ DaemonMsgCreateData, DeployData, PropsData }
 import akka.routing.{ NoRouter, RouterConfig }
 import scala.reflect.ClassTag
 import util.{ Failure, Success }
@@ -36,8 +36,8 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
     case DaemonMsgCreate(props, deploy, path, supervisor) ⇒
 
-      def deployProto(d: Deploy): DeployProtocol = {
-        val builder = DeployProtocol.newBuilder.setPath(d.path)
+      def deployProto(d: Deploy): DeployData = {
+        val builder = DeployData.newBuilder.setPath(d.path)
         if (d.config != ConfigFactory.empty)
           builder.setConfig(serialize(d.config))
         if (d.routerConfig != NoRouter)
@@ -50,7 +50,7 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
       }
 
       def propsProto = {
-        val builder = PropsProtocol.newBuilder
+        val builder = PropsData.newBuilder
           .setClazz(props.clazz.getName)
           .setDeploy(deployProto(props.deploy))
         props.args map serialize foreach builder.addArgs
@@ -58,7 +58,7 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
         builder.build
       }
 
-      DaemonMsgCreateProtocol.newBuilder.
+      DaemonMsgCreateData.newBuilder.
         setProps(propsProto).
         setDeploy(deployProto(deploy)).
         setPath(path).
@@ -71,9 +71,9 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
   }
 
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
-    val proto = DaemonMsgCreateProtocol.parseFrom(bytes)
+    val proto = DaemonMsgCreateData.parseFrom(bytes)
 
-    def deploy(protoDeploy: DeployProtocol): Deploy = {
+    def deploy(protoDeploy: DeployData): Deploy = {
       val config =
         if (protoDeploy.hasConfig) deserialize(protoDeploy.getConfig, classOf[Config])
         else ConfigFactory.empty

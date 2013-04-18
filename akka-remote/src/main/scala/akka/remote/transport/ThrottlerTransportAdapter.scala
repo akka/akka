@@ -449,8 +449,8 @@ private[transport] class ThrottledAssociation(
   private def peekOrigin(b: ByteString): Option[Address] = {
     try {
       AkkaPduProtobufCodec.decodePdu(b) match {
-        case Associate(_, origin) ⇒ Some(origin)
-        case _                    ⇒ None
+        case Associate(info) ⇒ Some(info.origin)
+        case _               ⇒ None
       }
     } catch {
       // This layer should not care about malformed packets. Also, this also useful for testing, because
