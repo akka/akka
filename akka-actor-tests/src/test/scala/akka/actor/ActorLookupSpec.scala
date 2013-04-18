@@ -83,6 +83,9 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       a1 ! PoisonPill
       expectTerminated(a1)
 
+      // let it be completely removed from user guardian
+      expectNoMsg(1 second)
+
       // not equal because it's terminated
       system.actorFor(a1.path.toString) must not be (a1)
 
