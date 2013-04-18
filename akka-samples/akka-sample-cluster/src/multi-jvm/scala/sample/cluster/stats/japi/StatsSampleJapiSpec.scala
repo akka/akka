@@ -82,8 +82,14 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
       system.actorOf(Props[StatsWorker], "statsWorker")
       system.actorOf(Props[StatsService], "statsService")
 
-      receiveN(3).collect { case MemberUp(m) => m.address }.toSet must be (
-          Set(firstAddress, secondAddress, thirdAddress))
+      // FIXME ticket 3239 duplicate MemberUp events, it should be possible to use
+      // receiveN(3).collect { case MemberUp(m) => m.address }.toSet must be (Set(firstAddress, secondAddress, thirdAddress))
+      import akka.actor.Address
+      @scala.annotation.tailrec def awaitMembersUp(expected: Set[Address], got: Set[Address] = Set.empty): Unit = {
+        val members = got + expectMsgType[MemberUp].member.address
+        if (members != expected) awaitMembersUp(expected, members)
+      }
+      awaitMembersUp(Set(firstAddress, secondAddress, thirdAddress))
 
       Cluster(system).unsubscribe(testActor)
 
