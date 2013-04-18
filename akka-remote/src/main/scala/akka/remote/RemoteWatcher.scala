@@ -184,15 +184,17 @@ private[akka] class RemoteWatcher(
     watchingNodes foreach { a ⇒
       if (!unreachable(a) && !failureDetector.isAvailable(a)) {
         log.warning("Detected unreachable: [{}]", a)
+        addressUids.get(a) foreach { uid ⇒ quarantine(a, uid) }
         publishAddressTerminated(a)
         unreachable += a
       }
     }
 
-  def publishAddressTerminated(address: Address): Unit = {
-    addressUids.get(address) foreach { uid ⇒ remoteProvider.quarantine(address, uid) }
+  def publishAddressTerminated(address: Address): Unit =
     context.system.eventStream.publish(AddressTerminated(address))
-  }
+
+  def quarantine(address: Address, uid: Int): Unit =
+    remoteProvider.quarantine(address, uid)
 
   def watchRemote(watchee: ActorRef, watcher: ActorRef): Unit =
     if (watchee.path.uid == akka.actor.ActorCell.undefinedUid)
