@@ -39,11 +39,11 @@ class GossipSpec extends WordSpec with MustMatchers {
 
       val merged1 = g1 merge g2
       merged1.members must be(SortedSet(a2, c1, e1))
-      merged1.members.toSeq.map(_.status) must be(Seq(Joining, Leaving, Joining))
+      merged1.members.toSeq.map(_.status) must be(Seq(Up, Leaving, Up))
 
       val merged2 = g2 merge g1
       merged2.members must be(SortedSet(a2, c1, e1))
-      merged2.members.toSeq.map(_.status) must be(Seq(Joining, Leaving, Joining))
+      merged2.members.toSeq.map(_.status) must be(Seq(Up, Leaving, Up))
 
     }
 
@@ -53,11 +53,11 @@ class GossipSpec extends WordSpec with MustMatchers {
 
       val merged1 = g1 merge g2
       merged1.overview.unreachable must be(Set(a2, b2, c1, d2))
-      merged1.overview.unreachable.toSeq.sorted.map(_.status) must be(Seq(Joining, Removed, Leaving, Removed))
+      merged1.overview.unreachable.toSeq.sorted.map(_.status) must be(Seq(Up, Removed, Leaving, Removed))
 
       val merged2 = g2 merge g1
       merged2.overview.unreachable must be(Set(a2, b2, c1, d2))
-      merged2.overview.unreachable.toSeq.sorted.map(_.status) must be(Seq(Joining, Removed, Leaving, Removed))
+      merged2.overview.unreachable.toSeq.sorted.map(_.status) must be(Seq(Up, Removed, Leaving, Removed))
 
     }
 
@@ -67,13 +67,13 @@ class GossipSpec extends WordSpec with MustMatchers {
 
       val merged1 = g1 merge g2
       merged1.members must be(SortedSet(a2))
-      merged1.members.toSeq.map(_.status) must be(Seq(Joining))
+      merged1.members.toSeq.map(_.status) must be(Seq(Up))
       merged1.overview.unreachable must be(Set(b2, c1, d2))
       merged1.overview.unreachable.toSeq.sorted.map(_.status) must be(Seq(Removed, Leaving, Removed))
 
       val merged2 = g2 merge g1
       merged2.members must be(SortedSet(a2))
-      merged2.members.toSeq.map(_.status) must be(Seq(Joining))
+      merged2.members.toSeq.map(_.status) must be(Seq(Up))
       merged2.overview.unreachable must be(Set(b2, c1, d2))
       merged2.overview.unreachable.toSeq.sorted.map(_.status) must be(Seq(Removed, Leaving, Removed))
 
