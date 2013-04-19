@@ -69,10 +69,11 @@ class RemoteSettings(val config: Config) {
     getInt("akka.remote.system-message-buffer-size")
   } requiring (_ > 0, "system-message-buffer-size must be > 0")
 
-  val QuarantineDuration: FiniteDuration = {
-    if (getString("akka.remote.quarantine-systems-for") == "off") Duration.Zero
-    else Duration(getMilliseconds("akka.remote.quarantine-systems-for"), MILLISECONDS)
-  } requiring (_ >= Duration.Zero, "resend-interval must be > 0 or off")
+  val QuarantineDuration: Duration = {
+    if (getString("akka.remote.quarantine-systems-for") == "off") Duration.Undefined
+    else Duration(getMilliseconds("akka.remote.quarantine-systems-for"), MILLISECONDS) requiring
+      (_ >= Duration.Zero, "quarantine-systems-for must be > 0 or off")
+  }
 
   val CommandAckTimeout: Timeout = {
     Timeout(Duration(getMilliseconds("akka.remote.command-ack-timeout"), MILLISECONDS))

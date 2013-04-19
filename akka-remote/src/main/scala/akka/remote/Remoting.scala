@@ -381,20 +381,24 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         Stop
 
       case HopelessAssociation(localAddress, remoteAddress, Some(uid), _) ⇒
-        if (settings.QuarantineDuration > Duration.Zero) {
-          log.error("Association to [{}] having UID [{}] is irrecoverably failed. UID is now quarantined and all " +
-            "messages to this UID will be delivered to dead letters. Remote actorsystem must be restarted to recover " +
-            "from this situation.", remoteAddress, uid)
-          endpoints.markAsQuarantined(remoteAddress, uid, Deadline.now + settings.QuarantineDuration)
+        settings.QuarantineDuration match {
+          case d: FiniteDuration ⇒
+            log.error("Association to [{}] having UID [{}] is irrecoverably failed. UID is now quarantined and all " +
+              "messages to this UID will be delivered to dead letters. Remote actorsystem must be restarted to recover " +
+              "from this situation.", remoteAddress, uid)
+            endpoints.markAsQuarantined(remoteAddress, uid, Deadline.now + d)
+          case _ ⇒ // disabled
         }
         context.system.eventStream.publish(AddressTerminated(remoteAddress))
         Stop
 
       case HopelessAssociation(localAddress, remoteAddress, None, _) ⇒
-        if (settings.QuarantineDuration > Duration.Zero) {
-          log.error("Association to [{}] with unknown UID is irrecoverably failed. " +
-            "Address is now quarantined, all messages to this address will be delivered to dead letters.", remoteAddress)
-          endpoints.markAsFailed(sender, Deadline.now + settings.QuarantineDuration)
+        settings.QuarantineDuration match {
+          case d: FiniteDuration ⇒
+            log.error("Association to [{}] with unknown UID is irrecoverably failed. " +
+              "Address is now quarantined, all messages to this address will be delivered to dead letters.", remoteAddress)
+            endpoints.markAsFailed(sender, Deadline.now + d)
+          case _ ⇒
         }
         context.system.eventStream.publish(AddressTerminated(remoteAddress))
         Stop
@@ -434,6 +438,22 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       addressesPromise.success(transportsAndAddresses)
     case ManagementCommand(_) ⇒
       sender ! ManagementCommandAck(false)
+    case Quarantine(address, uid) ⇒
+      settings.QuarantineDuration match {
+        case d: FiniteDuration ⇒
+          // Stop writers
+          endpoints.writableEndpointWithPolicyFor(address) match {
+            case Some(Pass(endpoint)) ⇒ context.stop(endpoint)
+            case _                    ⇒ // nothing to stop
+          }
+          // Stop inbound read-only associations
+          endpoints.readOnlyEndpointFor(address) match {
+            case Some(endpoint) ⇒ context.stop(endpoint)
+            case _              ⇒ // nothing to stop
+          }
+          endpoints.markAsQuarantined(address, uid, Deadline.now + d)
+        case _ ⇒ // Ignore
+      }
     case StartupFinished ⇒
       context.become(accepting)
     case ShutdownAndFlush ⇒
