@@ -438,6 +438,20 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       addressesPromise.success(transportsAndAddresses)
     case ManagementCommand(_) ⇒
       sender ! ManagementCommandAck(false)
+    case StartupFinished ⇒
+      context.become(accepting)
+    case ShutdownAndFlush ⇒
+      sender ! true
+      context.stop(self) // Nothing to flush at this point
+  }
+
+  val accepting: Receive = {
+    case ManagementCommand(cmd) ⇒
+      val allStatuses = transportMapping.values map { transport ⇒
+        transport.managementCommand(cmd)
+      }
+      Future.fold(allStatuses)(true)(_ && _) map ManagementCommandAck pipeTo sender
+
     case Quarantine(address, uid) ⇒
       settings.QuarantineDuration match {
         case d: FiniteDuration ⇒
@@ -454,19 +468,6 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
           endpoints.markAsQuarantined(address, uid, Deadline.now + d)
         case _ ⇒ // Ignore
       }
-    case StartupFinished ⇒
-      context.become(accepting)
-    case ShutdownAndFlush ⇒
-      sender ! true
-      context.stop(self) // Nothing to flush at this point
-  }
-
-  val accepting: Receive = {
-    case ManagementCommand(cmd) ⇒
-      val allStatuses = transportMapping.values map { transport ⇒
-        transport.managementCommand(cmd)
-      }
-      Future.fold(allStatuses)(true)(_ && _) map ManagementCommandAck pipeTo sender
 
     case s @ Send(message, senderOption, recipientRef, _) ⇒
       val recipientAddress = recipientRef.path.address
