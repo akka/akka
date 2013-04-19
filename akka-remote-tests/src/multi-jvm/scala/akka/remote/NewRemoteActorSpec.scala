@@ -80,11 +80,16 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
       enterBarrier("done")
     }
 
-    "be able to shutdown system when using remote deployed actor" taggedAs LongRunningTest in within(10 seconds) {
+    "be able to shutdown system when using remote deployed actor" taggedAs LongRunningTest in within(20 seconds) {
       runOn(master) {
         val actor = system.actorOf(Props[SomeActor], "service-hello3")
         actor.isInstanceOf[RemoteActorRef] must be(true)
         actor.path.address must be(node(slave).address)
+        // This watch is in race with the shutdown of the watched system. This race should remain, as the test should
+        // handle both cases:
+        //  - remote system receives watch, replies with DeathWatchNotification
+        //  - remote system never gets watch, but DeathWatch heartbeats time out, and AddressTerminated is generated
+        //    (this needs some time to happen)
         watch(actor)
 
         enterBarrier("deployed")
