@@ -40,6 +40,8 @@ class RemoteWatcherSpec extends AkkaSpec(
   """akka {
        # loglevel = DEBUG
        actor.provider = "akka.remote.RemoteActorRefProvider"
+       # don't use quarantine for this "unit test"
+       remote.quarantine-systems-for = off
        remote.netty.tcp {
          hostname = localhost
          port = 0
