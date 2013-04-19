@@ -245,12 +245,13 @@ directives are part of the :class:`Act` trait):
 
 .. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#supervise-with
 
+
 Last but not least there is a little bit of convenience magic built-in, which
 detects if the runtime class of the statically given actor subtype extends the
-:class:`Stash` trait (this is a complicated way of saying that ``new Act with
-Stash`` would not work because its runtime erased type is just an anonymous
-subtype of ``Act``). The purpose is to automatically use a dispatcher with the
-appropriate deque-based mailbox, ``akka.actor.default-stash-dispatcher``.
+:class:`RequiresMessageQueue` trait via the :class:`Stash` trait (this is a
+complicated way of saying that ``new Act with Stash`` would not work because its
+runtime erased type is just an anonymous subtype of ``Act``). The purpose is to
+automatically use the appropriate deque-based mailbox type required by :class:`Stash`.
 If you want to use this magic, simply extend :class:`ActWithStash`:
 
 .. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#act-with-stash

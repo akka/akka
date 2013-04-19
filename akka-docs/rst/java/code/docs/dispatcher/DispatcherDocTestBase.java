@@ -30,6 +30,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 //#imports-custom
 
+//#imports-required-mailbox
+
+//#imports-required-mailbox
+
+import docs.actor.MyBoundedUntypedActor;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -48,8 +53,8 @@ public class DispatcherDocTestBase {
   @BeforeClass
   public static void beforeAll() {
     system = ActorSystem.create("MySystem",
-        ConfigFactory.parseString(
-          DispatcherDocSpec.config()).withFallback(AkkaSpec.testConf()));
+      ConfigFactory.parseString(DispatcherDocSpec.javaConfig()).withFallback(
+              ConfigFactory.parseString(DispatcherDocSpec.config())).withFallback(AkkaSpec.testConf()));
   }
 
   @AfterClass
@@ -94,6 +99,33 @@ public class DispatcherDocTestBase {
     // for use with Futures, Scheduler, etc.
     final ExecutionContext ex = system.dispatchers().lookup("my-dispatcher");
     //#lookup
+  }
+
+  @SuppressWarnings("unused")
+  @Test
+  public void defineMailboxInConfig() {
+    //#defining-mailbox-in-config
+    ActorRef myActor =
+      system.actorOf(Props.create(MyUntypedActor.class),
+        "priomailboxactor");
+    //#defining-mailbox-in-config
+  }
+
+  @SuppressWarnings("unused")
+  @Test
+  public void defineMailboxInCode() {
+    //#defining-mailbox-in-code
+    ActorRef myActor =
+      system.actorOf(Props.create(MyUntypedActor.class)
+        .withMailbox("prio-mailbox"));
+    //#defining-mailbox-in-code
+  }
+
+  @SuppressWarnings("unused")
+  @Test
+  public void usingARequiredMailbox() {
+    ActorRef myActor =
+      system.actorOf(Props.create(MyBoundedUntypedActor.class));
   }
 
   @Test

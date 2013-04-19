@@ -19,6 +19,7 @@ class PinnedDispatcher(
   _actor: ActorCell,
   _id: String,
   _mailboxType: MailboxType,
+  _mailboxTypeConfigured: Boolean,
   _shutdownTimeout: FiniteDuration,
   _threadPoolConfig: ThreadPoolConfig)
   extends Dispatcher(_prerequisites,
@@ -26,6 +27,7 @@ class PinnedDispatcher(
     Int.MaxValue,
     Duration.Zero,
     _mailboxType,
+    _mailboxTypeConfigured,
     _threadPoolConfig.copy(corePoolSize = 1, maxPoolSize = 1),
     _shutdownTimeout) {
 

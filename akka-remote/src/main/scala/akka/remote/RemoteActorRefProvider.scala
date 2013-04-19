@@ -267,7 +267,7 @@ private[akka] class RemoteActorRefProvider(
       }
 
       Iterator(props.deploy) ++ deployment.iterator reduce ((a, b) ⇒ b withFallback a) match {
-        case d @ Deploy(_, _, _, RemoteScope(addr), _) ⇒
+        case d @ Deploy(_, _, _, RemoteScope(addr), _, _) ⇒
           if (hasAddress(addr)) {
             local.actorOf(system, props, supervisor, path, false, deployment.headOption, false, async)
           } else {

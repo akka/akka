@@ -567,7 +567,7 @@ case class BoundedMailbox( final val capacity: Int, final val pushTimeOut: Finit
 }
 
 /**
- * UnboundedPriorityMailbox is an unbounded mailbox that allows for priorization of its contents.
+ * UnboundedPriorityMailbox is an unbounded mailbox that allows for prioritization of its contents.
  * Extend this class and provide the Comparator in the constructor.
  */
 class UnboundedPriorityMailbox( final val cmp: Comparator[Envelope], final val initialCapacity: Int) extends MailboxType {
@@ -579,7 +579,7 @@ class UnboundedPriorityMailbox( final val cmp: Comparator[Envelope], final val i
 }
 
 /**
- * BoundedPriorityMailbox is a bounded mailbox that allows for priorization of its contents.
+ * BoundedPriorityMailbox is a bounded mailbox that allows for prioritization of its contents.
  * Extend this class and provide the Comparator in the constructor.
  */
 class BoundedPriorityMailbox( final val cmp: Comparator[Envelope], final val capacity: Int, final val pushTimeOut: Duration) extends MailboxType {
@@ -624,3 +624,13 @@ case class BoundedDequeBasedMailbox( final val capacity: Int, final val pushTime
       final val pushTimeOut = BoundedDequeBasedMailbox.this.pushTimeOut
     }
 }
+
+/**
+ * Trait to signal that an Actor requires a certain type of message queue semantics.
+ *
+ * The mailbox type will be looked up by mapping the type T via akka.actor.mailbox.requirements in the config,
+ * to a mailbox configuration. If no mailbox is assigned on Props or in deployment config then this one will be used.
+ *
+ * The queue type of the created mailbox will be checked against the type T and an error will be logged if it doesn't match.
+ */
+trait RequiresMessageQueue[T]

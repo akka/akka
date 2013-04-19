@@ -46,7 +46,20 @@ private[akka] trait Dispatch { this: ActorCell ⇒
      * Create the mailbox and enqueue the Create() message to ensure that
      * this is processed before anything else.
      */
-    swapMailbox(dispatcher.createMailbox(this))
+    val mbox = dispatcher.createMailbox(this)
+    val actorClass = this.props.actorClass
+    if (this.system.mailboxes.hasRequiredType(actorClass)) {
+      this.system.mailboxes.getRequiredType(actorClass).foreach {
+        case c if !c.isAssignableFrom(mbox.messageQueue.getClass) ⇒
+          // FIXME 3237 throw an exception here instead of just logging it,
+          // and update the comment on the RequiresMessageQueue trait
+          val e = new IllegalArgumentException(s"Actor [${this.self.path}] requires mailbox type [${c}]" +
+            s" got [${mbox.messageQueue.getClass}]")
+          this.systemImpl.eventStream.publish(Error(e, getClass.getName, getClass, e.getMessage))
+        case _ ⇒
+      }
+    }
+    swapMailbox(mbox)
     mailbox.setActor(this)
 
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅

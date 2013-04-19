@@ -12,8 +12,25 @@ import akka.event.Logging
 import akka.event.LoggingAdapter
 import scala.concurrent.duration._
 import akka.actor._
+import docs.dispatcher.DispatcherDocSpec.MyBoundedActor
 
 object DispatcherDocSpec {
+  val javaConfig = """
+     //#prio-dispatcher-config-java
+     prio-dispatcher {
+       mailbox-type = "docs.dispatcher.DispatcherDocTestBase$MyPrioMailbox"
+       //Other dispatcher configuration goes here
+     }
+     //#prio-dispatcher-config-java
+
+    //#prio-mailbox-config-java
+    prio-mailbox {
+      mailbox-type = "docs.dispatcher.DispatcherDocSpec$MyPrioMailbox"
+      //Other mailbox configuration goes here
+    }
+    //#prio-mailbox-config-java
+  """
+
   val config = """
     //#my-dispatcher-config
     my-dispatcher {
@@ -74,7 +91,7 @@ object DispatcherDocSpec {
         core-pool-size-factor = 8.0
         max-pool-size-factor  = 16.0
       }
-      # Specifies the bounded capacity of the mailbox queue
+      # Specifies the bounded capacity of the message queue
       mailbox-capacity = 100
       throughput = 3
     }
@@ -94,15 +111,9 @@ object DispatcherDocSpec {
     //#prio-dispatcher-config
     prio-dispatcher {
       mailbox-type = "docs.dispatcher.DispatcherDocSpec$MyPrioMailbox"
-    }
-    //#prio-dispatcher-config
-
-    //#prio-dispatcher-config-java
-    prio-dispatcher-java {
-      mailbox-type = "docs.dispatcher.DispatcherDocTestBase$MyPrioMailbox"
       //Other dispatcher configuration goes here
     }
-    //#prio-dispatcher-config-java
+    //#prio-dispatcher-config
 
     //#dispatcher-deployment-config
     akka.actor.deployment {
@@ -111,6 +122,38 @@ object DispatcherDocSpec {
       }
     }
     //#dispatcher-deployment-config
+
+    //#prio-mailbox-config
+    prio-mailbox {
+      mailbox-type = "docs.dispatcher.DispatcherDocSpec$MyPrioMailbox"
+      //Other mailbox configuration goes here
+    }
+    //#prio-mailbox-config
+
+    //#mailbox-deployment-config
+
+    akka.actor.deployment {
+      /priomailboxactor {
+        mailbox = prio-mailbox
+      }
+    }
+    //#mailbox-deployment-config
+
+    //#bounded-mailbox-config
+    bounded-mailbox {
+      mailbox-type = "akka.dispatch.BoundedMailbox"
+      mailbox-capacity = 1000
+      mailbox-push-timeout-time = 10s
+    }
+    //#bounded-mailbox-config
+
+    //#required-mailbox-config
+
+    akka.actor.mailbox.requirements {
+      "akka.dispatch.BoundedMessageQueueSemantics" = bounded-mailbox
+    }
+    //#required-mailbox-config
+
   """
 
   //#prio-mailbox
@@ -143,6 +186,13 @@ object DispatcherDocSpec {
       case x ⇒
     }
   }
+
+  //#required-mailbox-class
+  import akka.dispatch.RequiresMessageQueue
+  import akka.dispatch.BoundedMessageQueueSemantics
+
+  class MyBoundedActor extends MyActor with RequiresMessageQueue[BoundedMessageQueueSemantics]
+  //#required-mailbox-class
 
   //#mailbox-implementation-example
   class MyUnboundedMailbox extends akka.dispatch.MailboxType {
@@ -207,6 +257,27 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
     // for use with Futures, Scheduler, etc.
     implicit val executionContext = system.dispatchers.lookup("my-dispatcher")
     //#lookup
+  }
+
+  "defining mailbox in config" in {
+    val context = system
+    //#defining-mailbox-in-config
+    import akka.actor.Props
+    val myActor = context.actorOf(Props[MyActor], "priomailboxactor")
+    //#defining-mailbox-in-config
+  }
+
+  "defining mailbox in code" in {
+    val context = system
+    //#defining-mailbox-in-code
+    import akka.actor.Props
+    val myActor = context.actorOf(Props[MyActor].withMailbox("prio-mailbox"))
+    //#defining-mailbox-in-code
+  }
+
+  "using a required mailbox" in {
+    val context = system
+    val myActor = context.actorOf(Props[MyBoundedActor])
   }
 
   "defining priority dispatcher" in {

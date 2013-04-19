@@ -174,6 +174,7 @@ class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisi
     config.getInt("throughput"),
     Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
     mailboxType,
+    mailBoxTypeConfigured,
     configureExecutor(),
     Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))
 
@@ -196,7 +197,7 @@ class BalancingDispatcherConfigurator(config: Config, prerequisites: DispatcherP
     config.getString("id"),
     config.getInt("throughput"),
     Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
-    mailboxType, configureExecutor(),
+    mailboxType, mailBoxTypeConfigured, configureExecutor(),
     Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS),
     config.getBoolean("attempt-teamwork"))
 
@@ -229,7 +230,7 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
    */
   override def dispatcher(): MessageDispatcher =
     new PinnedDispatcher(
-      prerequisites, null, config.getString("id"), mailboxType,
+      prerequisites, null, config.getString("id"), mailboxType, mailBoxTypeConfigured,
       Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS), threadPoolConfig)
 
 }
