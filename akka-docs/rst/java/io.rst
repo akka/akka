@@ -1,6 +1,6 @@
 .. _io-java:
 
-I/O (Java)
+I/O
 ==========
 
 Introduction

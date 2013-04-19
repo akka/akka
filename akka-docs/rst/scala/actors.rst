@@ -1,7 +1,7 @@
 .. _actors-scala:
 
 ################
- Actors (Scala)
+ Actors
 ################
 
 

@@ -300,7 +300,7 @@ provide cluster elasticity.
 State Diagram for the Member States
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. image:: images/member-states.png
+.. image:: ../images/member-states.png
 
 
 Member States

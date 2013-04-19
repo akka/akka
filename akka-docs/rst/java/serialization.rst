@@ -2,7 +2,7 @@
 .. _serialization-java:
 
 #####################
- Serialization (Java)
+ Serialization
 #####################
 
 Akka has a built-in Extension for serialization,

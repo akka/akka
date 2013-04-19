@@ -2,7 +2,7 @@
 .. _scheduler-scala:
 
 ###################
- Scheduler (Scala)
+ Scheduler
 ###################
 
 Sometimes the need for making things happen in the future arises, and where do

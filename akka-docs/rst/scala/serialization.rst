@@ -2,7 +2,7 @@
 .. _serialization-scala:
 
 ######################
- Serialization (Scala)
+ Serialization
 ######################
 
 Akka has a built-in Extension for serialization,

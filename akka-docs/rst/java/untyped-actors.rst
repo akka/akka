@@ -1,7 +1,7 @@
 .. _untyped-actors-java:
 
 ################
- Actors (Java)
+ Actors
 ################
 
 

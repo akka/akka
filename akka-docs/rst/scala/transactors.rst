@@ -1,7 +1,7 @@
 .. _transactors-scala:
 
 #####################
- Transactors (Scala)
+ Transactors
 #####################
 
 

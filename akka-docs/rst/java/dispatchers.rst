@@ -1,6 +1,6 @@
 .. _dispatchers-java:
 
-Dispatchers (Java)
+Dispatchers
 ===================
 
 An Akka ``MessageDispatcher`` is what makes Akka Actors "tick", it is the engine of the machine so to speak.

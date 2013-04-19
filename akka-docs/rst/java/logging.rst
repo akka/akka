@@ -1,7 +1,7 @@
 .. _logging-java:
 
 ################
- Logging (Java)
+ Logging
 ################
 
 Logging in Akka is not tied to a specific logging backend. By default

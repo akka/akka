@@ -8,3 +8,4 @@ Additional Information
    recipes
    language-bindings
    osgi
+   http

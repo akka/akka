@@ -1,7 +1,7 @@
 
 .. _microkernel-java:
 
-Microkernel (Java)
+Microkernel
 ==================
 
 The purpose of the Akka Microkernel is to offer a bundling mechanism so that you can distribute

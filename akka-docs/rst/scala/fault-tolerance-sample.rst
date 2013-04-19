@@ -1,6 +1,6 @@
 .. _fault-tolerance-sample-scala:
 
-Diagrams of the Fault Tolerance Sample (Scala)
+Diagrams of the Fault Tolerance Sample
 ----------------------------------------------
 
 
@@ -48,7 +48,7 @@ Step        Description
 15, 16      and tells the ``Counter`` to use the new ``Storage``
 =========== ==================================================================================
 
-Full Source Code of the Fault Tolerance Sample (Scala)
+Full Source Code of the Fault Tolerance Sample
 ------------------------------------------------------
 
 .. includecode:: code/docs/actor/FaultHandlingDocSample.scala#all
