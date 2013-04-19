@@ -71,8 +71,8 @@ class RemoteSettings(val config: Config) {
 
   val QuarantineDuration: Duration = {
     if (getString("akka.remote.quarantine-systems-for") == "off") Duration.Undefined
-    else Duration(getMilliseconds("akka.remote.quarantine-systems-for"), MILLISECONDS) requiring
-      (_ >= Duration.Zero, "quarantine-systems-for must be > 0 or off")
+    else Duration(getMilliseconds("akka.remote.quarantine-systems-for"), MILLISECONDS).requiring(_ > Duration.Zero,
+      "quarantine-systems-for must be > 0 or off")
   }
 
   val CommandAckTimeout: Timeout = {
