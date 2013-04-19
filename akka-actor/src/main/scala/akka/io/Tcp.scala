@@ -82,7 +82,7 @@ object Tcp extends ExtensionKey[TcpExt] {
                      localAddress: Option[InetSocketAddress] = None,
                      options: immutable.Traversable[SocketOption] = Nil) extends Command
   case class Bind(handler: ActorRef,
-                  endpoint: InetSocketAddress,
+                  localAddress: InetSocketAddress,
                   backlog: Int = 100,
                   options: immutable.Traversable[SocketOption] = Nil) extends Command
 

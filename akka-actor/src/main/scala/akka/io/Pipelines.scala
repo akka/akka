@@ -15,6 +15,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.collection.mutable.WrappedArray
 import scala.concurrent.duration.Deadline
 import scala.beans.BeanProperty
+import akka.event.LoggingAdapter
 
 /**
  * Scala API: A pair of pipes, one for commands and one for events, plus a
@@ -34,21 +35,22 @@ import scala.beans.BeanProperty
  */
 trait PipePair[CmdAbove, CmdBelow, EvtAbove, EvtBelow] {
 
-  type Mgmt = PartialFunction[AnyRef, Iterable[Either[EvtAbove, CmdBelow]]]
+  type Result = Either[EvtAbove, CmdBelow]
+  type Mgmt = PartialFunction[AnyRef, Iterable[Result]]
 
   /**
    * The command pipeline transforms injected commands from the upper stage
    * into commands for the stage below, but it can also emit events for the
    * upper stage. Any number of each can be generated.
    */
-  def commandPipeline: CmdAbove ⇒ Iterable[Either[EvtAbove, CmdBelow]]
+  def commandPipeline: CmdAbove ⇒ Iterable[Result]
 
   /**
    * The event pipeline transforms injected event from the lower stage
    * into event for the stage above, but it can also emit commands for the
    * stage below. Any number of each can be generated.
    */
-  def eventPipeline: EvtBelow ⇒ Iterable[Either[EvtAbove, CmdBelow]]
+  def eventPipeline: EvtBelow ⇒ Iterable[Result]
 
   /**
    * The management port allows sending broadcast messages to all stages
@@ -816,6 +818,17 @@ class LengthFieldFrame(maxSize: Int,
     }
 }
 //#length-field-frame
+
+/**
+ * This trait expresses that the pipeline’s context needs to provide a logging
+ * facility.
+ */
+trait HasLogging extends PipelineContext {
+  /**
+   * Retrieve the [[LoggingAdapter]] for this pipeline’s context.
+   */
+  def getLogger: LoggingAdapter
+}
 
 //#tick-generator
 /**
