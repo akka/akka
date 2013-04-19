@@ -21,6 +21,7 @@ import java.io._
 import scala.collection.mutable
 import akka.event.LoggingAdapter
 import java.util.concurrent.TimeUnit
+import scala.annotation.tailrec
 import akka.actor.mailbox.filebased.FileBasedMailboxSettings
 
 // a config value that's backed by a global setting but may be locally overridden
@@ -413,25 +414,28 @@ class PersistentQueue(persistencePath: String, val name: String, val settings: F
   }
 
   final def discardExpired(): Int = {
-    if (queue.isEmpty || journal.isReplaying) {
-      0
-    } else {
-      val realExpiry = adjustExpiry(queue.front.addTime, queue.front.expiry)
-      if ((realExpiry != 0) && (realExpiry < System.currentTimeMillis)) {
-        _totalExpired += 1
-        val item = queue.dequeue
-        val len = item.data.length
-        queueSize -= len
-        _memoryBytes -= len
-        queueLength -= 1
-        fillReadBehind
-        if (keepJournal()) journal.remove()
-        expiredQueue().map { _.add(item.data, 0) }
-        1 + discardExpired()
+    @tailrec def internalDisard(discarded: Int): Int = {
+      if (queue.isEmpty || journal.isReplaying) {
+        discarded
       } else {
-        0
+        val realExpiry = adjustExpiry(queue.front.addTime, queue.front.expiry)
+        if ((realExpiry != 0) && (realExpiry < System.currentTimeMillis)) {
+          _totalExpired += 1
+          val item = queue.dequeue
+          val len = item.data.length
+          queueSize -= len
+          _memoryBytes -= len
+          queueLength -= 1
+          fillReadBehind
+          if (keepJournal()) journal.remove()
+          expiredQueue().map { _.add(item.data, 0) }
+          internalDisard(discarded + 1)
+        } else {
+          discarded
+        }
       }
     }
+    internalDisard(0)
   }
 
   private def _unremove(xid: Int) = {
