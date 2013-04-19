@@ -404,9 +404,12 @@ private[akka] class RemoteActorRefProvider(
   private def hasAddress(address: Address): Boolean =
     address == local.rootPath.address || address == rootPath.address || transport.addresses(address)
 
-  def quarantine(address: Address, uid: Int): Unit = {
-    // FIXME send to EndpointManager
-  }
+  /**
+   * Marks a remote system as out of sync and prevents reconnects until the quarantine timeout elapses.
+   * @param address Address of the remote system to be quarantined
+   * @param uid UID of the remote system
+   */
+  def quarantine(address: Address, uid: Int): Unit = transport.quarantine(address: Address, uid: Int)
 
   /**
    * INTERNAL API

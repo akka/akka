@@ -83,6 +83,13 @@ private[akka] abstract class RemoteTransport(val system: ExtendedActorSystem, va
   def log: LoggingAdapter
 
   /**
+   * Marks a remote system as out of sync and prevents reconnects until the quarantine timeout elapses.
+   * @param address Address of the remote system to be quarantined
+   * @param uid UID of the remote system
+   */
+  def quarantine(address: Address, uid: Int): Unit
+
+  /**
    * When this method returns true, some functionality will be turned off for security purposes.
    */
   protected def useUntrustedMode: Boolean
