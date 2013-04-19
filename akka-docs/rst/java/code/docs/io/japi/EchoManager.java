@@ -58,7 +58,7 @@ public class EchoManager extends UntypedActor {
     } else if (msg instanceof Tcp.CommandFailed) {
       final CommandFailed failed = (CommandFailed) msg;
       if (failed.cmd() instanceof Bind) {
-        log.warning("cannot bind to [{}]", ((Bind) failed.cmd()).endpoint());
+        log.warning("cannot bind to [{}]", ((Bind) failed.cmd()).localAddress());
         getContext().stop(getSelf());
       } else {
         log.warning("unknown command failed [{}]", failed.cmd());

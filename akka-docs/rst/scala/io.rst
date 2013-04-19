@@ -601,6 +601,40 @@ The helper functions are very similar to the ACK-based case:
 
 .. includecode:: code/docs/io/EchoServer.scala#helpers
 
+Usage Example: TcpPipelineHandler and SSL
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This example shows the different parts described above working together:
+
+.. includecode:: ../../../akka-remote/src/test/scala/akka/io/ssl/SslTlsSupportSpec.scala#server
+
+The actor above is meant to be registered as the inbound connection handler for
+a listen socket. When a new connection comes in it will create a
+:class:`javax.net.ssl.SSLEngine` (details not shown here since they vary wildly
+for different setups, please refer to the JDK documentation) and wrap that in
+an :class:`SslTlsSupport` pipeline stage (which is included in ``akka-actor``).
+This single-stage pipeline will be driven by a :class:`TcpPipelineHandler`
+actor which is also included in ``akka-actor``. In order to capture the generic
+command and event types consumed and emitted by that actor we need to create a
+wrapper—the nested :class:`Init` class—which also provides the
+:meth:`makeContext` method for creating the pipeline context needed by the
+supplied pipeline. With those things bundled up all that remains is creating a
+:class:`TcpPipelineHandler` and registering that one as the recipient of
+inbound traffic from the TCP connection.
+
+Since we instructed that handler actor to send any events which are emitted by
+the SSL pipeline to ourselves, we can then just switch behavior to receive the
+decrypted payload message, compute a response and reply by sending back a
+``Tcp.Write``. It should be noted that communication with the handler wraps
+commands and events in the inner types of the ``init`` object in order to keep
+things well separated.
+
+.. warning::
+
+   The :class:`TcpPipelineHandler` does currently not handle back-pressure from
+   the TCP socket, i.e. it will just lose data when the kernel buffer
+   overflows. This will be fixed before Akka 2.2 final.
+
 Using UDP
 ---------
 

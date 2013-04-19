@@ -582,6 +582,53 @@ The helper functions are very similar to the ACK-based case:
 
 .. includecode:: code/docs/io/japi/EchoHandler.java#helpers
 
+Usage Example: TcpPipelineHandler and SSL
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This example shows the different parts described above working together. Let us
+first look at the SSL server:
+
+.. includecode:: code/docs/io/japi/SslDocTest.java#server
+
+The actor above binds to a local port and registers itself as the handler for
+new connections.  When a new connection comes in it will create a
+:class:`javax.net.ssl.SSLEngine` (details not shown here since they vary wildly
+for different setups, please refer to the JDK documentation) and wrap that in
+an :class:`SslTlsSupport` pipeline stage (which is included in ``akka-actor``).
+This single-stage pipeline will be driven by a :class:`TcpPipelineHandler`
+actor which is also included in ``akka-actor``. In order to capture the generic
+command and event types consumed and emitted by that actor we need to create a
+wrapper—the nested :class:`Init` class—which also provides the
+:meth:`makeContext` method for creating the pipeline context needed by the
+supplied pipeline. With those things bundled up all that remains is creating a
+:class:`TcpPipelineHandler` and registering that one as the recipient of
+inbound traffic from the TCP connection.
+
+Since we instructed that handler actor to send any events which are emitted by
+the SSL pipeline to ourselves, we can then just wait for the reception of the
+decrypted payload messages, compute a response—just ``"world"`` in this
+case—and reply by sending back a ``Tcp.Write``. It should be noted that
+communication with the handler wraps commands and events in the inner types of
+the ``init`` object in order to keep things well separated. To ease handling of
+such path-dependent types there exist two helper methods, namely
+:class:`Init.command` for creating a command and :class:`Init.event` for
+unwrapping an event.
+
+.. warning::
+
+   The :class:`TcpPipelineHandler` does currently not handle back-pressure from
+   the TCP socket, i.e. it will just lose data when the kernel buffer
+   overflows. This will be fixed before Akka 2.2 final.
+
+Looking at the client side we see that not much needs to be changed:
+
+.. includecode:: code/docs/io/japi/SslDocTest.java#client
+
+Once the connection is established we again create a
+:class:`TcpPipelineHandler` wrapping an :class:`SslTlsSupport` (in client mode)
+and register that as the recipient of inbound traffic and ourselves as
+recipient for the decrypted payload data. The we send a greeting to the server
+and forward any replies to some ``listener`` actor.
 
 Using UDP
 ---------
