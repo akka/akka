@@ -74,7 +74,7 @@ object TcpPipelineHandler {
  * the connection actor terminates this actor terminates as well; the designated
  * handler may want to watch this actor’s lifecycle.
  *
- * <b>FIXME WARNING:</b>
+ * <b>FIXME WARNING:</b> (Ticket 3253)
  *
  * This actor does currently not handle back-pressure from the TCP socket; it
  * is meant only as a demonstration and will be fleshed out in full before the
