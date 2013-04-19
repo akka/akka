@@ -2,7 +2,7 @@
 .. _durable-mailboxes-java:
 
 ##########################
- Durable Mailboxes (Java)
+ Durable Mailboxes
 ##########################
 
 

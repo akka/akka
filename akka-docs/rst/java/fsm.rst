@@ -1,7 +1,7 @@
 .. _fsm-java:
 
 ###########################################
-Building Finite State Machine Actors (Java)
+Building Finite State Machine Actors
 ###########################################
 
 

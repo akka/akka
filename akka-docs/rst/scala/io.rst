@@ -1,6 +1,6 @@
 .. _io-scala:
 
-I/O (Scala)
+I/O
 ===========
 
 Introduction

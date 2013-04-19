@@ -1,7 +1,7 @@
 .. _extending-akka-java:
 
 ########################
- Akka Extensions (Java)
+ Akka Extensions
 ########################
 
 

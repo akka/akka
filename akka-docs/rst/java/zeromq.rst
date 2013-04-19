@@ -2,7 +2,7 @@
 .. _zeromq-java:
 
 ###############
- ZeroMQ (Java)
+ ZeroMQ
 ###############
 
 

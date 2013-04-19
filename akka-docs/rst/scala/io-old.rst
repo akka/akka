@@ -1,6 +1,6 @@
 .. _io-scala-old:
 
-Old IO (Scala)
+Old IO
 ==============
 
 .. warning::

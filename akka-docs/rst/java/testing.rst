@@ -1,7 +1,7 @@
 .. _akka-testkit-java:
 
 ##############################
-Testing Actor Systems (Java)
+Testing Actor Systems
 ##############################
 
 As with any piece of software, automated tests are a very important part of the

@@ -5,26 +5,30 @@
  Team
 ######
 
-===================  ==========================  ====================================
-Name                 Role                        Email
-===================  ==========================  ====================================
-Jonas Bonér          Founder, Despot, Committer  jonas AT jonasboner DOT com
-Viktor Klang         Project Owner               viktor DOT klang AT gmail DOT com
-Roland Kuhn          Committer
-Patrik Nordwall      Committer                   patrik DOT nordwall AT gmail DOT com
-Derek Williams       Committer                   derek AT nebvin DOT ca
-Henrik Engström      Committer
-Peter Vlugter        Committer
-Martin Krasser       Committer                   krasserm AT googlemail DOT com
+===================  ==========================
+Name                 Role                      
+===================  ==========================
+Jonas Bonér          Founder, Despot, Committer
+Viktor Klang         Honorary Member           
+Roland Kuhn          Project Lead
+Patrik Nordwall      Core Team
+Björn Antonsson      Core Team
+Endre Varga          Core Team
+Mathias Doenitz      Committer
+Johannes Rudolph     Committer
 Raymond Roestenburg  Committer
 Piotr Gabryanczyk    Committer
-Helena Edelson       Committer                   helena AT helenaedelson DOT com
-Debasish Ghosh       Alumnus                     dghosh AT acm DOT org
-Ross McDonald        Alumnus                     rossajmcd AT gmail DOT com
+Helena Edelson       Committer                 
+Henrik Engström      Alumnus
+Peter Vlugter        Alumnus
+Martin Krasser       Alumnus                 
+Derek Williams       Alumnus                 
+Debasish Ghosh       Alumnus                   
+Ross McDonald        Alumnus                   
 Eckhart Hertzler     Alumnus
 Mikael Högqvist      Alumnus
 Tim Perrett          Alumnus
-Jeanfrancois Arcand  Alumnus                     jfarcand AT apache DOT org
+Jeanfrancois Arcand  Alumnus                   
 Jan Van Besien       Alumnus
 Michael Kober        Alumnus
 Peter Veentjer       Alumnus
@@ -32,5 +36,4 @@ Irmo Manie           Alumnus
 Heiko Seeberger      Alumnus
 Hiram Chirino        Alumnus
 Scott Clasen         Alumnus
-
-===================  ==========================  ====================================
+===================  ==========================

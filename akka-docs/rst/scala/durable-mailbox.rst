@@ -2,7 +2,7 @@
 .. _durable-mailboxes-scala:
 
 ###########################
- Durable Mailboxes (Scala)
+ Durable Mailboxes
 ###########################
 
 

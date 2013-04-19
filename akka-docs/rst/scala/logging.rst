@@ -1,7 +1,7 @@
 .. _logging-scala:
 
 #################
- Logging (Scala)
+ Logging
 #################
 
 Logging in Akka is not tied to a specific logging backend. By default

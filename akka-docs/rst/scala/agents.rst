@@ -1,7 +1,7 @@
 .. _agents-scala:
 
 ################
- Agents (Scala)
+ Agents
 ################
 
 Agents in Akka are inspired by `agents in Clojure`_.
