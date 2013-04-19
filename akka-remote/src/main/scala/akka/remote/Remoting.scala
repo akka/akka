@@ -488,8 +488,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
           if (timeOfRelease.isOverdue()) createAndRegisterWritingEndpoint(None) ! s
           else extendedSystem.deadLetters ! s
         case Some(Quarantined(uid, timeOfRelease)) ⇒
-          if (timeOfRelease.isOverdue()) createAndRegisterWritingEndpoint(Some(uid)) ! s
-          else createAndRegisterWritingEndpoint(None) ! s
+          if (timeOfRelease.isOverdue()) createAndRegisterWritingEndpoint(None) ! s
+          else createAndRegisterWritingEndpoint(Some(uid)) ! s
         case None ⇒
           createAndRegisterWritingEndpoint(None) ! s
 
