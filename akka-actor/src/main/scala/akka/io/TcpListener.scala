@@ -44,19 +44,19 @@ private[io] class TcpListener(val selectorRouter: ActorRef,
     val socket = serverSocketChannel.socket
     options.foreach(_.beforeServerSocketBind(socket))
     try {
-      socket.bind(endpoint, backlog)
+      socket.bind(localAddress, backlog)
       require(socket.getLocalSocketAddress.isInstanceOf[InetSocketAddress],
         s"bound to unknown SocketAddress [${socket.getLocalSocketAddress}]")
     } catch {
       case NonFatal(e) ⇒
         bindCommander ! bind.failureMessage
-        log.error(e, "Bind failed for TCP channel on endpoint [{}]", endpoint)
+        log.error(e, "Bind failed for TCP channel on endpoint [{}]", localAddress)
         context.stop(self)
     }
     serverSocketChannel
   }
   context.parent ! RegisterChannel(channel, SelectionKey.OP_ACCEPT)
-  log.debug("Successfully bound to {}", endpoint)
+  log.debug("Successfully bound to {}", localAddress)
 
   override def supervisorStrategy = IO.connectionSupervisorStrategy
 
@@ -78,10 +78,10 @@ private[io] class TcpListener(val selectorRouter: ActorRef,
       }
 
     case Unbind ⇒
-      log.debug("Unbinding endpoint {}", endpoint)
+      log.debug("Unbinding endpoint {}", localAddress)
       channel.close()
       sender ! Unbound
-      log.debug("Unbound endpoint {}, stopping listener", endpoint)
+      log.debug("Unbound endpoint {}, stopping listener", localAddress)
       context.stop(self)
   }
 
