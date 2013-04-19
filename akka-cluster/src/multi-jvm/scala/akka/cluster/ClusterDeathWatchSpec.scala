@@ -136,7 +136,8 @@ abstract class ClusterDeathWatchSpec
 
     }
 
-    "receive Terminated when watched path doesn't exist" taggedAs LongRunningTest in {
+    "receive Terminated when watched path doesn't exist" taggedAs LongRunningTest ignore {
+      Thread.sleep(5000)
       runOn(first) {
         val path = RootActorPath(second) / "user" / "non-existing"
         system.actorOf(Props(new Actor {

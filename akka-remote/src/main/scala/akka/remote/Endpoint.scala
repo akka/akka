@@ -131,6 +131,13 @@ private[remote] class EndpointAssociationException(msg: String, cause: Throwable
  * INTERNAL API
  */
 @SerialVersionUID(1L)
+private[remote] class QuarantinedUidException(uid: Int, remoteAddress: Address)
+  extends EndpointException(s"Refused association to [$remoteAddress] because its UID [$uid] is quarantined.")
+
+/**
+ * INTERNAL API
+ */
+@SerialVersionUID(1L)
 private[remote] class OversizedPayloadException(msg: String) extends EndpointException(msg)
 
 /**
@@ -147,9 +154,10 @@ private[remote] object ReliableDeliverySupervisor {
     transport: Transport,
     settings: RemoteSettings,
     codec: AkkaPduCodec,
+    refuseUid: Option[Int],
     receiveBuffers: ConcurrentHashMap[Link, AckedReceiveBuffer[Message]]): Props =
     Props(classOf[ReliableDeliverySupervisor], handleOrActive, localAddress, remoteAddress, transport, settings,
-      codec, receiveBuffers)
+      codec, refuseUid, receiveBuffers)
 }
 
 /**
@@ -162,13 +170,14 @@ private[remote] class ReliableDeliverySupervisor(
   val transport: Transport,
   val settings: RemoteSettings,
   val codec: AkkaPduCodec,
+  val refuseUid: Option[Int],
   val receiveBuffers: ConcurrentHashMap[Link, AckedReceiveBuffer[Message]]) extends Actor {
   import ReliableDeliverySupervisor._
 
   def retryGateEnabled = settings.RetryGateClosedFor > Duration.Zero
 
   override val supervisorStrategy = OneForOneStrategy(settings.MaximumRetriesInWindow, settings.RetryWindow, loggingEnabled = false) {
-    case e @ (_: InvalidAssociation | _: HopelessAssociation) ⇒ Escalate
+    case e @ (_: InvalidAssociation | _: HopelessAssociation | _: QuarantinedUidException) ⇒ Escalate
     case NonFatal(e) ⇒
       if (retryGateEnabled) {
         import context.dispatcher
@@ -299,6 +308,7 @@ private[remote] class ReliableDeliverySupervisor(
       transport = transport,
       settings = settings,
       AkkaPduProtobufCodec,
+      refuseUid,
       receiveBuffers = receiveBuffers,
       reliableDeliverySupervisor = Some(self))
       .withDispatcher("akka.remote.writer-dispatcher"),
@@ -339,10 +349,11 @@ private[remote] object EndpointWriter {
     transport: Transport,
     settings: RemoteSettings,
     codec: AkkaPduCodec,
+    refuseUid: Option[Int],
     receiveBuffers: ConcurrentHashMap[Link, AckedReceiveBuffer[Message]],
     reliableDeliverySupervisor: Option[ActorRef]): Props =
     Props(classOf[EndpointWriter], handleOrActive, localAddress, remoteAddress, transport, settings, codec,
-      receiveBuffers, reliableDeliverySupervisor)
+      refuseUid, receiveBuffers, reliableDeliverySupervisor)
 
   /**
    * This message signals that the current association maintained by the local EndpointWriter and EndpointReader is
@@ -377,6 +388,7 @@ private[remote] class EndpointWriter(
   transport: Transport,
   settings: RemoteSettings,
   codec: AkkaPduCodec,
+  val refuseUid: Option[Int],
   val receiveBuffers: ConcurrentHashMap[Link, AckedReceiveBuffer[Message]],
   val reliableDeliverySupervisor: Option[ActorRef]) extends EndpointActor(localAddress, remoteAddress, transport, settings, codec) with Stash with FSM[EndpointWriter.State, Unit] {
 
@@ -441,6 +453,11 @@ private[remote] class EndpointWriter(
     case Event(Status.Failure(e), _) ⇒
       publishAndThrow(new EndpointAssociationException(s"Association failed with [$remoteAddress]", e))
     case Event(inboundHandle: AkkaProtocolHandle, _) ⇒
+      refuseUid match {
+        case Some(uid) if inboundHandle.handshakeInfo.uid == uid ⇒
+          publishAndThrow(new QuarantinedUidException(inboundHandle.handshakeInfo.uid, inboundHandle.remoteAddress))
+        case _ ⇒ // Everything is fine
+      }
       // Assert handle == None?
       context.parent ! ReliableDeliverySupervisor.GotUid(inboundHandle.handshakeInfo.uid)
       handle = Some(inboundHandle)
