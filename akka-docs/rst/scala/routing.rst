@@ -1,7 +1,7 @@
 
 .. _routing-scala:
 
-Routing (Scala)
+Routing
 ===============
 
 A Router is an actor that receives messages and efficiently routes them to other actors, known as

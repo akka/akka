@@ -1,7 +1,7 @@
 .. _transactors-java:
 
 ####################
- Transactors (Java)
+ Transactors
 ####################
 
 

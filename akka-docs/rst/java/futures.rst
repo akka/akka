@@ -1,6 +1,6 @@
 .. _futures-java:
 
-Futures (Java)
+Futures
 ===============
 
 Introduction

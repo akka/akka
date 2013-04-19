@@ -1,7 +1,7 @@
 .. _event-bus-scala:
 
 #################
-Event Bus (Scala)
+Event Bus
 #################
 
 

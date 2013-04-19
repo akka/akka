@@ -2,7 +2,7 @@
 .. _zeromq-scala:
 
 ################
- ZeroMQ (Scala)
+ ZeroMQ
 ################
 
 

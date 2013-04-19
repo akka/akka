@@ -1,7 +1,7 @@
 .. _event-bus-java:
 
 ################
-Event Bus (Java)
+Event Bus
 ################
 
 Originally conceived as a way to send messages to groups of actors, the

@@ -2,7 +2,7 @@
 .. _camel-scala:
 
 ##############
- Camel (Scala)
+ Camel
 ##############
 
 Additional Resources
@@ -489,7 +489,7 @@ is then forwarded to the ``HttpTransformer`` actor which replaces all occurrence
 of *Akka* with *AKKA*. The transformation result is sent back the HttpConsumer
 which finally returns it to the browser.
 
-.. image:: ../modules/camel-async-interact.png
+.. image:: ../images/camel-async-interact.png
 
 Implementing the example actor classes and wiring them together is rather easy
 as shown in the following snippet.
@@ -506,7 +506,7 @@ side. The following high-level sequence diagram illustrates that.
 .. _Jetty continuations: http://wiki.eclipse.org/Jetty/Feature/Continuations
 .. _Jetty's asynchronous HTTP client: http://wiki.eclipse.org/Jetty/Tutorial/HttpClient
 
-.. image:: ../modules/camel-async-sequence.png
+.. image:: ../images/camel-async-sequence.png
 
 Custom Camel route example
 --------------------------
@@ -515,7 +515,7 @@ This section also demonstrates the combined usage of a ``Producer`` and a
 ``Consumer`` actor as well as the inclusion of a custom Camel route. The
 following figure gives an overview.
 
-.. image:: ../modules/camel-custom-route.png
+.. image:: ../images/camel-custom-route.png
 
 * A consumer actor receives a message from an HTTP client
 

@@ -1,6 +1,6 @@
 .. _fault-tolerance-sample-java:
 
-Diagrams of the Fault Tolerance Sample (Java)
+Diagrams of the Fault Tolerance Sample
 ----------------------------------------------
 
 .. image:: ../images/faulttolerancesample-normal-flow.png
@@ -46,7 +46,7 @@ Step        Description
 15, 16      and tells the ``Counter`` to use the new ``Storage``
 =========== ==================================================================================
 
-Full Source Code of the Fault Tolerance Sample (Java)
+Full Source Code of the Fault Tolerance Sample
 ------------------------------------------------------
 
 .. includecode:: code/docs/actor/japi/FaultHandlingDocSample.java#all

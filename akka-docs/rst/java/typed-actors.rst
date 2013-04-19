@@ -1,4 +1,4 @@
-Typed Actors (Java)
+Typed Actors
 ===================
 
 Akka Typed Actors is an implementation of the `Active Objects <http://en.wikipedia.org/wiki/Active_object>`_ pattern.

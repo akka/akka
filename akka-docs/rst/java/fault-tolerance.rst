@@ -1,6 +1,6 @@
 .. _fault-tolerance-java:
 
-Fault Tolerance (Java)
+Fault Tolerance
 ======================
 
 As explained in :ref:`actor-systems` each actor is the supervisor of its

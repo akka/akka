@@ -1,7 +1,7 @@
 .. _remoting-scala:
 
 #################
- Remoting (Scala)
+ Remoting
 #################
 
 
@@ -197,7 +197,7 @@ order to account for network issues that sometimes occur on such platforms.
 The following chart illustrates how *phi* increase with increasing time since the
 previous heartbeat.
 
-.. image:: ../cluster/images/phi1.png
+.. image:: ../images/phi1.png
 
 Phi is calculated from the mean and standard deviation of historical
 inter arrival times. The previous chart is an example for standard deviation
@@ -205,7 +205,7 @@ of 200 ms. If the heartbeats arrive with less deviation the curve becomes steepe
 i.e. it is possible to determine failure more quickly. The curve looks like this for
 a standard deviation of 100 ms.
 
-.. image:: ../cluster/images/phi2.png
+.. image:: ../images/phi2.png
 
 To be able to survive sudden abnormalities, such as garbage collection pauses and
 transient network failures the failure detector is configured with a margin,
@@ -214,7 +214,7 @@ adjust the :ref:`remote-configuration-scala` of this depending on you environmen
 This is how the curve looks like for ``acceptable-heartbeat-pause`` configured to
 3 seconds.
 
-.. image:: ../cluster/images/phi3.png
+.. image:: ../images/phi3.png
 
 Serialization
 ^^^^^^^^^^^^^

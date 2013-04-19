@@ -19,7 +19,6 @@ prior deprecation.
 .. toctree::
    :maxdepth: 1
 
-   ../cluster/index
    ../dev/multi-node-testing
 
 Another reason for marking a module as experimental is that it's too early

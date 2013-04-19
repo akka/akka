@@ -16,7 +16,7 @@ Tickets
 Roadmaps
 ^^^^^^^^
 
-`The roadmap for each Akka milestone is here <https://www.assembla.com/spaces/akka/milestones>`_
+`The roadmap for each Akka milestone is here <https://docs.google.com/document/d/18W9-fKs55wiFNjXL9q50PYOnR7-nnsImzJqHOPPbM4E/pub>`_
 
 
 Creating tickets
@@ -30,24 +30,6 @@ Then you also need to become a "Watcher" of the Akka space.
 
 `Link to create a new ticket <https://www.assembla.com/spaces/akka/tickets/new>`__
 
-Thanks a lot for reporting bugs and suggesting features.
+Thanks a lot for reporting bugs and suggesting features. *Please include the versions of Scala and Akka and relevant configuration files.*
 
 
-Failing test
-------------
-
-Please submit a failing test on the following format:
-
-.. code-block:: scala
-
-  import org.scalatest.WordSpec
-  import org.scalatest.matchers.MustMatchers
-
-  class Ticket001Spec extends WordSpec with MustMatchers {
-
-    "An XXX" must {
-      "do YYY" in {
-        1 must be (1)
-      }
-    }
-  }

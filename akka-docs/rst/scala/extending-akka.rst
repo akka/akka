@@ -1,7 +1,7 @@
 .. _extending-akka-scala:
 
 #########################
- Akka Extensions (Scala)
+ Akka Extensions
 #########################
 
 

@@ -1,6 +1,6 @@
 .. _futures-scala:
 
-Futures (Scala)
+Futures
 ===============
 
 

@@ -2,7 +2,7 @@
 .. _scheduler-java:
 
 ##################
- Scheduler (Java)
+ Scheduler
 ##################
 
 Sometimes the need for making things happen in the future arises, and where do
