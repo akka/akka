@@ -28,6 +28,9 @@ object DeployerSpec {
         /service3 {
           dispatcher = my-dispatcher
         }
+        /service4 {
+          mailbox = my-mailbox
+        }
         /service-round-robin {
           router = round-robin
         }
@@ -80,7 +83,8 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
           deployment.get.config,
           NoRouter,
           NoScopeGiven,
-          Deploy.NoDispatcherGiven)))
+          Deploy.NoDispatcherGiven,
+          Deploy.NoMailboxGiven)))
     }
 
     "use None deployment for undefined service" in {
@@ -99,7 +103,22 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
           deployment.get.config,
           NoRouter,
           NoScopeGiven,
-          dispatcher = "my-dispatcher")))
+          dispatcher = "my-dispatcher",
+          Deploy.NoMailboxGiven)))
+    }
+
+    "be able to parse 'akka.actor.deployment._' with mailbox config" in {
+      val service = "/service4"
+      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
+
+      deployment must be(Some(
+        Deploy(
+          service,
+          deployment.get.config,
+          NoRouter,
+          NoScopeGiven,
+          Deploy.NoDispatcherGiven,
+          mailbox = "my-mailbox")))
     }
 
     "detect invalid number-of-instances" in {

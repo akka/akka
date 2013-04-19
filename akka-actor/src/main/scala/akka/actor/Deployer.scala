@@ -15,6 +15,7 @@ import scala.annotation.tailrec
 
 object Deploy {
   final val NoDispatcherGiven = ""
+  final val NoMailboxGiven = ""
 }
 
 /**
@@ -32,13 +33,14 @@ object Deploy {
  * val remoteProps = someProps.withDeploy(Deploy(scope = RemoteScope("someOtherNodeName")))
  * }}}
  */
-@SerialVersionUID(1L)
+@SerialVersionUID(2L)
 final case class Deploy(
   path: String = "",
   config: Config = ConfigFactory.empty,
   routerConfig: RouterConfig = NoRouter,
   scope: Scope = NoScopeGiven,
-  dispatcher: String = Deploy.NoDispatcherGiven) {
+  dispatcher: String = Deploy.NoDispatcherGiven,
+  mailbox: String = Deploy.NoMailboxGiven) {
 
   /**
    * Java API to create a Deploy with the given RouterConfig
@@ -61,13 +63,13 @@ final case class Deploy(
    * other members are merged using ``<X>.withFallback(other.<X>)``.
    */
   def withFallback(other: Deploy): Deploy = {
-    val disp = if (dispatcher == Deploy.NoDispatcherGiven) other.dispatcher else dispatcher
     Deploy(
       path,
       config.withFallback(other.config),
       routerConfig.withFallback(other.routerConfig),
       scope.withFallback(other.scope),
-      disp)
+      if (dispatcher == Deploy.NoDispatcherGiven) other.dispatcher else dispatcher,
+      if (mailbox == Deploy.NoMailboxGiven) other.mailbox else mailbox)
   }
 }
 
@@ -154,7 +156,8 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
     val deployment = config.withFallback(default)
     val router = createRouterConfig(deployment.getString("router"), key, config, deployment)
     val dispatcher = deployment.getString("dispatcher")
-    Some(Deploy(key, deployment, router, NoScopeGiven, dispatcher))
+    val mailbox = deployment.getString("mailbox")
+    Some(Deploy(key, deployment, router, NoScopeGiven, dispatcher, mailbox))
   }
 
   /**

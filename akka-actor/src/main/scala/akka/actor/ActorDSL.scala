@@ -68,8 +68,7 @@ import java.util.concurrent.TimeUnit
  * be circumvented by shadowing the name `system` within `"fred"`).
  *
  * <b>Note:</b> If you want to use an `Act with Stash`, you should use the
- * `ActWithStash` trait in order to have the actor run on a special dispatcher
- * (`"akka.actor.default-stash-dispatcher"`) which has the necessary deque-based
+ * `ActWithStash` trait in order to have the actor get the necessary deque-based
  * mailbox setting.
  */
 object ActorDSL extends dsl.Inbox with dsl.Creators {

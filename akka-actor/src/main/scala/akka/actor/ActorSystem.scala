@@ -320,6 +320,11 @@ abstract class ActorSystem extends ActorRefFactory {
   implicit def dispatcher: ExecutionContext
 
   /**
+   * Helper object for looking up configured mailbox types.
+   */
+  def mailboxes: Mailboxes
+
+  /**
    * Register a block of code (callback) to run after ActorSystem.shutdown has been issued and
    * all actors in this actor system have been stopped.
    * Multiple code blocks may be registered by calling this method multiple times.
@@ -559,6 +564,8 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     threadFactory, eventStream, deadLetterMailbox, scheduler, dynamicAccess, settings))
 
   val dispatcher: ExecutionContext = dispatchers.defaultGlobalDispatcher
+
+  val mailboxes: Mailboxes = new Mailboxes(settings, eventStream, dynamicAccess)
 
   val internalCallingThreadExecutionContext: ExecutionContext =
     dynamicAccess.getObjectFor[ExecutionContext]("scala.concurrent.Future$InternalCallbackExecutor$").getOrElse(

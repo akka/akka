@@ -89,6 +89,7 @@ object ActorSystemSpec {
       config.getInt("throughput"),
       Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
       mailboxType,
+      mailBoxTypeConfigured,
       configureExecutor(),
       Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) {
       val doneIt = new Switch

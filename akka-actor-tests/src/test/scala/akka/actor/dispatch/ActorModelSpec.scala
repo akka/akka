@@ -521,6 +521,7 @@ object DispatcherModelSpec {
         config.getInt("throughput"),
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
         mailboxType,
+        mailBoxTypeConfigured,
         configureExecutor(),
         Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor
 
@@ -594,6 +595,7 @@ object BalancingDispatcherModelSpec {
         config.getInt("throughput"),
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
         mailboxType,
+        mailBoxTypeConfigured,
         configureExecutor(),
         Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS),
         config.getBoolean("attempt-teamwork")) with MessageDispatcherInterceptor

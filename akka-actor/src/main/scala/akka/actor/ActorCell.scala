@@ -279,6 +279,10 @@ private[akka] trait Cell {
    * which may be a costly operation, 0 otherwise.
    */
   def numberOfMessages: Int
+  /**
+   * The props for this actor cell.
+   */
+  def props: Props
 }
 
 /**
