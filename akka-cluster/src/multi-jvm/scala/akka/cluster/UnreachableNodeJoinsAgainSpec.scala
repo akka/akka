@@ -28,10 +28,6 @@ object UnreachableNodeJoinsAgainMultiNodeConfig extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString(
     """
-      # this setting is here to limit the number of retries and failures while the
-      # node is being blackholed
-      akka.remote.retry-gate-closed-for = 500 ms
-
       akka.remote.log-remote-lifecycle-events = off
       akka.cluster.publish-stats-interval = 0s
     """).withFallback(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig)))
@@ -167,7 +163,6 @@ abstract class UnreachableNodeJoinsAgainSpec
         val victimAddress = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
         system.shutdown()
         system.awaitTermination(10 seconds)
-        Thread.sleep(5000)
         // create new ActorSystem with same host:port
         val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
             akka.remote.netty.tcp {
@@ -178,7 +173,6 @@ abstract class UnreachableNodeJoinsAgainSpec
 
         try {
           Cluster(freshSystem).join(masterAddress)
-          Thread.sleep(5000)
           within(15 seconds) {
             awaitAssert(Cluster(freshSystem).readView.members.map(_.address) must contain(victimAddress))
             awaitAssert(Cluster(freshSystem).readView.members.size must be(expectedNumberOfMembers))

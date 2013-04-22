@@ -16,7 +16,6 @@ object AkkaProtocolStressTest {
       #loglevel = DEBUG
       actor.provider = "akka.remote.RemoteActorRefProvider"
 
-      remote.retry-gate-closed-for = 0 s
       remote.log-remote-lifecycle-events = on
 
       remote.transport-failure-detector {

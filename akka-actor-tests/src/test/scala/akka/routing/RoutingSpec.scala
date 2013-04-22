@@ -72,6 +72,8 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
   implicit val ec = system.dispatcher
   import akka.routing.RoutingSpec._
 
+  muteDeadLetters("DeathWatchNotification.*")()
+
   "routers in general" must {
 
     "evict terminated routees" in {
