@@ -12,7 +12,7 @@ import akka.actor.ActorRef
 
 class UdpConnectedIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with ImplicitSender {
 
-  val addresses = temporaryServerAddresses(3)
+  val addresses = temporaryServerAddresses(3, udp = true)
 
   def bindUdp(address: InetSocketAddress, handler: ActorRef): ActorRef = {
     val commander = TestProbe()
