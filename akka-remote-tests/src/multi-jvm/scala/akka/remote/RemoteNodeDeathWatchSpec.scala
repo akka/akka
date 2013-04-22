@@ -198,7 +198,7 @@ abstract class RemoteNodeDeathWatchSpec
       val watcher2 = system.actorOf(Props(classOf[ProbeActor], testActor), "w2")
       system.actorOf(Props(classOf[ProbeActor], testActor), "s1")
       val s2 = system.actorOf(Props(classOf[ProbeActor], testActor), "s2")
-      enterBarrier("actors-started-3")
+      enterBarrier("actors-started-4")
 
       val other = if (myself == first) second else first
       val subject1 = identify(other, "s1")
