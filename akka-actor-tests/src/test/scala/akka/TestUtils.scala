@@ -5,22 +5,31 @@
 package akka
 
 import scala.collection.immutable
-import java.net.InetSocketAddress
-import java.nio.channels.ServerSocketChannel
+import java.net.{ SocketAddress, ServerSocket, DatagramSocket, InetSocketAddress }
+import java.nio.channels.{ DatagramChannel, ServerSocketChannel }
 import akka.actor.{ Terminated, ActorSystem, ActorRef }
 import akka.testkit.TestProbe
 
 object TestUtils {
 
-  def temporaryServerAddress(address: String = "127.0.0.1"): InetSocketAddress =
-    temporaryServerAddresses(1, address).head
+  // Structural type needed since DatagramSocket and ServerSocket has no common ancestor apart from Object
+  type GeneralSocket = {
+    def bind(sa: SocketAddress): Unit
+    def close(): Unit
+    def getLocalPort(): Int
+  }
 
-  def temporaryServerAddresses(numberOfAddresses: Int, hostname: String = "127.0.0.1"): immutable.IndexedSeq[InetSocketAddress] = {
+  def temporaryServerAddress(address: String = "127.0.0.1", udp: Boolean = false): InetSocketAddress =
+    temporaryServerAddresses(1, address, udp).head
+
+  def temporaryServerAddresses(numberOfAddresses: Int, hostname: String = "127.0.0.1", udp: Boolean = false): immutable.IndexedSeq[InetSocketAddress] = {
     val sockets = for (_ ← 1 to numberOfAddresses) yield {
-      val serverSocket = ServerSocketChannel.open()
-      serverSocket.socket.bind(new InetSocketAddress(hostname, 0))
-      val port = serverSocket.socket.getLocalPort
-      (serverSocket, new InetSocketAddress(hostname, port))
+      val serverSocket: GeneralSocket =
+        if (udp) DatagramChannel.open().socket()
+        else ServerSocketChannel.open().socket()
+
+      serverSocket.bind(new InetSocketAddress(hostname, 0))
+      (serverSocket, new InetSocketAddress(hostname, serverSocket.getLocalPort))
     }
 
     sockets collect { case (socket, address) ⇒ socket.close(); address }
