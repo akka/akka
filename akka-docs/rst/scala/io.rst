@@ -518,7 +518,7 @@ operation:
 
 These models (with the exception of the second which is rather specialised) are
 demonstrated in complete examples below. The full and contiguous source is
-available `on github <@github@/akka-docs/rst/scala/code/io/EchoServer.scala>`_.
+available `on github <@github@/akka-docs/rst/scala/code/docs/io/EchoServer.scala>`_.
 
 .. note::
 
