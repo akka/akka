@@ -91,7 +91,10 @@ class RemoteWatcherSpec extends AkkaSpec(
   val remoteAddress = remoteSystem.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
   def remoteAddressUid = AddressUidExtension(remoteSystem).addressUid
 
-  Seq(system, remoteSystem).foreach(muteDeadLetters("Disassociated.*", "DisassociateUnderlying.*")(_))
+  Seq(system, remoteSystem).foreach(muteDeadLetters(
+    akka.remote.transport.AssociationHandle.Disassociated.getClass,
+    akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass,
+    akka.dispatch.NullMessage.getClass)(_))
 
   override def afterTermination() {
     remoteSystem.shutdown()
