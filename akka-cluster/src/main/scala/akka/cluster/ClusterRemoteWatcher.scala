@@ -82,7 +82,9 @@ private[cluster] class ClusterRemoteWatcher(
     case state: CurrentClusterState ⇒
       clusterNodes = state.members.collect { case m if m.address != selfAddress ⇒ m.address }
       clusterNodes foreach takeOverResponsibility
-      unreachable = state.unreachable.collect { case m if m.address != selfAddress ⇒ m.address }
+      val clusterUnreachable = state.unreachable.collect { case m if m.address != selfAddress ⇒ m.address }
+      unreachable --= clusterNodes
+      unreachable ++= clusterUnreachable
     case MemberUp(m) ⇒
       if (m.address != selfAddress) {
         clusterNodes += m.address
@@ -101,6 +103,7 @@ private[cluster] class ClusterRemoteWatcher(
         }
         publishAddressTerminated(m.address)
       }
+    case _: MemberEvent ⇒ // not interesting
   }
 
   /**

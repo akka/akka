@@ -580,13 +580,14 @@ object AkkaBuild extends Build {
     // multinode.D= and multinode.X= makes it possible to pass arbitrary
     // -D or -X arguments to the forked jvm, e.g.
     // -Dmultinode.Djava.net.preferIPv4Stack=true -Dmultinode.Xmx512m -Dmultinode.XX:MaxPermSize=256M
+    // -DMultiJvm.akka.cluster.Stress.nrOfNodes=15
     val MultinodeJvmArgs = "multinode\\.(D|X)(.*)".r
+    val knownPrefix = Set("multnode.", "akka.", "MultiJvm.")
     val akkaProperties = System.getProperties.propertyNames.asScala.toList.collect {
       case MultinodeJvmArgs(a, b) =>
         val value = System.getProperty("multinode." + a + b)
         "-" + a + b + (if (value == "") "" else "=" + value)
-      case key: String if key.startsWith("multinode.") => "-D" + key + "=" + System.getProperty(key)
-      case key: String if key.startsWith("akka.") => "-D" + key + "=" + System.getProperty(key)
+      case key: String if knownPrefix.exists(pre => key.startsWith(pre)) => "-D" + key + "=" + System.getProperty(key)
     }
 
     "-Xmx256m" :: akkaProperties :::
