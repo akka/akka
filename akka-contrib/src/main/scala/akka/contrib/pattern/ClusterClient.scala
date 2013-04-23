@@ -59,6 +59,13 @@ object ClusterClient {
     props(initialContacts.asScala.toSet)
   }
 
+  @SerialVersionUID(1L)
+  case class Send(path: String, msg: Any, localAffinity: Boolean)
+  @SerialVersionUID(1L)
+  case class SendToAll(path: String, msg: Any)
+  @SerialVersionUID(1L)
+  case class Publish(topic: String, msg: Any)
+
   /**
    * INTERNAL API
    */
@@ -79,10 +86,24 @@ object ClusterClient {
  * contacts, i.e. not necessarily the initial contact points.
  *
  * You can send messages via the `ClusterClient` to any actor in the cluster
- * that is registered in the [[DistributedPubSubMediator]] used by the [[ClusterReceptionist]].
- * Messages are wrapped in [[DistributedPubSubMediator.Send]], [[DistributedPubSubMediator.SendToAll]]
- * or [[DistributedPubSubMediator.Publish]] with the semantics described in
- * [[DistributedPubSubMediator]].
+ * that is registered in the [[ClusterReceptionist]].
+ * Messages are wrapped in [[ClusterClient.Send]], [[ClusterClient.SendToAll]]
+ * or [[ClusterClient.Publish]].
+ *
+ * 1. [[ClusterClient.Send]] -
+ * The message will be delivered to one recipient with a matching path, if any such
+ * exists. If several entries match the path the message will be delivered
+ * to one random destination. The sender of the message can specify that local
+ * affinity is preferred, i.e. the message is sent to an actor in the same local actor
+ * system as the used receptionist actor, if any such exists, otherwise random to any other
+ * matching entry.
+ *
+ * 2. [[ClusterClient.SendToAll]] -
+ * The message will be delivered to all recipients with a matching path.
+ *
+ * 3. [[ClusterClient.Publish]] -
+ * The message will be delivered to all recipients Actors that have been registered as subscribers to
+ * to the named topic.
  *
  *  Use the factory method [[ClusterClient#props]]) to create the
  * [[akka.actor.Props]] for the actor.
@@ -96,7 +117,6 @@ class ClusterClient(
   import ClusterClient._
   import ClusterClient.Internal._
   import ClusterReceptionist.Internal._
-  import DistributedPubSubMediator.{ Send, SendToAll, Publish }
 
   var contacts: immutable.IndexedSeq[ActorSelection] = initialContacts.toVector
   sendGetContacts()
@@ -141,8 +161,12 @@ class ClusterClient(
     var pongTimestamp = System.nanoTime
 
     {
-      case msg @ (_: Send | _: SendToAll | _: Publish) ⇒
-        receptionist forward msg
+      case Send(path, msg, localAffinity) ⇒
+        receptionist forward DistributedPubSubMediator.Send(path, msg, localAffinity)
+      case SendToAll(path, msg) ⇒
+        receptionist forward DistributedPubSubMediator.SendToAll(path, msg)
+      case Publish(topic, msg) ⇒
+        receptionist forward DistributedPubSubMediator.Publish(topic, msg)
       case PingTick ⇒
         if (System.nanoTime - pongTimestamp > 3 * pingInterval.toNanos)
           becomeEstablishing()
@@ -200,12 +224,43 @@ class ClusterReceptionistExtension(system: ExtendedActorSystem) extends Extensio
   /**
    * Register the actors that should be reachable for the clients in this [[DistributedPubSubMediator]].
    */
-  def pubSubMediator: ActorRef = DistributedPubSubExtension(system).mediator
+  private def pubSubMediator: ActorRef = DistributedPubSubExtension(system).mediator
+
+  /**
+   * Register an actor that should be reachable for the clients.
+   * The clients can send messages to this actor with `Send` or `SendToAll` using
+   * the path elements of the `ActorRef`, e.g. `"/user/myservice"`.
+   */
+  def registerService(actor: ActorRef): Unit =
+    pubSubMediator ! DistributedPubSubMediator.Put(actor)
+
+  /**
+   * A registered actor will be automatically unregistered when terminated,
+   * but it can also be explicitly unregistered before termination.
+   */
+  def unregisterService(actor: ActorRef): Unit =
+    pubSubMediator ! DistributedPubSubMediator.Remove(actor.path.elements.mkString("/", "/", ""))
+
+  /**
+   * Register an actor that should be reachable for the clients to a named topic.
+   * Several actors can be registered to the same topic name, and all will receive
+   * published messages.
+   * The client can publish messages to this topic with `Publish`.
+   */
+  def registerSubscriber(topic: String, actor: ActorRef): Unit =
+    pubSubMediator ! DistributedPubSubMediator.Subscribe(topic, actor)
+
+  /**
+   * A registered subscriber will be automatically unregistered when terminated,
+   * but it can also be explicitly unregistered before termination.
+   */
+  def unregisterSubscriber(topic: String, actor: ActorRef): Unit =
+    pubSubMediator ! DistributedPubSubMediator.Unsubscribe(topic, actor)
 
   /**
    * The [[ClusterReceptionist]] actor
    */
-  val receptionist: ActorRef = {
+  private val receptionist: ActorRef = {
     if (isTerminated)
       system.deadLetters
     else {
