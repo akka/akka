@@ -7,7 +7,7 @@ option optimize_for = SPEED;
 
 /******************************************
   Compile with:
-  cd ./akka-remote-tests/src/main/protocol
+  cd ./akka-multi-node-testkit/src/main/protocol
   protoc TestConductorProtocol.proto --java_out ../java
   cd ../../../..
   ./scripts/fix-protobuf.sh
@@ -55,7 +55,8 @@ enum FailType {
   Throttle = 1;
   Disconnect = 2;
   Abort = 3;
-  Shutdown = 4;
+  Exit = 4;
+  Shutdown = 5;
 }
 
 enum Direction {

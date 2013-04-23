@@ -43,8 +43,8 @@ private[akka] case class ThrottleMsg(target: Address, direction: Direction, rate
 private[akka] case class Disconnect(node: RoleName, target: RoleName, abort: Boolean) extends CommandOp
 private[akka] case class DisconnectMsg(target: Address, abort: Boolean) extends ConfirmedClientOp with NetworkOp
 
-private[akka] case class Terminate(node: RoleName, exitValue: Int) extends CommandOp
-private[akka] case class TerminateMsg(exitValue: Int) extends ConfirmedClientOp with NetworkOp
+private[akka] case class Terminate(node: RoleName, exitValue: Option[Int]) extends CommandOp
+private[akka] case class TerminateMsg(exitValue: Option[Int]) extends ConfirmedClientOp with NetworkOp
 
 private[akka] case class GetAddress(node: RoleName) extends ServerOp with NetworkOp
 private[akka] case class AddressReply(node: RoleName, addr: Address) extends UnconfirmedClientOp with NetworkOp
@@ -94,8 +94,10 @@ private[akka] class MsgEncoder extends OneToOneEncoder {
         case DisconnectMsg(target, abort) ⇒
           w.setFailure(TCP.InjectFailure.newBuilder.setAddress(target)
             .setFailure(if (abort) TCP.FailType.Abort else TCP.FailType.Disconnect))
-        case TerminateMsg(exitValue) ⇒
-          w.setFailure(TCP.InjectFailure.newBuilder.setFailure(TCP.FailType.Shutdown).setExitValue(exitValue))
+        case TerminateMsg(Some(exitValue)) ⇒
+          w.setFailure(TCP.InjectFailure.newBuilder.setFailure(TCP.FailType.Exit).setExitValue(exitValue))
+        case TerminateMsg(None) ⇒
+          w.setFailure(TCP.InjectFailure.newBuilder.setFailure(TCP.FailType.Shutdown))
         case GetAddress(node) ⇒
           w.setAddr(TCP.AddressRequest.newBuilder.setNode(node.name))
         case AddressReply(node, addr) ⇒
@@ -140,7 +142,8 @@ private[akka] class MsgDecoder extends OneToOneDecoder {
           case FT.Throttle   ⇒ ThrottleMsg(f.getAddress, f.getDirection, f.getRateMBit)
           case FT.Abort      ⇒ DisconnectMsg(f.getAddress, true)
           case FT.Disconnect ⇒ DisconnectMsg(f.getAddress, false)
-          case FT.Shutdown   ⇒ TerminateMsg(f.getExitValue)
+          case FT.Exit       ⇒ TerminateMsg(Some(f.getExitValue))
+          case FT.Shutdown   ⇒ TerminateMsg(None)
         }
       } else if (w.hasAddr) {
         val a = w.getAddr

@@ -76,7 +76,6 @@ abstract class RemoteDeploymentDeathWatchSpec
 
         sleep()
         // if the remote deployed actor is not removed the system will not shutdown
-        system.shutdown()
         val timeout = remaining
         try system.awaitTermination(timeout) catch {
           case _: TimeoutException ⇒
@@ -93,12 +92,12 @@ abstract class RemoteDeploymentDeathWatchSpec
       runOn(first) {
         enterBarrier("hello-deployed")
         sleep()
-        testConductor.shutdown(third, 0).await
+        testConductor.exit(third, 0).await
         enterBarrier("third-crashed")
 
         runOn(first) {
-          // second system will be shutdown, remove to not participate in barriers any more
-          testConductor.removeNode(second)
+          // second system will be shutdown
+          testConductor.shutdown(second)
         }
 
         enterBarrier("after-3")

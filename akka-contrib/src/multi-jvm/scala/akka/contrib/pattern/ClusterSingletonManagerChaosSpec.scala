@@ -100,7 +100,7 @@ class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonMan
     runOn(controller) {
       roles foreach { r ⇒
         log.info("Shutdown [{}]", node(r).address)
-        testConductor.shutdown(r, 0).await
+        testConductor.exit(r, 0).await
       }
     }
   }

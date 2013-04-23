@@ -88,13 +88,15 @@ public final class TestConductorProtocol {
     Throttle(0, 1),
     Disconnect(1, 2),
     Abort(2, 3),
-    Shutdown(3, 4),
+    Exit(3, 4),
+    Shutdown(4, 5),
     ;
     
     public static final int Throttle_VALUE = 1;
     public static final int Disconnect_VALUE = 2;
     public static final int Abort_VALUE = 3;
-    public static final int Shutdown_VALUE = 4;
+    public static final int Exit_VALUE = 4;
+    public static final int Shutdown_VALUE = 5;
     
     
     public final int getNumber() { return value; }
@@ -104,7 +106,8 @@ public final class TestConductorProtocol {
         case 1: return Throttle;
         case 2: return Disconnect;
         case 3: return Abort;
-        case 4: return Shutdown;
+        case 4: return Exit;
+        case 5: return Shutdown;
         default: return null;
       }
     }
@@ -135,7 +138,7 @@ public final class TestConductorProtocol {
     }
     
     private static final FailType[] VALUES = {
-      Throttle, Disconnect, Abort, Shutdown, 
+      Throttle, Disconnect, Abort, Exit, Shutdown, 
     };
     
     public static FailType valueOf(
@@ -4215,11 +4218,11 @@ public final class TestConductorProtocol {
       "ion\030\002 \001(\0162\n.Direction\022\031\n\007address\030\003 \001(\0132\010" +
       ".Address\022\020\n\010rateMBit\030\006 \001(\002\022\021\n\texitValue\030" +
       "\007 \001(\005*;\n\tBarrierOp\022\t\n\005Enter\020\001\022\010\n\004Fail\020\002\022" +
-      "\r\n\tSucceeded\020\003\022\n\n\006Failed\020\004*A\n\010FailType\022\014" +
+      "\r\n\tSucceeded\020\003\022\n\n\006Failed\020\004*K\n\010FailType\022\014" +
       "\n\010Throttle\020\001\022\016\n\nDisconnect\020\002\022\t\n\005Abort\020\003\022" +
-      "\014\n\010Shutdown\020\004*,\n\tDirection\022\010\n\004Send\020\001\022\013\n\007" +
-      "Receive\020\002\022\010\n\004Both\020\003B\035\n\031akka.remote.testc" +
-      "onductorH\001"
+      "\010\n\004Exit\020\004\022\014\n\010Shutdown\020\005*,\n\tDirection\022\010\n\004" +
+      "Send\020\001\022\013\n\007Receive\020\002\022\010\n\004Both\020\003B\035\n\031akka.re" +
+      "mote.testconductorH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
