@@ -24,6 +24,8 @@ import akka.actor.ActorIdentity
 import akka.actor.Identify
 import akka.actor.ActorRef
 import akka.remote.RemoteWatcher
+import akka.actor.ActorSystem
+import akka.cluster.MultiNodeClusterSpec.EndActor
 
 object ClusterDeathWatchMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -39,6 +41,7 @@ object ClusterDeathWatchMultiJvmSpec extends MultiNodeConfig {
   class Hello extends Actor {
     def receive = Actor.emptyBehavior
   }
+
 }
 
 class ClusterDeathWatchMultiJvmNode1 extends ClusterDeathWatchSpec
@@ -206,6 +209,14 @@ abstract class ClusterDeathWatchSpec
     }
 
     "be able to shutdown system when using remote deployed actor on node that crash" taggedAs LongRunningTest in within(20 seconds) {
+      // fourth actor system will be shutdown, not part of testConductor any more
+      // so we can't use barriers to synchronize with it
+      val firstAddress = address(first)
+      runOn(first) {
+        system.actorOf(Props(classOf[EndActor], testActor, None), "end")
+      }
+      enterBarrier("end-actor-created")
+
       runOn(fourth) {
         val hello = system.actorOf(Props[Hello], "hello")
         hello.isInstanceOf[RemoteActorRef] must be(true)
@@ -231,14 +242,32 @@ abstract class ClusterDeathWatchSpec
             fail("Failed to stop [%s] within [%s] \n%s".format(system.name, timeout,
               system.asInstanceOf[ActorSystemImpl].printTree))
         }
+
+        // signal to the first node that fourth is done
+        val endSystem = ActorSystem("EndSystem", system.settings.config)
+        try {
+          val endProbe = TestProbe()(endSystem)
+          val endActor = endSystem.actorOf(Props(classOf[EndActor], endProbe.ref, Some(firstAddress)), "end")
+          endActor ! EndActor.SendEnd
+          endProbe.expectMsg(EndActor.EndAck)
+
+        } finally {
+          endSystem.shutdown()
+          endSystem.awaitTermination(10 seconds)
+        }
+        // no barrier here, because it is not part of testConductor roles any more
+
       }
 
       runOn(first, second, third, fifth) {
         enterBarrier("hello-deployed")
         enterBarrier("first-unavailable")
+
+        // don't end the test until the fourth is done
         runOn(first) {
           // fourth system will be shutdown, remove to not participate in barriers any more
           testConductor.removeNode(fourth)
+          expectMsg(EndActor.End)
         }
 
         enterBarrier("after-4")
