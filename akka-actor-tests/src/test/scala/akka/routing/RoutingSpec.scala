@@ -198,6 +198,18 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       expectMsgType[ActorKilledException]
     }
 
+    "set supplied supervisorStrategy for FromConfig" in {
+      val escalator = OneForOneStrategy() {
+        case e ⇒ testActor ! e; SupervisorStrategy.Escalate
+      }
+      val router = system.actorOf(Props.empty.withRouter(FromConfig.withSupervisorStrategy(escalator)), "router1")
+      router ! CurrentRoutees
+      EventFilter[ActorKilledException](occurrences = 1) intercept {
+        expectMsgType[RouterRoutees].routees.head ! Kill
+      }
+      expectMsgType[ActorKilledException]
+    }
+
     "default to all-for-one-always-escalate strategy" in {
       val restarter = OneForOneStrategy() {
         case e ⇒ testActor ! e; SupervisorStrategy.Restart
@@ -579,6 +591,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         sys.shutdown()
       }
     }
+
     "support custom router" in {
       val myrouter = system.actorOf(Props.empty.withRouter(FromConfig), "myrouter")
       myrouter.isTerminated must be(false)

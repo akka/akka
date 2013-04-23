@@ -23,14 +23,7 @@ import akka.cluster.StandardMetrics.Cpu
 import akka.cluster.StandardMetrics.HeapMemory
 import akka.event.Logging
 import akka.japi.Util.immutableSeq
-import akka.routing.Broadcast
-import akka.routing.Destination
-import akka.routing.FromConfig
-import akka.routing.NoRouter
-import akka.routing.Resizer
-import akka.routing.Route
-import akka.routing.RouteeProvider
-import akka.routing.RouterConfig
+import akka.routing._
 
 object AdaptiveLoadBalancingRouter {
   private val escalateStrategy: SupervisorStrategy = OneForOneStrategy() {
@@ -76,7 +69,7 @@ case class AdaptiveLoadBalancingRouter(
   override val resizer: Option[Resizer] = None,
   val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
   val supervisorStrategy: SupervisorStrategy = AdaptiveLoadBalancingRouter.escalateStrategy)
-  extends RouterConfig with AdaptiveLoadBalancingRouterLike {
+  extends RouterConfig with AdaptiveLoadBalancingRouterLike with OverrideUnsetConfig[AdaptiveLoadBalancingRouter] {
 
   /**
    * Java API: Constructor that sets nrOfInstances to be created.
@@ -118,17 +111,17 @@ case class AdaptiveLoadBalancingRouter(
     copy(supervisorStrategy = strategy)
 
   /**
-   * Uses the resizer of the given RouterConfig if this RouterConfig
-   * doesn't have one, i.e. the resizer defined in code is used if
+   * Java API for setting the resizer to be used.
+   */
+  def withResizer(resizer: Resizer): AdaptiveLoadBalancingRouter = copy(resizer = Some(resizer))
+
+  /**
+   * Uses the resizer and/or the supervisor strategy of the given Routerconfig
+   * if this RouterConfig doesn't have one, i.e. the resizer defined in code is used if
    * resizer was not defined in config.
    */
   override def withFallback(other: RouterConfig): RouterConfig = other match {
-    case _: FromConfig | _: NoRouter ⇒ this
-    case otherRouter: AdaptiveLoadBalancingRouter ⇒
-      val useResizer =
-        if (this.resizer.isEmpty && otherRouter.resizer.isDefined) otherRouter.resizer
-        else this.resizer
-      copy(resizer = useResizer)
+    case _: FromConfig | _: NoRouter | _: AdaptiveLoadBalancingRouter ⇒ this.overrideUnsetConfig(other)
     case _ ⇒ throw new IllegalArgumentException("Expected AdaptiveLoadBalancingRouter, got [%s]".format(other))
   }
 

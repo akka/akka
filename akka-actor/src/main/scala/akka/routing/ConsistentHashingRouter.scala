@@ -148,7 +148,7 @@ case class ConsistentHashingRouter(
   val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy,
   val virtualNodesFactor: Int = 0,
   val hashMapping: ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping)
-  extends RouterConfig with ConsistentHashingLike {
+  extends RouterConfig with ConsistentHashingLike with OverrideUnsetConfig[ConsistentHashingRouter] {
 
   /**
    * Java API: Constructor that sets nrOfInstances to be created.
@@ -180,7 +180,12 @@ case class ConsistentHashingRouter(
   def withSupervisorStrategy(strategy: SupervisorStrategy): ConsistentHashingRouter = copy(supervisorStrategy = strategy)
 
   /**
-   * Java API for setting the number of virtual nodes per node, used in [[akka.routing.ConsistantHash]]
+   * Java API for setting the resizer to be used.
+   */
+  def withResizer(resizer: Resizer): ConsistentHashingRouter = copy(resizer = Some(resizer))
+
+  /**
+   * Java API for setting the number of virtual nodes per node, used in [[akka.routing.ConsistentHash]]
    */
   def withVirtualNodesFactor(vnodes: Int): ConsistentHashingRouter = copy(virtualNodesFactor = vnodes)
 
@@ -195,20 +200,15 @@ case class ConsistentHashingRouter(
   }
 
   /**
-   * Uses the resizer of the given RouterConfig if this RouterConfig
-   * doesn't have one, i.e. the resizer defined in code is used if
+   * Uses the resizer and/or the supervisor strategy of the given Routerconfig
+   * if this RouterConfig doesn't have one, i.e. the resizer defined in code is used if
    * resizer was not defined in config.
-   * Uses the the `hashMapping` defined in code, since
-   * that can't be defined in configuration.
+   * Uses the the `hashMapping` defined in code, since that can't be defined in configuration.
    */
   override def withFallback(other: RouterConfig): RouterConfig = other match {
-    case _: FromConfig | _: NoRouter ⇒ this
-    case otherRouter: ConsistentHashingRouter ⇒
-      val useResizer =
-        if (this.resizer.isEmpty && otherRouter.resizer.isDefined) otherRouter.resizer
-        else this.resizer
-      copy(resizer = useResizer, hashMapping = otherRouter.hashMapping)
-    case _ ⇒ throw new IllegalArgumentException("Expected ConsistentHashingRouter, got [%s]".format(other))
+    case _: FromConfig | _: NoRouter          ⇒ this.overrideUnsetConfig(other)
+    case otherRouter: ConsistentHashingRouter ⇒ (copy(hashMapping = otherRouter.hashMapping)).overrideUnsetConfig(other)
+    case _                                    ⇒ throw new IllegalArgumentException("Expected ConsistentHashingRouter, got [%s]".format(other))
   }
 }
 
