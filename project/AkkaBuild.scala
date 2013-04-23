@@ -183,6 +183,9 @@ object AkkaBuild extends Build {
     dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test"),
     settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ multiJvmSettings ++ OSGi.cluster ++ experimentalSettings ++
       scalabuffSettings ++ Seq(
+      // this is only needed while we use the SNAPSHOT version
+      resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+      scalabuffVersion in ScalaBuff := "1.2.0-SNAPSHOT",
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
       parallelExecution in Test := false,
