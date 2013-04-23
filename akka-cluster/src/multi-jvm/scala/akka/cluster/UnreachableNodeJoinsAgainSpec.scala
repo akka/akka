@@ -18,6 +18,7 @@ import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.RootActorPath
+import akka.cluster.MultiNodeClusterSpec.EndActor
 
 object UnreachableNodeJoinsAgainMultiNodeConfig extends MultiNodeConfig {
   val first = role("first")
@@ -37,9 +38,6 @@ object UnreachableNodeJoinsAgainMultiNodeConfig extends MultiNodeConfig {
 
   testTransport(on = true)
 
-  class EndActor(testActor: ActorRef) extends Actor {
-    def receive = { case msg ⇒ testActor forward msg }
-  }
 }
 
 class UnreachableNodeJoinsAgainMultiJvmNode1 extends UnreachableNodeJoinsAgainSpec
@@ -147,7 +145,7 @@ abstract class UnreachableNodeJoinsAgainSpec
       // so we can't use barriers to synchronize with it
       val masterAddress = address(master)
       runOn(master) {
-        system.actorOf(Props(classOf[EndActor], testActor), "end")
+        system.actorOf(Props(classOf[EndActor], testActor, None), "end")
       }
       enterBarrier("end-actor-created")
 
@@ -186,7 +184,13 @@ abstract class UnreachableNodeJoinsAgainSpec
             awaitAssert(Cluster(freshSystem).readView.members.size must be(expectedNumberOfMembers))
             awaitAssert(clusterView.members.map(_.status) must be(Set(MemberStatus.Up)))
           }
-          freshSystem.actorSelection(RootActorPath(master) / "user" / "end") ! "done"
+
+          // signal to master node that victim is done
+          val endProbe = TestProbe()(freshSystem)
+          val endActor = freshSystem.actorOf(Props(classOf[EndActor], endProbe.ref, Some(masterAddress)), "end")
+          endActor ! EndActor.SendEnd
+          endProbe.expectMsg(EndActor.EndAck)
+
         } finally {
           freshSystem.shutdown()
           freshSystem.awaitTermination(10 seconds)
@@ -198,7 +202,7 @@ abstract class UnreachableNodeJoinsAgainSpec
         awaitMembersUp(expectedNumberOfMembers)
         // don't end the test until the freshSystem is done
         runOn(master) {
-          expectMsg("done")
+          expectMsg(EndActor.End)
         }
         endBarrier()
       }

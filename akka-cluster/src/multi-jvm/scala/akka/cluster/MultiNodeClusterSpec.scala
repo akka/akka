@@ -18,6 +18,9 @@ import scala.concurrent.duration._
 import scala.collection.immutable
 import java.util.concurrent.ConcurrentHashMap
 import akka.remote.DefaultFailureDetectorRegistry
+import akka.actor.ActorRef
+import akka.actor.Actor
+import akka.actor.RootActorPath
 
 object MultiNodeClusterSpec {
 
@@ -48,6 +51,28 @@ object MultiNodeClusterSpec {
       single-expect-default = 5 s
     }
     """)
+
+  // sometimes we need to coordinate test shutdown with messages instead of barriers
+  object EndActor {
+    case object SendEnd
+    case object End
+    case object EndAck
+  }
+
+  class EndActor(testActor: ActorRef, target: Option[Address]) extends Actor {
+    import EndActor._
+    def receive = {
+      case SendEnd ⇒
+        target foreach { t ⇒
+          context.actorSelection(RootActorPath(t) / self.path.elements) ! End
+        }
+      case End ⇒
+        testActor forward End
+        sender ! EndAck
+      case EndAck ⇒
+        testActor forward EndAck
+    }
+  }
 }
 
 trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner { self: MultiNodeSpec ⇒
