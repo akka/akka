@@ -57,7 +57,6 @@ class ClusterClientMultiJvmNode5 extends ClusterClientSpec
 
 class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNodeSpec with ImplicitSender {
   import ClusterClientSpec._
-  import DistributedPubSubMediator._
 
   override def initialParticipants = roles.size
 
@@ -69,14 +68,13 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
     enterBarrier(from.name + "-joined")
   }
 
-  def createReceptionist(): ActorRef = ClusterReceptionistExtension(system).receptionist
+  def createReceptionist(): Unit = ClusterReceptionistExtension(system)
 
-  def mediator: ActorRef = ClusterReceptionistExtension(system).pubSubMediator
-  def receptionist: ActorRef = ClusterReceptionistExtension(system).receptionist
+  def receptionist: ClusterReceptionistExtension = ClusterReceptionistExtension(system)
 
   def awaitCount(expected: Int): Unit = {
     awaitAssert {
-      mediator ! Count
+      DistributedPubSubExtension(system).mediator ! DistributedPubSubMediator.Count
       expectMsgType[Int] must be(expected)
     }
   }
@@ -96,7 +94,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       join(fourth, first)
       runOn(fourth) {
         val service = system.actorOf(Props(classOf[TestService], testActor), "testService")
-        mediator ! Put(service)
+        receptionist.registerService(service)
       }
       runOn(first, second, third, fourth) {
         awaitCount(1)
@@ -110,7 +108,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         val c = system.actorOf(ClusterClient.props(initialContacts))
 
         awaitAssert {
-          c ! Send("/user/testService", "hello", localAffinity = true)
+          c ! ClusterClient.Send("/user/testService", "hello", localAffinity = true)
           expectMsg(1 second, "ack")
         }
       }
@@ -128,23 +126,21 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
       //#server
       runOn(host1) {
-        val mediator = ClusterReceptionistExtension(system).pubSubMediator
         val serviceA = system.actorOf(Props[Service], "serviceA")
-        mediator ! DistributedPubSubMediator.Put(serviceA)
+        receptionist.registerService(serviceA)
       }
 
       runOn(host2, host3) {
-        val mediator = ClusterReceptionistExtension(system).pubSubMediator
         val serviceB = system.actorOf(Props[Service], "serviceB")
-        mediator ! DistributedPubSubMediator.Put(serviceB)
+        receptionist.registerService(serviceB)
       }
       //#server
 
       //#client
       runOn(client) {
         val c = system.actorOf(ClusterClient.props(initialContacts))
-        c ! DistributedPubSubMediator.Send("/user/serviceA", "hello", localAffinity = true)
-        c ! DistributedPubSubMediator.SendToAll("/user/serviceB", "hi")
+        c ! ClusterClient.Send("/user/serviceA", "hello", localAffinity = true)
+        c ! ClusterClient.SendToAll("/user/serviceB", "hi")
       }
       //#client
 
@@ -164,7 +160,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
     "re-establish connection to receptionist when connection is lost" in within(30 seconds) {
       runOn(first, second, third, fourth) {
         val service2 = system.actorOf(Props(classOf[TestService], testActor), "service2")
-        mediator ! Put(service2)
+        receptionist.registerService(service2)
         awaitCount(8)
       }
       enterBarrier("service2-replicated")
@@ -173,7 +169,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         val c = system.actorOf(ClusterClient.props(initialContacts))
 
         awaitAssert {
-          c ! Send("/user/service2", "bonjour", localAffinity = true)
+          c ! ClusterClient.Send("/user/service2", "bonjour", localAffinity = true)
           expectMsg(1 second, "ack")
         }
         val lastSenderAddress = lastSender.path.address
@@ -183,7 +179,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         }
         testConductor.shutdown(receptionistRoleName, 0).await
         awaitAssert {
-          c ! Send("/user/service2", "hi again", localAffinity = true)
+          c ! ClusterClient.Send("/user/service2", "hi again", localAffinity = true)
           expectMsg(1 second, "ack")
         }
       }
