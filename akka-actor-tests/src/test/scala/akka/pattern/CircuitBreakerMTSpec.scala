@@ -12,8 +12,8 @@ import scala.annotation.tailrec
 class CircuitBreakerMTSpec extends AkkaSpec {
   implicit val ec = system.dispatcher
   "A circuit breaker being called by many threads" must {
-    val callTimeout = 1.second.dilated
-    val resetTimeout = 2.seconds.dilated
+    val callTimeout = 2.second.dilated
+    val resetTimeout = 3.seconds.dilated
     val maxFailures = 5
     val breaker = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
     val numberOfTestCalls = 100
