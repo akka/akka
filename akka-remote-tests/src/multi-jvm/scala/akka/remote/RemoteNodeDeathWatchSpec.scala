@@ -333,7 +333,7 @@ abstract class RemoteNodeDeathWatchSpec
         sleep()
 
         log.info("shutdown second")
-        testConductor.shutdown(second, 0).await
+        testConductor.exit(second, 0).await
         expectMsgType[WrappedTerminated](15 seconds).t.actor must be(subject)
 
         // verify that things are cleaned up, and heartbeating is stopped
