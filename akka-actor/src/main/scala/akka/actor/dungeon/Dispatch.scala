@@ -10,11 +10,10 @@ import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
 import akka.util.Unsafe
 import akka.dispatch.NullMessage
-import akka.actor.{ NoSerializationVerificationNeeded, InvalidMessageException, ActorRef, ActorCell }
+import akka.actor._
 import akka.serialization.SerializationExtension
 import scala.util.control.NonFatal
 import scala.util.control.Exception.Catcher
-import scala.concurrent.ExecutionContext
 
 private[akka] trait Dispatch { this: ActorCell ⇒
 
@@ -47,23 +46,24 @@ private[akka] trait Dispatch { this: ActorCell ⇒
      * this is processed before anything else.
      */
     val mbox = dispatcher.createMailbox(this)
-    val actorClass = this.props.actorClass
-    if (this.system.mailboxes.hasRequiredType(actorClass)) {
-      this.system.mailboxes.getRequiredType(actorClass).foreach {
+
+    // we need to delay the failure to the point of actor creation so we can handle
+    // it properly in the normal way
+    val actorClass = props.actorClass
+    val createMessage = if (system.mailboxes.hasRequiredType(actorClass)) {
+      Create(system.mailboxes.getRequiredType(actorClass).flatMap {
         case c if !c.isAssignableFrom(mbox.messageQueue.getClass) ⇒
-          // FIXME 3237 throw an exception here instead of just logging it,
-          // and update the comment on the RequiresMessageQueue trait
-          val e = new IllegalArgumentException(s"Actor [${this.self.path}] requires mailbox type [${c}]" +
-            s" got [${mbox.messageQueue.getClass}]")
-          this.systemImpl.eventStream.publish(Error(e, getClass.getName, getClass, e.getMessage))
-        case _ ⇒
-      }
-    }
+          Some(ActorInitializationException(self, s"Actor [${self}] requires mailbox type [${c}]" +
+            s" got [${mbox.messageQueue.getClass}]"))
+        case _ ⇒ None
+      })
+    } else Create(None)
+
     swapMailbox(mbox)
     mailbox.setActor(this)
 
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-    mailbox.systemEnqueue(self, Create())
+    mailbox.systemEnqueue(self, createMessage)
 
     if (sendSupervise) {
       // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅

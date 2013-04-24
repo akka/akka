@@ -4,7 +4,7 @@
 package akka.dispatch.sysmsg
 
 import scala.annotation.tailrec
-import akka.actor.{ InternalActorRef, ActorRef, PossiblyHarmful }
+import akka.actor.{ ActorInitializationException, InternalActorRef, ActorRef, PossiblyHarmful }
 
 /**
  * INTERNAL API
@@ -201,7 +201,7 @@ trait StashWhenFailed
  * INTERNAL API
  */
 @SerialVersionUID(-4836972106317757555L)
-private[akka] case class Create() extends SystemMessage // send to self from Dispatcher.register
+private[akka] case class Create(failure: Option[ActorInitializationException]) extends SystemMessage // sent to self from Dispatcher.register
 /**
  * INTERNAL API
  */

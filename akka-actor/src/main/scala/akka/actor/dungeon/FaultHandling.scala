@@ -132,7 +132,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
   private def finishCreate(): Unit = {
     try resumeNonRecursive()
     finally clearFailed()
-    try create()
+    try create(None)
     catch handleNonFatalOrInterruptedException { e ⇒
       handleInvokeFailure(Nil, e)
     }
