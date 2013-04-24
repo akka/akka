@@ -281,7 +281,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       expectMsg(ResetOk)
       roles foreach { r ⇒
         log.info("Shutdown [{}]", node(r).address)
-        testConductor.shutdown(r, 0).await
+        testConductor.exit(r, 0).await
       }
     }
   }

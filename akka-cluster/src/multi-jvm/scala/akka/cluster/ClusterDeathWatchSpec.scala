@@ -235,7 +235,6 @@ abstract class ClusterDeathWatchSpec
 
         enterBarrier("first-unavailable")
 
-        system.shutdown()
         val timeout = remaining
         try system.awaitTermination(timeout) catch {
           case _: TimeoutException ⇒
@@ -266,7 +265,7 @@ abstract class ClusterDeathWatchSpec
         // don't end the test until the fourth is done
         runOn(first) {
           // fourth system will be shutdown, remove to not participate in barriers any more
-          testConductor.removeNode(fourth)
+          testConductor.shutdown(fourth).await
           expectMsg(EndActor.End)
         }
 

@@ -160,12 +160,11 @@ abstract class UnreachableNodeJoinsAgainSpec
 
       runOn(first) {
         // will shutdown ActorSystem of victim
-        testConductor.removeNode(victim)
+        testConductor.shutdown(victim)
       }
 
       runOn(victim) {
         val victimAddress = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
-        system.shutdown()
         system.awaitTermination(10 seconds)
         Thread.sleep(5000)
         // create new ActorSystem with same host:port

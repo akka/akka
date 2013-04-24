@@ -177,7 +177,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
           case Some(r) ⇒ r
           case None    ⇒ fail("unexpected missing roleName: " + lastSender.path.address)
         }
-        testConductor.shutdown(receptionistRoleName, 0).await
+        testConductor.exit(receptionistRoleName, 0).await
         awaitAssert {
           c ! ClusterClient.Send("/user/service2", "hi again", localAffinity = true)
           expectMsg(1 second, "ack")

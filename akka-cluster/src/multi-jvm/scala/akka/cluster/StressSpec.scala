@@ -795,7 +795,7 @@ abstract class StressSpec
         runOn(roles.head) {
           if (shutdown) {
             log.info("Shutting down [{}]", removeAddress)
-            testConductor.shutdown(removeRole, 0).await
+            testConductor.exit(removeRole, 0).await
           }
         }
         awaitMembersUp(currentRoles.size, timeout = remaining)
@@ -828,7 +828,7 @@ abstract class StressSpec
           runOn(roles.head) {
             if (shutdown) removeRoles.foreach { r ⇒
               log.info("Shutting down [{}]", address(r))
-              testConductor.shutdown(r, 0).await
+              testConductor.exit(r, 0).await
             }
           }
           awaitMembersUp(currentRoles.size, timeout = remaining)
