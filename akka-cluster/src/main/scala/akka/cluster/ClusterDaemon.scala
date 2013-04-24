@@ -850,7 +850,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
       val localUnreachableMembers = localGossip.overview.unreachable
 
       val newlyDetectedUnreachableMembers = localMembers filterNot { member ⇒
-        member.uniqueAddress == selfUniqueAddress || failureDetector.isAvailable(member.address)
+        member.uniqueAddress == selfUniqueAddress || member.status == Exiting || failureDetector.isAvailable(member.address)
       }
 
       if (newlyDetectedUnreachableMembers.nonEmpty) {
