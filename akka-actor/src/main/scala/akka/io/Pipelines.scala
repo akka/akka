@@ -812,12 +812,94 @@ class LengthFieldFrame(maxSize: Int,
           frames match {
             case Nil        ⇒ Nil
             case one :: Nil ⇒ ctx.singleEvent(one)
-            case many       ⇒ many.reverse map (Left(_))
+            case many       ⇒ many reverseMap (Left(_))
           }
         }
     }
 }
 //#length-field-frame
+
+/**
+ * Pipeline stage for delimiter byte based framing and de-framing. Useful for string oriented protocol using '\n'
+ * or 0 as delimiter values.
+ *
+ * @param maxSize The maximum size of the frame the pipeline is willing to decode. Not checked for encoding, as the
+ *                sender might decide to pass through multiple chunks in one go (multiple lines in case of a line-based
+ *                protocol)
+ * @param delimiter The sequence of bytes that will be used as the delimiter for decoding.
+ * @param includeDelimiter If enabled, the delmiter bytes will be part of the decoded messages. In the case of sends
+ *                          the delimiter has to be appended to the end of frames by the user. It is also possible
+ *                          to send multiple frames by embedding multiple delimiters in the passed ByteString
+ */
+class DelimiterFraming(maxSize: Int, delimiter: ByteString = ByteString('\n'), includeDelimiter: Boolean = false)
+  extends SymmetricPipelineStage[PipelineContext, ByteString, ByteString] {
+
+  require(maxSize > 0, "maxSize must be positive")
+  require(delimiter.nonEmpty, "delimiter must not be empty")
+
+  override def apply(ctx: PipelineContext) = new SymmetricPipePair[ByteString, ByteString] {
+    val singleByteDelimiter: Boolean = delimiter.size == 1
+    var buffer: ByteString = ByteString.empty
+
+    @tailrec
+    private def extractParts(nextChunk: ByteString, acc: List[ByteString]): List[ByteString] = {
+      val firstByteOfDelimiter = delimiter.head
+      val matchPosition = nextChunk.indexOf(firstByteOfDelimiter)
+      if (matchPosition == -1) {
+        val minSize = buffer.size + nextChunk.size
+        if (minSize > maxSize) throw new IllegalArgumentException(
+          s"Received too large frame of size $minSize (max = $maxSize)")
+        buffer ++= nextChunk
+        acc
+      } else {
+        val missingBytes: Int = if (includeDelimiter) matchPosition + delimiter.size else matchPosition
+        val expectedSize = buffer.size + missingBytes
+        if (expectedSize > maxSize) throw new IllegalArgumentException(
+          s"Received frame already of size $expectedSize (max = $maxSize)")
+
+        if (singleByteDelimiter || nextChunk.slice(matchPosition, matchPosition + delimiter.size) == delimiter) {
+          val decoded = buffer ++ nextChunk.take(missingBytes)
+          buffer = ByteString.empty
+          extractParts(nextChunk.drop(matchPosition + delimiter.size), decoded :: acc)
+        } else {
+          buffer ++= nextChunk.take(matchPosition + 1)
+          extractParts(nextChunk.drop(matchPosition + 1), acc)
+        }
+
+      }
+    }
+
+    override val eventPipeline = {
+      bs: ByteString ⇒
+        val parts = extractParts(bs, Nil)
+        parts match {
+          case Nil        ⇒ Nil
+          case one :: Nil ⇒ ctx.singleEvent(one)
+          case many       ⇒ many reverseMap (Left(_))
+        }
+    }
+
+    override val commandPipeline = {
+      bs: ByteString ⇒ ctx.singleCommand(bs)
+    }
+  }
+}
+
+/**
+ * Simple convenience pipeline stage for turning Strings into ByteStrings and vice versa.
+ *
+ * @param charset The character set to be used for encoding and decoding the raw byte representation of the strings.
+ */
+class StringByteStringAdapter(charset: String = "utf-8")
+  extends PipelineStage[PipelineContext, String, ByteString, String, ByteString] {
+
+  override def apply(ctx: PipelineContext) = new PipePair[String, ByteString, String, ByteString] {
+
+    val commandPipeline = (str: String) ⇒ ctx.singleCommand(ByteString(str, charset))
+
+    val eventPipeline = (bs: ByteString) ⇒ ctx.singleEvent(bs.decodeString(charset))
+  }
+}
 
 /**
  * This trait expresses that the pipeline’s context needs to provide a logging
