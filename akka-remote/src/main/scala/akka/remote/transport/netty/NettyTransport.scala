@@ -26,6 +26,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration, MILLISECONDS }
 import scala.concurrent.{ ExecutionContext, Promise, Future, blocking }
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.{ NoStackTrace, NonFatal }
+import akka.util.Helpers.Requiring
 
 object NettyTransportSettings {
   sealed trait Mode
@@ -99,6 +100,10 @@ class NettyTransportSettings(config: Config) {
   val SendBufferSize: Option[Int] = optionSize("send-buffer-size")
 
   val ReceiveBufferSize: Option[Int] = optionSize("receive-buffer-size")
+
+  val MaxFrameSize: Int = getBytes("maximum-frame-size").toInt requiring (
+    _ >= 32000,
+    s"Setting 'maximum-frame-size' must be at least 32000 bytes")
 
   val Backlog: Int = getInt("backlog")
 
@@ -228,7 +233,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   implicit val executionContext: ExecutionContext = system.dispatcher
 
   override val schemeIdentifier: String = (if (EnableSsl) "ssl." else "") + TransportMode
-  override def maximumPayloadBytes: Int = 32000 // The number of octets required by the remoting specification
+  override def maximumPayloadBytes: Int = settings.MaxFrameSize
 
   private final val isDatagram = TransportMode == Udp
 
