@@ -60,6 +60,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
   // not MultiNodeClusterSpec.clusterConfig
   commonConfig(ConfigFactory.parseString("""
     akka.test.cluster-stress-spec {
+      log-stats = off
       # scale the nr-of-nodes* settings with this factor
       nr-of-nodes-factor = 1
       nr-of-nodes = 13
@@ -147,6 +148,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
 
     private def getDuration(name: String): FiniteDuration = Duration(getMilliseconds(name), MILLISECONDS)
 
+    val logStats = getBoolean("log-stats")
     val nFactor = getInt("nr-of-nodes-factor")
     val totalNumberOfNodes = getInt("nr-of-nodes") * nFactor ensuring (
       _ >= 10, "nr-of-nodes must be >= 10")
@@ -211,7 +213,9 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
    * expected results has been collected. It shuts down
    * itself when expected results has been collected.
    */
-  class ClusterResultAggregator(title: String, expectedResults: Int, reportMetricsInterval: FiniteDuration) extends Actor with ActorLogging {
+  class ClusterResultAggregator(title: String, expectedResults: Int, settings: Settings) extends Actor with ActorLogging {
+    import settings.reportMetricsInterval
+    import settings.logStats
     val cluster = Cluster(context.system)
     var reportTo: Option[ActorRef] = None
     var results = Vector.empty[ClusterResult]
@@ -242,12 +246,14 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       case PhiResult(from, phiValues)            ⇒ phiValuesObservedByNode += from -> phiValues
       case StatsResult(from, stats)              ⇒ clusterStatsObservedByNode += from -> stats
       case ReportTick ⇒
-        log.info(s"[${title}] in progress\n${formatMetrics}\n\n${formatPhi}\n\n${formatStats}")
+        if (logStats)
+          log.info(s"[${title}] in progress\n${formatMetrics}\n\n${formatPhi}\n\n${formatStats}")
       case r: ClusterResult ⇒
         results :+= r
         if (results.size == expectedResults) {
           val aggregated = AggregatedClusterResult(title, maxDuration, totalClusterStats)
-          log.info(s"[${title}] completed in [${aggregated.duration.toMillis}] ms\n${aggregated.clusterStats}\n${formatMetrics}\n\n${formatPhi}\n\n${formatStats}")
+          if (logStats)
+            log.info(s"[${title}] completed in [${aggregated.duration.toMillis}] ms\n${aggregated.clusterStats}\n${formatMetrics}\n\n${formatPhi}\n\n${formatStats}")
           reportTo foreach { _ ! aggregated }
           context stop self
         }
@@ -665,6 +671,7 @@ abstract class StressSpec
     sys.eventStream.publish(Mute(EventFilter.warning(pattern = ".*PhiResult.*")))
     sys.eventStream.publish(Mute(EventFilter.warning(pattern = ".*SendBatch.*")))
     sys.eventStream.publish(Mute(EventFilter.warning(pattern = ".*ClusterStats.*")))
+    muteDeadLetters("SimpleJob.*", "Tick.*", "AggregatedClusterResult.*")(sys)
   }
 
   val seedNodes = roles.take(numberOfSeedNodes)
@@ -680,7 +687,7 @@ abstract class StressSpec
 
   def createResultAggregator(title: String, expectedResults: Int, includeInHistory: Boolean): Unit = {
     runOn(roles.head) {
-      val aggregator = system.actorOf(Props(new ClusterResultAggregator(title, expectedResults, reportMetricsInterval)),
+      val aggregator = system.actorOf(Props(new ClusterResultAggregator(title, expectedResults, settings)),
         name = "result" + step)
       if (includeInHistory) aggregator ! ReportTo(Some(clusterResultHistory))
       else aggregator ! ReportTo(None)
@@ -698,7 +705,9 @@ abstract class StressSpec
     identifyProbe.expectMsgType[ActorIdentity].ref
   }
 
-  lazy val clusterResultHistory = system.actorOf(Props[ClusterResultHistory], "resultHistory")
+  lazy val clusterResultHistory =
+    if (settings.logStats) system.actorOf(Props[ClusterResultHistory], "resultHistory")
+    else system.deadLetters
 
   lazy val phiObserver = system.actorOf(Props[PhiObserver], "phiObserver")
 
@@ -953,9 +962,10 @@ abstract class StressSpec
 
   def awaitWorkResult: WorkResult = {
     val workResult = expectMsgType[WorkResult]
-    log.info("{} result, [{}] jobs/s, retried [{}] of [{}] msg", masterName,
-      workResult.jobsPerSecond.form,
-      workResult.retryCount, workResult.sendCount)
+    if (settings.logStats)
+      log.info("{} result, [{}] jobs/s, retried [{}] of [{}] msg", masterName,
+        workResult.jobsPerSecond.form,
+        workResult.retryCount, workResult.sendCount)
     master match {
       case Some(m) ⇒
         watch(m)
