@@ -16,6 +16,7 @@ import akka.util.Timeout
 import akka.remote.testconductor.{ TestConductorExt, TestConductor, RoleName }
 import akka.remote.RemoteActorRefProvider
 import akka.testkit._
+import akka.testkit.TestEvent._
 import scala.concurrent.duration._
 import akka.remote.testconductor.RoleName
 import akka.actor.RootActorPath
@@ -101,7 +102,6 @@ abstract class MultiNodeConfig {
       if (_testTransport) ConfigFactory.parseString(
         """
            akka.remote.netty.tcp.applied-adapters = [trttl, gremlin]
-           akka.remote.retry-gate-closed-for = 1 s
         """)
       else ConfigFactory.empty
 
@@ -358,6 +358,14 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
    * }}}
    */
   def node(role: RoleName): ActorPath = RootActorPath(testConductor.getAddressFor(role).await)
+
+  def muteDeadLetters(endPatterns: String*)(sys: ActorSystem = system): Unit =
+    if (!sys.log.isDebugEnabled) {
+      def mute(suffix: String): Unit =
+        sys.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead.*" + suffix)))
+      if (endPatterns.isEmpty) mute("")
+      else endPatterns foreach mute
+    }
 
   /**
    * Enrich `.await()` onto all Awaitables, using remaining duration from the innermost

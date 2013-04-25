@@ -503,7 +503,11 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
       sender ! ActorIdentity(messageId, None)
       true
     case s: SelectChildName ⇒
-      s.identifyRequest foreach { x ⇒ sender ! ActorIdentity(x.messageId, None) }
+      s.identifyRequest match {
+        case Some(identify) ⇒ sender ! ActorIdentity(identify.messageId, None)
+        case None ⇒
+          eventStream.publish(DeadLetter(s.wrappedMessage, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
+      }
       true
     case _ ⇒ false
   }
@@ -533,15 +537,7 @@ private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
         w.watcher.sendSystemMessage(
           DeathWatchNotification(w.watchee, existenceConfirmed = false, addressTerminated = false))
       true
-    case w: Unwatch ⇒ true // Just ignore
-    case Identify(messageId) ⇒
-      sender ! ActorIdentity(messageId, None)
-      true
-    case s: SelectChildName ⇒
-      s.identifyRequest foreach { x ⇒ sender ! ActorIdentity(x.messageId, None) }
-      true
-    case NullMessage ⇒ true
-    case _           ⇒ false
+    case _ ⇒ super.specialHandle(msg, sender)
   }
 
   @throws(classOf[java.io.ObjectStreamException])
