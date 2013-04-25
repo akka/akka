@@ -100,6 +100,11 @@ class NettyTransportSettings(config: Config) {
 
   val ReceiveBufferSize: Option[Int] = optionSize("receive-buffer-size")
 
+  val MaxFrameSize: Int = getBytes("maximum-frame-size").toInt match {
+    case x if x < 32000 ⇒ throw new ConfigurationException(s"Setting 'maximum-frame-size' must be at least 32000 bytes")
+    case other          ⇒ other
+  }
+
   val Backlog: Int = getInt("backlog")
 
   val Hostname: String = getString("hostname") match {
@@ -228,7 +233,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   implicit val executionContext: ExecutionContext = system.dispatcher
 
   override val schemeIdentifier: String = (if (EnableSsl) "ssl." else "") + TransportMode
-  override def maximumPayloadBytes: Int = 32000 // The number of octets required by the remoting specification
+  override def maximumPayloadBytes: Int = settings.MaxFrameSize
 
   private final val isDatagram = TransportMode == Udp
 
