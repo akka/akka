@@ -26,6 +26,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration, MILLISECONDS }
 import scala.concurrent.{ ExecutionContext, Promise, Future, blocking }
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.{ NoStackTrace, NonFatal }
+import akka.util.Helpers.Requiring
 
 object NettyTransportSettings {
   sealed trait Mode
@@ -100,10 +101,9 @@ class NettyTransportSettings(config: Config) {
 
   val ReceiveBufferSize: Option[Int] = optionSize("receive-buffer-size")
 
-  val MaxFrameSize: Int = getBytes("maximum-frame-size").toInt match {
-    case x if x < 32000 ⇒ throw new ConfigurationException(s"Setting 'maximum-frame-size' must be at least 32000 bytes")
-    case other          ⇒ other
-  }
+  val MaxFrameSize: Int = getBytes("maximum-frame-size").toInt requiring (
+    _ >= 32000,
+    s"Setting 'maximum-frame-size' must be at least 32000 bytes")
 
   val Backlog: Int = getInt("backlog")
 
