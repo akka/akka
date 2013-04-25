@@ -3,24 +3,22 @@
  */
 package akka.remote.netty
 
-import java.util.concurrent.TimeUnit
-import java.net.{ InetAddress, InetSocketAddress }
-import org.jboss.netty.util.{ Timeout, TimerTask, HashedWheelTimer }
-import org.jboss.netty.bootstrap.ClientBootstrap
-import org.jboss.netty.channel.group.DefaultChannelGroup
-import org.jboss.netty.channel.{ ChannelFutureListener, ChannelHandler, DefaultChannelPipeline, MessageEvent, ExceptionEvent, ChannelStateEvent, ChannelPipelineFactory, ChannelPipeline, ChannelHandlerContext, ChannelFuture, Channel }
-import org.jboss.netty.handler.codec.frame.{ LengthFieldPrepender, LengthFieldBasedFrameDecoder }
-import org.jboss.netty.handler.execution.ExecutionHandler
-import org.jboss.netty.handler.timeout.{ IdleState, IdleStateEvent, IdleStateAwareChannelHandler, IdleStateHandler }
+import akka.actor.{ DeadLetter, Address, ActorRef }
+import akka.event.Logging
 import akka.remote.RemoteProtocol.{ RemoteControlProtocol, CommandType, AkkaRemoteProtocol }
 import akka.remote.{ RemoteProtocol, RemoteMessage, RemoteLifeCycleEvent, RemoteClientStarted, RemoteClientShutdown, RemoteClientException, RemoteClientError, RemoteClientDisconnected, RemoteClientConnected }
-import akka.AkkaException
-import akka.event.Logging
-import akka.actor.{ DeadLetter, Address, ActorRef }
 import akka.util.Switch
-import scala.util.control.NonFatal
+import java.net.{ InetAddress, InetSocketAddress }
+import java.nio.channels.ClosedChannelException
+import java.util.concurrent.TimeUnit
+import org.jboss.netty.bootstrap.ClientBootstrap
+import org.jboss.netty.channel.group.DefaultChannelGroup
+import org.jboss.netty.channel.{ ChannelFutureListener, ChannelHandler, MessageEvent, ExceptionEvent, ChannelStateEvent, ChannelHandlerContext, ChannelFuture, Channel }
 import org.jboss.netty.handler.ssl.SslHandler
+import org.jboss.netty.handler.timeout.{ IdleState, IdleStateEvent, IdleStateAwareChannelHandler }
+import org.jboss.netty.util.{ Timeout, TimerTask, HashedWheelTimer }
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
 
 /**
  * This is the abstract baseclass for netty remote clients, currently there's only an
@@ -64,7 +62,9 @@ private[akka] abstract class RemoteClient private[akka] (val netty: NettyRemoteT
       val f = channel.write(request)
       f.addListener(
         new ChannelFutureListener {
+
           import netty.system.deadLetters
+
           def operationComplete(future: ChannelFuture): Unit =
             if (future.isCancelled || !future.isSuccess) request match {
               case (msg, sender, recipient) ⇒ deadLetters ! DeadLetter(msg, sender.getOrElse(deadLetters), recipient)
@@ -306,8 +306,12 @@ private[akka] class ActiveRemoteClientHandler(
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
     val cause = if (event.getCause ne null) event.getCause else new Exception("Unknown cause")
-    client.notifyListeners(RemoteClientError(cause, client.netty, client.remoteAddress))
-    event.getChannel.close()
+    cause match {
+      case _: ClosedChannelException ⇒ // Ignore
+      case _ ⇒
+        client.notifyListeners(RemoteClientError(cause, client.netty, client.remoteAddress))
+        event.getChannel.close()
+    }
   }
 }
 

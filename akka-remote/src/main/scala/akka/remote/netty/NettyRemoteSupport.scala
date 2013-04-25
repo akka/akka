@@ -4,26 +4,27 @@
 
 package akka.remote.netty
 
+import akka.actor.{ ExtendedActorSystem, Address, ActorRef }
+import akka.event.Logging
+import akka.remote.RemoteProtocol.AkkaRemoteProtocol
+import akka.remote.RemoteServerStarted
+import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteActorRefProvider, RemoteActorRef }
+import com.google.protobuf.MessageLite
 import java.net.InetSocketAddress
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import java.util.concurrent.Executors
-import scala.collection.mutable.HashMap
+import org.jboss.netty.buffer.{ ChannelBuffer, ChannelBuffers }
+import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ DefaultChannelGroup, ChannelGroupFuture }
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
-import org.jboss.netty.channel.{ ChannelHandlerContext, Channel, DefaultChannelPipeline, ChannelHandler, ChannelPipelineFactory, ChannelLocal }
 import org.jboss.netty.handler.codec.frame.{ LengthFieldPrepender, LengthFieldBasedFrameDecoder }
 import org.jboss.netty.handler.codec.protobuf.{ ProtobufEncoder, ProtobufDecoder }
 import org.jboss.netty.handler.execution.{ ExecutionHandler, OrderedMemoryAwareThreadPoolExecutor }
 import org.jboss.netty.handler.timeout.IdleStateHandler
 import org.jboss.netty.util.{ DefaultObjectSizeEstimator, HashedWheelTimer }
-import akka.event.Logging
-import akka.remote.RemoteProtocol.AkkaRemoteProtocol
-import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteActorRefProvider, RemoteActorRef, RemoteServerStarted }
+import scala.collection.mutable.HashMap
 import scala.util.control.NonFatal
-import akka.actor.{ ExtendedActorSystem, Address, ActorRef }
-import com.google.protobuf.MessageLite
-import org.jboss.netty.buffer.{ ChannelBuffer, ChannelBuffers }
 
 private[akka] object ChannelAddress extends ChannelLocal[Option[Address]] {
   override def initialValue(ch: Channel): Option[Address] = None
@@ -320,7 +321,18 @@ private[akka] class RemoteMessageEncoder(remoteSupport: NettyRemoteTransport) ex
   }
 }
 
-private[akka] class RemoteMessageDecoder extends ProtobufDecoder(AkkaRemoteProtocol.getDefaultInstance)
+private[akka] class RemoteMessageDecoder extends ProtobufDecoder(AkkaRemoteProtocol.getDefaultInstance) {
+  override def decode(ctx: ChannelHandlerContext, channel: Channel, msg: AnyRef): AnyRef = {
+    try super.decode(ctx, channel, msg) catch {
+      case NonFatal(e) ⇒
+        val channelFuture = channel.close()
+        ctx.sendDownstream(new UpstreamChannelStateEvent(channel, ChannelState.OPEN, false))
+        ctx.sendUpstream(new DownstreamChannelStateEvent(channel, channelFuture, ChannelState.OPEN, false))
+        null
+    }
+  }
+
+}
 
 private[akka] class DefaultDisposableChannelGroup(name: String) extends DefaultChannelGroup(name) {
   protected val guard = new ReentrantReadWriteLock

@@ -3,21 +3,17 @@
  */
 package akka.remote.netty
 
-import java.net.InetSocketAddress
-import java.util.concurrent.Executors
-import scala.Option.option2Iterable
-import org.jboss.netty.bootstrap.ServerBootstrap
-import org.jboss.netty.channel.ChannelHandler.Sharable
-import org.jboss.netty.channel.group.ChannelGroup
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
-import org.jboss.netty.handler.codec.frame.{ LengthFieldPrepender, LengthFieldBasedFrameDecoder }
-import org.jboss.netty.handler.execution.ExecutionHandler
+import akka.actor.Address
 import akka.remote.RemoteProtocol.{ RemoteControlProtocol, CommandType, AkkaRemoteProtocol }
 import akka.remote.{ RemoteServerShutdown, RemoteServerError, RemoteServerClientDisconnected, RemoteServerClientConnected, RemoteServerClientClosed, RemoteProtocol, RemoteMessage }
-import akka.actor.Address
 import java.net.InetAddress
-import akka.actor.ActorSystemImpl
+import java.net.InetSocketAddress
+import java.nio.channels.ClosedChannelException
+import java.util.concurrent.Executors
+import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel._
+import org.jboss.netty.channel.group.ChannelGroup
+import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 
 private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
 
@@ -179,8 +175,13 @@ private[akka] class RemoteServerHandler(
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    netty.notifyListeners(RemoteServerError(event.getCause, netty))
-    event.getChannel.close()
+    val cause = if (event.getCause ne null) event.getCause else new Exception("Unknown cause")
+    cause match {
+      case _: ClosedChannelException ⇒ // Ignore
+      case _ ⇒
+        netty.notifyListeners(RemoteServerError(event.getCause, netty))
+        event.getChannel.close()
+    }
   }
 }
 
