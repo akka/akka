@@ -13,3 +13,5 @@ Actors also provide the abstraction for transparent distribution and the basis f
 Akka is Open Source and available under the Apache 2 License.
 
 Learn more at "http://akka.io":http://akka.io.
+
+Some nonsense, for a commit that isn't the head.
