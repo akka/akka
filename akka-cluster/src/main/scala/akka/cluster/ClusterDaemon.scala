@@ -16,6 +16,7 @@ import akka.actor.SupervisorStrategy.Stop
 import akka.cluster.MemberStatus._
 import akka.cluster.ClusterEvent._
 import akka.actor.ActorSelection
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -175,7 +176,8 @@ private[cluster] object ClusterLeaderAction {
  *
  * Supervisor managing the different Cluster daemons.
  */
-private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Actor with ActorLogging {
+private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Actor with ActorLogging
+  with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import InternalClusterAction._
   // Important - don't use Cluster(context.system) here because that would
   // cause deadlock. The Cluster extension is currently being created and is waiting
@@ -206,7 +208,8 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
  * ClusterCoreDaemon and ClusterDomainEventPublisher can't be restarted because the state
  * would be obsolete. Shutdown the member if any those actors crashed.
  */
-private[cluster] final class ClusterCoreSupervisor extends Actor with ActorLogging {
+private[cluster] final class ClusterCoreSupervisor extends Actor with ActorLogging
+  with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import InternalClusterAction._
 
   val publisher = context.actorOf(Props[ClusterDomainEventPublisher].
@@ -234,7 +237,8 @@ private[cluster] final class ClusterCoreSupervisor extends Actor with ActorLoggi
 /**
  * INTERNAL API.
  */
-private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Actor with ActorLogging {
+private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Actor with ActorLogging
+  with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import ClusterLeaderAction._
   import InternalClusterAction._
 

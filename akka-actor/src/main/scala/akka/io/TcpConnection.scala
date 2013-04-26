@@ -17,14 +17,17 @@ import akka.util.ByteString
 import akka.io.Inet.SocketOption
 import akka.io.Tcp._
 import akka.io.SelectionHandler._
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
  *
  * INTERNAL API
  */
-private[io] abstract class TcpConnection(val channel: SocketChannel,
-                                         val tcp: TcpExt) extends Actor with ActorLogging {
+private[io] abstract class TcpConnection(
+  val channel: SocketChannel,
+  val tcp: TcpExt)
+  extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import tcp.Settings._
   import tcp.bufferPool
   import TcpConnection._

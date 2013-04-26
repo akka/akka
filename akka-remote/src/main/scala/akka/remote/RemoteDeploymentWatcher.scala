@@ -9,6 +9,7 @@ import akka.actor.Terminated
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.dispatch.sysmsg.DeathWatchNotification
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 /**
  * INTERNAL API
@@ -23,7 +24,7 @@ private[akka] object RemoteDeploymentWatcher {
  * Responsible for cleaning up child references of remote deployed actors when remote node
  * goes down (jvm crash, network failure), i.e. triggered by [[akka.actor.AddressTerminated]].
  */
-private[akka] class RemoteDeploymentWatcher extends Actor {
+private[akka] class RemoteDeploymentWatcher extends Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import RemoteDeploymentWatcher._
   var supervisors = Map.empty[ActorRef, InternalActorRef]
 

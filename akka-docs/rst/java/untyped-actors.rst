@@ -733,6 +733,12 @@ actor's state which have the same property. The :class:`Stash` trait’s
 implementation of :meth:`preRestart` will call ``unstashAll()``, which is
 usually the desired behavior.
 
+.. note::
+
+  If you want to enforce that your actor can only work with an unbounded stash,
+  then you should use the ``UntypedActorWithUnboundedStash`` class instead.
+
+
 .. _killing-actors-java:
 
 Killing an Actor
