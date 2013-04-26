@@ -48,7 +48,7 @@ trait Player { this: TestConductorExt ⇒
     import Settings.BarrierTimeout
 
     if (_client ne null) throw new IllegalStateException("TestConductorClient already started")
-    _client = system.actorOf(Props(new ClientFSM(name, controllerAddr)), "TestConductorClient")
+    _client = system.actorOf(Props(classOf[ClientFSM], name, controllerAddr), "TestConductorClient")
     val a = system.actorOf(Props(new Actor {
       var waiting: ActorRef = _
       def receive = {
