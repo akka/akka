@@ -822,7 +822,7 @@ final class IOManager private (system: ExtendedActorSystem) extends Extension { 
    * IO. It communicates with other actors using subclasses of
    * [[akka.actor.IO.IOMessage]].
    */
-  val actor: ActorRef = system.actorOf(Props(new IOManagerActor(settings)), "io-manager")
+  val actor: ActorRef = system.actorOf(Props(classOf[IOManagerActor], settings), "io-manager")
 
   /**
    * Create a ServerSocketChannel listening on an address. Messages will be

@@ -13,6 +13,8 @@ import scala.annotation.varargs
 import Deploy.{ NoDispatcherGiven, NoMailboxGiven }
 import scala.collection.immutable
 
+import scala.language.existentials
+
 /**
  * Factory for Props instances.
  *
