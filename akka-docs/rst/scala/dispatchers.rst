@@ -240,7 +240,7 @@ a dispatcher with a specified mailbox type, then that will override this mapping
 .. note::
 
   The type of the queue in the mailbox created for an actor will be checked against the required type in the
-  trait and if the queue doesn't implement the required type an error will be logged.
+  trait and if the queue doesn't implement the required type then actor creation will fail.
 
 
 Mailbox configuration precedence
