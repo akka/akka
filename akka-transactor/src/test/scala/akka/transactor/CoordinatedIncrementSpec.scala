@@ -72,9 +72,9 @@ class CoordinatedIncrementSpec extends AkkaSpec(CoordinatedIncrement.config) wit
   val numCounters = 4
 
   def actorOfs = {
-    def createCounter(i: Int) = system.actorOf(Props(new Counter("counter" + i)))
+    def createCounter(i: Int) = system.actorOf(Props(classOf[Counter], "counter" + i))
     val counters = (1 to numCounters) map createCounter
-    val failer = system.actorOf(Props(new Failer))
+    val failer = system.actorOf(Props[Failer])
     (counters, failer)
   }
 
