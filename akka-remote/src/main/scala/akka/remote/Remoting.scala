@@ -157,7 +157,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
       case None ⇒
         log.info("Starting remoting")
         val manager: ActorRef = system.asInstanceOf[ActorSystemImpl].systemActorOf(
-          Props(new EndpointManager(provider.remoteSettings.config, log)), Remoting.EndpointManagerName)
+          Props(classOf[EndpointManager], provider.remoteSettings.config, log), Remoting.EndpointManagerName)
         endpointManager = Some(manager)
 
         try {
