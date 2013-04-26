@@ -142,7 +142,7 @@ object DiningHakkers {
     //Create 5 awesome hakkers and assign them their left and right chopstick
     val hakkers = for {
       (name, i) ← List("Ghosh", "Boner", "Klang", "Krasser", "Manie").zipWithIndex
-    } yield system.actorOf(Props(new Hakker(name, chopsticks(i), chopsticks((i + 1) % 5))))
+    } yield system.actorOf(Props(classOf[Hakker], name, chopsticks(i), chopsticks((i + 1) % 5)))
 
     //Signal all hakkers that they should start thinking, and watch the show
     hakkers.foreach(_ ! Think)

@@ -9,8 +9,8 @@ import org.apache.camel.{ Exchange }
 object AsyncRouteAndTransform extends App {
   val system = ActorSystem("rewriteAkkaToAKKA")
   val httpTransformer = system.actorOf(Props[HttpTransformer], "transformer")
-  val httpProducer = system.actorOf(Props(new HttpProducer(httpTransformer)), "producer")
-  val httpConsumer = system.actorOf(Props(new HttpConsumer(httpProducer)), "consumer")
+  val httpProducer = system.actorOf(Props(classOf[HttpProducer], httpTransformer), "producer")
+  val httpConsumer = system.actorOf(Props(classOf[HttpConsumer], httpProducer), "consumer")
 }
 
 class HttpConsumer(producer: ActorRef) extends Consumer {

@@ -93,7 +93,7 @@ java.io.EOFException
       }
     }
 
-    hakker.tell(Identify, actorSystem.actorOf(Props(new Interrogator()), "Interrogator"))
+    hakker.tell(Identify, actorSystem.actorOf(Props[Interrogator], "Interrogator"))
     val (fromHakker, busyWith) = response.poll(5, TimeUnit.SECONDS)
 
     println("---------------> %s is busy with %s.".format(fromHakker, busyWith))
