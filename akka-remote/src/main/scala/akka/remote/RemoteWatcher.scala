@@ -168,7 +168,7 @@ private[akka] class RemoteWatcher(
     watchedByNodes += sender
     // watch back to stop heartbeating if other side dies
     context watch sender
-    watching += ((sender, self))
+    addWatching(sender, self)
   }
 
   def endHeartbeatRequest(): Unit = {
@@ -201,20 +201,24 @@ private[akka] class RemoteWatcher(
       logActorForDeprecationWarning(watchee)
     else if (watcher != self) {
       log.debug("Watching: [{} -> {}]", watcher.path, watchee.path)
-      watching += ((watchee, watcher))
-      val watcheeAddress = watchee.path.address
-      if (!watchingNodes(watcheeAddress) && unreachable(watcheeAddress)) {
-        // first watch to that node after a previous unreachable
-        unreachable -= watcheeAddress
-        failureDetector.remove(watcheeAddress)
-      }
-      watchingNodes += watcheeAddress
-      endWatchingNodes -= watcheeAddress
+      addWatching(watchee, watcher)
 
       // also watch from self, to be able to cleanup on termination of the watchee
       context watch watchee
       watching += ((watchee, self))
     }
+
+  def addWatching(watchee: ActorRef, watcher: ActorRef): Unit = {
+    watching += ((watchee, watcher))
+    val watcheeAddress = watchee.path.address
+    if (!watchingNodes(watcheeAddress) && unreachable(watcheeAddress)) {
+      // first watch to that node after a previous unreachable
+      unreachable -= watcheeAddress
+      failureDetector.remove(watcheeAddress)
+    }
+    watchingNodes += watcheeAddress
+    endWatchingNodes -= watcheeAddress
+  }
 
   def unwatchRemote(watchee: ActorRef, watcher: ActorRef): Unit =
     if (watchee.path.uid == akka.actor.ActorCell.undefinedUid)
@@ -247,8 +251,8 @@ private[akka] class RemoteWatcher(
       watching = watching.filterNot {
         case (wee, _) ⇒ wee == watchee
       }
-      checkLastUnwatchOfNode(watchee.path.address)
     }
+    checkLastUnwatchOfNode(watchee.path.address)
   }
 
   def checkLastUnwatchOfNode(watcheeAddress: Address): Unit = {
