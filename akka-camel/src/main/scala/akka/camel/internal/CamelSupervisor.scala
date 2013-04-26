@@ -20,7 +20,7 @@ import akka.camel.internal.ActivationProtocol._
  */
 private[camel] class CamelSupervisor extends Actor with CamelSupport {
   private val activationTracker = context.actorOf(Props[ActivationTracker], "activationTracker")
-  private val registry: ActorRef = context.actorOf(Props(new Registry(activationTracker)), "registry")
+  private val registry: ActorRef = context.actorOf(Props(classOf[Registry], activationTracker), "registry")
 
   override val supervisorStrategy = OneForOneStrategy() {
     case NonFatal(e) ⇒
@@ -90,8 +90,8 @@ private[camel] class ActorActivationException(val actorRef: ActorRef, cause: Thr
 private[camel] class Registry(activationTracker: ActorRef) extends Actor with CamelSupport {
   import context.{ stop, parent }
 
-  private val producerRegistrar = context.actorOf(Props(new ProducerRegistrar(activationTracker)), "producerRegistrar")
-  private val consumerRegistrar = context.actorOf(Props(new ConsumerRegistrar(activationTracker)), "consumerRegistrar")
+  private val producerRegistrar = context.actorOf(Props(classOf[ProducerRegistrar], activationTracker), "producerRegistrar")
+  private val consumerRegistrar = context.actorOf(Props(classOf[ConsumerRegistrar], activationTracker), "consumerRegistrar")
   private var producers = Set[ActorRef]()
   private var consumers = Set[ActorRef]()
 
