@@ -12,6 +12,8 @@ These guidelines are meant to be a living document that should be changed and ad
 
 These guidelines mainly applies to Typesafe’s “mature” projects - not necessarily to projects of the type ‘collection of scripts’ etc.
 
+And some more nonsense that is the head commit.
+
 ## General Workflow
 
 This is the process for committing code into master. There are of course exceptions to these rules, for example minor changes to comments and documentation, fixing a broken build etc.
