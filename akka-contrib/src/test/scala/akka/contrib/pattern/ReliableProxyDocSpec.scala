@@ -20,7 +20,7 @@ class ReliableProxyDocSpec extends AkkaSpec with ImplicitSender {
       val target = system.deadLetters
       val a = system.actorOf(Props(new Actor {
         //#demo-transition
-        val proxy = context.actorOf(Props(new ReliableProxy(target, 100.millis)))
+        val proxy = context.actorOf(Props(classOf[ReliableProxy], target, 100.millis))
         proxy ! FSM.SubscribeTransitionCallBack(self)
 
         var client: ActorRef = _
