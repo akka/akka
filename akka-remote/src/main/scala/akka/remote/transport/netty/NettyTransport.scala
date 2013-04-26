@@ -422,7 +422,8 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
     for {
       // Force flush by trying to write an empty buffer and wait for success
       _ ← always(channelGroup.write(ChannelBuffers.buffer(0)))
-      _ ← always({ channelGroup.unbind(); channelGroup.disconnect() })
+      _ ← always(channelGroup.unbind())
+      _ ← always(channelGroup.disconnect())
       _ ← always(channelGroup.close())
     } {
       // Release the selectors, but don't try to kill the dispatcher

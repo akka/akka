@@ -91,5 +91,5 @@ private[remote] class TcpAssociationHandle(val localAddress: Address,
       true
     } else false
 
-  override def disassociate(): Unit = NettyTransport.gracefulClose(channel)
+  override def disassociate(): Unit = if (channel.isOpen) NettyTransport.gracefulClose(channel)
 }
