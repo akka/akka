@@ -108,6 +108,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
         classOf[ClusterHeartbeatReceiver.Heartbeat],
         classOf[ClusterHeartbeatReceiver.EndHeartbeat],
         classOf[GossipEnvelope],
+        classOf[GossipStatus],
         classOf[MetricsGossipEnvelope],
         classOf[ClusterEvent.ClusterMetricsChanged],
         classOf[InternalClusterAction.Tick],
