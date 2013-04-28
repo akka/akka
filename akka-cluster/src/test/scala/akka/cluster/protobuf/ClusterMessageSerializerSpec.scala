@@ -54,9 +54,14 @@ class ClusterMessageSerializerSpec extends AkkaSpec {
       val node4 = VectorClock.Node("node4")
       val g1 = (Gossip(SortedSet(a1, b1, c1, d1)) :+ node1 :+ node2).seen(a1.uniqueAddress).seen(b1.uniqueAddress)
       val g2 = (g1 :+ node3 :+ node4).seen(a1.uniqueAddress).seen(c1.uniqueAddress)
+      val g3 = g2.copy(overview = g2.overview.copy(unreachable = Set(e1, f1)))
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g1))
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g2))
-      checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g2.copy(overview = g2.overview.copy(unreachable = Set(e1, f1)))))
+      checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g3))
+
+      checkSerialization(GossipStatus(a1.uniqueAddress, g1.version))
+      checkSerialization(GossipStatus(a1.uniqueAddress, g2.version))
+      checkSerialization(GossipStatus(a1.uniqueAddress, g3.version))
 
       checkSerialization(InternalClusterAction.Welcome(uniqueAddress, g2))
 
