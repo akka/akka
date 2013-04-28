@@ -398,6 +398,7 @@ private[remote] class EndpointWriter(
   import context.dispatcher
 
   val extendedSystem: ExtendedActorSystem = context.system.asInstanceOf[ExtendedActorSystem]
+  val remoteMetrics = RemoteMetricsExtension(context.system)
 
   var reader: Option[ActorRef] = None
   var handle: Option[AkkaProtocolHandle] = handleOrActive // FIXME: refactor into state data
@@ -495,7 +496,10 @@ private[remote] class EndpointWriter(
               seqOption = seqOption,
               ackOption = lastAck)
 
-            if (pdu.size > transport.maximumPayloadBytes) {
+            val pduSize = pdu.size
+            remoteMetrics.logPayloadBytes(msg, pduSize)
+
+            if (pduSize > transport.maximumPayloadBytes) {
               publishAndStay(new OversizedPayloadException(s"Discarding oversized payload sent to ${recipient}: max allowed size ${transport.maximumPayloadBytes} bytes, actual size of encoded ${msg.getClass} was ${pdu.size} bytes."))
             } else if (h.write(pdu)) {
               stay()
