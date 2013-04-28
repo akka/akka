@@ -192,13 +192,18 @@ class RemoteWatcherSpec extends AkkaSpec(
       monitorB.tell(HeartbeatRequest, monitorA)
       monitorB ! Stats
       // HeartbeatRequest adds cross watch to RemoteWatcher peer
-      expectMsg(Stats.counts(watching = 1, watchingNodes = 0, watchedByNodes = 1))
+      val stats = expectMsg(Stats.counts(watching = 1, watchingNodes = 1, watchedByNodes = 1))
+      stats.watchingRefs must be(Set((monitorA, monitorB)))
       expectNoMsg(100 millis)
       monitorB ! HeartbeatTick
       expectMsg(heartbeatMsgB)
+      // HeartbeatRequest for the cross watch
+      expectMsg(HeartbeatRequest)
       expectNoMsg(100 millis)
       monitorB ! HeartbeatTick
       expectMsg(heartbeatMsgB)
+      // HeartbeatRequest for the cross watch
+      expectMsg(HeartbeatRequest)
       expectNoMsg(100 millis)
 
       // unwatch
@@ -208,15 +213,19 @@ class RemoteWatcherSpec extends AkkaSpec(
       expectMsg(Stats.empty)
       expectNoMsg(100 millis)
       monitorB ! HeartbeatTick
+      // EndHeartbeatRequest for the cross watch
+      expectMsg(EndHeartbeatRequest)
       expectNoMsg(100 millis)
 
       // start heartbeating again
       monitorB.tell(HeartbeatRequest, monitorA)
       monitorB ! Stats
-      expectMsg(Stats.counts(watching = 1, watchingNodes = 0, watchedByNodes = 1))
+      val stats2 = expectMsg(Stats.counts(watching = 1, watchingNodes = 1, watchedByNodes = 1))
+      stats2.watchingRefs must be(Set((monitorA, monitorB)))
       expectNoMsg(100 millis)
       monitorB ! HeartbeatTick
       expectMsg(heartbeatMsgB)
+      expectMsg(HeartbeatRequest)
       expectNoMsg(100 millis)
 
       // then kill other side, which should stop the heartbeating
@@ -226,6 +235,7 @@ class RemoteWatcherSpec extends AkkaSpec(
         expectMsg(Stats.empty)
       }
       monitorB ! HeartbeatTick
+      // no more heartbeats and no EndHeartbeatRequest for the cross watch
       expectNoMsg(500 millis)
 
       // make sure nothing floods over to next test
