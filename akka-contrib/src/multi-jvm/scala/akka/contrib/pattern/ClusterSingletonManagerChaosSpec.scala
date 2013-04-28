@@ -70,16 +70,6 @@ class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonMan
 
   override def initialParticipants = roles.size
 
-  // Sort the roles in the order used by the cluster.
-  lazy val sortedClusterRoles: immutable.IndexedSeq[RoleName] = {
-    implicit val clusterOrdering: Ordering[RoleName] = new Ordering[RoleName] {
-      import Member.addressOrdering
-      def compare(x: RoleName, y: RoleName) =
-        addressOrdering.compare(node(x).address, node(y).address)
-    }
-    roles.filterNot(_ == controller).toVector.sorted
-  }
-
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
       Cluster(system) join node(to).address
@@ -105,52 +95,77 @@ class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonMan
     }
   }
 
-  def echo(leader: RoleName): ActorSelection =
-    system.actorSelection(RootActorPath(node(leader).address) / "user" / "singleton" / "echo")
+  def echo(oldest: RoleName): ActorSelection =
+    system.actorSelection(RootActorPath(node(oldest).address) / "user" / "singleton" / "echo")
 
-  def verify(leader: RoleName): Unit = {
-    enterBarrier("before-" + leader.name + "-verified")
-    runOn(leader) {
-      expectMsg(EchoStarted)
+  def awaitMemberUp(memberProbe: TestProbe, nodes: RoleName*): Unit = {
+    runOn(nodes.filterNot(_ == nodes.head): _*) {
+      memberProbe.expectMsgType[MemberUp](15.seconds).member.address must be(node(nodes.head).address)
     }
-    enterBarrier(leader.name + "-active")
-
-    runOn(sortedClusterRoles.filterNot(_ == leader): _*) {
-      echo(leader) ! "hello"
-      fishForMessage() {
-        case _: ActorRef ⇒ true
-        case EchoStarted ⇒ false
-      } match {
-        case echoRef: ActorRef ⇒ echoRef.path.address must be(node(leader).address)
-      }
+    runOn(nodes.head) {
+      memberProbe.receiveN(nodes.size, 15.seconds).collect { case MemberUp(m) ⇒ m.address }.toSet must be(
+        nodes.map(node(_).address).toSet)
     }
-    enterBarrier(leader.name + "-verified")
+    enterBarrier(nodes.head.name + "-up")
   }
 
   "A ClusterSingletonManager in chaotic cluster" must {
 
-    "startup 3 node cluster" in within(90 seconds) {
-      log.info("Sorted cluster nodes [{}]", sortedClusterRoles.map(node(_).address).mkString(", "))
+    "startup 6 node cluster" in within(60 seconds) {
+      val memberProbe = TestProbe()
+      Cluster(system).subscribe(memberProbe.ref, classOf[MemberUp])
+      memberProbe.expectMsgClass(classOf[CurrentClusterState])
 
-      join(sortedClusterRoles(5), sortedClusterRoles.last)
-      join(sortedClusterRoles(4), sortedClusterRoles.last)
-      join(sortedClusterRoles(3), sortedClusterRoles.last)
+      join(first, first)
+      awaitMemberUp(memberProbe, first)
+      runOn(first) {
+        expectMsg(EchoStarted)
+      }
+      enterBarrier("first-started")
 
-      verify(sortedClusterRoles(3))
+      join(second, first)
+      awaitMemberUp(memberProbe, second, first)
+
+      join(third, first)
+      awaitMemberUp(memberProbe, third, second, first)
+
+      join(fourth, first)
+      awaitMemberUp(memberProbe, fourth, third, second, first)
+
+      join(fifth, first)
+      awaitMemberUp(memberProbe, fifth, fourth, third, second, first)
+
+      join(sixth, first)
+      awaitMemberUp(memberProbe, sixth, fifth, fourth, third, second, first)
+
+      runOn(controller) {
+        echo(first) ! "hello"
+        expectMsgType[ActorRef](3.seconds).path.address must be(node(first).address)
+      }
+      enterBarrier("first-verified")
+
     }
 
-    "hand over when joining 3 more nodes" in within(90 seconds) {
-      join(sortedClusterRoles(2), sortedClusterRoles(3))
-      join(sortedClusterRoles(1), sortedClusterRoles(4))
-      join(sortedClusterRoles(0), sortedClusterRoles(5))
+    "take over when three oldest nodes crash in 6 nodes cluster" in within(90 seconds) {
+      // FIXME change those to DeadLetterFilter
+      system.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*")))
+      system.eventStream.publish(Mute(EventFilter.error(pattern = ".*Disassociated.*")))
+      system.eventStream.publish(Mute(EventFilter.error(pattern = ".*Association failed.*")))
+      enterBarrier("logs-muted")
 
-      verify(sortedClusterRoles(0))
+      crash(first, second, third)
+      enterBarrier("after-crash")
+      runOn(fourth) {
+        expectMsg(EchoStarted)
+      }
+      enterBarrier("fourth-active")
+
+      runOn(controller) {
+        echo(fourth) ! "hello"
+        expectMsgType[ActorRef](3.seconds).path.address must be(node(fourth).address)
+      }
+      enterBarrier("fourth-verified")
+
     }
-
-    "take over when three leaders crash in 6 nodes cluster" in within(90 seconds) {
-      crash(sortedClusterRoles(0), sortedClusterRoles(1), sortedClusterRoles(2))
-      verify(sortedClusterRoles(3))
-    }
-
   }
 }
