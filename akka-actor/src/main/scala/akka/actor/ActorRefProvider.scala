@@ -289,7 +289,14 @@ trait ActorRefFactory {
    * the supplied path, it is recommended to send a message and gather the
    * replies in order to resolve the matching set of actors.
    */
-  def actorSelection(path: String): ActorSelection = ActorSelection(lookupRoot, path)
+  def actorSelection(path: String): ActorSelection = path match {
+    case RelativeActorPath(elems) ⇒
+      if (elems.isEmpty) ActorSelection(provider.deadLetters, "")
+      else if (elems.head.isEmpty) ActorSelection(provider.rootGuardian, path.substring(1))
+      else ActorSelection(lookupRoot, path)
+    case _ ⇒
+      ActorSelection(provider.deadLetters, "")
+  }
 
   /**
    * Stop the actor pointed to by the given [[akka.actor.ActorRef]]; this is
