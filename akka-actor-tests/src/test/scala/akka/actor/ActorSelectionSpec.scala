@@ -55,9 +55,13 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
 
   def identify(selection: ActorSelection): Option[ActorRef] = {
     selection.tell(Identify(selection), idProbe.ref)
-    idProbe.expectMsgPF() {
+    val result = idProbe.expectMsgPF() {
       case ActorIdentity(`selection`, ref) ⇒ ref
     }
+    val asked = Await.result((selection ? Identify(selection)).mapTo[ActorIdentity], timeout.duration)
+    asked.ref must be(result)
+    asked.correlationId must be(selection)
+    result
   }
 
   def identify(path: String): Option[ActorRef] = identify(system.actorSelection(path))
@@ -285,6 +289,19 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
       }
       actors must be === Seq(c21)
       expectNoMsg(1 second)
+    }
+
+    "compare equally" in {
+      ActorSelection(c21, "../*/hello") must be === ActorSelection(c21, "../*/hello")
+      ActorSelection(c21, "../*/hello").## must be === ActorSelection(c21, "../*/hello").##
+      ActorSelection(c2, "../*/hello") must not be ActorSelection(c21, "../*/hello")
+      ActorSelection(c2, "../*/hello").## must not be ActorSelection(c21, "../*/hello").##
+      ActorSelection(c21, "../*/hell") must not be ActorSelection(c21, "../*/hello")
+      ActorSelection(c21, "../*/hell").## must not be ActorSelection(c21, "../*/hello").##
+    }
+
+    "print nicely" in {
+      ActorSelection(c21, "../*/hello").toString must be(s"ActorSelection[Actor[akka://ActorSelectionSpec/user/c2/c21#${c21.path.uid}]/../*/hello]")
     }
 
   }
