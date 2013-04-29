@@ -12,8 +12,11 @@ import scala.util.Success
 import scala.util.Failure
 import akka.actor.Terminated
 import akka.actor.Props
+import akka.util.ByteString
 
 object TcpPipelineHandler {
+
+  case class EscapeEvent(ev: Tcp.Event) extends Tcp.Command
 
   /**
    * This class wraps up a pipeline with its external (i.e. “top”) command and
@@ -102,6 +105,7 @@ class TcpPipelineHandler[Ctx <: PipelineContext, Cmd, Evt](
         case Tcp.Write(data, Tcp.NoAck)  ⇒ connection ! cmd
         case Tcp.Write(data, ack)        ⇒ connection ! Tcp.Write(data, Ack(ack))
         case Tell(receiver, msg, sender) ⇒ receiver.tell(msg, sender)
+        case EscapeEvent(ev)             ⇒ handler ! ev
         case _                           ⇒ connection ! cmd
       }
     case Failure(ex) ⇒ throw ex
@@ -114,6 +118,36 @@ class TcpPipelineHandler[Ctx <: PipelineContext, Cmd, Evt](
     case Command(cmd)          ⇒ pipes.injectCommand(cmd)
     case evt: Tcp.Event        ⇒ pipes.injectEvent(evt)
     case Terminated(`handler`) ⇒ connection ! Tcp.Abort
+    case cmd: Tcp.Command      ⇒ pipes.managementCommand(cmd)
   }
 
+}
+
+/**
+ * Adapts a ByteString oriented pipeline stage to a stage that communicates via Tcp Commands and Events. Every ByteString
+ * passed down to this stage will be converted to Tcp.Write commands, while incoming Tcp.Receive events will be unwrapped
+ * and their contents passed up as raw ByteStrings. This adapter should be used together with TcpPipelineHandler.
+ *
+ * While this adapter communicates to the stage above it via raw ByteStrings, it is possible to inject Tcp Command
+ * by sending them to the management port, and the adapter will simply pass them down to the stage below. Incoming Tcp Events
+ * that are not Receive events will be passed directly to the handler registered for TcpPipelineHandler.
+ * @tparam Ctx
+ */
+class TcpReadWriteAdapter[Ctx <: PipelineContext] extends PipelineStage[Ctx, ByteString, Tcp.Command, ByteString, Tcp.Event] {
+
+  override def apply(ctx: Ctx) = new PipePair[ByteString, Tcp.Command, ByteString, Tcp.Event] {
+
+    override val commandPipeline = {
+      data: ByteString ⇒ ctx.singleCommand(Tcp.Write(data))
+    }
+
+    override val eventPipeline = (evt: Tcp.Event) ⇒ evt match {
+      case Tcp.Received(data) ⇒ ctx.singleEvent(data)
+      case ev: Tcp.Event      ⇒ ctx.singleCommand(TcpPipelineHandler.EscapeEvent(ev))
+    }
+
+    override val managementPort: Mgmt = {
+      case cmd: Tcp.Command ⇒ ctx.singleCommand(cmd)
+    }
+  }
 }
