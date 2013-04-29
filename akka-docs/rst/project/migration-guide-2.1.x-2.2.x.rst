@@ -17,8 +17,8 @@ Deprecated Closure-Taking Props
 :class:`Actor` instance when invoked. This approach is flawed in that closures
 are usually created in-line and thus carry a reference to their enclosing
 object; this is not well known among programmers, in particular it can be
-surprising that innocent-looking actor creation should not be serializable if
-the e.g. the enclosing class is an actor.
+surprising that innocent-looking actor creation should not be serializable,
+e.g. if the enclosing class is an actor.
 
 Thus we have decided to deprecate ``Props(new MyActor(...))`` and
 :class:`UntypedActorFactory` in favor of basing :class:`Props` on a
@@ -208,7 +208,7 @@ when the target actor is terminated and created again under the same path. Sendi
 of the previous incarnation of the actor will not be delivered to the new incarnation, but that was the case
 for remote references. The reason was that the target actor was looked up by its path on every message
 delivery and the path didn't distinguish between the two incarnations of the actor. This has been fixed, and
-sending messages to remote references that points to a terminated actor will not be delivered to a new
+messages sent to a remote reference that points to a terminated actor will not be delivered to a new
 actor with the same path.
 
 Equality of ``ActorRef`` has been changed to match the intention that an ``ActorRef`` corresponds to the target
