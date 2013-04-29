@@ -631,6 +631,7 @@ case class BoundedDequeBasedMailbox( final val capacity: Int, final val pushTime
  * The mailbox type will be looked up by mapping the type T via akka.actor.mailbox.requirements in the config,
  * to a mailbox configuration. If no mailbox is assigned on Props or in deployment config then this one will be used.
  *
- * The queue type of the created mailbox will be checked against the type T and an error will be logged if it doesn't match.
+ * The queue type of the created mailbox will be checked against the type T and actor creation will fail if it doesn't
+ * fulfill the requirements.
  */
 trait RequiresMessageQueue[T]

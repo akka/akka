@@ -7,6 +7,7 @@ package akka.actor
 import com.typesafe.config.ConfigFactory
 import akka.testkit._
 import akka.dispatch._
+import akka.TestUtils.verifyActorTermination
 
 object ActorMailboxSpec {
   val mailboxConf = ConfigFactory.parseString("""
@@ -133,10 +134,9 @@ class ActorMailboxSpec extends AkkaSpec(ActorMailboxSpec.mailboxConf) with Defau
       checkMailboxQueue(Props[QueueReportingActor], "default-unbounded-deque", UnboundedDeqMailboxTypes)
     }
 
-    "get an unbounded dequeu message queue when it's configured as mailbox overriding RequestMailbox" in {
-      filterEvents(EventFilter[IllegalArgumentException]()) {
-        checkMailboxQueue(Props[BoundedQueueReportingActor], "default-unbounded-deque-override-trait",
-          UnboundedDeqMailboxTypes)
+    "fail to create actor when an unbounded dequeu message queue is configured as mailbox overriding RequestMailbox" in {
+      filterEvents(EventFilter[ActorInitializationException]()) {
+        verifyActorTermination(system.actorOf(Props[BoundedQueueReportingActor], "default-unbounded-deque-override-trait"))
       }
     }
 
@@ -144,9 +144,9 @@ class ActorMailboxSpec extends AkkaSpec(ActorMailboxSpec.mailboxConf) with Defau
       checkMailboxQueue(Props[QueueReportingActor], "unbounded-default", UnboundedMailboxTypes)
     }
 
-    "get an unbounded message queue when defined in dispatcher overriding RequestMailbox" in {
-      filterEvents(EventFilter[IllegalArgumentException]()) {
-        checkMailboxQueue(Props[BoundedQueueReportingActor], "unbounded-default-override-trait", UnboundedMailboxTypes)
+    "fail to create actor when an unbounded message queue is defined in dispatcher overriding RequestMailbox" in {
+      filterEvents(EventFilter[ActorInitializationException]()) {
+        verifyActorTermination(system.actorOf(Props[BoundedQueueReportingActor], "unbounded-default-override-trait"))
       }
     }
 

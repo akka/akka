@@ -483,6 +483,27 @@ case object NoRouter extends NoRouter {
 }
 
 /**
+ * INTERNAL API
+ *
+ * Used to override unset configuration in a router.
+ */
+private[akka] trait OverrideUnsetConfig[T <: RouterConfig] extends RouterConfig {
+
+  final def overrideUnsetConfig(other: RouterConfig): RouterConfig = {
+    val wssConf: OverrideUnsetConfig[T] = if ((this.supervisorStrategy eq Router.defaultSupervisorStrategy)
+      && (other.supervisorStrategy ne Router.defaultSupervisorStrategy))
+      this.withSupervisorStrategy(other.supervisorStrategy).asInstanceOf[OverrideUnsetConfig[T]]
+    else this
+    if (wssConf.resizer.isEmpty && other.resizer.isDefined) wssConf.withResizer(other.resizer.get)
+    else wssConf
+  }
+
+  def withSupervisorStrategy(strategy: SupervisorStrategy): T
+
+  def withResizer(resizer: Resizer): T
+}
+
+/**
  * Router configuration which has no default, i.e. external configuration is required.
  */
 case object FromConfig extends FromConfig {
@@ -501,18 +522,22 @@ case object FromConfig extends FromConfig {
  * (defaults to default-dispatcher).
  */
 @SerialVersionUID(1L)
-class FromConfig(val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
-  extends RouterConfig
-  with Serializable {
+class FromConfig(val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+                 val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy)
+  extends RouterConfig with Serializable {
 
-  def this() = this(Dispatchers.DefaultDispatcherId)
+  def this() = this(Dispatchers.DefaultDispatcherId, Router.defaultSupervisorStrategy)
 
   override def verifyConfig(): Unit =
     throw new ConfigurationException("router needs external configuration from file (e.g. application.conf)")
 
   def createRoute(routeeProvider: RouteeProvider): Route = null
 
-  def supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy
+  /**
+   * Java API for setting the supervisor strategy to be used for the “head”
+   * Router actor.
+   */
+  def withSupervisorStrategy(strategy: SupervisorStrategy): FromConfig = new FromConfig(this.routerDispatcher, strategy)
 }
 
 object RoundRobinRouter {
@@ -573,7 +598,7 @@ object RoundRobinRouter {
 case class RoundRobinRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
                             val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
                             val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy)
-  extends RouterConfig with RoundRobinLike {
+  extends RouterConfig with RoundRobinLike with OverrideUnsetConfig[RoundRobinRouter] {
 
   /**
    * Java API: Constructor that sets nrOfInstances to be created.
@@ -605,14 +630,16 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[
   def withSupervisorStrategy(strategy: SupervisorStrategy): RoundRobinRouter = copy(supervisorStrategy = strategy)
 
   /**
-   * Uses the resizer of the given Routerconfig if this RouterConfig
-   * doesn't have one, i.e. the resizer defined in code is used if
+   * Java API for setting the resizer to be used.
+   */
+  def withResizer(resizer: Resizer): RoundRobinRouter = copy(resizer = Some(resizer))
+
+  /**
+   * Uses the resizer and/or the supervisor strategy of the given Routerconfig
+   * if this RouterConfig doesn't have one, i.e. the resizer defined in code is used if
    * resizer was not defined in config.
    */
-  override def withFallback(other: RouterConfig): RouterConfig = {
-    if (this.resizer.isEmpty && other.resizer.isDefined) copy(resizer = other.resizer)
-    else this
-  }
+  override def withFallback(other: RouterConfig): RouterConfig = this.overrideUnsetConfig(other)
 }
 
 /**
@@ -706,7 +733,7 @@ object RandomRouter {
 case class RandomRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
                         val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
                         val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy)
-  extends RouterConfig with RandomLike {
+  extends RouterConfig with RandomLike with OverrideUnsetConfig[RandomRouter] {
 
   /**
    * Java API: Constructor that sets nrOfInstances to be created.
@@ -738,14 +765,16 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[Stri
   def withSupervisorStrategy(strategy: SupervisorStrategy): RandomRouter = copy(supervisorStrategy = strategy)
 
   /**
-   * Uses the resizer of the given Routerconfig if this RouterConfig
-   * doesn't have one, i.e. the resizer defined in code is used if
+   * Java API for setting the resizer to be used.
+   */
+  def withResizer(resizer: Resizer): RandomRouter = copy(resizer = Some(resizer))
+
+  /**
+   * Uses the resizer and/or the supervisor strategy of the given Routerconfig
+   * if this RouterConfig doesn't have one, i.e. the resizer defined in code is used if
    * resizer was not defined in config.
    */
-  override def withFallback(other: RouterConfig): RouterConfig = {
-    if (this.resizer.isEmpty && other.resizer.isDefined) copy(resizer = other.resizer)
-    else this
-  }
+  override def withFallback(other: RouterConfig): RouterConfig = this.overrideUnsetConfig(other)
 }
 
 /**
@@ -846,7 +875,7 @@ object SmallestMailboxRouter {
 case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
                                  val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
                                  val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy)
-  extends RouterConfig with SmallestMailboxLike {
+  extends RouterConfig with SmallestMailboxLike with OverrideUnsetConfig[SmallestMailboxRouter] {
 
   /**
    * Java API: Constructor that sets nrOfInstances to be created.
@@ -878,14 +907,16 @@ case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: immutable.Iter
   def withSupervisorStrategy(strategy: SupervisorStrategy): SmallestMailboxRouter = copy(supervisorStrategy = strategy)
 
   /**
-   * Uses the resizer of the given Routerconfig if this RouterConfig
-   * doesn't have one, i.e. the resizer defined in code is used if
+   * Java API for setting the resizer to be used.
+   */
+  def withResizer(resizer: Resizer): SmallestMailboxRouter = copy(resizer = Some(resizer))
+
+  /**
+   * Uses the resizer and/or the supervisor strategy of the given Routerconfig
+   * if this RouterConfig doesn't have one, i.e. the resizer defined in code is used if
    * resizer was not defined in config.
    */
-  override def withFallback(other: RouterConfig): RouterConfig = {
-    if (this.resizer.isEmpty && other.resizer.isDefined) copy(resizer = other.resizer)
-    else this
-  }
+  override def withFallback(other: RouterConfig): RouterConfig = this.overrideUnsetConfig(other)
 }
 
 /**
@@ -1061,7 +1092,7 @@ object BroadcastRouter {
 case class BroadcastRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
                            val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
                            val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy)
-  extends RouterConfig with BroadcastLike {
+  extends RouterConfig with BroadcastLike with OverrideUnsetConfig[BroadcastRouter] {
 
   /**
    * Java API: Constructor that sets nrOfInstances to be created.
@@ -1093,14 +1124,16 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[S
   def withSupervisorStrategy(strategy: SupervisorStrategy): BroadcastRouter = copy(supervisorStrategy = strategy)
 
   /**
-   * Uses the resizer of the given Routerconfig if this RouterConfig
-   * doesn't have one, i.e. the resizer defined in code is used if
+   * Java API for setting the resizer to be used.
+   */
+  def withResizer(resizer: Resizer): BroadcastRouter = copy(resizer = Some(resizer))
+
+  /**
+   * Uses the resizer and/or the supervisor strategy of the given Routerconfig
+   * if this RouterConfig doesn't have one, i.e. the resizer defined in code is used if
    * resizer was not defined in config.
    */
-  override def withFallback(other: RouterConfig): RouterConfig = {
-    if (this.resizer.isEmpty && other.resizer.isDefined) copy(resizer = other.resizer)
-    else this
-  }
+  override def withFallback(other: RouterConfig): RouterConfig = this.overrideUnsetConfig(other)
 }
 
 /**
@@ -1186,7 +1219,7 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: im
                                              override val resizer: Option[Resizer] = None,
                                              val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
                                              val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy)
-  extends RouterConfig with ScatterGatherFirstCompletedLike {
+  extends RouterConfig with ScatterGatherFirstCompletedLike with OverrideUnsetConfig[ScatterGatherFirstCompletedRouter] {
 
   if (within <= Duration.Zero) throw new IllegalArgumentException(
     "[within: Duration] can not be zero or negative, was [" + within + "]")
@@ -1218,17 +1251,19 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: im
    * Java API for setting the supervisor strategy to be used for the “head”
    * Router actor.
    */
-  def withSupervisorStrategy(strategy: SupervisorStrategy) = copy(supervisorStrategy = strategy)
+  def withSupervisorStrategy(strategy: SupervisorStrategy): ScatterGatherFirstCompletedRouter = copy(supervisorStrategy = strategy)
 
   /**
-   * Uses the resizer of the given Routerconfig if this RouterConfig
-   * doesn't have one, i.e. the resizer defined in code is used if
+   * Java API for setting the resizer to be used.
+   */
+  def withResizer(resizer: Resizer): ScatterGatherFirstCompletedRouter = copy(resizer = Some(resizer))
+
+  /**
+   * Uses the resizer and/or the supervisor strategy of the given Routerconfig
+   * if this RouterConfig doesn't have one, i.e. the resizer defined in code is used if
    * resizer was not defined in config.
    */
-  override def withFallback(other: RouterConfig): RouterConfig = {
-    if (this.resizer.isEmpty && other.resizer.isDefined) copy(resizer = other.resizer)
-    else this
-  }
+  override def withFallback(other: RouterConfig): RouterConfig = this.overrideUnsetConfig(other)
 }
 
 /**

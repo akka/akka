@@ -422,7 +422,7 @@ private[akka] class ActorCell(
           case message: SystemMessage if shouldStash(message, currentState) ⇒ stash(message)
           case f: Failed ⇒ handleFailure(f)
           case DeathWatchNotification(a, ec, at) ⇒ watchedActorTerminated(a, ec, at)
-          case Create() ⇒ create()
+          case Create(failure) ⇒ create(failure)
           case Watch(watchee, watcher) ⇒ addWatcher(watchee, watcher)
           case Unwatch(watchee, watcher) ⇒ remWatcher(watchee, watcher)
           case Recreate(cause) ⇒ faultRecreate(cause)
@@ -547,13 +547,16 @@ private[akka] class ActorCell(
     }
   }
 
-  protected def create(): Unit = {
+  protected def create(failure: Option[ActorInitializationException]): Unit = {
     def clearOutActorIfNonNull(): Unit = {
       if (actor != null) {
         clearActorFields(actor)
         actor = null // ensure that we know that we failed during creation
       }
     }
+
+    failure foreach { throw _ }
+
     try {
       val created = newActor()
       actor = created

@@ -255,14 +255,7 @@ case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]) {
     }
   }
 
-  /**
-   * Obtain an upper-bound approximation of the actor class which is going to
-   * be created by these Props. In other words, the [[#newActor]] method will
-   * produce an instance of this class or a subclass thereof. This is used by
-   * the actor system to select special dispatchers or mailboxes in case
-   * dependencies are encoded in the actor type.
-   */
-  def actorClass(): Class[_ <: Actor] = {
+  private lazy val cachedActorClass: Class[_ <: Actor] = {
     if (classOf[IndirectActorProducer].isAssignableFrom(clazz)) {
       Reflect.instantiate(clazz, args).asInstanceOf[IndirectActorProducer].actorClass
     } else if (classOf[Actor].isAssignableFrom(clazz)) {
@@ -271,6 +264,15 @@ case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]) {
       throw new IllegalArgumentException("unknown actor creator [$clazz]")
     }
   }
+  /**
+   * Obtain an upper-bound approximation of the actor class which is going to
+   * be created by these Props. In other words, the [[#newActor]] method will
+   * produce an instance of this class or a subclass thereof. This is used by
+   * the actor system to select special dispatchers or mailboxes in case
+   * dependencies are encoded in the actor type.
+   */
+  def actorClass(): Class[_ <: Actor] = cachedActorClass
+
 }
 
 /**

@@ -4,7 +4,7 @@
 package akka.dispatch.sysmsg
 
 import scala.annotation.tailrec
-import akka.actor.{ InternalActorRef, ActorRef, PossiblyHarmful }
+import akka.actor.{ ActorInitializationException, InternalActorRef, ActorRef, PossiblyHarmful }
 
 /**
  * INTERNAL API
@@ -200,47 +200,47 @@ trait StashWhenFailed
 /**
  * INTERNAL API
  */
-@SerialVersionUID(-4836972106317757555L)
-private[akka] case class Create() extends SystemMessage // send to self from Dispatcher.register
+@SerialVersionUID(1L)
+private[akka] case class Create(failure: Option[ActorInitializationException]) extends SystemMessage // sent to self from Dispatcher.register
 /**
  * INTERNAL API
  */
-@SerialVersionUID(686735569005808256L)
+@SerialVersionUID(1L)
 private[akka] case class Recreate(cause: Throwable) extends SystemMessage with StashWhenWaitingForChildren // sent to self from ActorCell.restart
 /**
  * INTERNAL API
  */
-@SerialVersionUID(7270271967867221401L)
+@SerialVersionUID(1L)
 private[akka] case class Suspend() extends SystemMessage with StashWhenWaitingForChildren // sent to self from ActorCell.suspend
 /**
  * INTERNAL API
  */
-@SerialVersionUID(-2567504317093262591L)
+@SerialVersionUID(1L)
 private[akka] case class Resume(causedByFailure: Throwable) extends SystemMessage with StashWhenWaitingForChildren // sent to self from ActorCell.resume
 /**
  * INTERNAL API
  */
-@SerialVersionUID(708873453777219599L)
+@SerialVersionUID(1L)
 private[akka] case class Terminate() extends SystemMessage // sent to self from ActorCell.stop
 /**
  * INTERNAL API
  */
-@SerialVersionUID(3245747602115485675L)
+@SerialVersionUID(1L)
 private[akka] case class Supervise(child: ActorRef, async: Boolean) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
 /**
  * INTERNAL API
  */
-@SerialVersionUID(3323205435124174788L)
+@SerialVersionUID(1L)
 private[akka] case class Watch(watchee: InternalActorRef, watcher: InternalActorRef) extends SystemMessage // sent to establish a DeathWatch
 /**
  * INTERNAL API
  */
-@SerialVersionUID(6363620903363658256L)
+@SerialVersionUID(1L)
 private[akka] case class Unwatch(watchee: ActorRef, watcher: ActorRef) extends SystemMessage // sent to tear down a DeathWatch
 /**
  * INTERNAL API
  */
-@SerialVersionUID(-5475916034683997987L)
+@SerialVersionUID(1L)
 private[akka] case object NoMessage extends SystemMessage // switched into the mailbox to signal termination
 
 /**
