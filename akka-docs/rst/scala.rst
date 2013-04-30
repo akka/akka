@@ -6,7 +6,7 @@ Scala Documentation
 .. toctree::
    :maxdepth: 2
 
-   intro/index
+   intro/index-scala
    general/index
    scala/index-actors
    scala/index-futures
