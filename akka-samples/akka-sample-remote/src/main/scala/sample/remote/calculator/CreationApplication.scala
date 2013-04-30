@@ -18,7 +18,7 @@ class CreationApplication extends Bootable {
     ActorSystem("RemoteCreation", ConfigFactory.load.getConfig("remotecreation"))
   val remoteActor = system.actorOf(Props[AdvancedCalculatorActor],
     name = "advancedCalculator")
-  val localActor = system.actorOf(Props(new CreationActor(remoteActor)),
+  val localActor = system.actorOf(Props(classOf[CreationActor], remoteActor),
     name = "creationActor")
 
   def doSomething(op: MathOp): Unit =

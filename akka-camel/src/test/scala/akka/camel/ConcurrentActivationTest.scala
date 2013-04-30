@@ -39,7 +39,7 @@ class ConcurrentActivationTest extends WordSpec with MustMatchers with NonShared
         // future to all the futures of activation and deactivation
         val futureRegistrarLists = promiseRegistrarLists.future
 
-        val ref = system.actorOf(Props(new ConsumerBroadcast(promiseRegistrarLists)), name = "broadcaster")
+        val ref = system.actorOf(Props(classOf[ConsumerBroadcast], promiseRegistrarLists), name = "broadcaster")
         // create the registrars
         ref ! CreateRegistrars(number)
         // send a broadcast to all registrars, so that number * number messages are sent
@@ -95,7 +95,7 @@ class ConsumerBroadcast(promise: Promise[(Future[List[List[ActorRef]]], Future[L
 
         allActivationFutures = allActivationFutures :+ activationListFuture
         allDeactivationFutures = allDeactivationFutures :+ deactivationListFuture
-        context.actorOf(Props(new Registrar(i, number, activationListPromise, deactivationListPromise)), "registrar-" + i)
+        context.actorOf(Props(classOf[Registrar], i, number, activationListPromise, deactivationListPromise), "registrar-" + i)
       }
       promise.success(Future.sequence(allActivationFutures) -> Future.sequence(allDeactivationFutures))
 

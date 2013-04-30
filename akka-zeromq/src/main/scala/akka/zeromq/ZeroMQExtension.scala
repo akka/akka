@@ -68,7 +68,7 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
       case _                           ⇒ false
     }, "A socket type is required")
     val params = socketParameters.to[immutable.Seq]
-    Props(new ConcurrentSocketActor(params)).withDispatcher("akka.zeromq.socket-dispatcher")
+    Props(classOf[ConcurrentSocketActor], params).withDispatcher("akka.zeromq.socket-dispatcher")
   }
 
   /**

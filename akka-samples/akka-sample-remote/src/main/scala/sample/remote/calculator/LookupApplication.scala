@@ -23,7 +23,7 @@ class LookupApplication extends Bootable {
     ActorSystem("LookupApplication", ConfigFactory.load.getConfig("remotelookup"))
   val remotePath =
     "akka.tcp://CalculatorApplication@127.0.0.1:2552/user/simpleCalculator"
-  val actor = system.actorOf(Props(new LookupActor(remotePath)), "lookupActor")
+  val actor = system.actorOf(Props(classOf[LookupActor], remotePath), "lookupActor")
 
   def doSomething(op: MathOp): Unit =
     actor ! op

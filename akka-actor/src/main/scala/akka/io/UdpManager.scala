@@ -49,10 +49,10 @@ private[io] class UdpManager(udp: UdpExt) extends SelectorBasedManager(udp.setti
   def receive = workerForCommandHandler {
     case b: Bind ⇒
       val commander = sender
-      Props(new UdpListener(udp, commander, b))
+      Props(classOf[UdpListener], udp, commander, b)
     case SimpleSender(options) ⇒
       val commander = sender
-      Props(new UdpSender(udp, options, commander))
+      Props(classOf[UdpSender], udp, options, commander)
   }
 
 }
