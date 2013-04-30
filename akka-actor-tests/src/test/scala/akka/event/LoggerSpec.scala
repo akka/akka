@@ -7,10 +7,12 @@ import akka.testkit._
 import scala.concurrent.duration._
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.{ ActorRef, Actor, ActorSystem }
+import java.util.{ Date, GregorianCalendar, TimeZone, Calendar }
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import akka.serialization.SerializationExtension
 import akka.event.Logging.{ Warning, LogEvent, LoggerInitialized, InitializeLogger }
+import akka.util.Helpers
 
 object LoggerSpec {
 
@@ -141,6 +143,19 @@ class LoggerSpec extends WordSpec with MustMatchers {
           system.awaitTermination(5.seconds.dilated)
         }
       }
+    }
+  }
+
+  "Ticket 3080" must {
+    "format currentTimeMillis to a valid UTC String" in {
+      val timestamp = System.currentTimeMillis
+      val c = new GregorianCalendar(TimeZone.getTimeZone("UTC"))
+      c.setTime(new Date(timestamp))
+      val hours = c.get(Calendar.HOUR_OF_DAY)
+      val minutes = c.get(Calendar.MINUTE)
+      val seconds = c.get(Calendar.SECOND)
+      val ms = c.get(Calendar.MILLISECOND)
+      Helpers.currentTimeMillisToUTCString(timestamp) must be(f"$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC")
     }
   }
 

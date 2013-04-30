@@ -578,6 +578,11 @@ object Logging {
     val thread: Thread = Thread.currentThread
 
     /**
+     * When this LogEvent was created according to System.currentTimeMillis
+     */
+    val timestamp: Long = System.currentTimeMillis
+
+    /**
      * The LogLevel of this LogEvent
      */
     def level: LogLevel
@@ -675,6 +680,7 @@ object Logging {
     import java.text.SimpleDateFormat
     import java.util.Date
 
+    private val date = new Date()
     private val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.SSS")
     private val errorFormat = "[ERROR] [%s] [%s] [%s] %s%s".intern
     private val errorFormatWithoutCause = "[ERROR] [%s] [%s] [%s] %s".intern
@@ -682,7 +688,10 @@ object Logging {
     private val infoFormat = "[INFO] [%s] [%s] [%s] %s".intern
     private val debugFormat = "[DEBUG] [%s] [%s] [%s] %s".intern
 
-    def timestamp(): String = synchronized { dateFormat.format(new Date) } // SDF isn't threadsafe
+    def timestamp(event: LogEvent): String = synchronized {
+      date.setTime(event.timestamp)
+      dateFormat.format(date)
+    } // SDF isn't threadsafe
 
     def print(event: Any): Unit = event match {
       case e: Error   ⇒ error(e)
@@ -695,7 +704,7 @@ object Logging {
     def error(event: Error): Unit = {
       val f = if (event.cause == Error.NoCause) errorFormatWithoutCause else errorFormat
       println(f.format(
-        timestamp,
+        timestamp(event),
         event.thread.getName,
         event.logSource,
         event.message,
@@ -704,21 +713,21 @@ object Logging {
 
     def warning(event: Warning): Unit =
       println(warningFormat.format(
-        timestamp,
+        timestamp(event),
         event.thread.getName,
         event.logSource,
         event.message))
 
     def info(event: Info): Unit =
       println(infoFormat.format(
-        timestamp,
+        timestamp(event),
         event.thread.getName,
         event.logSource,
         event.message))
 
     def debug(event: Debug): Unit =
       println(debugFormat.format(
-        timestamp,
+        timestamp(event),
         event.thread.getName,
         event.logSource,
         event.message))
@@ -735,10 +744,9 @@ object Logging {
     val path: ActorPath = new RootActorPath(Address("akka", "all-systems"), "/StandardOutLogger")
     def provider: ActorRefProvider = throw new UnsupportedOperationException("StandardOutLogger does not provide")
     override val toString = "StandardOutLogger"
-    override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
+    override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit =
       if (message == null) throw new InvalidMessageException("Message is null")
-      print(message)
-    }
+      else print(message)
   }
 
   val StandardOutLogger = new StandardOutLogger
