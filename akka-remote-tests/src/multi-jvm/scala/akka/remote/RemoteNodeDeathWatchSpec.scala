@@ -96,10 +96,12 @@ abstract class RemoteNodeDeathWatchSpec
     expectMsgType[ActorIdentity].ref.get
   }
 
-  def assertCleanup(): Unit = {
-    awaitAssert {
-      remoteWatcher ! Stats
-      expectMsg(Stats.empty)
+  def assertCleanup(timeout: FiniteDuration = 5.seconds): Unit = {
+    within(timeout) {
+      awaitAssert {
+        remoteWatcher ! Stats
+        expectMsg(Stats.empty)
+      }
     }
   }
 
@@ -415,11 +417,9 @@ abstract class RemoteNodeDeathWatchSpec
         testConductor.exit(third, 0).await
 
         // verify that things are cleaned up, and heartbeating is stopped
-        within(20 seconds) {
-          assertCleanup()
-          expectNoMsg(2.seconds)
-          assertCleanup()
-        }
+        assertCleanup(20 seconds)
+        expectNoMsg(2.seconds)
+        assertCleanup()
       }
 
       enterBarrier("after-7")
