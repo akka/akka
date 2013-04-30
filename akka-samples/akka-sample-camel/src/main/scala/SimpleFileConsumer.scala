@@ -11,7 +11,7 @@ object SimpleFileConsumer extends App {
   val tmpDirUri = "file://%s/%s" format (tmpDir, subDir)
 
   val system = ActorSystem("consume-files")
-  val fileConsumer = system.actorOf(Props(new FileConsumer(tmpDirUri)), "fileConsumer")
+  val fileConsumer = system.actorOf(Props(classOf[FileConsumer], tmpDirUri), "fileConsumer")
   println(String.format("Put a text file in '%s', the consumer will pick it up!", consumeDir))
 }
 

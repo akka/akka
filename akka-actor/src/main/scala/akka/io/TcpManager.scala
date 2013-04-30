@@ -50,10 +50,10 @@ private[io] class TcpManager(tcp: TcpExt) extends SelectorBasedManager(tcp.Setti
   def receive = workerForCommandHandler {
     case c: Connect ⇒
       val commander = sender
-      Props(new TcpOutgoingConnection(tcp, commander, c))
+      Props(classOf[TcpOutgoingConnection], tcp, commander, c)
     case b: Bind ⇒
       val commander = sender
-      Props(new TcpListener(selectorPool, tcp, commander, b))
+      Props(classOf[TcpListener], selectorPool, tcp, commander, b)
   }
 
 }

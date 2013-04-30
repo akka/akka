@@ -15,7 +15,7 @@ private[io] class UdpConnectedManager(udpConn: UdpConnectedExt) extends Selector
   def receive = workerForCommandHandler {
     case c: Connect ⇒
       val commander = sender
-      Props(new UdpConnection(udpConn, commander, c))
+      Props(classOf[UdpConnection], udpConn, commander, c)
   }
 
 }

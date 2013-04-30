@@ -96,7 +96,7 @@ private[io] class TcpListener(val selectorRouter: ActorRef,
     if (socketChannel != null) {
       log.debug("New connection accepted")
       socketChannel.configureBlocking(false)
-      selectorRouter ! WorkerForCommand(RegisterIncoming(socketChannel), self, Props(new TcpIncomingConnection(socketChannel, tcp, handler, options)))
+      selectorRouter ! WorkerForCommand(RegisterIncoming(socketChannel), self, Props(classOf[TcpIncomingConnection], socketChannel, tcp, handler, options))
       acceptAllPending(limit - 1)
     } else context.parent ! AcceptInterest
   }

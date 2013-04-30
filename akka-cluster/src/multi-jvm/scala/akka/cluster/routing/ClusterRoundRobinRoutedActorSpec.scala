@@ -160,7 +160,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
 
       // cluster consists of first and second
 
-      system.actorOf(Props(new SomeActor(LookupRoutee)), "myservice")
+      system.actorOf(Props(classOf[SomeActor], LookupRoutee), "myservice")
       enterBarrier("myservice-started")
 
       runOn(first) {

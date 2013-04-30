@@ -84,7 +84,7 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
     "guarantee at-most-once delivery and message ordering despite packet loss" taggedAs TimingTest in {
       Await.result(RARP(system).provider.transport.managementCommand(One(addressB, Drop(0.3, 0.3))), 3.seconds.dilated)
 
-      val tester = system.actorOf(Props(new SequenceVerifier(here, self))) ! "start"
+      val tester = system.actorOf(Props(classOf[SequenceVerifier], here, self)) ! "start"
 
       expectMsgPF(45.seconds) {
         case (received: Int, lost: Int) ⇒

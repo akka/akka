@@ -117,7 +117,7 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
   "Remoting " + msg must {
     "guaranteed delivery and message ordering despite packet loss " taggedAs TimingTest in {
       Await.result(RARP(systemB).provider.transport.managementCommand(One(address, Drop(0.3, 0.3))), 3.seconds.dilated)
-      systemB.actorOf(Props(new SystemMessageSender(MsgCount, there)))
+      systemB.actorOf(Props(classOf[SystemMessageSender], MsgCount, there))
 
       val toSend = (0 until MsgCount).toList
       val received = expectMsgAllOf(45.seconds, toSend: _*)

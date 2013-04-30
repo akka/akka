@@ -45,7 +45,7 @@ object ReliableProxy {
   case class Ack(serial: Int)
   case object Tick
 
-  def receiver(target: ActorRef): Props = Props(new Receiver(target))
+  def receiver(target: ActorRef): Props = Props(classOf[Receiver], target)
 
   sealed trait State
   case object Idle extends State

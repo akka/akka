@@ -84,7 +84,7 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
   "ThrottlerTransportAdapter" must {
     "maintain average message rate" taggedAs TimingTest in {
       throttle(Direction.Send, TokenBucket(200, 500, 0, 0)) must be(true)
-      val tester = system.actorOf(Props(new ThrottlingTester(here, self))) ! "start"
+      val tester = system.actorOf(Props(classOf[ThrottlingTester], here, self)) ! "start"
 
       val time = NANOSECONDS.toSeconds(expectMsgType[Long]((TotalTime + 3).seconds))
       log.warning("Total time of transmission: " + time)

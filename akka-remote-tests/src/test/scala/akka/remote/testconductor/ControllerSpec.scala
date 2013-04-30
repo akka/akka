@@ -27,7 +27,7 @@ class ControllerSpec extends AkkaSpec(ControllerSpec.config) with ImplicitSender
   "A Controller" must {
 
     "publish its nodes" in {
-      val c = system.actorOf(Props(new Controller(1, new InetSocketAddress(InetAddress.getLocalHost, 0))))
+      val c = system.actorOf(Props(classOf[Controller], 1, new InetSocketAddress(InetAddress.getLocalHost, 0)))
       c ! NodeInfo(A, AddressFromURIString("akka://sys"), testActor)
       expectMsg(ToClient(Done))
       c ! NodeInfo(B, AddressFromURIString("akka://sys"), testActor)
