@@ -333,28 +333,12 @@ class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyR
       String.valueOf(ser.serialize(obj).map(encodeHex).get) must be === asExpected
 
     "be preserved for the Create SystemMessage" in {
-      verify(Create(Some(FakeActorInitializationException(FakeActorRef("failure"), "failed"))),
+      // Using null as the cause to avoid a large serialized message and JDK differences
+      verify(Create(Some(null)),
         "aced00057372001b616b6b612e64697370617463682e7379736d73672e4372656174650000000000" +
           "0000010200014c00076661696c75726574000e4c7363616c612f4f7074696f6e3b78707372000a73" +
           "63616c612e536f6d65e2a09f87fc0836ae0200014c0001787400124c6a6176612f6c616e672f4f62" +
-          "6a6563743b7872000c7363616c612e4f7074696f6ee36024a8328a45e9020000787073720033616b" +
-          "6b612e73657269616c697a6174696f6e2e46616b654163746f72496e697469616c697a6174696f6e" +
-          "457863657074696f6ea310e76a3232c9070200024c00056163746f727400154c616b6b612f616374" +
-          "6f722f4163746f725265663b4c00076d6573736167657400124c6a6176612f6c616e672f53747269" +
-          "6e673b78720027616b6b612e6163746f722e4163746f72496e697469616c697a6174696f6e457863" +
-          "657074696f6e00000000000000010200014c00056163746f7271007e000878720012616b6b612e41" +
-          "6b6b61457863657074696f6e00000000000000010200007872001a6a6176612e6c616e672e52756e" +
-          "74696d65457863657074696f6e9e5f06470a3483e5020000787200136a6176612e6c616e672e4578" +
-          "63657074696f6ed0fd1f3e1a3b1cc4020000787200136a6176612e6c616e672e5468726f7761626c" +
-          "65d5c635273977b8cb0300034c000563617573657400154c6a6176612f6c616e672f5468726f7761" +
-          "626c653b4c000d64657461696c4d65737361676571007e00095b000a737461636b54726163657400" +
-          "1e5b4c6a6176612f6c616e672f537461636b5472616365456c656d656e743b787070740006666169" +
-          "6c65647572001e5b4c6a6176612e6c616e672e537461636b5472616365456c656d656e743b02462a" +
-          "3c3cfd2239020000787000000000787372001f616b6b612e73657269616c697a6174696f6e2e4661" +
-          "6b654163746f7252656600000000000000010200014c00046e616d6571007e00097872001b616b6b" +
-          "612e6163746f722e496e7465726e616c4163746f72526566869e6c3669e60e5f0200007872001361" +
-          "6b6b612e6163746f722e4163746f72526566c3585dde655f469402000078707400076661696c7572" +
-          "6571007e001871007e0012")
+          "6a6563743b7872000c7363616c612e4f7074696f6ee36024a8328a45e9020000787070")
     }
     "be preserved for the Recreate SystemMessage" in {
       verify(Recreate(null),
@@ -415,7 +399,7 @@ class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyR
           "000000000000010200007870")
     }
     "be preserved for the Failed SystemMessage" in {
-      // Using null as the cause to avoid a large serialized message
+      // Using null as the cause to avoid a large serialized message and JDK differences
       verify(Failed(FakeActorRef("child"), cause = null, uid = 0),
         "aced00057372001b616b6b612e64697370617463682e7379736d73672e4661696c65640000000000" +
           "0000010200034900037569644c000563617573657400154c6a6176612f6c616e672f5468726f7761" +
@@ -484,5 +468,3 @@ protected[akka] case class FakeActorRef(name: String) extends InternalActorRef w
   override def isLocal = ???
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender) = ???
 }
-
-protected[akka] case class FakeActorInitializationException(actor: ActorRef, message: String) extends ActorInitializationException(actor, message, null) with OnlyCauseStackTrace
