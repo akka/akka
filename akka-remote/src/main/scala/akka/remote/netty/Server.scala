@@ -14,6 +14,7 @@ import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.ChannelGroup
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
+import scala.util.control.NoStackTrace
 
 private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
 
@@ -175,7 +176,7 @@ private[akka] class RemoteServerHandler(
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    val cause = if (event.getCause ne null) event.getCause else new Exception("Unknown cause")
+    val cause = if (event.getCause ne null) event.getCause else new Exception("Unknown cause") with NoStackTrace
     cause match {
       case _: ClosedChannelException ⇒ // Ignore
       case _ ⇒

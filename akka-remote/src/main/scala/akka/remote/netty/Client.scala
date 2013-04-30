@@ -18,7 +18,7 @@ import org.jboss.netty.handler.ssl.SslHandler
 import org.jboss.netty.handler.timeout.{ IdleState, IdleStateEvent, IdleStateAwareChannelHandler }
 import org.jboss.netty.util.{ Timeout, TimerTask, HashedWheelTimer }
 import scala.concurrent.duration._
-import scala.util.control.NonFatal
+import scala.util.control.{NoStackTrace, NonFatal}
 
 /**
  * This is the abstract baseclass for netty remote clients, currently there's only an
@@ -305,7 +305,7 @@ private[akka] class ActiveRemoteClientHandler(
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    val cause = if (event.getCause ne null) event.getCause else new Exception("Unknown cause")
+    val cause = if (event.getCause ne null) event.getCause else new Exception("Unknown cause") with NoStackTrace
     cause match {
       case _: ClosedChannelException ⇒ // Ignore
       case _ ⇒
