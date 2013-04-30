@@ -188,12 +188,12 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
   def receive = {
     case msg @ GetClusterCoreRef ⇒ coreSupervisor forward msg
     case AddOnMemberUpListener(code) ⇒
-      context.actorOf(Props(new OnMemberUpListener(code)))
+      context.actorOf(Props(classOf[OnMemberUpListener], code))
     case PublisherCreated(publisher) ⇒
       if (settings.MetricsEnabled) {
         // metrics must be started after core/publisher to be able
         // to inject the publisher ref to the ClusterMetricsCollector
-        context.actorOf(Props(new ClusterMetricsCollector(publisher)).
+        context.actorOf(Props(classOf[ClusterMetricsCollector], publisher).
           withDispatcher(context.props.dispatcher), name = "metrics")
       }
   }
@@ -211,7 +211,7 @@ private[cluster] final class ClusterCoreSupervisor extends Actor with ActorLoggi
 
   val publisher = context.actorOf(Props[ClusterDomainEventPublisher].
     withDispatcher(context.props.dispatcher), name = "publisher")
-  val coreDaemon = context.watch(context.actorOf(Props(new ClusterCoreDaemon(publisher)).
+  val coreDaemon = context.watch(context.actorOf(Props(classOf[ClusterCoreDaemon], publisher).
     withDispatcher(context.props.dispatcher), name = "daemon"))
 
   context.parent ! PublisherCreated(publisher)
@@ -355,10 +355,10 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
         self ! ClusterUserAction.JoinTo(selfAddress)
         None
       } else if (seedNodes.head == selfAddress) {
-        Some(context.actorOf(Props(new FirstSeedNodeProcess(seedNodes)).
+        Some(context.actorOf(Props(classOf[FirstSeedNodeProcess], seedNodes).
           withDispatcher(UseDispatcher), name = "firstSeedNodeProcess"))
       } else {
-        Some(context.actorOf(Props(new JoinSeedNodeProcess(seedNodes)).
+        Some(context.actorOf(Props(classOf[JoinSeedNodeProcess], seedNodes).
           withDispatcher(UseDispatcher), name = "joinSeedNodeProcess"))
       }
   }

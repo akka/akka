@@ -21,6 +21,6 @@ import akka.sample.osgi.internal.Hakker
 
 class DiningHakkersServiceImpl(system: ActorSystem) extends DiningHakkersService {
   def getHakker(name: String, chairNumber: Int) = {
-    system.actorOf(Props(new Hakker(name, chairNumber)))
+    system.actorOf(Props(classOf[Hakker], name, chairNumber))
   }
 }

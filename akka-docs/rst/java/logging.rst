@@ -284,3 +284,16 @@ information is available in the MDC with attribute name ``akkaSource``::
 
 For more details on what this attribute contains—also for non-actors—please see
 `How to Log`_.
+
+More accurate timestamps for log output in MDC
+------------------------------------------------
+
+Akka's logging is asynchronous which means that the timestamp of a log entry is taken from
+when the underlying logger implementation is called, which can be surprising at first.
+If you want to more accurately output the timestamp, use the MDC attribute ``akkaTimestamp``::
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%X{akkaTimestamp} %-5level %logger{36} %X{akkaSource} - %msg%n</pattern>
+    </encoder>
+  </appender>

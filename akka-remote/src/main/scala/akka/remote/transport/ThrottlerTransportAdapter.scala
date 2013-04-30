@@ -164,7 +164,7 @@ class ThrottlerTransportAdapter(_wrappedTransport: Transport, _system: ExtendedA
   protected def managerName: String = s"throttlermanager.${wrappedTransport.schemeIdentifier}${UniqueId.getAndIncrement}"
   protected def managerProps: Props = {
     val wt = wrappedTransport
-    Props(new ThrottlerManager(wt))
+    Props(classOf[ThrottlerManager], wt)
   }
 
   override def managementCommand(cmd: Any): Future[Boolean] = {
@@ -289,7 +289,7 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
     val managerRef = self
     ThrottlerHandle(
       originalHandle,
-      context.actorOf(Props(new ThrottledAssociation(managerRef, listener, originalHandle, inbound)), "throttler" + nextId()))
+      context.actorOf(Props(classOf[ThrottledAssociation], managerRef, listener, originalHandle, inbound), "throttler" + nextId()))
   }
 }
 

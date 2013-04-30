@@ -27,7 +27,7 @@ object IO {
     override def supervisorStrategy = connectionSupervisorStrategy
 
     val selectorPool = context.actorOf(
-      props = Props(new SelectionHandler(self, selectorSettings)).withRouter(RandomRouter(nrOfSelectors)),
+      props = Props(classOf[SelectionHandler], self, selectorSettings).withRouter(RandomRouter(nrOfSelectors)),
       name = "selectors")
 
     private def createWorkerMessage(pf: PartialFunction[HasFailureMessage, Props]): PartialFunction[HasFailureMessage, WorkerForCommand] = {

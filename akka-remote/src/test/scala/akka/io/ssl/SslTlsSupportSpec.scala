@@ -24,24 +24,20 @@
 
 package akka.io.ssl
 
+import akka.TestUtils
+import akka.event.Logging
+import akka.event.LoggingAdapter
+import akka.io._
+import akka.remote.security.provider.AkkaProvider
+import akka.testkit.{ TestProbe, AkkaSpec }
+import akka.util.{ ByteString, Timeout }
 import java.io.{ BufferedWriter, OutputStreamWriter, InputStreamReader, BufferedReader }
-import javax.net.ssl._
 import java.net.{ InetSocketAddress, SocketException }
 import java.security.{ KeyStore, SecureRandom }
 import java.util.concurrent.atomic.AtomicInteger
+import javax.net.ssl._
 import scala.concurrent.duration._
-import com.typesafe.config.{ ConfigFactory, Config }
-import akka.actor._
-import akka.event.LoggingAdapter
-import akka.testkit.{ TestProbe, AkkaSpec }
-import akka.util.{ ByteString, Timeout }
-import akka.io.{ IO, Tcp, PipelineContext }
-import akka.TestUtils
-import akka.event.Logging
-import akka.io.TcpPipelineHandler
-import akka.io.SslTlsSupport
-import akka.io.HasLogging
-import akka.remote.security.provider.AkkaProvider
+import akka.actor.{ Props, ActorLogging, Actor, ActorContext }
 
 // TODO move this into akka-actor once AkkaProvider for SecureRandom does not have external dependencies
 class SslTlsSupportSpec extends AkkaSpec {
@@ -103,26 +99,38 @@ class SslTlsSupportSpec extends AkkaSpec {
     val connected = probe.expectMsgType[Tcp.Connected]
     val connection = probe.sender
 
-    val init = new TcpPipelineHandler.Init(new SslTlsSupport(sslEngine(connected.remoteAddress, client = true))) {
+    val init = new TcpPipelineHandler.Init(
+      new StringByteStringAdapter >>
+        new DelimiterFraming(maxSize = 1024, delimiter = ByteString('\n'), includeDelimiter = true) >>
+        new TcpReadWriteAdapter[HasLogging] >>
+        new SslTlsSupport(sslEngine(connected.remoteAddress, client = true))) {
       override def makeContext(actorContext: ActorContext): HasLogging = new HasLogging {
         override def getLogger = system.log
       }
     }
+
     import init._
+
     val handler = system.actorOf(TcpPipelineHandler(init, connection, probe.ref),
       "client" + counter.incrementAndGet())
     probe.send(connection, Tcp.Register(handler))
 
     def run() {
-      probe.send(handler, Command(Tcp.Write(ByteString("3+4\n"))))
-      probe.expectMsg(Event(Tcp.Received(ByteString("7\n"))))
-      probe.send(handler, Command(Tcp.Write(ByteString("20+22\n"))))
-      probe.expectMsg(Event(Tcp.Received(ByteString("42\n"))))
+      probe.send(handler, Command("3+4\n"))
+      probe.expectMsg(Event("7\n"))
+      probe.send(handler, Command("20+22\n"))
+      probe.expectMsg(Event("42\n"))
+      probe.send(handler, Command("12+24\n11+1"))
+      Thread.sleep(1000) // Exercise framing by waiting at a mid-frame point
+      probe.send(handler, Command("1\n0+0\n"))
+      probe.expectMsg(Event("36\n"))
+      probe.expectMsg(Event("22\n"))
+      probe.expectMsg(Event("0\n"))
     }
 
     def close() {
-      probe.send(handler, Command(Tcp.Close))
-      probe.expectMsgType[Event].evt match {
+      probe.send(handler, Tcp.Close)
+      probe.expectMsgType[Tcp.Event] match {
         case _: Tcp.ConnectionClosed ⇒ true
       }
       TestUtils.verifyActorTermination(handler)
@@ -133,13 +141,16 @@ class SslTlsSupportSpec extends AkkaSpec {
   //#server
   class AkkaSslServer extends Actor with ActorLogging {
 
-    import Tcp.{ Connected, Received }
+    import Tcp.Connected
 
     def receive: Receive = {
       case Connected(remote, _) ⇒
         val init =
           new TcpPipelineHandler.Init(
-            new SslTlsSupport(sslEngine(remote, client = false))) {
+            new StringByteStringAdapter >>
+              new DelimiterFraming(maxSize = 1024, delimiter = ByteString('\n'), includeDelimiter = true) >>
+              new TcpReadWriteAdapter[HasLogging] >>
+              new SslTlsSupport(sslEngine(remote, client = false))) {
             override def makeContext(actorContext: ActorContext): HasLogging =
               new HasLogging {
                 override def getLogger = log
@@ -154,11 +165,11 @@ class SslTlsSupportSpec extends AkkaSpec {
         connection ! Tcp.Register(handler)
 
         context become {
-          case Event(Received(data)) ⇒
-            val input = data.utf8String.dropRight(1)
+          case Event(data) ⇒
+            val input = data.dropRight(1)
             log.debug("akka-io Server received {} from {}", input, sender)
             val response = serverResponse(input)
-            sender ! Command(Tcp.Write(ByteString(response)))
+            sender ! Command(response)
             log.debug("akka-io Server sent: {}", response.dropRight(1))
         }
     }

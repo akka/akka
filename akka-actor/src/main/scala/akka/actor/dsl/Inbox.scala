@@ -27,7 +27,7 @@ trait Inbox { this: ActorDSL.type ⇒
     val DSLInboxQueueSize = config.getInt("inbox-size")
 
     val inboxNr = new AtomicInteger
-    val inboxProps = Props(new InboxActor(DSLInboxQueueSize))
+    val inboxProps = Props(classOf[InboxActor], ActorDSL, DSLInboxQueueSize)
 
     def newReceiver: ActorRef = mkChild(inboxProps, "inbox-" + inboxNr.incrementAndGet)
   }

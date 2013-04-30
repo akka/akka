@@ -64,7 +64,7 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def startController(participants: Int, name: RoleName, controllerPort: InetSocketAddress): Future[InetSocketAddress] = {
     if (_controller ne null) throw new RuntimeException("TestConductorServer was already started")
-    _controller = system.actorOf(Props(new Controller(participants, controllerPort)), "controller")
+    _controller = system.actorOf(Props(classOf[Controller], participants, controllerPort), "controller")
     import Settings.BarrierTimeout
     import system.dispatcher
     controller ? GetSockAddr flatMap { case sockAddr: InetSocketAddress ⇒ startClient(name, sockAddr) map (_ ⇒ sockAddr) }
@@ -413,7 +413,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
     case CreateServerFSM(channel) ⇒
       val (ip, port) = channel.getRemoteAddress match { case s: InetSocketAddress ⇒ (s.getAddress.getHostAddress, s.getPort) }
       val name = ip + ":" + port + "-server" + generation.next
-      sender ! context.actorOf(Props(new ServerFSM(self, channel)), name)
+      sender ! context.actorOf(Props(classOf[ServerFSM], self, channel), name)
     case c @ NodeInfo(name, addr, fsm) ⇒
       barrier forward c
       if (nodes contains name) {

@@ -143,7 +143,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
     "support reply via sender" in {
       val serverRef = TestActorRef(Props[ReplyActor])
-      val clientRef = TestActorRef(Props(new SenderActor(serverRef)))
+      val clientRef = TestActorRef(Props(classOf[SenderActor], serverRef))
 
       counter = 4
 
