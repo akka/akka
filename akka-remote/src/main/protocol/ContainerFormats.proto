@@ -1,0 +1,36 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+option java_package = "akka.remote";
+option optimize_for = SPEED;
+
+/******************************************
+  Compile with:
+  cd ./akka-remote/src/main/protocol
+  protoc ContainerFormats.proto --java_out ../java
+  cd ../../../..
+  ./scripts/fix-protobuf.sh
+*******************************************/
+
+/******************************************
+  ActorSelection related formats
+*******************************************/
+
+message SelectionEnvelope {
+  required bytes enclosedMessage = 1;
+  required int32 serializerId = 2;
+  repeated Selection pattern = 3;
+  optional bytes messageManifest = 4;
+}
+
+enum PatternType {
+  PARENT = 0;
+  CHILD_NAME = 1;
+  CHILD_PATTERN = 2;
+}
+
+message Selection {
+  required PatternType type = 1;
+  optional string matcher = 2;
+}
