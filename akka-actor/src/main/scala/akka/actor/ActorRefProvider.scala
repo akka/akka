@@ -6,7 +6,6 @@ package akka.actor
 
 import scala.collection.immutable
 import akka.dispatch.sysmsg._
-import akka.dispatch.NullMessage
 import akka.routing._
 import akka.event._
 import akka.util.{ Switch, Helpers }
@@ -493,9 +492,8 @@ private[akka] class LocalActorRefProvider private[akka] (
     @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") override def isTerminated: Boolean = stopped.isOn
 
     override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = stopped.ifOff(message match {
-      case null        ⇒ throw new InvalidMessageException("Message is null")
-      case NullMessage ⇒ // do nothing
-      case _           ⇒ log.error(s"$this received unexpected message [$message]")
+      case null ⇒ throw new InvalidMessageException("Message is null")
+      case _    ⇒ log.error(s"$this received unexpected message [$message]")
     })
 
     override def sendSystemMessage(message: SystemMessage): Unit = stopped ifOff {
