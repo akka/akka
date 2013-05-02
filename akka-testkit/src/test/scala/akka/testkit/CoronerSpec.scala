@@ -24,19 +24,35 @@ class CoronerSpec extends WordSpec with MustMatchers {
 
   "A Coroner" must {
 
-    "generate a report if enough time passes" taggedAs TimingTest in {
-      val (_, report) = captureOutput(out ⇒ Await.ready(Coroner.watch(100.milliseconds.fromNow, "XXXX", out), 1.second))
+    "generate a report if enough time passes" in {
+      val (_, report) = captureOutput(out ⇒ {
+        val coroner = Coroner.watch(100.milliseconds, "XXXX", out)
+        Await.ready(coroner, 5.seconds)
+        coroner.cancel()
+      })
       report must include("Coroner's Report")
       report must include("XXXX")
     }
 
-    "not generate a report if cancelled early" taggedAs TimingTest in {
+    "not generate a report if cancelled early" in {
       val (_, report) = captureOutput(out ⇒ {
-        val coroner = Coroner.watch(100.milliseconds.fromNow, "XXXX", out)
+        val coroner = Coroner.watch(60.seconds, "XXXX", out)
+        coroner.cancel()
+        Await.ready(coroner, 1.seconds)
+      })
+      report must be("")
+    }
+
+    "display thread counts if enabled" in {
+      val (_, report) = captureOutput(out ⇒ {
+        val coroner = Coroner.watch(60.seconds, "XXXX", out, displayThreadCounts = true)
         coroner.cancel()
         Await.ready(coroner, 1.second)
       })
-      report must be("")
+      report must include("Coroner Thread Count Start:")
+      report must include("Coroner Thread Count End:")
+      report must include("XXXX")
+      report must not include ("Coroner's Report")
     }
 
     "display deadlock information in its report" in {
