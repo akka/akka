@@ -99,7 +99,15 @@ message GossipEnvelope {
   required UniqueAddress from = 1;
   required UniqueAddress to = 2;
   required Gossip gossip = 3;
-  required bool conversation = 4;
+}
+
+/**
+ * Gossip Status
+ */
+message GossipStatus {
+  required UniqueAddress from = 1;
+  repeated string allHashes = 2;
+  required VectorClock version = 3;
 }
 
 /**

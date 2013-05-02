@@ -239,4 +239,14 @@ private[cluster] case class GossipOverview(
  * different in that case.
  */
 @SerialVersionUID(1L)
-private[cluster] case class GossipEnvelope(from: UniqueAddress, to: UniqueAddress, gossip: Gossip, conversation: Boolean = true) extends ClusterMessage
+private[cluster] case class GossipEnvelope(from: UniqueAddress, to: UniqueAddress, gossip: Gossip) extends ClusterMessage
+
+/**
+ * INTERNAL API
+ * When there are no known changes to the node ring a `GossipStatus`
+ * initiates a gossip chat between two members. If the receiver has a newer
+ * version it replies with a `GossipEnvelope`. If receiver has older version
+ * it replies with its `GossipStatus`. Same versions ends the chat immediately.
+ */
+@SerialVersionUID(1L)
+private[cluster] case class GossipStatus(from: UniqueAddress, version: VectorClock) extends ClusterMessage
