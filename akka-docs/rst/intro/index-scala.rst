@@ -7,6 +7,7 @@ Introduction
    what-is-akka
    why-akka
    getting-started
+   ../scala/hello-world
    deployment-scenarios
    use-cases
 
