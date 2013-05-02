@@ -467,7 +467,7 @@ an ``onComplete``-handler on the future to effect the submission of the
 aggregated :class:`Result` to another actor.
 
 Using ``ask`` will send a message to the receiving Actor as with ``tell``, and
-the receiving actor must reply with ``getSender().tell(reply)`` in order to
+the receiving actor must reply with ``getSender().tell(reply, getSelf())`` in order to
 complete the returned :class:`Future` with a value. The ``ask`` operation
 involves creating an internal actor for handling this reply, which needs to
 have a timeout after which it is destroyed in order not to leak resources; see
@@ -533,7 +533,7 @@ Reply to messages
 
 If you want to have a handle for replying to a message, you can use
 ``getSender()``, which gives you an ActorRef. You can reply by sending to
-that ActorRef with ``getSender().tell(replyMsg)``. You can also store the ActorRef
+that ActorRef with ``getSender().tell(replyMsg, getSelf())``. You can also store the ActorRef
 for replying later, or passing on to other actors. If there is no sender (a
 message was sent without an actor or future context) then the sender
 defaults to a 'dead-letter' actor ref.

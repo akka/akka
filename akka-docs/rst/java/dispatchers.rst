@@ -291,7 +291,7 @@ filling in will they be transferred into the real mailbox. Thus,
 
    final Props props = ...
    // this actor uses MyCustomMailbox, which is assumed to be a singleton
-   system.actorOf(props.withDispatcher("myCustomMailbox").tell("bang");
+   system.actorOf(props.withDispatcher("myCustomMailbox").tell("bang", sender);
    assert(MyCustomMailbox.getInstance().getLastEnqueued().equals("bang"));
 
 will probably fail; you will have to allow for some time to pass and retry the

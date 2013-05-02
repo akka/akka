@@ -65,11 +65,4 @@ public class JavaAPI {
     }));
     assertNotNull(ref);
   }
-
-  @Test
-  public void mustAcceptSingleArgTell() {
-    ActorRef ref = system.actorOf(Props.create(JavaAPITestActor.class));
-    ref.tell("hallo");
-    ref.tell("hallo", ref);
-  }
 }

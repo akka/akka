@@ -28,7 +28,7 @@ by the ``ExecutionContexts`` class to wrap ``Executors`` and ``ExecutorServices`
 Use with Actors
 ---------------
 
-There are generally two ways of getting a reply from an ``UntypedActor``: the first is by a sent message (``actorRef.tell(msg)``),
+There are generally two ways of getting a reply from an ``UntypedActor``: the first is by a sent message (``actorRef.tell(msg, sender)``),
 which only works if the original sender was an ``UntypedActor``) and the second is through a ``Future``.
 
 Using the ``ActorRef``\'s ``ask`` method to send a message will return a ``Future``.
