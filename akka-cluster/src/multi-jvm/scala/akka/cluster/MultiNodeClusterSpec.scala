@@ -113,7 +113,6 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
         "HandleListenerRegistered.*",
         "PoisonPill.*",
         "DeathWatchNotification.*",
-        "NullMessage.*",
         "InboundPayload.*")(sys)
 
     }
