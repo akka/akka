@@ -5,8 +5,8 @@ package docs.jrouting;
 
 import java.util.Arrays;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import akka.actor.ActorRef;
@@ -23,17 +23,11 @@ import docs.routing.RouterViaProgramDocSpec.Echo;
 
 public class RouterViaProgramDocTestBase {
 
-  static ActorSystem system;
-  
-  @BeforeClass
-  public static void setup() {
-    system = ActorSystem.create();
-  }
-  
-  @AfterClass
-  public static void teardown() {
-    system.shutdown();
-  }
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("RouterViaProgramDocTest");
+
+  private final ActorSystem system = actorSystemResource.getSystem();
 
   private static class JavaTestKitWithSelf extends JavaTestKit {
     public JavaTestKitWithSelf(ActorSystem system) {

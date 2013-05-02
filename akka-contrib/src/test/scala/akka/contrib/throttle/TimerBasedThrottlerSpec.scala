@@ -32,7 +32,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
   with WordSpec with MustMatchers with BeforeAndAfterAll {
 
   override def afterAll {
-    system.shutdown()
+    shutdown(system)
   }
 
   "A throttler" must {

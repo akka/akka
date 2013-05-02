@@ -57,9 +57,9 @@ abstract class RestartFirstSeedNodeSpec
   override def afterAll(): Unit = {
     runOn(seed1) {
       if (seed1System.isTerminated)
-        restartedSeed1System.shutdown()
+        shutdown(restartedSeed1System)
       else
-        seed1System.shutdown()
+        shutdown(seed1System)
     }
     super.afterAll()
   }
@@ -103,8 +103,7 @@ abstract class RestartFirstSeedNodeSpec
 
       // shutdown seed1System
       runOn(seed1) {
-        seed1System.shutdown()
-        seed1System.awaitTermination(remaining)
+        shutdown(seed1System, remaining)
       }
       runOn(seed2, seed3) {
         awaitMembersUp(2, canNotBePartOfMemberRing = Set(seedNodes.head))

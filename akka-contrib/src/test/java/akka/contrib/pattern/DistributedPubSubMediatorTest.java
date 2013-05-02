@@ -4,8 +4,8 @@
 
 package akka.contrib.pattern;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import akka.actor.ActorRef;
@@ -17,17 +17,12 @@ import akka.event.LoggingAdapter;
 
 public class DistributedPubSubMediatorTest {
 
-  private static ActorSystem system;
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("DistributedPubSubMediatorTest");
 
-  @BeforeClass
-  public static void setup() {
-    system = ActorSystem.create();
-  }
+  private final ActorSystem system = actorSystemResource.getSystem();
 
-  @AfterClass
-  public static void teardown() {
-    system.shutdown();
-  }
 
   @Test
   public void demonstrateUsage() {

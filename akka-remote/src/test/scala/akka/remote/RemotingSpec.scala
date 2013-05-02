@@ -201,7 +201,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
   val maxPayloadBytes = system.settings.config.getBytes("akka.remote.test.maximum-payload-bytes").toInt
 
   override def afterTermination() {
-    remoteSystem.shutdown()
+    shutdown(remoteSystem)
     AssociationRegistry.clear()
   }
 
@@ -258,8 +258,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
       // then we shutdown all but one system to simulate broken connections
       moreSystems foreach { sys ⇒
-        sys.shutdown()
-        sys.awaitTermination(5.seconds.dilated)
+        shutdown(sys)
       }
 
       1 to n foreach { x ⇒
@@ -531,8 +530,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
           expectMsg(3.seconds, ("pong", otherGuyRemoteTest))
         }(otherSystem)
       } finally {
-        otherSystem.shutdown()
-        otherSystem.awaitTermination(5.seconds.dilated)
+        shutdown(otherSystem)
       }
     }
   }

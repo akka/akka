@@ -5,10 +5,7 @@ package docs.agent;
 
 import static org.junit.Assert.*;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import akka.testkit.AkkaSpec;
 
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;

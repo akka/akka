@@ -129,8 +129,7 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
 
   override def afterTermination() {
     if (cipherConfig.runTest) {
-      other.shutdown()
-      other.awaitTermination()
+      shutdown(other)
     }
   }
 

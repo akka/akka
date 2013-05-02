@@ -80,7 +80,7 @@ abstract class DurableMailboxSpec(system: ActorSystem, val backendName: String)
   protected def atStartup() {}
 
   final override def afterAll {
-    system.shutdown()
+    TestKit.shutdownActorSystem(system)
     try system.awaitTermination(5 seconds) catch {
       case _: TimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
     }

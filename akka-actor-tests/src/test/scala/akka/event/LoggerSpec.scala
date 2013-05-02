@@ -99,8 +99,7 @@ class LoggerSpec extends WordSpec with MustMatchers {
           probe.expectNoMsg(0.5.seconds.dilated)
         }
       } finally {
-        system.shutdown()
-        system.awaitTermination(5.seconds.dilated)
+        TestKit.shutdownActorSystem(system)
       }
     }
     out
@@ -139,8 +138,7 @@ class LoggerSpec extends WordSpec with MustMatchers {
           probe1.expectMsg("log it")
           probe2.expectMsg("log it")
         } finally {
-          system.shutdown()
-          system.awaitTermination(5.seconds.dilated)
+          TestKit.shutdownActorSystem(system)
         }
       }
     }
@@ -165,8 +163,7 @@ class LoggerSpec extends WordSpec with MustMatchers {
       try {
         SerializationExtension(s).serialize(Warning("foo", classOf[String]))
       } finally {
-        s.shutdown()
-        s.awaitTermination(5.seconds.dilated)
+        TestKit.shutdownActorSystem(s)
       }
     }
   }

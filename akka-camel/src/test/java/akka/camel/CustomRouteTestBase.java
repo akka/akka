@@ -4,7 +4,9 @@ import akka.actor.*;
 import akka.camel.internal.component.CamelPath;
 import akka.camel.javaapi.UntypedConsumerActor;
 import akka.camel.javaapi.UntypedProducerActor;
+import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.util.Timeout;
+import org.junit.*;
 import scala.concurrent.Await;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.duration.Duration;
@@ -14,25 +16,20 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Predicate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
 public class CustomRouteTestBase {
-  private static Camel camel;
-  private static ActorSystem system;
 
-  @Before
-  public void before() {
-    system = ActorSystem.create("test");
-    camel = (Camel) CamelExtension.get(system);
-  }
+  @Rule
+  public AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("CustomRouteTest");
 
-  @After
-  public void after() {
-    system.shutdown();
+  private final ActorSystem system = actorSystemResource.getSystem();
+  private Camel camel = (Camel) CamelExtension.get(system);
+
+  public static class MyActor extends UntypedActor {
+    @Override public void onReceive(Object o) {}
   }
 
   @Test
@@ -98,7 +95,7 @@ public class CustomRouteTestBase {
       camel.activationFutureFor(system.actorOf(Props.create(TestAckConsumer.class, "direct:testConsumerAckFromUri","mock:mockAckUri"), "testConsumerAckUri"),
       timeout, executionContext),
     duration);
-    camel.context().addRoutes(new CustomRouteBuilder("direct:testAckFromUri","akka://test/user/testConsumerAckUri?autoAck=false"));
+    camel.context().addRoutes(new CustomRouteBuilder("direct:testAckFromUri","akka://CustomRouteTest/user/testConsumerAckUri?autoAck=false"));
     camel.template().sendBody("direct:testAckFromUri", "test");
     assertMockEndpoint(mockEndpoint);
     system.stop(consumer);

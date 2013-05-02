@@ -185,8 +185,7 @@ abstract class UnreachableNodeJoinsAgainSpec
           endProbe.expectMsg(EndActor.EndAck)
 
         } finally {
-          freshSystem.shutdown()
-          freshSystem.awaitTermination(10 seconds)
+          shutdown(freshSystem)
         }
         // no barrier here, because it is not part of testConductor roles any more
       }

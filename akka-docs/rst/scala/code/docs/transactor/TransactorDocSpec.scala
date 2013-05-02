@@ -161,7 +161,7 @@ class TransactorDocSpec extends AkkaSpec {
 
     count must be === 1
 
-    system.shutdown()
+    shutdown(system)
   }
 
   "coordinated api" in {
@@ -191,7 +191,7 @@ class TransactorDocSpec extends AkkaSpec {
 
     coordinated.await()
 
-    system.shutdown()
+    shutdown(system)
   }
 
   "counter transactor" in {
@@ -208,7 +208,7 @@ class TransactorDocSpec extends AkkaSpec {
 
     underlyingCounter.count.single.get must be === 1
 
-    system.shutdown()
+    shutdown(system)
   }
 
   "friendly counter transactor" in {
@@ -229,6 +229,6 @@ class TransactorDocSpec extends AkkaSpec {
     underlyingFriendlyCounter.count.single.get must be === 1
     underlyingFriend.count.single.get must be === 1
 
-    system.shutdown()
+    shutdown(system)
   }
 }

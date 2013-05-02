@@ -15,7 +15,7 @@ import scala.reflect.ClassTag
 import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
 import scala.concurrent.Await
 import akka.util.Timeout
-import akka.testkit.AkkaSpec
+import akka.testkit.{ TestKit, AkkaSpec }
 
 private[camel] object TestSupport {
   def start(actor: ⇒ Actor, name: String)(implicit system: ActorSystem, timeout: Timeout): ActorRef =
@@ -53,7 +53,7 @@ private[camel] object TestSupport {
 
     abstract override protected def afterAll() {
       super.afterAll()
-      system.shutdown()
+      TestKit.shutdownActorSystem(system)
     }
   }
 
@@ -68,7 +68,7 @@ private[camel] object TestSupport {
     }
 
     override protected def afterEach() {
-      system.shutdown()
+      TestKit.shutdownActorSystem(system)
       super.afterEach()
     }
 

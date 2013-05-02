@@ -5,6 +5,7 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.camel.Camel;
 import akka.camel.CamelExtension;
+import akka.testkit.JavaTestKit;
 
 public class CustomRouteTestBase {
   public void customRoute() throws Exception{
@@ -15,6 +16,6 @@ public class CustomRouteTestBase {
     camel.context().addRoutes(new CustomRouteBuilder(responder));
     //#CustomRoute
     system.stop(responder);
-    system.shutdown();
+    JavaTestKit.shutdownActorSystem(system);
   }
 }

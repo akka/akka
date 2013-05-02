@@ -268,14 +268,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
         }
       }
     }
-    system.shutdown()
-    try system.awaitTermination(shutdownTimeout) catch {
-      case _: TimeoutException ⇒
-        val msg = "Failed to stop [%s] within [%s] \n%s".format(system.name, shutdownTimeout,
-          system.asInstanceOf[ActorSystemImpl].printTree)
-        if (verifySystemShutdown) throw new RuntimeException(msg)
-        else system.log.warning(msg)
-    }
+    shutdown(system)
     afterTermination()
   }
 

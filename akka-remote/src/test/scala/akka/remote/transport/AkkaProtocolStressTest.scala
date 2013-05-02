@@ -103,6 +103,6 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
       EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
   }
 
-  override def afterTermination(): Unit = systemB.shutdown()
+  override def afterTermination(): Unit = shutdown(systemB)
 
 }

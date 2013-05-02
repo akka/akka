@@ -8,13 +8,14 @@ import org.scalatest.WordSpec
 import akka.actor.ActorSystem
 import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit._
+import akka.testkit.TestKit
 
 class CamelConfigSpec extends WordSpec with MustMatchers {
 
   val (settings, config) = {
     val system = ActorSystem("CamelConfigSpec")
     val result = (CamelExtension(system).settings, system.settings.config)
-    system.shutdown()
+    TestKit.shutdownActorSystem(system)
     result
   }
   "CamelConfigSpec" must {

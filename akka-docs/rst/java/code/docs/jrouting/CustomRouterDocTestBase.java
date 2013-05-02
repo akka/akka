@@ -14,9 +14,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.*;
 
 import scala.concurrent.Await;
 import scala.concurrent.Future;
@@ -38,17 +37,11 @@ import akka.util.Timeout;
 
 public class CustomRouterDocTestBase {
 
-  ActorSystem system;
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("CustomRouterDocTest", AkkaSpec.testConf());
 
-  @Before
-  public void setUp() {
-    system = ActorSystem.create("MySystem", AkkaSpec.testConf());
-  }
-
-  @After
-  public void tearDown() {
-    system.shutdown();
-  }
+  private final ActorSystem system = actorSystemResource.getSystem();
   
   public static class MyActor extends UntypedActor {
     @Override public void onReceive(Object o) {}

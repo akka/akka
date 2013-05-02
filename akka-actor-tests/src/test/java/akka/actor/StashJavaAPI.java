@@ -1,26 +1,18 @@
 package akka.actor;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import com.typesafe.config.ConfigFactory;
 
 public class StashJavaAPI {
 
-  private static ActorSystem system;
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("StashJavaAPI", ActorWithBoundedStashSpec.testConf());
 
-  @BeforeClass
-  public static void beforeAll() {
-    system = ActorSystem.create("StashJavaAPI",
-        ConfigFactory.parseString(ActorWithStashSpec.testConf()));
-  }
-
-  @AfterClass
-  public static void afterAll() {
-    system.shutdown();
-    system = null;
-  }
+  private final ActorSystem system = actorSystemResource.getSystem();
 
   @Test
   public void mustBeAbleToUseStash() {

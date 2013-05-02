@@ -147,7 +147,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     }
 
     "allow valid names" in {
-      ActorSystem("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-").shutdown()
+      shutdown(ActorSystem("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"))
     }
 
     "support extensions" in {
@@ -199,14 +199,14 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       val system = ActorSystem()
       system.isTerminated must be(false)
       system.shutdown()
-      system.awaitTermination()
+      system.awaitTermination(10 seconds)
       system.isTerminated must be(true)
     }
 
     "throw RejectedExecutionException when shutdown" in {
       val system2 = ActorSystem("AwaitTermination", AkkaSpec.testConf)
       system2.shutdown()
-      system2.awaitTermination(5 seconds)
+      system2.awaitTermination(10 seconds)
 
       intercept[RejectedExecutionException] {
         system2.registerOnTermination { println("IF YOU SEE THIS THEN THERE'S A BUG HERE") }
@@ -275,7 +275,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       val t = probe.expectMsg(Terminated(a)(existenceConfirmed = true, addressTerminated = false))
       t.existenceConfirmed must be(true)
       t.addressTerminated must be(false)
-      system.shutdown()
+      shutdown(system)
     }
 
     "shut down when /user escalates" in {

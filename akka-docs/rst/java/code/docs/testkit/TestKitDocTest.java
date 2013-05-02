@@ -5,12 +5,12 @@ package docs.testkit;
 
 import static org.junit.Assert.*;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import akka.testkit.*;
+import docs.actor.mailbox.DurableMailboxDocSpec;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.Config;
 
 import akka.actor.ActorKilledException;
 import akka.actor.ActorRef;
@@ -22,14 +22,17 @@ import akka.actor.Terminated;
 import akka.actor.UntypedActor;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
-import akka.testkit.CallingThreadDispatcher;
-import akka.testkit.TestActor;
 import akka.testkit.TestActor.AutoPilot;
-import akka.testkit.TestActorRef;
-import akka.testkit.JavaTestKit;
 import scala.concurrent.duration.Duration;
 
 public class TestKitDocTest {
+
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("TestKitDocTest",
+      ConfigFactory.parseString("akka.loggers = [akka.testkit.TestEventListener]"));
+
+  private final ActorSystem system = actorSystemResource.getSystem();
 
   //#test-actor-ref
   static class MyActor extends UntypedActor {
@@ -43,23 +46,6 @@ public class TestKitDocTest {
     public boolean testMe() { return true; }
   }
 
-  //#test-actor-ref
-
-  private static ActorSystem system;
-
-  @BeforeClass
-  public static void setup() {
-    final Config config = ConfigFactory.parseString(
-        "akka.loggers = [akka.testkit.TestEventListener]");
-    system = ActorSystem.create("demoSystem", config);
-  }
-
-  @AfterClass
-  public static void cleanup() {
-    system.shutdown();
-  }
-
-  //#test-actor-ref
   @Test
   public void demonstrateTestActorRef() {
     final Props props = Props.create(MyActor.class);
@@ -415,7 +401,7 @@ public class TestKitDocTest {
   public void demonstrateEventFilter() {
     //#test-event-filter
     new JavaTestKit(system) {{
-      assertEquals("demoSystem", system.name());
+      assertEquals("TestKitDocTest", system.name());
       final ActorRef victim = system.actorOf(Props.empty(), "victim");
 
       final int result = new EventFilter<Integer>(ActorKilledException.class) {
@@ -423,7 +409,7 @@ public class TestKitDocTest {
           victim.tell(Kill.getInstance(), null);
           return 42;
         }
-      }.from("akka://demoSystem/user/victim").occurrences(1).exec();
+      }.from("akka://TestKitDocTest/user/victim").occurrences(1).exec();
 
       assertEquals(42, result);
     }};

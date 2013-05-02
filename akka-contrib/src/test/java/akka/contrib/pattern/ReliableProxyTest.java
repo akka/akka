@@ -4,8 +4,8 @@
 
 package akka.contrib.pattern;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import scala.concurrent.duration.Duration;
@@ -25,17 +25,11 @@ import akka.contrib.pattern.ReliableProxy;
 
 public class ReliableProxyTest {
 
-  private static ActorSystem system;
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("ReliableProxyTest");
 
-  @BeforeClass
-  public static void setup() {
-    system = ActorSystem.create();
-  }
-
-  @AfterClass
-  public static void teardown() {
-    system.shutdown();
-  }
+  private final ActorSystem system = actorSystemResource.getSystem();
 
   @Test
   public void demonstrateUsage() {
