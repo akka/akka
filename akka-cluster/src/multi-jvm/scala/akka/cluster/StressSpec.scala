@@ -713,7 +713,7 @@ abstract class StressSpec
     super.muteLog(sys)
     sys.eventStream.publish(Mute(EventFilter[RuntimeException](pattern = ".*Simulated exception.*")))
     muteDeadLetters(classOf[SimpleJob], classOf[AggregatedClusterResult], SendBatch.getClass,
-      classOf[StatsResult])(sys)
+      classOf[StatsResult], classOf[PhiResult], RetryTick.getClass)(sys)
   }
 
   def jvmInfo(): String = {
@@ -1125,8 +1125,8 @@ abstract class StressSpec
         runOn(roles.head) {
           log.info("StressSpec settings:\n{}", settings)
         }
-        enterBarrier("after-" + step)
       }
+      enterBarrier("after-" + step)
     }
 
     "join seed nodes" taggedAs LongRunningTest in within(30 seconds) {
