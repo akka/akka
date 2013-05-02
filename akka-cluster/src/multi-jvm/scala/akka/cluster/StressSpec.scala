@@ -1191,40 +1191,40 @@ abstract class StressSpec
           workResult.sendCount must be > (0L)
           workResult.ackCount must be > (0L)
         }
-        enterBarrier("after-" + step)
       }
+      enterBarrier("after-" + step)
     }
 
     "use routers with normal throughput" taggedAs LongRunningTest in {
       if (exerciseActors) {
         exerciseRouters("use routers with normal throughput", normalThroughputDuration,
           batchInterval = workBatchInterval, expectDroppedMessages = false, tree = false)
-        enterBarrier("after-" + step)
       }
+      enterBarrier("after-" + step)
     }
 
     "use routers with high throughput" taggedAs LongRunningTest in {
       if (exerciseActors) {
         exerciseRouters("use routers with high throughput", highThroughputDuration,
           batchInterval = Duration.Zero, expectDroppedMessages = false, tree = false)
-        enterBarrier("after-" + step)
       }
+      enterBarrier("after-" + step)
     }
 
     "use many actors with normal throughput" taggedAs LongRunningTest in {
       if (exerciseActors) {
         exerciseRouters("use many actors with normal throughput", normalThroughputDuration,
           batchInterval = workBatchInterval, expectDroppedMessages = false, tree = true)
-        enterBarrier("after-" + step)
       }
+      enterBarrier("after-" + step)
     }
 
     "use many actors with high throughput" taggedAs LongRunningTest in {
       if (exerciseActors) {
         exerciseRouters("use many actors with high throughput", highThroughputDuration,
           batchInterval = Duration.Zero, expectDroppedMessages = false, tree = true)
-        enterBarrier("after-" + step)
       }
+      enterBarrier("after-" + step)
     }
 
     "exercise join/remove/join/remove" taggedAs LongRunningTest in {
@@ -1235,8 +1235,8 @@ abstract class StressSpec
     "exercise supervision" taggedAs LongRunningTest in {
       if (exerciseActors) {
         exerciseSupervision("exercise supervision", supervisionDuration, supervisionOneIteration)
-        enterBarrier("after-" + step)
       }
+      enterBarrier("after-" + step)
     }
 
     "gossip when idle" taggedAs LongRunningTest in {
@@ -1250,8 +1250,8 @@ abstract class StressSpec
           system.actorOf(Props(classOf[Master], settings, settings.workBatchInterval, false),
             name = "master-" + myself.name) ! Begin
         }
-        enterBarrier("after-" + step)
       }
+      enterBarrier("after-" + step)
     }
 
     "leave nodes one-by-one from large cluster" taggedAs LongRunningTest in {
@@ -1296,15 +1296,15 @@ abstract class StressSpec
           workResult.sendCount must be > (0L)
           workResult.ackCount must be > (0L)
         }
-        enterBarrier("after-" + step)
       }
+      enterBarrier("after-" + step)
     }
 
     "log jvm info" taggedAs LongRunningTest in {
       if (infolog) {
         log.info("StressSpec JVM:\n{}", jvmInfo)
-        enterBarrier("after-" + step)
       }
+      enterBarrier("after-" + step)
     }
 
   }
