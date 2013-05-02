@@ -8,7 +8,6 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
-import akka.actor.UntypedActorFactory;
 import akka.kernel.Bootable;
 import com.typesafe.config.ConfigFactory;
 //#imports
@@ -21,11 +20,7 @@ public class JLookupApplication implements Bootable {
   public JLookupApplication() {
     system = ActorSystem.create("LookupApplication", ConfigFactory.load().getConfig("remotelookup"));
     final String path = "akka.tcp://CalculatorApplication@127.0.0.1:2552/user/simpleCalculator";
-    actor = system.actorOf(new Props().withCreator(new UntypedActorFactory() {
-      public UntypedActor create() {
-        return new JLookupActor(path);
-      }
-    }), "lookupActor");
+    actor = system.actorOf(Props.create(JLookupActor.class, path), "lookupActor");
   }
 
   public void doSomething(Op.MathOp mathOp) {
