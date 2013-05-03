@@ -23,25 +23,25 @@ The cluster singleton pattern is implemented by ``akka.contrib.pattern.ClusterSi
 It manages singleton actor instance among all cluster nodes or a group of nodes tagged with
 a specific role. ``ClusterSingletonManager`` is an actor that is supposed to be started on
 all nodes, or all nodes with specified role, in the cluster. The actual singleton actor is
-started by the ``ClusterSingletonManager`` on the leader node by creating a child actor from
+started by the ``ClusterSingletonManager`` on the oldest node by creating a child actor from
 supplied ``Props``. ``ClusterSingletonManager`` makes sure that at most one singleton instance
 is running at any point in time.
 
-The singleton actor is always running on the leader member, which is nothing more than
-the address currently sorted first in the member ring. This can change when adding
-or removing members. A graceful hand over can normally be performed when joining a new
-node that becomes leader or removing current leader node. Be aware that there is a short
-time period when there is no active singleton during the hand over process.
+The singleton actor is always running on the oldest member, which can be determined by
+``Member#isOlderThan``. This can change when removing members. A graceful hand over can normally
+be performed when current oldest node is leaving the cluster. Be aware that there is a short
+time period when there is no active singleton during the hand-over process.
 
-The cluster failure detector will notice when a leader node becomes unreachable due to
-things like JVM crash, hard shut down, or network failure. Then a new leader node will
+The cluster failure detector will notice when oldest node becomes unreachable due to
+things like JVM crash, hard shut down, or network failure. Then a new oldest node will
 take over and a new singleton actor is created. For these failure scenarios there will
 not be a graceful hand-over, but more than one active singletons is prevented by all
 reasonable means. Some corner cases are eventually resolved by configurable timeouts.
 
-You access the singleton actor with ``actorSelection`` using the names you have specified when
-creating the ClusterSingletonManager. You can subscribe to cluster ``LeaderChanged`` or
-``RoleLeaderChanged`` events to keep track of which node it is supposed to be running on.
+You access the singleton actor with ``actorSelection`` using the names you have
+specified when creating the ClusterSingletonManager. You can subscribe to
+``akka.cluster.ClusterEvent.MemberEvent`` and sort the members by age
+(``Member#isOlderThan``) to keep track of oldest member.
 Alternatively the singleton actor may broadcast its existence when it is started.
 
 An Example
@@ -56,6 +56,8 @@ scenario when integrating with external systems.
 On each node in the cluster you need to start the ``ClusterSingletonManager`` and
 supply the ``Props`` of the singleton actor, in this case the JMS queue consumer.
 
+In Scala:
+
 .. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterSingletonManagerSpec.scala#create-singleton-manager
 
 Here we limit the singleton to nodes tagged with the ``"worker"`` role, but all nodes, independent of
@@ -64,6 +66,10 @@ role, can be used by specifying ``None`` as ``role`` parameter.
 The corresponding Java API for the ``singeltonProps`` function is ``akka.contrib.pattern.ClusterSingletonPropsFactory``.
 The Java API takes a plain String for the role parameter and ``null`` means that all nodes, independent of
 role, are used.
+
+In Java:
+
+.. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ClusterSingletonManagerTest.java#create-singleton-manager
 
 Here we use an application specific ``terminationMessage`` to be able to close the
 resources before actually stopping the singleton actor. Note that ``PoisonPill`` is a
@@ -74,32 +80,28 @@ Here is how the singleton actor handles the ``terminationMessage`` in this examp
 .. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterSingletonManagerSpec.scala#consumer-end
 
 Note that you can send back current state to the ``ClusterSingletonManager`` before terminating.
-This message will be sent over to the ``ClusterSingletonManager`` at the new leader node and it
+This message will be sent over to the ``ClusterSingletonManager`` at the new oldest node and it
 will be passed to the ``singletonProps`` factory when creating the new singleton instance.
 
 With the names given above the path of singleton actor can be constructed by subscribing to
-``RoleLeaderChanged`` cluster event and the actor reference is then looked up using ``actorSelection``:
+``MemberEvent`` cluster event and sort the members by age to keep track of oldest member.
 
-.. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterSingletonManagerSpec.scala#singleton-proxy2
+In Scala:
 
-Subscribe to ``LeaderChanged`` instead of ``RoleLeaderChanged`` if you don't limit the singleton to
-the group of members tagged with a specific role.
+.. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterSingletonManagerSpec.scala#singleton-proxy
+
+In Java:
+
+.. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ClusterSingletonManagerTest.java#singleton-proxy
+
+The checks of ``role`` can be omitted if you don't limit the singleton to the group of members
+tagged with a specific role.
 
 Note that the hand-over might still be in progress and the singleton actor might not be started yet
-when you receive the ``LeaderChanged`` / ``RoleLeaderChanged`` event.
+when you receive the member event.
 
 A nice alternative to the above proxy is to use :ref:`distributed-pub-sub`. Let the singleton
 actor register itself to the mediator with ``DistributedPubSubMediator.Put`` message when it is
 started. Send messages to the singleton actor via the mediator with ``DistributedPubSubMediator.SendToAll``.
-
-To test scenarios where the cluster leader node is removed or shut down you can use :ref:`multi-node-testing` and
-utilize the fact that the leader is supposed to be the first member when sorted by member address.
-
-.. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterSingletonManagerSpec.scala#sort-cluster-roles
-
-.. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterSingletonManagerSpec.scala#test-leave
-
-Also, make sure that you don't shut down the first role, which is running the test conductor controller.
-Use a dedicated role for the controller, which is not a cluster member.
 
 .. note:: The singleton pattern will be simplified, perhaps provided out-of-the-box, when the cluster handles automatic actor partitioning.

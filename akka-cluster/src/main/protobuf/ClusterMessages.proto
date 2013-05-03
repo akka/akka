@@ -139,8 +139,9 @@ message GossipOverview {
  */
 message Member {
   required int32 addressIndex = 1;
-  required MemberStatus status = 2;
-  repeated int32 rolesIndexes = 3 [packed = true];
+  required int32 upNumber = 2;
+  required MemberStatus status = 3;
+  repeated int32 rolesIndexes = 4 [packed = true];
 }
 
 /**

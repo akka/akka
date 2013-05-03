@@ -121,5 +121,15 @@ class GossipSpec extends WordSpec with MustMatchers {
       checkMerged(g3 merge g2)
       checkMerged(g2 merge g3)
     }
+
+    "know who is youngest" in {
+      // a2 and e1 is Joining
+      val g1 = Gossip(members = SortedSet(a2, b1.copyUp(3)), overview = GossipOverview(unreachable = Set(e1)))
+      g1.youngestMember must be(b1)
+      val g2 = Gossip(members = SortedSet(a2), overview = GossipOverview(unreachable = Set(b1.copyUp(3), e1)))
+      g2.youngestMember must be(b1)
+      val g3 = Gossip(members = SortedSet(a2, b1.copyUp(3), e2.copyUp(4)))
+      g3.youngestMember must be(e2)
+    }
   }
 }

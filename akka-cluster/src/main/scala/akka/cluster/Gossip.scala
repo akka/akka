@@ -213,6 +213,16 @@ private[cluster] case class Gossip(
       getOrElse(Member.removed(node)) // placeholder for removed member
   }
 
+  def youngestMember: Member = {
+    require(members.nonEmpty, "No youngest when no members")
+    def maxByUpNumber(mbrs: Iterable[Member]): Member =
+      mbrs.maxBy(m ⇒ if (m.upNumber == Int.MaxValue) 0 else m.upNumber)
+    if (overview.unreachable.isEmpty)
+      maxByUpNumber(members)
+    else
+      maxByUpNumber(members ++ overview.unreachable)
+  }
+
   override def toString =
     s"Gossip(members = [${members.mkString(", ")}], overview = ${overview}, version = ${version})"
 }

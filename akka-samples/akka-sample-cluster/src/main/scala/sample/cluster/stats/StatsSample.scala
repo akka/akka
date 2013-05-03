@@ -2,6 +2,7 @@ package sample.cluster.stats
 
 //#imports
 import language.postfixOps
+import scala.collection.immutable
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
@@ -19,6 +20,7 @@ import akka.actor.RootActorPath
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
+import akka.cluster.Member
 import akka.contrib.pattern.ClusterSingletonManager
 import akka.routing.FromConfig
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
@@ -91,29 +93,32 @@ class StatsFacade extends Actor with ActorLogging {
   import context.dispatcher
   val cluster = Cluster(context.system)
 
-  var currentMaster: Option[ActorSelection] = None
+  // sort by age, oldest first
+  val ageOrdering = Ordering.fromLessThan[Member] { (a, b) ⇒ a.isOlderThan(b) }
+  var membersByAge: immutable.SortedSet[Member] = immutable.SortedSet.empty(ageOrdering)
 
-  // subscribe to cluster changes, RoleLeaderChanged
+  // subscribe to cluster changes
   // re-subscribe when restart
-  override def preStart(): Unit = cluster.subscribe(self, classOf[RoleLeaderChanged])
+  override def preStart(): Unit = cluster.subscribe(self, classOf[MemberEvent])
   override def postStop(): Unit = cluster.unsubscribe(self)
 
   def receive = {
-    case job: StatsJob if currentMaster.isEmpty ⇒
+    case job: StatsJob if membersByAge.isEmpty ⇒
       sender ! JobFailed("Service unavailable, try again later")
     case job: StatsJob ⇒
-      currentMaster foreach { _.tell(job, sender) }
+      currentMaster.tell(job, sender)
     case state: CurrentClusterState ⇒
-      setCurrentMaster(state.roleLeader("compute"))
-    case RoleLeaderChanged(role, leader) ⇒
-      if (role == "compute")
-        setCurrentMaster(leader)
+      membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.collect {
+        case m if m.hasRole("compute") ⇒ m
+      }
+    case MemberUp(m)      ⇒ if (m.hasRole("compute")) membersByAge += m
+    case MemberRemoved(m) ⇒ if (m.hasRole("compute")) membersByAge -= m
+    case _: MemberEvent   ⇒ // not interesting
   }
 
-  def setCurrentMaster(address: Option[Address]): Unit = {
-    currentMaster = address.map(a ⇒ context.actorSelection(RootActorPath(a) /
-      "user" / "singleton" / "statsService"))
-  }
+  def currentMaster: ActorSelection =
+    context.actorSelection(RootActorPath(membersByAge.head.address) /
+      "user" / "singleton" / "statsService")
 
 }
 //#facade
