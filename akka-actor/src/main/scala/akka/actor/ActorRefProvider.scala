@@ -6,7 +6,7 @@ package akka.actor
 
 import scala.collection.immutable
 import akka.dispatch.sysmsg._
-import akka.dispatch.NullMessage
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue, NullMessage }
 import akka.routing._
 import akka.event._
 import akka.util.{ Switch, Helpers }
@@ -367,7 +367,8 @@ private[akka] object LocalActorRefProvider {
   /*
    * Root and user guardian
    */
-  private class Guardian(override val supervisorStrategy: SupervisorStrategy) extends Actor {
+  private class Guardian(override val supervisorStrategy: SupervisorStrategy) extends Actor
+    with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
     def receive = {
       case Terminated(_)    ⇒ context.stop(self)
@@ -382,7 +383,8 @@ private[akka] object LocalActorRefProvider {
   /**
    * System guardian
    */
-  private class SystemGuardian(override val supervisorStrategy: SupervisorStrategy, val guardian: ActorRef) extends Actor {
+  private class SystemGuardian(override val supervisorStrategy: SupervisorStrategy, val guardian: ActorRef)
+    extends Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
     import SystemGuardian._
 
     var terminationHooks = Set.empty[ActorRef]

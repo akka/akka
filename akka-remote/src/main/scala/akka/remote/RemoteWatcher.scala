@@ -14,6 +14,7 @@ import akka.actor.RootActorPath
 import akka.actor.Terminated
 import akka.actor.ExtendedActorSystem
 import akka.ConfigurationException
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 /**
  * INTERNAL API
@@ -92,7 +93,7 @@ private[akka] class RemoteWatcher(
   unreachableReaperInterval: FiniteDuration,
   heartbeatExpectedResponseAfter: FiniteDuration,
   numberOfEndHeartbeatRequests: Int)
-  extends Actor with ActorLogging {
+  extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import RemoteWatcher._
   import context.dispatcher

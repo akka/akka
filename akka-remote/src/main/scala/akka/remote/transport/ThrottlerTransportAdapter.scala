@@ -22,6 +22,7 @@ import scala.math.min
 import scala.util.{ Success, Failure }
 import scala.util.control.NonFatal
 import akka.dispatch.sysmsg.{ Unwatch, Watch }
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 class ThrottlerProvider extends TransportAdapterProvider {
 
@@ -336,7 +337,8 @@ private[transport] class ThrottledAssociation(
   val associationHandler: AssociationEventListener,
   val originalHandle: AssociationHandle,
   val inbound: Boolean)
-  extends Actor with LoggingFSM[ThrottledAssociation.ThrottlerState, ThrottledAssociation.ThrottlerData] {
+  extends Actor with LoggingFSM[ThrottledAssociation.ThrottlerState, ThrottledAssociation.ThrottlerData]
+  with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import ThrottledAssociation._
   import context.dispatcher
 

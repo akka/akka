@@ -22,6 +22,7 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 @SerialVersionUID(1L)
 class AkkaProtocolException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with OnlyCauseStackTrace {
@@ -227,7 +228,8 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
                                             private val settings: AkkaProtocolSettings,
                                             private val codec: AkkaPduCodec,
                                             private val failureDetector: FailureDetector)
-  extends Actor with FSM[AssociationState, ProtocolStateData] {
+  extends Actor with FSM[AssociationState, ProtocolStateData]
+  with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import ProtocolStateActor._
   import context.dispatcher

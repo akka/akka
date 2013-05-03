@@ -11,6 +11,7 @@ import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus._
 import akka.event.EventStream
 import akka.actor.AddressTerminated
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 /**
  * Domain events published to the event bus.
@@ -252,7 +253,8 @@ object ClusterEvent {
  * Responsible for domain event subscriptions and publishing of
  * domain events to event bus.
  */
-private[cluster] final class ClusterDomainEventPublisher extends Actor with ActorLogging {
+private[cluster] final class ClusterDomainEventPublisher extends Actor with ActorLogging
+  with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import InternalClusterAction._
 
   var latestGossip: Gossip = Gossip.empty

@@ -19,6 +19,7 @@ import akka.io.IO.HasFailureMessage
 import akka.util.Helpers.Requiring
 import akka.event.LoggingAdapter
 import akka.util.SerializedSuspendableExecutionContext
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 abstract class SelectionHandlerSettings(config: Config) {
   import config._
@@ -56,7 +57,8 @@ private[io] object SelectionHandler {
   case object WriteInterest
 }
 
-private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends Actor with ActorLogging {
+private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends Actor with ActorLogging
+  with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import SelectionHandler._
   import settings._
 
