@@ -402,7 +402,7 @@ An example of setting up a custom transport implementation::
 Remote Events
 -------------
 
-It is possible to listen to events that occur in Akka Remote, and to subscribe/unsubscribe to there events,
+It is possible to listen to events that occur in Akka Remote, and to subscribe/unsubscribe to these events
 you simply register as listener to the below described types in on the ``ActorSystem.eventStream``.
 
 .. note::
