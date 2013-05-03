@@ -40,7 +40,7 @@ object Udp extends ExtensionKey[UdpExt] {
   }
 
   case class Bind(handler: ActorRef,
-                  endpoint: InetSocketAddress,
+                  localAddress: InetSocketAddress,
                   options: immutable.Traversable[SocketOption] = Nil) extends Command
   case object Unbind extends Command
 
