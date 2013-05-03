@@ -12,6 +12,7 @@ import akka.io.SelectionHandler._
 import akka.io.Tcp._
 import akka.io.IO.HasFailureMessage
 import java.net.InetSocketAddress
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 /**
  * INTERNAL API
@@ -29,10 +30,12 @@ private[io] object TcpListener {
 /**
  * INTERNAL API
  */
-private[io] class TcpListener(val selectorRouter: ActorRef,
-                              val tcp: TcpExt,
-                              val bindCommander: ActorRef,
-                              val bind: Bind) extends Actor with ActorLogging {
+private[io] class TcpListener(
+  val selectorRouter: ActorRef,
+  val tcp: TcpExt,
+  val bindCommander: ActorRef,
+  val bind: Bind)
+  extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import TcpListener._
   import tcp.Settings._
 

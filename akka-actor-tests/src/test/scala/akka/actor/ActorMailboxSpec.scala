@@ -102,7 +102,7 @@ class ActorMailboxSpec extends AkkaSpec(ActorMailboxSpec.mailboxConf) with Defau
 
     actor ! "ping"
     val q = expectMsgType[MessageQueue]
-    types foreach (t ⇒ assert(t isInstance q, s"Type [${q.getClass}] is not assignable to [${t}]"))
+    types foreach (t ⇒ assert(t isInstance q, s"Type [${q.getClass.getName}] is not assignable to [${t.getName}]"))
   }
 
   "An Actor" must {

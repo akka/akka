@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit
 import akka.util.Timeout
 import org.zeromq.ZMQException
 import scala.concurrent.duration.FiniteDuration
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 /**
  * A Model to represent a version of the zeromq library
@@ -241,7 +242,7 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
   private val zeromqGuardian: ActorRef = {
     verifyZeroMQVersion()
 
-    system.actorOf(Props(new Actor {
+    system.actorOf(Props(new Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
       import SupervisorStrategy._
       override def supervisorStrategy = OneForOneStrategy() {
         case ex: ZMQException if nonfatal(ex) ⇒ Resume

@@ -390,7 +390,9 @@ private[remote] class EndpointWriter(
   codec: AkkaPduCodec,
   val refuseUid: Option[Int],
   val receiveBuffers: ConcurrentHashMap[Link, AckedReceiveBuffer[Message]],
-  val reliableDeliverySupervisor: Option[ActorRef]) extends EndpointActor(localAddress, remoteAddress, transport, settings, codec) with Stash with FSM[EndpointWriter.State, Unit] {
+  val reliableDeliverySupervisor: Option[ActorRef])
+  extends EndpointActor(localAddress, remoteAddress, transport, settings, codec) with UnboundedStash
+  with FSM[EndpointWriter.State, Unit] {
 
   import EndpointWriter._
   import context.dispatcher
