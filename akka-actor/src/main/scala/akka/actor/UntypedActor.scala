@@ -63,11 +63,11 @@ import akka.japi.{ Creator }
  *
  *        if (msg.equals("UseSender")) {
  *          // Reply to original sender of message
- *          getSender().tell(msg + ":" + getSelf());
+ *          getSender().tell(msg, getSelf());
  *
  *        } else if (msg.equals("SendToSelf")) {
  *          // Send message to the actor itself recursively
- *          getSelf().tell("SomeOtherMessage");
+ *          getSelf().tell("SomeOtherMessage", getSelf());
  *
  *        } else if (msg.equals("ErrorKernelWithDirectReply")) {
  *          // Send work to one-off child which will reply directly to original sender
@@ -83,7 +83,7 @@ import akka.japi.{ Creator }
  *
  *        final Reply reply = (Reply) message;
  *        // might want to do some processing/book-keeping here
- *        reply.sender.tell(reply.result);
+ *        reply.sender.tell(reply.result, getSelf());
  *
  *      } else throw new IllegalArgumentException("Unknown message: " + message);
  *    }
