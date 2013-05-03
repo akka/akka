@@ -74,6 +74,53 @@ trait AskSupport {
    * See [[scala.concurrent.Future]] for a description of `flow`
    */
   def ask(actorRef: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] = actorRef ? message
+
+  /**
+   * Import this implicit conversion to gain `?` and `ask` methods on
+   * [[akka.actor.ActorSelection]], which will defer to the
+   * `ask(actorSelection, message)(timeout)` method defined here.
+   *
+   * {{{
+   * import akka.pattern.ask
+   *
+   * val future = selection ? message             // => ask(selection, message)
+   * val future = selection ask message           // => ask(selection, message)
+   * val future = selection.ask(message)(timeout) // => ask(selection, message)(timeout)
+   * }}}
+   *
+   * All of the above use an implicit [[akka.actor.Timeout]].
+   */
+  implicit def ask(actorSelection: ActorSelection): AskableActorSelection = new AskableActorSelection(actorSelection)
+
+  /**
+   * Sends a message asynchronously and returns a [[scala.concurrent.Future]]
+   * holding the eventual reply message; this means that the target actor
+   * needs to send the result to the `sender` reference provided. The Future
+   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
+   * given timeout has expired; this is independent from any timeout applied
+   * while awaiting a result for this future (i.e. in
+   * `Await.result(..., timeout)`).
+   *
+   * <b>Warning:</b>
+   * When using future callbacks, inside actors you need to carefully avoid closing over
+   * the containing actor’s object, i.e. do not call methods or access mutable state
+   * on the enclosing actor from within the callback. This would break the actor
+   * encapsulation and may introduce synchronization bugs and race conditions because
+   * the callback will be scheduled concurrently to the enclosing actor. Unfortunately
+   * there is not yet a way to detect these illegal accesses at compile time.
+   *
+   * <b>Recommended usage:</b>
+   *
+   * {{{
+   *   val f = ask(selection, request)(timeout)
+   *   flow {
+   *     EnrichedRequest(request, f())
+   *   } pipeTo nextActor
+   * }}}
+   *
+   * See [[scala.concurrent.Future]] for a description of `flow`
+   */
+  def ask(actorSelection: ActorSelection, message: Any)(implicit timeout: Timeout): Future[Any] = actorSelection ? message
 }
 
 /*
@@ -84,15 +131,37 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
   def ask(message: Any)(implicit timeout: Timeout): Future[Any] = actorRef match {
     case ref: InternalActorRef if ref.isTerminated ⇒
       actorRef ! message
-      Future.failed[Any](new AskTimeoutException("Recipient[%s] had already been terminated." format actorRef))
+      Future.failed[Any](new AskTimeoutException(s"Recipient[$actorRef] had already been terminated."))
     case ref: InternalActorRef ⇒
-      if (timeout.duration.length <= 0) Future.failed[Any](new IllegalArgumentException("Timeout length for an `ask` must be greater or equal to 1.  Question not sent to [%s]" format actorRef))
+      if (timeout.duration.length <= 0)
+        Future.failed[Any](new IllegalArgumentException(s"Timeout length must not be negative, question not sent to [$actorRef]"))
       else {
         val a = PromiseActorRef(ref.provider, timeout)
         actorRef.tell(message, a)
         a.result.future
       }
-    case _ ⇒ Future.failed[Any](new IllegalArgumentException("Unsupported type of ActorRef for the recipient. Question not sent to [%s]" format actorRef))
+    case _ ⇒ Future.failed[Any](new IllegalArgumentException(s"Unsupported recipient ActorRef type, question not sent to [$actorRef]"))
+  }
+
+  def ?(message: Any)(implicit timeout: Timeout): Future[Any] = ask(message)(timeout)
+}
+
+/*
+ * Implementation class of the “ask” pattern enrichment of ActorSelection
+ */
+final class AskableActorSelection(val actorSel: ActorSelection) extends AnyVal {
+
+  def ask(message: Any)(implicit timeout: Timeout): Future[Any] = actorSel.anchor match {
+    case ref: InternalActorRef ⇒
+      if (timeout.duration.length <= 0)
+        Future.failed[Any](
+          new IllegalArgumentException(s"Timeout length must not be negative, question not sent to [$actorSel]"))
+      else {
+        val a = PromiseActorRef(ref.provider, timeout)
+        actorSel.tell(message, a)
+        a.result.future
+      }
+    case _ ⇒ Future.failed[Any](new IllegalArgumentException(s"Unsupported recipient ActorRef type, question not sent to [$actorSel]"))
   }
 
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] = ask(message)(timeout)

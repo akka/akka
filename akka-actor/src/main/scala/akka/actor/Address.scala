@@ -90,6 +90,13 @@ private[akka] trait PathUtils {
   }
 }
 
+/**
+ * Extractor for so-called “relative actor paths” as in “relative URI”, not in
+ * “relative to some actor”. Examples:
+ *
+ *  * "grand/child"
+ *  * "/user/hello/world"
+ */
 object RelativeActorPath extends PathUtils {
   def unapply(addr: String): Option[immutable.Seq[String]] = {
     try {
