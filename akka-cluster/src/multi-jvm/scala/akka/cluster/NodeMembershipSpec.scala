@@ -58,5 +58,18 @@ abstract class NodeMembershipSpec
 
       enterBarrier("after-2")
     }
+
+    "correct member age" taggedAs LongRunningTest in {
+      val firstMember = clusterView.members.find(_.address == address(first)).get
+      val secondMember = clusterView.members.find(_.address == address(second)).get
+      val thirdMember = clusterView.members.find(_.address == address(third)).get
+      firstMember.isOlderThan(thirdMember) must be(true)
+      thirdMember.isOlderThan(firstMember) must be(false)
+      secondMember.isOlderThan(thirdMember) must be(true)
+      thirdMember.isOlderThan(secondMember) must be(false)
+
+      enterBarrier("after-3")
+
+    }
   }
 }

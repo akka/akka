@@ -748,16 +748,29 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
           // transform the node member ring
           val newMembers = localMembers collect {
-            // Move JOINING => UP (once all nodes have seen that this node is JOINING, i.e. we have a convergence)
-            // and minimum number of nodes have joined the cluster
-            case member if isJoiningToUp(member) ⇒ member copy (status = Up)
-            // Move LEAVING => EXITING (once we have a convergence on LEAVING
-            // *and* if we have a successful partition handoff)
-            case member if member.status == Leaving && hasPartionHandoffCompletedSuccessfully ⇒
-              member copy (status = Exiting)
-            // Everyone else that is not Exiting stays as they are
-            case member if member.status != Exiting && member.status != Down ⇒ member
-            // Move EXITING => REMOVED, DOWN => REMOVED - i.e. remove the nodes from the `members` set/node ring and seen table
+            var upNumber = 0
+
+            {
+              // Move JOINING => UP (once all nodes have seen that this node is JOINING, i.e. we have a convergence)
+              // and minimum number of nodes have joined the cluster
+              case member if isJoiningToUp(member) ⇒
+                if (upNumber == 0) {
+                  // It is alright to use same upNumber as already used by a removed member, since the upNumber
+                  // is only used for comparing age of current cluster members (Member.isOlderThan)
+                  val youngest = localGossip.youngestMember
+                  upNumber = 1 + (if (youngest.upNumber == Int.MaxValue) 0 else youngest.upNumber)
+                } else {
+                  upNumber += 1
+                }
+                member.copyUp(upNumber)
+              // Move LEAVING => EXITING (once we have a convergence on LEAVING
+              // *and* if we have a successful partition handoff)
+              case member if member.status == Leaving && hasPartionHandoffCompletedSuccessfully ⇒
+                member copy (status = Exiting)
+              // Everyone else that is not Exiting stays as they are
+              case member if member.status != Exiting && member.status != Down ⇒ member
+              // Move EXITING => REMOVED, DOWN => REMOVED - i.e. remove the nodes from the `members` set/node ring and seen table
+            }
           }
 
           // ----------------------

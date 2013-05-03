@@ -263,10 +263,10 @@ Cluster Singleton Pattern
 For some use cases it is convenient and sometimes also mandatory to ensure that
 you have exactly one actor of a certain type running somewhere in the cluster.
 
-This can be implemented by subscribing to ``LeaderChanged`` or ``RoleLeaderChanged``
-events, but there are several corner cases to consider. Therefore, this specific use 
-case is made easily accessible by the :ref:`cluster-singleton` in the contrib module.
-You can use it as is, or adjust to fit your specific needs. 
+This can be implemented by subscribing to member events, but there are several corner 
+cases to consider. Therefore, this specific use case is made easily accessible by the 
+:ref:`cluster-singleton` in the contrib module. You can use it as is, or adjust to fit
+your specific needs. 
 
 Distributed Publish Subscribe Pattern
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -456,9 +456,7 @@ delegates jobs to the ``StatsService``.
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#facade
 
 The ``StatsFacade`` receives text from users and delegates to the current ``StatsService``, the single
-master. It listens to cluster events to lookup the ``StatsService`` on the leader node. The master runs 
-on the same node as the leader of the cluster members, which is nothing more than the address currently 
-sorted first in the member ring, i.e. it can change when new nodes join or when current leader leaves.
+master. It listens to cluster events to lookup the ``StatsService`` on the oldest node.
 
 All nodes start ``StatsFacade`` and the ``ClusterSingletonManager``. The router is now configured like this:
 

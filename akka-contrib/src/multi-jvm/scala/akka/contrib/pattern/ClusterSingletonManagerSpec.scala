@@ -139,59 +139,42 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
         queue ! UnregisterConsumer
       case UnregistrationOk ⇒
         // reply to ClusterSingletonManager with hand over data,
-        // which will be passed as parameter to new leader consumer
+        // which will be passed as parameter to new consumer singleton
         context.parent ! current
         context stop self
       //#consumer-end
     }
   }
 
-  // documentation of how to keep track of the leader address in user land
+  // documentation of how to keep track of the oldest member in user land
   //#singleton-proxy
   class ConsumerProxy extends Actor {
-    // subscribe to LeaderChanged, re-subscribe when restart
+    // subscribe to MemberEvent, re-subscribe when restart
     override def preStart(): Unit =
-      Cluster(context.system).subscribe(self, classOf[LeaderChanged])
-    override def postStop(): Unit =
-      Cluster(context.system).unsubscribe(self)
-
-    var leaderAddress: Option[Address] = None
-
-    def receive = {
-      case state: CurrentClusterState ⇒ leaderAddress = state.leader
-      case LeaderChanged(leader)      ⇒ leaderAddress = leader
-      case other                      ⇒ consumer foreach { _.tell(other, sender) }
-    }
-
-    def consumer: Option[ActorSelection] =
-      leaderAddress map (a ⇒ context.actorSelection(RootActorPath(a) /
-        "user" / "singleton" / "consumer"))
-  }
-  //#singleton-proxy
-
-  // documentation of how to keep track of the role leader address in user land
-  //#singleton-proxy2
-  class ConsumerProxy2 extends Actor {
-    // subscribe to RoleLeaderChanged, re-subscribe when restart
-    override def preStart(): Unit =
-      Cluster(context.system).subscribe(self, classOf[RoleLeaderChanged])
+      Cluster(context.system).subscribe(self, classOf[MemberEvent])
     override def postStop(): Unit =
       Cluster(context.system).unsubscribe(self)
 
     val role = "worker"
-    var leaderAddress: Option[Address] = None
+    // sort by age, oldest first
+    val ageOrdering = Ordering.fromLessThan[Member] { (a, b) ⇒ a.isOlderThan(b) }
+    var membersByAge: immutable.SortedSet[Member] = immutable.SortedSet.empty(ageOrdering)
 
     def receive = {
-      case state: CurrentClusterState   ⇒ leaderAddress = state.roleLeader(role)
-      case RoleLeaderChanged(r, leader) ⇒ if (r == role) leaderAddress = leader
-      case other                        ⇒ consumer foreach { _.tell(other, sender) }
+      case state: CurrentClusterState ⇒
+        membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.collect {
+          case m if m.hasRole(role) ⇒ m
+        }
+      case MemberUp(m)      ⇒ if (m.hasRole(role)) membersByAge += m
+      case MemberRemoved(m) ⇒ if (m.hasRole(role)) membersByAge -= m
+      case other            ⇒ consumer foreach { _.tell(other, sender) }
     }
 
     def consumer: Option[ActorSelection] =
-      leaderAddress map (a ⇒ context.actorSelection(RootActorPath(a) /
+      membersByAge.headOption map (m ⇒ context.actorSelection(RootActorPath(m.address) /
         "user" / "singleton" / "consumer"))
   }
-  //#singleton-proxy2
+  //#singleton-proxy
 
 }
 
@@ -213,18 +196,6 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
 
   val identifyProbe = TestProbe()
 
-  //#sort-cluster-roles
-  // Sort the roles in the order used by the cluster.
-  lazy val sortedWorkerNodes: immutable.IndexedSeq[RoleName] = {
-    implicit val clusterOrdering: Ordering[RoleName] = new Ordering[RoleName] {
-      import Member.addressOrdering
-      def compare(x: RoleName, y: RoleName) =
-        addressOrdering.compare(node(x).address, node(y).address)
-    }
-    roles.filterNot(r ⇒ r == controller || r == observer).toVector.sorted
-  }
-  //#sort-cluster-roles
-
   def queue: ActorRef = {
     system.actorSelection(node(controller) / "user" / "queue").tell(Identify("queue"), identifyProbe.ref)
     identifyProbe.expectMsgType[ActorIdentity].ref.get
@@ -235,6 +206,17 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       Cluster(system) join node(to).address
       if (Cluster(system).selfRoles.contains("worker")) createSingleton()
     }
+  }
+
+  def awaitMemberUp(memberProbe: TestProbe, nodes: RoleName*): Unit = {
+    runOn(nodes.filterNot(_ == nodes.head): _*) {
+      memberProbe.expectMsgType[MemberUp](15.seconds).member.address must be(node(nodes.head).address)
+    }
+    runOn(nodes.head) {
+      memberProbe.receiveN(nodes.size, 15.seconds).collect { case MemberUp(m) ⇒ m.address }.toSet must be(
+        nodes.map(node(_).address).toSet)
+    }
+    enterBarrier(nodes.head.name + "-up")
   }
 
   def createSingleton(): ActorRef = {
@@ -249,30 +231,34 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
     //#create-singleton-manager
   }
 
-  def consumer(leader: RoleName): ActorSelection =
-    system.actorSelection(RootActorPath(node(leader).address) / "user" / "singleton" / "consumer")
+  def consumer(oldest: RoleName): ActorSelection =
+    system.actorSelection(RootActorPath(node(oldest).address) / "user" / "singleton" / "consumer")
 
-  def verify(leader: RoleName, msg: Int, expectedCurrent: Int): Unit = {
-    enterBarrier("before-" + leader.name + "-verified")
-    runOn(leader) {
+  def verifyRegistration(oldest: RoleName, expectedCurrent: Int): Unit = {
+    enterBarrier("before-" + oldest.name + "-registration-verified")
+    runOn(oldest) {
       expectMsg(RegistrationOk)
-      consumer(leader) ! GetCurrent
+      consumer(oldest) ! GetCurrent
       expectMsg(expectedCurrent)
     }
-    enterBarrier(leader.name + "-active")
+    enterBarrier("after-" + oldest.name + "-registration-verified")
+  }
+
+  def verifyMsg(oldest: RoleName, msg: Int): Unit = {
+    enterBarrier("before-" + msg + "-verified")
 
     runOn(controller) {
       queue ! msg
       // make sure it's not terminated, which would be wrong
       expectNoMsg(1 second)
     }
-    runOn(leader) {
-      expectMsg(msg)
+    runOn(oldest) {
+      expectMsg(5.seconds, msg)
     }
-    runOn(sortedWorkerNodes.filterNot(_ == leader): _*) {
+    runOn(roles.filterNot(r ⇒ r == oldest || r == controller || r == observer): _*) {
       expectNoMsg(1 second)
     }
-    enterBarrier(leader.name + "-verified")
+    enterBarrier("after-" + msg + "-verified")
   }
 
   def crash(roles: RoleName*): Unit = {
@@ -288,8 +274,11 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
 
   "A ClusterSingletonManager" must {
 
-    "startup in single member cluster" in within(10 seconds) {
-      log.info("Sorted cluster nodes [{}]", sortedWorkerNodes.map(node(_).address).mkString(", "))
+    "startup 6 node cluster" in within(60 seconds) {
+
+      val memberProbe = TestProbe()
+      Cluster(system).subscribe(memberProbe.ref, classOf[MemberUp])
+      memberProbe.expectMsgClass(classOf[CurrentClusterState])
 
       runOn(controller) {
         // watch that it is not terminated, which would indicate misbehaviour
@@ -297,55 +286,48 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       }
       enterBarrier("queue-started")
 
-      join(sortedWorkerNodes.last, sortedWorkerNodes.last)
-      verify(sortedWorkerNodes.last, msg = 1, expectedCurrent = 0)
+      join(first, first)
+      awaitMemberUp(memberProbe, first)
+      verifyRegistration(first, expectedCurrent = 0)
+      verifyMsg(first, msg = 1)
 
       // join the observer node as well, which should not influence since it doesn't have the "worker" role
-      join(observer, sortedWorkerNodes.last)
+      join(observer, first)
+      awaitMemberUp(memberProbe, observer, first)
+
+      join(second, first)
+      awaitMemberUp(memberProbe, second, observer, first)
+      verifyMsg(first, msg = 2)
+
+      join(third, first)
+      awaitMemberUp(memberProbe, third, second, observer, first)
+      verifyMsg(first, msg = 3)
+
+      join(fourth, first)
+      awaitMemberUp(memberProbe, fourth, third, second, observer, first)
+      verifyMsg(first, msg = 4)
+
+      join(fifth, first)
+      awaitMemberUp(memberProbe, fifth, fourth, third, second, observer, first)
+      verifyMsg(first, msg = 5)
+
+      join(sixth, first)
+      awaitMemberUp(memberProbe, sixth, fifth, fourth, third, second, observer, first)
+      verifyMsg(first, msg = 6)
+
       enterBarrier("after-1")
     }
 
-    "hand over when new leader joins to 1 node cluster" in within(15 seconds) {
-      val newLeaderRole = sortedWorkerNodes(4)
-      join(newLeaderRole, sortedWorkerNodes.last)
-      verify(newLeaderRole, msg = 2, expectedCurrent = 1)
-    }
-
-    "hand over when new leader joins to 2 nodes cluster" in within(15 seconds) {
-      val newLeaderRole = sortedWorkerNodes(3)
-      join(newLeaderRole, sortedWorkerNodes.last)
-      verify(newLeaderRole, msg = 3, expectedCurrent = 2)
-    }
-
-    "hand over when new leader joins to 3 nodes cluster" in within(15 seconds) {
-      val newLeaderRole = sortedWorkerNodes(2)
-      join(newLeaderRole, sortedWorkerNodes.last)
-      verify(newLeaderRole, msg = 4, expectedCurrent = 3)
-    }
-
-    "hand over when new leader joins to 4 nodes cluster" in within(15 seconds) {
-      val newLeaderRole = sortedWorkerNodes(1)
-      join(newLeaderRole, sortedWorkerNodes.last)
-      verify(newLeaderRole, msg = 5, expectedCurrent = 4)
-    }
-
-    "hand over when new leader joins to 5 nodes cluster" in within(15 seconds) {
-      val newLeaderRole = sortedWorkerNodes(0)
-      join(newLeaderRole, sortedWorkerNodes.last)
-      verify(newLeaderRole, msg = 6, expectedCurrent = 5)
-    }
-
-    "hand over when leader leaves in 6 nodes cluster " in within(30 seconds) {
-      //#test-leave
-      val leaveRole = sortedWorkerNodes(0)
-      val newLeaderRole = sortedWorkerNodes(1)
+    "hand over when oldest leaves in 6 nodes cluster " in within(30 seconds) {
+      val leaveRole = first
+      val newOldestRole = second
 
       runOn(leaveRole) {
         Cluster(system) leave node(leaveRole).address
       }
-      //#test-leave
 
-      verify(newLeaderRole, msg = 7, expectedCurrent = 6)
+      verifyRegistration(second, expectedCurrent = 6)
+      verifyMsg(second, msg = 7)
 
       runOn(leaveRole) {
         system.actorSelection("/user/singleton").tell(Identify("singleton"), identifyProbe.ref)
@@ -360,24 +342,28 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       enterBarrier("after-leave")
     }
 
-    "take over when leader crashes in 5 nodes cluster" in within(60 seconds) {
+    "take over when oldest crashes in 5 nodes cluster" in within(60 seconds) {
+      // FIXME change those to DeadLetterFilter
       system.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*")))
       system.eventStream.publish(Mute(EventFilter.error(pattern = ".*Disassociated.*")))
       system.eventStream.publish(Mute(EventFilter.error(pattern = ".*Association failed.*")))
       enterBarrier("logs-muted")
 
-      crash(sortedWorkerNodes(1))
-      verify(sortedWorkerNodes(2), msg = 8, expectedCurrent = 0)
+      crash(second)
+      verifyRegistration(third, expectedCurrent = 0)
+      verifyMsg(third, msg = 8)
     }
 
-    "take over when two leaders crash in 3 nodes cluster" in within(60 seconds) {
-      crash(sortedWorkerNodes(2), sortedWorkerNodes(3))
-      verify(sortedWorkerNodes(4), msg = 9, expectedCurrent = 0)
+    "take over when two oldest crash in 3 nodes cluster" in within(60 seconds) {
+      crash(third, fourth)
+      verifyRegistration(fifth, expectedCurrent = 0)
+      verifyMsg(fifth, msg = 9)
     }
 
-    "take over when leader crashes in 2 nodes cluster" in within(60 seconds) {
-      crash(sortedWorkerNodes(4))
-      verify(sortedWorkerNodes(5), msg = 10, expectedCurrent = 0)
+    "take over when oldest crashes in 2 nodes cluster" in within(60 seconds) {
+      crash(fifth)
+      verifyRegistration(sixth, expectedCurrent = 0)
+      verifyMsg(sixth, msg = 10)
     }
 
   }
