@@ -35,28 +35,30 @@ private[io] class TcpListener(val selectorRouter: ActorRef,
                               val bind: Bind) extends Actor with ActorLogging {
   import TcpListener._
   import tcp.Settings._
-  import bind._
 
-  context.watch(handler) // sign death pact
-  val channel = {
-    val serverSocketChannel = ServerSocketChannel.open
-    serverSocketChannel.configureBlocking(false)
-    val socket = serverSocketChannel.socket
-    options.foreach(_.beforeServerSocketBind(socket))
+  context.watch(bind.handler) // sign death pact
+
+  val channel = ServerSocketChannel.open
+  channel.configureBlocking(false)
+
+  val localAddress =
     try {
-      socket.bind(localAddress, backlog)
-      require(socket.getLocalSocketAddress.isInstanceOf[InetSocketAddress],
-        s"bound to unknown SocketAddress [${socket.getLocalSocketAddress}]")
+      val socket = channel.socket
+      bind.options.foreach(_.beforeServerSocketBind(socket))
+      socket.bind(bind.localAddress, bind.backlog)
+      val ret = socket.getLocalSocketAddress match {
+        case isa: InetSocketAddress ⇒ isa
+        case x                      ⇒ throw new IllegalArgumentException(s"bound to unknown SocketAddress [$x]")
+      }
+      context.parent ! RegisterChannel(channel, SelectionKey.OP_ACCEPT)
+      log.debug("Successfully bound to {}", ret)
+      ret
     } catch {
       case NonFatal(e) ⇒
         bindCommander ! bind.failureMessage
-        log.error(e, "Bind failed for TCP channel on endpoint [{}]", localAddress)
+        log.error(e, "Bind failed for TCP channel on endpoint [{}]", bind.localAddress)
         context.stop(self)
     }
-    serverSocketChannel
-  }
-  context.parent ! RegisterChannel(channel, SelectionKey.OP_ACCEPT)
-  log.debug("Successfully bound to {}", localAddress)
 
   override def supervisorStrategy = IO.connectionSupervisorStrategy
 
@@ -96,7 +98,7 @@ private[io] class TcpListener(val selectorRouter: ActorRef,
     if (socketChannel != null) {
       log.debug("New connection accepted")
       socketChannel.configureBlocking(false)
-      selectorRouter ! WorkerForCommand(RegisterIncoming(socketChannel), self, Props(classOf[TcpIncomingConnection], socketChannel, tcp, handler, options))
+      selectorRouter ! WorkerForCommand(RegisterIncoming(socketChannel), self, Props(classOf[TcpIncomingConnection], socketChannel, tcp, bind.handler, bind.options))
       acceptAllPending(limit - 1)
     } else context.parent ! AcceptInterest
   }
