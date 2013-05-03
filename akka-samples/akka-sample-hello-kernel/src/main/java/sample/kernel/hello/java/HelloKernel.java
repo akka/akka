@@ -14,7 +14,7 @@ public class HelloKernel implements Bootable {
 
   public static class HelloActor extends UntypedActor {
     final ActorRef worldActor = getContext().actorOf(
-        new Props(WorldActor.class));
+        Props.create(WorldActor.class));
 
     public void onReceive(Object message) {
       if (message == "start")
@@ -37,7 +37,7 @@ public class HelloKernel implements Bootable {
   }
 
   public void startup() {
-    system.actorOf(new Props(HelloActor.class)).tell("start", null);
+    system.actorOf(Props.create(HelloActor.class)).tell("start", null);
   }
 
   public void shutdown() {

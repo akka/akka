@@ -14,7 +14,7 @@ public class CustomRouteTest {
   
   // only to test compilability
   public void testRoute() {
-    final ActorRef ref = system.actorOf(new Props().withRouter(new RoundRobinRouter(1)));
+    final ActorRef ref = system.actorOf(Props.empty().withRouter(new RoundRobinRouter(1)));
     final scala.Function1<scala.Tuple2<ActorRef, Object>,
                           scala.collection.immutable.Iterable<Destination>> route = ExtractRoute.apply(ref);
     route.apply(null);
