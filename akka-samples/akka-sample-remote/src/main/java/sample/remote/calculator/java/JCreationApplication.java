@@ -7,7 +7,6 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
-import akka.actor.UntypedActorFactory;
 import akka.kernel.Bootable;
 import com.typesafe.config.ConfigFactory;
 
@@ -19,13 +18,9 @@ public class JCreationApplication implements Bootable {
   public JCreationApplication() {
     system = ActorSystem.create("CreationApplication", ConfigFactory.load()
         .getConfig("remotecreation"));
-    final ActorRef remoteActor = system.actorOf(new Props(JAdvancedCalculatorActor.class),
+    final ActorRef remoteActor = system.actorOf(Props.create(JAdvancedCalculatorActor.class),
         "advancedCalculator");
-    actor = system.actorOf(new Props().withCreator(new UntypedActorFactory() {
-      public UntypedActor create() {
-        return new JCreationActor(remoteActor);
-      }
-    }), "creationActor");
+    actor = system.actorOf(Props.create(JCreationActor.class, remoteActor), "creationActor");
 
   }
 

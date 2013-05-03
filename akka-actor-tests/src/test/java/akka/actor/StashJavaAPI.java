@@ -24,7 +24,7 @@ public class StashJavaAPI {
 
   @Test
   public void mustBeAbleToUseStash() {
-    ActorRef ref = system.actorOf(new Props(StashJavaAPITestActor.class)
+    ActorRef ref = system.actorOf(Props.create(StashJavaAPITestActor.class)
         .withDispatcher("my-dispatcher"));
     ref.tell("Hello", ref);
     ref.tell("Hello", ref);

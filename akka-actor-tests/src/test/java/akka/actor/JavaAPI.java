@@ -52,13 +52,13 @@ public class JavaAPI {
 
   @Test
   public void mustBeAbleToCreateActorRefFromClass() {
-    ActorRef ref = system.actorOf(new Props(JavaAPITestActor.class));
+    ActorRef ref = system.actorOf(Props.create(JavaAPITestActor.class));
     assertNotNull(ref);
   }
 
   @Test
   public void mustBeAbleToCreateActorRefFromFactory() {
-    ActorRef ref = system.actorOf(new Props().withCreator(new Creator<Actor>() {
+    ActorRef ref = system.actorOf(Props.empty().withCreator(new Creator<Actor>() {
       public Actor create() {
         return new JavaAPITestActor();
       }
@@ -68,7 +68,7 @@ public class JavaAPI {
 
   @Test
   public void mustAcceptSingleArgTell() {
-    ActorRef ref = system.actorOf(new Props(JavaAPITestActor.class));
+    ActorRef ref = system.actorOf(Props.create(JavaAPITestActor.class));
     ref.tell("hallo");
     ref.tell("hallo", ref);
   }

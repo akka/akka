@@ -14,8 +14,6 @@ import org.junit.Before;
 import akka.actor.ActorSystem;
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import akka.actor.UntypedActor;
-import akka.actor.UntypedActorFactory;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import static akka.pattern.Patterns.ask;
@@ -62,16 +60,10 @@ public class UntypedTransactorTest {
     counters = new ArrayList<ActorRef>();
     for (int i = 1; i <= numCounters; i++) {
       final String name = "counter" + i;
-      ActorRef counter = system.actorOf(new Props(new UntypedActorFactory() {
-        private static final long serialVersionUID = 1L;
-
-        public UntypedActor create() {
-          return new UntypedCounter(name);
-        }
-      }));
+      ActorRef counter = system.actorOf(Props.create(UntypedCounter.class, name));
       counters.add(counter);
     }
-    failer = system.actorOf(new Props(UntypedFailer.class));
+    failer = system.actorOf(Props.create(UntypedFailer.class));
   }
 
   @Test

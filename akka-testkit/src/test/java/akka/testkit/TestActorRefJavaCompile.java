@@ -11,7 +11,7 @@ public class TestActorRefJavaCompile {
 
   public void shouldBeAbleToCompileWhenUsingApply() {
   	//Just a dummy call to make sure it compiles
-    TestActorRef<Actor> ref = TestActorRef.apply(new Props(), null);
+    TestActorRef<Actor> ref = TestActorRef.apply(Props.empty(), null);
     ref.toString();
   }
 }

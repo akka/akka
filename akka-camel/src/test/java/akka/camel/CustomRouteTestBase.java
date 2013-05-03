@@ -38,7 +38,7 @@ public class CustomRouteTestBase {
   @Test
   public void testCustomProducerRoute() throws Exception {
     MockEndpoint mockEndpoint = camel.context().getEndpoint("mock:mockProducer", MockEndpoint.class);
-    ActorRef producer = system.actorOf(new Props(MockEndpointProducer.class), "mockEndpoint");
+    ActorRef producer = system.actorOf(Props.create(MockEndpointProducer.class), "mockEndpoint");
     camel.context().addRoutes(new CustomRouteBuilder("direct:test",producer));
     camel.template().sendBody("direct:test", "test");
     assertMockEndpoint(mockEndpoint);
@@ -48,11 +48,7 @@ public class CustomRouteTestBase {
   @Test
   public void testCustomProducerUriRoute() throws Exception {
     MockEndpoint mockEndpoint = camel.context().getEndpoint("mock:mockProducerUri", MockEndpoint.class);
-    ActorRef producer = system.actorOf(new Props(new UntypedActorFactory(){
-      public Actor create() {
-        return new EndpointProducer("mock:mockProducerUri");
-      }
-    }), "mockEndpointUri");
+    ActorRef producer = system.actorOf(Props.create(EndpointProducer.class, "mock:mockProducerUri"), "mockEndpointUri");
     camel.context().addRoutes(new CustomRouteBuilder("direct:test",producer));
     camel.template().sendBody("direct:test", "test");
     assertMockEndpoint(mockEndpoint);
@@ -66,7 +62,7 @@ public class CustomRouteTestBase {
     Timeout timeout = new Timeout(duration);
     ExecutionContext executionContext = system.dispatcher();
     ActorRef consumer = Await.result(
-            camel.activationFutureFor(system.actorOf(new Props(TestConsumer.class), "testConsumer"), timeout, executionContext),
+            camel.activationFutureFor(system.actorOf(Props.create(TestConsumer.class), "testConsumer"), timeout, executionContext),
             duration);
     camel.context().addRoutes(new CustomRouteBuilder("direct:testRouteConsumer",consumer));
     camel.template().sendBody("direct:testRouteConsumer", "test");
@@ -83,7 +79,7 @@ public class CustomRouteTestBase {
     ActorRef consumer = Await.result(
       camel.activationFutureFor(
         system.actorOf(
-          new Props( new UntypedActorFactory(){ public Actor create() { return new TestAckConsumer("direct:testConsumerAck","mock:mockAck"); } }), "testConsumerAck"),
+          Props.create(TestAckConsumer.class, "direct:testConsumerAck","mock:mockAck"), "testConsumerAck"),
       timeout, executionContext),
     duration);
     camel.context().addRoutes(new CustomRouteBuilder("direct:testAck", consumer, false, duration));
@@ -99,7 +95,7 @@ public class CustomRouteTestBase {
     FiniteDuration duration = Duration.create(10, TimeUnit.SECONDS);
     Timeout timeout = new Timeout(duration);
     ActorRef consumer = Await.result(
-      camel.activationFutureFor(system.actorOf(new Props( new UntypedActorFactory(){ public Actor create() { return new TestAckConsumer("direct:testConsumerAckFromUri","mock:mockAckUri"); } }), "testConsumerAckUri"),
+      camel.activationFutureFor(system.actorOf(Props.create(TestAckConsumer.class, "direct:testConsumerAckFromUri","mock:mockAckUri"), "testConsumerAckUri"),
       timeout, executionContext),
     duration);
     camel.context().addRoutes(new CustomRouteBuilder("direct:testAckFromUri","akka://test/user/testConsumerAckUri?autoAck=false"));
@@ -114,7 +110,7 @@ public class CustomRouteTestBase {
     Timeout timeout = new Timeout(duration);
     ExecutionContext executionContext = system.dispatcher();
     ActorRef consumer = Await.result(
-      camel.activationFutureFor(system.actorOf(new Props( new UntypedActorFactory(){ public Actor create() { return new TestAckConsumer("direct:testConsumerException","mock:mockException"); } }), "testConsumerException"),
+      camel.activationFutureFor(system.actorOf(Props.create(TestAckConsumer.class, "direct:testConsumerException","mock:mockException"), "testConsumerException"),
       timeout, executionContext),
     duration);
     camel.context().addRoutes(new CustomRouteBuilder("direct:testException", consumer, false, Duration.create(0, TimeUnit.SECONDS)));
