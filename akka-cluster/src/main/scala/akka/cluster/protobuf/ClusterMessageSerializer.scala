@@ -134,7 +134,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
     val allMembers = List(gossip.members, gossip.overview.unreachable).flatMap(identity)
     val allAddresses = allMembers.map(_.uniqueAddress).to[Vector]
     val addressMapping = allAddresses.zipWithIndex.toMap
-    val allRoles = allMembers.flatMap(_.roles).to[Vector]
+    val allRoles = allMembers.foldLeft(Set.empty[String])((acc, m) ⇒ acc ++ m.roles).to[Vector]
     val roleMapping = allRoles.zipWithIndex.toMap
     val allHashes = gossip.overview.seen.values.foldLeft(gossip.version.versions.keys.map(_.hash).toSet) {
       case (s, VectorClock(t, v)) ⇒ s ++ v.keys.map(_.hash)
