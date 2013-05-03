@@ -93,8 +93,7 @@ class RemoteWatcherSpec extends AkkaSpec(
 
   Seq(system, remoteSystem).foreach(muteDeadLetters(
     akka.remote.transport.AssociationHandle.Disassociated.getClass,
-    akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass,
-    akka.dispatch.NullMessage.getClass)(_))
+    akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass)(_))
 
   override def afterTermination() {
     remoteSystem.shutdown()

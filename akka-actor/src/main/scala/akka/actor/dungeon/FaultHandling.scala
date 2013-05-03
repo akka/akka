@@ -202,7 +202,6 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     catch handleNonFatalOrInterruptedException { e ⇒ publish(Error(e, self.path.toString, clazz(a), e.getMessage)) }
     finally try dispatcher.detach(this)
     finally try parent.sendSystemMessage(DeathWatchNotification(self, existenceConfirmed = true, addressTerminated = false))
-    finally try parent ! NullMessage // read ScalaDoc of NullMessage to see why
     finally try tellWatchersWeDied(a)
     finally try unwatchWatchedActors(a) // stay here as we expect an emergency stop from handleInvokeFailure
     finally {

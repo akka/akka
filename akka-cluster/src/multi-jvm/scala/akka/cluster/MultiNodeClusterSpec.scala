@@ -114,7 +114,6 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
         classOf[InternalClusterAction.Tick],
         classOf[akka.actor.PoisonPill],
         classOf[akka.dispatch.sysmsg.DeathWatchNotification],
-        akka.dispatch.NullMessage.getClass,
         akka.remote.transport.AssociationHandle.Disassociated.getClass,
         akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass,
         classOf[akka.remote.transport.AssociationHandle.InboundPayload])(sys)

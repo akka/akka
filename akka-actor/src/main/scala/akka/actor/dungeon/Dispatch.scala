@@ -9,7 +9,6 @@ import akka.dispatch.{ MessageDispatcher, Mailbox, Envelope }
 import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
 import akka.util.Unsafe
-import akka.dispatch.NullMessage
 import akka.actor._
 import akka.serialization.SerializationExtension
 import scala.util.control.NonFatal
@@ -68,7 +67,6 @@ private[akka] trait Dispatch { this: ActorCell ⇒
     if (sendSupervise) {
       // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
       parent.sendSystemMessage(akka.dispatch.sysmsg.Supervise(self, async = false))
-      parent ! NullMessage // read ScalaDoc of NullMessage to see why
     }
     this
   }

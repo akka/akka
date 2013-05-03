@@ -6,7 +6,6 @@ package akka.actor
 
 import akka.actor.dungeon.ChildrenContainer
 import akka.dispatch.Envelope
-import akka.dispatch.NullMessage
 import akka.dispatch.sysmsg._
 import akka.event.Logging.{ LogEvent, Debug, Error }
 import akka.japi.Procedure
@@ -462,39 +461,38 @@ private[akka] class ActorCell(
     checkReceiveTimeout // Reschedule receive timeout
   }
 
-  def autoReceiveMessage(msg: Envelope): Unit =
-    if (msg.message != NullMessage) {
-      if (system.settings.DebugAutoReceive)
-        publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
+  def autoReceiveMessage(msg: Envelope): Unit = {
+    if (system.settings.DebugAutoReceive)
+      publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
-      msg.message match {
-        case t: Terminated              ⇒ receivedTerminated(t)
-        case AddressTerminated(address) ⇒ addressTerminated(address)
-        case Kill                       ⇒ throw new ActorKilledException("Kill")
-        case PoisonPill                 ⇒ self.stop()
-        case SelectParent(m) ⇒
-          if (self == system.provider.rootGuardian) self.tell(m, msg.sender)
-          else parent.tell(m, msg.sender)
-        case s @ SelectChildName(name, m) ⇒
-          def selectChild(): Unit = {
-            getChildByName(name) match {
-              case Some(c: ChildRestartStats) ⇒ c.child.tell(m, msg.sender)
-              case _ ⇒
-                s.identifyRequest foreach { x ⇒ sender ! ActorIdentity(x.messageId, None) }
-            }
+    msg.message match {
+      case t: Terminated              ⇒ receivedTerminated(t)
+      case AddressTerminated(address) ⇒ addressTerminated(address)
+      case Kill                       ⇒ throw new ActorKilledException("Kill")
+      case PoisonPill                 ⇒ self.stop()
+      case SelectParent(m) ⇒
+        if (self == system.provider.rootGuardian) self.tell(m, msg.sender)
+        else parent.tell(m, msg.sender)
+      case s @ SelectChildName(name, m) ⇒
+        def selectChild(): Unit = {
+          getChildByName(name) match {
+            case Some(c: ChildRestartStats) ⇒ c.child.tell(m, msg.sender)
+            case _ ⇒
+              s.identifyRequest foreach { x ⇒ sender ! ActorIdentity(x.messageId, None) }
           }
-          // need this special case because of extraNames handled by rootGuardian
-          if (self == system.provider.rootGuardian) {
-            self.asInstanceOf[LocalActorRef].getSingleChild(name) match {
-              case Nobody ⇒ selectChild()
-              case child  ⇒ child.tell(m, msg.sender)
-            }
-          } else
-            selectChild()
-        case SelectChildPattern(p, m) ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
-        case Identify(messageId)      ⇒ sender ! ActorIdentity(messageId, Some(self))
-      }
+        }
+        // need this special case because of extraNames handled by rootGuardian
+        if (self == system.provider.rootGuardian) {
+          self.asInstanceOf[LocalActorRef].getSingleChild(name) match {
+            case Nobody ⇒ selectChild()
+            case child  ⇒ child.tell(m, msg.sender)
+          }
+        } else
+          selectChild()
+      case SelectChildPattern(p, m) ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
+      case Identify(messageId)      ⇒ sender ! ActorIdentity(messageId, Some(self))
     }
+  }
 
   final def receiveMessage(msg: Any): Unit = behaviorStack.head.applyOrElse(msg, actor.unhandled)
 
