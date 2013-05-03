@@ -45,14 +45,14 @@ class AskSpec extends AkkaSpec {
       f.isCompleted must be(true)
       intercept[IllegalArgumentException] {
         Await.result(f, remaining)
-      }.getMessage must be === "Unsupported type of ActorRef for the recipient. Question not sent to [null]"
+      }.getMessage must be === "Unsupported recipient ActorRef type, question not sent to [null]"
     }
 
     "return broken promises on 0 timeout" in {
       implicit val timeout = Timeout(0 seconds)
       val echo = system.actorOf(Props(new Actor { def receive = { case x ⇒ sender ! x } }))
       val f = echo ? "foo"
-      val expectedMsg = "Timeout length for an `ask` must be greater or equal to 1.  Question not sent to [%s]" format echo
+      val expectedMsg = "Timeout length must not be negative, question not sent to [%s]" format echo
       intercept[IllegalArgumentException] {
         Await.result(f, remaining)
       }.getMessage must be === expectedMsg
@@ -62,7 +62,7 @@ class AskSpec extends AkkaSpec {
       implicit val timeout = Timeout(-1000 seconds)
       val echo = system.actorOf(Props(new Actor { def receive = { case x ⇒ sender ! x } }))
       val f = echo ? "foo"
-      val expectedMsg = "Timeout length for an `ask` must be greater or equal to 1.  Question not sent to [%s]" format echo
+      val expectedMsg = "Timeout length must not be negative, question not sent to [%s]" format echo
       intercept[IllegalArgumentException] {
         Await.result(f, remaining)
       }.getMessage must be === expectedMsg
