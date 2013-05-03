@@ -115,6 +115,8 @@ directory.
 More information is available in the documentation of the
 :ref:`microkernel-scala` / :ref:`microkernel-java`.
 
+.. _build-tool:
+
 Using a build tool
 ------------------
 

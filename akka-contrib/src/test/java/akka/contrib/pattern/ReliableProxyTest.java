@@ -49,12 +49,7 @@ public class ReliableProxyTest {
 
           //#demo-proxy
           final ActorRef proxy = getContext().actorOf(
-              new Props(new UntypedActorFactory() {
-                public Actor create() {
-                  final FiniteDuration retry = Duration.create(100, "millis");
-                  return new ReliableProxy(target, retry);
-                }
-              }));
+              Props.create(ReliableProxy.class, target, Duration.create(100, "millis")));
 
           public void onReceive(Object msg) {
             if ("hello".equals(msg)) {
@@ -68,7 +63,7 @@ public class ReliableProxyTest {
     parent.tell("hello", null);
     probe.expectMsg("world!");
   }
-  
+
   @Test
   public void demonstrateTransitions() {
     final ActorRef target = system.deadLetters();
@@ -79,15 +74,8 @@ public class ReliableProxyTest {
         return new UntypedActor() {
 
           //#demo-transition
-          final ActorRef proxy = getContext().actorOf(
-              new Props(new UntypedActorFactory() {
-                public Actor create() {
-                  final FiniteDuration retry = Duration.create(100, "millis");
-                  return new ReliableProxy(target, retry);
-                }
-              }));
+          final ActorRef proxy = getContext().actorOf(Props.create(ReliableProxy.class, target, Duration.create(100, "millis")));
           ActorRef client = null;
-          
           {
             proxy.tell(new FSM.SubscribeTransitionCallBack(getSelf()), getSelf());
           }

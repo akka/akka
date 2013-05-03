@@ -94,12 +94,12 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   override def expectedTestDuration: FiniteDuration = 60 seconds
 
-  def muteDeadLetters(endPatterns: String*)(sys: ActorSystem = system): Unit =
+  def muteDeadLetters(messageClasses: Class[_]*)(sys: ActorSystem = system): Unit =
     if (!sys.log.isDebugEnabled) {
-      def mute(suffix: String): Unit =
-        sys.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead.*" + suffix)))
-      if (endPatterns.isEmpty) mute("")
-      else endPatterns foreach mute
+      def mute(clazz: Class[_]): Unit =
+        sys.eventStream.publish(Mute(DeadLettersFilter(clazz)(occurrences = Int.MaxValue)))
+      if (messageClasses.isEmpty) mute(classOf[AnyRef])
+      else messageClasses foreach mute
     }
 
 }

@@ -105,16 +105,19 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
         }
 
       muteDeadLetters(
-        "Heartbeat.*",
-        "GossipEnvelope.*",
-        "ClusterMetricsChanged.*",
-        "Disassociated.*",
-        "DisassociateUnderlying.*",
-        "HandleListenerRegistered.*",
-        "PoisonPill.*",
-        "DeathWatchNotification.*",
-        "NullMessage.*",
-        "InboundPayload.*")(sys)
+        classOf[ClusterHeartbeatReceiver.Heartbeat],
+        classOf[ClusterHeartbeatReceiver.EndHeartbeat],
+        classOf[GossipEnvelope],
+        classOf[GossipStatus],
+        classOf[MetricsGossipEnvelope],
+        classOf[ClusterEvent.ClusterMetricsChanged],
+        classOf[InternalClusterAction.Tick],
+        classOf[akka.actor.PoisonPill],
+        classOf[akka.dispatch.sysmsg.DeathWatchNotification],
+        akka.dispatch.NullMessage.getClass,
+        akka.remote.transport.AssociationHandle.Disassociated.getClass,
+        akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass,
+        classOf[akka.remote.transport.AssociationHandle.InboundPayload])(sys)
 
     }
   }
@@ -289,6 +292,8 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
       awaitAssert(clusterView.leader must be(expectedLeader))
     }
   }
+
+  def awaitAllReachable(): Unit = awaitAssert(clusterView.unreachableMembers.isEmpty)
 
   /**
    * Wait until the specified nodes have seen the same gossip overview.

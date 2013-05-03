@@ -23,6 +23,7 @@ import scala.util.control.NonFatal
 import scala.util.{ Failure, Success }
 import akka.remote.transport.AkkaPduCodec.Message
 import java.util.concurrent.ConcurrentHashMap
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 
 /**
  * INTERNAL API
@@ -82,7 +83,7 @@ private[remote] object Remoting {
 
   case class RegisterTransportActor(props: Props, name: String)
 
-  private[Remoting] class TransportSupervisor extends Actor {
+  private[Remoting] class TransportSupervisor extends Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
     override def supervisorStrategy = OneForOneStrategy() {
       case NonFatal(e) ⇒ Restart
     }
@@ -348,7 +349,8 @@ private[remote] object EndpointManager {
 /**
  * INTERNAL API
  */
-private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends Actor {
+private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends Actor
+  with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import EndpointManager._
   import context.dispatcher

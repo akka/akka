@@ -12,13 +12,16 @@ import java.nio.channels.DatagramChannel
 import java.nio.channels.SelectionKey._
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 /**
  * INTERNAL API
  */
-private[io] class UdpConnection(val udpConn: UdpConnectedExt,
-                                val commander: ActorRef,
-                                val connect: Connect) extends Actor with ActorLogging {
+private[io] class UdpConnection(
+  val udpConn: UdpConnectedExt,
+  val commander: ActorRef,
+  val connect: Connect)
+  extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   def selector: ActorRef = context.parent
 

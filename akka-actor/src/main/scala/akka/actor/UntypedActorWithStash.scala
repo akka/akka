@@ -31,3 +31,8 @@ package akka.actor
  * </pre>
  */
 abstract class UntypedActorWithStash extends UntypedActor with Stash
+
+/**
+ * Actor base class that enforces an unbounded stash for the actor.
+ */
+abstract class UntypedActorWithUnboundedStash extends UntypedActor with UnboundedStash

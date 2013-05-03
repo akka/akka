@@ -6,7 +6,7 @@ package akka.actor;
 
 public class NonPublicClass {
     public static Props createProps() {
-        return new Props(MyNonPublicActorClass.class);
+        return Props.create(MyNonPublicActorClass.class);
     }
 }
 

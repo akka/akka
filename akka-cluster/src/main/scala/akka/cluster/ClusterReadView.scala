@@ -9,6 +9,7 @@ import scala.collection.immutable
 import akka.actor.{ Actor, ActorRef, ActorSystemImpl, Address, Props }
 import akka.cluster.ClusterEvent._
 import akka.actor.PoisonPill
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 /**
  * INTERNAL API
@@ -40,7 +41,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
 
   // create actor that subscribes to the cluster eventBus to update current read view state
   private val eventBusListener: ActorRef = {
-    cluster.system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new Actor {
+    cluster.system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
       override def preStart(): Unit = cluster.subscribe(self, classOf[ClusterDomainEvent])
       override def postStop(): Unit = cluster.unsubscribe(self)
 

@@ -23,16 +23,14 @@ object TestUtils {
     temporaryServerAddresses(1, address, udp).head
 
   def temporaryServerAddresses(numberOfAddresses: Int, hostname: String = "127.0.0.1", udp: Boolean = false): immutable.IndexedSeq[InetSocketAddress] = {
-    val sockets = for (_ ← 1 to numberOfAddresses) yield {
+    Vector.fill(numberOfAddresses) {
       val serverSocket: GeneralSocket =
         if (udp) DatagramChannel.open().socket()
         else ServerSocketChannel.open().socket()
 
       serverSocket.bind(new InetSocketAddress(hostname, 0))
       (serverSocket, new InetSocketAddress(hostname, serverSocket.getLocalPort))
-    }
-
-    sockets collect { case (socket, address) ⇒ socket.close(); address }
+    } collect { case (socket, address) ⇒ socket.close(); address }
   }
 
   def verifyActorTermination(actor: ActorRef)(implicit system: ActorSystem): Unit = {

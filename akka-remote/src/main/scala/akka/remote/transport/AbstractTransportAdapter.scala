@@ -12,7 +12,7 @@ import akka.util.Timeout
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Promise, Future }
-import scala.util.Success
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 trait TransportAdapterProvider {
   /**
@@ -162,7 +162,8 @@ abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorS
   override def shutdown(): Unit = manager ! PoisonPill
 }
 
-abstract class ActorTransportAdapterManager extends Actor {
+abstract class ActorTransportAdapterManager extends Actor
+  with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import ActorTransportAdapter.{ ListenUnderlying, ListenerRegistered }
 
   private var delayedEvents = immutable.Queue.empty[Any]

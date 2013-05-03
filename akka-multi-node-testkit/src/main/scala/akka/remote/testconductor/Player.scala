@@ -19,6 +19,7 @@ import akka.pattern.{ ask, pipe, AskTimeoutException }
 import akka.event.{ LoggingAdapter, Logging }
 import java.net.{ InetSocketAddress, ConnectException }
 import akka.remote.transport.ThrottlerTransportAdapter.{ SetThrottle, TokenBucket, Blackhole, Unthrottled }
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 /**
  * The Player is the client component of the
@@ -49,7 +50,7 @@ trait Player { this: TestConductorExt ⇒
 
     if (_client ne null) throw new IllegalStateException("TestConductorClient already started")
     _client = system.actorOf(Props(classOf[ClientFSM], name, controllerAddr), "TestConductorClient")
-    val a = system.actorOf(Props(new Actor {
+    val a = system.actorOf(Props(new Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
       var waiting: ActorRef = _
       def receive = {
         case fsm: ActorRef ⇒
@@ -140,7 +141,8 @@ private[akka] object ClientFSM {
  *
  * INTERNAL API.
  */
-private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress) extends Actor with LoggingFSM[ClientFSM.State, ClientFSM.Data] {
+private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress) extends Actor
+  with LoggingFSM[ClientFSM.State, ClientFSM.Data] with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import ClientFSM._
 
   val settings = TestConductor().Settings

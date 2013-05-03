@@ -10,12 +10,16 @@ import akka.io.SelectionHandler.{ ChannelRegistered, RegisterChannel }
 import scala.collection.immutable
 import akka.io.Inet.SocketOption
 import scala.util.control.NonFatal
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 /**
  * INTERNAL API
  */
-private[io] class UdpSender(val udp: UdpExt, options: immutable.Traversable[SocketOption], val commander: ActorRef)
-  extends Actor with ActorLogging with WithUdpSend {
+private[io] class UdpSender(
+  val udp: UdpExt,
+  options: immutable.Traversable[SocketOption],
+  val commander: ActorRef)
+  extends Actor with ActorLogging with WithUdpSend with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   def selector: ActorRef = context.parent
 

@@ -269,7 +269,6 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
       }
     }
     system.shutdown()
-    val shutdownTimeout = 5.seconds.dilated
     try system.awaitTermination(shutdownTimeout) catch {
       case _: TimeoutException ⇒
         val msg = "Failed to stop [%s] within [%s] \n%s".format(system.name, shutdownTimeout,
@@ -279,6 +278,8 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
     }
     afterTermination()
   }
+
+  def shutdownTimeout: FiniteDuration = 5.seconds.dilated
 
   /**
    * Override this and return `true` to assert that the
@@ -359,12 +360,12 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
    */
   def node(role: RoleName): ActorPath = RootActorPath(testConductor.getAddressFor(role).await)
 
-  def muteDeadLetters(endPatterns: String*)(sys: ActorSystem = system): Unit =
+  def muteDeadLetters(messageClasses: Class[_]*)(sys: ActorSystem = system): Unit =
     if (!sys.log.isDebugEnabled) {
-      def mute(suffix: String): Unit =
-        sys.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead.*" + suffix)))
-      if (endPatterns.isEmpty) mute("")
-      else endPatterns foreach mute
+      def mute(clazz: Class[_]): Unit =
+        sys.eventStream.publish(Mute(DeadLettersFilter(clazz)(occurrences = Int.MaxValue)))
+      if (messageClasses.isEmpty) mute(classOf[AnyRef])
+      else messageClasses foreach mute
     }
 
   /**

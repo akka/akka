@@ -6,7 +6,7 @@ Java Documentation
 .. toctree::
    :maxdepth: 2
 
-   intro/index
+   intro/index-java
    general/index
    java/index-actors
    java/index-futures

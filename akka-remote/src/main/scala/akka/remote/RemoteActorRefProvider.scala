@@ -17,6 +17,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import com.typesafe.config.Config
 import akka.ConfigurationException
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 
 /**
  * INTERNAL API
@@ -31,7 +32,8 @@ private[akka] object RemoteActorRefProvider {
   case object WaitTransportShutdown extends TerminatorState
   case object Finished extends TerminatorState
 
-  private class RemotingTerminator(systemGuardian: ActorRef) extends Actor with FSM[TerminatorState, Option[Internals]] {
+  private class RemotingTerminator(systemGuardian: ActorRef) extends Actor with FSM[TerminatorState, Option[Internals]]
+    with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
     import context.dispatcher
 
     startWith(Uninitialized, None)
