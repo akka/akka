@@ -52,8 +52,7 @@ object RemoteWatcherSpec {
   class TestRemoteWatcher(heartbeatExpectedResponseAfter: FiniteDuration) extends RemoteWatcher(createFailureDetector,
     heartbeatInterval = TurnOff,
     unreachableReaperInterval = TurnOff,
-    heartbeatExpectedResponseAfter = heartbeatExpectedResponseAfter,
-    numberOfEndHeartbeatRequests = 3) {
+    heartbeatExpectedResponseAfter = heartbeatExpectedResponseAfter) {
 
     def this() = this(heartbeatExpectedResponseAfter = TurnOff)
 
@@ -99,7 +98,7 @@ class RemoteWatcherSpec extends AkkaSpec(
     remoteSystem.shutdown()
   }
 
-  val heartbeatMsgB = Heartbeat(remoteAddressUid)
+  val heartbeatRspB = HeartbeatRsp(remoteAddressUid)
 
   def createRemoteActor(props: Props, name: String): ActorRef = {
     remoteSystem.actorOf(props, name)
@@ -126,32 +125,35 @@ class RemoteWatcherSpec extends AkkaSpec(
       monitorA ! Stats
       // for each watchee the RemoteWatcher also adds its own watch: 5 = 3 + 2
       // (a1->b1), (a1->b2), (a2->b2)
-      expectMsg(Stats.counts(watching = 5, watchingNodes = 1, watchedByNodes = 0))
+      expectMsg(Stats.counts(watching = 5, watchingNodes = 1))
       expectNoMsg(100 millis)
       monitorA ! HeartbeatTick
-      expectMsg(HeartbeatRequest)
+      expectMsg(Heartbeat)
       expectNoMsg(100 millis)
       monitorA ! HeartbeatTick
-      expectMsg(HeartbeatRequest)
+      expectMsg(Heartbeat)
       expectNoMsg(100 millis)
-      monitorA.tell(heartbeatMsgB, monitorB)
+      monitorA.tell(heartbeatRspB, monitorB)
       monitorA ! HeartbeatTick
+      expectMsg(Heartbeat)
       expectNoMsg(100 millis)
 
       monitorA ! UnwatchRemote(b1, a1)
       // still (a1->b2) and (a2->b2) left
       monitorA ! Stats
-      expectMsg(Stats.counts(watching = 3, watchingNodes = 1, watchedByNodes = 0))
+      expectMsg(Stats.counts(watching = 3, watchingNodes = 1))
       expectNoMsg(100 millis)
       monitorA ! HeartbeatTick
+      expectMsg(Heartbeat)
       expectNoMsg(100 millis)
 
       monitorA ! UnwatchRemote(b2, a2)
       // still (a1->b2) left
       monitorA ! Stats
-      expectMsg(Stats.counts(watching = 2, watchingNodes = 1, watchedByNodes = 0))
+      expectMsg(Stats.counts(watching = 2, watchingNodes = 1))
       expectNoMsg(100 millis)
       monitorA ! HeartbeatTick
+      expectMsg(Heartbeat)
       expectNoMsg(100 millis)
 
       monitorA ! UnwatchRemote(b2, a1)
@@ -159,79 +161,10 @@ class RemoteWatcherSpec extends AkkaSpec(
       monitorA ! Stats
       expectMsg(Stats.empty)
       expectNoMsg(100 millis)
-      // expecting 3 EndHeartbeatRequest
       monitorA ! HeartbeatTick
-      expectMsg(EndHeartbeatRequest)
-      expectNoMsg(100 millis)
-      monitorA ! HeartbeatTick
-      expectMsg(EndHeartbeatRequest)
-      expectNoMsg(100 millis)
-      monitorA ! HeartbeatTick
-      expectMsg(EndHeartbeatRequest)
       expectNoMsg(100 millis)
       monitorA ! HeartbeatTick
       expectNoMsg(100 millis)
-
-      // make sure nothing floods over to next test
-      expectNoMsg(2 seconds)
-    }
-
-    "have correct interaction when beeing watched" in {
-
-      val monitorA = system.actorOf(Props(classOf[TestActorProxy], testActor), "monitor2")
-      val monitorB = createRemoteActor(Props[TestRemoteWatcher], "monitor2")
-
-      val b3 = createRemoteActor(Props[MyActor], "b3")
-
-      // watch
-      monitorB.tell(HeartbeatRequest, monitorA)
-      monitorB ! Stats
-      // HeartbeatRequest adds cross watch to RemoteWatcher peer
-      val stats = expectMsg(Stats.counts(watching = 1, watchingNodes = 1, watchedByNodes = 1))
-      stats.watchingRefs must be(Set((monitorA, monitorB)))
-      expectNoMsg(100 millis)
-      monitorB ! HeartbeatTick
-      expectMsg(heartbeatMsgB)
-      // HeartbeatRequest for the cross watch
-      expectMsg(HeartbeatRequest)
-      expectNoMsg(100 millis)
-      monitorB ! HeartbeatTick
-      expectMsg(heartbeatMsgB)
-      // HeartbeatRequest for the cross watch
-      expectMsg(HeartbeatRequest)
-      expectNoMsg(100 millis)
-
-      // unwatch
-      monitorB.tell(EndHeartbeatRequest, monitorA)
-      monitorB ! Stats
-      // EndHeartbeatRequest should remove the cross watch
-      expectMsg(Stats.empty)
-      expectNoMsg(100 millis)
-      monitorB ! HeartbeatTick
-      // EndHeartbeatRequest for the cross watch
-      expectMsg(EndHeartbeatRequest)
-      expectNoMsg(100 millis)
-
-      // start heartbeating again
-      monitorB.tell(HeartbeatRequest, monitorA)
-      monitorB ! Stats
-      val stats2 = expectMsg(Stats.counts(watching = 1, watchingNodes = 1, watchedByNodes = 1))
-      stats2.watchingRefs must be(Set((monitorA, monitorB)))
-      expectNoMsg(100 millis)
-      monitorB ! HeartbeatTick
-      expectMsg(heartbeatMsgB)
-      expectMsg(HeartbeatRequest)
-      expectNoMsg(100 millis)
-
-      // then kill other side, which should stop the heartbeating
-      monitorA ! PoisonPill
-      awaitAssert {
-        monitorB ! Stats
-        expectMsg(Stats.empty)
-      }
-      monitorB ! HeartbeatTick
-      // no more heartbeats and no EndHeartbeatRequest for the cross watch
-      expectNoMsg(500 millis)
 
       // make sure nothing floods over to next test
       expectNoMsg(2 seconds)
@@ -252,14 +185,18 @@ class RemoteWatcherSpec extends AkkaSpec(
       monitorA ! WatchRemote(b, a)
 
       monitorA ! HeartbeatTick
-      expectMsg(HeartbeatRequest)
-      monitorA.tell(heartbeatMsgB, monitorB)
+      expectMsg(Heartbeat)
+      monitorA.tell(heartbeatRspB, monitorB)
       expectNoMsg(1 second)
-      monitorA.tell(heartbeatMsgB, monitorB)
+      monitorA ! HeartbeatTick
+      expectMsg(Heartbeat)
+      monitorA.tell(heartbeatRspB, monitorB)
 
       within(10 seconds) {
         awaitAssert {
           monitorA ! HeartbeatTick
+          expectMsg(Heartbeat)
+          // but no HeartbeatRsp
           monitorA ! ReapUnreachableTick
           p.expectMsg(1 second, TestRemoteWatcher.AddressTerm(b.path.address))
           q.expectMsg(1 second, TestRemoteWatcher.Quarantined(b.path.address, remoteAddressUid))
@@ -287,12 +224,14 @@ class RemoteWatcherSpec extends AkkaSpec(
       monitorA ! WatchRemote(b, a)
 
       monitorA ! HeartbeatTick
-      expectMsg(HeartbeatRequest)
-      // no heartbeats sent
+      expectMsg(Heartbeat)
+      // no HeartbeatRsp sent
 
       within(20 seconds) {
         awaitAssert {
           monitorA ! HeartbeatTick
+          expectMsg(Heartbeat)
+          // but no HeartbeatRsp
           monitorA ! ReapUnreachableTick
           p.expectMsg(1 second, TestRemoteWatcher.AddressTerm(b.path.address))
           // no quarantine when missing first heartbeat, uid unknown
@@ -300,14 +239,8 @@ class RemoteWatcherSpec extends AkkaSpec(
         }
       }
 
-      // some more HeartbeatRequest may be sent
-      receiveWhile(1.second) {
-        case HeartbeatRequest ⇒ // ok
-      }
-
       // make sure nothing floods over to next test
       expectNoMsg(2 seconds)
-
     }
 
     "generate AddressTerminated for new watch after broken connection that was re-established and broken again" in {
@@ -325,14 +258,18 @@ class RemoteWatcherSpec extends AkkaSpec(
       monitorA ! WatchRemote(b, a)
 
       monitorA ! HeartbeatTick
-      expectMsg(HeartbeatRequest)
-      monitorA.tell(heartbeatMsgB, monitorB)
+      expectMsg(Heartbeat)
+      monitorA.tell(heartbeatRspB, monitorB)
       expectNoMsg(1 second)
-      monitorA.tell(heartbeatMsgB, monitorB)
+      monitorA ! HeartbeatTick
+      expectMsg(Heartbeat)
+      monitorA.tell(heartbeatRspB, monitorB)
 
       within(10 seconds) {
         awaitAssert {
           monitorA ! HeartbeatTick
+          expectMsg(Heartbeat)
+          // but no HeartbeatRsp
           monitorA ! ReapUnreachableTick
           p.expectMsg(1 second, TestRemoteWatcher.AddressTerm(b.path.address))
           q.expectMsg(1 second, TestRemoteWatcher.Quarantined(b.path.address, remoteAddressUid))
@@ -353,15 +290,21 @@ class RemoteWatcherSpec extends AkkaSpec(
       monitorA ! WatchRemote(c, a)
 
       monitorA ! HeartbeatTick
-      expectMsg(HeartbeatRequest)
-      monitorA.tell(heartbeatMsgB, monitorB)
+      expectMsg(Heartbeat)
+      monitorA.tell(heartbeatRspB, monitorB)
       expectNoMsg(1 second)
-      monitorA.tell(heartbeatMsgB, monitorB)
       monitorA ! HeartbeatTick
+      expectMsg(Heartbeat)
+      monitorA.tell(heartbeatRspB, monitorB)
+      monitorA ! HeartbeatTick
+      expectMsg(Heartbeat)
       monitorA ! ReapUnreachableTick
       p.expectNoMsg(1 second)
-      monitorA.tell(heartbeatMsgB, monitorB)
       monitorA ! HeartbeatTick
+      expectMsg(Heartbeat)
+      monitorA.tell(heartbeatRspB, monitorB)
+      monitorA ! HeartbeatTick
+      expectMsg(Heartbeat)
       monitorA ! ReapUnreachableTick
       p.expectNoMsg(1 second)
       q.expectNoMsg(1 second)
@@ -370,6 +313,8 @@ class RemoteWatcherSpec extends AkkaSpec(
       within(10 seconds) {
         awaitAssert {
           monitorA ! HeartbeatTick
+          expectMsg(Heartbeat)
+          // but no HeartbeatRsp
           monitorA ! ReapUnreachableTick
           p.expectMsg(1 second, TestRemoteWatcher.AddressTerm(c.path.address))
           q.expectMsg(1 second, TestRemoteWatcher.Quarantined(c.path.address, remoteAddressUid))

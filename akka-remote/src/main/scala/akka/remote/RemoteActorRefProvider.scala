@@ -191,8 +191,7 @@ private[akka] class RemoteActorRefProvider(
       failureDetector,
       heartbeatInterval = WatchHeartBeatInterval,
       unreachableReaperInterval = WatchUnreachableReaperInterval,
-      heartbeatExpectedResponseAfter = WatchHeartbeatExpectedResponseAfter,
-      numberOfEndHeartbeatRequests = WatchNumberOfEndHeartbeatRequests), "remote-watcher")
+      heartbeatExpectedResponseAfter = WatchHeartbeatExpectedResponseAfter), "remote-watcher")
   }
 
   protected def createRemoteWatcherFailureDetector(system: ExtendedActorSystem): FailureDetectorRegistry[Address] = {
