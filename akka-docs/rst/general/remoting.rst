@@ -18,8 +18,8 @@ available equally when running within a single JVM or on a cluster of hundreds
 of machines. The key for enabling this is to go from remote to local by way of
 optimization instead of trying to go from local to remote by way of
 generalization. See `this classic paper
-<http://labs.oracle.com/techrep/1994/abstract-29.html>`_ for a detailed
-discussion on why the second approach is bound to fail.
+<http://doc.akka.io/docs/misc/smli_tr-94-29.pdf>`_
+for a detailed discussion on why the second approach is bound to fail.
 
 Ways in which Transparency is Broken
 ------------------------------------

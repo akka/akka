@@ -30,10 +30,10 @@ blog post <http://letitcrash.com/post/19074284309/when-to-use-typedactors>`_.
 
 A bit more background: TypedActors can very easily be abused as RPC, and that
 is an abstraction which is `well-known
-<http://labs.oracle.com/techrep/1994/abstract-29.html>`_ to be leaky. Hence
-TypedActors are not what we think of first when we talk about making highly
-scalable concurrent software easier to write correctly. They have their niche,
-use them sparingly.
+<http://doc.akka.io/docs/misc/smli_tr-94-29.pdf>`_
+to be leaky. Hence TypedActors are not what we think of first when we talk
+about making highly scalable concurrent software easier to write correctly.
+They have their niche, use them sparingly.
 
 The tools of the trade
 ----------------------
