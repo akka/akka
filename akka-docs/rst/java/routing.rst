@@ -27,7 +27,7 @@ Sending a message to a router is easy.
 
 .. code-block:: java
 
-  router.tell(new MyMsg());
+  router.tell(new MyMsg(), sender);
 
 A router actor forwards messages to its routees according to its routing policy.
 

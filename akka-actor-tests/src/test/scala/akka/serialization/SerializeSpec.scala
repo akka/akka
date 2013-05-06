@@ -363,35 +363,22 @@ class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyR
           "0000000000010200007870")
     }
     "be preserved for the Supervise SystemMessage" in {
-      verify(Supervise(FakeActorRef("child"), true),
+      verify(Supervise(null, true),
         "aced00057372001e616b6b612e64697370617463682e7379736d73672e5375706572766973650000" +
           "0000000000010200025a00056173796e634c00056368696c647400154c616b6b612f6163746f722f" +
-          "4163746f725265663b7870017372001f616b6b612e73657269616c697a6174696f6e2e46616b6541" +
-          "63746f7252656600000000000000010200014c00046e616d657400124c6a6176612f6c616e672f53" +
-          "7472696e673b7872001b616b6b612e6163746f722e496e7465726e616c4163746f72526566869e6c" +
-          "3669e60e5f02000078720013616b6b612e6163746f722e4163746f72526566c3585dde655f469402" +
-          "000078707400056368696c64")
+          "4163746f725265663b78700170")
     }
     "be preserved for the Watch SystemMessage" in {
-      verify(Watch(FakeActorRef("watchee"), FakeActorRef("watcher")),
+      verify(Watch(null, null),
         "aced00057372001a616b6b612e64697370617463682e7379736d73672e5761746368000000000000" +
           "00010200024c00077761746368656574001d4c616b6b612f6163746f722f496e7465726e616c4163" +
-          "746f725265663b4c00077761746368657271007e000178707372001f616b6b612e73657269616c69" +
-          "7a6174696f6e2e46616b654163746f7252656600000000000000010200014c00046e616d65740012" +
-          "4c6a6176612f6c616e672f537472696e673b7872001b616b6b612e6163746f722e496e7465726e61" +
-          "6c4163746f72526566869e6c3669e60e5f02000078720013616b6b612e6163746f722e4163746f72" +
-          "526566c3585dde655f46940200007870740007776174636865657371007e00037400077761746368" +
-          "6572")
+          "746f725265663b4c00077761746368657271007e000178707070")
     }
     "be preserved for the Unwatch SystemMessage" in {
-      verify(Unwatch(FakeActorRef("watchee"), FakeActorRef("watcher")),
+      verify(Unwatch(null, null),
         "aced00057372001c616b6b612e64697370617463682e7379736d73672e556e776174636800000000" +
           "000000010200024c0007776174636865657400154c616b6b612f6163746f722f4163746f72526566" +
-          "3b4c00077761746368657271007e000178707372001f616b6b612e73657269616c697a6174696f6e" +
-          "2e46616b654163746f7252656600000000000000010200014c00046e616d657400124c6a6176612f" +
-          "6c616e672f537472696e673b7872001b616b6b612e6163746f722e496e7465726e616c4163746f72" +
-          "526566869e6c3669e60e5f02000078720013616b6b612e6163746f722e4163746f72526566c3585d" +
-          "de655f46940200007870740007776174636865657371007e000374000777617463686572")
+          "3b4c00077761746368657271007e000178707070")
     }
     "be preserved for the NoMessage SystemMessage" in {
       verify(NoMessage,
@@ -400,15 +387,11 @@ class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyR
     }
     "be preserved for the Failed SystemMessage" in {
       // Using null as the cause to avoid a large serialized message and JDK differences
-      verify(Failed(FakeActorRef("child"), cause = null, uid = 0),
+      verify(Failed(null, cause = null, uid = 0),
         "aced00057372001b616b6b612e64697370617463682e7379736d73672e4661696c65640000000000" +
           "0000010200034900037569644c000563617573657400154c6a6176612f6c616e672f5468726f7761" +
           "626c653b4c00056368696c647400154c616b6b612f6163746f722f4163746f725265663b78700000" +
-          "0000707372001f616b6b612e73657269616c697a6174696f6e2e46616b654163746f725265660000" +
-          "0000000000010200014c00046e616d657400124c6a6176612f6c616e672f537472696e673b787200" +
-          "1b616b6b612e6163746f722e496e7465726e616c4163746f72526566869e6c3669e60e5f02000078" +
-          "720013616b6b612e6163746f722e4163746f72526566c3585dde655f469402000078707400056368" +
-          "696c64")
+          "00007070")
     }
   }
 }
@@ -449,22 +432,4 @@ protected[akka] class TestSerializer extends Serializer {
 @SerialVersionUID(1)
 protected[akka] case class FakeThrowable(msg: String) extends Throwable(msg) with Serializable {
   override def fillInStackTrace = null
-}
-
-@SerialVersionUID(1)
-protected[akka] case class FakeActorRef(name: String) extends InternalActorRef with ActorRefScope {
-  override def path = RootActorPath(Address("proto", "SomeSystem"), name)
-  override def forward(message: Any)(implicit context: ActorContext) = ???
-  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") override def isTerminated = ???
-  override def start() = ???
-  override def resume(causedByFailure: Throwable) = ???
-  override def suspend() = ???
-  override def restart(cause: Throwable) = ???
-  override def stop() = ???
-  override def sendSystemMessage(message: SystemMessage) = ???
-  override def provider = ???
-  override def getParent = ???
-  override def getChild(name: Iterator[String]) = ???
-  override def isLocal = ???
-  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender) = ???
 }

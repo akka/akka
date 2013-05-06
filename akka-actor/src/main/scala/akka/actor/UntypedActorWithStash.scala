@@ -17,7 +17,7 @@ package akka.actor
  *     public void onReceive(Object msg) {
  *       if (msg instanceof String) {
  *         if (count < 0) {
- *           getSender().tell(new Integer(((String) msg).length()));
+ *           getSender().tell(new Integer(((String) msg).length()), getSelf());
  *         } else if (count == 2) {
  *           count = -1;
  *           unstashAll();
