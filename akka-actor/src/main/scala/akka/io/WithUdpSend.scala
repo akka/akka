@@ -3,10 +3,10 @@
  */
 package akka.io
 
+import java.nio.channels.{ SelectionKey, DatagramChannel }
 import akka.actor.{ ActorRef, ActorLogging, Actor }
 import akka.io.Udp.{ CommandFailed, Send }
 import akka.io.SelectionHandler._
-import java.nio.channels.DatagramChannel
 
 /**
  * INTERNAL API
@@ -21,15 +21,13 @@ private[io] trait WithUdpSend {
   var retriedSend = false
   def hasWritePending = pendingSend ne null
 
-  def selector: ActorRef
   def channel: DatagramChannel
   def udp: UdpExt
   val settings = udp.settings
 
   import settings._
 
-  def sendHandlers: Receive = {
-
+  def sendHandlers(registration: ChannelRegistration): Receive = {
     case send: Send if hasWritePending ⇒
       if (TraceLogging) log.debug("Dropping write because queue is full")
       sender ! CommandFailed(send)
@@ -41,14 +39,12 @@ private[io] trait WithUdpSend {
     case send: Send ⇒
       pendingSend = send
       pendingCommander = sender
-      doSend()
+      doSend(registration)
 
-    case ChannelWritable ⇒ if (hasWritePending) doSend()
-
+    case ChannelWritable ⇒ if (hasWritePending) doSend(registration)
   }
 
-  final def doSend(): Unit = {
-
+  final def doSend(registration: ChannelRegistration): Unit = {
     val buffer = udp.bufferPool.acquire()
     try {
       buffer.clear()
@@ -65,7 +61,7 @@ private[io] trait WithUdpSend {
           pendingSend = null
           pendingCommander = null
         } else {
-          selector ! WriteInterest
+          registration.enableInterest(SelectionKey.OP_WRITE)
           retriedSend = true
         }
       } else {
@@ -74,10 +70,8 @@ private[io] trait WithUdpSend {
         pendingSend = null
         pendingCommander = null
       }
-
     } finally {
       udp.bufferPool.release(buffer)
     }
-
   }
 }

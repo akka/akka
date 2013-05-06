@@ -19,9 +19,10 @@ import scala.collection.immutable
  * INTERNAL API
  */
 private[io] class TcpOutgoingConnection(_tcp: TcpExt,
+                                        channelRegistry: ChannelRegistry,
                                         commander: ActorRef,
                                         connect: Connect)
-  extends TcpConnection(TcpOutgoingConnection.newSocketChannel(), _tcp) {
+  extends TcpConnection(_tcp, TcpOutgoingConnection.newSocketChannel()) {
 
   import connect._
 
@@ -29,25 +30,25 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
 
   localAddress.foreach(channel.socket.bind)
   options.foreach(_.beforeConnect(channel.socket))
-  selector ! RegisterChannel(channel, SelectionKey.OP_CONNECT)
+  channelRegistry.register(channel, SelectionKey.OP_CONNECT)
 
   def receive: Receive = {
-    case ChannelRegistered ⇒
+    case registration: ChannelRegistration ⇒
       log.debug("Attempting connection to [{}]", remoteAddress)
       if (channel.connect(remoteAddress))
-        completeConnect(commander, options)
-      else {
-        context.become(connecting(commander, options))
-      }
+        completeConnect(registration, commander, options)
+      else
+        context.become(connecting(registration, commander, options))
   }
 
-  def connecting(commander: ActorRef, options: immutable.Traversable[SocketOption]): Receive = {
+  def connecting(registration: ChannelRegistration, commander: ActorRef,
+                 options: immutable.Traversable[SocketOption]): Receive = {
     case ChannelConnectable ⇒
       try {
         val connected = channel.finishConnect()
         assert(connected, "Connectable channel failed to connect")
         log.debug("Connection established")
-        completeConnect(commander, options)
+        completeConnect(registration, commander, options)
       } catch {
         case e: IOException ⇒
           if (tcp.Settings.TraceLogging) log.debug("Could not establish connection due to {}", e)
@@ -55,7 +56,6 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
           throw e
       }
   }
-
 }
 
 /**
