@@ -48,8 +48,13 @@ import akka.io.IO.SelectorBasedManager
 private[io] class TcpManager(tcp: TcpExt) extends SelectorBasedManager(tcp.Settings, tcp.Settings.NrOfSelectors) with ActorLogging {
 
   def receive = workerForCommandHandler {
-    case c: Connect ⇒ Props(classOf[TcpOutgoingConnection], tcp, sender, c)
-    case b: Bind    ⇒ Props(classOf[TcpListener], selectorPool, tcp, sender, b)
+    case c: Connect ⇒
+      val commander = sender
+      registry ⇒ Props(classOf[TcpOutgoingConnection], tcp, registry, commander, c)
+
+    case b: Bind ⇒
+      val commander = sender
+      registry ⇒ Props(classOf[TcpListener], selectorPool, tcp, registry, commander, b)
   }
 
 }
