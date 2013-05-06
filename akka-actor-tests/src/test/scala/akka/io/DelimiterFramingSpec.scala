@@ -9,6 +9,7 @@ import akka.util.ByteString
 import akka.actor.{ Props, ActorLogging, Actor, ActorContext }
 import akka.TestUtils
 import java.util.concurrent.atomic.AtomicInteger
+import scala.concurrent.duration._
 
 class DelimiterFramingSpec extends AkkaSpec {
 
@@ -77,9 +78,26 @@ class DelimiterFramingSpec extends AkkaSpec {
       probe.expectMsg(Event(s"testone$expectedDelimiter"))
       probe.send(handler, Command(s"two${delimiter}thr"))
       probe.expectMsg(Event(s"two$expectedDelimiter"))
-      Thread.sleep(1000)
+      probe.expectNoMsg(1.seconds)
       probe.send(handler, Command(s"ee$delimiter"))
       probe.expectMsg(Event(s"three$expectedDelimiter"))
+      if (delimiter.size > 1) {
+        val (first, second) = delimiter.splitAt(1)
+
+        // Test a fragmented delimiter
+        probe.send(handler, Command(s"four$first"))
+        probe.expectNoMsg(1.seconds)
+        probe.send(handler, Command(second))
+        probe.expectMsg(Event(s"four$expectedDelimiter"))
+
+        // Test cases of false match on a delimiter fragment
+        for (piece ← s"${first}five${first}$delimiter") {
+          probe.expectNoMsg(100.milliseconds)
+          probe.send(handler, Command(String.valueOf(piece)))
+        }
+        probe.expectMsg(Event(s"${first}five${first}$expectedDelimiter"))
+
+      }
       probe.send(handler, Command(s"${delimiter}${delimiter}"))
       probe.expectMsg(Event(expectedDelimiter))
       probe.expectMsg(Event(expectedDelimiter))

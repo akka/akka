@@ -840,42 +840,70 @@ class DelimiterFraming(maxSize: Int, delimiter: ByteString = ByteString('\n'), i
   override def apply(ctx: PipelineContext) = new SymmetricPipePair[ByteString, ByteString] {
     val singleByteDelimiter: Boolean = delimiter.size == 1
     var buffer: ByteString = ByteString.empty
+    var delimiterFragment: Option[ByteString] = None
+    val firstByteOfDelimiter = delimiter.head
 
     @tailrec
-    private def extractParts(nextChunk: ByteString, acc: List[ByteString]): List[ByteString] = {
-      val firstByteOfDelimiter = delimiter.head
-      val matchPosition = nextChunk.indexOf(firstByteOfDelimiter)
-      if (matchPosition == -1) {
-        val minSize = buffer.size + nextChunk.size
-        if (minSize > maxSize) throw new IllegalArgumentException(
-          s"Received too large frame of size $minSize (max = $maxSize)")
+    private def extractParts(nextChunk: ByteString, acc: List[ByteString]): List[ByteString] = delimiterFragment match {
+      case Some(fragment) if nextChunk.size < fragment.size && fragment.startsWith(nextChunk) ⇒
         buffer ++= nextChunk
+        delimiterFragment = Some(fragment.drop(nextChunk.size))
         acc
-      } else {
-        val missingBytes: Int = if (includeDelimiter) matchPosition + delimiter.size else matchPosition
-        val expectedSize = buffer.size + missingBytes
-        if (expectedSize > maxSize) throw new IllegalArgumentException(
-          s"Received frame already of size $expectedSize (max = $maxSize)")
-
-        if (singleByteDelimiter || nextChunk.slice(matchPosition, matchPosition + delimiter.size) == delimiter) {
-          val decoded = buffer ++ nextChunk.take(missingBytes)
-          buffer = ByteString.empty
-          extractParts(nextChunk.drop(matchPosition + delimiter.size), decoded :: acc)
+      // We got the missing parts of the delimiter
+      case Some(fragment) if nextChunk.startsWith(fragment) ⇒
+        val decoded = if (includeDelimiter) buffer ++ fragment else buffer.take(buffer.size - delimiter.size + fragment.size)
+        buffer = ByteString.empty
+        delimiterFragment = None
+        extractParts(nextChunk.drop(fragment.size), decoded :: acc)
+      case _ ⇒
+        val matchPosition = nextChunk.indexOf(firstByteOfDelimiter)
+        if (matchPosition == -1) {
+          delimiterFragment = None
+          val minSize = buffer.size + nextChunk.size
+          if (minSize > maxSize) throw new IllegalArgumentException(
+            s"Received too large frame of size $minSize (max = $maxSize)")
+          buffer ++= nextChunk
+          acc
+        } else if (matchPosition + delimiter.size > nextChunk.size) {
+          val delimiterMatchLength = nextChunk.size - matchPosition
+          if (nextChunk.drop(matchPosition) == delimiter.take(delimiterMatchLength)) {
+            buffer ++= nextChunk
+            // we are expecting the other parts of the delimiter
+            delimiterFragment = Some(delimiter.drop(nextChunk.size - matchPosition))
+            acc
+          } else {
+            // false positive
+            delimiterFragment = None
+            buffer ++= nextChunk.take(matchPosition + 1)
+            extractParts(nextChunk.drop(matchPosition + 1), acc)
+          }
         } else {
-          buffer ++= nextChunk.take(matchPosition + 1)
-          extractParts(nextChunk.drop(matchPosition + 1), acc)
+          delimiterFragment = None
+          val missingBytes: Int = if (includeDelimiter) matchPosition + delimiter.size else matchPosition
+          val expectedSize = buffer.size + missingBytes
+          if (expectedSize > maxSize) throw new IllegalArgumentException(
+            s"Received frame already of size $expectedSize (max = $maxSize)")
+
+          if (singleByteDelimiter || nextChunk.slice(matchPosition, matchPosition + delimiter.size) == delimiter) {
+            val decoded = buffer ++ nextChunk.take(missingBytes)
+            buffer = ByteString.empty
+            extractParts(nextChunk.drop(matchPosition + delimiter.size), decoded :: acc)
+          } else {
+            buffer ++= nextChunk.take(matchPosition + 1)
+            extractParts(nextChunk.drop(matchPosition + 1), acc)
+          }
         }
 
-      }
     }
 
     override val eventPipeline = {
       bs: ByteString ⇒
         val parts = extractParts(bs, Nil)
+        buffer = buffer.compact // TODO: This should be properly benchmarked and memory profiled
         parts match {
           case Nil        ⇒ Nil
-          case one :: Nil ⇒ ctx.singleEvent(one)
-          case many       ⇒ many reverseMap (Left(_))
+          case one :: Nil ⇒ ctx.singleEvent(one.compact)
+          case many       ⇒ many reverseMap { frame ⇒ Left(frame.compact) }
         }
     }
 
