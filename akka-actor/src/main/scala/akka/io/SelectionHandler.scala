@@ -193,7 +193,7 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends A
         keys.clear() // we need to remove the selected keys from the set, otherwise they remain selected
       }
 
-      wakeUp.set(false) // worst-case we do a double-wakeup, but it's supposed to be idempotent so it's just an extra syscall
+      wakeUp.set(false)
       // FIXME what is the appropriate error-handling here, shouldn't this task be resubmitted in case of exception?
       selectorManagementEC.execute(this) // re-schedules select behind all currently queued tasks
     }
