@@ -86,6 +86,8 @@ abstract class RemoteNodeDeathWatchSpec
 
   override def initialParticipants = roles.size
 
+  muteDeadLetters(Heartbeat.getClass)()
+
   lazy val remoteWatcher: ActorRef = {
     system.actorSelection("/system/remote-watcher") ! Identify(None)
     expectMsgType[ActorIdentity].ref.get

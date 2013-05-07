@@ -51,7 +51,6 @@ class RemoteConfigSpec extends AkkaSpec(
 
       WatchFailureDetectorImplementationClass must be(classOf[PhiAccrualFailureDetector].getName)
       WatchHeartBeatInterval must be(1 seconds)
-      WatchNumberOfEndHeartbeatRequests must be(8)
       WatchHeartbeatExpectedResponseAfter must be(3 seconds)
       WatchUnreachableReaperInterval must be(1 second)
       WatchFailureDetectorConfig.getDouble("threshold") must be(10.0 plusOrMinus 0.0001)

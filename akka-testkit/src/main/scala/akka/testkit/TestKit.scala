@@ -252,7 +252,7 @@ trait TestKitBase {
       val failed =
         try { a; false } catch {
           case NonFatal(e) ⇒
-            if (now >= stop) throw e
+            if ((now + t) >= stop) throw e
             true
         }
       if (failed) {
