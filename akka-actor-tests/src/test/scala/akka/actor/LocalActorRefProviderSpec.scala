@@ -70,9 +70,13 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
       childProps1 must be(Props.empty)
       system stop a
       expectTerminated(a)
-      val childProps2 = child.asInstanceOf[LocalActorRef].underlying.props
-      childProps2 must not be theSameInstanceAs(childProps1)
-      childProps2 must be theSameInstanceAs ActorCell.terminatedProps
+      // the fields are cleared after the Terminated message has been sent,
+      // so we need to check for a reasonable time after we receive it
+      awaitAssert({
+        val childProps2 = child.asInstanceOf[LocalActorRef].underlying.props
+        childProps2 must not be theSameInstanceAs(childProps1)
+        childProps2 must be theSameInstanceAs ActorCell.terminatedProps
+      }, 1 second)
     }
   }
 
