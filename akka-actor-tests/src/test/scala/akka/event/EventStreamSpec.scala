@@ -104,7 +104,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         expectMsgAllOf(m, Logging.Debug(sys.deadLetters.path.toString, sys.deadLetters.getClass, "unhandled message from " + sys.deadLetters + ": 42"))
         sys.eventStream.unsubscribe(testActor)
       } finally {
-        sys.shutdown()
+        shutdown(sys)
       }
     }
 

@@ -38,7 +38,7 @@ akka.loglevel = DEBUG
   val target2 = other.actorFor(RootActorPath(addr) / testActor.path.elements)
 
   override def afterTermination() {
-    other.shutdown()
+    shutdown(other)
   }
 
   // need to enable debug log-level without actually printing those messages

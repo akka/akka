@@ -5,8 +5,8 @@
 package docs.io.japi;
 
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 //#imports
@@ -138,19 +138,13 @@ public class IODocTest {
     
   }
   //#client
-  
-  private static ActorSystem system;
-  
-  @BeforeClass
-  public static void setup() {
-    system = ActorSystem.create("IODocTest", AkkaSpec.testConf());
-  }
-  
-  @AfterClass
-  public static void teardown() {
-    system.shutdown();
-  }
-  
+
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("IODocTest", AkkaSpec.testConf());
+
+  private final ActorSystem system = actorSystemResource.getSystem();
+
   @Test
   public void testConnection() {
     new JavaTestKit(system) {

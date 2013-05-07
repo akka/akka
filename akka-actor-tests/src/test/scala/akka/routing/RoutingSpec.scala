@@ -590,7 +590,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       try {
         sys.actorOf(Props.empty.withRouter(FromConfig), "routed")
       } finally {
-        sys.shutdown()
+        shutdown(sys)
       }
     }
 

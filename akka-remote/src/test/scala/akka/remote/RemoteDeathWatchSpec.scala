@@ -34,7 +34,7 @@ akka {
   }
 
   override def afterTermination() {
-    other.shutdown()
+    shutdown(other)
   }
 
   "receive Terminated when watched node is unknown host" in {

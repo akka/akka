@@ -43,7 +43,8 @@ public class TestKitSampleTest {
   
   @AfterClass
   public static void teardown() {
-    system.shutdown();
+    JavaTestKit.shutdownActorSystem(system);
+    system = null;
   }
 
   @Test

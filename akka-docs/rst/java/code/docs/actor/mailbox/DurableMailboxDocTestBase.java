@@ -9,8 +9,8 @@ import akka.actor.ActorRef;
 
 //#imports
 
-import org.junit.After;
-import org.junit.Before;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import akka.testkit.AkkaSpec;
@@ -20,18 +20,12 @@ import akka.actor.UntypedActor;
 
 public class DurableMailboxDocTestBase {
 
-  ActorSystem system;
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("DurableMailboxDocTest",
+      ConfigFactory.parseString(DurableMailboxDocSpec.config()).withFallback(AkkaSpec.testConf()));
 
-  @Before
-  public void setUp() {
-    system = ActorSystem.create("MySystem",
-        ConfigFactory.parseString(DurableMailboxDocSpec.config()).withFallback(AkkaSpec.testConf()));
-  }
-
-  @After
-  public void tearDown() {
-    system.shutdown();
-  }
+  private final ActorSystem system = actorSystemResource.getSystem();
 
   @Test
   public void configDefinedDispatcher() {

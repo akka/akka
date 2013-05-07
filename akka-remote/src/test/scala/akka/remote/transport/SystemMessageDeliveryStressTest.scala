@@ -136,7 +136,7 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
       EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
   }
 
-  override def afterTermination(): Unit = systemB.shutdown()
+  override def afterTermination(): Unit = shutdown(systemB)
 
 }
 

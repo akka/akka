@@ -9,8 +9,8 @@ import java.net.InetSocketAddress;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import akka.actor.ActorContext;
@@ -184,17 +184,11 @@ public class SslDocTest {
   }
   //#server
 
-  private static ActorSystem system;
-  
-  @BeforeClass
-  public static void setup() {
-    system = ActorSystem.create("IODocTest", AkkaSpec.testConf());
-  }
-  
-  @AfterClass
-  public static void teardown() {
-    system.shutdown();
-  }
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("SslDocTest", AkkaSpec.testConf());
+
+  private final ActorSystem system = actorSystemResource.getSystem();
   
   @Test
   public void demonstrateSslClient() {

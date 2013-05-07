@@ -6,10 +6,8 @@ package akka.transactor;
 
 import static org.junit.Assert.*;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.Before;
+import akka.testkit.*;
+import org.junit.*;
 
 import akka.actor.ActorSystem;
 import akka.actor.ActorRef;
@@ -17,10 +15,7 @@ import akka.actor.Props;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import static akka.pattern.Patterns.ask;
-import akka.testkit.AkkaSpec;
-import akka.testkit.EventFilter;
-import akka.testkit.ErrorFilter;
-import akka.testkit.TestEvent;
+
 import akka.util.Timeout;
 
 import static akka.japi.Util.immutableSeq;
@@ -33,18 +28,12 @@ import scala.collection.JavaConverters;
 import scala.collection.immutable.Seq;
 
 public class UntypedCoordinatedIncrementTest {
-  private static ActorSystem system;
 
-  @BeforeClass
-  public static void beforeAll() {
-    system = ActorSystem.create("UntypedCoordinatedIncrementTest", AkkaSpec.testConf());
-  }
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("UntypedCoordinatedIncrementTest", AkkaSpec.testConf());
 
-  @AfterClass
-  public static void afterAll() {
-    system.shutdown();
-    system = null;
-  }
+  private final ActorSystem system = actorSystemResource.getSystem();
 
   List<ActorRef> counters;
   ActorRef failer;

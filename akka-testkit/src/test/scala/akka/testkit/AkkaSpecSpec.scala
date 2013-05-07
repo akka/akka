@@ -28,7 +28,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
           a ! 42
         }
       } finally {
-        system.shutdown()
+        TestKit.shutdownActorSystem(system)
       }
     }
 
@@ -43,7 +43,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
         val ref = Seq(testActor, system.actorOf(Props.empty, "name"))
       }
       spec.ref foreach (_.isTerminated must not be true)
-      system.shutdown()
+      TestKit.shutdownActorSystem(system)
       spec.awaitCond(spec.ref forall (_.isTerminated), 2 seconds)
     }
 
@@ -86,15 +86,15 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
 
         val latch = new TestLatch(1)(system)
         system.registerOnTermination(latch.countDown())
-        system.shutdown()
+        TestKit.shutdownActorSystem(system)
         Await.ready(latch, 2 seconds)
         Await.result(davyJones ? "Die!", timeout.duration) must be === "finally gone"
 
         // this will typically also contain log messages which were sent after the logger shutdown
         locker must contain(DeadLetter(42, davyJones, probe.ref))
       } finally {
-        system.shutdown()
-        otherSystem.shutdown()
+        TestKit.shutdownActorSystem(system)
+        TestKit.shutdownActorSystem(otherSystem)
       }
     }
   }

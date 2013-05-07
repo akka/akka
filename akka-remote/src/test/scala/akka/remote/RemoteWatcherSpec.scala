@@ -96,7 +96,7 @@ class RemoteWatcherSpec extends AkkaSpec(
     akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass)(_))
 
   override def afterTermination() {
-    remoteSystem.shutdown()
+    shutdown(remoteSystem)
   }
 
   val heartbeatMsgB = Heartbeat(remoteAddressUid)

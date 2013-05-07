@@ -4,8 +4,8 @@
 
 package docs.io;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import akka.actor.ActorSystem;
@@ -27,6 +27,7 @@ public class UdpConnectedDocTest {
   static public class Demo extends UntypedActor {
     ActorRef connectionActor = null;
     ActorRef handler = getSelf();
+    ActorSystem system = context().system();
 
     @Override
     public void onReceive(Object msg) {
@@ -76,18 +77,6 @@ public class UdpConnectedDocTest {
             //#send
           }
     }
-  }
-
-  static ActorSystem system;
-
-  @BeforeClass
-  static public void setup() {
-    system = ActorSystem.create("UdpConnectedDocTest");
-  }
-
-  @AfterClass
-  static public void teardown() {
-    system.shutdown();
   }
 
   @Test

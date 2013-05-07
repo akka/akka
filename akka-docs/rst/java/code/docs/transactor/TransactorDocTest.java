@@ -5,6 +5,8 @@
 package docs.transactor;
 
 import static org.junit.Assert.*;
+
+import akka.testkit.JavaTestKit;
 import org.junit.Test;
 
 //#imports
@@ -18,83 +20,83 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TransactorDocTest {
 
-    @Test
-    public void coordinatedExample() throws Exception {
-        //#coordinated-example
-        ActorSystem system = ActorSystem.create("CoordinatedExample");
+  @Test
+  public void coordinatedExample() throws Exception {
+    //#coordinated-example
+    ActorSystem system = ActorSystem.create("CoordinatedExample");
 
-        ActorRef counter1 = system.actorOf(Props.create(CoordinatedCounter.class));
-        ActorRef counter2 = system.actorOf(Props.create(CoordinatedCounter.class));
+    ActorRef counter1 = system.actorOf(Props.create(CoordinatedCounter.class));
+    ActorRef counter2 = system.actorOf(Props.create(CoordinatedCounter.class));
 
-        Timeout timeout = new Timeout(5, SECONDS);
+    Timeout timeout = new Timeout(5, SECONDS);
 
-        counter1.tell(new Coordinated(new Increment(counter2), timeout), null);
+    counter1.tell(new Coordinated(new Increment(counter2), timeout), null);
 
-        Integer count = (Integer) Await.result(
-          ask(counter1, "GetCount", timeout), timeout.duration());
-        //#coordinated-example
+    Integer count = (Integer) Await.result(
+      ask(counter1, "GetCount", timeout), timeout.duration());
+    //#coordinated-example
 
-        assertEquals(count, new Integer(1));
+    assertEquals(count, new Integer(1));
 
-        system.shutdown();
-    }
+    JavaTestKit.shutdownActorSystem(system);
+  }
 
-    @Test
-    public void coordinatedApi() {
-        //#create-coordinated
-        Timeout timeout = new Timeout(5, SECONDS);
-        Coordinated coordinated = new Coordinated(timeout);
-        //#create-coordinated
+  @Test
+  public void coordinatedApi() {
+    //#create-coordinated
+    Timeout timeout = new Timeout(5, SECONDS);
+    Coordinated coordinated = new Coordinated(timeout);
+    //#create-coordinated
 
-        ActorSystem system = ActorSystem.create("CoordinatedApi");
-        ActorRef actor = system.actorOf(Props.create(Coordinator.class));
+    ActorSystem system = ActorSystem.create("CoordinatedApi");
+    ActorRef actor = system.actorOf(Props.create(Coordinator.class));
 
-        //#send-coordinated
-        actor.tell(new Coordinated(new Message(), timeout), null);
-        //#send-coordinated
+    //#send-coordinated
+    actor.tell(new Coordinated(new Message(), timeout), null);
+    //#send-coordinated
 
-        //#include-coordinated
-        actor.tell(coordinated.coordinate(new Message()), null);
-        //#include-coordinated
+    //#include-coordinated
+    actor.tell(coordinated.coordinate(new Message()), null);
+    //#include-coordinated
 
-        coordinated.await();
+    coordinated.await();
 
-        system.shutdown();
-    }
+    JavaTestKit.shutdownActorSystem(system);
+  }
 
-    @Test
-    public void counterTransactor() throws Exception {
-        ActorSystem system = ActorSystem.create("CounterTransactor");
-        ActorRef counter = system.actorOf(Props.create(Counter.class));
+  @Test
+  public void counterTransactor() throws Exception {
+    ActorSystem system = ActorSystem.create("CounterTransactor");
+    ActorRef counter = system.actorOf(Props.create(Counter.class));
 
-        Timeout timeout = new Timeout(5, SECONDS);
-        Coordinated coordinated = new Coordinated(timeout);
-        counter.tell(coordinated.coordinate(new Increment()), null);
-        coordinated.await();
+    Timeout timeout = new Timeout(5, SECONDS);
+    Coordinated coordinated = new Coordinated(timeout);
+    counter.tell(coordinated.coordinate(new Increment()), null);
+    coordinated.await();
 
-        Integer count = (Integer) Await.result(ask(counter, "GetCount", timeout), timeout.duration());
-        assertEquals(count, new Integer(1));
+    Integer count = (Integer) Await.result(ask(counter, "GetCount", timeout), timeout.duration());
+    assertEquals(count, new Integer(1));
 
-        system.shutdown();
-    }
+    JavaTestKit.shutdownActorSystem(system);
+  }
 
-    @Test
-    public void friendlyCounterTransactor() throws Exception {
-        ActorSystem system = ActorSystem.create("FriendlyCounterTransactor");
-        ActorRef friend = system.actorOf(Props.create(Counter.class));
-        ActorRef friendlyCounter = system.actorOf(Props.create(FriendlyCounter.class));
+  @Test
+  public void friendlyCounterTransactor() throws Exception {
+    ActorSystem system = ActorSystem.create("FriendlyCounterTransactor");
+    ActorRef friend = system.actorOf(Props.create(Counter.class));
+    ActorRef friendlyCounter = system.actorOf(Props.create(FriendlyCounter.class));
 
-        Timeout timeout = new Timeout(5, SECONDS);
-        Coordinated coordinated = new Coordinated(timeout);
-        friendlyCounter.tell(coordinated.coordinate(new Increment(friend)), null);
-        coordinated.await();
+    Timeout timeout = new Timeout(5, SECONDS);
+    Coordinated coordinated = new Coordinated(timeout);
+    friendlyCounter.tell(coordinated.coordinate(new Increment(friend)), null);
+    coordinated.await();
 
-        Integer count1 = (Integer) Await.result(ask(friendlyCounter, "GetCount", timeout), timeout.duration());
-        assertEquals(count1, new Integer(1));
+    Integer count1 = (Integer) Await.result(ask(friendlyCounter, "GetCount", timeout), timeout.duration());
+    assertEquals(count1, new Integer(1));
 
-        Integer count2 = (Integer) Await.result(ask(friend, "GetCount", timeout), timeout.duration());
-        assertEquals(count2, new Integer(1));
+    Integer count2 = (Integer) Await.result(ask(friend, "GetCount", timeout), timeout.duration());
+    assertEquals(count2, new Integer(1));
 
-        system.shutdown();
-    }
+    JavaTestKit.shutdownActorSystem(system);
+  }
 }

@@ -961,7 +961,7 @@ abstract class StressSpec
           reportResult {
             val nextAS =
               if (activeRoles contains myself) {
-                previousAS foreach { _.shutdown() }
+                previousAS foreach { as ⇒ TestKit.shutdownActorSystem(as) }
                 val sys = ActorSystem(system.name, system.settings.config)
                 muteLog(sys)
                 Cluster(sys).joinSeedNodes(seedNodes.toIndexedSeq map address)
@@ -990,7 +990,7 @@ abstract class StressSpec
       }
     }
 
-    loop(1, None, Set.empty) foreach { _.shutdown }
+    loop(1, None, Set.empty) foreach { as ⇒ TestKit.shutdownActorSystem(as) }
     within(loopDuration) {
       runOn(usedRoles: _*) {
         awaitMembersUp(nbrUsedRoles, timeout = remaining)

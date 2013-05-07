@@ -26,6 +26,7 @@ import akka.testkit.TestProbe;
 import akka.testkit.ErrorFilter;
 import akka.testkit.EventFilter;
 import akka.testkit.TestEvent;
+import akka.testkit.JavaTestKit;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static akka.japi.Util.immutableSeq;
 import akka.japi.Function;
@@ -155,7 +156,8 @@ public class FaultHandlingTestBase {
 
   @AfterClass
   public static void cleanup() {
-    system.shutdown();
+    JavaTestKit.shutdownActorSystem(system);
+    system = null;
   }
 
   @Test

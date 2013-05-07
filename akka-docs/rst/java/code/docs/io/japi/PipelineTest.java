@@ -7,8 +7,8 @@ package docs.io.japi;
 import java.nio.ByteOrder;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import scala.concurrent.duration.Duration;
@@ -48,18 +48,12 @@ public class PipelineTest {
   }
   final Context ctx = new Context();
   //#byteorder
-  
-  static ActorSystem system = null;
-  
-  @BeforeClass
-  public static void setup() {
-    system = ActorSystem.create("PipelineTest");
-  }
-  
-  @AfterClass
-  public static void teardown() {
-    system.shutdown();
-  }
+
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("PipelineTest");
+
+  private final ActorSystem system = actorSystemResource.getSystem();
 
   @Test
   public void demonstratePipeline() throws Exception {
