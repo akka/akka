@@ -59,6 +59,7 @@ class RemoteConfigSpec extends AkkaSpec(
       Duration(WatchFailureDetectorConfig.getMilliseconds("acceptable-heartbeat-pause"), MILLISECONDS) must be(4 seconds)
       Duration(WatchFailureDetectorConfig.getMilliseconds("min-std-deviation"), MILLISECONDS) must be(100 millis)
 
+      remoteSettings.config.getString("akka.remote.log-frame-size-exceeding") must be("off")
     }
 
     "be able to parse AkkaProtocol related config elements" in {
@@ -75,6 +76,12 @@ class RemoteConfigSpec extends AkkaSpec(
       Duration(TransportFailureDetectorConfig.getMilliseconds("acceptable-heartbeat-pause"), MILLISECONDS) must be(3 seconds)
       Duration(TransportFailureDetectorConfig.getMilliseconds("min-std-deviation"), MILLISECONDS) must be(100 millis)
 
+    }
+
+    "contain correct netty.tcp values in reference.conf" in {
+      val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.netty.tcp")
+
+      c.getBytes("maximum-frame-size") must be(128000)
     }
 
     "contain correct socket worker pool configuration values in reference.conf" in {

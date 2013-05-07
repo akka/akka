@@ -157,6 +157,23 @@ If you want to see all messages that are received through remoting at DEBUG log 
       }
     }
 
+If you want to see message types with payload size in bytes larger than
+a specified limit at INFO log level:
+
+.. code-block:: ruby
+
+    akka {
+      remote {
+        # Logging of message types with payload size in bytes larger than
+        # this value. Maximum detected size per message type is logged once,
+        # with an increase threshold of 10%.
+        # By default this feature is turned off. Activate it by setting the property to
+        # a value in bytes, such as 1000b. Note that for all messages larger than this
+        # limit there will be extra performance and scalability cost.
+        log-frame-size-exceeding = 1000b
+      }
+    }
+
 Also see the logging options for TestKit: :ref:`actor.logging-java`.
 
 Turn Off Logging
