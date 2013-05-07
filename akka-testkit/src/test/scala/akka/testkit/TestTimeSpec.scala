@@ -25,7 +25,7 @@ class TestTimeSpec extends AkkaSpec(Map("akka.test.timefactor" -> 2.0)) with Bef
       awaitAssert("foo" must be("foo"))
       within(300.millis, 2.seconds) {
         intercept[TestFailedException] {
-          awaitAssert("foo" must be("bar"), 500.millis)
+          awaitAssert("foo" must be("bar"), 500.millis, 300.millis)
         }
       }
     }
