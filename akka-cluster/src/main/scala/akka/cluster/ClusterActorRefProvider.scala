@@ -65,8 +65,7 @@ private[akka] class ClusterActorRefProvider(
       failureDetector,
       heartbeatInterval = WatchHeartBeatInterval,
       unreachableReaperInterval = WatchUnreachableReaperInterval,
-      heartbeatExpectedResponseAfter = WatchHeartbeatExpectedResponseAfter,
-      numberOfEndHeartbeatRequests = WatchNumberOfEndHeartbeatRequests), "remote-watcher")
+      heartbeatExpectedResponseAfter = WatchHeartbeatExpectedResponseAfter), "remote-watcher")
   }
 
   /**

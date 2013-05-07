@@ -87,9 +87,6 @@ class RemoteSettings(val config: Config) {
   val WatchUnreachableReaperInterval: FiniteDuration = {
     Duration(WatchFailureDetectorConfig.getMilliseconds("unreachable-nodes-reaper-interval"), MILLISECONDS)
   } requiring (_ > Duration.Zero, "watch-failure-detector.unreachable-nodes-reaper-interval must be > 0")
-  val WatchNumberOfEndHeartbeatRequests: Int = {
-    WatchFailureDetectorConfig.getInt("nr-of-end-heartbeats")
-  } requiring (_ > 0, "watch-failure-detector.nr-of-end-heartbeats must be > 0")
   val WatchHeartbeatExpectedResponseAfter: FiniteDuration = {
     Duration(WatchFailureDetectorConfig.getMilliseconds("expected-response-after"), MILLISECONDS)
   } requiring (_ > Duration.Zero, "watch-failure-detector.expected-response-after > 0")

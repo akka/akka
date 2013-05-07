@@ -26,10 +26,9 @@ private[cluster] object ClusterRemoteWatcher {
     failureDetector: FailureDetectorRegistry[Address],
     heartbeatInterval: FiniteDuration,
     unreachableReaperInterval: FiniteDuration,
-    heartbeatExpectedResponseAfter: FiniteDuration,
-    numberOfEndHeartbeatRequests: Int): Props =
+    heartbeatExpectedResponseAfter: FiniteDuration): Props =
     Props(classOf[ClusterRemoteWatcher], failureDetector, heartbeatInterval, unreachableReaperInterval,
-      heartbeatExpectedResponseAfter, numberOfEndHeartbeatRequests)
+      heartbeatExpectedResponseAfter)
 }
 
 /**
@@ -47,14 +46,12 @@ private[cluster] class ClusterRemoteWatcher(
   failureDetector: FailureDetectorRegistry[Address],
   heartbeatInterval: FiniteDuration,
   unreachableReaperInterval: FiniteDuration,
-  heartbeatExpectedResponseAfter: FiniteDuration,
-  numberOfEndHeartbeatRequests: Int)
+  heartbeatExpectedResponseAfter: FiniteDuration)
   extends RemoteWatcher(
     failureDetector,
     heartbeatInterval,
     unreachableReaperInterval,
-    heartbeatExpectedResponseAfter,
-    numberOfEndHeartbeatRequests) {
+    heartbeatExpectedResponseAfter) {
 
   import RemoteWatcher._
 
