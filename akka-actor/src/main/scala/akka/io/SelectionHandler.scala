@@ -164,7 +164,6 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends A
 
   val select = new Task {
     def tryRun(): Unit = {
-      wakeUp.set(false) // Reset early, worst-case we do a double-wakeup, but it's supposed to be idempotent so it's just an extra syscall
       if (selector.select() > 0) { // This assumes select return value == selectedKeys.size
         val keys = selector.selectedKeys
         val iterator = keys.iterator()
@@ -194,6 +193,7 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends A
         keys.clear() // we need to remove the selected keys from the set, otherwise they remain selected
       }
 
+      wakeUp.set(false) // worst-case we do a double-wakeup, but it's supposed to be idempotent so it's just an extra syscall
       // FIXME what is the appropriate error-handling here, shouldn't this task be resubmitted in case of exception?
       selectorManagementEC.execute(this) // re-schedules select behind all currently queued tasks
     }
