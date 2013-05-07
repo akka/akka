@@ -3,8 +3,8 @@
  */
 package docs.remoting;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import com.typesafe.config.ConfigFactory;
@@ -28,18 +28,12 @@ public class RemoteDeploymentDocTestBase {
       getSender().tell(getSelf(), getSelf());
     }
   }
-  
-  static ActorSystem system;
-  
-  @BeforeClass
-  public static void init() {
-    system = ActorSystem.create();
-  }
-  
-  @AfterClass
-  public static void cleanup() {
-    system.shutdown();
-  }
+
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("RemoteDeploymentDocTest");
+
+  private final ActorSystem system = actorSystemResource.getSystem();
   
   @Test
   public void demonstrateDeployment() {

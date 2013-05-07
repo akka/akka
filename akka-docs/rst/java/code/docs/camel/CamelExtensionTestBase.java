@@ -3,6 +3,7 @@ package docs.camel;
 import akka.actor.ActorSystem;
 import akka.camel.Camel;
 import akka.camel.CamelExtension;
+import akka.testkit.JavaTestKit;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.junit.Test;
@@ -16,7 +17,7 @@ public class CamelExtensionTestBase {
     CamelContext camelContext = camel.context();
     ProducerTemplate producerTemplate = camel.template();
     //#CamelExtension
-    system.shutdown();
+    JavaTestKit.shutdownActorSystem(system);
   }
   public void addActiveMQComponent() {
     //#CamelExtensionAddComponent
@@ -26,7 +27,7 @@ public class CamelExtensionTestBase {
     // camelContext.addComponent("activemq", ActiveMQComponent.activeMQComponent(
     //   "vm://localhost?broker.persistent=false"));
     //#CamelExtensionAddComponent
-    system.shutdown();
+      JavaTestKit.shutdownActorSystem(system);
   }
 
 }

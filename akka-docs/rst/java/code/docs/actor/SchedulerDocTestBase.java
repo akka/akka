@@ -17,26 +17,17 @@ import akka.actor.Cancellable;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.AkkaSpec;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.*;
 
 public class SchedulerDocTestBase {
 
-  ActorSystem system;
-  ActorRef testActor;
+  @Rule
+  public AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("SchedulerDocTest", AkkaSpec.testConf());
 
-  @Before
-  public void setUp() {
-    system = ActorSystem.create("MySystem", AkkaSpec.testConf());
-    testActor = system.actorOf(Props.create(MyUntypedActor.class));
-  }
-
-  @After
-  public void tearDown() {
-    system.shutdown();
-  }
+  private final ActorSystem system = actorSystemResource.getSystem();
+  private ActorRef testActor = system.actorOf(Props.create(MyUntypedActor.class));
 
   @Test
   public void scheduleOneOffTask() {

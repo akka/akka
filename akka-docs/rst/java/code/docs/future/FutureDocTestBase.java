@@ -51,8 +51,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.junit.After;
-import org.junit.Before;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import akka.testkit.AkkaSpec;
@@ -67,45 +67,39 @@ import static org.junit.Assert.*;
 
 public class FutureDocTestBase {
 
-  ActorSystem system;
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("FutureDocTest", AkkaSpec.testConf());
 
-  @Before
-  public void setUp() {
-    system = ActorSystem.create("MySystem", AkkaSpec.testConf());
-  }
-
-  @After
-  public void tearDown() {
-    system.shutdown();
-  }
+  private final ActorSystem system = actorSystemResource.getSystem();
 
   public final static class PrintResult<T> extends OnSuccess<T> {
-        @Override public final void onSuccess(T t) {
-            // print t
-        }
+    @Override public final void onSuccess(T t) {
+      // print t
     }
+  }
 
   public final static class Demo {
-      //#print-result
-      public final static class PrintResult<T> extends OnSuccess<T> {
-        @Override public final void onSuccess(T t) {
-            System.out.println(t);
-        }
+    //#print-result
+    public final static class PrintResult<T> extends OnSuccess<T> {
+      @Override public final void onSuccess(T t) {
+        System.out.println(t);
       }
-      //#print-result
+    }
+    //#print-result
   }
   @SuppressWarnings("unchecked") @Test public void useCustomExecutionContext() throws Exception {
-      ExecutorService yourExecutorServiceGoesHere = Executors.newSingleThreadExecutor();
-      //#diy-execution-context
-      ExecutionContext ec =
-        ExecutionContexts.fromExecutorService(yourExecutorServiceGoesHere);
+    ExecutorService yourExecutorServiceGoesHere = Executors.newSingleThreadExecutor();
+    //#diy-execution-context
+    ExecutionContext ec =
+      ExecutionContexts.fromExecutorService(yourExecutorServiceGoesHere);
 
-      //Use ec with your Futures
-      Future<String> f1 = Futures.successful("foo");
+    //Use ec with your Futures
+    Future<String> f1 = Futures.successful("foo");
 
-      // Then you shut down the ExecutorService at the end of your application.
-      yourExecutorServiceGoesHere.shutdown();
-      //#diy-execution-context
+    // Then you shut down the ExecutorService at the end of your application.
+    yourExecutorServiceGoesHere.shutdown();
+    //#diy-execution-context
   }
 
   @Test
@@ -134,8 +128,8 @@ public class FutureDocTestBase {
 
     f.onSuccess(new PrintResult<String>(), system.dispatcher());
     //#future-eval
-      String result = (String) Await.result(f, Duration.create(5, SECONDS));
-      assertEquals("HelloWorld", result);
+    String result = (String) Await.result(f, Duration.create(5, SECONDS));
+    assertEquals("HelloWorld", result);
   }
 
   @Test
@@ -504,13 +498,13 @@ public class FutureDocTestBase {
       final ExecutionContext ec = system.dispatcher();
 
       future.onComplete(new OnComplete<String>() {
-          public void onComplete(Throwable failure, String result) {
-              if (failure != null) {
-                  //We got a failure, handle it here
-              } else {
-                  // We got a result, do something with it
-              }
+        public void onComplete(Throwable failure, String result) {
+          if (failure != null) {
+            //We got a failure, handle it here
+          } else {
+            // We got a result, do something with it
           }
+        }
       }, ec);
       //#onComplete
     }

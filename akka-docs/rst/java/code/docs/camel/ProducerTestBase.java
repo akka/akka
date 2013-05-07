@@ -3,6 +3,7 @@ package docs.camel;
 import java.util.HashMap;
 import java.util.Map;
 
+import akka.testkit.JavaTestKit;
 import scala.concurrent.Future;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -18,7 +19,7 @@ public class ProducerTestBase {
     ActorRef producer = system.actorOf(props, "jmsproducer");
     producer.tell("<order amount=\"100\" currency=\"PLN\" itemId=\"12345\"/>", null);
     //#TellProducer
-    system.shutdown();
+    JavaTestKit.shutdownActorSystem(system);
   }
 
   @SuppressWarnings("unused")
@@ -30,7 +31,7 @@ public class ProducerTestBase {
     Future<Object> future = Patterns.ask(producer, "some request", 1000);
     //#AskProducer
     system.stop(producer);
-    system.shutdown();
+    JavaTestKit.shutdownActorSystem(system);
   }
 
   public void correlate(){
@@ -44,6 +45,6 @@ public class ProducerTestBase {
       "itemId=\"12345\"/>",headers), null);
     //#Correlate
     system.stop(producer);
-    system.shutdown();
+    JavaTestKit.shutdownActorSystem(system);
   }
 }

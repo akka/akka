@@ -8,12 +8,17 @@ import scala.annotation.{ varargs, tailrec }
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
-import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque, TimeUnit, atomic }
+import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 import akka.actor._
 import akka.actor.Actor._
 import akka.util.{ Timeout, BoxedType }
 import scala.util.control.NonFatal
+import scala.Some
+import java.util.concurrent.TimeUnit
+import akka.actor.IllegalActorStateException
+import akka.actor.DeadLetter
+import akka.actor.Terminated
 
 object TestActor {
   type Ignore = Option[PartialFunction[Any, Boolean]]
@@ -645,6 +650,18 @@ trait TestKitBase {
     }
   }
 
+  /**
+   * Shut down an actor system and wait for termination.
+   * On failure debug output will be logged about the remaining actors in the system.
+   *
+   * If verifySystemShutdown is true, then an exception will be thrown on failure.
+   */
+  def shutdown(actorSystem: ActorSystem,
+               duration: Duration = 5.seconds.dilated.min(10.seconds),
+               verifySystemShutdown: Boolean = false) {
+    TestKit.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
+  }
+
   private def format(u: TimeUnit, d: Duration) = "%.3f %s".format(d.toUnit(u), u.toString.toLowerCase)
 }
 
@@ -727,6 +744,25 @@ object TestKit {
    */
   def dilated(duration: Duration, system: ActorSystem): Duration =
     duration * TestKitExtension(system).TestTimeFactor
+
+  /**
+   * Shut down an actor system and wait for termination.
+   * On failure debug output will be logged about the remaining actors in the system.
+   *
+   * If verifySystemShutdown is true, then an exception will be thrown on failure.
+   */
+  def shutdownActorSystem(actorSystem: ActorSystem,
+                          duration: Duration = 10 seconds,
+                          verifySystemShutdown: Boolean = false): Unit = {
+    actorSystem.shutdown()
+    try actorSystem.awaitTermination(duration) catch {
+      case _: TimeoutException ⇒
+        val msg = "Failed to stop [%s] within [%s] \n%s".format(actorSystem.name, duration,
+          actorSystem.asInstanceOf[ActorSystemImpl].printTree)
+        if (verifySystemShutdown) throw new RuntimeException(msg)
+        else actorSystem.log.warning(msg)
+    }
+  }
 }
 
 /**

@@ -3,6 +3,7 @@
  */
 package docs.serialization;
 
+import akka.testkit.JavaTestKit;
 import org.junit.Test;
 import static org.junit.Assert.*;
 //#imports
@@ -66,7 +67,7 @@ public class SerializationDocTestBase {
     final ActorRef deserializedActorRef = extendedSystem.provider().resolveActorRef(identifier);
     // Then just use the ActorRef
     //#actorref-serializer
-    extendedSystem.shutdown();
+    JavaTestKit.shutdownActorSystem(extendedSystem);
   }
 
   static
@@ -187,6 +188,6 @@ public class SerializationDocTestBase {
     assertEquals(original, back);
 
     //#programmatic
-    system.shutdown();
+    JavaTestKit.shutdownActorSystem(system);
   }
 }

@@ -6,8 +6,8 @@ package docs.actor;
 
 import java.util.concurrent.TimeUnit;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import scala.concurrent.duration.Duration;
@@ -21,19 +21,12 @@ import akka.testkit.JavaTestKit;
 
 public class InboxDocTest {
 
-  private static ActorSystem system;
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("InboxDocTest", AkkaSpec.testConf());
 
-  @BeforeClass
-  public static void beforeAll() {
-    system = ActorSystem.create("MySystem", AkkaSpec.testConf());
-  }
+  private final ActorSystem system = actorSystemResource.getSystem();
 
-  @AfterClass
-  public static void afterAll() {
-    system.shutdown();
-    system = null;
-  }
-  
   @Test
   public void demonstrateInbox() {
     final JavaTestKit probe = new JavaTestKit(system);

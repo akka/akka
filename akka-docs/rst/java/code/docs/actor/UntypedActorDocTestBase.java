@@ -15,8 +15,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 //#import-gracefulStop
@@ -82,18 +82,11 @@ import akka.util.Timeout;
 
 public class UntypedActorDocTestBase {
 
-  private static ActorSystem system;
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("UntypedActorDocTest", AkkaSpec.testConf());
 
-  @BeforeClass
-  public static void beforeAll() {
-    system = ActorSystem.create("MySystem", AkkaSpec.testConf());
-  }
-
-  @AfterClass
-  public static void afterAll() {
-    system.shutdown();
-    system = null;
-  }
+  private final ActorSystem system = actorSystemResource.getSystem();
 
   @SuppressWarnings("unused")
   @Test
@@ -156,7 +149,7 @@ public class UntypedActorDocTestBase {
         }
       };
     } finally {
-      system.shutdown();
+      JavaTestKit.shutdownActorSystem(system);
     }
   }
 

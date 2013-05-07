@@ -19,7 +19,7 @@ import akka.event.Logging.Debug;
 //#imports-listener
 
 import org.junit.Test;
-
+import akka.testkit.JavaTestKit;
 import scala.Option;
 
 //#imports-deadletter
@@ -37,7 +37,7 @@ public class LoggingDocTestBase {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(Props.create(MyActor.class, this));
     myActor.tell("test", null);
-    system.shutdown();
+    JavaTestKit.shutdownActorSystem(system);
   }
 
   @Test
@@ -47,7 +47,7 @@ public class LoggingDocTestBase {
     final ActorRef actor = system.actorOf(Props.create(DeadLetterActor.class));
     system.eventStream().subscribe(actor, DeadLetter.class);
     //#deadletters
-    system.shutdown();
+    JavaTestKit.shutdownActorSystem(system);
   }
   
   @Test
@@ -57,7 +57,7 @@ public class LoggingDocTestBase {
     final Object[] args = new Object[] { "The", "brown", "fox", "jumps", 42 };
     system.log().debug("five parameters: {}, {}, {}, {}, {}", args);
     //#array
-    system.shutdown();
+    JavaTestKit.shutdownActorSystem(system);
   }
 
   //#my-actor

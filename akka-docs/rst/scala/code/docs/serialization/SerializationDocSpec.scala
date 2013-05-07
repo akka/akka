@@ -64,7 +64,7 @@ package docs.serialization {
       //#serialize-messages-config
       val a = ActorSystem("system", config)
       a.settings.SerializeAllMessages must be(true)
-      a.shutdown()
+      shutdown(a)
     }
 
     "demonstrate configuration of serialize creators" in {
@@ -79,7 +79,7 @@ package docs.serialization {
       //#serialize-creators-config
       val a = ActorSystem("system", config)
       a.settings.SerializeAllCreators must be(true)
-      a.shutdown()
+      shutdown(a)
     }
 
     "demonstrate configuration of serializers" in {
@@ -97,7 +97,7 @@ package docs.serialization {
     """)
       //#serialize-serializers-config
       val a = ActorSystem("system", config)
-      a.shutdown()
+      shutdown(a)
     }
 
     "demonstrate configuration of serialization-bindings" in {
@@ -126,7 +126,7 @@ package docs.serialization {
       SerializationExtension(a).serializerFor(classOf[String]).getClass must equal(classOf[JavaSerializer])
       SerializationExtension(a).serializerFor(classOf[Customer]).getClass must equal(classOf[JavaSerializer])
       SerializationExtension(a).serializerFor(classOf[java.lang.Boolean]).getClass must equal(classOf[MyOwnSerializer])
-      a.shutdown()
+      shutdown(a)
     }
 
     "demonstrate the programmatic API" in {
@@ -152,7 +152,7 @@ package docs.serialization {
       back must equal(original)
 
       //#programmatic
-      system.shutdown()
+      shutdown(system)
     }
 
     "demonstrate serialization of ActorRefs" in {

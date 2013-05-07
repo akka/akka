@@ -264,7 +264,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
         actor ! Kill
       }
     } finally {
-      system.shutdown()
+      shutdown(system)
     }
     //#event-filter
   }
@@ -282,7 +282,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       try expectMsg("hello") catch { case NonFatal(e) ⇒ system.shutdown(); throw e }
       //#put-your-test-code-here
 
-      system.shutdown()
+      shutdown(system)
     }
     //#test-kit-base
   }

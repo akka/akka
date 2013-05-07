@@ -267,7 +267,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     val system = ActorSystem("mySystem")
     val myActor = system.actorOf(Props[MyActor].withDispatcher("my-dispatcher"), "myactor2")
     //#system-actorOf
-    system.shutdown()
+    shutdown(system)
   }
 
   "creating actor with IndirectActorProducer" in {

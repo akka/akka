@@ -6,6 +6,8 @@ package docs.camel;
     import akka.camel.Camel;
     import akka.camel.CamelExtension;
     import akka.camel.javaapi.UntypedConsumerActor;
+    import akka.testkit.JavaTestKit;
+    import akka.testkit.TestKit;
     import akka.util.Timeout;
     import scala.concurrent.Future;
     import scala.concurrent.duration.Duration;
@@ -38,7 +40,7 @@ public class ActivationTestBase {
     Future<ActorRef> deactivationFuture = camel.deactivationFutureFor(producer,
       timeout, system.dispatcher());
     //#CamelDeactivation
-    system.shutdown();
+    JavaTestKit.shutdownActorSystem(system);
   }
 
   public static class MyConsumer extends UntypedConsumerActor {

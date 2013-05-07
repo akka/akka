@@ -4,35 +4,27 @@
 
 package akka.actor;
 
-import akka.actor.ActorSystem;
 import akka.event.Logging;
 import akka.event.Logging.LoggerInitialized;
 import akka.japi.Creator;
 import akka.routing.CurrentRoutees;
 import akka.routing.FromConfig;
 import akka.routing.NoRouter;
+import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class JavaAPI {
 
-  private static ActorSystem system;
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("JAvaAPI", AkkaSpec.testConf());
 
-  @BeforeClass
-  public static void beforeAll() {
-    system = ActorSystem.create("JavaAPI", AkkaSpec.testConf());
-  }
+  private final ActorSystem system = actorSystemResource.getSystem();
 
-  @AfterClass
-  public static void afterAll() {
-    system.shutdown();
-    system = null;
-  }
-  
   // compilation tests
   @SuppressWarnings("unused")
   public void mustCompile() {

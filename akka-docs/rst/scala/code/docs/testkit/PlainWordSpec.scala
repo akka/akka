@@ -31,7 +31,7 @@ class MySpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
   import MySpec._
 
   override def afterAll {
-    system.shutdown()
+    TestKit.shutdownActorSystem(system)
   }
 
   "An Echo actor" must {

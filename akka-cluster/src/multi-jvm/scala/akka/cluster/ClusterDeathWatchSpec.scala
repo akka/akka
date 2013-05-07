@@ -251,8 +251,7 @@ abstract class ClusterDeathWatchSpec
           endProbe.expectMsg(EndActor.EndAck)
 
         } finally {
-          endSystem.shutdown()
-          endSystem.awaitTermination(10 seconds)
+          shutdown(endSystem, 10 seconds)
         }
         // no barrier here, because it is not part of testConductor roles any more
 

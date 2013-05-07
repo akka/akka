@@ -45,7 +45,7 @@ class TestKitUsageSpec
     system.actorOf(Props(classOf[SequencingActor], testActor, headList, tailList))
 
   override def afterAll {
-    system.shutdown()
+    shutdown(system)
   }
 
   "An EchoActor" should {

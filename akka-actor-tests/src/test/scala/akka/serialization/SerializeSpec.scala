@@ -186,7 +186,7 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
           (deadLetters eq a.deadLetters) must be(true)
         }
       } finally {
-        a.shutdown()
+        shutdown(a)
       }
     }
 

@@ -16,7 +16,9 @@ import akka.event.LoggingAdapter;
 //#imports-prio-mailbox
 import akka.dispatch.PriorityGenerator;
 import akka.dispatch.UnboundedPriorityMailbox;
+import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.JavaTestKit;
+import akka.testkit.TestKit;
 import com.typesafe.config.Config;
 
 //#imports-prio-mailbox
@@ -35,8 +37,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 //#imports-required-mailbox
 
 import docs.actor.MyBoundedUntypedActor;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import scala.Option;
 import scala.concurrent.ExecutionContext;
@@ -48,20 +49,13 @@ import akka.testkit.AkkaSpec;
 
 public class DispatcherDocTestBase {
 
-  static ActorSystem system;
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("DispatcherDocTest", ConfigFactory.parseString(
+      DispatcherDocSpec.javaConfig()).withFallback(ConfigFactory.parseString(
+      DispatcherDocSpec.config())).withFallback(AkkaSpec.testConf()));
 
-  @BeforeClass
-  public static void beforeAll() {
-    system = ActorSystem.create("MySystem",
-      ConfigFactory.parseString(DispatcherDocSpec.javaConfig()).withFallback(
-              ConfigFactory.parseString(DispatcherDocSpec.config())).withFallback(AkkaSpec.testConf()));
-  }
-
-  @AfterClass
-  public static void afterAll() {
-    system.shutdown();
-    system = null;
-  }
+  private final ActorSystem system = actorSystemResource.getSystem();
 
   @SuppressWarnings("unused")
   @Test

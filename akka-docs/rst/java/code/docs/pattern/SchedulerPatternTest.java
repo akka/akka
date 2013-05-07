@@ -16,17 +16,11 @@ import java.util.concurrent.TimeUnit;
 
 public class SchedulerPatternTest {
 
-  static ActorSystem system;
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("SchedulerPatternTest", AkkaSpec.testConf());
 
-  @BeforeClass
-  public static void setUp() {
-    system = ActorSystem.create("SchedulerPatternTest", AkkaSpec.testConf());
-  }
-
-  @AfterClass
-  public static void tearDown() {
-    system.shutdown();
-  }
+  private final ActorSystem system = actorSystemResource.getSystem();
 
   static
   //#schedule-constructor

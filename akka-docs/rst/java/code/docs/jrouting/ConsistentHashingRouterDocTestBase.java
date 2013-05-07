@@ -3,8 +3,8 @@
  */
 package docs.jrouting;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.ClassRule;
 import org.junit.Test;
 import akka.testkit.JavaTestKit;
 import akka.actor.ActorSystem;
@@ -27,17 +27,11 @@ import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope;
 
 public class ConsistentHashingRouterDocTestBase {
 
-  static ActorSystem system;
-  
-  @BeforeClass
-  public static void setup() {
-    system = ActorSystem.create();
-  }
-  
-  @AfterClass
-  public static void teardown() {
-    system.shutdown();
-  }
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("ConsistentHashingRouterDocTest");
+
+  private final ActorSystem system = actorSystemResource.getSystem();
 
   static
   //#cache-actor

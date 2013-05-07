@@ -4,7 +4,6 @@
 package akka.testkit;
 
 import akka.actor.Terminated;
-import akka.japi.Option;
 import scala.runtime.AbstractFunction0;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -14,6 +13,8 @@ import akka.japi.JavaPartialFunction;
 import akka.japi.Util;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Java API: Test kit for testing actors. Inheriting from this class enables
@@ -42,6 +43,29 @@ import scala.concurrent.duration.FiniteDuration;
  * 
  */
 public class JavaTestKit {
+  /**
+   * Shut down an actor system and wait for termination.
+   * On failure debug output will be logged about the remaining actors in the system.
+   * <p>
+   *
+   * If verifySystemShutdown is true, then an exception will be thrown on failure.
+   */
+  public static void shutdownActorSystem(ActorSystem actorSystem, Duration duration, Boolean verifySystemShutdown) {
+      boolean vss = verifySystemShutdown != null ? verifySystemShutdown : false;
+      Duration dur = duration != null ? duration : FiniteDuration.create(10, TimeUnit.SECONDS);
+    TestKit.shutdownActorSystem(actorSystem, dur, vss);
+  }
+
+  public static void shutdownActorSystem(ActorSystem actorSystem) {
+    shutdownActorSystem(actorSystem, null, null);
+  }
+  public void shutdownActorSystem(ActorSystem actorSystem, Duration duration) {
+    shutdownActorSystem(actorSystem, duration, null);
+  }
+  public void shutdownActorSystem(ActorSystem actorSystem, Boolean verifySystemShutdown) {
+    shutdownActorSystem(actorSystem, null, verifySystemShutdown);
+  }
+
   private final TestProbe p;
 
   public JavaTestKit(ActorSystem system) {
@@ -637,4 +661,28 @@ public class JavaTestKit {
     }
   }
 
+  /**
+   * Shut down an actor system and wait for termination.
+   * On failure debug output will be logged about the remaining actors in the system.
+   * <p>
+   *
+   * If verifySystemShutdown is true, then an exception will be thrown on failure.
+   */
+  public void shutdown(ActorSystem actorSystem, Duration duration, Boolean verifySystemShutdown) {
+    boolean vss = verifySystemShutdown != null ? verifySystemShutdown : false;
+    Duration dur = duration != null ? duration :
+            TestKit.dilated(FiniteDuration.create(5, TimeUnit.SECONDS),
+                    getSystem()).min(FiniteDuration.create(10, TimeUnit.SECONDS));
+    JavaTestKit.shutdownActorSystem(actorSystem, dur, vss);
+  }
+
+  public void shutdown(ActorSystem actorSystem) {
+      shutdown(actorSystem, null, null);
+  }
+  public void shutdown(ActorSystem actorSystem, Duration duration) {
+      shutdown(actorSystem, duration, null);
+  }
+  public void shutdown(ActorSystem actorSystem, Boolean verifySystemShutdown) {
+      shutdown(actorSystem, null, verifySystemShutdown);
+  }
 }

@@ -30,6 +30,7 @@ import akka.actor.UntypedActor;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import org.junit.*;
 import scala.concurrent.duration.Duration;
 import akka.serialization.SerializationExtension;
 import akka.serialization.Serialization;
@@ -47,26 +48,16 @@ import java.text.SimpleDateFormat;
 
 import akka.actor.ActorSystem;
 import akka.testkit.AkkaSpec;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.Assume;
+import akka.testkit.AkkaJUnitActorSystemResource;
 
 public class ZeromqDocTestBase {
 
-  ActorSystem system;
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("ZeromqDocTest",
+      ConfigFactory.parseString("akka.loglevel=INFO").withFallback(AkkaSpec.testConf()));
 
-  @Before
-  public void setUp() {
-    system = ActorSystem.create("ZeromqDocTest",
-        ConfigFactory.parseString("akka.loglevel=INFO").withFallback(AkkaSpec.testConf()));
-  }
-
-  @After
-  public void tearDown() {
-    system.shutdown();
-  }
+  private final ActorSystem system = actorSystemResource.getSystem();
 
   @SuppressWarnings("unused")
   @Test

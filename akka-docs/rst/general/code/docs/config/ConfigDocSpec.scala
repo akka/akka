@@ -5,6 +5,7 @@ package docs.config
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
+import akka.testkit.TestKit
 
 //#imports
 import akka.actor.ActorSystem
@@ -28,6 +29,6 @@ class ConfigDocSpec extends WordSpec with MustMatchers {
     val system = ActorSystem("MySystem", ConfigFactory.load(customConf))
     //#custom-config
 
-    system.shutdown()
+    TestKit.shutdownActorSystem(system)
   }
 }

@@ -17,6 +17,7 @@ import akka.actor.UntypedActor;
 
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
 import akka.testkit.AkkaSpec;
 
@@ -201,7 +202,7 @@ public class FSMDocTestBase {
 
   @org.junit.After
   public void cleanup() {
-    system.shutdown();
+    JavaTestKit.shutdownActorSystem(system);
   }
 
 }

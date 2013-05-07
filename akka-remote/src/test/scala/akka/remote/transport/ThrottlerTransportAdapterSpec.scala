@@ -136,7 +136,7 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
       EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
   }
 
-  override def afterTermination(): Unit = systemB.shutdown()
+  override def afterTermination(): Unit = shutdown(systemB)
 }
 
 class ThrottlerTransportAdapterGenericSpec extends GenericTransportSpec(withAkkaProtocol = true) {

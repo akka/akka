@@ -11,7 +11,7 @@ import akka.camel.internal.ActivationProtocol._
 
 class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen {
 
-  override protected def afterAll() { system.shutdown() }
+  override protected def afterAll() { shutdown(system) }
 
   var actor: TestProbe = _
   var awaiting: Awaiting = _
