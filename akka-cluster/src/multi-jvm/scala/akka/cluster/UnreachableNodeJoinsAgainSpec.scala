@@ -194,7 +194,7 @@ abstract class UnreachableNodeJoinsAgainSpec
         awaitMembersUp(expectedNumberOfMembers)
         // don't end the test until the freshSystem is done
         runOn(master) {
-          expectMsg(EndActor.End)
+          expectMsg(20 seconds, EndActor.End)
         }
         endBarrier()
       }
