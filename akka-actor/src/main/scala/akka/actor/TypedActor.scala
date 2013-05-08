@@ -596,7 +596,10 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   /**
    * Returns the akka.actor.Props representation of this TypedProps
    */
-  def actorProps(): Props = if (dispatcher == Props.default.dispatcher) Props.default else Props(dispatcher = dispatcher)
+  def actorProps(): Props =
+    if (dispatcher == Props.default.dispatcher)
+      Props.default.withDeploy(deploy)
+    else Props(dispatcher = dispatcher).withDeploy(deploy)
 }
 
 /**
