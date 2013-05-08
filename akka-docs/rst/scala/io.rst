@@ -119,6 +119,10 @@ Receiving messages from the ``IOManager``:
     case IO.NewClient(server) =>
       println("New incoming connection on server")
       val socket = server.accept()
+      /*
+       * another alternative would be to delegate the new connection to another actor
+       * by calling `server.accept()(otherActor)`.
+       */
       println("Writing to new client socket")
       socket.write(bytes)
       println("Closing socket")
@@ -134,6 +138,8 @@ Receiving messages from the ``IOManager``:
       println("Server socket has closed, cause: " + cause)
 
   }
+
+These message are sent to that actor which requested the connection to be made or the listening socket to be opened, meaning that this actor is responsible for handling the events pertaining to the life-cycle of the socket.
 
 IO.Iteratee
 ^^^^^^^^^^^
