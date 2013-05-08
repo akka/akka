@@ -16,7 +16,7 @@ import com.typesafe.tools.mima.plugin.MimaKeys.{ previousArtifact, binaryIssueFi
 import com.typesafe.tools.mima.core._
 import com.typesafe.sbt.SbtSite.site
 import com.typesafe.sbt.site.SphinxSupport
-import com.typesafe.sbt.site.SphinxSupport.{ enableOutput, generatePdf, generatedPdf, sphinxInputs, sphinxPackages, Sphinx }
+import com.typesafe.sbt.site.SphinxSupport.{ enableOutput, generateEpub, generatedEpub, generatePdf, generatedPdf, sphinxInputs, sphinxPackages, Sphinx }
 import com.typesafe.sbt.preprocess.Preprocess.{ preprocess, preprocessExts, preprocessVars, simplePreprocess }
 import ls.Plugin.{ lsSettings, LsKeys }
 import java.lang.Boolean.getBoolean
@@ -52,8 +52,8 @@ object AkkaBuild extends Build {
       // generate online version of docs
       sphinxInputs in Sphinx <<= sphinxInputs in Sphinx in LocalProject(docs.id) map { inputs => inputs.copy(tags = inputs.tags :+ "online") },
       // don't regenerate the pdf, just reuse the akka-docs version
-      generatedPdf in Sphinx <<= generatedPdf in Sphinx in LocalProject(docs.id) map identity
-
+      generatedPdf in Sphinx <<= generatedPdf in Sphinx in LocalProject(docs.id) map identity,
+      generatedEpub in Sphinx <<= generatedEpub in Sphinx in LocalProject(docs.id) map identity
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples)
   )
@@ -417,6 +417,7 @@ object AkkaBuild extends Build {
         orig
       },
       enableOutput in generatePdf in Sphinx := true,
+      enableOutput in generateEpub in Sphinx := true,
       unmanagedSourceDirectories in Test <<= sourceDirectory in Sphinx apply { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
       unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
