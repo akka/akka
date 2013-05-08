@@ -26,11 +26,7 @@ class DemoActor extends Actor {
 }
 
 //#server
-object Server {
-  def apply(manager: ActorRef) = Props(classOf[Server], manager)
-}
-
-class Server(manager: ActorRef) extends Actor {
+class Server extends Actor {
 
   import Tcp._
   import context.system
@@ -38,12 +34,17 @@ class Server(manager: ActorRef) extends Actor {
   IO(Tcp) ! Bind(self, new InetSocketAddress("localhost", 0))
 
   def receive = {
-    case b @ Bound(localAddress) ⇒ manager ! b
+    case b @ Bound(localAddress) ⇒
+      //#do-some-logging-or-setup
+      context.parent ! b
+    //#do-some-logging-or-setup
 
-    case CommandFailed(_: Bind)  ⇒ context stop self
+    case CommandFailed(_: Bind) ⇒ context stop self
 
     case c @ Connected(remote, local) ⇒
-      manager ! c
+      //#server
+      context.parent ! c
+      //#server
       val handler = context.actorOf(Props[SimplisticHandler])
       val connection = sender
       connection ! Register(handler)
@@ -97,8 +98,15 @@ class Client(remote: InetSocketAddress, listener: ActorRef) extends Actor {
 
 class IODocSpec extends AkkaSpec {
 
+  class Parent extends Actor {
+    context.actorOf(Props[Server], "server")
+    def receive = {
+      case msg ⇒ testActor forward msg
+    }
+  }
+
   "demonstrate connect" in {
-    val server = system.actorOf(Server(testActor), "server1")
+    val server = system.actorOf(Props(classOf[Parent], this), "parent")
     val listen = expectMsgType[Tcp.Bound].localAddress
     val client = system.actorOf(Client(listen, testActor), "client1")
 

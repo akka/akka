@@ -134,9 +134,9 @@ class TcpPipelineHandler[Ctx <: PipelineContext, Cmd, Evt](
  * that are not Receive events will be passed directly to the handler registered for TcpPipelineHandler.
  * @tparam Ctx
  */
-class TcpReadWriteAdapter[Ctx <: PipelineContext] extends PipelineStage[Ctx, ByteString, Tcp.Command, ByteString, Tcp.Event] {
+class TcpReadWriteAdapter extends PipelineStage[PipelineContext, ByteString, Tcp.Command, ByteString, Tcp.Event] {
 
-  override def apply(ctx: Ctx) = new PipePair[ByteString, Tcp.Command, ByteString, Tcp.Event] {
+  override def apply(ctx: PipelineContext) = new PipePair[ByteString, Tcp.Command, ByteString, Tcp.Event] {
 
     override val commandPipeline = {
       data: ByteString ⇒ ctx.singleCommand(Tcp.Write(data))

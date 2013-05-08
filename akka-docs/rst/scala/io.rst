@@ -427,6 +427,7 @@ Accepting connections
 ^^^^^^^^^^^^^^^^^^^^^
 
 .. includecode:: code/docs/io/IODocSpec.scala#server
+   :exclude: do-some-logging-or-setup
 
 To create a TCP server and listen for inbound connections, a :class:`Bind`
 command has to be sent to the TCP manager.  This will instruct the TCP manager

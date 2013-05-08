@@ -102,7 +102,7 @@ class SslTlsSupportSpec extends AkkaSpec {
     val init = new TcpPipelineHandler.Init(
       new StringByteStringAdapter >>
         new DelimiterFraming(maxSize = 1024, delimiter = ByteString('\n'), includeDelimiter = true) >>
-        new TcpReadWriteAdapter[HasLogging] >>
+        new TcpReadWriteAdapter >>
         new SslTlsSupport(sslEngine(connected.remoteAddress, client = true))) {
       override def makeContext(actorContext: ActorContext): HasLogging = new HasLogging {
         override def getLogger = system.log
@@ -148,9 +148,16 @@ class SslTlsSupportSpec extends AkkaSpec {
         val init =
           new TcpPipelineHandler.Init(
             new StringByteStringAdapter >>
-              new DelimiterFraming(maxSize = 1024, delimiter = ByteString('\n'), includeDelimiter = true) >>
-              new TcpReadWriteAdapter[HasLogging] >>
+              new DelimiterFraming(maxSize = 1024, delimiter = ByteString('\n'),
+                includeDelimiter = true) >>
+              new TcpReadWriteAdapter >>
               new SslTlsSupport(sslEngine(remote, client = false))) {
+            /*
+             * When creating an `Init` the abstract `makeContext` method needs to be 
+             * implemented. If the type of the returned context does not satisfy the 
+             * requirements of all pipeline stages, then you’ll get an error that 
+             * `makeContext` has an incompatible type.
+             */
             override def makeContext(actorContext: ActorContext): HasLogging =
               new HasLogging {
                 override def getLogger = log

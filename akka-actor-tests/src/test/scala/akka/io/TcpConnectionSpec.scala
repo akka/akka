@@ -483,28 +483,6 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       }
     }
 
-    // This test is disabled on windows, as the assumption that not calling accept on a server socket means that
-    // no TCP level connection has been established with the client does not hold.
-    // RK: I think Windows is no different than any other OS in this regard, there was just a sleep() missing.
-    "report failed connection attempt while not accepted" in new UnacceptedConnectionTest {
-      run {
-        ignoreIfWindows()
-
-        // close instead of accept
-        localServerChannel.close()
-
-        // must give the OS some time to send RST from server to client
-        Thread.sleep(100)
-
-        EventFilter[SocketException](occurrences = 1) intercept {
-          selector.send(connectionActor, ChannelConnectable)
-          userHandler.expectMsg(CommandFailed(Connect(serverAddress)))
-        }
-
-        verifyActorTermination(connectionActor)
-      }
-    }
-
     val UnboundAddress = temporaryServerAddress()
 
     "report failed connection attempt when target is unreachable" in
