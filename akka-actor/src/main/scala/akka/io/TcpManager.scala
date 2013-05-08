@@ -49,11 +49,11 @@ private[io] class TcpManager(tcp: TcpExt) extends SelectorBasedManager(tcp.Setti
 
   def receive = workerForCommandHandler {
     case c: Connect ⇒
-      val commander = sender
+      val commander = sender // cache because we create a function that will run asyncly
       registry ⇒ Props(classOf[TcpOutgoingConnection], tcp, registry, commander, c)
 
     case b: Bind ⇒
-      val commander = sender
+      val commander = sender // cache because we create a function that will run asyncly
       registry ⇒ Props(classOf[TcpListener], selectorPool, tcp, registry, commander, b)
   }
 

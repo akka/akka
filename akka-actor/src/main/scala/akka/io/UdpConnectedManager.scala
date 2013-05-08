@@ -15,7 +15,7 @@ private[io] class UdpConnectedManager(udpConn: UdpConnectedExt)
 
   def receive = workerForCommandHandler {
     case c: Connect ⇒
-      val commander = sender
+      val commander = sender // cache because we create a function that will run asyncly
       registry ⇒ Props(classOf[UdpConnection], udpConn, registry, commander, c)
   }
 
