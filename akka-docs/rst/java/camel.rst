@@ -101,13 +101,13 @@ The ``CamelExtension`` object provides access to the `Camel`_ interface.
 The `Camel`_ interface in turn provides access to two important Apache Camel objects, the `CamelContext`_ and the `ProducerTemplate`_.
 Below you can see how you can get access to these Apache Camel objects.
 
-.. includecode:: code/docs/camel/CamelExtensionTestBase.java#CamelExtension
+.. includecode:: code/docs/camel/CamelExtensionTest.java#CamelExtension
 
 One ``CamelExtension`` is only loaded once for every one ``ActorSystem``, which makes it safe to call the ``CamelExtension`` at any point in your code to get to the
 Apache Camel objects associated with it. There is one `CamelContext`_ and one `ProducerTemplate`_ for every one ``ActorSystem`` that uses a ``CamelExtension``.
 Below an example on how to add the ActiveMQ component to the `CamelContext`_, which is required when you would like to use the ActiveMQ component.
 
-.. includecode:: code/docs/camel/CamelExtensionTestBase.java#CamelExtensionAddComponent
+.. includecode:: code/docs/camel/CamelExtensionTest.java#CamelExtensionAddComponent
 
 The `CamelContext`_ joins the lifecycle of the ``ActorSystem`` and ``CamelExtension`` it is associated with; the `CamelContext`_ is started when
 the ``CamelExtension`` is created, and it is shut down when the associated ``ActorSystem`` is shut down. The same is true for the `ProducerTemplate`_.

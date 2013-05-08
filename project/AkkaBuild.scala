@@ -276,12 +276,13 @@ object AkkaBuild extends Build {
   )
 
   lazy val camel = Project(
-     id = "akka-camel",
-     base = file("akka-camel"),
-     dependencies = Seq(actor, slf4j, testkit % "test->test"),
-     settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.camel ++ Seq(
-       libraryDependencies ++= Dependencies.camel
-     )
+    id = "akka-camel",
+    base = file("akka-camel"),
+    dependencies = Seq(actor, slf4j, testkit % "test->test"),
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.camel ++ Seq(
+      libraryDependencies ++= Dependencies.camel,
+      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a")
+    )
   )
 
   val ActorReferenceCopyTask = TaskKey[Int]("hello", "Copy reference.conf from akka modules to akka-osgi")
@@ -992,7 +993,7 @@ object Dependencies {
 
   val kernel = Seq(Test.scalatest, Test.junit)
 
-  val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito, Test.logback, Test.commonsIo)
+  val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito, Test.logback, Test.commonsIo, Test.junitIntf)
 
   val camelSample = Seq(camelJetty)
 

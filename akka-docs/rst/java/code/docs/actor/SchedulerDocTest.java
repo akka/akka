@@ -20,7 +20,7 @@ import akka.testkit.AkkaSpec;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import org.junit.*;
 
-public class SchedulerDocTestBase {
+public class SchedulerDocTest {
 
   @Rule
   public AkkaJUnitActorSystemResource actorSystemResource =

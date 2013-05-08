@@ -38,7 +38,7 @@ import org.junit.BeforeClass;
 import org.junit.AfterClass;
 
 //#testkit
-public class FaultHandlingTestBase {
+public class FaultHandlingTest {
   //#testkit
   static
   //#supervisor

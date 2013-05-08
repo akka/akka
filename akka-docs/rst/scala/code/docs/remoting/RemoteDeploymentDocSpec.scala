@@ -20,7 +20,11 @@ object RemoteDeploymentDocSpec {
 
 class RemoteDeploymentDocSpec extends AkkaSpec("""
     akka.actor.provider = "akka.remote.RemoteActorRefProvider"
-    akka.remote.netty.tcp.port = 0
+    akka.remote.netty.tcp {
+      port = 0
+      server-socket-worker-pool.pool-size-max = 2
+      client-socket-worker-pool.pool-size-max = 2
+    }
 """) with ImplicitSender {
 
   import RemoteDeploymentDocSpec._

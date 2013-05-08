@@ -25,7 +25,7 @@ import akka.routing.ConsistentHashingRouter.ConsistentHashMapper;
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope;
 //#imports2
 
-public class ConsistentHashingRouterDocTestBase {
+public class ConsistentHashingRouterDocTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

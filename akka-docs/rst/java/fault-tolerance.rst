@@ -39,7 +39,7 @@ in more depth.
 
 For the sake of demonstration let us consider the following strategy:
 
-.. includecode:: code/docs/actor/FaultHandlingTestBase.java
+.. includecode:: code/docs/actor/FaultHandlingTest.java
    :include: strategy
 
 I have chosen a few well-known exception types in order to demonstrate the
@@ -115,49 +115,49 @@ Test Application
 The following section shows the effects of the different directives in practice,
 wherefor a test setup is needed. First off, we need a suitable supervisor:
 
-.. includecode:: code/docs/actor/FaultHandlingTestBase.java
+.. includecode:: code/docs/actor/FaultHandlingTest.java
    :include: supervisor
 
 This supervisor will be used to create a child, with which we can experiment:
 
-.. includecode:: code/docs/actor/FaultHandlingTestBase.java
+.. includecode:: code/docs/actor/FaultHandlingTest.java
    :include: child
 
 The test is easier by using the utilities described in :ref:`akka-testkit`,
 where ``TestProbe`` provides an actor ref useful for receiving and inspecting replies.
 
-.. includecode:: code/docs/actor/FaultHandlingTestBase.java
+.. includecode:: code/docs/actor/FaultHandlingTest.java
    :include: testkit
 
 Let us create actors:
 
-.. includecode:: code/docs/actor/FaultHandlingTestBase.java
+.. includecode:: code/docs/actor/FaultHandlingTest.java
    :include: create
 
 The first test shall demonstrate the ``Resume`` directive, so we try it out by
 setting some non-initial state in the actor and have it fail:
 
-.. includecode:: code/docs/actor/FaultHandlingTestBase.java
+.. includecode:: code/docs/actor/FaultHandlingTest.java
    :include: resume
 
 As you can see the value 42 survives the fault handling directive. Now, if we
 change the failure to a more serious ``NullPointerException``, that will no
 longer be the case:
 
-.. includecode:: code/docs/actor/FaultHandlingTestBase.java
+.. includecode:: code/docs/actor/FaultHandlingTest.java
    :include: restart
 
 And finally in case of the fatal ``IllegalArgumentException`` the child will be
 terminated by the supervisor:
 
-.. includecode:: code/docs/actor/FaultHandlingTestBase.java
+.. includecode:: code/docs/actor/FaultHandlingTest.java
    :include: stop
 
 Up to now the supervisor was completely unaffected by the child’s failure,
 because the directives set did handle it. In case of an ``Exception``, this is not
 true anymore and the supervisor escalates the failure.
 
-.. includecode:: code/docs/actor/FaultHandlingTestBase.java
+.. includecode:: code/docs/actor/FaultHandlingTest.java
    :include: escalate-kill
 
 The supervisor itself is supervised by the top-level actor provided by the
@@ -170,12 +170,12 @@ child not to survive this failure.
 In case this is not desired (which depends on the use case), we need to use a
 different supervisor which overrides this behavior.
 
-.. includecode:: code/docs/actor/FaultHandlingTestBase.java
+.. includecode:: code/docs/actor/FaultHandlingTest.java
    :include: supervisor2
 
 With this parent, the child survives the escalated restart, as demonstrated in
 the last test:
 
-.. includecode:: code/docs/actor/FaultHandlingTestBase.java
+.. includecode:: code/docs/actor/FaultHandlingTest.java
    :include: escalate-restart
 

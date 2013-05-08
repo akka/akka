@@ -551,5 +551,5 @@ reference file for more information:
    Setting properties like the listening IP and port number programmatically is
    best done by using something like the following:
 
-   .. includecode:: ../java/code/docs/remoting/RemoteDeploymentDocTestBase.java#programmatic
+   .. includecode:: ../java/code/docs/remoting/RemoteDeploymentDocTest.java#programmatic
 

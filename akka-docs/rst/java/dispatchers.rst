@@ -20,7 +20,7 @@ Looking up a Dispatcher
 
 Dispatchers implement the :class:`ExecutionContext` interface and can thus be used to run :class:`Future` invocations etc.
 
-.. includecode:: code/docs/dispatcher/DispatcherDocTestBase.java#lookup
+.. includecode:: code/docs/dispatcher/DispatcherDocTest.java#lookup
 
 Setting the dispatcher for an Actor
 -----------------------------------
@@ -38,7 +38,7 @@ For more options, see the default-dispatcher section of the :ref:`configuration`
 
 Then you create the actor as usual and define the dispatcher in the deployment configuration.
 
-.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTestBase.java#defining-dispatcher-in-config
+.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTest.java#defining-dispatcher-in-config
 
 .. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#dispatcher-deployment-config
 
@@ -46,7 +46,7 @@ An alternative to the deployment configuration is to define the dispatcher in co
 If you define the ``dispatcher`` in the deployment configuration then this value will be used instead
 of programmatically provided parameter.
 
-.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTestBase.java#defining-dispatcher-in-code
+.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTest.java#defining-dispatcher-in-code
 
 .. note::
     The dispatcher you specify in ``withDispatcher`` and the ``dispatcher`` property in the deployment 
@@ -131,7 +131,7 @@ Configuring a ``PinnedDispatcher``:
 
 And then using it:
 
-.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTestBase.java#defining-pinned-dispatcher
+.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTest.java#defining-pinned-dispatcher
 
 Note that ``thread-pool-executor`` configuration as per the above ``my-thread-pool-dispatcher`` example is
 NOT applicable. This is because every actor will have its own thread pool when using ``PinnedDispatcher``,
@@ -192,7 +192,7 @@ Mailbox configuration examples
 
 How to create a PriorityMailbox:
 
-.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTestBase.java#prio-mailbox
+.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTest.java#prio-mailbox
 
 And then add it to the configuration:
 
@@ -200,7 +200,7 @@ And then add it to the configuration:
 
 And then an example on how you would use it:
 
-.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTestBase.java#prio-dispatcher
+.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTest.java#prio-dispatcher
 
 It is also possible to configure a mailbox type directly like this:
 
@@ -209,11 +209,11 @@ It is also possible to configure a mailbox type directly like this:
 
 And then use it either from deployment like this:
 
-.. includecode:: code/docs/dispatcher/DispatcherDocTestBase.java#defining-mailbox-in-config
+.. includecode:: code/docs/dispatcher/DispatcherDocTest.java#defining-mailbox-in-config
 
 Or code like this:
 
-.. includecode:: code/docs/dispatcher/DispatcherDocTestBase.java#defining-mailbox-in-code
+.. includecode:: code/docs/dispatcher/DispatcherDocTest.java#defining-mailbox-in-code
 
 
 Requiring a message queue type for an Actor
@@ -257,9 +257,9 @@ Creating your own Mailbox type
 
 An example is worth a thousand quacks:
 
-.. includecode:: code/docs/dispatcher/DispatcherDocTestBase.java#imports-custom
+.. includecode:: code/docs/dispatcher/DispatcherDocTest.java#imports-custom
 
-.. includecode:: code/docs/dispatcher/DispatcherDocTestBase.java#mailbox-implementation-example
+.. includecode:: code/docs/dispatcher/DispatcherDocTest.java#mailbox-implementation-example
 
 And then you just specify the FQCN of your MailboxType as the value of the "mailbox-type" in the dispatcher
 configuration, or the mailbox configuration.

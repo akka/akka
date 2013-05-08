@@ -80,7 +80,7 @@ import akka.testkit.JavaTestKit;
 import akka.util.Timeout;
 //#import-ask
 
-public class UntypedActorDocTestBase {
+public class UntypedActorDocTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

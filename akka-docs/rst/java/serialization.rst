@@ -75,10 +75,10 @@ Programmatic
 If you want to programmatically serialize/deserialize using Akka Serialization,
 here's some examples:
 
-.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTest.java
    :include: imports
 
-.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTest.java
    :include: programmatic
 
 For more information, have a look at the ``ScalaDoc`` for ``akka.serialization._``
@@ -96,10 +96,10 @@ Creating new Serializers
 First you need to create a class definition of your ``Serializer``,
 which is done by extending ``akka.serialization.JSerializer``, like this:
 
-.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTest.java
    :include: imports
 
-.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTest.java
    :include: my-own-serializer
    :exclude: ...
 
@@ -115,10 +115,10 @@ In the general case, the local address to be used depends on the type of remote
 address which shall be the recipient of the serialized information. Use
 :meth:`Serialization.serializedActorPath(actorRef)` like this:
 
-.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTest.java
    :include: imports
 
-.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTest.java
    :include: actorref-serializer
 
 This assumes that serialization happens in the context of sending a message
@@ -134,7 +134,7 @@ transport per se, which makes this question a bit more interesting. To find out
 the appropriate address to use when sending to ``remoteAddr`` you can use
 :meth:`ActorRefProvider.getExternalAddressFor(remoteAddr)` like this:
 
-.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTest.java
    :include: external-address
 
 .. note::
@@ -160,7 +160,7 @@ lenient as Akka’s RemoteActorRefProvider).
 There is also a default remote address which is the one used by cluster support
 (and typical systems have just this one); you can get it like this:
 
-.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTest.java
    :include: external-address-default
 
 Deep serialization of Actors

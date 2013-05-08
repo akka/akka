@@ -18,7 +18,7 @@ import com.typesafe.config.ConfigFactory;
 import akka.actor.ActorSystem;
 import akka.actor.UntypedActor;
 
-public class DurableMailboxDocTestBase {
+public class DurableMailboxDocTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

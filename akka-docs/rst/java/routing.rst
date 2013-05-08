@@ -67,7 +67,7 @@ routee actors.
 
 Routees can also be specified by providing their path strings instead of their :class:`ActorRef`\s.
 
-.. includecode:: code/docs/jrouting/RouterViaProgramDocTestBase.java#programmaticRoutingRouteePaths
+.. includecode:: code/docs/jrouting/RouterViaProgramDocTest.java#programmaticRoutingRouteePaths
 
 In addition to being able to supply looked-up remote actors as routees, you can ask the router to
 deploy its created children on a set of remote hosts. Routees will be deployed in round-robin
@@ -133,7 +133,7 @@ while still re-creating the children, will still preserve the same number of act
 
 Setting the strategy is easily done:
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTestBase.java
+.. includecode:: code/docs/jrouting/CustomRouterDocTest.java
    :include: supervision
 
 Another potentially useful approach is to give the router the same strategy as
@@ -321,16 +321,16 @@ the same time for one router. The ``withHashMapper`` is tried first.
 
 Code example:
 
-.. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTestBase.java
+.. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTest.java
    :include: imports1
 
-.. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTestBase.java
+.. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTest.java
    :include: cache-actor
 
-.. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTestBase.java
+.. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTest.java
    :include: imports2
 
-.. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTestBase.java
+.. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTest.java
    :include: consistent-hashing-router
 
 In the above example you see that the ``Get`` message implements ``ConsistentHashable`` itself,
@@ -361,7 +361,7 @@ matter how that router would normally route its messages.
 The example below shows how you would use a ``Broadcast`` message to send a very important message
 to every routee of a router.
 
-.. includecode:: code/docs/jrouting/RouterViaProgramDocTestBase.java#broadcastDavyJonesWarning
+.. includecode:: code/docs/jrouting/RouterViaProgramDocTest.java#broadcastDavyJonesWarning
 
 In this example the router receives the ``Broadcast`` message, extracts its payload
 (``"Watch out for Davy Jones' locker"``), and then sends the payload on to all of the router's
@@ -374,7 +374,7 @@ A ``PoisonPill`` message has special handling for all actors, including for rout
 receives a ``PoisonPill`` message, that actor will be stopped. See the :ref:`poison-pill-java`
 documentation for details.
 
-.. includecode:: code/docs/jrouting/RouterViaProgramDocTestBase.java#poisonPill
+.. includecode:: code/docs/jrouting/RouterViaProgramDocTest.java#poisonPill
 
 For a router, which normally passes on messages to routees, it is important to realise that
 ``PoisonPill`` messages are processed by the router only. ``PoisonPill`` messages sent to a router
@@ -392,7 +392,7 @@ router. Instead you should wrap a ``PoisonPill`` message inside a broadcast mess
 routee will the ``PoisonPill`` message directly. Note that this will stop all routees, even if the
 routees aren't children of the router, i.e. even routees programmatically provided to the router.
 
-.. includecode:: code/docs/jrouting/RouterViaProgramDocTestBase.java#broadcastPoisonPill
+.. includecode:: code/docs/jrouting/RouterViaProgramDocTest.java#broadcastPoisonPill
 
 With the code shown above, each routee will receive a ``PoisonPill`` message. Each routee will
 continue to process its messages as normal, eventually processing the ``PoisonPill``. This will
@@ -420,14 +420,14 @@ Routees that are children of the router will also be suspended, and will be affe
 supervision directive that is applied to the router. Routees that are not the routers children, i.e.
 those that were created externally to the router, will not be affected.
 
-.. includecode:: code/docs/jrouting/RouterViaProgramDocTestBase.java#kill
+.. includecode:: code/docs/jrouting/RouterViaProgramDocTest.java#kill
 
 As with the ``PoisonPill`` message, there is a distinction between killing a router, which
 indirectly kills its children (who happen to be routees), and killing routees directly (some of whom
 may not be children.) To kill routees directly the router should be sent a ``Kill`` message wrapped
 in a ``Broadcast`` message.
 
-.. includecode:: code/docs/jrouting/RouterViaProgramDocTestBase.java#broadcastKill
+.. includecode:: code/docs/jrouting/RouterViaProgramDocTest.java#broadcastKill
 
 .. _resizable-routers-java:
 
@@ -506,12 +506,12 @@ democrat related messages to the Democrat actor and all republican related messa
 
 We begin with defining the class:
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTestBase.java#crRouter
+.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#crRouter
    :exclude: crRoute
 
 The next step is to implement the ``createCustomRoute`` method in the class just defined:
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTestBase.java#crRoute
+.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#crRoute
 
 As you can see above we start off by creating the routees and put them in a collection.
 
@@ -520,12 +520,12 @@ It registers the routees internally and failing to call this method will
 cause a ``ActorInitializationException`` to be thrown when the router is used.
 Therefore always make sure to do the following in your custom router:
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTestBase.java#crRegisterRoutees
+.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#crRegisterRoutees
 
 The routing logic is where your magic sauce is applied. In our example it inspects the message types
 and forwards to the correct routee based on this:
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTestBase.java#crRoutingLogic
+.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#crRoutingLogic
 
 As you can see above what's returned in the ``CustomRoute`` function, which defines the mapping
 from incoming sender/message to a ``List`` of ``Destination(sender, routee)``.
@@ -536,11 +536,11 @@ For more information about how to alter the original sender we refer to the sour
 
 All in all the custom router looks like this:
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTestBase.java#CustomRouter
+.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#CustomRouter
 
 If you are interested in how to use the VoteCountRouter it looks like this:
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTestBase.java#crTest
+.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#crTest
 
 .. caution::
 
@@ -594,7 +594,7 @@ the actor system’s default dispatcher. All standard routers allow setting this
 property in their constructor or factory method, custom routers have to
 implement the method in a suitable way.
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTestBase.java#dispatchers
+.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#dispatchers
 
 .. note::
 

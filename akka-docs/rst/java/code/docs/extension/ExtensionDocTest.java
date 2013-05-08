@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
 
-public class ExtensionDocTestBase {
+public class ExtensionDocTest {
 
   static
   //#extension

@@ -47,7 +47,7 @@ import com.typesafe.config.ConfigFactory;
 import docs.actor.MyUntypedActor;
 import akka.testkit.AkkaSpec;
 
-public class DispatcherDocTestBase {
+public class DispatcherDocTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
