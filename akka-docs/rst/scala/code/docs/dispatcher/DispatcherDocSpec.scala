@@ -18,7 +18,7 @@ object DispatcherDocSpec {
   val javaConfig = """
      //#prio-dispatcher-config-java
      prio-dispatcher {
-       mailbox-type = "docs.dispatcher.DispatcherDocTestBase$MyPrioMailbox"
+       mailbox-type = "docs.dispatcher.DispatcherDocTest$MyPrioMailbox"
        //Other dispatcher configuration goes here
      }
      //#prio-dispatcher-config-java

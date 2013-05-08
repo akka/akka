@@ -21,7 +21,7 @@ import akka.remote.RemoteScope;
 
 import akka.actor.UntypedActor;
 
-public class RemoteDeploymentDocTestBase {
+public class RemoteDeploymentDocTest {
 
   public static class SampleActor extends UntypedActor {
     public void onReceive(Object message) {

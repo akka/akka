@@ -20,7 +20,7 @@ import static org.junit.Assert.assertEquals;
 /**
  *
  */
-public class MessageJavaTestBase {
+public class MessageJavaTest {
   private Map<String,Object> empty = new HashMap<String, Object>();
 
   @ClassRule

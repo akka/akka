@@ -38,7 +38,7 @@ The tools of the trade
 Before we create our first Typed Actor we should first go through the tools that we have at our disposal,
 it's located in ``akka.actor.TypedActor``.
 
-.. includecode:: code/docs/actor/TypedActorDocTestBase.java
+.. includecode:: code/docs/actor/TypedActorDocTest.java
    :include: typed-actor-extension-tools
 
 .. warning::
@@ -55,42 +55,42 @@ To create a Typed Actor you need to have one or more interfaces, and one impleme
 
 The following imports are assumed:
 
-.. includecode:: code/docs/actor/TypedActorDocTestBase.java
+.. includecode:: code/docs/actor/TypedActorDocTest.java
    :include: imports
 
 Our example interface:
 
-.. includecode:: code/docs/actor/TypedActorDocTestBase.java
+.. includecode:: code/docs/actor/TypedActorDocTest.java
    :include: typed-actor-iface
    :exclude: typed-actor-iface-methods
 
 Our example implementation of that interface:
 
-.. includecode:: code/docs/actor/TypedActorDocTestBase.java
+.. includecode:: code/docs/actor/TypedActorDocTest.java
    :include: typed-actor-impl
    :exclude: typed-actor-impl-methods
 
 The most trivial way of creating a Typed Actor instance
 of our ``Squarer``:
 
-.. includecode:: code/docs/actor/TypedActorDocTestBase.java
+.. includecode:: code/docs/actor/TypedActorDocTest.java
    :include: typed-actor-create1
 
 First type is the type of the proxy, the second type is the type of the implementation.
 If you need to call a specific constructor you do it like this:
 
-.. includecode:: code/docs/actor/TypedActorDocTestBase.java
+.. includecode:: code/docs/actor/TypedActorDocTest.java
    :include: typed-actor-create2
 
 Since you supply a ``Props``, you can specify which dispatcher to use, what the default timeout should be used and more.
 Now, our ``Squarer`` doesn't have any methods, so we'd better add those.
 
-.. includecode:: code/docs/actor/TypedActorDocTestBase.java
+.. includecode:: code/docs/actor/TypedActorDocTest.java
    :include: typed-actor-iface
 
 Alright, now we've got some methods we can call, but we need to implement those in ``SquarerImpl``.
 
-.. includecode:: code/docs/actor/TypedActorDocTestBase.java
+.. includecode:: code/docs/actor/TypedActorDocTest.java
    :include: typed-actor-impl
 
 Excellent, now we have an interface and an implementation of that interface,
@@ -118,7 +118,7 @@ we *strongly* recommend that parameters passed are immutable.
 One-way message send
 ^^^^^^^^^^^^^^^^^^^^
 
-.. includecode:: code/docs/actor/TypedActorDocTestBase.java
+.. includecode:: code/docs/actor/TypedActorDocTest.java
    :include: typed-actor-call-oneway
 
 As simple as that! The method will be executed on another thread; asynchronously.
@@ -126,13 +126,13 @@ As simple as that! The method will be executed on another thread; asynchronously
 Request-reply message send
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. includecode:: code/docs/actor/TypedActorDocTestBase.java
+.. includecode:: code/docs/actor/TypedActorDocTest.java
    :include: typed-actor-call-option
 
 This will block for as long as the timeout that was set in the ``Props`` of the Typed Actor,
 if needed. It will return ``None`` if a timeout occurs.
 
-.. includecode:: code/docs/actor/TypedActorDocTestBase.java
+.. includecode:: code/docs/actor/TypedActorDocTest.java
    :include: typed-actor-call-strict
 
 This will block for as long as the timeout that was set in the ``Props`` of the Typed Actor,
@@ -141,7 +141,7 @@ if needed. It will throw a ``java.util.concurrent.TimeoutException`` if a timeou
 Request-reply-with-future message send
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. includecode:: code/docs/actor/TypedActorDocTestBase.java
+.. includecode:: code/docs/actor/TypedActorDocTest.java
    :include: typed-actor-call-future
 
 This call is asynchronous, and the Future returned can be used for asynchronous composition.
@@ -151,12 +151,12 @@ Stopping Typed Actors
 
 Since Akka's Typed Actors are backed by Akka Actors they must be stopped when they aren't needed anymore.
 
-.. includecode:: code/docs/actor/TypedActorDocTestBase.java
+.. includecode:: code/docs/actor/TypedActorDocTest.java
    :include: typed-actor-stop
 
 This asynchronously stops the Typed Actor associated with the specified proxy ASAP.
 
-.. includecode:: code/docs/actor/TypedActorDocTestBase.java
+.. includecode:: code/docs/actor/TypedActorDocTest.java
    :include: typed-actor-poisonpill
 
 This asynchronously stops the Typed Actor associated with the specified proxy
@@ -168,7 +168,7 @@ Typed Actor Hierarchies
 Since you can obtain a contextual Typed Actor Extension by passing in an ``ActorContext``
 you can create child Typed Actors by invoking ``typedActorOf(..)`` on that.
 
-.. includecode:: code/docs/actor/TypedActorDocTestBase.java
+.. includecode:: code/docs/actor/TypedActorDocTest.java
    :include: typed-actor-hierarchy
 
 You can also create a child Typed Actor in regular Akka Actors by giving the ``UntypedActorContext``
@@ -213,4 +213,4 @@ Lookup & Remoting
 
 Since ``TypedActors`` are backed by ``Akka Actors``, you can use ``typedActorOf`` to proxy ``ActorRefs`` potentially residing on remote nodes.
 
-.. includecode:: code/docs/actor/TypedActorDocTestBase.java#typed-actor-remote
+.. includecode:: code/docs/actor/TypedActorDocTest.java#typed-actor-remote

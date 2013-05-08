@@ -19,7 +19,7 @@ import org.apache.camel.component.mock.MockEndpoint;
 
 import java.util.concurrent.TimeUnit;
 
-public class CustomRouteTestBase {
+public class CustomRouteTest {
 
   @Rule
   public AkkaJUnitActorSystemResource actorSystemResource =

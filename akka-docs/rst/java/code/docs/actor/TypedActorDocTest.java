@@ -19,7 +19,7 @@ import java.lang.Exception;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
-public class TypedActorDocTestBase {
+public class TypedActorDocTest {
     Object someReference = null;
     ActorSystem system = null;
 

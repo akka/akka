@@ -19,7 +19,7 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.*;
 
-public class ConsumerJavaTestBase {
+public class ConsumerJavaTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

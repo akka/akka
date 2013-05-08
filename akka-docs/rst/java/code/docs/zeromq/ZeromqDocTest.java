@@ -50,7 +50,7 @@ import akka.actor.ActorSystem;
 import akka.testkit.AkkaSpec;
 import akka.testkit.AkkaJUnitActorSystemResource;
 
-public class ZeromqDocTestBase {
+public class ZeromqDocTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

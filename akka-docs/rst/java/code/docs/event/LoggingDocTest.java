@@ -30,7 +30,7 @@ import akka.actor.UntypedActor;
 import akka.actor.DeadLetter;
 //#imports-deadletter
 
-public class LoggingDocTestBase {
+public class LoggingDocTest {
   
   @Test
   public void useLoggingActor() {

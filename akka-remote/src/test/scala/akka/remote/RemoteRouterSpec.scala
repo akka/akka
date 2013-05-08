@@ -24,6 +24,8 @@ akka {
   remote.netty.tcp {
     hostname = localhost
     port = 0
+    server-socket-worker-pool.pool-size-max = 2
+    client-socket-worker-pool.pool-size-max = 2
   }
   actor.deployment {
     /blub {

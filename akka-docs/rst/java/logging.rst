@@ -17,10 +17,10 @@ How to Log
 Create a ``LoggingAdapter`` and use the ``error``, ``warning``, ``info``, or ``debug`` methods,
 as illustrated in this example:
 
-.. includecode:: code/docs/event/LoggingDocTestBase.java
+.. includecode:: code/docs/event/LoggingDocTest.java
    :include: imports
 
-.. includecode:: code/docs/event/LoggingDocTestBase.java
+.. includecode:: code/docs/event/LoggingDocTest.java
    :include: my-actor
 
 The first parameter to ``Logging.getLogger`` could also be any
@@ -42,7 +42,7 @@ placeholders results in a warning being appended to the log statement (i.e. on
 the same line with the same severity). You may pass a Java array as the only
 substitution argument to have its elements be treated individually:
 
-.. includecode:: code/docs/event/LoggingDocTestBase.java#array
+.. includecode:: code/docs/event/LoggingDocTest.java#array
 
 The Java :class:`Class` of the log source is also included in the generated
 :class:`LogEvent`. In case of a simple string this is replaced with a “marker”
@@ -218,10 +218,10 @@ logger available in the 'akka-slf4j' module.
 
 Example of creating a listener:
 
-.. includecode:: code/docs/event/LoggingDocTestBase.java
+.. includecode:: code/docs/event/LoggingDocTest.java
    :include: imports,imports-listener
 
-.. includecode:: code/docs/event/LoggingDocTestBase.java
+.. includecode:: code/docs/event/LoggingDocTest.java
    :include: my-event-listener
 
 .. _slf4j-java:

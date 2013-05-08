@@ -158,12 +158,12 @@ Classification`_ which enables registering to related sets of channels (as is
 used for :class:`RemoteLifeCycleMessage`). The following example demonstrates
 how a simple subscription works. Given a simple actor:
 
-.. includecode:: code/docs/event/LoggingDocTestBase.java#imports-deadletter
-.. includecode:: code/docs/event/LoggingDocTestBase.java#deadletter-actor
+.. includecode:: code/docs/event/LoggingDocTest.java#imports-deadletter
+.. includecode:: code/docs/event/LoggingDocTest.java#deadletter-actor
 
 it can be subscribed like this:
 
-.. includecode:: code/docs/event/LoggingDocTestBase.java#deadletters
+.. includecode:: code/docs/event/LoggingDocTest.java#deadletters
 
 Default Handlers
 ----------------

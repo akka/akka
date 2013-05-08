@@ -4,10 +4,10 @@
 package docs.jrouting;
 
 import static akka.pattern.Patterns.ask;
-import static docs.jrouting.CustomRouterDocTestBase.Message.DemocratCountResult;
-import static docs.jrouting.CustomRouterDocTestBase.Message.DemocratVote;
-import static docs.jrouting.CustomRouterDocTestBase.Message.RepublicanCountResult;
-import static docs.jrouting.CustomRouterDocTestBase.Message.RepublicanVote;
+import static docs.jrouting.CustomRouterDocTest.Message.DemocratCountResult;
+import static docs.jrouting.CustomRouterDocTest.Message.DemocratVote;
+import static docs.jrouting.CustomRouterDocTest.Message.RepublicanCountResult;
+import static docs.jrouting.CustomRouterDocTest.Message.RepublicanVote;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
@@ -35,7 +35,7 @@ import akka.routing.RouteeProvider;
 import akka.testkit.AkkaSpec;
 import akka.util.Timeout;
 
-public class CustomRouterDocTestBase {
+public class CustomRouterDocTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
