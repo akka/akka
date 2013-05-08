@@ -130,10 +130,16 @@ object Member {
 
   def pickHighestPriority(a: Set[Member], b: Set[Member]): Set[Member] = {
     // group all members by Address => Seq[Member]
-    val groupedByAddress = (a.toSeq ++ b.toSeq).groupBy(_.uniqueAddress)
+    val groupedByAddress = List(a, b).flatten.groupBy(_.uniqueAddress)
     // pick highest MemberStatus
     (Member.none /: groupedByAddress) {
-      case (acc, (_, members)) ⇒ acc + members.reduceLeft(highestPriorityOf)
+      case (acc, (_, members)) ⇒
+        // removed has higher priority than Down and Exiting
+        if (members.tail.isEmpty) {
+          val m = members.head
+          if (m.status == Down || m.status == Exiting) acc
+          else acc + m
+        } else acc + members.reduceLeft(highestPriorityOf)
     }
   }
 
