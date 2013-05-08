@@ -37,10 +37,22 @@ abstract class SelectionHandlerSettings(config: Config) {
   def MaxChannelsPerSelector: Int
 }
 
+/**
+ * Interface behind which we hide our selector management logic from the connection actors
+ */
 private[io] trait ChannelRegistry {
+  /**
+   * Registers the given channel with the selector, creates a ChannelRegistration instance for it
+   * and dispatches it back to the channelActor calling this `register`
+   */
   def register(channel: SelectableChannel, initialOps: Int)(implicit channelActor: ActorRef)
 }
 
+/**
+ * Implementations of this interface are sent as actor messages back to a channel actor as
+ * a result of it having called `register` on the `ChannelRegistry`.
+ * Enables a channel actor to directly schedule interest setting tasks to the selector mgmt. dispatcher.
+ */
 private[io] trait ChannelRegistration {
   def enableInterest(op: Int)
   def disableInterest(op: Int)
@@ -193,6 +205,8 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends A
 
     case Retry(cmd, retriesLeft) ⇒ spawnChildWithCapacityProtection(cmd, retriesLeft)
 
+    // since our ActorRef is never exposed to the user and we are only assigning watches to our
+    // children all incoming `Terminated` events must be for a child of ours
     case _: Terminated           ⇒ childCount -= 1
   }
 

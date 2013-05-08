@@ -48,11 +48,11 @@ private[io] class UdpManager(udp: UdpExt) extends SelectorBasedManager(udp.setti
 
   def receive = workerForCommandHandler {
     case b: Bind ⇒
-      val commander = sender
+      val commander = sender // cache because we create a function that will run asyncly
       registry ⇒ Props(classOf[UdpListener], udp, registry, commander, b)
 
     case SimpleSender(options) ⇒
-      val commander = sender
+      val commander = sender // cache because we create a function that will run asyncly
       registry ⇒ Props(classOf[UdpSender], udp, registry, commander, options)
   }
 
