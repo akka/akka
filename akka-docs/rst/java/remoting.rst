@@ -100,7 +100,7 @@ which in this sample corresponds to ``sampleActorSystem@127.0.0.1:2553``.
 
 Once you have configured the properties above you would do the following in code:
 
-.. includecode:: code/docs/remoting/RemoteDeploymentDocTestBase.java#sample-actor
+.. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#sample-actor
 
 The actor class ``SampleActor`` has to be available to the runtimes using it, i.e. the classloader of the
 actor systems has to have a JAR containing the class.
@@ -133,15 +133,15 @@ precedence.
 
 With these imports:
 
-.. includecode:: code/docs/remoting/RemoteDeploymentDocTestBase.java#import
+.. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#import
 
 and a remote address like this:
 
-.. includecode:: code/docs/remoting/RemoteDeploymentDocTestBase.java#make-address
+.. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#make-address
 
 you can advise the system to create a child on that remote node like so:
 
-.. includecode:: code/docs/remoting/RemoteDeploymentDocTestBase.java#deploy
+.. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#deploy
 
 Watching Remote Actors
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -550,4 +550,4 @@ reference file for more information:
    Setting properties like the listening IP and port number programmatically is
    best done by using something like the following:
 
-   .. includecode:: code/docs/remoting/RemoteDeploymentDocTestBase.java#programmatic
+   .. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#programmatic

@@ -65,7 +65,7 @@ import akka.pattern.Patterns;
 
 import static org.junit.Assert.*;
 
-public class FutureDocTestBase {
+public class FutureDocTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

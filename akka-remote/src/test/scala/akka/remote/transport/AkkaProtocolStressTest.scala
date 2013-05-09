@@ -30,6 +30,8 @@ object AkkaProtocolStressTest {
       remote.netty.tcp {
         applied-adapters = ["gremlin"]
         port = 0
+        server-socket-worker-pool.pool-size-max = 2
+        client-socket-worker-pool.pool-size-max = 2
       }
 
     }

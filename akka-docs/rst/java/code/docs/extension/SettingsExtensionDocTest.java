@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 import akka.actor.UntypedActor;
 import org.junit.Test;
 
-public class SettingsExtensionDocTestBase {
+public class SettingsExtensionDocTest {
 
   static
   //#extension

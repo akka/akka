@@ -12,7 +12,7 @@ import akka.serialization.*;
 
 //#imports
 
-public class SerializationDocTestBase {
+public class SerializationDocTest {
   static
   //#my-own-serializer
   public class MyOwnSerializer extends JSerializer {

@@ -8,7 +8,7 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.junit.Test;
 
-public class CamelExtensionTestBase {
+public class CamelExtensionTest {
   @Test
   public void getCamelExtension() {
     //#CamelExtension

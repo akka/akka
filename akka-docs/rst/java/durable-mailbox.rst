@@ -57,7 +57,7 @@ of the mailbox:
 
 Here is an example of how to create an actor with a durable dispatcher:
 
-.. includecode:: code/docs/actor/mailbox/DurableMailboxDocTestBase.java
+.. includecode:: code/docs/actor/mailbox/DurableMailboxDocTest.java
    :include: imports,dispatcher-config-use
 
 You can also configure and tune the file-based durable mailbox. This is done in

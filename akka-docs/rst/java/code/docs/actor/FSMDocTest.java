@@ -21,7 +21,7 @@ import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
 import akka.testkit.AkkaSpec;
 
-public class FSMDocTestBase {
+public class FSMDocTest {
 
   static
   //#data

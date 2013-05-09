@@ -21,7 +21,7 @@ import akka.testkit.JavaTestKit;
 import docs.jrouting.RouterViaProgramExample.ExampleActor;
 import docs.routing.RouterViaProgramDocSpec.Echo;
 
-public class RouterViaProgramDocTestBase {
+public class RouterViaProgramDocTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =

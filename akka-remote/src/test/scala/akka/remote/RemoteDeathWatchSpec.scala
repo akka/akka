@@ -21,9 +21,11 @@ akka {
     remote.netty.tcp {
         hostname = "localhost"
         port = 0
+        server-socket-worker-pool.pool-size-max = 2
+        client-socket-worker-pool.pool-size-max = 2
     }
 }
-                                                                      """)) with ImplicitSender with DefaultTimeout with DeathWatchSpec {
+""")) with ImplicitSender with DefaultTimeout with DeathWatchSpec {
 
   val other = ActorSystem("other", ConfigFactory.parseString("akka.remote.netty.tcp.port=2666")
     .withFallback(system.settings.config))
