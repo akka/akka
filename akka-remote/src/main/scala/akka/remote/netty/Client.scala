@@ -18,7 +18,7 @@ import org.jboss.netty.handler.ssl.SslHandler
 import org.jboss.netty.handler.timeout.{ IdleState, IdleStateEvent, IdleStateAwareChannelHandler }
 import org.jboss.netty.util.{ Timeout, TimerTask, HashedWheelTimer }
 import scala.concurrent.duration._
-import scala.util.control.{NoStackTrace, NonFatal}
+import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
  * This is the abstract baseclass for netty remote clients, currently there's only an
