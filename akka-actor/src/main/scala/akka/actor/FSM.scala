@@ -452,7 +452,10 @@ trait FSM[S, D] extends Listeners with ActorLogging {
   /**
    * Return next state data (available in onTransition handlers)
    */
-  final def nextStateData = nextState.stateData
+  final def nextStateData = nextState match {
+    case null ⇒ throw new IllegalStateException("nextStateData is only available during onTransition")
+    case x    ⇒ x.stateData
+  }
 
   /*
    * ****************************************************************
@@ -597,6 +600,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
         this.nextState = nextState
         handleTransition(currentState.stateName, nextState.stateName)
         gossip(Transition(self, currentState.stateName, nextState.stateName))
+        this.nextState = null
       }
       currentState = nextState
       val timeout = if (currentState.timeout.isDefined) currentState.timeout else stateTimeouts(currentState.stateName)
