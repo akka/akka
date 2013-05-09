@@ -76,5 +76,13 @@ abstract class SingletonClusterSpec(multiNodeConfig: SingletonClusterMultiNodeCo
 
       enterBarrier("after-3")
     }
+
+    "leave and shutdown itself when singleton cluster" taggedAs LongRunningTest in {
+      runOn(first) {
+        cluster.leave(first)
+        awaitCond(cluster.isTerminated, 5.seconds)
+      }
+      enterBarrier("after-4")
+    }
   }
 }

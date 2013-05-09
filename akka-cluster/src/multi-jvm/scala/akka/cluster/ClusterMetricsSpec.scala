@@ -50,6 +50,7 @@ abstract class ClusterMetricsSpec extends MultiNodeSpec(ClusterMetricsMultiJvmSp
       }
       enterBarrier("first-left")
       runOn(second, third, fourth, fifth) {
+        markNodeAsUnavailable(first)
         awaitAssert(clusterView.clusterMetrics.size must be(roles.size - 1))
       }
       enterBarrier("finished")

@@ -19,14 +19,7 @@ object MembershipChangeListenerExitingMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(
-    debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString("""
-        akka.cluster {
-          unreachable-nodes-reaper-interval = 300 s # turn "off" reaping to unreachable node set
-        }
-      """)
-        .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet)))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
 class MembershipChangeListenerExitingMultiJvmNode1 extends MembershipChangeListenerExitingSpec

@@ -42,8 +42,6 @@ class ClusterMessageSerializerSpec extends AkkaSpec {
       checkSerialization(InternalClusterAction.InitJoin)
       checkSerialization(InternalClusterAction.InitJoinAck(address))
       checkSerialization(InternalClusterAction.InitJoinNack(address))
-      checkSerialization(ClusterLeaderAction.Exit(uniqueAddress))
-      checkSerialization(ClusterLeaderAction.Shutdown(uniqueAddress))
       checkSerialization(ClusterHeartbeatReceiver.Heartbeat(address))
       checkSerialization(ClusterHeartbeatReceiver.EndHeartbeat(address))
       checkSerialization(ClusterHeartbeatSender.HeartbeatRequest(address))
