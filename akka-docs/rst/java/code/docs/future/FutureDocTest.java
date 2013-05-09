@@ -8,6 +8,7 @@ import akka.dispatch.*;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
 import scala.concurrent.Await;
+import scala.concurrent.Promise;
 import akka.util.Timeout;
 //#imports1
 
@@ -340,7 +341,7 @@ public class FutureDocTest {
   }
 
   @Test
-  public void useSuccessfulAndFailed() throws Exception {
+  public void useSuccessfulAndFailedAndPromise() throws Exception {
     final ExecutionContext ec = system.dispatcher();
     //#successful
     Future<String> future = Futures.successful("Yay!");
@@ -349,11 +350,18 @@ public class FutureDocTest {
     Future<String> otherFuture = Futures.failed(
       new IllegalArgumentException("Bang!"));
     //#failed
+    //#promise
+    Promise<String> promise = Futures.promise();
+    Future<String> theFuture = promise.future();
+    promise.success("hello");
+    //#promise
     Object result = Await.result(future, Duration.create(5, SECONDS));
     assertEquals("Yay!", result);
     Throwable result2 = Await.result(otherFuture.failed(),
       Duration.create(5, SECONDS));
     assertEquals("Bang!", result2.getMessage());
+    String out = Await.result(theFuture, Duration.create(5, SECONDS));
+    assertEquals("hello", out);
   }
 
   @Test
