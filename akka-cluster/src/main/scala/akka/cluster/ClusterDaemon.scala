@@ -824,6 +824,10 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
         } else (localGossip, false, Member.none, Member.none, Member.none, Member.none, Member.none)
 
+      // FIXME remove
+      log.info("Leader actions, convergence: [{}], changed: [{}], members: [{}], unreachable: [{}]",
+        localGossip.convergence, hasChangedState, localGossip.members, localGossip.overview.unreachable)
+
       if (hasChangedState) { // we have a change of state - version it and try to update
         // ----------------------
         // Updating the vclock version for the changes
@@ -878,6 +882,10 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
         removedUnreachableMembers foreach { member ⇒
           log.info("Cluster Node [{}] - Leader is removing unreachable node [{}]", selfAddress, member.address)
         }
+
+        // FIXME remove
+        log.info("After Leader actions, members: [{}], unreachable: [{}]",
+          latestGossip.members, latestGossip.overview.unreachable)
 
         publish(latestGossip)
       }

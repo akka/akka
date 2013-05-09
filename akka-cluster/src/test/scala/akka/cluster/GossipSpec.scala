@@ -47,6 +47,38 @@ class GossipSpec extends WordSpec with MustMatchers {
 
     }
 
+    "merge Removed as higher priority than Exiting" in {
+      // Removed is a bit special, since the member is actually removed from the set
+      // c3 is Down
+      val g1 = Gossip(members = SortedSet(a1, c3))
+      val g2 = Gossip(members = SortedSet(a1))
+      (g1 merge g2).members must be(SortedSet(a1))
+      (g2 merge g1).members must be(SortedSet(a1))
+    }
+
+    "merge Removed as higher priority than unreachable Down" in {
+      // Removed is a bit special, since the member is actually removed from the set
+      // e3 is Down
+      val g1 = Gossip(members = SortedSet(a1), overview = GossipOverview(unreachable = Set(b1, e3)))
+      val g2 = Gossip(members = SortedSet(a1))
+
+      val merged1 = g1 merge g2
+      merged1.members must be(SortedSet(a1))
+      merged1.overview.unreachable must be(Set(b1))
+
+      val merged2 = g2 merge g1
+      merged2.members must be(SortedSet(a1))
+      merged2.overview.unreachable must be(Set(b1))
+    }
+
+    "merge Joining as higher priority than Removed" in {
+      // e1 is Joining
+      val g1 = Gossip(members = SortedSet(a1, e1))
+      val g2 = Gossip(members = SortedSet(a1))
+      (g1 merge g2).members must be(SortedSet(a1, e1))
+      (g2 merge g1).members must be(SortedSet(a1, e1))
+    }
+
     "merge unreachable by status priority" in {
       val g1 = Gossip(members = Gossip.emptyMembers, overview = GossipOverview(unreachable = Set(a1, b1, c1, d1)))
       val g2 = Gossip(members = Gossip.emptyMembers, overview = GossipOverview(unreachable = Set(a2, b2, c2, d2)))
