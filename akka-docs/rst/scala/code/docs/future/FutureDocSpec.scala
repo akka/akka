@@ -399,15 +399,21 @@ class FutureDocSpec extends AkkaSpec {
     }
   }
 
-  "demonstrate usage of Future.successful & Future.failed" in {
+  "demonstrate usage of Future.successful & Future.failed & Future.promise" in {
     //#successful
     val future = Future.successful("Yay!")
     //#successful
     //#failed
     val otherFuture = Future.failed[String](new IllegalArgumentException("Bang!"))
     //#failed
+    //#promise
+    val promise = Promise[String]()
+    val theFuture = promise.future
+    promise.success("hello")
+    //#promise
     Await.result(future, 3 seconds) must be("Yay!")
     intercept[IllegalArgumentException] { Await.result(otherFuture, 3 seconds) }
+    Await.result(theFuture, 3 seconds) must be("hello")
   }
 
   "demonstrate usage of pattern.after" in {
