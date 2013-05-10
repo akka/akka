@@ -137,7 +137,13 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ mimaSettings ++ javadocSettings ++ OSGi.testkit ++ Seq(
       libraryDependencies ++= Dependencies.testkit,
       initialCommands += "import akka.testkit._",
-      previousArtifact := akkaPreviousArtifact("akka-testkit")
+      previousArtifact := akkaPreviousArtifact("akka-testkit"),
+	    binaryIssueFilters ++= Seq(
+		    ProblemFilters.exclude[MissingClassProblem]("akka.testkit.NestingQueue"),
+		    ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.testkit.CallingThreadMailbox.queue"),
+		    ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.testkit.CallingThreadDispatcherQueues.registerQueue"),
+		    ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.testkit.CallingThreadDispatcherQueues.gatherFromAllOtherQueues")
+      )
     )
   )
 
