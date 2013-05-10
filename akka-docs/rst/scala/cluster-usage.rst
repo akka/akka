@@ -98,14 +98,14 @@ it retries this procedure until successful or shutdown.
 
 The seed nodes can be started in any order and it is not necessary to have all
 seed nodes running, but the node configured as the first element in the ``seed-nodes``
-configuration list must be started when initially starting a cluster, otherwise the 
-other seed-nodes will not become initialized and no other node can join the cluster. 
-It is quickest to start all configured seed nodes at the same time (order doesn't matter), 
+configuration list must be started when initially starting a cluster, otherwise the
+other seed-nodes will not become initialized and no other node can join the cluster.
+It is quickest to start all configured seed nodes at the same time (order doesn't matter),
 otherwise it can take up to the configured ``seed-node-timeout`` until the nodes
 can join.
 
 Once more than two seed nodes have been started it is no problem to shut down the first
-seed node. If the first seed node is restarted it will first try join the other 
+seed node. If the first seed node is restarted it will first try join the other
 seed nodes in the existing cluster.
 
 You can disable automatic joining with configuration::
@@ -119,7 +119,7 @@ seed nodes at all.
 
 Joining can also be performed programatically with ``Cluster(system).join(address)``.
 
-Unsuccessful join attempts are automatically retried after the time period defined in 
+Unsuccessful join attempts are automatically retried after the time period defined in
 configuration property ``retry-unsuccessful-join-after``. When using auto-joining with
 ``seed-nodes`` this means that a new seed node is picked. When joining manually or
 programatically this means that the last join request is retried. Retries can be disabled by
@@ -237,7 +237,7 @@ How To Startup when Cluster Size Reached
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A common use case is to start actors after the cluster has been initialized,
-members have joined, and the cluster has reached a certain size. 
+members have joined, and the cluster has reached a certain size.
 
 With a configuration option you can define required number of members
 before the leader changes member status of 'Joining' members to 'Up'.
@@ -249,7 +249,7 @@ before the leader changes member status of 'Joining' members to 'Up'.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/factorial.conf#role-min-nr-of-members
 
-You can start the actors in a ``registerOnMemberUp`` callback, which will 
+You can start the actors in a ``registerOnMemberUp`` callback, which will
 be invoked when the current member status is changed tp 'Up', i.e. the cluster
 has at least the defined number of members.
 
@@ -263,10 +263,10 @@ Cluster Singleton Pattern
 For some use cases it is convenient and sometimes also mandatory to ensure that
 you have exactly one actor of a certain type running somewhere in the cluster.
 
-This can be implemented by subscribing to member events, but there are several corner 
-cases to consider. Therefore, this specific use case is made easily accessible by the 
+This can be implemented by subscribing to member events, but there are several corner
+cases to consider. Therefore, this specific use case is made easily accessible by the
 :ref:`cluster-singleton` in the contrib module. You can use it as is, or adjust to fit
-your specific needs. 
+your specific needs.
 
 Distributed Publish Subscribe Pattern
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -330,9 +330,9 @@ This is how the curve looks like for ``acceptable-heartbeat-pause`` configured t
 .. image:: ../images/phi3.png
 
 
-Death watch uses the cluster failure detector for nodes in the cluster, i.e. it 
-generates ``Terminated`` message from network failures and JVM crashes, in addition 
-to graceful termination of watched actor. 
+Death watch uses the cluster failure detector for nodes in the cluster, i.e. it
+generates ``Terminated`` message from network failures and JVM crashes, in addition
+to graceful termination of watched actor.
 
 .. _cluster_aware_routers_scala:
 
@@ -350,9 +350,10 @@ are already running, the configuration for a router looks like this:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#router-lookup-config
 
-It is the relative actor path defined in ``routees-path`` that identify what actor to lookup. 
+It is the relative actor path defined in ``routees-path`` that identify what actor to lookup.
 It is possible to limit the lookup of routees to member nodes tagged with a certain role by
-specifying ``use-role``.
+specifying ``use-role``. The lookup is retried in case routee actors are not started before
+the router.
 
 ``nr-of-instances`` defines total number of routees in the cluster, but there will not be
 more than one per node. Setting ``nr-of-instances`` to a high value will result in new routees
@@ -481,7 +482,7 @@ service nodes and 1 client::
 Cluster Metrics
 ^^^^^^^^^^^^^^^
 
-The member nodes of the cluster collects system health metrics and publishes that to other nodes and to 
+The member nodes of the cluster collects system health metrics and publishes that to other nodes and to
 registered subscribers. This information is primarily used for load-balancing routers.
 
 Hyperic Sigar
@@ -489,11 +490,11 @@ Hyperic Sigar
 
 The built-in metrics is gathered from JMX MBeans, and optionally you can use `Hyperic Sigar <http://www.hyperic.com/products/sigar>`_
 for a wider and more accurate range of metrics compared to what can be retrieved from ordinary MBeans.
-Sigar is using a native OS library. To enable usage of Sigar you need to add the directory of the native library to 
+Sigar is using a native OS library. To enable usage of Sigar you need to add the directory of the native library to
 ``-Djava.libarary.path=<path_of_sigar_libs>`` add the following dependency::
 
     "org.fusesource" % "sigar" % "@sigarVersion@"
- 
+
 Download the native Sigar libraries from `Maven Central <http://repo1.maven.org/maven2/org/fusesource/sigar/@sigarVersion@/>`_
 
 Adaptive Load Balancing
@@ -504,7 +505,7 @@ It uses random selection of routees with probabilities derived from the remainin
 It can be configured to use a specific MetricsSelector to produce the probabilities, a.k.a. weights:
 
 * ``heap`` / ``HeapMetricsSelector`` - Used and max JVM heap memory. Weights based on remaining heap capacity; (max - used) / max
-* ``load`` / ``SystemLoadAverageMetricsSelector`` - System load average for the past 1 minute, corresponding value can be found in ``top`` of Linux systems. The system is possibly nearing a bottleneck if the system load average is nearing number of cpus/cores. Weights based on remaining load capacity; 1 - (load / processors) 
+* ``load`` / ``SystemLoadAverageMetricsSelector`` - System load average for the past 1 minute, corresponding value can be found in ``top`` of Linux systems. The system is possibly nearing a bottleneck if the system load average is nearing number of cpus/cores. Weights based on remaining load capacity; 1 - (load / processors)
 * ``cpu`` / ``CpuMetricsSelector`` - CPU utilization in percentage, sum of User + Sys + Nice + Wait. Weights based on remaining cpu capacity; 1 - utilization
 * ``mix`` / ``MixMetricsSelector`` - Combines heap, cpu and load. Weights based on mean of remaining capacity of the combined selectors.
 * Any custom implementation of ``akka.cluster.routing.MetricsSelector``
@@ -530,7 +531,7 @@ As you can see, the router is defined in the same way as other routers, and in t
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf#adaptive-router
 
-It is only router type ``adaptive`` and the ``metrics-selector`` that is specific to this router, other things work 
+It is only router type ``adaptive`` and the ``metrics-selector`` that is specific to this router, other things work
 in the same way as other routers.
 
 The same type of router could also have been defined in code:
@@ -566,7 +567,7 @@ It is possible to subscribe to the metrics events directly to implement other fu
 Custom Metrics Collector
 ------------------------
 
-You can plug-in your own metrics collector instead of 
+You can plug-in your own metrics collector instead of
 ``akka.cluster.SigarMetricsCollector`` or ``akka.cluster.JmxMetricsCollector``. Look at those two implementations
 for inspiration. The implementation class can be defined in the :ref:`cluster_configuration_scala`.
 
@@ -669,7 +670,7 @@ Run it without parameters to see instructions about how to use the script::
                 is-singleton - Checks if the cluster is a singleton cluster (single
                                node cluster)
                 is-available - Checks if the member node is available
-  Where the <node-url> should be on the format of 
+  Where the <node-url> should be on the format of
     'akka.<protocol>://<actor-system-name>@<hostname>:<port>'
 
   Examples: bin/akka-cluster localhost:9999 is-available

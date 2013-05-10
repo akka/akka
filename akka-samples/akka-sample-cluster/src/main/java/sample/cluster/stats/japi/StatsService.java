@@ -1,5 +1,7 @@
 package sample.cluster.stats.japi;
 
+import java.util.concurrent.TimeUnit;
+import scala.concurrent.duration.Duration;
 import sample.cluster.stats.japi.StatsMessages.StatsJob;
 //#imports
 import akka.actor.ActorRef;
@@ -55,10 +57,12 @@ abstract class StatsService2 extends UntypedActor {
   String routeesPath = "/user/statsWorker";
   boolean allowLocalRoutees = true;
   String useRole = "compute";
+  Duration retryLookupInterval = Duration.create(20, TimeUnit.SECONDS);
   ActorRef workerRouter = getContext().actorOf(
       Props.create(StatsWorker.class).withRouter(new ClusterRouterConfig(
           new ConsistentHashingRouter(0), new ClusterRouterSettings(
-              totalInstances, routeesPath, allowLocalRoutees, useRole))),
+              totalInstances, routeesPath, allowLocalRoutees, useRole,
+              retryLookupInterval))),
       "workerRouter2");
   //#router-lookup-in-code
 }

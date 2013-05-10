@@ -9,6 +9,7 @@ import akka.routing._
 import com.typesafe.config._
 import akka.cluster.routing.ClusterRouterConfig
 import akka.cluster.routing.ClusterRouterSettings
+import scala.concurrent.duration._
 
 object ClusterDeployerSpec {
   val deployerConf = ConfigFactory.parseString("""
@@ -29,6 +30,7 @@ object ClusterDeployerSpec {
           cluster.enabled = on
           cluster.allow-local-routees = off
           cluster.routees-path = "/user/myservice"
+          cluster.retry-lookup-interval = 3s
         }
       }
       akka.remote.netty.tcp.port = 0
@@ -50,15 +52,22 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
       deployment must not be (None)
 
-      deployment must be(Some(
-        Deploy(
-          service,
-          deployment.get.config,
-          ClusterRouterConfig(RoundRobinRouter(20), ClusterRouterSettings(
-            totalInstances = 20, maxInstancesPerNode = 3, allowLocalRoutees = false, useRole = None)),
-          ClusterScope,
-          Deploy.NoDispatcherGiven,
-          Deploy.NoMailboxGiven)))
+      val d = deployment.get
+      d.path must be(service)
+      d.scope must be(ClusterScope)
+      d.dispatcher must be(Deploy.NoDispatcherGiven)
+      d.mailbox must be(Deploy.NoMailboxGiven)
+      d.routerConfig match {
+        case c: ClusterRouterConfig ⇒
+          c.local must be(RoundRobinRouter(20))
+          c.settings.totalInstances must be(20)
+          c.settings.maxInstancesPerNode must be(3)
+          c.settings.allowLocalRoutees must be(false)
+          c.settings.routeesPath must be("")
+          c.settings.useRole must be(None)
+          c.settings.retryLookupInterval.isFinite must be(false) // Duration.Undefined
+        case _ ⇒ fail("unexpected routerConfig: " + d.routerConfig)
+      }
     }
 
     "be able to parse 'akka.actor.deployment._' with specified cluster deploy routee settings" in {
@@ -66,15 +75,23 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
       deployment must not be (None)
 
-      deployment must be(Some(
-        Deploy(
-          service,
-          deployment.get.config,
-          ClusterRouterConfig(RoundRobinRouter(20), ClusterRouterSettings(
-            totalInstances = 20, routeesPath = "/user/myservice", allowLocalRoutees = false, useRole = None)),
-          ClusterScope,
-          "mydispatcher",
-          "mymailbox")))
+      val d = deployment.get
+      d.path must be(service)
+      d.scope must be(ClusterScope)
+      d.dispatcher must be("mydispatcher")
+      d.mailbox must be("mymailbox")
+      d.routerConfig match {
+        case c: ClusterRouterConfig ⇒
+          c.local must be(RoundRobinRouter(20))
+          c.settings.totalInstances must be(20)
+          c.settings.maxInstancesPerNode must be(1)
+          c.settings.allowLocalRoutees must be(false)
+          c.settings.routeesPath must be("/user/myservice")
+          c.settings.useRole must be(None)
+          c.settings.retryLookupInterval must be(3.seconds)
+        case _ ⇒ fail("unexpected routerConfig: " + d.routerConfig)
+      }
+
     }
 
   }

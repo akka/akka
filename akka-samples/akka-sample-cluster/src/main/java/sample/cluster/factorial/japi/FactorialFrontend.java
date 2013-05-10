@@ -1,5 +1,7 @@
 package sample.cluster.factorial.japi;
 
+import java.util.concurrent.TimeUnit;
+import scala.concurrent.duration.Duration;
 import akka.actor.UntypedActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
@@ -65,11 +67,13 @@ abstract class FactorialFrontend2 extends UntypedActor {
   String routeesPath = "/user/factorialBackend";
   boolean allowLocalRoutees = true;
   String useRole = "backend";
+  Duration retryLookupInterval = Duration.create(20, TimeUnit.SECONDS);
   ActorRef backend = getContext().actorOf(
     Props.create(FactorialBackend.class).withRouter(new ClusterRouterConfig(
       new AdaptiveLoadBalancingRouter(HeapMetricsSelector.getInstance(), 0),
       new ClusterRouterSettings(
-        totalInstances, routeesPath, allowLocalRoutees, useRole))),
+        totalInstances, routeesPath, allowLocalRoutees, useRole,
+        retryLookupInterval))),
       "factorialBackendRouter2");
   //#router-lookup-in-code
 }
