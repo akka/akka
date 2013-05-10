@@ -47,21 +47,20 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
       camel.sendTo("direct:a1", msg = "some message") must be("received some message")
     }
 
-    "Consumer must time-out if consumer is slow" in {
+    "Consumer must time-out if consumer is slow" taggedAs TimingTest in {
       val SHORT_TIMEOUT = 10 millis
-      val LONG_WAIT = 200 millis
+      val LONG_WAIT = 1 second
 
       val ref = start(new Consumer {
         override def replyTimeout = SHORT_TIMEOUT
-
         def endpointUri = "direct:a3"
         def receive = { case _ ⇒ { Thread.sleep(LONG_WAIT.toMillis); sender ! "done" } }
       }, name = "ignore-this-deadletter-timeout-consumer-reply")
 
-      val exception = intercept[CamelExecutionException] {
+      intercept[CamelExecutionException] {
         camel.sendTo("direct:a3", msg = "some msg 3")
-      }
-      exception.getCause.getClass must be(classOf[TimeoutException])
+      }.getCause.getClass must be(classOf[TimeoutException])
+
       stop(ref)
     }
 
