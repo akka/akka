@@ -18,10 +18,11 @@
 # 1.2) Install the sbt-pgp plugin from http://www.scala-sbt.org/sbt-pgp/
 #      The plugin will try to use the default key stored in ~/.gnupg/pubring.gpg
 #      and ~/.gnupg/secring.gpg.
+#      At least version 0.8 is needed.
 #
 # 1.3) Check that signing works
 #      From inside sbt do the following
-#        sbt> publish-local
+#        sbt> publish-local-signed
 #      It should should ask you for your pass phrase, and create .asc files for
 #      all artifacts
 #
@@ -31,6 +32,8 @@
 #      To find out your key id do this from the command line:
 #        shell> gpg --list-keys
 #        pub    2048/<your key id> ...
+#      You can verify the existence of your key here, if you don't trust your tool:
+#        http://sks-keyservers.net/i/#extract
 #
 # 2) You must have publishing rights to oss.sonatype.org
 #
@@ -52,7 +55,11 @@
 #
 # 3) You must have publishing rights to scalasbt.artifactoryonline.com
 #
-# 3.1) Politely ask the Q-branch to create a user for you
+# 3.1) Politely ask the maintainers of the community plugins repository
+#      for credentials here:
+#        http://groups.google.com/group/sbt-repo-admins?hl=en
+#      More information about this repository is available here:
+#        http://www.scala-sbt.org/release/docs/Community/Community-Plugins.html
 #
 # 3.2) Add your credentials to sbt by adding this to your global.sbt file
 #        credentials += Credentials("Artifactory Realm",
