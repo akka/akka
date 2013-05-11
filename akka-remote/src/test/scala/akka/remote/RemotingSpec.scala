@@ -13,6 +13,7 @@ import java.io.NotSerializableException
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.concurrent.forkjoin.ThreadLocalRandom
 
 object RemotingSpec {
 
@@ -159,13 +160,14 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
   val here = system.actorFor("akka.test://remote-sys@localhost:12346/user/echo")
 
   private def verifySend(msg: Any)(afterSend: ⇒ Unit) {
+    val bigBounceId = s"bigBounce-${ThreadLocalRandom.current.nextInt()}"
     val bigBounceOther = remoteSystem.actorOf(Props(new Actor {
       def receive = {
         case x: Int ⇒ sender ! byteStringOfSize(x)
         case x      ⇒ sender ! x
       }
-    }), "bigBounce")
-    val bigBounceHere = system.actorFor("akka.test://remote-sys@localhost:12346/user/bigBounce")
+    }), bigBounceId)
+    val bigBounceHere = system.actorFor(s"akka.test://remote-sys@localhost:12346/user/$bigBounceId")
 
     val eventForwarder = system.actorOf(Props(new Actor {
       def receive = {
@@ -181,8 +183,8 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     } finally {
       system.eventStream.unsubscribe(eventForwarder, classOf[AssociationErrorEvent])
       system.eventStream.unsubscribe(eventForwarder, classOf[DisassociatedEvent])
-      system.stop(eventForwarder)
-      remoteSystem.stop(bigBounceOther)
+      eventForwarder ! PoisonPill
+      bigBounceOther ! PoisonPill
     }
   }
 
