@@ -126,8 +126,8 @@ import ReliableProxy._
  * '''''maxRetries''''' is the maximum number of retries (0 means no maximum).
  * After the maxRetries has been reached the actor will stop itself and send a
  * ProxyTerminated message to its parent.
- */
-class ReliableProxy(target: ActorRef, retryAfter: FiniteDuration, maxRetries: Int = 0)
+ */ // TODO - default args on Actor constructors no longer supported?
+class ReliableProxy(target: ActorRef, retryAfter: FiniteDuration, maxRetries: Int)
   extends Actor with FSM[State, Vector[Message]] {
 
   val tunnel = context.actorOf(receiver(target).withDeploy(Deploy(scope = RemoteScope(target.path.address))), "tunnel")
@@ -245,8 +245,8 @@ case class Unsent(private val queue: Vector[Message])
  * after receiving a ProxyTerminated message).  Note this setting does not prevent
  * this actor from recreating its ReliableProxy after it has propagated
  * ProxyTerminated to its parent.
- */
-class ReliableProxySuper(target: ActorRef, retryAfter: FiniteDuration, maxRetries: Int = 0, maxSuperRetries: Int = 0)
+ */ // TODO - default args on Actor constructors no longer supported?
+class ReliableProxySuper(target: ActorRef, retryAfter: FiniteDuration, maxRetries: Int, maxSuperRetries: Int)
   extends Actor with ActorLogging {
 
   var numRetries = 0

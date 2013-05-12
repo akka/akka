@@ -43,7 +43,7 @@ public class ReliableProxyTest {
 
           //#demo-proxy
           final ActorRef proxy = getContext().actorOf(
-              Props.create(ReliableProxy.class, target, Duration.create(100, "millis")));
+              Props.create(ReliableProxy.class, target, Duration.create(100, "millis"), 0));
 
           public void onReceive(Object msg) {
             if ("hello".equals(msg)) {
@@ -68,7 +68,7 @@ public class ReliableProxyTest {
         return new UntypedActor() {
 
           //#demo-transition
-          final ActorRef proxy = getContext().actorOf(Props.create(ReliableProxy.class, target, Duration.create(100, "millis")));
+          final ActorRef proxy = getContext().actorOf(Props.create(ReliableProxy.class, target, Duration.create(100, "millis"), 0));
           ActorRef client = null;
           {
             proxy.tell(new FSM.SubscribeTransitionCallBack(getSelf()), getSelf());
