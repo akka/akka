@@ -183,7 +183,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test"),
     settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ multiJvmSettings ++ OSGi.cluster ++ experimentalSettings ++
       scalabuffSettings ++ Seq(
-      scalabuffVersion in ScalaBuff := "1.2.0-SNAPSHOT",
+      scalabuffVersion in ScalaBuff := "1.2.0",
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
       parallelExecution in Test := false,
