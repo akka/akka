@@ -214,10 +214,8 @@ case class ProxyTerminated(actor: ActorRef, outstanding: Unsent)
  * If this is sent back to the ReliableProxy/ReliableProxySuper the messages
  * contained in it will be resent through the new tunnel.  Note: this has
  * to be sent back to ReliableProxy/ReliableProxySuper before any other message.
- *
- * Note: the contained ``queue`` is for internal use only.
  */
-case class Unsent(queue: Vector[Message])
+case class Unsent(private val queue: Vector[Message])
 
 /**
  * ReliableProxySuper is an actor that both proxies the ReliableProxy and
