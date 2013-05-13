@@ -8,7 +8,6 @@ import java.nio.channels.SocketChannel
 import scala.collection.immutable
 import akka.actor.ActorRef
 import akka.io.Inet.SocketOption
-import akka.io.SelectionHandler.{ ChannelRegistered, RegisterChannel }
 
 /**
  * An actor handling the connection state machine for an incoming, already connected
@@ -16,17 +15,18 @@ import akka.io.SelectionHandler.{ ChannelRegistered, RegisterChannel }
  *
  * INTERNAL API
  */
-private[io] class TcpIncomingConnection(_channel: SocketChannel,
-                                        _tcp: TcpExt,
-                                        handler: ActorRef,
+private[io] class TcpIncomingConnection(_tcp: TcpExt,
+                                        _channel: SocketChannel,
+                                        registry: ChannelRegistry,
+                                        bindHandler: ActorRef,
                                         options: immutable.Traversable[SocketOption])
-  extends TcpConnection(_channel, _tcp) {
+  extends TcpConnection(_tcp, _channel) {
 
-  context.watch(handler) // sign death pact
+  context.watch(bindHandler) // sign death pact
 
-  context.parent ! RegisterChannel(channel, 0)
+  registry.register(channel, initialOps = 0)
 
   def receive = {
-    case ChannelRegistered ⇒ completeConnect(handler, options)
+    case registration: ChannelRegistration ⇒ completeConnect(registration, bindHandler, options)
   }
 }
