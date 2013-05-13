@@ -140,7 +140,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
     // about nodes that are known here, otherwise removed nodes can come back
     val otherGossip = envelope.gossip.filter(nodes)
     latestGossip = latestGossip merge otherGossip
-    publish()
+    // changes will be published in the period collect task
     if (!envelope.reply)
       replyGossipTo(envelope.from)
   }
