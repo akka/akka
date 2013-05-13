@@ -76,6 +76,15 @@ object ClusterRoundRobinRoutedActorMultiJvmSpec extends MultiNodeConfig {
           nr-of-instances = 10
           cluster {
             enabled = on
+            routees-path = "/user/myservice2"
+            retry-lookup-interval = 1s
+          }
+        }
+        /router6 {
+          router = round-robin
+          nr-of-instances = 10
+          cluster {
+            enabled = on
             use-role = a
           }
         }
@@ -104,6 +113,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
   lazy val router3 = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "router3")
   lazy val router4 = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "router4")
   lazy val router5 = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "router5")
+  lazy val router6 = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "router6")
 
   def receiveReplies(routeeType: RouteeType, expectedReplies: Int): Map[Address, Int] = {
     val zero = Map.empty[Address, Int] ++ roles.map(address(_) -> 0)
@@ -184,6 +194,42 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
       enterBarrier("after-3")
     }
 
+    "retry lookup routees on the member nodes in the cluster" taggedAs LongRunningTest in {
+
+      // routees not started yet
+      runOn(first) {
+        router5 ! "hit"
+        expectNoMsg(1 second)
+        router5 ! "hit"
+        expectNoMsg(1 second)
+      }
+
+      enterBarrier("verified-no-myservice2")
+
+      system.actorOf(Props(classOf[SomeActor], LookupRoutee), "myservice2")
+      enterBarrier("myservice2-started")
+
+      runOn(first) {
+        // 2 nodes, 1 routee on each node, but the routee actors are not started yet
+        awaitAssert(currentRoutees(router5).size must be(2), 5.seconds)
+
+        val iterationCount = 10
+        for (i ← 0 until iterationCount) {
+          router5 ! "hit"
+        }
+
+        val replies = receiveReplies(LookupRoutee, iterationCount)
+
+        replies(first) must be > (0)
+        replies(second) must be > (0)
+        replies(third) must be(0)
+        replies(fourth) must be(0)
+        replies.values.sum must be(iterationCount)
+      }
+
+      enterBarrier("after-4")
+    }
+
     "deploy routees to new nodes in the cluster" taggedAs LongRunningTest in {
 
       // add third and fourth
@@ -204,7 +250,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         replies.values.sum must be(iterationCount)
       }
 
-      enterBarrier("after-4")
+      enterBarrier("after-5")
     }
 
     "lookup routees on new nodes in the cluster" taggedAs LongRunningTest in {
@@ -219,6 +265,8 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         for (i ← 0 until iterationCount) {
           router4 ! "hit"
         }
+        // 4 nodes, 1 routee on each node
+        awaitAssert(currentRoutees(router4).size must be(4))
 
         val replies = receiveReplies(LookupRoutee, iterationCount)
 
@@ -226,7 +274,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         replies.values.sum must be(iterationCount)
       }
 
-      enterBarrier("after-5")
+      enterBarrier("after-6")
     }
 
     "deploy routees to only remote nodes when allow-local-routees = off" taggedAs LongRunningTest in {
@@ -249,17 +297,17 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         replies.values.sum must be(iterationCount)
       }
 
-      enterBarrier("after-6")
+      enterBarrier("after-7")
     }
 
     "deploy routees to specified node role" taggedAs LongRunningTest in {
 
       runOn(first) {
-        awaitAssert(currentRoutees(router5).size must be(2))
+        awaitAssert(currentRoutees(router6).size must be(2))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
-          router5 ! "hit"
+          router6 ! "hit"
         }
 
         val replies = receiveReplies(DeployRoutee, iterationCount)
@@ -271,7 +319,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         replies.values.sum must be(iterationCount)
       }
 
-      enterBarrier("after-7")
+      enterBarrier("after-8")
     }
 
     "deploy programatically defined routees to the member nodes in the cluster" taggedAs LongRunningTest in {
@@ -297,7 +345,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         replies.values.sum must be(iterationCount)
       }
 
-      enterBarrier("after-8")
+      enterBarrier("after-9")
     }
 
     "deploy programatically defined routees to other node when a node becomes down" taggedAs LongRunningTest in {
@@ -330,7 +378,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         replies.values.sum must be(iterationCount)
       }
 
-      enterBarrier("after-9")
+      enterBarrier("after-10")
     }
 
   }

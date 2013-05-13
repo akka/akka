@@ -3,9 +3,9 @@
  */
 package akka.cluster.routing
 
-import java.lang.IllegalStateException
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.immutable
+import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.ConfigurationException
 import akka.actor.ActorContext
@@ -30,6 +30,7 @@ import akka.actor.RootActorPath
 import akka.actor.ActorCell
 import akka.actor.RelativeActorPath
 import scala.annotation.tailrec
+import akka.actor.Cancellable
 
 /**
  * [[akka.routing.RouterConfig]] implementation for deployment on cluster nodes.
@@ -48,7 +49,8 @@ final case class ClusterRouterConfig(local: RouterConfig, settings: ClusterRoute
 
     // Intercept ClusterDomainEvent and route them to the ClusterRouterActor
     ({
-      case (sender, message: ClusterDomainEvent) ⇒ List(Destination(sender, routeeProvider.context.self))
+      case (sender, message: ClusterDomainEvent)  ⇒ List(Destination(sender, routeeProvider.context.self))
+      case (sender, ClusterRouterActor.RetryTick) ⇒ List(Destination(sender, routeeProvider.context.self))
     }: Route) orElse localRoute
   }
 
@@ -77,7 +79,7 @@ object ClusterRouterSettings {
    * Settings for create and deploy of the routees
    */
   def apply(totalInstances: Int, maxInstancesPerNode: Int, allowLocalRoutees: Boolean, useRole: Option[String]): ClusterRouterSettings =
-    new ClusterRouterSettings(totalInstances, maxInstancesPerNode, routeesPath = "", allowLocalRoutees, useRole)
+    new ClusterRouterSettings(totalInstances, maxInstancesPerNode, routeesPath = "", allowLocalRoutees, useRole, Duration.Undefined)
 
   /**
    * Settings for remote deployment of the routees, allowed to use routees on own node
@@ -88,14 +90,16 @@ object ClusterRouterSettings {
   /**
    * Settings for lookup of the routees
    */
-  def apply(totalInstances: Int, routeesPath: String, allowLocalRoutees: Boolean, useRole: Option[String]): ClusterRouterSettings =
-    new ClusterRouterSettings(totalInstances, maxInstancesPerNode = 1, routeesPath, allowLocalRoutees, useRole)
+  def apply(totalInstances: Int, routeesPath: String, allowLocalRoutees: Boolean, useRole: Option[String],
+            retryLookupInterval: Duration): ClusterRouterSettings =
+    new ClusterRouterSettings(totalInstances, maxInstancesPerNode = 1, routeesPath, allowLocalRoutees, useRole,
+      retryLookupInterval)
 
   /**
    * Settings for lookup of the routees, allowed to use routees on own node
    */
-  def apply(totalInstances: Int, routeesPath: String, useRole: Option[String]): ClusterRouterSettings =
-    apply(totalInstances, routeesPath, allowLocalRoutees = true, useRole)
+  def apply(totalInstances: Int, routeesPath: String, useRole: Option[String], retryLookupInterval: Duration): ClusterRouterSettings =
+    apply(totalInstances, routeesPath, allowLocalRoutees = true, useRole, retryLookupInterval)
 
   def useRoleOption(role: String): Option[String] = role match {
     case null | "" ⇒ None
@@ -114,26 +118,32 @@ case class ClusterRouterSettings private[akka] (
   maxInstancesPerNode: Int,
   routeesPath: String,
   allowLocalRoutees: Boolean,
-  useRole: Option[String]) {
+  useRole: Option[String],
+  retryLookupInterval: Duration) {
 
   /**
    * Java API: Settings for create and deploy of the routees
    */
   def this(totalInstances: Int, maxInstancesPerNode: Int, allowLocalRoutees: Boolean, useRole: String) =
     this(totalInstances, maxInstancesPerNode, routeesPath = "", allowLocalRoutees,
-      ClusterRouterSettings.useRoleOption(useRole))
+      ClusterRouterSettings.useRoleOption(useRole), Duration.Undefined)
 
   /**
    * Java API: Settings for lookup of the routees
    */
-  def this(totalInstances: Int, routeesPath: String, allowLocalRoutees: Boolean, useRole: String) =
+  def this(totalInstances: Int, routeesPath: String, allowLocalRoutees: Boolean, useRole: String,
+           retryLookupInterval: Duration) =
     this(totalInstances, maxInstancesPerNode = 1, routeesPath, allowLocalRoutees,
-      ClusterRouterSettings.useRoleOption(useRole))
+      ClusterRouterSettings.useRoleOption(useRole), retryLookupInterval)
 
-  if (totalInstances <= 0) throw new IllegalArgumentException("totalInstances of cluster router must be > 0")
-  if (maxInstancesPerNode <= 0) throw new IllegalArgumentException("maxInstancesPerNode of cluster router must be > 0")
-  if (isRouteesPathDefined && maxInstancesPerNode != 1)
-    throw new IllegalArgumentException("maxInstancesPerNode of cluster router must be 1 when routeesPath is defined")
+  require(totalInstances > 0, "totalInstances of cluster router must be > 0")
+  require(maxInstancesPerNode > 0, "maxInstancesPerNode of cluster router must be > 0")
+  if (isRouteesPathDefined) {
+    require(maxInstancesPerNode == 1, "maxInstancesPerNode of cluster router must be 1 when routeesPath is defined")
+    require(!retryLookupInterval.isFinite || retryLookupInterval > Duration.Zero,
+      "retryLookupInterval of cluster router must be > 0s or off (Duration.Undefined) when routeesPath is defined")
+
+  }
 
   val routeesPathElements: immutable.Iterable[String] = routeesPath match {
     case RelativeActorPath(elements) ⇒ elements
@@ -155,7 +165,7 @@ private[akka] class ClusterRouteeProvider(
   _context: ActorContext,
   _routeeProps: Props,
   _resizer: Option[Resizer],
-  settings: ClusterRouterSettings)
+  val settings: ClusterRouterSettings)
   extends RouteeProvider(_context, _routeeProps, _resizer) {
 
   // need this counter as instance variable since Resizer may call createRoutees several times
@@ -207,10 +217,14 @@ private[akka] class ClusterRouteeProvider(
     }
   }
 
+  private[routing] def retryCreateRoutees(): Unit = createRoutees()
+
   private def selectDeploymentTarget: Option[Address] = {
     val currentRoutees = routees
     val currentNodes = availableNodes
-    if (currentNodes.isEmpty || currentRoutees.size >= settings.totalInstances) {
+    val currentSize = currentRoutees.size
+    if (currentNodes.isEmpty || currentSize >= settings.totalInstances ||
+      (settings.isRouteesPathDefined && currentSize == currentNodes.size)) {
       None
     } else {
       // find the node with least routees
@@ -267,16 +281,29 @@ private[akka] class ClusterRouteeProvider(
 
 /**
  * INTERNAL API
+ */
+private[akka] object ClusterRouterActor {
+  case object RetryTick
+}
+
+/**
+ * INTERNAL API
  * The router actor, subscribes to cluster events.
  */
 private[akka] class ClusterRouterActor extends Router {
+  import ClusterRouterActor._
+
+  var retryTask: Option[Cancellable] = None
 
   // re-subscribe when restart
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent])
     cluster.subscribe(self, classOf[UnreachableMember])
   }
-  override def postStop(): Unit = cluster.unsubscribe(self)
+  override def postStop(): Unit = {
+    cluster.unsubscribe(self)
+    retryTask.foreach(_.cancel())
+  }
 
   // lazy to not interfere with RoutedActorCell initialization
   lazy val routeeProvider: ClusterRouteeProvider = ref.routeeProvider match {
@@ -308,6 +335,14 @@ private[akka] class ClusterRouterActor extends Router {
       routeeProvider.nodes = s.members.collect { case m if routeeProvider.isAvailable(m) ⇒ m.address }
       routeeProvider.createRoutees()
 
+      if (routeeProvider.settings.isRouteesPathDefined && retryTask.isEmpty)
+        routeeProvider.settings.retryLookupInterval match {
+          case interval: FiniteDuration ⇒
+            retryTask = Some(context.system.scheduler.schedule(interval, interval, self, RetryTick)(
+              context.dispatcher))
+          case _ ⇒ // retry disabled
+        }
+
     case m: MemberEvent if routeeProvider.isAvailable(m.member) ⇒
       routeeProvider.nodes += m.member.address
       // createRoutees will create routees based on
@@ -316,10 +351,13 @@ private[akka] class ClusterRouterActor extends Router {
 
     case other: MemberEvent ⇒
       // other events means that it is no longer interesting, such as
-      // MemberJoined, MemberLeft, MemberExited, MemberRemoved
+      // MemberJoined, MemberExited, MemberRemoved
       unregisterRoutees(other.member)
 
     case UnreachableMember(m) ⇒
       unregisterRoutees(m)
+
+    case RetryTick ⇒
+      routeeProvider.retryCreateRoutees()
   }
 }

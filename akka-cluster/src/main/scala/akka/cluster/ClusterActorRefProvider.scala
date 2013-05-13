@@ -3,6 +3,8 @@
  */
 package akka.cluster
 
+import scala.concurrent.duration.Duration
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import com.typesafe.config.Config
 import akka.ConfigurationException
 import akka.actor.ActorSystem
@@ -91,13 +93,26 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
           if (deploy.routerConfig.isInstanceOf[RemoteRouterConfig])
             throw new ConfigurationException("Cluster deployment can't be combined with [%s]".format(deploy.routerConfig))
 
+          val routeesPath = deploy.config.getString("cluster.routees-path")
+          val retryLookupInterval: Duration = {
+            if (routeesPath == "") Duration.Undefined
+            else {
+              val retryKey = "cluster.retry-lookup-interval"
+              deploy.config.getString(retryKey).toLowerCase match {
+                case "off" ⇒ Duration.Undefined
+                case _     ⇒ Duration(deploy.config.getMilliseconds(retryKey), MILLISECONDS)
+              }
+            }
+          }
+
           import ClusterRouterSettings.useRoleOption
           val clusterRouterSettings = ClusterRouterSettings(
             totalInstances = deploy.config.getInt("nr-of-instances"),
             maxInstancesPerNode = deploy.config.getInt("cluster.max-nr-of-instances-per-node"),
             allowLocalRoutees = deploy.config.getBoolean("cluster.allow-local-routees"),
-            routeesPath = deploy.config.getString("cluster.routees-path"),
-            useRole = useRoleOption(deploy.config.getString("cluster.use-role")))
+            routeesPath = routeesPath,
+            useRole = useRoleOption(deploy.config.getString("cluster.use-role")),
+            retryLookupInterval = retryLookupInterval)
 
           Some(deploy.copy(
             routerConfig = ClusterRouterConfig(deploy.routerConfig, clusterRouterSettings), scope = ClusterScope))

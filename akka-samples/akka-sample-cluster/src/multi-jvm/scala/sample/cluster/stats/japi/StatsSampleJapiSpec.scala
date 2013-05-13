@@ -43,6 +43,7 @@ object StatsSampleJapiSpecConfig extends MultiNodeConfig {
             routees-path = "/user/statsWorker"
             allow-local-routees = on
             use-role = compute
+            retry-lookup-interval = 20s
           }
         }
     }

@@ -3,6 +3,7 @@ package sample.cluster.factorial
 //#imports
 import scala.annotation.tailrec
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.ActorLogging
@@ -150,7 +151,8 @@ abstract class FactorialFrontend2 extends Actor {
     ClusterRouterConfig(AdaptiveLoadBalancingRouter(HeapMetricsSelector),
       ClusterRouterSettings(
         totalInstances = 100, routeesPath = "/user/factorialBackend",
-        allowLocalRoutees = true, useRole = Some("backend")))),
+        allowLocalRoutees = true, useRole = Some("backend"),
+        retryLookupInterval = 20.seconds))),
     name = "factorialBackendRouter2")
   //#router-lookup-in-code
 }
