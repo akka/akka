@@ -374,7 +374,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   else None
 
   override val supervisorStrategy =
-    OneForOneStrategy(settings.MaximumRetriesInWindow, settings.RetryWindow, loggingEnabled = false) {
+    OneForOneStrategy(loggingEnabled = false) {
       case InvalidAssociation(localAddress, remoteAddress, _) ⇒
         log.error("Tried to associate with invalid remote address [{}]. " +
           "Address is now quarantined, all messages to this address will be delivered to dead letters.", remoteAddress)
@@ -467,6 +467,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
             case Some(endpoint) ⇒ context.stop(endpoint)
             case _              ⇒ // nothing to stop
           }
+          log.info("Address [{}] is now quarantined, all messages to this address will be delivered to dead letters.",
+            address)
           endpoints.markAsQuarantined(address, uid, Deadline.now + d)
         case _ ⇒ // Ignore
       }

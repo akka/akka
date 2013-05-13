@@ -454,7 +454,13 @@ private[remote] class EndpointWriter(
     case Event(Status.Failure(e: InvalidAssociationException), _) ⇒
       publishAndThrow(new InvalidAssociation(localAddress, remoteAddress, e))
     case Event(Status.Failure(e), _) ⇒
-      publishAndThrow(new EndpointAssociationException(s"Association failed with [$remoteAddress]", e))
+      refuseUid match {
+        case Some(uid) ⇒
+          // don't try again when endpoint is quarantined
+          publishAndThrow(new QuarantinedUidException(uid, remoteAddress))
+        case None ⇒
+          publishAndThrow(new EndpointAssociationException(s"Association failed with [$remoteAddress]", e))
+      }
     case Event(inboundHandle: AkkaProtocolHandle, _) ⇒
       refuseUid match {
         case Some(uid) if inboundHandle.handshakeInfo.uid == uid ⇒

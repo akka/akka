@@ -34,8 +34,8 @@ class RemoteConfigSpec extends AkkaSpec(
       RetryGateClosedFor must be(Duration.Zero)
       UnknownAddressGateClosedFor must be(1 minute)
       UsePassiveConnections must be(true)
-      MaximumRetriesInWindow must be(5)
-      RetryWindow must be(3 seconds)
+      MaximumRetriesInWindow must be(3)
+      RetryWindow must be(60 seconds)
       BackoffPeriod must be(10 millis)
       SysMsgAckTimeout must be(0.3 seconds)
       SysResendTimeout must be(1 seconds)
@@ -81,6 +81,7 @@ class RemoteConfigSpec extends AkkaSpec(
       val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.netty.tcp")
 
       c.getBytes("maximum-frame-size") must be(128000)
+      c.getMilliseconds("connection-timeout") must be(15000)
     }
 
     "contain correct socket worker pool configuration values in reference.conf" in {
