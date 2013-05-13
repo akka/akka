@@ -5,15 +5,15 @@
 package akka.io
 
 import java.net.Socket
-import java.nio.channels.SocketChannel
+import java.nio.channels.{ SelectableChannel, SocketChannel }
+import java.nio.channels.SelectionKey.OP_ACCEPT
 import scala.concurrent.duration._
-import akka.actor.{ Terminated, SupervisorStrategy, Actor, Props }
-import akka.testkit.{ TestProbe, TestActorRef, AkkaSpec }
-import Tcp._
-import akka.testkit.EventFilter
-import akka.io.SelectionHandler._
+import akka.actor._
+import akka.testkit.{ TestProbe, TestActorRef, AkkaSpec, EventFilter }
 import akka.io.TcpListener.{ RegisterIncoming, FailedRegisterIncoming }
+import akka.io.SelectionHandler._
 import akka.TestUtils
+import Tcp._
 
 class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
 
@@ -22,7 +22,10 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
     "register its ServerSocketChannel with its selector" in new TestSetup
 
     "let the Bind commander know when binding is completed" in new TestSetup {
-      listener ! ChannelRegistered
+      listener ! new ChannelRegistration {
+        def disableInterest(op: Int) = ()
+        def enableInterest(op: Int) = ()
+      }
       bindCommander.expectMsgType[Bound]
     }
 
@@ -39,7 +42,7 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
       expectWorkerForCommand
       expectWorkerForCommand
       selectorRouter.expectNoMsg(100.millis)
-      parent.expectMsg(AcceptInterest)
+      interestCallReceiver.expectMsg(OP_ACCEPT)
 
       // and pick up the last remaining connection on the next ChannelAcceptable
       listener ! ChannelAcceptable
@@ -53,13 +56,13 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
       listener ! ChannelAcceptable
       expectWorkerForCommand
       selectorRouter.expectNoMsg(100.millis)
-      parent.expectMsg(AcceptInterest)
+      interestCallReceiver.expectMsg(OP_ACCEPT)
 
       attemptConnectionToEndpoint()
       listener ! ChannelAcceptable
       expectWorkerForCommand
       selectorRouter.expectNoMsg(100.millis)
-      parent.expectMsg(AcceptInterest)
+      interestCallReceiver.expectMsg(OP_ACCEPT)
     }
 
     "react to Unbind commands by replying with Unbound and stopping itself" in new TestSetup {
@@ -89,19 +92,26 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
 
   val counter = Iterator.from(0)
 
-  class TestSetup { setup ⇒
+  class TestSetup {
     val handler = TestProbe()
     val handlerRef = handler.ref
     val bindCommander = TestProbe()
     val parent = TestProbe()
     val selectorRouter = TestProbe()
     val endpoint = TestUtils.temporaryServerAddress()
+
+    var registerCallReceiver = TestProbe()
+    var interestCallReceiver = TestProbe()
+
     private val parentRef = TestActorRef(new ListenerParent)
 
-    parent.expectMsgType[RegisterChannel]
+    registerCallReceiver.expectMsg(OP_ACCEPT)
 
     def bindListener() {
-      listener ! ChannelRegistered
+      listener ! new ChannelRegistration {
+        def enableInterest(op: Int): Unit = interestCallReceiver.ref ! op
+        def disableInterest(op: Int): Unit = interestCallReceiver.ref ! -op
+      }
       bindCommander.expectMsgType[Bound]
     }
 
@@ -117,15 +127,19 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
           chan
       }
 
-    private class ListenerParent extends Actor {
+    private class ListenerParent extends Actor with ChannelRegistry {
       val listener = context.actorOf(
-        props = Props(new TcpListener(selectorRouter.ref, Tcp(system), bindCommander.ref, Bind(handler.ref, endpoint, 100, Nil))),
+        props = Props(classOf[TcpListener], selectorRouter.ref, Tcp(system), this, bindCommander.ref,
+          Bind(handler.ref, endpoint, 100, Nil)),
         name = "test-listener-" + counter.next())
       parent.watch(listener)
       def receive: Receive = {
         case msg ⇒ parent.ref forward msg
       }
       override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
+
+      def register(channel: SelectableChannel, initialOps: Int)(implicit channelActor: ActorRef): Unit =
+        registerCallReceiver.ref.tell(initialOps, channelActor)
     }
   }
 

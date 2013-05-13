@@ -3,13 +3,13 @@
  */
 package akka.io
 
-import akka.actor._
+import java.lang.{ Iterable ⇒ JIterable }
+import java.net.InetSocketAddress
+import scala.collection.immutable
 import akka.io.Inet.SocketOption
 import akka.io.Udp.UdpSettings
 import akka.util.ByteString
-import java.net.InetSocketAddress
-import scala.collection.immutable
-import java.lang.{ Iterable ⇒ JIterable }
+import akka.actor._
 
 object UdpConnected extends ExtensionKey[UdpConnectedExt] {
   /**

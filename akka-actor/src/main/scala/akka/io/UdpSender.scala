@@ -3,25 +3,22 @@
  */
 package akka.io
 
-import akka.actor._
 import java.nio.channels.DatagramChannel
-import akka.io.Udp._
-import akka.io.SelectionHandler.{ ChannelRegistered, RegisterChannel }
 import scala.collection.immutable
-import akka.io.Inet.SocketOption
 import scala.util.control.NonFatal
-import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.io.Inet.SocketOption
+import akka.io.Udp._
+import akka.actor._
 
 /**
  * INTERNAL API
  */
-private[io] class UdpSender(
-  val udp: UdpExt,
-  options: immutable.Traversable[SocketOption],
-  val commander: ActorRef)
+private[io] class UdpSender(val udp: UdpExt,
+                            channelRegistry: ChannelRegistry,
+                            commander: ActorRef,
+                            options: immutable.Traversable[SocketOption])
   extends Actor with ActorLogging with WithUdpSend with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
-
-  def selector: ActorRef = context.parent
 
   val channel = {
     val datagramChannel = DatagramChannel.open
@@ -32,11 +29,11 @@ private[io] class UdpSender(
 
     datagramChannel
   }
-  selector ! RegisterChannel(channel, 0)
+  channelRegistry.register(channel, initialOps = 0)
 
   def receive: Receive = {
-    case ChannelRegistered ⇒
-      context.become(sendHandlers, discardOld = true)
+    case registration: ChannelRegistration ⇒
+      context.become(sendHandlers(registration), discardOld = true)
       commander ! SimpleSendReady
   }
 
