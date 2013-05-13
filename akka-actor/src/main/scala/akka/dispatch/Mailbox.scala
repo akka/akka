@@ -454,7 +454,7 @@ trait BoundedMessageQueueSemantics extends QueueBasedMessageQueue {
   override def queue: BlockingQueue[Envelope]
 
   def enqueue(receiver: ActorRef, handle: Envelope): Unit =
-    if (pushTimeOut.length > 0) {
+    if (pushTimeOut.length >= 0) {
       if (!queue.offer(handle, pushTimeOut.length, pushTimeOut.unit))
         receiver.asInstanceOf[InternalActorRef].provider.deadLetters.tell(
           DeadLetter(handle.message, handle.sender, receiver), handle.sender)
@@ -490,14 +490,14 @@ trait BoundedDequeBasedMessageQueueSemantics extends DequeBasedMessageQueue {
   override def queue: BlockingDeque[Envelope]
 
   def enqueue(receiver: ActorRef, handle: Envelope): Unit =
-    if (pushTimeOut.length > 0) {
+    if (pushTimeOut.length >= 0) {
       if (!queue.offer(handle, pushTimeOut.length, pushTimeOut.unit))
         receiver.asInstanceOf[InternalActorRef].provider.deadLetters.tell(
           DeadLetter(handle.message, handle.sender, receiver), handle.sender)
     } else queue put handle
 
   def enqueueFirst(receiver: ActorRef, handle: Envelope): Unit =
-    if (pushTimeOut.length > 0) {
+    if (pushTimeOut.length >= 0) {
       if (!queue.offerFirst(handle, pushTimeOut.length, pushTimeOut.unit))
         receiver.asInstanceOf[InternalActorRef].provider.deadLetters.tell(
           DeadLetter(handle.message, handle.sender, receiver), handle.sender)

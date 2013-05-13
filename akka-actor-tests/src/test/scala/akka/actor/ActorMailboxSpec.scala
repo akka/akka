@@ -8,6 +8,7 @@ import com.typesafe.config.ConfigFactory
 import akka.testkit._
 import akka.dispatch._
 import akka.TestUtils.verifyActorTermination
+import scala.concurrent.duration.Duration
 
 object ActorMailboxSpec {
   val mailboxConf = ConfigFactory.parseString("""
@@ -31,6 +32,12 @@ object ActorMailboxSpec {
       mailbox-type = "akka.dispatch.BoundedMailbox"
     }
 
+    bounded-mailbox-with-zero-pushtimeout {
+      mailbox-capacity = 1000
+      mailbox-push-timeout-time = 0s
+      mailbox-type = "akka.dispatch.BoundedMailbox"
+    }
+
     akka.actor.deployment {
       /default-default {
       }
@@ -42,6 +49,9 @@ object ActorMailboxSpec {
       }
       /default-bounded {
         mailbox = bounded-mailbox
+      }
+      /default-bounded-mailbox-with-zero-pushtimeout {
+        mailbox = bounded-mailbox-with-zero-pushtimeout
       }
       /default-unbounded-deque {
         mailbox = akka.actor.mailbox.unbounded-deque-based
@@ -97,12 +107,13 @@ class ActorMailboxSpec extends AkkaSpec(ActorMailboxSpec.mailboxConf) with Defau
 
   import ActorMailboxSpec._
 
-  def checkMailboxQueue(props: Props, name: String, types: Seq[Class[_]]): Unit = {
+  def checkMailboxQueue(props: Props, name: String, types: Seq[Class[_]]): MessageQueue = {
     val actor = system.actorOf(props, name)
 
     actor ! "ping"
     val q = expectMsgType[MessageQueue]
     types foreach (t ⇒ assert(t isInstance q, s"Type [${q.getClass.getName}] is not assignable to [${t.getName}]"))
+    q
   }
 
   "An Actor" must {
@@ -154,8 +165,13 @@ class ActorMailboxSpec extends AkkaSpec(ActorMailboxSpec.mailboxConf) with Defau
       checkMailboxQueue(Props[QueueReportingActor], "unbounded-bounded", BoundedMailboxTypes)
     }
 
-    "get a bounded message queue by when defined in dispatcher" in {
+    "get a bounded message queue when defined in dispatcher" in {
       checkMailboxQueue(Props[QueueReportingActor], "bounded-default", BoundedMailboxTypes)
+    }
+
+    "get a bounded message queue with 0 push timeout when defined in dispatcher" in {
+      val q = checkMailboxQueue(Props[QueueReportingActor], "default-bounded-mailbox-with-zero-pushtimeout", BoundedMailboxTypes)
+      q.asInstanceOf[BoundedMessageQueueSemantics].pushTimeOut must be === Duration.Zero
     }
 
     "get an unbounded message queue when it's configured as mailbox overriding bounded in dispatcher" in {
