@@ -15,18 +15,13 @@
 #      Make sure to use the email address that you will use later to register
 #      with Sonatype.
 #
-# 1.2) Install the sbt-pgp plugin from http://www.scala-sbt.org/sbt-pgp/
-#      The plugin will try to use the default key stored in ~/.gnupg/pubring.gpg
-#      and ~/.gnupg/secring.gpg.
-#      At least version 0.8 is needed.
-#
-# 1.3) Check that signing works
+# 1.2) Check that signing works
 #      From inside sbt do the following
 #        sbt> publish-local-signed
 #      It should should ask you for your pass phrase, and create .asc files for
 #      all artifacts
 #
-# 1.4) Publish your key to a server that Sonatype use
+# 1.3) Publish your key to a server that Sonatype use
 #      From the command line:
 #        shell> gpg --keyserver hkp://pool.sks-keyservers.net/ --send-keys <your key id>
 #      To find out your key id do this from the command line:
