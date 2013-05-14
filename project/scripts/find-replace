@@ -65,7 +65,7 @@ for file in $files; do
   # escape / for sed
   sedfind=$(echo $find_expr | sed 's/\//\\\//g')
   sedreplace=$(echo $replace_expr | sed 's/\//\\\//g')
-  sed -i '.sed' "s/${sedfind}/${sedreplace}/g" $file
+  sed -i.sed "s/${sedfind}/${sedreplace}/g" $file
   eval "$simple_diff $file.sed $file"
   rm -f $file.sed
 done
