@@ -10,7 +10,7 @@ import org.scalatest.matchers.MustMatchers
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class AddressSpec extends WordSpec with MustMatchers {
 
-  val explicitErrorMessage = "The 2.1-SNAPSHOT documentation is available at http://doc.akka.io/docs/akka/2.1-SNAPSHOT/"
+  val explicitErrorMessage = "The 2.1.4 documentation is available at http://doc.akka.io/docs/akka/2.1.4/"
 
   "An Address" must {
 

@@ -20,7 +20,7 @@ import annotation.tailrec
 final case class Address private (protocol: String, system: String, host: Option[String], port: Option[Int]) {
 
   require(protocol == "akka", s"The Address protocol '${protocol}' is not allowed, it can only be 'akka'." +
-    (if (protocol == "akka.tcp") "\nIs your config from the wrong akka version?\nThe 2.1-SNAPSHOT documentation is available at http://doc.akka.io/docs/akka/2.1-SNAPSHOT/" else ""))
+    (if (protocol == "akka.tcp") "\nIs your config from the wrong akka version?\nThe 2.1.4 documentation is available at http://doc.akka.io/docs/akka/2.1.4/" else ""))
 
   def this(protocol: String, system: String) = this(protocol, system, None, None)
   def this(protocol: String, system: String, host: String, port: Int) = this(protocol, system, Option(host), Some(port))
