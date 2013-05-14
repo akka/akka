@@ -39,12 +39,11 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
       a
   }
 
-  protected def receivedTerminated(t: Terminated): Unit = {
+  protected def receivedTerminated(t: Terminated): Unit =
     if (terminatedQueued(t.actor)) {
       terminatedQueued -= t.actor // here we know that it is the SAME ref which was put in
       receiveMessage(t)
     }
-  }
 
   /**
    * When this actor is watching the subject of [[akka.actor.Terminated]] message
@@ -65,21 +64,17 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
 
   // TODO this should be removed and be replaced with `watching.contains(subject)`
   //   when all actor references have uid, i.e. actorFor is removed
-  private def watchingContains(subject: ActorRef): Boolean = {
+  private def watchingContains(subject: ActorRef): Boolean =
     watching.contains(subject) || (subject.path.uid != ActorCell.undefinedUid &&
       watching.contains(new UndefinedUidActorRef(subject)))
-  }
 
   // TODO this should be removed and be replaced with `set - subject`
   //   when all actor references have uid, i.e. actorFor is removed
-  private def removeFromSet(subject: ActorRef, set: Set[ActorRef]): Set[ActorRef] = {
-    val removed = if (set(subject)) set - subject else set
-    if (subject.path.uid != ActorCell.undefinedUid)
-      removed - new UndefinedUidActorRef(subject)
-    else removed filterNot (_.path == subject.path)
-  }
+  private def removeFromSet(subject: ActorRef, set: Set[ActorRef]): Set[ActorRef] =
+    if (subject.path.uid != ActorCell.undefinedUid) (set - subject) - new UndefinedUidActorRef(subject)
+    else set filterNot (_.path == subject.path)
 
-  protected def tellWatchersWeDied(actor: Actor): Unit = {
+  protected def tellWatchersWeDied(actor: Actor): Unit =
     if (!watchedBy.isEmpty) {
       try {
         def sendTerminated(ifLocal: Boolean)(watcher: ActorRef): Unit =
@@ -103,9 +98,8 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
         watchedBy foreach sendTerminated(ifLocal = true)
       } finally watchedBy = ActorCell.emptyActorRefSet
     }
-  }
 
-  protected def unwatchWatchedActors(actor: Actor): Unit = {
+  protected def unwatchWatchedActors(actor: Actor): Unit =
     if (!watching.isEmpty) {
       try {
         watching foreach { // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
@@ -117,7 +111,6 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
         unsubscribeAddressTerminated()
       }
     }
-  }
 
   protected def addWatcher(watchee: ActorRef, watcher: ActorRef): Unit = {
     val watcheeSelf = watchee == self
