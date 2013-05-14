@@ -2,6 +2,9 @@
 #
 # Release script for Akka.
 #
+# ATTENTION: This script involves calling `git clean -fxd` which will remove all untracked
+#            files from your working directory (including IDE settings).
+#
 # Prerequisites and Installation Instructions
 #
 # 1) You must be able to sign the artifacts with PGP
@@ -208,6 +211,9 @@ declare -r initial_branch=$(get_current_branch)
   git status
   fail "There are uncommitted changes - please commit before releasing"
 }
+
+(read -p "The working directory will now be cleaned from all non-tracked files. Are you sure you want this? " x; test "$x" = yes) || fail "bailing out"
+git clean -fxd || fail "cannot git clean -fxd"
 
 # the branch we'll release on
 declare -r release_branch="releasing-${version}"
