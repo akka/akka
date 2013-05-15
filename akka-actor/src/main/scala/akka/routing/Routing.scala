@@ -58,9 +58,10 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
   private[akka] val routerConfig = _props.routerConfig
   private[akka] val resizeInProgress = new AtomicBoolean
   private val resizeCounter = new AtomicLong
+  private val selfRoutee = Routee(Left(self))
 
   @volatile
-  private var _routees: immutable.IndexedSeq[ActorRef] = immutable.IndexedSeq.empty[ActorRef] // this MUST be initialized during createRoute
+  private var _routees: immutable.IndexedSeq[Routee] = immutable.IndexedSeq.empty[Routee] // this MUST be initialized during createRoute
   def routees = _routees
 
   @volatile
@@ -84,7 +85,7 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
    */
 
   def applyRoute(sender: ActorRef, message: Any): immutable.Iterable[Destination] = message match {
-    case _: AutoReceivedMessage | _: Terminated ⇒ Destination(sender, self) :: Nil
+    case _: AutoReceivedMessage | _: Terminated ⇒ Destination(sender, selfRoutee) :: Nil
     case CurrentRoutees                         ⇒ { sender ! RouterRoutees(_routees); Nil }
     case _ ⇒
       val payload = (sender, message)
@@ -93,14 +94,17 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
 
   /**
    * Adds the routees to existing routees.
-   * Adds death watch of the routees so that they are removed when terminated.
+   * Adds death watch of ActorRef routees so that they are removed when terminated.
    * Not thread safe, but intended to be called from protected points, such as
    * `RouterConfig.createRoute` and `Resizer.resize`
    */
-  private[akka] def addRoutees(newRoutees: immutable.Iterable[ActorRef]): Unit = {
+  private[akka] def addRoutees(newRoutees: immutable.Iterable[Routee]): Unit = {
     _routees ++= newRoutees
-    // subscribe to Terminated messages for all route destinations, to be handled by Router actor
-    newRoutees foreach watch
+    // subscribe to Terminated messages for ActorRef route destinations, to be handled by Router actor
+    newRoutees foreach {
+      case Routee(Left(ref)) ⇒ watch(ref)
+      case _                 ⇒
+    }
   }
 
   /**
@@ -109,8 +113,13 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
    * Not thread safe, but intended to be called from protected points, such as
    * `Resizer.resize`
    */
-  private[akka] def removeRoutees(abandonedRoutees: immutable.Iterable[ActorRef]): Unit = {
-    _routees = abandonedRoutees.foldLeft(_routees) { (xs, x) ⇒ unwatch(x); xs.filterNot(_.path == x.path) }
+  private[akka] def removeRoutees(abandonedRoutees: immutable.Iterable[Routee]): Unit = {
+    _routees = abandonedRoutees.foldLeft(_routees) {
+      case (xs, Routee(Left(ref))) ⇒
+        unwatch(ref)
+        xs.filterNot { case Routee(Left(r)) ⇒ r.path == ref.path }
+      case (xs, routeeSelection) ⇒ xs.filterNot { _ == routeeSelection }
+    }
   }
 
   /**
@@ -132,10 +141,12 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
       case m                       ⇒ m
     }
     applyRoute(msg.sender, msg.message) foreach {
-      case Destination(sender, `self`) ⇒
+      case Destination(sender, `selfRoutee`) ⇒
         super.sendMessage(Envelope(message, sender, system))
-      case Destination(sender, recipient) ⇒
+      case Destination(sender, Routee(Left(recipient))) ⇒
         resize() // only resize when the message target is one of the routees
+        recipient.tell(message, sender)
+      case Destination(sender, Routee(Right(recipient))) ⇒
         recipient.tell(message, sender)
     }
   }
@@ -208,7 +219,7 @@ trait RouterConfig {
    */
   def withFallback(other: RouterConfig): RouterConfig = this
 
-  protected def toAll(sender: ActorRef, routees: immutable.Iterable[ActorRef]): immutable.Iterable[Destination] =
+  protected def toAll(sender: ActorRef, routees: immutable.Iterable[Routee]): immutable.Iterable[Destination] =
     routees.map(Destination(sender, _))
 
   /**
@@ -235,7 +246,7 @@ trait RouterConfig {
 /**
  * Factory and registry for routees of the router.
  * Uses `context.actorOf` to create routees from nrOfInstances property
- * and `context.actorFor` lookup routees from paths.
+ * or `context.actorSelection` to send messages to paths.
  */
 class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resizer: Option[Resizer]) {
 
@@ -247,7 +258,8 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
    * Not thread safe, but intended to be called from protected points, such as
    * `RouterConfig.createRoute` and `Resizer.resize`.
    */
-  def registerRoutees(routees: immutable.Iterable[ActorRef]): Unit = routedCell.addRoutees(routees)
+  def registerRoutees(routees: immutable.Iterable[ActorRef]): Unit =
+    register(routees map Routee.apply)
 
   /**
    * Java API: Adds the routees to the router.
@@ -258,12 +270,29 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
   def registerRoutees(routees: java.lang.Iterable[ActorRef]): Unit = registerRoutees(immutableSeq(routees))
 
   /**
+   * Adds the routees to the router.
+   * Adds death watch of ActorRef routees so that they are removed when terminated.
+   * Not thread safe, but intended to be called from protected points, such as
+   * `RouterConfig.createRoute` and `Resizer.resize`.
+   */
+  def register(routees: immutable.Iterable[Routee]): Unit =
+    routedCell.addRoutees(routees)
+
+  /**
+   * Java API: Adds the routees to the router.
+   * Adds death watch of ActorRef routees so that they are removed when terminated.
+   * Not thread safe, but intended to be called from protected points, such as
+   * `RouterConfig.createRoute` and `Resizer.resize`.
+   */
+  def register(routees: java.lang.Iterable[Routee]): Unit = register(immutableSeq(routees))
+
+  /**
    * Removes routees from the router. This method doesn't stop the routees.
    * Removes death watch of the routees.
    * Not thread safe, but intended to be called from protected points, such as
    * `Resizer.resize`.
    */
-  def unregisterRoutees(routees: immutable.Iterable[ActorRef]): Unit = routedCell.removeRoutees(routees)
+  def unregisterRoutees(routees: immutable.Iterable[ActorRef]): Unit = unregister(routees map Routee.apply)
 
   /**
    * Java API: Removes routees from the router. This method doesn't stop the routees.
@@ -273,16 +302,31 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
    */
   def unregisterRoutees(routees: java.lang.Iterable[ActorRef]): Unit = unregisterRoutees(immutableSeq(routees))
 
-  // TODO replace all usages of actorFor in routing with actorSelection. Not possible until
-  //      major refactoring of routing because of demand for synchronous registration of routees.
-
   /**
-   * Looks up routes with specified paths and registers them.
+   * Removes routees from the router. This method doesn't stop the routees.
+   * Removes death watch of ActorRef routees.
+   * Not thread safe, but intended to be called from protected points, such as
+   * `Resizer.resize`.
    */
-  def registerRouteesFor(paths: immutable.Iterable[String]): Unit = registerRoutees(paths.map(context.actorFor(_)))
+  def unregister(routees: immutable.Iterable[Routee]): Unit =
+    routedCell.removeRoutees(routees)
 
   /**
-   * Java API: Looks up routes with specified paths and registers them.
+   * Java API: Removes routees from the router. This method doesn't stop the routees.
+   * Removes death watch of ActorRef routees.
+   * Not thread safe, but intended to be called from protected points, such as
+   * `Resizer.resize`.
+   */
+  def unregister(routees: java.lang.Iterable[Routee]): Unit = unregister(immutableSeq(routees))
+
+  /**
+   * Use `actorSelection` to send messages to registered paths.
+   */
+  def registerRouteesFor(paths: immutable.Iterable[String]): Unit =
+    routedCell.addRoutees(paths.map(p ⇒ Routee(context.actorSelection(p))))
+
+  /**
+   * Java API: Use `actorSelection` to send messages to registered paths.
    */
   def registerRouteesFor(paths: java.lang.Iterable[String]): Unit = registerRouteesFor(immutableSeq(paths))
 
@@ -305,8 +349,9 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
     } else if (nrOfInstances > 0) {
       val currentRoutees = routees
       val abandon = currentRoutees.drop(currentRoutees.length - nrOfInstances)
-      unregisterRoutees(abandon)
-      delayedStop(context.system.scheduler, abandon, stopDelay)
+      unregister(abandon)
+      val stopRefs = abandon collect { case Routee(Left(ref)) ⇒ ref }
+      delayedStop(context.system.scheduler, stopRefs, stopDelay)
     }
   }
 
@@ -332,14 +377,24 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
   /**
    * All routees of the router
    */
-  def routees: immutable.IndexedSeq[ActorRef] = routedCell.routees
+  def routees: immutable.IndexedSeq[Routee] = routedCell.routees
 
   /**
    * Java API: All routees of the router
    */
-  def getRoutees(): java.util.List[ActorRef] = routees.asJava
+  def getRoutees(): java.util.List[Routee] = routees.asJava
 
   private def routedCell = context.asInstanceOf[RoutedActorCell]
+}
+
+object Routee {
+  def apply(ref: ActorRef) = new Routee(ref)
+  def apply(selection: ActorSelection) = new Routee(selection)
+}
+
+case class Routee(val refOrSelection: Either[ActorRef, ActorSelection]) {
+  def this(ref: ActorRef) = this(Left(ref))
+  def this(selection: ActorSelection) = this(Right(selection))
 }
 
 /**
@@ -390,7 +445,7 @@ trait Router extends Actor {
       if (ab.get) try ref.routerConfig.resizer foreach (_.resize(ref.routeeProvider)) finally ab.set(false)
 
     case Terminated(child) ⇒
-      ref.removeRoutees(child :: Nil)
+      ref.removeRoutees(List(Routee(child)))
       if (ref.routees.isEmpty && ref.routerConfig.stopRouterWhenAllRouteesRemoved)
         context.stop(self)
 
@@ -451,7 +506,15 @@ case object CurrentRoutees extends CurrentRoutees {
  * Message used to carry information about what routees the router is currently using.
  */
 @SerialVersionUID(1L)
-case class RouterRoutees(routees: immutable.Iterable[ActorRef])
+case class RouterRoutees(routees: immutable.Iterable[Routee]) {
+  // FIXME #3349 Java API
+  // FIXME #3349 compatibility? deprecation?
+}
+
+object Destination {
+  def apply(sender: ActorRef, recipient: ActorRef) = new Destination(sender, recipient)
+  def apply(sender: ActorRef, recipient: ActorSelection) = new Destination(sender, recipient)
+}
 
 /**
  * For every message sent to a router, its route determines a set of destinations,
@@ -460,7 +523,10 @@ case class RouterRoutees(routees: immutable.Iterable[ActorRef])
  * gather router needs to receive the replies with an AskActorRef instead.
  */
 @SerialVersionUID(1L)
-case class Destination(sender: ActorRef, recipient: ActorRef)
+case class Destination(sender: ActorRef, recipient: Routee) {
+  def this(sender: ActorRef, recipient: ActorRef) = this(sender, Routee(recipient))
+  def this(sender: ActorRef, recipient: ActorSelection) = this(sender, Routee(recipient))
+}
 
 /**
  * Routing configuration that indicates no routing; this is also the default
@@ -544,12 +610,14 @@ object RoundRobinRouter {
   /**
    * Creates a new RoundRobinRouter, routing to the specified routees
    */
+  @deprecated("Use apply that takes String paths", "2.2")
   def apply(routees: immutable.Iterable[ActorRef]): RoundRobinRouter =
     new RoundRobinRouter(routees = routees map (_.path.toString))
 
   /**
    * Java API to create router with the supplied 'routees' actors.
    */
+  @deprecated("Use constructor that takes String paths", "2.2")
   def create(routees: java.lang.Iterable[ActorRef]): RoundRobinRouter =
     apply(immutableSeq(routees))
 }
@@ -592,7 +660,7 @@ object RoundRobinRouter {
  * }}}
  *
  * @param routees string representation of the actor paths of the routees that will be looked up
- *   using `actorFor` in [[akka.actor.ActorRefProvider]]
+ *   using `actorSelection` in [[akka.actor.ActorRefProvider]]
  */
 @SerialVersionUID(1L)
 case class RoundRobinRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
@@ -609,7 +677,7 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[
    * Java API: Constructor that sets the routees to be used.
    *
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
-   *   using `actorFor` in [[akka.actor.ActorRefProvider]]
+   *   using `actorSelection` in [[akka.actor.ActorRefProvider]]
    */
   def this(routeePaths: java.lang.Iterable[String]) = this(routees = immutableSeq(routeePaths))
 
@@ -658,11 +726,12 @@ trait RoundRobinLike { this: RouterConfig ⇒
       else routeeProvider.registerRouteesFor(routees)
     }
 
+    val deadLettersRoutee = Routee(routeeProvider.context.system.deadLetters)
     val next = new AtomicLong(0)
 
-    def getNext(): ActorRef = {
+    def getNext(): Routee = {
       val currentRoutees = routeeProvider.routees
-      if (currentRoutees.isEmpty) routeeProvider.context.system.deadLetters
+      if (currentRoutees.isEmpty) deadLettersRoutee
       else currentRoutees((next.getAndIncrement % currentRoutees.size).asInstanceOf[Int])
     }
 
@@ -680,11 +749,13 @@ object RandomRouter {
   /**
    * Creates a new RandomRouter, routing to the specified routees
    */
+  @deprecated("Use apply that takes String paths", "2.2")
   def apply(routees: immutable.Iterable[ActorRef]): RandomRouter = new RandomRouter(routees = routees map (_.path.toString))
 
   /**
    * Java API to create router with the supplied 'routees' actors.
    */
+  @deprecated("Use constructor that takes String paths", "2.2")
   def create(routees: java.lang.Iterable[ActorRef]): RandomRouter =
     apply(immutableSeq(routees))
 }
@@ -727,7 +798,7 @@ object RandomRouter {
  * }}}
  *
  * @param routees string representation of the actor paths of the routees that will be looked up
- *   using `actorFor` in [[akka.actor.ActorRefProvider]]
+ *   using `actorSelection` in [[akka.actor.ActorRefProvider]]
  */
 @SerialVersionUID(1L)
 case class RandomRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
@@ -744,7 +815,7 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[Stri
    * Java API: Constructor that sets the routees to be used.
    *
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
-   *   using `actorFor` in [[akka.actor.ActorRefProvider]]
+   *   using `actorSelection` in [[akka.actor.ActorRefProvider]]
    */
   def this(routeePaths: java.lang.Iterable[String]) = this(routees = immutableSeq(routeePaths))
 
@@ -792,9 +863,11 @@ trait RandomLike { this: RouterConfig ⇒
       else routeeProvider.registerRouteesFor(routees)
     }
 
-    def getNext(): ActorRef = {
+    val deadLettersRoutee = Routee(routeeProvider.context.system.deadLetters)
+
+    def getNext(): Routee = {
       val currentRoutees = routeeProvider.routees
-      if (currentRoutees.isEmpty) routeeProvider.context.system.deadLetters
+      if (currentRoutees.isEmpty) deadLettersRoutee
       else currentRoutees(ThreadLocalRandom.current.nextInt(currentRoutees.size))
     }
 
@@ -812,12 +885,14 @@ object SmallestMailboxRouter {
   /**
    * Creates a new SmallestMailboxRouter, routing to the specified routees
    */
+  @deprecated("Use apply that takes String paths", "2.2")
   def apply(routees: immutable.Iterable[ActorRef]): SmallestMailboxRouter =
     new SmallestMailboxRouter(routees = routees map (_.path.toString))
 
   /**
    * Java API to create router with the supplied 'routees' actors.
    */
+  @deprecated("Use constructor that takes String paths", "2.2")
   def create(routees: java.lang.Iterable[ActorRef]): SmallestMailboxRouter =
     apply(immutableSeq(routees))
 }
@@ -869,7 +944,7 @@ object SmallestMailboxRouter {
  * }}}
  *
  * @param routees string representation of the actor paths of the routees that will be looked up
- *   using `actorFor` in [[akka.actor.ActorRefProvider]]
+ *   using `actorSelection` in [[akka.actor.ActorRefProvider]]
  */
 @SerialVersionUID(1L)
 case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
@@ -886,7 +961,7 @@ case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: immutable.Iter
    * Java API: Constructor that sets the routees to be used.
    *
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
-   *   using `actorFor` in [[akka.actor.ActorRefProvider]]
+   *   using `actorSelection` in [[akka.actor.ActorRefProvider]]
    */
   def this(routeePaths: java.lang.Iterable[String]) = this(routees = immutableSeq(routeePaths))
 
@@ -934,8 +1009,8 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
    * Method is exposed to subclasses to be able to implement custom
    * routers based on mailbox and actor internal state.
    */
-  protected def isProcessingMessage(a: ActorRef): Boolean = a match {
-    case x: ActorRefWithCell ⇒
+  protected def isProcessingMessage(a: Routee): Boolean = a match {
+    case Routee(Left(x: ActorRefWithCell)) ⇒
       x.underlying match {
         case cell: ActorCell ⇒ cell.mailbox.isScheduled && cell.currentMessage != null
         case _               ⇒ false
@@ -950,9 +1025,9 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
    * Method is exposed to subclasses to be able to implement custom
    * routers based on mailbox and actor internal state.
    */
-  protected def hasMessages(a: ActorRef): Boolean = a match {
-    case x: ActorRefWithCell ⇒ x.underlying.hasMessages
-    case _                   ⇒ false
+  protected def hasMessages(a: Routee): Boolean = a match {
+    case Routee(Left(x: ActorRefWithCell)) ⇒ x.underlying.hasMessages
+    case _                                 ⇒ false
   }
 
   /**
@@ -961,8 +1036,8 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
    * Method is exposed to subclasses to be able to implement custom
    * routers based on mailbox and actor internal state.
    */
-  protected def isSuspended(a: ActorRef): Boolean = a match {
-    case x: ActorRefWithCell ⇒
+  protected def isSuspended(a: Routee): Boolean = a match {
+    case Routee(Left(x: ActorRefWithCell)) ⇒
       x.underlying match {
         case cell: ActorCell ⇒ cell.mailbox.isSuspended
         case _               ⇒ true
@@ -976,15 +1051,22 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
    * Method is exposed to subclasses to be able to implement custom
    * routers based on mailbox and actor internal state.
    */
-  protected def numberOfMessages(a: ActorRef): Int = a match {
-    case x: ActorRefWithCell ⇒ x.underlying.numberOfMessages
-    case _                   ⇒ 0
+  protected def numberOfMessages(a: Routee): Int = a match {
+    case Routee(Left(x: ActorRefWithCell)) ⇒ x.underlying.numberOfMessages
+    case _                                 ⇒ 0
   }
 
   def createRoute(routeeProvider: RouteeProvider): Route = {
     if (resizer.isEmpty) {
       if (routees.isEmpty) routeeProvider.createRoutees(nrOfInstances)
       else routeeProvider.registerRouteesFor(routees)
+    }
+
+    val deadLettersRoutee = Routee(routeeProvider.context.system.deadLetters)
+
+    def isTerminated(routee: Routee): Boolean = routee match {
+      case Routee(Left(ref)) ⇒ ref.isTerminated
+      case _                 ⇒ false
     }
 
     // Worst-case a 2-pass inspection with mailbox size checking done on second pass, and only until no one empty is found.
@@ -998,16 +1080,16 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
     // 4. An ActorRef with unknown mailbox size that isn't processing anything
     // 5. An ActorRef with a known mailbox size
     // 6. An ActorRef without any messages
-    @tailrec def getNext(targets: immutable.IndexedSeq[ActorRef] = routeeProvider.routees,
-                         proposedTarget: ActorRef = routeeProvider.context.system.deadLetters,
+    @tailrec def getNext(targets: immutable.IndexedSeq[Routee] = routeeProvider.routees,
+                         proposedTarget: Routee = deadLettersRoutee,
                          currentScore: Long = Long.MaxValue,
                          at: Int = 0,
-                         deep: Boolean = false): ActorRef =
+                         deep: Boolean = false): Routee =
       if (targets.isEmpty)
-        routeeProvider.context.system.deadLetters
+        deadLettersRoutee
       else if (at >= targets.size) {
         if (deep) {
-          if (proposedTarget.isTerminated) targets(ThreadLocalRandom.current.nextInt(targets.size)) else proposedTarget
+          if (isTerminated(proposedTarget)) targets(ThreadLocalRandom.current.nextInt(targets.size)) else proposedTarget
         } else getNext(targets, proposedTarget, currentScore, 0, deep = true)
       } else {
         val target = targets(at)
@@ -1039,11 +1121,13 @@ object BroadcastRouter {
   /**
    * Creates a new BroadcastRouter, routing to the specified routees
    */
+  @deprecated("Use apply that takes String paths", "2.2")
   def apply(routees: immutable.Iterable[ActorRef]): BroadcastRouter = new BroadcastRouter(routees = routees map (_.path.toString))
 
   /**
    * Java API to create router with the supplied 'routees' actors.
    */
+  @deprecated("Use constructor that takes String paths", "2.2")
   def create(routees: java.lang.Iterable[ActorRef]): BroadcastRouter =
     apply(immutableSeq(routees))
 }
@@ -1086,7 +1170,7 @@ object BroadcastRouter {
  * }}}
  *
  * @param routees string representation of the actor paths of the routees that will be looked up
- *   using `actorFor` in [[akka.actor.ActorRefProvider]]
+ *   using `actorSelection` in [[akka.actor.ActorRefProvider]]
  */
 @SerialVersionUID(1L)
 case class BroadcastRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
@@ -1103,7 +1187,7 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[S
    * Java API: Constructor that sets the routees to be used.
    *
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
-   *   using `actorFor` in [[akka.actor.ActorRefProvider]]
+   *   using `actorSelection` in [[akka.actor.ActorRefProvider]]
    */
   def this(routeePaths: java.lang.Iterable[String]) = this(routees = immutableSeq(routeePaths))
 
@@ -1162,12 +1246,14 @@ object ScatterGatherFirstCompletedRouter {
   /**
    * Creates a new ScatterGatherFirstCompletedRouter, routing to the specified routees, timing out after the specified Duration
    */
+  @deprecated("Use apply that takes String paths", "2.2")
   def apply(routees: immutable.Iterable[ActorRef], within: FiniteDuration): ScatterGatherFirstCompletedRouter =
     new ScatterGatherFirstCompletedRouter(routees = routees map (_.path.toString), within = within)
 
   /**
    * Java API to create router with the supplied 'routees' actors.
    */
+  @deprecated("Use constructor that takes String paths", "2.2")
   def create(routees: java.lang.Iterable[ActorRef], within: FiniteDuration): ScatterGatherFirstCompletedRouter =
     apply(immutableSeq(routees), within)
 }
@@ -1212,7 +1298,7 @@ object ScatterGatherFirstCompletedRouter {
  * }}}
  *
  * @param routees string representation of the actor paths of the routees that will be looked up
- *   using `actorFor` in [[akka.actor.ActorRefProvider]]
+ *   using `actorSelection` in [[akka.actor.ActorRefProvider]]
  */
 @SerialVersionUID(1L)
 case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, within: FiniteDuration,
@@ -1233,7 +1319,7 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: im
    * Java API: Constructor that sets the routees to be used.
    *
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
-   *   using `actorFor` in [[akka.actor.ActorRefProvider]]
+   *   using `actorSelection` in [[akka.actor.ActorRefProvider]]
    */
   def this(routeePaths: java.lang.Iterable[String], w: FiniteDuration) = this(routees = immutableSeq(routeePaths), within = w)
 
@@ -1434,7 +1520,7 @@ case class DefaultResizer(
    * @param routees The current actor in the resizer
    * @return the number of routees by which the resizer should be adjusted (positive, negative or zero)
    */
-  def capacity(routees: immutable.IndexedSeq[ActorRef]): Int = {
+  def capacity(routees: immutable.IndexedSeq[Routee]): Int = {
     val currentSize = routees.size
     val press = pressure(routees)
     val delta = filter(press, currentSize)
@@ -1462,9 +1548,9 @@ case class DefaultResizer(
    * @param routees the current resizer of routees
    * @return number of busy routees, between 0 and routees.size
    */
-  def pressure(routees: immutable.IndexedSeq[ActorRef]): Int = {
+  def pressure(routees: immutable.IndexedSeq[Routee]): Int = {
     routees count {
-      case a: ActorRefWithCell ⇒
+      case Routee(Left(a: ActorRefWithCell)) ⇒
         a.underlying match {
           case cell: ActorCell ⇒
             pressureThreshold match {

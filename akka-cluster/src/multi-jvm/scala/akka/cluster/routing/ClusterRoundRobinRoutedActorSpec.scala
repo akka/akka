@@ -21,6 +21,7 @@ import akka.routing.RoundRobinRouter
 import akka.routing.RoutedActorRef
 import akka.routing.RouterRoutees
 import akka.testkit._
+import akka.routing.Routee
 
 object ClusterRoundRobinRoutedActorMultiJvmSpec extends MultiNodeConfig {
 
@@ -108,19 +109,13 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
   def receiveReplies(routeeType: RouteeType, expectedReplies: Int): Map[Address, Int] = {
     val zero = Map.empty[Address, Int] ++ roles.map(address(_) -> 0)
     (receiveWhile(5 seconds, messages = expectedReplies) {
-      case Reply(`routeeType`, ref) ⇒ fullAddress(ref)
+      case Reply(`routeeType`, ref) ⇒ fullAddress(Routee(ref))
     }).foldLeft(zero) {
       case (replyMap, address) ⇒ replyMap + (address -> (replyMap(address) + 1))
     }
   }
 
-  /**
-   * Fills in self address for local ActorRef
-   */
-  private def fullAddress(actorRef: ActorRef): Address = actorRef.path.address match {
-    case Address(_, _, None, None) ⇒ cluster.selfAddress
-    case a                         ⇒ a
-  }
+  private def fullAddress(routee: Routee): Address = ClusterRouterConfig.fullAddress(routee, cluster.selfAddress)
 
   def currentRoutees(router: ActorRef) =
     Await.result(router ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees].routees
@@ -305,12 +300,13 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
 
       runOn(first) {
         def routees = currentRoutees(router2)
+        def routeeRefs = routees map { case Routee(Left(ref)) ⇒ ref }
         def routeeAddresses = (routees map fullAddress).toSet
 
-        routees foreach watch
+        routeeRefs foreach watch
         val notUsedAddress = ((roles map address).toSet -- routeeAddresses).head
         val downAddress = routeeAddresses.find(_ != address(first)).get
-        val downRoutee = routees.find(_.path.address == downAddress).get
+        val downRoutee = routeeRefs.find(_.path.address == downAddress).get
 
         cluster.down(downAddress)
         expectMsgType[Terminated].actor must be(downRoutee)

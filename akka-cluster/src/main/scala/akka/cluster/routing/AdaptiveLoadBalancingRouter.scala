@@ -181,13 +181,15 @@ trait AdaptiveLoadBalancingRouterLike { this: RouterConfig ⇒
 
     }).withDispatcher(routerDispatcher), name = "metricsListener")
 
-    def getNext(): ActorRef = weightedRoutees match {
+    val deadLettersRoutee = Routee(routeeProvider.context.system.deadLetters)
+
+    def getNext(): Routee = weightedRoutees match {
       case Some(weighted) ⇒
-        if (weighted.isEmpty) routeeProvider.context.system.deadLetters
+        if (weighted.isEmpty) deadLettersRoutee
         else weighted(ThreadLocalRandom.current.nextInt(weighted.total) + 1)
       case None ⇒
         val currentRoutees = routeeProvider.routees
-        if (currentRoutees.isEmpty) routeeProvider.context.system.deadLetters
+        if (currentRoutees.isEmpty) deadLettersRoutee
         else currentRoutees(ThreadLocalRandom.current.nextInt(currentRoutees.size))
     }
 
@@ -373,23 +375,19 @@ abstract class CapacityMetricsSelector extends MetricsSelector {
  *
  * Pick routee based on its weight. Higher weight, higher probability.
  */
-private[cluster] class WeightedRoutees(refs: immutable.IndexedSeq[ActorRef], selfAddress: Address, weights: Map[Address, Int]) {
+private[cluster] class WeightedRoutees(routees: immutable.IndexedSeq[Routee], selfAddress: Address, weights: Map[Address, Int]) {
 
   // fill an array of same size as the refs with accumulated weights,
   // binarySearch is used to pick the right bucket from a requested value
   // from 1 to the total sum of the used weights.
   private val buckets: Array[Int] = {
-    def fullAddress(actorRef: ActorRef): Address = actorRef.path.address match {
-      case Address(_, _, None, None) ⇒ selfAddress
-      case a                         ⇒ a
-    }
-    val buckets = Array.ofDim[Int](refs.size)
+    val buckets = Array.ofDim[Int](routees.size)
     val meanWeight = if (weights.isEmpty) 1 else weights.values.sum / weights.size
     val w = weights.withDefaultValue(meanWeight) // we don’t necessarily have metrics for all addresses
     var i = 0
     var sum = 0
-    refs foreach { ref ⇒
-      sum += w(fullAddress(ref))
+    routees foreach { r ⇒
+      sum += w(ClusterRouterConfig.fullAddress(r, selfAddress))
       buckets(i) = sum
       i += 1
     }
@@ -406,9 +404,9 @@ private[cluster] class WeightedRoutees(refs: immutable.IndexedSeq[ActorRef], sel
   /**
    * Pick the routee matching a value, from 1 to total.
    */
-  def apply(value: Int): ActorRef = {
+  def apply(value: Int): Routee = {
     require(1 <= value && value <= total, "value must be between [1 - %s]" format total)
-    refs(idx(Arrays.binarySearch(buckets, value)))
+    routees(idx(Arrays.binarySearch(buckets, value)))
   }
 
   /**

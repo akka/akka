@@ -30,6 +30,25 @@ import akka.actor.RootActorPath
 import akka.actor.ActorCell
 import akka.actor.RelativeActorPath
 import scala.annotation.tailrec
+import akka.routing.Routee
+
+object ClusterRouterConfig {
+
+  /**
+   * INTERNAL API
+   * Fills in self address for local ActorRef
+   */
+  private[akka] def fullAddress(routee: Routee, selfAddress: Address): Address = {
+    def refAddress(ref: ActorRef): Address = ref.path.address match {
+      case Address(_, _, None, None) ⇒ selfAddress
+      case a                         ⇒ a
+    }
+    routee match {
+      case Routee(Left(ref))        ⇒ refAddress(ref)
+      case Routee(Right(selection)) ⇒ refAddress(selection.anchor)
+    }
+  }
+}
 
 /**
  * [[akka.routing.RouterConfig]] implementation for deployment on cluster nodes.
@@ -178,17 +197,18 @@ private[akka] class ClusterRouteeProvider(
     def doCreateRoutees(): Unit = selectDeploymentTarget match {
       case None ⇒ // done
       case Some(target) ⇒
-        val ref =
+        val routee =
           if (settings.isRouteesPathDefined) {
-            context.actorFor(RootActorPath(target) / settings.routeesPathElements)
+            Routee(context.actorSelection(RootActorPath(target) / settings.routeesPathElements))
           } else {
             val name = "c" + childNameCounter.incrementAndGet
             val deploy = Deploy(config = ConfigFactory.empty(), routerConfig = routeeProps.routerConfig,
               scope = RemoteScope(target))
-            context.asInstanceOf[ActorCell].attachChild(routeeProps.withDeploy(deploy), name, systemService = false)
+            val ref = context.asInstanceOf[ActorCell].attachChild(routeeProps.withDeploy(deploy), name, systemService = false)
+            Routee(ref)
           }
         // must register each one, since registered routees are used in selectDeploymentTarget
-        registerRoutees(List(ref))
+        register(List(routee))
 
         // recursion until all created
         doCreateRoutees()
@@ -230,10 +250,8 @@ private[akka] class ClusterRouteeProvider(
   /**
    * Fills in self address for local ActorRef
    */
-  private[routing] def fullAddress(actorRef: ActorRef): Address = actorRef.path.address match {
-    case Address(_, _, None, None) ⇒ cluster.selfAddress
-    case a                         ⇒ a
-  }
+  private[routing] def fullAddress(routee: Routee): Address =
+    ClusterRouterConfig.fullAddress(routee, cluster.selfAddress)
 
   private[routing] def availableNodes: immutable.SortedSet[Address] = {
     import Member.addressOrdering
@@ -287,7 +305,7 @@ private[akka] class ClusterRouterActor extends Router {
 
   def cluster: Cluster = routeeProvider.cluster
 
-  def fullAddress(actorRef: ActorRef): Address = routeeProvider.fullAddress(actorRef)
+  def fullAddress(routee: Routee): Address = routeeProvider.fullAddress(routee)
 
   def unregisterRoutees(member: Member) = {
     val address = member.address
@@ -295,7 +313,7 @@ private[akka] class ClusterRouterActor extends Router {
 
     // unregister routees that live on that node
     val affectedRoutees = routeeProvider.routees.filter(fullAddress(_) == address)
-    routeeProvider.unregisterRoutees(affectedRoutees)
+    routeeProvider.unregister(affectedRoutees)
 
     // createRoutees will not create more than createRoutees and maxInstancesPerNode
     // this is useful when totalInstances < upNodes.size

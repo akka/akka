@@ -19,12 +19,14 @@ object ConsistentHashingRouter {
   /**
    * Creates a new ConsistentHashingRouter, routing to the specified routees
    */
+  @deprecated("Use apply that takes String paths", "2.2")
   def apply(routees: immutable.Iterable[ActorRef]): ConsistentHashingRouter =
     new ConsistentHashingRouter(routees = routees map (_.path.toString))
 
   /**
    * Java API to create router with the supplied 'routees' actors.
    */
+  @deprecated("Use constructor that takes String paths", "2.2")
   def create(routees: java.lang.Iterable[ActorRef]): ConsistentHashingRouter = apply(immutableSeq(routees))
 
   /**
@@ -241,15 +243,15 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
       else virtualNodesFactor
 
     // tuple of routees and the ConsistentHash, updated together in updateConsistentHash
-    val consistentHashRef = new AtomicReference[(IndexedSeq[ConsistentActorRef], ConsistentHash[ConsistentActorRef])]((null, null))
+    val consistentHashRef = new AtomicReference[(IndexedSeq[ConsistentRoutee], ConsistentHash[ConsistentRoutee])]((null, null))
     updateConsistentHash()
 
     // update consistentHash when routees has changed
     // changes to routees are rare and when no changes this is a quick operation
-    def updateConsistentHash(): ConsistentHash[ConsistentActorRef] = {
+    def updateConsistentHash(): ConsistentHash[ConsistentRoutee] = {
       val oldConsistentHashTuple = consistentHashRef.get
       val (oldConsistentHashRoutees, oldConsistentHash) = oldConsistentHashTuple
-      val currentRoutees = routeeProvider.routees map { ConsistentActorRef(_, selfAddress) }
+      val currentRoutees = routeeProvider.routees map { ConsistentRoutee(_, selfAddress) }
 
       if (currentRoutees ne oldConsistentHashRoutees) {
         // when other instance, same content, no need to re-hash, but try to set routees
@@ -262,19 +264,21 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
       } else oldConsistentHash
     }
 
-    def target(hashData: Any): ActorRef = try {
+    val deadLettersRoutee = Routee(routeeProvider.context.system.deadLetters)
+
+    def target(hashData: Any): Routee = try {
       val currentConsistenHash = updateConsistentHash()
-      if (currentConsistenHash.isEmpty) routeeProvider.context.system.deadLetters
+      if (currentConsistenHash.isEmpty) deadLettersRoutee
       else hashData match {
-        case bytes: Array[Byte] ⇒ currentConsistenHash.nodeFor(bytes).actorRef
-        case str: String        ⇒ currentConsistenHash.nodeFor(str).actorRef
-        case x: AnyRef          ⇒ currentConsistenHash.nodeFor(SerializationExtension(routeeProvider.context.system).serialize(x).get).actorRef
+        case bytes: Array[Byte] ⇒ currentConsistenHash.nodeFor(bytes).routee
+        case str: String        ⇒ currentConsistenHash.nodeFor(str).routee
+        case x: AnyRef          ⇒ currentConsistenHash.nodeFor(SerializationExtension(routeeProvider.context.system).serialize(x).get).routee
       }
     } catch {
       case NonFatal(e) ⇒
         // serialization failed
         log.warning("Couldn't route message with consistent hash key [{}] due to [{}]", hashData, e.getMessage)
-        routeeProvider.context.system.deadLetters
+        deadLettersRoutee
     }
 
     {
@@ -303,11 +307,16 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
  * isn't a good representation, because LocalActorRef doesn't include the
  * host and port.
  */
-private[akka] case class ConsistentActorRef(actorRef: ActorRef, selfAddress: Address) {
+private[akka] case class ConsistentRoutee(routee: Routee, selfAddress: Address) {
   override def toString: String = {
-    actorRef.path.address match {
-      case Address(_, _, None, None) ⇒ actorRef.path.toStringWithAddress(selfAddress)
-      case a                         ⇒ actorRef.path.toString
+    def refString(ref: ActorRef): String = ref.path.address match {
+      case Address(_, _, None, None) ⇒ ref.path.toStringWithAddress(selfAddress)
+      case a                         ⇒ ref.path.toString
+    }
+
+    routee match {
+      case Routee(Left(ref))        ⇒ refString(ref)
+      case Routee(Right(selection)) ⇒ refString(selection.anchor) + selection.pathString
     }
   }
 }
