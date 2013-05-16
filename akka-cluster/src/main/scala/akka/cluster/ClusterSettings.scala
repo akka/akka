@@ -62,7 +62,6 @@ class ClusterSettings(val config: Config, val systemName: String) {
       case _     ⇒ Duration(cc.getMilliseconds(key), MILLISECONDS) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
   }
-  final val AutoJoin: Boolean = cc.getBoolean("auto-join")
   final val AutoDown: Boolean = cc.getBoolean("auto-down")
   final val Roles: Set[String] = immutableSeq(cc.getStringList("roles")).toSet
   final val MinNrOfMembers: Int = {

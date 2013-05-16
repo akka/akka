@@ -26,7 +26,6 @@ object RestartFirstSeedNodeMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
       akka.cluster {
-        auto-join = off
         auto-down = on
       }
     """)).withFallback(MultiNodeClusterSpec.clusterConfig))

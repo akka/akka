@@ -68,16 +68,6 @@ partitioning of the application are decoupled. A node could be a member of a
 cluster without hosting any actors.
 
 
-Singleton Cluster
------------------
-
-If a node does not have a preconfigured contact point to join in the Akka
-configuration, then it is considered a singleton cluster (single node cluster)
-and will automatically transition from ``joining`` to ``up``. Singleton clusters
-can later explicitly send a ``Join`` message to another node to form a N-node
-cluster. It is also possible to link multiple N-node clusters by ``joining`` them.
-
-
 Gossip
 ------
 
@@ -187,7 +177,8 @@ The seed nodes are configured contact points for inital join of the cluster.
 When a new node is started started it sends a message to all seed nodes and 
 then sends join command to the one that answers first.
 
-It is possible to turn off automatic join.
+It is possible to not use seed nodes and instead join any node in the cluster
+manually.
 
 
 Gossip Protocol

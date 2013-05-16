@@ -119,7 +119,6 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
 
     akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.cluster {
-      auto-join = off
       auto-down = on
       publish-stats-interval = 0 s # always, when it happens
     }

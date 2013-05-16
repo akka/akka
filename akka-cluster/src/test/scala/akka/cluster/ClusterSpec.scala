@@ -19,7 +19,6 @@ import akka.actor.ActorRef
 object ClusterSpec {
   val config = """
     akka.cluster {
-      auto-join                    = off
       auto-down                    = off
       periodic-tasks-initial-delay = 120 seconds // turn off scheduled tasks
       publish-stats-interval = 0 s # always, when it happens
@@ -60,7 +59,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "initially become singleton cluster when joining itself and reach convergence" in {
-      clusterView.members.size must be(0) // auto-join = off
+      clusterView.members.size must be(0)
       cluster.join(selfAddress)
       leaderActions() // Joining -> Up
       awaitCond(clusterView.isSingletonCluster)
