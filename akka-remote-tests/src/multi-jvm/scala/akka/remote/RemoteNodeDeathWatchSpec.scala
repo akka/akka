@@ -219,7 +219,7 @@ abstract class RemoteNodeDeathWatchSpec
       runOn(first, second) {
         val watcher1 = system.actorOf(Props(classOf[ProbeActor], testActor), "w1")
         val watcher2 = system.actorOf(Props(classOf[ProbeActor], testActor), "w2")
-        system.actorOf(Props(classOf[ProbeActor], testActor), "s1")
+        val s1 = system.actorOf(Props(classOf[ProbeActor], testActor), "s1")
         val s2 = system.actorOf(Props(classOf[ProbeActor], testActor), "s2")
         enterBarrier("actors-started-4")
 
@@ -235,8 +235,13 @@ abstract class RemoteNodeDeathWatchSpec
         sleep()
         watcher1 ! UnwatchIt(subject1)
         expectMsg(1 second, Ack)
+        enterBarrier("unwatch-s1-4")
+        system.stop(s1)
+        expectNoMsg(2 seconds)
+        enterBarrier("stop-s1-4")
+
         system.stop(s2)
-        enterBarrier("unwatch-stop-4")
+        enterBarrier("stop-s2-4")
 
         expectMsgType[WrappedTerminated].t.actor must be(subject2)
       }
@@ -244,7 +249,9 @@ abstract class RemoteNodeDeathWatchSpec
       runOn(third) {
         enterBarrier("actors-started-4")
         enterBarrier("watch-4")
-        enterBarrier("unwatch-stop-4")
+        enterBarrier("unwatch-s1-4")
+        enterBarrier("stop-s1-4")
+        enterBarrier("stop-s2-4")
       }
 
       // verify that things are cleaned up, and heartbeating is stopped
