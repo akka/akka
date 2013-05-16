@@ -5,9 +5,7 @@ package akka.cluster.routing
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
 import com.typesafe.config.ConfigFactory
-
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Address
@@ -21,6 +19,7 @@ import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
 import akka.routing.CurrentRoutees
 import akka.routing.FromConfig
+import akka.routing.Routee
 import akka.routing.RouterRoutees
 import akka.testkit._
 
@@ -71,13 +70,7 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
   def currentRoutees(router: ActorRef) =
     Await.result(router ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees].routees
 
-  /**
-   * Fills in self address for local ActorRef
-   */
-  private def fullAddress(actorRef: ActorRef): Address = actorRef.path.address match {
-    case Address(_, _, None, None) ⇒ cluster.selfAddress
-    case a                         ⇒ a
-  }
+  private def fullAddress(routee: Routee): Address = ClusterRouterConfig.fullAddress(routee, cluster.selfAddress)
 
   "A cluster router with a consistent hashing router" must {
     "start cluster with 2 nodes" taggedAs LongRunningTest in {

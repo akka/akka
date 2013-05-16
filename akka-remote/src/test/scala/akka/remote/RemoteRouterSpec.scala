@@ -212,7 +212,7 @@ akka.actor.deployment {
 
       router ! CurrentRoutees
       EventFilter[ActorKilledException](occurrences = 1) intercept {
-        expectMsgType[RouterRoutees].routees.head ! Kill
+        expectMsgType[RouterRoutees].routees.foreach { case Routee(Left(ref)) ⇒ ref ! Kill }
       }
       expectMsgType[ActorKilledException]
     }

@@ -19,12 +19,13 @@ import akka.pattern.ask
 import akka.remote.testkit.{ MultiNodeSpec, MultiNodeConfig }
 import akka.routing.CurrentRoutees
 import akka.routing.FromConfig
+import akka.routing.Routee
 import akka.routing.RouterRoutees
 import akka.testkit.{ LongRunningTest, DefaultTimeout, ImplicitSender }
 
 object AdaptiveLoadBalancingRouterMultiJvmSpec extends MultiNodeConfig {
 
-  class Routee extends Actor {
+  class RouteeActor extends Actor {
     def receive = {
       case _ ⇒ sender ! Reply(Cluster(context.system).selfAddress)
     }
@@ -104,16 +105,10 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
     }
   }
 
-  /**
-   * Fills in self address for local ActorRef
-   */
-  def fullAddress(actorRef: ActorRef): Address = actorRef.path.address match {
-    case Address(_, _, None, None) ⇒ cluster.selfAddress
-    case a                         ⇒ a
-  }
+  private def fullAddress(routee: Routee): Address = ClusterRouterConfig.fullAddress(routee, cluster.selfAddress)
 
   def startRouter(name: String): ActorRef = {
-    val router = system.actorOf(Props[Routee].withRouter(ClusterRouterConfig(
+    val router = system.actorOf(Props[RouteeActor].withRouter(ClusterRouterConfig(
       local = AdaptiveLoadBalancingRouter(HeapMetricsSelector),
       settings = ClusterRouterSettings(totalInstances = 10, maxInstancesPerNode = 1, useRole = None))), name)
     // it may take some time until router receives cluster member events

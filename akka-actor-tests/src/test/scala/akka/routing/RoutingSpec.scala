@@ -113,7 +113,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       router ! CurrentRoutees
       val routees = expectMsgType[RouterRoutees].routees
       routees.size must be(2)
-      routees foreach system.stop
+      routees foreach { case Routee(Left(ref)) ⇒ system.stop(ref) }
       // expect no Terminated
       expectNoMsg(2.seconds)
     }
@@ -139,7 +139,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
       1 to actors foreach { _ ⇒
         val routees = expectMsgType[RouterRoutees].routees
-        routees.map(_.path.name) must be === names
+        routees.map { case Routee(Right(selection)) ⇒ selection.pathString.split("/").last } must be === names
       }
       expectNoMsg(500.millis)
     }
@@ -188,14 +188,14 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       //#supervision
       router ! CurrentRoutees
       EventFilter[ActorKilledException](occurrences = 1) intercept {
-        expectMsgType[RouterRoutees].routees.head ! Kill
+        expectMsgType[RouterRoutees].routees.foreach { case Routee(Left(ref)) ⇒ ref ! Kill }
       }
       expectMsgType[ActorKilledException]
 
       val router2 = system.actorOf(Props.empty.withRouter(RoundRobinRouter(1).withSupervisorStrategy(escalator)))
       router2 ! CurrentRoutees
       EventFilter[ActorKilledException](occurrences = 1) intercept {
-        expectMsgType[RouterRoutees].routees.head ! Kill
+        expectMsgType[RouterRoutees].routees.foreach { case Routee(Left(ref)) ⇒ ref ! Kill }
       }
       expectMsgType[ActorKilledException]
     }
@@ -207,7 +207,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       val router = system.actorOf(Props.empty.withRouter(FromConfig.withSupervisorStrategy(escalator)), "router1")
       router ! CurrentRoutees
       EventFilter[ActorKilledException](occurrences = 1) intercept {
-        expectMsgType[RouterRoutees].routees.head ! Kill
+        expectMsgType[RouterRoutees].routees.foreach { case Routee(Left(ref)) ⇒ ref ! Kill }
       }
       expectMsgType[ActorKilledException]
     }

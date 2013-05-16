@@ -60,10 +60,10 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
         lowerBound = 2,
         upperBound = 3)
 
-      val c1 = resizer.capacity(immutable.IndexedSeq.empty[ActorRef])
+      val c1 = resizer.capacity(immutable.IndexedSeq.empty[Routee])
       c1 must be(2)
 
-      val current = immutable.IndexedSeq(system.actorOf(Props[TestActor]), system.actorOf(Props[TestActor]))
+      val current = immutable.IndexedSeq(Routee(system.actorOf(Props[TestActor])), Routee(system.actorOf(Props[TestActor])))
       val c2 = resizer.capacity(current)
       c2 must be(0)
     }
@@ -142,8 +142,9 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
 
       val router = system.actorOf(Props(new Actor {
         def receive = {
-          case d: FiniteDuration ⇒ Thread.sleep(d.dilated.toMillis); sender ! "done"
-          case "echo"            ⇒ sender ! "reply"
+          case d: FiniteDuration ⇒
+            Thread.sleep(d.dilated.toMillis); sender ! "done"
+          case "echo" ⇒ sender ! "reply"
         }
       }).withRouter(RoundRobinRouter(resizer = Some(resizer))))
 

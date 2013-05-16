@@ -47,10 +47,12 @@ abstract class ActorSelection extends Serializable {
     val sb = new java.lang.StringBuilder
     sb.append("ActorSelection[").
       append(anchor.toString).
-      append(path.mkString("/", "/", "")).
+      append(pathString).
       append("]")
     sb.toString
   }
+
+  def pathString: String = path.mkString("/", "/", "")
 
   override def equals(obj: Any): Boolean = obj match {
     case s: ActorSelection ⇒ this.anchor == s.anchor && this.path == s.path
