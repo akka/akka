@@ -74,7 +74,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
         system.eventStream.subscribe(davyJones, classOf[DeadLetter])
 
         val probe = new TestProbe(system)
-        probe.ref ! 42
+        probe.ref.tell(42, davyJones)
         /*
        * this will ensure that the message is actually received, otherwise it
        * may happen that the system.stop() suspends the testActor before it had
