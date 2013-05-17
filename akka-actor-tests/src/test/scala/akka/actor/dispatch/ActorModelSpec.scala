@@ -365,7 +365,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       def flood(num: Int) {
         val cachedMessage = CountDownNStop(new CountDownLatch(num))
         val stopLatch = new CountDownLatch(num)
-        val waitTime = (30 seconds).dilated.toMillis
+        val waitTime = (20 seconds).dilated.toMillis
         val boss = system.actorOf(Props(new Actor {
           def receive = {
             case "run"             ⇒ for (_ ← 1 to num) (context.watch(context.actorOf(props))) ! cachedMessage

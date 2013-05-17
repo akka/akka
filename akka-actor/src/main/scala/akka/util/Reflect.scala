@@ -50,7 +50,14 @@ private[akka] object Reflect {
    * Calls findConstructor and invokes it with the given arguments.
    */
   private[akka] def instantiate[T](clazz: Class[T], args: immutable.Seq[Any]): T = {
-    val constructor = findConstructor(clazz, args)
+    instantiate(findConstructor(clazz, args), args)
+  }
+
+  /**
+   * INTERNAL API
+   * Invokes the constructor with the the given arguments.
+   */
+  private[akka] def instantiate[T](constructor: Constructor[T], args: immutable.Seq[Any]): T = {
     constructor.setAccessible(true)
     try constructor.newInstance(args.asInstanceOf[Seq[AnyRef]]: _*)
     catch {
