@@ -858,7 +858,7 @@ abstract class StressSpec
     }
   }
 
-  def removeOne(shutdown: Boolean): Unit = within(10.seconds + convergenceWithin(3.seconds, nbrUsedRoles - 1)) {
+  def removeOne(shutdown: Boolean): Unit = within(25.seconds + convergenceWithin(3.seconds, nbrUsedRoles - 1)) {
     val currentRoles = roles.take(nbrUsedRoles - 1)
     val title = s"${if (shutdown) "shutdown" else "remove"} one from ${nbrUsedRoles} nodes cluster"
     createResultAggregator(title, expectedResults = currentRoles.size, includeInHistory = true)
@@ -903,7 +903,7 @@ abstract class StressSpec
   }
 
   def removeSeveral(numberOfNodes: Int, shutdown: Boolean): Unit =
-    within(10.seconds + convergenceWithin(5.seconds, nbrUsedRoles - numberOfNodes)) {
+    within(25.seconds + convergenceWithin(5.seconds, nbrUsedRoles - numberOfNodes)) {
       val currentRoles = roles.take(nbrUsedRoles - numberOfNodes)
       val removeRoles = roles.slice(currentRoles.size, nbrUsedRoles)
       val title = s"${if (shutdown) "shutdown" else "leave"} ${numberOfNodes} in ${nbrUsedRoles} nodes cluster"

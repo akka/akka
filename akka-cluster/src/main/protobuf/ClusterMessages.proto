@@ -54,20 +54,6 @@ message Welcome {
  * Sends an Address
  */
 
-/****************************************
- * Cluster Leader Action Messages
- ****************************************/
-
-/**
- * Exit
- * Sends a UniqueAddress
- */
-
-/**
- * Shutdown
- * Sends a UniqueAddress
- */
-
 
 /****************************************
  * Cluster Heartbeat Messages
