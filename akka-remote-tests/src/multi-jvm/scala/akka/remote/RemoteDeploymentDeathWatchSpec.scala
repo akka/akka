@@ -95,10 +95,8 @@ abstract class RemoteDeploymentDeathWatchSpec
         testConductor.exit(third, 0).await
         enterBarrier("third-crashed")
 
-        runOn(first) {
-          // second system will be shutdown
-          testConductor.shutdown(second)
-        }
+        // second system will be shutdown
+        testConductor.shutdown(second).await
 
         enterBarrier("after-3")
       }
