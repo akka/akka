@@ -23,8 +23,6 @@ case class SingletonClusterMultiNodeConfig(failureDetectorPuppet: Boolean) exten
     """)).
     withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
 
-  nodeConfig(first)(ConfigFactory.parseString("akka.cluster.auto-join = on"))
-
 }
 
 class SingletonClusterWithFailureDetectorPuppetMultiJvmNode1 extends SingletonClusterSpec(failureDetectorPuppet = true)
@@ -45,8 +43,9 @@ abstract class SingletonClusterSpec(multiNodeConfig: SingletonClusterMultiNodeCo
 
   "A cluster of 2 nodes" must {
 
-    "become singleton cluster when started with 'auto-join=on' and 'seed-nodes=[]'" taggedAs LongRunningTest in {
+    "become singleton cluster when started with seed-nodes" taggedAs LongRunningTest in {
       runOn(first) {
+        cluster.joinSeedNodes(Vector(first))
         awaitMembersUp(1)
         clusterView.isSingletonCluster must be(true)
       }

@@ -25,9 +25,6 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
   // not MultiNodeClusterSpec.clusterConfig
   commonConfig(ConfigFactory.parseString("""
     akka.actor.provider = akka.cluster.ClusterActorRefProvider
-    akka.cluster {
-      auto-join = off
-    }
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.loglevel = INFO
     akka.remote.log-remote-lifecycle-events = off

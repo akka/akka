@@ -64,7 +64,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
       try {
         var locker = Seq.empty[DeadLetter]
         implicit val timeout = TestKitExtension(system).DefaultTimeout
-        implicit val davyJones = otherSystem.actorOf(Props(new Actor {
+        val davyJones = otherSystem.actorOf(Props(new Actor {
           def receive = {
             case m: DeadLetter ⇒ locker :+= m
             case "Die!"        ⇒ sender ! "finally gone"; context.stop(self)
