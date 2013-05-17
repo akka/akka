@@ -48,6 +48,8 @@ trait FailureDetectorRegistry[A] {
 }
 
 /**
+ * INTERNAL API
+ *
  * Utility class to create [[FailureDetector]] instances reflectively.
  */
 private[akka] object FailureDetectorLoader {
