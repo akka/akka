@@ -195,14 +195,8 @@ private[akka] class RemoteActorRefProvider(
   }
 
   protected def createRemoteWatcherFailureDetector(system: ExtendedActorSystem): FailureDetectorRegistry[Address] = {
-    def createFailureDetector(): FailureDetector = {
-      import remoteSettings.{ WatchFailureDetectorImplementationClass ⇒ fqcn }
-      system.dynamicAccess.createInstanceFor[FailureDetector](
-        fqcn, List(classOf[Config] -> remoteSettings.WatchFailureDetectorConfig)).recover({
-          case e ⇒ throw new ConfigurationException(
-            s"Could not create custom remote watcher failure detector [$fqcn] due to: ${e.toString}", e)
-        }).get
-    }
+    def createFailureDetector(): FailureDetector =
+      FailureDetectorLoader.load(remoteSettings.WatchFailureDetectorImplementationClass, remoteSettings.WatchFailureDetectorConfig, system)
 
     new DefaultFailureDetectorRegistry(() ⇒ createFailureDetector())
   }

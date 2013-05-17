@@ -91,14 +91,8 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   log.info("Cluster Node [{}] - is starting up...", selfAddress)
 
   val failureDetector: FailureDetectorRegistry[Address] = {
-    def createFailureDetector(): FailureDetector = {
-      import settings.{ FailureDetectorImplementationClass ⇒ fqcn }
-      system.dynamicAccess.createInstanceFor[FailureDetector](
-        fqcn, List(classOf[Config] -> settings.FailureDetectorConfig)).recover({
-          case e ⇒ throw new ConfigurationException(
-            s"Could not create custom cluster failure detector [$fqcn] due to: ${e.toString}", e)
-        }).get
-    }
+    def createFailureDetector(): FailureDetector =
+      FailureDetectorLoader.load(settings.FailureDetectorImplementationClass, settings.FailureDetectorConfig, system)
 
     new DefaultFailureDetectorRegistry(() ⇒ createFailureDetector())
   }

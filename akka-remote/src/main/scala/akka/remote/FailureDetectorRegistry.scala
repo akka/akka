@@ -4,6 +4,11 @@
 
 package akka.remote
 
+import akka.actor.{ ActorContext, ActorSystem, ExtendedActorSystem }
+import com.typesafe.config.Config
+import akka.event.EventStream
+import akka.ConfigurationException
+
 /**
  * Interface for a registry of Akka failure detectors. New resources are implicitly registered when heartbeat is first
  * called with the resource given as parameter.
@@ -40,4 +45,45 @@ trait FailureDetectorRegistry[A] {
    * Removes all resources and any associated failure detector state.
    */
   def reset(): Unit
+}
+
+/**
+ * INTERNAL API
+ *
+ * Utility class to create [[FailureDetector]] instances reflectively.
+ */
+private[akka] object FailureDetectorLoader {
+
+  /**
+   * Loads and instantiates a given [[FailureDetector]] implementation. The class to be loaded must have a constructor
+   * that accepts a [[com.typesafe.config.Config]] and an [[EventStream]] parameter. Will throw ConfigurationException
+   * if the implementation cannot be loaded.
+   *
+   * @param fqcn Fully qualified class name of the implementation to be loaded.
+   * @param config Configuration that will be passed to the implementation
+   * @param system ActorSystem to be used for loading the implementation
+   * @return A configured instance of the given [[FailureDetector]] implementation
+   */
+  def load(fqcn: String, config: Config, system: ActorSystem): FailureDetector = {
+    system.asInstanceOf[ExtendedActorSystem].dynamicAccess.createInstanceFor[FailureDetector](
+      fqcn, List(
+        classOf[Config] -> config,
+        classOf[EventStream] -> system.eventStream)).recover({
+        case e ⇒ throw new ConfigurationException(
+          s"Could not create custom failure detector [$fqcn] due to: ${e.toString}", e)
+      }).get
+  }
+
+  /**
+   * Loads and instantiates a given [[FailureDetector]] implementation. The class to be loaded must have a constructor
+   * that accepts a [[com.typesafe.config.Config]] and an [[EventStream]] parameter. Will throw ConfigurationException
+   * if the implementation cannot be loaded. Use [[FailureDetectorLoader#load]] if no implicit [[ActorContext]] is
+   * available.
+   *
+   * @param fqcn Fully qualified class name of the implementation to be loaded.
+   * @param config Configuration that will be passed to the implementation
+   * @return
+   */
+  def apply(fqcn: String, config: Config)(implicit ctx: ActorContext) = load(fqcn, config, ctx.system)
+
 }

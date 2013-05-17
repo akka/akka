@@ -8,11 +8,12 @@ import java.util.concurrent.atomic.AtomicReference
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.FailureDetector
 import com.typesafe.config.Config
+import akka.event.EventStream
 
 /**
  * User controllable "puppet" failure detector.
  */
-class FailureDetectorPuppet(config: Config) extends FailureDetector {
+class FailureDetectorPuppet(config: Config, ev: EventStream) extends FailureDetector {
 
   trait Status
   object Up extends Status

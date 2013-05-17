@@ -138,14 +138,8 @@ private[transport] class AkkaProtocolManager(
         failureDetector), actorNameFor(remoteAddress))
   }
 
-  private def createTransportFailureDetector(): FailureDetector = {
-    import settings.{ TransportFailureDetectorImplementationClass ⇒ fqcn }
-    context.system.asInstanceOf[ExtendedActorSystem].dynamicAccess.createInstanceFor[FailureDetector](
-      fqcn, List(classOf[Config] -> settings.TransportFailureDetectorConfig)).recover({
-        case e ⇒ throw new ConfigurationException(
-          s"Could not create custom remote failure detector [$fqcn] due to: ${e.toString}", e)
-      }).get
-  }
+  private def createTransportFailureDetector(): FailureDetector =
+    FailureDetectorLoader(settings.TransportFailureDetectorImplementationClass, settings.TransportFailureDetectorConfig)
 
   override def postStop() {
     wrappedTransport.shutdown()
