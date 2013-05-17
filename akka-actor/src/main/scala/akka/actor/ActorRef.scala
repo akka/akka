@@ -96,7 +96,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    */
   final def compareTo(other: ActorRef) = {
     val x = this.path compareTo other.path
-    if (x == 0) this.path.uid compareTo other.path.uid
+    if (x == 0) if (this.path.uid < other.path.uid) -1 else if (this.path.uid == other.path.uid) 0 else 1
     else x
   }
 

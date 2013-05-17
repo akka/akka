@@ -301,8 +301,7 @@ private[akka] object ActorCell {
 
   final val emptyBehaviorStack: List[Actor.Receive] = Nil
 
-  final val emptyActorRefSet: Set[ActorRef] = immutable.TreeSet.empty
-  final val emptyActorRefMap: Map[ActorPath, ActorRef] = immutable.TreeMap.empty
+  final val emptyActorRefSet: Set[ActorRef] = immutable.HashSet.empty
 
   final val terminatedProps: Props = Props(() ⇒ throw new IllegalActorStateException("This Actor has been terminated"))
 

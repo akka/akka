@@ -184,7 +184,7 @@ private[akka] trait Children { this: ActorCell ⇒
       // this name will either be unreserved or overwritten with a real child below
       val actor =
         try {
-          val childPath = (cell.self.path / name).withUid(ActorCell.newUid())
+          val childPath = new ChildActorPath(cell.self.path, name, ActorCell.newUid())
           cell.provider.actorOf(cell.systemImpl, props, cell.self, childPath,
             systemService = systemService, deploy = None, lookupDeploy = true, async = async)
         } catch {
