@@ -72,8 +72,6 @@ object RemotingSpec {
     common-netty-settings {
       port = 0
       hostname = "localhost"
-      server-socket-worker-pool.pool-size-max = 2
-      client-socket-worker-pool.pool-size-max = 2
     }
 
     akka {

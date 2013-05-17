@@ -93,7 +93,7 @@ class RemoteConfigSpec extends AkkaSpec(
         pool.getInt("pool-size-min") must equal(2)
 
         pool.getDouble("pool-size-factor") must equal(1.0)
-        pool.getInt("pool-size-max") must equal(8)
+        pool.getInt("pool-size-max") must equal(2)
       }
 
       // client-socket-worker-pool
@@ -101,7 +101,7 @@ class RemoteConfigSpec extends AkkaSpec(
         val pool = c.getConfig("client-socket-worker-pool")
         pool.getInt("pool-size-min") must equal(2)
         pool.getDouble("pool-size-factor") must equal(1.0)
-        pool.getInt("pool-size-max") must equal(8)
+        pool.getInt("pool-size-max") must equal(2)
       }
 
     }
