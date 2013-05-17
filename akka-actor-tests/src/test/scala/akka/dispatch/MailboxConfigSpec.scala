@@ -9,7 +9,7 @@ import java.util.concurrent.{ ConcurrentLinkedQueue, BlockingQueue }
 import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll }
 import com.typesafe.config.Config
 import akka.actor.{ RepointableRef, Props, DeadLetter, ActorSystem, ActorRefWithCell, ActorRef, ActorCell }
-import akka.testkit.AkkaSpec
+import akka.testkit.{ EventFilter, AkkaSpec }
 import scala.concurrent.{ Future, Promise, Await, ExecutionContext }
 import scala.concurrent.duration._
 
@@ -69,6 +69,10 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
       testEnqueueDequeue(BoundedMailbox(10000, -1 millisecond))
     }
 
+    "dequeue what was enqueued properly for bounded mailboxes with 0 pushTimeout" in {
+      testEnqueueDequeue(BoundedMailbox(10, 0 millisecond), 20, 10, false)
+    }
+
     "dequeue what was enqueued properly for bounded mailboxes with pushTimeout" in {
       testEnqueueDequeue(BoundedMailbox(10000, 100 milliseconds))
     }
@@ -121,45 +125,55 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
     q.hasMessages must be === false
   }
 
-  def testEnqueueDequeue(config: MailboxType) {
-    implicit val within = 10 seconds
+  def testEnqueueDequeue(config: MailboxType,
+                         enqueueN: Int = 10000,
+                         dequeueN: Int = 10000,
+                         parallel: Boolean = true): Unit = within(10 seconds) {
     val q = factory(config)
     ensureInitialMailboxState(config, q)
 
-    def createProducer(fromNum: Int, toNum: Int): Future[Vector[Envelope]] = spawn {
-      val messages = Vector() ++ (for (i ← fromNum to toNum) yield createMessageInvocation(i))
-      for (i ← messages) q.enqueue(null, i)
-      messages
-    }
+    EventFilter.warning(pattern = ".*received dead letter from Actor.*MailboxSpec/deadLetters.*",
+      occurrences = (enqueueN - dequeueN)) intercept {
 
-    val totalMessages = 10000
-    val step = 500
-
-    val producers = for (i ← (1 to totalMessages by step).toList) yield createProducer(i, i + step - 1)
-
-    def createConsumer: Future[Vector[Envelope]] = spawn {
-      var r = Vector[Envelope]()
-      while (producers.exists(_.isCompleted == false) || q.hasMessages) {
-        q.dequeue match {
-          case null    ⇒
-          case message ⇒ r = r :+ message
+        def createProducer(fromNum: Int, toNum: Int): Future[Vector[Envelope]] = spawn {
+          val messages = Vector() ++ (for (i ← fromNum to toNum) yield createMessageInvocation(i))
+          for (i ← messages) q.enqueue(testActor, i)
+          messages
         }
+
+        val producers = {
+          val step = 500
+          val ps = for (i ← (1 to enqueueN by step).toList) yield createProducer(i, Math.min(enqueueN, i + step - 1))
+
+          if (parallel == false)
+            ps foreach { Await.ready(_, remaining) }
+
+          ps
+        }
+
+        def createConsumer: Future[Vector[Envelope]] = spawn {
+          var r = Vector[Envelope]()
+
+          while (producers.exists(_.isCompleted == false) || q.hasMessages)
+            Option(q.dequeue) foreach { message ⇒ r = r :+ message }
+
+          r
+        }
+
+        val consumers = List.fill(maxConsumers)(createConsumer)
+
+        val ps = producers.map(Await.result(_, remaining))
+        val cs = consumers.map(Await.result(_, remaining))
+
+        ps.map(_.size).sum must be === enqueueN //Must have produced 1000 messages
+        cs.map(_.size).sum must be === dequeueN //Must have consumed all produced messages
+        //No message is allowed to be consumed by more than one consumer
+        cs.flatten.distinct.size must be === dequeueN
+        //All consumed messages must have been produced
+        (cs.flatten diff ps.flatten).size must be === 0
+        //The ones that were produced and not consumed
+        (ps.flatten diff cs.flatten).size must be === (enqueueN - dequeueN)
       }
-      r
-    }
-
-    val consumers = List.fill(maxConsumers)(createConsumer)
-
-    val ps = producers.map(Await.result(_, within))
-    val cs = consumers.map(Await.result(_, within))
-
-    ps.map(_.size).sum must be === totalMessages //Must have produced 1000 messages
-    cs.map(_.size).sum must be === totalMessages //Must have consumed all produced messages
-    //No message is allowed to be consumed by more than one consumer
-    cs.flatten.distinct.size must be === totalMessages
-    //All produced messages should have been consumed
-    (cs.flatten diff ps.flatten).size must be === 0
-    (ps.flatten diff cs.flatten).size must be === 0
   }
 }
 
