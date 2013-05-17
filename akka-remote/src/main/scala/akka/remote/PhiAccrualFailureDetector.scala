@@ -11,6 +11,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 import scala.collection.immutable
 import com.typesafe.config.Config
+import akka.event.EventStream
 
 /**
  * Implementation of 'The Phi Accrual Failure Detector' by Hayashibara et al. as defined in their paper:
@@ -66,7 +67,7 @@ class PhiAccrualFailureDetector(
    * `min-std-deviation`, `acceptable-heartbeat-pause` and
    * `heartbeat-interval`.
    */
-  def this(config: Config) =
+  def this(config: Config, ev: EventStream) =
     this(
       threshold = config.getDouble("threshold"),
       maxSampleSize = config.getInt("max-sample-size"),

@@ -4,6 +4,11 @@
 
 package akka.remote
 
+import akka.actor.{ ActorContext, ActorSystem, ExtendedActorSystem }
+import com.typesafe.config.Config
+import akka.event.EventStream
+import akka.ConfigurationException
+
 /**
  * Interface for a registry of Akka failure detectors. New resources are implicitly registered when heartbeat is first
  * called with the resource given as parameter.
@@ -40,4 +45,20 @@ trait FailureDetectorRegistry[A] {
    * Removes all resources and any associated failure detector state.
    */
   def reset(): Unit
+}
+
+object FailureDetectorLoader {
+
+  def load(fqcn: String, config: Config, system: ActorSystem): FailureDetector = {
+    system.asInstanceOf[ExtendedActorSystem].dynamicAccess.createInstanceFor[FailureDetector](
+      fqcn, List(
+        classOf[Config] -> config,
+        classOf[EventStream] -> system.eventStream)).recover({
+        case e ⇒ throw new ConfigurationException(
+          s"Could not create custom failure detector [$fqcn] due to: ${e.toString}", e)
+      }).get
+  }
+
+  def apply(fqcn: String, config: Config)(implicit ctx: ActorContext) = load(fqcn, config, ctx.system)
+
 }
