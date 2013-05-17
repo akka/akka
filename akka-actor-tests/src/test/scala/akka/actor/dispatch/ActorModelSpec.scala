@@ -365,6 +365,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       def flood(num: Int) {
         val cachedMessage = CountDownNStop(new CountDownLatch(num))
         val stopLatch = new CountDownLatch(num)
+        val keepAliveLatch = new CountDownLatch(1)
         val waitTime = (20 seconds).dilated.toMillis
         val boss = system.actorOf(Props(new Actor {
           def receive = {
@@ -372,34 +373,46 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
             case Terminated(child) ⇒ stopLatch.countDown()
           }
         }).withDispatcher("boss"))
-        boss ! "run"
         try {
-          assertCountDown(cachedMessage.latch, waitTime, "Counting down from " + num)
-        } catch {
-          case e: Throwable ⇒
-            dispatcher match {
-              case dispatcher: BalancingDispatcher ⇒
-                val team = dispatcher.team
-                val mq = dispatcher.messageQueue
+          // this future is meant to keep the dispatcher alive until the end of the test run even if
+          // the boss doesn't create children fast enough to keep the dispatcher from becoming empty
+          // and it needs to be on a separate thread to not deadlock the calling thread dispatcher
+          new Thread(new Runnable {
+            def run() = Future {
+              keepAliveLatch.await(waitTime, TimeUnit.MILLISECONDS)
+            }(dispatcher)
+          }).start()
+          boss ! "run"
+          try {
+            assertCountDown(cachedMessage.latch, waitTime, "Counting down from " + num)
+          } catch {
+            case e: Throwable ⇒
+              dispatcher match {
+                case dispatcher: BalancingDispatcher ⇒
+                  val team = dispatcher.team
+                  val mq = dispatcher.messageQueue
 
-                System.err.println("Teammates left: " + team.size + " stopLatch: " + stopLatch.getCount + " inhab:" + dispatcher.inhabitants)
-                team.toArray sorted new Ordering[AnyRef] {
-                  def compare(l: AnyRef, r: AnyRef) = (l, r) match { case (ll: ActorCell, rr: ActorCell) ⇒ ll.self.path compareTo rr.self.path }
-                } foreach {
-                  case cell: ActorCell ⇒
-                    System.err.println(" - " + cell.self.path + " " + cell.isTerminated + " " + cell.mailbox.status + " "
-                      + cell.mailbox.numberOfMessages + " " + cell.mailbox.systemDrain(SystemMessageList.LNil).size)
-                }
+                  System.err.println("Teammates left: " + team.size + " stopLatch: " + stopLatch.getCount + " inhab:" + dispatcher.inhabitants)
+                  team.toArray sorted new Ordering[AnyRef] {
+                    def compare(l: AnyRef, r: AnyRef) = (l, r) match { case (ll: ActorCell, rr: ActorCell) ⇒ ll.self.path compareTo rr.self.path }
+                  } foreach {
+                    case cell: ActorCell ⇒
+                      System.err.println(" - " + cell.self.path + " " + cell.isTerminated + " " + cell.mailbox.status + " "
+                        + cell.mailbox.numberOfMessages + " " + cell.mailbox.systemDrain(SystemMessageList.LNil).size)
+                  }
 
-                System.err.println("Mailbox: " + mq.numberOfMessages + " " + mq.hasMessages)
-                Iterator.continually(mq.dequeue) takeWhile (_ ne null) foreach System.err.println
-              case _ ⇒
-            }
+                  System.err.println("Mailbox: " + mq.numberOfMessages + " " + mq.hasMessages)
+                  Iterator.continually(mq.dequeue) takeWhile (_ ne null) foreach System.err.println
+                case _ ⇒
+              }
 
-            throw e
+              throw e
+          }
+          assertCountDown(stopLatch, waitTime, "Expected all children to stop")
+        } finally {
+          keepAliveLatch.countDown()
+          system.stop(boss)
         }
-        assertCountDown(stopLatch, waitTime, "Expected all children to stop")
-        system.stop(boss)
       }
       for (run ← 1 to 3) {
         flood(50000)
