@@ -122,6 +122,7 @@ object ClusterSingletonManager {
     case object WasOldest extends State
     case object HandingOver extends State
     case object TakeOver extends State
+    case object End extends State
 
     case object Uninitialized extends Data
     case class YoungerData(oldestOption: Option[Address]) extends Data
@@ -131,6 +132,7 @@ object ClusterSingletonManager {
     case class WasOldestData(singleton: ActorRef, singletonTerminated: Boolean, handOverData: Option[Any],
                              newOldestOption: Option[Address]) extends Data
     case class HandingOverData(singleton: ActorRef, handOverTo: Option[ActorRef], handOverData: Option[Any]) extends Data
+    case object EndData extends Data
 
     val HandOverRetryTimer = "hand-over-retry"
     val TakeOverRetryTimer = "take-over-retry"
@@ -399,6 +401,8 @@ class ClusterSingletonManager(
   // Previous GetNext request delivered event and new GetNext is to be sent
   var oldestChangedReceived = true
 
+  var selfExited = false
+
   // keep track of previously removed members
   var removed = Map.empty[Address, Deadline]
 
@@ -423,6 +427,7 @@ class ClusterSingletonManager(
     require(!cluster.isTerminated, "Cluster node must not be terminated")
 
     // subscribe to cluster changes, re-subscribe when restart
+    cluster.subscribe(self, classOf[MemberExited])
     cluster.subscribe(self, classOf[MemberRemoved])
 
     setTimer(CleanupTimer, Cleanup, 1.minute, repeat = true)
@@ -595,7 +600,7 @@ class ClusterSingletonManager(
     case Event(HandOverToMe, WasOldestData(singleton, singletonTerminated, handOverData, _)) ⇒
       gotoHandingOver(singleton, singletonTerminated, handOverData, Some(sender))
 
-    case Event(MemberRemoved(m), WasOldestData(singleton, singletonTerminated, handOverData, Some(newOldest))) if m.address == newOldest ⇒
+    case Event(MemberRemoved(m), WasOldestData(singleton, singletonTerminated, handOverData, Some(newOldest))) if !selfExited && m.address == newOldest ⇒
       addRemoved(m.address)
       gotoHandingOver(singleton, singletonTerminated, handOverData, None)
 
@@ -635,13 +640,28 @@ class ClusterSingletonManager(
     val newOldest = handOverTo.map(_.path.address)
     logInfo("Singleton terminated, hand-over done [{} -> {}]", cluster.selfAddress, newOldest)
     handOverTo foreach { _ ! HandOverDone(handOverData) }
-    goto(Younger) using YoungerData(newOldest)
+    if (selfExited || removed.contains(cluster.selfAddress))
+      goto(End) using EndData
+    else
+      goto(Younger) using YoungerData(newOldest)
+  }
+
+  when(End) {
+    case Event(MemberRemoved(m), _) if m.address == cluster.selfAddress ⇒
+      logInfo("Self removed, stopping ClusterSingletonManager")
+      stop()
   }
 
   whenUnhandled {
     case Event(_: CurrentClusterState, _) ⇒ stay
+    case Event(MemberExited(m), _) ⇒
+      if (m.address == cluster.selfAddress) {
+        selfExited = true
+        logInfo("Exited [{}]", m.address)
+      }
+      stay
     case Event(MemberRemoved(m), _) ⇒
-      logInfo("Member removed [{}]", m.address)
+      if (!selfExited) logInfo("Member removed [{}]", m.address)
       addRemoved(m.address)
       stay
     case Event(TakeOverFromMe, _) ⇒
@@ -670,9 +690,10 @@ class ClusterSingletonManager(
   }
 
   onTransition {
-    case _ -> Younger if removed.contains(cluster.selfAddress) ⇒
+    case _ -> (Younger | End) if removed.contains(cluster.selfAddress) ⇒
       logInfo("Self removed, stopping ClusterSingletonManager")
-      stop()
+      // note that FSM.stop() can't be used in onTransition
+      context.stop(self)
   }
 
 }

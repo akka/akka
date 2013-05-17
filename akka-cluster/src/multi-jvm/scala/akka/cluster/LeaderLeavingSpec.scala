@@ -18,12 +18,8 @@ object LeaderLeavingMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(
-    debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString("""
-          # turn off unreachable reaper
-          akka.cluster.unreachable-nodes-reaper-interval = 300 s""")
-        .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet)))
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(
+    "akka.cluster.auto-down=on")).withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
 class LeaderLeavingMultiJvmNode1 extends LeaderLeavingSpec
@@ -37,8 +33,6 @@ abstract class LeaderLeavingSpec
   import LeaderLeavingMultiJvmSpec._
   import ClusterEvent._
 
-  val leaderHandoffWaitingTime = 30.seconds
-
   "A LEADER that is LEAVING" must {
 
     "be moved to LEAVING, then to EXITING, then to REMOVED, then be shut down and then a new LEADER should be elected" taggedAs LongRunningTest in {
@@ -47,7 +41,7 @@ abstract class LeaderLeavingSpec
 
       val oldLeaderAddress = clusterView.leader.get
 
-      within(leaderHandoffWaitingTime) {
+      within(30.seconds) {
 
         if (clusterView.isLeader) {
 
@@ -58,6 +52,7 @@ abstract class LeaderLeavingSpec
 
           // verify that the LEADER is shut down
           awaitCond(cluster.isTerminated)
+          enterBarrier("leader-shutdown")
 
         } else {
 
@@ -76,11 +71,11 @@ abstract class LeaderLeavingSpec
 
           enterBarrier("leader-left")
 
-          val expectedAddresses = roles.toSet map address
-          awaitAssert(clusterView.members.map(_.address) must be(expectedAddresses))
-
           // verify that the LEADER is EXITING
           exitingLatch.await
+
+          enterBarrier("leader-shutdown")
+          markNodeAsUnavailable(oldLeaderAddress)
 
           // verify that the LEADER is no longer part of the 'members' set
           awaitAssert(clusterView.members.map(_.address) must not contain (oldLeaderAddress))

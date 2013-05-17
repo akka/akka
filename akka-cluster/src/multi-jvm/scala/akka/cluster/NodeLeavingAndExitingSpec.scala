@@ -18,12 +18,8 @@ object NodeLeavingAndExitingMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(
-    debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString("""
-          # turn off unreachable reaper
-          akka.cluster.unreachable-nodes-reaper-interval = 300 s""")
-        .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet)))
+  commonConfig(debugConfig(on = false).
+    withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
 class NodeLeavingAndExitingMultiJvmNode1 extends NodeLeavingAndExitingSpec
@@ -62,9 +58,6 @@ abstract class NodeLeavingAndExitingSpec
           cluster.leave(second)
         }
         enterBarrier("second-left")
-
-        val expectedAddresses = roles.toSet map address
-        awaitAssert(clusterView.members.map(_.address) must be(expectedAddresses))
 
         // Verify that 'second' node is set to EXITING
         exitingLatch.await

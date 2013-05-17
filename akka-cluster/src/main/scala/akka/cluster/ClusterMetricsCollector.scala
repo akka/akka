@@ -88,6 +88,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
     case state: CurrentClusterState ⇒ receiveState(state)
     case MemberUp(m)                ⇒ addMember(m)
     case MemberRemoved(m)           ⇒ removeMember(m)
+    case MemberExited(m)            ⇒ removeMember(m)
     case UnreachableMember(m)       ⇒ removeMember(m)
     case _: MemberEvent             ⇒ // not interested in other types of MemberEvent
 

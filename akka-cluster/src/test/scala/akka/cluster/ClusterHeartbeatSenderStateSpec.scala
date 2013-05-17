@@ -10,6 +10,7 @@ import akka.actor.Address
 import akka.routing.ConsistentHash
 import scala.concurrent.duration._
 import scala.collection.immutable
+import scala.collection.immutable.HashSet
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterHeartbeatSenderStateSpec extends WordSpec with MustMatchers {
@@ -43,7 +44,7 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with MustMatchers {
     }
 
     "remove heartbeatRequest after reset" in {
-      val s = emptyState.addHeartbeatRequest(aa, Deadline.now + 30.seconds).reset(Set(aa, bb))
+      val s = emptyState.addHeartbeatRequest(aa, Deadline.now + 30.seconds).reset(HashSet(aa, bb))
       s.heartbeatRequest must be(Map.empty)
     }
 
@@ -53,13 +54,13 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with MustMatchers {
     }
 
     "remove heartbeatRequest after removeMember" in {
-      val s = emptyState.addHeartbeatRequest(aa, Deadline.now + 30.seconds).reset(Set(aa, bb)).removeMember(aa)
+      val s = emptyState.addHeartbeatRequest(aa, Deadline.now + 30.seconds).reset(HashSet(aa, bb)).removeMember(aa)
       s.heartbeatRequest must be(Map.empty)
       s.ending must be(Map(aa -> 0))
     }
 
     "remove from ending after addHeartbeatRequest" in {
-      val s = emptyState.reset(Set(aa, bb)).removeMember(aa)
+      val s = emptyState.reset(HashSet(aa, bb)).removeMember(aa)
       s.ending must be(Map(aa -> 0))
       val s2 = s.addHeartbeatRequest(aa, Deadline.now + 30.seconds)
       s2.heartbeatRequest.keySet must be(Set(aa))
@@ -67,7 +68,7 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with MustMatchers {
     }
 
     "include nodes from reset in active set" in {
-      val nodes = Set(aa, bb, cc)
+      val nodes = HashSet(aa, bb, cc)
       val s = emptyState.reset(nodes)
       s.current must be(nodes)
       s.ending must be(Map.empty)
@@ -81,8 +82,8 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with MustMatchers {
       s.addMember(ee).current.size must be(3)
     }
 
-    "move meber to ending set when removing member" in {
-      val nodes = Set(aa, bb, cc, dd, ee)
+    "move member to ending set when removing member" in {
+      val nodes = HashSet(aa, bb, cc, dd, ee)
       val s = emptyState.reset(nodes)
       s.ending must be(Map.empty)
       val included = s.current.head
@@ -95,7 +96,7 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with MustMatchers {
     }
 
     "increase ending count correctly" in {
-      val s = emptyState.reset(Set(aa)).removeMember(aa)
+      val s = emptyState.reset(HashSet(aa)).removeMember(aa)
       s.ending must be(Map(aa -> 0))
       val s2 = s.increaseEndingCount(aa).increaseEndingCount(aa)
       s2.ending must be(Map(aa -> 2))

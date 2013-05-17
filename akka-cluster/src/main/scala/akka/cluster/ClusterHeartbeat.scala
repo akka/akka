@@ -128,17 +128,33 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
     case UnreachableMember(m)         ⇒ removeMember(m)
     case MemberRemoved(m)             ⇒ removeMember(m)
     case s: CurrentClusterState       ⇒ reset(s)
+    case MemberExited(m)              ⇒ memberExited(m)
     case _: MemberEvent               ⇒ // not interested in other types of MemberEvent
     case HeartbeatRequest(from)       ⇒ addHeartbeatRequest(from)
     case SendHeartbeatRequest(to)     ⇒ sendHeartbeatRequest(to)
     case ExpectedFirstHeartbeat(from) ⇒ triggerFirstHeartbeat(from)
   }
 
-  def reset(snapshot: CurrentClusterState): Unit = state = state.reset(snapshot.members.map(_.address))
+  def reset(snapshot: CurrentClusterState): Unit =
+    state = state.reset(snapshot.members.map(_.address)(collection.breakOut))
 
   def addMember(m: Member): Unit = if (m.address != selfAddress) state = state addMember m.address
 
-  def removeMember(m: Member): Unit = if (m.address != selfAddress) state = state removeMember m.address
+  def removeMember(m: Member): Unit = {
+    if (m.uniqueAddress == cluster.selfUniqueAddress)
+      // This cluster node will be shutdown, but stop this actor immediately
+      // to prevent it from sending out anything more and avoid sending EndHeartbeat.
+      context stop self
+    else
+      state = state removeMember m.address
+  }
+
+  def memberExited(m: Member): Unit =
+    if (m.uniqueAddress == cluster.selfUniqueAddress) {
+      // This cluster node will be shutdown, but stop this actor immediately
+      // to prevent it from sending out anything more and avoid sending EndHeartbeat.
+      context stop self
+    }
 
   def addHeartbeatRequest(address: Address): Unit =
     if (address != selfAddress) state = state.addHeartbeatRequest(address, Deadline.now + HeartbeatRequestTimeToLive)
@@ -253,7 +269,7 @@ private[cluster] case class ClusterHeartbeatSenderState private (
 
   val active: Set[Address] = current ++ heartbeatRequest.keySet
 
-  def reset(nodes: Set[Address]): ClusterHeartbeatSenderState = {
+  def reset(nodes: immutable.HashSet[Address]): ClusterHeartbeatSenderState = {
     ClusterHeartbeatSenderState(nodes.foldLeft(this) { _ removeHeartbeatRequest _ }, ring.copy(nodes = nodes + ring.selfAddress))
   }
 

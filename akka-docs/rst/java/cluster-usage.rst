@@ -158,6 +158,26 @@ Be aware of that using auto-down implies that two separate clusters will
 automatically be formed in case of network partition. That might be
 desired by some applications but not by others.
 
+Leaving
+^^^^^^^
+
+There are two ways to remove a member from the cluster.
+
+You can just stop the actor system (or the JVM process). It will be detected
+as unreachable and removed after the automatic or manual downing as described
+above.
+
+A more graceful exit can be performed if you tell the cluster that a node shall leave.
+This can be performed using :ref:`cluster_jmx_java` or :ref:`cluster_command_line_java`.
+It can also be performed programatically with ``Cluster.get(system).leave(address)``. 
+
+Note that this command can be issued to any member in the cluster, not necessarily the
+one that is leaving. The cluster extension, but not the actor system or JVM, of the 
+leaving member will be shutdown after the leader has changed status of the member to 
+`Exiting`. Thereafter the member will be removed from the cluster. Normally this is handled 
+automatically, but in case of network failures during this process it might still be necessary
+to set the node’s status to ``Down`` in order to complete the removal.
+
 .. _cluster_subscriber_java:
 
 Subscribe to Cluster Events
@@ -168,7 +188,15 @@ You can subscribe to change notifications of the cluster membership by using
 ``akka.cluster.ClusterEvent.CurrentClusterState``, is sent to the subscriber
 as the first event, followed by events for incremental updates.
 
-There are several types of change events, consult the API documentation
+The events to track the life-cycle of members are:
+
+* ``ClusterEvent.MemberUp`` - A new member has joined the cluster and its status has been changed to ``Up``.
+* ``ClusterEvent.MemberExited`` - A member is leaving the cluster and its status has been changed to ``Exiting``.
+  Note that the node might already have been shutdown when this event is published on another node.
+* ``ClusterEvent.MemberRemoved`` - Member completely removed from the cluster.
+* ``ClusterEvent.UnreachableMember`` - A member is considered as unreachable by the failure detector.
+
+There are more types of change events, consult the API documentation
 of classes that extends ``akka.cluster.ClusterEvent.ClusterDomainEvent``
 for details about the events.
 
