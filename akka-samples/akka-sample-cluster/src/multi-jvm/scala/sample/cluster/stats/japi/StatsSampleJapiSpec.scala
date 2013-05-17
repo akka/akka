@@ -31,7 +31,6 @@ object StatsSampleJapiSpecConfig extends MultiNodeConfig {
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.roles = [compute]
-    akka.cluster.auto-join = off
     # don't use sigar for tests, native lib not in path
     akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
     akka.actor.deployment {

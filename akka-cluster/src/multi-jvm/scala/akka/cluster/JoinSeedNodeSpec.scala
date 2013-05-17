@@ -20,7 +20,6 @@ object JoinSeedNodeMultiJvmSpec extends MultiNodeConfig {
   val ordinary2 = role("ordinary2")
 
   commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("akka.cluster.auto-join = off")).
     withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 

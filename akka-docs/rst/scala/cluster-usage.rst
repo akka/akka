@@ -86,13 +86,12 @@ and register it as subscriber of certain cluster events. It gets notified with
 an snapshot event, ``CurrentClusterState`` that holds full state information of
 the cluster. After that it receives events for changes that happen in the cluster.
 
-Automatic vs. Manual Joining
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Joining to Seed Nodes
+^^^^^^^^^^^^^^^^^^^^^
 
-You may decide if joining to the cluster should be done automatically or manually.
-By default it is automatic and you need to define the seed nodes in configuration
-so that a new node has an initial contact point. When a new node is started it
-sends a message to all seed nodes and then sends join command to the one that
+You may decide if joining to the cluster should be done manually or automatically
+to configured initial contact points, so-called seed nodes. When a new node is started
+it sends a message to all seed nodes and then sends join command to the one that
 answers first. If no one of the seed nodes replied (might not be started yet)
 it retries this procedure until successful or shutdown.
 
@@ -108,22 +107,17 @@ Once more than two seed nodes have been started it is no problem to shut down th
 seed node. If the first seed node is restarted it will first try join the other 
 seed nodes in the existing cluster.
 
-You can disable automatic joining with configuration::
-
-      akka.cluster.auto-join = off
-
-Then you need to join manually, using :ref:`cluster_jmx_scala` or :ref:`cluster_command_line_scala`.
-You can join to any node in the cluster. It doesn't have to be configured as
-seed node. If you are not using auto-join there is no need to configure
-seed nodes at all.
+If you don't configure the seed nodes you need to join manually, using :ref:`cluster_jmx_scala`
+or :ref:`cluster_command_line_scala`. You can join to any node in the cluster. It doesn't 
+have to be configured as a seed node.
 
 Joining can also be performed programatically with ``Cluster(system).join(address)``.
 
 Unsuccessful join attempts are automatically retried after the time period defined in 
-configuration property ``retry-unsuccessful-join-after``. When using auto-joining with
-``seed-nodes`` this means that a new seed node is picked. When joining manually or
-programatically this means that the last join request is retried. Retries can be disabled by
-setting the property to ``off``.
+configuration property ``retry-unsuccessful-join-after``. When using ``seed-nodes`` this
+means that a new seed node is picked. When joining manually or programatically this means 
+that the last join request is retried. Retries can be disabled by setting the property to 
+``off``.
 
 An actor system can only join a cluster once. Additional attempts will be ignored.
 When it has successfully joined it must be restarted to be able to join another

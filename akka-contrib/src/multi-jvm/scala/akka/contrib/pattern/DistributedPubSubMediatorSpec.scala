@@ -28,7 +28,6 @@ object DistributedPubSubMediatorSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-join = off
     akka.cluster.auto-down = on
     """))
 
