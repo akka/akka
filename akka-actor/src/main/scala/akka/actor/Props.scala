@@ -14,6 +14,7 @@ import Deploy.{ NoDispatcherGiven, NoMailboxGiven }
 import scala.collection.immutable
 
 import scala.language.existentials
+import java.lang.reflect.Constructor
 
 /**
  * Factory for Props instances.
@@ -72,7 +73,6 @@ object Props {
    *
    * Scala API.
    */
-  @deprecated("give class and arguments instead", "2.2")
   def apply(creator: ⇒ Actor): Props = default.withCreator(creator)
 
   /**
@@ -134,11 +134,36 @@ object Props {
  * }}}
  */
 @SerialVersionUID(2L)
-case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]) {
+final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]) {
 
-  // the constructor can't be serialized, but needs to be a lazy val to be initialized after deserialization
+  // derived property, does not need to be serialized
   @transient
-  private lazy val constructor = Reflect.findConstructor(clazz, args)
+  private[this] var _constructor: Constructor[_] = _
+
+  // derived property, does not need to be serialized
+  @transient
+  private[this] var _cachedActorClass: Class[_ <: Actor] = _
+
+  private[this] def constructor: Constructor[_] = {
+    if (_constructor eq null)
+      _constructor = Reflect.findConstructor(clazz, args)
+
+    _constructor
+  }
+
+  private[this] def cachedActorClass: Class[_ <: Actor] = {
+    if (_cachedActorClass eq null) {
+      _cachedActorClass =
+        if (classOf[IndirectActorProducer].isAssignableFrom(clazz))
+          Reflect.instantiate(constructor, args).asInstanceOf[IndirectActorProducer].actorClass
+        else if (classOf[Actor].isAssignableFrom(clazz))
+          clazz.asInstanceOf[Class[_ <: Actor]]
+        else
+          throw new IllegalArgumentException(s"unknown actor creator [$clazz]")
+    }
+    _cachedActorClass
+  }
+
   // validate constructor signature; throws IllegalArgumentException if invalid
   constructor
 
@@ -158,7 +183,7 @@ case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]) {
    *             non-serializable inner classes, making them also
    *             non-serializable
    */
-  @deprecated("use constructor which takes the actor class directly", "2.2")
+  @deprecated("use Props.create", "2.2")
   def this(factory: UntypedActorFactory) = this(Props.defaultDeploy, classOf[UntypedActorFactoryConsumer], Vector(factory))
 
   /**
@@ -170,7 +195,7 @@ case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]) {
   @deprecated("use Props.create()", "2.2")
   def this(actorClass: Class[_ <: Actor]) = this(Props.defaultDeploy, actorClass, Vector.empty)
 
-  @deprecated("use newActor()", "2.2")
+  @deprecated("There is no use-case for this method anymore", "2.2")
   def creator: () ⇒ Actor = newActor
 
   /**
@@ -202,8 +227,7 @@ case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]) {
    *
    * The creator must not return the same instance multiple times.
    */
-  @deprecated("move actor into named class and use withCreator(clazz)", "2.2")
-  def withCreator(c: ⇒ Actor): Props = copy(clazz = classOf[CreatorFunctionConsumer], args = Vector(() ⇒ c))
+  def withCreator(c: ⇒ Actor): Props = copy(clazz = classOf[CreatorFunctionConsumer], args = (() ⇒ c) :: Nil)
 
   /**
    * Java API: Returns a new Props with the specified creator set.
@@ -215,8 +239,7 @@ case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]) {
    *             non-serializable inner classes, making them also
    *             non-serializable
    */
-  @deprecated("use Props.create(clazz, args ...) instead", "2.2")
-  def withCreator(c: Creator[Actor]): Props = copy(clazz = classOf[CreatorConsumer], args = Vector(c))
+  def withCreator(c: Creator[Actor]): Props = copy(clazz = classOf[CreatorConsumer], args = c :: Nil)
 
   /**
    * Returns a new Props with the specified creator set.
@@ -224,8 +247,7 @@ case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]) {
    * @deprecated use Props.create(clazz) instead; deprecated since it duplicates
    *             another API
    */
-  @deprecated("use Props(clazz, args).withDeploy(other.deploy)", "2.2")
-  def withCreator(c: Class[_ <: Actor]): Props = copy(clazz = c, args = Vector.empty)
+  def withCreator(c: Class[_ <: Actor]): Props = copy(clazz = c, args = Nil)
 
   /**
    * Returns a new Props with the specified dispatcher set.
@@ -248,30 +270,6 @@ case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]) {
   def withDeploy(d: Deploy): Props = copy(deploy = d withFallback deploy)
 
   /**
-   * Create a new actor instance. This method is only useful when called during
-   * actor creation by the ActorSystem, i.e. for user-level code it can only be
-   * used within the implementation of [[IndirectActorProducer#produce]].
-   */
-  def newActor(): Actor = {
-    Reflect.instantiate(constructor, args) match {
-      case a: Actor                 ⇒ a
-      case i: IndirectActorProducer ⇒ i.produce()
-      case _                        ⇒ throw new IllegalArgumentException(s"unknown actor creator [$clazz]")
-    }
-  }
-
-  // don't serialize the class but reinitialize it after deserialization
-  @transient
-  private lazy val cachedActorClass: Class[_ <: Actor] = {
-    if (classOf[IndirectActorProducer].isAssignableFrom(clazz)) {
-      Reflect.instantiate(constructor, args).asInstanceOf[IndirectActorProducer].actorClass
-    } else if (classOf[Actor].isAssignableFrom(clazz)) {
-      clazz.asInstanceOf[Class[_ <: Actor]]
-    } else {
-      throw new IllegalArgumentException("unknown actor creator [$clazz]")
-    }
-  }
-  /**
    * Obtain an upper-bound approximation of the actor class which is going to
    * be created by these Props. In other words, the [[#newActor]] method will
    * produce an instance of this class or a subclass thereof. This is used by
@@ -280,6 +278,21 @@ case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]) {
    */
   def actorClass(): Class[_ <: Actor] = cachedActorClass
 
+  /**
+   * INTERNAL API
+   *
+   *
+   * Create a new actor instance. This method is only useful when called during
+   * actor creation by the ActorSystem, i.e. for user-level code it can only be
+   * used within the implementation of [[IndirectActorProducer#produce]].
+   */
+  private[akka] def newActor(): Actor = {
+    Reflect.instantiate(constructor, args) match {
+      case a: Actor                 ⇒ a
+      case i: IndirectActorProducer ⇒ i.produce()
+      case _                        ⇒ throw new IllegalArgumentException(s"unknown actor creator [$clazz]")
+    }
+  }
 }
 
 /**
