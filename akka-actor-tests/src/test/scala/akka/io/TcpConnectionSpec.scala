@@ -24,8 +24,6 @@ import akka.util.{ Helpers, ByteString }
 import akka.TestUtils._
 
 class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms") {
-  val serverAddress = temporaryServerAddress()
-
   // Helper to avoid Windows localization specific differences
   def ignoreIfWindows(): Unit =
     if (Helpers.isWindows) {
@@ -705,6 +703,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
   }
 
   abstract class LocalServerTest extends ChannelRegistry {
+    val serverAddress = temporaryServerAddress()
     val localServerChannel = ServerSocketChannel.open()
     val userHandler = TestProbe()
     val selector = TestProbe()
