@@ -398,7 +398,7 @@ private[remote] class EndpointWriter(
   import context.dispatcher
 
   val extendedSystem: ExtendedActorSystem = context.system.asInstanceOf[ExtendedActorSystem]
-  val remoteMetrics = RemoteMetricsExtension(context.system)
+  val remoteMetrics = RemoteMetricsExtension(extendedSystem)
 
   var reader: Option[ActorRef] = None
   var handle: Option[AkkaProtocolHandle] = handleOrActive // FIXME: refactor into state data
@@ -411,7 +411,8 @@ private[remote] class EndpointWriter(
 
   override val supervisorStrategy = OneForOneStrategy() { case NonFatal(e) ⇒ publishAndThrow(e) }
 
-  val msgDispatch = new DefaultMessageDispatcher(extendedSystem, RARP(extendedSystem).provider, log)
+  val provider = RARP(extendedSystem).provider
+  val msgDispatch = new DefaultMessageDispatcher(extendedSystem, provider, log)
 
   var inbound = handle.isDefined
 
@@ -492,6 +493,11 @@ private[remote] class EndpointWriter(
       try {
         handle match {
           case Some(h) ⇒
+            if (provider.remoteSettings.LogSend) {
+              def msgLog = s"RemoteMessage: [$msg] to [$recipient]<+[${recipient.path}] from [${senderOption.getOrElse(extendedSystem.deadLetters)}]"
+              log.debug("sending message {}", msgLog)
+            }
+
             ackDeadline = newAckDeadline
 
             val pdu = codec.constructMessage(
@@ -599,7 +605,7 @@ private[remote] class EndpointWriter(
 
   private def serializeMessage(msg: Any): SerializedMessage = handle match {
     case Some(h) ⇒
-      Serialization.currentTransportInformation.withValue(Serialization.Information(h.localAddress, context.system)) {
+      Serialization.currentTransportInformation.withValue(Serialization.Information(h.localAddress, extendedSystem)) {
         (MessageSerializer.serialize(extendedSystem, msg.asInstanceOf[AnyRef]))
       }
     case None ⇒ throw new EndpointException("Internal error: No handle was present during serialization of" +
