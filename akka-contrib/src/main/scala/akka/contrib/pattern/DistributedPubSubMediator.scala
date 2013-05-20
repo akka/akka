@@ -67,7 +67,7 @@ object DistributedPubSubMediator {
   @SerialVersionUID(1L)
   case class Send(path: String, msg: Any, localAffinity: Boolean)
   @SerialVersionUID(1L)
-  case class SendToAll(path: String, msg: Any)
+  case class SendToAll(path: String, msg: Any, skipSenderNode: Boolean = false)
   @SerialVersionUID(1L)
   case class Publish(topic: String, msg: Any)
 
@@ -267,8 +267,8 @@ class DistributedPubSubMediator(
             refs(ThreadLocalRandom.current.nextInt(refs.size)) forward msg
       }
 
-    case SendToAll(path, msg) ⇒
-      publish(path, msg)
+    case SendToAll(path, msg, skipSenderNode) ⇒
+      publish(path, msg, skipSenderNode)
 
     case Publish(topic, msg) ⇒
       publish(mkKey(self.path / URLEncoder.encode(topic, "utf-8")), msg)
@@ -368,11 +368,12 @@ class DistributedPubSubMediator(
       sender ! count
   }
 
-  def publish(path: String, msg: Any): Unit = {
+  def publish(path: String, msg: Any, skipSenderNode: Boolean = false): Unit = {
     for {
-      (_, bucket) ← registry
+      (address, bucket) ← registry
       valueHolder ← bucket.content.get(path)
       ref ← valueHolder.ref
+      if !(skipSenderNode && address == selfAddress) // if we should skip sender node and current address == self address => skip
     } ref forward msg
   }
 
