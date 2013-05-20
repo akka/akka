@@ -317,7 +317,7 @@ private[akka] class PlayerHandler(
     val channel = event.getChannel
     log.debug("disconnected from {}", getAddrString(channel))
     fsm ! PoisonPill
-    RemoteConnection.shutdown(channel)
+    executor.execute(new Runnable { def run = RemoteConnection.shutdown(channel) }) // Must be shutdown outside of the Netty IO pool
   }
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
