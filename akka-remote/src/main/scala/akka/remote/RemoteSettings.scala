@@ -11,7 +11,7 @@ import scala.collection.immutable
 import akka.util.Helpers.Requiring
 import akka.japi.Util._
 
-class RemoteSettings(val config: Config) {
+final class RemoteSettings(val config: Config) {
   import config._
   import scala.collection.JavaConverters._
 
