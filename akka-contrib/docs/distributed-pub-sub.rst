@@ -43,8 +43,8 @@ the same path, without address information, can be registered on different nodes
 On each node there can only be one such actor, since the path is unique within one
 local actor system. Typical usage of this mode is to broadcast messages to all replicas
 with the same path, e.g. 3 actors on different nodes that all perform the same actions,
-for redundancy. You can also optionally specify a property (``skipSenderNode``) deciding
-if the message should be sent to a matching path on the sender node or not.
+for redundancy. You can also optionally specify a property (``allButSelf``) deciding
+if the message should be sent to a matching path on the self node or not.
 
 **3. DistributedPubSubMediator.Publish**
 

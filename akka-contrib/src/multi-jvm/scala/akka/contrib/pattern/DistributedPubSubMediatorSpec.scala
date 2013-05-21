@@ -45,7 +45,7 @@ object DistributedPubSubMediatorSpec extends MultiNodeConfig {
     def receive = {
       case Whisper(path, msg)      ⇒ mediator ! Send(path, msg, localAffinity = true)
       case Talk(path, msg)         ⇒ mediator ! SendToAll(path, msg)
-      case TalkToOthers(path, msg) ⇒ mediator ! SendToAll(path, msg, skipSenderNode = true)
+      case TalkToOthers(path, msg) ⇒ mediator ! SendToAll(path, msg, allButSelf = true)
       case Shout(topic, msg)       ⇒ mediator ! Publish(topic, msg)
       case msg                     ⇒ testActor ! msg
     }
