@@ -152,7 +152,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
   }
 
   private[this] def cachedActorClass: Class[_ <: Actor] = {
-    if (_cachedActorClass eq null) {
+    if (_cachedActorClass eq null)
       _cachedActorClass =
         if (classOf[IndirectActorProducer].isAssignableFrom(clazz))
           Reflect.instantiate(constructor, args).asInstanceOf[IndirectActorProducer].actorClass
@@ -160,7 +160,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
           clazz.asInstanceOf[Class[_ <: Actor]]
         else
           throw new IllegalArgumentException(s"unknown actor creator [$clazz]")
-    }
+
     _cachedActorClass
   }
 
@@ -239,6 +239,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    *             non-serializable inner classes, making them also
    *             non-serializable
    */
+  @deprecated("use Props.create(clazz, args ...) instead", "2.2")
   def withCreator(c: Creator[Actor]): Props = copy(clazz = classOf[CreatorConsumer], args = c :: Nil)
 
   /**
@@ -247,6 +248,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    * @deprecated use Props.create(clazz) instead; deprecated since it duplicates
    *             another API
    */
+  @deprecated("use Props(clazz, args).withDeploy(other.deploy)", "2.2")
   def withCreator(c: Class[_ <: Actor]): Props = copy(clazz = c, args = Nil)
 
   /**
@@ -280,7 +282,6 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
 
   /**
    * INTERNAL API
-   *
    *
    * Create a new actor instance. This method is only useful when called during
    * actor creation by the ActorSystem, i.e. for user-level code it can only be
