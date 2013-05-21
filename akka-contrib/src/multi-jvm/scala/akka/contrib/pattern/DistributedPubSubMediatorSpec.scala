@@ -34,6 +34,7 @@ object DistributedPubSubMediatorSpec extends MultiNodeConfig {
   object TestChatUser {
     case class Whisper(path: String, msg: Any)
     case class Talk(path: String, msg: Any)
+    case class TalkToOthers(path: String, msg: Any)
     case class Shout(topic: String, msg: Any)
   }
 
@@ -42,10 +43,11 @@ object DistributedPubSubMediatorSpec extends MultiNodeConfig {
     import DistributedPubSubMediator._
 
     def receive = {
-      case Whisper(path, msg) ⇒ mediator ! Send(path, msg, localAffinity = true)
-      case Talk(path, msg)    ⇒ mediator ! SendToAll(path, msg)
-      case Shout(topic, msg)  ⇒ mediator ! Publish(topic, msg)
-      case msg                ⇒ testActor ! msg
+      case Whisper(path, msg)      ⇒ mediator ! Send(path, msg, localAffinity = true)
+      case Talk(path, msg)         ⇒ mediator ! SendToAll(path, msg)
+      case TalkToOthers(path, msg) ⇒ mediator ! SendToAll(path, msg, allButSelf = true)
+      case Shout(topic, msg)       ⇒ mediator ! Publish(topic, msg)
+      case msg                     ⇒ testActor ! msg
     }
   }
 
@@ -317,5 +319,27 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
       enterBarrier("after-8")
     }
 
+    "send-all to all other nodes" in within(15 seconds) {
+      runOn(first, second, third) { // create the user on all nodes
+        val u11 = createChatUser("u11")
+        mediator ! Put(u11)
+      }
+      awaitCount(13)
+      enterBarrier("11-registered")
+
+      runOn(third) {
+        chatUser("u5") ! TalkToOthers("/user/u11", "hi") // sendToAll to all other nodes
+      }
+
+      runOn(first, second) {
+        expectMsg("hi")
+        lastSender.path.name must be("u11")
+      }
+      runOn(third) {
+        expectNoMsg(2.seconds) // sender node should not receive a message
+      }
+
+      enterBarrier("after-11")
+    }
   }
 }
