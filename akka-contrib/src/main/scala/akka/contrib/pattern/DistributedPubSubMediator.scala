@@ -52,24 +52,17 @@ object DistributedPubSubMediator {
    */
   def defaultProps(role: String): Props = props(Internal.roleOption(role))
 
-  @SerialVersionUID(1L)
-  case class Put(ref: ActorRef)
-  @SerialVersionUID(1L)
-  case class Remove(path: String)
-  @SerialVersionUID(1L)
-  case class Subscribe(topic: String, ref: ActorRef)
-  @SerialVersionUID(1L)
-  case class Unsubscribe(topic: String, ref: ActorRef)
-  @SerialVersionUID(1L)
-  case class SubscribeAck(subscribe: Subscribe)
-  @SerialVersionUID(1L)
-  case class UnsubscribeAck(unsubscribe: Unsubscribe)
-  @SerialVersionUID(1L)
-  case class Send(path: String, msg: Any, localAffinity: Boolean)
-  @SerialVersionUID(1L)
-  case class SendToAll(path: String, msg: Any)
-  @SerialVersionUID(1L)
-  case class Publish(topic: String, msg: Any)
+  @SerialVersionUID(1L) case class Put(ref: ActorRef)
+  @SerialVersionUID(1L) case class Remove(path: String)
+  @SerialVersionUID(1L) case class Subscribe(topic: String, ref: ActorRef)
+  @SerialVersionUID(1L) case class Unsubscribe(topic: String, ref: ActorRef)
+  @SerialVersionUID(1L) case class SubscribeAck(subscribe: Subscribe)
+  @SerialVersionUID(1L) case class UnsubscribeAck(unsubscribe: Unsubscribe)
+  @SerialVersionUID(1L) case class Publish(topic: String, msg: Any)
+  @SerialVersionUID(1L) case class Send(path: String, msg: Any, localAffinity: Boolean)
+  @SerialVersionUID(1L) case class SendToAll(path: String, msg: Any, allButSelf: Boolean = false) {
+    def this(path: String, msg: Any) = this(path, msg, allButSelf = false)
+  }
 
   // Only for testing purposes, to poll/await replication
   case object Count
@@ -267,8 +260,8 @@ class DistributedPubSubMediator(
             refs(ThreadLocalRandom.current.nextInt(refs.size)) forward msg
       }
 
-    case SendToAll(path, msg) ⇒
-      publish(path, msg)
+    case SendToAll(path, msg, skipSenderNode) ⇒
+      publish(path, msg, skipSenderNode)
 
     case Publish(topic, msg) ⇒
       publish(mkKey(self.path / URLEncoder.encode(topic, "utf-8")), msg)
@@ -368,9 +361,10 @@ class DistributedPubSubMediator(
       sender ! count
   }
 
-  def publish(path: String, msg: Any): Unit = {
+  def publish(path: String, msg: Any, allButSelf: Boolean = false): Unit = {
     for {
-      (_, bucket) ← registry
+      (address, bucket) ← registry
+      if !(allButSelf && address == selfAddress) // if we should skip sender node and current address == self address => skip
       valueHolder ← bucket.content.get(path)
       ref ← valueHolder.ref
     } ref forward msg
