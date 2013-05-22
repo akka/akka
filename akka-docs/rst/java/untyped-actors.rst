@@ -48,8 +48,8 @@ creating an actor including associated deployment information (e.g. which
 dispatcher to use, see more below). Here are some examples of how to create a
 :class:`Props` instance.
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#import-props
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#creating-props-config
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#import-props
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#creating-props-config
 
 The last line shows how to pass constructor arguments to the :class:`Actor`
 being created. The presence of a matching constructor is verified during
@@ -63,8 +63,8 @@ Deprecated Variants
 Up to Akka 2.1 there were also the following possibilities (which are retained
 for a migration period):
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#import-untypedActor
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#creating-props-deprecated
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#import-untypedActor
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#creating-props-deprecated
 
 The last two are deprecated because their functionality is available in full
 through :meth:`Props.create()`.
@@ -104,7 +104,7 @@ especially when refactoring the actor’s constructor signature at a later point
 where compiler checks will allow this modification to be done with greater
 confidence than without.
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#props-factory
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#props-factory
 
 Creating Actors with Props
 --------------------------
@@ -113,14 +113,14 @@ Actors are created by passing a :class:`Props` instance into the
 :meth:`actorOf` factory method which is available on :class:`ActorSystem` and
 :class:`ActorContext`.
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#import-actorRef
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#system-actorOf
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#import-actorRef
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#system-actorOf
 
 Using the :class:`ActorSystem` will create top-level actors, supervised by the
 actor system’s provided guardian actor, while using an actor’s context will
 create a child actor.
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#context-actorOf
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#context-actorOf
    :exclude: plus-some-behavior
 
 It is recommended to create a hierarchy of children, grand-children and so on
@@ -153,8 +153,8 @@ be part of the :class:`Props` as well, as described `above <Props>`_. But there
 are cases when a factory method must be used, for example when the actual
 constructor arguments are determined by a dependency injection framework.
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#import-indirect
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#import-indirect
+.. includecode:: code/docs/actor/UntypedActorDocTest.java
    :include: creating-indirectly
    :exclude: obtain-fresh-Actor-instance-from-DI-framework
 
@@ -226,7 +226,7 @@ In addition, it offers:
 The remaining visible methods are user-overridable life-cycle hooks which are
 described in the following:
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#lifecycle-callbacks
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#lifecycle-callbacks
 
 The implementations shown above are the defaults provided by the :class:`UntypedActor`
 class.
@@ -245,8 +245,8 @@ termination (see `Stopping Actors`_). This service is provided by the
 Registering a monitor is easy (see fourth line, the rest is for demonstrating
 the whole functionality):
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#import-terminated
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#watch
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#import-terminated
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#watch
 
 It should be noted that the :class:`Terminated` message is generated
 independent of the order in which registration and termination occur.
@@ -272,7 +272,7 @@ Start Hook
 
 Right after starting the actor, its :meth:`preStart` method is invoked.
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#preStart
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#preStart
 
 This method is called when the actor is first created. During restarts it is
 called by the default implementation of :meth:`postRestart`, which means that
@@ -349,7 +349,7 @@ actors may look up other actors by specifying absolute or relative
 paths—logical or physical—and receive back an :class:`ActorSelection` with the
 result:
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#selection-local
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#selection-local
 
 The supplied path is parsed as a :class:`java.net.URI`, which basically means
 that it is split on ``/`` into path elements. If the path starts with ``/``, it
@@ -363,7 +363,7 @@ structure, i.e. the supervisor.
 The path elements of an actor selection may contain wildcard patterns allowing for
 broadcasting of messages to that section:
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#selection-wildcard
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#selection-wildcard
 
 Messages can be sent via the :class:`ActorSelection` and the path of the
 :class:`ActorSelection` is looked up when delivering each message. If the selection
@@ -375,12 +375,12 @@ the actor. There is a built-in ``Identify`` message that all Actors will underst
 and automatically reply to with a ``ActorIdentity`` message containing the
 :class:`ActorRef`.
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java
+.. includecode:: code/docs/actor/UntypedActorDocTest.java
    :include: import-identify,identify
 
 Remote actor addresses may also be looked up, if :ref:`remoting <remoting-java>` is enabled:
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#selection-remote
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#selection-remote
 
 An example demonstrating remote actor look-up is given in :ref:`remote-lookup-sample-java`.
 
@@ -438,7 +438,7 @@ Tell: Fire-forget
 This is the preferred way of sending messages. No blocking waiting for a
 message. This gives the best concurrency and scalability characteristics.
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#tell
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#tell
 
 The sender reference is passed along with the message and available within the
 receiving actor via its :meth:`getSender()` method while processing this
@@ -455,8 +455,8 @@ Ask: Send-And-Receive-Future
 The ``ask`` pattern involves actors as well as futures, hence it is offered as
 a use pattern rather than a method on :class:`ActorRef`:
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#import-ask
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#ask-pipe
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#import-ask
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#ask-pipe
 
 This example demonstrates ``ask`` together with the ``pipe`` pattern on
 futures, because this is likely to be a common combination. Please note that
@@ -478,7 +478,7 @@ more below.
     To complete the future with an exception you need send a Failure message to the sender.
     This is *not done automatically* when an actor throws an exception while processing a message.
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#reply-exception
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#reply-exception
 
 If the actor does not complete the future, it will expire after the timeout period,
 specified as parameter to the ``ask`` method; this will complete the
@@ -510,7 +510,7 @@ through a 'mediator'. This can be useful when writing actors that work as
 routers, load-balancers, replicators etc.
 You need to pass along your context variable as well.
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#forward
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#forward
 
 Receive messages
 ================
@@ -538,7 +538,7 @@ for replying later, or passing on to other actors. If there is no sender (a
 message was sent without an actor or future context) then the sender
 defaults to a 'dead-letter' actor ref.
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#reply
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#reply
    :exclude: calculate-result
 
 Receive timeout
@@ -593,7 +593,7 @@ whole system.
 The :meth:`postStop()` hook is invoked after an actor is fully stopped. This
 enables cleaning up of resources:
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#postStop
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#postStop
    :exclude: clean-up-resources-here
 
 .. note::
@@ -616,7 +616,7 @@ in the mailbox.
 
 Use it like this:
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java
+.. includecode:: code/docs/actor/UntypedActorDocTest.java
    :include: poison-pill
 
 Graceful Stop
@@ -625,10 +625,10 @@ Graceful Stop
 :meth:`gracefulStop` is useful if you need to wait for termination or compose ordered
 termination of several actors:
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java
+.. includecode:: code/docs/actor/UntypedActorDocTest.java
    :include: import-gracefulStop
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java
+.. includecode:: code/docs/actor/UntypedActorDocTest.java
    :include: gracefulStop
 
 When ``gracefulStop()`` returns successfully, the actor’s ``postStop()`` hook
@@ -663,10 +663,10 @@ at the top) and popped.
 
 To hotswap the Actor using ``getContext().become``:
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java
+.. includecode:: code/docs/actor/UntypedActorDocTest.java
    :include: import-procedure
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java
+.. includecode:: code/docs/actor/UntypedActorDocTest.java
    :include: hot-swap-actor
 
 This variant of the :meth:`become` method is useful for many different things,
@@ -702,8 +702,8 @@ order as they have been received originally.
 
 Here is an example of the ``UntypedActorWithStash`` class in action:
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#import-stash
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java#stash
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#import-stash
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#stash
 
 Invoking ``stash()`` adds the current message (the message that the
 actor received last) to the actor's stash. It is typically invoked
@@ -752,7 +752,7 @@ See :ref:`supervision-directives` for more information.
 
 Use ``Kill`` like this:
 
-.. includecode:: code/docs/actor/UnTypedActorDocTest.java
+.. includecode:: code/docs/actor/UntypedActorDocTest.java
    :include: kill
 
 Actors and exceptions
