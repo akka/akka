@@ -40,7 +40,7 @@ object AkkaBuild extends Build {
     organization := "com.typesafe.akka",
     version      := "2.2-SNAPSHOT",
     // Also change ScalaVersion in akka-sbt-plugin/sample/project/Build.scala
-    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.1"),
+    scalaVersion := System.getProperty("akka.scalaVersion", "2.11.0-M3"),
     scalaBinaryVersion <<= (scalaVersion, scalaBinaryVersion)((v, bv) => System.getProperty("akka.scalaBinaryVersion", if (v contains "-") v else bv))
   )
 
@@ -53,7 +53,7 @@ object AkkaBuild extends Build {
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
-      unidocExclude := Seq(samples.id, channelsTests.id, remoteTests.id),
+      unidocExclude := Seq(samples.id, channelsTests.id, remoteTests.id, akkaSbtPlugin.id),
       sources in JavaDoc <<= junidocSources,
       javacOptions in JavaDoc := Seq(),
       artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar"),
