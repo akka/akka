@@ -102,6 +102,17 @@ it sends a message to all seed nodes and then sends join command to the one that
 answers first. If no one of the seed nodes replied (might not be started yet)
 it retries this procedure until successful or shutdown.
 
+You define the seed nodes in the :ref:`cluster_configuration_java` file (application.conf)::
+
+  akka.cluster.seed-nodes = [
+    "akka.tcp://ClusterSystem@host1:2552", 
+    "akka.tcp://ClusterSystem@host2:2552"]
+
+This can also be defined as Java system properties when starting the JVM using the following syntax::
+
+  -Dakka.cluster.seed-nodes.0=akka.tcp://ClusterSystem@host1:2552
+  -Dakka.cluster.seed-nodes.1=akka.tcp://ClusterSystem@host2:2552
+
 The seed nodes can be started in any order and it is not necessary to have all
 seed nodes running, but the node configured as the first element in the ``seed-nodes``
 configuration list must be started when initially starting a cluster, otherwise the 
