@@ -1,6 +1,8 @@
 package akka.actor;
 
 import akka.testkit.AkkaJUnitActorSystemResource;
+import akka.testkit.TestProbe;
+
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -16,11 +18,12 @@ public class StashJavaAPI {
 
   @Test
   public void mustBeAbleToUseStash() {
-    ActorRef ref = system.actorOf(Props.create(StashJavaAPITestActor.class)
-        .withDispatcher("my-dispatcher"));
-    ref.tell("Hello", ref);
-    ref.tell("Hello", ref);
-    ref.tell(new Object(), null);
+    ActorRef ref = system.actorOf(Props.create(StashJavaAPITestActor.class));
+    final TestProbe probe = new TestProbe(system);
+    probe.send(ref, "Hello");
+    probe.send(ref, "Hello2");
+    probe.send(ref, "Hello12");
+    probe.expectMsg(5);
   }
 
 }

@@ -129,8 +129,7 @@ object CallingThreadDispatcher {
 class CallingThreadDispatcher(
   _prerequisites: DispatcherPrerequisites,
   val mailboxType: MailboxType,
-  val mailboxTypeConfigured: Boolean,
-  val name: String = "calling-thread") extends MessageDispatcher(_prerequisites) {
+  val mailboxTypeConfigured: Boolean) extends MessageDispatcher(_prerequisites) {
   import CallingThreadDispatcher._
 
   val log = akka.event.Logging(prerequisites.eventStream, "CallingThreadDispatcher")
