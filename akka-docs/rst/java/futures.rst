@@ -88,7 +88,7 @@ Or failures:
 
 It is also possible to create an empty ``Promise``, to be filled later, and obtain the corresponding ``Future``:
 
-.. includecode:: code/docs/future/FutureDocTestBase.java#promise
+.. includecode:: code/docs/future/FutureDocTest.java#promise
 
 For these examples ``PrintResult`` is defined as follows:
 
