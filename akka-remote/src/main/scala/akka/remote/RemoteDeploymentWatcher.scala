@@ -35,7 +35,8 @@ private[akka] class RemoteDeploymentWatcher extends Actor with RequiresMessageQu
 
     case t @ Terminated(a) if supervisors isDefinedAt a ⇒
       // send extra DeathWatchNotification to the supervisor so that it will remove the child
-      supervisors(a).sendSystemMessage(DeathWatchNotification(a, existenceConfirmed = false, addressTerminated = true))
+      supervisors(a).sendSystemMessage(DeathWatchNotification(a, existenceConfirmed = t.existenceConfirmed,
+        addressTerminated = t.addressTerminated))
       supervisors -= a
 
     case _: Terminated ⇒
