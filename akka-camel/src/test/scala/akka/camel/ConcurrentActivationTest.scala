@@ -25,7 +25,7 @@ class ConcurrentActivationTest extends WordSpec with MustMatchers with NonShared
 
   "Activation" must {
     "support concurrent registrations and de-registrations" in {
-      implicit val timeout = Timeout((5 seconds).dilated)
+      implicit val timeout = Timeout((10 seconds).dilated)
       val timeoutDuration = timeout.duration
       implicit val ec = system.dispatcher
       val number = 10
