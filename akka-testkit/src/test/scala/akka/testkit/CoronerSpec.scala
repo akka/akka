@@ -49,8 +49,8 @@ class CoronerSpec extends WordSpec with MustMatchers {
         coroner.cancel()
         Await.ready(coroner, 1.second)
       })
-      report must include("Coroner Thread Count Start:")
-      report must include("Coroner Thread Count End:")
+      report must include("Coroner Thread Count starts at ")
+      report must include("Coroner Thread Count started at ")
       report must include("XXXX")
       report must not include ("Coroner's Report")
     }
