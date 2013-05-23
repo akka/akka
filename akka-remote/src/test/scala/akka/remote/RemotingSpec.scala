@@ -418,7 +418,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       expectMsg(57)
     }
 
-    "not fail ask across node boundaries" in {
+    "not fail ask across node boundaries" in within(5.seconds) {
       import system.dispatcher
       val f = for (_ ← 1 to 1000) yield here ? "ping" mapTo manifest[(String, ActorRef)]
       Await.result(Future.sequence(f), remaining).map(_._1).toSet must be(Set("pong"))
