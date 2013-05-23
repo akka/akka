@@ -37,6 +37,8 @@ Akka is very modular and consists of several JARs containing different features.
 
 - ``akka-camel`` – Apache Camel integration
 
+- ``akka-cluster`` – Cluster membership management, elastic routers.
+
 - ``akka-dataflow`` – add-on to SIP-14 futures supporting implicit
   continuation-passing style
 
@@ -74,9 +76,6 @@ mailing list.
 
 - ``akka-channels-experimental`` – Typed Channels on top of untyped Actors,
   using Scala 2.10 macros
-
-- ``akka-cluster-experimental`` – Cluster membership management, leader
-  election, elastic routers.
 
 - ``akka-contrib`` – an assortment of contributions which may or may not be
   moved into core modules, see :ref:`akka-contrib` for more details.
