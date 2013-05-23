@@ -578,9 +578,10 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
   "router FromConfig" must {
     "throw suitable exception when not configured" in {
-      intercept[ConfigurationException] {
-        system.actorOf(Props.empty.withRouter(FromConfig))
-      }.getMessage.contains("application.conf") must be(true)
+      val e = intercept[ConfigurationException] {
+        system.actorOf(Props[TestActor].withRouter(FromConfig), "routerNotDefined")
+      }
+      e.getMessage must include("routerNotDefined")
     }
 
     "allow external configuration" in {
