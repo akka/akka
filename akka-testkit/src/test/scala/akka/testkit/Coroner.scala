@@ -89,7 +89,7 @@ object Coroner {
       val startThreads = threadMx.getThreadCount
       if (displayThreadCounts) {
         threadMx.resetPeakThreadCount()
-        out.println(s"Coroner Thread Count Start: current = ${startThreads} in ${reportTitle}")
+        out.println(s"Coroner Thread Count starts at $startThreads in $reportTitle")
       }
       watchedHandle.started()
       try {
@@ -106,7 +106,7 @@ object Coroner {
       } finally {
         if (displayThreadCounts) {
           val endThreads = threadMx.getThreadCount
-          out.println(s"Coroner Thread Count End: current = ${endThreads}, diff = ${endThreads - startThreads}, peak = ${threadMx.getPeakThreadCount} in ${reportTitle}")
+          out.println(s"Coroner Thread Count started at $startThreads, ended at $endThreads, peaked at ${threadMx.getPeakThreadCount} in $reportTitle")
         }
         out.flush()
         watchedHandle.finished()
