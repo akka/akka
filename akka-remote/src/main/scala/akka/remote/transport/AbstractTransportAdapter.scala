@@ -4,7 +4,7 @@
 package akka.remote.transport
 
 import akka.actor._
-import akka.pattern.{ ask, pipe }
+import akka.pattern.{ ask, pipe, gracefulStop }
 import akka.remote.Remoting.RegisterTransportActor
 import akka.remote.transport.Transport._
 import akka.remote.RARP
@@ -97,7 +97,7 @@ abstract class AbstractTransportAdapter(protected val wrappedTransport: Transpor
     statusPromise.future
   }
 
-  override def shutdown(): Unit = wrappedTransport.shutdown()
+  override def shutdown(): Future[Boolean] = wrappedTransport.shutdown()
 
 }
 
@@ -159,7 +159,11 @@ abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorS
   override def interceptAssociate(remoteAddress: Address, statusPromise: Promise[AssociationHandle]): Unit =
     manager ! AssociateUnderlying(remoteAddress, statusPromise)
 
-  override def shutdown(): Unit = manager ! PoisonPill
+  override def shutdown(): Future[Boolean] =
+    for {
+      stopResult ← gracefulStop(manager, RARP(system).provider.remoteSettings.FlushWait)
+      wrappedStopResult ← wrappedTransport.shutdown()
+    } yield stopResult && wrappedStopResult
 }
 
 abstract class ActorTransportAdapterManager extends Actor

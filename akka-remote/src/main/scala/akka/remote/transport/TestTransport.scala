@@ -87,7 +87,7 @@ class TestTransport(
     (localHandle, remoteHandle)
   }
 
-  private def defaultShutdown: Future[Unit] = Future.successful(())
+  private def defaultShutdown: Future[Boolean] = Future.successful(true)
 
   /**
    * The [[akka.remote.transport.TestTransport.SwitchableLoggedBehavior]] for the listen() method.
@@ -106,13 +106,13 @@ class TestTransport(
   /**
    * The [[akka.remote.transport.TestTransport.SwitchableLoggedBehavior]] for the shutdown() method.
    */
-  val shutdownBehavior = new SwitchableLoggedBehavior[Unit, Unit](
+  val shutdownBehavior = new SwitchableLoggedBehavior[Unit, Boolean](
     (_) ⇒ defaultShutdown,
     (_) ⇒ registry.logActivity(ShutdownAttempt(localAddress)))
 
   override def listen: Future[(Address, Promise[AssociationEventListener])] = listenBehavior(())
   override def associate(remoteAddress: Address): Future[AssociationHandle] = associateBehavior(remoteAddress)
-  override def shutdown(): Unit = shutdownBehavior(())
+  override def shutdown(): Future[Boolean] = shutdownBehavior(())
 
   private def defaultWrite(params: (TestAssociationHandle, ByteString)): Future[Boolean] = {
     registry.getRemoteReadHandlerFor(params._1) match {

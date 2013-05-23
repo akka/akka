@@ -417,14 +417,15 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
     }
   }
 
-  override def shutdown(): Unit = {
-    def always(c: ChannelGroupFuture) = NettyFutureBridge(c) recover { case _ ⇒ c.getGroup }
+  override def shutdown(): Future[Boolean] = {
+    def always(c: ChannelGroupFuture) = NettyFutureBridge(c).map(_ ⇒ true) recover { case _ ⇒ false }
     for {
       // Force flush by trying to write an empty buffer and wait for success
-      _ ← always(channelGroup.write(ChannelBuffers.buffer(0)))
-      _ ← always({ channelGroup.unbind(); channelGroup.disconnect() })
-      _ ← always(channelGroup.close())
-    } {
+      lastWriteStatus ← always(channelGroup.write(ChannelBuffers.buffer(0)))
+      unbindStatus ← always(channelGroup.unbind())
+      disconnectStatus ← always(channelGroup.disconnect())
+      closeStatus ← always(channelGroup.close())
+    } yield {
       // Release the selectors, but don't try to kill the dispatcher
       if (UseDispatcherForIo.isDefined) {
         clientChannelFactory.shutdown()
@@ -433,6 +434,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
         clientChannelFactory.releaseExternalResources()
         serverChannelFactory.releaseExternalResources()
       }
+      lastWriteStatus && unbindStatus && disconnectStatus && closeStatus
     }
 
   }
