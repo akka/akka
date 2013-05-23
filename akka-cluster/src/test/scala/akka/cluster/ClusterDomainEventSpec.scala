@@ -73,10 +73,10 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
     }
 
     "be produced for removed members" in {
-      val (g1, _) = converge(Gossip(members = SortedSet(aUp, dLeaving)))
+      val (g1, _) = converge(Gossip(members = SortedSet(aUp, dExiting)))
       val (g2, s2) = converge(Gossip(members = SortedSet(aUp)))
 
-      diffMemberEvents(g1, g2) must be(Seq(MemberRemoved(dRemoved)))
+      diffMemberEvents(g1, g2) must be(Seq(MemberRemoved(dRemoved, Exiting)))
       diffUnreachable(g1, g2) must be(Seq.empty)
       diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
     }
@@ -97,7 +97,7 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
       val (g1, _) = converge(Gossip(members = SortedSet(aUp, bUp, eJoining)))
       val (g2, s2) = converge(Gossip(members = SortedSet(bUp, eJoining)))
 
-      diffMemberEvents(g1, g2) must be(Seq(MemberRemoved(aRemoved)))
+      diffMemberEvents(g1, g2) must be(Seq(MemberRemoved(aRemoved, Up)))
       diffUnreachable(g1, g2) must be(Seq.empty)
       diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
       diffLeader(g1, g2) must be(Seq(LeaderChanged(Some(bUp.address))))

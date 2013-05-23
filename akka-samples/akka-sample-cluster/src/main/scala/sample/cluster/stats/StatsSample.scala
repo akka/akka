@@ -111,9 +111,9 @@ class StatsFacade extends Actor with ActorLogging {
       membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.collect {
         case m if m.hasRole("compute") ⇒ m
       }
-    case MemberUp(m)      ⇒ if (m.hasRole("compute")) membersByAge += m
-    case MemberRemoved(m) ⇒ if (m.hasRole("compute")) membersByAge -= m
-    case _: MemberEvent   ⇒ // not interesting
+    case MemberUp(m)         ⇒ if (m.hasRole("compute")) membersByAge += m
+    case MemberRemoved(m, _) ⇒ if (m.hasRole("compute")) membersByAge -= m
+    case _: MemberEvent      ⇒ // not interesting
   }
 
   def currentMaster: ActorSelection =

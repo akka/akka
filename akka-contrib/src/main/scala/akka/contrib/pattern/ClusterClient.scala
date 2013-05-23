@@ -453,7 +453,7 @@ class ClusterReceptionist(
         consistentHash = ConsistentHash(nodes, virtualNodesFactor)
       }
 
-    case MemberRemoved(m) ⇒
+    case MemberRemoved(m, _) ⇒
       if (m.address == selfAddress)
         context stop self
       else if (matchingRole(m)) {
