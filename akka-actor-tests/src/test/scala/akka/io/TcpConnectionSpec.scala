@@ -5,7 +5,7 @@
 package akka.io
 
 import java.io.{ File, IOException }
-import java.net.{ URLClassLoader, ConnectException, InetSocketAddress, SocketException }
+import java.net.{ URLClassLoader, ConnectException, InetSocketAddress, SocketException, SocketTimeoutException }
 import java.nio.ByteBuffer
 import java.nio.channels._
 import java.nio.channels.spi.SelectorProvider
@@ -490,16 +490,32 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
         override lazy val connectionActor = createConnectionActor(serverAddress = UnboundAddress)
         run {
           val sel = SelectorProvider.provider().openSelector()
-          val key = clientSideChannel.register(sel, SelectionKey.OP_CONNECT | SelectionKey.OP_READ)
-          // This timeout should be large enough to work on Windows
-          sel.select(3000)
+          try {
+            val key = clientSideChannel.register(sel, SelectionKey.OP_CONNECT | SelectionKey.OP_READ)
+            // This timeout should be large enough to work on Windows
+            sel.select(3000)
 
-          key.isConnectable must be(true)
-          EventFilter[ConnectException](occurrences = 1) intercept {
-            selector.send(connectionActor, ChannelConnectable)
-            userHandler.expectMsg(CommandFailed(Connect(UnboundAddress)))
+            key.isConnectable must be(true)
+            val forceThisLazyVal = connectionActor.toString
+            Thread.sleep(300)
+            EventFilter[ConnectException](occurrences = 1) intercept {
+              selector.send(connectionActor, ChannelConnectable)
+              userHandler.expectMsg(CommandFailed(Connect(UnboundAddress)))
+            }
+
+            verifyActorTermination(connectionActor)
+          } finally sel.close()
+        }
+      }
+
+    "report failed connection attempt when timing out" in
+      new UnacceptedConnectionTest() {
+        override lazy val connectionActor = createConnectionActor(serverAddress = UnboundAddress, timeout = Option(100.millis))
+        run {
+          connectionActor.toString must not be ("")
+          EventFilter[SocketTimeoutException](occurrences = 1) intercept {
+            userHandler.expectMsg(CommandFailed(Connect(UnboundAddress, timeout = Option(100.millis))))
           }
-
           verifyActorTermination(connectionActor)
         }
       }
@@ -708,9 +724,10 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
     def setServerSocketOptions() = ()
 
     def createConnectionActor(serverAddress: InetSocketAddress = serverAddress,
-                              options: immutable.Seq[SocketOption] = Nil): TestActorRef[TcpOutgoingConnection] = {
+                              options: immutable.Seq[SocketOption] = Nil,
+                              timeout: Option[FiniteDuration] = None): TestActorRef[TcpOutgoingConnection] = {
       val ref = TestActorRef(
-        new TcpOutgoingConnection(Tcp(system), this, userHandler.ref, Connect(serverAddress, options = options)) {
+        new TcpOutgoingConnection(Tcp(system), this, userHandler.ref, Connect(serverAddress, options = options, timeout = timeout)) {
           override def postRestart(reason: Throwable): Unit = context.stop(self) // ensure we never restart
         })
       ref ! new ChannelRegistration {
