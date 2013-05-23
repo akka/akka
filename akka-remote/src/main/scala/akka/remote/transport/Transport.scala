@@ -119,12 +119,14 @@ trait Transport {
   def associate(remoteAddress: Address): Future[AssociationHandle]
 
   /**
-   * Shuts down the transport layer and releases all the corresponding resources. Shutdown is asynchronous, may be
-   * called multiple times and does not return a success indication.
+   * Shuts down the transport layer and releases all the corresponding resources. Shutdown is asynchronous signalling
+   * the end of the shutdown by completing the returned future.
    *
    * The transport SHOULD try flushing pending writes before becoming completely closed.
+   * @return
+   *   Future signalling the completion of shutdown
    */
-  def shutdown(): Unit
+  def shutdown(): Future[Boolean]
 
   /**
    * This method allows upper layers to send management commands to the transport. It is the responsibility of the

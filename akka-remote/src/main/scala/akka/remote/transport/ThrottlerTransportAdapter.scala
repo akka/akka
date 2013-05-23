@@ -198,8 +198,6 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
 
   private def nakedAddress(address: Address): Address = address.copy(protocol = "", system = "")
 
-  override def postStop(): Unit = wrappedTransport.shutdown()
-
   override def ready: Receive = {
     case InboundAssociation(handle) ⇒
       val wrappedHandle = wrapHandle(handle, associationListener, inbound = true)

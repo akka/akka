@@ -126,26 +126,23 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
     endpointManager match {
       case Some(manager) ⇒
         implicit val timeout = ShutdownTimeout
-        val stopped: Future[Boolean] = (manager ? ShutdownAndFlush).mapTo[Boolean]
 
         def finalize(): Unit = {
           eventPublisher.notifyListeners(RemotingShutdownEvent)
           endpointManager = None
         }
 
-        stopped.onComplete {
+        (manager ? ShutdownAndFlush).mapTo[Boolean].andThen {
           case Success(flushSuccessful) ⇒
             if (!flushSuccessful)
-              log.warning("Shutdown finished, but flushing timed out. Some messages might not have been sent. " +
+              log.warning("Shutdown finished, but flushing might not have been successful and some messages might have been dropped. " +
                 "Increase akka.remote.flush-wait-on-shutdown to a larger value to avoid this.")
             finalize()
 
           case Failure(e) ⇒
             notifyError("Failure during shutdown of remoting.", e)
             finalize()
-        }
-
-        stopped map { _ ⇒ () } // RARP needs only type Unit, not a boolean
+        } map { _ ⇒ () } // RARP needs only type Unit, not a boolean
       case None ⇒
         log.warning("Remoting is not running. Ignoring shutdown attempt.")
         Future successful (())
@@ -532,12 +529,20 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       endpoints.prune()
     case ShutdownAndFlush ⇒
       // Shutdown all endpoints and signal to sender when ready (and whether all endpoints were shut down gracefully)
-      val sys = context.system // Avoid closing over context
-      Future sequence endpoints.allEndpoints.map {
-        gracefulStop(_, settings.FlushWait, EndpointWriter.FlushAndStop)
-      } map { _.foldLeft(true) { _ && _ } } recover {
-        case _: AskTimeoutException ⇒ false
-      } pipeTo sender
+
+      def shutdownAll[T](resources: TraversableOnce[T])(shutdown: T ⇒ Future[Boolean]): Future[Boolean] = {
+        (Future sequence resources.map(shutdown(_))) map { _.foldLeft(true) { _ && _ } } recover {
+          case NonFatal(_) ⇒ false
+        }
+      }
+
+      (for {
+        // The construction of the future for shutdownStatus has to happen after the flushStatus future has been finished
+        // so that endpoints are shut down before transports.
+        flushStatus ← shutdownAll(endpoints.allEndpoints)(gracefulStop(_, settings.FlushWait, EndpointWriter.FlushAndStop))
+        shutdownStatus ← shutdownAll(transportMapping.values)(_.shutdown())
+      } yield flushStatus && shutdownStatus) pipeTo sender
+
       // Ignore all other writes
       context.become(flushing)
   }
@@ -629,12 +634,6 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
   override def postStop(): Unit = {
     pruneTimerCancellable.foreach { _.cancel() }
-    transportMapping.values foreach { transport ⇒
-      try transport.shutdown() catch {
-        case NonFatal(e) ⇒
-          log.error(e, s"Unable to shut down the underlying transport: [$transport]")
-      }
-    }
   }
 
 }

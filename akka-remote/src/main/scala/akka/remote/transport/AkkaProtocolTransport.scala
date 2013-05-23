@@ -141,10 +141,6 @@ private[transport] class AkkaProtocolManager(
   private def createTransportFailureDetector(): FailureDetector =
     FailureDetectorLoader(settings.TransportFailureDetectorImplementationClass, settings.TransportFailureDetectorConfig)
 
-  override def postStop() {
-    wrappedTransport.shutdown()
-  }
-
 }
 
 private[remote] class AkkaProtocolHandle(
