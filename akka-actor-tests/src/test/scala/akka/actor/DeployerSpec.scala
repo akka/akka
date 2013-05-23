@@ -132,8 +132,25 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
             }
             """, ConfigParseOptions.defaults).withFallback(AkkaSpec.testConf)
 
-        shutdown(ActorSystem("invalid", invalidDeployerConf))
+        shutdown(ActorSystem("invalid-number-of-instances", invalidDeployerConf))
       }
+    }
+
+    "detect invalid deployment path" in {
+      val e = intercept[InvalidActorNameException] {
+        val invalidDeployerConf = ConfigFactory.parseString("""
+            akka.actor.deployment {
+              /gul/ubåt {
+                router = round-robin
+                nr-of-instances = 2
+              }
+            }
+            """, ConfigParseOptions.defaults).withFallback(AkkaSpec.testConf)
+
+        shutdown(ActorSystem("invalid-path", invalidDeployerConf))
+      }
+      e.getMessage must include("[ubåt]")
+      e.getMessage must include("[/gul/ubåt]")
     }
 
     "be able to parse 'akka.actor.deployment._' with from-code router" in {
