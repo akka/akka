@@ -248,6 +248,7 @@ private[remote] object EndpointManager {
   case object Prune
   case class ListensResult(addressesPromise: Promise[Seq[(Transport, Address)]],
                            results: Seq[(Transport, Address, Promise[AssociationEventListener])])
+  case class ListensFailure(addressesPromise: Promise[Seq[(Transport, Address)]], cause: Throwable)
 
   // Helper class to store address pairs
   case class Link(localAddress: Address, remoteAddress: Address)
@@ -422,7 +423,9 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
   def receive = {
     case Listen(addressesPromise) ⇒
-      listens map { ListensResult(addressesPromise, _) } pipeTo self
+      listens map { ListensResult(addressesPromise, _) } recover {
+        case NonFatal(e) ⇒ ListensFailure(addressesPromise, e)
+      } pipeTo self
     case ListensResult(addressesPromise, results) ⇒
       transportMapping = results.groupBy {
         case (_, transportAddress, _) ⇒ transportAddress
@@ -438,6 +441,9 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
           transport -> address
       }
       addressesPromise.success(transportsAndAddresses)
+    case ListensFailure(addressesPromise, cause) ⇒
+      addressesPromise.failure(cause)
+
     case ManagementCommand(_) ⇒
       sender ! ManagementCommandAck(false)
     case StartupFinished ⇒
