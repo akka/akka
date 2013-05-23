@@ -483,7 +483,7 @@ trait Actor {
    * Actors are automatically started asynchronously when created.
    * Empty default implementation.
    */
-  @throws(classOf[Exception]) // when changing this you MUST also change UnTypedActorDocTest
+  @throws(classOf[Exception]) // when changing this you MUST also change UntypedActorDocTest
   //#lifecycle-hooks
   def preStart(): Unit = ()
 
@@ -495,7 +495,7 @@ trait Actor {
    * Is called asynchronously after 'actor.stop()' is invoked.
    * Empty default implementation.
    */
-  @throws(classOf[Exception]) // when changing this you MUST also change UnTypedActorDocTest
+  @throws(classOf[Exception]) // when changing this you MUST also change UntypedActorDocTest
   //#lifecycle-hooks
   def postStop(): Unit = ()
 
@@ -509,7 +509,7 @@ trait Actor {
    * Is called on a crashed Actor right BEFORE it is restarted to allow clean
    * up of resources before Actor is terminated.
    */
-  @throws(classOf[Exception]) // when changing this you MUST also change UnTypedActorDocTest
+  @throws(classOf[Exception]) // when changing this you MUST also change UntypedActorDocTest
   //#lifecycle-hooks
   def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     context.children foreach { child ⇒
@@ -527,7 +527,7 @@ trait Actor {
    * <p/>
    * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
    */
-  @throws(classOf[Exception]) // when changing this you MUST also change UnTypedActorDocTest
+  @throws(classOf[Exception]) // when changing this you MUST also change UntypedActorDocTest
   //#lifecycle-hooks
   def postRestart(reason: Throwable): Unit = {
     preStart()
