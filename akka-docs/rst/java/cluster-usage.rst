@@ -710,20 +710,3 @@ Cluster Info Logging
 You can silence the logging of cluster events at info level with configuration property::
 
   akka.cluster.log-info = off
-
-Cluster Scheduler
------------------
-
-It is recommended that you change the ``tick-duration`` to 33 ms or less
-of the default scheduler when using cluster, if you don't need to have it
-configured to a longer duration for other reasons. If you don't do this
-a dedicated scheduler will be used for periodic tasks of the cluster, which
-introduce the extra overhead of another thread.
-
-::
-
-  # shorter tick-duration of default scheduler when using cluster
-  akka.scheduler.tick-duration = 33ms
-
-
-
