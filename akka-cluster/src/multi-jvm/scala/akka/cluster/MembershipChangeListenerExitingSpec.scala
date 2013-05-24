@@ -54,7 +54,7 @@ abstract class MembershipChangeListenerExitingSpec
                 exitingLatch.countDown()
             case MemberExited(m) if m.address == secondAddress ⇒
               exitingLatch.countDown()
-            case MemberRemoved(m) if m.address == secondAddress ⇒
+            case MemberRemoved(m, Exiting) if m.address == secondAddress ⇒
               removedLatch.countDown()
             case _ ⇒ // ignore
           }

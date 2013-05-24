@@ -11,7 +11,6 @@ import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberRemoved
-import akka.cluster.ClusterEvent.UnreachableMember
 import akka.remote.FailureDetectorRegistry
 import akka.remote.RemoteWatcher
 
@@ -63,7 +62,6 @@ private[cluster] class ClusterRemoteWatcher(
   override def preStart(): Unit = {
     super.preStart()
     cluster.subscribe(self, classOf[MemberEvent])
-    cluster.subscribe(self, classOf[UnreachableMember])
   }
 
   override def postStop(): Unit = {
@@ -79,24 +77,18 @@ private[cluster] class ClusterRemoteWatcher(
     case state: CurrentClusterState ⇒
       clusterNodes = state.members.collect { case m if m.address != selfAddress ⇒ m.address }
       clusterNodes foreach takeOverResponsibility
-      val clusterUnreachable = state.unreachable.collect { case m if m.address != selfAddress ⇒ m.address }
       unreachable --= clusterNodes
-      unreachable ++= clusterUnreachable
     case MemberUp(m) ⇒
       if (m.address != selfAddress) {
         clusterNodes += m.address
         takeOverResponsibility(m.address)
         unreachable -= m.address
       }
-    case UnreachableMember(m) ⇒
-      if (m.address != selfAddress)
-        unreachable += m.address
-    case MemberRemoved(m) ⇒
+    case MemberRemoved(m, previousStatus) ⇒
       if (m.address != selfAddress) {
         clusterNodes -= m.address
-        if (unreachable contains m.address) {
+        if (previousStatus == MemberStatus.Down) {
           quarantine(m.address, m.uniqueAddress.uid)
-          unreachable -= m.address
         }
         publishAddressTerminated(m.address)
       }

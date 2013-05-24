@@ -164,9 +164,9 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
         membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.collect {
           case m if m.hasRole(role) ⇒ m
         }
-      case MemberUp(m)      ⇒ if (m.hasRole(role)) membersByAge += m
-      case MemberRemoved(m) ⇒ if (m.hasRole(role)) membersByAge -= m
-      case other            ⇒ consumer foreach { _.tell(other, sender) }
+      case MemberUp(m)         ⇒ if (m.hasRole(role)) membersByAge += m
+      case MemberRemoved(m, _) ⇒ if (m.hasRole(role)) membersByAge -= m
+      case other               ⇒ consumer foreach { _.tell(other, sender) }
     }
 
     def consumer: Option[ActorSelection] =

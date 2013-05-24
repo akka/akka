@@ -89,9 +89,9 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
       memberSubscriber.expectNoMsg(1 second)
       // at the removed member a an empty gossip is the last thing
       publisher ! PublishChanges(Gossip.empty)
-      memberSubscriber.expectMsg(MemberRemoved(aRemoved))
-      memberSubscriber.expectMsg(MemberRemoved(bRemoved))
-      memberSubscriber.expectMsg(MemberRemoved(cRemoved))
+      memberSubscriber.expectMsg(MemberRemoved(aRemoved, Exiting))
+      memberSubscriber.expectMsg(MemberRemoved(bRemoved, Exiting))
+      memberSubscriber.expectMsg(MemberRemoved(cRemoved, Up))
       memberSubscriber.expectMsg(LeaderChanged(None))
     }
 
@@ -150,7 +150,7 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
 
     "publish Removed when stopped" in {
       publisher ! PoisonPill
-      memberSubscriber.expectMsg(MemberRemoved(aRemoved))
+      memberSubscriber.expectMsg(MemberRemoved(aRemoved, Up))
     }
 
   }
