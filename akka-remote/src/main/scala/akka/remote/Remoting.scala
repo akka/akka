@@ -332,6 +332,9 @@ private[remote] object EndpointManager {
     def markAsQuarantined(address: Address, uid: Int, timeOfRelease: Deadline): Unit =
       addressToWritable += address -> Quarantined(uid, timeOfRelease)
 
+    def removePolicy(address: Address): Unit =
+      addressToWritable -= address
+
     def allEndpoints: collection.Iterable[ActorRef] = writableToAddress.keys ++ readonlyToAddress.keys
 
     def prune(): Unit = {
@@ -479,26 +482,25 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     case s @ Send(message, senderOption, recipientRef, _) ⇒
       val recipientAddress = recipientRef.path.address
 
-      def createAndRegisterWritingEndpoint(refuseUid: Option[Int]): ActorRef = endpoints.registerWritableEndpoint(recipientAddress, createEndpoint(
+      def createAndRegisterWritingEndpoint(): ActorRef = endpoints.registerWritableEndpoint(recipientAddress, createEndpoint(
         recipientAddress,
         recipientRef.localAddressToUse,
         transportMapping(recipientRef.localAddressToUse),
         settings,
         handleOption = None,
-        refuseUid,
         writing = true))
 
       endpoints.writableEndpointWithPolicyFor(recipientAddress) match {
         case Some(Pass(endpoint)) ⇒
           endpoint ! s
         case Some(Gated(timeOfRelease)) ⇒
-          if (timeOfRelease.isOverdue()) createAndRegisterWritingEndpoint(None) ! s
+          if (timeOfRelease.isOverdue()) createAndRegisterWritingEndpoint() ! s
           else extendedSystem.deadLetters ! s
         case Some(Quarantined(uid, timeOfRelease)) ⇒
-          if (timeOfRelease.isOverdue()) createAndRegisterWritingEndpoint(None) ! s
-          else createAndRegisterWritingEndpoint(Some(uid)) ! s
+          if (timeOfRelease.isOverdue()) createAndRegisterWritingEndpoint() ! s
+          else extendedSystem.deadLetters ! s
         case None ⇒
-          createAndRegisterWritingEndpoint(None) ! s
+          createAndRegisterWritingEndpoint() ! s
 
       }
 
@@ -515,12 +517,19 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
             transportMapping(handle.localAddress),
             settings,
             Some(handle),
-            refuseUid = None,
             writing)
           if (writing)
             endpoints.registerWritableEndpoint(handle.remoteAddress, endpoint)
-          else
+          else {
             endpoints.registerReadOnlyEndpoint(handle.remoteAddress, endpoint)
+            endpoints.writableEndpointWithPolicyFor(handle.remoteAddress) match {
+              case Some(Pass(_)) ⇒ // Leave it alone
+              case _ ⇒
+                // Since we just communicated with the guy we can lift gate, quarantine, etc. New writer will be
+                // opened at first write.
+                endpoints.removePolicy(handle.remoteAddress)
+            }
+          }
         }
     }
     case Terminated(endpoint) ⇒
@@ -605,7 +614,6 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
                              transport: Transport,
                              endpointSettings: RemoteSettings,
                              handleOption: Option[AkkaProtocolHandle],
-                             refuseUid: Option[Int],
                              writing: Boolean): ActorRef = {
     assert(transportMapping contains localAddress)
 
@@ -616,7 +624,6 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       transport,
       endpointSettings,
       AkkaPduProtobufCodec,
-      refuseUid,
       receiveBuffers).withDispatcher("akka.remote.writer-dispatcher"),
       "reliableEndpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()))
     else context.watch(context.actorOf(EndpointWriter(
@@ -626,7 +633,6 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       transport,
       endpointSettings,
       AkkaPduProtobufCodec,
-      refuseUid,
       receiveBuffers,
       reliableDeliverySupervisor = None).withDispatcher("akka.remote.writer-dispatcher"),
       "endpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()))
