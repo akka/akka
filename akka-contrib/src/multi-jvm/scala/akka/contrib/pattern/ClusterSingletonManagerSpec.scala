@@ -195,8 +195,11 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
 
   val identifyProbe = TestProbe()
 
+  val controllerRootActorPath = node(controller)
+
   def queue: ActorRef = {
-    system.actorSelection(node(controller) / "user" / "queue").tell(Identify("queue"), identifyProbe.ref)
+    // this is used from inside actor construction, i.e. other thread, and must therefore not call `node(controller`
+    system.actorSelection(controllerRootActorPath / "user" / "queue").tell(Identify("queue"), identifyProbe.ref)
     identifyProbe.expectMsgType[ActorIdentity].ref.get
   }
 
