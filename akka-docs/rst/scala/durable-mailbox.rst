@@ -15,8 +15,8 @@ mailbox when the node of the actor resides on crashes, then when you restart the
 node, the actor will be able to continue processing as if nothing had happened;
 with all pending messages still in its mailbox.
 
-You configure durable mailboxes through the dispatcher. The actor is oblivious
-to which type of mailbox it is using.
+You configure durable mailboxes through the dispatcher or the actor deployment (see
+:ref:`mailboxes-scala`). The actor is oblivious to which type of mailbox it is using.
 
 This gives you an excellent way of creating bulkheads in your application, where
 groups of actors sharing the same dispatcher also share the same backing

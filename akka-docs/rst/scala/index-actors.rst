@@ -9,6 +9,7 @@ Actors
    typed-actors
    fault-tolerance
    dispatchers
+   mailboxes
    routing
    fsm
    testing

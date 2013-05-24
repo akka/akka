@@ -149,9 +149,11 @@ Creating Actors with Factory Methods
 ------------------------------------
 
 If your UntypedActor has a constructor that takes parameters then those need to
-be part of the :class:`Props` as well, as described `above <Props>`_. But there
+be part of the :class:`Props` as well, as described `above`__. But there
 are cases when a factory method must be used, for example when the actual
 constructor arguments are determined by a dependency injection framework.
+
+__ Props_
 
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#import-indirect
 .. includecode:: code/docs/actor/UntypedActorDocTest.java
@@ -691,14 +693,8 @@ behavior. Upon changing the actor's message handler, i.e., right
 before invoking ``getContext().become()`` or ``getContext().unbecome()``, all
 stashed messages can be "unstashed", thereby prepending them to the actor's
 mailbox. This way, the stashed messages can be processed in the same
-order as they have been received originally.
-
-.. warning::
-
-  Please note that the stash can only be used together with actors
-  that have a deque-based mailbox. For this, configure the
-  ``mailbox-type`` of the dispatcher to be a deque-based mailbox, such as
-  ``akka.dispatch.UnboundedDequeBasedMailbox`` (see :ref:`dispatchers-java`).
+order as they have been received originally. An actor that extends
+``UntypedActorWithStash`` will automatically get a deque-based mailbox.
 
 Here is an example of the ``UntypedActorWithStash`` class in action:
 
