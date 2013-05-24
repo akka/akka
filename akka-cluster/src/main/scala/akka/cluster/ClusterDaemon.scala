@@ -241,9 +241,6 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
   private def clusterCore(address: Address): ActorSelection =
     context.actorSelection(RootActorPath(address) / "system" / "cluster" / "core" / "daemon")
 
-  context.actorOf(Props[ClusterHeartbeatSender].
-    withDispatcher(UseDispatcher), name = "heartbeatSender")
-
   import context.dispatcher
 
   // start periodic gossip to random nodes in cluster
@@ -302,6 +299,14 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
         if (SeedNodes.nonEmpty) joinSeedNodes(SeedNodes)
         else join(joinWith)
       }
+  }
+
+  def becomeInitialized(): Unit = {
+    // start heartbeatSender here, and not in constructor to make sure that
+    // heartbeating doesn't start before Welcome is received
+    context.actorOf(Props[ClusterHeartbeatSender].
+      withDispatcher(UseDispatcher), name = "heartbeatSender")
+    context.become(initialized)
   }
 
   def initialized: Actor.Receive = {
@@ -384,7 +389,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
       }
 
       if (address == selfAddress) {
-        context.become(initialized)
+        becomeInitialized()
         joining(selfUniqueAddress, cluster.selfRoles)
       } else {
         val joinDeadline = RetryUnsuccessfulJoinAfter match {
@@ -457,7 +462,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
       publish(latestGossip)
       if (from != selfUniqueAddress)
         gossipTo(from, sender)
-      context.become(initialized)
+      becomeInitialized()
     }
   }
 
