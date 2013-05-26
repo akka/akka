@@ -654,145 +654,85 @@ keep things well separated.
 Using UDP
 ---------
 
-UDP support comes in two flavors: connectionless and connection-based. With connectionless UDP, workers can send datagrams
-to any remote address. Connection-based UDP workers are linked to a single remote address.
+UDP is a connectionless datagram protocol which offers two different ways of
+communication on the JDK level:
 
-The connectionless UDP manager is accessed through ``Udp``. ``Udp`` refers to the "fire-and-forget" style of sending
-UDP datagrams.
+ * sockets which are free to send datagrams to any destination and receive
+   datagrams from any origin
 
-.. code-block:: scala
+ * sockets which are restricted to communication with one specific remote
+   socket address
 
-  import akka.io.IO
-  import akka.io.Udp
-  val connectionLessUdp = IO(Udp)
+In the low-level API the distinction is made—confusingly—by whether or not
+:meth:`connect` has been called on the socket (even when connect has been
+called the protocol is still connectionless). These two forms of UDP usage are
+offered using distinct IO extensions described below.
 
-The connection-based UDP manager is accessed through ``UdpConnected``.
-
-.. code-block:: scala
-
-  import akka.io.UdpConnected
-  val connectionBasedUdp = IO(UdpConnected)
-
-UDP servers can be only implemented by the connectionless API, but clients can use both.
-
-Connectionless UDP
-^^^^^^^^^^^^^^^^^^
+Unconnected UDP
+^^^^^^^^^^^^^^^
 
 Simple Send
 ............
 
-To simply send a UDP datagram without listening to an answer one needs to send the ``SimpleSender`` command to the
-``Udp`` manager:
+.. includecode:: code/docs/io/UdpDocSpec.scala#sender
 
-.. code-block:: scala
+The simplest form of UDP usage is to just send datagrams without the need of
+getting a reply. To this end a “simple sender” facility is provided as
+demonstrated above. The UDP extension is queried using the
+:class:`SimpleSender` message, which is answered by a :class:`SimpleSenderReady`
+notification. The sender of this message is the newly created sender actor
+which from this point onward can be used to send datagrams to arbitrary
+destinations; in this example it will just send any UTF-8 encoded
+:class:`String` it receives to a predefined remote address.
 
-  IO(Udp) ! SimpleSender
-  // or with socket options:
-  import akka.io.Udp._
-  IO(Udp) ! SimpleSender(List(SO.Broadcast(true)))
+.. note::
 
-The manager will create a worker for sending, and the worker will reply with a ``SimpleSendReady`` message:
-
-.. code-block:: scala
-
-  case SimpleSendReady =>
-    simpleSender = sender
-
-After saving the sender of the ``SimpleSendReady`` message it is possible to send out UDP datagrams with a simple
-message send:
-
-.. code-block:: scala
-
-  simpleSender ! Send(data, serverAddress)
-
+  The simple sender will not shut itself down because it cannot know when you
+  are done with it. You will need to send it a :class:`PoisonPill` when you
+  want to close the ephemeral port the sender is bound to.
 
 Bind (and Send)
 ...............
 
-To listen for UDP datagrams arriving on a given port, the ``Bind`` command has to be sent to the connectionless UDP
-manager
+.. includecode:: code/docs/io/UdpDocSpec.scala#listener
 
-.. code-block:: scala
+If you want to implement a UDP server which listens on a socket for incoming
+datagrams then you need to use the :class:`Bind` command as shown above. The
+local address specified may have a zero port in which case the operating system
+will automatically choose a free port and assign it to the new socket. Which
+port was actually bound can be found out by inspecting the :class:`Bound`
+message.
 
-  IO(Udp) ! Bind(handler, localAddress)
+The sender of the :class:`Bound` message is the actor which manages the new
+socket. Sending datagrams is achieved by using the :class:`Send` message type
+and the socket can be closed by sending a :class:`Unbind` command, in which
+case the socket actor will reply with a :class:`Unbound` notification.
 
-After the bind succeeds, the sender of the ``Bind`` command will be notified with a ``Bound`` message. The sender of
-this message is the worker for the UDP channel bound to the local address.
+Received datagrams are sent to the actor designated in the :class:`Bind`
+message, whereas the :class:`Bound` message will be sent to the sender of the
+:class:`Bind`.
 
-.. code-block:: scala
+Connected UDP
+^^^^^^^^^^^^^
 
-  case Bound =>
-    udpWorker = sender // Save the worker ref for later use
+The service provided by the connection based UDP API is similar to the
+bind-and-send service we saw earlier, but the main difference is that a
+connection is only able to send to the ``remoteAddress`` it was connected to,
+and will receive datagrams only from that address.
 
-The actor passed in the ``handler`` parameter will receive inbound UDP datagrams sent to the bound address:
+.. includecode:: code/docs/io/UdpDocSpec.scala#connected
 
-.. code-block:: scala
-
-  case Received(dataByteString, remoteAddress) => // Do something with the data
-
-The ``Received`` message contains the payload of the datagram and the address of the sender.
-
-It is also possible to send UDP datagrams using the ``ActorRef`` of the worker saved in ``udpWorker``:
-
-.. code-block:: scala
-
- udpWorker ! Send(data, serverAddress)
-
-.. note::
-  The difference between using a bound UDP worker to send instead of a simple-send worker is that in the former case
-  the sender field of the UDP datagram will be the bound local address, while in the latter it will be an undetermined
-  ephemeral port.
-
-Connection based UDP
-^^^^^^^^^^^^^^^^^^^^
-
-The service provided by the connection based UDP API is similar to the bind-and-send service we saw earlier, but
-the main difference is that a connection is only able to send to the ``remoteAddress`` it was connected to, and will
-receive datagrams only from that address.
-
-Connecting is similar to what we have seen in the previous section:
-
-.. code-block:: scala
-
-  IO(UdpConnected) ! Connect(handler, remoteAddress)
-
-Or, with more options:
-
-.. code-block:: scala
-
-  IO(UdpConnected) ! Connect(handler, Some(localAddress), remoteAddress, List(SO.Broadcast(true)))
-
-After the connect succeeds, the sender of the ``Connect`` command will be notified with a ``Connected`` message. The sender of
-this message is the worker for the UDP connection.
-
-.. code-block:: scala
-
-  case Connected =>
-    udpConnectionActor = sender // Save the worker ref for later use
-
-The actor passed in the ``handler`` parameter will receive inbound UDP datagrams sent to the bound address:
-
-.. code-block:: scala
-
-  case Received(dataByteString) => // Do something with the data
-
-The ``Received`` message contains the payload of the datagram but unlike in the connectionless case, no sender address
-is provided, as a UDP connection only receives messages from the endpoint it has been connected to.
-
-UDP datagrams can be sent by sending a ``Send`` message to the worker actor.
-
-.. code-block:: scala
-
- udpConnectionActor ! Send(data)
-
-Again, like the ``Received`` message, the ``Send`` message does not contain a remote address. This is because the address
-will always be the endpoint we originally connected to.
+Consequently the example shown here looks quite similar to the previous one,
+the biggest difference is the absence of remote address information in
+:class:`Send` and :class:`Received` messages.
 
 .. note::
-  There is a small performance benefit in using connection based UDP API over the connectionless one.
-  If there is a SecurityManager enabled on the system, every connectionless message send has to go through a security
-  check, while in the case of connection-based UDP the security check is cached after connect, thus writes do
-  not suffer an additional performance penalty.
+  
+  There is a small performance benefit in using connection based UDP API over
+  the connectionless one.  If there is a SecurityManager enabled on the system,
+  every connectionless message send has to go through a security check, while
+  in the case of connection-based UDP the security check is cached after
+  connect, thus writes do not suffer an additional performance penalty.
 
 Architecture in-depth
 ---------------------

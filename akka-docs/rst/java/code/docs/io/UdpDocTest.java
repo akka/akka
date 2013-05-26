@@ -6,86 +6,171 @@ package docs.io;
 
 //#imports
 import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
+import akka.actor.PoisonPill;
 import akka.actor.UntypedActor;
-import akka.io.Inet;
 import akka.io.Udp;
+import akka.io.UdpConnected;
+import akka.io.UdpConnectedMessage;
 import akka.io.UdpMessage;
-import akka.io.UdpSO;
+import akka.japi.Procedure;
 import akka.util.ByteString;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
 //#imports
 
-import akka.testkit.AkkaJUnitActorSystemResource;
-import org.junit.ClassRule;
-import org.junit.Test;
-
-
 public class UdpDocTest {
-  static public class Demo extends UntypedActor {
-    ActorSystem system = context().system();
 
-    public void onReceive(Object message) {
-      //#manager
-      final ActorRef udp = Udp.get(system).manager();
-      //#manager
+  //#sender
+  public static class SimpleSender extends UntypedActor {
+    final InetSocketAddress remote;
 
-      //#simplesend
-      udp.tell(UdpMessage.simpleSender(), getSelf());
+    public SimpleSender(InetSocketAddress remote) {
+      this.remote = remote;
+      
+      // request creation of a SimpleSender
+      final ActorRef mgr = Udp.get(getContext().system()).getManager();
+      mgr.tell(UdpMessage.simpleSender(), getSelf());
+    }
+    
+    @Override
+    public void onReceive(Object msg) {
+      if (msg instanceof Udp.SimpleSenderReady) {
+        getContext().become(ready(getSender()));
+        //#sender
+        getSender().tell(UdpMessage.send(ByteString.fromString("hello"), remote), getSelf());
+        //#sender
+      } else unhandled(msg);
+    }
+    
+    private Procedure<Object> ready(final ActorRef send) {
+      return new Procedure<Object>() {
+        @Override
+        public void apply(Object msg) throws Exception {
+          if (msg instanceof String) {
+            final String str = (String) msg;
+            send.tell(UdpMessage.send(ByteString.fromString(str), remote), getSelf());
+            //#sender
+            if (str.equals("world")) {
+              send.tell(PoisonPill.getInstance(), getSelf());
+            }
+            //#sender
 
-      // ... or with socket options:
-      final List<Inet.SocketOption> options = new ArrayList<Inet.SocketOption>();
-      options.add(UdpSO.broadcast(true));
-      udp.tell(UdpMessage.simpleSender(), getSelf());
-      //#simplesend
-
-      ActorRef simpleSender = null;
-
-      //#simplesend-finish
-      if (message instanceof Udp.SimpleSendReady) {
-        simpleSender = getSender();
-      }
-      //#simplesend-finish
-
-      final ByteString data = ByteString.empty();
-
-      //#simplesend-send
-      simpleSender.tell(UdpMessage.send(data, new InetSocketAddress("127.0.0.1", 7654)), getSelf());
-      //#simplesend-send
-
-      final ActorRef handler = getSelf();
-
-      //#bind
-      udp.tell(UdpMessage.bind(handler, new InetSocketAddress("127.0.0.1", 9876)), getSelf());
-      //#bind
-
-      ActorRef udpWorker = null;
-
-      //#bind-finish
-      if (message instanceof Udp.Bound) {
-        udpWorker = getSender();
-      }
-      //#bind-finish
-
-      //#bind-receive
-      if (message instanceof Udp.Received) {
-        final Udp.Received rcvd = (Udp.Received) message;
-        final ByteString payload = rcvd.data();
-        final InetSocketAddress sender = rcvd.sender();
-      }
-      //#bind-receive
-
-      //#bind-send
-      udpWorker.tell(UdpMessage.send(data, new InetSocketAddress("127.0.0.1", 7654)), getSelf());
-      //#bind-send
+          } else unhandled(msg);
+        }
+      };
     }
   }
+  //#sender
+  
+  //#listener
+  public static class Listener extends UntypedActor {
+    final ActorRef nextActor;
 
-  @Test
-  public void demonstrateConnect() {
+    public Listener(ActorRef nextActor) {
+      this.nextActor = nextActor;
+      
+      // request creation of a bound listen socket
+      final ActorRef mgr = Udp.get(getContext().system()).getManager();
+      mgr.tell(
+          UdpMessage.bind(getSelf(), new InetSocketAddress("localhost", 0)),
+          getSelf());
+    }
+
+    @Override
+    public void onReceive(Object msg) {
+      if (msg instanceof Udp.Bound) {
+        final Udp.Bound b = (Udp.Bound) msg;
+        //#listener
+        nextActor.tell(b.localAddress(), getSender());
+        //#listener
+        getContext().become(ready(getSender()));
+      } else unhandled(msg);
+    }
+    
+    private Procedure<Object> ready(final ActorRef socket) {
+      return new Procedure<Object>() {
+        @Override
+        public void apply(Object msg) throws Exception {
+          if (msg instanceof Udp.Received) {
+            final Udp.Received r = (Udp.Received) msg;
+            // echo server example: send back the data
+            socket.tell(UdpMessage.send(r.data(), r.sender()), getSelf());
+            // or do some processing and forward it on
+            final Object processed = // parse data etc., e.g. using PipelineStage
+                //#listener
+                r.data().utf8String();
+            //#listener
+            nextActor.tell(processed, getSelf());
+            
+          } else if (msg.equals(UdpMessage.unbind())) {
+            socket.tell(msg, getSelf());
+          
+          } else if (msg instanceof Udp.Unbound) {
+            getContext().stop(getSelf());
+            
+          } else unhandled(msg);
+        }
+      };
+    }
   }
+  //#listener
+  
+  //#connected
+  public static class Connected extends UntypedActor  {
+    final InetSocketAddress remote;
+
+    public Connected(InetSocketAddress remote) {
+      this.remote = remote;
+      
+      // create a restricted a.k.a. “connected” socket
+      final ActorRef mgr = UdpConnected.get(getContext().system()).getManager();
+      mgr.tell(UdpConnectedMessage.connect(getSelf(), remote), getSelf());
+    }
+    
+    @Override
+    public void onReceive(Object msg) {
+      if (msg instanceof UdpConnected.Connected) {
+        getContext().become(ready(getSender()));
+        //#connected
+        getSender()
+            .tell(UdpConnectedMessage.send(ByteString.fromString("hello")),
+                getSelf());
+        //#connected
+      } else unhandled(msg);
+    }
+    
+    private Procedure<Object> ready(final ActorRef connection) {
+      return new Procedure<Object>() {
+        @Override
+        public void apply(Object msg) throws Exception {
+          if (msg instanceof UdpConnected.Received) {
+            final UdpConnected.Received r = (UdpConnected.Received) msg;
+            // process data, send it on, etc.
+            // #connected
+            if (r.data().utf8String().equals("hello")) {
+              connection.tell(
+                  UdpConnectedMessage.send(ByteString.fromString("world")),
+                  getSelf());
+            }
+            // #connected
+            
+          } else if (msg instanceof String) {
+            final String str = (String) msg;
+            connection
+                .tell(UdpConnectedMessage.send(ByteString.fromString(str)),
+                    getSelf());
+          
+          } else if (msg.equals(UdpConnectedMessage.disconnect())) {
+            connection.tell(msg, getSelf());
+          
+          } else if (msg instanceof UdpConnected.Disconnected) {
+            getContext().stop(getSelf());
+          
+          } else unhandled(msg);
+        }
+      };
+    }
+  }
+  //#connected
 
 }

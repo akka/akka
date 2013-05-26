@@ -60,7 +60,7 @@ private[io] class UdpListener(val udp: UdpExt,
   }
 
   def readHandlers(registration: ChannelRegistration): Receive = {
-    case StopReading     ⇒ registration.disableInterest(OP_READ)
+    case SuspendReading  ⇒ registration.disableInterest(OP_READ)
     case ResumeReading   ⇒ registration.enableInterest(OP_READ)
     case ChannelReadable ⇒ doReceive(registration, bind.handler)
 

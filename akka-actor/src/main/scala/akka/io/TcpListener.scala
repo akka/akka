@@ -11,7 +11,6 @@ import scala.util.control.NonFatal
 import akka.actor.{ Props, ActorLogging, ActorRef, Actor }
 import akka.io.SelectionHandler._
 import akka.io.Tcp._
-import akka.io.IO.HasFailureMessage
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 /**
@@ -64,7 +63,7 @@ private[io] class TcpListener(selectorRouter: ActorRef,
         context.stop(self)
     }
 
-  override def supervisorStrategy = IO.connectionSupervisorStrategy
+  override def supervisorStrategy = SelectionHandler.connectionSupervisorStrategy
 
   def receive: Receive = {
     case registration: ChannelRegistration ⇒

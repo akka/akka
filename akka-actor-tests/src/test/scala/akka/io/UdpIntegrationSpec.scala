@@ -24,7 +24,7 @@ class UdpIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with ImplicitS
   val simpleSender: ActorRef = {
     val commander = TestProbe()
     commander.send(IO(Udp), SimpleSender)
-    commander.expectMsg(SimpleSendReady)
+    commander.expectMsg(SimpleSenderReady)
     commander.sender
   }
 

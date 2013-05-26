@@ -4,14 +4,13 @@
 package akka.io
 
 import akka.actor.Props
-import akka.io.IO.SelectorBasedManager
 import akka.io.UdpConnected.Connect
 
 /**
  * INTERNAL API
  */
 private[io] class UdpConnectedManager(udpConn: UdpConnectedExt)
-  extends SelectorBasedManager(udpConn.settings, udpConn.settings.NrOfSelectors) {
+  extends SelectionHandler.SelectorBasedManager(udpConn.settings, udpConn.settings.NrOfSelectors) {
 
   def receive = workerForCommandHandler {
     case c: Connect ⇒

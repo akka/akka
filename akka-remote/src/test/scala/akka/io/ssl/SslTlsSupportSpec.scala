@@ -185,7 +185,7 @@ class SslTlsSupportSpec extends AkkaSpec {
   //#handler
   class AkkaSslHandler(init: Init[WithinActorContext, String, String])
     extends Actor with ActorLogging {
-   
+
     def receive = {
       case init.Event(data) ⇒
         val input = data.dropRight(1)
