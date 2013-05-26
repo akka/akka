@@ -41,12 +41,15 @@ class TcpIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with TcpIntegr
     "properly complete one client/server request/response cycle" in new TestSetup {
       val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
 
-      clientHandler.send(clientConnection, Write(ByteString("Captain on the bridge!"), 'Aye))
-      clientHandler.expectMsg('Aye)
+      object Aye extends Event
+      object Yes extends Event
+
+      clientHandler.send(clientConnection, Write(ByteString("Captain on the bridge!"), Aye))
+      clientHandler.expectMsg(Aye)
       serverHandler.expectMsgType[Received].data.decodeString("ASCII") must be("Captain on the bridge!")
 
-      serverHandler.send(serverConnection, Write(ByteString("For the king!"), 'Yes))
-      serverHandler.expectMsg('Yes)
+      serverHandler.send(serverConnection, Write(ByteString("For the king!"), Yes))
+      serverHandler.expectMsg(Yes)
       clientHandler.expectMsgType[Received].data.decodeString("ASCII") must be("For the king!")
 
       serverHandler.send(serverConnection, Close)
@@ -60,8 +63,10 @@ class TcpIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with TcpIntegr
     "support waiting for writes with backpressure" in new TestSetup {
       val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
 
-      serverHandler.send(serverConnection, Write(ByteString(Array.fill[Byte](100000)(0)), 'Ack))
-      serverHandler.expectMsg('Ack)
+      object Ack extends Event
+
+      serverHandler.send(serverConnection, Write(ByteString(Array.fill[Byte](100000)(0)), Ack))
+      serverHandler.expectMsg(Ack)
 
       expectReceivedData(clientHandler, 100000)
 

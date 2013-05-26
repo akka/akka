@@ -219,7 +219,7 @@ class SslTlsSupport(engine: SSLEngine) extends PipelineStage[HasLogging, Command
       }
     }
 
-  private final class Send(val buffer: ByteBuffer, val ack: Any)
+  private final class Send(val buffer: ByteBuffer, val ack: Event)
 
   private object Send {
     val Empty = new Send(ByteBuffer wrap SslTlsSupport.EmptyByteArray, Tcp.NoAck)

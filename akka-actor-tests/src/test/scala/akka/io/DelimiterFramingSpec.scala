@@ -10,6 +10,8 @@ import akka.actor.{ Props, ActorLogging, Actor, ActorContext }
 import akka.TestUtils
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration._
+import akka.io.TcpPipelineHandler.Management
+import akka.actor.ActorRef
 
 class DelimiterFramingSpec extends AkkaSpec {
 
@@ -42,6 +44,7 @@ class DelimiterFramingSpec extends AkkaSpec {
     val probe = TestProbe()
     probe.send(IO(Tcp), Tcp.Bind(bindHandler, serverAddress))
     probe.expectMsgType[Tcp.Bound]
+    bindHandler ! Listener(probe.lastSender)
 
     val client = new AkkaLineClient(serverAddress, delimiter, includeDelimiter)
     client.run()
@@ -58,14 +61,10 @@ class DelimiterFramingSpec extends AkkaSpec {
     val connected = probe.expectMsgType[Tcp.Connected]
     val connection = probe.sender
 
-    val init = new TcpPipelineHandler.Init(
+    val init = TcpPipelineHandler.withLogger(system.log,
       new StringByteStringAdapter >>
         new DelimiterFraming(maxSize = 1024, delimiter = ByteString(delimiter), includeDelimiter = includeDelimiter) >>
-        new TcpReadWriteAdapter) {
-      override def makeContext(actorContext: ActorContext): HasLogging = new HasLogging {
-        override def getLogger = system.log
-      }
-    }
+        new TcpReadWriteAdapter)
 
     import init._
 
@@ -104,36 +103,32 @@ class DelimiterFramingSpec extends AkkaSpec {
     }
 
     def close() {
-      probe.send(handler, Tcp.Close)
-      probe.expectMsgType[Tcp.Event] match {
-        case _: Tcp.ConnectionClosed ⇒ true
-      }
+      probe.send(handler, Management(Tcp.Close))
+      probe.expectMsgType[Tcp.ConnectionClosed]
       TestUtils.verifyActorTermination(handler)
     }
-
   }
+
+  case class Listener(ref: ActorRef)
 
   class AkkaLineEchoServer(delimiter: String, includeDelimiter: Boolean) extends Actor with ActorLogging {
 
     import Tcp.Connected
 
+    var listener: ActorRef = _
+
     def receive: Receive = {
+      case Listener(ref) ⇒ listener = ref
       case Connected(remote, _) ⇒
         val init =
-          new TcpPipelineHandler.Init(
+          TcpPipelineHandler.withLogger(log,
             new StringByteStringAdapter >>
               new DelimiterFraming(maxSize = 1024, delimiter = ByteString(delimiter), includeDelimiter = includeDelimiter) >>
-              new TcpReadWriteAdapter) {
-            override def makeContext(actorContext: ActorContext): HasLogging =
-              new HasLogging {
-                override def getLogger = log
-              }
-          }
+              new TcpReadWriteAdapter)
         import init._
 
         val connection = sender
-        val handler = system.actorOf(
-          TcpPipelineHandler(init, sender, self), "server" + counter.incrementAndGet())
+        val handler = context.actorOf(TcpPipelineHandler(init, sender, self), "pipeline")
 
         connection ! Tcp.Register(handler)
 
@@ -141,6 +136,8 @@ class DelimiterFramingSpec extends AkkaSpec {
           case Event(data) ⇒
             if (includeDelimiter) sender ! Command(data)
             else sender ! Command(data + delimiter)
+          case Tcp.PeerClosed ⇒ listener ! Tcp.Unbind
+          case Tcp.Unbound    ⇒ context.stop(self)
         }
     }
   }

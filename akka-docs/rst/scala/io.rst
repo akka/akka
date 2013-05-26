@@ -583,7 +583,7 @@ resending of all queued data:
 It should be noted that all writes which are currently buffered have also been
 sent to the connection actor upon entering this state, which means that the
 :class:`ResumeWriting` message is enqueued after those writes, leading to the
-reception of all outstanding :class:`CommandFailre` messages (which are ignored
+reception of all outstanding :class:`CommandFailed` messages (which are ignored
 in this state) before receiving the :class:`WritingResumed` signal. That latter
 message is sent by the connection actor only once the internally queued write
 has been fully completed, meaning that a subsequent write will not fail. This
@@ -609,32 +609,47 @@ This example shows the different parts described above working together:
 
 .. includecode:: ../../../akka-remote/src/test/scala/akka/io/ssl/SslTlsSupportSpec.scala#server
 
-The actor above is meant to be registered as the inbound connection handler for
-a listen socket. When a new connection comes in it will create a
-:class:`javax.net.ssl.SSLEngine` (details not shown here since they vary wildly
+The actor above binds to a local port and registers itself as the handler for
+new connections.  When a new connection comes in it will create a
+:class:`javax.net.ssl.SSLEngine` (details not shown here since they vary widely
 for different setups, please refer to the JDK documentation) and wrap that in
 an :class:`SslTlsSupport` pipeline stage (which is included in ``akka-actor``).
-This single-stage pipeline will be driven by a :class:`TcpPipelineHandler`
-actor which is also included in ``akka-actor``. In order to capture the generic
-command and event types consumed and emitted by that actor we need to create a
-wrapper—the nested :class:`Init` class—which also provides the
-:meth:`makeContext` method for creating the pipeline context needed by the
-supplied pipeline. With those things bundled up all that remains is creating a
+
+This sample demonstrates a few more things: below the SSL pipeline stage we
+have inserted a backpressure buffer which will generate a
+:class:`HighWatermarkReached` event to tell the upper stages to suspend writing
+and a :class:`LowWatermarkReached` when they can resume writing. The
+implementation is very similar to the NACK-based backpressure approach
+presented above. Above the SSL stage comes an adapter which extracts only the
+payload data from the TCP commands and events, i.e. it speaks
+:class:`ByteString` above. The resulting byte streams are broken into frames by
+a :class:`DelimiterFraming` stage which chops them up on newline characters.
+The top-most stage then converts between :class:`String` and UTF-8 encoded
+:class:`ByteString`.
+
+As a result the pipeline will accept simple :class:`String` commands, encode
+them using UTF-8, delimit them with newlines (which are expected to be already
+present in the sending direction), transform them into TCP commands and events,
+encrypt them and send them off to the connection actor while buffering writes.
+
+This pipeline is driven by a :class:`TcpPipelineHandler` actor which is also
+included in ``akka-actor``. In order to capture the generic command and event
+types consumed and emitted by that actor we need to create a wrapper—the nested
+:class:`Init` class—which also provides the the pipeline context needed by the
+supplied pipeline; in this case we use the :meth:`withLogger` convenience
+method which supplies a context that implements :class:`HasLogger` and
+:class:`HasActorContext` and should be sufficient for typical pipelines. With
+those things bundled up all that remains is creating a
 :class:`TcpPipelineHandler` and registering that one as the recipient of
-inbound traffic from the TCP connection.
+inbound traffic from the TCP connection. The pipeline handler is instructed to 
+send the decrypted payload data to the following actor:
 
-Since we instructed that handler actor to send any events which are emitted by
-the SSL pipeline to ourselves, we can then just switch behavior to receive the
-decrypted payload message, compute a response and reply by sending back a
-``Tcp.Write``. It should be noted that communication with the handler wraps
-commands and events in the inner types of the ``init`` object in order to keep
-things well separated.
+.. includecode:: ../../../akka-remote/src/test/scala/akka/io/ssl/SslTlsSupportSpec.scala#handler
 
-.. warning::
-
-   The :class:`TcpPipelineHandler` does currently not handle back-pressure from
-   the TCP socket, i.e. it will just lose data when the kernel buffer
-   overflows. This will be fixed before Akka 2.2 final.
+This actor computes a response and replies by sending back a :class:`String`.
+It should be noted that communication with the :class:`TcpPipelineHandler`
+wraps commands and events in the inner types of the ``init`` object in order to
+keep things well separated.
 
 Using UDP
 ---------

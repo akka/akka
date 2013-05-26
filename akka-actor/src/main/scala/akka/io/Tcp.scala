@@ -63,12 +63,14 @@ object Tcp extends ExtensionKey[TcpExt] {
 
   }
 
+  trait Message
+
   /// COMMANDS
 
   /**
    * This is the common trait for all commands understood by TCP actors.
    */
-  trait Command extends IO.HasFailureMessage {
+  trait Command extends Message with IO.HasFailureMessage {
     def failureMessage = CommandFailed(this)
   }
 
@@ -102,7 +104,7 @@ object Tcp extends ExtensionKey[TcpExt] {
     override def event = Aborted
   }
 
-  case class NoAck(token: Any)
+  case class NoAck(token: Any) extends Event
   object NoAck extends NoAck(null)
 
   sealed trait WriteCommand extends Command {
@@ -116,7 +118,7 @@ object Tcp extends ExtensionKey[TcpExt] {
    * Write data to the TCP connection. If no ack is needed use the special
    * `NoAck` object.
    */
-  case class Write(data: ByteString, ack: Any) extends WriteCommand
+  case class Write(data: ByteString, ack: Event) extends WriteCommand
   object Write {
     /**
      * The empty Write doesn't write anything and isn't acknowledged.
@@ -149,7 +151,7 @@ object Tcp extends ExtensionKey[TcpExt] {
   case object ResumeReading extends Command
 
   /// EVENTS
-  trait Event
+  trait Event extends Message
 
   case class Received(data: ByteString) extends Event
   case class Connected(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress) extends Event
@@ -274,7 +276,7 @@ object TcpMessage {
   def noAck(token: AnyRef): NoAck = NoAck(token)
 
   def write(data: ByteString): Command = Write(data)
-  def write(data: ByteString, ack: AnyRef): Command = Write(data, ack)
+  def write(data: ByteString, ack: Event): Command = Write(data, ack)
 
   def suspendReading: Command = SuspendReading
   def resumeReading: Command = ResumeReading

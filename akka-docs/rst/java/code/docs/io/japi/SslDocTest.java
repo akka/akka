@@ -21,8 +21,13 @@ import akka.actor.UntypedActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.io.AbstractPipelineContext;
+import akka.io.BackpressureBuffer;
+import akka.io.DelimiterFraming;
 import akka.io.HasLogging;
+import akka.io.PipelineStage;
+import static akka.io.PipelineStage.sequence;
 import akka.io.SslTlsSupport;
+import akka.io.StringByteStringAdapter;
 import akka.io.Tcp;
 import akka.io.Tcp.Bound;
 import akka.io.Tcp.Command;
@@ -33,6 +38,8 @@ import akka.io.Tcp.Received;
 import akka.io.TcpMessage;
 import akka.io.TcpPipelineHandler;
 import akka.io.TcpPipelineHandler.Init;
+import akka.io.TcpPipelineHandler.WithinActorContext;
+import akka.io.TcpReadWriteAdapter;
 import akka.io.ssl.SslTlsSupportSpec;
 import akka.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
@@ -60,14 +67,8 @@ public class SslDocTest {
           .tell(TcpMessage.connect(remote), getSelf());
     }
     
-    class Context extends AbstractPipelineContext implements HasLogging {
-      @Override
-      public LoggingAdapter getLogger() {
-        return log;
-      }
-    }
-    
-    Init<HasLogging, Command, Event> init = null;
+    // this will hold the pipeline handler’s context
+    Init<WithinActorContext, String, String> init = null;
 
     @Override
     public void onReceive(Object msg) {
@@ -79,33 +80,30 @@ public class SslDocTest {
         final SSLEngine engine = sslContext.createSSLEngine(
             remote.getHostName(), remote.getPort());
         engine.setUseClientMode(true);
-        final SslTlsSupport ssl = new SslTlsSupport(engine);
 
-        // set up the context for communicating with TcpPipelineHandler
-        init = new Init<HasLogging, Command, Event>(ssl) {
-          @Override
-          public HasLogging makeContext(ActorContext ctx) {
-            return new Context();
-          }
-        };
+        // build pipeline and set up context for communicating with TcpPipelineHandler
+        init = TcpPipelineHandler.withLogger(log, sequence(sequence(sequence(sequence(
+            new StringByteStringAdapter("utf-8"),
+            new DelimiterFraming(1024, ByteString.fromString("\n"), true)),
+            new TcpReadWriteAdapter()),
+            new SslTlsSupport(engine)),
+            new BackpressureBuffer(1000, 10000, 1000000)));
+
         // create handler for pipeline, setting ourselves as payload recipient
         final ActorRef handler = getContext().actorOf(
             TcpPipelineHandler.create(init, getSender(), getSelf()));
         
         // register the SSL handler with the connection
         getSender().tell(TcpMessage.register(handler), getSelf());
+        
         // and send a message across the SSL channel
-        handler.tell(
-            init.command(TcpMessage.write(ByteString.fromString("hello"))),
-            getSelf());
+        handler.tell(init.command("hello\n"), getSelf());
       
       } else if (msg instanceof Init.Event) {
         // unwrap TcpPipelineHandler’s event into a Tcp.Event
-        final Event recv = init.event(msg);
-        if (recv instanceof Received) {
-          // and inform someone of the received payload
-          listener.tell(((Received) recv).data().utf8String(), getSelf());
-        }
+        final String recv = init.event(msg);
+        // and inform someone of the received payload
+        listener.tell(recv, getSelf());
       }
     }
   }
@@ -130,14 +128,8 @@ public class SslDocTest {
           getSelf());
     }
     
-    class Context extends AbstractPipelineContext implements HasLogging {
-      @Override
-      public LoggingAdapter getLogger() {
-        return log;
-      }
-    }
-    
-    Init<HasLogging, Command, Event> init = null;
+    // this will hold the pipeline handler’s context
+    Init<WithinActorContext, String, String> init = null;
 
     @Override
     public void onReceive(Object msg) {
@@ -153,15 +145,15 @@ public class SslDocTest {
         final SSLEngine engine = sslContext.createSSLEngine(
             remote.getHostName(), remote.getPort());
         engine.setUseClientMode(false);
-        final SslTlsSupport ssl = new SslTlsSupport(engine);
-
-        // set up the context for communicating with TcpPipelineHandler
-        init = new Init<HasLogging, Command, Event>(ssl) {
-          @Override
-          public HasLogging makeContext(ActorContext ctx) {
-            return new Context();
-          }
-        };
+        
+        // build pipeline and set up context for communicating with TcpPipelineHandler
+        init = TcpPipelineHandler.withLogger(log, sequence(sequence(sequence(sequence(
+            new StringByteStringAdapter("utf-8"),
+            new DelimiterFraming(1024, ByteString.fromString("\n"), true)),
+            new TcpReadWriteAdapter()),
+            new SslTlsSupport(engine)),
+            new BackpressureBuffer(1000, 10000, 1000000)));
+        
         // create handler for pipeline, setting ourselves as payload recipient
         final ActorRef handler = getContext().actorOf(
             TcpPipelineHandler.create(init, getSender(), getSelf()));
@@ -171,14 +163,11 @@ public class SslDocTest {
       
       } else if (msg instanceof Init.Event) {
         // unwrap TcpPipelineHandler’s event to get a Tcp.Event
-        final Event recv = init.event(msg);
-        if (recv instanceof Received) {
-          // inform someone of the received message
-          listener.tell(((Received) recv).data().utf8String(), getSelf());
-          // and reply (sender is the SSL handler created above)
-          getSender().tell(init.command(
-              TcpMessage.write(ByteString.fromString("world"))), getSelf());
-        }
+        final String recv = init.event(msg);
+        // inform someone of the received message
+        listener.tell(recv, getSelf());
+        // and reply (sender is the SSL handler created above)
+        getSender().tell(init.command("world\n"), getSelf());
       }
     }
   }
@@ -201,9 +190,9 @@ public class SslDocTest {
         assert getLastSender() == server;
         
         final ActorRef client = system.actorOf(Props.create(SslClient.class, bound.localAddress(), ctx, getRef()));
-        expectMsgEquals("hello");
+        expectMsgEquals("hello\n");
         assert getLastSender() == server;
-        expectMsgEquals("world");
+        expectMsgEquals("world\n");
         assert getLastSender() == client;
       }
     };

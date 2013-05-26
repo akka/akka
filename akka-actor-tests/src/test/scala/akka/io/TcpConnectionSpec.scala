@@ -140,7 +140,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
     "write data to network (and acknowledge)" in new EstablishedConnectionTest() {
       run {
-        object Ack
+        object Ack extends Event
         val writer = TestProbe()
 
         // directly acknowledge an empty write
@@ -172,7 +172,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
     "write data after not acknowledged data" in new EstablishedConnectionTest() {
       run {
-        object Ack
+        object Ack extends Event
         val writer = TestProbe()
         writer.send(connectionActor, Write(ByteString(42.toByte)))
         writer.expectNoMsg(500.millis)
@@ -197,7 +197,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
         // maximum of 100 MB
         val size = math.min(testFile.length(), 100000000).toInt
 
-        object Ack
+        object Ack extends Event
         val writer = TestProbe()
         writer.send(connectionActor, WriteFile(testFile.getAbsolutePath, 0, size, Ack))
         pullFromServerSide(size, 1000000)
@@ -225,8 +225,8 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
             "backpressure present.")
           pending
           ignoreIfWindows()
-          object Ack1
-          object Ack2
+          object Ack1 extends Event
+          object Ack2 extends Event
 
           clientSideChannel.socket.setSendBufferSize(1024)
 
@@ -281,7 +281,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       new EstablishedConnectionTest() with SmallRcvBuffer {
         run {
           // we should test here that a pending write command is properly finished first
-          object Ack
+          object Ack extends Event
           // set an artificially small send buffer size so that the write is queued
           // inside the connection actor
           clientSideChannel.socket.setSendBufferSize(1024)
@@ -343,7 +343,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
       new EstablishedConnectionTest() with SmallRcvBuffer {
         run {
           // we should test here that a pending write command is properly finished first
-          object Ack
+          object Ack extends Event
           // set an artificially small send buffer size so that the write is queued
           // inside the connection actor
           clientSideChannel.socket.setSendBufferSize(1024)
@@ -376,7 +376,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
           ignoreIfWindows()
 
           // we should test here that a pending write command is properly finished first
-          object Ack
+          object Ack extends Event
           // set an artificially small send buffer size so that the write is queued
           // inside the connection actor
           clientSideChannel.socket.setSendBufferSize(1024)
@@ -423,7 +423,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
           selector.send(connectionActor, ChannelReadable)
           connectionHandler.expectMsg(PeerClosed)
-          object Ack
+          object Ack extends Event
           connectionHandler.send(connectionActor, writeCmd(Ack))
           pullFromServerSide(TestSize)
           connectionHandler.expectMsg(Ack)
@@ -441,7 +441,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
           selector.send(connectionActor, ChannelReadable)
           connectionHandler.expectMsg(PeerClosed)
-          object Ack
+          object Ack extends Event
           connectionHandler.send(connectionActor, writeCmd(Ack))
           pullFromServerSide(TestSize)
           connectionHandler.expectMsg(Ack)
@@ -571,8 +571,9 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
         writer.expectMsg(Duration.Zero, WritingResumed)
 
         // now write should work again
-        writer.send(connectionActor, writeCmd("works"))
-        writer.expectMsg("works")
+        object works extends Event
+        writer.send(connectionActor, writeCmd(works))
+        writer.expectMsg(works)
       }
     }
 
@@ -606,8 +607,9 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
         writer.expectMsg(1.second, WritingResumed)
 
         // now write should work again
-        writer.send(connectionActor, writeCmd("works"))
-        writer.expectMsg("works")
+        object works extends Event
+        writer.send(connectionActor, writeCmd(works))
+        writer.expectMsg(works)
       }
     }
 
@@ -638,8 +640,9 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
         pullFromServerSide(TestSize * written)
 
         // now write should work again
-        writer.send(connectionActor, writeCmd("works"))
-        writer.expectMsg("works")
+        object works extends Event
+        writer.send(connectionActor, writeCmd(works))
+        writer.expectMsg(works)
       }
     }
 
@@ -663,8 +666,9 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
         pullFromServerSide(TestSize * written)
 
         // now write should work again
-        writer.send(connectionActor, writeCmd("works"))
-        writer.expectMsg("works")
+        object works extends Event
+        writer.send(connectionActor, writeCmd(works))
+        writer.expectMsg(works)
       }
     }
   }
@@ -767,7 +771,7 @@ class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms")
 
     final val TestSize = 10000 // compile-time constant
 
-    def writeCmd(ack: AnyRef) =
+    def writeCmd(ack: Event) =
       Write(ByteString(Array.fill[Byte](TestSize)(0)), ack)
 
     def closeServerSideAndWaitForClientReadable(fullClose: Boolean = true): Unit = {
