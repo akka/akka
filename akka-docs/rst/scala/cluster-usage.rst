@@ -5,8 +5,6 @@
  Cluster Usage
 #######################
 
-.. note:: This module is :ref:`experimental <experimental>`. This document describes how to use the features implemented so far. More features are coming in Akka Coltrane. Track progress of the Coltrane milestone in `Assembla <http://www.assembla.com/spaces/akka/tickets>`_ and the `Roadmap <https://docs.google.com/document/d/18W9-fKs55wiFNjXL9q50PYOnR7-nnsImzJqHOPPbM4E/edit?hl=en_US>`_.
-
 For introduction to the Akka Cluster concepts please see :ref:`cluster`.
 
 Preparing Your Project for Clustering
@@ -14,12 +12,7 @@ Preparing Your Project for Clustering
 
 The Akka cluster is a separate jar file. Make sure that you have the following dependency in your project::
 
-  "com.typesafe.akka" %% "akka-cluster-experimental" % "@version@" @crossString@
-
-If you are using the latest nightly build you should pick a timestamped Akka
-version from
-`<http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/akka-cluster-experimental_@binVersion@/>`_.
-We recommend against using ``SNAPSHOT`` in order to obtain stable builds.
+  "com.typesafe.akka" %% "akka-cluster" % "@version@" @crossString@
 
 A Simple Cluster Example
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -242,7 +235,7 @@ frontend nodes and 3 backend nodes::
 
   sbt
 
-  project akka-sample-cluster-experimental
+  project akka-sample-cluster
 
   run-main sample.cluster.transformation.TransformationFrontend 2551
 
@@ -463,7 +456,7 @@ service nodes and 1 client::
 
   sbt
 
-  project akka-sample-cluster-experimental
+  project akka-sample-cluster
 
   run-main sample.cluster.stats.StatsSample 2551
 
@@ -577,7 +570,7 @@ and you can try by starting nodes in different terminal windows. For example, st
 
   sbt
 
-  project akka-sample-cluster-experimental
+  project akka-sample-cluster
 
   run-main sample.cluster.factorial.FactorialBackend 2551
 

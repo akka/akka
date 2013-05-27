@@ -179,7 +179,7 @@ object AkkaBuild extends Build {
   ) configs (MultiJvm)
 
   lazy val cluster = Project(
-    id = "akka-cluster-experimental",
+    id = "akka-cluster",
     base = file("akka-cluster"),
     dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test"),
     settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ multiJvmSettings ++ OSGi.cluster ++ experimentalSettings ++
@@ -192,7 +192,7 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
-      previousArtifact := akkaPreviousArtifact("akka-cluster-experimental")
+      previousArtifact := akkaPreviousArtifact("akka-cluster")
     )
   ) configs (MultiJvm, ScalaBuff)
 
@@ -388,7 +388,7 @@ object AkkaBuild extends Build {
   )
 
   lazy val clusterSample = Project(
-    id = "akka-sample-cluster-experimental",
+    id = "akka-sample-cluster",
     base = file("akka-samples/akka-sample-cluster"),
     dependencies = Seq(cluster, contrib, remoteTests % "test", testkit % "test"),
     settings = sampleSettings ++ multiJvmSettings ++ experimentalSettings ++ Seq(
