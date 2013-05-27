@@ -71,6 +71,12 @@ In Java:
 
 .. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ClusterSingletonManagerTest.java#create-singleton-manager
 
+.. note::
+
+  The ``singletonProps``/``singletonPropsFactory`` is invoked when creating
+  the singleton actor and it must not use members that are not thread safe, e.g.
+  mutable state in enclosing actor.
+
 Here we use an application specific ``terminationMessage`` to be able to close the
 resources before actually stopping the singleton actor. Note that ``PoisonPill`` is a
 perfectly fine ``terminationMessage`` if you only need to stop the actor.

@@ -25,6 +25,9 @@ object ClusterSingletonManager {
 
   /**
    * Scala API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]].
+   * Note that the `singletonProps` function is applied when creating
+   * the singleton actor and it must not use members that are not thread safe, e.g.
+   * mutable state in enclosing actor.
    */
   def props(
     singletonProps: Option[Any] ⇒ Props,
@@ -39,6 +42,9 @@ object ClusterSingletonManager {
 
   /**
    * Java API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]].
+   * Note that the `singletonPropsFactory` is invoked when creating
+   * the singleton actor and it must not use members that are not thread safe, e.g.
+   * mutable state in enclosing actor.
    */
   def props(
     singletonName: String,
@@ -54,6 +60,9 @@ object ClusterSingletonManager {
   /**
    * Java API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]]
    * with default values.
+   * Note that the `singletonPropsFactory` is invoked when creating
+   * the singleton actor and it must not use members that are not thread safe, e.g.
+   * mutable state in enclosing actor.
    */
   def defaultProps(
     singletonName: String,
@@ -325,7 +334,9 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  *    might be None when no hand-over took place, or when the there
  *    is no need for sending data to the new singleton. The `handOverData`
  *    is typically passed as parameter to the constructor of the
- *    singleton actor.
+ *    singleton actor. Note that the `singletonProps` function is applied when creating
+ *    the singleton actor and it must not use members that are not thread safe, e.g.
+ *    mutable state in enclosing actor.
  *
  * '''''singletonName''''' The actor name of the child singleton actor.
  *
