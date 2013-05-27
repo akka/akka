@@ -33,7 +33,7 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     throw new ConfigurationException(
       "Configuration for " + this +
         " is invalid - you can not use a 'BalancingDispatcher' as a Router's dispatcher, you can however use it for the routees.")
-  } else _props.routerConfig.verifyConfig()
+  } else _props.routerConfig.verifyConfig(_path)
 
   override def newCell(old: UnstartedCell): Cell = new RoutedActorCell(system, this, props, supervisor).init(sendSupervise = false)
 
@@ -222,7 +222,7 @@ trait RouterConfig {
   /**
    * Check that everything is there which is needed. Called in constructor of RoutedActorRef to fail early.
    */
-  def verifyConfig(): Unit = ()
+  def verifyConfig(path: ActorPath): Unit = ()
 
   /*
    * Specify that this router should stop itself when all routees have terminated (been removed).
@@ -528,8 +528,8 @@ class FromConfig(val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
 
   def this() = this(Dispatchers.DefaultDispatcherId, Router.defaultSupervisorStrategy)
 
-  override def verifyConfig(): Unit =
-    throw new ConfigurationException("router needs external configuration from file (e.g. application.conf)")
+  override def verifyConfig(path: ActorPath): Unit =
+    throw new ConfigurationException(s"Configuration missing for router [$path] in 'akka.actor.deployment' section.")
 
   def createRoute(routeeProvider: RouteeProvider): Route = null
 
