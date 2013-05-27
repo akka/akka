@@ -342,7 +342,7 @@ class DistributedPubSubMediator(
       if (matchingRole(m))
         nodes += m.address
 
-    case MemberRemoved(m) ⇒
+    case MemberRemoved(m, _) ⇒
       if (m.address == selfAddress)
         context stop self
       else if (matchingRole(m)) {

@@ -111,8 +111,12 @@ object ClusterEvent {
 
   /**
    * Member completely removed from the cluster.
+   * When `previousStatus` is `MemberStatus.Down` the node was removed
+   * after being detected as unreachable and downed.
+   * When `previousStatus` is `MemberStatus.Exiting` the node was removed
+   * after graceful leaving and exiting.
    */
-  case class MemberRemoved(member: Member) extends MemberEvent {
+  case class MemberRemoved(member: Member, previousStatus: MemberStatus) extends MemberEvent {
     if (member.status != Removed) throw new IllegalArgumentException("Expected Removed status, got: " + member)
   }
 
@@ -200,7 +204,7 @@ object ClusterEvent {
 
       val removedMembers = (oldGossip.members -- newGossip.members -- newGossip.overview.unreachable) ++
         (oldGossip.overview.unreachable -- newGossip.overview.unreachable)
-      val removedEvents = removedMembers.map(m ⇒ MemberRemoved(m.copy(status = Removed)))
+      val removedEvents = removedMembers.map(m ⇒ MemberRemoved(m.copy(status = Removed), m.status))
 
       (new VectorBuilder[MemberEvent]() ++= memberEvents ++= removedEvents).result()
     }

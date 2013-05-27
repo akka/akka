@@ -48,7 +48,7 @@ abstract class NodeLeavingAndExitingSpec
               if (state.members.exists(m ⇒ m.address == secondAddess && m.status == Exiting))
                 exitingLatch.countDown()
             case MemberExited(m) if m.address == secondAddess ⇒ exitingLatch.countDown()
-            case MemberRemoved(m)                             ⇒ // not tested here
+            case _: MemberRemoved                             ⇒ // not tested here
 
           }
         })), classOf[MemberEvent])

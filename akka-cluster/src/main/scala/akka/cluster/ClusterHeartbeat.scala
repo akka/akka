@@ -126,7 +126,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
     case HeartbeatTick                ⇒ heartbeat()
     case MemberUp(m)                  ⇒ addMember(m)
     case UnreachableMember(m)         ⇒ removeMember(m)
-    case MemberRemoved(m)             ⇒ removeMember(m)
+    case MemberRemoved(m, _)          ⇒ removeMember(m)
     case s: CurrentClusterState       ⇒ reset(s)
     case MemberExited(m)              ⇒ memberExited(m)
     case _: MemberEvent               ⇒ // not interested in other types of MemberEvent

@@ -49,7 +49,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
         case e: ClusterDomainEvent ⇒ e match {
           case SeenChanged(convergence, seenBy) ⇒
             state = state.copy(seenBy = seenBy)
-          case MemberRemoved(member) ⇒
+          case MemberRemoved(member, _) ⇒
             state = state.copy(members = state.members - member, unreachable = state.unreachable - member)
           case UnreachableMember(member) ⇒
             // replace current member with new member (might have different status, only address is used in equals)

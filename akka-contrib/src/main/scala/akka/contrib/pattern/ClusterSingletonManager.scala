@@ -489,13 +489,13 @@ class ClusterSingletonManager(
         stay using YoungerData(oldestOption)
       }
 
-    case Event(MemberRemoved(m), YoungerData(Some(previousOldest))) if m.address == previousOldest ⇒
+    case Event(MemberRemoved(m, _), YoungerData(Some(previousOldest))) if m.address == previousOldest ⇒
       logInfo("Previous oldest removed [{}]", m.address)
       addRemoved(m.address)
       // transition when OldestChanged
       stay using YoungerData(None)
 
-    case Event(MemberRemoved(m), _) if m.address == cluster.selfAddress ⇒
+    case Event(MemberRemoved(m, _), _) if m.address == cluster.selfAddress ⇒
       logInfo("Self removed, stopping ClusterSingletonManager")
       stop()
 
@@ -518,7 +518,7 @@ class ClusterSingletonManager(
         stay
       }
 
-    case Event(MemberRemoved(m), BecomingOldestData(Some(previousOldest))) if m.address == previousOldest ⇒
+    case Event(MemberRemoved(m, _), BecomingOldestData(Some(previousOldest))) if m.address == previousOldest ⇒
       logInfo("Previous oldest [{}] removed", previousOldest)
       addRemoved(m.address)
       stay
@@ -600,7 +600,7 @@ class ClusterSingletonManager(
     case Event(HandOverToMe, WasOldestData(singleton, singletonTerminated, handOverData, _)) ⇒
       gotoHandingOver(singleton, singletonTerminated, handOverData, Some(sender))
 
-    case Event(MemberRemoved(m), WasOldestData(singleton, singletonTerminated, handOverData, Some(newOldest))) if !selfExited && m.address == newOldest ⇒
+    case Event(MemberRemoved(m, _), WasOldestData(singleton, singletonTerminated, handOverData, Some(newOldest))) if !selfExited && m.address == newOldest ⇒
       addRemoved(m.address)
       gotoHandingOver(singleton, singletonTerminated, handOverData, None)
 
@@ -647,7 +647,7 @@ class ClusterSingletonManager(
   }
 
   when(End) {
-    case Event(MemberRemoved(m), _) if m.address == cluster.selfAddress ⇒
+    case Event(MemberRemoved(m, _), _) if m.address == cluster.selfAddress ⇒
       logInfo("Self removed, stopping ClusterSingletonManager")
       stop()
   }
@@ -660,7 +660,7 @@ class ClusterSingletonManager(
         logInfo("Exited [{}]", m.address)
       }
       stay
-    case Event(MemberRemoved(m), _) ⇒
+    case Event(MemberRemoved(m, _), _) ⇒
       if (!selfExited) logInfo("Member removed [{}]", m.address)
       addRemoved(m.address)
       stay
