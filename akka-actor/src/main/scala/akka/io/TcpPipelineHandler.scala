@@ -117,11 +117,12 @@ object TcpPipelineHandler {
  * the connection actor terminates this actor terminates as well; the designated
  * handler may want to watch this actor’s lifecycle.
  *
- * <b>FIXME WARNING:</b> (Ticket 3253)
- *
- * This actor does currently not handle back-pressure from the TCP socket; it
- * is meant only as a demonstration and will be fleshed out in full before the
- * 2.2 release.
+ * <b>IMPORTANT:</b>
+ * 
+ * Proper function of this actor (and of other pipeline stages like [[TcpReadWriteAdapter]]
+ * depends on the fact that stages handling TCP commands and events pass unknown
+ * subtypes through unaltered. There are more commands and events than are declared
+ * within the [[Tcp]] object and you can even define your own.
  */
 class TcpPipelineHandler[Ctx <: PipelineContext, Cmd, Evt](
   init: TcpPipelineHandler.Init[Ctx, Cmd, Evt],
