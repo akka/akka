@@ -126,7 +126,6 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.remote.log-remote-lifecycle-events = off
 
-    #akka.scheduler.tick-duration = 33 ms
     akka.actor.default-dispatcher.fork-join-executor {
       parallelism-min = 8
       parallelism-max = 8

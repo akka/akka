@@ -202,7 +202,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
           case Msg(ts) ⇒
             val now = System.nanoTime
             // Make sure that no message has been dispatched before the scheduled time (10ms) has occurred
-            if (now - ts < 10.millis.toNanos) throw new RuntimeException("Interval is too small: " + (now - ts))
+            if (now - ts < 5.millis.toNanos) throw new RuntimeException("Interval is too small: " + (now - ts))
             ticks.countDown()
         }
       }))
@@ -296,22 +296,6 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
 class DefaultSchedulerSpec extends AkkaSpec(SchedulerSpec.testConf) with SchedulerSpec {
   private val cancellables = new ConcurrentLinkedQueue[Cancellable]()
 
-  "A HashedWheelTimer" must {
-
-    "not mess up long timeouts" taggedAs LongRunningTest in {
-      val longish = Long.MaxValue.nanos
-      val barrier = TestLatch()
-      import system.dispatcher
-      val job = system.scheduler.scheduleOnce(longish)(barrier.countDown())
-      intercept[TimeoutException] {
-        // this used to fire after 46 seconds due to wrap-around
-        Await.ready(barrier, 90 seconds)
-      }
-      job.cancel()
-    }
-
-  }
-
   def collectCancellable(c: Cancellable): Cancellable = {
     cancellables.add(c)
     c
@@ -325,7 +309,6 @@ class DefaultSchedulerSpec extends AkkaSpec(SchedulerSpec.testConf) with Schedul
     }
   }
 
-  override def expectedTestDuration = 5 minutes
 }
 
 class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRevolver) with SchedulerSpec {
