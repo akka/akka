@@ -367,6 +367,18 @@ akka-testkit
 .. literalinclude:: ../../../akka-testkit/src/main/resources/reference.conf
    :language: none
 
+akka-camel
+~~~~~~~~~~
+
+.. literalinclude:: ../../../akka-camel/src/main/resources/reference.conf
+   :language: none
+
+akka-cluster
+~~~~~~~~~~~~
+
+.. literalinclude:: ../../../akka-cluster/src/main/resources/reference.conf
+   :language: none
+
 akka-transactor
 ~~~~~~~~~~~~~~~
 
