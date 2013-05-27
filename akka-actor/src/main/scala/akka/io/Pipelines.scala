@@ -721,6 +721,223 @@ abstract class PipelineStage[Context <: PipelineContext, CmdAbove, CmdBelow, Evt
     }
 }
 
+object BackpressureBuffer {
+  /**
+   * Message type which is sent when the buffer’s high watermark has been
+   * reached, which means that further write requests should not be sent
+   * until the low watermark has been reached again.
+   */
+  trait HighWatermarkReached extends Tcp.Event
+  case object HighWatermarkReached extends HighWatermarkReached
+
+  /**
+   * Message type which is sent when the buffer’s fill level falls below
+   * the low watermark, which means that writing can commence again.
+   */
+  trait LowWatermarkReached extends Tcp.Event
+  case object LowWatermarkReached extends LowWatermarkReached
+}
+
+/**
+ * This pipeline stage implements a configurable buffer for transforming the
+ * per-write ACK/NACK-based backpressure model of a TCP connection actor into
+ * an edge-triggered back-pressure model: the upper stages will receive
+ * notification when the buffer runs full ([[HighWatermarkReached]]) and when
+ * it subsequently empties ([[LowWatermarkReached]]). The upper layers should
+ * respond by not generating more writes when the buffer is full. There is also
+ * a hard limit upon which this buffer will abort the connection.
+ *
+ * All limits are configurable and are given in number of bytes.
+ * The `highWatermark` should be set such that the
+ * amount of data generated before reception of the asynchronous
+ * [[HighWatermarkReached]] notification does not lead to exceeding the
+ * `maxCapacity` hard limit; if the writes may arrive in bursts then the
+ * difference between these two should allow for at least one burst to be sent
+ * after the high watermark has been reached. The `lowWatermark` must be less
+ * than or equal to the `highWatermark`, where the difference between these two
+ * defines the hysteresis, i.e. how often these notifications are sent out (i.e.
+ * if the difference is rather large then it will take some time for the buffer
+ * to empty below the low watermark, and that room is then available for data
+ * sent in response to the [[LowWatermarkReached]] notification; if the
+ * difference was small then the buffer would more quickly oscillate between
+ * these two limits).
+ */
+class BackpressureBuffer(lowBytes: Long, highBytes: Long, maxBytes: Long)
+  extends PipelineStage[HasLogging, Tcp.Command, Tcp.Command, Tcp.Event, Tcp.Event] {
+
+  require(lowBytes >= 0, "lowWatermark needs to be non-negative")
+  require(highBytes >= lowBytes, "highWatermark needs to be at least as large as lowWatermark")
+  require(maxBytes >= highBytes, "maxCapacity needs to be at least as large as highWatermark")
+
+  case class Ack(num: Int, ack: Tcp.Event) extends Tcp.Event
+
+  override def apply(ctx: HasLogging) = new PipePair[Tcp.Command, Tcp.Command, Tcp.Event, Tcp.Event] {
+
+    import Tcp._
+    import BackpressureBuffer._
+
+    private val log = ctx.getLogger
+
+    private var storageOffset = 0
+    private var storage = Vector.empty[Write]
+    private def currentOffset = storageOffset + storage.size
+
+    private var stored = 0L
+    private var suspended = false
+
+    private var behavior = writing
+    override def commandPipeline = behavior
+    override def eventPipeline = behavior
+
+    private def become(f: Message ⇒ Iterable[Result]) { behavior = f }
+
+    private lazy val writing: Message ⇒ Iterable[Result] = {
+      case Write(data, ack) ⇒
+        buffer(Write(data, Ack(currentOffset, ack)), doWrite = true)
+
+      case CommandFailed(Write(_, Ack(offset, _))) ⇒
+        become(buffering(offset))
+        ctx.singleCommand(ResumeWriting)
+
+      case cmd: CloseCommand ⇒ cmd match {
+        case _ if storage.isEmpty ⇒
+          become(finished)
+          ctx.singleCommand(cmd)
+        case Abort ⇒
+          storage = Vector.empty
+          become(finished)
+          ctx.singleCommand(Abort)
+        case _ ⇒
+          become(closing(cmd))
+          ctx.nothing
+      }
+
+      case Ack(seq, ack) ⇒ acknowledge(seq, ack)
+
+      case cmd: Command  ⇒ ctx.singleCommand(cmd)
+      case evt: Event    ⇒ ctx.singleEvent(evt)
+    }
+
+    private def buffering(nack: Int): Message ⇒ Iterable[Result] = {
+      var toAck = 10
+      var closed: CloseCommand = null
+
+      {
+        case Write(data, ack) ⇒
+          buffer(Write(data, Ack(currentOffset, ack)), doWrite = false)
+
+        case WritingResumed ⇒
+          ctx.singleCommand(storage(0))
+
+        case cmd: CloseCommand ⇒ cmd match {
+          case Abort ⇒
+            storage = Vector.empty
+            become(finished)
+            ctx.singleCommand(Abort)
+          case _ ⇒
+            closed = cmd
+            ctx.nothing
+        }
+
+        case Ack(seq, ack) if seq < nack ⇒ acknowledge(seq, ack)
+
+        case Ack(seq, ack) ⇒
+          val ackMsg = acknowledge(seq, ack)
+          if (storage.nonEmpty) {
+            if (toAck > 0) {
+              toAck -= 1
+              ctx.dealias(ackMsg) ++ Seq(Right(storage(0)))
+            } else {
+              become(if (closed != null) closing(closed) else writing)
+              ctx.dealias(ackMsg) ++ storage.map(Right(_))
+            }
+          } else if (closed != null) {
+            become(finished)
+            ctx.dealias(ackMsg) ++ Seq(Right(closed))
+          } else {
+            become(writing)
+            ackMsg
+          }
+
+        case CommandFailed(_: Write) ⇒ ctx.nothing
+        case cmd: Command            ⇒ ctx.singleCommand(cmd)
+        case evt: Event              ⇒ ctx.singleEvent(evt)
+      }
+    }
+
+    private def closing(cmd: CloseCommand): Message ⇒ Iterable[Result] = {
+      case Ack(seq, ack) ⇒
+        val result = acknowledge(seq, ack)
+        if (storage.isEmpty) {
+          become(finished)
+          ctx.dealias(result) ++ Seq(Right(cmd))
+        } else result
+
+      case CommandFailed(_: Write) ⇒
+        become({
+          case WritingResumed ⇒
+            become(closing(cmd))
+            storage.map(Right(_))
+          case CommandFailed(_: Write) ⇒ ctx.nothing
+          case cmd: Command            ⇒ ctx.singleCommand(cmd)
+          case evt: Event              ⇒ ctx.singleEvent(evt)
+        })
+        ctx.singleCommand(ResumeWriting)
+
+      case cmd: Command ⇒ ctx.singleCommand(cmd)
+      case evt: Event   ⇒ ctx.singleEvent(evt)
+    }
+
+    private val finished: Message ⇒ Iterable[Result] = {
+      case _: Write                ⇒ ctx.nothing
+      case CommandFailed(_: Write) ⇒ ctx.nothing
+      case cmd: Command            ⇒ ctx.singleCommand(cmd)
+      case evt: Event              ⇒ ctx.singleEvent(evt)
+    }
+
+    private def buffer(w: Write, doWrite: Boolean): Iterable[Result] = {
+      storage :+= w
+      stored += w.data.size
+
+      if (stored > maxBytes) {
+        log.warning("aborting connection (buffer overrun)")
+        become(finished)
+        ctx.singleCommand(Abort)
+      } else if (stored > highBytes && !suspended) {
+        log.debug("suspending writes")
+        suspended = true
+        if (doWrite) {
+          Seq(Right(w), Left(HighWatermarkReached))
+        } else {
+          ctx.singleEvent(HighWatermarkReached)
+        }
+      } else if (doWrite) {
+        ctx.singleCommand(w)
+      } else Nil
+    }
+
+    private def acknowledge(seq: Int, ack: Event): Iterable[Result] = {
+      require(seq == storageOffset, s"received ack $seq at $storageOffset")
+      require(storage.nonEmpty, s"storage was empty at ack $seq")
+
+      val size = storage(0).data.size
+      stored -= size
+
+      storageOffset += 1
+      storage = storage drop 1
+
+      if (suspended && stored < lowBytes) {
+        log.debug("resuming writes")
+        suspended = false
+        if (ack == NoAck) ctx.singleEvent(LowWatermarkReached)
+        else Vector(Left(ack), Left(LowWatermarkReached))
+      } else if (ack == NoAck) ctx.nothing
+      else ctx.singleEvent(ack)
+    }
+  }
+
+}
+
 //#length-field-frame
 /**
  * Pipeline stage for length-field encoded framing. It will prepend a

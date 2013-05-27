@@ -58,11 +58,11 @@ private[io] class UdpConnection(udpConn: UdpConnectedExt,
   }
 
   def connected(registration: ChannelRegistration): Receive = {
-    case StopReading     ⇒ registration.disableInterest(OP_READ)
+    case SuspendReading  ⇒ registration.disableInterest(OP_READ)
     case ResumeReading   ⇒ registration.enableInterest(OP_READ)
     case ChannelReadable ⇒ doRead(registration, handler)
 
-    case Close ⇒
+    case Disconnect ⇒
       log.debug("Closing UDP connection to [{}]", remoteAddress)
       channel.close()
       sender ! Disconnected

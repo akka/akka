@@ -4,20 +4,15 @@
 
 package akka.io
 
-import akka.actor.Actor
-import akka.actor.ActorContext
 import scala.beans.BeanProperty
-import akka.actor.ActorRef
-import scala.util.Success
-import scala.util.Failure
-import akka.actor.Terminated
-import akka.actor.Props
+import scala.util.{ Failure, Success }
+import akka.actor.{ Actor, ActorContext, ActorRef, Props, Terminated }
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.util.ByteString
-import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.event.Logging
+import akka.event.LoggingAdapter
 
 object TcpPipelineHandler {
-
-  case class EscapeEvent(ev: Tcp.Event) extends Tcp.Command
 
   /**
    * This class wraps up a pipeline with its external (i.e. “top”) command and
@@ -26,25 +21,61 @@ object TcpPipelineHandler {
    * instance of [[Init]]). All events emitted by the pipeline will be sent to
    * the registered handler wrapped in an Event.
    */
-  abstract class Init[Ctx <: PipelineContext, Cmd, Evt](val stages: PipelineStage[Ctx, Cmd, Tcp.Command, Evt, Tcp.Event]) {
+  abstract class Init[Ctx <: PipelineContext, Cmd, Evt](
+    val stages: PipelineStage[_ >: Ctx <: PipelineContext, Cmd, Tcp.Command, Evt, Tcp.Event]) {
+
+    /**
+     * This method must be implemented to return the [[PipelineContext]]
+     * necessary for the operation of the given [[PipelineStage]].
+     */
     def makeContext(actorContext: ActorContext): Ctx
 
+    /**
+     * Java API: construct a command to be sent to the [[TcpPipelineHandler]]
+     * actor.
+     */
     def command(cmd: Cmd): Command = Command(cmd)
+
+    /**
+     * Java API: extract a wrapped event received from the [[TcpPipelineHandler]]
+     * actor.
+     *
+     * @throws MatchError if the given object is not an Event matching this
+     *                    specific Init instance.
+     */
     def event(evt: AnyRef): Evt = evt match {
       case Event(evt) ⇒ evt
     }
 
-    final case class Command(@BeanProperty cmd: Cmd)
-    final case class Event(@BeanProperty evt: Evt)
+    /**
+     * Wrapper class for commands to be sent to the [[TcpPipelineHandler]] actor.
+     */
+    case class Command(@BeanProperty cmd: Cmd)
+
+    /**
+     * Wrapper class for events emitted by the [[TcpPipelineHandler]] actor.
+     */
+    case class Event(@BeanProperty evt: Evt)
   }
 
   /**
-   * Wrapper around acknowledgements: if a Tcp.Write is generated which
-   * request an ACK then it is wrapped such that the ACK can flow back up the
-   * pipeline later, allowing you to use arbitrary ACK messages (not just
-   * subtypes of Tcp.Event).
+   * This interface bundles logging and ActorContext for Java.
    */
-  case class Ack(ack: Any) extends Tcp.Event
+  trait WithinActorContext extends HasLogging with HasActorContext
+
+  def withLogger[Cmd, Evt](log: LoggingAdapter,
+                           stages: PipelineStage[_ >: WithinActorContext <: PipelineContext, Cmd, Tcp.Command, Evt, Tcp.Event]): Init[WithinActorContext, Cmd, Evt] =
+    new Init[WithinActorContext, Cmd, Evt](stages) {
+      override def makeContext(ctx: ActorContext): WithinActorContext = new WithinActorContext {
+        override def getLogger = log
+        override def getContext = ctx
+      }
+    }
+
+  /**
+   * Wrapper class for management commands sent to the [[TcpPipelineHandler]] actor.
+   */
+  case class Management(@BeanProperty cmd: AnyRef)
 
   /**
    * This is a new Tcp.Command which the pipeline can emit to effect the
@@ -53,6 +84,14 @@ object TcpPipelineHandler {
    * possibly transform the send.
    */
   case class Tell(receiver: ActorRef, msg: Any, sender: ActorRef) extends Tcp.Command
+
+  /**
+   * The pipeline may want to emit a [[Tcp.Event]] to the registered handler
+   * actor, which is enabled by emitting this [[Tcp.Command]] wrapping an event
+   * instead. The [[TcpPipelineHandler]] actor will upon reception of this command
+   * forward the wrapped event to the handler.
+   */
+  case class TcpEvent(@BeanProperty evt: Tcp.Event) extends Tcp.Command
 
   /**
    * Scala API: create [[Props]] for a pipeline handler
@@ -78,11 +117,12 @@ object TcpPipelineHandler {
  * the connection actor terminates this actor terminates as well; the designated
  * handler may want to watch this actor’s lifecycle.
  *
- * <b>FIXME WARNING:</b> (Ticket 3253)
+ * <b>IMPORTANT:</b>
  *
- * This actor does currently not handle back-pressure from the TCP socket; it
- * is meant only as a demonstration and will be fleshed out in full before the
- * 2.2 release.
+ * Proper function of this actor (and of other pipeline stages like [[TcpReadWriteAdapter]]
+ * depends on the fact that stages handling TCP commands and events pass unknown
+ * subtypes through unaltered. There are more commands and events than are declared
+ * within the [[Tcp]] object and you can even define your own.
  */
 class TcpPipelineHandler[Ctx <: PipelineContext, Cmd, Evt](
   init: TcpPipelineHandler.Init[Ctx, Cmd, Evt],
@@ -103,10 +143,8 @@ class TcpPipelineHandler[Ctx <: PipelineContext, Cmd, Evt](
   val pipes = PipelineFactory.buildWithSinkFunctions(ctx, init.stages)({
     case Success(cmd) ⇒
       cmd match {
-        case Tcp.Write(data, Tcp.NoAck)  ⇒ connection ! cmd
-        case Tcp.Write(data, ack)        ⇒ connection ! Tcp.Write(data, Ack(ack))
         case Tell(receiver, msg, sender) ⇒ receiver.tell(msg, sender)
-        case EscapeEvent(ev)             ⇒ handler ! ev
+        case TcpEvent(ev)                ⇒ handler ! ev
         case _                           ⇒ connection ! cmd
       }
     case Failure(ex) ⇒ throw ex
@@ -116,10 +154,11 @@ class TcpPipelineHandler[Ctx <: PipelineContext, Cmd, Evt](
   })
 
   def receive = {
-    case Command(cmd)          ⇒ pipes.injectCommand(cmd)
-    case evt: Tcp.Event        ⇒ pipes.injectEvent(evt)
-    case Terminated(`handler`) ⇒ connection ! Tcp.Abort
-    case cmd: Tcp.Command      ⇒ pipes.managementCommand(cmd)
+    case Command(cmd)             ⇒ pipes.injectCommand(cmd)
+    case evt: Tcp.Event           ⇒ pipes.injectEvent(evt)
+    case Management(cmd)          ⇒ pipes.managementCommand(cmd)
+    case Terminated(`handler`)    ⇒ connection ! Tcp.Abort
+    case Terminated(`connection`) ⇒ context.stop(self)
   }
 
 }
@@ -131,12 +170,13 @@ class TcpPipelineHandler[Ctx <: PipelineContext, Cmd, Evt](
  *
  * While this adapter communicates to the stage above it via raw ByteStrings, it is possible to inject Tcp Command
  * by sending them to the management port, and the adapter will simply pass them down to the stage below. Incoming Tcp Events
- * that are not Receive events will be passed directly to the handler registered for TcpPipelineHandler.
- * @tparam Ctx
+ * that are not Receive events will be passed downwards wrapped in a [[TcpEvent]]; the [[TcpPipelineHandler]] will
+ * send these notifications to the registered event handler actor.
  */
-class TcpReadWriteAdapter[Ctx <: PipelineContext] extends PipelineStage[Ctx, ByteString, Tcp.Command, ByteString, Tcp.Event] {
+class TcpReadWriteAdapter extends PipelineStage[PipelineContext, ByteString, Tcp.Command, ByteString, Tcp.Event] {
+  import TcpPipelineHandler.TcpEvent
 
-  override def apply(ctx: Ctx) = new PipePair[ByteString, Tcp.Command, ByteString, Tcp.Event] {
+  override def apply(ctx: PipelineContext) = new PipePair[ByteString, Tcp.Command, ByteString, Tcp.Event] {
 
     override val commandPipeline = {
       data: ByteString ⇒ ctx.singleCommand(Tcp.Write(data))
@@ -144,7 +184,7 @@ class TcpReadWriteAdapter[Ctx <: PipelineContext] extends PipelineStage[Ctx, Byt
 
     override val eventPipeline = (evt: Tcp.Event) ⇒ evt match {
       case Tcp.Received(data) ⇒ ctx.singleEvent(data)
-      case ev: Tcp.Event      ⇒ ctx.singleCommand(TcpPipelineHandler.EscapeEvent(ev))
+      case ev: Tcp.Event      ⇒ ctx.singleCommand(TcpEvent(ev))
     }
 
     override val managementPort: Mgmt = {

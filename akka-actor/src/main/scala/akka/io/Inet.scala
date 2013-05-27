@@ -80,17 +80,67 @@ object Inet {
   }
 
   trait SoForwarders {
+    /**
+     * [[akka.io.Tcp.SocketOption]] to set the SO_RCVBUF option
+     *
+     * For more information see [[java.net.Socket.setReceiveBufferSize]]
+     */
     val ReceiveBufferSize = SO.ReceiveBufferSize
+
+    /**
+     * [[akka.io.Tcp.SocketOption]] to enable or disable SO_REUSEADDR
+     *
+     * For more information see [[java.net.Socket.setReuseAddress]]
+     */
     val ReuseAddress = SO.ReuseAddress
+
+    /**
+     * [[akka.io.Tcp.SocketOption]] to set the SO_SNDBUF option.
+     *
+     * For more information see [[java.net.Socket.setSendBufferSize]]
+     */
     val SendBufferSize = SO.SendBufferSize
+
+    /**
+     * [[akka.io.Tcp.SocketOption]] to set the traffic class or
+     * type-of-service octet in the IP header for packets sent from this
+     * socket.
+     *
+     * For more information see [[java.net.Socket.setTrafficClass]]
+     */
     val TrafficClass = SO.TrafficClass
   }
 
   trait SoJavaFactories {
     import SO._
+    /**
+     * [[akka.io.Tcp.SocketOption]] to set the SO_RCVBUF option
+     *
+     * For more information see [[java.net.Socket.setReceiveBufferSize]]
+     */
     def receiveBufferSize(size: Int) = ReceiveBufferSize(size)
+
+    /**
+     * [[akka.io.Tcp.SocketOption]] to enable or disable SO_REUSEADDR
+     *
+     * For more information see [[java.net.Socket.setReuseAddress]]
+     */
     def reuseAddress(on: Boolean) = ReuseAddress(on)
+
+    /**
+     * [[akka.io.Tcp.SocketOption]] to set the SO_SNDBUF option.
+     *
+     * For more information see [[java.net.Socket.setSendBufferSize]]
+     */
     def sendBufferSize(size: Int) = SendBufferSize(size)
+
+    /**
+     * [[akka.io.Tcp.SocketOption]] to set the traffic class or
+     * type-of-service octet in the IP header for packets sent from this
+     * socket.
+     *
+     * For more information see [[java.net.Socket.setTrafficClass]]
+     */
     def trafficClass(tc: Int) = TrafficClass(tc)
   }
 

@@ -33,8 +33,8 @@ private[io] class UdpSender(val udp: UdpExt,
 
   def receive: Receive = {
     case registration: ChannelRegistration ⇒
-      context.become(sendHandlers(registration), discardOld = true)
-      commander ! SimpleSendReady
+      commander ! SimpleSenderReady
+      context.become(sendHandlers(registration))
   }
 
   override def postStop(): Unit = if (channel.isOpen) {

@@ -14,12 +14,12 @@ import akka.io.SelectionHandler._
 private[io] trait WithUdpSend {
   me: Actor with ActorLogging ⇒
 
-  var pendingSend: Send = null
-  var pendingCommander: ActorRef = null
+  private var pendingSend: Send = null
+  private var pendingCommander: ActorRef = null
   // If send fails first, we allow a second go after selected writable, but no more. This flag signals that
   // pending send was already tried once.
-  var retriedSend = false
-  def hasWritePending = pendingSend ne null
+  private var retriedSend = false
+  private def hasWritePending = pendingSend ne null
 
   def channel: DatagramChannel
   def udp: UdpExt
@@ -44,7 +44,7 @@ private[io] trait WithUdpSend {
     case ChannelWritable ⇒ if (hasWritePending) doSend(registration)
   }
 
-  final def doSend(registration: ChannelRegistration): Unit = {
+  private def doSend(registration: ChannelRegistration): Unit = {
     val buffer = udp.bufferPool.acquire()
     try {
       buffer.clear()

@@ -15,10 +15,11 @@ import scala.util.control.NonFatal
 import scala.concurrent.ExecutionContext
 import akka.event.LoggingAdapter
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
-import akka.io.IO.HasFailureMessage
 import akka.util.Helpers.Requiring
 import akka.util.SerializedSuspendableExecutionContext
 import akka.actor._
+import akka.routing.RandomRouter
+import akka.event.Logging
 
 abstract class SelectionHandlerSettings(config: Config) {
   import config._
@@ -60,6 +61,10 @@ private[io] trait ChannelRegistration {
 
 private[io] object SelectionHandler {
 
+  trait HasFailureMessage {
+    def failureMessage: Any
+  }
+
   case class WorkerForCommand(apiCommand: HasFailureMessage, commander: ActorRef, childProps: ChannelRegistry ⇒ Props)
 
   case class Retry(command: WorkerForCommand, retriesLeft: Int) { require(retriesLeft >= 0) }
@@ -68,6 +73,34 @@ private[io] object SelectionHandler {
   case object ChannelAcceptable
   case object ChannelReadable
   case object ChannelWritable
+
+  private[io] abstract class SelectorBasedManager(selectorSettings: SelectionHandlerSettings, nrOfSelectors: Int) extends Actor {
+
+    override def supervisorStrategy = connectionSupervisorStrategy
+
+    val selectorPool = context.actorOf(
+      props = Props(classOf[SelectionHandler], selectorSettings).withRouter(RandomRouter(nrOfSelectors)),
+      name = "selectors")
+
+    final def workerForCommandHandler(pf: PartialFunction[HasFailureMessage, ChannelRegistry ⇒ Props]): Receive = {
+      case cmd: HasFailureMessage if pf.isDefinedAt(cmd) ⇒ selectorPool ! WorkerForCommand(cmd, sender, pf(cmd))
+    }
+  }
+
+  /**
+   * Special supervisor strategy for parents of TCP connection and listener actors.
+   * Stops the child on all errors and logs DeathPactExceptions only at debug level.
+   */
+  private[io] final val connectionSupervisorStrategy: SupervisorStrategy =
+    new OneForOneStrategy()(SupervisorStrategy.stoppingStrategy.decider) {
+      override protected def logFailure(context: ActorContext, child: ActorRef, cause: Throwable,
+                                        decision: SupervisorStrategy.Directive): Unit =
+        if (cause.isInstanceOf[DeathPactException]) {
+          try context.system.eventStream.publish {
+            Logging.Debug(child.path.toString, getClass, "Closed after handler termination")
+          } catch { case NonFatal(_) ⇒ }
+        } else super.logFailure(context, child, cause, decision)
+    }
 
   private class ChannelRegistryImpl(executionContext: ExecutionContext, log: LoggingAdapter) extends ChannelRegistry {
     private[this] val selector = SelectorProvider.provider.openSelector

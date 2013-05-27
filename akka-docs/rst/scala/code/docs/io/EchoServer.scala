@@ -81,6 +81,8 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
 
   import Tcp._
 
+  case class Ack(offset: Int) extends Event
+
   // sign death pact: this actor terminates when connection breaks
   context watch connection
 
@@ -90,13 +92,13 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
   //#writing
   def writing: Receive = {
     case Received(data) ⇒
-      connection ! Write(data, currentOffset)
+      connection ! Write(data, Ack(currentOffset))
       buffer(data)
 
-    case ack: Int ⇒
+    case Ack(ack) ⇒
       acknowledge(ack)
 
-    case CommandFailed(Write(_, ack: Int)) ⇒
+    case CommandFailed(Write(_, Ack(ack))) ⇒
       connection ! ResumeWriting
       context become buffering(ack)
 
@@ -115,8 +117,8 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
       case Received(data)         ⇒ buffer(data)
       case WritingResumed         ⇒ writeFirst()
       case PeerClosed             ⇒ peerClosed = true
-      case ack: Int if ack < nack ⇒ acknowledge(ack)
-      case ack: Int ⇒
+      case Ack(ack) if ack < nack ⇒ acknowledge(ack)
+      case Ack(ack) ⇒
         acknowledge(ack)
         if (storage.nonEmpty) {
           if (toAck > 0) {
@@ -148,7 +150,7 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
 
       }, discardOld = false)
 
-    case ack: Int ⇒
+    case Ack(ack) ⇒
       acknowledge(ack)
       if (storage.isEmpty) context stop self
   }
@@ -159,15 +161,15 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
   }
 
   //#storage-omitted
-  var storageOffset = 0
-  var storage = Vector.empty[ByteString]
-  var stored = 0L
-  var transferred = 0L
+  private var storageOffset = 0
+  private var storage = Vector.empty[ByteString]
+  private var stored = 0L
+  private var transferred = 0L
 
   val maxStored = 100000000L
   val highWatermark = maxStored * 5 / 10
   val lowWatermark = maxStored * 3 / 10
-  var suspended = false
+  private var suspended = false
 
   private def currentOffset = storageOffset + storage.size
 
@@ -207,12 +209,12 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
   //#helpers
 
   private def writeFirst(): Unit = {
-    connection ! Write(storage(0), storageOffset)
+    connection ! Write(storage(0), Ack(storageOffset))
   }
 
   private def writeAll(): Unit = {
     for ((data, i) ← storage.zipWithIndex) {
-      connection ! Write(data, storageOffset + i)
+      connection ! Write(data, Ack(storageOffset + i))
     }
   }
 
@@ -229,7 +231,7 @@ class SimpleEchoHandler(connection: ActorRef, remote: InetSocketAddress)
   // sign death pact: this actor terminates when connection breaks
   context watch connection
 
-  case object Ack
+  case object Ack extends Event
 
   def receive = {
     case Received(data) ⇒

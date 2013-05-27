@@ -24,20 +24,24 @@
 
 package akka.io.ssl
 
-import akka.TestUtils
-import akka.event.Logging
-import akka.event.LoggingAdapter
-import akka.io._
-import akka.remote.security.provider.AkkaProvider
-import akka.testkit.{ TestProbe, AkkaSpec }
-import akka.util.{ ByteString, Timeout }
-import java.io.{ BufferedWriter, OutputStreamWriter, InputStreamReader, BufferedReader }
+import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
 import java.net.{ InetSocketAddress, SocketException }
 import java.security.{ KeyStore, SecureRandom }
 import java.util.concurrent.atomic.AtomicInteger
-import javax.net.ssl._
-import scala.concurrent.duration._
-import akka.actor.{ Props, ActorLogging, Actor, ActorContext }
+
+import scala.concurrent.duration.DurationInt
+
+import akka.TestUtils
+import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
+import akka.event.{ Logging, LoggingAdapter }
+import akka.io.{ BackpressureBuffer, DelimiterFraming, IO, SslTlsSupport, StringByteStringAdapter, Tcp }
+import akka.io.TcpPipelineHandler
+import akka.io.TcpPipelineHandler.{ Init, Management, WithinActorContext }
+import akka.io.TcpReadWriteAdapter
+import akka.remote.security.provider.AkkaProvider
+import akka.testkit.{ AkkaSpec, TestProbe }
+import akka.util.{ ByteString, Timeout }
+import javax.net.ssl.{ KeyManagerFactory, SSLContext, SSLServerSocket, SSLSocket, TrustManagerFactory }
 
 // TODO move this into akka-actor once AkkaProvider for SecureRandom does not have external dependencies
 class SslTlsSupportSpec extends AkkaSpec {
@@ -66,26 +70,26 @@ class SslTlsSupportSpec extends AkkaSpec {
 
     "work between a Java client and a akka server" in {
       val serverAddress = TestUtils.temporaryServerAddress()
-      val bindHandler = system.actorOf(Props(classOf[AkkaSslServer], this))
       val probe = TestProbe()
-      probe.send(IO(Tcp), Tcp.Bind(bindHandler, serverAddress))
-      probe.expectMsgType[Tcp.Bound]
+      val bindHandler = probe.watch(system.actorOf(Props(new AkkaSslServer(serverAddress)), "server1"))
+      expectMsg(Tcp.Bound)
 
       val client = new JavaSslClient(serverAddress)
       client.run()
       client.close()
+      probe.expectTerminated(bindHandler)
     }
 
     "work between a akka client and a akka server" in {
       val serverAddress = TestUtils.temporaryServerAddress()
-      val bindHandler = system.actorOf(Props(classOf[AkkaSslServer], this))
       val probe = TestProbe()
-      probe.send(IO(Tcp), Tcp.Bind(bindHandler, serverAddress))
-      probe.expectMsgType[Tcp.Bound]
+      val bindHandler = probe.watch(system.actorOf(Props(new AkkaSslServer(serverAddress)), "server2"))
+      expectMsg(Tcp.Bound)
 
       val client = new AkkaSslClient(serverAddress)
       client.run()
       client.close()
+      probe.expectTerminated(bindHandler)
     }
   }
 
@@ -99,15 +103,11 @@ class SslTlsSupportSpec extends AkkaSpec {
     val connected = probe.expectMsgType[Tcp.Connected]
     val connection = probe.sender
 
-    val init = new TcpPipelineHandler.Init(
+    val init = TcpPipelineHandler.withLogger(system.log,
       new StringByteStringAdapter >>
         new DelimiterFraming(maxSize = 1024, delimiter = ByteString('\n'), includeDelimiter = true) >>
-        new TcpReadWriteAdapter[HasLogging] >>
-        new SslTlsSupport(sslEngine(connected.remoteAddress, client = true))) {
-      override def makeContext(actorContext: ActorContext): HasLogging = new HasLogging {
-        override def getLogger = system.log
-      }
-    }
+        new TcpReadWriteAdapter >>
+        new SslTlsSupport(sslEngine(connected.remoteAddress, client = true)))
 
     import init._
 
@@ -129,52 +129,73 @@ class SslTlsSupportSpec extends AkkaSpec {
     }
 
     def close() {
-      probe.send(handler, Tcp.Close)
-      probe.expectMsgType[Tcp.Event] match {
-        case _: Tcp.ConnectionClosed ⇒ true
-      }
+      probe.send(handler, Management(Tcp.Close))
+      probe.expectMsgType[Tcp.ConnectionClosed]
       TestUtils.verifyActorTermination(handler)
     }
 
   }
 
   //#server
-  class AkkaSslServer extends Actor with ActorLogging {
+  class AkkaSslServer(local: InetSocketAddress) extends Actor with ActorLogging {
 
-    import Tcp.Connected
+    import Tcp._
+
+    implicit def system = context.system
+    IO(Tcp) ! Bind(self, local)
 
     def receive: Receive = {
+      case _: Bound ⇒
+        context.become(bound(sender))
+        //#server
+        testActor ! Bound
+      //#server
+    }
+
+    def bound(listener: ActorRef): Receive = {
       case Connected(remote, _) ⇒
-        val init =
-          new TcpPipelineHandler.Init(
-            new StringByteStringAdapter >>
-              new DelimiterFraming(maxSize = 1024, delimiter = ByteString('\n'), includeDelimiter = true) >>
-              new TcpReadWriteAdapter[HasLogging] >>
-              new SslTlsSupport(sslEngine(remote, client = false))) {
-            override def makeContext(actorContext: ActorContext): HasLogging =
-              new HasLogging {
-                override def getLogger = log
-              }
-          }
-        import init._
+        val init = TcpPipelineHandler.withLogger(log,
+          new StringByteStringAdapter("utf-8") >>
+            new DelimiterFraming(maxSize = 1024, delimiter = ByteString('\n'),
+              includeDelimiter = true) >>
+            new TcpReadWriteAdapter >>
+            new SslTlsSupport(sslEngine(remote, client = false)) >>
+            new BackpressureBuffer(lowBytes = 100, highBytes = 1000, maxBytes = 1000000))
 
         val connection = sender
-        val handler = system.actorOf(
-          TcpPipelineHandler(init, sender, self), "server" + counter.incrementAndGet())
+        val handler = context.actorOf(Props(new AkkaSslHandler(init)))
+        //#server
+        context watch handler
+        //#server
+        val pipeline = context.actorOf(TcpPipelineHandler(init, sender, handler))
 
-        connection ! Tcp.Register(handler)
-
-        context become {
-          case Event(data) ⇒
-            val input = data.dropRight(1)
-            log.debug("akka-io Server received {} from {}", input, sender)
-            val response = serverResponse(input)
-            sender ! Command(response)
-            log.debug("akka-io Server sent: {}", response.dropRight(1))
+        connection ! Tcp.Register(pipeline)
+      //#server
+      case _: Terminated ⇒
+        listener ! Unbind
+        context.become {
+          case Unbound ⇒ context stop self
         }
+      //#server
     }
   }
   //#server
+
+  //#handler
+  class AkkaSslHandler(init: Init[WithinActorContext, String, String])
+    extends Actor with ActorLogging {
+
+    def receive = {
+      case init.Event(data) ⇒
+        val input = data.dropRight(1)
+        log.debug("akka-io Server received {} from {}", input, sender)
+        val response = serverResponse(input)
+        sender ! init.Command(response)
+        log.debug("akka-io Server sent: {}", response.dropRight(1))
+      case Tcp.PeerClosed ⇒ context.stop(self)
+    }
+  }
+  //#handler
 
   class JavaSslServer extends Thread {
     val log: LoggingAdapter = Logging(system, getClass)
