@@ -205,9 +205,12 @@ private[akka] class RemoteActorRefProvider(
     system.systemActorOf(Props[RemoteDeploymentWatcher], "remote-deployment-watcher")
 
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath,
-              systemService: Boolean, deploy: Option[Deploy], lookupDeploy: Boolean, async: Boolean): InternalActorRef = {
+              systemService: Boolean, deploy: Option[Deploy], lookupDeploy: Boolean, async: Boolean): InternalActorRef =
     if (systemService) local.actorOf(system, props, supervisor, path, systemService, deploy, lookupDeploy, async)
     else {
+
+      if (!system.dispatchers.hasDispatcher(props.dispatcher))
+        throw new ConfigurationException(s"Dispatcher [${props.dispatcher}] not configured for path $path")
 
       /*
        * This needs to deal with “mangled” paths, which are created by remote
@@ -281,7 +284,6 @@ private[akka] class RemoteActorRefProvider(
         case _ ⇒ local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
       }
     }
-  }
 
   @deprecated("use actorSelection instead of actorFor", "2.2")
   def actorFor(path: ActorPath): InternalActorRef = {

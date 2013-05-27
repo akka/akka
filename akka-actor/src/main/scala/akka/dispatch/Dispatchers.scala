@@ -10,6 +10,7 @@ import akka.actor.{ Scheduler, DynamicAccess, ActorSystem }
 import akka.event.Logging.Warning
 import akka.event.EventStream
 import scala.concurrent.duration.Duration
+import akka.ConfigurationException
 
 /**
  * DispatcherPrerequisites represents useful contextual pieces when constructing a MessageDispatcher
@@ -65,11 +66,20 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
   private val dispatcherConfigurators = new ConcurrentHashMap[String, MessageDispatcherConfigurator]
 
   /**
-   * Returns a dispatcher as specified in configuration, or if not defined it uses
-   * the default dispatcher. Please note that this method _may_ create and return a NEW dispatcher,
-   * _every_ call.
+   * Returns a dispatcher as specified in configuration. Please note that this
+   * method _may_ create and return a NEW dispatcher, _every_ call.
+   *
+   * @throws ConfigurationException if the specified dispatcher cannot be found in the configuration
    */
   def lookup(id: String): MessageDispatcher = lookupConfigurator(id).dispatcher()
+
+  /**
+   * Checks that the configuration provides a section for the given dispatcher.
+   * This does not guarantee that no ConfigurationException will be thrown when
+   * using this dispatcher, because the details can only be checked by trying
+   * to instantiate it, which might be undesirable when just checking.
+   */
+  def hasDispatcher(id: String): Boolean = settings.config.hasPath(id)
 
   private def lookupConfigurator(id: String): MessageDispatcherConfigurator = {
     dispatcherConfigurators.get(id) match {
@@ -78,15 +88,8 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
         // That shouldn't happen often and in case it does the actual ExecutorService isn't
         // created until used, i.e. cheap.
         val newConfigurator =
-          if (settings.config.hasPath(id)) {
-            configuratorFrom(config(id))
-          } else {
-            // Note that the configurator of the default dispatcher will be registered for this id,
-            // so this will only be logged once, which is crucial.
-            prerequisites.eventStream.publish(Warning("Dispatchers", this.getClass,
-              "Dispatcher [%s] not configured, using default-dispatcher".format(id)))
-            lookupConfigurator(DefaultDispatcherId)
-          }
+          if (settings.config.hasPath(id)) configuratorFrom(config(id))
+          else throw new ConfigurationException(s"Dispatcher [$id] not configured")
 
         dispatcherConfigurators.putIfAbsent(id, newConfigurator) match {
           case null     ⇒ newConfigurator
@@ -140,7 +143,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    *         IllegalArgumentException if it cannot create the MessageDispatcherConfigurator
    */
   private def configuratorFrom(cfg: Config): MessageDispatcherConfigurator = {
-    if (!cfg.hasPath("id")) throw new IllegalArgumentException("Missing dispatcher 'id' property in config: " + cfg.root.render)
+    if (!cfg.hasPath("id")) throw new ConfigurationException("Missing dispatcher 'id' property in config: " + cfg.root.render)
 
     cfg.getString("type") match {
       case "Dispatcher"          ⇒ new DispatcherConfigurator(cfg, prerequisites)
@@ -150,7 +153,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
         val args = List(classOf[Config] -> cfg, classOf[DispatcherPrerequisites] -> prerequisites)
         prerequisites.dynamicAccess.createInstanceFor[MessageDispatcherConfigurator](fqn, args).recover({
           case exception ⇒
-            throw new IllegalArgumentException(
+            throw new ConfigurationException(
               ("Cannot instantiate MessageDispatcherConfigurator type [%s], defined in [%s], " +
                 "make sure it has constructor with [com.typesafe.config.Config] and " +
                 "[akka.dispatch.DispatcherPrerequisites] parameters")

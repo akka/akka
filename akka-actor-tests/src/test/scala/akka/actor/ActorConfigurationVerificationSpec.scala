@@ -75,5 +75,23 @@ class ActorConfigurationVerificationSpec extends AkkaSpec(ActorConfigurationVeri
     "not fail verification with a ConfigurationException if also configured with a Router" in {
       system.actorOf(Props[TestActor].withDispatcher("pinned-dispatcher").withRouter(RoundRobinRouter(2)))
     }
+
+    "fail verification if the dispatcher cannot be found" in {
+      intercept[ConfigurationException] {
+        system.actorOf(Props[TestActor].withDispatcher("does not exist"))
+      }
+    }
+
+    "fail verification if the dispatcher cannot be found for the head of a router" in {
+      intercept[ConfigurationException] {
+        system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(1, routerDispatcher = "does not exist")))
+      }
+    }
+
+    "fail verification if the dispatcher cannot be found for the routees of a router" in {
+      intercept[ConfigurationException] {
+        system.actorOf(Props[TestActor].withDispatcher("does not exist").withRouter(RoundRobinRouter(1)))
+      }
+    }
   }
 }

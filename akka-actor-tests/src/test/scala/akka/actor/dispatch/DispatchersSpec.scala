@@ -3,18 +3,15 @@
  */
 package akka.actor.dispatch
 
-import language.postfixOps
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
+import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.reflect.ClassTag
-import akka.dispatch._
-import akka.testkit.AkkaSpec
-import akka.testkit.ImplicitSender
-import scala.collection.JavaConverters._
+
 import com.typesafe.config.ConfigFactory
-import akka.actor.Actor
-import akka.actor.Props
-import scala.concurrent.duration._
-import akka.actor.ActorRef
+
+import akka.ConfigurationException
+import akka.actor.{ Actor, ActorRef, Props }
+import akka.dispatch.{ BalancingDispatcher, Dispatcher, Dispatchers, MessageDispatcher, PinnedDispatcher }
+import akka.testkit.{ AkkaSpec, ImplicitSender }
 
 object DispatchersSpec {
   val config = """
@@ -101,9 +98,10 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
       dispatcher.id must be("myapp.mydispatcher")
     }
 
-    "use default dispatcher for missing config" in {
-      val dispatcher = lookup("myapp.other-dispatcher")
-      dispatcher must be === defaultGlobalDispatcher
+    "complain about missing config" in {
+      intercept[ConfigurationException] {
+        lookup("myapp.other-dispatcher")
+      }
     }
 
     "have only one default dispatcher" in {
@@ -112,8 +110,8 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
       dispatcher must be === system.dispatcher
     }
 
-    "throw IllegalArgumentException if type does not exist" in {
-      intercept[IllegalArgumentException] {
+    "throw ConfigurationException if type does not exist" in {
+      intercept[ConfigurationException] {
         from(ConfigFactory.parseMap(Map(tipe -> "typedoesntexist", id -> "invalid-dispatcher").asJava).
           withFallback(defaultDispatcherConfig))
       }
