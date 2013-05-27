@@ -146,8 +146,19 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
   def lookup(path: Iterator[String]): Option[Deploy] = deployments.get().find(path).data
 
   def deploy(d: Deploy): Unit = {
-    @tailrec def add(path: Array[String], d: Deploy, w: WildcardTree[Deploy] = deployments.get): Unit =
+    @tailrec def add(path: Array[String], d: Deploy, w: WildcardTree[Deploy] = deployments.get): Unit = {
+      import ActorPath.ElementRegex
+      for (i ← 0 until path.length) path(i) match {
+        case "" ⇒
+          throw new InvalidActorNameException(s"actor name in deployment [${d.path}] must not be empty")
+        case ElementRegex() ⇒ // ok
+        case name ⇒
+          throw new InvalidActorNameException(
+            s"illegal actor name [$name] in deployment [${d.path}], must conform to $ElementRegex")
+      }
+
       if (!deployments.compareAndSet(w, w.insert(path.iterator, d))) add(path, d)
+    }
 
     add(d.path.split("/").drop(1), d)
   }

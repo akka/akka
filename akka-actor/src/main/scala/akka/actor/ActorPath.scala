@@ -19,7 +19,7 @@ object ActorPath {
 
   /**
    * This Regular Expression is used to validate a path element (Actor Name).
-   * Since Actors form a tree, it is addressable using an URL, therefor an Actor Name has to conform to:
+   * Since Actors form a tree, it is addressable using an URL, therefore an Actor Name has to conform to:
    * http://www.ietf.org/rfc/rfc2396.txt
    */
   val ElementRegex = """(?:[-\w:@&=+,.!~*'_;]|%\p{XDigit}{2})(?:[-\w:@&=+,.!~*'$_;]|%\p{XDigit}{2})*""".r

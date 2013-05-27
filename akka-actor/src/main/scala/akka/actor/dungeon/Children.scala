@@ -163,7 +163,7 @@ private[akka] trait Children { this: ActorCell ⇒
       case null           ⇒ throw new InvalidActorNameException("actor name must not be null")
       case ""             ⇒ throw new InvalidActorNameException("actor name must not be empty")
       case ElementRegex() ⇒ name
-      case _              ⇒ throw new InvalidActorNameException("illegal actor name '" + name + "', must conform to " + ElementRegex)
+      case _              ⇒ throw new InvalidActorNameException(s"illegal actor name [$name], must conform to $ElementRegex")
     }
   }
 
