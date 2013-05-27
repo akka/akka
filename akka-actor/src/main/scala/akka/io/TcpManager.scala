@@ -6,7 +6,6 @@ package akka.io
 
 import Tcp._
 import akka.actor.{ ActorLogging, Props }
-import akka.io.IO.SelectorBasedManager
 
 /**
  * INTERNAL API
@@ -45,7 +44,8 @@ import akka.io.IO.SelectorBasedManager
  * with a [[akka.io.Tcp.CommandFailed]] message. This message contains the original command for reference.
  *
  */
-private[io] class TcpManager(tcp: TcpExt) extends SelectorBasedManager(tcp.Settings, tcp.Settings.NrOfSelectors) with ActorLogging {
+private[io] class TcpManager(tcp: TcpExt)
+  extends SelectionHandler.SelectorBasedManager(tcp.Settings, tcp.Settings.NrOfSelectors) with ActorLogging {
 
   def receive = workerForCommandHandler {
     case c: Connect ⇒

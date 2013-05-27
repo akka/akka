@@ -9,5 +9,8 @@ Networking
    remoting
    serialization
    io
+   io-codec
+   io-tcp
+   io-udp
    zeromq
    camel

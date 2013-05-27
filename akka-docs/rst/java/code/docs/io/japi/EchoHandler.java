@@ -14,6 +14,7 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.io.Tcp.CommandFailed;
 import akka.io.Tcp.ConnectionClosed;
+import akka.io.Tcp.Event;
 import akka.io.Tcp.Received;
 import akka.io.Tcp.Write;
 import akka.io.Tcp.WritingResumed;
@@ -33,6 +34,13 @@ public class EchoHandler extends UntypedActor {
   public static final long MAX_STORED = 100000000;
   public static final long HIGH_WATERMARK = MAX_STORED * 5 / 10;
   public static final long LOW_WATERMARK = MAX_STORED * 2 / 10;
+  
+  private static class Ack implements Event {
+    public final int ack;
+    public Ack(int ack) {
+      this.ack = ack;
+    }
+  }
 
   public EchoHandler(ActorRef connection, InetSocketAddress remote) {
     this.connection = connection;
@@ -50,7 +58,7 @@ public class EchoHandler extends UntypedActor {
     public void apply(Object msg) throws Exception {
       if (msg instanceof Received) {
         final ByteString data = ((Received) msg).data();
-        connection.tell(TcpMessage.write(data, currentOffset()), getSelf());
+        connection.tell(TcpMessage.write(data, new Ack(currentOffset())), getSelf());
         buffer(data);
 
       } else if (msg instanceof Integer) {
@@ -59,7 +67,7 @@ public class EchoHandler extends UntypedActor {
       } else if (msg instanceof CommandFailed) {
         final Write w = (Write) ((CommandFailed) msg).cmd();
         connection.tell(TcpMessage.resumeWriting(), getSelf());
-        getContext().become(buffering((Integer) w.ack()));
+        getContext().become(buffering((Ack) w.ack()));
 
       } else if (msg instanceof ConnectionClosed) {
         final ConnectionClosed cl = (ConnectionClosed) msg;
@@ -75,7 +83,7 @@ public class EchoHandler extends UntypedActor {
   };
 
   //#buffering
-  protected Procedure<Object> buffering(final int nack) {
+  protected Procedure<Object> buffering(final Ack nack) {
     return new Procedure<Object>() {
 
       private int toAck = 10;
@@ -99,7 +107,7 @@ public class EchoHandler extends UntypedActor {
           final int ack = (Integer) msg;
           acknowledge(ack);
 
-          if (ack >= nack) {
+          if (ack >= nack.ack) {
             // otherwise it was the ack of the last successful write
 
             if (storage.isEmpty()) {
@@ -216,12 +224,12 @@ public class EchoHandler extends UntypedActor {
   protected void writeAll() {
     int i = 0;
     for (ByteString data : storage) {
-      connection.tell(TcpMessage.write(data, storageOffset + i++), getSelf());
+      connection.tell(TcpMessage.write(data, new Ack(storageOffset + i++)), getSelf());
     }
   }
 
   protected void writeFirst() {
-    connection.tell(TcpMessage.write(storage.peek(), storageOffset), getSelf());
+    connection.tell(TcpMessage.write(storage.peek(), new Ack(storageOffset)), getSelf());
   }
 
   //#storage-omitted

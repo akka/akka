@@ -13,6 +13,7 @@ import akka.actor.UntypedActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.io.Tcp.ConnectionClosed;
+import akka.io.Tcp.Event;
 import akka.io.Tcp.Received;
 import akka.io.TcpMessage;
 import akka.japi.Procedure;
@@ -85,7 +86,7 @@ public class SimpleEchoHandler extends UntypedActor {
   private boolean suspended = false;
   private boolean closing = false;
   
-  private final Object ACK = new Object();
+  private final Event ACK = new Event() {};
 
   //#simple-helpers
   protected void buffer(ByteString data) {

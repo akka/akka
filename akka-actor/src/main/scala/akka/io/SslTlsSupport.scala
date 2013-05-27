@@ -47,7 +47,10 @@ object SslTlsSupport {
  * This pipeline stage implements SSL / TLS support, using an externally
  * configured [[SSLEngine]]. It operates on the level of [[Tcp.Event]] and
  * [[Tcp.Command]] messages, which means that it will typically be one of
- * the lowest stages in a protocol stack.
+ * the lowest stages in a protocol stack. Since SSLEngine relies on contiguous
+ * transmission of a data stream you will need to handle backpressure from
+ * the TCP connection actor, for example by using a [[BackpressureBuffer]]
+ * underneath the SSL stage.
  *
  * Each instance of this stage has a scratch [[ByteBuffer]] of approx. 18kiB
  * allocated which is used by the SSLEngine.
@@ -219,7 +222,7 @@ class SslTlsSupport(engine: SSLEngine) extends PipelineStage[HasLogging, Command
       }
     }
 
-  private final class Send(val buffer: ByteBuffer, val ack: Any)
+  private final class Send(val buffer: ByteBuffer, val ack: Event)
 
   private object Send {
     val Empty = new Send(ByteBuffer wrap SslTlsSupport.EmptyByteArray, Tcp.NoAck)
