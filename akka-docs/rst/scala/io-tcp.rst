@@ -261,12 +261,12 @@ have inserted a backpressure buffer which will generate a
 :class:`HighWatermarkReached` event to tell the upper stages to suspend writing
 and a :class:`LowWatermarkReached` when they can resume writing. The
 implementation is very similar to the NACK-based backpressure approach
-presented above. Above the SSL stage comes an adapter which extracts only the
-payload data from the TCP commands and events, i.e. it speaks
-:class:`ByteString` above. The resulting byte streams are broken into frames by
-a :class:`DelimiterFraming` stage which chops them up on newline characters.
-The top-most stage then converts between :class:`String` and UTF-8 encoded
-:class:`ByteString`.
+presented above, please refer to the API docs for details on its usage. Above
+the SSL stage comes an adapter which extracts only the payload data from the
+TCP commands and events, i.e. it speaks :class:`ByteString` above. The
+resulting byte streams are broken into frames by a :class:`DelimiterFraming`
+stage which chops them up on newline characters.  The top-most stage then
+converts between :class:`String` and UTF-8 encoded :class:`ByteString`.
 
 As a result the pipeline will accept simple :class:`String` commands, encode
 them using UTF-8, delimit them with newlines (which are expected to be already

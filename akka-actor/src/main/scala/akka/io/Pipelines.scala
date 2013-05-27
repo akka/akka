@@ -762,12 +762,12 @@ object BackpressureBuffer {
  * difference was small then the buffer would more quickly oscillate between
  * these two limits).
  */
-class BackpressureBuffer(lowWatermark: Long, highWatermark: Long, maxCapacity: Long)
+class BackpressureBuffer(lowBytes: Long, highBytes: Long, maxBytes: Long)
   extends PipelineStage[HasLogging, Tcp.Command, Tcp.Command, Tcp.Event, Tcp.Event] {
 
-  require(lowWatermark >= 0, "lowWatermark needs to be non-negative")
-  require(highWatermark >= lowWatermark, "highWatermark needs to be at least as large as lowWatermark")
-  require(maxCapacity >= highWatermark, "maxCapacity needs to be at least as large as highWatermark")
+  require(lowBytes >= 0, "lowWatermark needs to be non-negative")
+  require(highBytes >= lowBytes, "highWatermark needs to be at least as large as lowWatermark")
+  require(maxBytes >= highBytes, "maxCapacity needs to be at least as large as highWatermark")
 
   case class Ack(num: Int, ack: Tcp.Event) extends Tcp.Event
 
@@ -899,11 +899,11 @@ class BackpressureBuffer(lowWatermark: Long, highWatermark: Long, maxCapacity: L
       storage :+= w
       stored += w.data.size
 
-      if (stored > maxCapacity) {
+      if (stored > maxBytes) {
         log.warning("aborting connection (buffer overrun)")
         become(finished)
         ctx.singleCommand(Abort)
-      } else if (stored > highWatermark && !suspended) {
+      } else if (stored > highBytes && !suspended) {
         log.debug("suspending writes")
         suspended = true
         if (doWrite) {
@@ -926,7 +926,7 @@ class BackpressureBuffer(lowWatermark: Long, highWatermark: Long, maxCapacity: L
       storageOffset += 1
       storage = storage drop 1
 
-      if (suspended && stored < lowWatermark) {
+      if (suspended && stored < lowBytes) {
         log.debug("resuming writes")
         suspended = false
         if (ack == NoAck) ctx.singleEvent(LowWatermarkReached)

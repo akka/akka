@@ -118,7 +118,7 @@ object TcpPipelineHandler {
  * handler may want to watch this actor’s lifecycle.
  *
  * <b>IMPORTANT:</b>
- * 
+ *
  * Proper function of this actor (and of other pipeline stages like [[TcpReadWriteAdapter]]
  * depends on the fact that stages handling TCP commands and events pass unknown
  * subtypes through unaltered. There are more commands and events than are declared

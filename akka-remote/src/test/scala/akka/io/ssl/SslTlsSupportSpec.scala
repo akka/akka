@@ -160,8 +160,7 @@ class SslTlsSupportSpec extends AkkaSpec {
               includeDelimiter = true) >>
             new TcpReadWriteAdapter >>
             new SslTlsSupport(sslEngine(remote, client = false)) >>
-            new BackpressureBuffer(lowWatermark = 1000, highWatermark = 10000,
-              maxCapacity = 1000000))
+            new BackpressureBuffer(lowBytes = 100, highBytes = 1000, maxBytes = 1000000))
 
         val connection = sender
         val handler = context.actorOf(Props(new AkkaSslHandler(init)))

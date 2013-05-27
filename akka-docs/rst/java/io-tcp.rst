@@ -266,12 +266,13 @@ have inserted a backpressure buffer which will generate a
 (generated at 10000 buffered bytes) and a :class:`LowWatermarkReached` when
 they can resume writing (when buffer empties below 1000 bytes); the buffer has
 a maximum capacity of 1MB. The implementation is very similar to the NACK-based
-backpressure approach presented above. Above the SSL stage comes an adapter
-which extracts only the payload data from the TCP commands and events, i.e. it
-speaks :class:`ByteString` above. The resulting byte streams are broken into
-frames by a :class:`DelimiterFraming` stage which chops them up on newline
-characters.  The top-most stage then converts between :class:`String` and UTF-8
-encoded :class:`ByteString`.
+backpressure approach presented above, please refer to the API documentation
+for details about its usage. Above the SSL stage comes an adapter which
+extracts only the payload data from the TCP commands and events, i.e. it speaks
+:class:`ByteString` above. The resulting byte streams are broken into frames by
+a :class:`DelimiterFraming` stage which chops them up on newline characters.
+The top-most stage then converts between :class:`String` and UTF-8 encoded
+:class:`ByteString`.
 
 As a result the pipeline will accept simple :class:`String` commands, encode
 them using UTF-8, delimit them with newlines (which are expected to be already

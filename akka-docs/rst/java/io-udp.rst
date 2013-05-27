@@ -29,7 +29,7 @@ Unconnected UDP
 ---------------
 
 Simple Send
-^^^^^^^^^^^^
+^^^^^^^^^^^
 
 .. includecode:: code/docs/io/UdpDocTest.java#sender
 
