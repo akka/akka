@@ -156,7 +156,6 @@ trait ActorRefProvider {
    */
   def terminationFuture: Future[Unit]
 
-  //FIXME I PROPOSE TO REMOVE THIS IN 2.1 - √
   /**
    * Obtain the address which is to be used within sender references when
    * sending to the given other address or none if the other address cannot be

@@ -9,7 +9,7 @@ import akka.actor.ExtendedActorSystem
 import scala.concurrent.duration._
 import akka.remote.transport.AkkaProtocolSettings
 import akka.util.{ Timeout, Helpers }
-import akka.remote.transport.netty.SSLSettings
+import akka.remote.transport.netty.{ NettyTransportSettings, SSLSettings }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RemoteConfigSpec extends AkkaSpec(
@@ -79,9 +79,22 @@ class RemoteConfigSpec extends AkkaSpec(
 
     "contain correct netty.tcp values in reference.conf" in {
       val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.netty.tcp")
+      val s = new NettyTransportSettings(c)
+      import s._
 
-      c.getBytes("maximum-frame-size") must be(128000)
-      c.getMilliseconds("connection-timeout") must be(15000)
+      ConnectionTimeout must be === 15.seconds
+      WriteBufferHighWaterMark must be === None
+      WriteBufferLowWaterMark must be === None
+      SendBufferSize must be === Some(256000)
+      ReceiveBufferSize must be === Some(256000)
+      MaxFrameSize must be === 128000
+      Backlog must be === 4096
+      TcpNodelay must be(true)
+      TcpKeepalive must be(true)
+      TcpReuseAddr must be(true)
+      c.getString("hostname") must be === ""
+      ServerSocketWorkerPoolSize must be === 2
+      ClientSocketWorkerPoolSize must be === 2
     }
 
     "contain correct socket worker pool configuration values in reference.conf" in {

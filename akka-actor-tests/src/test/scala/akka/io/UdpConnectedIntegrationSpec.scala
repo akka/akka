@@ -45,10 +45,7 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with 
 
       server ! Udp.Send(data2, clientAddress)
 
-      // FIXME: Currently this line fails
-      expectMsgPF() {
-        case UdpConnected.Received(d) ⇒ d must be === data2
-      }
+      expectMsgType[UdpConnected.Received].data must be === data2
     }
 
     "be able to send and receive with binding" in {
@@ -67,10 +64,7 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with 
 
       server ! Udp.Send(data2, clientAddress)
 
-      // FIXME: Currently this line fails
-      expectMsgPF() {
-        case UdpConnected.Received(d) ⇒ d must be === data2
-      }
+      expectMsgType[UdpConnected.Received].data must be === data2
     }
 
   }

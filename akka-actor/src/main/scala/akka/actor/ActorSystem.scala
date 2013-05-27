@@ -544,7 +544,6 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   def deadLetters: ActorRef = provider.deadLetters
 
-  //FIXME Why do we need this at all?
   val deadLetterMailbox: Mailbox = new Mailbox(new MessageQueue {
     def enqueue(receiver: ActorRef, envelope: Envelope): Unit =
       deadLetters.tell(DeadLetter(envelope.message, envelope.sender, receiver), envelope.sender)
