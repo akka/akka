@@ -33,10 +33,9 @@ object ClusterSingletonManager {
     role: Option[String],
     maxHandOverRetries: Int = 20,
     maxTakeOverRetries: Int = 15,
-    retryInterval: FiniteDuration = 1.second,
-    loggingEnabled: Boolean = true): Props =
+    retryInterval: FiniteDuration = 1.second): Props =
     Props(classOf[ClusterSingletonManager], singletonProps, singletonName, terminationMessage, role,
-      maxHandOverRetries, maxTakeOverRetries, retryInterval, loggingEnabled)
+      maxHandOverRetries, maxTakeOverRetries, retryInterval)
 
   /**
    * Java API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]].
@@ -48,7 +47,6 @@ object ClusterSingletonManager {
     maxHandOverRetries: Int,
     maxTakeOverRetries: Int,
     retryInterval: FiniteDuration,
-    loggingEnabled: Boolean,
     singletonPropsFactory: ClusterSingletonPropsFactory): Props =
     props(handOverData ⇒ singletonPropsFactory.create(handOverData.orNull), singletonName, terminationMessage,
       ClusterSingletonManager.Internal.roleOption(role), maxHandOverRetries, maxTakeOverRetries, retryInterval)
@@ -368,8 +366,6 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  *   stopped. `maxTakeOverRetries` must be less than `maxHandOverRetries` to
  *   ensure that new oldest doesn't start singleton actor before previous is
  *   stopped for certain corner cases.
- *
- * '''''loggingEnabled''''' Logging of what is going on at info log level.
  */
 class ClusterSingletonManager(
   singletonProps: Option[Any] ⇒ Props,
@@ -378,8 +374,7 @@ class ClusterSingletonManager(
   role: Option[String],
   maxHandOverRetries: Int,
   maxTakeOverRetries: Int,
-  retryInterval: FiniteDuration,
-  loggingEnabled: Boolean)
+  retryInterval: FiniteDuration)
   extends Actor with FSM[ClusterSingletonManager.State, ClusterSingletonManager.Data] {
 
   // to ensure that new oldest doesn't start singleton actor before previous is stopped for certain corner cases
@@ -392,6 +387,7 @@ class ClusterSingletonManager(
 
   val cluster = Cluster(context.system)
   val selfAddressOption = Some(cluster.selfAddress)
+  import cluster.settings.LogInfo
 
   require(role.forall(cluster.selfRoles.contains),
     s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
@@ -414,13 +410,13 @@ class ClusterSingletonManager(
   }
 
   def logInfo(message: String): Unit =
-    if (loggingEnabled) log.info(message)
+    if (LogInfo) log.info(message)
 
   def logInfo(template: String, arg1: Any): Unit =
-    if (loggingEnabled) log.info(template, arg1)
+    if (LogInfo) log.info(template, arg1)
 
   def logInfo(template: String, arg1: Any, arg2: Any): Unit =
-    if (loggingEnabled) log.info(template, arg1, arg2)
+    if (LogInfo) log.info(template, arg1, arg2)
 
   override def preStart(): Unit = {
     super.preStart()

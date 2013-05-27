@@ -46,7 +46,8 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   import context.dispatcher
   val cluster = Cluster(context.system)
   import cluster.{ selfAddress, scheduler, settings }
-  import settings._
+  import cluster.settings._
+  import cluster.InfoLogger._
 
   /**
    * The node ring gossipped that contains only members that are Up.
@@ -78,7 +79,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent])
     cluster.subscribe(self, classOf[UnreachableMember])
-    log.info("Metrics collection has started successfully on node [{}]", selfAddress)
+    logInfo("Metrics collection has started successfully")
   }
 
   def receive = {
@@ -782,10 +783,11 @@ private[cluster] object MetricsCollector {
       Try(new SigarMetricsCollector(system)) match {
         case Success(sigarCollector) ⇒ sigarCollector
         case Failure(e) ⇒
-          log.info("Metrics will be retreived from MBeans, and may be incorrect on some platforms. " +
-            "To increase metric accuracy add the 'sigar.jar' to the classpath and the appropriate " +
-            "platform-specific native libary to 'java.library.path'. Reason: " +
-            e.toString)
+          Cluster(system).InfoLogger.logInfo(
+            "Metrics will be retreived from MBeans, and may be incorrect on some platforms. " +
+              "To increase metric accuracy add the 'sigar.jar' to the classpath and the appropriate " +
+              "platform-specific native libary to 'java.library.path'. Reason: " +
+              e.toString)
           new JmxMetricsCollector(system)
       }
 

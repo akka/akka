@@ -56,6 +56,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   val settings = new ClusterSettings(system.settings.config, system.name)
   import settings._
+  import InfoLogger._
 
   /**
    * INTERNAL API
@@ -88,7 +89,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   // ClusterJmx is initialized as the last thing in the constructor
   private var clusterJmx: Option[ClusterJmx] = None
 
-  log.info("Cluster Node [{}] - is starting up...", selfAddress)
+  logInfo("Starting up...")
 
   val failureDetector: FailureDetectorRegistry[Address] = {
     def createFailureDetector(): FailureDetector =
@@ -107,7 +108,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   private[cluster] val scheduler: Scheduler = {
     if (system.scheduler.maxFrequency < 1.second / SchedulerTickDuration) {
       import scala.collection.JavaConverters._
-      log.info("Using a dedicated scheduler for cluster. Default scheduler can be used if configured " +
+      logInfo("Using a dedicated scheduler for cluster. Default scheduler can be used if configured " +
         "with 'akka.scheduler.tick-duration' [{} ms] <=  'akka.cluster.scheduler.tick-duration' [{} ms].",
         (1000 / system.scheduler.maxFrequency).toInt, SchedulerTickDuration.toMillis)
 
@@ -179,7 +180,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
       Some(jmx)
     }
 
-  log.info("Cluster Node [{}] - has started up successfully", selfAddress)
+  logInfo("Started up successfully")
 
   // ======================================================
   // ===================== PUBLIC API =====================
@@ -290,7 +291,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    */
   private[cluster] def shutdown(): Unit = {
     if (_isTerminated.compareAndSet(false, true)) {
-      log.info("Cluster Node [{}] - Shutting down cluster Node and cluster daemons...", selfAddress)
+      logInfo("Shutting down...")
 
       system.stop(clusterDaemons)
       if (readViewStarted) readView.close()
@@ -299,13 +300,28 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
       clusterJmx foreach { _.unregisterMBean() }
 
-      log.info("Cluster Node [{}] - Cluster node successfully shut down", selfAddress)
+      logInfo("Successfully shut down")
     }
   }
 
   private def closeScheduler(): Unit = scheduler match {
     case x: Closeable ⇒ x.close()
     case _            ⇒
+  }
+
+  /**
+   * INTERNAL API
+   */
+  private[cluster] object InfoLogger {
+
+    def logInfo(message: String): Unit =
+      if (LogInfo) log.info("Cluster Node [{}] - {}", selfAddress, message)
+
+    def logInfo(template: String, arg1: Any): Unit =
+      if (LogInfo) log.info("Cluster Node [{}] - " + template, selfAddress, arg1)
+
+    def logInfo(template: String, arg1: Any, arg2: Any): Unit =
+      if (LogInfo) log.info("Cluster Node [{}] - " + template, selfAddress, arg1, arg2)
   }
 
 }

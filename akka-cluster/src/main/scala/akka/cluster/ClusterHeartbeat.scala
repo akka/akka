@@ -88,6 +88,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   val cluster = Cluster(context.system)
   import cluster.{ selfAddress, scheduler }
   import cluster.settings._
+  import cluster.InfoLogger._
   import context.dispatcher
 
   val selfHeartbeat = Heartbeat(selfAddress)
@@ -170,7 +171,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
 
   def triggerFirstHeartbeat(address: Address): Unit =
     if (!cluster.failureDetector.isMonitoring(address)) {
-      log.info("Trigger extra expected heartbeat from [{}]", address)
+      logInfo("Trigger extra expected heartbeat from [{}]", address)
       cluster.failureDetector.heartbeat(address)
     }
 

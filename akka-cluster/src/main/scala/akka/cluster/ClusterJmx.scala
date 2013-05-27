@@ -91,6 +91,7 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
   private val mBeanServer = ManagementFactory.getPlatformMBeanServer
   private val clusterMBeanName = new ObjectName("akka:type=Cluster")
   private def clusterView = cluster.readView
+  import cluster.InfoLogger._
 
   /**
    * Creates the cluster JMX MBean and registers it in the MBean server.
@@ -130,7 +131,7 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
     }
     try {
       mBeanServer.registerMBean(mbean, clusterMBeanName)
-      log.info("Cluster Node [{}] - registered cluster JMX MBean [{}]", clusterView.selfAddress, clusterMBeanName)
+      logInfo("Registered cluster JMX MBean [{}]", clusterMBeanName)
     } catch {
       case e: InstanceAlreadyExistsException ⇒ // ignore - we are running multiple cluster nodes in the same JVM (probably for testing)
     }

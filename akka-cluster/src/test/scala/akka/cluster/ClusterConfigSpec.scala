@@ -18,6 +18,7 @@ class ClusterConfigSpec extends AkkaSpec {
     "be able to parse generic cluster config elements" in {
       val settings = new ClusterSettings(system.settings.config, system.name)
       import settings._
+      LogInfo must be(true)
       FailureDetectorConfig.getDouble("threshold") must be(8.0 plusOrMinus 0.0001)
       FailureDetectorConfig.getInt("max-sample-size") must be(1000)
       Duration(FailureDetectorConfig.getMilliseconds("min-std-deviation"), MILLISECONDS) must be(100 millis)
