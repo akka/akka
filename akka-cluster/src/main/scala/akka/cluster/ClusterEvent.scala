@@ -169,7 +169,9 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
-  private[cluster] case class CurrentInternalStats(stats: ClusterStats) extends ClusterDomainEvent
+  private[cluster] case class CurrentInternalStats(
+    gossipStats: GossipStats,
+    vclockStats: VectorClockStats) extends ClusterDomainEvent
 
   /**
    * INTERNAL API
