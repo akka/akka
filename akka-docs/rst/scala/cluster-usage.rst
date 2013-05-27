@@ -731,6 +731,13 @@ reference file for more information:
 .. literalinclude:: ../../../akka-cluster/src/main/resources/reference.conf
    :language: none
 
+Cluster Info Logging
+--------------------
+
+You can silence the logging of cluster events at info level with configuration property::
+
+  akka.cluster.log-info = off
+
 Cluster Scheduler
 -----------------
 
