@@ -348,14 +348,16 @@ class LightArrayRevolverScheduler(config: Config,
     }
 
   private val stopped = new AtomicReference[Promise[immutable.Seq[TimerTask]]]
-  def stop(): Future[immutable.Seq[TimerTask]] =
-    if (stopped.compareAndSet(null, Promise())) {
+  def stop(): Future[immutable.Seq[TimerTask]] = {
+    val p = Promise[immutable.Seq[TimerTask]]()
+    if (stopped.compareAndSet(null, p)) {
       // Interrupting the timer thread to make it shut down faster is not good since
       // it could be in the middle of executing the scheduled tasks, which might not
       // respond well to being interrupted.
       // Instead we just wait one more tick for it to finish.
-      stopped.get.future
+      p.future
     } else Future.successful(Nil)
+  }
 
   private def clearAll(): immutable.Seq[TimerTask] = {
     def collect(curr: TaskHolder, acc: Vector[TimerTask]): Vector[TimerTask] = {
@@ -383,7 +385,9 @@ class LightArrayRevolverScheduler(config: Config,
                 case e: Throwable ⇒ log.error(e, "LARS cannot start new thread, ship’s going down!")
               }
               timerThread = thread
-            case x ⇒ x success clearAll()
+            case p ⇒
+              assert(stopped.compareAndSet(p, Promise successful Nil), "Stop signal violated in LARS")
+              p success clearAll()
           }
           throw t
       }
