@@ -51,11 +51,19 @@ dispatcher to use, see more below). Here are some examples of how to create a
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#import-props
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#creating-props-config
 
-The last line shows how to pass constructor arguments to the :class:`Actor`
+The second line shows how to pass constructor arguments to the :class:`Actor`
 being created. The presence of a matching constructor is verified during
 construction of the :class:`Props` object, resulting in an
 :class:`IllegalArgumentEception` if no or multiple matching constructors are
 found.
+
+The third line demonstrates the use of a :class:`Creator<T extends Actor>`. The
+creator class must be static, which is verified during :class:`Props`
+construction. The type parameter’s upper bound is used to determine the
+produced actor class, falling back to :class:`Actor` if fully erased. An
+example of a parametric factory could be:
+
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#parametric-creator
 
 Deprecated Variants
 ^^^^^^^^^^^^^^^^^^^

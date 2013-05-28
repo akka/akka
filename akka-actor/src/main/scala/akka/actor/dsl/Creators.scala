@@ -14,7 +14,6 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 import akka.pattern.ask
 import scala.reflect.ClassTag
-import akka.dispatch.{ UnboundedDequeBasedMailbox, RequiresMessageQueue }
 
 trait Creators { this: ActorDSL.type ⇒
 
