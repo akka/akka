@@ -47,7 +47,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
       spec.awaitCond(spec.ref forall (_.isTerminated), 2 seconds)
     }
 
-    "must stop correctly when sending PoisonPill to rootGuardian" in {
+    "stop correctly when sending PoisonPill to rootGuardian" in {
       val system = ActorSystem("AkkaSpec2", AkkaSpec.testConf)
       val spec = new AkkaSpec(system) {}
       val latch = new TestLatch(1)(system)
@@ -58,7 +58,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
       Await.ready(latch, 2 seconds)
     }
 
-    "must enqueue unread messages from testActor to deadLetters" in {
+    "enqueue unread messages from testActor to deadLetters" in {
       val system, otherSystem = ActorSystem("AkkaSpec3", AkkaSpec.testConf)
 
       try {

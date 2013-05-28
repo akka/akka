@@ -335,7 +335,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       ping(actor3)
     }
 
-    "must attempt restart when exception during restart" in {
+    "attempt restart when exception during restart" in {
       val inits = new AtomicInteger(0)
       val supervisor = system.actorOf(Props(new Supervisor(
         OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = 10 seconds)(classOf[Exception] :: Nil))))
@@ -376,7 +376,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       system.stop(supervisor)
     }
 
-    "must not lose system messages when a NonFatal exception occurs when processing a system message" in {
+    "not lose system messages when a NonFatal exception occurs when processing a system message" in {
       val parent = system.actorOf(Props(new Actor {
         override val supervisorStrategy = OneForOneStrategy()({
           case e: IllegalStateException if e.getMessage == "OHNOES" ⇒ throw e
