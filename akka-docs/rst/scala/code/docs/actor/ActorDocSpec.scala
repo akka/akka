@@ -265,7 +265,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
     // ActorSystem is a heavy object: create only one per application
     val system = ActorSystem("mySystem")
-    val myActor = system.actorOf(Props[MyActor].withDispatcher("my-dispatcher"), "myactor2")
+    val myActor = system.actorOf(Props[MyActor], "myactor2")
     //#system-actorOf
     shutdown(system)
   }

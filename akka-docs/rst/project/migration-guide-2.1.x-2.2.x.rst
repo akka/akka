@@ -50,6 +50,21 @@ ActorContext & ActorRefFactory dispatcher
 
 The return type of ``ActorContext``'s and ``ActorRefFactory``'s ``dispatcher``-method now returns ``ExecutionContext`` instead of ``MessageDispatcher``.
 
+Removed fallback to default dispatcher
+======================================
+
+If deploying an actor with a specific dispatcher, e.g.
+``Props(...).withDispatcher("d")``, then it would previously fall back to
+``akka.actor.default-dispatcher`` if no configuration section for ``d`` could
+be found.
+
+This was beneficial for preparing later deployment choices during development
+by grouping actors on dispatcher IDs but not immediately configuring those.
+Akka 2.2 introduces the possibility to add dispatcher configuration to the
+``akka.actor.deployment`` section, making this unnecessary.
+
+The fallback was removed because in many cases its application was neither
+intended nor noticed.
 
 API changes to FSM and TestFSMRef
 =================================

@@ -16,6 +16,7 @@ import scala.util.{ Success, Failure }
 import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.annotation.implicitNotFound
+import akka.ConfigurationException
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -708,6 +709,9 @@ private[akka] class LocalActorRefProvider private[akka] (
 
           } else props
 
+        if (!system.dispatchers.hasDispatcher(props2.dispatcher))
+          throw new ConfigurationException(s"Dispatcher [${props2.dispatcher}] not configured for path $path")
+
         if (async) new RepointableActorRef(system, props2, supervisor, path).initialize(async)
         else new LocalActorRef(system, props2, supervisor, path)
 
@@ -715,7 +719,12 @@ private[akka] class LocalActorRefProvider private[akka] (
         val lookup = if (lookupDeploy) deployer.lookup(path) else None
         val fromProps = Iterator(props.deploy.copy(routerConfig = props.deploy.routerConfig withFallback router))
         val d = fromProps ++ deploy.iterator ++ lookup.iterator reduce ((a, b) ⇒ b withFallback a)
-        new RoutedActorRef(system, props.withRouter(d.routerConfig), supervisor, path).initialize(async)
+        val p = props.withRouter(d.routerConfig)
+        if (!system.dispatchers.hasDispatcher(p.dispatcher))
+          throw new ConfigurationException(s"Dispatcher [${p.dispatcher}] not configured for routees of $path")
+        if (!system.dispatchers.hasDispatcher(d.routerConfig.routerDispatcher))
+          throw new ConfigurationException(s"Dispatcher [${p.dispatcher}] not configured for router of $path")
+        new RoutedActorRef(system, p, supervisor, path).initialize(async)
     }
   }
 
