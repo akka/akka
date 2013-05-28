@@ -7,11 +7,12 @@ import language.postfixOps
 
 import java.util.concurrent.{ ConcurrentLinkedQueue, BlockingQueue }
 import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll }
-import com.typesafe.config.Config
-import akka.actor.{ RepointableRef, Props, DeadLetter, ActorSystem, ActorRefWithCell, ActorRef, ActorCell }
+import com.typesafe.config.{ Config, ConfigFactory }
+import akka.actor._
 import akka.testkit.{ EventFilter, AkkaSpec }
-import scala.concurrent.{ Future, Promise, Await, ExecutionContext }
+import scala.concurrent.{ Future, Await, ExecutionContext }
 import scala.concurrent.duration._
+import akka.dispatch.{ UnboundedMailbox, BoundedMailbox, SingleConsumerOnlyUnboundedMailbox }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
@@ -234,5 +235,43 @@ class SingleConsumerOnlyMailboxSpec extends MailboxSpec {
   def factory = {
     case u: UnboundedMailbox ⇒ SingleConsumerOnlyUnboundedMailbox().create(None, None)
     case b: BoundedMailbox   ⇒ pending; null
+  }
+}
+
+object SingleConsumerOnlyMailboxVerificationSpec {
+  case object Ping
+  val mailboxConf = ConfigFactory.parseString("""
+      test-dispatcher {
+      mailbox-type = "akka.dispatch.SingleConsumerOnlyUnboundedMailbox"
+      throughput = 1
+      }""")
+}
+
+class SingleConsumerOnlyMailboxVerificationSpec extends AkkaSpec(SingleConsumerOnlyMailboxVerificationSpec.mailboxConf) {
+  import SingleConsumerOnlyMailboxVerificationSpec.Ping
+  "A SingleConsumerOnlyMailbox" should {
+    "support pathological ping-ponging" in within(30.seconds) {
+      val total = 2000000
+      val runner = system.actorOf(Props(new Actor {
+        val a, b = context.watch(
+          context.actorOf(Props(new Actor {
+            var n = total / 2
+            def receive = {
+              case Ping ⇒
+                n -= 1
+                sender ! Ping
+                if (n == 0)
+                  context stop self
+            }
+          }).withDispatcher("test-dispatcher")))
+        def receive = {
+          case Ping                  ⇒ a.tell(Ping, b)
+          case Terminated(`a` | `b`) ⇒ if (context.children.isEmpty) context stop self
+        }
+      }))
+      watch(runner)
+      runner ! Ping
+      expectTerminated(runner)
+    }
   }
 }
