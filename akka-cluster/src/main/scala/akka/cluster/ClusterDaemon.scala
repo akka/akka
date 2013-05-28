@@ -697,7 +697,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
     val localUnreachableMembers = localOverview.unreachable
 
     val hasPartionHandoffCompletedSuccessfully: Boolean = {
-      // FIXME implement partion handoff and a check if it is completed - now just returns TRUE - e.g. has completed successfully
+      // TODO implement partion handoff and a check if it is completed - now just returns TRUE - e.g. has completed successfully
       true
     }
 

@@ -345,10 +345,9 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
     }
 
     "take over when oldest crashes in 5 nodes cluster" in within(60 seconds) {
-      // FIXME change those to DeadLetterFilter
-      system.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*")))
-      system.eventStream.publish(Mute(EventFilter.error(pattern = ".*Disassociated.*")))
-      system.eventStream.publish(Mute(EventFilter.error(pattern = ".*Association failed.*")))
+      // mute logging of deadLetters during shutdown of systems
+      if (!log.isDebugEnabled)
+        system.eventStream.publish(Mute(DeadLettersFilter[Any]))
       enterBarrier("logs-muted")
 
       crash(second)
