@@ -233,7 +233,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       expectMsg("restarted")
     }
 
-    "must start in-line for context.actorOf()" in {
+    "start in-line for context.actorOf()" in {
       system.actorOf(Props(new Actor {
         def receive = {
           case "start" ⇒

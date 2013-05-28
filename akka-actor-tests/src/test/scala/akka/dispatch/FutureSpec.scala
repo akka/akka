@@ -41,7 +41,8 @@ object FutureSpec {
 
   class TestDelayActor(await: TestLatch) extends Actor {
     def receive = {
-      case "Hello"   ⇒ FutureSpec.ready(await, TestLatch.DefaultTimeout); sender ! "World"
+      case "Hello" ⇒
+        FutureSpec.ready(await, TestLatch.DefaultTimeout); sender ! "World"
       case "NoReply" ⇒ FutureSpec.ready(await, TestLatch.DefaultTimeout)
       case "Failure" ⇒
         FutureSpec.ready(await, TestLatch.DefaultTimeout)
@@ -439,12 +440,12 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         Await.result(Future.fold(List[Future[Int]]())(0)(_ + _), timeout.duration) must be(0)
       }
 
-      "shouldReduceResults" in {
+      "reduce results" in {
         val futures = (1 to 10).toList map { i ⇒ Future(i) }
         assert(Await.result(Future.reduce(futures)(_ + _), remaining) === 55)
       }
 
-      "shouldReduceResultsWithException" in {
+      "reduce results with Exception" in {
         filterException[IllegalArgumentException] {
           val futures = (1 to 10).toList map {
             case 6 ⇒ Future(throw new IllegalArgumentException("shouldReduceResultsWithException: expected"))
@@ -454,13 +455,13 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         }
       }
 
-      "shouldReduceThrowIAEOnEmptyInput" in {
+      "throw IllegalArgumentException on empty input to reduce" in {
         filterException[IllegalArgumentException] {
           intercept[java.util.NoSuchElementException] { Await.result(Future.reduce(List[Future[Int]]())(_ + _), timeout.duration) }
         }
       }
 
-      "receiveShouldExecuteOnComplete" in {
+      "execute onSuccess when received ask reply" in {
         val latch = new TestLatch
         val actor = system.actorOf(Props[TestActor])
         actor ? "Hello" onSuccess { case "World" ⇒ latch.open() }
@@ -468,7 +469,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         system.stop(actor)
       }
 
-      "shouldTraverseFutures" in {
+      "traverse Futures" in {
         val oddActor = system.actorOf(Props(new Actor {
           var counter = 1
           def receive = {
@@ -487,7 +488,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         assert(Await.result(Future.traverse(list)(x ⇒ Future(x * 2 - 1)), timeout.duration).sum === 10000)
       }
 
-      "shouldHandleThrowables" in {
+      "handle Throwables" in {
         class ThrowableTest(m: String) extends Throwable(m)
 
         EventFilter[ThrowableTest](occurrences = 4) intercept {
@@ -507,7 +508,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         }
       }
 
-      "shouldBlockUntilResult" in {
+      "block until result" in {
         val latch = new TestLatch
 
         val f = Future { FutureSpec.ready(latch, 5 seconds); 5 }
@@ -572,7 +573,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         FutureSpec.ready(f4, timeout.duration) must be('completed)
       }
 
-      "should not deadlock with nested await (ticket 1313)" in {
+      "not deadlock with nested await (ticket 1313)" in {
         val simple = Future(()) map (_ ⇒ Await.result((Future(()) map (_ ⇒ ())), timeout.duration))
         FutureSpec.ready(simple, timeout.duration) must be('completed)
 

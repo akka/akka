@@ -92,7 +92,7 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
       throttle(Direction.Send, Unthrottled) must be(true)
     }
 
-    "must survive blackholing" taggedAs TimingTest in {
+    "survive blackholing" taggedAs TimingTest in {
       here ! "Blackhole 1"
       expectMsg("Blackhole 1")
 
