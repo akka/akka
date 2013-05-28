@@ -166,15 +166,15 @@ class BackpressureSpec extends AkkaSpec with ImplicitSender {
         send ! StartSending(N)
         val hash = expectMsgType[Done].hash
         implicit val t = Timeout(100.millis)
-        awaitAssert(Await.result(recv ? GetProgress, t.duration) === N)
+        awaitAssert(Await.result(recv ? GetProgress, t.duration) must be === Progress(N))
         recv ! GetHash
-        expectMsgType[Hash].hash === hash
+        expectMsgType[Hash].hash must be === hash
       }
       send ! Close
       val terminated = receiveWhile(1.second, messages = 2) {
         case Terminated(t) ⇒ t
       }
-      terminated === Set(send, recv)
+      terminated.toSet must be === Set(send, recv)
     }
 
     "transmit the right bytes with hiccups" in {
@@ -187,15 +187,15 @@ class BackpressureSpec extends AkkaSpec with ImplicitSender {
         send ! StartSending(N)
         val hash = expectMsgType[Done].hash
         implicit val t = Timeout(100.millis)
-        awaitAssert(Await.result(recv ? GetProgress, t.duration) === N)
+        awaitAssert(Await.result(recv ? GetProgress, t.duration) must be === Progress(N))
         recv ! GetHash
-        expectMsgType[Hash].hash === hash
+        expectMsgType[Hash].hash must be === hash
       }
       send ! Close
       val terminated = receiveWhile(1.second, messages = 2) {
         case Terminated(t) ⇒ t
       }
-      terminated === Set(send, recv)
+      terminated.toSet must be === Set(send, recv)
     }
 
   }
