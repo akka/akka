@@ -227,6 +227,15 @@ Using Akka with NetBeans
 
 Setup SBT project and then use `sbt-netbeans-plugin <https://github.com/remeniuk/sbt-netbeans-plugin>`_ to generate a NetBeans project.
 
+Do not use -optimize Scala compiler flag
+----------------------------------------
+
+.. warning::
+  
+  Akka has not been compiled or tested with -optimize Scala compiler flag. 
+  Strange behavior has been reported by users that have tried it.
+
+
 Build from sources
 ------------------
 
