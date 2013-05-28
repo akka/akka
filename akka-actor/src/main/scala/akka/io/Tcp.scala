@@ -113,7 +113,8 @@ object Tcp extends ExtensionKey[TcpExt] {
    */
   case class Connect(remoteAddress: InetSocketAddress,
                      localAddress: Option[InetSocketAddress] = None,
-                     options: immutable.Traversable[SocketOption] = Nil) extends Command
+                     options: immutable.Traversable[SocketOption] = Nil,
+                     timeout: Option[FiniteDuration] = None) extends Command
 
   /**
    * The Bind message is send to the TCP manager actor, which is obtained via
@@ -528,20 +529,36 @@ object TcpMessage {
    * @param remoteAddress is the address to connect to
    * @param localAddress optionally specifies a specific address to bind to
    * @param options Please refer to [[TcpSO]] for a list of all supported options.
+   * @param timeout is the desired connection timeout, `null` means "no timeout"
    */
   def connect(remoteAddress: InetSocketAddress,
               localAddress: InetSocketAddress,
-              options: JIterable[SocketOption]): Command = Connect(remoteAddress, Some(localAddress), options)
+              options: JIterable[SocketOption],
+              timeout: FiniteDuration): Command = Connect(remoteAddress, Option(localAddress), options, Option(timeout))
+
+  /**
+   * Connect to the given `remoteAddress` with an optional `localAddress` to bind to given the specified Socket Options
+   */
+  def connect(remoteAddress: InetSocketAddress,
+              localAddress: InetSocketAddress,
+              options: JIterable[SocketOption]): Command = Connect(remoteAddress, Option(localAddress), options, None)
+
   /**
    * Connect to the given `remoteAddress` without binding to a local address.
    */
   def connect(remoteAddress: InetSocketAddress,
-              options: JIterable[SocketOption]): Command = Connect(remoteAddress, None, options)
+              options: JIterable[SocketOption]): Command = Connect(remoteAddress, None, options, None)
   /**
    * Connect to the given `remoteAddress` without binding to a local address and without
    * specifying options.
    */
-  def connect(remoteAddress: InetSocketAddress): Command = Connect(remoteAddress, None, Nil)
+  def connect(remoteAddress: InetSocketAddress): Command = Connect(remoteAddress, None, Nil, None)
+
+  /**
+   * Connect to the given `remoteAddress` with a connection `timeout` without binding to a local address and without
+   * specifying options.
+   */
+  def connect(remoteAddress: InetSocketAddress, timeout: FiniteDuration): Command = Connect(remoteAddress, None, Nil, Option(timeout))
 
   /**
    * The Bind message is send to the TCP manager actor, which is obtained via
