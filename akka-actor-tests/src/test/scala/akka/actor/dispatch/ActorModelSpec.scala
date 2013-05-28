@@ -261,7 +261,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
 
   "A " + dispatcherType must {
 
-    "must dynamically handle its own life cycle" in {
+    "dynamically handle its own life cycle" in {
       implicit val dispatcher = interceptedDispatcher()
       assertDispatcher(dispatcher)(stops = 0)
       val a = newTestActor(dispatcher.id)

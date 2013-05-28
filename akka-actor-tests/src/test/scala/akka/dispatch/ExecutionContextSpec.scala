@@ -136,7 +136,7 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
       sec.isEmpty must be === true
     }
 
-    "should relinquish thread when suspended" in {
+    "relinquish thread when suspended" in {
       val submissions = new AtomicInteger(0)
       val counter = new AtomicInteger(0)
       val underlying = new ExecutionContext {
