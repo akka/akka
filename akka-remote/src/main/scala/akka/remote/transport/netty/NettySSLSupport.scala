@@ -38,7 +38,6 @@ private[akka] class SSLSettings(config: Config) {
 
   val SSLRandomNumberGenerator = emptyIsNone(getString("random-number-generator"))
 
-  // FIXME: Change messages to reflect new configuration
   if (SSLProtocol.isEmpty) throw new ConfigurationException(
     "Configuration option 'akka.remote.netty.ssl.enable-ssl is turned on but no protocol is defined in 'akka.remote.netty.ssl.security.protocol'.")
   if (SSLKeyStore.isEmpty && SSLTrustStore.isEmpty) throw new ConfigurationException(

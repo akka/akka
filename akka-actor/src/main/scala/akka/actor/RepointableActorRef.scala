@@ -220,36 +220,32 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
     }
   }
 
-  // FIXME: once we have guaranteed delivery of system messages, hook this in!
-  def sendSystemMessage(msg: SystemMessage): Unit =
-    if (lock.tryLock(timeout.length, timeout.unit)) {
-      try {
-        val cell = self.underlying
-        if (cellIsReady(cell)) {
-          cell.sendSystemMessage(msg)
-        } else {
-          // systemMessages that are sent during replace need to jump to just after the last system message in the queue, so it's processed before other messages
-          val wasEnqueued = if ((self.lookup ne this) && (self.underlying eq this) && !queue.isEmpty()) {
-            @tailrec def tryEnqueue(i: JListIterator[Any] = queue.listIterator(), insertIntoIndex: Int = -1): Boolean =
-              if (i.hasNext())
-                tryEnqueue(i,
-                  if (i.next().isInstanceOf[SystemMessage]) i.nextIndex() // update last sysmsg seen so far
-                  else insertIntoIndex) // or just keep the last seen one
-              else if (insertIntoIndex == -1) queue.offer(msg)
-              else Try(queue.add(insertIntoIndex, msg)).isSuccess
-            tryEnqueue()
-          } else queue.offer(msg)
+  def sendSystemMessage(msg: SystemMessage): Unit = {
+    lock.lock // we cannot lose system messages, ever, and we cannot throw an Error from here as well
+    try {
+      val cell = self.underlying
+      if (cellIsReady(cell)) {
+        cell.sendSystemMessage(msg)
+      } else {
+        // systemMessages that are sent during replace need to jump to just after the last system message in the queue, so it's processed before other messages
+        val wasEnqueued = if ((self.lookup ne this) && (self.underlying eq this) && !queue.isEmpty()) {
+          @tailrec def tryEnqueue(i: JListIterator[Any] = queue.listIterator(), insertIntoIndex: Int = -1): Boolean =
+            if (i.hasNext())
+              tryEnqueue(i,
+                if (i.next().isInstanceOf[SystemMessage]) i.nextIndex() // update last sysmsg seen so far
+                else insertIntoIndex) // or just keep the last seen one
+            else if (insertIntoIndex == -1) queue.offer(msg)
+            else Try(queue.add(insertIntoIndex, msg)).isSuccess
+          tryEnqueue()
+        } else queue.offer(msg)
 
-          if (!wasEnqueued) {
-            system.eventStream.publish(Warning(self.path.toString, getClass, "dropping system message " + msg + " due to enqueue failure"))
-            system.deadLetters ! DeadLetter(msg, self, self)
-          } else if (Mailbox.debug) println(s"$self temp queueing system $msg")
-        }
-      } finally lock.unlock()
-    } else {
-      system.eventStream.publish(Warning(self.path.toString, getClass, "dropping system message " + msg + " due to lock timeout"))
-      system.deadLetters ! DeadLetter(msg, self, self)
-    }
+        if (!wasEnqueued) {
+          system.eventStream.publish(Warning(self.path.toString, getClass, "dropping system message " + msg + " due to enqueue failure"))
+          system.deadLetters ! DeadLetter(msg, self, self)
+        } else if (Mailbox.debug) println(s"$self temp queueing system $msg")
+      }
+    } finally lock.unlock()
+  }
 
   def isLocal = true
 
