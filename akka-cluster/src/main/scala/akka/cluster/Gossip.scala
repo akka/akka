@@ -64,7 +64,7 @@ private[cluster] case class Gossip(
   version: VectorClock = VectorClock()) // vector clock version
   extends Versioned[Gossip] {
 
-  // FIXME can be disabled as optimization
+  // TODO can be disabled as optimization
   assertInvariants()
 
   private def assertInvariants(): Unit = {
