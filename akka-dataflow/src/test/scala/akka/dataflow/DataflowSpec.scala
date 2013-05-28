@@ -290,7 +290,7 @@ class DataflowSpec extends AkkaSpec with DefaultTimeout {
       assert(Await.result(z.future, timeout.duration) === 42)
     }
 
-    "should capture first exception with dataflow" in {
+    "capture first exception with dataflow" in {
       val f1 = flow { 40 / 0 }
       intercept[java.lang.ArithmeticException](Await result (f1, TestLatch.DefaultTimeout))
     }
