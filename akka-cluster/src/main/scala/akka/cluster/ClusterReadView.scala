@@ -29,7 +29,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
    * Current internal cluster stats, updated periodically via event bus.
    */
   @volatile
-  private var _latestStats = ClusterStats()
+  private var _latestStats = CurrentInternalStats(GossipStats(), VectorClockStats())
 
   /**
    * Current cluster metrics, updated periodically via event bus.
@@ -63,7 +63,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
           case RoleLeaderChanged(role, leader) ⇒
             state = state.copy(roleLeaderMap = state.roleLeaderMap + (role -> leader))
           case s: CurrentClusterState       ⇒ state = s
-          case CurrentInternalStats(stats)  ⇒ _latestStats = stats
+          case stats: CurrentInternalStats  ⇒ _latestStats = stats
           case ClusterMetricsChanged(nodes) ⇒ _clusterMetrics = nodes
         }
       }
@@ -146,7 +146,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   /**
    * INTERNAL API
    */
-  private[cluster] def latestStats: ClusterStats = _latestStats
+  private[cluster] def latestStats: CurrentInternalStats = _latestStats
 
   /**
    * Unsubscribe to cluster events.

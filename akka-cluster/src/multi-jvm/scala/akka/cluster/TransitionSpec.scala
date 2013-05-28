@@ -21,7 +21,10 @@ object TransitionMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("akka.cluster.periodic-tasks-initial-delay = 300 s # turn off all periodic tasks")).
+    withFallback(ConfigFactory.parseString("""
+      akka.cluster.periodic-tasks-initial-delay = 300 s # turn off all periodic tasks
+      akka.cluster.publish-stats-interval = 0 s # always, when it happens
+      """)).
     withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
@@ -82,10 +85,10 @@ abstract class TransitionSpec
     def gossipTo(toRole: RoleName): Unit = {
       gossipBarrierCounter += 1
       runOn(toRole) {
-        val oldCount = clusterView.latestStats.receivedGossipCount
+        val oldCount = clusterView.latestStats.gossipStats.receivedGossipCount
         enterBarrier("before-gossip-" + gossipBarrierCounter)
         awaitCond {
-          clusterView.latestStats.receivedGossipCount != oldCount // received gossip
+          clusterView.latestStats.gossipStats.receivedGossipCount != oldCount // received gossip
         }
         // gossip chat will synchronize the views
         awaitCond((Set(fromRole, toRole) -- seenLatestGossip).isEmpty)
