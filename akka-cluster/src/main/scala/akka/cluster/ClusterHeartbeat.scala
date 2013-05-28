@@ -246,7 +246,7 @@ private[cluster] case class ClusterHeartbeatSenderState private (
   ending: Map[Address, Int] = Map.empty,
   heartbeatRequest: Map[Address, Deadline] = Map.empty) {
 
-  // FIXME can be disabled as optimization
+  // TODO can be disabled as optimization
   assertInvariants()
 
   private def assertInvariants(): Unit = {
