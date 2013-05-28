@@ -76,9 +76,7 @@ class NettyTransportSettings(config: Config) {
     case unknown ⇒ throw new ConfigurationException(s"Unknown transport: [$unknown]")
   }
 
-  val EnableSsl: Boolean = if (getBoolean("enable-ssl") && TransportMode == Udp)
-    throw new ConfigurationException("UDP transport does not support SSL")
-  else getBoolean("enable-ssl")
+  val EnableSsl: Boolean = getBoolean("enable-ssl") requiring (!_ || TransportMode == Tcp, s"$TransportMode does not support SSL")
 
   val UseDispatcherForIo: Option[String] = getString("use-dispatcher-for-io") match {
     case "" | null  ⇒ None
@@ -106,6 +104,12 @@ class NettyTransportSettings(config: Config) {
     s"Setting 'maximum-frame-size' must be at least 32000 bytes")
 
   val Backlog: Int = getInt("backlog")
+
+  val TcpNodelay: Boolean = getBoolean("tcp-nodelay")
+
+  val TcpKeepalive: Boolean = getBoolean("tcp-keepalive")
+
+  val TcpReuseAddr: Boolean = getBoolean("tcp-reuse-addr")
 
   val Hostname: String = getString("hostname") match {
     case ""    ⇒ InetAddress.getLocalHost.getHostAddress
@@ -323,12 +327,11 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
     }
 
   private def setupBootstrap[B <: Bootstrap](bootstrap: B, pipelineFactory: ChannelPipelineFactory): B = {
-    // FIXME: Expose these settings in configuration
     bootstrap.setPipelineFactory(pipelineFactory)
     bootstrap.setOption("backlog", settings.Backlog)
-    bootstrap.setOption("tcpNoDelay", true)
-    bootstrap.setOption("child.keepAlive", true)
-    bootstrap.setOption("reuseAddress", true)
+    bootstrap.setOption("tcpNoDelay", settings.TcpNodelay)
+    bootstrap.setOption("child.keepAlive", settings.TcpKeepalive)
+    bootstrap.setOption("reuseAddress", settings.TcpReuseAddr)
     if (isDatagram) bootstrap.setOption("receiveBufferSizePredictorFactory", new FixedReceiveBufferSizePredictorFactory(ReceiveBufferSize.get))
     settings.ReceiveBufferSize.foreach(sz ⇒ bootstrap.setOption("receiveBufferSize", sz))
     settings.SendBufferSize.foreach(sz ⇒ bootstrap.setOption("sendBufferSize", sz))
@@ -345,6 +348,12 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   private def outboundBootstrap(remoteAddress: Address): ClientBootstrap = {
     val bootstrap = setupBootstrap(new ClientBootstrap(clientChannelFactory), clientPipelineFactory(remoteAddress))
     bootstrap.setOption("connectTimeoutMillis", settings.ConnectionTimeout.toMillis)
+    bootstrap.setOption("tcpNoDelay", settings.TcpNodelay)
+    bootstrap.setOption("keepAlive", settings.TcpKeepalive)
+    settings.ReceiveBufferSize.foreach(sz ⇒ bootstrap.setOption("receiveBufferSize", sz))
+    settings.SendBufferSize.foreach(sz ⇒ bootstrap.setOption("sendBufferSize", sz))
+    settings.WriteBufferHighWaterMark.foreach(sz ⇒ bootstrap.setOption("writeBufferHighWaterMark", sz))
+    settings.WriteBufferLowWaterMark.foreach(sz ⇒ bootstrap.setOption("writeBufferLowWaterMark", sz))
     bootstrap
   }
 
@@ -390,7 +399,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
           channel ⇒
             if (EnableSsl)
               blocking {
-                channel.getPipeline.get[SslHandler](classOf[SslHandler]).handshake().awaitUninterruptibly()
+                channel.getPipeline.get(classOf[SslHandler]).handshake().awaitUninterruptibly()
               }
             if (!isDatagram) channel.setReadable(false)
             channel
@@ -408,7 +417,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
             }
           }
         else
-          readyChannel.getPipeline.get[ClientHandler](classOf[ClientHandler]).statusFuture
+          readyChannel.getPipeline.get(classOf[ClientHandler]).statusFuture
       } yield handle) recover {
         case c: CancellationException ⇒ throw new NettyTransportException("Connection was cancelled") with NoStackTrace
         case u @ (_: UnknownHostException | _: SecurityException) ⇒ throw new InvalidAssociationException(u.getMessage, u.getCause)

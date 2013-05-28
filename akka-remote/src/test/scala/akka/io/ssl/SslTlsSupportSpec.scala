@@ -236,9 +236,9 @@ class SslTlsSupportSpec extends AkkaSpec {
 
     def run() {
       write("1+2")
-      readLine() === "3"
+      readLine() must be === "3"
       write("12+24")
-      readLine() === "36"
+      readLine() must be === "36"
     }
 
     def write(string: String) {

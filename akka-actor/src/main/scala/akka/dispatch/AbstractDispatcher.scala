@@ -109,7 +109,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   /**
    *  Creates and returns a mailbox for the given actor.
    */
-  protected[akka] def createMailbox(actor: Cell): Mailbox //FIXME should this really be private[akka]?
+  protected[akka] def createMailbox(actor: Cell): Mailbox
 
   /**
    * Finds out the mailbox type for an actor based on configuration, props and requirements.
