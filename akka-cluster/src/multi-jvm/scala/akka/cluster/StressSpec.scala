@@ -25,6 +25,7 @@ import akka.actor.SupervisorStrategy._
 import akka.actor.Terminated
 import akka.cluster.ClusterEvent.ClusterMetricsChanged
 import akka.cluster.ClusterEvent.CurrentClusterState
+import akka.cluster.ClusterEvent.CurrentInternalStats
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.StandardMetrics.Cpu
 import akka.cluster.StandardMetrics.HeapMemory
@@ -120,7 +121,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.cluster {
       auto-down = on
-      publish-stats-interval = 0 s # always, when it happens
+      publish-stats-interval = 1s
     }
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.loglevel = INFO
@@ -228,9 +229,9 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
   case class ClusterResult(
     address: Address,
     duration: Duration,
-    clusterStats: ClusterStats)
+    clusterStats: GossipStats)
 
-  case class AggregatedClusterResult(title: String, duration: Duration, clusterStats: ClusterStats)
+  case class AggregatedClusterResult(title: String, duration: Duration, clusterStats: GossipStats)
 
   /**
    * Central aggregator of cluster statistics and metrics.
@@ -251,7 +252,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     }
     var clusterStatsObservedByNode = {
       import akka.cluster.Member.addressOrdering
-      immutable.SortedMap.empty[Address, ClusterStats]
+      immutable.SortedMap.empty[Address, CurrentInternalStats]
     }
 
     import context.dispatcher
@@ -276,7 +277,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       case r: ClusterResult ⇒
         results :+= r
         if (results.size == expectedResults) {
-          val aggregated = AggregatedClusterResult(title, maxDuration, totalClusterStats)
+          val aggregated = AggregatedClusterResult(title, maxDuration, totalGossipStats)
           if (infolog)
             log.info(s"[${title}] completed in [${aggregated.duration.toMillis}] ms\n${aggregated.clusterStats}\n${formatMetrics}\n\n${formatPhi}\n\n${formatStats}")
           reportTo foreach { _ ! aggregated }
@@ -288,7 +289,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
 
     def maxDuration = results.map(_.duration).max
 
-    def totalClusterStats = results.foldLeft(ClusterStats()) { _ :+ _.clusterStats }
+    def totalGossipStats = results.foldLeft(GossipStats()) { _ :+ _.clusterStats }
 
     def formatMetrics: String = {
       import akka.cluster.Member.addressOrdering
@@ -335,9 +336,16 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     def formatPhiLine(monitor: Address, subject: Address, phi: PhiValue): String =
       s"${monitor}\t${subject}\t${phi.count}\t${phi.countAboveOne}\t${phi.max.form}"
 
-    def formatStats: String =
-      (clusterStatsObservedByNode map { case (monitor, stats) ⇒ s"${monitor}\t${stats}" }).
-        mkString("ClusterStats(gossip, merge, same, newer, older)\n", "\n", "")
+    def formatStats: String = {
+      def f(stats: CurrentInternalStats) = {
+        import stats.gossipStats._
+        import stats.vclockStats._
+        s"ClusterStats($receivedGossipCount, $mergeCount, $sameCount, $newerCount, $olderCount, $versionSize, $seenLatest)"
+      }
+      (clusterStatsObservedByNode map { case (monitor, stats) ⇒ s"${monitor}\t${f(stats)}" }).
+        mkString("ClusterStats(gossip, merge, same, newer, older, vclockSize, seenLatest)\n", "\n", "")
+    }
+
   }
 
   /**
@@ -357,7 +365,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     def formatHistory: String =
       (formatHistoryHeader +: (history map formatHistoryLine)).mkString("\n")
 
-    def formatHistoryHeader: String = "[Title]\t[Duration (ms)]\t[ClusterStats(gossip, merge, same, newer, older)]"
+    def formatHistoryHeader: String = "[Title]\t[Duration (ms)]\t[GossipStats(gossip, merge, same, newer, older)]"
 
     def formatHistoryLine(result: AggregatedClusterResult): String =
       s"${result.title}\t${result.duration.toMillis}\t${result.clusterStats}"
@@ -431,20 +439,18 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
   class StatsObserver extends Actor {
     val cluster = Cluster(context.system)
     var reportTo: Option[ActorRef] = None
-    var startStats = cluster.readView.latestStats
+    var startStats: Option[GossipStats] = None
 
-    import context.dispatcher
-    val checkStatsTask = context.system.scheduler.schedule(
-      1.second, 1.second, self, StatsTick)
-
-    override def postStop(): Unit = {
-      checkStatsTask.cancel()
-      super.postStop()
-    }
+    override def preStart(): Unit = cluster.subscribe(self, classOf[CurrentInternalStats])
+    override def postStop(): Unit = cluster.unsubscribe(self)
 
     def receive = {
-      case StatsTick ⇒
-        val res = StatsResult(cluster.selfAddress, cluster.readView.latestStats :- startStats)
+      case CurrentInternalStats(gossipStats, vclockStats) ⇒
+        val diff = startStats match {
+          case None        ⇒ { startStats = Some(gossipStats); gossipStats }
+          case Some(start) ⇒ gossipStats :- start
+        }
+        val res = StatsResult(cluster.selfAddress, CurrentInternalStats(diff, vclockStats))
         reportTo foreach { _ ! res }
       case ReportTo(ref) ⇒
         reportTo foreach context.unwatch
@@ -456,7 +462,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
           case _           ⇒
         }
       case Reset ⇒
-        startStats = cluster.readView.latestStats
+        startStats = None
     }
   }
 
@@ -650,8 +656,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     def compare(that: PhiValue) = addressOrdering.compare(this.address, that.address)
   }
   case class ReportTo(ref: Option[ActorRef])
-  case object StatsTick
-  case class StatsResult(from: Address, stats: ClusterStats)
+  case class StatsResult(from: Address, stats: CurrentInternalStats)
 
   type JobId = Int
   trait Job { def id: JobId }
@@ -750,6 +755,8 @@ abstract class StressSpec
   }
 
   val seedNodes = roles.take(numberOfSeedNodes)
+
+  def latestGossipStats = cluster.readView.latestStats.gossipStats
 
   override def cluster: Cluster = {
     createWorker
@@ -928,12 +935,12 @@ abstract class StressSpec
 
   def reportResult[T](thunk: ⇒ T): T = {
     val startTime = System.nanoTime
-    val startStats = clusterView.latestStats
+    val startStats = clusterView.latestStats.gossipStats
 
     val returnValue = thunk
 
     clusterResultAggregator foreach {
-      _ ! ClusterResult(cluster.selfAddress, (System.nanoTime - startTime).nanos, cluster.readView.latestStats :- startStats)
+      _ ! ClusterResult(cluster.selfAddress, (System.nanoTime - startTime).nanos, latestGossipStats :- startStats)
     }
 
     returnValue

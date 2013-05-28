@@ -232,7 +232,9 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
   // and the Gossip is not versioned for this 'Node' yet
   var latestGossip: Gossip = Gossip.empty
 
-  var stats = ClusterStats()
+  val statsEnabled = PublishStatsInterval.isFinite
+  var gossipStats = GossipStats()
+  var vclockStats = VectorClockStats()
 
   var seedNodeProcess: Option[ActorRef] = None
 
@@ -576,22 +578,21 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
       val comparison = remoteGossip.version tryCompareTo localGossip.version
 
-      val (winningGossip, talkback, newStats) = comparison match {
+      val (winningGossip, talkback) = comparison match {
         case None ⇒
           // conflicting versions, merge
-          (remoteGossip merge localGossip, true, stats.incrementMergeCount)
+          (remoteGossip merge localGossip, true)
         case Some(0) ⇒
           // same version
-          (remoteGossip mergeSeen localGossip, !remoteGossip.seenByNode(selfUniqueAddress), stats.incrementSameCount)
+          (remoteGossip mergeSeen localGossip, !remoteGossip.seenByNode(selfUniqueAddress))
         case Some(x) if x < 0 ⇒
           // local is newer
-          (localGossip, true, stats.incrementNewerCount)
+          (localGossip, true)
         case _ ⇒
           // remote is newer
-          (remoteGossip, !remoteGossip.seenByNode(selfUniqueAddress), stats.incrementOlderCount)
+          (remoteGossip, !remoteGossip.seenByNode(selfUniqueAddress))
       }
 
-      stats = newStats
       latestGossip = winningGossip seen selfUniqueAddress
 
       // for all new joining nodes we remove them from the failure detector
@@ -607,7 +608,18 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
           remoteGossip, localGossip, winningGossip)
       }
 
-      stats = stats.incrementReceivedGossipCount
+      if (statsEnabled) {
+        gossipStats = comparison match {
+          case None             ⇒ gossipStats.incrementMergeCount
+          case Some(0)          ⇒ gossipStats.incrementSameCount
+          case Some(x) if x < 0 ⇒ gossipStats.incrementNewerCount
+          case _                ⇒ gossipStats.incrementOlderCount
+        }
+        vclockStats = VectorClockStats(
+          versionSize = latestGossip.version.versions.size,
+          latestGossip.members.count(m ⇒ latestGossip.seenByNode(m.uniqueAddress)))
+      }
+
       publish(latestGossip)
 
       if (latestGossip.member(selfUniqueAddress).status == Exiting)
@@ -904,7 +916,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
     if (PublishStatsInterval == Duration.Zero) publishInternalStats()
   }
 
-  def publishInternalStats(): Unit = publisher ! CurrentInternalStats(stats)
+  def publishInternalStats(): Unit = publisher ! CurrentInternalStats(gossipStats, vclockStats)
 
 }
 
@@ -1065,30 +1077,27 @@ private[cluster] class OnMemberUpListener(callback: Runnable) extends Actor with
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[cluster] case class ClusterStats(
+private[cluster] case class GossipStats(
   receivedGossipCount: Long = 0L,
   mergeCount: Long = 0L,
   sameCount: Long = 0L,
   newerCount: Long = 0L,
   olderCount: Long = 0L) {
 
-  def incrementReceivedGossipCount(): ClusterStats =
-    copy(receivedGossipCount = receivedGossipCount + 1)
+  def incrementMergeCount(): GossipStats =
+    copy(mergeCount = mergeCount + 1, receivedGossipCount = receivedGossipCount + 1)
 
-  def incrementMergeCount(): ClusterStats =
-    copy(mergeCount = mergeCount + 1)
+  def incrementSameCount(): GossipStats =
+    copy(sameCount = sameCount + 1, receivedGossipCount = receivedGossipCount + 1)
 
-  def incrementSameCount(): ClusterStats =
-    copy(sameCount = sameCount + 1)
+  def incrementNewerCount(): GossipStats =
+    copy(newerCount = newerCount + 1, receivedGossipCount = receivedGossipCount + 1)
 
-  def incrementNewerCount(): ClusterStats =
-    copy(newerCount = newerCount + 1)
+  def incrementOlderCount(): GossipStats =
+    copy(olderCount = olderCount + 1, receivedGossipCount = receivedGossipCount + 1)
 
-  def incrementOlderCount(): ClusterStats =
-    copy(olderCount = olderCount + 1)
-
-  def :+(that: ClusterStats): ClusterStats = {
-    ClusterStats(
+  def :+(that: GossipStats): GossipStats = {
+    GossipStats(
       this.receivedGossipCount + that.receivedGossipCount,
       this.mergeCount + that.mergeCount,
       this.sameCount + that.sameCount,
@@ -1096,8 +1105,8 @@ private[cluster] case class ClusterStats(
       this.olderCount + that.olderCount)
   }
 
-  def :-(that: ClusterStats): ClusterStats = {
-    ClusterStats(
+  def :-(that: GossipStats): GossipStats = {
+    GossipStats(
       this.receivedGossipCount - that.receivedGossipCount,
       this.mergeCount - that.mergeCount,
       this.sameCount - that.sameCount,
@@ -1106,3 +1115,12 @@ private[cluster] case class ClusterStats(
   }
 
 }
+
+/**
+ * INTERNAL API
+ */
+@SerialVersionUID(1L)
+private[cluster] case class VectorClockStats(
+  versionSize: Int = 0,
+  seenLatest: Int = 0)
+
