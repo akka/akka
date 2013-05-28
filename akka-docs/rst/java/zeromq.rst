@@ -13,6 +13,10 @@ ZeroMQ is very opinionated when it comes to multi-threading so configuration opt
 The ZeroMQ module for Akka is written against an API introduced in JZMQ, which uses JNI to interact with the native ZeroMQ library. Instead of using JZMQ, the module uses ZeroMQ binding for Scala that uses the native ZeroMQ library through JNA. In other words, the only native library that this module requires is the native ZeroMQ library.
 The benefit of the scala library is that you don't need to compile and manage native dependencies at the cost of some runtime performance. The scala-bindings are compatible with the JNI bindings so they are a drop-in replacement, in case you really need to get that extra bit of performance out.
 
+.. info::
+
+  The currently used version of ``zeromq-scala-bindings`` is only compatible with zeromq 2; zeromq 3 is not supported.
+
 Connection
 ==========
 
