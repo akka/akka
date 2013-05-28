@@ -1197,10 +1197,13 @@ class TickGenerator[Cmd <: AnyRef, Evt <: AnyRef](interval: FiniteDuration)
     new PipePair[Cmd, Cmd, Evt, Evt] {
 
       // use unique object to avoid double-activation on actor restart
-      private val trigger: Trigger =
+      private val trigger: Trigger = {
+        val path = ctx.getContext.self.path
+
         new Trigger {
-          override def toString = s"Tick[${ctx.getContext.self.path}]"
+          override def toString = s"Tick[$path]"
         }
+      }
 
       private def schedule() =
         ctx.getContext.system.scheduler.scheduleOnce(
