@@ -23,7 +23,12 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
 
     @SuppressWarnings("unchecked")
     protected final Node<T> peekNode() {
-        return ((Node<T>)Unsafe.instance.getObjectVolatile(this, tailOffset)).next();
+        for(;;) {
+          final Node<T> tail = ((Node<T>)Unsafe.instance.getObjectVolatile(this, tailOffset));
+          final Node<T> next = tail.next();
+          if (next != null || get() == tail)
+            return next;
+        }
     }
 
     public final T peek() {
@@ -53,7 +58,7 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
         if (next == null) return null;
         else {
             final T ret = next.value;
-            next.value = null; // Null out the value so that we can GC it early
+            next.value = null;
             Unsafe.instance.putOrderedObject(this, tailOffset, next);
             return ret;
         }
@@ -87,7 +92,7 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
         }
 
         protected final void setNext(final Node<T> newNext) {
-            Unsafe.instance.putOrderedObject(this, nextOffset, newNext);
+          Unsafe.instance.putOrderedObject(this, nextOffset, newNext);
         }
         
         private final static long nextOffset;
