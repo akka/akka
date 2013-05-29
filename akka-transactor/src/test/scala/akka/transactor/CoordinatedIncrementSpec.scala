@@ -79,7 +79,7 @@ class CoordinatedIncrementSpec extends AkkaSpec(CoordinatedIncrement.config) wit
   }
 
   "Coordinated increment" should {
-    implicit val timeout = Timeout(100.millis.dilated)
+    implicit val timeout = Timeout(2.seconds.dilated)
     "increment all counters by one with successful transactions" in {
       val (counters, failer) = actorOfs
       val coordinated = Coordinated()
