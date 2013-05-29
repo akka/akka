@@ -571,7 +571,7 @@ class ClusterSingletonManager(
         case Some(a) if a == cluster.selfAddress ⇒
           // already oldest
           stay
-        case Some(a) if removed.contains(a) ⇒
+        case Some(a) if !selfExited && removed.contains(a) ⇒
           gotoHandingOver(singleton, singletonTerminated, handOverData, None)
         case Some(a) ⇒
           // send TakeOver request in case the new oldest doesn't know previous oldest
