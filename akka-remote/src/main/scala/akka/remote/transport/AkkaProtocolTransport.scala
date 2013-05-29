@@ -121,7 +121,7 @@ private[transport] class AkkaProtocolManager(
         stateActorAssociationHandler,
         stateActorSettings,
         AkkaPduProtobufCodec,
-        failureDetector), actorNameFor(handle.remoteAddress))
+        failureDetector).withDeploy(Deploy.local), actorNameFor(handle.remoteAddress))
 
     case AssociateUnderlying(remoteAddress, statusPromise) ⇒
       val stateActorLocalAddress = localAddress
@@ -135,7 +135,7 @@ private[transport] class AkkaProtocolManager(
         stateActorWrappedTransport,
         stateActorSettings,
         AkkaPduProtobufCodec,
-        failureDetector), actorNameFor(remoteAddress))
+        failureDetector).withDeploy(Deploy.local), actorNameFor(remoteAddress))
   }
 
   private def createTransportFailureDetector(): FailureDetector =

@@ -10,6 +10,7 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.actor.Props
 import akka.actor.Actor
+import akka.actor.Deploy
 
 object MembershipChangeListenerUpMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -49,7 +50,7 @@ abstract class MembershipChangeListenerUpSpec
                 latch.countDown()
             case _ ⇒ // ignore
           }
-        })), classOf[MemberEvent])
+        }).withDeploy(Deploy.local)), classOf[MemberEvent])
         enterBarrier("listener-1-registered")
         cluster.join(first)
         latch.await
@@ -76,7 +77,7 @@ abstract class MembershipChangeListenerUpSpec
               latch.countDown()
           case _ ⇒ // ignore
         }
-      })), classOf[MemberEvent])
+      }).withDeploy(Deploy.local)), classOf[MemberEvent])
       enterBarrier("listener-2-registered")
 
       runOn(third) {

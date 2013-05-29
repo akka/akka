@@ -44,7 +44,7 @@ akka {
       def receive = {
         case t: Terminated ⇒ testActor ! t.actor.path
       }
-    }), name = "observer2")
+    }).withDeploy(Deploy.local), name = "observer2")
 
     expectMsg(60.seconds, path)
   }

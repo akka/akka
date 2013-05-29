@@ -10,6 +10,7 @@ import akka.actor.{ Actor, ActorRef, ActorSystemImpl, Address, Props }
 import akka.cluster.ClusterEvent._
 import akka.actor.PoisonPill
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.actor.Deploy
 
 /**
  * INTERNAL API
@@ -67,7 +68,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
           case ClusterMetricsChanged(nodes) ⇒ _clusterMetrics = nodes
         }
       }
-    }).withDispatcher(cluster.settings.UseDispatcher), name = "clusterEventBusListener")
+    }).withDispatcher(cluster.settings.UseDispatcher).withDeploy(Deploy.local), name = "clusterEventBusListener")
   }
 
   def self: Member = {

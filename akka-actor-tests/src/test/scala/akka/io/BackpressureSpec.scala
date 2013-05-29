@@ -6,16 +6,15 @@ package akka.io
 
 import java.net.InetSocketAddress
 import java.security.MessageDigest
-
 import scala.concurrent.Await
 import scala.concurrent.duration.{ Duration, DurationInt }
 import scala.concurrent.forkjoin.ThreadLocalRandom
-
 import akka.actor.{ Actor, ActorContext, ActorLogging, ActorRef, Props, ReceiveTimeout, Stash, Terminated }
 import akka.io.TcpPipelineHandler.{ Init, Management, WithinActorContext }
 import akka.pattern.ask
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 import akka.util.{ ByteString, Timeout }
+import akka.actor.Deploy
 
 object BackpressureSpec {
 
@@ -38,7 +37,7 @@ object BackpressureSpec {
         val init = TcpPipelineHandler.withLogger(log,
           new TcpReadWriteAdapter >>
             new BackpressureBuffer(10000, 1000000, Long.MaxValue))
-        val handler = context.actorOf(TcpPipelineHandler(init, sender, self), "pipeline")
+        val handler = context.actorOf(TcpPipelineHandler(init, sender, self).withDeploy(Deploy.local), "pipeline")
         sender ! Tcp.Register(handler)
         unstashAll()
         context.become(connected(init, handler))
@@ -78,6 +77,8 @@ object BackpressureSpec {
     val failed: Receive = {
       case _ ⇒ sender ! Failed
     }
+
+    override def postRestart(thr: Throwable): Unit = context.stop(self)
   }
 
   case object GetPort
@@ -113,7 +114,7 @@ object BackpressureSpec {
         val init = TcpPipelineHandler.withLogger(log,
           new TcpReadWriteAdapter >>
             new BackpressureBuffer(10000, 1000000, Long.MaxValue))
-        val handler = context.actorOf(TcpPipelineHandler(init, sender, self), "pipeline")
+        val handler = context.actorOf(TcpPipelineHandler(init, sender, self).withDeploy(Deploy.local), "pipeline")
         sender ! Tcp.Register(handler)
         unstashAll()
         context.become(connected(init, handler))
@@ -147,10 +148,12 @@ object BackpressureSpec {
     val failed: Receive = {
       case _ ⇒ sender ! Failed
     }
+
+    override def postRestart(thr: Throwable): Unit = context.stop(self)
   }
 }
 
-class BackpressureSpec extends AkkaSpec with ImplicitSender {
+class BackpressureSpec extends AkkaSpec("akka.actor.serialize-creators=on") with ImplicitSender {
 
   import BackpressureSpec._
 

@@ -145,7 +145,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   // create supervisor for daemons under path "/system/cluster"
   private val clusterDaemons: ActorRef = {
     system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(classOf[ClusterDaemon], settings).
-      withDispatcher(UseDispatcher), name = "cluster")
+      withDispatcher(UseDispatcher).withDeploy(Deploy.local), name = "cluster")
   }
 
   /**

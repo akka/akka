@@ -28,9 +28,7 @@ import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStream
 import java.net.{ InetSocketAddress, SocketException }
 import java.security.{ KeyStore, SecureRandom }
 import java.util.concurrent.atomic.AtomicInteger
-
 import scala.concurrent.duration.DurationInt
-
 import akka.TestUtils
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
 import akka.event.{ Logging, LoggingAdapter }
@@ -42,6 +40,7 @@ import akka.remote.security.provider.AkkaProvider
 import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.util.{ ByteString, Timeout }
 import javax.net.ssl.{ KeyManagerFactory, SSLContext, SSLServerSocket, SSLSocket, TrustManagerFactory }
+import akka.actor.Deploy
 
 // TODO move this into akka-actor once AkkaProvider for SecureRandom does not have external dependencies
 class SslTlsSupportSpec extends AkkaSpec {
@@ -71,7 +70,7 @@ class SslTlsSupportSpec extends AkkaSpec {
     "work between a Java client and a akka server" in {
       val serverAddress = TestUtils.temporaryServerAddress()
       val probe = TestProbe()
-      val bindHandler = probe.watch(system.actorOf(Props(new AkkaSslServer(serverAddress)), "server1"))
+      val bindHandler = probe.watch(system.actorOf(Props(new AkkaSslServer(serverAddress)).withDeploy(Deploy.local), "server1"))
       expectMsg(Tcp.Bound)
 
       val client = new JavaSslClient(serverAddress)
@@ -83,7 +82,7 @@ class SslTlsSupportSpec extends AkkaSpec {
     "work between a akka client and a akka server" in {
       val serverAddress = TestUtils.temporaryServerAddress()
       val probe = TestProbe()
-      val bindHandler = probe.watch(system.actorOf(Props(new AkkaSslServer(serverAddress)), "server2"))
+      val bindHandler = probe.watch(system.actorOf(Props(new AkkaSslServer(serverAddress)).withDeploy(Deploy.local), "server2"))
       expectMsg(Tcp.Bound)
 
       val client = new AkkaSslClient(serverAddress)
@@ -111,7 +110,7 @@ class SslTlsSupportSpec extends AkkaSpec {
 
     import init._
 
-    val handler = system.actorOf(TcpPipelineHandler(init, connection, probe.ref),
+    val handler = system.actorOf(TcpPipelineHandler(init, connection, probe.ref).withDeploy(Deploy.local),
       "client" + counter.incrementAndGet())
     probe.send(connection, Tcp.Register(handler))
 
@@ -163,11 +162,11 @@ class SslTlsSupportSpec extends AkkaSpec {
             new BackpressureBuffer(lowBytes = 100, highBytes = 1000, maxBytes = 1000000))
 
         val connection = sender
-        val handler = context.actorOf(Props(new AkkaSslHandler(init)))
+        val handler = context.actorOf(Props(new AkkaSslHandler(init)).withDeploy(Deploy.local))
         //#server
         context watch handler
         //#server
-        val pipeline = context.actorOf(TcpPipelineHandler(init, sender, handler))
+        val pipeline = context.actorOf(TcpPipelineHandler(init, sender, handler).withDeploy(Deploy.local))
 
         connection ! Tcp.Register(pipeline)
       //#server

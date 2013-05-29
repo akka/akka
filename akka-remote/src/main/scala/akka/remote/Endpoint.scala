@@ -308,7 +308,7 @@ private[remote] class ReliableDeliverySupervisor(
       AkkaPduProtobufCodec,
       receiveBuffers = receiveBuffers,
       reliableDeliverySupervisor = Some(self))
-      .withDispatcher("akka.remote.writer-dispatcher"),
+      .withDispatcher("akka.remote.writer-dispatcher").withDeploy(Deploy.local),
       "endpointWriter"))
   }
 }
@@ -581,7 +581,7 @@ private[remote] class EndpointWriter(
     val newReader =
       context.watch(context.actorOf(
         EndpointReader(localAddress, remoteAddress, transport, settings, codec,
-          msgDispatch, inbound, reliableDeliverySupervisor, receiveBuffers),
+          msgDispatch, inbound, reliableDeliverySupervisor, receiveBuffers).withDeploy(Deploy.local),
         "endpointReader-" + AddressUrlEncoder(remoteAddress) + "-" + readerId.next()))
     handle.readHandlerPromise.success(ActorHandleEventListener(newReader))
     Some(newReader)

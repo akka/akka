@@ -23,7 +23,10 @@ import akka.testkit.{ AkkaSpec, EventFilter, TestActorRef, TestProbe }
 import akka.util.{ Helpers, ByteString }
 import akka.TestUtils._
 
-class TcpConnectionSpec extends AkkaSpec("akka.io.tcp.register-timeout = 500ms") {
+class TcpConnectionSpec extends AkkaSpec("""
+    akka.io.tcp.register-timeout = 500ms
+    akka.actor.serialize-creators = on
+    """) {
   // Helper to avoid Windows localization specific differences
   def ignoreIfWindows(): Unit =
     if (Helpers.isWindows) {

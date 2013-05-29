@@ -168,12 +168,15 @@ private[akka] trait Children { this: ActorCell ⇒
   }
 
   private def makeChild(cell: ActorCell, props: Props, name: String, async: Boolean, systemService: Boolean): ActorRef = {
-    if (cell.system.settings.SerializeAllCreators) {
-      val ser = SerializationExtension(cell.system)
-      props.args forall (arg ⇒
-        arg.isInstanceOf[NoSerializationVerificationNeeded] ||
-          ser.deserialize(ser.serialize(arg.asInstanceOf[AnyRef]).get, arg.getClass).get != null)
-    }
+    if (cell.system.settings.SerializeAllCreators && props.deploy.scope != LocalScope)
+      try {
+        val ser = SerializationExtension(cell.system)
+        props.args forall (arg ⇒
+          arg.isInstanceOf[NoSerializationVerificationNeeded] ||
+            ser.deserialize(ser.serialize(arg.asInstanceOf[AnyRef]).get, arg.getClass).get != null)
+      } catch {
+        case NonFatal(e) ⇒ throw new IllegalArgumentException(s"pre-creation serialization check failed at [${cell.self.path}/$name]", e)
+      }
     /*
      * in case we are currently terminating, fail external attachChild requests
      * (internal calls cannot happen anyway because we are suspended)

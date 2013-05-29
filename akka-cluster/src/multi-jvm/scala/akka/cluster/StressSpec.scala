@@ -585,7 +585,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     require(level >= 1)
     def createChild(): Actor = if (level == 1) new Leaf else new TreeNode(level - 1, width)
     val indexedChildren =
-      0 until width map { i ⇒ context.actorOf(Props(createChild()), name = i.toString) } toVector
+      0 until width map { i ⇒ context.actorOf(Props(createChild()).withDeploy(Deploy.local), name = i.toString) } toVector
 
     def receive = {
       case (idx: Int, job: SimpleJob) if idx < width ⇒ indexedChildren(idx) forward ((idx, job))
@@ -762,7 +762,7 @@ abstract class StressSpec
 
   def createResultAggregator(title: String, expectedResults: Int, includeInHistory: Boolean): Unit = {
     runOn(roles.head) {
-      val aggregator = system.actorOf(Props(classOf[ClusterResultAggregator], title, expectedResults, settings),
+      val aggregator = system.actorOf(Props(classOf[ClusterResultAggregator], title, expectedResults, settings).withDeploy(Deploy.local),
         name = "result" + step)
       if (includeInHistory && infolog) aggregator ! ReportTo(Some(clusterResultHistory))
       else aggregator ! ReportTo(None)
@@ -1017,7 +1017,7 @@ abstract class StressSpec
       val (masterRoles, otherRoles) = roles.take(nbrUsedRoles).splitAt(3)
       runOn(masterRoles: _*) {
         reportResult {
-          val m = system.actorOf(Props(classOf[Master], settings, batchInterval, tree),
+          val m = system.actorOf(Props(classOf[Master], settings, batchInterval, tree).withDeploy(Deploy.local),
             name = "master-" + myself.name)
           m ! Begin
           import system.dispatcher
@@ -1149,7 +1149,7 @@ abstract class StressSpec
 
     "start routers that are running while nodes are joining" taggedAs LongRunningTest in {
       runOn(roles.take(3): _*) {
-        system.actorOf(Props(classOf[Master], settings, settings.workBatchInterval, false),
+        system.actorOf(Props(classOf[Master], settings, settings.workBatchInterval, false).withDeploy(Deploy.local),
           name = "master-" + myself.name) ! Begin
       }
     }
@@ -1245,7 +1245,7 @@ abstract class StressSpec
     "start routers that are running while nodes are removed" taggedAs LongRunningTest in {
       if (exerciseActors) {
         runOn(roles.take(3): _*) {
-          system.actorOf(Props(classOf[Master], settings, settings.workBatchInterval, false),
+          system.actorOf(Props(classOf[Master], settings, settings.workBatchInterval, false).withDeploy(Deploy.local),
             name = "master-" + myself.name) ! Begin
         }
       }

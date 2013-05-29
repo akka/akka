@@ -25,6 +25,7 @@ import scala.reflect.classTag
 import akka.ConfigurationException
 import akka.AkkaException
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.actor.Deploy
 
 /**
  * The conductor is the one orchestrating the test: it governs the
@@ -413,7 +414,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
     case CreateServerFSM(channel) ⇒
       val (ip, port) = channel.getRemoteAddress match { case s: InetSocketAddress ⇒ (s.getAddress.getHostAddress, s.getPort) }
       val name = ip + ":" + port + "-server" + generation.next
-      sender ! context.actorOf(Props(classOf[ServerFSM], self, channel), name)
+      sender ! context.actorOf(Props(classOf[ServerFSM], self, channel).withDeploy(Deploy.local), name)
     case c @ NodeInfo(name, addr, fsm) ⇒
       barrier forward c
       if (nodes contains name) {
