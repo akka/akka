@@ -49,6 +49,7 @@ import akka.actor.IndirectActorProducer;
 import akka.actor.OneForOneStrategy;
 //#import-props
 import akka.actor.Props;
+import akka.japi.Creator;
 //#import-props
 import akka.actor.SupervisorStrategy;
 import akka.actor.SupervisorStrategy.Directive;
@@ -88,14 +89,35 @@ public class UntypedActorDocTest {
 
   private final ActorSystem system = actorSystemResource.getSystem();
 
+  //#creating-props-config
+  static class MyActorC implements Creator<MyActor> {
+    @Override public MyActor create() {
+      return new MyActor("...");
+    }
+  }
+  
+  //#creating-props-config
+
   @SuppressWarnings("unused")
   @Test
   public void createProps() {
     //#creating-props-config
     Props props1 = Props.create(MyUntypedActor.class);
     Props props2 = Props.create(MyActor.class, "...");
+    Props props3 = Props.create(new MyActorC());
     //#creating-props-config
   }
+  
+  //#parametric-creator
+  static class ParametricCreator<T extends MyActor> implements Creator<T> {
+    @Override public T create() {
+      // ... fabricate actor here
+      //#parametric-creator
+      return null;
+      //#parametric-creator
+    }
+  }
+  //#parametric-creator
 
   @SuppressWarnings("deprecation")
   @Test

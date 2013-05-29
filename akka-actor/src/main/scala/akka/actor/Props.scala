@@ -12,9 +12,12 @@ import akka.util.Reflect
 import scala.annotation.varargs
 import Deploy.{ NoDispatcherGiven, NoMailboxGiven }
 import scala.collection.immutable
-
 import scala.language.existentials
 import java.lang.reflect.Constructor
+import java.lang.reflect.Modifier
+import scala.annotation.tailrec
+import java.lang.reflect.ParameterizedType
+import java.lang.reflect.TypeVariable
 
 /**
  * Factory for Props instances.
@@ -41,14 +44,14 @@ object Props {
   final val defaultDeploy = Deploy()
 
   /**
-   * The default Props instance, uses the settings from the Props object starting with default*.
-   */
-  final val default = new Props()
-
-  /**
    * A Props instance whose creator will create an actor that doesn't respond to any message
    */
   final val empty = Props[EmptyActor]
+
+  /**
+   * The default Props instance, uses the settings from the Props object starting with default*.
+   */
+  final val default = new Props()
 
   /**
    * INTERNAL API
@@ -85,7 +88,7 @@ object Props {
   /**
    * The deprecated legacy constructor.
    */
-  @deprecated("give class and arguments instead", "2.2")
+  @deprecated("use Props.withDispatcher and friends", "2.2")
   def apply(
     creator: () ⇒ Actor = Props.defaultCreator,
     dispatcher: String = Dispatchers.DefaultDispatcherId,
@@ -99,6 +102,13 @@ object Props {
   }
 
   /**
+   * The deprecated legacy extractor.
+   */
+  @deprecated("use three-argument version", "2.2")
+  def unapply(p: Props)(dummy: Int = 0): Option[(() ⇒ Actor, String, RouterConfig, Deploy)] =
+    Some((p.creator, p.dispatcher, p.routerConfig, p.deploy))
+
+  /**
    * Scala API: create a Props given a class and its constructor arguments.
    */
   def apply(clazz: Class[_], args: Any*): Props = apply(defaultDeploy, clazz, args.toVector)
@@ -108,6 +118,30 @@ object Props {
    */
   @varargs
   def create(clazz: Class[_], args: AnyRef*): Props = apply(defaultDeploy, clazz, args.toVector)
+
+  /**
+   * Create new Props from the given [[Creator]].
+   */
+  def create[T <: Actor](creator: Creator[T]): Props = {
+    if ((creator.getClass.getModifiers & Modifier.STATIC) == 0)
+      throw new IllegalArgumentException("cannot use non-static local Creator to create actors; make it static or top-level")
+    val cc = classOf[Creator[_]]
+    val ac = classOf[Actor]
+    @tailrec def findType(c: Class[_]): Class[_] = {
+      c.getGenericInterfaces collectFirst {
+        case t: ParameterizedType if cc.isAssignableFrom(t.getRawType.asInstanceOf[Class[_]]) ⇒
+          t.getActualTypeArguments.head match {
+            case c: Class[_] ⇒ c // since T <: Actor
+            case v: TypeVariable[_] ⇒
+              v.getBounds collectFirst { case c: Class[_] if ac.isAssignableFrom(c) && c != ac ⇒ c } getOrElse ac
+          }
+      } match {
+        case Some(x) ⇒ x
+        case None    ⇒ findType(c.getSuperclass)
+      }
+    }
+    apply(defaultDeploy, classOf[CreatorConsumer], findType(creator.getClass) :: creator :: Nil)
+  }
 }
 
 /**
@@ -183,7 +217,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    *             non-serializable inner classes, making them also
    *             non-serializable
    */
-  @deprecated("use Props.create", "2.2")
+  @deprecated("use Props.create()", "2.2")
   def this(factory: UntypedActorFactory) = this(Props.defaultDeploy, classOf[UntypedActorFactoryConsumer], Vector(factory))
 
   /**
@@ -227,6 +261,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    *
    * The creator must not return the same instance multiple times.
    */
+  @deprecated("use Props(...).withDeploy(other.deploy)", "2.2")
   def withCreator(c: ⇒ Actor): Props = copy(clazz = classOf[CreatorFunctionConsumer], args = (() ⇒ c) :: Nil)
 
   /**
@@ -239,8 +274,8 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    *             non-serializable inner classes, making them also
    *             non-serializable
    */
-  @deprecated("use Props.create(clazz, args ...) instead", "2.2")
-  def withCreator(c: Creator[Actor]): Props = copy(clazz = classOf[CreatorConsumer], args = c :: Nil)
+  @deprecated("use Props.create(clazz, args ...).withDeploy(other.deploy) instead", "2.2")
+  def withCreator(c: Creator[Actor]): Props = copy(clazz = classOf[CreatorConsumer], args = classOf[Actor] :: c :: Nil)
 
   /**
    * Returns a new Props with the specified creator set.
@@ -248,7 +283,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    * @deprecated use Props.create(clazz) instead; deprecated since it duplicates
    *             another API
    */
-  @deprecated("use Props(clazz, args).withDeploy(other.deploy)", "2.2")
+  @deprecated("use Props.create(clazz, args).withDeploy(other.deploy)", "2.2")
   def withCreator(c: Class[_ <: Actor]): Props = copy(clazz = c, args = Nil)
 
   /**
@@ -342,8 +377,8 @@ private[akka] class CreatorFunctionConsumer(creator: () ⇒ Actor) extends Indir
 /**
  * INTERNAL API
  */
-private[akka] class CreatorConsumer(creator: Creator[Actor]) extends IndirectActorProducer {
-  override def actorClass = classOf[Actor]
+private[akka] class CreatorConsumer(clazz: Class[_ <: Actor], creator: Creator[Actor]) extends IndirectActorProducer {
+  override def actorClass = clazz
   override def produce() = creator.create()
 }
 
