@@ -5,7 +5,9 @@
  Cluster Specification
 ######################
 
-.. note:: This document describes the design concepts of the clustering. Not everything described here is implemented yet.
+.. note:: This document describes the design concepts of the clustering. Not everything described here is implemented yet,
+   and such parts have been marked  with footnote [#ni]_. Actor partitioning and stateful actor replication have not been
+   implemented yet.
 
 Intro
 =====
@@ -13,10 +15,11 @@ Intro
 Akka Cluster provides a fault-tolerant, elastic, decentralized peer-to-peer
 cluster with no single point of failure (SPOF) or single point of bottleneck
 (SPOB). It implements a Dynamo-style system using gossip protocols, automatic
-failure detection, automatic partitioning, handoff, and cluster rebalancing. But
-with some differences due to the fact that it is not just managing passive data,
-but actors - active, sometimes stateful, components that also have requirements
-on message ordering, the number of active instances in the cluster, etc.
+failure detection, automatic partitioning [#ni]_, handoff [#ni]_, and cluster 
+rebalancing [#ni]_. But with some differences due to the fact that it is not just 
+managing passive data, but actors - active, sometimes stateful, components that 
+also have requirements on message ordering, the number of active instances in 
+the cluster, etc.
 
 
 Terms
@@ -31,25 +34,25 @@ These terms are used throughout the documentation.
 **cluster**
   A set of nodes. Contains distributed Akka applications.
 
-**partition**
+**partition** [#ni]_
   An actor or subtree of actors in the Akka application that is distributed
   within the cluster.
 
-**partition point**
+**partition point** [#ni]_
   The actor at the head of a partition. The point around which a partition is
   formed.
 
-**partition path**
+**partition path** [#ni]_
   Also referred to as the actor address. Has the format `actor1/actor2/actor3`
 
-**instance count**
+**instance count** [#ni]_
   The number of instances of a partition in the cluster. Also referred to as the
   ``N-value`` of the partition.
 
-**instance node**
+**instance node** [#ni]_
   A node that an actor instance is assigned to.
 
-**partition table**
+**partition table** [#ni]_
   A mapping from partition path to a set of instance nodes (where the nodes are
   referred to by the ordinal position given the nodes in sorted order).
 
@@ -64,7 +67,7 @@ Membership
 A cluster is made up of a set of member nodes. The identifier for each node is a
 ``hostname:port`` pair. An Akka application is distributed over a cluster with
 each node hosting some part of the application. Cluster membership and
-partitioning of the application are decoupled. A node could be a member of a
+partitioning [#ni]_ of the application are decoupled. A node could be a member of a
 cluster without hosting any actors.
 
 
@@ -158,7 +161,7 @@ The role of the ``leader`` is to shift members in and out of the cluster, changi
 ``removed`` state, and to schedule rebalancing across the cluster. Currently
 ``leader`` actions are only triggered by receiving a new cluster state with gossip
 convergence but it may also be possible for the user to explicitly rebalance the
-cluster by specifying migrations, or to rebalance the cluster automatically
+cluster by specifying migrations [#ni]_, or to rebalance [#ni]_ the cluster automatically
 based on metrics from member nodes. Metrics may be spread using the gossip
 protocol or possibly more efficiently using a *random chord* method, where the
 ``leader`` contacts several random nodes around the cluster ring and each contacted
@@ -190,17 +193,16 @@ representing current versions but not actual values; the recipient of the gossip
 can then send back any values for which it has newer versions and also request
 values for which it has outdated versions. Akka uses a single shared state with
 a vector clock for versioning, so the variant of push-pull gossip used in Akka
-makes use of the gossip overview (containing the current state versions for all
-nodes) to only push the actual state as needed. This also allows any node to
-easily determine which other nodes have newer or older information, not just the
-nodes involved in a gossip exchange.
+makes use of this version to only push the actual state as needed.
 
 Periodically, the default is every 1 second, each node chooses another random
 node to initiate a round of gossip with. The choice of node is random but can
 also include extra gossiping nodes with either newer or older state versions.
 
 The gossip overview contains the current state version for all nodes and also a
-list of unreachable nodes.
+list of unreachable nodes.  This allows any node to easily determine which other 
+nodes have newer or older information, not just the nodes involved in a gossip 
+exchange.
 
 The nodes defined as ``seed`` nodes are just regular member nodes whose only
 "special role" is to function as contact points in the cluster.
@@ -209,8 +211,8 @@ During each round of gossip exchange it sends Gossip to random node with
 newer or older state information, if any, based on the current gossip overview, 
 with some probability. Otherwise Gossip to any random live node.
 
-The gossiper only sends the gossip overview to the chosen node. The recipient of
-the gossip can use the gossip overview to determine whether:
+The gossiper only sends the gossip version to the chosen node. The recipient of
+the gossip can use the gossip version to determine whether:
 
 1. it has a newer version of the gossip state, in which case it sends that back
    to the gossiper, or
@@ -224,14 +226,11 @@ not sent or requested.
 The main structures used in gossiping are the gossip overview and the gossip
 state::
 
-  GossipOverview {
-    versions: Map[Node, VectorClock],
-    unreachable: Set[Node]
-  }
-
  GossipState {
     version: VectorClock,
     members: SortedSet[Member],
+    unreachable: Set[Node],
+    seen: Map[Node, VectorClock],
     partitions: Tree[PartitionPath, Node],
     pending: Set[PartitionChange],
     meta: Option[Map[String, Array[Byte]]]
@@ -243,10 +242,10 @@ Some of the other structures used are::
 
   Member {
     node: Node,
-    state: MemberState
+    status: MemberStatus
   }
 
-  MemberState = Joining | Up | Leaving | Exiting | Down | Removed
+  MemberStatus = Joining | Up | Leaving | Exiting | Down | Removed
 
   PartitionChange {
     from: Node,
@@ -263,12 +262,12 @@ Membership Lifecycle
 
 A node begins in the ``joining`` state. Once all nodes have seen that the new
 node is joining (through gossip convergence) the ``leader`` will set the member
-state to ``up`` and can start assigning partitions to the new node.
+state to ``up`` and can start assigning partitions [#ni]_ to the new node.
 
 If a node is leaving the cluster in a safe, expected manner then it switches to
-the ``leaving`` state. The ``leader`` will reassign partitions across the cluster
+the ``leaving`` state. The ``leader`` will reassign partitions [#ni]_ across the cluster
 (it is possible for a leaving node to itself be the ``leader``). When all partition
-handoff has completed then the node will change to the ``exiting`` state. Once
+handoff [#ni]_ has completed then the node will change to the ``exiting`` state. Once
 all nodes have seen the exiting state (convergence) the ``leader`` will remove the
 node from the cluster, marking it as ``removed``.
 
@@ -277,12 +276,11 @@ any ``leader`` actions are also not possible (for instance, allowing a node to
 become a part of the cluster, or changing actor distribution). To be able to
 move forward the state of the unreachable nodes must be changed. If the
 unreachable node is experiencing only transient difficulties then it can be
-explicitly marked as ``down`` using the ``down`` user action. When this node
-comes back up and begins gossiping it will automatically go through the joining
-process again. If the unreachable node will be permanently down then it can be
-removed from the cluster directly by shutting the actor system down or killing it
-through an external ``SIGKILL`` signal, invocation of ``System.exit(status)`` or
-similar. The cluster can, through the leader, also *auto-down* a node.
+explicitly marked as ``down`` using the ``down`` user action. This node must be
+restarted and go through the joining process again. If the unreachable node will be
+permanently down then it can be removed from the cluster directly by shutting the actor
+system down or killing it through an external ``SIGKILL`` signal, invocation of 
+``System.exit(status)`` or similar. The cluster can, through the leader, also *auto-down* a node.
 
 This means that nodes can join and leave the cluster at any point in time, i.e.
 provide cluster elasticity.
@@ -338,7 +336,7 @@ The ``leader`` has the following duties:
 
   - exiting -> removed
 
-- partition distribution
+- partition distribution [#ni]_
 
   - scheduling handoffs (pending changes)
 
@@ -348,8 +346,10 @@ The ``leader`` has the following duties:
     RAM, Garbage Collection, mailbox depth etc.)
 
 
-Partitioning
-============
+Partitioning [#ni]_
+===================
+
+.. note:: Actor partitioning is not implemented yet.
 
 Each partition (an actor or actor subtree) in the actor system is assigned to a
 set of nodes in the cluster. The actor at the head of the partition is referred
@@ -575,21 +575,20 @@ have a dependency on message ordering from any given source.
   and 3b would be required.
 
 
-Stateful Actor Replication
-==========================
+Stateful Actor Replication [#ni]_
+=================================
 
-Support for stateful singleton actors will come in future releases of Akka, and
-is scheduled for Akka 2.2. Having a Dynamo base for the clustering already we
-should use the same infrastructure to provide stateful actor clustering and
-datastore as well. The stateful actor clustering should be layered on top of the
-distributed datastore. See the next section for a rough outline on how the
-distributed datastore could be implemented.
+.. note:: Stateful actor replication is not implemented yet.
 
 
 Implementing a Dynamo-style Distributed Database on top of Akka Cluster
 -----------------------------------------------------------------------
 
-The missing pieces to implement a full Dynamo-style eventually consistent data
+Having a Dynamo base for the clustering already we could use the same infrastructure 
+to provide stateful actor clustering and datastore as well. The stateful actor 
+clustering could be layered on top of the distributed datastore.
+
+The missing pieces (rough outline) to implement a full Dynamo-style eventually consistent data
 storage on top of the Akka Cluster as described in this document are:
 
 - Configuration of ``READ`` and ``WRITE`` consistency levels according to the
@@ -632,3 +631,7 @@ storage on top of the Akka Cluster as described in this document are:
     4. Return the latest versioned data.
 
 .. _Read Repair: http://wiki.apache.org/cassandra/ReadRepair
+
+.. rubric:: Footnotes
+
+.. [#ni] Not implemented yet
