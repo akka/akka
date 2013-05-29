@@ -6,7 +6,7 @@
 ######################
 
 .. note:: This document describes the design concepts of the clustering. Not everything described here is implemented yet,
-   and such parts have been marked  with footnote [#ni]_. Actor partitioning and stateful actor replication have not been
+   and such parts have been marked  with footnote :ref:`[*] <niy>`. Actor partitioning and stateful actor replication have not been
    implemented yet.
 
 Intro
@@ -15,8 +15,8 @@ Intro
 Akka Cluster provides a fault-tolerant, elastic, decentralized peer-to-peer
 cluster with no single point of failure (SPOF) or single point of bottleneck
 (SPOB). It implements a Dynamo-style system using gossip protocols, automatic
-failure detection, automatic partitioning [#ni]_, handoff [#ni]_, and cluster 
-rebalancing [#ni]_. But with some differences due to the fact that it is not just 
+failure detection, automatic partitioning :ref:`[*] <niy>`, handoff :ref:`[*] <niy>`, and cluster 
+rebalancing :ref:`[*] <niy>`. But with some differences due to the fact that it is not just 
 managing passive data, but actors - active, sometimes stateful, components that 
 also have requirements on message ordering, the number of active instances in 
 the cluster, etc.
@@ -34,25 +34,25 @@ These terms are used throughout the documentation.
 **cluster**
   A set of nodes. Contains distributed Akka applications.
 
-**partition** [#ni]_
+**partition** :ref:`[*] <niy>`
   An actor or subtree of actors in the Akka application that is distributed
   within the cluster.
 
-**partition point** [#ni]_
+**partition point** :ref:`[*] <niy>`
   The actor at the head of a partition. The point around which a partition is
   formed.
 
-**partition path** [#ni]_
+**partition path** :ref:`[*] <niy>`
   Also referred to as the actor address. Has the format `actor1/actor2/actor3`
 
-**instance count** [#ni]_
+**instance count** :ref:`[*] <niy>`
   The number of instances of a partition in the cluster. Also referred to as the
   ``N-value`` of the partition.
 
-**instance node** [#ni]_
+**instance node** :ref:`[*] <niy>`
   A node that an actor instance is assigned to.
 
-**partition table** [#ni]_
+**partition table** :ref:`[*] <niy>`
   A mapping from partition path to a set of instance nodes (where the nodes are
   referred to by the ordinal position given the nodes in sorted order).
 
@@ -67,7 +67,7 @@ Membership
 A cluster is made up of a set of member nodes. The identifier for each node is a
 ``hostname:port`` pair. An Akka application is distributed over a cluster with
 each node hosting some part of the application. Cluster membership and
-partitioning [#ni]_ of the application are decoupled. A node could be a member of a
+partitioning :ref:`[*] <niy>` of the application are decoupled. A node could be a member of a
 cluster without hosting any actors.
 
 
@@ -161,7 +161,7 @@ The role of the ``leader`` is to shift members in and out of the cluster, changi
 ``removed`` state, and to schedule rebalancing across the cluster. Currently
 ``leader`` actions are only triggered by receiving a new cluster state with gossip
 convergence but it may also be possible for the user to explicitly rebalance the
-cluster by specifying migrations [#ni]_, or to rebalance [#ni]_ the cluster automatically
+cluster by specifying migrations :ref:`[*] <niy>`, or to rebalance :ref:`[*] <niy>` the cluster automatically
 based on metrics from member nodes. Metrics may be spread using the gossip
 protocol or possibly more efficiently using a *random chord* method, where the
 ``leader`` contacts several random nodes around the cluster ring and each contacted
@@ -262,12 +262,12 @@ Membership Lifecycle
 
 A node begins in the ``joining`` state. Once all nodes have seen that the new
 node is joining (through gossip convergence) the ``leader`` will set the member
-state to ``up`` and can start assigning partitions [#ni]_ to the new node.
+state to ``up`` and can start assigning partitions :ref:`[*] <niy>` to the new node.
 
 If a node is leaving the cluster in a safe, expected manner then it switches to
-the ``leaving`` state. The ``leader`` will reassign partitions [#ni]_ across the cluster
+the ``leaving`` state. The ``leader`` will reassign partitions :ref:`[*] <niy>` across the cluster
 (it is possible for a leaving node to itself be the ``leader``). When all partition
-handoff [#ni]_ has completed then the node will change to the ``exiting`` state. Once
+handoff :ref:`[*] <niy>` has completed then the node will change to the ``exiting`` state. Once
 all nodes have seen the exiting state (convergence) the ``leader`` will remove the
 node from the cluster, marking it as ``removed``.
 
@@ -336,7 +336,7 @@ The ``leader`` has the following duties:
 
   - exiting -> removed
 
-- partition distribution [#ni]_
+- partition distribution :ref:`[*] <niy>`
 
   - scheduling handoffs (pending changes)
 
@@ -346,8 +346,8 @@ The ``leader`` has the following duties:
     RAM, Garbage Collection, mailbox depth etc.)
 
 
-Partitioning [#ni]_
-===================
+Partitioning :ref:`[*] <niy>`
+=============================
 
 .. note:: Actor partitioning is not implemented yet.
 
@@ -575,8 +575,8 @@ have a dependency on message ordering from any given source.
   and 3b would be required.
 
 
-Stateful Actor Replication [#ni]_
-=================================
+Stateful Actor Replication :ref:`[*] <niy>`
+===========================================
 
 .. note:: Stateful actor replication is not implemented yet.
 
@@ -632,6 +632,14 @@ storage on top of the Akka Cluster as described in this document are:
 
 .. _Read Repair: http://wiki.apache.org/cassandra/ReadRepair
 
-.. rubric:: Footnotes
 
-.. [#ni] Not implemented yet
+.. _niy:
+
+[*] Not Implemented Yet
+=======================
+
+* Actor partitioning
+* Actor handoff
+* Actor rebalancing
+* Stateful actor replication
+
