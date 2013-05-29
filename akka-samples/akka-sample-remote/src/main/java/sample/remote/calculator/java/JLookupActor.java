@@ -42,11 +42,13 @@ public class JLookupActor extends UntypedActor {
 
     } else if (message instanceof Op.AddResult) {
       Op.AddResult result = (Op.AddResult) message;
-      System.out.printf("Add result: %d + %d = %d\n", result.getN1(), result.getN2(), result.getResult());
+      System.out.printf("Add result: %d + %d = %d\n", result.getN1(), 
+        result.getN2(), result.getResult());
 
     } else if (message instanceof Op.SubtractResult) {
       Op.SubtractResult result = (Op.SubtractResult) message;
-      System.out.printf("Sub result: %d - %d = %d\n", result.getN1(), result.getN2(), result.getResult());
+      System.out.printf("Sub result: %d - %d = %d\n", result.getN1(), 
+        result.getN2(), result.getResult());
 
     } else {
       unhandled(message);

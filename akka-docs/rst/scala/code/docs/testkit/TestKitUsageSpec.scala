@@ -146,8 +146,8 @@ object TestKitUsageSpec {
    * like to test that the interesting value is received and that you cant
    * be bothered with the rest
    */
-  class SequencingActor(next: ActorRef, head: immutable.Seq[String], tail: immutable.Seq[String])
-    extends Actor {
+  class SequencingActor(next: ActorRef, head: immutable.Seq[String],
+                        tail: immutable.Seq[String]) extends Actor {
     def receive = {
       case msg ⇒ {
         head foreach { next ! _ }

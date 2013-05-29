@@ -43,7 +43,8 @@ public class Processor extends UntypedActor {
   final PipelineStage<Context, Message, ByteString, Message, ByteString> stages =
     PipelineStage.sequence(
         // Java 7 can infer these types, Java 6 cannot
-    PipelineStage.<Context, Message, Message, ByteString, Message, Message, ByteString> sequence( //
+    PipelineStage.<Context, Message, Message, ByteString, Message, Message, 
+        ByteString> sequence( //
       new TickGenerator<Message, Message>(interval), //
       new MessageStage()), //
       new LengthFieldFrame(10000));

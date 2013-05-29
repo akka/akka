@@ -68,7 +68,8 @@ public class ReliableProxyTest {
         return new UntypedActor() {
 
           //#demo-transition
-          final ActorRef proxy = getContext().actorOf(Props.create(ReliableProxy.class, target, Duration.create(100, "millis")));
+          final ActorRef proxy = getContext().actorOf(Props.create(ReliableProxy.class, target,
+            Duration.create(100, "millis")));
           ActorRef client = null;
           {
             proxy.tell(new FSM.SubscribeTransitionCallBack(getSelf()), getSelf());
