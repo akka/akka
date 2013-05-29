@@ -16,7 +16,10 @@ object RouterDocSpec {
   }
 }
 
-class RouterDocSpec extends AkkaSpec {
+class RouterDocSpec extends AkkaSpec("""
+router {}
+workers {}
+""") {
 
   import RouterDocSpec._
 

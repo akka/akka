@@ -34,12 +34,15 @@ import akka.routing.RoundRobinRouter;
 import akka.routing.RouteeProvider;
 import akka.testkit.AkkaSpec;
 import akka.util.Timeout;
+import com.typesafe.config.ConfigFactory;
 
 public class CustomRouterDocTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
-    new AkkaJUnitActorSystemResource("CustomRouterDocTest", AkkaSpec.testConf());
+    new AkkaJUnitActorSystemResource(
+      "CustomRouterDocTest", ConfigFactory.load(ConfigFactory.parseString(
+          "head{}\nworkers{}").withFallback(AkkaSpec.testConf())));
 
   private final ActorSystem system = actorSystemResource.getSystem();
   
