@@ -74,7 +74,7 @@ private[akka] trait Dispatch { this: ActorCell ⇒
   /**
    * Start this cell, i.e. attach it to the dispatcher.
    */
-  final def start(): this.type = {
+  def start(): this.type = {
     // This call is expected to start off the actor by scheduling its mailbox.
     dispatcher.attach(this)
     this
