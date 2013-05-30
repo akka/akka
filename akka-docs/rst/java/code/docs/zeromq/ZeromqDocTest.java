@@ -88,7 +88,8 @@ public class ZeromqDocTest {
 
     byte[] payload = new byte[0];
     //#pub-topic
-    pubSocket.tell(ZMQMessage.withFrames(ByteString.fromString("foo.bar"), ByteString.fromArray(payload)), null);
+    pubSocket.tell(ZMQMessage.withFrames(ByteString.fromString("foo.bar"), 
+      ByteString.fromArray(payload)), null);
     //#pub-topic
 
     system.stop(subSocket);

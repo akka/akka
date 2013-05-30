@@ -191,7 +191,8 @@ object DispatcherDocSpec {
   import akka.dispatch.RequiresMessageQueue
   import akka.dispatch.BoundedMessageQueueSemantics
 
-  class MyBoundedActor extends MyActor with RequiresMessageQueue[BoundedMessageQueueSemantics]
+  class MyBoundedActor extends MyActor
+    with RequiresMessageQueue[BoundedMessageQueueSemantics]
   //#required-mailbox-class
 
   //#mailbox-implementation-example
@@ -301,7 +302,8 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
           case x ⇒ log.info(x.toString)
         }
       }
-      val a = system.actorOf(Props(classOf[Logger], this).withDispatcher("prio-dispatcher"))
+      val a = system.actorOf(Props(classOf[Logger], this).withDispatcher(
+        "prio-dispatcher"))
 
       /*
        * Logs:
