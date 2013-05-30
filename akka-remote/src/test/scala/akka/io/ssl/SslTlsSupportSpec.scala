@@ -192,7 +192,7 @@ class SslTlsSupportSpec extends AkkaSpec {
         val response = serverResponse(input)
         sender ! init.Command(response)
         log.debug("akka-io Server sent: {}", response.dropRight(1))
-      case Tcp.PeerClosed ⇒ context.stop(self)
+      case _: Tcp.ConnectionClosed ⇒ context.stop(self)
     }
   }
   //#handler
