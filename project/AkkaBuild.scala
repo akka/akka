@@ -136,7 +136,8 @@ object AkkaBuild extends Build {
     dependencies = Seq(testkit % "compile;test->test"),
     settings = defaultSettings ++ scaladocSettings  ++ Seq(
       publishArtifact in Compile := false,
-      libraryDependencies ++= Dependencies.actorTests
+      libraryDependencies ++= Dependencies.actorTests,
+      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a")
     )
   )
 
@@ -972,7 +973,7 @@ object Dependencies {
 
   val testkit = Seq(Test.junit, Test.scalatest)
 
-  val actorTests = Seq(Test.junit, Test.scalatest, Test.commonsCodec, Test.commonsMath, Test.mockito, Test.scalacheck, protobuf)
+  val actorTests = Seq(Test.junit, Test.scalatest, Test.commonsCodec, Test.commonsMath, Test.mockito, Test.scalacheck, protobuf, Test.junitIntf)
 
   val remote = Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest)
 

@@ -18,17 +18,57 @@ Deprecated Closure-Taking Props
 are usually created in-line and thus carry a reference to their enclosing
 object; this is not well known among programmers, in particular it can be
 surprising that innocent-looking actor creation should not be serializable,
-e.g. if the enclosing class is an actor.
+e.g. if the enclosing class is an actor. Another issue which came up often
+during reviews is that these actor creators inadvertedly close over the Actor’s
+``this`` reference for calling methods on it, which is inherently unsafe.
 
-Thus we have decided to deprecate ``Props(new MyActor(...))`` and
-:class:`UntypedActorFactory` in favor of basing :class:`Props` on a
-:class:`Class` and a sequence of constructor arguments. This has the added
-benefit of allowing easier integration with dependency injection frameworks,
-see :ref:`actor-create-factory`.
+Another reason for changing the underlying implementation is that Props now
+carries information about which class of actor will be created, allowing the
+extraction of mailbox type requirements (e.g. when using the Stash) before
+trying to create the actor. Being based on the actor class and a list of
+constructor arguments also allows these arguments to be serialized according to
+the configured serializer bindings instead of mandating Java serialization
+(which was used previously).
 
-The deprecated methods will be retained until the possibility of reintroducing
-a similar syntax in a safe fashion has been properly researched (in case of
-Scala it might be possible to use macros to this effect).
+What changes for Java?
+----------------------
+
+A new method ``Props.create`` has been introduced with two overloads::
+
+  Props.create(MyActor.class, arg1, arg2, ...);
+  // or
+  Props.create(new MyActorCreator(args ...));
+
+In the first case the existence of a constructor signature matching the
+supplied arguments is verified at Props construction time. In the second case
+it is verified that ``MyActorCreator`` (which must be a ``akka.japi.Creator<?
+extends Actor>``) is a static class. In both cases failure is signaled by
+throwing a :class:`IllegalArgumentException`.
+
+The constructors of :class:`Props` have been deprecated to facilitate migration.
+
+The :meth:`withCreator` methods have been deprecated. The functionality is
+available by using ``Props.create(...).withDeploy(oldProps.deploy());``.
+
+:class:`UntypedActorFactory` has been deprecated in favor of the more precisely
+typed :class:`Creator<T>`.
+
+What changes for Scala?
+-----------------------
+
+The case class signature of Props has been changed to only contain a
+:class:`Deploy`, a :class:`Class[_]` and an immutable :class:`Seq[Any]` (the
+constructor arguments for the class). The old factory and extractor methods
+have been deprecated.
+
+Properly serializable :class:`Props` can now be created for actors which take
+constructor arguments by using ``Props(classOf[MyActor], arg1, arg2, ...)``.
+In a future update—possibly within the 2.2.x timeframe—we plan to introduce a
+macro which will transform the by-name argument to ``Props(new MyActor(...))``
+into a call to the former.
+
+The :meth:`withCreator` methods have been deprecated. The functionality is
+available by using ``Props(...).withDeploy(oldProps.deploy)``.
 
 Immutable everywhere
 ====================
