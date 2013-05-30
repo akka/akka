@@ -118,6 +118,7 @@ abstract class RemoteNodeDeathWatchSpec
         watcher ! WatchIt(subject)
         expectMsg(1 second, Ack)
         subject ! "hello1"
+        enterBarrier("hello1-message-sent")
         enterBarrier("watch-established-1")
 
         sleep()
@@ -128,6 +129,7 @@ abstract class RemoteNodeDeathWatchSpec
         val subject = system.actorOf(Props(classOf[ProbeActor], testActor), "subject1")
         enterBarrier("actors-started-1")
 
+        enterBarrier("hello1-message-sent")
         expectMsg(3 seconds, "hello1")
         enterBarrier("watch-established-1")
 
@@ -137,6 +139,7 @@ abstract class RemoteNodeDeathWatchSpec
 
       runOn(third) {
         enterBarrier("actors-started-1")
+        enterBarrier("hello1-message-sent")
         enterBarrier("watch-established-1")
       }
 
