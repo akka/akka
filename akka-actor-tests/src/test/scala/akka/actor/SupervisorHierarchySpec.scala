@@ -470,7 +470,7 @@ object SupervisorHierarchySpec {
         setTimer("phase", StateTimeout, 50.seconds.dilated, false)
     }
 
-    val workSchedule = 250.millis
+    val workSchedule = 50.millis
 
     private def random012: Int = Random.nextFloat match {
       case x if x > 0.1  ⇒ 0
