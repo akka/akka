@@ -46,7 +46,7 @@ private[akka] object RoutedActorCell {
   }
 }
 
-private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActorRef, _props: Props, _supervisor: InternalActorRef)
+private[akka] final class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActorRef, _props: Props, _supervisor: InternalActorRef)
   extends ActorCell(
     _system,
     _ref,
@@ -67,7 +67,11 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
   private var _routeeProvider: RouteeProvider = _
   def routeeProvider = _routeeProvider
 
-  val route = {
+  @volatile
+  private var _route: Route = _
+  def route = _route
+
+  private def startRoute() {
     val routeeProps = _props.withRouter(NoRouter)
     _routeeProvider = routerConfig.createRouteeProvider(this, routeeProps)
     val r = routerConfig.createRoute(routeeProvider)
@@ -76,7 +80,13 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
       if (resizer.isTimeForResize(resizeCounter.getAndIncrement()))
         resizer.resize(routeeProvider)
     }
-    r
+    _route = r
+  }
+
+  override def start(): this.type = {
+    startRoute()
+    // create the routees before scheduling the Router actor
+    super.start()
   }
 
   /*
