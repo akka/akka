@@ -26,13 +26,13 @@ class TransportAdapters(system: ExtendedActorSystem) extends Extension {
 
   private val adaptersTable: Map[String, TransportAdapterProvider] = for ((name, fqn) ← settings.Adapters) yield {
     name -> system.dynamicAccess.createInstanceFor[TransportAdapterProvider](fqn, immutable.Seq.empty).recover({
-      case exception ⇒ throw new IllegalArgumentException("Cannot instantiate transport adapter" + fqn, exception)
+      case e ⇒ throw new IllegalArgumentException(s"Cannot instantiate transport adapter [${fqn}]", e)
     }).get
   }
 
   def getAdapterProvider(name: String): TransportAdapterProvider = adaptersTable.get(name) match {
     case Some(provider) ⇒ provider
-    case None           ⇒ throw new IllegalArgumentException("There is no registered transport adapter provider with name: " + name)
+    case None           ⇒ throw new IllegalArgumentException(s"There is no registered transport adapter provider with name: [${name}]")
   }
 }
 

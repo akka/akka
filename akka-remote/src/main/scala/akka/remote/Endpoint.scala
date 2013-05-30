@@ -82,11 +82,11 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
           // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
           r.!(payload)(sender)
         else
-          log.error("dropping message {} for non-local recipient {} arriving at {} inbound addresses are {}",
-            payloadClass, r, recipientAddress, provider.transport.addresses)
+          log.error("dropping message [{}] for non-local recipient [{}] arriving at [{}] inbound addresses are [{}]",
+            payloadClass, r, recipientAddress, provider.transport.addresses.mkString(", "))
 
-      case r ⇒ log.error("dropping message {} for unknown recipient {} arriving at {} inbound addresses are {}",
-        payloadClass, r, recipientAddress, provider.transport.addresses)
+      case r ⇒ log.error("dropping message [{}] for unknown recipient [{}] arriving at [{}] inbound addresses are [{}]",
+        payloadClass, r, recipientAddress, provider.transport.addresses.mkString(", "))
 
     }
   }
@@ -592,8 +592,8 @@ private[remote] class EndpointWriter(
       Serialization.currentTransportInformation.withValue(Serialization.Information(h.localAddress, extendedSystem)) {
         (MessageSerializer.serialize(extendedSystem, msg.asInstanceOf[AnyRef]))
       }
-    case None ⇒ throw new EndpointException("Internal error: No handle was present during serialization of" +
-      "outbound message.")
+    case None ⇒
+      throw new EndpointException("Internal error: No handle was present during serialization of outbound message.")
   }
 
 }

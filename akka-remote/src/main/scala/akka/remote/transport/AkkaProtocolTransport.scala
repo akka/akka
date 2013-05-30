@@ -328,8 +328,11 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
               wrappedHandle,
               immutable.Queue.empty)
           } else {
-            log.warning(s"Association attempt with mismatching cookie from [{}]. Expected [{}] but received [{}].",
-              info.origin, localHandshakeInfo.cookie.getOrElse(""), info.cookie.getOrElse(""))
+            if (log.isDebugEnabled)
+              log.warning(s"Association attempt with mismatching cookie from [{}]. Expected [{}] but received [{}].",
+                info.origin, localHandshakeInfo.cookie.getOrElse(""), info.cookie.getOrElse(""))
+            else
+              log.warning(s"Association attempt with mismatching cookie from [{}].", info.origin)
             stop()
           }
 
@@ -362,7 +365,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
             listener notify InboundPayload(payload)
             stay()
           case msg ⇒
-            throw new AkkaProtocolException("unhandled message in Open state with type " + (if (msg ne null) msg.getClass else "null"))
+            throw new AkkaProtocolException(s"unhandled message in state Open(InboundPayload) with type [${safeClassName(msg)}]")
         }
 
         case _ ⇒ stay()
@@ -376,7 +379,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
         case ListenerReady(_, wrappedHandle)            ⇒ wrappedHandle
         case AssociatedWaitHandler(_, wrappedHandle, _) ⇒ wrappedHandle
         case msg ⇒
-          throw new AkkaProtocolException("unhandled message in Open state with type " + (if (msg ne null) msg.getClass else "null"))
+          throw new AkkaProtocolException(s"unhandled message in state Open(DisassociateUnderlying) with type [${safeClassName(msg)}]")
       }
       sendDisassociate(handle)
       stop()
@@ -399,6 +402,11 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
       sendDisassociate(wrappedHandle)
       stop(FSM.Failure(TimeoutReason))
     }
+  }
+
+  private def safeClassName(obj: AnyRef): String = obj match {
+    case null ⇒ "null"
+    case _    ⇒ obj.getClass.getName
   }
 
   override def postStop(): Unit = {
@@ -428,6 +436,12 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
 
     case StopEvent(_, _, InboundUnassociated(_, wrappedHandle)) ⇒
       wrappedHandle.disassociate()
+
+  }
+
+  override protected def logTermination(reason: FSM.Reason): Unit = reason match {
+    case FSM.Failure(TimeoutReason) ⇒ // no logging
+    case other                      ⇒ super.logTermination(reason)
   }
 
   private def listenForListenerRegistration(readHandlerPromise: Promise[HandleEventListener]): Unit =
