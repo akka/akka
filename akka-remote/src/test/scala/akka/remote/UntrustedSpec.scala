@@ -20,6 +20,7 @@ import org.junit.runner.RunWith
 import akka.actor.Terminated
 import scala.concurrent.duration._
 import akka.actor.PoisonPill
+import akka.actor.Deploy
 
 @RunWith(classOf[JUnitRunner])
 class UntrustedSpec extends AkkaSpec("""
@@ -51,7 +52,7 @@ akka.loglevel = DEBUG
       case d @ Debug(_, _, msg: String) if msg contains "dropping" ⇒ testActor ! d
       case _ ⇒
     }
-  }), "debugSniffer"), classOf[Logging.Debug])
+  }).withDeploy(Deploy.local), "debugSniffer"), classOf[Logging.Debug])
 
   "UntrustedMode" must {
 
@@ -77,7 +78,7 @@ akka.loglevel = DEBUG
         def receive = {
           case x ⇒ testActor forward x
         }
-      }))
+      }).withDeploy(Deploy.local))
       within(1.second) {
         expectMsgType[Logging.Debug]
         expectNoMsg

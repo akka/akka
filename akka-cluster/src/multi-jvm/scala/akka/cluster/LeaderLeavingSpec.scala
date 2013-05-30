@@ -12,6 +12,7 @@ import scala.concurrent.duration._
 import akka.actor.Props
 import akka.actor.Actor
 import akka.cluster.MemberStatus._
+import akka.actor.Deploy
 
 object LeaderLeavingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -66,7 +67,7 @@ abstract class LeaderLeavingSpec
               case MemberExited(m) if m.address == oldLeaderAddress ⇒ exitingLatch.countDown()
               case _ ⇒ // ignore
             }
-          })), classOf[MemberEvent])
+          }).withDeploy(Deploy.local)), classOf[MemberEvent])
           enterBarrier("registered-listener")
 
           enterBarrier("leader-left")

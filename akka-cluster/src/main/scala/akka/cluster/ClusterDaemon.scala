@@ -17,6 +17,7 @@ import akka.cluster.MemberStatus._
 import akka.cluster.ClusterEvent._
 import akka.actor.ActorSelection
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.actor.Deploy
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -167,7 +168,7 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
   def receive = {
     case msg @ GetClusterCoreRef ⇒ coreSupervisor forward msg
     case AddOnMemberUpListener(code) ⇒
-      context.actorOf(Props(classOf[OnMemberUpListener], code))
+      context.actorOf(Props(classOf[OnMemberUpListener], code).withDeploy(Deploy.local))
     case PublisherCreated(publisher) ⇒
       if (settings.MetricsEnabled) {
         // metrics must be started after core/publisher to be able

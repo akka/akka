@@ -15,7 +15,10 @@ import akka.io.SelectionHandler._
 import akka.TestUtils
 import Tcp._
 
-class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
+class TcpListenerSpec extends AkkaSpec("""
+    akka.io.tcp.batch-accept-limit = 2
+    akka.actor.serialize-creators = on
+    """) {
 
   "A TcpListener" must {
 
@@ -130,7 +133,7 @@ class TcpListenerSpec extends AkkaSpec("akka.io.tcp.batch-accept-limit = 2") {
     private class ListenerParent extends Actor with ChannelRegistry {
       val listener = context.actorOf(
         props = Props(classOf[TcpListener], selectorRouter.ref, Tcp(system), this, bindCommander.ref,
-          Bind(handler.ref, endpoint, 100, Nil)),
+          Bind(handler.ref, endpoint, 100, Nil)).withDeploy(Deploy.local),
         name = "test-listener-" + counter.next())
       parent.watch(listener)
       def receive: Receive = {

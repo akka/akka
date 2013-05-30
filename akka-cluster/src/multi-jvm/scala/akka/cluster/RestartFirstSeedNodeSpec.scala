@@ -17,6 +17,7 @@ import akka.actor.Props
 import akka.actor.Actor
 import akka.actor.RootActorPath
 import akka.cluster.MemberStatus._
+import akka.actor.Deploy
 
 object RestartFirstSeedNodeMultiJvmSpec extends MultiNodeConfig {
   val seed1 = role("seed1")
@@ -74,7 +75,7 @@ abstract class RestartFirstSeedNodeSpec
               seedNode1Address = a
               sender ! "ok"
           }
-        }), name = "address-receiver")
+        }).withDeploy(Deploy.local), name = "address-receiver")
         enterBarrier("seed1-address-receiver-ready")
       }
 

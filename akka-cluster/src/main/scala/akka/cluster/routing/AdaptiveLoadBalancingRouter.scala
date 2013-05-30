@@ -5,7 +5,6 @@
 package akka.cluster.routing
 
 import java.util.Arrays
-
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.collection.immutable
 import akka.actor.Actor
@@ -24,6 +23,7 @@ import akka.cluster.StandardMetrics.HeapMemory
 import akka.event.Logging
 import akka.japi.Util.immutableSeq
 import akka.routing._
+import akka.actor.Deploy
 
 object AdaptiveLoadBalancingRouter {
   private val escalateStrategy: SupervisorStrategy = OneForOneStrategy() {
@@ -179,7 +179,7 @@ trait AdaptiveLoadBalancingRouterLike { this: RouterConfig ⇒
           metricsSelector.weights(metrics)))
       }
 
-    }).withDispatcher(routerDispatcher), name = "metricsListener")
+    }).withDispatcher(routerDispatcher).withDeploy(Deploy.local), name = "metricsListener")
 
     def getNext(): ActorRef = weightedRoutees match {
       case Some(weighted) ⇒

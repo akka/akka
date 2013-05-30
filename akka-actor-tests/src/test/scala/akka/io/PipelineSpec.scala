@@ -12,7 +12,7 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.Try
 import scala.util.Success
 
-class PipelineSpec extends AkkaSpec {
+class PipelineSpec extends AkkaSpec("akka.actor.serialize-creators = on") {
 
   trait Level1
   trait Level2

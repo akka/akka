@@ -147,7 +147,7 @@ private[remote] object ReliableDeliverySupervisor {
   case object Ungate
   case class GotUid(uid: Int)
 
-  def apply(
+  def props(
     handleOrActive: Option[AkkaProtocolHandle],
     localAddress: Address,
     remoteAddress: Address,
@@ -299,7 +299,7 @@ private[remote] class ReliableDeliverySupervisor(
     }
 
   private def createWriter(): ActorRef = {
-    context.watch(context.actorOf(EndpointWriter(
+    context.watch(context.actorOf(EndpointWriter.props(
       handleOrActive = currentHandle,
       localAddress = localAddress,
       remoteAddress = remoteAddress,
@@ -308,7 +308,7 @@ private[remote] class ReliableDeliverySupervisor(
       AkkaPduProtobufCodec,
       receiveBuffers = receiveBuffers,
       reliableDeliverySupervisor = Some(self))
-      .withDispatcher("akka.remote.writer-dispatcher"),
+      .withDispatcher("akka.remote.writer-dispatcher").withDeploy(Deploy.local),
       "endpointWriter"))
   }
 }
@@ -339,7 +339,7 @@ private[remote] abstract class EndpointActor(
  */
 private[remote] object EndpointWriter {
 
-  def apply(
+  def props(
     handleOrActive: Option[AkkaProtocolHandle],
     localAddress: Address,
     remoteAddress: Address,
@@ -580,8 +580,8 @@ private[remote] class EndpointWriter(
   private def startReadEndpoint(handle: AkkaProtocolHandle): Some[ActorRef] = {
     val newReader =
       context.watch(context.actorOf(
-        EndpointReader(localAddress, remoteAddress, transport, settings, codec,
-          msgDispatch, inbound, reliableDeliverySupervisor, receiveBuffers),
+        EndpointReader.props(localAddress, remoteAddress, transport, settings, codec,
+          msgDispatch, inbound, reliableDeliverySupervisor, receiveBuffers).withDeploy(Deploy.local),
         "endpointReader-" + AddressUrlEncoder(remoteAddress) + "-" + readerId.next()))
     handle.readHandlerPromise.success(ActorHandleEventListener(newReader))
     Some(newReader)
@@ -603,7 +603,7 @@ private[remote] class EndpointWriter(
  */
 private[remote] object EndpointReader {
 
-  def apply(
+  def props(
     localAddress: Address,
     remoteAddress: Address,
     transport: Transport,

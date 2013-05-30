@@ -164,14 +164,14 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         case x: Int ⇒ sender ! byteStringOfSize(x)
         case x      ⇒ sender ! x
       }
-    }), bigBounceId)
+    }).withDeploy(Deploy.local), bigBounceId)
     val bigBounceHere = system.actorFor(s"akka.test://remote-sys@localhost:12346/user/$bigBounceId")
 
     val eventForwarder = system.actorOf(Props(new Actor {
       def receive = {
         case x ⇒ testActor ! x
       }
-    }))
+    }).withDeploy(Deploy.local))
     system.eventStream.subscribe(eventForwarder, classOf[AssociationErrorEvent])
     system.eventStream.subscribe(eventForwarder, classOf[DisassociatedEvent])
     try {
@@ -368,10 +368,10 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         }
       }), "looker2")
       // child is configured to be deployed on remoteSystem
-      l ! (Props[Echo1], "child")
+      l ! ((Props[Echo1], "child"))
       val child = expectMsgType[ActorRef]
       // grandchild is configured to be deployed on RemotingSpec (system)
-      child ! (Props[Echo1], "grandchild")
+      child ! ((Props[Echo1], "grandchild"))
       val grandchild = expectMsgType[ActorRef]
       grandchild.asInstanceOf[ActorRefScope].isLocal must be(true)
       grandchild ! 53
@@ -399,7 +399,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       child ! PoisonPill
       expectMsg("postStop")
       expectMsgType[Terminated].actor must be === child
-      l ! (Props[Echo1], "child")
+      l ! ((Props[Echo1], "child"))
       val child2 = expectMsgType[ActorRef]
       child2 ! Identify("idReq2")
       expectMsg(ActorIdentity("idReq2", Some(child2)))

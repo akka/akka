@@ -87,7 +87,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡
           case "ping"        â‡’ sender ! "pong"
           case t: Terminated â‡’ testActor ! WrappedTerminated(t)
         }
-      }))
+      }).withDeploy(Deploy.local))
 
       monitor2 ! "ping"
 
@@ -133,7 +133,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡
             super.handleFailure(context, child, cause, stats, children)
           }
         }
-        val supervisor = system.actorOf(Props(new Supervisor(strategy)))
+        val supervisor = system.actorOf(Props(new Supervisor(strategy)).withDeploy(Deploy.local))
 
         val failed = Await.result((supervisor ? Props.empty).mapTo[ActorRef], timeout.duration)
         val brother = Await.result((supervisor ? Props(new Actor {
@@ -166,7 +166,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡
                 context unbecome
             }
         }
-      }))
+      }).withDeploy(Deploy.local))
 
       parent ! "NKOTB"
       expectMsg("GREEN")
@@ -198,7 +198,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡
       }
 
       val t1, t2 = TestLatch()
-      val w = system.actorOf(Props(new Watcher), "myDearWatcher")
+      val w = system.actorOf(Props(new Watcher).withDeploy(Deploy.local), "myDearWatcher")
       val p = TestProbe()
       w ! W(p.ref)
       w ! ((t1, t2))

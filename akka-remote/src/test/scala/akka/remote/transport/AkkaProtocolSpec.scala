@@ -13,6 +13,7 @@ import com.google.protobuf.{ ByteString ⇒ PByteString }
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Promise }
+import akka.actor.Deploy
 
 object AkkaProtocolSpec {
 
@@ -129,7 +130,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         ActorAssociationEventListener(testActor),
         new AkkaProtocolSettings(conf),
         codec,
-        failureDetector))
+        failureDetector).withDeploy(Deploy.local))
 
       awaitCond(handle.readHandlerPromise.isCompleted)
     }
@@ -143,7 +144,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         ActorAssociationEventListener(testActor),
         new AkkaProtocolSettings(conf),
         codec,
-        failureDetector))
+        failureDetector).withDeploy(Deploy.local))
 
       reader ! testAssociate(uid = 33, cookie = None)
 
@@ -178,7 +179,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         ActorAssociationEventListener(testActor),
         new AkkaProtocolSettings(conf),
         codec,
-        failureDetector))
+        failureDetector).withDeploy(Deploy.local))
 
       // a stray message will force a disassociate
       reader ! testHeartbeat
@@ -205,7 +206,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         transport,
         new AkkaProtocolSettings(conf),
         codec,
-        failureDetector))
+        failureDetector).withDeploy(Deploy.local))
 
       awaitCond(lastActivityIsAssociate(registry, 42, None))
       failureDetector.called must be(true)
@@ -238,7 +239,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         ActorAssociationEventListener(testActor),
         new AkkaProtocolSettings(ConfigFactory.parseString("akka.remote.require-cookie = on").withFallback(conf)),
         codec,
-        failureDetector))
+        failureDetector).withDeploy(Deploy.local))
 
       reader ! testAssociate(uid = 33, Some("xyzzy"))
 
@@ -257,7 +258,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         ActorAssociationEventListener(testActor),
         new AkkaProtocolSettings(ConfigFactory.parseString("akka.remote.require-cookie = on").withFallback(conf)),
         codec,
-        failureDetector))
+        failureDetector).withDeploy(Deploy.local))
 
       // Send the correct cookie
       reader ! testAssociate(uid = 33, Some("abcde"))
@@ -290,7 +291,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         transport,
         new AkkaProtocolSettings(ConfigFactory.parseString("akka.remote.require-cookie = on").withFallback(conf)),
         codec,
-        failureDetector))
+        failureDetector).withDeploy(Deploy.local))
 
       awaitCond(lastActivityIsAssociate(registry, uid = 42, cookie = Some("abcde")))
     }
@@ -308,7 +309,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         transport,
         new AkkaProtocolSettings(conf),
         codec,
-        failureDetector))
+        failureDetector).withDeploy(Deploy.local))
 
       awaitCond(lastActivityIsAssociate(registry, uid = 42, cookie = None))
 
@@ -343,7 +344,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         transport,
         new AkkaProtocolSettings(conf),
         codec,
-        failureDetector))
+        failureDetector).withDeploy(Deploy.local))
 
       awaitCond(lastActivityIsAssociate(registry, uid = 42, cookie = None))
 
@@ -378,7 +379,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         transport,
         new AkkaProtocolSettings(conf),
         codec,
-        failureDetector))
+        failureDetector).withDeploy(Deploy.local))
 
       awaitCond(lastActivityIsAssociate(registry, uid = 42, cookie = None))
 
@@ -416,7 +417,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         transport,
         new AkkaProtocolSettings(conf),
         codec,
-        failureDetector))
+        failureDetector).withDeploy(Deploy.local))
 
       awaitCond(lastActivityIsAssociate(registry, uid = 42, cookie = None))
 

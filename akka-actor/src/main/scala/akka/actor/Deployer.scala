@@ -16,6 +16,7 @@ import scala.annotation.tailrec
 object Deploy {
   final val NoDispatcherGiven = ""
   final val NoMailboxGiven = ""
+  val local = Deploy(scope = LocalScope)
 }
 
 /**
@@ -99,6 +100,7 @@ abstract class LocalScope extends Scope
  * which do not set a different scope. It is also the only scope handled by
  * the LocalActorRefProvider.
  */
+@SerialVersionUID(1L)
 case object LocalScope extends LocalScope {
   /**
    * Java API: get the singleton instance
@@ -113,6 +115,7 @@ case object LocalScope extends LocalScope {
  */
 @SerialVersionUID(1L)
 abstract class NoScopeGiven extends Scope
+@SerialVersionUID(1L)
 case object NoScopeGiven extends NoScopeGiven {
   def withFallback(other: Scope): Scope = other
 

@@ -9,7 +9,11 @@ import Tcp._
 import akka.TestUtils
 import TestUtils._
 
-class CapacityLimitSpec extends AkkaSpec("akka.loglevel = ERROR\nakka.io.tcp.max-channels = 4")
+class CapacityLimitSpec extends AkkaSpec("""
+    akka.loglevel = ERROR
+    akka.io.tcp.max-channels = 4
+    akka.actor.serialize-creators = on
+    """)
   with TcpIntegrationSpecSupport {
 
   "The TCP transport implementation" should {

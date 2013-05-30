@@ -12,7 +12,10 @@ import TestUtils._
 import akka.testkit.EventFilter
 import java.io.IOException
 
-class TcpIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with TcpIntegrationSpecSupport {
+class TcpIntegrationSpec extends AkkaSpec("""
+    akka.loglevel = INFO
+    akka.actor.serialize-creators = on
+    """) with TcpIntegrationSpecSupport {
 
   "The TCP transport implementation" should {
 

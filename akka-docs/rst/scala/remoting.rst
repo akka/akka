@@ -120,6 +120,10 @@ actor systems has to have a JAR containing the class.
   most cases is not serializable. It is best to create a factory method in the
   companion object of the actor’s class.
 
+  Serializability of all Props can be tested by setting the configuration item
+  ``akka.actor.serialize-creators=on``. Only Props whose ``deploy`` has
+  ``LocalScope`` are exempt from this check.
+
 .. note::
 
   You can use asterisks as wildcard matches for the actor paths, so you could specify:

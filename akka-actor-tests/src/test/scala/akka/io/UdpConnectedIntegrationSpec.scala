@@ -10,7 +10,10 @@ import akka.util.ByteString
 import java.net.InetSocketAddress
 import akka.actor.ActorRef
 
-class UdpConnectedIntegrationSpec extends AkkaSpec("akka.loglevel = INFO") with ImplicitSender {
+class UdpConnectedIntegrationSpec extends AkkaSpec("""
+    akka.loglevel = INFO
+    akka.actor.serialize-creators = on
+    """) with ImplicitSender {
 
   val addresses = temporaryServerAddresses(3, udp = true)
 

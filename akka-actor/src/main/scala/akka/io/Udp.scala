@@ -215,7 +215,7 @@ class UdpExt(system: ExtendedActorSystem) extends IO.Extension {
 
   val manager: ActorRef = {
     system.asInstanceOf[ActorSystemImpl].systemActorOf(
-      props = Props(classOf[UdpManager], this),
+      props = Props(classOf[UdpManager], this).withDeploy(Deploy.local),
       name = "IO-UDP-FF")
   }
 
