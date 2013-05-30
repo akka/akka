@@ -37,7 +37,7 @@ object BackpressureSpec {
         val init = TcpPipelineHandler.withLogger(log,
           new TcpReadWriteAdapter >>
             new BackpressureBuffer(10000, 1000000, Long.MaxValue))
-        val handler = context.actorOf(TcpPipelineHandler(init, sender, self).withDeploy(Deploy.local), "pipeline")
+        val handler = context.actorOf(TcpPipelineHandler.props(init, sender, self).withDeploy(Deploy.local), "pipeline")
         sender ! Tcp.Register(handler)
         unstashAll()
         context.become(connected(init, handler))
@@ -114,7 +114,7 @@ object BackpressureSpec {
         val init = TcpPipelineHandler.withLogger(log,
           new TcpReadWriteAdapter >>
             new BackpressureBuffer(10000, 1000000, Long.MaxValue))
-        val handler = context.actorOf(TcpPipelineHandler(init, sender, self).withDeploy(Deploy.local), "pipeline")
+        val handler = context.actorOf(TcpPipelineHandler.props(init, sender, self).withDeploy(Deploy.local), "pipeline")
         sender ! Tcp.Register(handler)
         unstashAll()
         context.become(connected(init, handler))

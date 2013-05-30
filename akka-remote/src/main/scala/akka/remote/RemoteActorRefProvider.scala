@@ -191,7 +191,7 @@ private[akka] class RemoteActorRefProvider(
       failureDetector,
       heartbeatInterval = WatchHeartBeatInterval,
       unreachableReaperInterval = WatchUnreachableReaperInterval,
-      heartbeatExpectedResponseAfter = WatchHeartbeatExpectedResponseAfter).withDeploy(Deploy.local),
+      heartbeatExpectedResponseAfter = WatchHeartbeatExpectedResponseAfter),
       "remote-watcher")
   }
 

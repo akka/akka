@@ -617,7 +617,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
                              writing: Boolean): ActorRef = {
     assert(transportMapping contains localAddress)
 
-    if (writing) context.watch(context.actorOf(ReliableDeliverySupervisor(
+    if (writing) context.watch(context.actorOf(ReliableDeliverySupervisor.props(
       handleOption,
       localAddress,
       remoteAddress,
@@ -626,7 +626,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       AkkaPduProtobufCodec,
       receiveBuffers).withDispatcher("akka.remote.writer-dispatcher").withDeploy(Deploy.local),
       "reliableEndpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()))
-    else context.watch(context.actorOf(EndpointWriter(
+    else context.watch(context.actorOf(EndpointWriter.props(
       handleOption,
       localAddress,
       remoteAddress,

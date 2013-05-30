@@ -110,7 +110,7 @@ class SslTlsSupportSpec extends AkkaSpec {
 
     import init._
 
-    val handler = system.actorOf(TcpPipelineHandler(init, connection, probe.ref).withDeploy(Deploy.local),
+    val handler = system.actorOf(TcpPipelineHandler.props(init, connection, probe.ref).withDeploy(Deploy.local),
       "client" + counter.incrementAndGet())
     probe.send(connection, Tcp.Register(handler))
 
@@ -166,7 +166,8 @@ class SslTlsSupportSpec extends AkkaSpec {
         //#server
         context watch handler
         //#server
-        val pipeline = context.actorOf(TcpPipelineHandler(init, sender, handler).withDeploy(Deploy.local))
+        val pipeline = context.actorOf(TcpPipelineHandler.props(
+          init, sender, handler).withDeploy(Deploy.local))
 
         connection ! Tcp.Register(pipeline)
       //#server

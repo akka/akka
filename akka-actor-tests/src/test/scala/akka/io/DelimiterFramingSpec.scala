@@ -69,7 +69,7 @@ class DelimiterFramingSpec extends AkkaSpec("akka.actor.serialize-creators = on"
 
     import init._
 
-    val handler = system.actorOf(TcpPipelineHandler(init, connection, probe.ref).withDeploy(Deploy.local),
+    val handler = system.actorOf(TcpPipelineHandler.props(init, connection, probe.ref).withDeploy(Deploy.local),
       "client" + counter.incrementAndGet())
     probe.send(connection, Tcp.Register(handler))
 
@@ -129,7 +129,7 @@ class DelimiterFramingSpec extends AkkaSpec("akka.actor.serialize-creators = on"
         import init._
 
         val connection = sender
-        val handler = context.actorOf(TcpPipelineHandler(init, sender, self).withDeploy(Deploy.local), "pipeline")
+        val handler = context.actorOf(TcpPipelineHandler.props(init, sender, self).withDeploy(Deploy.local), "pipeline")
 
         connection ! Tcp.Register(handler)
 
