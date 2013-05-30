@@ -12,8 +12,9 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration._
 import akka.io.TcpPipelineHandler.Management
 import akka.actor.ActorRef
+import akka.actor.Deploy
 
-class DelimiterFramingSpec extends AkkaSpec {
+class DelimiterFramingSpec extends AkkaSpec("akka.actor.serialize-creators = on") {
 
   val addresses = TestUtils.temporaryServerAddresses(4)
 
@@ -40,7 +41,7 @@ class DelimiterFramingSpec extends AkkaSpec {
   val counter = new AtomicInteger
 
   def testSetup(serverAddress: InetSocketAddress, delimiter: String, includeDelimiter: Boolean): Unit = {
-    val bindHandler = system.actorOf(Props(classOf[AkkaLineEchoServer], this, delimiter, includeDelimiter))
+    val bindHandler = system.actorOf(Props(classOf[AkkaLineEchoServer], this, delimiter, includeDelimiter).withDeploy(Deploy.local))
     val probe = TestProbe()
     probe.send(IO(Tcp), Tcp.Bind(bindHandler, serverAddress))
     probe.expectMsgType[Tcp.Bound]
@@ -68,7 +69,7 @@ class DelimiterFramingSpec extends AkkaSpec {
 
     import init._
 
-    val handler = system.actorOf(TcpPipelineHandler(init, connection, probe.ref),
+    val handler = system.actorOf(TcpPipelineHandler.props(init, connection, probe.ref).withDeploy(Deploy.local),
       "client" + counter.incrementAndGet())
     probe.send(connection, Tcp.Register(handler))
 
@@ -128,7 +129,7 @@ class DelimiterFramingSpec extends AkkaSpec {
         import init._
 
         val connection = sender
-        val handler = context.actorOf(TcpPipelineHandler(init, sender, self), "pipeline")
+        val handler = context.actorOf(TcpPipelineHandler.props(init, sender, self).withDeploy(Deploy.local), "pipeline")
 
         connection ! Tcp.Register(handler)
 

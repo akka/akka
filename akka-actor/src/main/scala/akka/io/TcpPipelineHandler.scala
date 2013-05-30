@@ -94,15 +94,9 @@ object TcpPipelineHandler {
   case class TcpEvent(@BeanProperty evt: Tcp.Event) extends Tcp.Command
 
   /**
-   * Scala API: create [[Props]] for a pipeline handler
+   * create [[Props]] for a pipeline handler
    */
-  def apply[Ctx <: PipelineContext, Cmd, Evt](init: TcpPipelineHandler.Init[Ctx, Cmd, Evt], connection: ActorRef, handler: ActorRef) =
-    Props(classOf[TcpPipelineHandler[_, _, _]], init, connection, handler)
-
-  /**
-   * Java API: create [[Props]] for a pipeline handler
-   */
-  def create[Ctx <: PipelineContext, Cmd, Evt](init: TcpPipelineHandler.Init[Ctx, Cmd, Evt], connection: ActorRef, handler: ActorRef) =
+  def props[Ctx <: PipelineContext, Cmd, Evt](init: TcpPipelineHandler.Init[Ctx, Cmd, Evt], connection: ActorRef, handler: ActorRef) =
     Props(classOf[TcpPipelineHandler[_, _, _]], init, connection, handler)
 
 }

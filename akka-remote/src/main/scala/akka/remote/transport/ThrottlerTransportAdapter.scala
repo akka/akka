@@ -288,7 +288,8 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
     val managerRef = self
     ThrottlerHandle(
       originalHandle,
-      context.actorOf(Props(classOf[ThrottledAssociation], managerRef, listener, originalHandle, inbound), "throttler" + nextId()))
+      context.actorOf(Props(classOf[ThrottledAssociation], managerRef, listener, originalHandle, inbound).withDeploy(Deploy.local),
+        "throttler" + nextId()))
   }
 }
 

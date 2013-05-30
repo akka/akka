@@ -13,6 +13,7 @@ import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberRemoved
 import akka.remote.FailureDetectorRegistry
 import akka.remote.RemoteWatcher
+import akka.actor.Deploy
 
 /**
  * INTERNAL API
@@ -27,7 +28,7 @@ private[cluster] object ClusterRemoteWatcher {
     unreachableReaperInterval: FiniteDuration,
     heartbeatExpectedResponseAfter: FiniteDuration): Props =
     Props(classOf[ClusterRemoteWatcher], failureDetector, heartbeatInterval, unreachableReaperInterval,
-      heartbeatExpectedResponseAfter)
+      heartbeatExpectedResponseAfter).withDeploy(Deploy.local)
 }
 
 /**

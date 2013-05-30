@@ -489,14 +489,17 @@ case object NoRouter extends NoRouter {
  */
 private[akka] trait OverrideUnsetConfig[T <: RouterConfig] extends RouterConfig {
 
-  final def overrideUnsetConfig(other: RouterConfig): RouterConfig = {
-    val wssConf: OverrideUnsetConfig[T] = if ((this.supervisorStrategy eq Router.defaultSupervisorStrategy)
-      && (other.supervisorStrategy ne Router.defaultSupervisorStrategy))
-      this.withSupervisorStrategy(other.supervisorStrategy).asInstanceOf[OverrideUnsetConfig[T]]
-    else this
-    if (wssConf.resizer.isEmpty && other.resizer.isDefined) wssConf.withResizer(other.resizer.get)
-    else wssConf
-  }
+  final def overrideUnsetConfig(other: RouterConfig): RouterConfig =
+    if (other == NoRouter) this // NoRouter is the default, hence “neutral”
+    else {
+      val wssConf: OverrideUnsetConfig[T] =
+        if ((this.supervisorStrategy eq Router.defaultSupervisorStrategy)
+          && (other.supervisorStrategy ne Router.defaultSupervisorStrategy))
+          this.withSupervisorStrategy(other.supervisorStrategy).asInstanceOf[OverrideUnsetConfig[T]]
+        else this
+      if (wssConf.resizer.isEmpty && other.resizer.isDefined) wssConf.withResizer(other.resizer.get)
+      else wssConf
+    }
 
   def withSupervisorStrategy(strategy: SupervisorStrategy): T
 

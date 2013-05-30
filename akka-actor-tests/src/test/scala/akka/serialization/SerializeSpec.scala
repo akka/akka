@@ -276,7 +276,7 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
     }))
     system stop c
 
-    intercept[java.io.NotSerializableException] {
+    intercept[IllegalArgumentException] {
       val d = system.actorOf(Props(new NonSerializableActor(system)))
     }
 

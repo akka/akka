@@ -17,6 +17,7 @@ import akka.ConfigurationException
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 import akka.actor.InternalActorRef
 import akka.dispatch.sysmsg.DeathWatchNotification
+import akka.actor.Deploy
 
 /**
  * INTERNAL API
@@ -32,7 +33,7 @@ private[akka] object RemoteWatcher {
     unreachableReaperInterval: FiniteDuration,
     heartbeatExpectedResponseAfter: FiniteDuration): Props =
     Props(classOf[RemoteWatcher], failureDetector, heartbeatInterval, unreachableReaperInterval,
-      heartbeatExpectedResponseAfter)
+      heartbeatExpectedResponseAfter).withDeploy(Deploy.local)
 
   case class WatchRemote(watchee: ActorRef, watcher: ActorRef)
   case class UnwatchRemote(watchee: ActorRef, watcher: ActorRef)

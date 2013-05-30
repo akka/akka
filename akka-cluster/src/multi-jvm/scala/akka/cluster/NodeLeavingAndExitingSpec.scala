@@ -12,6 +12,7 @@ import scala.concurrent.duration._
 import akka.actor.Props
 import akka.actor.Actor
 import akka.cluster.MemberStatus._
+import akka.actor.Deploy
 
 object NodeLeavingAndExitingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -51,7 +52,7 @@ abstract class NodeLeavingAndExitingSpec
             case _: MemberRemoved                             ⇒ // not tested here
 
           }
-        })), classOf[MemberEvent])
+        }).withDeploy(Deploy.local)), classOf[MemberEvent])
         enterBarrier("registered-listener")
 
         runOn(third) {

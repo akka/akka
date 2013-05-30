@@ -92,7 +92,7 @@ public class SslDocTest {
 
         // create handler for pipeline, setting ourselves as payload recipient
         final ActorRef handler = getContext().actorOf(
-            TcpPipelineHandler.create(init, getSender(), getSelf()));
+            TcpPipelineHandler.props(init, getSender(), getSelf()));
         
         // register the SSL handler with the connection
         getSender().tell(TcpMessage.register(handler), getSelf());
@@ -157,7 +157,7 @@ public class SslDocTest {
         
         // create handler for pipeline, setting ourselves as payload recipient
         final ActorRef handler = getContext().actorOf(
-            TcpPipelineHandler.create(init, getSender(), getSelf()));
+            TcpPipelineHandler.props(init, getSender(), getSelf()));
         
         // register the SSL handler with the connection
         getSender().tell(TcpMessage.register(handler), getSelf());

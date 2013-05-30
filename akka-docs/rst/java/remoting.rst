@@ -111,7 +111,11 @@ actor systems has to have a JAR containing the class.
   arguments to the actor being created, do not make the factory a non-static
   inner class: this will inherently capture a reference to its enclosing
   object, which in most cases is not serializable. It is best to make a static
-  inner class which implements :class:`UntypedActorFactory`.
+  inner class which implements :class:`Creator<T extends Actor>`.
+
+  Serializability of all Props can be tested by setting the configuration item
+  ``akka.actor.serialize-creators=on``. Only Props whose ``deploy`` has
+  ``LocalScope`` are exempt from this check.
 
 .. note::
 

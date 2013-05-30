@@ -26,6 +26,7 @@ import akka.actor.ActorRef
 import akka.remote.RemoteWatcher
 import akka.actor.ActorSystem
 import akka.cluster.MultiNodeClusterSpec.EndActor
+import akka.actor.Deploy
 
 object ClusterDeathWatchMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -93,7 +94,7 @@ abstract class ClusterDeathWatchSpec
               watchEstablished.countDown
             case Terminated(actor) ⇒ testActor ! actor.path
           }
-        }), name = "observer1")
+        }).withDeploy(Deploy.local), name = "observer1")
 
         watchEstablished.await
         enterBarrier("watch-established")
@@ -113,7 +114,7 @@ abstract class ClusterDeathWatchSpec
       }
 
       runOn(second, third, fourth) {
-        system.actorOf(Props(new Actor { def receive = Actor.emptyBehavior }), name = "subject")
+        system.actorOf(Props(new Actor { def receive = Actor.emptyBehavior }).withDeploy(Deploy.local), name = "subject")
         enterBarrier("subjected-started")
         enterBarrier("watch-established")
         runOn(third) {
@@ -148,7 +149,7 @@ abstract class ClusterDeathWatchSpec
           def receive = {
             case t: Terminated ⇒ testActor ! t.actor.path
           }
-        }), name = "observer3")
+        }).withDeploy(Deploy.local), name = "observer3")
 
         expectMsg(path)
       }
@@ -158,7 +159,7 @@ abstract class ClusterDeathWatchSpec
 
     "be able to watch actor before node joins cluster, ClusterRemoteWatcher takes over from RemoteWatcher" taggedAs LongRunningTest in within(20 seconds) {
       runOn(fifth) {
-        system.actorOf(Props(new Actor { def receive = Actor.emptyBehavior }), name = "subject5")
+        system.actorOf(Props(new Actor { def receive = Actor.emptyBehavior }).withDeploy(Deploy.local), name = "subject5")
       }
       enterBarrier("subjected-started")
 

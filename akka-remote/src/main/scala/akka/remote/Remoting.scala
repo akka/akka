@@ -89,7 +89,7 @@ private[remote] object Remoting {
     }
 
     def receive = {
-      case RegisterTransportActor(props, name) ⇒ sender ! context.actorOf(props, name)
+      case RegisterTransportActor(props, name) ⇒ sender ! context.actorOf(props.withDeploy(Deploy.local), name)
     }
   }
 
@@ -155,7 +155,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
       case None ⇒
         log.info("Starting remoting")
         val manager: ActorRef = system.asInstanceOf[ActorSystemImpl].systemActorOf(
-          Props(classOf[EndpointManager], provider.remoteSettings.config, log), Remoting.EndpointManagerName)
+          Props(classOf[EndpointManager], provider.remoteSettings.config, log).withDeploy(Deploy.local), Remoting.EndpointManagerName)
         endpointManager = Some(manager)
 
         try {
@@ -617,16 +617,16 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
                              writing: Boolean): ActorRef = {
     assert(transportMapping contains localAddress)
 
-    if (writing) context.watch(context.actorOf(ReliableDeliverySupervisor(
+    if (writing) context.watch(context.actorOf(ReliableDeliverySupervisor.props(
       handleOption,
       localAddress,
       remoteAddress,
       transport,
       endpointSettings,
       AkkaPduProtobufCodec,
-      receiveBuffers).withDispatcher("akka.remote.writer-dispatcher"),
+      receiveBuffers).withDispatcher("akka.remote.writer-dispatcher").withDeploy(Deploy.local),
       "reliableEndpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()))
-    else context.watch(context.actorOf(EndpointWriter(
+    else context.watch(context.actorOf(EndpointWriter.props(
       handleOption,
       localAddress,
       remoteAddress,
@@ -634,7 +634,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       endpointSettings,
       AkkaPduProtobufCodec,
       receiveBuffers,
-      reliableDeliverySupervisor = None).withDispatcher("akka.remote.writer-dispatcher"),
+      reliableDeliverySupervisor = None).withDispatcher("akka.remote.writer-dispatcher").withDeploy(Deploy.local),
       "endpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()))
   }
 
