@@ -23,8 +23,8 @@ public class MyDurableMessageQueue extends DurableMessageQueueWithSerialization 
   private final QueueStorage storage = new QueueStorage();
   // A real-world implementation would use configuration to set the last 
   // three parameters below
-  private final CircuitBreaker breaker = CircuitBreaker.create(system().scheduler(), 5, 
-    Duration.create(30, "seconds"), Duration.create(1, "minute"));
+  private final CircuitBreaker breaker = CircuitBreaker.create(system().scheduler(),
+    5, Duration.create(30, "seconds"), Duration.create(1, "minute"));
 
   @Override
   public void enqueue(ActorRef receiver, final Envelope envelope) {

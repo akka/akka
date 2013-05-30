@@ -161,7 +161,8 @@ public class UntypedActorDocTest {
     //#system-actorOf
     // ActorSystem is a heavy object: create only one per application
     final ActorSystem system = ActorSystem.create("MySystem");
-    final ActorRef myActor = system.actorOf(Props.create(MyUntypedActor.class), "myactor");
+    final ActorRef myActor = system.actorOf(Props.create(MyUntypedActor.class),
+      "myactor");
     //#system-actorOf
     try {
       new JavaTestKit(system) {
@@ -238,7 +239,8 @@ public class UntypedActorDocTest {
     //#creating-indirectly
     
     final ActorRef myActor = getContext().actorOf(
-      Props.create(DependencyInjector.class, applicationContext, "MyActor"), "myactor3");
+      Props.create(DependencyInjector.class, applicationContext, "MyActor"),
+        "myactor3");
     //#creating-indirectly
     new JavaTestKit(system) {
       {

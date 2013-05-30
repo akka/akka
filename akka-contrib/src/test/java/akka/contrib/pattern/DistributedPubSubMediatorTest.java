@@ -46,9 +46,11 @@ public class DistributedPubSubMediatorTest {
     LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
     public Subscriber() {
-      ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
+      ActorRef mediator = 
+        DistributedPubSubExtension.get(getContext().system()).mediator();
       // subscribe to the topic named "content"
-      mediator.tell(new DistributedPubSubMediator.Subscribe("content", getSelf()), getSelf());
+      mediator.tell(new DistributedPubSubMediator.Subscribe("content", getSelf()), 
+        getSelf());
     }
 
     public void onReceive(Object msg) {
@@ -67,13 +69,15 @@ public class DistributedPubSubMediatorTest {
   public class Publisher extends UntypedActor {
 
     // activate the extension
-    ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
+    ActorRef mediator = 
+      DistributedPubSubExtension.get(getContext().system()).mediator();
 
     public void onReceive(Object msg) {
       if (msg instanceof String) {
         String in = (String) msg;
         String out = in.toUpperCase();
-        mediator.tell(new DistributedPubSubMediator.Publish("content", out), getSelf());
+        mediator.tell(new DistributedPubSubMediator.Publish("content", out), 
+          getSelf());
       } else {
         unhandled(msg);
       }

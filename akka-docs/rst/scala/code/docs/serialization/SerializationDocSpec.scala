@@ -182,7 +182,8 @@ package docs.serialization {
       }
 
       def serializeTo(ref: ActorRef, remote: Address): String =
-        ref.path.toSerializationFormatWithAddress(ExternalAddress(extendedSystem).addressFor(remote))
+        ref.path.toSerializationFormatWithAddress(ExternalAddress(extendedSystem).
+          addressFor(remote))
       //#external-address
     }
 
@@ -197,7 +198,8 @@ package docs.serialization {
       }
 
       def serializeAkkaDefault(ref: ActorRef): String =
-        ref.path.toSerializationFormatWithAddress(ExternalAddress(theActorSystem).addressForAkka)
+        ref.path.toSerializationFormatWithAddress(ExternalAddress(theActorSystem).
+          addressForAkka)
       //#external-address-default
     }
   }

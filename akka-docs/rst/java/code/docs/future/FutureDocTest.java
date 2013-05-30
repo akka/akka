@@ -566,7 +566,8 @@ public class FutureDocTest {
         return "foo";
       }
     }, ec);
-    Future<String> result = Futures.firstCompletedOf(Arrays.<Future<String>>asList(future, delayed), ec);
+    Future<String> result = Futures.firstCompletedOf(
+      Arrays.<Future<String>>asList(future, delayed), ec);
     //#after
     Await.result(result, Duration.create(2, SECONDS));
   }

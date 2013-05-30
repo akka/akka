@@ -20,7 +20,8 @@ public class FactorialFrontendMain {
     Cluster.get(system).registerOnMemberUp(new Runnable() {
       @Override
       public void run() {
-        system.actorOf(Props.create(FactorialFrontend.class, upToN, true), "factorialFrontend");
+        system.actorOf(Props.create(FactorialFrontend.class, upToN, true), 
+          "factorialFrontend");
       }
     });
     //#registerOnUp

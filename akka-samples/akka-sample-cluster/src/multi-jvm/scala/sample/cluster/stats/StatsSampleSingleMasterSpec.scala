@@ -100,7 +100,8 @@ abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSing
       // service and worker nodes might not be up yet
       awaitAssert {
         facade ! StatsJob("this is the text that will be analyzed")
-        expectMsgType[StatsResult](1.second).meanWordLength must be(3.875 plusOrMinus 0.001)
+        expectMsgType[StatsResult](1.second).meanWordLength must be(
+          3.875 plusOrMinus 0.001)
       }
 
       testConductor.enter("done")

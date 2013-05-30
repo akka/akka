@@ -120,7 +120,8 @@ abstract class StatsSampleSpec extends MultiNodeSpec(StatsSampleSpecConfig)
       // first attempts might fail because worker actors not started yet
       awaitAssert {
         service ! StatsJob("this is the text that will be analyzed")
-        expectMsgType[StatsResult](1.second).meanWordLength must be(3.875 plusOrMinus 0.001)
+        expectMsgType[StatsResult](1.second).meanWordLength must be(
+          3.875 plusOrMinus 0.001)
       }
 
     }

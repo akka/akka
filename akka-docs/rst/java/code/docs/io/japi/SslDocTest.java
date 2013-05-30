@@ -57,7 +57,8 @@ public class SslDocTest {
     final LoggingAdapter log = Logging
         .getLogger(getContext().system(), getSelf());
 
-    public SslClient(InetSocketAddress remote, SSLContext sslContext, ActorRef listener) {
+    public SslClient(InetSocketAddress remote, SSLContext sslContext, 
+        ActorRef listener) {
       this.remote = remote;
       this.sslContext = sslContext;
       this.listener = listener;

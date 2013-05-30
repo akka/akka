@@ -148,6 +148,7 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
   // documentation of how to keep track of the oldest member in user land
   //#singleton-proxy
   class ConsumerProxy extends Actor {
+
     // subscribe to MemberEvent, re-subscribe when restart
     override def preStart(): Unit =
       Cluster(context.system).subscribe(self, classOf[MemberEvent])
@@ -157,7 +158,8 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
     val role = "worker"
     // sort by age, oldest first
     val ageOrdering = Ordering.fromLessThan[Member] { (a, b) ⇒ a.isOlderThan(b) }
-    var membersByAge: immutable.SortedSet[Member] = immutable.SortedSet.empty(ageOrdering)
+    var membersByAge: immutable.SortedSet[Member] =
+      immutable.SortedSet.empty(ageOrdering)
 
     def receive = {
       case state: CurrentClusterState ⇒
@@ -170,8 +172,8 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
     }
 
     def consumer: Option[ActorSelection] =
-      membersByAge.headOption map (m ⇒ context.actorSelection(RootActorPath(m.address) /
-        "user" / "singleton" / "consumer"))
+      membersByAge.headOption map (m ⇒ context.actorSelection(
+        RootActorPath(m.address) / "user" / "singleton" / "consumer"))
   }
   //#singleton-proxy
 

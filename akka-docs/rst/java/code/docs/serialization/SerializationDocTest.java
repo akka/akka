@@ -64,7 +64,8 @@ public class SerializationDocTest {
 
     // Deserialize
     // (beneath fromBinary)
-    final ActorRef deserializedActorRef = extendedSystem.provider().resolveActorRef(identifier);
+    final ActorRef deserializedActorRef = extendedSystem.provider().resolveActorRef(
+      identifier);
     // Then just use the ActorRef
     //#actorref-serializer
     JavaTestKit.shutdownActorSystem(extendedSystem);

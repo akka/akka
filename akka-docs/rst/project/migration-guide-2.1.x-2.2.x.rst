@@ -299,7 +299,8 @@ The following will not match::
 
 Instead, use actorSelection followed by identify request, and watch the verified actor reference::
 
-  val selection = context.actorSelection("akka.tcp://actorSystemName@10.0.0.1:2552/user/actorName")
+  val selection = context.actorSelection(
+    "akka.tcp://actorSystemName@10.0.0.1:2552/user/actorName")
   selection ! Identify(None)
   var ref: ActorRef = _
 

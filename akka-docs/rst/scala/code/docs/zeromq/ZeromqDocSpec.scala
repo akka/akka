@@ -99,7 +99,8 @@ object ZeromqDocSpec {
     def receive = {
       // the first frame is the topic, second is the message
       case m: ZMQMessage if m.frames(0).utf8String == "health.heap" ⇒
-        val Heap(timestamp, used, max) = ser.deserialize(m.frames(1).toArray, classOf[Heap]).get
+        val Heap(timestamp, used, max) =
+          ser.deserialize(m.frames(1).toArray, classOf[Heap]).get
         if ((used.toDouble / max) > 0.9) count += 1
         else count = 0
         if (count > 10) log.warning("Need more memory, using {} %",

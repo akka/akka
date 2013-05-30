@@ -11,7 +11,8 @@ import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
 import akka.testkit._
 //#typed-actor-impl
-import java.lang.String.{ valueOf ⇒ println } //Mr funny man avoids printing to stdout AND keeping docs alright
+//Mr funny man avoids printing to stdout AND keeping docs alright
+import java.lang.String.{ valueOf ⇒ println }
 import akka.actor.ActorRef
 
 //#typed-actor-iface
