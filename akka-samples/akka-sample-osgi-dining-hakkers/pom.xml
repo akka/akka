@@ -21,12 +21,14 @@
         <scala.dep.version>2.10</scala.dep.version>
         <scalatest.version>1.9.1</scalatest.version>
         <typesafe.config.version>1.0.0</typesafe.config.version>
+        <scalabuff.version>1.2.0</scalabuff.version>
     </properties>
 
     <modules>
         <module>api</module>
         <module>command</module>
         <module>uncommons</module>
+        <module>scalabuff</module>
         <module>core</module>
 
         <module>assembly-features</module>
@@ -78,7 +80,7 @@
             </dependency>
             <dependency>
                 <groupId>com.typesafe.akka</groupId>
-                <artifactId>akka-cluster-experimental_${scala.dep.version}</artifactId>
+                <artifactId>akka-cluster_${scala.dep.version}</artifactId>
                 <version>${akka.version}</version>
             </dependency>
             <dependency>
@@ -95,6 +97,11 @@
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java</artifactId>
                 <version>${protobuf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.sandrogrzicic</groupId>
+                <artifactId>scalabuff-runtime_${scala.dep.version}</artifactId>
+                <version>${scalabuff.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>

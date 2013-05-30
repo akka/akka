@@ -85,15 +85,8 @@ java.io.EOFException
     // create an "Interrogator" actor that receives a Hakker's identification
     // this is to work around the TestProbe Exception above
     val response = new SynchronousQueue[(String, String)]()
-    class Interrogator extends Actor {
-      def receive = {
-        case msg: Identification ⇒ {
-          response.put((msg.name, msg.busyWith))
-        }
-      }
-    }
 
-    hakker.tell(Identify, actorSystem.actorOf(Props[Interrogator], "Interrogator"))
+    hakker.tell(Identify, actorSystem.actorOf(Props(classOf[HakkerStatusTest.Interrogator], response), "Interrogator"))
     val (fromHakker, busyWith) = response.poll(5, TimeUnit.SECONDS)
 
     println("---------------> %s is busy with %s.".format(fromHakker, busyWith))
@@ -102,4 +95,14 @@ java.io.EOFException
 
   }
 
+}
+
+object HakkerStatusTest {
+  class Interrogator(queue: SynchronousQueue[(String, String)]) extends Actor {
+    def receive = {
+      case msg: Identification ⇒ {
+        queue.put((msg.name, msg.busyWith))
+      }
+    }
+  }
 }
