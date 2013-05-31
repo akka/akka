@@ -550,12 +550,27 @@ private[akka] class VirtualPathContainer(
   def addChild(name: String, ref: InternalActorRef): Unit = {
     children.put(name, ref) match {
       case null ⇒ // okay
-      case old  ⇒ log.warning("{} replacing child {} ({} -> {})", path, name, old, ref)
+      case old ⇒
+        // this can happen from RemoteSystemDaemon if a new child is created
+        // before the old is removed from RemoteSystemDaemon children
+        log.debug("{} replacing child {} ({} -> {})", path, name, old, ref)
     }
   }
 
   def removeChild(name: String): Unit =
     if (children.remove(name) eq null) log.warning("{} trying to remove non-child {}", path, name)
+
+  /**
+   * Remove a named child if it matches the ref.
+   */
+  protected def removeChild(name: String, ref: ActorRef): Unit = {
+    val current = getChild(name)
+    if (current eq null)
+      log.warning("{} trying to remove non-child {}", path, name)
+    else if (current == ref)
+      children.remove(name, current) // remove when same value
+
+  }
 
   def getChild(name: String): InternalActorRef = children.get(name)
 
