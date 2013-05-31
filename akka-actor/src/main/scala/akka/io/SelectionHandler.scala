@@ -168,7 +168,7 @@ private[io] object SelectionHandler {
           def tryRun(): Unit = {
             // thorough 'close' of the Selector
             @tailrec def closeNextChannel(it: JIterator[SelectionKey]): Unit = if (it.hasNext) {
-              try it.next().channel.close() catch { case NonFatal(e) ⇒ log.error(e, "Error closing channel") }
+              try it.next().channel.close() catch { case NonFatal(e) ⇒ log.debug("Error closing channel: {}", e) }
               closeNextChannel(it)
             }
             try closeNextChannel(selector.keys.iterator)
@@ -246,7 +246,24 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends A
   override def postStop(): Unit = registry.shutdown()
 
   // we can never recover from failures of a connection or listener child
-  override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
+  // and log the failure at debug level
+  override def supervisorStrategy = {
+    def stoppingDecider: SupervisorStrategy.Decider = {
+      case _: Exception ⇒ SupervisorStrategy.Stop
+    }
+    new OneForOneStrategy()(stoppingDecider) {
+      override protected def logFailure(context: ActorContext, child: ActorRef, cause: Throwable,
+                                        decision: SupervisorStrategy.Directive): Unit =
+        try {
+          val logMessage = cause match {
+            case e: ActorInitializationException if e.getCause ne null ⇒ e.getCause.getMessage
+            case e ⇒ e.getMessage
+          }
+          context.system.eventStream.publish(
+            Logging.Debug(child.path.toString, classOf[SelectionHandler], logMessage))
+        } catch { case NonFatal(_) ⇒ }
+    }
+  }
 
   def spawnChildWithCapacityProtection(cmd: WorkerForCommand, retriesLeft: Int): Unit = {
     if (TraceLogging) log.debug("Executing [{}]", cmd)
@@ -258,7 +275,7 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends A
       if (MaxChannelsPerSelector > 0) context.watch(child) // we don't need to watch if we aren't limited
     } else {
       if (retriesLeft >= 1) {
-        log.warning("Rejecting [{}] with [{}] retries left, retrying...", cmd, retriesLeft)
+        log.debug("Rejecting [{}] with [{}] retries left, retrying...", cmd, retriesLeft)
         context.parent forward Retry(cmd, retriesLeft - 1)
       } else {
         log.warning("Rejecting [{}] with no retries left, aborting...", cmd)

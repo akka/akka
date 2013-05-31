@@ -4,6 +4,7 @@
 
 package akka.io
 
+import scala.concurrent.duration._
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
 import Tcp._
@@ -32,9 +33,7 @@ class TcpIntegrationSpec extends AkkaSpec("""
 
     "properly handle connection abort from one side" in new TestSetup {
       val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
-      EventFilter[IOException](occurrences = 1) intercept {
-        clientHandler.send(clientConnection, Abort)
-      }
+      clientHandler.send(clientConnection, Abort)
       clientHandler.expectMsg(Aborted)
       serverHandler.expectMsgType[ErrorClosed]
       verifyActorTermination(clientConnection)

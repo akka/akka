@@ -49,7 +49,7 @@ private[io] class UdpListener(val udp: UdpExt,
     } catch {
       case NonFatal(e) ⇒
         bindCommander ! CommandFailed(bind)
-        log.error(e, "Failed to bind UDP channel to endpoint [{}]", bind.localAddress)
+        log.debug("Failed to bind UDP channel to endpoint [{}]: {}", bind.localAddress, e)
         context.stop(self)
     }
 
@@ -99,7 +99,7 @@ private[io] class UdpListener(val udp: UdpExt,
       log.debug("Closing DatagramChannel after being stopped")
       try channel.close()
       catch {
-        case NonFatal(e) ⇒ log.error(e, "Error closing DatagramChannel")
+        case NonFatal(e) ⇒ log.debug("Error closing DatagramChannel: {}", e)
       }
     }
   }
