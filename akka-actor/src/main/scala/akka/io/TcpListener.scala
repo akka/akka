@@ -59,7 +59,7 @@ private[io] class TcpListener(selectorRouter: ActorRef,
     } catch {
       case NonFatal(e) ⇒
         bindCommander ! bind.failureMessage
-        log.error(e, "Bind failed for TCP channel on endpoint [{}]", bind.localAddress)
+        log.debug("Bind failed for TCP channel on endpoint [{}]: {}", bind.localAddress, e)
         context.stop(self)
     }
 
@@ -79,7 +79,7 @@ private[io] class TcpListener(selectorRouter: ActorRef,
       log.warning("Could not register incoming connection since selector capacity limit is reached, closing connection")
       try socketChannel.close()
       catch {
-        case NonFatal(e) ⇒ log.error(e, "Error closing channel")
+        case NonFatal(e) ⇒ log.debug("Error closing socket channel: {}", e)
       }
 
     case Unbind ⇒
@@ -95,7 +95,7 @@ private[io] class TcpListener(selectorRouter: ActorRef,
       if (limit > 0) {
         try channel.accept()
         catch {
-          case NonFatal(e) ⇒ { log.error(e, "Accept error: could not accept new connection due to {}", e); null }
+          case NonFatal(e) ⇒ { log.error(e, "Accept error: could not accept new connection"); null }
         }
       } else null
     if (socketChannel != null) {
@@ -115,7 +115,7 @@ private[io] class TcpListener(selectorRouter: ActorRef,
         channel.close()
       }
     } catch {
-      case NonFatal(e) ⇒ log.error(e, "Error closing ServerSocketChannel")
+      case NonFatal(e) ⇒ log.debug("Error closing ServerSocketChannel: {}", e)
     }
   }
 }
