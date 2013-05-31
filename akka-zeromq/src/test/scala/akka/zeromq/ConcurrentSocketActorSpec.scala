@@ -58,7 +58,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
 
       try {
         subscriberProbe.expectMsg(Connecting)
-        val msgNumbers = subscriberProbe.receiveWhile(2 seconds) {
+        val msgNumbers = subscriberProbe.receiveWhile(3 seconds) {
           case msg: ZMQMessage if msg.frames.size == 2 ⇒
             msg.frames(1).length must be(0)
             msg
@@ -69,7 +69,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
         msgGenerator.cancel()
         system stop publisher
         system stop subscriber
-        subscriberProbe.receiveWhile(1 seconds) {
+        subscriberProbe.receiveWhile(3 seconds) {
           case msg ⇒ msg
         }.last must equal(Closed)
         awaitCond(publisher.isTerminated)
