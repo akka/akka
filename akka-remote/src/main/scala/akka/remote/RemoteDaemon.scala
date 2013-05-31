@@ -83,7 +83,7 @@ private[akka] class RemoteSystemDaemon(
   override def sendSystemMessage(message: SystemMessage): Unit = message match {
     case DeathWatchNotification(child: ActorRefWithCell with ActorRefScope, _, _) if child.isLocal ⇒
       terminating.locked {
-        removeChild(child.path.elements.drop(1).mkString("/"))
+        removeChild(child.path.elements.drop(1).mkString("/"), child)
         terminationHookDoneWhenNoChildren()
       }
     case _ ⇒ super.sendSystemMessage(message)
