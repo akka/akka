@@ -71,7 +71,7 @@ class EchoManager(handlerClass: Class[_]) extends Actor with ActorLogging {
 }
 
 object EchoHandler {
-  def apply(connection: ActorRef, remote: InetSocketAddress): Props =
+  def props(connection: ActorRef, remote: InetSocketAddress): Props =
     Props(classOf[EchoHandler], connection, remote)
 }
 
