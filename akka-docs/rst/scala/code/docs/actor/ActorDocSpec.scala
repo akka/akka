@@ -59,7 +59,7 @@ class DemoActorWrapper extends Actor {
      * @return a Props for creating this actor, which can then be further configured
      *         (e.g. calling `.withDispatcher()` on it)
      */
-    def apply(name: String): Props = Props(classOf[DemoActor], name)
+    def props(name: String): Props = Props(classOf[DemoActor], name)
   }
 
   class DemoActor(name: String) extends Actor {
@@ -70,7 +70,7 @@ class DemoActorWrapper extends Actor {
 
   // ...
 
-  context.actorOf(DemoActor("hello"))
+  context.actorOf(DemoActor.props("hello"))
   //#props-factory
 
   def receive = Actor.emptyBehavior

@@ -65,7 +65,7 @@ class SimplisticHandler extends Actor {
 
 //#client
 object Client {
-  def apply(remote: InetSocketAddress, replies: ActorRef) =
+  def props(remote: InetSocketAddress, replies: ActorRef) =
     Props(classOf[Client], remote, replies)
 }
 
@@ -108,7 +108,7 @@ class IODocSpec extends AkkaSpec {
   "demonstrate connect" in {
     val server = system.actorOf(Props(classOf[Parent], this), "parent")
     val listen = expectMsgType[Tcp.Bound].localAddress
-    val client = system.actorOf(Client(listen, testActor), "client1")
+    val client = system.actorOf(Client.props(listen, testActor), "client1")
 
     val c1, c2 = expectMsgType[Tcp.Connected]
     c1.localAddress must be(c2.remoteAddress)
