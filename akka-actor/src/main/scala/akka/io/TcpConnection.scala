@@ -65,7 +65,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     case ReceiveTimeout ⇒
       // after sending `Register` user should watch this actor to make sure
       // it didn't die because of the timeout
-      log.warning("Configured registration timeout of [{}] expired, stopping", RegisterTimeout)
+      log.debug("Configured registration timeout of [{}] expired, stopping", RegisterTimeout)
       context.stop(self)
   }
 
@@ -141,10 +141,10 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
     case ResumeWriting ⇒
       /*
-       * If more than one actor sends Writes then the first to send this 
+       * If more than one actor sends Writes then the first to send this
        * message might resume too early for the second, leading to a Write of
        * the second to go through although it has not been resumed yet; there
-       * is nothing we can do about this apart from all actors needing to 
+       * is nothing we can do about this apart from all actors needing to
        * register themselves and us keeping track of them, which sounds bad.
        *
        * Thus it is documented that useResumeWriting is incompatible with

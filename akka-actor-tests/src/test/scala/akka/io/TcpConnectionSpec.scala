@@ -527,12 +527,10 @@ class TcpConnectionSpec extends AkkaSpec("""
       run {
         localServerChannel.accept()
 
-        EventFilter.warning(pattern = "registration timeout", occurrences = 1) intercept {
-          selector.send(connectionActor, ChannelConnectable)
-          userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
+        selector.send(connectionActor, ChannelConnectable)
+        userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
 
-          verifyActorTermination(connectionActor)
-        }
+        verifyActorTermination(connectionActor)
       }
     }
 
