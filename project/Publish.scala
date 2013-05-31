@@ -76,6 +76,7 @@ object Publish {
 
   def akkaPluginPublishTo: Initialize[Option[Resolver]] = {
     (defaultPublishTo, version) { (default, version) =>
+      pluginPublishLocally(default) orElse
       akkaPublishRepository orElse
       pluginRepo(version) orElse
       Some(Resolver.file("Default Local Repository", default))
@@ -101,6 +102,11 @@ object Publish {
 
   def akkaCredentials: Seq[Credentials] =
     Option(System.getProperty("akka.publish.credentials", null)) map (f => Credentials(new File(f))) toSeq
+
+  def pluginPublishLocally(default: File): Option[Resolver] =
+    Option(sys.props("publish.plugin.locally")) collect { case pl if pl.toLowerCase == "true" =>
+      Resolver.file("Default Local Repository", default)
+    }
 
   // timestamped versions
 
