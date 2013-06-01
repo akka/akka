@@ -3,7 +3,7 @@
  */
 package akka.actor
 
-import akka.dispatch.{ UnboundedDequeBasedMessageQueueSemantics, RequiresMessageQueue, Envelope, DequeBasedMessageQueue }
+import akka.dispatch.{ UnboundedDequeBasedMessageQueueSemantics, RequiresMessageQueue, Envelope, DequeBasedMessageQueueSemantics }
 import akka.AkkaException
 
 /**
@@ -47,7 +47,7 @@ import akka.AkkaException
  *  any trait/class that overrides the `preRestart` callback. This means it's not possible to write
  *  `Actor with MyActor with Stash` if `MyActor` overrides `preRestart`.
  */
-trait Stash extends UnrestrictedStash with RequiresMessageQueue[DequeBasedMessageQueue]
+trait Stash extends UnrestrictedStash with RequiresMessageQueue[DequeBasedMessageQueueSemantics]
 
 /**
  * The `UnboundedStash` trait is a version of `Stash` that enforces an unbounded stash for you actor.
@@ -64,16 +64,16 @@ trait UnrestrictedStash extends Actor {
    */
   private val capacity: Int = {
     val dispatcher = context.system.settings.config.getConfig(context.props.dispatcher)
-    val config = dispatcher.withFallback(context.system.settings.config.getConfig("akka.actor.default-dispatcher"))
+    val config = dispatcher.withFallback(context.system.settings.config.getConfig("akka.actor.default-mailbox"))
     config.getInt("stash-capacity")
   }
 
   /* The actor's deque-based message queue.
    * `mailbox.queue` is the underlying `Deque`.
    */
-  private val mailbox: DequeBasedMessageQueue = {
+  private val mailbox: DequeBasedMessageQueueSemantics = {
     context.asInstanceOf[ActorCell].mailbox.messageQueue match {
-      case queue: DequeBasedMessageQueue ⇒ queue
+      case queue: DequeBasedMessageQueueSemantics ⇒ queue
       case other ⇒ throw ActorInitializationException(self, s"DequeBasedMailbox required, got: ${other.getClass.getName}\n" +
         """An (unbounded) deque-based mailbox can be configured as follows:
           |  my-custom-mailbox {

@@ -559,12 +559,12 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     def hasSystemMessages = false
   }
 
+  val mailboxes: Mailboxes = new Mailboxes(settings, eventStream, dynamicAccess)
+
   val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(
-    threadFactory, eventStream, deadLetterMailbox, scheduler, dynamicAccess, settings))
+    threadFactory, eventStream, deadLetterMailbox, scheduler, dynamicAccess, settings, mailboxes))
 
   val dispatcher: ExecutionContext = dispatchers.defaultGlobalDispatcher
-
-  val mailboxes: Mailboxes = new Mailboxes(settings, eventStream, dynamicAccess)
 
   val internalCallingThreadExecutionContext: ExecutionContext =
     dynamicAccess.getObjectFor[ExecutionContext]("scala.concurrent.Future$InternalCallbackExecutor$").getOrElse(

@@ -348,3 +348,20 @@ message. Therefore the following is now safe::
   context.stop(target)
   context.unwatch(target)
 
+Dispatcher and Mailbox Implementation Changes
+=============================================
+
+This point is only relevant if you have implemented a custom mailbox or
+dispatcher and want to migrate that to Akka 2.2. The constructor signature of
+:class:`MessageDispatcher` has changed, it now takes a
+:class:`MessageDispatcherConfigurator` instead of
+:class:`DispatcherPrerequisites`. Its :class:`createMailbox` method now
+receives one more argument of type :class:`MailboxType`, which is the mailbox
+type determined by the :class:`ActorRefProvider` for the actor based on its
+deployment. The :class:`DispatcherPrerequisites` now include a
+:class:`Mailboxes` instance which can be used for resolving mailbox references.
+The constructor signatures of the built-in dispatcher implementation have been
+adapted accordingly.  The traits describing mailbox semantics have been
+separated from the implementation traits.
+
+

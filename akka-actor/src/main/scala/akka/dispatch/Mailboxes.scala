@@ -12,13 +12,24 @@ import akka.event.Logging.Warning
 import akka.ConfigurationException
 import scala.annotation.tailrec
 import java.lang.reflect.ParameterizedType
+import akka.util.Reflect
+import akka.actor.Props
+import akka.actor.Deploy
+import scala.util.Try
+import scala.util.Failure
+import scala.util.control.NonFatal
+import akka.dispatch.DispatcherPrerequisites
+
+object Mailboxes {
+  final val DefaultMailboxId = "akka.actor.default-mailbox"
+}
 
 private[akka] class Mailboxes(
   val settings: ActorSystem.Settings,
   val eventStream: EventStream,
   dynamicAccess: DynamicAccess) {
 
-  private val mailboxTypeConfigurators = new ConcurrentHashMap[String, Option[MailboxTypeConfigurator]]
+  private val mailboxTypeConfigurators = new ConcurrentHashMap[String, MailboxType]
 
   private val mailboxBindings: Map[Class[_ <: Any], String] = {
     import scala.collection.JavaConverters._
@@ -38,42 +49,95 @@ private[akka] class Mailboxes(
   /**
    * Returns a mailbox type as specified in configuration, based on the id, or if not defined None.
    */
-  def lookup(id: String): Option[MailboxType] = lookupConfigurator(id).map { _.mailboxType }
+  def lookup(id: String): MailboxType = lookupConfigurator(id)
 
   /**
    * Returns a mailbox type as specified in configuration, based on the type, or if not defined None.
    */
-  def lookupByQueueType(queueType: Class[_ <: Any]): Option[MailboxType] =
-    lookupId(queueType).flatMap(x ⇒ lookup(x))
+  def lookupByQueueType(queueType: Class[_ <: Any]): MailboxType = lookup(lookupId(queueType))
 
   private final val rmqClass = classOf[RequiresMessageQueue[_]]
   /**
    * Return the required message queue type for this class if any.
    */
-  def getRequiredType(actorClass: Class[_ <: Actor]): Option[Class[_]] = {
-    @tailrec
-    def innerRequiredType(classes: Iterator[Class[_]]): Option[Class[_]] = {
-      if (classes.isEmpty) None
-      else {
-        val c = classes.next()
-        if (rmqClass.isAssignableFrom(c)) {
-          val ifaces = c.getGenericInterfaces
-          val tpe = ifaces.collectFirst {
-            case t: ParameterizedType if rmqClass.isAssignableFrom(t.getRawType.asInstanceOf[Class[_]]) ⇒
-              t.getActualTypeArguments.head.asInstanceOf[Class[_]]
-          }
-          if (tpe.isDefined) tpe
-          else innerRequiredType(classes ++ ifaces.map {
-            case c: Class[_]          ⇒ c
-            case c: ParameterizedType ⇒ c.getRawType.asInstanceOf[Class[_]]
-          } ++ Iterator(c.getSuperclass))
-        } else {
-          innerRequiredType(classes)
-        }
+  def getRequiredType(actorClass: Class[_ <: Actor]): Class[_] =
+    Reflect.findMarker(actorClass, rmqClass) match {
+      case t: ParameterizedType ⇒ t.getActualTypeArguments.head match {
+        case c: Class[_] ⇒ c
+        case x           ⇒ throw new IllegalArgumentException(s"no wildcard type allowed in RequireMessageQueue argument (was [$x])")
       }
     }
-    if (rmqClass.isAssignableFrom(actorClass)) innerRequiredType(Iterator(actorClass))
-    else None
+
+  // don’t care if this happens twice
+  private var mailboxSizeWarningIssued = false
+
+  def getMailboxRequirement(config: Config) = config.getString("mailbox-requirement") match {
+    case "" ⇒ classOf[MessageQueue]
+    case x  ⇒ dynamicAccess.getClassFor[AnyRef](x).get
+  }
+
+  def getProducedMessageQueueType(mailboxType: MailboxType): Class[_] = {
+    val pmqClass = classOf[ProducesMessageQueue[_]]
+    if (!pmqClass.isAssignableFrom(mailboxType.getClass)) classOf[MessageQueue]
+    else Reflect.findMarker(mailboxType.getClass, pmqClass) match {
+      case t: ParameterizedType ⇒
+        t.getActualTypeArguments.head match {
+          case c: Class[_] ⇒ c
+          case x ⇒ throw new IllegalArgumentException(
+            s"no wildcard type allowed in ProducesMessageQueue argument (was [$x])")
+        }
+    }
+  }
+
+  /**
+   * Finds out the mailbox type for an actor based on configuration, props and requirements.
+   */
+  protected[akka] def getMailboxType(props: Props, dispatcherConfig: Config): MailboxType = {
+    val id = dispatcherConfig.getString("id")
+    val deploy = props.deploy
+    val actorClass = props.actorClass
+    lazy val actorRequirement = getRequiredType(actorClass)
+
+    val mailboxRequirement: Class[_] = getMailboxRequirement(dispatcherConfig)
+
+    val hasMailboxRequirement: Boolean = mailboxRequirement != classOf[MessageQueue]
+
+    val hasMailboxType =
+      dispatcherConfig.hasPath("mailbox-type") &&
+        dispatcherConfig.getString("mailbox-type") != Deploy.NoMailboxGiven
+
+    // TODO remove in 2.3
+    if (!hasMailboxType && !mailboxSizeWarningIssued && dispatcherConfig.hasPath("mailbox-size")) {
+      eventStream.publish(Warning("mailboxes", getClass,
+        "ignoring setting 'mailbox-size' for dispatcher [$id], you need to specify 'mailbox-type=bounded'"))
+      mailboxSizeWarningIssued = true
+    }
+
+    def verifyRequirements(mailboxType: MailboxType): MailboxType = {
+      lazy val mqType: Class[_] = getProducedMessageQueueType(mailboxType)
+      if (hasMailboxRequirement && !mailboxRequirement.isAssignableFrom(mqType))
+        throw new IllegalArgumentException(
+          s"produced message queue type [$mqType] does not fulfill requirement for dispatcher [${id}]")
+      if (hasRequiredType(actorClass) && !actorRequirement.isAssignableFrom(mqType))
+        throw new IllegalArgumentException(
+          s"produced message queue type [$mqType] does not fulfill requirement for actor class [$actorClass]")
+      mailboxType
+    }
+
+    if (deploy.mailbox != Deploy.NoMailboxGiven) {
+      verifyRequirements(lookup(deploy.mailbox))
+    } else if (deploy.dispatcher != Deploy.NoDispatcherGiven && hasMailboxType) {
+      verifyRequirements(lookup(dispatcherConfig.getString("id")))
+    } else if (hasRequiredType(actorClass)) {
+      try verifyRequirements(lookupByQueueType(getRequiredType(actorClass)))
+      catch {
+        case NonFatal(thr) if (hasMailboxRequirement) ⇒ verifyRequirements(lookupByQueueType(mailboxRequirement))
+      }
+    } else if (hasMailboxRequirement) {
+      verifyRequirements(lookupByQueueType(mailboxRequirement))
+    } else {
+      verifyRequirements(lookup(Mailboxes.DefaultMailboxId))
+    }
   }
 
   /**
@@ -81,65 +145,52 @@ private[akka] class Mailboxes(
    */
   def hasRequiredType(actorClass: Class[_ <: Actor]): Boolean = rmqClass.isAssignableFrom(actorClass)
 
-  private def lookupId(queueType: Class[_]): Option[String] = {
+  private def lookupId(queueType: Class[_]): String =
     mailboxBindings.get(queueType) match {
-      case None ⇒
-        eventStream.publish(Warning("Mailboxes", this.getClass, s"Mailbox Mapping for [${queueType}] not configured"))
-        None
-      case s ⇒ s
+      case None    ⇒ throw new IllegalArgumentException(s"Mailbox Mapping for [${queueType}] not configured")
+      case Some(s) ⇒ s
     }
-  }
 
-  private def lookupConfigurator(id: String): Option[MailboxTypeConfigurator] = {
+  private def lookupConfigurator(id: String): MailboxType = {
     mailboxTypeConfigurators.get(id) match {
       case null ⇒
         // It doesn't matter if we create a mailbox type configurator that isn't used due to concurrent lookup.
-        val newConfigurator =
-          if (settings.config.hasPath(id)) {
-            Some(new MailboxTypeConfigurator(settings, config(id), dynamicAccess))
-          } else {
-            eventStream.publish(Warning("Mailboxes", this.getClass, s"Mailbox Type [${id}] not configured"))
-            None
-          }
+        val newConfigurator = id match {
+          case "unbounded" ⇒ UnboundedMailbox()
+          case "bounded"   ⇒ new BoundedMailbox(settings, config(id))
+          case _ ⇒
+            if (!settings.config.hasPath(id)) throw new IllegalArgumentException(s"Mailbox Type [${id}] not configured")
+            val conf = config(id)
+            conf.getString("mailbox-type") match {
+              case "" ⇒ throw new IllegalArgumentException(s"The setting mailbox-type, defined in [$id] is empty")
+              case fqcn ⇒
+                val args = List(classOf[ActorSystem.Settings] -> settings, classOf[Config] -> conf)
+                dynamicAccess.createInstanceFor[MailboxType](fqcn, args).recover({
+                  case exception ⇒
+                    throw new IllegalArgumentException(
+                      (s"Cannot instantiate MailboxType [$fqcn], defined in [$id], make sure it has a public" +
+                        " constructor with [akka.actor.ActorSystem.Settings, com.typesafe.config.Config] parameters"),
+                      exception)
+                }).get
+            }
+        }
 
-        if (newConfigurator.isDefined) {
-          mailboxTypeConfigurators.putIfAbsent(id, newConfigurator) match {
-            case null     ⇒ newConfigurator
-            case existing ⇒ existing
-          }
-        } else None
+        mailboxTypeConfigurators.putIfAbsent(id, newConfigurator) match {
+          case null     ⇒ newConfigurator
+          case existing ⇒ existing
+        }
 
       case existing ⇒ existing
     }
   }
+
+  private val defaultMailboxConfig = settings.config.getConfig(Mailboxes.DefaultMailboxId)
 
   //INTERNAL API
   private def config(id: String): Config = {
     import scala.collection.JavaConverters._
     ConfigFactory.parseMap(Map("id" -> id).asJava)
       .withFallback(settings.config.getConfig(id))
+      .withFallback(defaultMailboxConfig)
   }
-}
-
-private[akka] class MailboxTypeConfigurator(
-  val settings: ActorSystem.Settings,
-  val config: Config,
-  dynamicAccess: DynamicAccess) {
-  private val instance: MailboxType = {
-    val id = config.getString("id")
-    config.getString("mailbox-type") match {
-      case "" ⇒ throw new IllegalArgumentException(s"The setting mailbox-type, defined in [${id}}] is empty")
-      case fqcn ⇒
-        val args = List(classOf[ActorSystem.Settings] -> settings, classOf[Config] -> config)
-        dynamicAccess.createInstanceFor[MailboxType](fqcn, args).recover({
-          case exception ⇒
-            throw new IllegalArgumentException(
-              (s"Cannot instantiate MailboxType [${fqcn}], defined in [${id}], make sure it has a public" +
-                " constructor with [akka.actor.ActorSystem.Settings, com.typesafe.config.Config] parameters"),
-              exception)
-        }).get
-    }
-  }
-
-  def mailboxType: MailboxType = instance
 }

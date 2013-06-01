@@ -11,6 +11,7 @@ import akka.event.Logging.Warning
 import akka.event.EventStream
 import scala.concurrent.duration.Duration
 import akka.ConfigurationException
+import akka.actor.Deploy
 
 /**
  * DispatcherPrerequisites represents useful contextual pieces when constructing a MessageDispatcher
@@ -22,6 +23,7 @@ trait DispatcherPrerequisites {
   def scheduler: Scheduler
   def dynamicAccess: DynamicAccess
   def settings: ActorSystem.Settings
+  def mailboxes: Mailboxes
 }
 
 /**
@@ -33,7 +35,8 @@ private[akka] case class DefaultDispatcherPrerequisites(
   val deadLetterMailbox: Mailbox,
   val scheduler: Scheduler,
   val dynamicAccess: DynamicAccess,
-  val settings: ActorSystem.Settings) extends DispatcherPrerequisites
+  val settings: ActorSystem.Settings,
+  val mailboxes: Mailboxes) extends DispatcherPrerequisites
 
 object Dispatchers {
   /**
@@ -101,7 +104,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
   }
 
   //INTERNAL API
-  private def config(id: String): Config = {
+  private[akka] def config(id: String): Config = {
     import scala.collection.JavaConverters._
     def simpleName = id.substring(id.lastIndexOf('.') + 1)
     idConfig(id)
@@ -172,12 +175,10 @@ class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisi
   extends MessageDispatcherConfigurator(config, prerequisites) {
 
   private val instance = new Dispatcher(
-    prerequisites,
+    this,
     config.getString("id"),
     config.getInt("throughput"),
     Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
-    mailboxType,
-    mailBoxTypeConfigured,
     configureExecutor(),
     Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))
 
@@ -187,22 +188,53 @@ class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisi
   override def dispatcher(): MessageDispatcher = instance
 }
 
+object BalancingDispatcherConfigurator {
+  private val defaultRequirement =
+    ConfigFactory.parseString("mailbox-requirement = akka.dispatch.MultipleConsumerSemantics")
+  def amendConfig(config: Config): Config =
+    if (config.getString("mailbox-requirement") != "") config
+    else defaultRequirement.withFallback(config)
+}
+
 /**
  * Configurator for creating [[akka.dispatch.BalancingDispatcher]].
  * Returns the same dispatcher instance for for each invocation
  * of the `dispatcher()` method.
  */
-class BalancingDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
-  extends MessageDispatcherConfigurator(config, prerequisites) {
+class BalancingDispatcherConfigurator(_config: Config, _prerequisites: DispatcherPrerequisites)
+  extends MessageDispatcherConfigurator(BalancingDispatcherConfigurator.amendConfig(_config), _prerequisites) {
 
-  private val instance = new BalancingDispatcher(
-    prerequisites,
-    config.getString("id"),
-    config.getInt("throughput"),
-    Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
-    mailboxType, mailBoxTypeConfigured, configureExecutor(),
-    Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS),
-    config.getBoolean("attempt-teamwork"))
+  private val instance = {
+    val mailboxes = prerequisites.mailboxes
+    val id = config.getString("id")
+    val requirement = mailboxes.getMailboxRequirement(config)
+    if (!classOf[MultipleConsumerSemantics].isAssignableFrom(requirement))
+      throw new IllegalArgumentException(
+        "BalancingDispatcher must have 'mailbox-requirement' which implements akka.dispatch.MultipleConsumerSemantics; " +
+          s"dispatcher [$id] has [$requirement]")
+    val conf = config.withFallback(prerequisites.settings.config.getConfig(Mailboxes.DefaultMailboxId))
+    val mailboxType =
+      if (conf.getString("mailbox-type") != Deploy.NoMailboxGiven) mailboxes.lookupByQueueType(requirement)
+      else {
+        val mt = mailboxes.lookup(conf.getString("mailbox-type"))
+        if (!requirement.isAssignableFrom(mailboxes.getProducedMessageQueueType(mt)))
+          throw new IllegalArgumentException(
+            s"BalancingDispatcher [$id] has 'mailbox-type' [${mt.getClass}] which is incompatible with 'mailbox-requirement' [$requirement]")
+        mt
+      }
+    create(mailboxType)
+  }
+
+  protected def create(mailboxType: MailboxType): BalancingDispatcher =
+    new BalancingDispatcher(
+      this,
+      config.getString("id"),
+      config.getInt("throughput"),
+      Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+      mailboxType,
+      configureExecutor(),
+      Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS),
+      config.getBoolean("attempt-teamwork"))
 
   /**
    * Returns the same dispatcher instance for each invocation
@@ -233,7 +265,7 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
    */
   override def dispatcher(): MessageDispatcher =
     new PinnedDispatcher(
-      prerequisites, null, config.getString("id"), mailboxType, mailBoxTypeConfigured,
+      this, null, config.getString("id"),
       Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS), threadPoolConfig)
 
 }

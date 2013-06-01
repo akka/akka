@@ -203,8 +203,7 @@ object DispatcherDocSpec {
     import akka.dispatch.{
       Envelope,
       MessageQueue,
-      QueueBasedMessageQueue,
-      UnboundedMessageQueueSemantics
+      UnboundedQueueBasedMessageQueue
     }
 
     // This constructor signature must exist, it will be called by Akka
@@ -213,7 +212,7 @@ object DispatcherDocSpec {
     // The create method is called to create the MessageQueue
     final override def create(owner: Option[ActorRef],
                               system: Option[ActorSystem]): MessageQueue =
-      new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
+      new UnboundedQueueBasedMessageQueue {
         final val queue = new ConcurrentLinkedQueue[Envelope]()
       }
   }

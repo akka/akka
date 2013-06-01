@@ -16,6 +16,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.control.NonFatal
+import akka.dispatch.MessageDispatcher
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -338,6 +339,7 @@ private[akka] class ActorCell(
   val system: ActorSystemImpl,
   val self: InternalActorRef,
   val props: Props,
+  val dispatcher: MessageDispatcher,
   val parent: InternalActorRef)
   extends UntypedActorContext with Cell
   with dungeon.ReceiveTimeout

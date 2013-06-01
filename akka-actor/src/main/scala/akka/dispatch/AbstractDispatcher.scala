@@ -17,6 +17,10 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
+import scala.util.Try
+import scala.util.Failure
+import akka.util.Reflect
+import java.lang.reflect.ParameterizedType
 
 final case class Envelope private (val message: Any, val sender: ActorRef)
 
@@ -79,11 +83,11 @@ private[akka] object MessageDispatcher {
     }
 }
 
-abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) extends AbstractMessageDispatcher with BatchingExecutor with ExecutionContext {
+abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator) extends AbstractMessageDispatcher with BatchingExecutor with ExecutionContext {
 
   import MessageDispatcher._
   import AbstractMessageDispatcher.{ inhabitantsOffset, shutdownScheduleOffset }
-  import prerequisites._
+  import configurator.prerequisites._
 
   @volatile private[this] var _inhabitantsDoNotCallMeDirectly: Long = _ // DO NOT TOUCH!
   @volatile private[this] var _shutdownScheduleDoNotCallMeDirectly: Int = _ // DO NOT TOUCH!
@@ -109,18 +113,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   /**
    *  Creates and returns a mailbox for the given actor.
    */
-  protected[akka] def createMailbox(actor: Cell): Mailbox
-
-  /**
-   * Finds out the mailbox type for an actor based on configuration, props and requirements.
-   */
-  protected[akka] def getMailboxType(actor: Cell, mailboxType: MailboxType, mailboxTypeConfigured: Boolean): MailboxType =
-    actor.props.mailbox.flatMap(id ⇒ actor.system.mailboxes.lookup(id)) match {
-      case Some(x)                       ⇒ x
-      case None if mailboxTypeConfigured ⇒ mailboxType
-      case None ⇒ actor.system.mailboxes.getRequiredType(actor.props.actorClass).
-        flatMap(c ⇒ actor.system.mailboxes.lookupByQueueType(c)).getOrElse(mailboxType)
-    }
+  protected[akka] def createMailbox(actor: Cell, mailboxType: MailboxType): Mailbox
 
   /**
    * Identifier of this dispatcher, corresponds to the full key
@@ -156,8 +149,8 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   }
 
   override def reportFailure(t: Throwable): Unit = t match {
-    case e: LogEventException ⇒ prerequisites.eventStream.publish(e.event)
-    case _                    ⇒ prerequisites.eventStream.publish(Error(t, getClass.getName, getClass, t.getMessage))
+    case e: LogEventException ⇒ eventStream.publish(e.event)
+    case _                    ⇒ eventStream.publish(Error(t, getClass.getName, getClass, t.getMessage))
   }
 
   @tailrec
@@ -320,37 +313,6 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
    * each invocation or return the same instance every time.
    */
   def dispatcher(): MessageDispatcher
-
-  /**
-   * Returns a factory for the [[akka.dispatch.Mailbox]] given the configuration.
-   * Default implementation instantiate the [[akka.dispatch.MailboxType]] specified
-   * as FQCN in mailbox-type config property. If mailbox-type is unspecified (empty)
-   * then [[akka.dispatch.UnboundedMailbox]] is used when capacity is < 1,
-   * otherwise [[akka.dispatch.BoundedMailbox]].
-   */
-  def mailboxType(): MailboxType = {
-    config.getString("mailbox-type") match {
-      case "" ⇒
-        if (config.getInt("mailbox-capacity") < 1) UnboundedMailbox()
-        else new BoundedMailbox(prerequisites.settings, config)
-      case "unbounded" ⇒ UnboundedMailbox()
-      case "bounded"   ⇒ new BoundedMailbox(prerequisites.settings, config)
-      case fqcn ⇒
-        val args = List(classOf[ActorSystem.Settings] -> prerequisites.settings, classOf[Config] -> config)
-        prerequisites.dynamicAccess.createInstanceFor[MailboxType](fqcn, args).recover({
-          case exception ⇒
-            throw new IllegalArgumentException(
-              ("Cannot instantiate MailboxType [%s], defined in [%s], " +
-                "make sure it has constructor with [akka.actor.ActorSystem.Settings, com.typesafe.config.Config] parameters")
-                .format(fqcn, config.getString("id")), exception)
-        }).get
-    }
-  }
-
-  /**
-   * Was the mailbox type configured or derived?
-   */
-  def mailBoxTypeConfigured: Boolean = config.getString("mailbox-type") != Deploy.NoMailboxGiven
 
   def configureExecutor(): ExecutorServiceConfigurator = {
     config.getString("executor") match {

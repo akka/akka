@@ -13,10 +13,12 @@ import akka.util.{ Switch, Helpers }
 import akka.japi.Util.immutableSeq
 import akka.util.Collections.EmptyImmutableSeq
 import scala.util.{ Success, Failure }
+import scala.util.control.NonFatal
 import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.annotation.implicitNotFound
 import akka.ConfigurationException
+import akka.dispatch.Mailboxes
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -559,10 +561,16 @@ private[akka] class LocalActorRefProvider private[akka] (
    */
   protected def systemGuardianStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
+  private lazy val defaultDispatcher = system.dispatchers.defaultGlobalDispatcher
+
+  private lazy val defaultMailbox = system.mailboxes.lookup(Mailboxes.DefaultMailboxId)
+
   override lazy val rootGuardian: LocalActorRef =
     new LocalActorRef(
       system,
       Props(classOf[LocalActorRefProvider.Guardian], rootGuardianStrategy),
+      defaultDispatcher,
+      defaultMailbox,
       theOneWhoWalksTheBubblesOfSpaceTime,
       rootPath) {
       override def getParent: InternalActorRef = this
@@ -581,7 +589,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     val cell = rootGuardian.underlying
     cell.reserveChild("user")
     val ref = new LocalActorRef(system, Props(classOf[LocalActorRefProvider.Guardian], guardianStrategy),
-      rootGuardian, rootPath / "user")
+      defaultDispatcher, defaultMailbox, rootGuardian, rootPath / "user")
     cell.initChild(ref)
     ref.start()
     ref
@@ -592,7 +600,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     cell.reserveChild("system")
     val ref = new LocalActorRef(
       system, Props(classOf[LocalActorRefProvider.SystemGuardian], systemGuardianStrategy, guardian),
-      rootGuardian, rootPath / "system")
+      defaultDispatcher, defaultMailbox, rootGuardian, rootPath / "system")
     cell.initChild(ref)
     ref.start()
     ref
@@ -712,19 +720,41 @@ private[akka] class LocalActorRefProvider private[akka] (
         if (!system.dispatchers.hasDispatcher(props2.dispatcher))
           throw new ConfigurationException(s"Dispatcher [${props2.dispatcher}] not configured for path $path")
 
-        if (async) new RepointableActorRef(system, props2, supervisor, path).initialize(async)
-        else new LocalActorRef(system, props2, supervisor, path)
+        try {
+          val dispatcher = system.dispatchers.lookup(props2.dispatcher)
+          val mailboxType = system.mailboxes.getMailboxType(props2, dispatcher.configurator.config)
+
+          if (async) new RepointableActorRef(system, props2, dispatcher, mailboxType, supervisor, path).initialize(async)
+          else new LocalActorRef(system, props2, dispatcher, mailboxType, supervisor, path)
+        } catch {
+          case NonFatal(e) ⇒ throw new IllegalArgumentException(
+            s"configuration problem while creating [$path] with dispatcher [${props2.dispatcher}] and mailbox [${props2.mailbox}]", e)
+        }
 
       case router ⇒
         val lookup = if (lookupDeploy) deployer.lookup(path) else None
         val fromProps = Iterator(props.deploy.copy(routerConfig = props.deploy.routerConfig withFallback router))
         val d = fromProps ++ deploy.iterator ++ lookup.iterator reduce ((a, b) ⇒ b withFallback a)
         val p = props.withRouter(d.routerConfig)
+
         if (!system.dispatchers.hasDispatcher(p.dispatcher))
           throw new ConfigurationException(s"Dispatcher [${p.dispatcher}] not configured for routees of $path")
         if (!system.dispatchers.hasDispatcher(d.routerConfig.routerDispatcher))
           throw new ConfigurationException(s"Dispatcher [${p.dispatcher}] not configured for router of $path")
-        new RoutedActorRef(system, p, supervisor, path).initialize(async)
+
+        val routerProps =
+          Props(p.deploy.copy(dispatcher = p.routerConfig.routerDispatcher),
+            classOf[RoutedActorCell.RouterCreator], Vector(p.routerConfig))
+        val routerDispatcher = system.dispatchers.lookup(p.routerConfig.routerDispatcher)
+        val routerMailbox = system.mailboxes.getMailboxType(routerProps, routerDispatcher.configurator.config)
+
+        val routeeProps = p.withRouter(NoRouter)
+        // the RouteeProvider uses context.actorOf() to create the routees, which does not allow us to pass
+        // these through, but obtain them here for early verification
+        val routeeDispatcher = system.dispatchers.lookup(p.dispatcher)
+        val routeeMailbox = system.mailboxes.getMailboxType(routeeProps, routeeDispatcher.configurator.config)
+
+        new RoutedActorRef(system, routerProps, routerDispatcher, routerMailbox, routeeProps, supervisor, path).initialize(async)
     }
   }
 
