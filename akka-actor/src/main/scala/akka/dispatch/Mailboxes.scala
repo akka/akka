@@ -147,7 +147,7 @@ private[akka] class Mailboxes(
 
   private def lookupId(queueType: Class[_]): String =
     mailboxBindings.get(queueType) match {
-      case None    ⇒ throw new IllegalArgumentException(s"Mailbox Mapping for [${queueType}] not configured")
+      case None    ⇒ throw new ConfigurationException(s"Mailbox Mapping for [${queueType}] not configured")
       case Some(s) ⇒ s
     }
 
@@ -159,10 +159,10 @@ private[akka] class Mailboxes(
           case "unbounded" ⇒ UnboundedMailbox()
           case "bounded"   ⇒ new BoundedMailbox(settings, config(id))
           case _ ⇒
-            if (!settings.config.hasPath(id)) throw new IllegalArgumentException(s"Mailbox Type [${id}] not configured")
+            if (!settings.config.hasPath(id)) throw new ConfigurationException(s"Mailbox Type [${id}] not configured")
             val conf = config(id)
             conf.getString("mailbox-type") match {
-              case "" ⇒ throw new IllegalArgumentException(s"The setting mailbox-type, defined in [$id] is empty")
+              case "" ⇒ throw new ConfigurationException(s"The setting mailbox-type, defined in [$id] is empty")
               case fqcn ⇒
                 val args = List(classOf[ActorSystem.Settings] -> settings, classOf[Config] -> conf)
                 dynamicAccess.createInstanceFor[MailboxType](fqcn, args).recover({

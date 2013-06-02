@@ -9,6 +9,7 @@ import akka.testkit._
 import akka.dispatch._
 import akka.TestUtils.verifyActorTermination
 import scala.concurrent.duration.Duration
+import akka.ConfigurationException
 
 object ActorMailboxSpec {
   val mailboxConf = ConfigFactory.parseString("""
@@ -181,7 +182,7 @@ class ActorMailboxSpec extends AkkaSpec(ActorMailboxSpec.mailboxConf) with Defau
     }
 
     "fail to create actor when an unbounded dequeu message queue is configured as mailbox overriding RequestMailbox" in {
-      intercept[IllegalArgumentException](system.actorOf(Props[BoundedQueueReportingActor], "default-unbounded-deque-override-trait"))
+      intercept[ConfigurationException](system.actorOf(Props[BoundedQueueReportingActor], "default-unbounded-deque-override-trait"))
     }
 
     "get an unbounded message queue when defined in dispatcher" in {
@@ -189,7 +190,7 @@ class ActorMailboxSpec extends AkkaSpec(ActorMailboxSpec.mailboxConf) with Defau
     }
 
     "fail to create actor when an unbounded message queue is defined in dispatcher overriding RequestMailbox" in {
-      intercept[IllegalArgumentException](system.actorOf(Props[BoundedQueueReportingActor], "unbounded-default-override-trait"))
+      intercept[ConfigurationException](system.actorOf(Props[BoundedQueueReportingActor], "unbounded-default-override-trait"))
     }
 
     "get a bounded message queue when it's configured as mailbox overriding unbounded in dispatcher" in {
@@ -219,11 +220,11 @@ class ActorMailboxSpec extends AkkaSpec(ActorMailboxSpec.mailboxConf) with Defau
     }
 
     "fail with a unbounded deque-based message queue if configured and required" in {
-      intercept[IllegalArgumentException](system.actorOf(Props[StashQueueReportingActor], "bounded-deque-require-unbounded-configured"))
+      intercept[ConfigurationException](system.actorOf(Props[StashQueueReportingActor], "bounded-deque-require-unbounded-configured"))
     }
 
     "fail with a bounded deque-based message queue if not configured" in {
-      intercept[IllegalArgumentException](system.actorOf(Props[StashQueueReportingActor], "bounded-deque-require-unbounded-unconfigured"))
+      intercept[ConfigurationException](system.actorOf(Props[StashQueueReportingActor], "bounded-deque-require-unbounded-unconfigured"))
     }
 
     "get a bounded deque-based message queue if configured and required with Props" in {
@@ -236,7 +237,7 @@ class ActorMailboxSpec extends AkkaSpec(ActorMailboxSpec.mailboxConf) with Defau
     }
 
     "fail with a unbounded deque-based message queue if configured and required with Props" in {
-      intercept[IllegalArgumentException](system.actorOf(
+      intercept[ConfigurationException](system.actorOf(
         Props[StashQueueReportingActor]
           .withDispatcher("requiring-bounded-dispatcher")
           .withMailbox("akka.actor.mailbox.unbounded-deque-based"),
@@ -244,7 +245,7 @@ class ActorMailboxSpec extends AkkaSpec(ActorMailboxSpec.mailboxConf) with Defau
     }
 
     "fail with a bounded deque-based message queue if not configured with Props" in {
-      intercept[IllegalArgumentException](system.actorOf(
+      intercept[ConfigurationException](system.actorOf(
         Props[StashQueueReportingActor]
           .withDispatcher("requiring-bounded-dispatcher"),
         "bounded-deque-require-unbounded-unconfigured-props"))
@@ -259,14 +260,14 @@ class ActorMailboxSpec extends AkkaSpec(ActorMailboxSpec.mailboxConf) with Defau
     }
 
     "fail with a unbounded deque-based message queue if configured and required with Props (dispatcher)" in {
-      intercept[IllegalArgumentException](system.actorOf(
+      intercept[ConfigurationException](system.actorOf(
         Props[StashQueueReportingActor]
           .withDispatcher("requiring-bounded-dispatcher"),
         "bounded-deque-require-unbounded-configured-props-disp"))
     }
 
     "fail with a bounded deque-based message queue if not configured with Props (dispatcher)" in {
-      intercept[IllegalArgumentException](system.actorOf(
+      intercept[ConfigurationException](system.actorOf(
         Props[StashQueueReportingActor]
           .withDispatcher("requiring-bounded-dispatcher"),
         "bounded-deque-require-unbounded-unconfigured-props-disp"))
@@ -281,14 +282,14 @@ class ActorMailboxSpec extends AkkaSpec(ActorMailboxSpec.mailboxConf) with Defau
     }
 
     "fail with a unbounded deque-based message queue if configured and required with Props (mailbox)" in {
-      intercept[IllegalArgumentException](system.actorOf(
+      intercept[ConfigurationException](system.actorOf(
         Props[StashQueueReportingActor]
           .withMailbox("akka.actor.mailbox.unbounded-deque-based"),
         "bounded-deque-require-unbounded-configured-props-mail"))
     }
 
     "fail with a bounded deque-based message queue if not configured with Props (mailbox)" in {
-      intercept[IllegalArgumentException](system.actorOf(
+      intercept[ConfigurationException](system.actorOf(
         Props[StashQueueReportingActor],
         "bounded-deque-require-unbounded-unconfigured-props-mail"))
     }

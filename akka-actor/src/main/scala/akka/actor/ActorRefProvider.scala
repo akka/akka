@@ -727,7 +727,7 @@ private[akka] class LocalActorRefProvider private[akka] (
           if (async) new RepointableActorRef(system, props2, dispatcher, mailboxType, supervisor, path).initialize(async)
           else new LocalActorRef(system, props2, dispatcher, mailboxType, supervisor, path)
         } catch {
-          case NonFatal(e) ⇒ throw new IllegalArgumentException(
+          case NonFatal(e) ⇒ throw new ConfigurationException(
             s"configuration problem while creating [$path] with dispatcher [${props2.dispatcher}] and mailbox [${props2.mailbox}]", e)
         }
 
@@ -745,16 +745,23 @@ private[akka] class LocalActorRefProvider private[akka] (
         val routerProps =
           Props(p.deploy.copy(dispatcher = p.routerConfig.routerDispatcher),
             classOf[RoutedActorCell.RouterCreator], Vector(p.routerConfig))
-        val routerDispatcher = system.dispatchers.lookup(p.routerConfig.routerDispatcher)
-        val routerMailbox = system.mailboxes.getMailboxType(routerProps, routerDispatcher.configurator.config)
-
         val routeeProps = p.withRouter(NoRouter)
-        // the RouteeProvider uses context.actorOf() to create the routees, which does not allow us to pass
-        // these through, but obtain them here for early verification
-        val routeeDispatcher = system.dispatchers.lookup(p.dispatcher)
-        val routeeMailbox = system.mailboxes.getMailboxType(routeeProps, routeeDispatcher.configurator.config)
 
-        new RoutedActorRef(system, routerProps, routerDispatcher, routerMailbox, routeeProps, supervisor, path).initialize(async)
+        try {
+          val routerDispatcher = system.dispatchers.lookup(p.routerConfig.routerDispatcher)
+          val routerMailbox = system.mailboxes.getMailboxType(routerProps, routerDispatcher.configurator.config)
+
+          // the RouteeProvider uses context.actorOf() to create the routees, which does not allow us to pass
+          // these through, but obtain them here for early verification
+          val routeeDispatcher = system.dispatchers.lookup(p.dispatcher)
+          val routeeMailbox = system.mailboxes.getMailboxType(routeeProps, routeeDispatcher.configurator.config)
+
+          new RoutedActorRef(system, routerProps, routerDispatcher, routerMailbox, routeeProps, supervisor, path).initialize(async)
+        } catch {
+          case NonFatal(e) ⇒ throw new ConfigurationException(
+            s"configuration problem while creating [$path] with router dispatcher [${routerProps.dispatcher}] and mailbox [${routerProps.mailbox}] " +
+              s" and routee dispatcher [${routeeProps.dispatcher}] and mailbox [${routeeProps.mailbox}]", e)
+        }
     }
   }
 

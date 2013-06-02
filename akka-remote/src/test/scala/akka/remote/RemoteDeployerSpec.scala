@@ -7,6 +7,7 @@ import akka.testkit._
 import akka.actor._
 import akka.routing._
 import com.typesafe.config._
+import akka.ConfigurationException
 
 object RemoteDeployerSpec {
   val deployerConf = ConfigFactory.parseString("""
@@ -47,7 +48,7 @@ class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) {
     }
 
     "reject remote deployment when the source requires LocalScope" in {
-      intercept[IllegalArgumentException] {
+      intercept[ConfigurationException] {
         system.actorOf(Props.empty.withDeploy(Deploy.local), "service2")
       }.getMessage must be === "configuration requested remote deployment for local-only Props at [akka://RemoteDeployerSpec/user/service2]"
     }
