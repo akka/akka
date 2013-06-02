@@ -167,7 +167,7 @@ class SslTlsSupportSpec extends AkkaSpec {
         context watch handler
         //#server
         val pipeline = context.actorOf(TcpPipelineHandler.props(
-          init, sender, handler).withDeploy(Deploy.local))
+          init, connection, handler).withDeploy(Deploy.local))
 
         connection ! Tcp.Register(pipeline)
       //#server
