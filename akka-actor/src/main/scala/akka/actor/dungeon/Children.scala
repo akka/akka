@@ -168,7 +168,7 @@ private[akka] trait Children { this: ActorCell ⇒
   }
 
   private def makeChild(cell: ActorCell, props: Props, name: String, async: Boolean, systemService: Boolean): ActorRef = {
-    if (cell.system.settings.SerializeAllCreators && props.deploy.scope != LocalScope)
+    if (cell.system.settings.SerializeAllCreators && !systemService && props.deploy.scope != LocalScope)
       try {
         val ser = SerializationExtension(cell.system)
         props.args forall (arg ⇒
