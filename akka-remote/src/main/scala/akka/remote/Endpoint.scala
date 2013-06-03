@@ -434,7 +434,7 @@ private[remote] class EndpointWriter(
     startWith(
       handle match {
         case Some(h) ⇒
-          reader = startReadEndpoint(h)
+          reader = Some(startReadEndpoint(h))
           Writing
         case None ⇒
           transport.associate(remoteAddress) pipeTo self
@@ -455,7 +455,7 @@ private[remote] class EndpointWriter(
       // Assert handle == None?
       context.parent ! ReliableDeliverySupervisor.GotUid(inboundHandle.handshakeInfo.uid)
       handle = Some(inboundHandle)
-      reader = startReadEndpoint(inboundHandle)
+      reader = Some(startReadEndpoint(inboundHandle))
       goto(Writing)
 
   }
@@ -524,22 +524,20 @@ private[remote] class EndpointWriter(
   }
 
   when(Handoff) {
-    case Event(Terminated(_), _) ⇒
-      reader = startReadEndpoint(handle.get)
+    case Event(Terminated(r), _) if r == reader.orNull ⇒
+      reader = Some(startReadEndpoint(handle.get))
       unstashAll()
       goto(Writing)
 
     case Event(Send(msg, senderOption, recipient, _), _) ⇒
       stash()
       stay()
-
   }
 
   whenUnhandled {
     case Event(Terminated(r), _) if r == reader.orNull ⇒
       publishAndThrow(new EndpointDisassociatedException("Disassociated"))
     case Event(TakeOver(newHandle), _) ⇒
-      // Shutdown old reader
       handle foreach { _.disassociate() }
       reader foreach context.stop
       handle = Some(newHandle)
@@ -577,20 +575,20 @@ private[remote] class EndpointWriter(
   private def trySendPureAck(): Unit = for (h ← handle; ack ← lastAck)
     if (h.write(codec.constructPureAck(ack))) ackDeadline = newAckDeadline
 
-  private def startReadEndpoint(handle: AkkaProtocolHandle): Some[ActorRef] = {
+  private def startReadEndpoint(handle: AkkaProtocolHandle): ActorRef = {
     val newReader =
       context.watch(context.actorOf(
         EndpointReader.props(localAddress, remoteAddress, transport, settings, codec,
           msgDispatch, inbound, reliableDeliverySupervisor, receiveBuffers).withDeploy(Deploy.local),
         "endpointReader-" + AddressUrlEncoder(remoteAddress) + "-" + readerId.next()))
     handle.readHandlerPromise.success(ActorHandleEventListener(newReader))
-    Some(newReader)
+    newReader
   }
 
   private def serializeMessage(msg: Any): SerializedMessage = handle match {
     case Some(h) ⇒
       Serialization.currentTransportInformation.withValue(Serialization.Information(h.localAddress, extendedSystem)) {
-        (MessageSerializer.serialize(extendedSystem, msg.asInstanceOf[AnyRef]))
+        MessageSerializer.serialize(extendedSystem, msg.asInstanceOf[AnyRef])
       }
     case None ⇒
       throw new EndpointException("Internal error: No handle was present during serialization of outbound message.")
@@ -621,7 +619,7 @@ private[remote] object EndpointReader {
 /**
  * INTERNAL API
  */
-private[remote] class EndpointReader(
+private[remote] final class EndpointReader(
   localAddress: Address,
   remoteAddress: Address,
   transport: Transport,
@@ -632,66 +630,51 @@ private[remote] class EndpointReader(
   val reliableDeliverySupervisor: Option[ActorRef],
   val receiveBuffers: ConcurrentHashMap[Link, AckedReceiveBuffer[Message]]) extends EndpointActor(localAddress, remoteAddress, transport, settings, codec) {
 
-  import EndpointWriter.OutboundAck
-
   val provider = RARP(context.system).provider
-  var ackedReceiveBuffer = new AckedReceiveBuffer[Message]
-
-  override def preStart(): Unit = {
+  var ackedReceiveBuffer: AckedReceiveBuffer[Message] =
     receiveBuffers.get(Link(localAddress, remoteAddress)) match {
-      case null ⇒
-      case buf ⇒
-        ackedReceiveBuffer = buf
-        deliverAndAck()
+      case null ⇒ new AckedReceiveBuffer[Message]
+      case buf  ⇒ deliverAndAck(buf)
     }
-  }
 
   override def postStop(): Unit = {
-
     @tailrec
-    def updateSavedState(key: Link, expectedState: AckedReceiveBuffer[Message]): Unit = {
-      if (expectedState eq null) {
-        if (receiveBuffers.putIfAbsent(key, ackedReceiveBuffer) ne null) updateSavedState(key, receiveBuffers.get(key))
-      } else if (!receiveBuffers.replace(key, expectedState, expectedState.mergeFrom(ackedReceiveBuffer)))
-        updateSavedState(key, receiveBuffers.get(key))
+    def updateSavedState(key: Link): Boolean = receiveBuffers.get(key) match {
+      case null ⇒ receiveBuffers.putIfAbsent(key, ackedReceiveBuffer) == null || updateSavedState(key)
+      case buf  ⇒ receiveBuffers.replace(key, buf, buf.mergeFrom(ackedReceiveBuffer)) || updateSavedState(key)
     }
 
-    val key = Link(localAddress, remoteAddress)
-    updateSavedState(key, receiveBuffers.get(key))
+    updateSavedState(Link(localAddress, remoteAddress))
   }
 
   override def receive: Receive = {
-    case Disassociated ⇒ context.stop(self)
-
     case InboundPayload(p) if p.size <= transport.maximumPayloadBytes ⇒
-      val (ackOption, msgOption) = tryDecodeMessageAndAck(p)
+      tryDecodeMessageAndAck(p) match {
+        case (None, None) ⇒ () // Nothing to see
+        case (ackOption, msgOption) ⇒
+          for (ack ← ackOption; reliableDelivery ← reliableDeliverySupervisor) reliableDelivery ! ack
 
-      for (ack ← ackOption; reliableDelivery ← reliableDeliverySupervisor) reliableDelivery ! ack
-
-      msgOption match {
-        case Some(msg) ⇒
-          if (msg.reliableDeliveryEnabled) {
-            ackedReceiveBuffer = ackedReceiveBuffer.receive(msg)
-            deliverAndAck()
-          } else msgDispatch.dispatch(msg.recipient, msg.recipientAddress, msg.serializedMessage, msg.senderOption)
-
-        case None ⇒
+          for (msg ← msgOption) {
+            if (msg.reliableDeliveryEnabled) ackedReceiveBuffer = deliverAndAck(ackedReceiveBuffer.receive(msg))
+            else msgDispatch.dispatch(msg.recipient, msg.recipientAddress, msg.serializedMessage, msg.senderOption)
+          }
       }
 
     case InboundPayload(oversized) ⇒
-      publishError(new OversizedPayloadException(s"Discarding oversized payload received: " +
-        s"max allowed size [${transport.maximumPayloadBytes}] bytes, actual size [${oversized.size}] bytes."))
+      publishError(new OversizedPayloadException("Discarding oversized payload received: max allowed size " +
+        s"[${transport.maximumPayloadBytes}] bytes, actual size [${oversized.size}] bytes."))
 
+    case Disassociated ⇒ context stop self
   }
 
-  private def deliverAndAck(): Unit = {
-    val (updatedBuffer, deliver, ack) = ackedReceiveBuffer.extractDeliverable
-    ackedReceiveBuffer = updatedBuffer
+  private def deliverAndAck(buffer: AckedReceiveBuffer[Message]): AckedReceiveBuffer[Message] = {
+    val (updatedBuffer, deliver, ack) = buffer.extractDeliverable
     // Notify writer that some messages can be acked
-    context.parent ! OutboundAck(ack)
-    deliver foreach { m ⇒
-      msgDispatch.dispatch(m.recipient, m.recipientAddress, m.serializedMessage, m.senderOption)
+    context.parent ! EndpointWriter.OutboundAck(ack)
+    deliver foreach {
+      m ⇒ msgDispatch.dispatch(m.recipient, m.recipientAddress, m.serializedMessage, m.senderOption)
     }
+    updatedBuffer
   }
 
   private def tryDecodeMessageAndAck(pdu: ByteString): (Option[Ack], Option[Message]) = try {
