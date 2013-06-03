@@ -16,7 +16,7 @@ master_doc = 'index'
 exclude_patterns = ['_build', 'pending', 'disabled']
 
 project = u'Akka'
-copyright = u'2011, Typesafe Inc'
+copyright = u'2011-2013, Typesafe Inc'
 version = '@version@'
 release = '@version@'
 
@@ -71,7 +71,9 @@ latex_paper_size = 'a4'
 latex_font_size = '10pt'
 
 latex_documents = [
-  ('index', 'Akka.tex', u' Akka Documentation',
+  ('java', 'AkkaJava.tex', u' Akka Java Documentation',
+   u'Typesafe Inc', 'manual'),
+  ('scala', 'AkkaScala.tex', u' Akka Scala Documentation',
    u'Typesafe Inc', 'manual'),
 ]
 
