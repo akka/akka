@@ -182,7 +182,7 @@ private[netty] abstract class ServerHandler(protected final val transport: Netty
       case listener: AssociationEventListener ⇒
         val remoteAddress = NettyTransport.addressFromSocketAddress(remoteSocketAddress, transport.schemeIdentifier,
           transport.system.name, hostName = None).getOrElse(
-            throw new NettyTransportException(s"Unknown remote address type [${remoteSocketAddress.getClass.getName}]"))
+            throw new NettyTransportException(s"Unknown inbound remote address type [${remoteSocketAddress.getClass.getName}]"))
         init(channel, remoteSocketAddress, remoteAddress, msg) { listener notify InboundAssociation(_) }
     }
   }
@@ -414,7 +414,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
                   case listener ⇒ udpConnectionTable.put(addr, listener)
                 }
                 handle
-              case unknown ⇒ throw new NettyTransportException(s"Unknown remote address type [${unknown.getClass.getName}]")
+              case unknown ⇒ throw new NettyTransportException(s"Unknown outbound remote address type [${unknown.getClass.getName}]")
             }
           }
         else
