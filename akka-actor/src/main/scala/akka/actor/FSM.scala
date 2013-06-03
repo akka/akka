@@ -646,11 +646,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
   private def terminate(nextState: State): Unit = {
     if (currentState.stopReason.isEmpty) {
       val reason = nextState.stopReason.get
-      reason match {
-        case Failure(ex: Throwable) ⇒ log.error(ex, "terminating due to Failure")
-        case Failure(msg: AnyRef)   ⇒ log.error(msg.toString)
-        case _                      ⇒
-      }
+      logTermination(reason)
       for (timer ← timers.values) timer.cancel()
       timers.clear()
       currentState = nextState
@@ -659,6 +655,16 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
       if (terminateEvent.isDefinedAt(stopEvent))
         terminateEvent(stopEvent)
     }
+  }
+
+  /**
+   * By default [[Failure]] is logged at error level and other reason
+   * types are not logged. It is possible to override this behavior.
+   */
+  protected def logTermination(reason: Reason): Unit = reason match {
+    case Failure(ex: Throwable) ⇒ log.error(ex, "terminating due to Failure")
+    case Failure(msg: AnyRef)   ⇒ log.error(msg.toString)
+    case _                      ⇒
   }
 
   /**

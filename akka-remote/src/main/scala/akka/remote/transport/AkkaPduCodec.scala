@@ -211,7 +211,8 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
             cookie))
       case CommandType.SHUTDOWN  ⇒ Disassociate
       case CommandType.HEARTBEAT ⇒ Heartbeat
-      case _                     ⇒ throw new PduCodecException("Decoding of control PDU failed: format invalid", null)
+      case x ⇒
+        throw new PduCodecException(s"Decoding of control PDU failed, invalid format, unexpected: [${x}]", null)
     }
   }
 
