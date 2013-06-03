@@ -19,7 +19,6 @@ import akka.actor.Deploy
 trait DispatcherPrerequisites {
   def threadFactory: ThreadFactory
   def eventStream: EventStream
-  def deadLetterMailbox: Mailbox
   def scheduler: Scheduler
   def dynamicAccess: DynamicAccess
   def settings: ActorSystem.Settings
@@ -32,7 +31,6 @@ trait DispatcherPrerequisites {
 private[akka] case class DefaultDispatcherPrerequisites(
   val threadFactory: ThreadFactory,
   val eventStream: EventStream,
-  val deadLetterMailbox: Mailbox,
   val scheduler: Scheduler,
   val dynamicAccess: DynamicAccess,
   val settings: ActorSystem.Settings,
@@ -188,11 +186,14 @@ class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisi
   override def dispatcher(): MessageDispatcher = instance
 }
 
-object BalancingDispatcherConfigurator {
+/**
+ * INTERNAL API
+ */
+private[akka] object BalancingDispatcherConfigurator {
   private val defaultRequirement =
     ConfigFactory.parseString("mailbox-requirement = akka.dispatch.MultipleConsumerSemantics")
   def amendConfig(config: Config): Config =
-    if (config.getString("mailbox-requirement") != "") config
+    if (config.getString("mailbox-requirement") != Mailboxes.NoMailboxRequirement) config
     else defaultRequirement.withFallback(config)
 }
 

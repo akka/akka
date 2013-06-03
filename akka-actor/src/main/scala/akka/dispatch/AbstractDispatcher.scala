@@ -87,7 +87,10 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
 
   import MessageDispatcher._
   import AbstractMessageDispatcher.{ inhabitantsOffset, shutdownScheduleOffset }
-  import configurator.prerequisites._
+  import configurator.prerequisites
+
+  val mailboxes = prerequisites.mailboxes
+  val eventStream = prerequisites.eventStream
 
   @volatile private[this] var _inhabitantsDoNotCallMeDirectly: Long = _ // DO NOT TOUCH!
   @volatile private[this] var _shutdownScheduleDoNotCallMeDirectly: Int = _ // DO NOT TOUCH!
@@ -168,7 +171,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
 
   private def scheduleShutdownAction(): Unit = {
     // IllegalStateException is thrown if scheduler has been shutdown
-    try scheduler.scheduleOnce(shutdownTimeout, shutdownAction)(new ExecutionContext {
+    try prerequisites.scheduler.scheduleOnce(shutdownTimeout, shutdownAction)(new ExecutionContext {
       override def execute(runnable: Runnable): Unit = runnable.run()
       override def reportFailure(t: Throwable): Unit = MessageDispatcher.this.reportFailure(t)
     }) catch {
@@ -196,7 +199,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
   protected[akka] def unregister(actor: ActorCell) {
     if (debug) actors.remove(this, actor.self)
     addInhabitants(-1)
-    val mailBox = actor.swapMailbox(deadLetterMailbox)
+    val mailBox = actor.swapMailbox(mailboxes.deadLetterMailbox)
     mailBox.becomeClosed()
     mailBox.cleanUp()
   }

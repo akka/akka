@@ -79,8 +79,8 @@ dispatcher which will execute it. Then the mailbox is determined as follows:
 
 6. The default mailbox ``akka.actor.default-mailbox`` will be used.
 
-Which Configuration is pass to the Mailbox Type
------------------------------------------------
+Which Configuration is passed to the Mailbox Type
+-------------------------------------------------
 
 Each mailbox type is implemented by a class which extends :class:`MailboxType`
 and takes two constructor arguments: a :class:`ActorSystem.Settings` object and

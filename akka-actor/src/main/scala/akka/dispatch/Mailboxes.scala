@@ -18,16 +18,40 @@ import akka.actor.Deploy
 import scala.util.Try
 import scala.util.Failure
 import scala.util.control.NonFatal
-import akka.dispatch.DispatcherPrerequisites
+import akka.actor.ActorRef
+import akka.actor.DeadLetter
+import akka.dispatch.sysmsg.SystemMessage
+import akka.dispatch.sysmsg.LatestFirstSystemMessageList
+import akka.dispatch.sysmsg.EarliestFirstSystemMessageList
+import akka.dispatch.sysmsg.SystemMessageList
 
 object Mailboxes {
   final val DefaultMailboxId = "akka.actor.default-mailbox"
+  final val NoMailboxRequirement = ""
 }
 
 private[akka] class Mailboxes(
   val settings: ActorSystem.Settings,
   val eventStream: EventStream,
-  dynamicAccess: DynamicAccess) {
+  dynamicAccess: DynamicAccess,
+  deadLetters: ActorRef) {
+
+  import Mailboxes._
+
+  val deadLetterMailbox: Mailbox = new Mailbox(new MessageQueue {
+    def enqueue(receiver: ActorRef, envelope: Envelope): Unit =
+      deadLetters.tell(DeadLetter(envelope.message, envelope.sender, receiver), envelope.sender)
+    def dequeue() = null
+    def hasMessages = false
+    def numberOfMessages = 0
+    def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = ()
+  }) {
+    becomeClosed()
+    def systemEnqueue(receiver: ActorRef, handle: SystemMessage): Unit =
+      deadLetters ! DeadLetter(handle, receiver, receiver)
+    def systemDrain(newContents: LatestFirstSystemMessageList): EarliestFirstSystemMessageList = SystemMessageList.ENil
+    def hasSystemMessages = false
+  }
 
   private val mailboxTypeConfigurators = new ConcurrentHashMap[String, MailboxType]
 
@@ -72,8 +96,8 @@ private[akka] class Mailboxes(
   private var mailboxSizeWarningIssued = false
 
   def getMailboxRequirement(config: Config) = config.getString("mailbox-requirement") match {
-    case "" ⇒ classOf[MessageQueue]
-    case x  ⇒ dynamicAccess.getClassFor[AnyRef](x).get
+    case NoMailboxRequirement ⇒ classOf[MessageQueue]
+    case x                    ⇒ dynamicAccess.getClassFor[AnyRef](x).get
   }
 
   def getProducedMessageQueueType(mailboxType: MailboxType): Class[_] = {
@@ -136,7 +160,7 @@ private[akka] class Mailboxes(
     } else if (hasMailboxRequirement) {
       verifyRequirements(lookupByQueueType(mailboxRequirement))
     } else {
-      verifyRequirements(lookup(Mailboxes.DefaultMailboxId))
+      verifyRequirements(lookup(DefaultMailboxId))
     }
   }
 
@@ -156,6 +180,7 @@ private[akka] class Mailboxes(
       case null ⇒
         // It doesn't matter if we create a mailbox type configurator that isn't used due to concurrent lookup.
         val newConfigurator = id match {
+          // TODO RK remove these two for Akka 2.3
           case "unbounded" ⇒ UnboundedMailbox()
           case "bounded"   ⇒ new BoundedMailbox(settings, config(id))
           case _ ⇒
@@ -184,7 +209,7 @@ private[akka] class Mailboxes(
     }
   }
 
-  private val defaultMailboxConfig = settings.config.getConfig(Mailboxes.DefaultMailboxId)
+  private val defaultMailboxConfig = settings.config.getConfig(DefaultMailboxId)
 
   //INTERNAL API
   private def config(id: String): Config = {

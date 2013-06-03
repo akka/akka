@@ -544,25 +544,10 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   def deadLetters: ActorRef = provider.deadLetters
 
-  val deadLetterMailbox: Mailbox = new Mailbox(new MessageQueue {
-    def enqueue(receiver: ActorRef, envelope: Envelope): Unit =
-      deadLetters.tell(DeadLetter(envelope.message, envelope.sender, receiver), envelope.sender)
-    def dequeue() = null
-    def hasMessages = false
-    def numberOfMessages = 0
-    def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = ()
-  }) {
-    becomeClosed()
-    def systemEnqueue(receiver: ActorRef, handle: SystemMessage): Unit =
-      deadLetters ! DeadLetter(handle, receiver, receiver)
-    def systemDrain(newContents: LatestFirstSystemMessageList): EarliestFirstSystemMessageList = SystemMessageList.ENil
-    def hasSystemMessages = false
-  }
-
-  val mailboxes: Mailboxes = new Mailboxes(settings, eventStream, dynamicAccess)
+  val mailboxes: Mailboxes = new Mailboxes(settings, eventStream, dynamicAccess, deadLetters)
 
   val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(
-    threadFactory, eventStream, deadLetterMailbox, scheduler, dynamicAccess, settings, mailboxes))
+    threadFactory, eventStream, scheduler, dynamicAccess, settings, mailboxes))
 
   val dispatcher: ExecutionContext = dispatchers.defaultGlobalDispatcher
 

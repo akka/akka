@@ -269,7 +269,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
      * if we closed the mailbox, we must dump the remaining system messages
      * to deadLetters (this is essential for DeathWatch)
      */
-    val dlm = actor.systemImpl.deadLetterMailbox
+    val dlm = actor.dispatcher.mailboxes.deadLetterMailbox
     while (messageList.nonEmpty) {
       val msg = messageList.head
       messageList = messageList.tail
@@ -295,7 +295,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    */
   protected[dispatch] def cleanUp(): Unit =
     if (actor ne null) { // actor is null for the deadLetterMailbox
-      val dlm = actor.systemImpl.deadLetterMailbox
+      val dlm = actor.dispatcher.mailboxes.deadLetterMailbox
       var messageList = systemDrain(new LatestFirstSystemMessageList(NoMessage))
       while (messageList.nonEmpty) {
         // message must be “virgin” before being able to systemEnqueue again
@@ -306,7 +306,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       }
 
       if (messageQueue ne null) // needed for CallingThreadDispatcher, which never calls Mailbox.run()
-        messageQueue.cleanUp(actor.self, actor.systemImpl.deadLetterMailbox.messageQueue)
+        messageQueue.cleanUp(actor.self, actor.dispatcher.mailboxes.deadLetterMailbox.messageQueue)
     }
 }
 
@@ -394,7 +394,7 @@ private[akka] trait DefaultSystemMessageQueue { self: Mailbox ⇒
     if (Mailbox.debug) println(receiver + " having enqueued " + message)
     val currentList = systemQueueGet
     if (currentList.head == NoMessage) {
-      if (actor ne null) actor.systemImpl.deadLetterMailbox.systemEnqueue(receiver, message)
+      if (actor ne null) actor.dispatcher.mailboxes.deadLetterMailbox.systemEnqueue(receiver, message)
     } else {
       if (!systemQueuePut(currentList, message :: currentList)) {
         message.unlink()

@@ -85,12 +85,12 @@ Search                               Replace with
 If you need to convert from Java to ``scala.collection.immutable.Seq`` or ``scala.collection.immutable.Iterable`` you should use ``akka.japi.Util.immutableSeq(…)``,
 and if you need to convert from Scala you can simply switch to using immutable collections yourself or use the ``to[immutable.<collection-type>]`` method.
 
-ActorContext & ActorRefFactory dispatcher
+ActorContext & ActorRefFactory Dispatcher
 =========================================
 
 The return type of ``ActorContext``'s and ``ActorRefFactory``'s ``dispatcher``-method now returns ``ExecutionContext`` instead of ``MessageDispatcher``.
 
-Removed fallback to default dispatcher
+Removed Fallback to Default Dispatcher
 ======================================
 
 If deploying an actor with a specific dispatcher, e.g.
@@ -105,6 +105,17 @@ Akka 2.2 introduces the possibility to add dispatcher configuration to the
 
 The fallback was removed because in many cases its application was neither
 intended nor noticed.
+
+Changed Configuration Section for Dispatcher & Mailbox
+======================================================
+
+The mailbox configuration defaults moved from ``akka.actor.default-dispatcher``
+to ``akka.actor.default-mailbox``. You will not have to change anything unless
+your configuration overrides a setting in the default dispatcher section.
+
+The ``mailbox-type`` now requires a fully-qualified class name for the mailbox
+to use. The special words ``bounded`` and ``unbounded`` are retained for a
+migration period throughout the 2.2 series.
 
 API changes to FSM and TestFSMRef
 =================================
