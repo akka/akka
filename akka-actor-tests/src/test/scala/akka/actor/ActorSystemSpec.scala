@@ -84,12 +84,10 @@ object ActorSystemSpec {
 
   class SlowDispatcher(_config: Config, _prerequisites: DispatcherPrerequisites) extends MessageDispatcherConfigurator(_config, _prerequisites) {
     private val instance = new Dispatcher(
-      prerequisites,
+      this,
       config.getString("id"),
       config.getInt("throughput"),
       Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
-      mailboxType,
-      mailBoxTypeConfigured,
       configureExecutor(),
       Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) {
       val doneIt = new Switch

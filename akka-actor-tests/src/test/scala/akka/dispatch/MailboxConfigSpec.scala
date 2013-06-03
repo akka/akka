@@ -209,7 +209,7 @@ object CustomMailboxSpec {
     }
   }
 
-  class MyMailbox(owner: ActorRef) extends QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
+  class MyMailbox(owner: ActorRef) extends UnboundedQueueBasedMessageQueue {
     final val queue = new ConcurrentLinkedQueue[Envelope]()
   }
 }

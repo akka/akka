@@ -8,7 +8,7 @@ import java.util.concurrent.{ ConcurrentHashMap, ConcurrentLinkedQueue }
 import com.typesafe.config.Config
 
 import akka.actor.{ ActorContext, ActorRef, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
-import akka.dispatch.{ Envelope, MailboxType, MessageQueue, QueueBasedMessageQueue, UnboundedMessageQueueSemantics }
+import akka.dispatch.{ Envelope, MailboxType, MessageQueue, UnboundedQueueBasedMessageQueue }
 
 object PeekMailboxExtension extends ExtensionId[PeekMailboxExtension] with ExtensionIdProvider {
   def lookup = this
@@ -53,7 +53,7 @@ class PeekMailboxType(settings: ActorSystem.Settings, config: Config) extends Ma
 }
 
 class PeekMailbox(owner: ActorRef, system: ActorSystem, maxRetries: Int)
-  extends QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
+  extends UnboundedQueueBasedMessageQueue {
   final val queue = new ConcurrentLinkedQueue[Envelope]()
 
   /*

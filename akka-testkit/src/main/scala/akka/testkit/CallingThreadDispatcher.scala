@@ -126,18 +126,16 @@ object CallingThreadDispatcher {
  *
  * @since 1.1
  */
-class CallingThreadDispatcher(
-  _prerequisites: DispatcherPrerequisites,
-  val mailboxType: MailboxType,
-  val mailboxTypeConfigured: Boolean) extends MessageDispatcher(_prerequisites) {
+class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) extends MessageDispatcher(_configurator) {
   import CallingThreadDispatcher._
+  import configurator.prerequisites._
 
-  val log = akka.event.Logging(prerequisites.eventStream, "CallingThreadDispatcher")
+  val log = akka.event.Logging(eventStream, "CallingThreadDispatcher")
 
   override def id: String = Id
 
-  protected[akka] override def createMailbox(actor: akka.actor.Cell) =
-    new CallingThreadMailbox(actor, getMailboxType(actor, mailboxType, mailboxTypeConfigured))
+  protected[akka] override def createMailbox(actor: akka.actor.Cell, mailboxType: MailboxType) =
+    new CallingThreadMailbox(actor, mailboxType)
 
   protected[akka] override def shutdown() {}
 
@@ -303,7 +301,7 @@ class CallingThreadDispatcher(
 class CallingThreadDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
   extends MessageDispatcherConfigurator(config, prerequisites) {
 
-  private val instance = new CallingThreadDispatcher(prerequisites, mailboxType(), mailBoxTypeConfigured)
+  private val instance = new CallingThreadDispatcher(this)
 
   override def dispatcher(): MessageDispatcher = instance
 }
@@ -342,7 +340,7 @@ class CallingThreadMailbox(_receiver: akka.actor.Cell, val mailboxType: MailboxT
       val qq = queue
       CallingThreadDispatcherQueues(actor.system).gatherFromAllOtherQueues(this, qq)
       super.cleanUp()
-      qq.cleanUp(actor.self, actor.systemImpl.deadLetterMailbox.messageQueue)
+      qq.cleanUp(actor.self, actor.dispatcher.mailboxes.deadLetterMailbox.messageQueue)
       q.remove()
     }
   }

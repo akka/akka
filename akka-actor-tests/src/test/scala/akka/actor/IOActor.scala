@@ -269,7 +269,7 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
         case Failure(e) if check(n, e) ⇒
           if (delay.isDefined) {
             executor match {
-              case m: MessageDispatcher ⇒ m.prerequisites.scheduler.scheduleOnce(delay.get)(run(n + 1))
+              case m: MessageDispatcher ⇒ m.configurator.prerequisites.scheduler.scheduleOnce(delay.get)(run(n + 1))
               case _                    ⇒ // Thread.sleep, ignore, or other?
             }
           } else run(n + 1)

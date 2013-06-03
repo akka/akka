@@ -529,12 +529,10 @@ object DispatcherModelSpec {
     extends MessageDispatcherConfigurator(config, prerequisites) {
 
     private val instance: MessageDispatcher =
-      new Dispatcher(prerequisites,
+      new Dispatcher(this,
         config.getString("id"),
         config.getInt("throughput"),
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
-        mailboxType,
-        mailBoxTypeConfigured,
         configureExecutor(),
         Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor
 
@@ -600,20 +598,17 @@ object BalancingDispatcherModelSpec {
   }
 
   class BalancingMessageDispatcherInterceptorConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
-    extends MessageDispatcherConfigurator(config, prerequisites) {
+    extends BalancingDispatcherConfigurator(config, prerequisites) {
 
-    private val instance: MessageDispatcher =
-      new BalancingDispatcher(prerequisites,
+    override protected def create(mailboxType: MailboxType): BalancingDispatcher =
+      new BalancingDispatcher(this,
         config.getString("id"),
         config.getInt("throughput"),
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
         mailboxType,
-        mailBoxTypeConfigured,
         configureExecutor(),
         Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS),
         config.getBoolean("attempt-teamwork")) with MessageDispatcherInterceptor
-
-    override def dispatcher(): MessageDispatcher = instance
   }
 }
 

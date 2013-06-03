@@ -63,9 +63,6 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         {
           c.getString("type") must equal("Dispatcher")
           c.getString("executor") must equal("fork-join-executor")
-          c.getInt("mailbox-capacity") must equal(-1)
-          c.getMilliseconds("mailbox-push-timeout-time") must equal(10 * 1000)
-          c.getString("mailbox-type") must be("")
           c.getMilliseconds("shutdown-timeout") must equal(1 * 1000)
           c.getInt("throughput") must equal(5)
           c.getMilliseconds("throughput-deadline-time") must equal(0)
@@ -132,6 +129,18 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
 
           ioExtSettings.defaultBacklog must be(1000)
           io.getInt("default-backlog") must be(ioExtSettings.defaultBacklog)
+        }
+      }
+
+      {
+        val c = config.getConfig("akka.actor.default-mailbox")
+
+        // general mailbox config
+
+        {
+          c.getInt("mailbox-capacity") must equal(1000)
+          c.getMilliseconds("mailbox-push-timeout-time") must equal(10 * 1000)
+          c.getString("mailbox-type") must be("akka.dispatch.UnboundedMailbox")
         }
       }
     }

@@ -5,7 +5,6 @@ package akka.routing
 
 import language.implicitConversions
 import language.postfixOps
-
 import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.actor._
@@ -20,22 +19,33 @@ import akka.event.Logging.Warning
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.annotation.tailrec
 import akka.event.Logging.Warning
+import akka.dispatch.{ MailboxType, MessageDispatcher }
+import akka.dispatch.BalancingDispatcher
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
  * send a message to one (or more) of these actors.
  */
-private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _supervisor: InternalActorRef, _path: ActorPath)
-  extends RepointableActorRef(_system, _props, _supervisor, _path) {
+private[akka] class RoutedActorRef(
+  _system: ActorSystemImpl,
+  _routerProps: Props,
+  _routerDispatcher: MessageDispatcher,
+  _routerMailbox: MailboxType,
+  _routeeProps: Props,
+  _supervisor: InternalActorRef,
+  _path: ActorPath)
+  extends RepointableActorRef(_system, _routerProps, _routerDispatcher, _routerMailbox, _supervisor, _path) {
 
   // verify that a BalancingDispatcher is not used with a Router
-  if (_props.routerConfig != NoRouter && _system.dispatchers.isBalancingDispatcher(_props.routerConfig.routerDispatcher)) {
+  if (_routerProps.routerConfig != NoRouter && _routerDispatcher.isInstanceOf[BalancingDispatcher]) {
     throw new ConfigurationException(
       "Configuration for " + this +
         " is invalid - you can not use a 'BalancingDispatcher' as a Router's dispatcher, you can however use it for the routees.")
-  } else _props.routerConfig.verifyConfig(_path)
+  } else _routerProps.routerConfig.verifyConfig(_path)
 
-  override def newCell(old: UnstartedCell): Cell = new RoutedActorCell(system, this, props, supervisor).init(sendSupervise = false)
+  override def newCell(old: UnstartedCell): Cell =
+    new RoutedActorCell(system, this, props, dispatcher, _routeeProps, supervisor)
+      .init(sendSupervise = false, mailboxType)
 
 }
 
@@ -46,16 +56,16 @@ private[akka] object RoutedActorCell {
   }
 }
 
-private[akka] final class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActorRef, _props: Props, _supervisor: InternalActorRef)
-  extends ActorCell(
-    _system,
-    _ref,
-    _props.copy(
-      deploy = _props.deploy.copy(dispatcher = _props.routerConfig.routerDispatcher),
-      classOf[RoutedActorCell.RouterCreator], Vector(_props.routerConfig)),
-    _supervisor) {
+private[akka] final class RoutedActorCell(
+  _system: ActorSystemImpl,
+  _ref: InternalActorRef,
+  _routerProps: Props,
+  _routerDispatcher: MessageDispatcher,
+  val routeeProps: Props,
+  _supervisor: InternalActorRef)
+  extends ActorCell(_system, _ref, _routerProps, _routerDispatcher, _supervisor) {
 
-  private[akka] val routerConfig = _props.routerConfig
+  private[akka] val routerConfig = _routerProps.routerConfig
   private[akka] val resizeInProgress = new AtomicBoolean
   private val resizeCounter = new AtomicLong
 
@@ -72,7 +82,6 @@ private[akka] final class RoutedActorCell(_system: ActorSystemImpl, _ref: Intern
   def route = _route
 
   private def startRoute() {
-    val routeeProps = _props.withRouter(NoRouter)
     _routeeProvider = routerConfig.createRouteeProvider(this, routeeProps)
     val r = routerConfig.createRoute(routeeProvider)
     // initial resize, before message send

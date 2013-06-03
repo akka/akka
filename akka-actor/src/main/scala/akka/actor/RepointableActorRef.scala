@@ -29,6 +29,8 @@ import util.Try
 private[akka] class RepointableActorRef(
   val system: ActorSystemImpl,
   val props: Props,
+  val dispatcher: MessageDispatcher,
+  val mailboxType: MailboxType,
   val supervisor: InternalActorRef,
   val path: ActorPath)
   extends ActorRefWithCell with RepointableRef {
@@ -111,7 +113,7 @@ private[akka] class RepointableActorRef(
    * unstarted cell. The cell must be fully functional.
    */
   def newCell(old: UnstartedCell): Cell =
-    new ActorCell(system, this, props, supervisor).init(sendSupervise = false)
+    new ActorCell(system, this, props, dispatcher, supervisor).init(sendSupervise = false, mailboxType)
 
   def start(): Unit = ()
 

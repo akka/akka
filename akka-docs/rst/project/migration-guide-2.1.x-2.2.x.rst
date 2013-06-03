@@ -85,12 +85,12 @@ Search                               Replace with
 If you need to convert from Java to ``scala.collection.immutable.Seq`` or ``scala.collection.immutable.Iterable`` you should use ``akka.japi.Util.immutableSeq(…)``,
 and if you need to convert from Scala you can simply switch to using immutable collections yourself or use the ``to[immutable.<collection-type>]`` method.
 
-ActorContext & ActorRefFactory dispatcher
+ActorContext & ActorRefFactory Dispatcher
 =========================================
 
 The return type of ``ActorContext``'s and ``ActorRefFactory``'s ``dispatcher``-method now returns ``ExecutionContext`` instead of ``MessageDispatcher``.
 
-Removed fallback to default dispatcher
+Removed Fallback to Default Dispatcher
 ======================================
 
 If deploying an actor with a specific dispatcher, e.g.
@@ -105,6 +105,17 @@ Akka 2.2 introduces the possibility to add dispatcher configuration to the
 
 The fallback was removed because in many cases its application was neither
 intended nor noticed.
+
+Changed Configuration Section for Dispatcher & Mailbox
+======================================================
+
+The mailbox configuration defaults moved from ``akka.actor.default-dispatcher``
+to ``akka.actor.default-mailbox``. You will not have to change anything unless
+your configuration overrides a setting in the default dispatcher section.
+
+The ``mailbox-type`` now requires a fully-qualified class name for the mailbox
+to use. The special words ``bounded`` and ``unbounded`` are retained for a
+migration period throughout the 2.2 series.
 
 API changes to FSM and TestFSMRef
 =================================
@@ -347,4 +358,21 @@ message. Therefore the following is now safe::
 
   context.stop(target)
   context.unwatch(target)
+
+Dispatcher and Mailbox Implementation Changes
+=============================================
+
+This point is only relevant if you have implemented a custom mailbox or
+dispatcher and want to migrate that to Akka 2.2. The constructor signature of
+:class:`MessageDispatcher` has changed, it now takes a
+:class:`MessageDispatcherConfigurator` instead of
+:class:`DispatcherPrerequisites`. Its :class:`createMailbox` method now
+receives one more argument of type :class:`MailboxType`, which is the mailbox
+type determined by the :class:`ActorRefProvider` for the actor based on its
+deployment. The :class:`DispatcherPrerequisites` now include a
+:class:`Mailboxes` instance which can be used for resolving mailbox references.
+The constructor signatures of the built-in dispatcher implementation have been
+adapted accordingly.  The traits describing mailbox semantics have been
+separated from the implementation traits.
+
 
