@@ -208,7 +208,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       }))
 
       (1 to 300).foreach { i ⇒
-        collectCancellable(system.scheduler.scheduleOnce(10 milliseconds, actor, Msg(System.nanoTime)))
+        collectCancellable(system.scheduler.scheduleOnce(20 milliseconds, actor, Msg(System.nanoTime)))
         Thread.sleep(5)
       }
 
@@ -236,12 +236,12 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
 
     "adjust for scheduler inaccuracy" taggedAs TimingTest in {
       val startTime = System.nanoTime
-      val n = 333
+      val n = 200
       val latch = new TestLatch(n)
-      system.scheduler.schedule(15.millis, 15.millis) { latch.countDown() }
+      system.scheduler.schedule(25.millis, 25.millis) { latch.countDown() }
       Await.ready(latch, 6.seconds)
       // Rate
-      n * 1000.0 / (System.nanoTime - startTime).nanos.toMillis must be(66.6 plusOrMinus 4)
+      n * 1000.0 / (System.nanoTime - startTime).nanos.toMillis must be(40.0 plusOrMinus 4)
     }
 
     "not be affected by long running task" taggedAs TimingTest in {
