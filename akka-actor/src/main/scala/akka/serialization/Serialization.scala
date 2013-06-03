@@ -12,6 +12,7 @@ import scala.collection.mutable.ArrayBuffer
 import java.io.NotSerializableException
 import scala.util.{ Try, DynamicVariable }
 import scala.collection.immutable
+import scala.util.control.NonFatal
 
 object Serialization {
 
@@ -55,7 +56,12 @@ object Serialization {
       case _                   ⇒ null
     }
     Serialization.currentTransportInformation.value match {
-      case null ⇒ path.toSerializationFormat
+      case null ⇒ originalSystem match {
+        case null ⇒ path.toSerializationFormat
+        case system ⇒
+          try path.toSerializationFormatWithAddress(system.provider.getDefaultAddress)
+          catch { case NonFatal(_) ⇒ path.toSerializationFormat }
+      }
       case Information(address, system) ⇒
         if (originalSystem == null || originalSystem == system)
           path.toSerializationFormatWithAddress(address)
@@ -136,7 +142,9 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
             possibilities(0)._2
         }
         serializerMap.putIfAbsent(clazz, ser) match {
-          case null ⇒ log.debug("Using serializer[{}] for message [{}]", ser.getClass.getName, clazz.getName); ser
+          case null ⇒
+            log.debug("Using serializer[{}] for message [{}]", ser.getClass.getName, clazz.getName)
+            ser
           case some ⇒ some
         }
       case ser ⇒ ser
