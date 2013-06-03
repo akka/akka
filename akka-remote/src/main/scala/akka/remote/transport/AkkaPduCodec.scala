@@ -139,14 +139,14 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
     envelopeBuilder.setMessage(serializedMessage)
     ackAndEnvelopeBuilder.setEnvelope(envelopeBuilder)
 
-    ByteString(ackAndEnvelopeBuilder.build.toByteArray)
+    ByteString.ByteString1C(ackAndEnvelopeBuilder.build.toByteArray) //Reuse Byte Array (naughty!)
   }
 
   override def constructPureAck(ack: Ack): ByteString =
-    ByteString(AckAndEnvelopeContainer.newBuilder.setAck(ackBuilder(ack)).build().toByteArray)
+    ByteString.ByteString1C(AckAndEnvelopeContainer.newBuilder.setAck(ackBuilder(ack)).build().toByteArray) //Reuse Byte Array (naughty!)
 
   override def constructPayload(payload: ByteString): ByteString =
-    ByteString(AkkaProtocolMessage.newBuilder().setPayload(PByteString.copyFrom(payload.asByteBuffer)).build.toByteArray)
+    ByteString.ByteString1C(AkkaProtocolMessage.newBuilder().setPayload(PByteString.copyFrom(payload.asByteBuffer)).build.toByteArray) //Reuse Byte Array (naughty!)
 
   override def constructAssociate(info: HandshakeInfo): ByteString = {
     val handshakeInfo = AkkaHandshakeInfo.newBuilder.setOrigin(serializeAddress(info.origin)).setUid(info.uid)
@@ -227,7 +227,7 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
     controlMessageBuilder.setCommandType(code)
     handshakeInfo foreach controlMessageBuilder.setHandshakeInfo
 
-    ByteString(AkkaProtocolMessage.newBuilder().setInstruction(controlMessageBuilder.build).build.toByteArray)
+    ByteString.ByteString1C(AkkaProtocolMessage.newBuilder().setInstruction(controlMessageBuilder.build).build.toByteArray) //Reuse Byte Array (naughty!)
   }
 
   private def serializeActorRef(defaultAddress: Address, ref: ActorRef): ActorRefData = {
