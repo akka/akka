@@ -74,7 +74,8 @@ trait TypedActorFactory {
   def typedActorOf[R <: AnyRef, T <: R](props: TypedProps[T]): R = {
     val proxyVar = new AtomVar[R] //Chicken'n'egg-resolver
     val c = props.creator //Cache this to avoid closing over the Props
-    val ap = props.actorProps.withCreator(new TypedActor.TypedActor[R, T](proxyVar, c()))
+    val i = props.interfaces //Cache this to avoid closing over the Props
+    val ap = props.actorProps.withCreator(new TypedActor.TypedActor[R, T](proxyVar, c(), i))
     typedActor.createActorRefProxy(props, proxyVar, actorFactory.actorOf(ap))
   }
 
@@ -84,7 +85,8 @@ trait TypedActorFactory {
   def typedActorOf[R <: AnyRef, T <: R](props: TypedProps[T], name: String): R = {
     val proxyVar = new AtomVar[R] //Chicken'n'egg-resolver
     val c = props.creator //Cache this to avoid closing over the Props
-    val ap = props.actorProps.withCreator(new akka.actor.TypedActor.TypedActor[R, T](proxyVar, c()))
+    val i = props.interfaces //Cache this to avoid closing over the Props
+    val ap = props.actorProps.withCreator(new akka.actor.TypedActor.TypedActor[R, T](proxyVar, c(), i))
     typedActor.createActorRefProxy(props, proxyVar, actorFactory.actorOf(ap, name))
   }
 
@@ -245,8 +247,13 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    *
    * Implementation of TypedActor as an Actor
    */
-  private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyVar: AtomVar[R], createInstance: ⇒ T) extends Actor {
-    val me = withContext[T](createInstance)
+  private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyVar: AtomVar[R], createInstance: ⇒ T, interfaces: immutable.Seq[Class[_]]) extends Actor {
+    // if we were remote deployed we need to create a local proxy
+    if (!context.parent.asInstanceOf[InternalActorRef].isLocal)
+      TypedActor.get(context.system).createActorRefProxy(
+        TypedProps(interfaces, createInstance), proxyVar, context.self)
+
+    private val me = withContext[T](createInstance)
 
     override def supervisorStrategy: SupervisorStrategy = me match {
       case l: Supervisor ⇒ l.supervisorStrategy
@@ -506,6 +513,12 @@ object TypedProps {
    */
   def apply[T <: AnyRef: ClassTag](): TypedProps[T] =
     new TypedProps[T](implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]])
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def apply[T <: AnyRef](interfaces: immutable.Seq[Class[_]], creator: ⇒ T): TypedProps[T] =
+    new TypedProps[T](interfaces, () ⇒ creator)
 }
 
 /**
