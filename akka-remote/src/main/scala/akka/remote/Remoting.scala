@@ -374,6 +374,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     Some(context.system.scheduler.schedule(pruneInterval, pruneInterval, self, Prune))
   else None
 
+  var pendingReadHandoffs = Map[ActorRef, AkkaProtocolHandle]()
+
   override val supervisorStrategy =
     OneForOneStrategy(loggingEnabled = false) {
       case InvalidAssociation(localAddress, remoteAddress, _) ⇒
@@ -505,34 +507,42 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       }
 
     case InboundAssociation(handle: AkkaProtocolHandle) ⇒ endpoints.readOnlyEndpointFor(handle.remoteAddress) match {
-      case Some(endpoint) ⇒ endpoint ! EndpointWriter.TakeOver(handle)
+      case Some(endpoint) ⇒
+        endpoint ! EndpointWriter.TakeOver(handle)
       case None ⇒
         if (endpoints.isQuarantined(handle.remoteAddress, handle.handshakeInfo.uid)) handle.disassociate()
-        else {
-          val writing = settings.UsePassiveConnections && !endpoints.hasWritableEndpointFor(handle.remoteAddress)
-          eventPublisher.notifyListeners(AssociatedEvent(handle.localAddress, handle.remoteAddress, true))
-          val endpoint = createEndpoint(
-            handle.remoteAddress,
-            handle.localAddress,
-            transportMapping(handle.localAddress),
-            settings,
-            Some(handle),
-            writing)
-          if (writing)
-            endpoints.registerWritableEndpoint(handle.remoteAddress, endpoint)
-          else {
-            endpoints.registerReadOnlyEndpoint(handle.remoteAddress, endpoint)
-            endpoints.writableEndpointWithPolicyFor(handle.remoteAddress) match {
-              case Some(Pass(_)) ⇒ // Leave it alone
-              case _ ⇒
-                // Since we just communicated with the guy we can lift gate, quarantine, etc. New writer will be
-                // opened at first write.
-                endpoints.removePolicy(handle.remoteAddress)
+        else endpoints.writableEndpointWithPolicyFor(handle.remoteAddress) match {
+          case Some(Pass(ep)) ⇒
+            pendingReadHandoffs += ep -> handle
+            ep ! EndpointWriter.StopReading(ep)
+          case _ ⇒
+            val writing = settings.UsePassiveConnections && !endpoints.hasWritableEndpointFor(handle.remoteAddress)
+            eventPublisher.notifyListeners(AssociatedEvent(handle.localAddress, handle.remoteAddress, true))
+            val endpoint = createEndpoint(
+              handle.remoteAddress,
+              handle.localAddress,
+              transportMapping(handle.localAddress),
+              settings,
+              Some(handle),
+              writing)
+            if (writing)
+              endpoints.registerWritableEndpoint(handle.remoteAddress, endpoint)
+            else {
+              endpoints.registerReadOnlyEndpoint(handle.remoteAddress, endpoint)
+              endpoints.writableEndpointWithPolicyFor(handle.remoteAddress) match {
+                case Some(Pass(_)) ⇒ // Leave it alone
+                case _ ⇒
+                  // Since we just communicated with the guy we can lift gate, quarantine, etc. New writer will be
+                  // opened at first write.
+                  endpoints.removePolicy(handle.remoteAddress)
+              }
             }
-          }
         }
     }
+    case EndpointWriter.StoppedReading(endpoint) ⇒
+      acceptPendingReader(takingOverFrom = endpoint)
     case Terminated(endpoint) ⇒
+      acceptPendingReader(takingOverFrom = endpoint)
       endpoints.unregisterEndpoint(endpoint)
     case Prune ⇒
       endpoints.prune()
@@ -607,6 +617,22 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     Future.sequence(transports.map { transport ⇒
       transport.listen map { case (address, listenerPromise) ⇒ (transport, address, listenerPromise) }
     })
+  }
+
+  private def acceptPendingReader(takingOverFrom: ActorRef): Unit = {
+    if (pendingReadHandoffs.contains(takingOverFrom)) {
+      val handle = pendingReadHandoffs(takingOverFrom)
+      pendingReadHandoffs -= takingOverFrom
+      eventPublisher.notifyListeners(AssociatedEvent(handle.localAddress, handle.remoteAddress, true))
+      val endpoint = createEndpoint(
+        handle.remoteAddress,
+        handle.localAddress,
+        transportMapping(handle.localAddress),
+        settings,
+        Some(handle),
+        writing = false)
+      endpoints.registerReadOnlyEndpoint(handle.remoteAddress, endpoint)
+    }
   }
 
   private def createEndpoint(remoteAddress: Address,
