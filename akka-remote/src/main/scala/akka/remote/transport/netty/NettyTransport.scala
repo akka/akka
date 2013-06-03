@@ -97,7 +97,8 @@ class NettyTransportSettings(config: Config) {
 
   val SendBufferSize: Option[Int] = optionSize("send-buffer-size")
 
-  val ReceiveBufferSize: Option[Int] = optionSize("receive-buffer-size")
+  val ReceiveBufferSize: Option[Int] = optionSize("receive-buffer-size") requiring (s ⇒
+    s.isDefined || TransportMode != Udp, "receive-buffer-size must be specified for UDP")
 
   val MaxFrameSize: Int = getBytes("maximum-frame-size").toInt requiring (
     _ >= 32000,
