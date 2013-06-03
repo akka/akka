@@ -712,6 +712,8 @@ object SupervisorHierarchySpec {
 class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) with DefaultTimeout with ImplicitSender {
   import SupervisorHierarchySpec._
 
+  override def expectedTestDuration = 2.minutes
+
   "A Supervisor Hierarchy" must {
 
     "restart manager and workers in AllForOne" in {
