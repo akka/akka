@@ -30,15 +30,15 @@ import java.lang.reflect.ParameterizedType
  *                   Larger values (or zero or negative) increase throughput, smaller values increase fairness
  */
 class Dispatcher(
-  _prerequisites: DispatcherPrerequisites,
+  _configurator: MessageDispatcherConfigurator,
   val id: String,
   val throughput: Int,
   val throughputDeadlineTime: Duration,
-  val mailboxType: MailboxType,
-  val mailboxTypeConfigured: Boolean,
   executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
   val shutdownTimeout: FiniteDuration)
-  extends MessageDispatcher(_prerequisites) {
+  extends MessageDispatcher(_configurator) {
+
+  import configurator.prerequisites._
 
   private class LazyExecutorServiceDelegate(factory: ExecutorServiceFactory) extends ExecutorServiceDelegate {
     lazy val executor: ExecutorService = factory.createExecutorService
@@ -46,7 +46,7 @@ class Dispatcher(
   }
 
   @volatile private var executorServiceDelegate: LazyExecutorServiceDelegate =
-    new LazyExecutorServiceDelegate(executorServiceFactoryProvider.createExecutorServiceFactory(id, prerequisites.threadFactory))
+    new LazyExecutorServiceDelegate(executorServiceFactoryProvider.createExecutorServiceFactory(id, threadFactory))
 
   protected final def executorService: ExecutorServiceDelegate = executorServiceDelegate
 
@@ -80,7 +80,7 @@ class Dispatcher(
           executorService execute invocation
         } catch {
           case e2: RejectedExecutionException ⇒
-            prerequisites.eventStream.publish(Error(e, getClass.getName, getClass, "executeTask was rejected twice!"))
+            eventStream.publish(Error(e, getClass.getName, getClass, "executeTask was rejected twice!"))
             throw e2
         }
     }
@@ -89,8 +89,8 @@ class Dispatcher(
   /**
    * INTERNAL API
    */
-  protected[akka] def createMailbox(actor: akka.actor.Cell): Mailbox = {
-    new Mailbox(getMailboxType(actor, mailboxType, mailboxTypeConfigured).create(Some(actor.self), Some(actor.system))) with DefaultSystemMessageQueue
+  protected[akka] def createMailbox(actor: akka.actor.Cell, mailboxType: MailboxType): Mailbox = {
+    new Mailbox(mailboxType.create(Some(actor.self), Some(actor.system))) with DefaultSystemMessageQueue
   }
 
   /**
@@ -125,7 +125,7 @@ class Dispatcher(
             } catch { //Retry once
               case e: RejectedExecutionException ⇒
                 mbox.setAsIdle()
-                prerequisites.eventStream.publish(Error(e, getClass.getName, getClass, "registerForExecution was rejected twice!"))
+                eventStream.publish(Error(e, getClass.getName, getClass, "registerForExecution was rejected twice!"))
                 throw e
             }
         }

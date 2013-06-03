@@ -29,16 +29,15 @@ import scala.concurrent.duration.FiniteDuration
  * @see akka.dispatch.Dispatchers
  */
 class BalancingDispatcher(
-  _prerequisites: DispatcherPrerequisites,
+  _configurator: MessageDispatcherConfigurator,
   _id: String,
   throughput: Int,
   throughputDeadlineTime: Duration,
-  mailboxType: MailboxType,
-  _mailBoxTypeConfigured: Boolean,
+  _mailboxType: MailboxType,
   _executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
   _shutdownTimeout: FiniteDuration,
   attemptTeamWork: Boolean)
-  extends Dispatcher(_prerequisites, _id, throughput, throughputDeadlineTime, mailboxType, _mailBoxTypeConfigured, _executorServiceFactoryProvider, _shutdownTimeout) {
+  extends Dispatcher(_configurator, _id, throughput, throughputDeadlineTime, _executorServiceFactoryProvider, _shutdownTimeout) {
 
   /**
    * INTERNAL API
@@ -51,12 +50,12 @@ class BalancingDispatcher(
   /**
    * INTERNAL API
    */
-  private[akka] val messageQueue: MessageQueue = mailboxType.create(None, None)
+  private[akka] val messageQueue: MessageQueue = _mailboxType.create(None, None)
 
   private class SharingMailbox(val system: ActorSystemImpl, _messageQueue: MessageQueue)
     extends Mailbox(_messageQueue) with DefaultSystemMessageQueue {
     override def cleanUp(): Unit = {
-      val dlq = system.deadLetterMailbox
+      val dlq = mailboxes.deadLetterMailbox
       //Don't call the original implementation of this since it scraps all messages, and we don't want to do that
       var messages = systemDrain(new LatestFirstSystemMessageList(NoMessage))
       while (messages.nonEmpty) {
@@ -69,7 +68,8 @@ class BalancingDispatcher(
     }
   }
 
-  protected[akka] override def createMailbox(actor: akka.actor.Cell): Mailbox = new SharingMailbox(actor.systemImpl, messageQueue)
+  protected[akka] override def createMailbox(actor: akka.actor.Cell, mailboxType: MailboxType): Mailbox =
+    new SharingMailbox(actor.systemImpl, messageQueue)
 
   protected[akka] override def register(actor: ActorCell): Unit = {
     super.register(actor)

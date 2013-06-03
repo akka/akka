@@ -5,6 +5,9 @@ package akka.util
 import scala.util.control.NonFatal
 import java.lang.reflect.Constructor
 import scala.collection.immutable
+import java.lang.reflect.Type
+import scala.annotation.tailrec
+import java.lang.reflect.ParameterizedType
 
 /**
  * Collection of internal reflection utilities which may or may not be
@@ -95,4 +98,20 @@ private[akka] object Reflect {
    * @return a function which when applied will create a new instance from the default constructor of the given class
    */
   private[akka] def instantiator[T](clazz: Class[T]): () ⇒ T = () ⇒ instantiate(clazz)
+
+  def findMarker(root: Class[_], marker: Class[_]): Type = {
+    @tailrec def rec(curr: Class[_]): Type = {
+      if (curr.getSuperclass != null && marker.isAssignableFrom(curr.getSuperclass)) rec(curr.getSuperclass)
+      else curr.getGenericInterfaces collectFirst {
+        case c: Class[_] if marker isAssignableFrom c ⇒ c
+        case t: ParameterizedType if marker isAssignableFrom t.getRawType.asInstanceOf[Class[_]] ⇒ t
+      } match {
+        case None                       ⇒ throw new IllegalArgumentException("cannot find [$marker] in ancestors of [$root]")
+        case Some(c: Class[_])          ⇒ if (c == marker) c else rec(c)
+        case Some(t: ParameterizedType) ⇒ if (t.getRawType == marker) t else rec(t.getRawType.asInstanceOf[Class[_]])
+        case _                          ⇒ ??? // cannot happen due to collectFirst
+      }
+    }
+    rec(root)
+  }
 }

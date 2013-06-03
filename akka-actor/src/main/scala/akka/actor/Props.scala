@@ -91,11 +91,11 @@ object Props {
   @deprecated("use Props.withDispatcher and friends", "2.2")
   def apply(
     creator: () ⇒ Actor = Props.defaultCreator,
-    dispatcher: String = Dispatchers.DefaultDispatcherId,
+    dispatcher: String = Deploy.NoDispatcherGiven,
     routerConfig: RouterConfig = Props.defaultRoutedProps,
     deploy: Deploy = Props.defaultDeploy): Props = {
 
-    val d1 = if (dispatcher != Dispatchers.DefaultDispatcherId) deploy.copy(dispatcher = dispatcher) else deploy
+    val d1 = if (dispatcher != Deploy.NoDispatcherGiven) deploy.copy(dispatcher = dispatcher) else deploy
     val d2 = if (routerConfig != Props.defaultRoutedProps) d1.copy(routerConfig = routerConfig) else d1
     val p = Props(classOf[CreatorFunctionConsumer], creator)
     if (d2 != Props.defaultDeploy) p.withDeploy(d2) else p
@@ -125,22 +125,17 @@ object Props {
   def create[T <: Actor](creator: Creator[T]): Props = {
     if ((creator.getClass.getModifiers & Modifier.STATIC) == 0)
       throw new IllegalArgumentException("cannot use non-static local Creator to create actors; make it static or top-level")
-    val cc = classOf[Creator[_]]
     val ac = classOf[Actor]
-    @tailrec def findType(c: Class[_]): Class[_] = {
-      c.getGenericInterfaces collectFirst {
-        case t: ParameterizedType if cc.isAssignableFrom(t.getRawType.asInstanceOf[Class[_]]) ⇒
-          t.getActualTypeArguments.head match {
-            case c: Class[_] ⇒ c // since T <: Actor
-            case v: TypeVariable[_] ⇒
-              v.getBounds collectFirst { case c: Class[_] if ac.isAssignableFrom(c) && c != ac ⇒ c } getOrElse ac
-          }
-      } match {
-        case Some(x) ⇒ x
-        case None    ⇒ findType(c.getSuperclass)
-      }
+    val actorClass = Reflect.findMarker(creator.getClass, classOf[Creator[_]]) match {
+      case t: ParameterizedType ⇒
+        t.getActualTypeArguments.head match {
+          case c: Class[_] ⇒ c // since T <: Actor
+          case v: TypeVariable[_] ⇒
+            v.getBounds collectFirst { case c: Class[_] if ac.isAssignableFrom(c) && c != ac ⇒ c } getOrElse ac
+          case x ⇒ throw new IllegalArgumentException(s"unsupported type found in Creator argument [$x]")
+        }
     }
-    apply(defaultDeploy, classOf[CreatorConsumer], findType(creator.getClass) :: creator :: Nil)
+    apply(defaultDeploy, classOf[CreatorConsumer], actorClass :: creator :: Nil)
   }
 }
 
@@ -245,9 +240,9 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    * Convenience method for extracting the mailbox information from the
    * contained [[Deploy]] instance.
    */
-  def mailbox: Option[String] = deploy.mailbox match {
-    case NoMailboxGiven ⇒ None
-    case x              ⇒ Some(x)
+  def mailbox: String = deploy.mailbox match {
+    case NoMailboxGiven ⇒ Mailboxes.DefaultMailboxId
+    case x              ⇒ x
   }
 
   /**

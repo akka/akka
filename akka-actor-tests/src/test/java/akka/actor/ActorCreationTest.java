@@ -47,6 +47,14 @@ public class ActorCreationTest {
     }
   }
   
+  static interface I<T> extends Creator<UntypedActor> {}
+  static class F implements I<Object> {
+    @Override
+    public UntypedActor create() {
+      return null;
+    }
+  }
+  
   @Test
   public void testRightCreator() {
     final Props p = Props.create(new C());
@@ -62,6 +70,12 @@ public class ActorCreationTest {
   @Test
   public void testBoundedCreator() {
     final Props p = Props.create(new E<UntypedActor>());
+    assertEquals(UntypedActor.class, p.actorClass());
+  }
+  
+  @Test
+  public void testSuperinterface() {
+    final Props p = Props.create(new F());
     assertEquals(UntypedActor.class, p.actorClass());
   }
   

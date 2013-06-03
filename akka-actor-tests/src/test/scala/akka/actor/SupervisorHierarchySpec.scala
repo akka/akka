@@ -78,12 +78,10 @@ object SupervisorHierarchySpec {
     extends DispatcherConfigurator(config, prerequisites) {
 
     private val instance: MessageDispatcher =
-      new Dispatcher(prerequisites,
+      new Dispatcher(this,
         config.getString("id"),
         config.getInt("throughput"),
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
-        mailboxType,
-        mailBoxTypeConfigured,
         configureExecutor(),
         Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) {
 

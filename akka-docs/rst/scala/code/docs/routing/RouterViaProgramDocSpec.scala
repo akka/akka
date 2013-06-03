@@ -40,7 +40,7 @@ class RouterViaProgramDocSpec extends AkkaSpec with ImplicitSender {
     val actor3 = system.actorOf(Props[ExampleActor1], "actor3")
     val routees = Vector[String]("/user/actor1", "/user/actor2", "/user/actor3")
     val router = system.actorOf(
-      Props().withRouter(RoundRobinRouter(routees = routees)))
+      Props.empty.withRouter(RoundRobinRouter(routees = routees)))
     //#programmaticRoutingRouteePaths
     1 to 6 foreach { i ⇒ router ! Message1(i) }
     val received = receiveN(6, 5.seconds.dilated)

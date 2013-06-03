@@ -13,6 +13,8 @@ import akka.actor._
 import akka.serialization.SerializationExtension
 import scala.util.control.NonFatal
 import scala.util.control.Exception.Catcher
+import akka.dispatch.MailboxType
+import akka.dispatch.ProducesMessageQueue
 
 private[akka] trait Dispatch { this: ActorCell ⇒
 
@@ -30,8 +32,6 @@ private[akka] trait Dispatch { this: ActorCell ⇒
 
   final def numberOfMessages: Int = mailbox.numberOfMessages
 
-  val dispatcher: MessageDispatcher = system.dispatchers.lookup(props.dispatcher)
-
   final def isTerminated: Boolean = mailbox.isClosed
 
   /**
@@ -39,24 +39,29 @@ private[akka] trait Dispatch { this: ActorCell ⇒
    * reasonably different from the previous UID of a possible actor with the same path,
    * which can be achieved by using ThreadLocalRandom.current.nextInt().
    */
-  final def init(sendSupervise: Boolean): this.type = {
+  final def init(sendSupervise: Boolean, mailboxType: MailboxType): this.type = {
     /*
      * Create the mailbox and enqueue the Create() message to ensure that
      * this is processed before anything else.
      */
-    val mbox = dispatcher.createMailbox(this)
+    val mbox = dispatcher.createMailbox(this, mailboxType)
 
+    /*
+     * The mailboxType was calculated taking into account what the MailboxType
+     * has promised to produce. If that was more than the default, then we need
+     * to reverify here because the dispatcher may well have screwed it up.
+     */
     // we need to delay the failure to the point of actor creation so we can handle
     // it properly in the normal way
     val actorClass = props.actorClass
-    val createMessage = if (system.mailboxes.hasRequiredType(actorClass)) {
-      Create(system.mailboxes.getRequiredType(actorClass).flatMap {
-        case c if !c.isAssignableFrom(mbox.messageQueue.getClass) ⇒
-          Some(ActorInitializationException(self, s"Actor [${self}] requires mailbox type [${c}]" +
-            s" got [${mbox.messageQueue.getClass}]"))
-        case _ ⇒ None
-      })
-    } else Create(None)
+    val createMessage = mailboxType match {
+      case _: ProducesMessageQueue[_] if system.mailboxes.hasRequiredType(actorClass) ⇒
+        val req = system.mailboxes.getRequiredType(actorClass)
+        if (req isInstance mbox.messageQueue) Create(None)
+        else Create(Some(ActorInitializationException(self,
+          s"Actor [$self] requires mailbox type [$req] got [${mbox.messageQueue.getClass.getName}]")))
+      case _ ⇒ Create(None)
+    }
 
     swapMailbox(mbox)
     mailbox.setActor(this)
