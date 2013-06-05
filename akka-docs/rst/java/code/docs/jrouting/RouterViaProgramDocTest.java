@@ -55,7 +55,7 @@ public class RouterViaProgramDocTest {
         Props.empty().withRouter(new RoundRobinRouter(routees)));
       //#programmaticRoutingRouteePaths
       for (int i = 1; i <= 6; i++) {
-        router.tell(new ExampleActor.Message(i), null);
+        router.tell(new ExampleActor.Message(i), ActorRef.noSender());
       }
     }};
   }

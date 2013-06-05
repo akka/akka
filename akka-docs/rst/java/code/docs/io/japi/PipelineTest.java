@@ -72,12 +72,12 @@ public class PipelineTest {
 
           @Override
           public void onCommand(ByteString cmd) throws Throwable {
-            commandHandler.tell(cmd, null);
+            commandHandler.tell(cmd, ActorRef.noSender());
           }
 
           @Override
           public void onEvent(Message evt) throws Throwable {
-            eventHandler.tell(evt, null);
+            eventHandler.tell(evt, ActorRef.noSender());
           }
         };
         
@@ -127,9 +127,9 @@ public class PipelineTest {
         final ActorRef proc = system.actorOf(Props.create(
             P.class, this, getRef(), getRef()), "processor");
         expectMsgClass(TickGenerator.Tick.class);
-        proc.tell(msg, null);
+        proc.tell(msg, ActorRef.noSender());
         final ByteString encoded = expectMsgClass(ByteString.class);
-        proc.tell(encoded, null);
+        proc.tell(encoded, ActorRef.noSender());
         final Message decoded = expectMsgClass(Message.class);
         assert msg == decoded;
 
@@ -140,13 +140,13 @@ public class PipelineTest {
             expectMsgClass(TickGenerator.Tick.class);
           }
         };
-        proc.tell("fail!", null);
+        proc.tell("fail!", ActorRef.noSender());
         new Within(Duration.create(1700, TimeUnit.MILLISECONDS),
             Duration.create(3, TimeUnit.SECONDS)) {
           protected void run() {
             expectMsgClass(TickGenerator.Tick.class);
             expectMsgClass(TickGenerator.Tick.class);
-            proc.tell(PoisonPill.getInstance(), null);
+            proc.tell(PoisonPill.getInstance(), ActorRef.noSender());
             expectNoMsg();
           }
         };

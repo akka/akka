@@ -30,7 +30,7 @@ public class TransactorDocTest {
 
     Timeout timeout = new Timeout(5, SECONDS);
 
-    counter1.tell(new Coordinated(new Increment(counter2), timeout), null);
+    counter1.tell(new Coordinated(new Increment(counter2), timeout), ActorRef.noSender());
 
     Integer count = (Integer) Await.result(
       ask(counter1, "GetCount", timeout), timeout.duration());
@@ -52,11 +52,11 @@ public class TransactorDocTest {
     ActorRef actor = system.actorOf(Props.create(Coordinator.class));
 
     //#send-coordinated
-    actor.tell(new Coordinated(new Message(), timeout), null);
+    actor.tell(new Coordinated(new Message(), timeout), ActorRef.noSender());
     //#send-coordinated
 
     //#include-coordinated
-    actor.tell(coordinated.coordinate(new Message()), null);
+    actor.tell(coordinated.coordinate(new Message()), ActorRef.noSender());
     //#include-coordinated
 
     coordinated.await();
@@ -71,7 +71,7 @@ public class TransactorDocTest {
 
     Timeout timeout = new Timeout(5, SECONDS);
     Coordinated coordinated = new Coordinated(timeout);
-    counter.tell(coordinated.coordinate(new Increment()), null);
+    counter.tell(coordinated.coordinate(new Increment()), ActorRef.noSender());
     coordinated.await();
 
     Integer count = (Integer) Await.result(ask(counter, "GetCount", timeout), timeout.duration());
@@ -88,7 +88,7 @@ public class TransactorDocTest {
 
     Timeout timeout = new Timeout(5, SECONDS);
     Coordinated coordinated = new Coordinated(timeout);
-    friendlyCounter.tell(coordinated.coordinate(new Increment(friend)), null);
+    friendlyCounter.tell(coordinated.coordinate(new Increment(friend)), ActorRef.noSender());
     coordinated.await();
 
     Integer count1 = (Integer) Await.result(ask(friendlyCounter, "GetCount", timeout), timeout.duration());

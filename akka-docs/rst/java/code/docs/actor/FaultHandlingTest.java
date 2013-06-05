@@ -179,21 +179,21 @@ public class FaultHandlingTest {
     //#create
 
     //#resume
-    child.tell(42, null);
+    child.tell(42, ActorRef.noSender());
     assert Await.result(ask(child, "get", 5000), timeout).equals(42);
-    child.tell(new ArithmeticException(), null);
+    child.tell(new ArithmeticException(), ActorRef.noSender());
     assert Await.result(ask(child, "get", 5000), timeout).equals(42);
     //#resume
 
     //#restart
-    child.tell(new NullPointerException(), null);
+    child.tell(new NullPointerException(), ActorRef.noSender());
     assert Await.result(ask(child, "get", 5000), timeout).equals(0);
     //#restart
 
     //#stop
     final TestProbe probe = new TestProbe(system);
     probe.watch(child);
-    child.tell(new IllegalArgumentException(), null);
+    child.tell(new IllegalArgumentException(), ActorRef.noSender());
     probe.expectMsgClass(Terminated.class);
     //#stop
 
@@ -202,7 +202,7 @@ public class FaultHandlingTest {
       Props.create(Child.class), 5000), timeout);
     probe.watch(child);
     assert Await.result(ask(child, "get", 5000), timeout).equals(0);
-    child.tell(new Exception(), null);
+    child.tell(new Exception(), ActorRef.noSender());
     probe.expectMsgClass(Terminated.class);
     //#escalate-kill
 
@@ -211,9 +211,9 @@ public class FaultHandlingTest {
     supervisor = system.actorOf(superprops);
     child = (ActorRef) Await.result(ask(supervisor,
       Props.create(Child.class), 5000), timeout);
-    child.tell(23, null);
+    child.tell(23, ActorRef.noSender());
     assert Await.result(ask(child, "get", 5000), timeout).equals(23);
-    child.tell(new Exception(), null);
+    child.tell(new Exception(), ActorRef.noSender());
     assert Await.result(ask(child, "get", 5000), timeout).equals(0);
     //#escalate-restart
     //#testkit

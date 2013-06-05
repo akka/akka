@@ -9,6 +9,7 @@ import java.util.Collections;
 import scala.concurrent.duration.Deadline;
 import scala.concurrent.duration.FiniteDuration;
 import scala.util.Either;
+import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.io.AbstractPipePair;
 import akka.io.PipePair;
@@ -74,7 +75,8 @@ public class TickGenerator<Cmd, Evt> extends
           @Override
           public Iterable<Either<Evt, Cmd>> onManagementCommand(Object cmd) {
             if (cmd == trigger) {
-              ctx.getContext().self().tell(new Tick(Deadline.now().time()), null);
+              ctx.getContext().self().tell(new Tick(Deadline.now().time()),
+                  ActorRef.noSender());
               schedule();
             }
             return Collections.emptyList();

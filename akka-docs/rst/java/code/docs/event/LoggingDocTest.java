@@ -36,7 +36,7 @@ public class LoggingDocTest {
   public void useLoggingActor() {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(Props.create(MyActor.class, this));
-    myActor.tell("test", null);
+    myActor.tell("test", ActorRef.noSender());
     JavaTestKit.shutdownActorSystem(system);
   }
 

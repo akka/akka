@@ -13,6 +13,16 @@ import scala.annotation.tailrec
 import java.util.concurrent.ConcurrentHashMap
 import akka.event.LoggingAdapter
 
+object ActorRef {
+
+  /**
+   * Use this value as an argument to [[#tell]] if there is not actor to
+   * reply to (e.g. when sending from non-actor code).
+   */
+  final val noSender: ActorRef = Actor.noSender
+
+}
+
 /**
  * Immutable and serializable handle to an actor, which may or may not reside
  * on the local host or inside the same [[akka.actor.ActorSystem]]. An ActorRef
