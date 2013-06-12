@@ -117,7 +117,7 @@ Blocking Needs Careful Management
 In some cases it is unavoidable to do blocking operations, i.e. to put a thread
 to sleep for an indeterminate time, waiting for an external event to occur.
 Examples are legacy RDBMS drivers or messaging APIs, and the underlying reason
-in typically that (network) I/O occurs under the covers. When facing this, you
+is typically that (network) I/O occurs under the covers. When facing this, you
 may be tempted to just wrap the blocking call inside a :class:`Future` and work
 with that instead, but this strategy is too simple: you are quite likely to
 find bottlenecks or run out of memory or threads when the application runs
