@@ -150,7 +150,8 @@ message VectorClock {
     required int32 hashIndex = 1;
     required int64 timestamp = 2;
   }
-  required int64 timestamp = 1;
+  // the timestamp could be removed but left for test data compatibility
+  optional int64 timestamp = 1;
   repeated Version versions = 2;
 }
 
