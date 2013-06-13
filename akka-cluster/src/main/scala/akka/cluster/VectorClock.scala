@@ -5,8 +5,6 @@
 package akka.cluster
 
 import akka.AkkaException
-import akka.event.Logging
-import akka.actor.ActorSystem
 
 import System.{ currentTimeMillis ⇒ newTimestamp }
 import java.security.MessageDigest
@@ -81,6 +79,7 @@ object VectorClock {
     private case class NodeImpl(name: String) extends Node {
       override def toString(): String = "Node(" + name + ")"
       override def hash: String = name
+      override def hashCode = name.hashCode
     }
 
     def apply(name: String): Node = NodeImpl(hash(name))
@@ -181,9 +180,9 @@ case class VectorClock(
     }
     vclock match {
       case VectorClock(_, otherVersions) ⇒
-        if (compare(versions, otherVersions)) Some(-1)
+        if (versions == otherVersions) Some(0)
+        else if (compare(versions, otherVersions)) Some(-1)
         else if (compare(otherVersions, versions)) Some(1)
-        else if (versions == otherVersions) Some(0)
         else None
       case _ ⇒ None
     }

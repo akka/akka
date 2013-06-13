@@ -218,4 +218,11 @@ object MemberStatus {
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[cluster] case class UniqueAddress(address: Address, uid: Int)
+private[cluster] case class UniqueAddress(address: Address, uid: Int) {
+  @volatile
+  private var _hashCode: Int = 0
+  override def hashCode: Int = {
+    if (_hashCode == 0) _hashCode = scala.util.hashing.MurmurHash3.productHash(this)
+    _hashCode
+  }
+}
