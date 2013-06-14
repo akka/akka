@@ -9,13 +9,13 @@ import java.security.MessageDigest
 import scala.concurrent.Await
 import scala.concurrent.duration.{ Duration, DurationInt }
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import akka.actor.{ Actor, ActorContext, ActorLogging, ActorRef, Props, ReceiveTimeout, Stash, Terminated }
+import scala.util.control.NonFatal
+import akka.actor.{ Actor, ActorLogging, ActorRef, Props, ReceiveTimeout, Stash, Terminated }
 import akka.io.TcpPipelineHandler.{ Init, Management, WithinActorContext }
 import akka.pattern.ask
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 import akka.util.{ ByteString, Timeout }
 import akka.actor.Deploy
-import scala.util.control.NonFatal
 
 object BackpressureSpec {
 

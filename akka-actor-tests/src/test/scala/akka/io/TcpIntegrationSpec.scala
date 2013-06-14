@@ -4,14 +4,10 @@
 
 package akka.io
 
-import scala.concurrent.duration._
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
+import akka.TestUtils._
 import Tcp._
-import akka.TestUtils
-import TestUtils._
-import akka.testkit.EventFilter
-import java.io.IOException
 
 class TcpIntegrationSpec extends AkkaSpec("""
     akka.loglevel = INFO
