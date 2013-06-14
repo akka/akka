@@ -43,9 +43,11 @@ object Versioned {
    * Returns or 'Ordering' for the two 'Versioned' instances.
    */
   def compare[T <: Versioned[T]](versioned1: Versioned[T], versioned2: Versioned[T]): Ordering = {
-    if (versioned1.version <> versioned2.version) Concurrent
-    else if (versioned1.version < versioned2.version) Before
-    else After
+    versioned1.version tryCompareTo versioned2.version match {
+      case None             ⇒ Concurrent
+      case Some(n) if n < 0 ⇒ Before
+      case _                ⇒ After
+    }
   }
 
   /**
@@ -97,11 +99,8 @@ object VectorClock {
    * Timestamp representation a unique 'Ordered' timestamp.
    */
   @SerialVersionUID(1L)
-  case class Timestamp(time: Long) extends Ordered[Timestamp] {
-    def max(other: Timestamp) = {
-      if (this < other) other
-      else this
-    }
+  final case class Timestamp(time: Long) extends Ordered[Timestamp] {
+    def max(other: Timestamp) = if (this < other) other else this
 
     def compare(other: Timestamp) = time compare other.time
 
@@ -126,6 +125,11 @@ object VectorClock {
       new Timestamp(newTime)
     }
   }
+
+  private[akka] final val GreaterThan = Some(1)
+  private[akka] final val LessThan = Some(-1)
+  private[akka] final val Equal = Some(0)
+  private[akka] final val Concurrent = Option.empty[Int]
 }
 
 /**
@@ -173,18 +177,20 @@ case class VectorClock(
    * }}}
    */
   def tryCompareTo[V >: VectorClock <% PartiallyOrdered[V]](vclock: V): Option[Int] = {
-    def compare(versions1: Map[Node, Timestamp], versions2: Map[Node, Timestamp]): Boolean = {
-      versions1.forall { case ((n, t)) ⇒ t <= versions2.getOrElse(n, Timestamp.zero) } &&
-        (versions1.exists { case ((n, t)) ⇒ t < versions2.getOrElse(n, Timestamp.zero) } ||
-          (versions1.size < versions2.size))
-    }
+    def newerOrSameIn(version: Pair[Node, Timestamp], versions: Map[Node, Timestamp]): Boolean =
+      version match { case (n, t) ⇒ t <= versions.getOrElse(n, Timestamp.zero) }
+
+    // this will return true for equal versions but that is ok since we check for equality first below
+    def olderThan(versions1: Map[Node, Timestamp], versions2: Map[Node, Timestamp]): Boolean =
+      versions1.forall(newerOrSameIn(_, versions2))
+
     vclock match {
       case VectorClock(_, otherVersions) ⇒
-        if (versions == otherVersions) Some(0)
-        else if (compare(versions, otherVersions)) Some(-1)
-        else if (compare(otherVersions, versions)) Some(1)
-        else None
-      case _ ⇒ None
+        if (versions == otherVersions) Equal
+        else if (olderThan(versions, otherVersions)) LessThan
+        else if (olderThan(otherVersions, versions)) GreaterThan
+        else Concurrent
+      case _ ⇒ Concurrent
     }
   }
 
@@ -192,9 +198,17 @@ case class VectorClock(
    * Merges this VectorClock with another VectorClock. E.g. merges its versioned history.
    */
   def merge(that: VectorClock): VectorClock = {
-    val mergedVersions = scala.collection.mutable.Map.empty[Node, Timestamp] ++ that.versions
-    for ((node, time) ← versions) mergedVersions(node) = time max mergedVersions.getOrElse(node, time)
-    VectorClock(timestamp, Map.empty[Node, Timestamp] ++ mergedVersions)
+    val mergedVersions = scala.collection.mutable.Map.empty[VectorClock.Node, VectorClock.Timestamp] ++ that.versions
+    var modifications = false
+    for ((node, time) ← versions) {
+      val mergedVersionsCurrentTime = mergedVersions.getOrElse(node, Timestamp.zero)
+      if (time != mergedVersionsCurrentTime) {
+        mergedVersions(node) = time max mergedVersionsCurrentTime
+        modifications = true
+      }
+    }
+    val mergeResult = if (modifications) mergedVersions.toMap else that.versions
+    VectorClock(timestamp, mergeResult)
   }
 
   override def toString = versions.map { case ((n, t)) ⇒ n + " -> " + t }.mkString("VectorClock(", ", ", ")")
