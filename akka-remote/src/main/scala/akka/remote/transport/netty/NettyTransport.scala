@@ -252,6 +252,9 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
    */
   private[netty] final val udpConnectionTable = new ConcurrentHashMap[SocketAddress, HandleEventListener]()
 
+  private def createExecutorService() =
+    UseDispatcherForIo.map(system.dispatchers.lookup) getOrElse Executors.newCachedThreadPool(system.threadFactory)
+
   /*
    * Be aware, that the close() method of DefaultChannelGroup is racy, because it uses an iterator over a ConcurrentHashMap.
    * In the old remoting this was handled by using a custom subclass, guarding the close() method with a write-lock.
@@ -263,20 +266,18 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
 
   private val clientChannelFactory: ChannelFactory = TransportMode match {
     case Tcp ⇒
-      val boss, worker = UseDispatcherForIo.map(system.dispatchers.lookup) getOrElse Executors.newCachedThreadPool()
+      val boss, worker = createExecutorService()
       new NioClientSocketChannelFactory(boss, worker, ClientSocketWorkerPoolSize)
     case Udp ⇒
-      val pool = UseDispatcherForIo.map(system.dispatchers.lookup) getOrElse Executors.newCachedThreadPool()
-      new NioDatagramChannelFactory(pool, ClientSocketWorkerPoolSize)
+      new NioDatagramChannelFactory(createExecutorService(), ClientSocketWorkerPoolSize)
   }
 
   private val serverChannelFactory: ChannelFactory = TransportMode match {
     case Tcp ⇒
-      val boss, worker = UseDispatcherForIo.map(system.dispatchers.lookup) getOrElse Executors.newCachedThreadPool()
+      val boss, worker = createExecutorService()
       new NioServerSocketChannelFactory(boss, worker, ServerSocketWorkerPoolSize)
     case Udp ⇒
-      val pool = UseDispatcherForIo.map(system.dispatchers.lookup) getOrElse Executors.newCachedThreadPool()
-      new NioDatagramChannelFactory(pool, ServerSocketWorkerPoolSize)
+      new NioDatagramChannelFactory(createExecutorService(), ServerSocketWorkerPoolSize)
   }
 
   private def newPipeline: DefaultChannelPipeline = {
