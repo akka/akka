@@ -9,6 +9,7 @@ import akka.AkkaException
 import System.{ currentTimeMillis ⇒ newTimestamp }
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicLong
+import scala.collection.mutable
 
 class VectorClockException(message: String) extends AkkaException(message)
 
@@ -177,18 +178,15 @@ case class VectorClock(
    * }}}
    */
   def tryCompareTo[V >: VectorClock <% PartiallyOrdered[V]](vclock: V): Option[Int] = {
-    def newerOrSameIn(version: Pair[Node, Timestamp], versions: Map[Node, Timestamp]): Boolean =
-      version match { case (n, t) ⇒ t <= versions.getOrElse(n, Timestamp.zero) }
-
-    // this will return true for equal versions but that is ok since we check for equality first below
-    def olderThan(versions1: Map[Node, Timestamp], versions2: Map[Node, Timestamp]): Boolean =
-      versions1.forall(newerOrSameIn(_, versions2))
+    def newerOrSameIn(version: Pair[Node, Timestamp], versions: Map[Node, Timestamp]): Boolean = {
+      version match { case (n, t) ⇒ t <= versions(n) }
+    }
 
     vclock match {
       case VectorClock(_, otherVersions) ⇒
         if (versions == otherVersions) Equal
-        else if (olderThan(versions, otherVersions)) LessThan
-        else if (olderThan(otherVersions, versions)) GreaterThan
+        else if (versions.forall(newerOrSameIn(_, otherVersions.withDefaultValue(Timestamp.zero)))) LessThan
+        else if (otherVersions.forall(newerOrSameIn(_, versions.withDefaultValue(Timestamp.zero)))) GreaterThan
         else Concurrent
       case _ ⇒ Concurrent
     }
@@ -198,10 +196,11 @@ case class VectorClock(
    * Merges this VectorClock with another VectorClock. E.g. merges its versioned history.
    */
   def merge(that: VectorClock): VectorClock = {
-    val mergedVersions = scala.collection.mutable.Map.empty[VectorClock.Node, VectorClock.Timestamp] ++ that.versions
+    val mergedVersions = mutable.Map.empty[VectorClock.Node, VectorClock.Timestamp] ++ that.versions
+    val cmpVersions = mergedVersions.withDefaultValue(Timestamp.zero)
     var modifications = false
     for ((node, time) ← versions) {
-      val mergedVersionsCurrentTime = mergedVersions.getOrElse(node, Timestamp.zero)
+      val mergedVersionsCurrentTime = cmpVersions(node)
       if (time != mergedVersionsCurrentTime) {
         mergedVersions(node) = time max mergedVersionsCurrentTime
         modifications = true
