@@ -10,8 +10,7 @@ import System.{ currentTimeMillis ⇒ newTimestamp }
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable
-
-class VectorClockException(message: String) extends AkkaException(message)
+import scala.annotation.tailrec
 
 /**
  * Trait to be extended by classes that wants to be versioned using a VectorClock.
@@ -43,24 +42,21 @@ object Versioned {
   /**
    * Returns or 'Ordering' for the two 'Versioned' instances.
    */
-  def compare[T <: Versioned[T]](versioned1: Versioned[T], versioned2: Versioned[T]): Ordering = {
+  def compare[T <: Versioned[T]](versioned1: Versioned[T], versioned2: Versioned[T]): Ordering =
     versioned1.version tryCompareTo versioned2.version match {
-      case None             ⇒ Concurrent
-      case Some(n) if n < 0 ⇒ Before
-      case _                ⇒ After
+      case VectorClock.Concurrent ⇒ Concurrent
+      case VectorClock.LessThan   ⇒ Before
+      case _                      ⇒ After
     }
-  }
 
   /**
    * Returns the Versioned that have the latest version.
    */
-  def latestVersionOf[T <: Versioned[T]](versioned1: T, versioned2: T): T = {
+  def latestVersionOf[T <: Versioned[T]](versioned1: T, versioned2: T): T =
     compare(versioned1, versioned2) match {
-      case Concurrent ⇒ versioned2
-      case Before     ⇒ versioned2
-      case After      ⇒ versioned1
+      case Concurrent | Before ⇒ versioned2
+      case After               ⇒ versioned1
     }
-  }
 }
 
 /**
@@ -102,28 +98,23 @@ object VectorClock {
   @SerialVersionUID(1L)
   final case class Timestamp(time: Long) extends Ordered[Timestamp] {
     def max(other: Timestamp) = if (this < other) other else this
-
     def compare(other: Timestamp) = time compare other.time
-
     override def toString = "%016x" format time
   }
 
   object Timestamp {
-    private val counter = new AtomicLong(newTimestamp)
+    private[this] val counter = new AtomicLong(newTimestamp)
 
-    val zero: Timestamp = Timestamp(0L)
+    final val zero: Timestamp = Timestamp(0L)
 
     def apply(): Timestamp = {
-      var newTime: Long = 0L
-      while (newTime == 0) {
+      @tailrec def generateNext(): Long = {
         val last = counter.get
         val current = newTimestamp
         val next = if (current > last) current else last + 1
-        if (counter.compareAndSet(last, next)) {
-          newTime = next
-        }
+        if (counter.compareAndSet(last, next)) next else generateNext()
       }
-      new Timestamp(newTime)
+      new Timestamp(generateNext())
     }
   }
 
@@ -144,7 +135,7 @@ object VectorClock {
  * Based on code from the 'vlock' VectorClock library by Coda Hale.
  */
 @SerialVersionUID(1L)
-case class VectorClock(
+final case class VectorClock(
   timestamp: VectorClock.Timestamp = VectorClock.Timestamp(),
   versions: Map[VectorClock.Node, VectorClock.Timestamp] = Map.empty[VectorClock.Node, VectorClock.Timestamp])
   extends PartiallyOrdered[VectorClock] {
@@ -159,7 +150,7 @@ case class VectorClock(
   /**
    * Returns true if <code>this</code> and <code>that</code> are concurrent else false.
    */
-  def <>(that: VectorClock): Boolean = tryCompareTo(that) == None
+  def <>(that: VectorClock): Boolean = tryCompareTo(that) == Concurrent
 
   /**
    * Returns true if this VectorClock has the same history as the 'that' VectorClock else false.
@@ -177,20 +168,17 @@ case class VectorClock(
    *   3. Clock 1 is AFTER (<)       Clock 2 otherwise.
    * }}}
    */
-  def tryCompareTo[V >: VectorClock <% PartiallyOrdered[V]](vclock: V): Option[Int] = {
-    def newerOrSameIn(version: Pair[Node, Timestamp], versions: Map[Node, Timestamp]): Boolean = {
-      version match { case (n, t) ⇒ t <= versions(n) }
-    }
-
+  def tryCompareTo[V >: VectorClock <% PartiallyOrdered[V]](vclock: V): Option[Int] =
     vclock match {
-      case VectorClock(_, otherVersions) ⇒
-        if (versions == otherVersions) Equal
-        else if (versions.forall(newerOrSameIn(_, otherVersions.withDefaultValue(Timestamp.zero)))) LessThan
-        else if (otherVersions.forall(newerOrSameIn(_, versions.withDefaultValue(Timestamp.zero)))) GreaterThan
+      case other: VectorClock ⇒
+        def newerOrSameIn(version: (Node, Timestamp), versions: Map[Node, Timestamp]): Boolean =
+          version._2 <= versions(version._1)
+        if (versions == other.versions) Equal
+        else if (versions.forall(newerOrSameIn(_, other.versions.withDefaultValue(Timestamp.zero)))) LessThan
+        else if (other.versions.forall(newerOrSameIn(_, versions.withDefaultValue(Timestamp.zero)))) GreaterThan
         else Concurrent
       case _ ⇒ Concurrent
     }
-  }
 
   /**
    * Merges this VectorClock with another VectorClock. E.g. merges its versioned history.
