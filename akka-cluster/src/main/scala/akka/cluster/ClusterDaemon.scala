@@ -235,7 +235,6 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
   val statsEnabled = PublishStatsInterval.isFinite
   var gossipStats = GossipStats()
-  var vclockStats = VectorClockStats()
 
   var seedNodeProcess: Option[ActorRef] = None
 
@@ -616,9 +615,6 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
           case Some(x) if x < 0 ⇒ gossipStats.incrementNewerCount
           case _                ⇒ gossipStats.incrementOlderCount
         }
-        vclockStats = VectorClockStats(
-          versionSize = latestGossip.version.versions.size,
-          latestGossip.members.count(m ⇒ latestGossip.seenByNode(m.uniqueAddress)))
       }
 
       publish(latestGossip)
@@ -917,7 +913,12 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
     if (PublishStatsInterval == Duration.Zero) publishInternalStats()
   }
 
-  def publishInternalStats(): Unit = publisher ! CurrentInternalStats(gossipStats, vclockStats)
+  def publishInternalStats(): Unit = {
+    val vclockStats = VectorClockStats(
+      versionSize = latestGossip.version.versions.size,
+      seenLatest = latestGossip.members.count(m ⇒ latestGossip.seenByNode(m.uniqueAddress)))
+    publisher ! CurrentInternalStats(gossipStats, vclockStats)
+  }
 
 }
 
