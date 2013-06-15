@@ -8,7 +8,7 @@ Encoding and decoding binary data
   Previously Akka offered a specialized Iteratee implementation in the
   ``akka.actor.IO`` object which is now deprecated in favor of the pipeline
   mechanism described here. The documentation for Iteratees can be found `here
-  <http://doc.akka.io/doc/akka/2.1.2/scala/io.html#Encoding_and_decoding_binary_data>`_.
+  <http://doc.akka.io/docs/akka/2.1.4/scala/io.html#Encoding_and_decoding_of_binary_data>`_.
 
 .. warning::
 
