@@ -60,6 +60,12 @@ public class ActorCreationTest {
     final Props p = Props.create(new C());
     assertEquals(UntypedActor.class, p.actorClass());
   }
+
+    @Test
+    public void testTopLevelNonStaticCreator() {
+        final Props p = Props.create(new NonStaticCreator());
+        assertEquals(UntypedActor.class, p.actorClass());
+    }
   
   @Test
   public void testParametricCreator() {
