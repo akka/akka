@@ -10,6 +10,7 @@ import akka.dispatch._
 import akka.TestUtils.verifyActorTermination
 import scala.concurrent.duration.Duration
 import akka.ConfigurationException
+import com.typesafe.config.Config
 
 object ActorMailboxSpec {
   val mailboxConf = ConfigFactory.parseString("""
@@ -139,9 +140,11 @@ object ActorMailboxSpec {
     classOf[BoundedDequeBasedMessageQueueSemantics])
 }
 
-class ActorMailboxSpec extends AkkaSpec(ActorMailboxSpec.mailboxConf) with DefaultTimeout with ImplicitSender {
+class ActorMailboxSpec(conf: Config) extends AkkaSpec(conf) with DefaultTimeout with ImplicitSender {
 
   import ActorMailboxSpec._
+
+  def this() = this(ActorMailboxSpec.mailboxConf)
 
   def checkMailboxQueue(props: Props, name: String, types: Seq[Class[_]]): MessageQueue = {
     val actor = system.actorOf(props, name)
