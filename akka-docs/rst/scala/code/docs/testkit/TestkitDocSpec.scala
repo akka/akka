@@ -5,18 +5,15 @@ package docs.testkit
 
 import language.postfixOps
 import scala.util.Success
+import akka.testkit._
 
 //#imports-test-probe
-import akka.testkit.TestProbe
 import scala.concurrent.duration._
 import akka.actor._
 import scala.concurrent.Future
 
 //#imports-test-probe
 
-import akka.testkit.AkkaSpec
-import akka.testkit.DefaultTimeout
-import akka.testkit.ImplicitSender
 import scala.util.control.NonFatal
 
 object TestkitDocSpec {
@@ -27,6 +24,16 @@ object TestkitDocSpec {
     def receive = {
       case Say42       ⇒ sender ! 42
       case "some work" ⇒ sender ! "some result"
+    }
+  }
+
+  class TestFsmActor extends Actor with FSM[Int, String] {
+    startWith(1, "")
+    when(1) {
+      case Event("go", _) ⇒ goto(2) using "go"
+    }
+    when(2) {
+      case Event("back", _) ⇒ goto(1) using "back"
     }
   }
 
@@ -91,15 +98,9 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     import akka.actor.FSM
     import scala.concurrent.duration._
 
-    val fsm = TestFSMRef(new Actor with FSM[Int, String] {
-      startWith(1, "")
-      when(1) {
-        case Event("go", _) ⇒ goto(2) using "go"
-      }
-      when(2) {
-        case Event("back", _) ⇒ goto(1) using "back"
-      }
-    })
+    val fsm = TestFSMRef(new TestFsmActor)
+
+    val mustBeTypedProperly: TestActorRef[TestFsmActor] = fsm
 
     assert(fsm.stateName == 1)
     assert(fsm.stateData == "")
