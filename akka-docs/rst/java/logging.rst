@@ -51,6 +51,27 @@ treatment of this case, e.g. in the SLF4J event listener which will then use
 the string instead of the class’ name for looking up the logger instance to
 use.
 
+Logging of Dead Letters
+-----------------------
+
+By default messages sent to dead letters are logged at info level. Existence of dead letters
+does not necessarily indicate a problem, but it might be, and therefore they are logged by default.
+After a few messages this logging is turned off, to avoid flooding the logs.
+You can disable this logging completely or adjust how many dead letters that are
+logged. During system shutdown it is likely that you see dead letters, since pending
+messages in the actor mailboxes are sent to dead letters. You can also disable logging
+of dead letters during shutdown.
+
+.. code-block:: ruby
+
+    akka {
+      log-dead-letters = 10
+      log-dead-letters-during-shutdown = on
+    }
+
+To customize the logging further or take other actions for dead letters you can subscribe
+to the :ref:`event-stream-java`.
+
 Auxiliary logging options
 -------------------------
 
