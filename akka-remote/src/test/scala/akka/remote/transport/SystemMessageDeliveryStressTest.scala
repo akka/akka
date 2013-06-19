@@ -46,7 +46,7 @@ object SystemMessageDeliveryStressTest {
         acceptable-heartbeat-pause = 0.01 s
       }
       remote.retry-window = 1 s
-      remote.maximum-retries-in-window = 1000
+      remote.maximum-retries-in-window = 2
       remote.use-passive-connections = on
 
       remote.netty.tcp {
@@ -90,7 +90,9 @@ object SystemMessageDeliveryStressTest {
 }
 
 abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
-  extends AkkaSpec(ConfigFactory.parseString(cfg).withFallback(configA)) with ImplicitSender with DefaultTimeout {
+  extends AkkaSpec(ConfigFactory.parseString(cfg).withFallback(SystemMessageDeliveryStressTest.baseConfig))
+  with ImplicitSender
+  with DefaultTimeout {
   import SystemMessageDeliveryStressTest._
 
   val systemB = ActorSystem("systemB", system.settings.config)

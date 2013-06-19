@@ -125,7 +125,9 @@ class TestTransport(
   }
 
   private def defaultDisassociate(handle: TestAssociationHandle): Future[Unit] = {
-    registry.deregisterAssociation(handle.key).foreach { registry.remoteListenerRelativeTo(handle, _) notify Disassociated }
+    registry.deregisterAssociation(handle.key).foreach {
+      registry.remoteListenerRelativeTo(handle, _) notify Disassociated(AssociationHandle.Unknown)
+    }
     Future.successful(())
   }
 

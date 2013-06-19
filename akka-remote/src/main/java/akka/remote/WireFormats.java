@@ -10,23 +10,29 @@ public final class WireFormats {
   }
   public enum CommandType
       implements com.google.protobuf.ProtocolMessageEnum {
-    CONNECT(0, 1),
-    SHUTDOWN(1, 2),
+    ASSOCIATE(0, 1),
+    DISASSOCIATE(1, 2),
     HEARTBEAT(2, 3),
+    DISASSOCIATE_SHUTTING_DOWN(3, 4),
+    DISASSOCIATE_QUARANTINED(4, 5),
     ;
     
-    public static final int CONNECT_VALUE = 1;
-    public static final int SHUTDOWN_VALUE = 2;
+    public static final int ASSOCIATE_VALUE = 1;
+    public static final int DISASSOCIATE_VALUE = 2;
     public static final int HEARTBEAT_VALUE = 3;
+    public static final int DISASSOCIATE_SHUTTING_DOWN_VALUE = 4;
+    public static final int DISASSOCIATE_QUARANTINED_VALUE = 5;
     
     
     public final int getNumber() { return value; }
     
     public static CommandType valueOf(int value) {
       switch (value) {
-        case 1: return CONNECT;
-        case 2: return SHUTDOWN;
+        case 1: return ASSOCIATE;
+        case 2: return DISASSOCIATE;
         case 3: return HEARTBEAT;
+        case 4: return DISASSOCIATE_SHUTTING_DOWN;
+        case 5: return DISASSOCIATE_QUARANTINED;
         default: return null;
       }
     }
@@ -57,7 +63,7 @@ public final class WireFormats {
     }
     
     private static final CommandType[] VALUES = {
-      CONNECT, SHUTDOWN, HEARTBEAT, 
+      ASSOCIATE, DISASSOCIATE, HEARTBEAT, DISASSOCIATE_SHUTTING_DOWN, DISASSOCIATE_QUARANTINED, 
     };
     
     public static CommandType valueOf(
@@ -5626,7 +5632,7 @@ public final class WireFormats {
     }
     
     private void initFields() {
-      commandType_ = akka.remote.WireFormats.CommandType.CONNECT;
+      commandType_ = akka.remote.WireFormats.CommandType.ASSOCIATE;
       handshakeInfo_ = akka.remote.WireFormats.AkkaHandshakeInfo.getDefaultInstance();
     }
     private byte memoizedIsInitialized = -1;
@@ -5799,7 +5805,7 @@ public final class WireFormats {
       
       public Builder clear() {
         super.clear();
-        commandType_ = akka.remote.WireFormats.CommandType.CONNECT;
+        commandType_ = akka.remote.WireFormats.CommandType.ASSOCIATE;
         bitField0_ = (bitField0_ & ~0x00000001);
         if (handshakeInfoBuilder_ == null) {
           handshakeInfo_ = akka.remote.WireFormats.AkkaHandshakeInfo.getDefaultInstance();
@@ -5947,7 +5953,7 @@ public final class WireFormats {
       private int bitField0_;
       
       // required .CommandType commandType = 1;
-      private akka.remote.WireFormats.CommandType commandType_ = akka.remote.WireFormats.CommandType.CONNECT;
+      private akka.remote.WireFormats.CommandType commandType_ = akka.remote.WireFormats.CommandType.ASSOCIATE;
       public boolean hasCommandType() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
@@ -5965,7 +5971,7 @@ public final class WireFormats {
       }
       public Builder clearCommandType() {
         bitField0_ = (bitField0_ & ~0x00000001);
-        commandType_ = akka.remote.WireFormats.CommandType.CONNECT;
+        commandType_ = akka.remote.WireFormats.CommandType.ASSOCIATE;
         onChanged();
         return this;
       }
@@ -7410,8 +7416,10 @@ public final class WireFormats {
       "(\0132\014.AddressData\022\013\n\003uid\030\002 \002(\006\022\016\n\006cookie\030" +
       "\003 \001(\t\"O\n\013AddressData\022\016\n\006system\030\001 \002(\t\022\020\n\010" +
       "hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010protocol" +
-      "\030\004 \001(\t*7\n\013CommandType\022\013\n\007CONNECT\020\001\022\014\n\010SH" +
-      "UTDOWN\020\002\022\r\n\tHEARTBEAT\020\003B\017\n\013akka.remoteH\001"
+      "\030\004 \001(\t*{\n\013CommandType\022\r\n\tASSOCIATE\020\001\022\020\n\014" +
+      "DISASSOCIATE\020\002\022\r\n\tHEARTBEAT\020\003\022\036\n\032DISASSO" +
+      "CIATE_SHUTTING_DOWN\020\004\022\034\n\030DISASSOCIATE_QU",
+      "ARANTINED\020\005B\017\n\013akka.remoteH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
