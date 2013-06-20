@@ -49,7 +49,7 @@ public class InboxDocTest {
     //#watch
     final Inbox inbox = Inbox.create(system);
     inbox.watch(target);
-    target.tell(PoisonPill.getInstance(), null);
+    target.tell(PoisonPill.getInstance(), ActorRef.noSender());
     assert inbox.receive(Duration.create(1, TimeUnit.SECONDS)) instanceof Terminated;
     //#watch
   }

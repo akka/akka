@@ -95,7 +95,7 @@ public class MessageStage extends
             if (cmd instanceof PipelineTest.SetTarget) {
               target = ((PipelineTest.SetTarget) cmd).getRef();
             } else if (cmd instanceof TickGenerator.Tick && target != null) {
-              target.tell(cmd, null);
+              target.tell(cmd, ActorRef.noSender());
             }
             //#omitted
             if (cmd instanceof TickGenerator.Tick) {

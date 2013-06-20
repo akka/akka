@@ -77,11 +77,11 @@ public class CustomRouterDocTest {
   public void countVotesAsIntendedNotAsInFlorida() throws Exception {
     ActorRef routedActor = system.actorOf(
       Props.empty().withRouter(new VoteCountRouter()));
-    routedActor.tell(DemocratVote, null);
-    routedActor.tell(DemocratVote, null);
-    routedActor.tell(RepublicanVote, null);
-    routedActor.tell(DemocratVote, null);
-    routedActor.tell(RepublicanVote, null);
+    routedActor.tell(DemocratVote, ActorRef.noSender());
+    routedActor.tell(DemocratVote, ActorRef.noSender());
+    routedActor.tell(RepublicanVote, ActorRef.noSender());
+    routedActor.tell(DemocratVote, ActorRef.noSender());
+    routedActor.tell(RepublicanVote, ActorRef.noSender());
     Timeout timeout = new Timeout(Duration.create(1, "seconds"));
     Future<Object> democratsResult =
       ask(routedActor, DemocratCountResult, timeout);

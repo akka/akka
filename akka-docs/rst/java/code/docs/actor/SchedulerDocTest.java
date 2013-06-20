@@ -41,7 +41,7 @@ public class SchedulerDocTest {
       new Runnable() {
         @Override
         public void run() {
-          testActor.tell(System.currentTimeMillis(), null);
+          testActor.tell(System.currentTimeMillis(), ActorRef.noSender());
         }
     }, system.dispatcher());
     //#schedule-one-off-thunk

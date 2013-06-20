@@ -370,7 +370,7 @@ public class UntypedActorDocTest {
         master.tell("", getRef());
         final ActorRef victim = expectMsgClass(ActorRef.class);
         //#kill
-        victim.tell(akka.actor.Kill.getInstance(), null);
+        victim.tell(akka.actor.Kill.getInstance(), ActorRef.noSender());
         //#kill
         expectMsgEquals("killed");
         expectMsgEquals("stopped");

@@ -33,7 +33,7 @@ public class DurableMailboxDocTest {
     ActorRef myActor = system.actorOf(Props.create(MyUntypedActor.class).
         withDispatcher("my-dispatcher"), "myactor");
     //#dispatcher-config-use
-    myActor.tell("test", null);
+    myActor.tell("test", ActorRef.noSender());
   }
 
   public static class MyUntypedActor extends UntypedActor {

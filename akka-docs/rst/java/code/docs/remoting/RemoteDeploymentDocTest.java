@@ -53,7 +53,7 @@ public class RemoteDeploymentDocTest {
     //#sample-actor
 
     ActorRef actor = system.actorOf(Props.create(SampleActor.class), "sampleActor");
-    actor.tell("Pretty slick", null);
+    actor.tell("Pretty slick", ActorRef.noSender());
     //#sample-actor
   }
   
