@@ -143,7 +143,6 @@ class TcpConnectionSpec extends AkkaSpec("""
 
     "write data to network (and acknowledge)" in new EstablishedConnectionTest() {
       run {
-        object Ack extends Event
         val writer = TestProbe()
 
         // directly acknowledge an empty write
@@ -175,13 +174,27 @@ class TcpConnectionSpec extends AkkaSpec("""
 
     "write data after not acknowledged data" in new EstablishedConnectionTest() {
       run {
-        object Ack extends Event
         val writer = TestProbe()
         writer.send(connectionActor, Write(ByteString(42.toByte)))
         writer.expectNoMsg(500.millis)
+      }
+    }
 
+    "acknowledge the completion of an ACKed empty write" in new EstablishedConnectionTest() {
+      run {
+        val writer = TestProbe()
         writer.send(connectionActor, Write(ByteString.empty, Ack))
         writer.expectMsg(Ack)
+      }
+    }
+
+    "not acknowledge the completion of a NACKed empty write" in new EstablishedConnectionTest() {
+      run {
+        val writer = TestProbe()
+        writer.send(connectionActor, Write(ByteString.empty, NoAck))
+        writer.expectNoMsg(250.millis)
+        writer.send(connectionActor, Write(ByteString.empty, NoAck(42)))
+        writer.expectNoMsg(250.millis)
       }
     }
 
@@ -200,7 +213,6 @@ class TcpConnectionSpec extends AkkaSpec("""
         // maximum of 100 MB
         val size = math.min(testFile.length(), 100000000).toInt
 
-        object Ack extends Event
         val writer = TestProbe()
         writer.send(connectionActor, WriteFile(testFile.getAbsolutePath, 0, size, Ack))
         pullFromServerSide(size, 1000000)
@@ -284,7 +296,7 @@ class TcpConnectionSpec extends AkkaSpec("""
       new EstablishedConnectionTest() with SmallRcvBuffer {
         run {
           // we should test here that a pending write command is properly finished first
-          object Ack extends Event
+
           // set an artificially small send buffer size so that the write is queued
           // inside the connection actor
           clientSideChannel.socket.setSendBufferSize(1024)
@@ -346,7 +358,7 @@ class TcpConnectionSpec extends AkkaSpec("""
       new EstablishedConnectionTest() with SmallRcvBuffer {
         run {
           // we should test here that a pending write command is properly finished first
-          object Ack extends Event
+
           // set an artificially small send buffer size so that the write is queued
           // inside the connection actor
           clientSideChannel.socket.setSendBufferSize(1024)
@@ -379,7 +391,7 @@ class TcpConnectionSpec extends AkkaSpec("""
           ignoreIfWindows()
 
           // we should test here that a pending write command is properly finished first
-          object Ack extends Event
+
           // set an artificially small send buffer size so that the write is queued
           // inside the connection actor
           clientSideChannel.socket.setSendBufferSize(1024)
@@ -426,7 +438,7 @@ class TcpConnectionSpec extends AkkaSpec("""
 
           selector.send(connectionActor, ChannelReadable)
           connectionHandler.expectMsg(PeerClosed)
-          object Ack extends Event
+
           connectionHandler.send(connectionActor, writeCmd(Ack))
           pullFromServerSide(TestSize)
           connectionHandler.expectMsg(Ack)
@@ -444,7 +456,7 @@ class TcpConnectionSpec extends AkkaSpec("""
 
           selector.send(connectionActor, ChannelReadable)
           connectionHandler.expectMsg(PeerClosed)
-          object Ack extends Event
+
           connectionHandler.send(connectionActor, writeCmd(Ack))
           pullFromServerSide(TestSize)
           connectionHandler.expectMsg(Ack)
@@ -890,4 +902,6 @@ class TcpConnectionSpec extends AkkaSpec("""
       channel.close()
     }
   }
+
+  object Ack extends Event
 }
