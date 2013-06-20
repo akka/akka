@@ -3,12 +3,12 @@
  */
 package akka.io
 
+import java.net.InetSocketAddress
 import akka.testkit.{ TestProbe, ImplicitSender, AkkaSpec }
+import akka.util.ByteString
+import akka.actor.ActorRef
 import akka.io.Udp._
 import akka.TestUtils._
-import akka.util.ByteString
-import java.net.InetSocketAddress
-import akka.actor.ActorRef
 
 class UdpIntegrationSpec extends AkkaSpec("""
     akka.loglevel = INFO

@@ -457,12 +457,11 @@ class TcpConnectionSpec extends AkkaSpec("""
 
     "report when peer aborted the connection" in new EstablishedConnectionTest() {
       run {
-        EventFilter[IOException](occurrences = 1) intercept {
-          abortClose(serverSideChannel)
-          selector.send(connectionActor, ChannelReadable)
-          val err = connectionHandler.expectMsgType[ErrorClosed]
-          err.cause must be(ConnectionResetByPeerMessage)
-        }
+        abortClose(serverSideChannel)
+        selector.send(connectionActor, ChannelReadable)
+        val err = connectionHandler.expectMsgType[ErrorClosed]
+        err.cause must be(ConnectionResetByPeerMessage)
+
         // wait a while
         connectionHandler.expectNoMsg(200.millis)
 
@@ -475,11 +474,9 @@ class TcpConnectionSpec extends AkkaSpec("""
         val writer = TestProbe()
 
         abortClose(serverSideChannel)
-        EventFilter[IOException](occurrences = 1) intercept {
-          writer.send(connectionActor, Write(ByteString("testdata")))
-          // bother writer and handler should get the message
-          writer.expectMsgType[ErrorClosed]
-        }
+        writer.send(connectionActor, Write(ByteString("testdata")))
+        // bother writer and handler should get the message
+        writer.expectMsgType[ErrorClosed]
         connectionHandler.expectMsgType[ErrorClosed]
 
         assertThisConnectionActorTerminated()
@@ -501,10 +498,8 @@ class TcpConnectionSpec extends AkkaSpec("""
             key.isConnectable must be(true)
             val forceThisLazyVal = connectionActor.toString
             Thread.sleep(300)
-            EventFilter[ConnectException](occurrences = 1) intercept {
-              selector.send(connectionActor, ChannelConnectable)
-              userHandler.expectMsg(CommandFailed(Connect(UnboundAddress)))
-            }
+            selector.send(connectionActor, ChannelConnectable)
+            userHandler.expectMsg(CommandFailed(Connect(UnboundAddress)))
 
             verifyActorTermination(connectionActor)
           } finally sel.close()
@@ -516,9 +511,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         override lazy val connectionActor = createConnectionActor(serverAddress = UnboundAddress, timeout = Option(100.millis))
         run {
           connectionActor.toString must not be ("")
-          EventFilter[SocketTimeoutException](occurrences = 1) intercept {
-            userHandler.expectMsg(CommandFailed(Connect(UnboundAddress, timeout = Option(100.millis))))
-          }
+          userHandler.expectMsg(CommandFailed(Connect(UnboundAddress, timeout = Option(100.millis))))
           verifyActorTermination(connectionActor)
         }
       }

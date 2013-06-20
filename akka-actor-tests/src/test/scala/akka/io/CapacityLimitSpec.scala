@@ -5,9 +5,8 @@
 package akka.io
 
 import akka.testkit.{ TestProbe, AkkaSpec }
+import akka.TestUtils._
 import Tcp._
-import akka.TestUtils
-import TestUtils._
 
 class CapacityLimitSpec extends AkkaSpec("""
     akka.loglevel = ERROR

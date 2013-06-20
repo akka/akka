@@ -4,13 +4,11 @@
 
 package akka.io
 
+import scala.annotation.tailrec
+import scala.concurrent.forkjoin.ThreadLocalRandom
+import scala.util.Success
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
-import scala.annotation.tailrec
-import java.nio.ByteOrder
-import scala.concurrent.forkjoin.ThreadLocalRandom
-import scala.util.Try
-import scala.util.Success
 
 class PipelineSpec extends AkkaSpec("akka.actor.serialize-creators = on") {
 
