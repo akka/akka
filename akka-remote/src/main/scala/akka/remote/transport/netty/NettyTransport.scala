@@ -27,6 +27,7 @@ import scala.concurrent.{ ExecutionContext, Promise, Future, blocking }
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.{ NoStackTrace, NonFatal }
 import akka.util.Helpers.Requiring
+import akka.util.Helpers
 
 object NettyTransportSettings {
   sealed trait Mode
@@ -110,7 +111,10 @@ class NettyTransportSettings(config: Config) {
 
   val TcpKeepalive: Boolean = getBoolean("tcp-keepalive")
 
-  val TcpReuseAddr: Boolean = getBoolean("tcp-reuse-addr")
+  val TcpReuseAddr: Boolean = getString("tcp-reuse-addr") match {
+    case "off-for-windows" ⇒ !Helpers.isWindows
+    case _                 ⇒ getBoolean("tcp-reuse-addr")
+  }
 
   val Hostname: String = getString("hostname") match {
     case ""    ⇒ InetAddress.getLocalHost.getHostAddress

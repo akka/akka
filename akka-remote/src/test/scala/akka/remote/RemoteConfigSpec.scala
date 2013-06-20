@@ -91,7 +91,7 @@ class RemoteConfigSpec extends AkkaSpec(
       Backlog must be === 4096
       TcpNodelay must be(true)
       TcpKeepalive must be(true)
-      TcpReuseAddr must be(true)
+      TcpReuseAddr must be(!Helpers.isWindows)
       c.getString("hostname") must be === ""
       ServerSocketWorkerPoolSize must be === 2
       ClientSocketWorkerPoolSize must be === 2
