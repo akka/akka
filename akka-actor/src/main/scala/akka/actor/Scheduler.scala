@@ -331,7 +331,7 @@ class LightArrayRevolverScheduler(config: Config,
     val wheel = Array.fill(WheelSize)(new TaskQueue)
 
     private def clearAll(): immutable.Seq[TimerTask] = {
-      def collect(q: TaskQueue, acc: Vector[TimerTask]): Vector[TimerTask] = {
+      @tailrec def collect(q: TaskQueue, acc: Vector[TimerTask]): Vector[TimerTask] = {
         q.poll() match {
           case null ⇒ acc
           case x    ⇒ collect(q, acc :+ x)
@@ -341,16 +341,16 @@ class LightArrayRevolverScheduler(config: Config,
     }
 
     @tailrec
-    private def checkQueue(): Unit = queue.pollNode() match {
+    private def checkQueue(time: Long): Unit = queue.pollNode() match {
       case null ⇒ ()
       case node ⇒
         if (node.value.ticks == 0) {
           node.value.executeTask()
         } else {
-          val bucket = (tick + node.value.ticks) & wheelMask
-          wheel(bucket).addNode(node)
+          val bucket = ((time + node.value.ticks * tickNanos - start) / tickNanos) & wheelMask
+          wheel(bucket.toInt).addNode(node)
         }
-        checkQueue()
+        checkQueue(time)
     }
 
     override final def run =
@@ -378,11 +378,12 @@ class LightArrayRevolverScheduler(config: Config,
       }
 
     @tailrec final def nextTick(): Unit = {
-      val sleepTime = start + tick * tickNanos - clock()
+      val time = clock()
+      val sleepTime = start + tick * tickNanos - time
 
       if (sleepTime > 0) {
         // check the queue before taking a nap
-        checkQueue()
+        checkQueue(time)
         waitNanos(sleepTime)
       } else {
         val bucket = tick & wheelMask
@@ -405,7 +406,7 @@ class LightArrayRevolverScheduler(config: Config,
         wheel(bucket) = putBack
 
         // check the queue now so that ticks==0 tasks can execute immediately
-        checkQueue()
+        checkQueue(clock())
 
         tick += 1
       }

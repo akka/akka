@@ -387,6 +387,21 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       }
     }
 
+    "properly defer jobs even when the timer thread oversleeps" in {
+      withScheduler() { (sched, driver) ⇒
+        implicit def ec = localEC
+        import driver._
+        sched.scheduleOnce(step * 3, probe.ref, "hello")
+        wakeUp(step * 5)
+        expectWait(step)
+        wakeUp(step * 2)
+        expectWait(step)
+        wakeUp(step)
+        probe.expectMsg("hello")
+        expectWait(step)
+      }
+    }
+
     "correctly wrap around wheel rounds" in {
       withScheduler(config = ConfigFactory.parseString("akka.scheduler.ticks-per-wheel=2")) { (sched, driver) ⇒
         implicit def ec = localEC
