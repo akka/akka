@@ -147,7 +147,7 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
       handleA.disassociate()
 
       expectMsgPF(timeout.duration) {
-        case Disassociated ⇒
+        case Disassociated(_) ⇒
       }
 
       awaitCond(!registry.existsAssociation(addressATest, addressBTest))

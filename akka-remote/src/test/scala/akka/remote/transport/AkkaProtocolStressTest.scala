@@ -25,7 +25,7 @@ object AkkaProtocolStressTest {
         acceptable-heartbeat-pause = 0.01 s
       }
       remote.retry-window = 1 s
-      remote.maximum-retries-in-window = 1000
+      remote.maximum-retries-in-window = 3
 
       remote.netty.tcp {
         applied-adapters = ["gremlin"]
@@ -33,10 +33,12 @@ object AkkaProtocolStressTest {
       }
 
     }
-                                                   """)
+  """)
 
   class SequenceVerifier(remote: ActorRef, controller: ActorRef) extends Actor {
-    val limit = 10000
+    import context.dispatcher
+
+    val limit = 100000
     var nextSeq = 0
     var maxSeq = -1
     var losses = 0
@@ -46,7 +48,8 @@ object AkkaProtocolStressTest {
       case "sendNext" ⇒ if (nextSeq < limit) {
         remote ! nextSeq
         nextSeq += 1
-        self ! "sendNext"
+        if (nextSeq % 2000 == 0) context.system.scheduler.scheduleOnce(500.milliseconds, self, "sendNext")
+        else self ! "sendNext"
       }
       case seq: Int ⇒
         if (seq > maxSeq) {
@@ -82,11 +85,13 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
 
   "AkkaProtocolTransport" must {
     "guarantee at-most-once delivery and message ordering despite packet loss" taggedAs TimingTest in {
+      system.eventStream.publish(TestEvent.Mute(DeadLettersFilter[Any]))
+      systemB.eventStream.publish(TestEvent.Mute(DeadLettersFilter[Any]))
       Await.result(RARP(system).provider.transport.managementCommand(One(addressB, Drop(0.3, 0.3))), 3.seconds.dilated)
 
       val tester = system.actorOf(Props(classOf[SequenceVerifier], here, self)) ! "start"
 
-      expectMsgPF(45.seconds) {
+      expectMsgPF(60.seconds) {
         case (received: Int, lost: Int) ⇒
           log.debug(s" ######## Received ${received - lost} messages from ${received} ########")
       }

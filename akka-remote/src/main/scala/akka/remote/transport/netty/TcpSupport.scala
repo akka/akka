@@ -38,7 +38,7 @@ private[remote] trait TcpHandlers extends CommonHandlers {
     new TcpAssociationHandle(localAddress, remoteAddress, transport, channel)
 
   override def onDisconnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit =
-    notifyListener(e.getChannel, Disassociated)
+    notifyListener(e.getChannel, Disassociated(AssociationHandle.Unknown))
 
   override def onMessage(ctx: ChannelHandlerContext, e: MessageEvent): Unit = {
     val bytes: Array[Byte] = e.getMessage.asInstanceOf[ChannelBuffer].array()
@@ -46,7 +46,7 @@ private[remote] trait TcpHandlers extends CommonHandlers {
   }
 
   override def onException(ctx: ChannelHandlerContext, e: ExceptionEvent): Unit = {
-    notifyListener(e.getChannel, Disassociated)
+    notifyListener(e.getChannel, Disassociated(AssociationHandle.Unknown))
     e.getChannel.close() // No graceful close here
   }
 }
