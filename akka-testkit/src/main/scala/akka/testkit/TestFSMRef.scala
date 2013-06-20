@@ -40,7 +40,7 @@ class TestFSMRef[S, D, T <: Actor](
   props: Props,
   supervisor: ActorRef,
   name: String)(implicit ev: T <:< FSM[S, D])
-  extends TestActorRef(system, props, supervisor, name) {
+  extends TestActorRef[T](system, props, supervisor, name) {
 
   private def fsm: T = underlyingActor
 
