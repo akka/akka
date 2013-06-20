@@ -3,6 +3,8 @@
  */
 package akka.remote
 
+import scala.language.postfixOps
+
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
@@ -45,7 +47,7 @@ abstract class RemoteDeliverySpec
 
   override def initialParticipants = roles.size
 
-  def identify(role: RoleName, actorName: String): ActorRef = {
+  def identify(role: RoleName, actorName: String): ActorRef = within(10 seconds) {
     system.actorSelection(node(role) / "user" / actorName) ! Identify(actorName)
     expectMsgType[ActorIdentity].ref.get
   }
