@@ -6,7 +6,7 @@ package akka.io
 import akka.testkit.{ TestProbe, AkkaSpec }
 import java.net.InetSocketAddress
 import akka.util.ByteString
-import akka.actor.{ Props, ActorLogging, Actor, ActorContext }
+import akka.actor.{ Props, ActorLogging, Actor }
 import akka.TestUtils
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration._

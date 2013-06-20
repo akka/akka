@@ -250,13 +250,12 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   def doCloseConnection(handler: ActorRef, closeCommander: Option[ActorRef], closedEvent: ConnectionClosed): Unit = {
     if (closedEvent == Aborted) abort()
     else channel.close()
-    closedMessage = CloseInformation(Set(handler) ++ closeCommander, closedEvent)
-    context.stop(self)
+    stopWith(CloseInformation(Set(handler) ++ closeCommander, closedEvent))
   }
 
-  def handleError(handler: ActorRef, exception: IOException): Nothing = {
-    closedMessage = CloseInformation(Set(handler), ErrorClosed(extractMsg(exception)))
-    throw exception
+  def handleError(handler: ActorRef, exception: IOException): Unit = {
+    log.debug("Closing connection due to IO error {}", exception)
+    stopWith(CloseInformation(Set(handler), ErrorClosed(extractMsg(exception))))
   }
 
   @tailrec private[this] def extractMsg(t: Throwable): String =
@@ -277,6 +276,11 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         if (TraceLogging) log.debug("setSoLinger(true, 0) failed with [{}]", e)
     }
     channel.close()
+  }
+
+  def stopWith(closeInfo: CloseInformation): Unit = {
+    closedMessage = closeInfo
+    context.stop(self)
   }
 
   override def postStop(): Unit = {
@@ -349,7 +353,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       }
 
       try innerWrite(this)
-      catch { case e: IOException ⇒ handleError(info.handler, e) }
+      catch { case e: IOException ⇒ handleError(info.handler, e); this }
     }
     def hasData = buffer.hasRemaining || remainingData.nonEmpty
     def consume(writtenBytes: Int): PendingBufferWrite =
