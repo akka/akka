@@ -125,21 +125,34 @@ private[cluster] case class Gossip(
     overview.seen.get(node).exists(_ == version)
   }
 
-  private def mergeSeenTables(allowed: Set[Member], one: Map[UniqueAddress, VectorClock], another: Map[UniqueAddress, VectorClock]): Map[UniqueAddress, VectorClock] = {
-    (Map.empty[UniqueAddress, VectorClock] /: allowed) {
-      (merged, member) ⇒
-        val node = member.uniqueAddress
-        (one.get(node), another.get(node)) match {
-          case (None, None)     ⇒ merged
-          case (Some(v1), None) ⇒ merged.updated(node, v1)
-          case (None, Some(v2)) ⇒ merged.updated(node, v2)
-          case (Some(v1), Some(v2)) ⇒
-            v1 tryCompareTo v2 match {
-              case None             ⇒ merged
-              case Some(x) if x > 0 ⇒ merged.updated(node, v1)
-              case _                ⇒ merged.updated(node, v2)
-            }
-        }
+  private def mergeSeenTables(allowed: Set[Member],
+                              one: Map[UniqueAddress, VectorClock],
+                              another: Map[UniqueAddress, VectorClock]): Map[UniqueAddress, VectorClock] = {
+    if (allowed.isEmpty) Map.empty
+    else {
+      val builder = Map.newBuilder[UniqueAddress, VectorClock]
+      builder.sizeHint(allowed.size)
+      allowed foreach {
+        member ⇒
+          import VectorClock.{ GreaterThan, LessThan, Equal }
+          val node = member.uniqueAddress
+          val v1 = one get node
+          val v2 = another get node
+          // Create table switch dispatch value and then off we go!
+          val mask = (if (v1.isDefined) 1 else 0) | (if (v2.isDefined) 2 else 0)
+          (mask: @scala.annotation.switch) match {
+            case 0 /*Both empty*/      ⇒ // Advertising space for sale
+            case 1 /*Only v1 defined*/ ⇒ builder += ((node, v1.get))
+            case 2 /*Only v2 defined*/ ⇒ builder += ((node, v2.get))
+            case 3 /*Both defined*/ ⇒
+              v1.get tryCompareTo v2.get match {
+                case GreaterThan      ⇒ builder += ((node, v1.get))
+                case LessThan | Equal ⇒ builder += ((node, v2.get))
+                case _ /*Concurrent*/ ⇒ // Advertising space for sale
+              }
+          }
+      }
+      builder.result
     }
   }
 

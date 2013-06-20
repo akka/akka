@@ -218,4 +218,7 @@ object MemberStatus {
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[cluster] case class UniqueAddress(address: Address, uid: Int)
+private[cluster] case class UniqueAddress(address: Address, uid: Int) {
+  @transient
+  override lazy val hashCode = scala.util.hashing.MurmurHash3.productHash(this)
+}
