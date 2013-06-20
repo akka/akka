@@ -132,7 +132,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
       } else write match {
         case Write(data, ack) if data.isEmpty ⇒
-          if (ack != NoAck) sender ! ack
+          if (write.wantsAck) sender ! ack
 
         case _ ⇒
           pendingWrite = createWrite(write)
