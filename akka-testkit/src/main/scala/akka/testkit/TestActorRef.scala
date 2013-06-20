@@ -154,7 +154,14 @@ object TestActorRef {
   }), name)
 
   /**
-   * Java API: create a TestActorRef in the given system for the given props
+   * Java API: create a TestActorRef in the given system for the given props,
+   * with the given name.
    */
   def create[T <: Actor](system: ActorSystem, props: Props, name: String): TestActorRef[T] = apply(props, name)(system)
+
+  /**
+   * Java API: create a TestActorRef in the given system for the given props,
+   * with a random name.
+   */
+  def create[T <: Actor](system: ActorSystem, props: Props): TestActorRef[T] = apply(props)(system)
 }
