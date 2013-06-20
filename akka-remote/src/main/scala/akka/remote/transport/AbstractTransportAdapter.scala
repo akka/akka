@@ -13,6 +13,7 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Promise, Future }
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.remote.transport.AssociationHandle.DisassociateInfo
 
 trait TransportAdapterProvider {
   /**
@@ -125,7 +126,7 @@ object ActorTransportAdapter {
   case class AssociateUnderlying(remoteAddress: Address, statusPromise: Promise[AssociationHandle]) extends TransportOperation
   case class ListenUnderlying(listenAddress: Address,
                               upstreamListener: Future[AssociationEventListener]) extends TransportOperation
-  case object DisassociateUnderlying extends TransportOperation
+  case class DisassociateUnderlying(info: DisassociateInfo = AssociationHandle.Unknown) extends TransportOperation
 
   implicit val AskTimeout = Timeout(5.seconds)
 }

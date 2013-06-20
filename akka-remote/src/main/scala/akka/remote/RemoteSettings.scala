@@ -40,8 +40,8 @@ final class RemoteSettings(val config: Config) {
   } requiring (_ >= Duration.Zero, "retry-gate-closed-for must be >= 0")
 
   val UnknownAddressGateClosedFor: FiniteDuration = {
-    Duration(getMilliseconds("akka.remote.gate-unknown-addresses-for"), MILLISECONDS)
-  } requiring (_ > Duration.Zero, "gate-unknown-addresses-for must be > 0")
+    Duration(getMilliseconds("akka.remote.gate-invalid-addresses-for"), MILLISECONDS)
+  } requiring (_ > Duration.Zero, "gate-invalid-addresses-for must be > 0")
 
   val UsePassiveConnections: Boolean = getBoolean("akka.remote.use-passive-connections")
 

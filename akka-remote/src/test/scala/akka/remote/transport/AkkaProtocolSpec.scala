@@ -3,7 +3,7 @@ package akka.remote.transport
 import akka.actor.{ ExtendedActorSystem, Address, Props }
 import akka.remote.transport.AkkaPduCodec.{ Disassociate, Associate, Heartbeat }
 import akka.remote.transport.AkkaProtocolSpec.TestFailureDetector
-import akka.remote.transport.AssociationHandle.{ ActorHandleEventListener, Disassociated, InboundPayload }
+import akka.remote.transport.AssociationHandle.{ DisassociateInfo, ActorHandleEventListener, Disassociated, InboundPayload }
 import akka.remote.transport.TestTransport._
 import akka.remote.transport.Transport._
 import akka.remote.{ SeqNo, WireFormats, RemoteActorRefProvider, FailureDetector }
@@ -74,7 +74,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
   def testHeartbeat = InboundPayload(codec.constructHeartbeat)
   def testPayload = InboundPayload(testMsgPdu)
 
-  def testDisassociate = InboundPayload(codec.constructDisassociate)
+  def testDisassociate(info: DisassociateInfo) = InboundPayload(codec.constructDisassociate(info))
   def testAssociate(uid: Int, cookie: Option[String]) =
     InboundPayload(codec.constructAssociate(HandshakeInfo(remoteAkkaAddress, uid, cookie)))
 
@@ -113,8 +113,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
     if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
       case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
         codec.decodePdu(payload) match {
-          case Disassociate ⇒ true
-          case _            ⇒ false
+          case Disassociate(_) ⇒ true
+          case _               ⇒ false
         }
       case _ ⇒ false
     }
@@ -326,9 +326,9 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
 
-      reader ! testDisassociate
+      reader ! testDisassociate(AssociationHandle.Unknown)
 
-      expectMsg(Disassociated)
+      expectMsg(Disassociated(AssociationHandle.Unknown))
     }
 
     "handle transport level disassociations" in {
@@ -361,9 +361,9 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
 
-      reader ! Disassociated
+      reader ! Disassociated(AssociationHandle.Unknown)
 
-      expectMsg(Disassociated)
+      expectMsg(Disassociated(AssociationHandle.Unknown))
     }
 
     "disassociate when failure detector signals failure" in {
@@ -401,7 +401,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       failureDetector.isAvailable = false
 
-      expectMsg(Disassociated)
+      expectMsg(Disassociated(AssociationHandle.Unknown))
     }
 
     "handle correctly when the handler is registered only after the association is already closed" in {
@@ -432,11 +432,11 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         case _ ⇒ fail()
       }
 
-      stateActor ! Disassociated
+      stateActor ! Disassociated(AssociationHandle.Unknown)
 
       wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
 
-      expectMsg(Disassociated)
+      expectMsg(Disassociated(AssociationHandle.Unknown))
 
     }
 

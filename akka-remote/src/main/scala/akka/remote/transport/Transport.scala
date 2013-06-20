@@ -8,6 +8,7 @@ import akka.actor.{ ActorRef, Address }
 import akka.util.ByteString
 import akka.remote.transport.AssociationHandle.HandleEventListener
 import akka.AkkaException
+import scala.util.control.NoStackTrace
 
 object Transport {
 
@@ -18,7 +19,7 @@ object Transport {
    * hostname, etc.).
    */
   @SerialVersionUID(1L)
-  case class InvalidAssociationException(msg: String, cause: Throwable) extends AkkaException(msg, cause)
+  case class InvalidAssociationException(msg: String, cause: Throwable = null) extends AkkaException(msg, cause) with NoStackTrace
 
   /**
    * Message sent to a [[akka.remote.transport.Transport.AssociationEventListener]] registered to a transport
@@ -159,8 +160,20 @@ object AssociationHandle {
 
   /**
    * Message sent to the listener registered to an association
+   *
+   * @param info
+   *   information about the reason of disassociation
    */
-  case object Disassociated extends HandleEvent
+  case class Disassociated(info: DisassociateInfo) extends HandleEvent
+
+  /**
+   * Supertype of possible disassociation reasons
+   */
+  sealed trait DisassociateInfo
+
+  case object Unknown extends DisassociateInfo
+  case object Shutdown extends DisassociateInfo
+  case object Quarantined extends DisassociateInfo
 
   /**
    * An interface that needs to be implemented by the user of an [[akka.remote.transport.AssociationHandle]]

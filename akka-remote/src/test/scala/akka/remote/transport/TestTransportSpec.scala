@@ -124,7 +124,7 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
       handleA.disassociate()
 
       expectMsgPF(timeout.duration) {
-        case Disassociated ⇒
+        case Disassociated(_) ⇒
       }
 
       awaitCond(!registry.existsAssociation(addressA, addressB))

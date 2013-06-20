@@ -379,7 +379,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   override val supervisorStrategy =
     OneForOneStrategy(loggingEnabled = false) {
       case InvalidAssociation(localAddress, remoteAddress, _) ⇒
-        log.error("Tried to associate with invalid remote address [{}]. " +
+        log.error("Tried to associate with unreachable remote address [{}]. " +
           "Address is now quarantined, all messages to this address will be delivered to dead letters.", remoteAddress)
         endpoints.markAsFailed(sender, Deadline.now + settings.UnknownAddressGateClosedFor)
         context.system.eventStream.publish(AddressTerminated(remoteAddress))
@@ -445,7 +445,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       addressesPromise.success(transportsAndAddresses)
     case ListensFailure(addressesPromise, cause) ⇒
       addressesPromise.failure(cause)
-
+    case ia: InboundAssociation ⇒
+      context.system.scheduler.scheduleOnce(10.milliseconds, self, ia)
     case ManagementCommand(_) ⇒
       sender ! ManagementCommandAck(false)
     case StartupFinished ⇒
@@ -510,9 +511,11 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       case Some(endpoint) ⇒
         endpoint ! EndpointWriter.TakeOver(handle)
       case None ⇒
-        if (endpoints.isQuarantined(handle.remoteAddress, handle.handshakeInfo.uid)) handle.disassociate()
+        if (endpoints.isQuarantined(handle.remoteAddress, handle.handshakeInfo.uid))
+          handle.disassociate(AssociationHandle.Quarantined)
         else endpoints.writableEndpointWithPolicyFor(handle.remoteAddress) match {
           case Some(Pass(ep)) ⇒
+            pendingReadHandoffs.get(ep) foreach (_.disassociate())
             pendingReadHandoffs += ep -> handle
             ep ! EndpointWriter.StopReading(ep)
           case _ ⇒
@@ -562,14 +565,16 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         shutdownStatus ← shutdownAll(transportMapping.values)(_.shutdown())
       } yield flushStatus && shutdownStatus) pipeTo sender
 
+      pendingReadHandoffs.valuesIterator foreach (_.disassociate(AssociationHandle.Shutdown))
+
       // Ignore all other writes
       context.become(flushing)
   }
 
   def flushing: Receive = {
-    case s: Send               ⇒ extendedSystem.deadLetters ! s
-    case InboundAssociation(h) ⇒ h.disassociate()
-    case Terminated(_)         ⇒ // why should we care now?
+    case s: Send                                   ⇒ extendedSystem.deadLetters ! s
+    case InboundAssociation(h: AkkaProtocolHandle) ⇒ h.disassociate(AssociationHandle.Shutdown)
+    case Terminated(_)                             ⇒ // why should we care now?
   }
 
   private def listens: Future[Seq[(Transport, Address, Promise[AssociationEventListener])]] = {

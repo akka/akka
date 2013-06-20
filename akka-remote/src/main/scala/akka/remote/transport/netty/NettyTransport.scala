@@ -436,8 +436,8 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
     def always(c: ChannelGroupFuture) = NettyFutureBridge(c).map(_ ⇒ true) recover { case _ ⇒ false }
     for {
       // Force flush by trying to write an empty buffer and wait for success
-      lastWriteStatus ← always(channelGroup.write(ChannelBuffers.buffer(0)))
       unbindStatus ← always(channelGroup.unbind())
+      lastWriteStatus ← always(channelGroup.write(ChannelBuffers.buffer(0)))
       disconnectStatus ← always(channelGroup.disconnect())
       closeStatus ← always(channelGroup.close())
     } yield {

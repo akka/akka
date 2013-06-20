@@ -119,11 +119,12 @@ message AkkaHandshakeInfo {
  * Defines the type of the AkkaControlMessage command type
  */
 enum CommandType {
-  CONNECT = 1;
-  SHUTDOWN = 2;
+  ASSOCIATE = 1;
+  DISASSOCIATE = 2;
   HEARTBEAT = 3;
+  DISASSOCIATE_SHUTTING_DOWN = 4; // Remote system is going down and will not accepts new connections
+  DISASSOCIATE_QUARANTINED = 5;   // Remote system refused the association since the current system is quarantined
 }
-
 
 /**
  * Defines a remote address.

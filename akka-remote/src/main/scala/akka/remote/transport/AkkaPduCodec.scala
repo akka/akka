@@ -6,15 +6,10 @@ package akka.remote.transport
 import akka.AkkaException
 import akka.actor.{ AddressFromURIString, InternalActorRef, Address, ActorRef }
 import akka.remote.WireFormats._
-import akka.remote.transport.AkkaPduCodec._
 import akka.remote._
 import akka.util.ByteString
 import com.google.protobuf.InvalidProtocolBufferException
 import com.google.protobuf.{ ByteString ⇒ PByteString }
-import akka.remote.Ack
-import akka.remote.transport.AkkaPduCodec.Payload
-import akka.remote.transport.AkkaPduCodec.Associate
-import akka.remote.transport.AkkaPduCodec.Message
 
 /**
  * INTERNAL API
@@ -35,7 +30,7 @@ private[remote] object AkkaPduCodec {
    */
   sealed trait AkkaPdu
   case class Associate(info: HandshakeInfo) extends AkkaPdu
-  case object Disassociate extends AkkaPdu
+  case class Disassociate(reason: AssociationHandle.DisassociateInfo) extends AkkaPdu
   case object Heartbeat extends AkkaPdu
   case class Payload(bytes: ByteString) extends AkkaPdu
 
@@ -57,7 +52,7 @@ private[remote] object AkkaPduCodec {
  * A Codec that is able to convert Akka PDUs (Protocol Data Units) from and to [[akka.util.ByteString]]s.
  */
 private[remote] trait AkkaPduCodec {
-
+  import AkkaPduCodec._
   /**
    * Returns an [[akka.remote.transport.AkkaPduCodec.AkkaPdu]] instance that represents the PDU contained in the raw
    * ByteString.
@@ -81,17 +76,17 @@ private[remote] trait AkkaPduCodec {
    *   Encoded form as raw bytes
    */
   def encodePdu(pdu: AkkaPdu): ByteString = pdu match {
-    case Associate(info) ⇒ constructAssociate(info)
-    case Payload(bytes)  ⇒ constructPayload(bytes)
-    case Disassociate    ⇒ constructDisassociate
-    case Heartbeat       ⇒ constructHeartbeat
+    case Associate(info)      ⇒ constructAssociate(info)
+    case Payload(bytes)       ⇒ constructPayload(bytes)
+    case Disassociate(reason) ⇒ constructDisassociate(reason)
+    case Heartbeat            ⇒ constructHeartbeat
   }
 
   def constructPayload(payload: ByteString): ByteString
 
   def constructAssociate(info: HandshakeInfo): ByteString
 
-  def constructDisassociate: ByteString
+  def constructDisassociate(reason: AssociationHandle.DisassociateInfo): ByteString
 
   def constructHeartbeat: ByteString
 
@@ -112,6 +107,7 @@ private[remote] trait AkkaPduCodec {
  * INTERNAL API
  */
 private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
+  import AkkaPduCodec._
 
   private def ackBuilder(ack: Ack): AcknowledgementInfo.Builder = {
     val ackBuilder = AcknowledgementInfo.newBuilder()
@@ -151,11 +147,18 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
   override def constructAssociate(info: HandshakeInfo): ByteString = {
     val handshakeInfo = AkkaHandshakeInfo.newBuilder.setOrigin(serializeAddress(info.origin)).setUid(info.uid)
     info.cookie foreach handshakeInfo.setCookie
-    constructControlMessagePdu(WireFormats.CommandType.CONNECT, Some(handshakeInfo))
+    constructControlMessagePdu(WireFormats.CommandType.ASSOCIATE, Some(handshakeInfo))
   }
 
-  override val constructDisassociate: ByteString =
-    constructControlMessagePdu(WireFormats.CommandType.SHUTDOWN, None)
+  private val DISASSOCIATE = constructControlMessagePdu(WireFormats.CommandType.DISASSOCIATE, None)
+  private val DISASSOCIATE_SHUTTING_DOWN = constructControlMessagePdu(WireFormats.CommandType.DISASSOCIATE_SHUTTING_DOWN, None)
+  private val DISASSOCIATE_QUARANTINED = constructControlMessagePdu(WireFormats.CommandType.DISASSOCIATE_QUARANTINED, None)
+
+  override def constructDisassociate(info: AssociationHandle.DisassociateInfo): ByteString = info match {
+    case AssociationHandle.Unknown     ⇒ DISASSOCIATE
+    case AssociationHandle.Shutdown    ⇒ DISASSOCIATE_SHUTTING_DOWN
+    case AssociationHandle.Quarantined ⇒ DISASSOCIATE_QUARANTINED
+  }
 
   override val constructHeartbeat: ByteString =
     constructControlMessagePdu(WireFormats.CommandType.HEARTBEAT, None)
@@ -201,7 +204,7 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
   private def decodeControlPdu(controlPdu: AkkaControlMessage): AkkaPdu = {
 
     controlPdu.getCommandType match {
-      case CommandType.CONNECT if controlPdu.hasHandshakeInfo ⇒
+      case CommandType.ASSOCIATE if controlPdu.hasHandshakeInfo ⇒
         val handshakeInfo = controlPdu.getHandshakeInfo
         val cookie = if (handshakeInfo.hasCookie) Some(handshakeInfo.getCookie) else None
         Associate(
@@ -209,8 +212,10 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
             decodeAddress(handshakeInfo.getOrigin),
             handshakeInfo.getUid.toInt, // 64 bits are allocated in the wire formats, but we use only 32 for now
             cookie))
-      case CommandType.SHUTDOWN  ⇒ Disassociate
-      case CommandType.HEARTBEAT ⇒ Heartbeat
+      case CommandType.DISASSOCIATE               ⇒ Disassociate(AssociationHandle.Unknown)
+      case CommandType.DISASSOCIATE_SHUTTING_DOWN ⇒ Disassociate(AssociationHandle.Shutdown)
+      case CommandType.DISASSOCIATE_QUARANTINED   ⇒ Disassociate(AssociationHandle.Quarantined)
+      case CommandType.HEARTBEAT                  ⇒ Heartbeat
       case x ⇒
         throw new PduCodecException(s"Decoding of control PDU failed, invalid format, unexpected: [${x}]", null)
     }
