@@ -32,7 +32,7 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         settings.SerializeAllMessages must equal(false)
 
         getInt("akka.scheduler.ticks-per-wheel") must equal(512)
-        getMilliseconds("akka.scheduler.tick-duration") must equal(20)
+        getMilliseconds("akka.scheduler.tick-duration") must equal(10)
         getString("akka.scheduler.implementation") must equal("akka.actor.LightArrayRevolverScheduler")
 
         getBoolean("akka.daemonic") must be(false)
