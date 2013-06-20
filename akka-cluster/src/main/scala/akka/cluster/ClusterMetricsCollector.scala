@@ -129,7 +129,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
    * @see [[akka.cluster.ClusterMetricsCollector.collect( )]]
    */
   def collect(): Unit = {
-    latestGossip :+= collector.sample
+    latestGossip :+= collector.sample()
     publish()
   }
 
@@ -575,13 +575,15 @@ private[cluster] trait MetricNumericConverter {
 }
 
 /**
- * INTERNAL API
+ * Implementations of cluster system metrics extends this trait.
  */
-private[cluster] trait MetricsCollector extends Closeable {
+trait MetricsCollector extends Closeable {
   /**
    * Samples and collects new data points.
+   * This method is invoked periodically and should return
+   * current metrics for this node.
    */
-  def sample: NodeMetrics
+  def sample(): NodeMetrics
 }
 
 /**
@@ -612,7 +614,7 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
    * Samples and collects new data points.
    * Creates a new instance each time.
    */
-  def sample: NodeMetrics = NodeMetrics(address, newTimestamp, metrics)
+  def sample(): NodeMetrics = NodeMetrics(address, newTimestamp, metrics)
 
   def metrics: Set[Metric] = {
     val heap = heapMemoryUsage
