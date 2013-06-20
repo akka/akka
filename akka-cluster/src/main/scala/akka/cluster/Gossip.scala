@@ -5,6 +5,7 @@
 package akka.cluster
 
 import scala.collection.immutable
+import scala.collection.immutable.TreeMap
 import MemberStatus._
 
 /**
@@ -61,8 +62,7 @@ private[cluster] object Gossip {
 private[cluster] case class Gossip(
   members: immutable.SortedSet[Member], // sorted set of members with their status, sorted by address
   overview: GossipOverview = GossipOverview(),
-  version: VectorClock = VectorClock()) // vector clock version
-  extends Versioned[Gossip] {
+  version: VectorClock = VectorClock()) { // vector clock version
 
   // TODO can be disabled as optimization
   assertInvariants()
@@ -125,8 +125,10 @@ private[cluster] case class Gossip(
     overview.seen.get(node).exists(_ == version)
   }
 
-  private def mergeSeenTables(allowed: Set[Member], one: Map[UniqueAddress, VectorClock], another: Map[UniqueAddress, VectorClock]): Map[UniqueAddress, VectorClock] = {
-    (Map.empty[UniqueAddress, VectorClock] /: allowed) {
+  private def mergeSeenTables(allowed: immutable.SortedSet[Member],
+                              one: TreeMap[UniqueAddress, VectorClock],
+                              another: TreeMap[UniqueAddress, VectorClock]): TreeMap[UniqueAddress, VectorClock] =
+    (TreeMap.empty[UniqueAddress, VectorClock] /: allowed) {
       (merged, member) ⇒
         val node = member.uniqueAddress
         (one.get(node), another.get(node)) match {
@@ -134,14 +136,13 @@ private[cluster] case class Gossip(
           case (Some(v1), None) ⇒ merged.updated(node, v1)
           case (None, Some(v2)) ⇒ merged.updated(node, v2)
           case (Some(v1), Some(v2)) ⇒
-            v1 tryCompareTo v2 match {
-              case None             ⇒ merged
-              case Some(x) if x > 0 ⇒ merged.updated(node, v1)
-              case _                ⇒ merged.updated(node, v2)
+            v1 compareTo v2 match {
+              case VectorClock.Same | VectorClock.After ⇒ merged.updated(node, v1)
+              case VectorClock.Before                   ⇒ merged.updated(node, v2)
+              case VectorClock.Concurrent               ⇒ merged
             }
         }
     }
-  }
 
   /**
    * Merges the seen table of two Gossip instances.
@@ -236,7 +237,7 @@ private[cluster] case class Gossip(
  */
 @SerialVersionUID(1L)
 private[cluster] case class GossipOverview(
-  seen: Map[UniqueAddress, VectorClock] = Map.empty,
+  seen: TreeMap[UniqueAddress, VectorClock] = TreeMap.empty,
   unreachable: Set[Member] = Set.empty) {
 
   override def toString =

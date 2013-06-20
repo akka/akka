@@ -118,13 +118,7 @@ object Member {
    */
   implicit val ordering: Ordering[Member] = new Ordering[Member] {
     def compare(a: Member, b: Member): Int = {
-      val result = addressOrdering.compare(a.address, b.address)
-      if (result == 0) {
-        val aUid = a.uniqueAddress.uid
-        val bUid = b.uniqueAddress.uid
-        if (aUid < bUid) -1 else if (aUid == bUid) 0 else 1
-      } else
-        result
+      a.uniqueAddress compare b.uniqueAddress
     }
   }
 
@@ -218,4 +212,13 @@ object MemberStatus {
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[cluster] case class UniqueAddress(address: Address, uid: Int)
+private[cluster] case class UniqueAddress(address: Address, uid: Int) extends Ordered[UniqueAddress] {
+  @transient
+  override lazy val hashCode = scala.util.hashing.MurmurHash3.productHash(this)
+
+  override def compare(that: UniqueAddress): Int = {
+    val result = Member.addressOrdering.compare(this.address, that.address)
+    if (result == 0) if (this.uid < that.uid) -1 else if (this.uid == that.uid) 0 else 1
+    else result
+  }
+}
