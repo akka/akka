@@ -4,15 +4,16 @@
 
 package akka.io
 
-import akka.actor.{ ReceiveTimeout, ActorRef }
-import akka.io.Inet.SocketOption
-import akka.io.SelectionHandler._
-import akka.io.Tcp._
 import java.io.IOException
 import java.nio.channels.{ SelectionKey, SocketChannel }
+import java.net.ConnectException
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
-import java.net.{ ConnectException, SocketTimeoutException }
+import akka.actor.{ ReceiveTimeout, ActorRef }
+import akka.io.Inet.SocketOption
+import akka.io.TcpConnection.CloseInformation
+import akka.io.SelectionHandler._
+import akka.io.Tcp._
 
 /**
  * An actor handling the connection state machine for an outgoing connection
@@ -45,7 +46,9 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
   }
 
   def connecting(registration: ChannelRegistration, commander: ActorRef,
-                 options: immutable.Traversable[SocketOption]): Receive =
+                 options: immutable.Traversable[SocketOption]): Receive = {
+    def stop(): Unit = stopWith(CloseInformation(Set(commander), connect.failureMessage))
+
     {
       case ChannelConnectable ⇒
         if (timeout.isDefined) context.setReceiveTimeout(Duration.Undefined) // Clear the timeout
@@ -55,16 +58,14 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
           completeConnect(registration, commander, options)
         } catch {
           case e: IOException ⇒
-            if (tcp.Settings.TraceLogging) log.debug("Could not establish connection due to {}", e)
-            closedMessage = TcpConnection.CloseInformation(Set(commander), connect.failureMessage)
-            throw e
+            log.debug("Could not establish connection to [{}] due to {}", remoteAddress, e)
+            stop()
         }
 
       case ReceiveTimeout ⇒
         if (timeout.isDefined) context.setReceiveTimeout(Duration.Undefined) // Clear the timeout
-        val failure = new SocketTimeoutException(s"Connection to [$remoteAddress] timed out")
-        if (tcp.Settings.TraceLogging) log.debug("Could not establish connection due to {}", failure)
-        closedMessage = TcpConnection.CloseInformation(Set(commander), connect.failureMessage)
-        throw failure
+        log.debug("Connect timeout expired, could not establish connection to [{}]", remoteAddress)
+        stop()
     }
+  }
 }
