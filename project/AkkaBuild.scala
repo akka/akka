@@ -36,11 +36,13 @@ object AkkaBuild extends Build {
 
   val enableMiMa = false
 
+  val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.2")
+
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.2-SNAPSHOT",
     // Also change ScalaVersion in akka-sbt-plugin/sample/project/Build.scala
-    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.1"),
+    scalaVersion := requestedScalaVersion,
     scalaBinaryVersion <<= (scalaVersion, scalaBinaryVersion)((v, bv) => System.getProperty("akka.scalaBinaryVersion", if (v contains "-") v else bv))
   )
 
@@ -80,7 +82,7 @@ object AkkaBuild extends Build {
     base = file("all-tests"),
     dependencies = (akka.aggregate: Seq[ProjectReference]) map (_ % "test->test"),
     settings = defaultSettings ++ Seq(
-      scalaVersion := "2.10.1-RC1", // FIXME no hardcoded value, has to be passed in manually
+      scalaVersion := requestedScalaVersion,
       publishArtifact := false,
       definedTests in Test := Nil
     ) ++ (
