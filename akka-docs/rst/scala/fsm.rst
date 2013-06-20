@@ -32,7 +32,7 @@ First, consider all of the below to use these import statements:
 
 .. includecode:: code/docs/actor/FSMDocSpec.scala#simple-imports
 
-The contract of our “Buncher” actor is that is accepts or produces the following messages:
+The contract of our “Buncher” actor is that it accepts or produces the following messages:
 
 .. includecode:: code/docs/actor/FSMDocSpec.scala#simple-events
 
