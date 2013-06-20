@@ -6,6 +6,7 @@ package akka.cluster.protobuf
 import akka.serialization.Serializer
 import akka.cluster._
 import scala.collection.breakOut
+import scala.collection.immutable.TreeMap
 import akka.actor.{ ExtendedActorSystem, Address }
 import scala.Some
 import scala.collection.immutable
@@ -60,7 +61,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
       case m: MetricsGossipEnvelope ⇒
         compress(metricsGossipEnvelopeToProto(m))
       case InternalClusterAction.Join(node, roles) ⇒
-        msg.Join(uniqueAddressToProto(node), roles.map(identity)(breakOut): Vector[String]).toByteArray
+        msg.Join(uniqueAddressToProto(node), roles.toVector).toByteArray
       case InternalClusterAction.Welcome(from, gossip) ⇒
         compress(msg.Welcome(uniqueAddressToProto(from), gossipToProto(gossip)))
       case ClusterUserAction.Leave(address) ⇒
@@ -162,8 +163,8 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
     val addressMapping = allAddresses.zipWithIndex.toMap
     val allRoles = allMembers.foldLeft(Set.empty[String])((acc, m) ⇒ acc ++ m.roles).to[Vector]
     val roleMapping = allRoles.zipWithIndex.toMap
-    val allHashes = gossip.overview.seen.values.foldLeft(gossip.version.versions.keys.map(_.hash).toSet) {
-      case (s, VectorClock(t, v)) ⇒ s ++ v.keys.map(_.hash)
+    val allHashes = gossip.overview.seen.values.foldLeft(gossip.version.versions.keys.toSet) {
+      case (s, VectorClock(v)) ⇒ s ++ v.keys
     }.to[Vector]
     val hashMapping = allHashes.zipWithIndex.toMap
 
@@ -192,8 +193,8 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
 
   private def vectorClockToProto(version: VectorClock, hashMapping: Map[String, Int]): msg.VectorClock = {
     def mapHash(hash: String) = mapWithErrorMessage(hashMapping, hash, "hash")
-    msg.VectorClock(version.timestamp.time,
-      version.versions.map { case (n, t) ⇒ msg.VectorClock.Version(mapHash(n.hash), t.time) }.to[Vector])
+    msg.VectorClock(None,
+      version.versions.map { case (n, t) ⇒ msg.VectorClock.Version(mapHash(n), t.time) }.to[Vector])
   }
 
   private def gossipEnvelopeToProto(envelope: GossipEnvelope): msg.GossipEnvelope = {
@@ -202,7 +203,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
   }
 
   private def gossipStatusToProto(status: GossipStatus): msg.GossipStatus = {
-    val allHashes: Vector[String] = status.version.versions.keys.map(_.hash)(collection.breakOut)
+    val allHashes: Vector[String] = status.version.versions.keys.toVector
     val hashMapping = allHashes.zipWithIndex.toMap
     msg.GossipStatus(uniqueAddressToProto(status.from), allHashes, vectorClockToProto(status.version, hashMapping))
   }
@@ -230,18 +231,17 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
 
     val members = gossip.members.map(memberFromProto).to[immutable.SortedSet]
     val unreachable = gossip.overview.unreachable.map(memberFromProto).toSet
-    val seen = gossip.overview.seen.map(seenFromProto).toMap
+    val seen = gossip.overview.seen.map(seenFromProto)(breakOut): TreeMap[UniqueAddress, VectorClock]
     val overview = GossipOverview(seen, unreachable)
 
     Gossip(members, overview, vectorClockFromProto(gossip.version, hashMapping))
   }
 
   private def vectorClockFromProto(version: msg.VectorClock, hashMapping: immutable.Seq[String]) = {
-    VectorClock(VectorClock.Timestamp(version.timestamp),
-      version.versions.map {
-        case msg.VectorClock.Version(h, t) ⇒
-          (VectorClock.Node.fromHash(hashMapping(h)), VectorClock.Timestamp(t))
-      }.toMap)
+    VectorClock(version.versions.map({
+      case msg.VectorClock.Version(h, t) ⇒
+        (VectorClock.Node.fromHash(hashMapping(h)), VectorClock.Timestamp(t))
+    })(breakOut): TreeMap[VectorClock.Node, VectorClock.Timestamp])
   }
 
   private def gossipEnvelopeFromProto(envelope: msg.GossipEnvelope): GossipEnvelope = {
