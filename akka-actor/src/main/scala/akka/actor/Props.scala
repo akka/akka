@@ -123,7 +123,7 @@ object Props {
    * Create new Props from the given [[Creator]].
    */
   def create[T <: Actor](creator: Creator[T]): Props = {
-    if ((creator.getClass.getModifiers & Modifier.STATIC) == 0)
+    if ((creator.getClass.getEnclosingClass ne null) && (creator.getClass.getModifiers & Modifier.STATIC) == 0)
       throw new IllegalArgumentException("cannot use non-static local Creator to create actors; make it static or top-level")
     val ac = classOf[Actor]
     val actorClass = Reflect.findMarker(creator.getClass, classOf[Creator[_]]) match {
