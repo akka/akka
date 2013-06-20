@@ -17,7 +17,8 @@ public class ProducerTestBase {
     ActorSystem system = ActorSystem.create("some-system");
     Props props = Props.create(Orders.class);
     ActorRef producer = system.actorOf(props, "jmsproducer");
-    producer.tell("<order amount=\"100\" currency=\"PLN\" itemId=\"12345\"/>", null);
+    producer.tell("<order amount=\"100\" currency=\"PLN\" itemId=\"12345\"/>",
+        ActorRef.noSender());
     //#TellProducer
     JavaTestKit.shutdownActorSystem(system);
   }
@@ -42,7 +43,7 @@ public class ProducerTestBase {
     Map<String,Object> headers = new HashMap<String, Object>();
     headers.put(CamelMessage.MessageExchangeId(),"123");
     producer.tell(new CamelMessage("<order amount=\"100\" currency=\"PLN\" " +
-      "itemId=\"12345\"/>",headers), null);
+      "itemId=\"12345\"/>",headers), ActorRef.noSender());
     //#Correlate
     system.stop(producer);
     JavaTestKit.shutdownActorSystem(system);

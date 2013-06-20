@@ -14,7 +14,7 @@ public class OnRouteResponseTestBase {
         Forwarder.class, "http://localhost:8080/news/akka", receiver));
     // the Forwarder sends out a request to the web page and forwards the response to
     // the ResponseReceiver
-    forwardResponse.tell("some request", null);
+    forwardResponse.tell("some request", ActorRef.noSender());
     //#RouteResponse
     system.stop(receiver);
     system.stop(forwardResponse);

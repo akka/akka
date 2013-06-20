@@ -83,13 +83,13 @@ public class ZeromqDocTest {
     //#sub-topic-socket
 
     //#unsub-topic-socket
-    subTopicSocket.tell(new Unsubscribe("foo.bar"), null);
+    subTopicSocket.tell(new Unsubscribe("foo.bar"), ActorRef.noSender());
     //#unsub-topic-socket
 
     byte[] payload = new byte[0];
     //#pub-topic
     pubSocket.tell(ZMQMessage.withFrames(ByteString.fromString("foo.bar"), 
-      ByteString.fromArray(payload)), null);
+      ByteString.fromArray(payload)), ActorRef.noSender());
     //#pub-topic
 
     system.stop(subSocket);
@@ -193,7 +193,7 @@ public class ZeromqDocTest {
     public void preStart() {
       getContext().system().scheduler()
           .schedule(Duration.create(1, "second"), Duration.create(1, "second"),
-            getSelf(), TICK, getContext().dispatcher(), null);
+            getSelf(), TICK, getContext().dispatcher(), ActorRef.noSender());
     }
 
     @Override

@@ -50,7 +50,7 @@ public class RouterViaProgramExample {
       Props.create(ExampleActor.class).withRouter(new RoundRobinRouter(nrOfInstances)));
     //#programmaticRoutingNrOfInstances
     for (int i = 1; i <= 6; i++) {
-      router1.tell(new ExampleActor.Message(i), null);
+      router1.tell(new ExampleActor.Message(i), ActorRef.noSender());
     }
 
     //#programmaticRoutingRoutees
@@ -63,7 +63,7 @@ public class RouterViaProgramExample {
       Props.empty().withRouter(RoundRobinRouter.create(routees)));
     //#programmaticRoutingRoutees
     for (int i = 1; i <= 6; i++) {
-      router2.tell(new ExampleActor.Message(i), null);
+      router2.tell(new ExampleActor.Message(i), ActorRef.noSender());
     }
 
     //#programmaticRoutingWithResizer
@@ -74,7 +74,7 @@ public class RouterViaProgramExample {
       Props.create(ExampleActor.class).withRouter(new RoundRobinRouter(resizer)));
     //#programmaticRoutingWithResizer
     for (int i = 1; i <= 6; i++) {
-      router3.tell(new ExampleActor.Message(i), null);
+      router3.tell(new ExampleActor.Message(i), ActorRef.noSender());
     }
     
     //#remoteRoutees

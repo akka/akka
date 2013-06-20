@@ -24,8 +24,8 @@ public class EchoServer {
       final ActorRef watcher = system.actorOf(Props.create(Watcher.class, latch), "watcher");
       final ActorRef nackServer = system.actorOf(Props.create(EchoManager.class, EchoHandler.class), "nack");
       final ActorRef ackServer = system.actorOf(Props.create(EchoManager.class, SimpleEchoHandler.class), "ack");
-      watcher.tell(nackServer, null);
-      watcher.tell(ackServer, null);
+      watcher.tell(nackServer, ActorRef.noSender());
+      watcher.tell(ackServer, ActorRef.noSender());
       latch.await(10, TimeUnit.MINUTES);
     } finally {
       system.shutdown();

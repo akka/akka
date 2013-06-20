@@ -189,11 +189,11 @@ public class FSMDocTest {
   public void mustBunch() {
     final ActorRef buncher = system.actorOf(Props.create(MyFSM.class));
     final TestProbe probe = new TestProbe(system);
-    buncher.tell(new SetTarget(probe.ref()), null);
-    buncher.tell(new Queue(1), null);
-    buncher.tell(new Queue(2), null);
-    buncher.tell(flush, null);
-    buncher.tell(new Queue(3), null);
+    buncher.tell(new SetTarget(probe.ref()), ActorRef.noSender());
+    buncher.tell(new Queue(1), ActorRef.noSender());
+    buncher.tell(new Queue(2), ActorRef.noSender());
+    buncher.tell(flush, ActorRef.noSender());
+    buncher.tell(new Queue(3), ActorRef.noSender());
     final Batch b = probe.expectMsgClass(Batch.class);
     assert b.objects.size() == 2;
     assert b.objects.contains(1);
