@@ -151,6 +151,12 @@ object ActorSystem {
     @deprecated("use LoggerStartTimeout)", "2.2")
     final val EventHandlerStartTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.event-handler-startup-timeout"), MILLISECONDS))
     final val LogConfigOnStart: Boolean = config.getBoolean("akka.log-config-on-start")
+    final val LogDeadLetters: Int = config.getString("akka.log-dead-letters").toLowerCase match {
+      case "off" | "false" ⇒ 0
+      case "on" | "true"   ⇒ Int.MaxValue
+      case _               ⇒ config.getInt("akka.log-dead-letters")
+    }
+    final val LogDeadLettersDuringShutdown: Boolean = config.getBoolean("akka.log-dead-letters-during-shutdown")
 
     final val AddLoggingReceive: Boolean = getBoolean("akka.actor.debug.receive")
     final val DebugAutoReceive: Boolean = getBoolean("akka.actor.debug.autoreceive")
@@ -178,6 +184,7 @@ object ActorSystem {
      * Returns the String representation of the Config that this Settings is backed by
      */
     override def toString: String = config.root.render
+
   }
 
   /**
@@ -459,6 +466,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   import ActorSystem._
 
+  @volatile private var logDeadLetterListener: Option[ActorRef] = None
   final val settings: Settings = new Settings(classLoader, applicationConfig, name)
 
   protected def uncaughtExceptionHandler: Thread.UncaughtExceptionHandler =
@@ -569,6 +577,8 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   private lazy val _start: this.type = {
     // the provider is expected to start default loggers, LocalActorRefProvider does this
     provider.init(this)
+    if (settings.LogDeadLetters > 0)
+      logDeadLetterListener = Some(systemActorOf(Props[DeadLetterListener], "deadLetterListener"))
     registerOnTermination(stopScheduler())
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
@@ -589,7 +599,10 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   def awaitTermination() = awaitTermination(Duration.Inf)
   def isTerminated = terminationCallbacks.isTerminated
 
-  def shutdown(): Unit = guardian.stop()
+  def shutdown(): Unit = {
+    if (!settings.LogDeadLettersDuringShutdown) logDeadLetterListener foreach stop
+    guardian.stop()
+  }
 
   //#create-scheduler
   /**

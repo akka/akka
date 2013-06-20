@@ -53,6 +53,12 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
 
         getMilliseconds("akka.logger-startup-timeout") must be(5.seconds.toMillis)
         settings.LoggerStartTimeout.duration must be(5.seconds)
+
+        getInt("akka.log-dead-letters") must be(10)
+        settings.LogDeadLetters must be(10)
+
+        getBoolean("akka.log-dead-letters-during-shutdown") must be(true)
+        settings.LogDeadLettersDuringShutdown must be(true)
       }
 
       {

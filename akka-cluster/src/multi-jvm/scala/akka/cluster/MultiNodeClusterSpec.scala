@@ -44,6 +44,7 @@ object MultiNodeClusterSpec {
       failure-detector.heartbeat-interval = 400 ms
     }
     akka.loglevel = INFO
+    akka.log-dead-letters-during-shutdown = off
     akka.remote.log-remote-lifecycle-events = off
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.test {
