@@ -155,6 +155,17 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       system.extension(TestExtension).system must be === system
     }
 
+    "log dead letters" in {
+      val sys = ActorSystem("LogDeadLetters", ConfigFactory.parseString("akka.loglevel=INFO").withFallback(AkkaSpec.testConf))
+      try {
+        val a = sys.actorOf(Props[ActorSystemSpec.Terminater])
+        EventFilter.info(pattern = "not delivered", occurrences = 1).intercept {
+          a ! "run"
+          a ! "boom"
+        }(sys)
+      } finally shutdown(sys)
+    }
+
     "run termination callbacks in order" in {
       val system2 = ActorSystem("TerminationCallbacks", AkkaSpec.testConf)
       val result = new ConcurrentLinkedQueue[Int]
