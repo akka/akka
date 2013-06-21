@@ -5,7 +5,7 @@ Prerequisites
 -------------
 
 Akka requires that you have `Java 1.6 <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`_ or
-later installed on you machine.
+later installed on your machine.
 
 Getting Started Guides and Template Projects
 --------------------------------------------
