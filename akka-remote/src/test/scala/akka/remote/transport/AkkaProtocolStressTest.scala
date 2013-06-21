@@ -68,7 +68,9 @@ object AkkaProtocolStressTest {
 
 class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with DefaultTimeout {
 
-  val systemB = ActorSystem("systemB", system.settings.config)
+  val systemB = ActorSystem(
+    "systemB",
+    ConfigFactory.parseString("akka.remote.maximum-retries-in-window = 10").withFallback(system.settings.config))
   val remote = systemB.actorOf(Props(new Actor {
     def receive = {
       case seq: Int ⇒ sender ! seq
