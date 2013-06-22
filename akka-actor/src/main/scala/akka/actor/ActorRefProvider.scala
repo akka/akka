@@ -211,10 +211,6 @@ trait ActorRefFactory {
    * reversed and with “$” prepended, may change in the future).
    *
    * See [[akka.actor.Props]] for details on how to obtain a `Props` object.
-   *
-   * When invoked on ActorSystem, this method sends a message to the guardian
-   * actor and blocks waiting for a reply, see `akka.actor.creation-timeout` in
-   * the `reference.conf`.
    */
   def actorOf(props: Props): ActorRef
 
@@ -224,10 +220,6 @@ trait ActorRefFactory {
    * and `InvalidActorNameException` is thrown.
    *
    * See [[akka.actor.Props]] for details on how to obtain a `Props` object.
-   *
-   * When invoked on ActorSystem, this method sends a message to the guardian
-   * actor and blocks waiting for a reply, see `akka.actor.creation-timeout` in
-   * the `reference.conf`.
    */
   def actorOf(props: Props, name: String): ActorRef
 
@@ -335,9 +327,6 @@ trait ActorRefFactory {
   /**
    * Stop the actor pointed to by the given [[akka.actor.ActorRef]]; this is
    * an asynchronous operation, i.e. involves a message send.
-   * When invoked on [[akka.actor.ActorSystem]] for a top-level actor, this
-   * method sends a message to the guardian actor and blocks waiting for a reply,
-   * see `akka.actor.creation-timeout` in the `reference.conf`.
    */
   def stop(actor: ActorRef): Unit
 }
