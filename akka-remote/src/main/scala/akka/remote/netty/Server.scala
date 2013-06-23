@@ -23,7 +23,7 @@ private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
   val ip = InetAddress.getByName(settings.Hostname)
 
   private val factory = {
-    val boss, worker = settings.UseDispatcherForIO.map(netty.system.dispatchers.lookup) getOrElse Executors.newCachedThreadPool()
+    val boss, worker = settings.UseDispatcherForIO.map(netty.system.dispatchers.lookup) getOrElse Executors.newCachedThreadPool(netty.system.threadFactory)
     new NioServerSocketChannelFactory(boss, worker, settings.ServerSocketWorkerPoolSize)
   }
 
