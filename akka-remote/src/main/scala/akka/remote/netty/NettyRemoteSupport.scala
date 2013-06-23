@@ -43,7 +43,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
   val timer: HashedWheelTimer = new HashedWheelTimer(system.threadFactory)
 
   val clientChannelFactory = {
-    val boss, worker = settings.UseDispatcherForIO.map(system.dispatchers.lookup) getOrElse Executors.newCachedThreadPool()
+    val boss, worker = settings.UseDispatcherForIO.map(system.dispatchers.lookup) getOrElse Executors.newCachedThreadPool(system.threadFactory)
     new NioClientSocketChannelFactory(boss, worker, settings.ClientSocketWorkerPoolSize)
   }
 
