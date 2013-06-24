@@ -341,16 +341,25 @@ class LightArrayRevolverScheduler(config: Config,
     }
 
     @tailrec
-    private def checkQueue(time: Long): Unit = queue.pollNode() match {
+    private def checkQueue(time: Long, pastExec: Boolean): Unit = queue.pollNode() match {
       case null ⇒ ()
       case node ⇒
         if (node.value.ticks == 0) {
           node.value.executeTask()
         } else {
-          val bucket = ((time + node.value.ticks * tickNanos - start) / tickNanos) & wheelMask
-          wheel(bucket.toInt).addNode(node)
+          val futureTick = ((time + node.value.ticks * tickNanos - start) / tickNanos).toInt
+          val offset = futureTick - tick
+          val bucket = futureTick & wheelMask
+          val isCurrent = (offset & wheelMask) == 0
+          /*
+           * if we enqueue into the current bucket after having executed its contents,
+           * we must correct for this because otherwise the task would execute one 
+           * rotation later than requested
+           */
+          node.value.ticks = if (pastExec && isCurrent) offset - WheelSize else offset
+          wheel(bucket).addNode(node)
         }
-        checkQueue(time)
+        checkQueue(time, pastExec)
     }
 
     override final def run =
@@ -383,7 +392,7 @@ class LightArrayRevolverScheduler(config: Config,
 
       if (sleepTime > 0) {
         // check the queue before taking a nap
-        checkQueue(time)
+        checkQueue(time, pastExec = false)
         waitNanos(sleepTime)
       } else {
         val bucket = tick & wheelMask
@@ -395,7 +404,7 @@ class LightArrayRevolverScheduler(config: Config,
           case node ⇒
             val task = node.value
             if (!task.isCancelled) {
-              if (task.ticks > WheelSize) {
+              if (task.ticks >= WheelSize) {
                 task.ticks -= WheelSize
                 putBack.addNode(node)
               } else task.executeTask()
@@ -406,7 +415,7 @@ class LightArrayRevolverScheduler(config: Config,
         wheel(bucket) = putBack
 
         // check the queue now so that ticks==0 tasks can execute immediately
-        checkQueue(clock())
+        checkQueue(clock(), pastExec = true)
 
         tick += 1
       }
