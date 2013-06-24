@@ -174,7 +174,7 @@ abstract class UnreachableNodeJoinsAgainSpec
           within(15 seconds) {
             awaitAssert(Cluster(freshSystem).readView.members.map(_.address) must contain(victimAddress))
             awaitAssert(Cluster(freshSystem).readView.members.size must be(expectedNumberOfMembers))
-            awaitAssert(clusterView.members.map(_.status) must be(Set(MemberStatus.Up)))
+            awaitAssert(Cluster(freshSystem).readView.members.map(_.status) must be(Set(MemberStatus.Up)))
           }
 
           // signal to master node that victim is done
