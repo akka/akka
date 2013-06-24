@@ -16,16 +16,24 @@
 
 declare AKKA_HOME="$(cd "$(cd "$(dirname "$0")"; pwd -P)"/..; pwd)"
 
-[ -n "$JMX_CLIENT_CLASSPATH" ] || JMX_CLIENT_CLASSPATH="$AKKA_HOME/lib/akka/akka-kernel*"
-
-# NOTE: The 'cmdline-jmxclient' is available as part of the Akka distribution.
-JMX_CLIENT="java -cp $JMX_CLIENT_CLASSPATH akka.jmx.Client -"
-
 SELF=`basename $0` # script name
-HOST=$1            # cluster node:port to talk to through JMX
+HOST=$1            # cluster node to talk to through JMX
+PORT=$2
+
+shift 2
+
+JMX_CLIENT="java -jar $AKKA_HOME/bin/jmxsh-R5.jar -h $HOST -p $PORT /dev/fd/0"
+
+function invoke() {
+  echo jmx_invoke -m akka:type=Cluster "$@" | $JMX_CLIENT
+}
+
+function get() {
+  echo "puts [jmx_get -m akka:type=Cluster \"$1\"]" | $JMX_CLIENT
+}
 
 function ensureNodeIsRunningAndAvailable {
-    REPLY=$($JMX_CLIENT $HOST akka:type=Cluster Available 2>&1 >/dev/null) # redirects STDERR to STDOUT before capturing it
+    REPLY=$(get Available) # redirects STDERR to STDOUT before capturing it
     if [[ "$REPLY" != *true ]]; then
         echo "Akka cluster node is not available on $HOST, due to $REPLY"
         exit 1
@@ -33,139 +41,127 @@ function ensureNodeIsRunningAndAvailable {
 }
 
 # switch on command
-case "$2" in
+case "$1" in
 
     join)
-        if [ $# -ne 3 ]; then
+        if [ $# -ne 2 ]; then
             echo "Usage: $SELF <node-hostname:jmx-port> join <node-url-to-join>"
             exit 1
         fi
 
-        ensureNodeIsRunningAndAvailable
-        shift
-
         ACTOR_SYSTEM_URL=$2
         echo "$HOST is JOINING cluster node $ACTOR_SYSTEM_URL"
-        $JMX_CLIENT $HOST akka:type=Cluster join=$ACTOR_SYSTEM_URL
+        invoke join $ACTOR_SYSTEM_URL
         ;;
 
     leave)
-        if [ $# -ne 3 ]; then
+        if [ $# -ne 2 ]; then
             echo "Usage: $SELF <node-hostname:jmx-port> leave <node-url-to-join>"
             exit 1
         fi
 
         ensureNodeIsRunningAndAvailable
-        shift
 
         ACTOR_SYSTEM_URL=$2
         echo "Scheduling $ACTOR_SYSTEM_URL to LEAVE cluster"
-        $JMX_CLIENT $HOST akka:type=Cluster leave=$ACTOR_SYSTEM_URL
+        invoke leave $ACTOR_SYSTEM_URL
         ;;
 
     down)
-        if [ $# -ne 3 ]; then
+        if [ $# -ne 2 ]; then
             echo "Usage: $SELF <node-hostname:jmx-port> down <node-url-to-join>"
             exit 1
         fi
 
         ensureNodeIsRunningAndAvailable
-        shift
 
         ACTOR_SYSTEM_URL=$2
         echo "Marking $ACTOR_SYSTEM_URL as DOWN"
-        $JMX_CLIENT $HOST akka:type=Cluster down=$ACTOR_SYSTEM_URL
+        invoke down $ACTOR_SYSTEM_URL
         ;;
 
     member-status)
-        if [ $# -ne 2 ]; then
+        if [ $# -ne 1 ]; then
             echo "Usage: $SELF <node-hostname:jmx-port> member-status"
             exit 1
         fi
 
         ensureNodeIsRunningAndAvailable
-        shift
 
         echo "Querying member status for $HOST"
-        $JMX_CLIENT $HOST akka:type=Cluster MemberStatus
+        get MemberStatus
         ;;
 
     cluster-status)
-        if [ $# -ne 2 ]; then
+        if [ $# -ne 1 ]; then
             echo "Usage: $SELF <node-hostname:jmx-port> cluster-status"
             exit 1
         fi
 
         ensureNodeIsRunningAndAvailable
-        shift
 
         echo "Querying cluster status"
-        $JMX_CLIENT $HOST akka:type=Cluster ClusterStatus
+        get ClusterStatus
         ;;
 
     members)
-        if [ $# -ne 2 ]; then
+        if [ $# -ne 1 ]; then
             echo "Usage: $SELF <node-hostname:jmx-port> members"
             exit 1
         fi
 
         ensureNodeIsRunningAndAvailable
-        shift
 
         echo "Querying members"
-        $JMX_CLIENT $HOST akka:type=Cluster Members
+        get Members
         ;;
 
     unreachable)
-        if [ $# -ne 2 ]; then
+        if [ $# -ne 1 ]; then
             echo "Usage: $SELF <node-hostname:jmx-port> unreachable"
             exit 1
         fi
 
         ensureNodeIsRunningAndAvailable
-        shift
 
         echo "Querying unreachable members"
-        $JMX_CLIENT $HOST akka:type=Cluster Unreachable
+        get Unreachable
         ;;
 
     leader)
-        if [ $# -ne 2 ]; then
+        if [ $# -ne 1 ]; then
             echo "Usage: $SELF <node-hostname:jmx-port> leader"
             exit 1
         fi
 
         ensureNodeIsRunningAndAvailable
-        shift
 
         echo "Checking leader status"
-        $JMX_CLIENT $HOST akka:type=Cluster Leader
+        get Leader
         ;;
 
     is-singleton)
-        if [ $# -ne 2 ]; then
+        if [ $# -ne 1 ]; then
             echo "Usage: $SELF <node-hostname:jmx-port> is-singleton"
             exit 1
         fi
 
         ensureNodeIsRunningAndAvailable
-        shift
 
         echo "Checking for singleton cluster"
-        $JMX_CLIENT $HOST akka:type=Cluster Singleton
+        get Singleton
         ;;
 
     is-available)
-        if [ $# -ne 2 ]; then
+        if [ $# -ne 1 ]; then
             echo "Usage: $SELF <node-hostname:jmx-port> is-available"
             exit 1
         fi
 
         ensureNodeIsRunningAndAvailable
-        shift
 
         echo "Checking if member node on $HOST is AVAILABLE"
-        $JMX_CLIENT $HOST akka:type=Cluster Available
+        get Available
         ;;
 
     *)
