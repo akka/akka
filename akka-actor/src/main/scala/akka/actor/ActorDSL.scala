@@ -73,7 +73,17 @@ import java.util.concurrent.TimeUnit
  */
 object ActorDSL extends dsl.Inbox with dsl.Creators {
 
-  protected object Extension extends ExtensionKey[Extension]
+  protected object Extension extends ExtensionId[Extension] with ExtensionIdProvider {
+
+    override def lookup = Extension
+
+    override def createExtension(system: ExtendedActorSystem): Extension = new Extension(system)
+
+    /**
+     * Java API: retrieve the ActorDSL extension for the given system.
+     */
+    override def get(system: ActorSystem): Extension = super.get(system)
+  }
 
   protected class Extension(val system: ExtendedActorSystem) extends akka.actor.Extension with InboxExtension {
 

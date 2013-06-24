@@ -44,6 +44,8 @@ public class SettingsExtensionDocTest {
     implements ExtensionIdProvider {
     public final static Settings SettingsProvider = new Settings();
 
+    private Settings() {}
+
     public Settings lookup() {
       return Settings.SettingsProvider;
     }

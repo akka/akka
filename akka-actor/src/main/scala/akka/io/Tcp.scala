@@ -35,10 +35,14 @@ import java.lang.{ Iterable ⇒ JIterable }
  *
  * The Java API for generating TCP commands is available at [[TcpMessage]].
  */
-object Tcp extends ExtensionKey[TcpExt] {
+object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
+
+  override def lookup = Tcp
+
+  override def createExtension(system: ExtendedActorSystem): TcpExt = new TcpExt(system)
 
   /**
-   * Java API: retrieve Tcp extension for the given system.
+   * Java API: retrieve the Tcp extension for the given system.
    */
   override def get(system: ActorSystem): TcpExt = super.get(system)
 

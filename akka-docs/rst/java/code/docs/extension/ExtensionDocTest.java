@@ -35,6 +35,8 @@ public class ExtensionDocTest {
     //This will be the identifier of our CountExtension
     public final static CountExtension CountExtensionProvider = new CountExtension();
 
+    private CountExtension() {}
+
     //The lookup method is required by ExtensionIdProvider,
     // so we return ourselves here, this allows us
     // to configure our extension to be loaded when

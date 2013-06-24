@@ -33,6 +33,6 @@ object IO {
    *
    * For the Java API please refer to the individual extensions directly.
    */
-  def apply[T <: Extension](key: ExtensionKey[T])(implicit system: ActorSystem): ActorRef = key(system).manager
+  def apply[T <: Extension](key: ExtensionId[T])(implicit system: ActorSystem): ActorRef = key(system).manager
 
 }
