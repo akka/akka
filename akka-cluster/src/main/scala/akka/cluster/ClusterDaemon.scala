@@ -327,7 +327,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     case msg: SubscriptionMessage         ⇒ publisher forward msg
     case ClusterUserAction.JoinTo(address) ⇒
       logInfo("Trying to join [{}] when already part of a cluster, ignoring", address)
-
+    case JoinSeedNodes(seedNodes) ⇒
+      logInfo("Trying to join seed nodes [{}] when already part of a cluster, ignoring",
+        seedNodes.mkString(", "))
   }
 
   def removed: Actor.Receive = {

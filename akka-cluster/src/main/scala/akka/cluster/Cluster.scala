@@ -236,9 +236,27 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * Try to join this cluster node with the node specified by 'address'.
    * A 'Join(selfAddress)' command is sent to the node to join.
+   *
+   * An actor system can only join a cluster once. Additional attempts will be ignored.
+   * When it has successfully joined it must be restarted to be able to join another
+   * cluster or to join the same cluster again.
    */
   def join(address: Address): Unit =
     clusterCore ! ClusterUserAction.JoinTo(address)
+
+  /**
+   * Join the specified seed nodes without defining them in config.
+   * Especially useful from tests when Addresses are unknown before startup time.
+   *
+   * An actor system can only join a cluster once. Additional attempts will be ignored.
+   * When it has successfully joined it must be restarted to be able to join another
+   * cluster or to join the same cluster again.
+   *
+   * JAVA API: Use akka.japi.Util.immutableSeq to convert a java.lang.Iterable
+   * to the type needed for the seedNodes parameter.
+   */
+  def joinSeedNodes(seedNodes: immutable.Seq[Address]): Unit =
+    clusterCore ! InternalClusterAction.JoinSeedNodes(seedNodes.toVector)
 
   /**
    * Send command to issue state transition to LEAVING for the node specified by 'address'.
@@ -272,14 +290,6 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   // ========================================================
   // ===================== INTERNAL API =====================
   // ========================================================
-
-  /**
-   * Make it possible to join the specified seed nodes without defining them
-   * in config. Especially useful from tests when Addresses are unknown
-   * before startup time.
-   */
-  private[cluster] def joinSeedNodes(seedNodes: immutable.IndexedSeq[Address]): Unit =
-    clusterCore ! InternalClusterAction.JoinSeedNodes(seedNodes)
 
   /**
    * INTERNAL API.
