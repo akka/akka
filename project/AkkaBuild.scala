@@ -7,7 +7,7 @@ package akka
 import sbt._
 import sbt.Keys._
 import com.typesafe.sbt.SbtMultiJvm
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions, multiNodeExecuteTests, multiNodeJavaName, multiNodeHostsFileName, multiNodeTargetDirName }
+import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions, multiNodeExecuteTests, multiNodeJavaName, multiNodeHostsFileName, multiNodeTargetDirName, multiTestOptions }
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import com.typesafe.sbtosgi.OsgiPlugin.{ OsgiKeys, osgiSettings }
@@ -77,11 +77,15 @@ object AkkaBuild extends Build {
   //   all-tests/test (or test-only)
   // customizing (on the SBT command line):
   //   set scalaVersion in allTests := "2.11.0"
+  lazy val multiJvmProjects = Seq(remoteTests, cluster)
   lazy val allTests = Project(
     id = "all-tests",
     base = file("all-tests"),
-    dependencies = (akka.aggregate: Seq[ProjectReference]) map (_ % "test->test"),
-    settings = defaultSettings ++ Seq(
+    dependencies = (
+      ((akka.aggregate: Seq[ProjectReference]) map (_ % "test->test")) ++
+      (multiJvmProjects map (_ % "multi-jvm->multi-jvm"))
+    ),
+    settings = defaultSettings ++ multiJvmSettings ++ Seq(
       scalaVersion := requestedScalaVersion,
       publishArtifact := false,
       definedTests in Test := Nil
@@ -93,8 +97,36 @@ object AkkaBuild extends Build {
         } map {
           pr => definedTests in Test <++= definedTests in (pr, Test)
         }
-      )
-  )
+    ) ++ (
+      multiJvmProjects map {
+        pr => definedTests in MultiJvm <++= definedTests in (pr, MultiJvm)
+      }
+    ) ++ Seq(
+      scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions
+    )
+  ) configs (MultiJvm)
+
+  lazy val atmos = Project(
+    id = "atmos",
+    base = file("atmos"),
+    dependencies = Seq(allTests % "test->test;multi-jvm->multi-jvm"),
+    settings = defaultSettings ++ multiJvmSettings ++ Seq(
+      fork in Test := true,
+      definedTests in Test <<= definedTests in allTests in Test,
+      libraryDependencies += "org.aspectj" % "aspectjweaver" % "1.7.2",
+      libraryDependencies += "com.typesafe.atmos" % "trace-akka-2.2.0-RC1_2.10" % "1.2.0-M5" excludeAll(ExclusionRule(organization = "com.typesafe.akka")),
+      resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
+      javaOptions in Test <++= (update) map { (u) =>
+        val f = u.matching(configurationFilter("compile") && moduleFilter(name = "aspectjweaver")).head
+        Seq("-javaagent:" + f.getAbsolutePath, "-Dorg.aspectj.tracing.factory=default")
+      },
+      definedTests in MultiJvm <++= definedTests in (allTests, MultiJvm),
+      scalatestOptions in MultiJvm <<= scalatestOptions in (allTests, MultiJvm),
+      multiTestOptions in MultiJvm <<= (multiTestOptions in MultiJvm, javaOptions in Test) map { (multiOptions, testOptions) =>
+        multiOptions.copy(jvm = multiOptions.jvm ++ testOptions)
+      }
+    )
+  ) configs (MultiJvm)
 
   lazy val actor = Project(
     id = "akka-actor",
