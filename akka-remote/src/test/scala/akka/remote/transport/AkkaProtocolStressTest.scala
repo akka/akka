@@ -70,7 +70,9 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
 
   val systemB = ActorSystem(
     "systemB",
-    ConfigFactory.parseString("akka.remote.maximum-retries-in-window = 10").withFallback(system.settings.config))
+    // Retry limit for system B should be high enough that it does not trigger during this test. Otherwise
+    // too much messages can be dropped causing the test to fail sporadically.
+    ConfigFactory.parseString("akka.remote.maximum-retries-in-window = 20").withFallback(system.settings.config))
   val remote = systemB.actorOf(Props(new Actor {
     def receive = {
       case seq: Int ⇒ sender ! seq
