@@ -132,23 +132,18 @@ object AkkaKernelPlugin extends Plugin {
       DistScript("start.bat", distBatScript, true))
 
     private def distShScript =
-      """|#!/bin/sh
-    |
-    |AKKA_HOME="$(cd "$(cd "$(dirname "$0")"; pwd -P)"/..; pwd)"
-    |AKKA_CLASSPATH="$AKKA_HOME/config:$AKKA_HOME/lib/*"
-    |JAVA_OPTS="%s"
-    |
-    |java $JAVA_OPTS -cp "$AKKA_CLASSPATH" -Dakka.home="$AKKA_HOME" %s%s "$@"
-    |""".stripMargin.format(jvmOptions, mainClass, if (bootClass.nonEmpty) " " + bootClass else "")
+      ("#!/bin/sh\n\n" +
+        "AKKA_HOME=\"$(cd \"$(cd \"$(dirname \"$0\")\"; pwd -P)\"/..; pwd)\"\n" +
+        "AKKA_CLASSPATH=\"$AKKA_HOME/config:$AKKA_HOME/lib/*\"\n" +
+        "JAVA_OPTS=\"%s\"\n\n" +
+        "java $JAVA_OPTS -cp \"$AKKA_CLASSPATH\" -Dakka.home=\"$AKKA_HOME\" %s%s \"$@\"\n").format(jvmOptions, mainClass, if (bootClass.nonEmpty) " " + bootClass else "")
 
     private def distBatScript =
-      """|@echo off
-    |set AKKA_HOME=%%~dp0..
-    |set AKKA_CLASSPATH=%%AKKA_HOME%%\config;%%AKKA_HOME%%\lib\*
-    |set JAVA_OPTS=%s
-    |
-    |java %%JAVA_OPTS%% -cp "%%AKKA_CLASSPATH%%" -Dakka.home="%%AKKA_HOME%%" %s%s %%*
-    |""".stripMargin.format(jvmOptions, mainClass, if (bootClass.nonEmpty) " " + bootClass else "")
+      ("@echo off\r\n\r\n" +
+        "set AKKA_HOME=%%~dp0..\r\n" +
+        "set AKKA_CLASSPATH=%%AKKA_HOME%%\\config;%%AKKA_HOME%%\\lib\\*\r\n" +
+        "set JAVA_OPTS=%s\r\n\r\n" +
+        "java %%JAVA_OPTS%% -cp \"%%AKKA_CLASSPATH%%\" -Dakka.home=\"%%AKKA_HOME%%\" %s%s %%*\r\n").format(jvmOptions, mainClass, if (bootClass.nonEmpty) " " + bootClass else "")
 
     private def setExecutable(target: File, executable: Boolean): Option[String] = {
       val success = target.setExecutable(executable, false)
