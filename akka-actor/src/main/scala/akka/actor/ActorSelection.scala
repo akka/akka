@@ -25,31 +25,26 @@ abstract class ActorSelection extends Serializable {
   protected val path: immutable.IndexedSeq[AnyRef]
 
   @deprecated("use the two-arg variant (typically getSelf() as second arg)", "2.2")
-  def tell(msg: Any): Unit = anchor ! toMessage(msg, path)
+  def tell(msg: Any): Unit = tell(msg, Actor.noSender)
 
-  def tell(msg: Any, sender: ActorRef): Unit = anchor.tell(toMessage(msg, path), sender)
+  def tell(msg: Any, sender: ActorRef): Unit = {
+    @tailrec def toMessage(msg: Any, path: immutable.IndexedSeq[AnyRef], index: Int): Any =
+      if (index < 0) msg
+      else toMessage(
+        path(index) match {
+          case ".."             ⇒ SelectParent(msg)
+          case s: String        ⇒ SelectChildName(s, msg)
+          case p: PatternHolder ⇒ SelectChildPattern(p.pat, msg)
+        }, path, index - 1)
 
-  private def toMessage(msg: Any, path: immutable.IndexedSeq[AnyRef]): Any = {
-    var acc = msg
-    var index = path.length - 1
-    while (index >= 0) {
-      acc = path(index) match {
-        case ".."             ⇒ SelectParent(acc)
-        case s: String        ⇒ SelectChildName(s, acc)
-        case p: PatternHolder ⇒ SelectChildPattern(p.pat, acc)
-      }
-      index -= 1
-    }
-    acc
+    anchor.tell(toMessage(msg, path, path.length - 1), sender)
   }
 
   override def toString: String = {
-    val sb = new java.lang.StringBuilder
-    sb.append("ActorSelection[").
+    (new java.lang.StringBuilder).append("ActorSelection[").
       append(anchor.toString).
       append(path.mkString("/", "/", "")).
-      append("]")
-    sb.toString
+      append("]").toString
   }
 
   override def equals(obj: Any): Boolean = obj match {
@@ -73,7 +68,7 @@ object ActorSelection {
   //This cast is safe because the self-type of ActorSelection requires that it mixes in ScalaActorSelection
   implicit def toScala(sel: ActorSelection): ScalaActorSelection = sel.asInstanceOf[ScalaActorSelection]
 
-  private case class PatternHolder(str: String) {
+  @SerialVersionUID(1L) private case class PatternHolder(str: String) {
     val pat = Helpers.makePattern(str)
     override def toString = str
   }
@@ -84,13 +79,7 @@ object ActorSelection {
    * matching magic, so it is preferable to cache its result if the
    * intention is to send messages frequently.
    */
-  def apply(anchorRef: ActorRef, path: String): ActorSelection = {
-    val compiled = compile(path.split("/+"))
-    new ActorSelection with ScalaActorSelection {
-      override val anchor = anchorRef
-      override val path = compiled
-    }
-  }
+  def apply(anchorRef: ActorRef, path: String): ActorSelection = apply(anchorRef, path.split("/+"))
 
   /**
    * Construct an ActorSelection from the given string representing a path
@@ -98,22 +87,15 @@ object ActorSelection {
    * matching magic, so it is preferable to cache its result if the
    * intention is to send messages frequently.
    */
-  def apply(anchorRef: ActorRef, elements: immutable.Iterable[String]): ActorSelection = {
-    val compiled = compile(elements)
+  def apply(anchorRef: ActorRef, elements: Iterable[String]): ActorSelection = {
+    val compiled: immutable.IndexedSeq[AnyRef] = elements.collect({
+      case x if !x.isEmpty ⇒ if ((x.indexOf('?') != -1) || (x.indexOf('*') != -1)) PatternHolder(x) else x
+    })(scala.collection.breakOut)
     new ActorSelection with ScalaActorSelection {
       override val anchor = anchorRef
       override val path = compiled
     }
   }
-
-  private def compile(in: Iterable[String]): immutable.IndexedSeq[AnyRef] = {
-    in.iterator.filterNot(_.isEmpty).map { x ⇒
-      if ((x.indexOf('?') != -1) || (x.indexOf('*') != -1))
-        PatternHolder(x)
-      else x
-    }.toVector
-  }
-
 }
 
 /**
