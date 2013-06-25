@@ -379,11 +379,15 @@ Messages can be sent via the :class:`ActorSelection` and the path of the
 :class:`ActorSelection` is looked up when delivering each message. If the selection
 does not match any actors the message will be dropped.
 
-To acquire an :class:`ActorRef` for an :class:`ActorSelection` you need to
-send a message to the selection and use the ``getSender`` reference of the reply from
-the actor. There is a built-in ``Identify`` message that all Actors will understand
-and automatically reply to with a ``ActorIdentity`` message containing the
-:class:`ActorRef`.
+To acquire an :class:`ActorRef` for an :class:`ActorSelection` you need to send
+a message to the selection and use the ``getSender`` reference of the reply
+from the actor. There is a built-in ``Identify`` message that all Actors will
+understand and automatically reply to with a ``ActorIdentity`` message
+containing the :class:`ActorRef`. This message is handled specially by the
+actors which are traversed in the sense that if a concrete name lookup fails
+(i.e. a non-wildcard path element does not correspond to a live actor) then a
+negative result is generated. Please note that this does not mean that delivery
+of that reply is guaranteed, it still is a normal message.
 
 .. includecode:: code/docs/actor/UntypedActorDocTest.java
    :include: import-identify,identify
