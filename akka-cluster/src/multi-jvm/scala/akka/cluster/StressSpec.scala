@@ -463,6 +463,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
         }
       case Reset ⇒
         startStats = None
+      case _: CurrentClusterState ⇒ // not interesting here
     }
   }
 
