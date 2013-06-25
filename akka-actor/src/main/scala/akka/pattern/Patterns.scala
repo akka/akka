@@ -79,8 +79,8 @@ object Patterns {
 
   /**
    * Register an onComplete callback on this [[scala.concurrent.Future]] to send
-   * the result to the given actor reference. Returns the original Future to
-   * allow method chaining.
+   * the result to the given [[akka.actor.ActorRef]] or [[akka.actor.ActorSelection]].
+   * Returns the original Future to allow method chaining.
    *
    * <b>Recommended usage example:</b>
    *
