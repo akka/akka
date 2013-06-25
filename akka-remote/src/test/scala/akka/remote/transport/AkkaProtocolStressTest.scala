@@ -25,7 +25,10 @@ object AkkaProtocolStressTest {
         acceptable-heartbeat-pause = 0.01 s
       }
       remote.retry-window = 1 s
-      remote.maximum-retries-in-window = 3
+      # This test drops messages, but dropping too much will make it fail. The reason is that this test
+      # expects at least a few of the final messages to arrive to prove that the Remoting does not get stuck
+      # in an irrecoverable state. The retry limit enabled case is covered by the SystemMessageDelivery tests.
+      remote.maximum-retries-in-window = 100
 
       remote.netty.tcp {
         applied-adapters = ["gremlin"]
@@ -33,7 +36,7 @@ object AkkaProtocolStressTest {
       }
 
     }
-  """)
+                                                   """)
 
   class SequenceVerifier(remote: ActorRef, controller: ActorRef) extends Actor {
     import context.dispatcher
@@ -68,11 +71,7 @@ object AkkaProtocolStressTest {
 
 class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with DefaultTimeout {
 
-  val systemB = ActorSystem(
-    "systemB",
-    // Retry limit for system B should be high enough that it does not trigger during this test. Otherwise
-    // too much messages can be dropped causing the test to fail sporadically.
-    ConfigFactory.parseString("akka.remote.maximum-retries-in-window = 20").withFallback(system.settings.config))
+  val systemB = ActorSystem("systemB", system.settings.config)
   val remote = systemB.actorOf(Props(new Actor {
     def receive = {
       case seq: Int ⇒ sender ! seq
