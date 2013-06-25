@@ -29,7 +29,12 @@ import akka.actor._
  *
  * The Java API for generating UDP commands is available at [[UdpConnectedMessage]].
  */
-object UdpConnected extends ExtensionKey[UdpConnectedExt] {
+object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvider {
+
+  override def lookup = UdpConnected
+
+  override def createExtension(system: ExtendedActorSystem): UdpConnectedExt = new UdpConnectedExt(system)
+
   /**
    * Java API: retrieve the UdpConnected extension for the given system.
    */
