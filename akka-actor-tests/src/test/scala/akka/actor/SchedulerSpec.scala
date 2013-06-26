@@ -202,7 +202,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
           case Msg(ts) ⇒
             val now = System.nanoTime
             // Make sure that no message has been dispatched before the scheduled time (10ms) has occurred
-            if (now - ts < 5.millis.toNanos) throw new RuntimeException("Interval is too small: " + (now - ts))
+            if (now < ts) throw new RuntimeException("Interval is too small: " + (now - ts))
             ticks.countDown()
         }
       }))
