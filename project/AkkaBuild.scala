@@ -36,7 +36,7 @@ object AkkaBuild extends Build {
 
   val enableMiMa = false
 
-  val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.2")
+  val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.11.0-M3")
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
@@ -1007,7 +1007,7 @@ object Dependencies {
       val logback      = "ch.qos.logback"              % "logback-classic"              % "1.0.7"            % "test" // EPL 1.0 / LGPL 2.1
       val mockito      = "org.mockito"                 % "mockito-all"                  % "1.8.1"            % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
-      val scalatest    = "org.scalatest"              %% "scalatest"                    % "1.9.1"            % "test" // ApacheV2
+      val scalatest    = "org.scalatest"              %% "scalatest"                    % "1.9.1b"           % "test" // ApacheV2
       val scalacheck   = "org.scalacheck"             %% "scalacheck"                   % "1.10.0"           % "test" // New BSD
       val ariesProxy   = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3"              % "test" // ApacheV2
       val pojosr       = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"            % "test" // ApacheV2
