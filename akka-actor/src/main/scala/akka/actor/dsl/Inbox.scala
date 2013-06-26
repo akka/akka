@@ -130,7 +130,8 @@ trait Inbox { this: ActorDSL.type ⇒
         import context.dispatcher
         if (currentDeadline.isEmpty) {
           currentDeadline = Some((next, context.system.scheduler.scheduleOnce(next.timeLeft, self, Kick)))
-        } else if (currentDeadline.get._1 != next) {
+        } else {
+          // must not rely on the Scheduler to not fire early (for robustness)
           currentDeadline.get._2.cancel()
           currentDeadline = Some((next, context.system.scheduler.scheduleOnce(next.timeLeft, self, Kick)))
         }
