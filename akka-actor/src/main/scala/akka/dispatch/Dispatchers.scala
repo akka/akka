@@ -148,6 +148,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
 
     cfg.getString("type") match {
       case "Dispatcher"          ⇒ new DispatcherConfigurator(cfg, prerequisites)
+      case "GlobalDispatcher"    ⇒ new GlobalDispatcherConfigurator(cfg, prerequisites)
       case "BalancingDispatcher" ⇒ new BalancingDispatcherConfigurator(cfg, prerequisites)
       case "PinnedDispatcher"    ⇒ new PinnedDispatcherConfigurator(cfg, prerequisites)
       case fqn ⇒
@@ -269,4 +270,19 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
       this, null, config.getString("id"),
       Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS), threadPoolConfig)
 
+}
+
+/**
+ * A MessageDispatcherConfigurator for GlobalDispatcher
+ */
+class GlobalDispatcherConfigurator(
+  config: Config,
+  prerequisites: DispatcherPrerequisites) extends MessageDispatcherConfigurator(config, prerequisites) {
+
+  override val dispatcher: MessageDispatcher = new GlobalDispatcher(
+    this,
+    config.getString("id"),
+    config.getInt("throughput"),
+    Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+    Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))
 }
