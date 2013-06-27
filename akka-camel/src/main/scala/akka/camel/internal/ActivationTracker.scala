@@ -9,7 +9,8 @@ import collection.mutable.WeakHashMap
 import akka.camel.internal.ActivationProtocol._
 
 /**
- * For internal use only. An actor that tracks activation and de-activation of endpoints.
+ * INTERNAL API
+ * An actor that tracks activation and de-activation of endpoints.
  */
 private[camel] class ActivationTracker extends Actor with ActorLogging {
 
@@ -108,14 +109,15 @@ private[camel] class ActivationTracker extends Actor with ActorLogging {
 }
 
 /**
- * For internal use only. A request message to the ActivationTracker for the status of activation.
+ * INTERNAL API
+ * A request message to the ActivationTracker for the status of activation.
  * @param ref the actorRef
  */
 private[camel] case class AwaitActivation(ref: ActorRef) extends ActivationMessage(ref)
 
 /**
- * For internal use only. A request message to the ActivationTracker for the status of de-activation.
- * For internal use only.
+ * INTERNAL API
+ * A request message to the ActivationTracker for the status of de-activation.
  * @param ref the actorRef
  */
 private[camel] case class AwaitDeActivation(ref: ActorRef) extends ActivationMessage(ref)

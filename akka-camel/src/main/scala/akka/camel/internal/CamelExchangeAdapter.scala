@@ -8,13 +8,11 @@ import org.apache.camel.{ Exchange, Message ⇒ JCamelMessage }
 import akka.camel.{ FailureResult, AkkaCamelException, CamelMessage }
 
 /**
- *  For internal use only.
- *  Adapter for converting an [[org.apache.camel.Exchange]] to and from [[akka.camel.CamelMessage]] and [[akka.camel.Failure]] objects.
- *  The org.apache.camel.Message is mutable and not suitable to be used directly as messages between Actors.
- *  This adapter is used to convert to immutable messages to be used with Actors, and convert the immutable messages back
- *  to org.apache.camel.Message when using Camel.
- *
- *
+ * INTERNAL API
+ * Adapter for converting an [[org.apache.camel.Exchange]] to and from [[akka.camel.CamelMessage]] and [[akka.camel.Failure]] objects.
+ * The org.apache.camel.Message is mutable and not suitable to be used directly as messages between Actors.
+ * This adapter is used to convert to immutable messages to be used with Actors, and convert the immutable messages back
+ * to org.apache.camel.Message when using Camel.
  */
 private[camel] class CamelExchangeAdapter(val exchange: Exchange) {
   /**
