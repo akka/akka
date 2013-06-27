@@ -30,7 +30,7 @@ trait Consumer extends Actor with CamelSupport {
     super.preStart()
     // Possible FIXME. registering the endpoint here because of problems
     // with order of execution of trait body in the Java version (UntypedConsumerActor)
-    // where getEndpointUri is called before its constructor (where a uri is set to return from getEndpointUri) 
+    // where getEndpointUri is called before its constructor (where a uri is set to return from getEndpointUri)
     // and remains null. CustomRouteTest provides a test to verify this.
     register()
   }
@@ -88,7 +88,7 @@ private[camel] object Consumer {
   }
 }
 /**
- * For internal use only.
+ * INTERNAL API
  * Captures the configuration of the Consumer.
  */
 private[camel] case class ConsumerConfig(activationTimeout: FiniteDuration, replyTimeout: FiniteDuration, autoAck: Boolean, onRouteDefinition: RouteDefinition ⇒ ProcessorDefinition[_]) extends NoSerializationVerificationNeeded

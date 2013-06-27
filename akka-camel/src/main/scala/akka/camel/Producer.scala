@@ -15,7 +15,7 @@ import org.apache.camel.processor.SendProcessor
  * Support trait for producing messages to Camel endpoints.
  */
 trait ProducerSupport extends Actor with CamelSupport {
-  private[this] var messages = Map[ActorRef, Any]()
+  private[this] var messages = Vector.empty[(ActorRef, Any)]
   private[this] var producerChild: Option[ActorRef] = None
 
   override def preStart() {
@@ -63,9 +63,9 @@ trait ProducerSupport extends Actor with CamelSupport {
         messages = {
           for (
             child ← producerChild;
-            (sender, msg) ← messages
-          ) child.tell(transformOutgoingMessage(msg), sender)
-          Map()
+            (snd, msg) ← messages
+          ) child.tell(transformOutgoingMessage(msg), snd)
+          Vector.empty
         }
       }
     case res: MessageResult ⇒ routeResponse(res.message)
@@ -77,7 +77,7 @@ trait ProducerSupport extends Actor with CamelSupport {
     case msg ⇒
       producerChild match {
         case Some(child) ⇒ child forward transformOutgoingMessage(msg)
-        case None        ⇒ messages += (sender -> msg)
+        case None        ⇒ messages :+= ((sender, msg))
       }
   }
 
@@ -117,8 +117,7 @@ trait ProducerSupport extends Actor with CamelSupport {
      * as argument to <code>receiveAfterProduce</code>. If the response is received synchronously from
      * the endpoint then <code>receiveAfterProduce</code> is called synchronously as well. If the
      * response is received asynchronously, the <code>receiveAfterProduce</code> is called
-     * asynchronously. The original
-     * sender and senderFuture are preserved.
+     * asynchronously. The original sender is preserved.
      *
      * @see CamelMessage#canonicalize(Any)
      * @param endpoint the endpoint
@@ -157,14 +156,12 @@ trait Producer extends ProducerSupport { this: Actor ⇒
 }
 
 /**
- * For internal use only.
- *
+ * INTERNAL API
  */
 private case class MessageResult(message: CamelMessage) extends NoSerializationVerificationNeeded
 
 /**
- * For internal use only.
- *
+ * INTERNAL API
  */
 private case class FailureResult(cause: Throwable, headers: Map[String, Any] = Map.empty) extends NoSerializationVerificationNeeded
 
