@@ -81,7 +81,7 @@ object RemotingSpec {
         transport = "akka.remote.Remoting"
 
         retry-gate-closed-for = 1 s
-        log-remote-lifecycle-events = on
+        log-remote-lifecycle-events = off
 
         enabled-transports = [
           "akka.remote.test",
@@ -466,9 +466,11 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "drop unserializable messages" in {
       object Unserializable
-      verifySend(Unserializable) {
-        expectMsgPF(1.second) {
-          case AssociationErrorEvent(_: NotSerializableException, _, _, _) ⇒ ()
+      EventFilter.error(pattern = ".*No configured serialization.*", occurrences = 1).intercept {
+        verifySend(Unserializable) {
+          expectMsgPF(1.second) {
+            case AssociationErrorEvent(_: NotSerializableException, _, _, _) ⇒ ()
+          }
         }
       }
     }
@@ -483,18 +485,22 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "drop sent messages over payload size" in {
       val oversized = byteStringOfSize(maxPayloadBytes + 1)
-      verifySend(oversized) {
-        expectMsgPF(1.second) {
-          case AssociationErrorEvent(e: OversizedPayloadException, _, _, _) if e.getMessage.startsWith("Discarding oversized payload sent") ⇒ ()
+      EventFilter.error(pattern = ".*Discarding oversized payload sent.*", occurrences = 1).intercept {
+        verifySend(oversized) {
+          expectMsgPF(1.second) {
+            case AssociationErrorEvent(e: OversizedPayloadException, _, _, _) if e.getMessage.startsWith("Discarding oversized payload sent") ⇒ ()
+          }
         }
       }
     }
 
     "drop received messages over payload size" in {
       // Receiver should reply with a message of size maxPayload + 1, which will be dropped and an error logged
-      verifySend(maxPayloadBytes + 1) {
-        expectMsgPF(1.second) {
-          case AssociationErrorEvent(e: OversizedPayloadException, _, _, _) if e.getMessage.startsWith("Discarding oversized payload received") ⇒ ()
+      EventFilter.error(pattern = ".*Discarding oversized payload received.*", occurrences = 1).intercept {
+        verifySend(maxPayloadBytes + 1) {
+          expectMsgPF(1.second) {
+            case AssociationErrorEvent(e: OversizedPayloadException, _, _, _) if e.getMessage.startsWith("Discarding oversized payload received") ⇒ ()
+          }
         }
       }
     }
