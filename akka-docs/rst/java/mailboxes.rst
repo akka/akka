@@ -92,15 +92,28 @@ fall-back to the default mailbox configuration section.
 Builtin Mailbox Implementations
 ===============================
 
-Akka comes shipped with a number of default mailbox implementations:
+Akka comes shipped with a number of mailbox implementations:
 
 * UnboundedMailbox
+  - The default mailbox
 
   - Backed by a ``java.util.concurrent.ConcurrentLinkedQueue``
 
   - Blocking: No
 
   - Bounded: No
+
+  - Configuration name: "unbounded" or "akka.dispatch.UnboundedMailbox"
+
+* SingleConsumerOnlyUnboundedMailbox
+
+  - Backed by a very efficient Multiple Producer Single Consumer queue, cannot be used with BalancingDispatcher
+
+  - Blocking: No
+
+  - Bounded: No
+
+  - Configuration name: "akka.dispatch.SingleConsumerOnlyUnboundedMailbox"
 
 * BoundedMailbox
 
@@ -110,6 +123,8 @@ Akka comes shipped with a number of default mailbox implementations:
 
   - Bounded: Yes
 
+  - Configuration name: "bounded" or "akka.dispatch.BoundedMailbox"
+
 * UnboundedPriorityMailbox
 
   - Backed by a ``java.util.concurrent.PriorityBlockingQueue``
@@ -118,6 +133,8 @@ Akka comes shipped with a number of default mailbox implementations:
 
   - Bounded: No
 
+  - Configuration name: "akka.dispatch.UnboundedPriorityMailbox"
+
 * BoundedPriorityMailbox
 
   - Backed by a ``java.util.PriorityBlockingQueue`` wrapped in an ``akka.util.BoundedBlockingQueue``
@@ -125,6 +142,8 @@ Akka comes shipped with a number of default mailbox implementations:
   - Blocking: Yes
 
   - Bounded: Yes
+
+  - Configuration name: "akka.dispatch.BoundedPriorityMailbox"
 
 * Durable mailboxes, see :ref:`durable-mailboxes-java`.
 
