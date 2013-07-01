@@ -36,7 +36,7 @@ Actors give you:
   - Asynchronous, non-blocking and highly performant event-driven programming model.
   - Very lightweight event-driven processes (approximately 2.7 million actors per GB RAM).
 
-See :ref:`actors-scala` and :ref:`untyped-actors-java`
+See :ref:`Actors (Scala) <actors-scala>` and :ref:`Untyped Actors (Java) <untyped-actors-java>`
 
 Fault Tolerance
 ---------------
@@ -45,7 +45,7 @@ Fault Tolerance
   - Supervisor hierarchies can span over multiple JVMs to provide truly fault-tolerant systems.
   - Excellent for writing highly fault-tolerant systems that self-heal and never stop.
 
-See :ref:`fault-tolerance-scala` and :ref:`fault-tolerance-java`
+See :ref:`Fault Tolerance (Scala) <fault-tolerance-scala>` and :ref:`Fault Tolerance (Java) <fault-tolerance-java>`
 
 Location Transparency
 ---------------------
@@ -60,7 +60,7 @@ Transactors
 Transactors combine actors and Software Transactional Memory (STM) into transactional actors.
 It allows you to compose atomic message flows with automatic retry and rollback.
 
-See :ref:`transactors-scala` and :ref:`transactors-java`
+See :ref:`Transactors (Scala) <transactors-scala>` and :ref:`Transactors (Java) <transactors-java>`
 
 
 Scala and Java APIs

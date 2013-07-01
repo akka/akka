@@ -107,7 +107,7 @@ application jar in the ``deploy`` directory and use the scripts in the ``bin``
 directory.
 
 More information is available in the documentation of the
-:ref:`microkernel-scala` / :ref:`microkernel-java`.
+:ref:`Microkernel (Scala) <microkernel-scala>` / :ref:`Microkernel (Java) <microkernel-java>`.
 
 .. _build-tool:
 
@@ -231,8 +231,8 @@ Do not use -optimize Scala compiler flag
 ----------------------------------------
 
 .. warning::
-  
-  Akka has not been compiled or tested with -optimize Scala compiler flag. 
+
+  Akka has not been compiled or tested with -optimize Scala compiler flag.
   Strange behavior has been reported by users that have tried it.
 
 
