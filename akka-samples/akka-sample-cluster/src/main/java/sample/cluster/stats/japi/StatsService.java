@@ -15,6 +15,9 @@ import akka.routing.FromConfig;
 //#service
 public class StatsService extends UntypedActor {
 
+  // This router is used both with lookup and deploy of routees. If you
+  // have a router with only lookup of routees you can use Props.empty()
+  // instead of Props.create(StatsWorker.class).
   ActorRef workerRouter = getContext().actorOf(
       Props.create(StatsWorker.class).withRouter(FromConfig.getInstance()),
       "workerRouter");
@@ -56,7 +59,7 @@ abstract class StatsService2 extends UntypedActor {
   boolean allowLocalRoutees = true;
   String useRole = "compute";
   ActorRef workerRouter = getContext().actorOf(
-      Props.create(StatsWorker.class).withRouter(new ClusterRouterConfig(
+      Props.empty().withRouter(new ClusterRouterConfig(
           new ConsistentHashingRouter(0), new ClusterRouterSettings(
               totalInstances, routeesPath, allowLocalRoutees, useRole))),
       "workerRouter2");
