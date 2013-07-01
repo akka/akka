@@ -30,7 +30,19 @@ import akka.AkkaException
  *  </pre>
  *
  *  Note that the `Stash` trait can only be used together with actors that have a deque-based
- *  mailbox.
+ *  mailbox. By default Stash based actors request a Deque based mailbox since the stash
+ *  trait extends `RequiresMessageQueue[DequeBasedMessageQueueSemantics]`.
+ *  You can override the default mailbox provided when `DequeBasedMessageQueueSemantics` are requested via config:
+ *  <pre>
+ *    akka.actor.mailbox.requirements {
+ *      "akka.dispatch.BoundedDequeBasedMessageQueueSemantics" = your-custom-mailbox
+ *    }
+ *  </pre>
+ *  Alternatively, you can add your own requirement marker to the actor and configure a mailbox type to be used
+ *  for your marker.
+ *
+ *  For a `Stash` that also enforces unboundedness of the deque see [[akka.actor.UnboundedStash]]. For a `Stash`
+ *  that does not enforce any mailbox type see [[akka.actor.UnrestrictedStash]].
  *
  *  Note that the `Stash` trait must be mixed into (a subclass of) the `Actor` trait before
  *  any trait/class that overrides the `preRestart` callback. This means it's not possible to write
@@ -39,10 +51,14 @@ import akka.AkkaException
 trait Stash extends UnrestrictedStash with RequiresMessageQueue[DequeBasedMessageQueueSemantics]
 
 /**
- * The `UnboundedStash` trait is a version of `Stash` that enforces an unbounded stash for you actor.
+ * The `UnboundedStash` trait is a version of [[akka.actor.Stash]] that enforces an unbounded stash for you actor.
  */
 trait UnboundedStash extends UnrestrictedStash with RequiresMessageQueue[UnboundedDequeBasedMessageQueueSemantics]
 
+/**
+ * A version of [[akka.actor.Stash]] that does not enforce any mailbox type. The proper mailbox has to be configured
+ * manually, and the mailbox should extend the [[akka.dispatch.DequeBasedMessageQueueSemantics]] marker trait.
+ */
 trait UnrestrictedStash extends Actor {
   /* The private stash of the actor. It is only accessible using `stash()` and
    * `unstashAll()`.

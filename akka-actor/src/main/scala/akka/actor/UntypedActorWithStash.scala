@@ -29,10 +29,32 @@ package akka.actor
  *     }
  *   }
  * </pre>
+ * Note that the subclasses of `UntypedActorWithStash` by default request a Deque based mailbox since this class
+ * implements the `RequiresMessageQueue<DequeBasedMessageQueueSemantics>` marker interface.
+ * You can override the default mailbox provided when `DequeBasedMessageQueueSemantics` are requested via config:
+ * <pre>
+ *   akka.actor.mailbox.requirements {
+ *     "akka.dispatch.BoundedDequeBasedMessageQueueSemantics" = your-custom-mailbox
+ *   }
+ * </pre>
+ * Alternatively, you can add your own requirement marker to the actor and configure a mailbox type to be used
+ * for your marker.
+ *
+ * For a `Stash` based actor that enforces unbounded deques see [[akka.actor.UntypedActorWithUnboundedStash]].
+ * There is also an unrestricted version [[akka.actor.UntypedActorWithUnrestrictedStash]] that does not
+ * enforce the mailbox type.
  */
 abstract class UntypedActorWithStash extends UntypedActor with Stash
 
 /**
- * Actor base class that enforces an unbounded stash for the actor.
+ * Actor base class with `Stash` that enforces an unbounded deque for the actor. The proper mailbox has to be configured
+ * manually, and the mailbox should extend the [[akka.dispatch.DequeBasedMessageQueueSemantics]] marker trait.
+ * See [[akka.actor.UntypedActorWithStash]] for details on how `Stash` works.
  */
 abstract class UntypedActorWithUnboundedStash extends UntypedActor with UnboundedStash
+
+/**
+ * Actor base class with `Stash` that does not enforce any mailbox type. The mailbox of the actor has to be configured
+ * manually. See [[akka.actor.UntypedActorWithStash]] for details on how `Stash` works.
+ */
+abstract class UntypedActorWithUnrestrictedStash extends UntypedActor with UnrestrictedStash

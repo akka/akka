@@ -708,6 +708,14 @@ mailbox. This way, the stashed messages can be processed in the same
 order as they have been received originally. An actor that extends
 ``UntypedActorWithStash`` will automatically get a deque-based mailbox.
 
+.. note::
+
+    The abstract class ``UntypedActorWithStash`` implements the marker
+    interface ``RequiresMessageQueue<DequeBasedMessageQueueSemantics>``
+    which requests the system to automatically choose a deque based
+    mailbox implementation for the actor. If you want more
+    control over the mailbox, see the documentation on mailboxes: :ref:`mailboxes-java`.
+
 Here is an example of the ``UntypedActorWithStash`` class in action:
 
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#import-stash
