@@ -376,6 +376,9 @@ Death watch uses the cluster failure detector for nodes in the cluster, i.e. it
 generates ``Terminated`` message from network failures and JVM crashes, in addition 
 to graceful termination of watched actor. 
 
+If you encounter suspicious false positives when the system is under load you should 
+define a separate dispatcher for the cluster actors as described in :ref:`cluster_dispatcher_java`.
+
 Cluster Aware Routers
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -739,3 +742,25 @@ Cluster Info Logging
 You can silence the logging of cluster events at info level with configuration property::
 
   akka.cluster.log-info = off
+
+.. _cluster_dispatcher_java:
+
+Cluster Dispatcher
+------------------
+
+Under the hood the cluster extension is implemented with actors and it can be necessary
+to create a bulkhead for those actors to avoid disturbance from other actors. Especially
+the heartbeating actors that is used for failure detection can generate false positives
+if they are not given a chance to run at regular intervals.
+For this purpose you can define a separate dispatcher to be used for the cluster actors::
+
+  akka.cluster.use-dispatcher = cluster-dispatcher
+
+  cluster-dispatcher {
+    type = "Dispatcher"
+    executor = "fork-join-executor"
+    fork-join-executor {
+      parallelism-min = 2
+      parallelism-max = 4
+    }
+  }
