@@ -84,6 +84,6 @@ final case class RemotingErrorEvent(cause: Throwable) extends RemotingLifecycleE
 private[remote] class EventPublisher(system: ActorSystem, log: LoggingAdapter, logEvents: Boolean) {
   def notifyListeners(message: RemotingLifecycleEvent): Unit = {
     system.eventStream.publish(message)
-    if (logEvents || message.logLevel == Logging.ErrorLevel) log.log(message.logLevel, "{}", message)
+    if (logEvents) log.log(message.logLevel, "{}", message)
   }
 }

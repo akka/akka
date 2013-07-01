@@ -433,8 +433,8 @@ private[remote] class EndpointWriter(
     throw reason
   }
 
-  private def publishAndStay(reason: Throwable): State = {
-    publishError(reason)
+  private def logAndStay(reason: Throwable): State = {
+    log.error(reason, "Transient association error (association remains live)")
     stay()
   }
 
@@ -513,7 +513,7 @@ private[remote] class EndpointWriter(
             remoteMetrics.logPayloadBytes(msg, pduSize)
 
             if (pduSize > transport.maximumPayloadBytes) {
-              publishAndStay(new OversizedPayloadException(s"Discarding oversized payload sent to ${recipient}: max allowed size ${transport.maximumPayloadBytes} bytes, actual size of encoded ${msg.getClass} was ${pdu.size} bytes."))
+              logAndStay(new OversizedPayloadException(s"Discarding oversized payload sent to ${recipient}: max allowed size ${transport.maximumPayloadBytes} bytes, actual size of encoded ${msg.getClass} was ${pdu.size} bytes."))
             } else if (h.write(pdu)) {
               stay()
             } else {
@@ -524,7 +524,7 @@ private[remote] class EndpointWriter(
             throw new EndpointException("Internal error: Endpoint is in state Writing, but no association handle is present.")
         }
       } catch {
-        case e: NotSerializableException ⇒ publishAndStay(e)
+        case e: NotSerializableException ⇒ logAndStay(e)
         case e: EndpointException        ⇒ publishAndThrow(e)
         case NonFatal(e)                 ⇒ publishAndThrow(new EndpointException("Failed to write message to the transport", e))
       }
@@ -707,8 +707,9 @@ private[remote] class EndpointReader(
       }
 
     case InboundPayload(oversized) ⇒
-      publishError(new OversizedPayloadException(s"Discarding oversized payload received: " +
-        s"max allowed size [${transport.maximumPayloadBytes}] bytes, actual size [${oversized.size}] bytes."))
+      log.error(new OversizedPayloadException(s"Discarding oversized payload received: " +
+        s"max allowed size [${transport.maximumPayloadBytes}] bytes, actual size [${oversized.size}] bytes."),
+        "Transient error while reading from association (association remains live)")
 
     case StopReading(writer) ⇒
       saveState()
