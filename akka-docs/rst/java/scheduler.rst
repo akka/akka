@@ -39,6 +39,15 @@ Schedule a Runnable, that sends the current time to the testActor, to be execute
 .. includecode:: code/docs/actor/SchedulerDocTest.java
    :include: schedule-one-off-thunk
 
+.. warning::
+
+    If you schedule Runnable instances you should be extra careful
+    to not pass or close over unstable references. In practice this means that you should
+    not call methods on the enclosing Actor from within the Runnable.
+    If you need to schedule an invocation it is better to use the ``schedule()``
+    variant accepting a message and an ``ActorRef`` to schedule a message to self
+    (containing the necessary parameters) and then call the method when the message is received.
+
 Schedule to send the "Tick"-message to the ``tickActor`` after 0ms repeating every 50ms:
 
 .. includecode:: code/docs/actor/SchedulerDocTest.java
