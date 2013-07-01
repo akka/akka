@@ -650,7 +650,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       transport,
       endpointSettings,
       AkkaPduProtobufCodec,
-      receiveBuffers).withDispatcher("akka.remote.writer-dispatcher").withDeploy(Deploy.local),
+      receiveBuffers).withDeploy(Deploy.local),
       "reliableEndpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()))
     else context.watch(context.actorOf(EndpointWriter.props(
       handleOption,
@@ -660,7 +660,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       endpointSettings,
       AkkaPduProtobufCodec,
       receiveBuffers,
-      reliableDeliverySupervisor = None).withDispatcher("akka.remote.writer-dispatcher").withDeploy(Deploy.local),
+      reliableDeliverySupervisor = None).withDeploy(Deploy.local),
       "endpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()))
   }
 
