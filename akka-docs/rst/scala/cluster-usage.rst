@@ -179,6 +179,11 @@ You can subscribe to change notifications of the cluster membership by using
 ``akka.cluster.ClusterEvent.CurrentClusterState``, is sent to the subscriber
 as the first event, followed by events for incremental updates.
 
+Note that you may receive an empty ``CurrentClusterState``, containing no members,
+if you start the subscription before the initial join procedure has completed. 
+This is expected behavior. When the node has been accepted in the cluster you will 
+receive ``MemberUp`` for that node, and other nodes.
+
 The events to track the life-cycle of members are:
 
 * ``ClusterEvent.MemberUp`` - A new member has joined the cluster and its status has been changed to ``Up``.
