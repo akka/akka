@@ -10,7 +10,18 @@ Developer Guidelines
 Code Style
 ----------
 
-The Akka code style follows the `Scala Style Guide <http://docs.scala-lang.org/style/>`_ .
+The Akka code style follows the `Scala Style Guide <http://docs.scala-lang.org/style/>`_ . The only exception is the
+style of block comments:
+
+.. code-block:: scala
+
+  /**
+    * Style mandated by "Scala Style Guide"
+    */
+
+  /**
+   * Style adopted in the Akka codebase
+   */
 
 Akka is using ``Scalariform`` to format the source code as part of the build. So just hack away and then run ``sbt compile`` and it will reformat the code according to Akka standards.
 
