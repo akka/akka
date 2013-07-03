@@ -10,7 +10,7 @@ import akka.event.Logging
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable.ArrayBuffer
 import java.io.NotSerializableException
-import scala.util.{ Try, DynamicVariable }
+import scala.util.{ Try, DynamicVariable, Failure }
 import scala.collection.immutable
 import scala.util.control.NonFatal
 
@@ -95,7 +95,14 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * Returns either the resulting object or an Exception if one was thrown.
    */
   def deserialize[T](bytes: Array[Byte], serializerId: Int, clazz: Option[Class[_ <: T]]): Try[T] =
-    Try(serializerByIdentity(serializerId).fromBinary(bytes, clazz).asInstanceOf[T])
+    Try {
+      val serializer = try serializerByIdentity(serializerId) catch {
+        case _: NoSuchElementException ⇒ throw new NotSerializableException(
+          s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
+            "akka.actor.serializers is not in synch between the two systems.")
+      }
+      serializer.fromBinary(bytes, clazz).asInstanceOf[T]
+    }
 
   /**
    * Deserializes the given array of bytes using the specified type to look up what Serializer should be used.
