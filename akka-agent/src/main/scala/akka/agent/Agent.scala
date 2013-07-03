@@ -124,7 +124,6 @@ object Agent {
  * val result = agent()
  * // use result ...
  *
- * agent.close
  * }}}
  * <br/>
  *
@@ -150,10 +149,6 @@ object Agent {
  *   value2 <- agent2
  * } yield value1 + value2
  *
- * agent1.close
- * agent2.close
- * agent3.close
- * agent4.close
  * }}}
  */
 abstract class Agent[T] {
