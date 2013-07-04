@@ -21,6 +21,12 @@ implementing a simple interface:
   according to the specific bus (see `Classifiers`_) and then published to all
   subscribers for the obtained classifier
 
+.. note::
+
+    Please note that the EventBus does not preserve the sender of the
+    published messages. If you need a reference to the original sender
+    you have to provide it inside the message.
+
 This mechanism is used in different places within Akka, e.g. the
 :ref:`DeathWatch <deathwatch-java>` and the `Event Stream`_. Implementations
 can make use of the specific building blocks presented below.
