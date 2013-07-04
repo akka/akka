@@ -90,14 +90,6 @@ object RemotingSpec {
           "akka.remote.netty.ssl"
         ]
 
-        writer-dispatcher {
-          executor = "fork-join-executor"
-          fork-join-executor {
-            parallelism-min = 2
-            parallelism-max = 2
-          }
-        }
-
         netty.tcp = $${common-netty-settings}
         netty.udp = $${common-netty-settings}
         netty.ssl = $${common-netty-settings}

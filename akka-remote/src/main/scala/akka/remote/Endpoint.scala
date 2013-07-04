@@ -321,9 +321,7 @@ private[remote] class ReliableDeliverySupervisor(
       settings = settings,
       AkkaPduProtobufCodec,
       receiveBuffers = receiveBuffers,
-      reliableDeliverySupervisor = Some(self))
-      .withDispatcher("akka.remote.writer-dispatcher").withDeploy(Deploy.local),
-      "endpointWriter"))
+      reliableDeliverySupervisor = Some(self)).withDeploy(Deploy.local), "endpointWriter"))
   }
 }
 
