@@ -164,9 +164,8 @@ object CamelMessage {
   private[camel] def from(camelMessage: JCamelMessage, headers: Map[String, Any]): CamelMessage = CamelMessage(camelMessage.getBody, headers ++ camelMessage.getHeaders)
 
   /**
-   * For internal use only.
+   * INTERNAL API
    * copies the content of this CamelMessage to an Apache Camel Message.
-   *
    */
   private[camel] def copyContent(from: CamelMessage, to: JCamelMessage): Unit = {
     to.setBody(from.body)

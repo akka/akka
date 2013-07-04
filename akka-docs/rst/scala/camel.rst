@@ -5,22 +5,6 @@
  Camel
 ##############
 
-Additional Resources
-====================
-For an introduction to akka-camel 2, see also the Peter Gabryanczyk's talk `Migrating akka-camel module to Akka 2.x`_.
-
-For an introduction to akka-camel 1, see also the `Appendix E - Akka and Camel`_
-(pdf) of the book `Camel in Action`_.
-
-.. _Appendix E - Akka and Camel: http://www.manning.com/ibsen/appEsample.pdf
-.. _Camel in Action: http://www.manning.com/ibsen/
-.. _Migrating akka-camel module to Akka 2.x: http://skillsmatter.com/podcast/scala/akka-2-x
-
-Other, more advanced external articles (for version 1) are:
-
-* `Akka Consumer Actors: New Features and Best Practices <http://krasserm.blogspot.com/2011/02/akka-consumer-actors-new-features-and.html>`_
-* `Akka Producer Actors: New Features and Best Practices <http://krasserm.blogspot.com/2011/02/akka-producer-actor-new-features-and.html>`_
-
 Introduction
 ============
 
@@ -407,7 +391,7 @@ The following URI options are supported:
 |              |          |         | See also :ref:`camel-acknowledgements`.   |
 +--------------+----------+---------+-------------------------------------------+
 
-Here's an actor endpoint URI example containing an actor uuid::
+Here's an actor endpoint URI example containing an actor path::
 
    akka://some-system/user/myconsumer?autoAck=false&replyTimeout=100+millis
 
@@ -570,3 +554,19 @@ seconds:
 
 For more information about the Camel Quartz component, see here:
 http://camel.apache.org/quartz.html
+
+Additional Resources
+====================
+For an introduction to akka-camel 2, see also the Peter Gabryanczyk's talk `Migrating akka-camel module to Akka 2.x`_.
+
+For an introduction to akka-camel 1, see also the `Appendix E - Akka and Camel`_
+(pdf) of the book `Camel in Action`_.
+
+.. _Appendix E - Akka and Camel: http://www.manning.com/ibsen/appEsample.pdf
+.. _Camel in Action: http://www.manning.com/ibsen/
+.. _Migrating akka-camel module to Akka 2.x: http://skillsmatter.com/podcast/scala/akka-2-x
+
+Other, more advanced external articles (for version 1) are:
+
+* `Akka Consumer Actors: New Features and Best Practices <http://krasserm.blogspot.com/2011/02/akka-consumer-actors-new-features-and.html>`_
+* `Akka Producer Actors: New Features and Best Practices <http://krasserm.blogspot.com/2011/02/akka-producer-actor-new-features-and.html>`_

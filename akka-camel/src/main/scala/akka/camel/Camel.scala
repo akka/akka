@@ -42,12 +42,14 @@ trait Camel extends Extension with Activation {
   def settings: CamelSettings
 
   /**
-   * For internal use only. Returns the camel supervisor actor.
+   * INTERNAL API
+   * Returns the camel supervisor actor.
    */
   private[camel] def supervisor: ActorRef
 
   /**
-   * For internal use only. Returns the associated ActorSystem.
+   * INTERNAL API
+   * Returns the associated ActorSystem.
    */
   private[camel] def system: ActorSystem
 }
@@ -122,7 +124,7 @@ object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider {
    * Creates a new instance of Camel and makes sure it gets stopped when the actor system is shutdown.
    */
   override def createExtension(system: ExtendedActorSystem): Camel = {
-    val camel = new DefaultCamel(system).start
+    val camel = new DefaultCamel(system).start()
     system.registerOnTermination(camel.shutdown())
     camel
   }

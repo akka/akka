@@ -11,7 +11,8 @@ import java.util.concurrent.TimeUnit._
 private[camel] trait CamelSupport { this: Actor ⇒
 
   /**
-   * For internal use only. Returns a [[akka.camel.Camel]] trait which provides access to the CamelExtension.
+   * INTERNAL API
+   * Returns a [[akka.camel.Camel]] trait which provides access to the CamelExtension.
    */
   protected val camel = CamelExtension(context.system)
 

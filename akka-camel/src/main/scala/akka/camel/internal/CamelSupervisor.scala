@@ -15,7 +15,7 @@ import akka.AkkaException
 import akka.camel.internal.ActivationProtocol._
 
 /**
- * For internal use only.
+ * INTERNAL API
  * Top level supervisor for internal Camel actors
  */
 private[camel] class CamelSupervisor extends Actor with CamelSupport {
@@ -36,7 +36,7 @@ private[camel] class CamelSupervisor extends Actor with CamelSupport {
 }
 
 /**
- * For internal use only.
+ * INTERNAL API
  * Messages for the camel supervisor, registrations and de-registrations.
  */
 private[camel] object CamelSupervisor {
@@ -45,46 +45,46 @@ private[camel] object CamelSupervisor {
   sealed trait CamelSupervisorMessage extends Serializable
 
   /**
-   * For internal use only.
+   * INTERNAL API
    * Registers a consumer or a producer.
    */
   case class Register(actorRef: ActorRef, endpointUri: String, config: Option[ConsumerConfig] = None) extends NoSerializationVerificationNeeded
 
   /**
-   * For internal use only.
+   * INTERNAL API
    * De-registers a producer or a consumer.
    */
   @SerialVersionUID(1L)
   case class DeRegister(actorRef: ActorRef) extends CamelSupervisorMessage
 
   /**
-   * For internal use only.
+   * INTERNAL API
    * Adds a watch for the actor
    */
   @SerialVersionUID(1L)
   case class AddWatch(actorRef: ActorRef) extends CamelSupervisorMessage
 
   /**
-   * For internal use only.
+   * INTERNAL API
    * Provides a Producer with the required camel objects to function.
    */
   case class CamelProducerObjects(endpoint: Endpoint, processor: SendProcessor) extends NoSerializationVerificationNeeded
 }
 
 /**
- * For internal use only.
+ * INTERNAL API
  * Thrown by registrars to indicate that the actor could not be de-activated.
  */
 private[camel] class ActorDeActivationException(val actorRef: ActorRef, cause: Throwable) extends AkkaException("Actor [%s] failed to de-activate".format(actorRef), cause)
 
 /**
- * For internal use only.
+ * INTERNAL API
  * Thrown by the registrars to indicate that the actor could not be activated.
  */
 private[camel] class ActorActivationException(val actorRef: ActorRef, cause: Throwable) extends AkkaException("Actor [%s] failed to activate".format(actorRef), cause)
 
 /**
- * For internal use only.
+ * INTERNAL API
  * Registry for Camel Consumers and Producers. Supervises the registrars.
  */
 private[camel] class Registry(activationTracker: ActorRef) extends Actor with CamelSupport {
@@ -138,7 +138,7 @@ private[camel] class Registry(activationTracker: ActorRef) extends Actor with Ca
 }
 
 /**
- * For internal use only.
+ * INTERNAL API
  * Registers Producers.
  */
 private[camel] class ProducerRegistrar(activationTracker: ActorRef) extends Actor with CamelSupport {
@@ -176,7 +176,7 @@ private[camel] class ProducerRegistrar(activationTracker: ActorRef) extends Acto
 }
 
 /**
- * For internal use only.
+ * INTERNAL API
  * Registers Consumers.
  */
 private[camel] class ConsumerRegistrar(activationTracker: ActorRef) extends Actor with CamelSupport {
