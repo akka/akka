@@ -367,51 +367,59 @@ Cluster Aware Routers
 
 All :ref:`routers <routing-scala>` can be made aware of member nodes in the cluster, i.e.
 deploying new routees or looking up routees on nodes in the cluster.
-When a node becomes unavailble or leaves the cluster the routees of that node are
+When a node becomes unavailable or leaves the cluster the routees of that node are
 automatically unregistered from the router. When new nodes join the cluster additional
 routees are added to the router, according to the configuration.
+
+There are two distinct types of routers. 
+
+* **Router that lookup existing actors and use them as routees.** The routees can be shared between
+  routers running on different nodes in the cluster. One example of a use case for this
+  type of router is a service running on some backend nodes in the cluster and 
+  used by routers running on front-end nodes in the cluster.
+
+* **Router that creates new routees as child actors and deploy them on remote nodes.** 
+  Each router will have its own routee instances. For example, if you start a router
+  on 3 nodes in a 10 nodes cluster you will have 30 routee actors in total if the router is
+  configured to use one inctance per node. The routees created by the the different routers
+  will not be shared between the routers. One example of a use case for this type of router
+  is a single master that coordinate jobs and delegates the actual work to routees running 
+  on other nodes in the cluster.
+
+Router with Lookup of Routees
+-----------------------------
 
 When using a router with routees looked up on the cluster member nodes, i.e. the routees
 are already running, the configuration for a router looks like this:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#router-lookup-config
 
+.. note:: 
+
+  The routee actors should be started as early as possible when starting the actor system, because
+  the router will try to use them as soon as the member status is changed to 'Up'. If it is not
+  available at that point it will be removed from the router and it will only re-try when the 
+  cluster members are changed.
+
 It is the relative actor path defined in ``routees-path`` that identify what actor to lookup. 
 It is possible to limit the lookup of routees to member nodes tagged with a certain role by
 specifying ``use-role``.
 
 ``nr-of-instances`` defines total number of routees in the cluster, but there will not be
-more than one per node. Setting ``nr-of-instances`` to a high value will result in new routees
+more than one per node. That routee actor could easily fan out to local children if more parallelism 
+is needed. Setting ``nr-of-instances`` to a high value will result in new routees
 added to the router when nodes join the cluster.
 
 The same type of router could also have been defined in code:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#router-lookup-in-code
 
-When using a router with routees created and deployed on the cluster member nodes
-the configuration for a router looks like this:
-
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSingleMasterSpec.scala#router-deploy-config
-
-It is possible to limit the deployment of routees to member nodes tagged with a certain role by
-specifying ``use-role``.
-
-``nr-of-instances`` defines total number of routees in the cluster, but the number of routees
-per node, ``max-nr-of-instances-per-node``, will not be exceeded. Setting ``nr-of-instances``
-to a high value will result in creating and deploying additional routees when new nodes join
-the cluster.
-
-The same type of router could also have been defined in code:
-
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#router-deploy-in-code
-
 See :ref:`cluster_configuration_scala` section for further descriptions of the settings.
-
 
 Router Example with Lookup of Routees
 -------------------------------------
 
-Let's take a look at how to use cluster aware routers.
+Let's take a look at how to use a cluster aware router with lookup of routees.
 
 The example application provides a service to calculate statistics for a text.
 When some text is sent to the service it splits it into words, and delegates the task
@@ -438,11 +446,8 @@ The service that receives text from users and splits it up into words, delegates
 
 Note, nothing cluster specific so far, just plain actors.
 
-We can use these actors with two different types of router setup. Either with lookup of routees,
-or with create and deploy of routees. Remember, routees are the workers in this case.
-
-We start with the router setup with lookup of routees. All nodes start ``StatsService`` and
-``StatsWorker`` actors and the router is configured with ``routees-path``:
+All nodes start ``StatsService`` and ``StatsWorker`` actors. Remember, routees are the workers in this case.
+The router is configured with ``routees-path``:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf#config-router-lookup
 
@@ -466,13 +471,34 @@ service nodes and 1 client::
 
   run-main sample.cluster.stats.StatsSample
 
+Router with Remote Deployed Routees
+-----------------------------------
+
+When using a router with routees created and deployed on the cluster member nodes
+the configuration for a router looks like this:
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSingleMasterSpec.scala#router-deploy-config
+
+It is possible to limit the deployment of routees to member nodes tagged with a certain role by
+specifying ``use-role``.
+
+``nr-of-instances`` defines total number of routees in the cluster, but the number of routees
+per node, ``max-nr-of-instances-per-node``, will not be exceeded. Setting ``nr-of-instances``
+to a high value will result in creating and deploying additional routees when new nodes join
+the cluster.
+
+The same type of router could also have been defined in code:
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#router-deploy-in-code
+
+See :ref:`cluster_configuration_scala` section for further descriptions of the settings.
+
 Router Example with Remote Deployed Routees
 -------------------------------------------
 
-The above setup is nice for this example, but we will also take a look at how to use
-a single master node that creates and deploys workers. To keep track of a single
-master we use the :ref:`cluster-singleton` in the contrib module. The ``ClusterSingletonManager``
-is started on each node.
+Let's take a look at how to use a cluster aware router on single master node that creates
+and deploys workers. To keep track of a single master we use the :ref:`cluster-singleton` 
+in the contrib module. The ``ClusterSingletonManager`` is started on each node.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#create-singleton-manager
 
