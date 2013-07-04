@@ -47,10 +47,10 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
       }))
       // The throttler for this example, setting the rate
       val throttler = system.actorOf(Props(classOf[TimerBasedThrottler],
-        3 msgsPer (1.second.dilated)))
+        3 msgsPer 1.second))
       // Set the target
       throttler ! SetTarget(Some(printer))
-      // These three messages will be sent to the echoer immediately
+      // These three messages will be sent to the target immediately
       throttler ! "1"
       throttler ! "2"
       throttler ! "3"
