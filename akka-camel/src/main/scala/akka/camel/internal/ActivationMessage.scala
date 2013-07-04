@@ -18,15 +18,15 @@ private[camel] object ActivationProtocol {
   private[camel] abstract class ActivationMessage(val actor: ActorRef) extends Serializable
 
   /**
-   * For internal use only. companion object of <code>ActivationMessage</code>
-   *
+   * INTERNAL API
+   *  companion object of <code>ActivationMessage</code>
    */
   private[camel] object ActivationMessage {
     def unapply(msg: ActivationMessage): Option[ActorRef] = Option(msg.actor)
   }
 
   /**
-   * For internal use only.
+   * INTERNAL API
    * Event message indicating that a single endpoint has been activated.
    * You can use the [[akka.camel.Activation]] trait which is available on [[akka.camel.Camel]]
    * to await activation or de-activation of endpoints.
@@ -36,7 +36,7 @@ private[camel] object ActivationProtocol {
   final case class EndpointActivated(actorRef: ActorRef) extends ActivationMessage(actorRef)
 
   /**
-   * For internal use only.
+   * INTERNAL API
    * Event message indicating that a single endpoint failed to activate.
    * You can use the [[akka.camel.Activation]] trait which is available on [[akka.camel.Camel]]
    * to await activation or de-activation of endpoints.
@@ -47,7 +47,7 @@ private[camel] object ActivationProtocol {
   final case class EndpointFailedToActivate(actorRef: ActorRef, cause: Throwable) extends ActivationMessage(actorRef)
 
   /**
-   * For internal use only.
+   * INTERNAL API
    * Event message indicating that a single endpoint was de-activated.
    * You can use the [[akka.camel.Activation]] trait which is available on [[akka.camel.Camel]]
    * to await activation or de-activation of endpoints.
@@ -57,7 +57,7 @@ private[camel] object ActivationProtocol {
   final case class EndpointDeActivated(actorRef: ActorRef) extends ActivationMessage(actorRef)
 
   /**
-   * For internal use only.
+   * INTERNAL API
    * Event message indicating that a single endpoint failed to de-activate.
    * You can use the [[akka.camel.Activation]] trait which is available on [[akka.camel.Camel]]
    * to await activation or de-activation of endpoints.
