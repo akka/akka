@@ -34,6 +34,9 @@ case class JobFailed(reason: String)
 
 //#service
 class StatsService extends Actor {
+  // This router is used both with lookup and deploy of routees. If you
+  // have a router with only lookup of routees you can use Props.empty
+  // instead of Props[StatsWorker.class].
   val workerRouter = context.actorOf(Props[StatsWorker].withRouter(FromConfig),
     name = "workerRouter")
 
@@ -225,7 +228,7 @@ abstract class StatsService2 extends Actor {
   import akka.cluster.routing.ClusterRouterSettings
   import akka.routing.ConsistentHashingRouter
 
-  val workerRouter = context.actorOf(Props[StatsWorker].withRouter(
+  val workerRouter = context.actorOf(Props.empty.withRouter(
     ClusterRouterConfig(ConsistentHashingRouter(), ClusterRouterSettings(
       totalInstances = 100, routeesPath = "/user/statsWorker",
       allowLocalRoutees = true, useRole = Some("compute")))),

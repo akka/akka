@@ -39,7 +39,7 @@ object FactorialFrontend {
 //#frontend
 class FactorialFrontend(upToN: Int, repeat: Boolean) extends Actor with ActorLogging {
 
-  val backend = context.actorOf(Props[FactorialBackend].withRouter(FromConfig),
+  val backend = context.actorOf(Props.empty.withRouter(FromConfig),
     name = "factorialBackendRouter")
 
   override def preStart(): Unit = sendJobs()
@@ -146,7 +146,7 @@ abstract class FactorialFrontend2 extends Actor {
   import akka.cluster.routing.AdaptiveLoadBalancingRouter
   import akka.cluster.routing.HeapMetricsSelector
 
-  val backend = context.actorOf(Props[FactorialBackend].withRouter(
+  val backend = context.actorOf(Props.empty.withRouter(
     ClusterRouterConfig(AdaptiveLoadBalancingRouter(HeapMetricsSelector),
       ClusterRouterSettings(
         totalInstances = 100, routeesPath = "/user/factorialBackend",
