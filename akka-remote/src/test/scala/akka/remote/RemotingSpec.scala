@@ -466,9 +466,9 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "drop unserializable messages" in {
       object Unserializable
-      verifySend(Unserializable) {
-        expectMsgPF(1.second) {
-          case AssociationErrorEvent(_: NotSerializableException, _, _, _) ⇒ ()
+      EventFilter[NotSerializableException](pattern = ".*No configured serialization.*", occurrences = 1).intercept {
+        verifySend(Unserializable) {
+          expectNoMsg(1.second) // No AssocitionErrorEvent should be published
         }
       }
     }
@@ -483,18 +483,18 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "drop sent messages over payload size" in {
       val oversized = byteStringOfSize(maxPayloadBytes + 1)
-      verifySend(oversized) {
-        expectMsgPF(1.second) {
-          case AssociationErrorEvent(e: OversizedPayloadException, _, _, _) if e.getMessage.startsWith("Discarding oversized payload sent") ⇒ ()
+      EventFilter[OversizedPayloadException](pattern = ".*Discarding oversized payload sent.*", occurrences = 1).intercept {
+        verifySend(oversized) {
+          expectNoMsg(1.second) // No AssocitionErrorEvent should be published
         }
       }
     }
 
     "drop received messages over payload size" in {
       // Receiver should reply with a message of size maxPayload + 1, which will be dropped and an error logged
-      verifySend(maxPayloadBytes + 1) {
-        expectMsgPF(1.second) {
-          case AssociationErrorEvent(e: OversizedPayloadException, _, _, _) if e.getMessage.startsWith("Discarding oversized payload received") ⇒ ()
+      EventFilter[OversizedPayloadException](pattern = ".*Discarding oversized payload received.*", occurrences = 1).intercept {
+        verifySend(maxPayloadBytes + 1) {
+          expectNoMsg(1.second) // No AssocitionErrorEvent should be published
         }
       }
     }
