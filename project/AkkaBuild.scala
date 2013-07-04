@@ -597,7 +597,7 @@ object AkkaBuild extends Build {
   lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
 
   lazy val parentSettings = baseSettings ++ Seq(
-    publishArtifact in Compile := false
+    publishArtifact := false
   )
 
   lazy val sampleSettings = defaultSettings ++ Seq(
