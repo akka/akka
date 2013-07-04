@@ -132,15 +132,18 @@ turn, will cause its children to stop and restart.
 It should be mentioned that the router's restart behavior has been overridden so that a restart,
 while still re-creating the children, will still preserve the same number of actors in the pool.
 
+This means that if you have not specified :meth:`supervisorStrategy` of the router or its parent a
+failure in a routee will escalate to the parent of the router, which will by default restart the router,
+which will restart all routees (it uses Escalate and does not stop routees during restart). The reason 
+is to make the default behave such that adding :meth:`.withRouter` to a child’s definition does not 
+change the supervision strategy applied to the child. This might be an inefficiency that you can avoid 
+by specifying the strategy when defining the router.
+
 Setting the strategy is easily done:
 
 .. includecode:: ../../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala#supervision
    :include: supervision
    :exclude: custom-strategy
-
-Another potentially useful approach is to give the router the same strategy as
-its parent, which effectively treats all actors in the pool as if they were
-direct children of their grand-parent instead.
 
 .. _note-router-terminated-children-scala:
 
