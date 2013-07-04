@@ -20,7 +20,7 @@ public class FactorialFrontend extends UntypedActor {
   LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
   ActorRef backend = getContext().actorOf(
-    Props.create(FactorialBackend.class).withRouter(FromConfig.getInstance()),
+    Props.empty().withRouter(FromConfig.getInstance()),
     "factorialBackendRouter");
 
   public FactorialFrontend(int upToN, boolean repeat) {
@@ -66,7 +66,7 @@ abstract class FactorialFrontend2 extends UntypedActor {
   boolean allowLocalRoutees = true;
   String useRole = "backend";
   ActorRef backend = getContext().actorOf(
-    Props.create(FactorialBackend.class).withRouter(new ClusterRouterConfig(
+    Props.empty().withRouter(new ClusterRouterConfig(
       new AdaptiveLoadBalancingRouter(HeapMetricsSelector.getInstance(), 0),
       new ClusterRouterSettings(
         totalInstances, routeesPath, allowLocalRoutees, useRole))),
