@@ -46,6 +46,10 @@ To use the sbt plugin you define it in your ``project/plugins.sbt``:
 
 .. includecode:: ../../../akka-sbt-plugin/sample/project/plugins.sbt
 
+Make sure that you have a ``project/build.properties`` file:
+
+.. includecode:: ../../../akka-sbt-plugin/sample/project/build.properties
+
 Then you add it to the settings of your ``project/Build.scala``. It is also important that you add the ``akka-kernel`` dependency.
 This is an example of a complete sbt build file:
 
