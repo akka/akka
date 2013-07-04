@@ -182,7 +182,7 @@ and parsed by the actor system can be displayed like this:
 .. code-block:: java
 
   final ActorSystem system = ActorSystem.create();
-  println(system.settings());
+  System.out.println(system.settings());
   // this is a shortcut for system.settings().config().root().render()
 
 A Word About ClassLoaders

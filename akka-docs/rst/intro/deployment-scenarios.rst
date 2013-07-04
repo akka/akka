@@ -13,7 +13,7 @@ Akka can be used in different ways:
   be put into ``WEB-INF/lib``
 
 - As a stand alone application by instantiating ActorSystem in a main class or
-  using the :ref:`microkernel-scala` / :ref:`microkernel-java`
+  using the :ref:`Microkernel (Scala) <microkernel-scala>` / :ref:`Microkernel (Java) <microkernel-java>`
 
 
 Using Akka as library
@@ -28,5 +28,5 @@ Using Akka as a stand alone microkernel
 ----------------------------------------
 
 Akka can also be run as a stand-alone microkernel. See
-:ref:`microkernel-scala` / :ref:`microkernel-java` for
+:ref:`Microkernel (Scala) <microkernel-scala>` / :ref:`Microkernel (Java) <microkernel-java>` for
 more information.
