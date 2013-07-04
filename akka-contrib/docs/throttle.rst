@@ -17,11 +17,16 @@ the :class:`TimerBasedThrottler`.
 How to use it
 -------------
 
-You can use a :class:`TimerBasedThrottler` as follows:
+You can use a :class:`TimerBasedThrottler` as follows. From Java it looks
+like this:
+
+.. includecode:: @contribSrc@/src/test/java/akka/contrib/throttle/TimerBasedThrottlerTest.java#demo-code
+
+And from Scala like this:
 
 .. includecode:: @contribSrc@/src/test/scala/akka/contrib/throttle/TimerBasedThrottlerSpec.scala#demo-code
 
-Please refer to the ScalaDoc documentation for the details.
+Please refer to the JavaDoc/ScalaDoc documentation for the details.
 
 
 The guarantees
