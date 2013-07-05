@@ -311,6 +311,19 @@ allocation of a thread for the duration of an in-out message exchange. There's
 also a :ref:`camel-async-example` that implements both, an asynchronous
 consumer and an asynchronous producer, with the jetty component.
 
+If the used Camel component is blocking it might be necessary to use a separate
+:ref:`dispatcher <dispatchers-scala>` for the producer. The Camel processor is 
+invoked by a child actor of the producer and the dispatcher can be defined in 
+the deployment section of the configuration. For example, if your producer actor 
+has path ``/user/integration/output`` the dispatcher of the child actor can be 
+defined with::
+
+  akka.actor.deployment {
+    /integration/output/* {
+      dispatcher = my-dispatcher
+    }
+  }
+
 .. _Camel components: http://camel.apache.org/components.html
 .. _subset of components: http://camel.apache.org/asynchronous-routing-engine.html
 .. _Jetty component: http://camel.apache.org/jetty.html
