@@ -12,7 +12,7 @@ import akka.actor.{ ActorInitializationException, InternalActorRef, ActorRef, Po
  * Helper companion object for [[akka.dispatch.sysmsg.LatestFirstSystemMessageList]] and
  * [[akka.dispatch.sysmsg.EarliestFirstSystemMessageList]]
  */
-object SystemMessageList {
+private[akka] object SystemMessageList {
   final val LNil: LatestFirstSystemMessageList = new LatestFirstSystemMessageList(null)
   final val ENil: EarliestFirstSystemMessageList = new EarliestFirstSystemMessageList(null)
 
@@ -33,7 +33,7 @@ object SystemMessageList {
  *
  * INTERNAL API
  *
- * Value class supporting list operations on system messages. The `next` field of [[akka.dispatch.sysmsg.SystemMessage]]
+ * Value class supporting list operations on system messages. The `next` field of [[SystemMessage]]
  * is hidden, and can only accessed through the value classes [[akka.dispatch.sysmsg.LatestFirstSystemMessageList]] and
  * [[akka.dispatch.sysmsg.EarliestFirstSystemMessageList]], abstracting over the fact that system messages are the
  * list nodes themselves. If used properly, this stays a compile time construct without any allocation overhead.
@@ -44,7 +44,7 @@ object SystemMessageList {
  * latest appended element.
  *
  */
-class LatestFirstSystemMessageList(val head: SystemMessage) extends AnyVal {
+private[akka] class LatestFirstSystemMessageList(val head: SystemMessage) extends AnyVal {
   import SystemMessageList._
 
   /**
@@ -65,7 +65,7 @@ class LatestFirstSystemMessageList(val head: SystemMessage) extends AnyVal {
   /**
    * Gives back the list containing all the elements except the first. This operation has constant cost.
    *
-   * *Warning:* as the underlying list nodes (the [[akka.dispatch.sysmsg.SystemMessage]] instances) are mutable, care
+   * *Warning:* as the underlying list nodes (the [[SystemMessage]] instances) are mutable, care
    * should be taken when passing the tail to other methods. [[akka.dispatch.sysmsg.SystemMessage#unlink]] should be
    * called on the head if one wants to detach the tail permanently.
    */
@@ -94,7 +94,7 @@ class LatestFirstSystemMessageList(val head: SystemMessage) extends AnyVal {
  *
  * INTERNAL API
  *
- * Value class supporting list operations on system messages. The `next` field of [[akka.dispatch.sysmsg.SystemMessage]]
+ * Value class supporting list operations on system messages. The `next` field of [[SystemMessage]]
  * is hidden, and can only accessed through the value classes [[akka.dispatch.sysmsg.LatestFirstSystemMessageList]] and
  * [[akka.dispatch.sysmsg.EarliestFirstSystemMessageList]], abstracting over the fact that system messages are the
  * list nodes themselves. If used properly, this stays a compile time construct without any allocation overhead.
@@ -105,7 +105,7 @@ class LatestFirstSystemMessageList(val head: SystemMessage) extends AnyVal {
  * latest appended element.
  *
  */
-class EarliestFirstSystemMessageList(val head: SystemMessage) extends AnyVal {
+private[akka] class EarliestFirstSystemMessageList(val head: SystemMessage) extends AnyVal {
   import SystemMessageList._
 
   /**
@@ -126,7 +126,7 @@ class EarliestFirstSystemMessageList(val head: SystemMessage) extends AnyVal {
   /**
    * Gives back the list containing all the elements except the first. This operation has constant cost.
    *
-   * *Warning:* as the underlying list nodes (the [[akka.dispatch.sysmsg.SystemMessage]] instances) are mutable, care
+   * *Warning:* as the underlying list nodes (the [[SystemMessage]] instances) are mutable, care
    * should be taken when passing the tail to other methods. [[akka.dispatch.sysmsg.SystemMessage#unlink]] should be
    * called on the head if one wants to detach the tail permanently.
    */

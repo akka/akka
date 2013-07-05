@@ -35,7 +35,7 @@ object ConsistentHashingRouter {
    * the hash, but the data to be hashed.
    *
    * If returning an `Array[Byte]` or String it will be used as is,
-   * otherwise the configured [[akka.akka.serialization.Serializer]]
+   * otherwise the configured [[akka.serialization.Serializer]]
    * will be applied to the returned data.
    *
    * If messages can't implement this interface themselves,
@@ -67,7 +67,7 @@ object ConsistentHashingRouter {
    * the hash that is to be returned, but the data to be hashed.
    *
    * If returning an `Array[Byte]` or String it will be used as is,
-   * otherwise the configured [[akka.akka.serialization.Serializer]]
+   * otherwise the configured [[akka.serialization.Serializer]]
    * will be applied to the returned data.
    */
   type ConsistentHashMapping = PartialFunction[Any, Any]
@@ -88,13 +88,14 @@ object ConsistentHashingRouter {
    * this mapping.
    *
    * If returning an `Array[Byte]` or String it will be used as is,
-   * otherwise the configured [[akka.akka.serialization.Serializer]]
+   * otherwise the configured [[akka.serialization.Serializer]]
    * will be applied to the returned data.
    */
   trait ConsistentHashMapper {
     def hashKey(message: Any): Any
   }
 }
+
 /**
  * A Router that uses consistent hashing to select a connection based on the
  * sent message.
@@ -137,7 +138,7 @@ object ConsistentHashingRouter {
  *
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
- * @param virtualNodesFactor number of virtual nodes per node, used in [[akka.routing.ConsistantHash]]
+ * @param virtualNodesFactor number of virtual nodes per node, used in [[akka.routing.ConsistentHash]]
  * @param hashMapping partial function from message to the data to
  *   use for the consistent hash key
  */

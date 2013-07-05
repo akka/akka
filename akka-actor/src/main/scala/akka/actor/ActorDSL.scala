@@ -118,7 +118,7 @@ abstract class Inbox {
    * Receive the next message from this Inbox. This call will return immediately
    * if the internal actor previously received a message, or it will block for
    * up to the specified duration to await reception of a message. If no message
-   * is received a [[TimeoutException]] will be raised.
+   * is received a [[java.util.concurrent.TimeoutException]] will be raised.
    */
   def receive(max: FiniteDuration): Any
 

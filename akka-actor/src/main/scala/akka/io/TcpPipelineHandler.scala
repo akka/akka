@@ -94,7 +94,7 @@ object TcpPipelineHandler {
   case class TcpEvent(@BeanProperty evt: Tcp.Event) extends Tcp.Command
 
   /**
-   * create [[Props]] for a pipeline handler
+   * create [[akka.actor.Props]] for a pipeline handler
    */
   def props[Ctx <: PipelineContext, Cmd, Evt](init: TcpPipelineHandler.Init[Ctx, Cmd, Evt], connection: ActorRef, handler: ActorRef) =
     Props(classOf[TcpPipelineHandler[_, _, _]], init, connection, handler)
@@ -104,8 +104,8 @@ object TcpPipelineHandler {
 /**
  * This actor wraps a pipeline and forwards commands and events between that
  * one and a [[Tcp]] connection actor. In order to inject commands into the
- * pipeline send an [[Init.Command]] message to this actor; events will be sent
- * to the designated handler wrapped in [[Init.Event]] messages.
+ * pipeline send an [[TcpPipelineHandler.Init.Command]] message to this actor; events will be sent
+ * to the designated handler wrapped in [[TcpPipelineHandler.Init.Event]] messages.
  *
  * When the designated handler terminates the TCP connection is aborted. When
  * the connection actor terminates this actor terminates as well; the designated
@@ -164,7 +164,7 @@ class TcpPipelineHandler[Ctx <: PipelineContext, Cmd, Evt](
  *
  * While this adapter communicates to the stage above it via raw ByteStrings, it is possible to inject Tcp Command
  * by sending them to the management port, and the adapter will simply pass them down to the stage below. Incoming Tcp Events
- * that are not Receive events will be passed downwards wrapped in a [[TcpEvent]]; the [[TcpPipelineHandler]] will
+ * that are not Receive events will be passed downwards wrapped in a [[TcpPipelineHandler.TcpEvent]]; the [[TcpPipelineHandler]] will
  * send these notifications to the registered event handler actor.
  */
 class TcpReadWriteAdapter extends PipelineStage[PipelineContext, ByteString, Tcp.Command, ByteString, Tcp.Event] {

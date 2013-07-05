@@ -103,7 +103,7 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
   case object Disconnect extends Command
 
   /**
-   * Send this message to a listener actor (which sent a [[Bound]] message) to
+   * Send this message to a listener actor (which sent a [[Udp.Bound]] message) to
    * have it stop reading datagrams from the network. If the O/S kernel’s receive
    * buffer runs full then subsequent datagrams will be silently discarded.
    * Re-enable reading from the socket using the [[ResumeReading]] command.
@@ -123,7 +123,7 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
 
   /**
    * When a connection actor receives a datagram from its socket it will send
-   * it to the handler designated in the [[Bind]] message using this message type.
+   * it to the handler designated in the [[Udp.Bind]] message using this message type.
    */
   case class Received(data: ByteString) extends Event
 
@@ -201,8 +201,8 @@ object UdpConnectedMessage {
   /**
    * This message is understood by the connection actors to send data to their
    * designated destination. The connection actor will respond with
-   * [[CommandFailed]] if the send could not be enqueued to the O/S kernel
-   * because the send buffer was full. If the given `ack` is not of type [[NoAck]]
+   * [[UdpConnected.CommandFailed]] if the send could not be enqueued to the O/S kernel
+   * because the send buffer was full. If the given `ack` is not of type [[UdpConnected.NoAck]]
    * the connection actor will reply with the given object as soon as the datagram
    * has been successfully enqueued to the O/S kernel.
    */
@@ -214,36 +214,36 @@ object UdpConnectedMessage {
 
   /**
    * Send this message to a connection actor (which had previously sent the
-   * [[Connected]] message) in order to close the socket. The connection actor
-   * will reply with a [[Disconnected]] message.
+   * [[UdpConnected.Connected]] message) in order to close the socket. The connection actor
+   * will reply with a [[UdpConnected.Disconnected]] message.
    */
   def disconnect: Command = Disconnect
 
   /**
-   * Each [[Send]] can optionally request a positive acknowledgment to be sent
-   * to the commanding actor. If such notification is not desired the [[Send#ack]]
+   * Each [[UdpConnected.Send]] can optionally request a positive acknowledgment to be sent
+   * to the commanding actor. If such notification is not desired the [[UdpConnected.Send#ack]]
    * must be set to an instance of this class. The token contained within can be used
-   * to recognize which write failed when receiving a [[CommandFailed]] message.
+   * to recognize which write failed when receiving a [[UdpConnected.CommandFailed]] message.
    */
   def noAck(token: AnyRef): NoAck = NoAck(token)
 
   /**
-   * Default [[NoAck]] instance which is used when no acknowledgment information is
+   * Default [[UdpConnected.NoAck]] instance which is used when no acknowledgment information is
    * explicitly provided. Its “token” is `null`.
    */
   def noAck: NoAck = NoAck
 
   /**
-   * Send this message to a listener actor (which sent a [[Bound]] message) to
+   * Send this message to a listener actor (which sent a [[Udp.Bound]] message) to
    * have it stop reading datagrams from the network. If the O/S kernel’s receive
    * buffer runs full then subsequent datagrams will be silently discarded.
-   * Re-enable reading from the socket using the [[ResumeReading]] command.
+   * Re-enable reading from the socket using the [[UdpConnected.ResumeReading]] command.
    */
   def suspendReading: Command = SuspendReading
 
   /**
    * This message must be sent to the listener actor to re-enable reading from
-   * the socket after a [[SuspendReading]] command.
+   * the socket after a [[UdpConnected.SuspendReading]] command.
    */
   def resumeReading: Command = ResumeReading
 

@@ -16,7 +16,7 @@ import akka.event.LoggingAdapter
 object ActorRef {
 
   /**
-   * Use this value as an argument to [[#tell]] if there is not actor to
+   * Use this value as an argument to [[ActorRef#tell]] if there is not actor to
    * reply to (e.g. when sending from non-actor code).
    */
   final val noSender: ActorRef = Actor.noSender
