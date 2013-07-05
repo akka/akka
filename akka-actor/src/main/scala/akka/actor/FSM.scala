@@ -27,27 +27,27 @@ object FSM {
 
   /**
    * Message type which is sent directly to the subscribed actor in
-   * [[akka.actor.FSM.SubscribeTransitionCallback]] before sending any
+   * [[akka.actor.FSM.SubscribeTransitionCallBack]] before sending any
    * [[akka.actor.FSM.Transition]] messages.
    */
   case class CurrentState[S](fsmRef: ActorRef, state: S)
 
   /**
    * Message type which is used to communicate transitions between states to
-   * all subscribed listeners (use [[akka.actor.FSM.SubscribeTransitionCallback]]).
+   * all subscribed listeners (use [[akka.actor.FSM.SubscribeTransitionCallBack]]).
    */
   case class Transition[S](fsmRef: ActorRef, from: S, to: S)
 
   /**
-   * Send this to an [[akka.actor.FSM]] to request first the [[akka.actor.CurrentState]]
-   * and then a series of [[akka.actor.Transition]] updates. Cancel the subscription
-   * using [[akka.actor.FSM.UnsubscribeTransitionCallback]].
+   * Send this to an [[akka.actor.FSM]] to request first the [[FSM.CurrentState]]
+   * and then a series of [[FSM.Transition]] updates. Cancel the subscription
+   * using [[FSM.UnsubscribeTransitionCallBack]].
    */
   case class SubscribeTransitionCallBack(actorRef: ActorRef)
 
   /**
    * Unsubscribe from [[akka.actor.FSM.Transition]] notifications which was
-   * effected by sending the corresponding [[akka.actor.FSM.SubscribeTransitionCallback]].
+   * effected by sending the corresponding [[akka.actor.FSM.SubscribeTransitionCallBack]].
    */
   case class UnsubscribeTransitionCallBack(actorRef: ActorRef)
 
@@ -658,7 +658,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
   }
 
   /**
-   * By default [[Failure]] is logged at error level and other reason
+   * By default [[FSM.Failure]] is logged at error level and other reason
    * types are not logged. It is possible to override this behavior.
    */
   protected def logTermination(reason: Reason): Unit = reason match {
