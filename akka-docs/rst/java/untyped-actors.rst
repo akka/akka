@@ -590,7 +590,7 @@ depends on the mailbox implementation.
 
 Termination of an actor proceeds in two steps: first the actor suspends its
 mailbox processing and sends a stop command to all its children, then it keeps
-processing the termination messages from its children until the last one is
+processing the internal termination notifications from its children until the last one is
 gone, finally terminating itself (invoking :meth:`postStop`, dumping mailbox,
 publishing :class:`Terminated` on the :ref:`DeathWatch <deathwatch-java>`, telling
 its supervisor). This procedure ensures that actor system sub-trees terminate
