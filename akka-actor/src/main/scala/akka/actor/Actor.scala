@@ -185,7 +185,7 @@ private[akka] case class SelectParent(next: Any) extends SelectionPath
 case class IllegalActorStateException private[akka] (message: String) extends AkkaException(message)
 
 /**
- * ActorKilledException is thrown when an Actor receives the akka.actor.Kill message
+ * ActorKilledException is thrown when an Actor receives the [[akka.actor.Kill]] message
  */
 @SerialVersionUID(1L)
 case class ActorKilledException private[akka] (message: String) extends AkkaException(message) with NoStackTrace
@@ -320,7 +320,8 @@ object Status {
 }
 
 /**
- * Mix in ActorLogging into your Actor to easily obtain a reference to a logger, which is available under the name "log".
+ * Scala API: Mix in ActorLogging into your Actor to easily obtain a reference to a logger,
+ * which is available under the name "log".
  *
  * {{{
  * class MyActor extends Actor with ActorLogging {
@@ -365,7 +366,7 @@ object Actor {
  *
  * An actor has a well-defined (non-cyclic) life-cycle.
  *  - ''RUNNING'' (created and started actor) - can receive messages
- *  - ''SHUTDOWN'' (when 'stop' or 'exit' is invoked) - can't do anything
+ *  - ''SHUTDOWN'' (when 'stop' is invoked) - can't do anything
  *
  * The Actor's own [[akka.actor.ActorRef]] is available as `self`, the current
  * message’s sender as `sender` and the [[akka.actor.ActorContext]] as
@@ -379,10 +380,10 @@ object Actor {
  * class ExampleActor extends Actor {
  *
  *   override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
- *     case _: ArithmeticException      ⇒ Resume
- *     case _: NullPointerException     ⇒ Restart
- *     case _: IllegalArgumentException ⇒ Stop
- *     case _: Exception                ⇒ Escalate
+ *     case _: ArithmeticException      => Resume
+ *     case _: NullPointerException     => Restart
+ *     case _: IllegalArgumentException => Stop
+ *     case _: Exception                => Escalate
  *   }
  *
  *   def receive = {
@@ -392,7 +393,7 @@ object Actor {
  *                                      // just to demonstrate how to stop yourself
  *     case Shutdown                 => context.stop(self)
  *
- *                                      // error kernel with child replying directly to “customer”
+ *                                      // error kernel with child replying directly to 'sender'
  *     case Dangerous(r)             => context.actorOf(Props[ReplyToOriginWorker]).tell(PerformWork(r), sender)
  *
  *                                      // error kernel with reply going through us
@@ -429,7 +430,7 @@ trait Actor {
    * [[akka.actor.UntypedActorContext]], which is the Java API of the actor
    * context.
    */
-  protected[akka] implicit val context: ActorContext = {
+  implicit val context: ActorContext = {
     val contextStack = ActorCell.contextStack.get
     if ((contextStack.isEmpty) || (contextStack.head eq null))
       throw ActorInitializationException(
@@ -542,7 +543,7 @@ trait Actor {
    * case of an unhandled [[akka.actor.Terminated]] message) or publishes an [[akka.actor.UnhandledMessage]]
    * to the actor's system's [[akka.event.EventStream]]
    */
-  def unhandled(message: Any) {
+  def unhandled(message: Any): Unit = {
     message match {
       case Terminated(dead) ⇒ throw new DeathPactException(dead)
       case _                ⇒ context.system.eventStream.publish(UnhandledMessage(message, sender, self))
