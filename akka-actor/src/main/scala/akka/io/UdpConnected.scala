@@ -25,7 +25,7 @@ import akka.actor._
  * from whom data can be received. For “unconnected” UDP mode see [[Udp]].
  *
  * For a full description of the design and philosophy behind this IO
- * implementation please refer to {@see <a href="http://doc.akka.io/">the Akka online documentation</a>}.
+ * implementation please refer to <a href="http://doc.akka.io/">the Akka online documentation</a>.
  *
  * The Java API for generating UDP commands is available at [[UdpConnectedMessage]].
  */

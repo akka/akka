@@ -25,7 +25,7 @@ import java.lang.{ Iterable ⇒ JIterable }
  * stable and ready for production use.
  *
  * For a full description of the design and philosophy behind this IO
- * implementation please refer to {@see <a href="http://doc.akka.io/">the Akka online documentation</a>}.
+ * implementation please refer to <a href="http://doc.akka.io/">the Akka online documentation</a>.
  *
  * In order to open an outbound connection send a [[Tcp.Connect]] message
  * to the [[TcpExt#manager]].

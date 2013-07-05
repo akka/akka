@@ -366,7 +366,7 @@ object LogSource {
  * your own, make sure to handle these four event types plus the <code>InitializeLogger</code>
  * message which is sent before actually attaching it to the logging bus.
  *
- * Logging is configured in <code>akka.conf</code> by setting (some of) the following:
+ * Logging is configured by setting (some of) the following:
  *
  * <pre><code>
  * akka {
@@ -737,8 +737,8 @@ object Logging {
    * Actor-less logging implementation for synchronous logging to standard
    * output. This logger is always attached first in order to be able to log
    * failures during application start-up, even before normal logging is
-   * started. Its log level can be configured by setting
-   * <code>akka.stdout-loglevel</code> in <code>akka.conf</code>.
+   * started. Its log level can be defined by configuration setting
+   * <code>akka.stdout-loglevel</code>.
    */
   class StandardOutLogger extends MinimalActorRef with StdOutLogger {
     val path: ActorPath = new RootActorPath(Address("akka", "all-systems"), "/StandardOutLogger")
