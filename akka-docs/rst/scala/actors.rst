@@ -800,13 +800,13 @@ stashed messages can be "unstashed", thereby prepending them to the actor's
 mailbox. This way, the stashed messages can be processed in the same
 order as they have been received originally.
 
-.. warning::
+.. note::
 
-  Please note that the ``Stash`` can only be used together with actors
-  that have a deque-based mailbox. For this, configure the
-  ``mailbox-type`` of the dispatcher or in the deployment of the actor
-  to be a deque-based mailbox, such as ``akka.dispatch.UnboundedDequeBasedMailbox``
-  (see :ref:`mailboxes-scala`).
+    The trait ``Stash`` extends the marker trait
+    ``RequiresMessageQueue[DequeBasedMessageQueueSemantics]`` which
+    requests the system to automatically choose a deque based
+    mailbox implementation for the actor. If you want more control over the
+    mailbox, see the documentation on mailboxes: :ref:`mailboxes-scala`.
 
 Here is an example of the ``Stash`` in action:
 
