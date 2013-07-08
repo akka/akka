@@ -79,6 +79,22 @@ dispatcher which will execute it. Then the mailbox is determined as follows:
 
 6. The default mailbox ``akka.actor.default-mailbox`` will be used.
 
+Default Mailbox
+---------------
+
+When the mailbox is not specified as described above the default mailbox 
+is used. By default it is an unbounded mailbox, which is backed by a 
+``java.util.concurrent.ConcurrentLinkedQueue``.
+
+``SingleConsumerOnlyUnboundedMailbox`` is an even more efficient mailbox, and
+it can be used as the default mailbox, but it cannot be used with a BalancingDispatcher.
+
+Configuration of ``SingleConsumerOnlyUnboundedMailbox`` as default mailbox::
+
+  akka.actor.default-mailbox {
+    mailbox-type = "akka.dispatch.SingleConsumerOnlyUnboundedMailbox"
+  }
+
 Which Configuration is passed to the Mailbox Type
 -------------------------------------------------
 
