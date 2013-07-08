@@ -65,7 +65,7 @@ private[akka] object Reflect {
     try constructor.newInstance(args.asInstanceOf[Seq[AnyRef]]: _*)
     catch {
       case e: IllegalArgumentException ⇒
-        val argString = args map (_.getClass) mkString ("[", ", ", "]")
+        val argString = args map safeGetClass mkString ("[", ", ", "]")
         throw new IllegalArgumentException(s"constructor $constructor is incompatible with arguments $argString", e)
     }
   }
@@ -77,19 +77,24 @@ private[akka] object Reflect {
    */
   private[akka] def findConstructor[T](clazz: Class[T], args: immutable.Seq[Any]): Constructor[T] = {
     def error(msg: String): Nothing = {
-      val argClasses = args map (_.getClass) mkString ", "
+      val argClasses = args map safeGetClass mkString ", "
       throw new IllegalArgumentException(s"$msg found on $clazz for arguments [$argClasses]")
     }
     val candidates =
       clazz.getDeclaredConstructors filter (c ⇒
         c.getParameterTypes.length == args.length &&
           (c.getParameterTypes zip args forall {
-            case (found, required) ⇒ found.isInstance(required) || BoxedType(found).isInstance(required)
+            case (found, required) ⇒
+              found.isInstance(required) || BoxedType(found).isInstance(required) ||
+                (required == null && !found.isPrimitive)
           }))
     if (candidates.size == 1) candidates.head.asInstanceOf[Constructor[T]]
     else if (candidates.size > 1) error("multiple matching constructors")
     else error("no matching constructor")
   }
+
+  private def safeGetClass(a: Any): Class[_] =
+    if (a == null) classOf[AnyRef] else a.getClass
 
   /**
    * INTERNAL API
