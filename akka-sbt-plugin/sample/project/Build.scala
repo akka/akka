@@ -29,8 +29,6 @@ object HelloKernelBuild extends Build {
   )
   
   lazy val defaultSettings = buildSettings ++ Seq(
-    resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
-
     // compile options
     scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
     javacOptions  ++= Seq("-Xlint:unchecked", "-Xlint:deprecation")

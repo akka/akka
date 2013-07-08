@@ -25,14 +25,10 @@ Microkernel
 -----------
 
 This download includes everything needed for a self-contained Akka
-Microkernel. See the documentation for more information about the
-microkernel (see `doc/akka/docs/modules/microkernel.html`).
+Microkernel.
 
-There is a sample microkernel application included in this download.
-Start this application with the following command:
-
-    bin/akka sample.kernel.hello.HelloKernel
-
+See the documentation for more information about the
+microkernel (see `doc/akka/docs/scala/microkernel.html`).
 
 Cluster Administration Tool
 ---------------------------
