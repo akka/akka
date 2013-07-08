@@ -588,30 +588,17 @@ object RoundRobinRouter {
  *
  * <h1>Supervision Setup</h1>
  *
- * The router creates a “head” actor which supervises and/or monitors the
- * routees. Instances are created as children of this actor, hence the
- * children are not supervised by the parent of the router. Common choices are
- * to always escalate (meaning that fault handling is always applied to all
- * children simultaneously; this is the default) or use the parent’s strategy,
- * which will result in routed children being treated individually, but it is
- * possible as well to use Routers to give different supervisor strategies to
- * different groups of children.
+ * Any routees that are created by a router will be created as the router's children.
+ * The router is therefore also the children's supervisor.
  *
- * {{{
- * class MyActor extends Actor {
- *   override val supervisorStrategy = ...
+ * The supervision strategy of the router actor can be configured with
+ * [[#withSupervisorStrategy]]. If no strategy is provided, routers default to
+ * a strategy of “always escalate”. This means that errors are passed up to the
+ * router's supervisor for handling.
  *
- *   val poolAsAWhole = context.actorOf(Props[SomeActor].withRouter(RoundRobinRouter(5)))
- *
- *   val poolIndividuals = context.actorOf(Props[SomeActor].withRouter(
- *     RoundRobinRouter(5, supervisorStrategy = this.supervisorStrategy)))
- *
- *   val specialChild = context.actorOf(Props[SomeActor].withRouter(
- *     RoundRobinRouter(5, supervisorStrategy = OneForOneStrategy() {
- *       ...
- *     })))
- * }
- * }}}
+ * The router's supervisor will treat the error as an error with the router itself.
+ * Therefore a directive to stop or restart will cause the router itself to stop or
+ * restart. The router, in turn, will cause its children to stop and restart.
  *
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
@@ -723,30 +710,17 @@ object RandomRouter {
  *
  * <h1>Supervision Setup</h1>
  *
- * The router creates a “head” actor which supervises and/or monitors the
- * routees. Instances are created as children of this actor, hence the
- * children are not supervised by the parent of the router. Common choices are
- * to always escalate (meaning that fault handling is always applied to all
- * children simultaneously; this is the default) or use the parent’s strategy,
- * which will result in routed children being treated individually, but it is
- * possible as well to use Routers to give different supervisor strategies to
- * different groups of children.
+ * Any routees that are created by a router will be created as the router's children.
+ * The router is therefore also the children's supervisor.
  *
- * {{{
- * class MyActor extends Actor {
- *   override val supervisorStrategy = ...
+ * The supervision strategy of the router actor can be configured with
+ * [[#withSupervisorStrategy]]. If no strategy is provided, routers default to
+ * a strategy of “always escalate”. This means that errors are passed up to the
+ * router's supervisor for handling.
  *
- *   val poolAsAWhole = context.actorOf(Props[SomeActor].withRouter(RandomRouter(5)))
- *
- *   val poolIndividuals = context.actorOf(Props[SomeActor].withRouter(
- *     RandomRouter(5, supervisorStrategy = this.supervisorStrategy)))
- *
- *   val specialChild = context.actorOf(Props[SomeActor].withRouter(
- *     RandomRouter(5, supervisorStrategy = OneForOneStrategy() {
- *       ...
- *     })))
- * }
- * }}}
+ * The router's supervisor will treat the error as an error with the router itself.
+ * Therefore a directive to stop or restart will cause the router itself to stop or
+ * restart. The router, in turn, will cause its children to stop and restart.
  *
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
@@ -865,30 +839,17 @@ object SmallestMailboxRouter {
  *
  * <h1>Supervision Setup</h1>
  *
- * The router creates a “head” actor which supervises and/or monitors the
- * routees. Instances are created as children of this actor, hence the
- * children are not supervised by the parent of the router. Common choices are
- * to always escalate (meaning that fault handling is always applied to all
- * children simultaneously; this is the default) or use the parent’s strategy,
- * which will result in routed children being treated individually, but it is
- * possible as well to use Routers to give different supervisor strategies to
- * different groups of children.
+ * Any routees that are created by a router will be created as the router's children.
+ * The router is therefore also the children's supervisor.
  *
- * {{{
- * class MyActor extends Actor {
- *   override val supervisorStrategy = ...
+ * The supervision strategy of the router actor can be configured with
+ * [[#withSupervisorStrategy]]. If no strategy is provided, routers default to
+ * a strategy of “always escalate”. This means that errors are passed up to the
+ * router's supervisor for handling.
  *
- *   val poolAsAWhole = context.actorOf(Props[SomeActor].withRouter(SmallestMailboxRouter(5)))
- *
- *   val poolIndividuals = context.actorOf(Props[SomeActor].withRouter(
- *     SmallestMailboxRouter(5, supervisorStrategy = this.supervisorStrategy)))
- *
- *   val specialChild = context.actorOf(Props[SomeActor].withRouter(
- *     SmallestMailboxRouter(5, supervisorStrategy = OneForOneStrategy() {
- *       ...
- *     })))
- * }
- * }}}
+ * The router's supervisor will treat the error as an error with the router itself.
+ * Therefore a directive to stop or restart will cause the router itself to stop or
+ * restart. The router, in turn, will cause its children to stop and restart.
  *
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
@@ -1082,30 +1043,17 @@ object BroadcastRouter {
  *
  * <h1>Supervision Setup</h1>
  *
- * The router creates a “head” actor which supervises and/or monitors the
- * routees. Instances are created as children of this actor, hence the
- * children are not supervised by the parent of the router. Common choices are
- * to always escalate (meaning that fault handling is always applied to all
- * children simultaneously; this is the default) or use the parent’s strategy,
- * which will result in routed children being treated individually, but it is
- * possible as well to use Routers to give different supervisor strategies to
- * different groups of children.
+ * Any routees that are created by a router will be created as the router's children.
+ * The router is therefore also the children's supervisor.
  *
- * {{{
- * class MyActor extends Actor {
- *   override val supervisorStrategy = ...
+ * The supervision strategy of the router actor can be configured with
+ * [[#withSupervisorStrategy]]. If no strategy is provided, routers default to
+ * a strategy of “always escalate”. This means that errors are passed up to the
+ * router's supervisor for handling.
  *
- *   val poolAsAWhole = context.actorOf(Props[SomeActor].withRouter(BroadcastRouter(5)))
- *
- *   val poolIndividuals = context.actorOf(Props[SomeActor].withRouter(
- *     BroadcastRouter(5, supervisorStrategy = this.supervisorStrategy)))
- *
- *   val specialChild = context.actorOf(Props[SomeActor].withRouter(
- *     BroadcastRouter(5, supervisorStrategy = OneForOneStrategy() {
- *       ...
- *     })))
- * }
- * }}}
+ * The router's supervisor will treat the error as an error with the router itself.
+ * Therefore a directive to stop or restart will cause the router itself to stop or
+ * restart. The router, in turn, will cause its children to stop and restart.
  *
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
@@ -1208,30 +1156,17 @@ object ScatterGatherFirstCompletedRouter {
  *
  * <h1>Supervision Setup</h1>
  *
- * The router creates a “head” actor which supervises and/or monitors the
- * routees. Instances are created as children of this actor, hence the
- * children are not supervised by the parent of the router. Common choices are
- * to always escalate (meaning that fault handling is always applied to all
- * children simultaneously; this is the default) or use the parent’s strategy,
- * which will result in routed children being treated individually, but it is
- * possible as well to use Routers to give different supervisor strategies to
- * different groups of children.
+ * Any routees that are created by a router will be created as the router's children.
+ * The router is therefore also the children's supervisor.
  *
- * {{{
- * class MyActor extends Actor {
- *   override val supervisorStrategy = ...
+ * The supervision strategy of the router actor can be configured with
+ * [[#withSupervisorStrategy]]. If no strategy is provided, routers default to
+ * a strategy of “always escalate”. This means that errors are passed up to the
+ * router's supervisor for handling.
  *
- *   val poolAsAWhole = context.actorOf(Props[SomeActor].withRouter(ScatterGatherFirstCompletedRouter(5)))
- *
- *   val poolIndividuals = context.actorOf(Props[SomeActor].withRouter(
- *     ScatterGatherFirstCompletedRouter(5, supervisorStrategy = this.supervisorStrategy)))
- *
- *   val specialChild = context.actorOf(Props[SomeActor].withRouter(
- *     ScatterGatherFirstCompletedRouter(5, supervisorStrategy = OneForOneStrategy() {
- *       ...
- *     })))
- * }
- * }}}
+ * The router's supervisor will treat the error as an error with the router itself.
+ * Therefore a directive to stop or restart will cause the router itself to stop or
+ * restart. The router, in turn, will cause its children to stop and restart.
  *
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]

@@ -25,7 +25,7 @@ import java.lang.{ Iterable ⇒ JIterable }
  * stable and ready for production use.
  *
  * For a full description of the design and philosophy behind this IO
- * implementation please refer to {@see <a href="http://doc.akka.io/">the Akka online documentation</a>}.
+ * implementation please refer to <a href="http://doc.akka.io/">the Akka online documentation</a>.
  *
  * In order to open an outbound connection send a [[Tcp.Connect]] message
  * to the [[TcpExt#manager]].
@@ -526,8 +526,8 @@ object TcpMessage {
 
   /**
    * The Connect message is sent to the TCP manager actor, which is obtained via
-   * [[TcpExt#getManager]]. Either the manager replies with a [[CommandFailed]]
-   * or the actor handling the new connection replies with a [[Connected]]
+   * [[TcpExt#getManager]]. Either the manager replies with a [[Tcp.CommandFailed]]
+   * or the actor handling the new connection replies with a [[Tcp.Connected]]
    * message.
    *
    * @param remoteAddress is the address to connect to
@@ -567,13 +567,13 @@ object TcpMessage {
   /**
    * The Bind message is send to the TCP manager actor, which is obtained via
    * [[TcpExt#getManager]] in order to bind to a listening socket. The manager
-   * replies either with a [[CommandFailed]] or the actor handling the listen
-   * socket replies with a [[Bound]] message. If the local port is set to 0 in
-   * the Bind message, then the [[Bound]] message should be inspected to find
+   * replies either with a [[Tcp.CommandFailed]] or the actor handling the listen
+   * socket replies with a [[Tcp.Bound]] message. If the local port is set to 0 in
+   * the Bind message, then the [[Tcp.Bound]] message should be inspected to find
    * the actual port which was bound to.
    *
    * @param handler The actor which will receive all incoming connection requests
-   *                in the form of [[Connected]] messages.
+   *                in the form of [[Tcp.Connected]] messages.
    *
    * @param localAddress The socket address to bind to; use port zero for
    *                automatic assignment (i.e. an ephemeral port, see [[Bound]])
@@ -596,7 +596,7 @@ object TcpMessage {
 
   /**
    * This message must be sent to a TCP connection actor after receiving the
-   * [[Connected]] message. The connection will not read any data from the
+   * [[Tcp.Connected]] message. The connection will not read any data from the
    * socket until this message is received, because this message defines the
    * actor which will receive all inbound data.
    *
@@ -605,11 +605,11 @@ object TcpMessage {
    *
    * @param keepOpenOnPeerClosed If this is set to true then the connection
    *                is not automatically closed when the peer closes its half,
-   *                requiring an explicit [[Closed]] from our side when finished.
+   *                requiring an explicit [[Tcp.Closed]] from our side when finished.
    *
    * @param useResumeWriting If this is set to true then the connection actor
-   *                will refuse all further writes after issuing a [[CommandFailed]]
-   *                notification until [[ResumeWriting]] is received. This can
+   *                will refuse all further writes after issuing a [[Tcp.CommandFailed]]
+   *                notification until [[Tcp.ResumeWriting]] is received. This can
    *                be used to implement NACK-based write backpressure.
    */
   def register(handler: ActorRef, keepOpenOnPeerClosed: Boolean, useResumeWriting: Boolean): Command =
@@ -621,15 +621,15 @@ object TcpMessage {
 
   /**
    * In order to close down a listening socket, send this message to that socket’s
-   * actor (that is the actor which previously had sent the [[Bound]] message). The
-   * listener socket actor will reply with a [[Unbound]] message.
+   * actor (that is the actor which previously had sent the [[Tcp.Bound]] message). The
+   * listener socket actor will reply with a [[Tcp.Unbound]] message.
    */
   def unbind: Command = Unbind
 
   /**
    * A normal close operation will first flush pending writes and then close the
    * socket. The sender of this command and the registered handler for incoming
-   * data will both be notified once the socket is closed using a [[Closed]]
+   * data will both be notified once the socket is closed using a [[Tcp.Closed]]
    * message.
    */
   def close: Command = Close
@@ -638,7 +638,7 @@ object TcpMessage {
    * A confirmed close operation will flush pending writes and half-close the
    * connection, waiting for the peer to close the other half. The sender of this
    * command and the registered handler for incoming data will both be notified
-   * once the socket is closed using a [[ConfirmedClosed]] message.
+   * once the socket is closed using a [[Tcp.ConfirmedClosed]] message.
    */
   def confirmedClose: Command = ConfirmedClose
 
@@ -647,28 +647,28 @@ object TcpMessage {
    * command to the O/S kernel which should result in a TCP_RST packet being sent
    * to the peer. The sender of this command and the registered handler for
    * incoming data will both be notified once the socket is closed using a
-   * [[Aborted]] message.
+   * [[Tcp.Aborted]] message.
    */
   def abort: Command = Abort
 
   /**
-   * Each [[WriteCommand]] can optionally request a positive acknowledgment to be sent
-   * to the commanding actor. If such notification is not desired the [[WriteCommand#ack]]
+   * Each [[Tcp.WriteCommand]] can optionally request a positive acknowledgment to be sent
+   * to the commanding actor. If such notification is not desired the [[Tcp.WriteCommand#ack]]
    * must be set to an instance of this class. The token contained within can be used
-   * to recognize which write failed when receiving a [[CommandFailed]] message.
+   * to recognize which write failed when receiving a [[Tcp.CommandFailed]] message.
    */
   def noAck(token: AnyRef): NoAck = NoAck(token)
   /**
-   * Default [[NoAck]] instance which is used when no acknowledgment information is
+   * Default [[Tcp.NoAck]] instance which is used when no acknowledgment information is
    * explicitly provided. Its “token” is `null`.
    */
   def noAck: NoAck = NoAck
 
   /**
    * Write data to the TCP connection. If no ack is needed use the special
-   * `NoAck` object. The connection actor will reply with a [[CommandFailed]]
-   * message if the write could not be enqueued. If [[WriteCommand#wantsAck]]
-   * returns true, the connection actor will reply with the supplied [[WriteCommand#ack]]
+   * `NoAck` object. The connection actor will reply with a [[Tcp.CommandFailed]]
+   * message if the write could not be enqueued. If [[Tcp.WriteCommand#wantsAck]]
+   * returns true, the connection actor will reply with the supplied [[Tcp.WriteCommand#ack]]
    * token once the write has been successfully enqueued to the O/S kernel.
    * <b>Note that this does not in any way guarantee that the data will be
    * or have been sent!</b> Unfortunately there is no way to determine whether
@@ -682,9 +682,9 @@ object TcpMessage {
 
   /**
    * Write `count` bytes starting at `position` from file at `filePath` to the connection.
-   * The count must be > 0. The connection actor will reply with a [[CommandFailed]]
-   * message if the write could not be enqueued. If [[WriteCommand#wantsAck]]
-   * returns true, the connection actor will reply with the supplied [[WriteCommand#ack]]
+   * The count must be > 0. The connection actor will reply with a [[Tcp.CommandFailed]]
+   * message if the write could not be enqueued. If [[Tcp.WriteCommand#wantsAck]]
+   * returns true, the connection actor will reply with the supplied [[Tcp.WriteCommand#ack]]
    * token once the write has been successfully enqueued to the O/S kernel.
    * <b>Note that this does not in any way guarantee that the data will be
    * or have been sent!</b> Unfortunately there is no way to determine whether
@@ -694,23 +694,23 @@ object TcpMessage {
     WriteFile(filePath, position, count, ack)
 
   /**
-   * When `useResumeWriting` is in effect as was indicated in the [[Register]] message
+   * When `useResumeWriting` is in effect as was indicated in the [[Tcp.Register]] message
    * then this command needs to be sent to the connection actor in order to re-enable
-   * writing after a [[CommandFailed]] event. All [[WriteCommand]] processed by the
-   * connection actor between the first [[CommandFailed]] and subsequent reception of
-   * this message will also be rejected with [[CommandFailed]].
+   * writing after a [[Tcp.CommandFailed]] event. All [[Tcp.WriteCommand]] processed by the
+   * connection actor between the first [[Tcp.CommandFailed]] and subsequent reception of
+   * this message will also be rejected with [[Tcp.CommandFailed]].
    */
   def resumeWriting: Command = ResumeWriting
 
   /**
    * Sending this command to the connection actor will disable reading from the TCP
    * socket. TCP flow-control will then propagate backpressure to the sender side
-   * as buffers fill up on either end. To re-enable reading send [[ResumeReading]].
+   * as buffers fill up on either end. To re-enable reading send [[Tcp.ResumeReading]].
    */
   def suspendReading: Command = SuspendReading
 
   /**
-   * This command needs to be sent to the connection actor after a [[SuspendReading]]
+   * This command needs to be sent to the connection actor after a [[Tcp.SuspendReading]]
    * command in order to resume reading from the socket.
    */
   def resumeReading: Command = ResumeReading

@@ -52,13 +52,13 @@ trait ActorContext extends ActorRefFactory {
 
   /**
    * Gets the current receive timeout.
-   * When specified, the receive method should be able to handle a 'ReceiveTimeout' message.
+   * When specified, the receive method should be able to handle a [[akka.actor.ReceiveTimeout]] message.
    */
   def receiveTimeout: Duration
 
   /**
-   * Defines the inactivity timeout after which the sending of a `ReceiveTimeout` message is triggered.
-   * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
+   * Defines the inactivity timeout after which the sending of a [[akka.actor.ReceiveTimeout]] message is triggered.
+   * When specified, the receive function should be able to handle a [[akka.actor.ReceiveTimeout]] message.
    * 1 millisecond is the minimum supported timeout.
    *
    * Please note that the receive timeout might fire and enqueue the `ReceiveTimeout` message right after
@@ -113,13 +113,13 @@ trait ActorContext extends ActorRefFactory {
 
   /**
    * Returns the dispatcher (MessageDispatcher) that is used for this Actor.
-   * Importing this member will place a implicit MessageDispatcher in scope.
+   * Importing this member will place a implicit ExecutionContext in scope.
    */
   implicit def dispatcher: ExecutionContext
 
   /**
    * The system that the actor belongs to.
-   * Importing this member will place a implicit MessageDispatcher in scope.
+   * Importing this member will place a implicit ExecutionContext in scope.
    */
   implicit def system: ActorSystem
 
@@ -130,8 +130,8 @@ trait ActorContext extends ActorRefFactory {
 
   /**
    * Registers this actor as a Monitor for the provided ActorRef.
-   * This actor will receive a Terminated(watched) message when watched
-   * is terminated.
+   * This actor will receive a Terminated(subject) message when watched
+   * actor is terminated.
    * @return the provided ActorRef
    */
   def watch(subject: ActorRef): ActorRef
