@@ -148,7 +148,7 @@ abstract class AbstractPipePair[CmdAbove, CmdBelow, EvtAbove, EvtBelow] {
 
   /**
    * Wrap a single command for efficient return to the pipeline’s machinery.
-   * This method avoids allocating a [[Right]] and an [[java.lang.Iterable]] by reusing
+   * This method avoids allocating a [[scala.util.Right]] and an [[java.lang.Iterable]] by reusing
    * one such instance within the AbstractPipePair, hence it can be used ONLY ONCE by
    * each pipeline stage. Prototypic and safe usage looks like this:
    *
@@ -166,7 +166,7 @@ abstract class AbstractPipePair[CmdAbove, CmdBelow, EvtAbove, EvtBelow] {
 
   /**
    * Wrap a single event for efficient return to the pipeline’s machinery.
-   * This method avoids allocating a [[Left]] and an [[Iterable]] by reusing
+   * This method avoids allocating a [[scala.util.Left]] and an [[java.lang.Iterable]] by reusing
    * one such instance within the AbstractPipePair, hence it can be used ONLY ONCE by
    * each pipeline stage. Prototypic and safe usage looks like this:
    *
@@ -490,7 +490,7 @@ trait PipelineContext {
 
   /**
    * Scala API: Wrap a single command for efficient return to the pipeline’s machinery.
-   * This method avoids allocating a [[Right]] and an [[Iterable]] by reusing
+   * This method avoids allocating a [[scala.util.Right]] and an [[scala.collection.Iterable]] by reusing
    * one such instance within the PipelineContext, hence it can be used ONLY ONCE by
    * each pipeline stage. Prototypic and safe usage looks like this:
    *
@@ -510,7 +510,7 @@ trait PipelineContext {
 
   /**
    * Scala API: Wrap a single event for efficient return to the pipeline’s machinery.
-   * This method avoids allocating a [[Left]] and an [[Iterable]] by reusing
+   * This method avoids allocating a [[scala.util.Left]] and an [[scala.collection.Iterable]] by reusing
    * one such instance within the context, hence it can be used ONLY ONCE by
    * each pipeline stage. Prototypic and safe usage looks like this:
    *
@@ -742,15 +742,15 @@ object BackpressureBuffer {
  * This pipeline stage implements a configurable buffer for transforming the
  * per-write ACK/NACK-based backpressure model of a TCP connection actor into
  * an edge-triggered back-pressure model: the upper stages will receive
- * notification when the buffer runs full ([[HighWatermarkReached]]) and when
- * it subsequently empties ([[LowWatermarkReached]]). The upper layers should
+ * notification when the buffer runs full ([[BackpressureBuffer.HighWatermarkReached]]) and when
+ * it subsequently empties ([[BackpressureBuffer.LowWatermarkReached]]). The upper layers should
  * respond by not generating more writes when the buffer is full. There is also
  * a hard limit upon which this buffer will abort the connection.
  *
  * All limits are configurable and are given in number of bytes.
  * The `highWatermark` should be set such that the
  * amount of data generated before reception of the asynchronous
- * [[HighWatermarkReached]] notification does not lead to exceeding the
+ * [[BackpressureBuffer.HighWatermarkReached]] notification does not lead to exceeding the
  * `maxCapacity` hard limit; if the writes may arrive in bursts then the
  * difference between these two should allow for at least one burst to be sent
  * after the high watermark has been reached. The `lowWatermark` must be less
@@ -758,7 +758,7 @@ object BackpressureBuffer {
  * defines the hysteresis, i.e. how often these notifications are sent out (i.e.
  * if the difference is rather large then it will take some time for the buffer
  * to empty below the low watermark, and that room is then available for data
- * sent in response to the [[LowWatermarkReached]] notification; if the
+ * sent in response to the [[BackpressureBuffer.LowWatermarkReached]] notification; if the
  * difference was small then the buffer would more quickly oscillate between
  * these two limits).
  */
@@ -1152,7 +1152,7 @@ class StringByteStringAdapter(charset: String = "utf-8")
  */
 trait HasLogging extends PipelineContext {
   /**
-   * Retrieve the [[LoggingAdapter]] for this pipeline’s context.
+   * Retrieve the [[akka.event.LoggingAdapter]] for this pipeline’s context.
    */
   def getLogger: LoggingAdapter
 }
@@ -1164,7 +1164,7 @@ trait HasLogging extends PipelineContext {
  */
 trait HasActorContext extends PipelineContext {
   /**
-   * Retrieve the [[ActorContext]] for this pipeline’s context.
+   * Retrieve the [[akka.actor.ActorContext]] for this pipeline’s context.
    */
   def getContext: ActorContext
 }

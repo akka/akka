@@ -16,7 +16,7 @@ import akka.event.LoggingAdapter
 object ActorRef {
 
   /**
-   * Use this value as an argument to [[#tell]] if there is not actor to
+   * Use this value as an argument to [[ActorRef#tell]] if there is not actor to
    * reply to (e.g. when sending from non-actor code).
    */
   final val noSender: ActorRef = Actor.noSender
@@ -45,7 +45,9 @@ object ActorRef {
  *   def receive {
  *     case Request1(msg) => other ! refine(msg)     // uses this actor as sender reference, reply goes to us
  *     case Request2(msg) => other.tell(msg, sender) // forward sender reference, enabling direct reply
- *     case Request3(msg) => sender ! (other ? msg)  // will reply with a Future for holding other’s reply (implicit timeout from "akka.actor.timeout")
+ *     case Request3(msg) =>
+ *       implicit val timeout = Timeout(5.seconds)
+ *       sender ! (other ? msg)  // will reply with a Future for holding other's reply
  *   }
  * }
  * }}}
@@ -61,16 +63,16 @@ object ActorRef {
  *   @Override
  *   public void onReceive(Object o) {
  *     if (o instanceof Request1) {
- *       val msg = ((Request1) o).getMsg();
- *       other.tell(msg);              // uses this actor as sender reference, reply goes to us
+ *       Msg msg = ((Request1) o).getMsg();
+ *       other.tell(msg, getSelf()); // uses this actor as sender reference, reply goes to us
  *
  *     } else if (o instanceof Request2) {
- *       val msg = ((Request2) o).getMsg();
+ *       Msg msg = ((Request2) o).getMsg();
  *       other.tell(msg, getSender()); // forward sender reference, enabling direct reply
  *
  *     } else if (o instanceof Request3) {
- *       val msg = ((Request3) o).getMsg();
- *       getSender().tell(ask(other, msg, 5000)); // reply with Future for holding the other’s reply (timeout 5 seconds)
+ *       Msg msg = ((Request3) o).getMsg();
+ *       getSender().tell(ask(other, msg, 5000)); // reply with Future for holding the other's reply (timeout 5 seconds)
  *
  *     } else {
  *       unhandled(o);
@@ -80,7 +82,8 @@ object ActorRef {
  * }}}
  *
  * ActorRef does not have a method for terminating the actor it points to, use
- * [[akka.actor.ActorRefFactory]]`.stop(child)` for this purpose.
+ * [[akka.actor.ActorRefFactory]]`.stop(ref)`, or send a [[akka.actor.PoisonPill]],
+ * for this purpose.
  *
  * Two actor references are compared equal when they have the same path and point to
  * the same actor incarnation. A reference pointing to a terminated actor doesn't compare

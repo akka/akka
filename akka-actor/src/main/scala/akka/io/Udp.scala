@@ -26,7 +26,7 @@ import akka.actor._
  * from whom data can be received. For “connected” UDP mode see [[UdpConnected]].
  *
  * For a full description of the design and philosophy behind this IO
- * implementation please refer to {@see <a href="http://doc.akka.io/">the Akka online documentation</a>}.
+ * implementation please refer to <a href="http://doc.akka.io/">the Akka online documentation</a>.
  *
  * The Java API for generating UDP commands is available at [[UdpMessage]].
  */
@@ -244,33 +244,33 @@ object UdpMessage {
   import language.implicitConversions
 
   /**
-   * Each [[Send]] can optionally request a positive acknowledgment to be sent
-   * to the commanding actor. If such notification is not desired the [[Send#ack]]
+   * Each [[Udp.Send]] can optionally request a positive acknowledgment to be sent
+   * to the commanding actor. If such notification is not desired the [[Udp.Send#ack]]
    * must be set to an instance of this class. The token contained within can be used
-   * to recognize which write failed when receiving a [[CommandFailed]] message.
+   * to recognize which write failed when receiving a [[Udp.CommandFailed]] message.
    */
   def noAck(token: AnyRef): NoAck = NoAck(token)
   /**
-   * Default [[NoAck]] instance which is used when no acknowledgment information is
+   * Default [[Udp.NoAck]] instance which is used when no acknowledgment information is
    * explicitly provided. Its “token” is `null`.
    */
   def noAck: NoAck = NoAck
 
   /**
    * This message is understood by the “simple sender” which can be obtained by
-   * sending the [[SimpleSender]] query to the [[UdpExt#manager]] as well as by
-   * the listener actors which are created in response to [[Bind]]. It will send
+   * sending the [[Udp.SimpleSender]] query to the [[UdpExt#manager]] as well as by
+   * the listener actors which are created in response to [[Udp.Bind]]. It will send
    * the given payload data as one UDP datagram to the given target address. The
-   * UDP actor will respond with [[CommandFailed]] if the send could not be
+   * UDP actor will respond with [[Udp.CommandFailed]] if the send could not be
    * enqueued to the O/S kernel because the send buffer was full. If the given
-   * `ack` is not of type [[NoAck]] the UDP actor will reply with the given
+   * `ack` is not of type [[Udp.NoAck]] the UDP actor will reply with the given
    * object as soon as the datagram has been successfully enqueued to the O/S
    * kernel.
    *
    * The sending UDP socket’s address belongs to the “simple sender” which does
    * not handle inbound datagrams and sends from an ephemeral port; therefore
    * sending using this mechanism is not suitable if replies are expected, use
-   * [[Bind]] in that case.
+   * [[Udp.Bind]] in that case.
    */
   def send(payload: ByteString, target: InetSocketAddress, ack: Event): Command = Send(payload, target, ack)
   /**
@@ -281,8 +281,8 @@ object UdpMessage {
   /**
    * Send this message to the [[UdpExt#manager]] in order to bind to the given
    * local port (or an automatically assigned one if the port number is zero).
-   * The listener actor for the newly bound port will reply with a [[Bound]]
-   * message, or the manager will reply with a [[CommandFailed]] message.
+   * The listener actor for the newly bound port will reply with a [[Udp.Bound]]
+   * message, or the manager will reply with a [[Udp.CommandFailed]] message.
    */
   def bind(handler: ActorRef, endpoint: InetSocketAddress, options: JIterable[SocketOption]): Command =
     Bind(handler, endpoint, options.asScala.to)
@@ -292,15 +292,15 @@ object UdpMessage {
   def bind(handler: ActorRef, endpoint: InetSocketAddress): Command = Bind(handler, endpoint, Nil)
 
   /**
-   * Send this message to the listener actor that previously sent a [[Bound]]
+   * Send this message to the listener actor that previously sent a [[Udp.Bound]]
    * message in order to close the listening socket. The recipient will reply
-   * with an [[Unbound]] message.
+   * with an [[Udp.Unbound]] message.
    */
   def unbind: Command = Unbind
 
   /**
    * Retrieve a reference to a “simple sender” actor of the UDP extension.
-   * The newly created “simple sender” will reply with the [[SimpleSenderReady]] notification.
+   * The newly created “simple sender” will reply with the [[Udp.SimpleSenderReady]] notification.
    *
    * The “simple sender” is a convenient service for being able to send datagrams
    * when the originating address is meaningless, i.e. when no reply is expected.
@@ -315,16 +315,16 @@ object UdpMessage {
   def simpleSender: Command = SimpleSender
 
   /**
-   * Send this message to a listener actor (which sent a [[Bound]] message) to
+   * Send this message to a listener actor (which sent a [[Udp.Bound]] message) to
    * have it stop reading datagrams from the network. If the O/S kernel’s receive
    * buffer runs full then subsequent datagrams will be silently discarded.
-   * Re-enable reading from the socket using the [[ResumeReading]] command.
+   * Re-enable reading from the socket using the [[Udp.ResumeReading]] command.
    */
   def suspendReading: Command = SuspendReading
 
   /**
    * This message must be sent to the listener actor to re-enable reading from
-   * the socket after a [[SuspendReading]] command.
+   * the socket after a [[Udp.SuspendReading]] command.
    */
   def resumeReading: Command = ResumeReading
 }

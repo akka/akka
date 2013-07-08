@@ -24,7 +24,7 @@ object LoggingReceive {
    * </code></pre>
    *
    * This method does NOT modify the given Receive unless
-   * akka.actor.debug.receive is set within akka.conf.
+   * `akka.actor.debug.receive` is set in configuration.
    */
   def apply(r: Receive)(implicit context: ActorContext): Receive = r match {
     case _: LoggingReceive ⇒ r
