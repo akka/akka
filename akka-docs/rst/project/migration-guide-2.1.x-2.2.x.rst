@@ -320,7 +320,7 @@ Instead, use actorSelection followed by identify request, and watch the verified
       ref = actorRef
       context watch ref
     case ActorIdentity(_, None) => // not alive
-    case Terminated(`ref`) => // ...
+    case Terminated(r) if r == ref => // ...
   }
 
 Use ``watch`` instead of ``isTerminated``
