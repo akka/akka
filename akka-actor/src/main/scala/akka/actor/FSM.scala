@@ -184,7 +184,7 @@ object FSM {
  *         case Ev(SomeMsg) => ... // convenience when data not needed
  *     }
  *     when(Two, stateTimeout = 5 seconds) { ... }
- *     initialize
+ *     initialize()
  *   }
  * </pre>
  *
@@ -286,7 +286,9 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
     register(stateName, stateFunction, Option(stateTimeout))
 
   /**
-   * Set initial state. Call this method from the constructor before the #initialize method.
+   * Set initial state. Call this method from the constructor before the [[#initialize]] method.
+   * If different state is needed after a restart this method, followed by [[#initialize]], can
+   * be used in the actor life cycle hooks [[akka.actor.Actor#preStart]] and [[akka.actor.Actor#postRestart]].
    *
    * @param stateName initial state designator
    * @param stateData initial state data
@@ -447,7 +449,10 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
 
   /**
    * Verify existence of initial state and setup timers. This should be the
-   * last call within the constructor.
+   * last call within the constructor, or [[akka.actor.Actor#preStart]] and
+   * [[akka.actor.Actor#postRestart]]
+   *
+   * @see [[#startWith]]
    */
   final def initialize(): Unit = makeTransition(currentState)
 
