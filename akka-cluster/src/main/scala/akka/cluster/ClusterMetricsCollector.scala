@@ -227,7 +227,7 @@ private[cluster] case class MetricsGossip(nodes: Set[NodeMetrics]) {
 private[cluster] case class MetricsGossipEnvelope(from: Address, gossip: MetricsGossip, reply: Boolean)
   extends ClusterMessage
 
-object EWMA {
+private[cluster] object EWMA {
   /**
    * math.log(2)
    */
@@ -687,8 +687,6 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
  *
  * The constructor will by design throw exception if org.hyperic.sigar.Sigar can't be loaded, due
  * to missing classes or native libraries.
- *
- * TODO switch to Scala reflection
  *
  * @param address The [[akka.actor.Address]] of the node being sampled
  * @param decay how quickly the exponential weighting of past data is decayed
