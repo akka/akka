@@ -42,13 +42,13 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
 }
 
 /**
- * This module is responsible for Gossiping cluster information. The abstraction maintains the list of live
- * and dead members. Periodically i.e. every 1 second this module chooses a random member and initiates a round
- * of Gossip with it.
- * <p/>
- * During each round of gossip exchange it sends Gossip to random node with
- * newer or older state information, if any, based on the current gossip overview,
- * with some probability. Otherwise Gossip to any random live node.
+ * This module is responsible cluster membership information. Changes to the cluster
+ * information is retrieved through [[#subscribe]]. Commands to operate the cluster is
+ * available through methods in this class, such as [[#join]], [[#down]] and [[#leave]].
+ *
+ * Each cluster [[Member]] is identified by its [[akka.actor.Address]], and
+ * the cluster address of this actor system is [[#selfAddress]]. A member also has a status;
+ * initially [[MemberStatus.Joining]] followed by [[MemberStatus.Up]].
  */
 class Cluster(val system: ExtendedActorSystem) extends Extension {
 
@@ -260,12 +260,26 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   /**
    * Send command to issue state transition to LEAVING for the node specified by 'address'.
+   * The member will go through the status changes [[MemberStatus.Leaving]] (not published to
+   * subscribers) followed by [[MemberStatus.Exiting]] and finally [[MemberStatus.Removed]].
+   *
+   * Note that this command can be issued to any member in the cluster, not necessarily the
+   * one that is leaving. The cluster extension, but not the actor system or JVM, of the
+   * leaving member will be shutdown after the leader has changed status of the member to
+   * Exiting. Thereafter the member will be removed from the cluster. Normally this is
+   * handled automatically, but in case of network failures during this process it might
+   * still be necessary to set the node’s status to Down in order to complete the removal.
    */
   def leave(address: Address): Unit =
     clusterCore ! ClusterUserAction.Leave(address)
 
   /**
    * Send command to DOWN the node specified by 'address'.
+   *
+   * When a member is considered by the failure detector to be unreachable the leader is not
+   * allowed to perform its duties, such as changing status of new joining members to 'Up'.
+   * The status of the unreachable member must be changed to 'Down', which can be done with
+   * this method.
    */
   def down(address: Address): Unit =
     clusterCore ! ClusterUserAction.Down(address)

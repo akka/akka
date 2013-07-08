@@ -19,6 +19,9 @@ import java.util.zip.GZIPInputStream
 import com.google.protobuf.MessageLite
 import scala.annotation.tailrec
 
+/**
+ * Protobuf serializer of cluster messages.
+ */
 class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializer {
 
   private final val BufferSize = 1024 * 4
