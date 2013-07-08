@@ -113,13 +113,14 @@ object SupervisorHierarchySpec {
    */
   case class HierarchyState(log: Vector[Event], kids: Map[ActorPath, Int], failConstr: Failure)
   val stateCache = new ConcurrentHashMap[ActorPath, HierarchyState]()
+  @volatile var ignoreFailConstr = false
 
   class Hierarchy(size: Int, breadth: Int, listener: ActorRef, myLevel: Int) extends Actor {
 
     var log = Vector.empty[Event]
 
     stateCache.get(self.path) match {
-      case hs @ HierarchyState(l: Vector[Event], _, f: Failure) if f.failConstr > 0 ⇒
+      case hs @ HierarchyState(l: Vector[Event], _, f: Failure) if f.failConstr > 0 && !ignoreFailConstr ⇒
         val log = l :+ Event("Failed in constructor", identityHashCode(this))
         stateCache.put(self.path, hs.copy(log = log, failConstr = f.copy(failConstr = f.failConstr - 1)))
         throw f
@@ -467,7 +468,7 @@ object SupervisorHierarchySpec {
         idleChildren = children
         activeChildren = children
         // set timeout for completion of the whole test (i.e. including Finishing and Stopping)
-        setTimer("phase", StateTimeout, 70.seconds.dilated, false)
+        setTimer("phase", StateTimeout, 90.seconds.dilated, false)
     }
 
     val workSchedule = 50.millis
@@ -524,6 +525,10 @@ object SupervisorHierarchySpec {
         ignoreNotResumedLogs = false
         hierarchy ! Dump(2)
         goto(Failed)
+    }
+
+    onTransition {
+      case Stress -> Finishing ⇒ ignoreFailConstr = true
     }
 
     when(Finishing) {
@@ -876,7 +881,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
 
       fsm ! Init
 
-      expectMsg(90 seconds, "stressTestSuccessful")
+      expectMsg(110 seconds, "stressTestSuccessful")
       expectMsg("stressTestStopped")
     }
   }
