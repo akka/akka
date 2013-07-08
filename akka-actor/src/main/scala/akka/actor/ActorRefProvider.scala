@@ -211,6 +211,9 @@ trait ActorRefFactory {
    * reversed and with “$” prepended, may change in the future).
    *
    * See [[akka.actor.Props]] for details on how to obtain a `Props` object.
+   *
+   * @throws akka.ConfigurationException if deployment, dispatcher
+   *   or mailbox configuration is wrong
    */
   def actorOf(props: Props): ActorRef
 
@@ -220,6 +223,10 @@ trait ActorRefFactory {
    * and `InvalidActorNameException` is thrown.
    *
    * See [[akka.actor.Props]] for details on how to obtain a `Props` object.
+   * @throws akka.actor.InvalidActorNameException if the given name is
+   *   invalid or already in use
+   * @throws akka.ConfigurationException if deployment, dispatcher
+   *   or mailbox configuration is wrong
    */
   def actorOf(props: Props, name: String): ActorRef
 
@@ -263,7 +270,7 @@ trait ActorRefFactory {
    *       ...
    *       val target = context.actorFor(Seq("..", "myBrother", "myNephew"))
    *       ...
-   * }
+   *   }
    * }
    * }}}
    *
@@ -285,9 +292,9 @@ trait ActorRefFactory {
    *     path.add("..");
    *     path.add("myBrother");
    *     path.add("myNephew");
-   *     final ActorRef target = context().actorFor(path);
+   *     final ActorRef target = getContext().actorFor(path);
    *     ...
-   * }
+   *   }
    * }
    * }}}
    *

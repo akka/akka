@@ -45,7 +45,7 @@ object SslTlsSupport {
 
 /**
  * This pipeline stage implements SSL / TLS support, using an externally
- * configured [[SSLEngine]]. It operates on the level of [[Tcp.Event]] and
+ * configured [[javax.net.ssl.SSLEngine]]. It operates on the level of [[Tcp.Event]] and
  * [[Tcp.Command]] messages, which means that it will typically be one of
  * the lowest stages in a protocol stack. Since SSLEngine relies on contiguous
  * transmission of a data stream you will need to handle backpressure from

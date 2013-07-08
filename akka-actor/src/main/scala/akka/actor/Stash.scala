@@ -30,18 +30,7 @@ import akka.AkkaException
  *  </pre>
  *
  *  Note that the `Stash` trait can only be used together with actors that have a deque-based
- *  mailbox. Actors can be configured to use a deque-based mailbox using a configuration like
- *  the following (see the documentation on dispatchers on how to configure a custom
- *  dispatcher):
- *  <pre>
- *  akka {
- *    actor {
- *      my-custom-dispatcher {
- *        mailbox-type = "akka.dispatch.UnboundedDequeBasedMailbox"
- *      }
- *    }
- *  }
- *  </pre>
+ *  mailbox.
  *
  *  Note that the `Stash` trait must be mixed into (a subclass of) the `Actor` trait before
  *  any trait/class that overrides the `preRestart` callback. This means it's not possible to write

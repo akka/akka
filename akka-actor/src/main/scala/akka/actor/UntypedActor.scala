@@ -27,7 +27,7 @@ import akka.japi.{ Creator }
  * {{{
  *  public class SampleUntypedActor extends UntypedActor {
  *
- *    public class Reply {
+ *    public static class Reply implements java.io.Serializable {
  *      final public ActorRef sender;
  *      final public Result result;
  *      Reply(ActorRef sender, Result result) {
@@ -59,7 +59,7 @@ import akka.japi.{ Creator }
  *
  *    public void onReceive(Object message) throws Exception {
  *      if (message instanceof String) {
- *        String msg = (String)message;
+ *        String msg = (String) message;
  *
  *        if (msg.equals("UseSender")) {
  *          // Reply to original sender of message
@@ -77,7 +77,9 @@ import akka.japi.{ Creator }
  *          // Send work to one-off child and collect the answer, reply handled further down
  *          getContext().actorOf(Props.create(Worker.class)).tell("DoWorkAndReplyToMe", getSelf());
  *
- *        } else throw new IllegalArgumentException("Unknown message: " + message);
+ *        } else {
+ *          unhandled(message);
+ *        }
  *
  *      } else if (message instanceof Reply) {
  *
@@ -85,7 +87,9 @@ import akka.japi.{ Creator }
  *        // might want to do some processing/book-keeping here
  *        reply.sender.tell(reply.result, getSelf());
  *
- *      } else throw new IllegalArgumentException("Unknown message: " + message);
+ *      } else {
+ *        unhandled(message);
+ *      }
  *    }
  *  }
  * }}}
@@ -107,7 +111,7 @@ abstract class UntypedActor extends Actor {
   def getContext(): UntypedActorContext = context.asInstanceOf[UntypedActorContext]
 
   /**
-   * Returns the 'self' reference.
+   * Returns the ActorRef for this actor.
    */
   def getSelf(): ActorRef = self
 
@@ -161,6 +165,16 @@ abstract class UntypedActor extends Actor {
   override def postRestart(reason: Throwable): Unit = super.postRestart(reason)
 
   final def receive = { case msg ⇒ onReceive(msg) }
+
+  /**
+   * Recommended convention is to call this method if the message
+   * isn't handled in [[#onReceive]] (e.g. unknown message type).
+   * By default it fails with either a [[akka.actor.DeathPactException]] (in
+   * case of an unhandled [[akka.actor.Terminated]] message) or publishes an [[akka.actor.UnhandledMessage]]
+   * to the actor's system's [[akka.event.EventStream]].
+   */
+  override def unhandled(message: Any): Unit = super.unhandled(message)
+
 }
 
 /**

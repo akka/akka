@@ -13,8 +13,16 @@ import akka.actor.Props
 import akka.actor.ActorRef
 import scala.util.control.NonFatal
 
+/**
+ * Main class to start an [[akka.actor.ActorSystem]] with one
+ * top level application supervisor actor. It will shutdown
+ * the actor system when the top level actor is terminated.
+ */
 object Main {
 
+  /**
+   * @params args one argument: the class of the application supervisor actor
+   */
   def main(args: Array[String]): Unit = {
     if (args.length != 1) {
       println("you need to provide exactly one argument: the class of the application supervisor actor")

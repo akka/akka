@@ -41,7 +41,7 @@ trait AskSupport {
    * val future = actor.ask(message)(timeout) // => ask(actor, message)(timeout)
    * }}}
    *
-   * All of the above use an implicit [[akka.actor.Timeout]].
+   * All of the above use an implicit [[akka.util.Timeout]].
    */
   implicit def ask(actorRef: ActorRef): AskableActorRef = new AskableActorRef(actorRef)
 
@@ -88,7 +88,7 @@ trait AskSupport {
    * val future = selection.ask(message)(timeout) // => ask(selection, message)(timeout)
    * }}}
    *
-   * All of the above use an implicit [[akka.actor.Timeout]].
+   * All of the above use an implicit [[akka.util.Timeout]].
    */
   implicit def ask(actorSelection: ActorSelection): AskableActorSelection = new AskableActorSelection(actorSelection)
 

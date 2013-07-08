@@ -120,7 +120,7 @@ object Props {
   def create(clazz: Class[_], args: AnyRef*): Props = apply(defaultDeploy, clazz, args.toVector)
 
   /**
-   * Create new Props from the given [[Creator]].
+   * Create new Props from the given [[akka.japi.Creator]].
    */
   def create[T <: Actor](creator: Creator[T]): Props = {
     if ((creator.getClass.getEnclosingClass ne null) && (creator.getClass.getModifiers & Modifier.STATIC) == 0)
@@ -216,7 +216,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
   def this(factory: UntypedActorFactory) = this(Props.defaultDeploy, classOf[UntypedActorFactoryConsumer], Vector(factory))
 
   /**
-   * Java API: create Props from a given [[Class]]
+   * Java API: create Props from a given [[java.lang.Class]]
    *
    * @deprecated use Props.create(clazz) instead; deprecated since it duplicates
    *             another API
@@ -303,7 +303,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
 
   /**
    * Obtain an upper-bound approximation of the actor class which is going to
-   * be created by these Props. In other words, the [[#newActor]] method will
+   * be created by these Props. In other words, the actor factory method will
    * produce an instance of this class or a subclass thereof. This is used by
    * the actor system to select special dispatchers or mailboxes in case
    * dependencies are encoded in the actor type.
