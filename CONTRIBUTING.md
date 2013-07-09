@@ -39,8 +39,11 @@ For a Pull Request to be considered at all it has to meet these requirements:
    - [Boy Scout Rule](http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule) needs to have been applied.
 2. Regardless if the code introduces new features or fixes bugs or regressions, it must have comprehensive tests.
 3. The code must be well documented in the Typesafe's standard documentation format (see the ‘Documentation’ section below).
+4. The commit messages must properly describe the changes, see further below.
 
 If these requirements are not met then the code should **not** be merged into master, or even reviewed - regardless of how good or important it is. No exceptions.
+
+Whether or not a pull request (or parts of it) shall be back- or forward-ported will be discussed on the pull request discussion page, it shall therefore not be part of the commit messages. If desired the intent can be expressed in the pull request description.
 
 ## Continuous Integration
 
@@ -74,20 +77,29 @@ Also, to facilitate both well-formed commits and working together, the ``wip`` a
 Follow these guidelines when creating public commits and writing commit messages.
 
 1. If your work spans multiple local commits (for example; if you do safe point commits while working in a feature branch or work in a branch for long time doing merges/rebases etc.) then please do not commit it all but rewrite the history by squashing the commits into a single big commit which you write a good commit message for (like discussed in the following sections). For more info read this article: [Git Workflow](http://sandofsky.com/blog/git-workflow.html). Every commit should be able to be used in isolation, cherry picked etc.
-2. First line should be a descriptive sentence what the commit is doing. It should be possible to fully understand what the commit does by just reading this single line. It is **not ok** to only list the ticket number, type "minor fix" or similar. Include reference to ticket number, prefixed with #, at the end of the first line. If the commit is a small fix, then you are done. If not, go to 3.
+
+2. First line should be a descriptive sentence what the commit is doing. It should be possible to fully understand what the commit does—but not necessarily how it does it—by just reading this single line. We follow the “imperative present tense” style for commit messages ([more info here](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html)).
+   
+   It is **not ok** to only list the ticket number, type "minor fix" or similar. In order to help with automatic filtering of the commit history (generating ChangeLogs, writing the migration guide, code archaeology) we use the following encoding:
+   * the first character is either '!' (for breaking API changes), '+' (for non-breaking API additions) or '=' (for API-neutral commits)
+   * then follows a comma-separated list of module abbreviations, formed by using the first three letters of the module name (the “akka-” prefix being stripped off), e.g. `act`, `clu`, `doc`; it is intentional that `akka-actor-tests` receives the same abbreviation as `akka-actor`
+   * then follows a space character, a hash sign '#' and the ticket number
+   * the rest of the line (usually there are 64 characters left) makes up the textual summary
+   
+   If the commit is a small fix, then you are done. If not, go to 3.
+
 3. Following the single line description should be a blank line followed by an enumerated list with the details of the commit.
+
 4. Add keywords for your commit (depending on the degree of automation we reach, the list may change over time):
     * ``Review by @gituser`` - if you want to notify someone on the team. The others can, and are encouraged to participate.
-    * ``Fix/Fixing/Fixes/Close/Closing/Refs #ticket`` - if you want to mark the ticket as fixed in the issue tracker (Assembla understands this).
-    * ``backport to _branch name_`` - if the fix needs to be cherry-picked to another branch (like 2.9.x, 2.10.x, etc)
 
 Example:
 
-    Adding monadic API to Future. Fixes #2731
+    +act #2731 Adding monadic API to Future
 
-      * Details 1
-      * Details 2
-      * Details 3
+    * Details 1
+    * Details 2
+    * Details 3
 
 ## Source style
 
