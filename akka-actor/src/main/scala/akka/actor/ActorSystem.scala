@@ -23,7 +23,7 @@ import scala.util.control.{ NonFatal, ControlThrowable }
 
 object ActorSystem {
 
-  val Version: String = "2.2-SNAPSHOT"
+  val Version: String = "2.2.0"
 
   val EnvHome: Option[String] = System.getenv("AKKA_HOME") match {
     case null | "" | "." ⇒ None
