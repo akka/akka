@@ -330,6 +330,41 @@ described in the following:
 The implementations shown above are the defaults provided by the :class:`Actor`
 trait.
 
+Actor Lifecycle
+---------------
+
+.. image:: ../images/actor_lifecycle.png
+   :align: center
+   :width: 680
+
+A path in an actor system represents a "place" which might be occupied
+by a living actor. Initially (apart from system initialized actors) a path is
+empty. When ``actorOf()`` is called it assigns an *incarnation* of the actor
+described by the passed ``Props`` to the given path. An actor incarnation is
+identified by the path *and a UID*. A restart only swaps the ``Actor``
+instance defined by the ``Props`` but the incarnation and hence the UID remains
+the same.
+
+The lifecycle of an incarnation ends when the actor is stopped. At
+that point the appropriate lifecycle events are called and watching actors
+are notified of the termination. After the incarnation is stopped, the path can
+be reused again by creating an actor with ``actorOf()``. In this case the
+name of the new incarnation will be the same as the previous one but the
+UIDs will differ.
+
+An ``ActorRef`` always represents an incarnation (path and UID) not just a
+given path. Therefore if an actor is stopped and a new one with the same
+name is created an ``ActorRef`` of the old incarnation will not point
+to the new one.
+
+``ActorSelection`` on the other hand points to the path (or multiple paths
+if wildcards are used) and is completely oblivious to which incarnation is currently
+occupying it. ``ActorSelection`` cannot be watched for this reason. It is
+possible to resolve the current incarnation's ``ActorRef`` living under the
+path by sending an ``Identify`` message to the ``ActorSelection`` which
+will be replied to with an ``ActorIdentity`` containing the correct reference
+(see :ref:`actorSelection-scala`).
+
 .. _deathwatch-scala:
 
 Lifecycle Monitoring aka DeathWatch
