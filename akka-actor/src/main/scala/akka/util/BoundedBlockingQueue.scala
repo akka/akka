@@ -150,7 +150,10 @@ class BoundedBlockingQueue[E <: AnyRef](
 
   override def clear() {
     lock.lock()
-    try backing.clear() finally lock.unlock()
+    try {
+      backing.clear()
+      notFull.signal()
+    } finally lock.unlock()
   }
 
   def remainingCapacity(): Int = {
@@ -185,7 +188,10 @@ class BoundedBlockingQueue[E <: AnyRef](
               case null ⇒ n
               case e    ⇒ c add e; drainOne(n + 1)
             }
-          } else n
+          } else {
+            notFull.signal()
+            n
+          }
         drainOne(0)
       } finally lock.unlock()
     }
