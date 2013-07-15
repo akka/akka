@@ -322,28 +322,55 @@ object AkkaBuild extends Build {
     )
   )
 
-  val ActorReferenceCopyTask = TaskKey[Int]("hello", "Copy reference.conf from akka modules to akka-osgi")
 
-  val ActorReferenceCopyAction = (streams)  map { (s) =>
-    s.log.debug("Copying of the akka-actor reference.conf in akka-osgi")
-    (file("akka-osgi/src/main/resources")).mkdir()
-    if ((file("akka-osgi/src/main/resources/reference.conf")).exists){(file("akka-osgi/src/main/resources/reference.conf")).delete()}
-    val projectReferencesToCopy = for (project <- projects.filter(p => !p.id.contains("test") && !p.id.contains("sample"))
-      if (file(project.base+"/src/main/resources/reference.conf")).exists())  yield project
+  val ActorMakeOsgiConfiguration = TaskKey[Seq[File]]("actor-make-osgi-configuration", "Copy reference.conf from akka modules for akka-osgi")
+  val ActorOsgiConfigurationReference = TaskKey[Seq[(File, String)]]("actor-osgi-configuration-reference", "The list of all configuration files to be bundled in an osgi bundle, as well as project name.")
 
-    val referencesFileToInclude = projectReferencesToCopy.map(project => {
-      copyFile(project.base+"/src/main/resources/reference.conf", "akka-osgi/src/main/resources/"+project.id+".conf")
-      "include \""+ project.id +".conf\""
-      })
-
-    val writer = new PrintWriter(file("akka-osgi/src/main/resources/reference.conf" ))
-    writer.write(referencesFileToInclude.mkString("\n"))
-    writer.close()
-    s.log.info("Akka module reference.conf copied in akka-osgi")
-    projects.size
+  import Project.Initialize
+  /** This method uses a bit of advanced sbt initailizers to grab the normalized names and resource directories
+   * from a set of projects, and then use this to create a mapping of (reference.conf to project name).
+   */
+  def ActorOsgiConfigurationReferenceAction(projects: Seq[Project]): Initialize[Task[Seq[(File, String)]]] = {
+    val directories: Initialize[Seq[File]] = projects.map(resourceDirectory in Compile in _).join
+    val names: Initialize[Seq[String]] = projects.map(normalizedName in _).join
+    directories zip names map { case (dirs, ns) =>
+        for {
+          (dir, project) <- dirs zip ns
+          val conf = dir / "reference.conf"
+          if conf.exists
+        } yield conf -> project
+      }
   }
-
-
+  
+  /** This method is repsonsible for genreating a new typeasafe config reference.conf file for OSGi.
+   * it copies all the files in the `includes` parameter, using the associated project name.  Then
+   * it generates a new resource.conf file which includes these files.
+   *
+   * @param target  The location where we write the new files
+   * @param includes A sequnece of (<reference.conf>, <project name>) pairs.
+   */
+  def makeOsgiConfigurationFiles(includes: Seq[(File, String)], target: File, streams: TaskStreams): Seq[File] = {
+    // First we copy all the files to their destination
+    val toCopy =
+      for {
+        (file, project) <- includes
+        val toFile = target / (project + ".conf")
+      } yield file -> toFile
+    IO.copy(toCopy)
+    val copiedResourceFileLocations = toCopy.map(_._2)
+    streams.log.debug("Copied OSGi resources: " + copiedResourceFileLocations.mkString("\n\t", "\n\t", "\n"))
+    // Now we generate the new including conf file
+    val newConf = target / "resource.conf"
+    val confIncludes =
+      for {
+        (file, project) <- includes
+      } yield "include \""+ project +".conf\""
+    val writer = new PrintWriter(newConf)
+    try writer.write(confIncludes mkString "\n")
+    finally writer.close()
+    streams.log.info("Copied OSGi resources.")
+    newConf +: copiedResourceFileLocations
+  }
 
   lazy val osgi = Project(
     id = "akka-osgi",
@@ -351,9 +378,10 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor),
     settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.osgi ++ Seq(
       libraryDependencies ++= Dependencies.osgi,
-      ActorReferenceCopyTask in Compile <<= ActorReferenceCopyAction ,
       cleanFiles <+= baseDirectory { base => base / "src/main/resources" } ,
-      compile in Compile <<= compile in Compile dependsOn (ActorReferenceCopyTask in Compile),
+      ActorOsgiConfigurationReference <<= ActorOsgiConfigurationReferenceAction(projects.filter(p => !p.id.contains("test") && !p.id.contains("sample"))),
+      ActorMakeOsgiConfiguration <<= (ActorOsgiConfigurationReference, resourceManaged in Compile, streams) map makeOsgiConfigurationFiles,
+      resourceGenerators in Compile <+= ActorMakeOsgiConfiguration,
       parallelExecution in Test := false
     )
   )
