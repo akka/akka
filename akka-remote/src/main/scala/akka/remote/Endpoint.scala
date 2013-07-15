@@ -545,13 +545,10 @@ private[remote] class EndpointWriter(
       unstashAll()
       goto(Writing)
 
-    case Event(Send(msg, senderOption, recipient, _), _) ⇒
+    case _ =>
       stash()
       stay()
 
-    case _: StopReading ⇒
-      stash()
-      stay()
   }
 
   whenUnhandled {
