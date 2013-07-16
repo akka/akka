@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
@@ -36,7 +36,7 @@ class BoundedBlockingQueue[E <: AnyRef](
 
   def put(e: E) { //Blocks until not full
     if (e eq null) throw new NullPointerException
-    lock.lock()
+    lock.lockInterruptibly()
     try {
       while (backing.size() == maxCapacity)
         notFull.await()
@@ -152,7 +152,7 @@ class BoundedBlockingQueue[E <: AnyRef](
     lock.lock()
     try {
       backing.clear()
-      notFull.signal()
+      notFull.signalAll()
     } finally lock.unlock()
   }
 
@@ -178,6 +178,7 @@ class BoundedBlockingQueue[E <: AnyRef](
   def drainTo(c: Collection[_ >: E], maxElements: Int): Int = {
     if (c eq null) throw new NullPointerException
     if (c eq this) throw new IllegalArgumentException
+    if (c eq backing) throw new IllegalArgumentException
     if (maxElements <= 0) 0
     else {
       lock.lock()
@@ -189,10 +190,11 @@ class BoundedBlockingQueue[E <: AnyRef](
               case e    ⇒ c add e; drainOne(n + 1)
             }
           } else {
-            notFull.signal()
             n
           }
-        drainOne(0)
+        val n = drainOne(0)
+        if (n > 0) notFull.signalAll()
+        n
       } finally lock.unlock()
     }
   }
