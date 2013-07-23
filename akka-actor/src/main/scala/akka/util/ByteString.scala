@@ -658,10 +658,9 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     fillArray(n) { (target, offset) ⇒
       if (byteOrder == ByteOrder.BIG_ENDIAN) {
         val start = n * 8 - 8
-        (0 until n) foreach (i ⇒ target(offset + i) = (x >>> start - 8 * i).toByte)
+        (0 until n) foreach { i ⇒ target(offset + i) = (x >>> start - 8 * i).toByte }
       } else if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
-        val end = offset + n - 1
-        (0 until n) foreach (i ⇒ target(end - i) = (x >>> 8 * i).toByte)
+        (0 until n) foreach { i ⇒ target(offset + i) = (x >>> 8 * i).toByte }
       } else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
     }
   }
