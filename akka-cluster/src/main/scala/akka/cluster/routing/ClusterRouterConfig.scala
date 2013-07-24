@@ -52,7 +52,7 @@ final case class ClusterRouterConfig(local: RouterConfig, settings: ClusterRoute
     }: Route) orElse localRoute
   }
 
-  override def createActor(): Router = new ClusterRouterActor
+  override def createActor(): Router = new ClusterRouterActor(local.supervisorStrategy)
 
   override def supervisorStrategy: SupervisorStrategy = local.supervisorStrategy
 
@@ -269,7 +269,7 @@ private[akka] class ClusterRouteeProvider(
  * INTERNAL API
  * The router actor, subscribes to cluster events.
  */
-private[akka] class ClusterRouterActor extends Router {
+private[akka] class ClusterRouterActor(override val supervisorStrategy: SupervisorStrategy) extends Router {
 
   // re-subscribe when restart
   override def preStart(): Unit = {
