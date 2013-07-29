@@ -34,6 +34,19 @@ nodes. In this post we’ll explore the implementation of such a concept."
 
 The pattern is described `Balancing Workload across Nodes with Akka 2 <http://letitcrash.com/post/29044669086/balancing-workload-across-nodes-with-akka-2>`_.
 
+Work Pulling Pattern to throttle and distribute work, and prevent mailbox overflow
+===============================
+
+Contributed by: Michael Pollmeier
+
+"This pattern ensures that your mailboxes don’t overflow if creating work is fast than 
+actually doing it – which can lead to out of memory errors when the mailboxes 
+eventually become too full. It also let’s you distribute work around your cluster,
+scale dynamically scale and is completely non-blocking. This pattern is a 
+specialisation of the above 'Balancing Workload Pattern'."
+
+The pattern is described `Work Pulling Pattern to prevent mailbox overflow, throttle and distribute work <http://www.michaelpollmeier.com/akka-work-pulling-pattern/>`_.
+
 Ordered Termination
 ===================
 
