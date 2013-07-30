@@ -277,4 +277,3 @@ class BoundedBlockingQueue[E <: AnyRef](
     try backing.toArray[X](a) finally lock.unlock()
   }
 }
-
