@@ -36,4 +36,4 @@ Licenses for Dependency Libraries
 ---------------------------------
 
 Each dependency and its license can be seen in the project build file (the comment on the side of each dependency):
-`<https://github.com/akka/akka/blob/master/project/AkkaBuild.scala#L497>`_
+`<https://github.com/akka/akka/blob/master/project/AkkaBuild.scala#L1004>`_
