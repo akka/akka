@@ -23,17 +23,14 @@ class MessageContainerSerializer(val system: ExtendedActorSystem) extends Serial
   def includeManifest: Boolean = false
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case path: SelectionPath ⇒
-      val builder = ContainerFormats.SelectionEnvelope.newBuilder()
-      serializeSelectionPath(path, builder)
-      builder.build().toByteArray
-    case _ ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
+    case path: SelectionPath ⇒ serializeSelectionPath(path, ContainerFormats.SelectionEnvelope.newBuilder()).build().toByteArray
+    case _                   ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
   }
 
   import ContainerFormats.PatternType._
 
   @tailrec
-  private def serializeSelectionPath(path: Any, builder: SelectionEnvelope.Builder): Unit = path match {
+  private def serializeSelectionPath(path: Any, builder: SelectionEnvelope.Builder): SelectionEnvelope.Builder = path match {
     case SelectChildName(name, next) ⇒
       serializeSelectionPath(next, builder.addPattern(buildPattern(Some(name), CHILD_NAME)))
     case SelectChildPattern(pattern, next) ⇒
