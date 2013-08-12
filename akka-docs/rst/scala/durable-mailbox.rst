@@ -83,16 +83,16 @@ mailboxes are an excellent fit for usage of circuit breakers.  These are describ
    :include: custom-mailbox
 
 To facilitate testing of a durable mailbox you may use ``DurableMailboxSpec`` as base class.
+To use ``DurableMailboxDocSpec`` add this dependency::
+
+  "com.typesafe.akka" %% "akka-mailboxes-common" % 
+    "@version@" classifier "test" @crossString@
+
 It implements a few basic tests and helps you setup the a fixture. More tests can be
 added in concrete subclass like this:
 
 .. includecode:: code/docs/actor/mailbox/DurableMailboxDocSpec.scala
    :include: custom-mailbox-test
-
-To use ``DurableMailboxDocSpec`` add this dependency::
-
-  "com.typesafe.akka" %% "akka-mailboxes-common" % 
-    "@version@" classifier "test" @crossString@
 
 For more inspiration you can look at the old implementations based on Redis, MongoDB, Beanstalk,
 and ZooKeeper, which can be found in Akka git repository tag
