@@ -101,14 +101,15 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
 
   protected def unwatchWatchedActors(actor: Actor): Unit =
     if (!watching.isEmpty) {
-      try {
-        watching foreach { // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-          case watchee: InternalActorRef ⇒ watchee.sendSystemMessage(Unwatch(watchee, self))
+      maintainAddressTerminatedSubscription(self) {
+        try {
+          watching foreach { // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+            case watchee: InternalActorRef ⇒ watchee.sendSystemMessage(Unwatch(watchee, self))
+          }
+        } finally {
+          watching = ActorCell.emptyActorRefSet
+          terminatedQueued = ActorCell.emptyActorRefSet
         }
-      } finally {
-        watching = ActorCell.emptyActorRefSet
-        terminatedQueued = ActorCell.emptyActorRefSet
-        unsubscribeAddressTerminated()
       }
     }
 
