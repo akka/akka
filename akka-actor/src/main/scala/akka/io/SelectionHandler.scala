@@ -93,8 +93,8 @@ private[io] object SelectionHandler {
    */
   private[io] final val connectionSupervisorStrategy: SupervisorStrategy =
     new OneForOneStrategy()(SupervisorStrategy.stoppingStrategy.decider) {
-      override protected def logFailure(context: ActorContext, child: ActorRef, cause: Throwable,
-                                        decision: SupervisorStrategy.Directive): Unit =
+      override def logFailure(context: ActorContext, child: ActorRef, cause: Throwable,
+                              decision: SupervisorStrategy.Directive): Unit =
         if (cause.isInstanceOf[DeathPactException]) {
           try context.system.eventStream.publish {
             Logging.Debug(child.path.toString, getClass, "Closed after handler termination")
@@ -252,8 +252,8 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends A
       case _: Exception ⇒ SupervisorStrategy.Stop
     }
     new OneForOneStrategy()(stoppingDecider) {
-      override protected def logFailure(context: ActorContext, child: ActorRef, cause: Throwable,
-                                        decision: SupervisorStrategy.Directive): Unit =
+      override def logFailure(context: ActorContext, child: ActorRef, cause: Throwable,
+                              decision: SupervisorStrategy.Directive): Unit =
         try {
           val logMessage = cause match {
             case e: ActorInitializationException if e.getCause ne null ⇒ e.getCause.getMessage

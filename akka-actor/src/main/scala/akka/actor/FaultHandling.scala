@@ -325,7 +325,7 @@ abstract class SupervisorStrategy {
    * `Resume` failures are logged at `Warning` level.
    * `Stop` and `Restart` failures are logged at `Error` level.
    */
-  protected def logFailure(context: ActorContext, child: ActorRef, cause: Throwable, decision: Directive): Unit =
+  def logFailure(context: ActorContext, child: ActorRef, cause: Throwable, decision: Directive): Unit =
     if (loggingEnabled) {
       val logMessage = cause match {
         case e: ActorInitializationException if e.getCause ne null ⇒ e.getCause.getMessage
