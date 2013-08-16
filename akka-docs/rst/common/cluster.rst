@@ -92,7 +92,7 @@ Vector Clocks
 `Vector clocks`_ are an algorithm for generating a partial ordering of events in
 a distributed system and detecting causality violations.
 
-We use vector clocks to to reconcile and merge differences in cluster state
+We use vector clocks to reconcile and merge differences in cluster state
 during gossiping. A vector clock is a set of (node, counter) pairs. Each update
 to the cluster state has an accompanying update to the vector clock.
 
