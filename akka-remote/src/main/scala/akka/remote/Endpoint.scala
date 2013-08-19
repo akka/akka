@@ -560,7 +560,7 @@ private[remote] class EndpointWriter(
       unstashAll()
       goto(Writing)
 
-    case _ =>
+    case _ ⇒
       stash()
       stay()
 
