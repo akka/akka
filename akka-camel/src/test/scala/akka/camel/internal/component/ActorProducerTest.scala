@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 import java.lang.String
 import akka.camel._
 import internal.{ DefaultCamel, CamelExchangeAdapter }
-import org.scalatest.{ Suite, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
+import org.scalatest.{ Suite, WordSpecLike, BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.camel.TestSupport._
 import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
 import org.mockito.{ ArgumentMatcher, Matchers, Mockito }
@@ -30,7 +30,7 @@ import akka.util.Timeout
 import akka.actor._
 import akka.testkit._
 
-class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with ActorProducerFixture {
+class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike with MustMatchers with ActorProducerFixture {
   implicit val timeout = Timeout(10 seconds)
 
   "ActorProducer" when {

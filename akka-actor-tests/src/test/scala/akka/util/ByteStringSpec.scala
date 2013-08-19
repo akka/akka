@@ -210,6 +210,21 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
     reference.toSeq == builder.result
   }
 
+  def testLongPartEncoding(anb: ArrayNumBytes[Long], byteOrder: ByteOrder): Boolean = {
+    val elemSize = 8
+    val (data, nBytes) = anb
+
+    val reference = Array.ofDim[Byte](data.length * elemSize)
+    ByteBuffer.wrap(reference).order(byteOrder).asLongBuffer.put(data)
+    val builder = ByteString.newBuilder
+    for (i ← 0 until data.length) builder.putLongPart(data(i), nBytes)(byteOrder)
+
+    reference.zipWithIndex.collect({ // Since there is no partial put on LongBuffer, we need to collect only the interesting bytes
+      case (r, i) if byteOrder == ByteOrder.LITTLE_ENDIAN && i % elemSize < nBytes            ⇒ r
+      case (r, i) if byteOrder == ByteOrder.BIG_ENDIAN && i % elemSize >= (elemSize - nBytes) ⇒ r
+    }).toSeq == builder.result
+  }
+
   def testFloatEncoding(slice: ArraySlice[Float], byteOrder: ByteOrder): Boolean = {
     val elemSize = 4
     val (data, from, until) = slice

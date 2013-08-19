@@ -6,7 +6,7 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.WordSpec
+import org.scalatest.WordSpecLike
 import org.scalatest.matchers.MustMatchers
 
 import akka.actor.Props
@@ -47,7 +47,7 @@ class TransformationSampleSpecMultiJvmNode4 extends TransformationSampleSpec
 class TransformationSampleSpecMultiJvmNode5 extends TransformationSampleSpec
 
 abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSampleSpecConfig)
-  with WordSpec with MustMatchers with BeforeAndAfterAll with ImplicitSender {
+  with WordSpecLike with MustMatchers with BeforeAndAfterAll with ImplicitSender {
 
   import TransformationSampleSpecConfig._
 
