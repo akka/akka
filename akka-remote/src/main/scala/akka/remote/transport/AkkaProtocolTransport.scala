@@ -115,27 +115,27 @@ private[transport] class AkkaProtocolManager(
       val stateActorAssociationHandler = associationListener
       val stateActorSettings = settings
       val failureDetector = createTransportFailureDetector()
-      context.actorOf(Props(classOf[ProtocolStateActor],
+      context.actorOf(RARP(context.system).configureDispatcher(Props(classOf[ProtocolStateActor],
         HandshakeInfo(stateActorLocalAddress, AddressUidExtension(context.system).addressUid, stateActorSettings.SecureCookie),
         handle,
         stateActorAssociationHandler,
         stateActorSettings,
         AkkaPduProtobufCodec,
-        failureDetector).withDeploy(Deploy.local), actorNameFor(handle.remoteAddress))
+        failureDetector)).withDeploy(Deploy.local), actorNameFor(handle.remoteAddress))
 
     case AssociateUnderlying(remoteAddress, statusPromise) ⇒
       val stateActorLocalAddress = localAddress
       val stateActorSettings = settings
       val stateActorWrappedTransport = wrappedTransport
       val failureDetector = createTransportFailureDetector()
-      context.actorOf(Props(classOf[ProtocolStateActor],
+      context.actorOf(RARP(context.system).configureDispatcher(Props(classOf[ProtocolStateActor],
         HandshakeInfo(stateActorLocalAddress, AddressUidExtension(context.system).addressUid, stateActorSettings.SecureCookie),
         remoteAddress,
         statusPromise,
         stateActorWrappedTransport,
         stateActorSettings,
         AkkaPduProtobufCodec,
-        failureDetector).withDeploy(Deploy.local), actorNameFor(remoteAddress))
+        failureDetector)).withDeploy(Deploy.local), actorNameFor(remoteAddress))
   }
 
   private def createTransportFailureDetector(): FailureDetector =
