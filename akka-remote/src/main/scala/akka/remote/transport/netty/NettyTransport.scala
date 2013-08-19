@@ -28,6 +28,7 @@ import scala.util.{ Failure, Success, Try }
 import scala.util.control.{ NoStackTrace, NonFatal }
 import akka.util.Helpers.Requiring
 import akka.util.Helpers
+import akka.remote.RARP
 
 object NettyTransportSettings {
   sealed trait Mode
@@ -239,7 +240,11 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   import NettyTransport._
   import settings._
 
-  implicit val executionContext: ExecutionContext = system.dispatcher
+  implicit val executionContext: ExecutionContext =
+    settings.UseDispatcherForIo.orElse(RARP(system).provider.remoteSettings.Dispatcher match {
+      case ""             ⇒ None
+      case dispatcherName ⇒ Some(dispatcherName)
+    }).map(system.dispatchers.lookup).getOrElse(system.dispatcher)
 
   override val schemeIdentifier: String = (if (EnableSsl) "ssl." else "") + TransportMode
   override def maximumPayloadBytes: Int = settings.MaxFrameSize

@@ -10,6 +10,7 @@ import akka.util.Timeout
 import scala.collection.immutable
 import akka.util.Helpers.Requiring
 import akka.japi.Util._
+import akka.actor.Props
 
 final class RemoteSettings(val config: Config) {
   import config._
@@ -22,6 +23,10 @@ final class RemoteSettings(val config: Config) {
   val UntrustedMode: Boolean = getBoolean("akka.remote.untrusted-mode")
 
   val LogRemoteLifecycleEvents: Boolean = getBoolean("akka.remote.log-remote-lifecycle-events")
+
+  val Dispatcher: String = getString("akka.remote.use-dispatcher")
+
+  def configureDispatcher(props: Props): Props = if (Dispatcher.isEmpty) props else props.withDispatcher(Dispatcher)
 
   val ShutdownTimeout: Timeout = {
     Timeout(Duration(getMilliseconds("akka.remote.shutdown-timeout"), MILLISECONDS))
