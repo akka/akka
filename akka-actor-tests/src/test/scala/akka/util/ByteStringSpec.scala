@@ -231,7 +231,7 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
     for (i ← 0 until data.length) builder.putLongPart(data(i), nBytes)(byteOrder)
 
     reference.zipWithIndex.collect({ // Since there is no partial put on LongBuffer, we need to collect only the interesting bytes
-      case (r, i) if byteOrder == ByteOrder.LITTLE_ENDIAN && i % elemSize < nBytes     ⇒ r
+      case (r, i) if byteOrder == ByteOrder.LITTLE_ENDIAN && i % elemSize < nBytes            ⇒ r
       case (r, i) if byteOrder == ByteOrder.BIG_ENDIAN && i % elemSize >= (elemSize - nBytes) ⇒ r
     }).toSeq == builder.result
   }
