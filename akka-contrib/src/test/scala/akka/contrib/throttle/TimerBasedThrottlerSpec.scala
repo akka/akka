@@ -14,7 +14,7 @@ import akka.testkit.ImplicitSender
 import akka.contrib.throttle.Throttler._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.WordSpec
+import org.scalatest.WordSpecLike
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterAll
 import akka.testkit._
@@ -29,7 +29,7 @@ object TimerBasedThrottlerSpec {
 
 @RunWith(classOf[JUnitRunner])
 class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSpec")) with ImplicitSender
-  with WordSpec with MustMatchers with BeforeAndAfterAll {
+  with WordSpecLike with MustMatchers with BeforeAndAfterAll {
 
   override def afterAll {
     shutdown(system)

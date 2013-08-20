@@ -14,7 +14,7 @@ import sample.cluster.stats.japi.StatsMessages._
 import akka.remote.testkit.MultiNodeConfig
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.WordSpec
+import org.scalatest.WordSpecLike
 import org.scalatest.matchers.MustMatchers
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
@@ -55,7 +55,7 @@ class StatsSampleJapiSpecMultiJvmNode2 extends StatsSampleJapiSpec
 class StatsSampleJapiSpecMultiJvmNode3 extends StatsSampleJapiSpec
 
 abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConfig)
-  with WordSpec with MustMatchers with BeforeAndAfterAll
+  with WordSpecLike with MustMatchers with BeforeAndAfterAll
   with ImplicitSender {
 
   import StatsSampleJapiSpecConfig._
