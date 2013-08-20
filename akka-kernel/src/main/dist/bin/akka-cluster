@@ -45,7 +45,7 @@ case "$1" in
 
     join)
         if [ $# -ne 2 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> join <node-url-to-join>"
+            echo "Usage: $SELF <node-hostname> <jmx-port> join <node-url-to-join>"
             exit 1
         fi
 
@@ -56,7 +56,7 @@ case "$1" in
 
     leave)
         if [ $# -ne 2 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> leave <node-url-to-join>"
+            echo "Usage: $SELF <node-hostname> <jmx-port> leave <node-url-to-join>"
             exit 1
         fi
 
@@ -69,7 +69,7 @@ case "$1" in
 
     down)
         if [ $# -ne 2 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> down <node-url-to-join>"
+            echo "Usage: $SELF <node-hostname> <jmx-port> down <node-url-to-join>"
             exit 1
         fi
 
@@ -82,7 +82,7 @@ case "$1" in
 
     member-status)
         if [ $# -ne 1 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> member-status"
+            echo "Usage: $SELF <node-hostname> <jmx-port> member-status"
             exit 1
         fi
 
@@ -94,7 +94,7 @@ case "$1" in
 
     cluster-status)
         if [ $# -ne 1 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> cluster-status"
+            echo "Usage: $SELF <node-hostname> <jmx-port> cluster-status"
             exit 1
         fi
 
@@ -106,7 +106,7 @@ case "$1" in
 
     members)
         if [ $# -ne 1 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> members"
+            echo "Usage: $SELF <node-hostname> <jmx-port> members"
             exit 1
         fi
 
@@ -118,7 +118,7 @@ case "$1" in
 
     unreachable)
         if [ $# -ne 1 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> unreachable"
+            echo "Usage: $SELF <node-hostname> <jmx-port> unreachable"
             exit 1
         fi
 
@@ -130,7 +130,7 @@ case "$1" in
 
     leader)
         if [ $# -ne 1 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> leader"
+            echo "Usage: $SELF <node-hostname> <jmx-port> leader"
             exit 1
         fi
 
@@ -142,7 +142,7 @@ case "$1" in
 
     is-singleton)
         if [ $# -ne 1 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> is-singleton"
+            echo "Usage: $SELF <node-hostname> <jmx-port> is-singleton"
             exit 1
         fi
 
@@ -154,7 +154,7 @@ case "$1" in
 
     is-available)
         if [ $# -ne 1 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> is-available"
+            echo "Usage: $SELF <node-hostname> <jmx-port> is-available"
             exit 1
         fi
 
@@ -165,7 +165,7 @@ case "$1" in
         ;;
 
     *)
-        printf "Usage: bin/$SELF <node-hostname:jmx-port> <command> ...\n"
+        printf "Usage: bin/$SELF <node-hostname> <jmx-port> <command> ...\n"
         printf "\n"
         printf "Supported commands are:\n"
         printf "%26s - %s\n" "join <node-url>"   "Sends request a JOIN node with the specified URL"
@@ -180,9 +180,9 @@ case "$1" in
         printf "%26s - %s\n" is-available        "Checks if the member node is available"
         printf "Where the <node-url> should be on the format of 'akka://actor-system-name@hostname:port'\n"
         printf "\n"
-        printf "Examples: bin/$SELF localhost:9999 is-available\n"
-        printf "          bin/$SELF localhost:9999 join akka://MySystem@darkstar:2552\n"
-        printf "          bin/$SELF localhost:9999 cluster-status\n"
+        printf "Examples: bin/$SELF localhost 9999 is-available\n"
+        printf "          bin/$SELF localhost 9999 join akka://MySystem@darkstar:2552\n"
+        printf "          bin/$SELF localhost 9999 cluster-status\n"
         exit 1
         ;;
 esac

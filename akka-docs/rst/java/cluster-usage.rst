@@ -692,7 +692,7 @@ Akka distribution.
 
 Run it without parameters to see instructions about how to use the script::
 
-  Usage: bin/akka-cluster <node-hostname:jmx-port> <command> ...
+  Usage: bin/akka-cluster <node-hostname> <jmx-port> <command> ...
 
   Supported commands are:
              join <node-url> - Sends request a JOIN node with the specified URL
@@ -710,9 +710,9 @@ Run it without parameters to see instructions about how to use the script::
   Where the <node-url> should be on the format of 
     'akka.<protocol>://<actor-system-name>@<hostname>:<port>'
 
-  Examples: bin/akka-cluster localhost:9999 is-available
-            bin/akka-cluster localhost:9999 join akka.tcp://MySystem@darkstar:2552
-            bin/akka-cluster localhost:9999 cluster-status
+  Examples: bin/akka-cluster localhost 9999 is-available
+            bin/akka-cluster localhost 9999 join akka.tcp://MySystem@darkstar:2552
+            bin/akka-cluster localhost 9999 cluster-status
 
 
 To be able to use the script you must enable remote monitoring and management when starting the JVMs of the cluster nodes,
