@@ -72,8 +72,8 @@ Here is an example Build.scala file that uses the MultiJvm plugin:
            "test" @crossString@,
          "com.typesafe.akka" %% "akka-multi-node-testkit" % "@version@" %
            "test" @crossString@,
-         "org.scalatest"     %% "scalatest" % "1.9.1" % "test",
-         "junit"              % "junit" % "4.5" % "test"
+         "org.scalatest"     %% "scalatest" % "1.9.2-SNAP2" % "test",
+         "junit"              % "junit" % "4.10" % "test"
        )
      }
    }

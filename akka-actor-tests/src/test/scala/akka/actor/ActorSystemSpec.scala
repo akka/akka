@@ -5,7 +5,7 @@ package akka.actor
 
 import language.postfixOps
 import akka.testkit._
-import org.scalatest.junit.JUnitSuite
+import org.scalatest.junit.JUnitSuiteLike
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -19,7 +19,7 @@ import com.typesafe.config.Config
 import java.util.concurrent.{ LinkedBlockingQueue, BlockingQueue, TimeUnit }
 import akka.util.Switch
 
-class JavaExtensionSpec extends JavaExtension with JUnitSuite
+class JavaExtensionSpec extends JavaExtension with JUnitSuiteLike
 
 object TestExtension extends ExtensionId[TestExtension] with ExtensionIdProvider {
   def lookup = this
