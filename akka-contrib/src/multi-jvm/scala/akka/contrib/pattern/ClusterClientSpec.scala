@@ -69,8 +69,6 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
   def createReceptionist(): Unit = ClusterReceptionistExtension(system)
 
-  def receptionist: ClusterReceptionistExtension = ClusterReceptionistExtension(system)
-
   def awaitCount(expected: Int): Unit = {
     awaitAssert {
       DistributedPubSubExtension(system).mediator ! DistributedPubSubMediator.Count
@@ -93,7 +91,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       join(fourth, first)
       runOn(fourth) {
         val service = system.actorOf(Props(classOf[TestService], testActor), "testService")
-        receptionist.registerService(service)
+        ClusterReceptionistExtension(system).registerService(service)
       }
       runOn(first, second, third, fourth) {
         awaitCount(1)
@@ -126,12 +124,12 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       //#server
       runOn(host1) {
         val serviceA = system.actorOf(Props[Service], "serviceA")
-        receptionist.registerService(serviceA)
+        ClusterReceptionistExtension(system).registerService(serviceA)
       }
 
       runOn(host2, host3) {
         val serviceB = system.actorOf(Props[Service], "serviceB")
-        receptionist.registerService(serviceB)
+        ClusterReceptionistExtension(system).registerService(serviceB)
       }
       //#server
 
@@ -159,7 +157,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
     "re-establish connection to receptionist when connection is lost" in within(30 seconds) {
       runOn(first, second, third, fourth) {
         val service2 = system.actorOf(Props(classOf[TestService], testActor), "service2")
-        receptionist.registerService(service2)
+        ClusterReceptionistExtension(system).registerService(service2)
         awaitCount(8)
       }
       enterBarrier("service2-replicated")

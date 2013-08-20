@@ -6,11 +6,14 @@ Cluster Client
 An actor system that is not part of the cluster can communicate with actors
 somewhere in the cluster via this ``ClusterClient``. The client can of course be part of
 another cluster. It only needs to know the location of one (or more) nodes to use as initial
-contact point. It will establish a connection to a ``ClusterReceptionist`` somewhere in
+contact points. It will establish a connection to a ``ClusterReceptionist`` somewhere in
 the cluster. It will monitor the connection to the receptionist and establish a new
 connection if the link goes down. When looking for a new receptionist it uses fresh
 contact points retrieved from previous establishment, or periodically refreshed contacts,
-i.e. not necessarily the initial contact points.
+i.e. not necessarily the initial contact points. Also, note it's necessary to change
+``akka.actor.provider`` from ``akka.actor.LocalActorRefProvider`` to 
+``akka.remote.RemoteActorRefProvider`` or ``akka.cluster.ClusterActorRefProvider`` when using
+the cluster client. 
 
 The receptionist is supposed to be started on all nodes, or all nodes with specified role,
 in the cluster. The receptionist can be started with the ``ClusterReceptionistExtension``
@@ -50,8 +53,12 @@ directly to the actor in the cluster.
 An Example
 ----------
 
-On the cluster nodes you start the receptionist and register the actors that
-should be available for the client.
+On the cluster nodes first start the receptionist. Note, it is recommended to load the extension 
+when the actor system is started by defining it in the ``akka.extensions`` configuration property::
+
+   akka.extensions = ["akka.contrib.pattern.ClusterReceptionistExtension"]
+
+Next, register the actors that should be available for the client.
 
 .. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterClientSpec.scala#server
 
@@ -83,7 +90,7 @@ The ``ClusterReceptionistExtension`` can be configured with the following proper
 Note that the ``ClusterReceptionistExtension`` uses the ``DistributedPubSubExtension``, which is described
 in :ref:`distributed-pub-sub`.
 
-It is recommended to load the extension when the actor system is started by defining it in
+It is recommended to load the extension when the actor system is started by defining it in the
 ``akka.extensions`` configuration property::
 
    akka.extensions = ["akka.contrib.pattern.ClusterReceptionistExtension"]
