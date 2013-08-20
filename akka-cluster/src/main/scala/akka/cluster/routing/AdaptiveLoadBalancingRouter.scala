@@ -399,7 +399,7 @@ private[cluster] class WeightedRoutees(refs: immutable.IndexedSeq[ActorRef], sel
     buckets
   }
 
-  def isEmpty: Boolean = buckets.length == 0
+  def isEmpty: Boolean = buckets.length == 0 || buckets(buckets.length - 1) == 0
 
   def total: Int = {
     require(!isEmpty, "WeightedRoutees must not be used when empty")

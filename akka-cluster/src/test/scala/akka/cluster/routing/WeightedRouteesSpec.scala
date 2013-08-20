@@ -44,6 +44,16 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
       intercept[IllegalArgumentException] {
         empty.total
       }
+
+      val empty2 = new WeightedRoutees(Vector(refA), a1, Map(a1 -> 0))
+      empty2.isEmpty must be(true)
+      intercept[IllegalArgumentException] {
+        empty2.total
+      }
+      intercept[IllegalArgumentException] {
+        empty2(0)
+      }
+
       val weighted = new WeightedRoutees(Vector(refA, refB, refC), a1, Map.empty)
       weighted.total must be(3)
       intercept[IllegalArgumentException] {
