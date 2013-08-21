@@ -193,9 +193,15 @@ private[akka] sealed trait SystemMessage extends PossiblyHarmful with Serializab
   def unlinked: Boolean = next eq null
 }
 
-trait StashWhenWaitingForChildren
+/**
+ * INTERNAL API
+ */
+private[akka] trait StashWhenWaitingForChildren
 
-trait StashWhenFailed
+/**
+ * INTERNAL API
+ */
+private[akka] trait StashWhenFailed
 
 /**
  * INTERNAL API

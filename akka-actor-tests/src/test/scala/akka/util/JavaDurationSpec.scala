@@ -3,6 +3,6 @@
  */
 package akka.util
 
-import org.scalatest.junit.JUnitSuite
+import org.scalatest.junit.JUnitSuiteLike
 
-class JavaDurationSpec extends JavaDuration with JUnitSuite
+class JavaDurationSpec extends JavaDuration with JUnitSuiteLike
