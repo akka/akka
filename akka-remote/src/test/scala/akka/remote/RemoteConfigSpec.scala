@@ -33,6 +33,7 @@ class RemoteConfigSpec extends AkkaSpec(
       StartupTimeout.duration must be(10 seconds)
       RetryGateClosedFor must be(Duration.Zero)
       UnknownAddressGateClosedFor must be(1 minute)
+      Dispatcher must be === ""
       UsePassiveConnections must be(true)
       MaximumRetriesInWindow must be(3)
       RetryWindow must be(60 seconds)
