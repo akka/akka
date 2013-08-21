@@ -63,6 +63,24 @@ object FaultHandlingDocSpec {
   }
   //#supervisor2
 
+  class Supervisor3 extends Actor {
+    //#default-strategy-fallback
+    import akka.actor.OneForOneStrategy
+    import akka.actor.SupervisorStrategy._
+    import scala.concurrent.duration._
+
+    override val supervisorStrategy =
+      OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+        case _: ArithmeticException ⇒ Resume
+        case t ⇒
+          super.supervisorStrategy.decider.applyOrElse(t, (_: Any) ⇒ Escalate)
+      }
+    //#default-strategy-fallback
+
+    def receive = Actor.emptyBehavior
+  }
+  //#supervisor
+
   //#child
   class Child extends Actor {
     var state = 0
