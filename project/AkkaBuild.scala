@@ -27,6 +27,7 @@ import java.util.Properties
 import annotation.tailrec
 import Unidoc.{ JavaDoc, javadocSettings, junidocSources, sunidoc, unidocExclude }
 import scalabuff.ScalaBuffPlugin._
+import com.typesafe.sbt.S3Plugin.{ S3, s3Settings }
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -50,7 +51,7 @@ object AkkaBuild extends Build {
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Publish.versionSettings ++
-      SphinxSupport.settings ++ Dist.settings ++ mimaSettings ++ unidocScaladocSettings ++ 
+      SphinxSupport.settings ++ Dist.settings ++ s3Settings ++ mimaSettings ++ unidocScaladocSettings ++ 
       inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
@@ -65,7 +66,18 @@ object AkkaBuild extends Build {
       sphinxInputs in Sphinx <<= sphinxInputs in Sphinx in LocalProject(docs.id) map { inputs => inputs.copy(tags = inputs.tags :+ "online") },
       // don't regenerate the pdf, just reuse the akka-docs version
       generatedPdf in Sphinx <<= generatedPdf in Sphinx in LocalProject(docs.id) map identity,
-      generatedEpub in Sphinx <<= generatedEpub in Sphinx in LocalProject(docs.id) map identity
+      generatedEpub in Sphinx <<= generatedEpub in Sphinx in LocalProject(docs.id) map identity,
+
+      S3.host in S3.upload := "downloads.typesafe.com.s3.amazonaws.com",
+      S3.progress in S3.upload := true,
+      mappings in S3.upload <<= (Release.releaseDirectory, version) map { (d, v) =>
+        def distMapping(extension: String): (File, String) = {
+          val file = d / "downloads" / ("akka-" + v + "." + extension)
+          file -> ("akka/" + file.getName)
+        }
+        Seq(distMapping("zip"), distMapping("tgz"))
+      }
+      
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
       mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples, channels, channelsTests,
