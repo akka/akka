@@ -97,7 +97,7 @@ trait UnrestrictedStash extends Actor {
    */
   def stash(): Unit = {
     val currMsg = context.asInstanceOf[ActorCell].currentMessage
-    if (theStash.size > 0 && (currMsg eq theStash.last))
+    if (theStash.nonEmpty && (currMsg eq theStash.last))
       throw new IllegalStateException("Can't stash the same message " + currMsg + " more than once")
     if (capacity <= 0 || theStash.size < capacity) theStash :+= currMsg
     else throw new StashOverflowException("Couldn't enqueue message " + currMsg + " to stash of " + self)
