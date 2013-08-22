@@ -3,7 +3,7 @@
  */
 package akka.pattern
 
-import akka.actor.Scheduler
+import akka.actor.{ ActorSelection, Scheduler }
 import scala.concurrent.ExecutionContext
 import java.util.concurrent.Callable
 import scala.concurrent.duration.FiniteDuration
@@ -75,7 +75,72 @@ object Patterns {
    *   });
    * }}}
    */
-  def ask(actor: ActorRef, message: Any, timeoutMillis: Long): Future[AnyRef] = scalaAsk(actor, message)(new Timeout(timeoutMillis)).asInstanceOf[Future[AnyRef]]
+  def ask(actor: ActorRef, message: Any, timeoutMillis: Long): Future[AnyRef] =
+    scalaAsk(actor, message)(new Timeout(timeoutMillis)).asInstanceOf[Future[AnyRef]]
+
+  /**
+   * <i>Java API for `akka.pattern.ask`:</i>
+   * Sends a message asynchronously and returns a [[scala.concurrent.Future]]
+   * holding the eventual reply message; this means that the target [[akka.actor.ActorSelection]]
+   * needs to send the result to the `sender` reference provided. The Future
+   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
+   * given timeout has expired; this is independent from any timeout applied
+   * while awaiting a result for this future (i.e. in
+   * `Await.result(..., timeout)`).
+   *
+   * <b>Warning:</b>
+   * When using future callbacks, inside actors you need to carefully avoid closing over
+   * the containing actor’s object, i.e. do not call methods or access mutable state
+   * on the enclosing actor from within the callback. This would break the actor
+   * encapsulation and may introduce synchronization bugs and race conditions because
+   * the callback will be scheduled concurrently to the enclosing actor. Unfortunately
+   * there is not yet a way to detect these illegal accesses at compile time.
+   *
+   * <b>Recommended usage:</b>
+   *
+   * {{{
+   *   final Future<Object> f = Patterns.ask(selection, request, timeout);
+   *   f.onSuccess(new Procedure<Object>() {
+   *     public void apply(Object o) {
+   *       nextActor.tell(new EnrichedResult(request, o));
+   *     }
+   *   });
+   * }}}
+   */
+  def ask(selection: ActorSelection, message: Any, timeout: Timeout): Future[AnyRef] =
+    scalaAsk(selection, message)(timeout).asInstanceOf[Future[AnyRef]]
+
+  /**
+   * <i>Java API for `akka.pattern.ask`:</i>
+   * Sends a message asynchronously and returns a [[scala.concurrent.Future]]
+   * holding the eventual reply message; this means that the target [[akka.actor.ActorSelection]]
+   * needs to send the result to the `sender` reference provided. The Future
+   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
+   * given timeout has expired; this is independent from any timeout applied
+   * while awaiting a result for this future (i.e. in
+   * `Await.result(..., timeout)`).
+   *
+   * <b>Warning:</b>
+   * When using future callbacks, inside actors you need to carefully avoid closing over
+   * the containing actor’s object, i.e. do not call methods or access mutable state
+   * on the enclosing actor from within the callback. This would break the actor
+   * encapsulation and may introduce synchronization bugs and race conditions because
+   * the callback will be scheduled concurrently to the enclosing actor. Unfortunately
+   * there is not yet a way to detect these illegal accesses at compile time.
+   *
+   * <b>Recommended usage:</b>
+   *
+   * {{{
+   *   final Future<Object> f = Patterns.ask(selection, request, timeout);
+   *   f.onSuccess(new Procedure<Object>() {
+   *     public void apply(Object o) {
+   *       nextActor.tell(new EnrichedResult(request, o));
+   *     }
+   *   });
+   * }}}
+   */
+  def ask(selection: ActorSelection, message: Any, timeoutMillis: Long): Future[AnyRef] =
+    scalaAsk(selection, message)(new Timeout(timeoutMillis)).asInstanceOf[Future[AnyRef]]
 
   /**
    * Register an onComplete callback on this [[scala.concurrent.Future]] to send
