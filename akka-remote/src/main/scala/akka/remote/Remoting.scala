@@ -35,7 +35,9 @@ private[remote] object AddressUrlEncoder {
 /**
  * INTERNAL API
  */
-private[remote] case class RARP(provider: RemoteActorRefProvider) extends Extension
+private[remote] case class RARP(provider: RemoteActorRefProvider) extends Extension {
+  def configureDispatcher(props: Props): Props = provider.remoteSettings.configureDispatcher(props)
+}
 /**
  * INTERNAL API
  */
@@ -89,7 +91,10 @@ private[remote] object Remoting {
     }
 
     def receive = {
-      case RegisterTransportActor(props, name) ⇒ sender ! context.actorOf(props.withDeploy(Deploy.local), name)
+      case RegisterTransportActor(props, name) ⇒
+        sender ! context.actorOf(
+          RARP(context.system).configureDispatcher(props.withDeploy(Deploy.local)),
+          name)
     }
   }
 
@@ -111,7 +116,9 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
   import provider.remoteSettings._
 
-  val transportSupervisor = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props[TransportSupervisor], "transports")
+  val transportSupervisor = system.asInstanceOf[ActorSystemImpl].systemActorOf(
+    configureDispatcher(Props[TransportSupervisor]),
+    "transports")
 
   override def localAddressForRemote(remote: Address): Address = Remoting.localAddressForRemote(transportMapping, remote)
 
@@ -155,7 +162,8 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
       case None ⇒
         log.info("Starting remoting")
         val manager: ActorRef = system.asInstanceOf[ActorSystemImpl].systemActorOf(
-          Props(classOf[EndpointManager], provider.remoteSettings.config, log).withDeploy(Deploy.local), Remoting.EndpointManagerName)
+          configureDispatcher(Props(classOf[EndpointManager], provider.remoteSettings.config, log)).withDeploy(Deploy.local),
+          Remoting.EndpointManagerName)
         endpointManager = Some(manager)
 
         try {
@@ -648,16 +656,16 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
                              writing: Boolean): ActorRef = {
     assert(transportMapping contains localAddress)
 
-    if (writing) context.watch(context.actorOf(ReliableDeliverySupervisor.props(
+    if (writing) context.watch(context.actorOf(RARP(extendedSystem).configureDispatcher(ReliableDeliverySupervisor.props(
       handleOption,
       localAddress,
       remoteAddress,
       transport,
       endpointSettings,
       AkkaPduProtobufCodec,
-      receiveBuffers).withDeploy(Deploy.local),
+      receiveBuffers)).withDeploy(Deploy.local),
       "reliableEndpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()))
-    else context.watch(context.actorOf(EndpointWriter.props(
+    else context.watch(context.actorOf(RARP(extendedSystem).configureDispatcher(EndpointWriter.props(
       handleOption,
       localAddress,
       remoteAddress,
@@ -665,7 +673,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       endpointSettings,
       AkkaPduProtobufCodec,
       receiveBuffers,
-      reliableDeliverySupervisor = None).withDeploy(Deploy.local),
+      reliableDeliverySupervisor = None)).withDeploy(Deploy.local),
       "endpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()))
   }
 
