@@ -17,6 +17,7 @@ import akka.ConfigurationException
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 import akka.actor.InternalActorRef
 import akka.dispatch.sysmsg.DeathWatchNotification
+import akka.dispatch.sysmsg.Watch
 import akka.actor.Deploy
 
 /**
@@ -148,6 +149,8 @@ private[akka] class RemoteWatcher(
       log.debug("Received first heartbeat rsp from [{}]", from)
 
     if (watchingNodes(from) && !unreachable(from)) {
+      if (!addressUids.contains(from) || addressUids(from) != uid)
+        reWatch(from)
       addressUids += (from -> uid)
       failureDetector.heartbeat(from)
     }
@@ -262,6 +265,20 @@ private[akka] class RemoteWatcher(
     if (watchingNodes(address) && !failureDetector.isMonitoring(address)) {
       log.debug("Trigger extra expected heartbeat from [{}]", address)
       failureDetector.heartbeat(address)
+    }
+
+  /**
+   * To ensure that we receive heartbeat messages from the right actor system
+   * incarnation we send Watch again for the first HeartbeatRsp (containing
+   * the system UID) and if HeartbeatRsp contains a new system UID.
+   * Terminated will be triggered if the watchee (including correct Actor UID)
+   * does not exist.
+   */
+  def reWatch(address: Address): Unit =
+    watching.foreach {
+      case (wee: InternalActorRef, wer: InternalActorRef) if wee.path.address == address ⇒
+        log.debug("Re-watch [{} -> {}]", wer, wee)
+        wee.sendSystemMessage(Watch(wee, wer)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     }
 
 }
