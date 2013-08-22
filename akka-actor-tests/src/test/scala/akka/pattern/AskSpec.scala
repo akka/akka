@@ -5,13 +5,12 @@ package akka.pattern
 
 import language.postfixOps
 
+import akka.actor._
 import akka.testkit.AkkaSpec
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import akka.testkit.DefaultTimeout
 import akka.util.Timeout
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import scala.util.Failure
-import akka.actor.{ Actor, Props, ActorRef }
 
 class AskSpec extends AkkaSpec {
 
@@ -66,6 +65,16 @@ class AskSpec extends AkkaSpec {
       intercept[IllegalArgumentException] {
         Await.result(f, remaining)
       }.getMessage must be === expectedMsg
+    }
+
+    "work for ActorSelection" in {
+      implicit val timeout = Timeout(5 seconds)
+      import system.dispatcher
+      val echo = system.actorOf(Props(new Actor { def receive = { case x ⇒ sender ! x } }), "select-echo")
+      val identityFuture = (system.actorSelection("/user/select-echo") ? Identify(None))
+        .mapTo[ActorIdentity].map(_.ref.get)
+
+      Await.result(identityFuture, 5 seconds) must be === echo
     }
 
   }
