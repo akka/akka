@@ -460,6 +460,8 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
     }
 
     val MaxChannelsPerSelector: Int = if (MaxChannels == -1) -1 else math.max(MaxChannels / NrOfSelectors, 1)
+    val FinishConnectRetries: Int = getInt("finish-connect-retries") requiring (_ > 0,
+      "finish-connect-retries must be > 0")
 
     private[this] def getIntBytes(path: String): Int = {
       val size = getBytes(path)
