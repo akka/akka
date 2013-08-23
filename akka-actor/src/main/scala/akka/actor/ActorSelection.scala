@@ -4,11 +4,19 @@
 package akka.actor
 
 import language.implicitConversions
-import scala.collection.immutable
-import java.util.regex.Pattern
-import akka.util.Helpers
-import akka.routing.MurmurHash
 import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+import scala.util.Success
+import scala.util.Failure
+import java.util.regex.Pattern
+import akka.pattern.ask
+import akka.routing.MurmurHash
+import akka.util.Helpers
+import akka.util.Timeout
+import akka.dispatch.ExecutionContexts
 
 /**
  * An ActorSelection is a logical view of a section of an ActorSystem's tree of Actors,
@@ -39,6 +47,38 @@ abstract class ActorSelection extends Serializable {
 
     anchor.tell(toMessage(msg, path, path.length - 1), sender)
   }
+
+  /**
+   * Resolve the [[ActorRef]] matching this selection.
+   * The result is returned as a Future that is completed with the [[ActorRef]]
+   * if such an actor exists. It is completed with failure [[ActorNotFound]] if
+   * no such actor exists or the identification didn't complete within the
+   * supplied `timeout`.
+   *
+   * Under the hood it talks to the actor to verify its existence and acquire its
+   * [[ActorRef]].
+   */
+  def resolveOne()(implicit timeout: Timeout): Future[ActorRef] = {
+    implicit val ec = ExecutionContexts.sameThreadExecutionContext
+    val p = Promise[ActorRef]()
+    this.ask(Identify(None)) onComplete {
+      case Success(ActorIdentity(_, Some(ref))) ⇒ p.success(ref)
+      case _                                    ⇒ p.failure(ActorNotFound(this))
+    }
+    p.future
+  }
+
+  /**
+   * Resolve the [[ActorRef]] matching this selection.
+   * The result is returned as a Future that is completed with the [[ActorRef]]
+   * if such an actor exists. It is completed with failure [[ActorNotFound]] if
+   * no such actor exists or the identification didn't complete within the
+   * supplied `timeout`.
+   *
+   * Under the hood it talks to the actor to verify its existence and acquire its
+   * [[ActorRef]].
+   */
+  def resolveOne(timeout: FiniteDuration): Future[ActorRef] = resolveOne()(timeout)
 
   override def toString: String = {
     (new java.lang.StringBuilder).append("ActorSelection[").
@@ -107,3 +147,11 @@ trait ScalaActorSelection {
 
   def !(msg: Any)(implicit sender: ActorRef = Actor.noSender) = tell(msg, sender)
 }
+
+/**
+ * When [[ActorSelection#resolveOne]] can't identify the actor the
+ * `Future` is completed with this failure.
+ */
+@SerialVersionUID(1L)
+case class ActorNotFound(selection: ActorSelection) extends RuntimeException("Actor not found for: " + selection)
+

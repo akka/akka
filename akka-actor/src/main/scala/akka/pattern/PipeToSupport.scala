@@ -51,6 +51,9 @@ trait PipeToSupport {
    * pipe(someFuture) to nextActor
    *
    * }}}
+   *
+   * The successful result of the future is sent as a message to the recipient, or
+   * the failure is sent in a [[akka.actor.Status.Failure]] to the recipient.
    */
   implicit def pipe[T](future: Future[T])(implicit executionContext: ExecutionContext): PipeableFuture[T] = new PipeableFuture(future)
 }
