@@ -5,6 +5,7 @@ import sbt.Keys._
 import java.io.File
 import com.typesafe.sbt.site.SphinxSupport.{ generate, Sphinx }
 import com.typesafe.sbt.pgp.PgpKeys.publishSigned
+import com.typesafe.sbt.S3Plugin.S3
 
 object Release {
   val releaseDirectory = SettingKey[File]("release-directory")
@@ -14,7 +15,7 @@ object Release {
   )
 
   lazy val commandSettings = Seq(
-    commands += buildReleaseCommand
+    commands ++= Seq(buildReleaseCommand, uploadReleaseCommand)
   )
 
   def buildReleaseCommand = Command.command("build-release") { state =>
@@ -35,5 +36,11 @@ object Release {
     IO.copyDirectory(docs, release / "docs" / "akka" / releaseVersion)
     IO.copyFile(dist, release / "downloads" / dist.name)
     state4
+  }
+
+  def uploadReleaseCommand = Command.command("upload-release") { state =>
+    val extracted = Project.extract(state)
+    val (state1, _) = extracted.runTask(S3.upload, state)
+    state1
   }
 }
