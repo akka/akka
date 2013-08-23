@@ -12,6 +12,7 @@ import org.scalatest.BeforeAndAfterEach
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.actor.Props
 import akka.actor.Actor
+import akka.actor.Deploy
 import akka.testkit.ImplicitSender
 import scala.concurrent.duration._
 import akka.actor.FSM
@@ -60,7 +61,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
           def receive = {
             case x ⇒ testActor ! x
           }
-        }), "echo")
+        }).withDeploy(Deploy.local), "echo")
       }
 
       enterBarrier("initialize")

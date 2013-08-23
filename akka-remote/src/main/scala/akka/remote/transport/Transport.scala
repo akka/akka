@@ -4,7 +4,7 @@
 package akka.remote.transport
 
 import scala.concurrent.{ Promise, Future }
-import akka.actor.{ ActorRef, Address }
+import akka.actor.{ NoSerializationVerificationNeeded, ActorRef, Address }
 import akka.util.ByteString
 import akka.remote.transport.AssociationHandle.HandleEventListener
 import akka.AkkaException
@@ -12,7 +12,7 @@ import scala.util.control.NoStackTrace
 
 object Transport {
 
-  trait AssociationEvent
+  trait AssociationEvent extends NoSerializationVerificationNeeded
 
   /**
    * Indicates that the association setup request is invalid, and it is impossible to recover (malformed IP address,
@@ -145,7 +145,7 @@ object AssociationHandle {
   /**
    * Trait for events that the registered listener for an [[akka.remote.transport.AssociationHandle]] might receive.
    */
-  sealed trait HandleEvent
+  sealed trait HandleEvent extends NoSerializationVerificationNeeded
 
   /**
    * Message sent to the listener registered to an association (via the Promise returned by
