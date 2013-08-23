@@ -83,7 +83,7 @@ private[remote] object Remoting {
     }
   }
 
-  case class RegisterTransportActor(props: Props, name: String)
+  case class RegisterTransportActor(props: Props, name: String) extends NoSerializationVerificationNeeded
 
   private[Remoting] class TransportSupervisor extends Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
     override def supervisorStrategy = OneForOneStrategy() {
@@ -233,7 +233,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 private[remote] object EndpointManager {
 
   // Messages between Remoting and EndpointManager
-  sealed trait RemotingCommand
+  sealed trait RemotingCommand extends NoSerializationVerificationNeeded
   case class Listen(addressesPromise: Promise[Seq[(Transport, Address)]]) extends RemotingCommand
   case object StartupFinished extends RemotingCommand
   case object ShutdownAndFlush extends RemotingCommand
@@ -250,10 +250,12 @@ private[remote] object EndpointManager {
   case class ManagementCommandAck(status: Boolean)
 
   // Messages internal to EndpointManager
-  case object Prune
+  case object Prune extends NoSerializationVerificationNeeded
   case class ListensResult(addressesPromise: Promise[Seq[(Transport, Address)]],
                            results: Seq[(Transport, Address, Promise[AssociationEventListener])])
+    extends NoSerializationVerificationNeeded
   case class ListensFailure(addressesPromise: Promise[Seq[(Transport, Address)]], cause: Throwable)
+    extends NoSerializationVerificationNeeded
 
   // Helper class to store address pairs
   case class Link(localAddress: Address, remoteAddress: Address)

@@ -14,7 +14,12 @@ import akka.io.TcpPipelineHandler.Management
 import akka.actor.ActorRef
 import akka.actor.Deploy
 
+object DelimiterFramingSpec {
+  case class Listener(ref: ActorRef)
+}
+
 class DelimiterFramingSpec extends AkkaSpec("akka.actor.serialize-creators = on") {
+  import DelimiterFramingSpec._
 
   val addresses = TestUtils.temporaryServerAddresses(4)
 
@@ -109,8 +114,6 @@ class DelimiterFramingSpec extends AkkaSpec("akka.actor.serialize-creators = on"
       TestUtils.verifyActorTermination(handler)
     }
   }
-
-  case class Listener(ref: ActorRef)
 
   class AkkaLineEchoServer(delimiter: String, includeDelimiter: Boolean) extends Actor with ActorLogging {
 

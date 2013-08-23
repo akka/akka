@@ -94,7 +94,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
   /**
    * The common interface for [[Command]] and [[Event]].
    */
-  sealed trait Message
+  sealed trait Message extends NoSerializationVerificationNeeded
 
   /// COMMANDS
 

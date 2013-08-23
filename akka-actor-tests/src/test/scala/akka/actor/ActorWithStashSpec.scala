@@ -72,6 +72,7 @@ object ActorWithStashSpec {
   }
 
   val testConf = """
+    akka.actor.serialize-messages = off
     my-dispatcher {
       mailbox-type = "akka.dispatch.UnboundedDequeBasedMailbox"
     }

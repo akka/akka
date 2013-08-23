@@ -5,7 +5,7 @@ package akka.remote.testconductor
 
 import language.postfixOps
 
-import akka.actor.{ Props, AddressFromURIString, ActorRef, Actor, OneForOneStrategy, SupervisorStrategy, PoisonPill }
+import akka.actor._
 import akka.testkit.{ AkkaSpec, ImplicitSender, EventFilter, TestProbe, TimingTest }
 import scala.concurrent.duration._
 import akka.event.Logging
@@ -531,7 +531,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       def receive = {
         case x: InetSocketAddress ⇒ testActor ! controller
       }
-    }))
+    }).withDeploy(Deploy.local))
     val actor = expectMsgType[ActorRef]
     f(actor)
     actor ! PoisonPill // clean up so network connections don't accumulate during test run
@@ -550,7 +550,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       def receive = {
         case _ ⇒ sender ! barrier
       }
-    })) ! ""
+    }).withDeploy(Deploy.local)) ! ""
     expectMsgType[ActorRef]
   }
 

@@ -25,6 +25,7 @@ object SerializationTests {
   val serializeConf = """
     akka {
       actor {
+        serialize-messages = off
         serializers {
           test = "akka.serialization.TestSerializer"
         }

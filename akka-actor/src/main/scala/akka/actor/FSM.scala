@@ -87,7 +87,9 @@ object FSM {
   /**
    * INTERNAL API
    */
-  private[akka] case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(context: ActorContext) {
+  // FIXME: what about the cancellable?
+  private[akka] case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(context: ActorContext)
+    extends NoSerializationVerificationNeeded {
     private var ref: Option[Cancellable] = _
     private val scheduler = context.system.scheduler
     private implicit val executionContext = context.dispatcher
@@ -676,13 +678,13 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * All messages sent to the [[akka.actor.FSM]] will be wrapped inside an
    * `Event`, which allows pattern matching to extract both state and data.
    */
-  case class Event(event: Any, stateData: D)
+  case class Event(event: Any, stateData: D) extends NoSerializationVerificationNeeded
 
   /**
    * Case class representing the state of the [[akka.actor.FSM]] whithin the
    * `onTermination` block.
    */
-  case class StopEvent(reason: Reason, currentState: S, stateData: D)
+  case class StopEvent(reason: Reason, currentState: S, stateData: D) extends NoSerializationVerificationNeeded
 }
 
 /**

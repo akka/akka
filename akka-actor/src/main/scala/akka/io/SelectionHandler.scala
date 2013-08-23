@@ -54,7 +54,7 @@ private[io] trait ChannelRegistry {
  * a result of it having called `register` on the `ChannelRegistry`.
  * Enables a channel actor to directly schedule interest setting tasks to the selector mgmt. dispatcher.
  */
-private[io] trait ChannelRegistration {
+private[io] trait ChannelRegistration extends NoSerializationVerificationNeeded {
   def enableInterest(op: Int)
   def disableInterest(op: Int)
 }
@@ -66,8 +66,9 @@ private[io] object SelectionHandler {
   }
 
   case class WorkerForCommand(apiCommand: HasFailureMessage, commander: ActorRef, childProps: ChannelRegistry ⇒ Props)
+    extends NoSerializationVerificationNeeded
 
-  case class Retry(command: WorkerForCommand, retriesLeft: Int) { require(retriesLeft >= 0) }
+  case class Retry(command: WorkerForCommand, retriesLeft: Int) extends NoSerializationVerificationNeeded { require(retriesLeft >= 0) }
 
   case object ChannelConnectable
   case object ChannelAcceptable
