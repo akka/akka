@@ -37,6 +37,7 @@ The Current List of Modules
    cluster-singleton
    distributed-pub-sub
    cluster-client
+   aggregator
 
 Suggested Way of Using these Contributions
 ------------------------------------------
