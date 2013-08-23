@@ -258,6 +258,8 @@ private[remote] object EndpointManager {
   // Helper class to store address pairs
   case class Link(localAddress: Address, remoteAddress: Address)
 
+  case class ResendState(uid: Int, buffer: AckedReceiveBuffer[Message])
+
   sealed trait EndpointPolicy {
 
     /**
@@ -429,7 +431,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     }
 
   // Structure for saving reliable delivery state across restarts of Endpoints
-  val receiveBuffers = new ConcurrentHashMap[Link, AckedReceiveBuffer[Message]]()
+  val receiveBuffers = new ConcurrentHashMap[Link, ResendState]()
 
   def receive = {
     case Listen(addressesPromise) ⇒
