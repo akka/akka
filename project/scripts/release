@@ -75,7 +75,17 @@
 #      From the command line:
 #        shell> cat ~/.ssh/id_rsa.pub | ssh akkarepo@repo.akka.io "cat >> ~/.ssh/authorized_keys"
 #
-# 5) Have access to github.com/akka/akka. This should be a given.
+# 5) You must have upload access to S3 bucket "downloads.typesafe.com"
+#
+# 5.1) Ask Akka team member for the AWS access key for 'akka.team' user.
+#
+# 5.2) Add your credentials to sbt by adding this to your global.sbt file
+#        credentials += Credentials("Amazon S3",
+#          "downloads.typesafe.com.s3.amazonaws.com",
+#          "<Access Key Id>",
+#          "<Secret Access Key>")
+#
+# 6) Have access to github.com/akka/akka. This should be a given.
 #
 # Now you should be all set to run the script
 #
@@ -369,8 +379,10 @@ echolog "Pushing ${release_dir} to ${publish_path} ..."
 if [ $dry_run ]; then
   echodry "Not actually pushing to server. Command:"
   echodry "  rsync -rlpvz --chmod=Dg+ws,Fg+w ${release_dir}/ ${publish_path}/"
+  echodry "  sbt upload-release"
 else
-  important rsync -rlpvz --chmod=Dg+ws,Fg+w ${release_dir}/ ${publish_path}/
+  important rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads ${release_dir}/ ${publish_path}/
+  important sbt upload-release
 fi
 
 if [ $dry_run ]; then
