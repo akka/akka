@@ -262,6 +262,12 @@ the actor. There is a built-in ``Identify`` message that all Actors will underst
 and automatically reply to with a ``ActorIdentity`` message containing the
 :class:`ActorRef`.
 
+You can also acquire an :class:`ActorRef` for an :class:`ActorSelection` with
+the ``resolveOne`` method of the :class:`ActorSelection`. It returns a ``Future`` 
+of the matching :class:`ActorRef` if such an actor exists. It is completed with 
+failure [[akka.actor.ActorNotFound]] if no such actor exists or the identification
+didn't complete within the supplied `timeout`.
+
 Read more about ``actorSelection`` in :ref:`docs for Java <actorSelection-java>` or
 :ref:`docs for Scala <actorSelection-scala>`.
 
