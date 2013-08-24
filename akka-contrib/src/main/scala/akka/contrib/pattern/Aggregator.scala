@@ -30,7 +30,7 @@ import scala.annotation.tailrec
  * The aggregator is to be mixed into an actor for the aggregator behavior.
  */
 trait Aggregator {
-  this: Actor =>
+  this: Actor ⇒
 
   private val expectList = WorkList.empty[Actor.Receive]
 
@@ -68,13 +68,13 @@ trait Aggregator {
    * Receive function for handling the aggregations.
    */
   def receive: Actor.Receive = {
-    case msg if handleResponse(msg) => // already dealt with in handleResponse
+    case msg if handleResponse(msg) ⇒ // already dealt with in handleResponse
   }
 
   def handleResponse(msg: Any) = {
-    expectList process { fn =>
+    expectList process { fn ⇒
       var processed = true
-      fn.applyOrElse(msg, (_: Any) => processed = false)
+      fn.applyOrElse(msg, (_: Any) ⇒ processed = false)
       processed
     }
   }
@@ -143,8 +143,7 @@ class WorkList[T] {
         if (tail == entry) tail = parent
         entry.isDeleted = true
         true
-      }
-      else if (entry.next != null) remove(entry, entry.next)
+      } else if (entry.next != null) remove(entry, entry.next)
       else false
     }
 
@@ -156,8 +155,7 @@ class WorkList[T] {
       if (tail == entry) tail = head
       entry.isDeleted = true
       true
-    }
-    else if (entry.next != null) remove(entry, entry.next)
+    } else if (entry.next != null) remove(entry, entry.next)
     else false
   }
 
@@ -167,7 +165,7 @@ class WorkList[T] {
    * @param processFn The processing function, returns true if processing succeeds.
    * @return true if an entry has been processed, false if no entries are processed successfully.
    */
-  def process(processFn: T => Boolean): Boolean = {
+  def process(processFn: T ⇒ Boolean): Boolean = {
 
     @tailrec
     def process(parent: Entry[T], entry: Entry[T]): Boolean = {
@@ -179,8 +177,7 @@ class WorkList[T] {
           entry.isDeleted = true
         }
         true // Handled
-      }
-      else if (entry.next != null) process(entry, entry.next)
+      } else if (entry.next != null) process(entry, entry.next)
       else false
     }
 
@@ -196,8 +193,7 @@ class WorkList[T] {
           entry.isDeleted = true
         }
         true // Handled
-      }
-      else if (entry.next != null) process(entry, entry.next)
+      } else if (entry.next != null) process(entry, entry.next)
       else false
     }
   }

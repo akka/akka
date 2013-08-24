@@ -34,7 +34,8 @@ import scala.math.BigDecimal.int2bigDecimal
 
 import akka.actor._
 /**
- * Sample and test code for the aggregator patter. This is based on Jamie Allen's tutorial at
+ * Sample and test code for the aggregator patter.
+ * This is based on Jamie Allen's tutorial at
  * http://jaxenter.com/tutorial-asynchronous-programming-with-akka-actors-46220.html
  */
 
@@ -46,7 +47,8 @@ case object MoneyMarket extends AccountType
 case class GetCustomerAccountBalances(id: Long, accountTypes: Set[AccountType])
 case class GetAccountBalances(id: Long)
 
-case class AccountBalances(accountType: AccountType, balance: Option[List[(Long, BigDecimal)]])
+case class AccountBalances(accountType: AccountType,
+                           balance: Option[List[(Long, BigDecimal)]])
 
 case class CheckingAccountBalances(balances: Option[List[(Long, BigDecimal)]])
 case class SavingsAccountBalances(balances: Option[List[(Long, BigDecimal)]])
@@ -78,6 +80,7 @@ class AccountBalanceRetriever extends Actor with Aggregator {
 
   import context._
 
+  //#initial-expect
   expectOnce {
     case GetCustomerAccountBalances(id, types) =>
       new AccountAggregator(sender, id, types)
@@ -85,10 +88,13 @@ class AccountBalanceRetriever extends Actor with Aggregator {
       sender ! CantUnderstand
       context.stop(self)
   }
+  //#initial-expect
 
-  class AccountAggregator(originalSender: ActorRef, id: Long, types: Set[AccountType]) {
+  class AccountAggregator(originalSender: ActorRef,
+                          id: Long, types: Set[AccountType]) {
 
-    val results = mutable.ArrayBuffer.empty[(AccountType, Option[List[(Long, BigDecimal)]])]
+    val results =
+      mutable.ArrayBuffer.empty[(AccountType, Option[List[(Long, BigDecimal)]])]
 
     if (types.size > 0)
       types foreach {
@@ -101,11 +107,13 @@ class AccountBalanceRetriever extends Actor with Aggregator {
     context.system.scheduler.scheduleOnce(250 milliseconds) {
       self ! TimedOut
     }
-
+    //#expect-timeout
     expect {
       case TimedOut => collectBalances(force = true)
     }
+    //#expect-timeout
 
+    //#expect-balance
     def fetchCheckingAccountsBalance() {
       context.actorOf(Props[CheckingAccountProxy]) ! GetAccountBalances(id)
       expectOnce {
@@ -114,6 +122,7 @@ class AccountBalanceRetriever extends Actor with Aggregator {
           collectBalances()
       }
     }
+    //#expect-balance
 
     def fetchSavingsAccountsBalance() {
       context.actorOf(Props[SavingsAccountProxy]) ! GetAccountBalances(id)
@@ -142,6 +151,63 @@ class AccountBalanceRetriever extends Actor with Aggregator {
   }
 }
 //#demo-code
+
+//#chain-sample
+case class InitialRequest(name: String)
+case class Request(name: String)
+case class Response(name: String, value: String)
+case class EvaluationResults(name: String, eval: List[Int])
+case class FinalResponse(qualifiedValues: List[String])
+
+/**
+ * An actor sample demonstrating use of unexpect and chaining.
+ * This is just an example and not a complete test case.
+ */
+class ChainingSample extends Actor with Aggregator {
+
+  expectOnce {
+    case InitialRequest(name) => new MultipleResponseHandler(sender, name)
+  }
+
+  class MultipleResponseHandler(originalSender: ActorRef, propName: String) {
+
+    import context.dispatcher
+    import collection.mutable.ArrayBuffer
+
+    val values = ArrayBuffer.empty[String]
+
+    context.actorSelection("/user/request_proxies") ! Request(propName)
+    context.system.scheduler.scheduleOnce(50 milliseconds) {
+      self ! TimedOut
+    }
+    //#unexpect-sample
+    val handle = expect {
+      case Response(name, value) =>
+        values += value
+        if (values.size > 3) processList()
+      case TimedOut => processList()
+    }
+
+    def processList() {
+      unexpect(handle)
+
+      if (values.size > 0) {
+        context.actorSelection("/user/evaluator") ! values.toList
+        expectOnce {
+          case EvaluationResults(name, eval) => processFinal(eval)
+        }
+      } else processFinal(List.empty[Int])
+    }
+    //#unexpect-sample
+
+    def processFinal(eval: List[Int]) {
+      // Select only the entries coming back from eval
+      originalSender ! FinalResponse(eval map values)
+      context.stop(self)
+    }
+  }
+}
+//#chain-sample
 
 class AggregatorSpec extends TestKit(ActorSystem("test")) with ImplicitSender with FunSuite with ShouldMatchers {
 
