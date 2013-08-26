@@ -50,9 +50,9 @@ final case class AssociationErrorEvent(
   cause: Throwable,
   localAddress: Address,
   remoteAddress: Address,
-  inbound: Boolean) extends AssociationEvent {
+  inbound: Boolean,
+  logLevel: Logging.LogLevel) extends AssociationEvent {
   protected override def eventName: String = "AssociationError"
-  override def logLevel: Logging.LogLevel = Logging.ErrorLevel
   override def toString: String = s"${super.toString}: Error [${cause.getMessage}] [${Logging.stackTraceFor(cause)}]"
   def getCause: Throwable = cause
 }
@@ -81,9 +81,9 @@ final case class RemotingErrorEvent(cause: Throwable) extends RemotingLifecycleE
 /**
  * INTERNAL API
  */
-private[remote] class EventPublisher(system: ActorSystem, log: LoggingAdapter, logEvents: Boolean) {
+private[remote] class EventPublisher(system: ActorSystem, log: LoggingAdapter, logLevel: Logging.LogLevel) {
   def notifyListeners(message: RemotingLifecycleEvent): Unit = {
     system.eventStream.publish(message)
-    if (logEvents) log.log(message.logLevel, "{}", message)
+    if (logLevel <= message.logLevel) log.log(message.logLevel, "{}", message)
   }
 }
