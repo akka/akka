@@ -123,7 +123,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
   override def localAddressForRemote(remote: Address): Address = Remoting.localAddressForRemote(transportMapping, remote)
 
   val log: LoggingAdapter = Logging(system.eventStream, "Remoting")
-  val eventPublisher = new EventPublisher(system, log, LogRemoteLifecycleEvents)
+  val eventPublisher = new EventPublisher(system, log, RemoteLifecycleEventsLogLevel)
 
   private def notifyError(msg: String, cause: Throwable): Unit =
     eventPublisher.notifyListeners(RemotingErrorEvent(new RemoteTransportException(msg, cause)))
@@ -370,7 +370,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   val extendedSystem = context.system.asInstanceOf[ExtendedActorSystem]
   val endpointId: Iterator[Int] = Iterator from 0
 
-  val eventPublisher = new EventPublisher(context.system, log, settings.LogRemoteLifecycleEvents)
+  val eventPublisher = new EventPublisher(context.system, log, settings.RemoteLifecycleEventsLogLevel)
 
   // Mapping between addresses and endpoint actors. If passive connections are turned off, incoming connections
   // will be not part of this map!
@@ -389,7 +389,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   override val supervisorStrategy =
     OneForOneStrategy(loggingEnabled = false) {
       case InvalidAssociation(localAddress, remoteAddress, _) ⇒
-        log.error("Tried to associate with unreachable remote address [{}]. " +
+        log.warning("Tried to associate with unreachable remote address [{}]. " +
           "Address is now quarantined, all messages to this address will be delivered to dead letters.", remoteAddress)
         endpoints.markAsFailed(sender, Deadline.now + settings.UnknownAddressGateClosedFor)
         context.system.eventStream.publish(AddressTerminated(remoteAddress))
@@ -398,7 +398,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       case HopelessAssociation(localAddress, remoteAddress, Some(uid), _) ⇒
         settings.QuarantineDuration match {
           case d: FiniteDuration ⇒
-            log.error("Association to [{}] having UID [{}] is irrecoverably failed. UID is now quarantined and all " +
+            log.warning("Association to [{}] having UID [{}] is irrecoverably failed. UID is now quarantined and all " +
               "messages to this UID will be delivered to dead letters. Remote actorsystem must be restarted to recover " +
               "from this situation.", remoteAddress, uid)
             endpoints.markAsQuarantined(remoteAddress, uid, Deadline.now + d)
@@ -410,7 +410,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       case HopelessAssociation(localAddress, remoteAddress, None, _) ⇒
         settings.QuarantineDuration match {
           case d: FiniteDuration ⇒
-            log.error("Association to [{}] with unknown UID is irrecoverably failed. " +
+            log.warning("Association to [{}] with unknown UID is irrecoverably failed. " +
               "Address is now quarantined, all messages to this address will be delivered to dead letters.", remoteAddress)
             endpoints.markAsFailed(sender, Deadline.now + d)
           case _ ⇒
