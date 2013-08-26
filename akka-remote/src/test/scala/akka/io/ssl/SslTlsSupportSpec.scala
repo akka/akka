@@ -39,7 +39,7 @@ import akka.io.TcpReadWriteAdapter
 import akka.remote.security.provider.AkkaProvider
 import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.util.{ ByteString, Timeout }
-import javax.net.ssl.{ KeyManagerFactory, SSLContext, SSLServerSocket, SSLSocket, TrustManagerFactory }
+import javax.net.ssl._
 import akka.actor.Deploy
 
 // TODO move this into akka-actor once AkkaProvider for SecureRandom does not have external dependencies
@@ -52,22 +52,32 @@ class SslTlsSupportSpec extends AkkaSpec {
   "The SslTlsSupport" should {
 
     "work between a Java client and a Java server" in {
+      invalidateSessions()
       val server = new JavaSslServer
       val client = new JavaSslClient(server.address)
       client.run()
+      val baselineSessionCounts = sessionCounts()
       client.close()
+      // make sure not to lose sessions by invalid session closure
+      sessionCounts() === baselineSessionCounts
       server.close()
+      sessionCounts() === baselineSessionCounts // see above
     }
 
     "work between a akka client and a Java server" in {
+      invalidateSessions()
       val server = new JavaSslServer
       val client = new AkkaSslClient(server.address)
       client.run()
+      val baselineSessionCounts = sessionCounts()
       client.close()
+      sessionCounts() === baselineSessionCounts // see above
       server.close()
+      sessionCounts() === baselineSessionCounts // see above
     }
 
     "work between a Java client and a akka server" in {
+      invalidateSessions()
       val serverAddress = TestUtils.temporaryServerAddress()
       val probe = TestProbe()
       val bindHandler = probe.watch(system.actorOf(Props(new AkkaSslServer(serverAddress)).withDeploy(Deploy.local), "server1"))
@@ -75,11 +85,14 @@ class SslTlsSupportSpec extends AkkaSpec {
 
       val client = new JavaSslClient(serverAddress)
       client.run()
+      val baselineSessionCounts = sessionCounts()
       client.close()
+      sessionCounts() === baselineSessionCounts // see above
       probe.expectTerminated(bindHandler)
     }
 
     "work between a akka client and a akka server" in {
+      invalidateSessions()
       val serverAddress = TestUtils.temporaryServerAddress()
       val probe = TestProbe()
       val bindHandler = probe.watch(system.actorOf(Props(new AkkaSslServer(serverAddress)).withDeploy(Deploy.local), "server2"))
@@ -87,8 +100,35 @@ class SslTlsSupportSpec extends AkkaSpec {
 
       val client = new AkkaSslClient(serverAddress)
       client.run()
+      val baselineSessionCounts = sessionCounts()
       client.close()
+      sessionCounts() === baselineSessionCounts // see above
       probe.expectTerminated(bindHandler)
+    }
+
+    "work between an akka client and a Java server with confirmedClose" in {
+      invalidateSessions()
+      val server = new JavaSslServer
+      val client = new AkkaSslClient(server.address)
+      client.run()
+      val baselineSessionCounts = sessionCounts()
+      client.closeConfirmed()
+      sessionCounts() === baselineSessionCounts // see above
+      server.close()
+      sessionCounts() === baselineSessionCounts // see above
+    }
+
+    "akka client runs the full shutdown sequence if peer closes" in {
+      invalidateSessions()
+      val server = new JavaSslServer
+      val client = new AkkaSslClient(server.address)
+      client.run()
+      val baselineSessionCounts = serverSessions().length
+      server.close()
+      client.peerClosed()
+      // we only check the akka side server sessions here
+      // the java client seems to lose the session for some reason
+      serverSessions().length === baselineSessionCounts
     }
   }
 
@@ -112,7 +152,7 @@ class SslTlsSupportSpec extends AkkaSpec {
 
     val handler = system.actorOf(TcpPipelineHandler.props(init, connection, probe.ref).withDeploy(Deploy.local),
       "client" + counter.incrementAndGet())
-    probe.send(connection, Tcp.Register(handler))
+    probe.send(connection, Tcp.Register(handler, keepOpenOnPeerClosed = true))
 
     def run() {
       probe.send(handler, Command("3+4\n"))
@@ -127,12 +167,22 @@ class SslTlsSupportSpec extends AkkaSpec {
       probe.expectMsg(Event("0\n"))
     }
 
+    def peerClosed(): Unit = {
+      probe.expectMsg(Tcp.PeerClosed)
+      TestUtils.verifyActorTermination(handler)
+    }
+
     def close() {
       probe.send(handler, Management(Tcp.Close))
       probe.expectMsgType[Tcp.ConnectionClosed]
       TestUtils.verifyActorTermination(handler)
     }
 
+    def closeConfirmed(): Unit = {
+      probe.send(handler, Management(Tcp.ConfirmedClose))
+      probe.expectMsg(Tcp.ConfirmedClosed)
+      TestUtils.verifyActorTermination(handler)
+    }
   }
 
   //#server
@@ -270,6 +320,21 @@ class SslTlsSupportSpec extends AkkaSpec {
     engine
   }
 
+  import collection.JavaConverters._
+  def clientSessions() = sessions(_.getServerSessionContext)
+  def serverSessions() = sessions(_.getClientSessionContext)
+  def sessionCounts() = (clientSessions().length, serverSessions().length)
+
+  def sessions(f: SSLContext ⇒ SSLSessionContext): Seq[SSLSession] = {
+    val ctx = f(sslContext)
+    val ids = ctx.getIds().asScala.toIndexedSeq
+    ids.map(ctx.getSession)
+  }
+
+  def invalidateSessions() = {
+    clientSessions().foreach(_.invalidate())
+    serverSessions().foreach(_.invalidate())
+  }
 }
 
 object SslTlsSupportSpec {
