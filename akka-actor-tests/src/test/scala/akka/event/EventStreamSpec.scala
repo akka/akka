@@ -11,12 +11,13 @@ import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
 import akka.event.Logging.InitializeLogger
 import akka.pattern.gracefulStop
-import akka.testkit.{ TestProbe, AkkaSpec }
+import akka.testkit.{ EventFilter, TestEvent, TestProbe, AkkaSpec }
 
 object EventStreamSpec {
 
   val config = ConfigFactory.parseString("""
       akka {
+        actor.serialize-messages = off
         stdout-loglevel = WARNING
         loglevel = INFO
         loggers = ["akka.event.EventStreamSpec$MyLog", "%s"]
@@ -25,6 +26,7 @@ object EventStreamSpec {
 
   val configUnhandled = ConfigFactory.parseString("""
       akka {
+        actor.serialize-messages = off
         stdout-loglevel = WARNING
         loglevel = DEBUG
         actor.debug.unhandled = on

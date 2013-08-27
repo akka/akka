@@ -4,7 +4,7 @@
 package akka.remote.testconductor
 
 import language.postfixOps
-import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props }
+import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props, NoSerializationVerificationNeeded }
 import RemoteConnection.getAddrString
 import TestConductorProtocol._
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent }
@@ -362,7 +362,7 @@ private[akka] object Controller {
   class ClientDisconnectedException(msg: String) extends AkkaException(msg) with NoStackTrace
   case object GetNodes
   case object GetSockAddr
-  case class CreateServerFSM(channel: Channel)
+  case class CreateServerFSM(channel: Channel) extends NoSerializationVerificationNeeded
 
   case class NodeInfo(name: RoleName, addr: Address, fsm: ActorRef)
 }

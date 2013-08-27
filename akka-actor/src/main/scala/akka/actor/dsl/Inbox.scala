@@ -21,16 +21,10 @@ import akka.pattern.ask
 import akka.actor.ActorDSL
 import akka.actor.Props
 
-trait Inbox { this: ActorDSL.type ⇒
-
-  protected trait InboxExtension { this: Extension ⇒
-    val DSLInboxQueueSize = config.getInt("inbox-size")
-
-    val inboxNr = new AtomicInteger
-    val inboxProps = Props(classOf[InboxActor], ActorDSL, DSLInboxQueueSize)
-
-    def newReceiver: ActorRef = mkChild(inboxProps, "inbox-" + inboxNr.incrementAndGet)
-  }
+/**
+ * INTERNAL API
+ */
+private[akka] object Inbox {
 
   private sealed trait Query {
     def deadline: Deadline
@@ -45,6 +39,22 @@ trait Inbox { this: ActorDSL.type ⇒
   }
   private case class StartWatch(target: ActorRef)
   private case object Kick
+
+}
+
+trait Inbox { this: ActorDSL.type ⇒
+
+  import Inbox._
+
+  protected trait InboxExtension { this: Extension ⇒
+    val DSLInboxQueueSize = config.getInt("inbox-size")
+
+    val inboxNr = new AtomicInteger
+    val inboxProps = Props(classOf[InboxActor], ActorDSL, DSLInboxQueueSize)
+
+    def newReceiver: ActorRef = mkChild(inboxProps, "inbox-" + inboxNr.incrementAndGet)
+  }
+
   private implicit val deadlineOrder: Ordering[Query] = new Ordering[Query] {
     def compare(left: Query, right: Query): Int = left.deadline.time compare right.deadline.time
   }

@@ -5,8 +5,7 @@ package akka.remote.testconductor
 
 import language.postfixOps
 import com.typesafe.config.ConfigFactory
-import akka.actor.Props
-import akka.actor.Actor
+import akka.actor.{Props, Actor, ActorIdentity, Identify, Deploy}
 import scala.concurrent.Await
 import scala.concurrent.Awaitable
 import scala.concurrent.duration._
@@ -16,8 +15,6 @@ import java.net.InetSocketAddress
 import java.net.InetAddress
 import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeSpec, MultiNodeConfig }
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
-import akka.actor.Identify
-import akka.actor.ActorIdentity
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false))
@@ -50,7 +47,7 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with ST
           def receive = {
             case x ⇒ testActor ! x; sender ! x
           }
-        }), "echo")
+        }).withDeploy(Deploy.local), "echo")
       }
 
       enterBarrier("name")

@@ -9,14 +9,11 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.control.NonFatal
-import akka.actor.{ Actor, ActorLogging, ActorRef, Address, Cancellable, Props, PoisonPill, ReceiveTimeout, RootActorPath, Scheduler }
-import akka.actor.OneForOneStrategy
+import akka.actor._
 import akka.actor.SupervisorStrategy.Stop
 import akka.cluster.MemberStatus._
 import akka.cluster.ClusterEvent._
-import akka.actor.ActorSelection
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
-import akka.actor.Deploy
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -132,7 +129,7 @@ private[cluster] object InternalClusterAction {
    * Comand to [[akka.cluster.ClusterDaemon]] to create a
    * [[akka.cluster.OnMemberUpListener]].
    */
-  case class AddOnMemberUpListener(callback: Runnable)
+  case class AddOnMemberUpListener(callback: Runnable) extends NoSerializationVerificationNeeded
 
   sealed trait SubscriptionMessage
   case class Subscribe(subscriber: ActorRef, to: Class[_]) extends SubscriptionMessage

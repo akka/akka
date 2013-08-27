@@ -6,7 +6,7 @@ package akka.remote.testconductor
 import language.postfixOps
 
 import java.util.concurrent.TimeoutException
-import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props, PoisonPill, Status, Address, Scheduler }
+import akka.actor._
 import akka.remote.testconductor.RemoteConnection.getAddrString
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Await, Future }
@@ -122,7 +122,7 @@ private[akka] object ClientFSM {
 
   case class Data(channel: Option[Channel], runningOp: Option[(String, ActorRef)])
 
-  case class Connected(channel: Channel)
+  case class Connected(channel: Channel) extends NoSerializationVerificationNeeded
   case class ConnectionFailure(msg: String) extends RuntimeException(msg) with NoStackTrace
   case object Disconnected
 }
