@@ -31,7 +31,7 @@ object ActorLifeCycleSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender with DefaultTimeout {
+class ActorLifeCycleSpec extends AkkaSpec("akka.actor.serialize-messages=off") with BeforeAndAfterEach with ImplicitSender with DefaultTimeout {
   import ActorLifeCycleSpec._
 
   "An Actor" must {
@@ -44,7 +44,7 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
         val restarterProps = Props(new LifeCycleTestActor(testActor, id, gen) {
           override def preRestart(reason: Throwable, message: Option[Any]) { report("preRestart") }
           override def postRestart(reason: Throwable) { report("postRestart") }
-        })
+        }).withDeploy(Deploy.local)
         val restarter = Await.result((supervisor ? restarterProps).mapTo[ActorRef], timeout.duration)
 
         expectMsg(("preStart", id, 0))

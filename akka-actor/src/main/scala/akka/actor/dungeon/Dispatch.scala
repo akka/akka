@@ -107,10 +107,15 @@ private[akka] trait Dispatch { this: ActorCell ⇒
 
   def sendMessage(msg: Envelope): Unit =
     try {
-      val m = msg.message.asInstanceOf[AnyRef]
-      if (system.settings.SerializeAllMessages && !m.isInstanceOf[NoSerializationVerificationNeeded]) {
-        val s = SerializationExtension(system)
-        s.deserialize(s.serialize(m).get, m.getClass).get
+      if (system.settings.SerializeAllMessages) {
+        val unwrapped = (msg.message match {
+          case DeadLetter(wrapped, _, _) ⇒ wrapped
+          case other                     ⇒ other
+        }).asInstanceOf[AnyRef]
+        if (!unwrapped.isInstanceOf[NoSerializationVerificationNeeded]) {
+          val s = SerializationExtension(system)
+          s.deserialize(s.serialize(unwrapped).get, unwrapped.getClass).get
+        }
       }
       dispatcher.dispatch(this, msg)
     } catch handleException

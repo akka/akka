@@ -18,6 +18,7 @@ import scala.util.Try
 object ResizerSpec {
 
   val config = """
+    akka.actor.serialize-messages = off
     akka.actor.deployment {
       /router1 {
         router = round-robin

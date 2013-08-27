@@ -49,6 +49,9 @@ object FutureSpec {
         sender ! Status.Failure(new RuntimeException("Expected exception; to test fault-tolerance"))
     }
   }
+
+  case class Req[T](req: T)
+  case class Res[T](res: T)
 }
 
 class JavaFutureSpec extends JavaFutureTests with JUnitSuiteLike
@@ -268,8 +271,6 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
       "support pattern matching within a for-comprehension" in {
         filterException[NoSuchElementException] {
-          case class Req[T](req: T)
-          case class Res[T](res: T)
           val actor = system.actorOf(Props(new Actor {
             def receive = {
               case Req(s: String) ⇒ sender ! Res(s.length)

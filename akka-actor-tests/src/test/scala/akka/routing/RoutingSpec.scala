@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger
 object RoutingSpec {
 
   val config = """
+    akka.actor.serialize-messages = off
     akka.actor.deployment {
       /router1 {
         router = round-robin

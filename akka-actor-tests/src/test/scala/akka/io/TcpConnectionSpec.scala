@@ -23,10 +23,17 @@ import akka.testkit.{ AkkaSpec, EventFilter, TestActorRef, TestProbe }
 import akka.util.{ Helpers, ByteString }
 import akka.TestUtils._
 
+object TcpConnectionSpec {
+  case object Ack extends Event
+  case class Registration(channel: SelectableChannel, initialOps: Int) extends NoSerializationVerificationNeeded
+}
+
 class TcpConnectionSpec extends AkkaSpec("""
     akka.io.tcp.register-timeout = 500ms
     akka.actor.serialize-creators = on
     """) {
+  import TcpConnectionSpec._
+
   // Helper to avoid Windows localization specific differences
   def ignoreIfWindows(): Unit =
     if (Helpers.isWindows) {
@@ -725,7 +732,7 @@ class TcpConnectionSpec extends AkkaSpec("""
     }
 
     def register(channel: SelectableChannel, initialOps: Int)(implicit channelActor: ActorRef): Unit =
-      registerCallReceiver.ref.tell(channel -> initialOps, channelActor)
+      registerCallReceiver.ref.tell(Registration(channel, initialOps), channelActor)
 
     def setServerSocketOptions() = ()
 
@@ -755,7 +762,7 @@ class TcpConnectionSpec extends AkkaSpec("""
     lazy val clientSideChannel = connectionActor.underlyingActor.channel
 
     override def run(body: ⇒ Unit): Unit = super.run {
-      registerCallReceiver.expectMsg(clientSideChannel -> OP_CONNECT)
+      registerCallReceiver.expectMsg(Registration(clientSideChannel, OP_CONNECT))
       registerCallReceiver.sender must be(connectionActor)
       body
     }
@@ -903,5 +910,4 @@ class TcpConnectionSpec extends AkkaSpec("""
     }
   }
 
-  object Ack extends Event
 }

@@ -437,7 +437,7 @@ private[io] object TcpConnection {
   // INTERNAL MESSAGES
 
   /** Informs actor that no writing was possible but there is still work remaining */
-  case class SendBufferFull(remainingWrite: PendingWrite)
+  case class SendBufferFull(remainingWrite: PendingWrite) extends NoSerializationVerificationNeeded
   /** Informs actor that a pending file write has finished */
   case object WriteFileFinished
   /** Informs actor that a pending WriteFile failed */

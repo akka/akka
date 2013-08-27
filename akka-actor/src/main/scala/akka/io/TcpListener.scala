@@ -8,7 +8,7 @@ import java.nio.channels.{ SocketChannel, SelectionKey, ServerSocketChannel }
 import java.net.InetSocketAddress
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
-import akka.actor.{ Props, ActorLogging, ActorRef, Actor }
+import akka.actor._
 import akka.io.SelectionHandler._
 import akka.io.Tcp._
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
@@ -18,11 +18,11 @@ import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
  */
 private[io] object TcpListener {
 
-  case class RegisterIncoming(channel: SocketChannel) extends HasFailureMessage {
+  case class RegisterIncoming(channel: SocketChannel) extends HasFailureMessage with NoSerializationVerificationNeeded {
     def failureMessage = FailedRegisterIncoming(channel)
   }
 
-  case class FailedRegisterIncoming(channel: SocketChannel)
+  case class FailedRegisterIncoming(channel: SocketChannel) extends NoSerializationVerificationNeeded
 
 }
 

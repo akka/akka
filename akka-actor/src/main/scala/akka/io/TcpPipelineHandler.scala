@@ -6,7 +6,7 @@ package akka.io
 
 import scala.beans.BeanProperty
 import scala.util.{ Failure, Success }
-import akka.actor.{ Actor, ActorContext, ActorRef, Props, Terminated }
+import akka.actor._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.util.ByteString
 import akka.event.Logging
@@ -50,12 +50,12 @@ object TcpPipelineHandler {
     /**
      * Wrapper class for commands to be sent to the [[TcpPipelineHandler]] actor.
      */
-    case class Command(@BeanProperty cmd: Cmd)
+    case class Command(@BeanProperty cmd: Cmd) extends NoSerializationVerificationNeeded
 
     /**
      * Wrapper class for events emitted by the [[TcpPipelineHandler]] actor.
      */
-    case class Event(@BeanProperty evt: Evt)
+    case class Event(@BeanProperty evt: Evt) extends NoSerializationVerificationNeeded
   }
 
   /**

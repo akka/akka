@@ -28,7 +28,7 @@ import scala.annotation.tailrec
 
 object ActorModelSpec {
 
-  sealed trait ActorModelMessage
+  sealed trait ActorModelMessage extends NoSerializationVerificationNeeded
 
   case class TryReply(expect: Any) extends ActorModelMessage
 

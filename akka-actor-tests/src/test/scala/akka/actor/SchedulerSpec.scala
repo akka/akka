@@ -22,6 +22,7 @@ object SchedulerSpec {
   val testConf = ConfigFactory.parseString("""
     akka.scheduler.implementation = akka.actor.DefaultScheduler
     akka.scheduler.ticks-per-wheel = 32
+    akka.actor.serialize-messages = off
   """).withFallback(AkkaSpec.testConf)
 
   val testConfRevolver = ConfigFactory.parseString("""
