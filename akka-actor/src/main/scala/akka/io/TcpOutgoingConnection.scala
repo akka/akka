@@ -61,6 +61,10 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
 
   def connecting(registration: ChannelRegistration, commander: ActorRef,
                  options: immutable.Traversable[SocketOption], remainingFinishConnectRetries: Int): Receive = {
+
+    // Not used, only to make binary compatibility check happy
+    def stop(): Unit = stopWith(CloseInformation(Set(commander), connect.failureMessage))
+
     {
       case ChannelConnectable ⇒
         reportConnectFailure {
