@@ -8,7 +8,7 @@ import akka.actor.SupervisorStrategy._
 import akka.actor.Terminated
 import akka.actor._
 import akka.dispatch.sysmsg.SystemMessage
-import akka.event.LoggingAdapter
+import akka.event.{ Logging, LoggingAdapter }
 import akka.pattern.pipe
 import akka.remote.EndpointManager.Link
 import akka.remote.EndpointManager.Send
@@ -337,13 +337,16 @@ private[remote] abstract class EndpointActor(
 
   def inbound: Boolean
 
-  val eventPublisher = new EventPublisher(context.system, log, settings.LogRemoteLifecycleEvents)
+  val eventPublisher = new EventPublisher(context.system, log, settings.RemoteLifecycleEventsLogLevel)
 
-  def publishError(reason: Throwable): Unit = {
-    try
-      eventPublisher.notifyListeners(AssociationErrorEvent(reason, localAddress, remoteAddress, inbound))
-    catch { case NonFatal(e) ⇒ log.error(e, "Unable to publish error event to EventStream.") }
-  }
+  def publishError(reason: Throwable, logLevel: Logging.LogLevel): Unit =
+    tryPublish(AssociationErrorEvent(reason, localAddress, remoteAddress, inbound, logLevel))
+
+  def publishDisassociated(): Unit = tryPublish(DisassociatedEvent(localAddress, remoteAddress, inbound))
+
+  private def tryPublish(ev: AssociationEvent): Unit = try
+    eventPublisher.notifyListeners(ev)
+  catch { case NonFatal(e) ⇒ log.error(e, "Unable to publish error event to EventStream.") }
 }
 
 /**
@@ -418,7 +421,9 @@ private[remote] class EndpointWriter(
 
   var lastAck: Option[Ack] = None
 
-  override val supervisorStrategy = OneForOneStrategy() { case NonFatal(e) ⇒ publishAndThrow(e) }
+  override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
+    case NonFatal(e) ⇒ publishAndThrow(e, Logging.ErrorLevel)
+  }
 
   val provider = RARP(extendedSystem).provider
   val msgDispatch = new DefaultMessageDispatcher(extendedSystem, provider, log)
@@ -426,8 +431,11 @@ private[remote] class EndpointWriter(
   var inbound = handle.isDefined
   var stopReason: DisassociateInfo = AssociationHandle.Unknown
 
-  private def publishAndThrow(reason: Throwable): Nothing = {
-    publishError(reason)
+  private def publishAndThrow(reason: Throwable, logLevel: Logging.LogLevel): Nothing = {
+    reason match {
+      case _: EndpointDisassociatedException ⇒ publishDisassociated()
+      case _                                 ⇒ publishError(reason, logLevel)
+    }
     throw reason
   }
 
@@ -463,9 +471,9 @@ private[remote] class EndpointWriter(
       stash()
       stay()
     case Event(Status.Failure(e: InvalidAssociationException), _) ⇒
-      publishAndThrow(new InvalidAssociation(localAddress, remoteAddress, e))
+      publishAndThrow(new InvalidAssociation(localAddress, remoteAddress, e), Logging.WarningLevel)
     case Event(Status.Failure(e), _) ⇒
-      publishAndThrow(new EndpointAssociationException(s"Association failed with [$remoteAddress]", e))
+      publishAndThrow(new EndpointAssociationException(s"Association failed with [$remoteAddress]", e), Logging.DebugLevel)
     case Event(inboundHandle: AkkaProtocolHandle, _) ⇒
       // Assert handle == None?
       context.parent ! ReliableDeliverySupervisor.GotUid(inboundHandle.handshakeInfo.uid)
@@ -522,9 +530,12 @@ private[remote] class EndpointWriter(
             throw new EndpointException("Internal error: Endpoint is in state Writing, but no association handle is present.")
         }
       } catch {
-        case e: NotSerializableException ⇒ logAndStay(e)
-        case e: EndpointException        ⇒ publishAndThrow(e)
-        case NonFatal(e)                 ⇒ publishAndThrow(new EndpointException("Failed to write message to the transport", e))
+        case e: NotSerializableException ⇒
+          logAndStay(e)
+        case e: EndpointException ⇒
+          publishAndThrow(e, Logging.ErrorLevel)
+        case NonFatal(e) ⇒
+          publishAndThrow(new EndpointException("Failed to write message to the transport", e), Logging.ErrorLevel)
       }
 
     // We are in Writing state, so stash is empty, safe to stop here
@@ -553,7 +564,7 @@ private[remote] class EndpointWriter(
 
   whenUnhandled {
     case Event(Terminated(r), _) if r == reader.orNull ⇒
-      publishAndThrow(new EndpointDisassociatedException("Disassociated"))
+      publishAndThrow(new EndpointDisassociatedException("Disassociated"), Logging.DebugLevel)
     case Event(s: StopReading, _) ⇒
       reader match {
         case Some(r) ⇒ r forward s

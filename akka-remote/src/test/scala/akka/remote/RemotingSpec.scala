@@ -204,11 +204,10 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       expectMsg(("pong", testActor))
     }
 
-    "send error message for wrong address" in {
-      filterEvents(EventFilter.error(start = "AssociationError", occurrences = 1),
-        EventFilter.error(pattern = "Address is now quarantined", occurrences = 1)) {
-          system.actorFor("akka.test://nonexistingsystem@localhost:12346/user/echo") ! "ping"
-        }
+    "send warning message for wrong address" in {
+      filterEvents(EventFilter.warning(pattern = "Address is now quarantined", occurrences = 1)) {
+        system.actorFor("akka.test://nonexistingsystem@localhost:12346/user/echo") ! "ping"
+      }
     }
 
     "support ask" in {
