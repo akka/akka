@@ -164,10 +164,10 @@ another child to the same parent an `InvalidActorNameException` is thrown.
 
 Actors are automatically started asynchronously when created.
 
-Creating Actors with Factory Methods
-------------------------------------
+Dependency Injection
+--------------------
 
-If your UntypedActor has a constructor that takes parameters then those need to
+If your Actor has a constructor that takes parameters then those need to
 be part of the :class:`Props` as well, as described `above`__. But there
 are cases when a factory method must be used, for example when the actual
 constructor arguments are determined by a dependency injection framework.
@@ -187,6 +187,12 @@ __ Props_
 
   When using a dependency injection framework, actor beans *MUST NOT* have
   singleton scope.
+
+Techniques for dependency injection and integration with dependency injection frameworks
+are described in more depth in the 
+`Using Akka with Dependency Injection <http://letitcrash.com/post/55958814293/akka-dependency-injection>`_ 
+guideline and the `Akka Java Spring <http://typesafe.com/activator/template/akka-java-spring>`_ tutorial
+in Typesafe Activator.
 
 The Actor DSL
 -------------
