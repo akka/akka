@@ -146,6 +146,8 @@ object Patterns {
    * Register an onComplete callback on this [[scala.concurrent.Future]] to send
    * the result to the given [[akka.actor.ActorRef]] or [[akka.actor.ActorSelection]].
    * Returns the original Future to allow method chaining.
+   * If the future was completed with failure it is sent as a [[akka.actor.Status.Failure]]
+   * to the recipient.
    *
    * <b>Recommended usage example:</b>
    *
