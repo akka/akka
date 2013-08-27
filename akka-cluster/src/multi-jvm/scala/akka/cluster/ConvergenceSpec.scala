@@ -70,12 +70,11 @@ abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
         within(28 seconds) {
           // third becomes unreachable
           awaitAssert(clusterView.unreachableMembers.size must be(1))
-          awaitAssert(clusterView.members.size must be(2))
-          awaitAssert(clusterView.members.map(_.status) must be(Set(MemberStatus.Up)))
           awaitSeenSameState(first, second)
           // still one unreachable
           clusterView.unreachableMembers.size must be(1)
           clusterView.unreachableMembers.head.address must be(thirdAddress)
+          clusterView.members.size must be(3)
 
         }
       }
@@ -96,7 +95,7 @@ abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
 
       runOn(first, second, fourth) {
         for (n ← 1 to 5) {
-          awaitAssert(clusterView.members.size must be(2))
+          awaitAssert(clusterView.members.size must be(3))
           awaitSeenSameState(first, second, fourth)
           memberStatus(first) must be(Some(MemberStatus.Up))
           memberStatus(second) must be(Some(MemberStatus.Up))

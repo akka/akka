@@ -94,8 +94,8 @@ by all other nodes in the cluster. Convergence is implemented by passing a map f
 node to current state version during gossip. This information is referred to as the
 gossip overview. When all versions in the overview are equal there is convergence.
 Gossip convergence cannot occur while any nodes are ``unreachable``. The nodes need
-to be moved to the ``down`` or ``removed`` states (see the `Membership Lifecycle`_
-section below).
+to become ``reachable`` again, or moved to the ``down`` and ``removed`` states 
+(see the `Membership Lifecycle`_ section below).
 
 
 Failure Detector
@@ -127,9 +127,17 @@ In a cluster each node is monitored by a few (default maximum 5) other nodes, an
 any of these detects the node as ``unreachable`` that information will spread to
 the rest of the cluster through the gossip. In other words, only one node needs to
 mark a node ``unreachable`` to have the rest of the cluster mark that node ``unreachable``.
-Right now there is no way for a node to come back from ``unreachable``. This is planned
-for the next release of Akka. It also means that the ``unreachable`` node needs to be moved
-to the ``down`` or ``removed`` states (see the `Membership Lifecycle`_ section below).
+
+The failure detector will also detect if the node becomes ``reachable`` again. When
+all nodes that monitored the ``unreachable`` node detects it as ``reachable`` again
+the cluster, after gossip dissemination, will consider it as ``reachable``. 
+
+If system messages cannot be delivered to a node it will be quarantined and then it
+cannot come back from ``unreachable``. This can happen if the there are too many
+unacknowledged system messages (e.g. watch, Terminated, remote actor deployment, 
+failures of actors supervised by remote parent). Then the node needs to be moved
+to the ``down`` or ``removed`` states (see the `Membership Lifecycle`_ section below)
+and the actor system must be restarted before it can join the cluster again.
 
 .. _The Phi Accrual Failure Detector: http://ddg.jaist.ac.jp/pub/HDY+04.pdf
 
@@ -221,8 +229,8 @@ from the cluster, marking it as ``removed``.
 If a node is ``unreachable`` then gossip convergence is not possible and therefore
 any ``leader`` actions are also not possible (for instance, allowing a node to
 become a part of the cluster). To be able to move forward the state of the
-``unreachable`` nodes must be changed. Currently the only way forward is to mark the
-node as ``down``. If the node is to join the cluster again the actor system must be
+``unreachable`` nodes must be changed. It must become ``reachable`` again or marked
+as ``down``. If the node is to join the cluster again the actor system must be
 restarted and go through the joining process again. The cluster can, through the
 leader, also *auto-down* a node.
 
@@ -292,8 +300,10 @@ Failure Detection and Unreachability
     causing the monitored node to be marked as unreachable
 
 - unreachable*
-    unreachable is not a real member state but more of a flag in addition
-    to the state signaling that the cluster is unable to talk to this node
+    unreachable is not a real member states but more of a flag in addition
+    to the state signaling that the cluster is unable to talk to this node,
+    after beeing unreachable the failure detector may detect it as reachable
+    again and thereby remove the flag
 
 
 Future Cluster Enhancements and Additions
@@ -649,4 +659,3 @@ storage on top of the Akka Cluster as described in this document are:
 * Actor handoff
 * Actor rebalancing
 * Stateful actor replication
-* Node becoming ``reachable`` after it has been marked as ``unreachable``

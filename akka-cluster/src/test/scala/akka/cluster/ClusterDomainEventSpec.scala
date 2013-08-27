@@ -65,11 +65,31 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
     }
 
     "be produced for members in unreachable" in {
-      val g1 = Gossip(members = SortedSet(aUp, bUp), overview = GossipOverview(unreachable = Set(cUp, eUp)))
-      val g2 = Gossip(members = SortedSet(aUp), overview = GossipOverview(unreachable = Set(cUp, bDown, eDown)))
+      val reachability1 = Reachability.empty.
+        unreachable(aUp.uniqueAddress, cUp.uniqueAddress).
+        unreachable(aUp.uniqueAddress, eUp.uniqueAddress)
+      val g1 = Gossip(members = SortedSet(aUp, bUp, cUp, eUp), overview = GossipOverview(reachability = reachability1))
+      val reachability2 = reachability1.
+        unreachable(aUp.uniqueAddress, bDown.uniqueAddress)
+      val g2 = Gossip(members = SortedSet(aUp, cUp, bDown, eDown), overview = GossipOverview(reachability = reachability2))
 
       diffUnreachable(g1, g2) must be(Seq(UnreachableMember(bDown)))
       diffSeen(g1, g2) must be(Seq.empty)
+    }
+
+    "be produced for members becoming reachable after unreachable" in {
+      val reachability1 = Reachability.empty.
+        unreachable(aUp.uniqueAddress, cUp.uniqueAddress).reachable(aUp.uniqueAddress, cUp.uniqueAddress).
+        unreachable(aUp.uniqueAddress, eUp.uniqueAddress).
+        unreachable(aUp.uniqueAddress, bUp.uniqueAddress)
+      val g1 = Gossip(members = SortedSet(aUp, bUp, cUp, eUp), overview = GossipOverview(reachability = reachability1))
+      val reachability2 = reachability1.
+        unreachable(aUp.uniqueAddress, cUp.uniqueAddress).
+        reachable(aUp.uniqueAddress, bUp.uniqueAddress)
+      val g2 = Gossip(members = SortedSet(aUp, cUp, bUp, eUp), overview = GossipOverview(reachability = reachability2))
+
+      diffUnreachable(g1, g2) must be(Seq(UnreachableMember(cUp)))
+      diffReachable(g1, g2) must be(Seq(ReachableMember(bUp)))
     }
 
     "be produced for removed members" in {

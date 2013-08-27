@@ -68,7 +68,6 @@ abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
     }
 
     "detect network partition and mark nodes on other side as unreachable and form new cluster" taggedAs LongRunningTest in within(30 seconds) {
-      val thirdAddress = address(third)
       enterBarrier("before-split")
 
       runOn(first) {
@@ -79,20 +78,15 @@ abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
       }
       enterBarrier("after-split")
 
-      runOn(side1.last) {
-        for (role ← side2) markNodeAsUnavailable(role)
-      }
-      runOn(side2.last) {
-        for (role ← side1) markNodeAsUnavailable(role)
-      }
-
       runOn(side1: _*) {
+        for (role ← side2) markNodeAsUnavailable(role)
         // auto-down = on
         awaitMembersUp(side1.size, side2.toSet map address)
         assertLeader(side1: _*)
       }
 
       runOn(side2: _*) {
+        for (role ← side1) markNodeAsUnavailable(role)
         // auto-down = on
         awaitMembersUp(side2.size, side1.toSet map address)
         assertLeader(side2: _*)

@@ -30,7 +30,6 @@ class ClusterConfigSpec extends AkkaSpec {
       PeriodicTasksInitialDelay must be(1 seconds)
       GossipInterval must be(1 second)
       HeartbeatInterval must be(1 second)
-      NumberOfEndHeartbeats must be(8)
       MonitoredByNrOfMembers must be(5)
       HeartbeatRequestDelay must be(10 seconds)
       HeartbeatExpectedResponseAfter must be(3 seconds)

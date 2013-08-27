@@ -34,9 +34,6 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val HeartbeatRequestTimeToLive: FiniteDuration = {
     Duration(FailureDetectorConfig.getMilliseconds("heartbeat-request.time-to-live"), MILLISECONDS)
   } requiring (_ > Duration.Zero, "failure-detector.heartbeat-request.time-to-live > 0")
-  val NumberOfEndHeartbeats: Int = {
-    FailureDetectorConfig.getInt("nr-of-end-heartbeats")
-  } requiring (_ > 0, "failure-detector.nr-of-end-heartbeats must be > 0")
   val MonitoredByNrOfMembers: Int = {
     FailureDetectorConfig.getInt("monitored-by-nr-of-members")
   } requiring (_ > 0, "failure-detector.monitored-by-nr-of-members must be > 0")

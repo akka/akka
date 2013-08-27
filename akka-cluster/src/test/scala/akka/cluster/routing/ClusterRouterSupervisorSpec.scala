@@ -6,7 +6,6 @@ package akka.cluster.routing
 import akka.testkit._
 import akka.actor._
 import akka.routing.RoundRobinRouter
-import akka.cluster.routing.ClusterRouterConfig
 import akka.actor.OneForOneStrategy
 
 object ClusterRouterSupervisorSpec {

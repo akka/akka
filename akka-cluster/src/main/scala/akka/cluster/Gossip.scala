@@ -67,23 +67,24 @@ private[cluster] case class Gossip(
   assertInvariants()
 
   private def assertInvariants(): Unit = {
-    val unreachableAndLive = members.intersect(overview.unreachable)
-    if (unreachableAndLive.nonEmpty)
-      throw new IllegalArgumentException("Same nodes in both members and unreachable is not allowed, got [%s]"
-        format unreachableAndLive.mkString(", "))
 
-    val allowedLiveMemberStatus: Set[MemberStatus] = Set(Joining, Up, Leaving, Exiting)
-    def hasNotAllowedLiveMemberStatus(m: Member) = !allowedLiveMemberStatus(m.status)
-    if (members exists hasNotAllowedLiveMemberStatus)
-      throw new IllegalArgumentException("Live members must have status [%s], got [%s]"
-        format (allowedLiveMemberStatus.mkString(", "),
-          (members filter hasNotAllowedLiveMemberStatus).mkString(", ")))
+    if (members.exists(_.status == Removed))
+      throw new IllegalArgumentException(s"Live members must have status [${Removed}], " +
+        s"got [${members.filter(_.status == Removed)}]")
 
-    val seenButNotMember = overview.seen -- members.map(_.uniqueAddress) -- overview.unreachable.map(_.uniqueAddress)
+    val inReachabilityButNotMember = overview.reachability.allObservers -- members.map(_.uniqueAddress)
+    if (inReachabilityButNotMember.nonEmpty)
+      throw new IllegalArgumentException("Nodes not part of cluster in reachability table, got [%s]"
+        format inReachabilityButNotMember.mkString(", "))
+
+    val seenButNotMember = overview.seen -- members.map(_.uniqueAddress)
     if (seenButNotMember.nonEmpty)
       throw new IllegalArgumentException("Nodes not part of cluster have marked the Gossip as seen, got [%s]"
         format seenButNotMember.mkString(", "))
   }
+
+  @transient private lazy val membersMap: Map[UniqueAddress, Member] =
+    members.map(m ⇒ m.uniqueAddress -> m)(collection.breakOut)
 
   /**
    * Increments the version for this 'Node'.
@@ -138,17 +139,17 @@ private[cluster] case class Gossip(
     // 1. merge vector clocks
     val mergedVClock = this.version merge that.version
 
-    // 2. merge unreachable by selecting the single Member with highest MemberStatus out of the Member groups
-    val mergedUnreachable = Member.pickHighestPriority(this.overview.unreachable, that.overview.unreachable)
+    // 2. merge members by selecting the single Member with highest MemberStatus out of the Member groups
+    val mergedMembers = Gossip.emptyMembers ++ Member.pickHighestPriority(this.members, that.members)
 
-    // 3. merge members by selecting the single Member with highest MemberStatus out of the Member groups,
-    //    and exclude unreachable
-    val mergedMembers = Gossip.emptyMembers ++ Member.pickHighestPriority(this.members, that.members).filterNot(mergedUnreachable.contains)
+    // 3. merge reachability table by picking records with highest version
+    val mergedReachability = this.overview.reachability.merge(mergedMembers.map(_.uniqueAddress),
+      that.overview.reachability)
 
     // 4. Nobody can have seen this new gossip yet
     val mergedSeen = Set.empty[UniqueAddress]
 
-    Gossip(mergedMembers, GossipOverview(mergedSeen, mergedUnreachable), mergedVClock)
+    Gossip(mergedMembers, GossipOverview(mergedSeen, mergedReachability), mergedVClock)
   }
 
   /**
@@ -165,7 +166,8 @@ private[cluster] case class Gossip(
     // When that is done we check that all members with a convergence
     // status is in the seen table and has the latest vector clock
     // version
-    overview.unreachable.forall(m ⇒ Gossip.convergenceSkipUnreachableWithMemberStatus(m.status)) &&
+    val unreachable = overview.reachability.allUnreachableOrTerminated map member
+    unreachable.forall(m ⇒ Gossip.convergenceSkipUnreachableWithMemberStatus(m.status)) &&
       !members.exists(m ⇒ Gossip.convergenceMemberStatus(m.status) && !seenByNode(m.uniqueAddress))
   }
 
@@ -176,34 +178,28 @@ private[cluster] case class Gossip(
   def roleLeader(role: String): Option[UniqueAddress] = leaderOf(members.filter(_.hasRole(role)))
 
   private def leaderOf(mbrs: immutable.SortedSet[Member]): Option[UniqueAddress] = {
-    if (mbrs.isEmpty) None
-    else mbrs.find(m ⇒ Gossip.leaderMemberStatus(m.status)).
-      orElse(Some(mbrs.min(Member.leaderStatusOrdering))).map(_.uniqueAddress)
+    val reachableMembers =
+      if (overview.reachability.isAllReachable) mbrs
+      else mbrs.filter(m ⇒ overview.reachability.isReachable(m.uniqueAddress))
+    if (reachableMembers.isEmpty) None
+    else reachableMembers.find(m ⇒ Gossip.leaderMemberStatus(m.status)).
+      orElse(Some(reachableMembers.min(Member.leaderStatusOrdering))).map(_.uniqueAddress)
   }
 
   def allRoles: Set[String] = members.flatMap(_.roles)
 
   def isSingletonCluster: Boolean = members.size == 1
 
-  /**
-   * Returns true if the node is in the unreachable set
-   */
-  def isUnreachable(node: UniqueAddress): Boolean =
-    overview.unreachable exists { _.uniqueAddress == node }
-
   def member(node: UniqueAddress): Member = {
-    members.find(_.uniqueAddress == node).orElse(overview.unreachable.find(_.uniqueAddress == node)).
-      getOrElse(Member.removed(node)) // placeholder for removed member
+    membersMap.getOrElse(node,
+      Member.removed(node)) // placeholder for removed member
   }
+
+  def hasMember(node: UniqueAddress): Boolean = membersMap.contains(node)
 
   def youngestMember: Member = {
     require(members.nonEmpty, "No youngest when no members")
-    def maxByUpNumber(mbrs: Iterable[Member]): Member =
-      mbrs.maxBy(m ⇒ if (m.upNumber == Int.MaxValue) 0 else m.upNumber)
-    if (overview.unreachable.isEmpty)
-      maxByUpNumber(members)
-    else
-      maxByUpNumber(members ++ overview.unreachable)
+    members.maxBy(m ⇒ if (m.upNumber == Int.MaxValue) 0 else m.upNumber)
   }
 
   override def toString =
@@ -217,10 +213,10 @@ private[cluster] case class Gossip(
 @SerialVersionUID(1L)
 private[cluster] case class GossipOverview(
   seen: Set[UniqueAddress] = Set.empty,
-  unreachable: Set[Member] = Set.empty) {
+  reachability: Reachability = Reachability.empty) {
 
   override def toString =
-    s"GossipOverview(unreachable = [${unreachable.mkString(", ")}], seen = [${seen.mkString(", ")}])"
+    s"GossipOverview(reachability = [$reachability], seen = [${seen.mkString(", ")}])"
 }
 
 /**

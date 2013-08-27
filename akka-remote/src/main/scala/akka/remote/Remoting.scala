@@ -400,10 +400,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       case HopelessAssociation(localAddress, remoteAddress, Some(uid), _) ⇒
         settings.QuarantineDuration match {
           case d: FiniteDuration ⇒
-            log.warning("Association to [{}] having UID [{}] is irrecoverably failed. UID is now quarantined and all " +
-              "messages to this UID will be delivered to dead letters. Remote actorsystem must be restarted to recover " +
-              "from this situation.", remoteAddress, uid)
             endpoints.markAsQuarantined(remoteAddress, uid, Deadline.now + d)
+            eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, uid))
           case _ ⇒ // disabled
         }
         context.system.eventStream.publish(AddressTerminated(remoteAddress))
@@ -488,9 +486,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
             case Some(endpoint) ⇒ context.stop(endpoint)
             case _              ⇒ // nothing to stop
           }
-          log.info("Address [{}] is now quarantined, all messages to this address will be delivered to dead letters.",
-            address)
           endpoints.markAsQuarantined(address, uid, Deadline.now + d)
+          eventPublisher.notifyListeners(QuarantinedEvent(address, uid))
         case _ ⇒ // Ignore
       }
 
