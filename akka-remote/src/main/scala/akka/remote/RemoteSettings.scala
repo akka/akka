@@ -11,6 +11,9 @@ import scala.collection.immutable
 import akka.util.Helpers.Requiring
 import akka.japi.Util._
 import akka.actor.Props
+import akka.event.Logging
+import akka.event.Logging.LogLevel
+import akka.ConfigurationException
 
 final class RemoteSettings(val config: Config) {
   import config._
@@ -22,7 +25,16 @@ final class RemoteSettings(val config: Config) {
 
   val UntrustedMode: Boolean = getBoolean("akka.remote.untrusted-mode")
 
-  val LogRemoteLifecycleEvents: Boolean = getBoolean("akka.remote.log-remote-lifecycle-events")
+  val RemoteLifecycleEventsLogLevel: LogLevel = getString("akka.remote.log-remote-lifecycle-events").toLowerCase() match {
+    case "on" ⇒ Logging.DebugLevel
+    case other ⇒ Logging.levelFor(other) match {
+      case Some(level) ⇒ level
+      case None        ⇒ throw new ConfigurationException("Logging level must be one of (on, off, debug, info, warning, error)")
+    }
+  }
+
+  @deprecated("Use the RemoteLifecycleEventsLogLevel field instead.")
+  def LogRemoteLifecycleEvents: Boolean = RemoteLifecycleEventsLogLevel >= Logging.ErrorLevel
 
   val Dispatcher: String = getString("akka.remote.use-dispatcher")
 
