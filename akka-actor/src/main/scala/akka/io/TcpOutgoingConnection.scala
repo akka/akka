@@ -8,7 +8,7 @@ import java.io.IOException
 import java.nio.channels.{ SelectionKey, SocketChannel }
 import java.net.ConnectException
 import scala.collection.immutable
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 import akka.actor.{ ReceiveTimeout, ActorRef }
 import akka.io.Inet.SocketOption
 import akka.io.TcpConnection.CloseInformation
@@ -55,19 +55,31 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
         if (channel.connect(remoteAddress))
           completeConnect(registration, commander, options)
         else
-          context.become(connecting(registration, commander, options))
+          context.become(connecting(registration, commander, options, tcp.Settings.FinishConnectRetries))
       }
   }
 
   def connecting(registration: ChannelRegistration, commander: ActorRef,
-                 options: immutable.Traversable[SocketOption]): Receive = {
+                 options: immutable.Traversable[SocketOption], remainingFinishConnectRetries: Int): Receive = {
     {
       case ChannelConnectable ⇒
-        if (timeout.isDefined) context.setReceiveTimeout(Duration.Undefined) // Clear the timeout
         reportConnectFailure {
-          channel.finishConnect() || (throw new ConnectException(s"Connection to [$remoteAddress] failed"))
-          log.debug("Connection established to [{}]", remoteAddress)
-          completeConnect(registration, commander, options)
+          if (channel.finishConnect()) {
+            if (timeout.isDefined) context.setReceiveTimeout(Duration.Undefined) // Clear the timeout
+            log.debug("Connection established to [{}]", remoteAddress)
+            completeConnect(registration, commander, options)
+          } else {
+            if (remainingFinishConnectRetries > 0) {
+              context.system.scheduler.scheduleOnce(1.millisecond) {
+                channelRegistry.register(channel, SelectionKey.OP_CONNECT)
+              }(context.dispatcher)
+              context.become(connecting(registration, commander, options, remainingFinishConnectRetries - 1))
+            } else {
+              log.debug("Could not establish connection because finishConnect " +
+                "never returned true (consider increasing akka.io.tcp.finish-connect-retries)")
+              stop()
+            }
+          }
         }
 
       case ReceiveTimeout ⇒
