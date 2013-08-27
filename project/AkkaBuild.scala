@@ -13,6 +13,7 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import com.typesafe.sbtosgi.OsgiPlugin.{ OsgiKeys, osgiSettings }
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
+import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
 import com.typesafe.sbt.SbtSite.site
 import com.typesafe.sbt.site.SphinxSupport
 import com.typesafe.sbt.site.SphinxSupport.{ enableOutput, generatePdf, generatedPdf, generateEpub, generatedEpub, sphinxInputs, sphinxPackages, Sphinx }
@@ -35,7 +36,7 @@ object AkkaBuild extends Build {
   // Load system properties from a file to make configuration from Jenkins easier
   loadSystemProperties("project/akka-build.properties")
 
-  val enableMiMa = false
+  val enableMiMa = true
 
   val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.2")
 
@@ -183,7 +184,8 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ scaladocSettings  ++ Seq(
       publishArtifact in Compile := false,
       libraryDependencies ++= Dependencies.actorTests,
-      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a")
+      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
+      reportBinaryIssues := () // disable bin comp check
     )
   )
 
@@ -221,7 +223,7 @@ object AkkaBuild extends Build {
       },
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
       publishArtifact in Compile := false,
-      previousArtifact := akkaPreviousArtifact("akka-remote-tests")
+      reportBinaryIssues := () // disable bin comp check
     )
   ) configs (MultiJvm)
 
@@ -330,7 +332,8 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, slf4j, testkit % "test->test"),
     settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.camel ++ Seq(
       libraryDependencies ++= Dependencies.camel,
-      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a")
+      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
+      previousArtifact := akkaPreviousArtifact("akka-camel")
     )
   )
 
@@ -366,7 +369,8 @@ object AkkaBuild extends Build {
       ActorReferenceCopyTask in Compile <<= ActorReferenceCopyAction ,
       cleanFiles <+= baseDirectory { base => base / "src/main/resources" } ,
       compile in Compile <<= compile in Compile dependsOn (ActorReferenceCopyTask in Compile),
-      parallelExecution in Test := false
+      parallelExecution in Test := false,
+      reportBinaryIssues := () // disable bin comp check
     )
   )
 
@@ -376,7 +380,8 @@ object AkkaBuild extends Build {
     dependencies = Seq(osgi % "compile;test->test"),
     settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.osgiAries ++ Seq(
       libraryDependencies ++= Dependencies.osgiAries,
-      parallelExecution in Test := false
+      parallelExecution in Test := false,
+      reportBinaryIssues := () // disable bin comp check
     )
   )
 
@@ -389,7 +394,8 @@ object AkkaBuild extends Build {
       publishTo <<= Publish.akkaPluginPublishTo,
       scalacOptions in Compile := Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
       scalaVersion := "2.9.2",
-      scalaBinaryVersion <<= scalaVersion
+      scalaBinaryVersion <<= scalaVersion,
+      reportBinaryIssues := () // disable bin comp check
     )
   )
 
@@ -554,7 +560,8 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.docs,
       publishArtifact in Compile := false,
       unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
-      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a")
+      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
+      reportBinaryIssues := () // disable bin comp check
     )
   )
 
@@ -565,6 +572,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.contrib,
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-v"),
+      reportBinaryIssues := (), // disable bin comp check
       description := """|
                         |This subproject provides a home to modules contributed by external
                         |developers which may or may not move into the officially supported code
@@ -583,7 +591,8 @@ object AkkaBuild extends Build {
     base = file("akka-channels"),
     dependencies = Seq(actor),
     settings = defaultSettings ++ scaladocSettings ++ experimentalSettings ++ Seq(
-      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _)
+      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _),
+      reportBinaryIssues := () // disable bin comp check
     )
   )
 
@@ -593,7 +602,8 @@ object AkkaBuild extends Build {
     dependencies = Seq(channels, testkit % "compile;test->test"),
     settings = defaultSettings ++ experimentalSettings ++ Seq(
       publishArtifact in Compile := false,
-      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _)
+      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _),
+      reportBinaryIssues := () // disable bin comp check
     )
   )
 
@@ -609,11 +619,13 @@ object AkkaBuild extends Build {
   lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
 
   lazy val parentSettings = baseSettings ++ Seq(
-    publishArtifact := false
+    publishArtifact := false,
+    reportBinaryIssues := () // disable bin comp check
   )
 
   lazy val sampleSettings = defaultSettings ++ Seq(
-    publishArtifact in (Compile, packageBin) := false
+    publishArtifact in (Compile, packageBin) := false,
+    reportBinaryIssues := () // disable bin comp check
   )
 
   lazy val experimentalSettings = Seq(
@@ -744,8 +756,15 @@ object AkkaBuild extends Build {
     },
 
     // show full stack traces and test case durations
-    testOptions in Test += Tests.Argument("-oDF")
+    testOptions in Test += Tests.Argument("-oDF"),
+
+    validatePullRequestTask,
+    validatePullRequest <<= validatePullRequest.dependsOn(reportBinaryIssues)
   )
+
+  val validatePullRequest = TaskKey[Unit]("validate-pull-request", "Additional tasks for pull request validation")
+  // the tasks that to run for validation is defined in defaultSettings
+  val validatePullRequestTask = validatePullRequest := ()
 
   // preprocessing settings for sphinx
   lazy val sphinxPreprocessing = inConfig(Sphinx)(Seq(
@@ -872,8 +891,12 @@ object AkkaBuild extends Build {
     previousArtifact := None
   )
 
-  def akkaPreviousArtifact(id: String, organization: String = "com.typesafe.akka", version: String = "2.0"): Option[sbt.ModuleID] =
-    if (enableMiMa) Some(organization % id % version) // the artifact to compare binary compatibility with
+  def akkaPreviousArtifact(id: String, organization: String = "com.typesafe.akka", version: String = "2.2.0", 
+      crossVersion: String = "2.10"): Option[sbt.ModuleID] =
+    if (enableMiMa) {
+      val fullId = if (crossVersion.isEmpty) id else id + "_" + crossVersion
+      Some(organization % fullId % version) // the artifact to compare binary compatibility with
+    }
     else None
 
   def loadSystemProperties(fileName: String): Unit = {

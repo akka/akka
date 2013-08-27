@@ -171,8 +171,12 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
   }
 
   private def vectorClockToProto(version: VectorClock, hashMapping: Map[String, Int]): msg.VectorClock = {
+    // Must keep mapHash method in 2.1.x series due to binary compatibility. Otherwise
+    // synthetic method akka$cluster$protobuf$ClusterMessageSerializer$$mapHash$1(java.lang.String,scala.collection.immutable.Map)Int
+    // in class akka.cluster.protobuf.ClusterMessageSerializer does not have a correspondent in new version
+    def mapHash(hash: String) = mapWithErrorMessage(hashMapping, hash, "hash")
     val versions: Vector[msg.VectorClock.Version] = version.versions.map({
-      case (n, t) ⇒ msg.VectorClock.Version(mapWithErrorMessage(hashMapping, n, "hash"), t.time)
+      case (n, t) ⇒ msg.VectorClock.Version(mapHash(n), t.time)
     })(breakOut)
     msg.VectorClock(None, versions)
   }

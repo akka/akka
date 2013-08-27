@@ -271,6 +271,9 @@ private[akka] class ClusterRouteeProvider(
  */
 private[akka] class ClusterRouterActor(override val supervisorStrategy: SupervisorStrategy) extends Router {
 
+  // Only for binary compatibility in 2.2.x
+  def this() = this(SupervisorStrategy.defaultStrategy)
+
   // re-subscribe when restart
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent])
