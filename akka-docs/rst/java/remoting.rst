@@ -71,6 +71,8 @@ To acquire an :class:`ActorRef` for an :class:`ActorSelection` you need to
 send a message to the selection and use the ``getSender`` reference of the reply from
 the actor. There is a built-in ``Identify`` message that all Actors will understand
 and automatically reply to with a ``ActorIdentity`` message containing the
+:class:`ActorRef`. This can also be done with the ``resolveOne`` method of
+the :class:`ActorSelection`, which returns a ``Future`` of the matching
 :class:`ActorRef`.
 
 .. note::

@@ -61,6 +61,12 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
     val asked = Await.result((selection ? Identify(selection)).mapTo[ActorIdentity], timeout.duration)
     asked.ref must be(result)
     asked.correlationId must be(selection)
+
+    implicit val ec = system.dispatcher
+    val resolved = Await.result(selection.resolveOne(timeout.duration).mapTo[ActorRef] recover { case _ ⇒ null },
+      timeout.duration)
+    Option(resolved) must be(result)
+
     result
   }
 
@@ -289,6 +295,24 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
       }
       actors must be === Seq(c21)
       expectNoMsg(1 second)
+    }
+
+    "resolve one actor with explicit timeout" in {
+      val s = system.actorSelection(system / "c2")
+      // Java and Scala API
+      Await.result(s.resolveOne(1.second.dilated), timeout.duration) must be === c2
+    }
+
+    "resolve one actor with implicit timeout" in {
+      val s = system.actorSelection(system / "c2")
+      // Scala API; implicit timeout from DefaultTimeout trait
+      Await.result(s.resolveOne(), timeout.duration) must be === c2
+    }
+
+    "resolve non-existing with Failure" in {
+      intercept[ActorNotFound] {
+        Await.result(system.actorSelection(system / "none").resolveOne(1.second.dilated), timeout.duration)
+      }
     }
 
     "compare equally" in {
