@@ -276,9 +276,11 @@ private[akka] class RemoteWatcher(
    */
   def reWatch(address: Address): Unit =
     watching.foreach {
-      case (wee: InternalActorRef, wer: InternalActorRef) if wee.path.address == address ⇒
-        log.debug("Re-watch [{} -> {}]", wer, wee)
-        wee.sendSystemMessage(Watch(wee, wer)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+      case (wee: InternalActorRef, wer: InternalActorRef) ⇒
+        if (wee.path.address == address) {
+          log.debug("Re-watch [{} -> {}]", wer, wee)
+          wee.sendSystemMessage(Watch(wee, wer)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+        }
     }
 
 }
