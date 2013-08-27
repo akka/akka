@@ -5,71 +5,57 @@
  Cluster Specification
 ######################
 
-.. note:: This document describes the design concepts of the clustering. Not everything described here is implemented yet,
-   and such parts have been marked  with footnote :ref:`[*] <niy>`. Actor partitioning and stateful actor replication have not been
-   implemented yet.
+.. note:: This document describes the design concepts of the clustering.
+   It is divided into two parts, where the first part describes what is
+   currently implemented and the second part describes what is planned as
+   future enhancements/additions. References to unimplemented parts have
+   been marked with the footnote :ref:`[*] <niy>`
+
+
+The Current Cluster
+*******************
+
 
 Intro
 =====
 
-Akka Cluster provides a fault-tolerant, elastic, decentralized peer-to-peer
-cluster with no single point of failure (SPOF) or single point of bottleneck
-(SPOB). It implements a Dynamo-style system using gossip protocols, automatic
-failure detection, automatic partitioning :ref:`[*] <niy>`, handoff :ref:`[*] <niy>`, and cluster 
-rebalancing :ref:`[*] <niy>`. But with some differences due to the fact that it is not just 
-managing passive data, but actors - active, sometimes stateful, components that 
-also have requirements on message ordering, the number of active instances in 
-the cluster, etc.
+Akka Cluster provides a fault-tolerant decentralized peer-to-peer based cluster
+`membership`_ service with no single point of failure or single point of bottleneck.
+It does this using `gossip`_ protocols and an automatic `failure detector`_.
 
 
 Terms
 =====
 
-These terms are used throughout the documentation.
-
 **node**
   A logical member of a cluster. There could be multiple nodes on a physical
-  machine. Defined by a `hostname:port` tuple.
+  machine. Defined by a `hostname:port:uid` tuple.
 
 **cluster**
-  A set of nodes. Contains distributed Akka applications.
-
-**partition** :ref:`[*] <niy>`
-  An actor or subtree of actors in the Akka application that is distributed
-  within the cluster.
-
-**partition point** :ref:`[*] <niy>`
-  The actor at the head of a partition. The point around which a partition is
-  formed.
-
-**partition path** :ref:`[*] <niy>`
-  Also referred to as the actor address. Has the format `actor1/actor2/actor3`
-
-**instance count** :ref:`[*] <niy>`
-  The number of instances of a partition in the cluster. Also referred to as the
-  ``N-value`` of the partition.
-
-**instance node** :ref:`[*] <niy>`
-  A node that an actor instance is assigned to.
-
-**partition table** :ref:`[*] <niy>`
-  A mapping from partition path to a set of instance nodes (where the nodes are
-  referred to by the ordinal position given the nodes in sorted order).
+  A set of nodes joined together through the `membership`_ service.
 
 **leader**
   A single node in the cluster that acts as the leader. Managing cluster convergence,
-  partitions, fail-over, rebalancing etc.
+  partitions :ref:`[*] <niy>`, fail-over :ref:`[*] <niy>`, rebalancing :ref:`[*] <niy>`
+  etc.
 
 
 Membership
 ==========
 
 A cluster is made up of a set of member nodes. The identifier for each node is a
-``hostname:port`` pair. An Akka application is distributed over a cluster with
-each node hosting some part of the application. Cluster membership and
-partitioning :ref:`[*] <niy>` of the application are decoupled. A node could be a member of a
+``hostname:port:uid`` tuple. An Akka application can be distributed over a cluster with
+each node hosting some part of the application. Cluster membership and partitioning
+:ref:`[*] <niy>` of the application are decoupled. A node could be a member of a
 cluster without hosting any actors.
 
+The node identifier internally also contains a UID that uniquely identifies this
+actor system instance at that ``hostname:port``. Akka uses the UID to be able to
+reliably trigger remote death watch. This means that the same actor system can never
+join a cluster again once it's been removed from that cluster. To re-join an actor
+system with the same ``hostname:port`` to a cluster you have to stop the actor system
+and start a new one with the same ``hotname:port`` which will then receive a different
+UID.
 
 Gossip
 ------
@@ -89,40 +75,34 @@ by issuing a ``Join`` command to one of the nodes in the cluster to join.
 Vector Clocks
 ^^^^^^^^^^^^^
 
-`Vector clocks`_ are an algorithm for generating a partial ordering of events in
-a distributed system and detecting causality violations.
+`Vector clocks`_ are a type of data structure and algorithm for generating a partial
+ordering of events in a distributed system and detecting causality violations.
 
 We use vector clocks to reconcile and merge differences in cluster state
 during gossiping. A vector clock is a set of (node, counter) pairs. Each update
 to the cluster state has an accompanying update to the vector clock.
 
-One problem with vector clocks is that their history can over time be very long,
-which will both make comparisons take longer time as well as take up unnecessary
-memory. To solve that problem we do pruning of the vector clocks according to
-the `pruning algorithm`_ in Riak.
-
 .. _Vector Clocks: http://en.wikipedia.org/wiki/Vector_clock
-.. _pruning algorithm: http://wiki.basho.com/Vector-Clocks.html#Vector-Clock-Pruning
 
 
 Gossip Convergence
 ^^^^^^^^^^^^^^^^^^
 
-Information about the cluster converges at certain points of time. This is when
-all nodes have seen the same cluster state. Convergence is recognised by passing
-a map from node to current state version during gossip. This information is
-referred to as the gossip overview. When all versions in the overview are equal
-there is convergence. Gossip convergence cannot occur while any nodes are
-unreachable, either the nodes become reachable again, or the nodes need to be
-moved into the ``down`` or ``removed`` states (see section on `Member states`_
-below).
+Information about the cluster converges locally at a node at certain points in time.
+This is when a node can prove that the cluster state he is observing has been observed
+by all other nodes in the cluster. Convergence is implemented by passing a map from
+node to current state version during gossip. This information is referred to as the
+gossip overview. When all versions in the overview are equal there is convergence.
+Gossip convergence cannot occur while any nodes are ``unreachable``. The nodes need
+to be moved to the ``down`` or ``removed`` states (see the `Membership Lifecycle`_
+section below).
 
 
 Failure Detector
 ^^^^^^^^^^^^^^^^
 
 The failure detector is responsible for trying to detect if a node is
-unreachable from the rest of the cluster. For this we are using an
+``unreachable`` from the rest of the cluster. For this we are using an
 implementation of `The Phi Accrual Failure Detector`_ by Hayashibara et al.
 
 An accrual failure detector decouple monitoring and interpretation. That makes
@@ -143,6 +123,14 @@ default ``threshold`` is 8 and is appropriate for most situations. However in
 cloud environments, such as Amazon EC2, the value could be increased to 12 in
 order to account for network issues that sometimes occur on such platforms.
 
+In a cluster each node is monitored by a few (default maximum 5) other nodes, and when
+any of these detects the node as ``unreachable`` that information will spread to
+the rest of the cluster through the gossip. In other words, only one node needs to
+mark a node ``unreachable`` to have the rest of the cluster mark that node ``unreachable``.
+Right now there is no way for a node to come back from ``unreachable``. This is planned
+for the next release of Akka. It also means that the ``unreachable`` node needs to be moved
+to the ``down`` or ``removed`` states (see the `Membership Lifecycle`_ section below).
+
 .. _The Phi Accrual Failure Detector: http://ddg.jaist.ac.jp/pub/HDY+04.pdf
 
 
@@ -153,32 +141,25 @@ After gossip convergence a ``leader`` for the cluster can be determined. There i
 ``leader`` election process, the ``leader`` can always be recognised deterministically
 by any node whenever there is gossip convergence. The ``leader`` is simply the first
 node in sorted order that is able to take the leadership role, where the preferred
-member states for a ``leader`` are ``up`` and ``leaving`` (see below for more 
-information about member states).
+member states for a ``leader`` are ``up`` and ``leaving`` (see the `Membership Lifecycle`_
+section below for more  information about member states).
 
 The role of the ``leader`` is to shift members in and out of the cluster, changing
-``joining`` members to the ``up`` state or ``exiting`` members to the
-``removed`` state, and to schedule rebalancing across the cluster. Currently
-``leader`` actions are only triggered by receiving a new cluster state with gossip
-convergence but it may also be possible for the user to explicitly rebalance the
-cluster by specifying migrations :ref:`[*] <niy>`, or to rebalance :ref:`[*] <niy>` the cluster automatically
-based on metrics from member nodes. Metrics may be spread using the gossip
-protocol or possibly more efficiently using a *random chord* method, where the
-``leader`` contacts several random nodes around the cluster ring and each contacted
-node gathers information from their immediate neighbours, giving a random
-sampling of load information.
+``joining`` members to the ``up`` state or ``exiting`` members to the ``removed``
+state. Currently ``leader`` actions are only triggered by receiving a new cluster
+state with gossip convergence.
 
 The ``leader`` also has the power, if configured so, to "auto-down" a node that
-according to the Failure Detector is considered unreachable. This means setting
-the unreachable node status to ``down`` automatically.
+according to the `Failure Detector`_ is considered ``unreachable``. This means setting
+the ``unreachable`` node status to ``down`` automatically.
 
 
 Seed Nodes
 ^^^^^^^^^^
 
-The seed nodes are configured contact points for inital join of the cluster.
-When a new node is started started it sends a message to all seed nodes and 
-then sends join command to the one that answers first.
+The seed nodes are configured contact points for initial join of the cluster.
+When a new node is started it sends a message to all seed nodes and  then sends
+a join command to the seed node that answers first.
 
 It is possible to not use seed nodes and instead join any node in the cluster
 manually.
@@ -223,67 +204,33 @@ the gossip can use the gossip version to determine whether:
 If the recipient and the gossip have the same version then the gossip state is
 not sent or requested.
 
-The main structures used in gossiping are the gossip overview and the gossip
-state::
-
- GossipState {
-    version: VectorClock,
-    members: SortedSet[Member],
-    unreachable: Set[Node],
-    seen: Map[Node, VectorClock],
-    partitions: Tree[PartitionPath, Node],
-    pending: Set[PartitionChange],
-    meta: Option[Map[String, Array[Byte]]]
-  }
-
-Some of the other structures used are::
-
-  Node = InetSocketAddress
-
-  Member {
-    node: Node,
-    status: MemberStatus
-  }
-
-  MemberStatus = Joining | Up | Leaving | Exiting | Down | Removed
-
-  PartitionChange {
-    from: Node,
-    to: Node,
-    path: PartitionPath,
-    status: PartitionChangeStatus
-  }
-
-  PartitionChangeStatus = Awaiting | Complete
-
 
 Membership Lifecycle
 --------------------
 
 A node begins in the ``joining`` state. Once all nodes have seen that the new
 node is joining (through gossip convergence) the ``leader`` will set the member
-state to ``up`` and can start assigning partitions :ref:`[*] <niy>` to the new node.
+state to ``up``.
 
 If a node is leaving the cluster in a safe, expected manner then it switches to
-the ``leaving`` state. The ``leader`` will reassign partitions :ref:`[*] <niy>` across the cluster
-(it is possible for a leaving node to itself be the ``leader``). When all partition
-handoff :ref:`[*] <niy>` has completed then the node will change to the ``exiting`` state. Once
-all nodes have seen the exiting state (convergence) the ``leader`` will remove the
-node from the cluster, marking it as ``removed``.
+the ``leaving`` state. Once the leader sees the convergence on the node in the
+``leaving`` state, the leader will then move it to ``exiting``.  Once all nodes
+have seen the exiting state (convergence) the ``leader`` will remove the node
+from the cluster, marking it as ``removed``.
 
-If a node is unreachable then gossip convergence is not possible and therefore
+If a node is ``unreachable`` then gossip convergence is not possible and therefore
 any ``leader`` actions are also not possible (for instance, allowing a node to
-become a part of the cluster, or changing actor distribution). To be able to
-move forward the state of the unreachable nodes must be changed. If the
-unreachable node is experiencing only transient difficulties then it can be
-explicitly marked as ``down`` using the ``down`` user action. This node must be
-restarted and go through the joining process again. If the unreachable node will be
-permanently down then it can be removed from the cluster directly by shutting the actor
-system down or killing it through an external ``SIGKILL`` signal, invocation of 
-``System.exit(status)`` or similar. The cluster can, through the leader, also *auto-down* a node.
+become a part of the cluster). To be able to move forward the state of the
+``unreachable`` nodes must be changed. Currently the only way forward is to mark the
+node as ``down``. If the node is to join the cluster again the actor system must be
+restarted and go through the joining process again. The cluster can, through the
+leader, also *auto-down* a node.
 
-This means that nodes can join and leave the cluster at any point in time, i.e.
-provide cluster elasticity.
+.. note:: If you have *auto-down* enabled and the failure detector triggers, you
+   can over time end up with a lot of single node clusters if you don't put
+   measures in place to shut down nodes that have become ``unreachable``. This
+   follows from the fact that the ``unreachable`` node will likely see the rest of
+   the cluster as ``unreachable``, become its own leader and form its own cluster.
 
 
 State Diagram for the Member States
@@ -305,7 +252,7 @@ Member States
     states during graceful removal
 
 - **down**
-    marked as down/offline/unreachable
+    marked as down (no longer part of cluster decisions)
 
 - **removed**
     tombstone state (no longer a member)
@@ -322,7 +269,7 @@ User Actions
     tell a node to leave the cluster gracefully
 
 - **down**
-    mark a node as temporarily down
+    mark a node as down
 
 
 Leader Actions
@@ -336,14 +283,56 @@ The ``leader`` has the following duties:
 
   - exiting -> removed
 
-- partition distribution :ref:`[*] <niy>`
 
-  - scheduling handoffs (pending changes)
+Failure Detection and Unreachability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  - setting the partition table (partition path -> base node)
+- fd*
+    the failure detector of one of the monitoring nodes has triggered
+    causing the monitored node to be marked as unreachable
 
-  - Automatic rebalancing based on runtime metrics in the system (such as CPU,
-    RAM, Garbage Collection, mailbox depth etc.)
+- unreachable*
+    unreachable is not a real member state but more of a flag in addition
+    to the state signaling that the cluster is unable to talk to this node
+
+
+Future Cluster Enhancements and Additions
+*****************************************
+
+
+Goal
+====
+
+In addition to membership also provide automatic partitioning :ref:`[*] <niy>`,
+handoff :ref:`[*] <niy>`, and cluster rebalancing :ref:`[*] <niy>` of actors.
+
+
+Additional Terms
+================
+
+These additional terms are used in this section.
+
+**partition** :ref:`[*] <niy>`
+  An actor or subtree of actors in the Akka application that is distributed
+  within the cluster.
+
+**partition point** :ref:`[*] <niy>`
+  The actor at the head of a partition. The point around which a partition is
+  formed.
+
+**partition path** :ref:`[*] <niy>`
+  Also referred to as the actor address. Has the format `actor1/actor2/actor3`
+
+**instance count** :ref:`[*] <niy>`
+  The number of instances of a partition in the cluster. Also referred to as the
+  ``N-value`` of the partition.
+
+**instance node** :ref:`[*] <niy>`
+  A node that an actor instance is assigned to.
+
+**partition table** :ref:`[*] <niy>`
+  A mapping from partition path to a set of instance nodes (where the nodes are
+  referred to by the ordinal position given the nodes in sorted order).
 
 
 Partitioning :ref:`[*] <niy>`
@@ -410,6 +399,25 @@ the following, with all instances on the same physical nodes as before::
 When rebalancing is required the ``leader`` will schedule handoffs, gossiping a set
 of pending changes, and when each change is complete the ``leader`` will update the
 partition table.
+
+
+Additional Leader Responsibilities
+----------------------------------
+
+After moving a member from joining to up, the leader can start assigning partitions
+:ref:`[*] <niy>` to the new node, and when a node is ``leaving`` the ``leader`` will
+reassign partitions :ref:`[*] <niy>` across the cluster (it is possible for a leaving
+node to itself be the ``leader``). When all partition handoff :ref:`[*] <niy>` has
+completed then the node will change to the ``exiting`` state.
+
+On convergence the leader can schedule rebalancing across the cluster,
+but it may also be possible for the user to explicitly rebalance the
+cluster by specifying migrations :ref:`[*] <niy>`, or to rebalance :ref:`[*] <niy>`
+the cluster automatically based on metrics from member nodes. Metrics may be spread
+using the gossip protocol or possibly more efficiently using a *random chord* method,
+where the ``leader`` contacts several random nodes around the cluster ring and each
+contacted node gathers information from their immediate neighbours, giving a random
+sampling of load information.
 
 
 Handoff
@@ -632,7 +640,6 @@ storage on top of the Akka Cluster as described in this document are:
 
 .. _Read Repair: http://wiki.apache.org/cassandra/ReadRepair
 
-
 .. _niy:
 
 [*] Not Implemented Yet
@@ -642,4 +649,4 @@ storage on top of the Akka Cluster as described in this document are:
 * Actor handoff
 * Actor rebalancing
 * Stateful actor replication
-
+* Node becoming ``reachable`` after it has been marked as ``unreachable``
