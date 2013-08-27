@@ -37,10 +37,10 @@ object TestActor {
     def run(sender: ActorRef, msg: Any): AutoPilot = sys.error("must not call")
   }
 
-  case class SetIgnore(i: Ignore)
-  case class Watch(ref: ActorRef)
-  case class UnWatch(ref: ActorRef)
-  case class SetAutoPilot(ap: AutoPilot)
+  case class SetIgnore(i: Ignore) extends NoSerializationVerificationNeeded
+  case class Watch(ref: ActorRef) extends NoSerializationVerificationNeeded
+  case class UnWatch(ref: ActorRef) extends NoSerializationVerificationNeeded
+  case class SetAutoPilot(ap: AutoPilot) extends NoSerializationVerificationNeeded
 
   trait Message {
     def msg: AnyRef
