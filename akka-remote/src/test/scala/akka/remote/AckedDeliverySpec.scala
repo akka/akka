@@ -169,6 +169,17 @@ class AckedDeliverySpec extends AkkaSpec {
       b7.nacked must be === Vector.empty
     }
 
+    "throw exception if non-buffered sequence number is NACKed" in {
+      val b0 = new AckedSendBuffer[Sequenced](10)
+      val msg1 = msg(1)
+      val msg2 = msg(2)
+
+      val b1 = b0.buffer(msg1).buffer(msg2)
+      intercept[ResendUnfulfillableException] {
+        b1.acknowledge(Ack(SeqNo(2), nacks = Set(SeqNo(0))))
+      }
+    }
+
   }
 
   "ReceiveBuffer" must {
