@@ -193,7 +193,7 @@ class LightArrayRevolverScheduler(config: Config,
   val TickDuration =
     Duration(config.getMilliseconds("akka.scheduler.tick-duration"), MILLISECONDS)
       .requiring(_ >= 10.millis || !Helpers.isWindows, "minimum supported akka.scheduler.tick-duration on Windows is 10ms")
-      .requiring(_ >= 1.millis, "minimum supported akka.scheduler.tick-duration is ms")
+      .requiring(_ >= 1.millis, "minimum supported akka.scheduler.tick-duration is 1ms")
   val ShutdownTimeout = Duration(config.getMilliseconds("akka.scheduler.shutdown-timeout"), MILLISECONDS)
 
   import LightArrayRevolverScheduler._
