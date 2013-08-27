@@ -71,6 +71,7 @@ object SupervisorHierarchySpec {
       type = "akka.actor.SupervisorHierarchySpec$MyDispatcherConfigurator"
     }
     akka.loglevel = INFO
+    akka.actor.serialize-messages = off
     akka.actor.debug.fsm = on
   """)
 

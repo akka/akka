@@ -28,6 +28,12 @@ object DeathWatchSpec {
    * and therefore the `Terminated` message is wrapped.
    */
   case class WrappedTerminated(t: Terminated)
+
+  case class W(ref: ActorRef)
+  case class U(ref: ActorRef)
+  case class FF(fail: Failed)
+
+  case class Latches(t1: TestLatch, t2: TestLatch) extends NoSerializationVerificationNeeded
 }
 
 trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡’
@@ -126,7 +132,6 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡
 
     "fail a monitor which does not handle Terminated()" in {
       filterEvents(EventFilter[ActorKilledException](), EventFilter[DeathPactException]()) {
-        case class FF(fail: Failed)
         val strategy = new OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider) {
           override def handleFailure(context: ActorContext, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]) = {
             testActor.tell(FF(Failed(child, cause, 0)), child)
@@ -185,13 +190,11 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡
     }
 
     "discard Terminated when unwatched between sysmsg and processing" in {
-      case class W(ref: ActorRef)
-      case class U(ref: ActorRef)
       class Watcher extends Actor {
         def receive = {
           case W(ref) â‡’ context watch ref
           case U(ref) â‡’ context unwatch ref
-          case (t1: TestLatch, t2: TestLatch) â‡’
+          case Latches(t1: TestLatch, t2: TestLatch) â‡’
             t1.countDown()
             Await.ready(t2, 3.seconds)
         }
@@ -201,7 +204,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡
       val w = system.actorOf(Props(new Watcher).withDeploy(Deploy.local), "myDearWatcher")
       val p = TestProbe()
       w ! W(p.ref)
-      w ! ((t1, t2))
+      w ! Latches(t1, t2)
       Await.ready(t1, 3.seconds)
       watch(p.ref)
       system stop p.ref

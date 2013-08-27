@@ -736,6 +736,11 @@ object BackpressureBuffer {
    */
   trait LowWatermarkReached extends Tcp.Event
   case object LowWatermarkReached extends LowWatermarkReached
+
+  /**
+   * INTERNAL API
+   */
+  private[io] case class Ack(num: Int, ack: Tcp.Event) extends Tcp.Event
 }
 
 /**
@@ -768,8 +773,6 @@ class BackpressureBuffer(lowBytes: Long, highBytes: Long, maxBytes: Long)
   require(lowBytes >= 0, "lowWatermark needs to be non-negative")
   require(highBytes >= lowBytes, "highWatermark needs to be at least as large as lowWatermark")
   require(maxBytes >= highBytes, "maxCapacity needs to be at least as large as highWatermark")
-
-  case class Ack(num: Int, ack: Tcp.Event) extends Tcp.Event
 
   override def apply(ctx: HasLogging) = new PipePair[Tcp.Command, Tcp.Command, Tcp.Event, Tcp.Event] {
 

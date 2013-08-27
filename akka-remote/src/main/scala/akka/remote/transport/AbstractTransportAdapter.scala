@@ -120,7 +120,7 @@ abstract class AbstractTransportAdapterHandle(val originalLocalAddress: Address,
 }
 
 object ActorTransportAdapter {
-  sealed trait TransportOperation
+  sealed trait TransportOperation extends NoSerializationVerificationNeeded
 
   case class ListenerRegistered(listener: AssociationEventListener) extends TransportOperation
   case class AssociateUnderlying(remoteAddress: Address, statusPromise: Promise[AssociationHandle]) extends TransportOperation

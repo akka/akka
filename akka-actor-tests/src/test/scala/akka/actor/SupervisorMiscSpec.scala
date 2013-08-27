@@ -17,6 +17,7 @@ import scala.util.control.NonFatal
 
 object SupervisorMiscSpec {
   val config = """
+    akka.actor.serialize-messages = off
     pinned-dispatcher {
       executor = thread-pool-executor
       type = PinnedDispatcher

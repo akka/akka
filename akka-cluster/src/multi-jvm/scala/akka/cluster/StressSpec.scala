@@ -118,6 +118,8 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       exercise-actors = on
     }
 
+    akka.actor.serialize-messages = off
+    akka.actor.serialize-creators = off
     akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.cluster {
       auto-down = on
