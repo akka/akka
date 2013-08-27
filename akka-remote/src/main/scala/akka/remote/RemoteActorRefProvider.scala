@@ -24,6 +24,7 @@ import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
  */
 private[akka] object RemoteActorRefProvider {
   private case class Internals(transport: RemoteTransport, serialization: Serialization, remoteDaemon: InternalActorRef)
+    extends NoSerializationVerificationNeeded
 
   sealed trait TerminatorState
   case object Uninitialized extends TerminatorState

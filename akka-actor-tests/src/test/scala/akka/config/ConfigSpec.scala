@@ -28,8 +28,11 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         settings.ConfigVersion must equal("2.2-SNAPSHOT")
 
         getBoolean("akka.daemonic") must equal(false)
-        getBoolean("akka.actor.serialize-messages") must equal(false)
-        settings.SerializeAllMessages must equal(false)
+
+        // WARNING: This setting must be off in the default reference.conf, but must be on when running
+        // the test suite.
+        getBoolean("akka.actor.serialize-messages") must equal(true)
+        settings.SerializeAllMessages must equal(true)
 
         getInt("akka.scheduler.ticks-per-wheel") must equal(512)
         getMilliseconds("akka.scheduler.tick-duration") must equal(10)

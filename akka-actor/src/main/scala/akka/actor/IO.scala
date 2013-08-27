@@ -243,7 +243,7 @@ object IO {
   /**
    * Messages used to communicate with an [[akka.actor.IOManager]].
    */
-  sealed trait IOMessage
+  sealed trait IOMessage extends NoSerializationVerificationNeeded
 
   /**
    * Message to an [[akka.actor.IOManager]] to create a ServerSocketChannel
@@ -912,6 +912,13 @@ object IOManager extends ExtensionId[IOManager] with ExtensionIdProvider {
     require(readBufferSize <= Int.MaxValue && readBufferSize > 0)
     require(selectInterval > 0)
   }
+
+  /**
+   * INTERNAL API
+   *
+   * unique message that is sent to ourself to initiate the next select
+   */
+  private[akka] case object Select
 }
 
 /**
@@ -922,6 +929,7 @@ object IOManager extends ExtensionId[IOManager] with ExtensionIdProvider {
 final class IOManagerActor(val settings: Settings) extends Actor with ActorLogging {
   import SelectionKey.{ OP_READ, OP_WRITE, OP_ACCEPT, OP_CONNECT }
   import settings.{ defaultBacklog, selectInterval, readBufferSize }
+  import IOManager.Select
 
   private type ReadChannel = ReadableByteChannel with SelectableChannel
   private type WriteChannel = WritableByteChannel with SelectableChannel
@@ -955,9 +963,6 @@ final class IOManagerActor(val settings: Settings) extends Actor with ActorLoggi
    * when there are no pending events.
    */
   private var fastSelect = false
-
-  /** unique message that is sent to ourself to initiate the next select */
-  private case object Select
 
   /** This method should be called after receiving any message */
   private def run() {

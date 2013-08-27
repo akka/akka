@@ -373,12 +373,14 @@ private[remote] object EndpointWriter {
    * used instead.
    * @param handle Handle of the new inbound association.
    */
-  case class TakeOver(handle: AkkaProtocolHandle)
+  case class TakeOver(handle: AkkaProtocolHandle) extends NoSerializationVerificationNeeded
   case object BackoffTimer
   case object FlushAndStop
   case object AckIdleCheckTimer
   case class StopReading(writer: ActorRef)
   case class StoppedReading(writer: ActorRef)
+
+  case class Handle(handle: AkkaProtocolHandle) extends NoSerializationVerificationNeeded
 
   case class OutboundAck(ack: Ack)
 
@@ -460,7 +462,7 @@ private[remote] class EndpointWriter(
           reader = startReadEndpoint(h)
           Writing
         case None ⇒
-          transport.associate(remoteAddress) pipeTo self
+          transport.associate(remoteAddress).mapTo[AkkaProtocolHandle].map(Handle(_)) pipeTo self
           Initializing
       },
       stateData = ())
@@ -474,7 +476,7 @@ private[remote] class EndpointWriter(
       publishAndThrow(new InvalidAssociation(localAddress, remoteAddress, e), Logging.WarningLevel)
     case Event(Status.Failure(e), _) ⇒
       publishAndThrow(new EndpointAssociationException(s"Association failed with [$remoteAddress]", e), Logging.DebugLevel)
-    case Event(inboundHandle: AkkaProtocolHandle, _) ⇒
+    case Event(Handle(inboundHandle), _) ⇒
       // Assert handle == None?
       context.parent ! ReliableDeliverySupervisor.GotUid(inboundHandle.handshakeInfo.uid)
       handle = Some(inboundHandle)

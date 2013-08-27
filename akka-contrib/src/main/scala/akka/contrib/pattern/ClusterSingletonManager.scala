@@ -8,6 +8,7 @@ import scala.concurrent.duration._
 import scala.collection.immutable
 import akka.actor.Actor
 import akka.actor.Actor.Receive
+import akka.actor.Deploy
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.ActorSelection
@@ -38,7 +39,7 @@ object ClusterSingletonManager {
     maxTakeOverRetries: Int = 15,
     retryInterval: FiniteDuration = 1.second): Props =
     Props(classOf[ClusterSingletonManager], singletonProps, singletonName, terminationMessage, role,
-      maxHandOverRetries, maxTakeOverRetries, retryInterval)
+      maxHandOverRetries, maxTakeOverRetries, retryInterval).withDeploy(Deploy.local)
 
   /**
    * Java API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]].
