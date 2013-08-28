@@ -355,12 +355,12 @@ private[remote] abstract class EndpointActor(
   val eventPublisher = new EventPublisher(context.system, log, settings.RemoteLifecycleEventsLogLevel)
 
   def publishError(reason: Throwable, logLevel: Logging.LogLevel): Unit =
-    tryPublish(AssociationErrorEvent(reason, localAddress, remoteAddress, inbound, logLevel))
+    tryPublish(AssociationErrorEvent(reason, localAddress, remoteAddress, inbound), Some(logLevel))
 
-  def publishDisassociated(): Unit = tryPublish(DisassociatedEvent(localAddress, remoteAddress, inbound))
+  def publishDisassociated(): Unit = tryPublish(DisassociatedEvent(localAddress, remoteAddress, inbound), None)
 
-  private def tryPublish(ev: AssociationEvent): Unit = try
-    eventPublisher.notifyListeners(ev)
+  private def tryPublish(ev: AssociationEvent, effectiveLogLevel: Option[Logging.LogLevel]): Unit = try
+    eventPublisher.notifyListeners(ev, effectiveLogLevel)
   catch { case NonFatal(e) ⇒ log.error(e, "Unable to publish error event to EventStream.") }
 }
 
@@ -606,7 +606,7 @@ private[remote] class EndpointWriter(
   onTransition {
     case Initializing -> Writing ⇒
       unstashAll()
-      eventPublisher.notifyListeners(AssociatedEvent(localAddress, remoteAddress, inbound))
+      eventPublisher.notifyListeners(AssociatedEvent(localAddress, remoteAddress, inbound), None)
     case Writing -> Buffering ⇒
       setTimer("backoff-timer", BackoffTimer, settings.BackoffPeriod, repeat = false)
     case Buffering -> Writing ⇒
@@ -621,7 +621,7 @@ private[remote] class EndpointWriter(
       // As the FSM trait does not call super.postStop(), this call is needed
       unstashAll()
       handle foreach { _.disassociate(stopReason) }
-      eventPublisher.notifyListeners(DisassociatedEvent(localAddress, remoteAddress, inbound))
+      eventPublisher.notifyListeners(DisassociatedEvent(localAddress, remoteAddress, inbound), None)
   }
 
   private def trySendPureAck(): Unit = for (h ← handle; ack ← lastAck)

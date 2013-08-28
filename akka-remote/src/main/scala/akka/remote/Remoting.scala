@@ -126,7 +126,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
   val eventPublisher = new EventPublisher(system, log, RemoteLifecycleEventsLogLevel)
 
   private def notifyError(msg: String, cause: Throwable): Unit =
-    eventPublisher.notifyListeners(RemotingErrorEvent(new RemoteTransportException(msg, cause)))
+    eventPublisher.notifyListeners(RemotingErrorEvent(new RemoteTransportException(msg, cause)), None)
 
   override def shutdown(): Future[Unit] = {
     import scala.concurrent.ExecutionContext.Implicits.global
@@ -135,7 +135,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
         implicit val timeout = ShutdownTimeout
 
         def finalize(): Unit = {
-          eventPublisher.notifyListeners(RemotingShutdownEvent)
+          eventPublisher.notifyListeners(RemotingShutdownEvent, None)
           endpointManager = None
         }
 
@@ -184,7 +184,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
           log.info("Remoting started; listening on addresses :" + addresses.mkString("[", ", ", "]"))
 
           manager ! StartupFinished
-          eventPublisher.notifyListeners(RemotingListenEvent(addresses))
+          eventPublisher.notifyListeners(RemotingListenEvent(addresses), None)
 
         } catch {
           case e: TimeoutException ⇒
@@ -532,7 +532,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
             ep ! EndpointWriter.StopReading(ep)
           case _ ⇒
             val writing = settings.UsePassiveConnections && !endpoints.hasWritableEndpointFor(handle.remoteAddress)
-            eventPublisher.notifyListeners(AssociatedEvent(handle.localAddress, handle.remoteAddress, true))
+            eventPublisher.notifyListeners(AssociatedEvent(handle.localAddress, handle.remoteAddress, true), None)
             val endpoint = createEndpoint(
               handle.remoteAddress,
               handle.localAddress,
@@ -640,7 +640,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     if (pendingReadHandoffs.contains(takingOverFrom)) {
       val handle = pendingReadHandoffs(takingOverFrom)
       pendingReadHandoffs -= takingOverFrom
-      eventPublisher.notifyListeners(AssociatedEvent(handle.localAddress, handle.remoteAddress, true))
+      eventPublisher.notifyListeners(AssociatedEvent(handle.localAddress, handle.remoteAddress, true), None)
       val endpoint = createEndpoint(
         handle.remoteAddress,
         handle.localAddress,
