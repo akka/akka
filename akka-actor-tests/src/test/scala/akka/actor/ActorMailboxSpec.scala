@@ -128,6 +128,8 @@ object ActorMailboxSpec {
 
   class StashQueueReportingActor extends QueueReportingActor with Stash
 
+  class StashQueueReportingActorWithParams(i: Int, s: String) extends StashQueueReportingActor
+
   val UnboundedMailboxTypes = Seq(classOf[UnboundedMessageQueueSemantics])
   val BoundedMailboxTypes = Seq(classOf[BoundedMessageQueueSemantics])
   val UnboundedDeqMailboxTypes = Seq(
@@ -174,6 +176,12 @@ class ActorMailboxSpec(conf: Config) extends AkkaSpec(conf) with DefaultTimeout 
     "get an unbounded deque message queue when it's only mixed with Stash" in {
       checkMailboxQueue(Props[StashQueueReportingActor],
         "default-override-from-stash", UnboundedDeqMailboxTypes)
+      checkMailboxQueue(Props(new StashQueueReportingActor),
+        "default-override-from-stash2", UnboundedDeqMailboxTypes)
+      checkMailboxQueue(Props(classOf[StashQueueReportingActorWithParams], 17, "hello"),
+        "default-override-from-stash3", UnboundedDeqMailboxTypes)
+      checkMailboxQueue(Props(new StashQueueReportingActorWithParams(17, "hello")),
+        "default-override-from-stash4", UnboundedDeqMailboxTypes)
     }
 
     "get a bounded message queue when it's configured as mailbox" in {
