@@ -63,18 +63,8 @@ object Props {
   }
 
   /**
-   * Returns a Props that has default values except for "creator" which will be a function that creates an instance
+   * Scala API: Returns a Props that has default values except for "creator" which will be a function that creates an instance
    * of the supplied type using the default constructor.
-   *
-   * CAVEAT: Required mailbox type cannot be detected when mixing in a trait "dynamically"
-   * when creating the instance. For example, the following will not detect the need for
-   * `DequeBasedMessageQueueSemantics` as defined in `Stash`:
-   * {{{
-   * 'Props(new Actor with Stash { ... })
-   * }}}
-   * Instead you must statically define `with Stash` in your actor class.
-   *
-   * Scala API.
    */
   def apply[T <: Actor: ClassTag](): Props = apply(defaultDeploy, implicitly[ClassTag[T]].runtimeClass, Vector.empty)
 
@@ -88,6 +78,15 @@ object Props {
   /**
    * Scala API: Returns a Props that has default values except for "creator" which will be a function that creates an instance
    * using the supplied thunk.
+   *
+   * CAVEAT: Required mailbox type cannot be detected when using anonymous mixin composition
+   * when creating the instance. For example, the following will not detect the need for
+   * `DequeBasedMessageQueueSemantics` as defined in `Stash`:
+   * {{{
+   * 'Props(new Actor with Stash { ... })
+   * }}}
+   * Instead you must create a named class that mixin the trait, 
+   * e.g. `class MyActor extends Actor with Stash`.
    */
   def apply[T <: Actor: ClassTag](creator: ⇒ T): Props =
     mkProps(implicitly[ClassTag[T]].runtimeClass, () ⇒ creator)
