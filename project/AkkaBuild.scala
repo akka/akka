@@ -14,6 +14,7 @@ import com.typesafe.sbtosgi.OsgiPlugin.{ OsgiKeys, osgiSettings }
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
+import com.typesafe.tools.mima.plugin.MimaKeys.binaryIssueFilters
 import com.typesafe.sbt.SbtSite.site
 import com.typesafe.sbt.site.SphinxSupport
 import com.typesafe.sbt.site.SphinxSupport.{ enableOutput, generatePdf, generatedPdf, generateEpub, generatedEpub, sphinxInputs, sphinxPackages, Sphinx }
@@ -886,9 +887,56 @@ object AkkaBuild extends Build {
       file
   }
 
+  lazy val mimaIgnoredProblems = {
+    import com.typesafe.tools.mima.core._
+    Seq(
+      // private case object inside a final class moved outside from class
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.IOManagerActor.akka$actor$IOManagerActor$$Select"),
+
+      // case classes Get, Select, StartWatch, Query, Kick, defined inside trait Inbox were moved outside to companion
+      // class to avoid closing over enclosing class. While Inbox is a trait it has self-type annotation ActorDSL.type
+      // making it impossible to mix in to anything else than the object ActorDSL
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.dsl.Inbox#Get.akka$actor$dsl$Inbox$Get$$$outer"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.dsl.Inbox#Get.this"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.dsl.Inbox#Select.this"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.dsl.Inbox#Select.akka$actor$dsl$Inbox$Select$$$outer"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.dsl.Inbox#StartWatch.akka$actor$dsl$Inbox$StartWatch$$$outer"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.dsl.Inbox#StartWatch.this"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.dsl.Inbox#Get.this"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.dsl.Inbox#Select.this"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.dsl.Inbox#StartWatch.this"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.dsl.Inbox.akka$actor$dsl$Inbox$$Get"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.dsl.Inbox.akka$actor$dsl$Inbox$$Select"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.dsl.Inbox.akka$actor$dsl$Inbox$$Kick"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.dsl.Inbox.akka$actor$dsl$Inbox$$StartWatch"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorDSL.akka$actor$dsl$Inbox$$Get"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorDSL.akka$actor$dsl$Inbox$$Select"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorDSL.akka$actor$dsl$Inbox$$Kick"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorDSL.akka$actor$dsl$Inbox$$StartWatch"),
+
+      // internal class marked with private[io] and INTERNAL API marker (and inside actor)
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpOutgoingConnection.connecting"),
+
+      // internal classes marked with private[remote] and INTERNAL API markers (most of them are inside actors, too)
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.EventPublisher.notifyListeners"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.EndpointActor.publishError"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.EndpointReader.props"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.ReliableDeliverySupervisor.nextSeq"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.EventPublisher.this"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.EndpointReader.this"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.EndpointWriter.akka$remote$EndpointWriter$$publishAndThrow"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.remote.transport.ThrottlerManager$OriginResolved$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.remote.transport.ThrottlerManager$OriginResolved"),
+
+      // inside package akka.camel.internal marked as private[camel] and INTERNAL API (and also inside actor)
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.camel.internal.Registry.supervisorStrategy")
+    )
+  }
+
   lazy val mimaSettings = mimaDefaultSettings ++ Seq(
     // MiMa
-    previousArtifact := None
+    previousArtifact := None,
+    binaryIssueFilters ++= mimaIgnoredProblems
   )
 
   def akkaPreviousArtifact(id: String, organization: String = "com.typesafe.akka", version: String = "2.2.0", 
