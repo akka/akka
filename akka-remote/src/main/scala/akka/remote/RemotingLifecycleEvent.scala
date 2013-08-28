@@ -5,6 +5,7 @@ package akka.remote
 
 import akka.event.{ LoggingAdapter, Logging }
 import akka.actor.{ ActorSystem, Address }
+import akka.event.Logging.LogLevel
 
 @SerialVersionUID(1L)
 sealed trait RemotingLifecycleEvent extends Serializable {
@@ -50,8 +51,8 @@ final case class AssociationErrorEvent(
   cause: Throwable,
   localAddress: Address,
   remoteAddress: Address,
-  inbound: Boolean,
-  logLevel: Logging.LogLevel) extends AssociationEvent {
+  inbound: Boolean) extends AssociationEvent {
+  override def logLevel: Logging.LogLevel = Logging.ErrorLevel
   protected override def eventName: String = "AssociationError"
   override def toString: String = s"${super.toString}: Error [${cause.getMessage}] [${Logging.stackTraceFor(cause)}]"
   def getCause: Throwable = cause
@@ -81,9 +82,11 @@ final case class RemotingErrorEvent(cause: Throwable) extends RemotingLifecycleE
 /**
  * INTERNAL API
  */
-private[remote] class EventPublisher(system: ActorSystem, log: LoggingAdapter, logLevel: Logging.LogLevel) {
-  def notifyListeners(message: RemotingLifecycleEvent): Unit = {
+private[remote] class EventPublisher(system: ActorSystem, log: LoggingAdapter, logLevel: LogLevel) {
+  // NOTE: overrideLogLevel is a workaround because no additional field can be added to
+  // case class AssociationErrorEvent. This is properly fixed in 2.3
+  def notifyListeners(message: RemotingLifecycleEvent, overrideLogLevel: Option[LogLevel]): Unit = {
     system.eventStream.publish(message)
-    if (logLevel <= message.logLevel) log.log(message.logLevel, "{}", message)
+    if (logLevel <= overrideLogLevel.getOrElse(message.logLevel)) log.log(message.logLevel, "{}", message)
   }
 }

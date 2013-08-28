@@ -10,7 +10,7 @@ import scala.util.{ Try, Success, Failure }
 import java.nio.ByteOrder
 import akka.util.ByteString
 import scala.collection.mutable
-import akka.actor.ActorContext
+import akka.actor.{ NoSerializationVerificationNeeded, ActorContext }
 import scala.concurrent.duration.FiniteDuration
 import scala.collection.mutable.WrappedArray
 import scala.concurrent.duration.Deadline
@@ -737,10 +737,6 @@ object BackpressureBuffer {
   trait LowWatermarkReached extends Tcp.Event
   case object LowWatermarkReached extends LowWatermarkReached
 
-  /**
-   * INTERNAL API
-   */
-  private[io] case class Ack(num: Int, ack: Tcp.Event) extends Tcp.Event
 }
 
 /**
@@ -773,6 +769,10 @@ class BackpressureBuffer(lowBytes: Long, highBytes: Long, maxBytes: Long)
   require(lowBytes >= 0, "lowWatermark needs to be non-negative")
   require(highBytes >= lowBytes, "highWatermark needs to be at least as large as lowWatermark")
   require(maxBytes >= highBytes, "maxCapacity needs to be at least as large as highWatermark")
+
+  // WARNING: Closes over enclosing class -- cannot moved outside because of backwards binary compatibility
+  // Fixed in 2.3
+  case class Ack(num: Int, ack: Tcp.Event) extends Tcp.Event with NoSerializationVerificationNeeded
 
   override def apply(ctx: HasLogging) = new PipePair[Tcp.Command, Tcp.Command, Tcp.Event, Tcp.Event] {
 
