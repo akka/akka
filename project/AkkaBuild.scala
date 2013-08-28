@@ -413,11 +413,11 @@ object AkkaBuild extends Build {
     base = file("akka-sbt-plugin"),
     settings = defaultSettings ++ Seq(
       sbtPlugin := true,
+      sbtVersion in Global := "0.13.0-RC1",
+      scalaVersion in Global := "2.10.2",
       publishMavenStyle := false, // SBT Plugins should be published as Ivy
       publishTo <<= Publish.akkaPluginPublishTo,
-      scalacOptions in Compile := Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
-      scalaVersion := "2.9.2",
-      scalaBinaryVersion <<= scalaVersion
+      scalacOptions in Compile := Seq("-encoding", "UTF-8", "-deprecation", "-unchecked")
     )
   )
 
