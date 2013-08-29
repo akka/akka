@@ -17,15 +17,17 @@ our $author;
 
 my $input;
 if (@ARGV > 0) {
-  open $input, "git log --shortstat -z --minimal -w -C $ARGV[0]|" or die "cannot open pipe for $ARGV[0]: $!\n";
+  open $input, "git log --no-merges --shortstat -z --minimal -w -C $ARGV[0]|" or die "cannot open pipe for $ARGV[0]: $!\n";
 } else {
   $input = \*STDIN;
 }
 
 while (<$input>) {
   ($author) = /Author: (.*) </;
-  my ($insert, $delete) = /files? changed, (\d+) insert.* (\d+) delet/;
-  next unless defined $insert;
+  my ($insert, $delete) = /files? changed(?:, (\d+) insertions?\(\+\))?(?:, (\d+) delet)?/;
+  next unless defined $author;
+  $insert = 0 unless defined $insert;
+  $delete = 0 unless defined $delete;
   $auth{$author} = [0, 0, 0] unless defined($auth{$author});
   my @l = @{$auth{$author}};
   $auth{$author} = [$l[0] + 1, $l[1] + $insert, $l[2] + $delete];
