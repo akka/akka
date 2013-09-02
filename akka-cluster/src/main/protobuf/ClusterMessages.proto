@@ -112,11 +112,8 @@ message Gossip {
  * Gossip Overview
  */
 message GossipOverview {
-  message Seen {
-    required int32 addressIndex = 1;
-    required VectorClock version = 2;
-  }
-  repeated Seen seen = 1;
+  /* This is the address indexes for the nodes that have seen this gossip */
+  repeated int32 seen = 1;
   repeated Member unreachable = 2;
 }
 
