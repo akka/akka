@@ -14,6 +14,7 @@ import akka.actor.SupervisorStrategy.Stop
 import akka.cluster.MemberStatus._
 import akka.cluster.ClusterEvent._
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import scala.collection.breakOut
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -593,9 +594,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       val comparison = remoteGossip.version compareTo localGossip.version
 
       val (winningGossip, talkback, gossipType) = comparison match {
-        case VectorClock.Concurrent ⇒
-          // conflicting versions, merge
-          (remoteGossip merge localGossip, true, Merge)
         case VectorClock.Same ⇒
           // same version
           (remoteGossip mergeSeen localGossip, !remoteGossip.seenByNode(selfUniqueAddress), Same)
@@ -605,6 +603,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         case VectorClock.After ⇒
           // remote is newer
           (remoteGossip, !remoteGossip.seenByNode(selfUniqueAddress), Newer)
+        case _ ⇒
+          // conflicting versions, merge
+          (remoteGossip merge localGossip, true, Merge)
       }
 
       latestGossip = winningGossip seen selfUniqueAddress
@@ -657,15 +658,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
       val preferredGossipTargets: Vector[UniqueAddress] =
         if (ThreadLocalRandom.current.nextDouble() < GossipDifferentViewProbability) { // If it's time to try to gossip to some nodes with a different view
-          // gossip to a random alive member with preference to a member with older or newer gossip version
-          val localMemberAddressesSet = localGossip.members map { _.uniqueAddress }
-          val nodesWithDifferentView = for {
-            (node, version) ← localGossip.overview.seen
-            if localMemberAddressesSet contains node
-            if version != localGossip.version
-          } yield node
-
-          nodesWithDifferentView.toVector
+          // gossip to a random alive member with preference to a member with older gossip version
+          localGossip.members.filterNot(m ⇒ localGossip.seenByNode(m.uniqueAddress)).map(_.uniqueAddress)(breakOut)
         } else Vector.empty[UniqueAddress]
 
       if (preferredGossipTargets.nonEmpty) {
@@ -917,8 +911,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   def updateLatestGossip(newGossip: Gossip): Unit = {
     // Updating the vclock version for the changes
     val versionedGossip = newGossip :+ vclockNode
-    // Updating the `seen` table
-    val seenVersionedGossip = versionedGossip seen selfUniqueAddress
+    // Nobody else have seen this gossip but us
+    val seenVersionedGossip = versionedGossip onlySeen (selfUniqueAddress)
     // Update the state with the new gossip
     latestGossip = seenVersionedGossip
   }
