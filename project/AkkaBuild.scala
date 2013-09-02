@@ -914,6 +914,9 @@ object AkkaBuild extends Build {
       ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorDSL.akka$actor$dsl$Inbox$$Kick"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorDSL.akka$actor$dsl$Inbox$$StartWatch"),
 
+      // removed method that was local to the VectorClock.compareTo method
+      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.VectorClock.akka$cluster$VectorClock$$olderOrSameIn$1"),
+
       // internal class marked with private[io] and INTERNAL API marker (and inside actor)
       ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpOutgoingConnection.connecting"),
 
