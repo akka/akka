@@ -39,7 +39,7 @@ trait Aggregator {
    * @param fn The receive function.
    * @return The same receive function.
    */
-  def expectOnce(fn: Actor.Receive) = {
+  def expectOnce(fn: Actor.Receive): Actor.Receive = {
     expectList += fn
     fn
   }
@@ -49,7 +49,7 @@ trait Aggregator {
    * @param fn The receive function.
    * @return The same receive function.
    */
-  def expect(fn: Actor.Receive) = {
+  def expect(fn: Actor.Receive): Actor.Receive = {
     implicit val permanent = true
     expectList += fn
     fn
@@ -60,7 +60,7 @@ trait Aggregator {
    * @param fn The receive function.
    * @return True if the partial function is removed, false if not found.
    */
-  def unexpect(fn: Actor.Receive) = {
+  def unexpect(fn: Actor.Receive): Boolean = {
     expectList -= fn
   }
 
@@ -68,10 +68,15 @@ trait Aggregator {
    * Receive function for handling the aggregations.
    */
   def receive: Actor.Receive = {
-    case msg if handleResponse(msg) ⇒ // already dealt with in handleResponse
+    case msg if handleMessage(msg) ⇒ // already dealt with in handleMessage
   }
 
-  def handleResponse(msg: Any) = {
+  /**
+   * Handles messages and matches against the expect list.
+   * @param msg The message to be handled.
+   * @return true if message is successfully processed, false otherwise.
+   */
+  def handleMessage(msg: Any): Boolean = {
     expectList process { fn ⇒
       var processed = true
       fn.applyOrElse(msg, (_: Any) ⇒ processed = false)

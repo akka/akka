@@ -2,11 +2,11 @@
 
 Aggregator Pattern
 ==================
-It is currently not straightforward to write an actor that aggregates data from
-multiple other actors and updates its state based on those responses. It is even
-harder to optionally aggregate more data based on the runtime state of the actor
-or take certain actions (sending another message and get another response) based
-on two or more previous responses.
+The aggregator pattern supports writing actors that aggregate data from multiple
+other actors and updates its state based on those responses. It is even harder to
+optionally aggregate more data based on the runtime state of the actor or take
+certain actions (sending another message and get another response) based on two or
+more previous responses.
 
 A common thought is to use the ask pattern to request information from other
 actors. However, ask creates another actor specifically for the ask. We cannot
@@ -21,7 +21,7 @@ Introduction
 The aggregator pattern allows match patterns to be dynamically added to and removed
 from an actor from inside the message handling logic. All match patterns are called
 from the receive loop and run in the thread handling the incoming message. By
-itself, the dynamically added receive logic will by itself never cause close-overs.
+itself, the dynamically added receive logic will not cause close-overs.
 
 Usage
 -----
@@ -73,13 +73,22 @@ A shorter example showing aggregating responses and chaining further requests.
 
 Pitfalls
 --------
-The current implementation does not match the sender of the message. This is designed
-to work with :class:`ActorSelection` as well as :class:`ActorRef`. Without the sender,
-there is a chance a received message can be matched by more than one partial function.
-The partial function that was registered via :class:`expect` or :class:`expectOnce`
-first (chronologically) and is not yet de-registered by :class:`unexpect` takes
-precedence in this case. Developers should make sure the messages can be uniquely
-matched or the wrong logic can be executed for a certain message.
+* The current implementation does not match the sender of the message. This is
+  designed to work with :class:`ActorSelection` as well as :class:`ActorRef`.
+  Without the sender, there is a chance a received message can be matched by
+  more than one partial function. The partial function that was registered via
+  :class:`expect` or :class:`expectOnce` first (chronologically) and is not yet
+  de-registered by :class:`unexpect` takes precedence in this case. Developers
+  should make sure the messages can be uniquely matched or the wrong logic can
+  be executed for a certain message.
+
+* The :class:`sender` referenced in any :class:`expect` or :class:`expectOnce`
+  logic refers to the sender of that particular message and not the sender of
+  the original message. The original sender still needs to be saved so a final
+  response can be sent back.
+
+* :class:`context.become` is not supported when extending the :class:`Aggregator`
+  trait.
 
 
 Sorry, there is not yet a Java implementation of the aggregator pattern available.

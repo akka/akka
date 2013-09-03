@@ -104,9 +104,7 @@ class AccountBalanceRetriever extends Actor with Aggregator {
       }
     else collectBalances() // Empty type list yields empty response
 
-    context.system.scheduler.scheduleOnce(250 milliseconds) {
-      self ! TimedOut
-    }
+    context.system.scheduler.scheduleOnce(1 second, self, TimedOut)
     //#expect-timeout
     expect {
       case TimedOut => collectBalances(force = true)
@@ -177,9 +175,8 @@ class ChainingSample extends Actor with Aggregator {
     val values = ArrayBuffer.empty[String]
 
     context.actorSelection("/user/request_proxies") ! Request(propName)
-    context.system.scheduler.scheduleOnce(50 milliseconds) {
-      self ! TimedOut
-    }
+    context.system.scheduler.scheduleOnce(50 milliseconds, self, TimedOut)
+
     //#unexpect-sample
     val handle = expect {
       case Response(name, value) =>
