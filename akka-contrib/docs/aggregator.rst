@@ -26,11 +26,11 @@ itself, the dynamically added receive logic will not cause close-overs.
 Usage
 -----
 To use the aggregator pattern, you need to extend the :class:`Aggregator` trait.
-The trait takes care of receive. You must not override receive without delegating to
-the trait. The trait provides the :class:`expect`, :class:`expectOnce`, and
-:class:`unexpect` calls. The :class:`expect` and :class:`expectOnce` calls return
-a handle that can be used for later de-registration by passing the handle to
-:class:`unexpect`.
+The trait takes care of :class:`receive` and actors extending this trait should
+not override :class:`receive`. The trait provides the :class:`expect`,
+:class:`expectOnce`, and :class:`unexpect` calls. The :class:`expect` and
+:class:`expectOnce` calls return a handle that can be used for later de-registration
+by passing the handle to :class:`unexpect`.
 
 :class:`expect` is often used for standing matches such as catching error messages or timeouts.
 
@@ -89,6 +89,14 @@ Pitfalls
 
 * :class:`context.become` is not supported when extending the :class:`Aggregator`
   trait.
+
+* We strongly recommend against overriding :class:`receive`. If your use case
+  really dictates, you may do so with extreme caution. Always provide a pattern
+  match handling aggregator messages among your :class:`receive` pattern matches,
+  as follows::
+
+    case msg if handleMessage(msg) ⇒ // noop
+    // side effects of handleMessage does the actual match
 
 
 Sorry, there is not yet a Java implementation of the aggregator pattern available.
