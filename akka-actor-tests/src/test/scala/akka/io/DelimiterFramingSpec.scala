@@ -123,7 +123,7 @@ class DelimiterFramingSpec extends AkkaSpec("akka.actor.serialize-creators = on"
 
     def receive: Receive = {
       case Listener(ref) ⇒ listener = ref
-      case Connected(remote, _) ⇒
+      case Connected(remote, _, _) ⇒
         val init =
           TcpPipelineHandler.withLogger(log,
             new StringByteStringAdapter >>

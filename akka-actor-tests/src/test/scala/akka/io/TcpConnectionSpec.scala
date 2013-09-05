@@ -140,7 +140,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         serverSideChannel.configureBlocking(false)
 
         selector.send(connectionActor, ChannelConnectable)
-        userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
+        userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress], None))
 
         userHandler.send(connectionActor, Register(userHandler.ref))
         userHandler.expectMsgType[Received].data.decodeString("ASCII") must be("immediatedata")
@@ -540,7 +540,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         localServerChannel.accept()
 
         selector.send(connectionActor, ChannelConnectable)
-        userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
+        userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress], None))
 
         verifyActorTermination(connectionActor)
       }
@@ -570,6 +570,7 @@ class TcpConnectionSpec extends AkkaSpec("""
 
     "support ResumeWriting (backed up)" in new EstablishedConnectionTest() {
       run {
+        ignoreIfWindows() // This test fails on Windows
         val writer = TestProbe()
         val write = writeCmd(NoAck)
 
@@ -785,7 +786,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         serverSideChannel must not be (null)
 
         selector.send(connectionActor, ChannelConnectable)
-        userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
+        userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress], None))
 
         userHandler.send(connectionActor, Register(connectionHandler.ref, keepOpenOnPeerClosed, useResumeWriting))
         interestCallReceiver.expectMsg(OP_READ)

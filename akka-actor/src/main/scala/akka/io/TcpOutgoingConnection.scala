@@ -25,7 +25,7 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
                                         channelRegistry: ChannelRegistry,
                                         commander: ActorRef,
                                         connect: Connect)
-  extends TcpConnection(_tcp, SocketChannel.open().configureBlocking(false).asInstanceOf[SocketChannel]) {
+  extends TcpConnection(_tcp, SocketChannel.open().configureBlocking(false).asInstanceOf[SocketChannel], connect.correlationId) {
 
   import connect._
 

@@ -135,7 +135,7 @@ object BackpressureSpec {
 
     def bound(port: Int): Receive = {
       case GetPort ⇒ sender ! Port(port)
-      case Tcp.Connected(local, remote) ⇒
+      case Tcp.Connected(local, remote, _) ⇒
         val init = TcpPipelineHandler.withLogger(log,
           new TcpReadWriteAdapter >>
             new BackpressureBuffer(10000, 1000000, Long.MaxValue))

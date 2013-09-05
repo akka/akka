@@ -25,7 +25,7 @@ import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
  *
  * INTERNAL API
  */
-private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketChannel)
+private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketChannel, val correlationId: Option[Any])
   extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import tcp.Settings._
@@ -172,7 +172,8 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
     commander ! Connected(
       channel.socket.getRemoteSocketAddress.asInstanceOf[InetSocketAddress],
-      channel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress])
+      channel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress],
+      correlationId)
 
     context.setReceiveTimeout(RegisterTimeout)
     context.become(waitingForRegistration(registration, commander))

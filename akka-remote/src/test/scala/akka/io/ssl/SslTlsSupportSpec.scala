@@ -202,7 +202,7 @@ class SslTlsSupportSpec extends AkkaSpec {
     }
 
     def bound(listener: ActorRef): Receive = {
-      case Connected(remote, _) ⇒
+      case Connected(remote, _, _) ⇒
         val init = TcpPipelineHandler.withLogger(log,
           new StringByteStringAdapter("utf-8") >>
             new DelimiterFraming(maxSize = 1024, delimiter = ByteString('\n'),

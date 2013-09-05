@@ -102,7 +102,7 @@ private[io] class TcpListener(selectorRouter: ActorRef,
       log.debug("New connection accepted")
       socketChannel.configureBlocking(false)
       def props(registry: ChannelRegistry) =
-        Props(classOf[TcpIncomingConnection], tcp, socketChannel, registry, bind.handler, bind.options)
+        Props(classOf[TcpIncomingConnection], tcp, socketChannel, registry, bind.handler, bind.options, bind.connectionCorrelationId)
       selectorRouter ! WorkerForCommand(RegisterIncoming(socketChannel), self, props)
       acceptAllPending(registration, limit - 1)
     } else registration.enableInterest(SelectionKey.OP_ACCEPT)
