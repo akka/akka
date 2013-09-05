@@ -82,8 +82,13 @@ abstract class RemoteNodeRestartDeathWatchSpec
 
         expectTerminated(subject, 15.seconds)
 
-        system.actorSelection(RootActorPath(secondAddress) / "user" / "subject") ! "shutdown"
-        expectMsg("shutdown-ack")
+        within(5.seconds) {
+          // retry because the Subject actor might not be started yet
+          awaitAssert {
+            system.actorSelection(RootActorPath(secondAddress) / "user" / "subject") ! "shutdown"
+            expectMsg(1.second, "shutdown-ack")
+          }
+        }
       }
 
       runOn(second) {
