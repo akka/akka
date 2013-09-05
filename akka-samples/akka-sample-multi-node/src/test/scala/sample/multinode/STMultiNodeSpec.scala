@@ -5,7 +5,7 @@
 package sample.multinode
 
 //#imports
-import org.scalatest.{ BeforeAndAfterAll, WordSpec }
+import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
 import org.scalatest.matchers.MustMatchers
 import akka.remote.testkit.MultiNodeSpecCallbacks
 //#imports
@@ -15,7 +15,7 @@ import akka.remote.testkit.MultiNodeSpecCallbacks
  * Hooks up MultiNodeSpec with ScalaTest
  */
 trait STMultiNodeSpec extends MultiNodeSpecCallbacks
-  with WordSpec with MustMatchers with BeforeAndAfterAll {
+  with WordSpecLike with MustMatchers with BeforeAndAfterAll {
 
   override def beforeAll() = multiNodeSpecBeforeAll()
 

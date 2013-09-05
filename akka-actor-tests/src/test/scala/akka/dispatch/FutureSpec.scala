@@ -14,7 +14,7 @@ import scala.concurrent.{ Await, Awaitable, Future, Promise, ExecutionContext }
 import scala.util.control.NonFatal
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
-import org.scalatest.junit.JUnitSuite
+import org.scalatest.junit.JUnitSuiteLike
 import scala.runtime.NonLocalReturnControl
 import akka.pattern.ask
 import java.lang.{ IllegalStateException, ArithmeticException }
@@ -54,7 +54,7 @@ object FutureSpec {
   case class Res[T](res: T)
 }
 
-class JavaFutureSpec extends JavaFutureTests with JUnitSuite
+class JavaFutureSpec extends JavaFutureTests with JUnitSuiteLike
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with DefaultTimeout {
