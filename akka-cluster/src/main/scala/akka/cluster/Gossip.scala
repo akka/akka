@@ -5,7 +5,6 @@
 package akka.cluster
 
 import scala.collection.immutable
-import scala.collection.immutable.TreeMap
 import MemberStatus._
 
 /**
@@ -80,11 +79,10 @@ private[cluster] case class Gossip(
         format (allowedLiveMemberStatus.mkString(", "),
           (members filter hasNotAllowedLiveMemberStatus).mkString(", ")))
 
-    val seenButNotMember = overview.seen.keySet -- members.map(_.uniqueAddress) -- overview.unreachable.map(_.uniqueAddress)
+    val seenButNotMember = overview.seen -- members.map(_.uniqueAddress) -- overview.unreachable.map(_.uniqueAddress)
     if (seenButNotMember.nonEmpty)
       throw new IllegalArgumentException("Nodes not part of cluster have marked the Gossip as seen, got [%s]"
         format seenButNotMember.mkString(", "))
-
   }
 
   /**
@@ -102,53 +100,34 @@ private[cluster] case class Gossip(
 
   /**
    * Marks the gossip as seen by this node (address) by updating the address entry in the 'gossip.overview.seen'
-   * Map with the VectorClock (version) for the new gossip.
    */
   def seen(node: UniqueAddress): Gossip = {
     if (seenByNode(node)) this
-    else this copy (overview = overview copy (seen = overview.seen + (node -> version)))
+    else this copy (overview = overview copy (seen = overview.seen + node))
   }
 
   /**
-   * The nodes that have seen current version of the Gossip.
+   * Marks the gossip as seen by only this node (address) by replacing the 'gossip.overview.seen'
    */
-  def seenBy: Set[UniqueAddress] = {
-    overview.seen.collect {
-      case (node, vclock) if vclock == version ⇒ node
-    }.toSet
+  def onlySeen(node: UniqueAddress): Gossip = {
+    this copy (overview = overview copy (seen = Set(node)))
   }
+
+  /**
+   * The nodes that have seen the current version of the Gossip.
+   */
+  def seenBy: Set[UniqueAddress] = overview.seen
 
   /**
    * Has this Gossip been seen by this node.
    */
-  def seenByNode(node: UniqueAddress): Boolean = {
-    overview.seen.get(node).exists(_ == version)
-  }
-
-  private def mergeSeenTables(allowed: immutable.SortedSet[Member],
-                              one: TreeMap[UniqueAddress, VectorClock],
-                              another: TreeMap[UniqueAddress, VectorClock]): TreeMap[UniqueAddress, VectorClock] =
-    (TreeMap.empty[UniqueAddress, VectorClock] /: allowed) {
-      (merged, member) ⇒
-        val node = member.uniqueAddress
-        (one.get(node), another.get(node)) match {
-          case (None, None)     ⇒ merged
-          case (Some(v1), None) ⇒ merged.updated(node, v1)
-          case (None, Some(v2)) ⇒ merged.updated(node, v2)
-          case (Some(v1), Some(v2)) ⇒
-            v1 compareTo v2 match {
-              case VectorClock.Same | VectorClock.After ⇒ merged.updated(node, v1)
-              case VectorClock.Before                   ⇒ merged.updated(node, v2)
-              case VectorClock.Concurrent               ⇒ merged
-            }
-        }
-    }
+  def seenByNode(node: UniqueAddress): Boolean = overview.seen(node)
 
   /**
    * Merges the seen table of two Gossip instances.
    */
   def mergeSeen(that: Gossip): Gossip =
-    this copy (overview = overview copy (seen = mergeSeenTables(members, overview.seen, that.overview.seen)))
+    this copy (overview = overview copy (seen = overview.seen ++ that.overview.seen))
 
   /**
    * Merges two Gossip instances including membership tables, and the VectorClock histories.
@@ -166,8 +145,8 @@ private[cluster] case class Gossip(
     //    and exclude unreachable
     val mergedMembers = Gossip.emptyMembers ++ Member.pickHighestPriority(this.members, that.members).filterNot(mergedUnreachable.contains)
 
-    // 4. merge seen table
-    val mergedSeen = mergeSeenTables(mergedMembers, overview.seen, that.overview.seen)
+    // 4. Nobody can have seen this new gossip yet
+    val mergedSeen = Set.empty[UniqueAddress]
 
     Gossip(mergedMembers, GossipOverview(mergedSeen, mergedUnreachable), mergedVClock)
   }
@@ -237,7 +216,7 @@ private[cluster] case class Gossip(
  */
 @SerialVersionUID(1L)
 private[cluster] case class GossipOverview(
-  seen: TreeMap[UniqueAddress, VectorClock] = TreeMap.empty,
+  seen: Set[UniqueAddress] = Set.empty,
   unreachable: Set[Member] = Set.empty) {
 
   override def toString =
