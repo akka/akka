@@ -144,8 +144,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
     val addressMapping = allAddresses.zipWithIndex.toMap
     val allRoles = allMembers.foldLeft(Set.empty[String])((acc, m) ⇒ acc ++ m.roles).to[Vector]
     val roleMapping = allRoles.zipWithIndex.toMap
-    val allHashes = gossip.overview.seen.values.foldLeft(gossip.version.versions.keys.toSet)(
-      { case (s, VectorClock(v)) ⇒ s ++ v.keys }).to[Vector]
+    val allHashes = gossip.version.versions.keys.to[Vector]
     val hashMapping = allHashes.zipWithIndex.toMap
 
     def mapUniqueAddress(uniqueAddress: UniqueAddress) = mapWithErrorMessage(addressMapping, uniqueAddress, "address")
@@ -155,14 +154,9 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
       msg.Member(mapUniqueAddress(member.uniqueAddress), member.upNumber,
         msg.MemberStatus.valueOf(memberStatusToInt(member.status)), member.roles.map(mapRole)(breakOut))
 
-    def seenToProto(seen: (UniqueAddress, VectorClock)) = {
-      val (address, version) = seen
-      msg.GossipOverview.Seen(mapUniqueAddress(address), vectorClockToProto(version, hashMapping))
-    }
-
     val unreachable: Vector[msg.Member] = gossip.overview.unreachable.map(memberToProto)(breakOut)
     val members: Vector[msg.Member] = gossip.members.map(memberToProto)(breakOut)
-    val seen: Vector[msg.GossipOverview.Seen] = gossip.overview.seen.map(seenToProto)(breakOut)
+    val seen: Vector[Int] = gossip.overview.seen.map(mapUniqueAddress)(breakOut)
 
     val overview = msg.GossipOverview(seen, unreachable)
 
@@ -202,12 +196,9 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
       new Member(addressMapping(member.addressIndex), member.upNumber, memberStatusFromInt(member.status.id),
         member.rolesIndexes.map(roleMapping)(breakOut))
 
-    def seenFromProto(seen: msg.GossipOverview.Seen) =
-      (addressMapping(seen.addressIndex), vectorClockFromProto(seen.version, hashMapping))
-
     val members: immutable.SortedSet[Member] = gossip.members.map(memberFromProto)(breakOut)
     val unreachable: immutable.Set[Member] = gossip.overview.unreachable.map(memberFromProto)(breakOut)
-    val seen: immutable.TreeMap[UniqueAddress, VectorClock] = gossip.overview.seen.map(seenFromProto)(breakOut)
+    val seen: Set[UniqueAddress] = gossip.overview.seen.map(addressMapping)(breakOut)
     val overview = GossipOverview(seen, unreachable)
 
     Gossip(members, overview, vectorClockFromProto(gossip.version, hashMapping))

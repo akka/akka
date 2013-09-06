@@ -105,17 +105,14 @@ class GossipSpec extends WordSpec with MustMatchers {
       val g3 = (g1 copy (version = g2.version)).seen(d1.uniqueAddress)
 
       def checkMerged(merged: Gossip) {
-        val keys = merged.overview.seen.keys.toSeq
-        keys.length must be(4)
-        keys.toSet must be(Set(a1.uniqueAddress, b1.uniqueAddress, c1.uniqueAddress, d1.uniqueAddress))
+        val seen = merged.overview.seen.toSeq
+        seen.length must be(0)
 
-        merged seenByNode (a1.uniqueAddress) must be(true)
+        merged seenByNode (a1.uniqueAddress) must be(false)
         merged seenByNode (b1.uniqueAddress) must be(false)
-        merged seenByNode (c1.uniqueAddress) must be(true)
-        merged seenByNode (d1.uniqueAddress) must be(true)
+        merged seenByNode (c1.uniqueAddress) must be(false)
+        merged seenByNode (d1.uniqueAddress) must be(false)
         merged seenByNode (e1.uniqueAddress) must be(false)
-
-        merged.overview.seen(b1.uniqueAddress) must be(g1.version)
       }
 
       checkMerged(g3 merge g2)
