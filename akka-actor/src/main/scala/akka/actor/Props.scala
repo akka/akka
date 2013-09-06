@@ -85,7 +85,7 @@ object Props {
    * {{{
    * 'Props(new Actor with Stash { ... })
    * }}}
-   * Instead you must create a named class that mixin the trait, 
+   * Instead you must create a named class that mixin the trait,
    * e.g. `class MyActor extends Actor with Stash`.
    */
   def apply[T <: Actor: ClassTag](creator: ⇒ T): Props =
