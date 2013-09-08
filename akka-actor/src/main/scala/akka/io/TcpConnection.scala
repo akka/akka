@@ -179,7 +179,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
                       options: immutable.Traversable[SocketOption]): Unit = {
     // Turn off Nagle's algorithm by default
     channel.socket.setTcpNoDelay(true)
-    options.foreach(_.afterConnect(channel.socket))
+    options.foreach(_.afterConnect(channel))
 
     commander ! Connected(
       channel.socket.getRemoteSocketAddress.asInstanceOf[InetSocketAddress],
