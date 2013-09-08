@@ -4,6 +4,7 @@
 package akka.io
 
 import java.net.{ DatagramSocket, Socket, ServerSocket }
+import java.nio.channels.DatagramChannel
 
 object Inet {
 
@@ -26,6 +27,12 @@ object Inet {
      * the slave socket for servers).
      */
     def afterConnect(s: Socket): Unit = ()
+
+    /**
+     * Action to be taken for this option after connect returned (i.e. on
+     * the slave socket for servers).
+     */
+    def afterConnect(c: DatagramChannel): Unit = ()
   }
 
   object SO {
