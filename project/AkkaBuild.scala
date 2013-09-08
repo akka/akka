@@ -1047,7 +1047,7 @@ object Dependencies {
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.2"       // MIT
     val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % "0.0.7"       // ApacheV2
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
-    val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "0.3.2"       // ApacheV2
+    val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "1.1.0"       // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
     val osgiCompendium= "org.osgi"                    % "org.osgi.compendium"          % "4.2.0"       // ApacheV2
 
@@ -1072,7 +1072,7 @@ object Dependencies {
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
       val scalatest    = "org.scalatest"              %% "scalatest"                    % "1.9.2-SNAP2"      % "test" // ApacheV2
       val scalacheck   = "org.scalacheck"             %% "scalacheck"                   % "1.10.0"           % "test" // New BSD
-      val ariesProxy   = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3"              % "test" // ApacheV2
+      val ariesProxy   = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "1.0.1"              % "test" // ApacheV2
       val pojosr       = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"            % "test" // ApacheV2
       val tinybundles  = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
       val log4j        = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
