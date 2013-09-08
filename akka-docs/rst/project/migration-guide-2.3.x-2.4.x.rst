@@ -51,6 +51,21 @@ Which turns out to be useful in many systems where same-state transitions actual
 
 In case you do *not* want to trigger a state transition event when effectively performing an ``X->X`` transition, use ``stay()`` instead.
 
+SocketOption's method signature changed to access channel
+=========================================================
+Server Socket Methods have been changed to take a channel instead of a socket.  The channel's socket can be retrieved by calling ``channel.socket``.  This allows for accessing new NIO features in Java 7.
+
+========================================  =====================================
+                 2.3                                      2.4
+========================================  =====================================
+``beforeDatagramBind(DatagramSocket)``    ``beforeBind(DatagramChannel)``
+``beforeServerSocketBind(ServerSocket)``  ``beforeBind(ServerSocketChannel)``
+``beforeConnect(Socket)``                 ``beforeBind(SocketChannel)``
+\                                         ``afterConnect(DatagramChannel)``
+\                                         ``afterConnect(ServerSocketChannel)``
+``afterConnect(Socket)``                  ``afterConnect(SocketChannel)``
+========================================  =====================================
+
 Removed Deprecated Features
 ===========================
 

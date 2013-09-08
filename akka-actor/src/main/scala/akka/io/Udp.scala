@@ -3,8 +3,8 @@
  */
 package akka.io
 
-import java.net.DatagramSocket
 import java.net.InetSocketAddress
+import java.nio.channels.DatagramChannel
 import com.typesafe.config.Config
 import scala.collection.immutable
 import akka.io.Inet.{ SoJavaFactories, SocketOption }
@@ -180,7 +180,7 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
      * For more information see [[java.net.DatagramSocket#setBroadcast]]
      */
     final case class Broadcast(on: Boolean) extends SocketOption {
-      override def beforeDatagramBind(s: DatagramSocket): Unit = s.setBroadcast(on)
+      override def beforeBind(c: DatagramChannel): Unit = c.socket.setBroadcast(on)
     }
 
   }
