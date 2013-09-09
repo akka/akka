@@ -29,7 +29,7 @@ that transaction. Agents are integrated with Scala STM - any dispatches made in
 a transaction are held until that transaction commits, and are discarded if it
 is retried or aborted.
 
-Agents are local to the node on which they are created. This implies that you
+.. note::Agents are local to the node on which they are created. This implies that you
 should generally not include them in messages that may be passed to remote Actors
 or as constructor parameters for remote Actors; those remote Actors will not be able to
 read or update the Agent.
