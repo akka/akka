@@ -4,9 +4,7 @@
 
 package akka.cluster
 
-import java.net.InetSocketAddress
 import akka.testkit.AkkaSpec
-import akka.actor.ActorSystem
 
 class VectorClockSpec extends AkkaSpec {
   import VectorClock._
@@ -119,6 +117,19 @@ class VectorClockSpec extends AkkaSpec {
 
       clock5_1 <> clock3_2 must be(true)
       clock3_2 <> clock5_1 must be(true)
+    }
+
+    "pass misc comparison test 8" in {
+      val clock1_1 = VectorClock()
+      val clock2_1 = clock1_1 :+ Node.fromHash("1")
+      val clock3_1 = clock2_1 :+ Node.fromHash("3")
+
+      val clock1_2 = clock3_1 :+ Node.fromHash("2")
+
+      val clock4_1 = clock3_1 :+ Node.fromHash("3")
+
+      clock4_1 <> clock1_2 must be(true)
+      clock1_2 <> clock4_1 must be(true)
     }
 
     "correctly merge two clocks" in {
