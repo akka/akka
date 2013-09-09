@@ -50,6 +50,15 @@ The ``sender`` of the response messages, as seen by the client, is preserved
 as the original sender, so the client can choose to send subsequent messages
 directly to the actor in the cluster.
 
+While establishing a connection to a receptionist the ``ClusterClient`` will buffer
+messages and send them when the connection is established. If the buffer is full
+the ``ClusterClient`` will throw ``akka.actor.StashOverflowException``, which can be
+handled in by the supervision strategy of the parent actor. The size of the buffer 
+can be configured by the following ``stash-capacity`` setting of the mailbox that is 
+used by the ``ClusterClient`` actor. 
+
+.. includecode:: @contribSrc@/src/main/resources/reference.conf#cluster-client-mailbox-config
+
 An Example
 ----------
 

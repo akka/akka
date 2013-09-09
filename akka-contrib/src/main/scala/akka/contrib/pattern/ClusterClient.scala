@@ -27,6 +27,7 @@ import akka.cluster.Member
 import akka.cluster.MemberStatus
 import akka.routing.ConsistentHash
 import akka.routing.MurmurHash
+import akka.actor.Stash
 
 object ClusterClient {
 
@@ -37,7 +38,8 @@ object ClusterClient {
     initialContacts: Set[ActorSelection],
     pingInterval: FiniteDuration = 3.second,
     refreshContactsInterval: FiniteDuration = 1.minute): Props =
-    Props(classOf[ClusterClient], initialContacts, pingInterval, refreshContactsInterval)
+    Props(classOf[ClusterClient], initialContacts, pingInterval, refreshContactsInterval).
+      withMailbox("akka.contrib.cluster.client.mailbox")
 
   /**
    * Java API: Factory method for `ClusterClient` [[akka.actor.Props]].
@@ -112,7 +114,7 @@ class ClusterClient(
   initialContacts: Set[ActorSelection],
   pingInterval: FiniteDuration,
   refreshContactsInterval: FiniteDuration)
-  extends Actor with ActorLogging {
+  extends Actor with Stash with ActorLogging {
 
   import ClusterClient._
   import ClusterClient.Internal._
@@ -143,12 +145,13 @@ class ClusterClient(
     case ActorIdentity(_, Some(receptionist)) ⇒
       context watch receptionist
       log.info("Connected to [{}]", receptionist.path)
+      unstashAll()
       context.become(active(receptionist))
     case ActorIdentity(_, None) ⇒ // ok, use another instead
     case PingTick               ⇒ sendGetContacts()
     case Pong                   ⇒
     case RefreshContactsTick    ⇒
-    case msg                    ⇒ context.system.deadLetters forward msg
+    case msg                    ⇒ stash()
   }
 
   def active(receptionist: ActorRef): Actor.Receive = {
