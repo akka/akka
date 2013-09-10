@@ -6,7 +6,6 @@ import akka.actor.ActorSystem;
 import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.contrib.pattern.ClusterSingletonManager;
-import akka.contrib.pattern.ClusterSingletonPropsFactory;
 
 public class StatsSampleOneMasterMain {
 
@@ -23,13 +22,9 @@ public class StatsSampleOneMasterMain {
 
     //#create-singleton-manager
     system.actorOf(ClusterSingletonManager.defaultProps(
-      "statsService", PoisonPill.getInstance(), "compute",
-      new ClusterSingletonPropsFactory() {
-        @Override
-        public Props create(Object handOverData) {
-          return Props.create(StatsService.class);
-        }
-      }), "singleton");
+      Props.create(StatsService.class),  
+      "statsService", PoisonPill.getInstance(), "compute"), 
+      "singleton");
     //#create-singleton-manager
 
     system.actorOf(Props.create(StatsFacade.class), "statsFacade");
