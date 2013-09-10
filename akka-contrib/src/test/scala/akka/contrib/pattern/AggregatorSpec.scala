@@ -6,6 +6,7 @@ package akka.contrib.pattern
 import akka.testkit.{ ImplicitSender, TestKit }
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
+import scala.annotation.tailrec
 
 //#demo-code
 import scala.collection._
@@ -318,6 +319,33 @@ class WorkListSpec extends FunSuite {
 
     assert(!processed2)
 
+  }
+
+  test("Append two lists") {
+    workList.removeAll()
+    0 to 4 foreach { id ⇒ workList.add(TestEntry(id), permanent = false) }
+
+    val l2 = new WorkList[TestEntry]
+    5 to 9 foreach { id ⇒ l2.add(TestEntry(id), permanent = true) }
+
+    workList addAll l2
+
+    @tailrec
+    def checkEntries(id: Int, entry: WorkList.Entry[TestEntry]): Int = {
+      if (entry == null) id
+      else {
+        assert(entry.ref.get.id === id)
+        checkEntries(id + 1, entry.next)
+      }
+    }
+
+    assert(checkEntries(0, workList.head.next) === 10)
+  }
+
+  test("Clear list") {
+    workList.removeAll()
+    assert(workList.head.next === null)
+    assert(workList.tail === workList.head)
   }
 
   val workList2 = WorkList.empty[PartialFunction[Any, Unit]]

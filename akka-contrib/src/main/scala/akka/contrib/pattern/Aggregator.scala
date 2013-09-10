@@ -12,7 +12,9 @@ import scala.annotation.tailrec
 trait Aggregator {
   this: Actor ⇒
 
+  private var processing = false
   private val expectList = WorkList.empty[Actor.Receive]
+  private val addBuffer = WorkList.empty[Actor.Receive]
 
   /**
    * Adds the partial function to the receive set, to be removed on first match.
@@ -20,7 +22,8 @@ trait Aggregator {
    * @return The same receive function.
    */
   def expectOnce(fn: Actor.Receive): Actor.Receive = {
-    expectList.add(fn, permanent = false)
+    if (processing) addBuffer.add(fn, permanent = false)
+    else expectList.add(fn, permanent = false)
     fn
   }
 
@@ -30,7 +33,8 @@ trait Aggregator {
    * @return The same receive function.
    */
   def expect(fn: Actor.Receive): Actor.Receive = {
-    expectList.add(fn, permanent = true)
+    if (processing) addBuffer.add(fn, permanent = true)
+    else expectList.add(fn, permanent = true)
     fn
   }
 
@@ -40,7 +44,9 @@ trait Aggregator {
    * @return True if the partial function is removed, false if not found.
    */
   def unexpect(fn: Actor.Receive): Boolean = {
-    expectList remove fn
+    if (expectList remove fn) true
+    else if (processing && (addBuffer remove fn)) true
+    else false
   }
 
   /**
@@ -56,10 +62,17 @@ trait Aggregator {
    * @return true if message is successfully processed, false otherwise.
    */
   def handleMessage(msg: Any): Boolean = {
-    expectList process { fn ⇒
-      var processed = true
-      fn.applyOrElse(msg, (_: Any) ⇒ processed = false)
-      processed
+    processing = true
+    try {
+      expectList process { fn ⇒
+        var processed = true
+        fn.applyOrElse(msg, (_: Any) ⇒ processed = false)
+        processed
+      }
+    } finally {
+      processing = false
+      expectList addAll addBuffer
+      addBuffer.removeAll()
     }
   }
 }
@@ -157,5 +170,31 @@ class WorkList[T] {
     }
 
     if (head.next == null) false else process(head, head.next)
+  }
+
+  /**
+   * Appends another WorkList to this WorkList.
+   * @param other The other WorkList
+   * @return This WorkList
+   */
+  def addAll(other: WorkList[T]) = {
+    if (other.head.next != null) {
+      tail.next = other.head.next
+      tail = other.tail
+    }
+    this
+  }
+
+  /**
+   * Removes all entries from this WorkList
+   * @return True if at least one entry is removed. False if none is removed.
+   */
+  def removeAll() = {
+    if (head.next == null) false
+    else {
+      head.next = null
+      tail = head
+      true
+    }
   }
 }
