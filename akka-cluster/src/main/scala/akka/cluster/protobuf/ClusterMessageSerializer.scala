@@ -185,7 +185,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
 
   private def vectorClockToProto(version: VectorClock, hashMapping: Map[String, Int]): msg.VectorClock = {
     val versions: Vector[msg.VectorClock.Version] = version.versions.map({
-      case (n, t) ⇒ msg.VectorClock.Version(mapWithErrorMessage(hashMapping, n, "hash"), t.time)
+      case (n, t) ⇒ msg.VectorClock.Version(mapWithErrorMessage(hashMapping, n, "hash"), t)
     })(breakOut)
     msg.VectorClock(None, versions)
   }
@@ -242,7 +242,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
 
   private def vectorClockFromProto(version: msg.VectorClock, hashMapping: immutable.Seq[String]) = {
     VectorClock(version.versions.map({
-      case msg.VectorClock.Version(h, t) ⇒ (VectorClock.Node.fromHash(hashMapping(h)), VectorClock.Timestamp(t))
+      case msg.VectorClock.Version(h, t) ⇒ (VectorClock.Node.fromHash(hashMapping(h)), t)
     })(breakOut))
   }
 
