@@ -3,7 +3,7 @@
  */
 package akka.contrib.pattern
 
-import akka.testkit.{ImplicitSender, TestKit}
+import akka.testkit.{ ImplicitSender, TestKit }
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
 
@@ -39,19 +39,19 @@ case object CantUnderstand
 
 class SavingsAccountProxy extends Actor {
   def receive = {
-    case GetAccountBalances(id: Long) =>
+    case GetAccountBalances(id: Long) ⇒
       sender ! SavingsAccountBalances(Some(List((1, 150000), (2, 29000))))
   }
 }
 class CheckingAccountProxy extends Actor {
   def receive = {
-    case GetAccountBalances(id: Long) =>
+    case GetAccountBalances(id: Long) ⇒
       sender ! CheckingAccountBalances(Some(List((3, 15000))))
   }
 }
 class MoneyMarketAccountProxy extends Actor {
   def receive = {
-    case GetAccountBalances(id: Long) =>
+    case GetAccountBalances(id: Long) ⇒
       sender ! MoneyMarketAccountBalances(None)
   }
 }
@@ -62,9 +62,9 @@ class AccountBalanceRetriever extends Actor with Aggregator {
 
   //#initial-expect
   expectOnce {
-    case GetCustomerAccountBalances(id, types) =>
+    case GetCustomerAccountBalances(id, types) ⇒
       new AccountAggregator(sender, id, types)
-    case _ =>
+    case _ ⇒
       sender ! CantUnderstand
       context.stop(self)
   }
@@ -78,16 +78,16 @@ class AccountBalanceRetriever extends Actor with Aggregator {
 
     if (types.size > 0)
       types foreach {
-        case Checking => fetchCheckingAccountsBalance()
-        case Savings => fetchSavingsAccountsBalance()
-        case MoneyMarket => fetchMoneyMarketAccountsBalance()
+        case Checking    ⇒ fetchCheckingAccountsBalance()
+        case Savings     ⇒ fetchSavingsAccountsBalance()
+        case MoneyMarket ⇒ fetchMoneyMarketAccountsBalance()
       }
     else collectBalances() // Empty type list yields empty response
 
     context.system.scheduler.scheduleOnce(1 second, self, TimedOut)
     //#expect-timeout
     expect {
-      case TimedOut => collectBalances(force = true)
+      case TimedOut ⇒ collectBalances(force = true)
     }
     //#expect-timeout
 
@@ -95,7 +95,7 @@ class AccountBalanceRetriever extends Actor with Aggregator {
     def fetchCheckingAccountsBalance() {
       context.actorOf(Props[CheckingAccountProxy]) ! GetAccountBalances(id)
       expectOnce {
-        case CheckingAccountBalances(balances) =>
+        case CheckingAccountBalances(balances) ⇒
           results += (Checking -> balances)
           collectBalances()
       }
@@ -105,7 +105,7 @@ class AccountBalanceRetriever extends Actor with Aggregator {
     def fetchSavingsAccountsBalance() {
       context.actorOf(Props[SavingsAccountProxy]) ! GetAccountBalances(id)
       expectOnce {
-        case SavingsAccountBalances(balances) =>
+        case SavingsAccountBalances(balances) ⇒
           results += (Savings -> balances)
           collectBalances()
       }
@@ -114,7 +114,7 @@ class AccountBalanceRetriever extends Actor with Aggregator {
     def fetchMoneyMarketAccountsBalance() {
       context.actorOf(Props[MoneyMarketAccountProxy]) ! GetAccountBalances(id)
       expectOnce {
-        case MoneyMarketAccountBalances(balances) =>
+        case MoneyMarketAccountBalances(balances) ⇒
           results += (MoneyMarket -> balances)
           collectBalances()
       }
@@ -144,7 +144,7 @@ case class FinalResponse(qualifiedValues: List[String])
 class ChainingSample extends Actor with Aggregator {
 
   expectOnce {
-    case InitialRequest(name) => new MultipleResponseHandler(sender, name)
+    case InitialRequest(name) ⇒ new MultipleResponseHandler(sender, name)
   }
 
   class MultipleResponseHandler(originalSender: ActorRef, propName: String) {
@@ -159,10 +159,10 @@ class ChainingSample extends Actor with Aggregator {
 
     //#unexpect-sample
     val handle = expect {
-      case Response(name, value) =>
+      case Response(name, value) ⇒
         values += value
         if (values.size > 3) processList()
-      case TimedOut => processList()
+      case TimedOut ⇒ processList()
     }
 
     def processList() {
@@ -171,7 +171,7 @@ class ChainingSample extends Actor with Aggregator {
       if (values.size > 0) {
         context.actorSelection("/user/evaluator") ! values.toList
         expectOnce {
-          case EvaluationResults(name, eval) => processFinal(eval)
+          case EvaluationResults(name, eval) ⇒ processFinal(eval)
         }
       } else processFinal(List.empty[Int])
     }
@@ -188,23 +188,23 @@ class ChainingSample extends Actor with Aggregator {
 
 class AggregatorSpec extends TestKit(ActorSystem("test")) with ImplicitSender with FunSuite with ShouldMatchers {
 
-  test ("Test request 1 account type") {
+  test("Test request 1 account type") {
     system.actorOf(Props[AccountBalanceRetriever]) ! GetCustomerAccountBalances(1, Set(Savings))
     receiveOne(10 seconds) match {
-      case result: List[_] =>
+      case result: List[_] ⇒
         result should have size 1
-      case result =>
+      case result ⇒
         assert(condition = false, s"Expect List, got ${result.getClass}")
     }
   }
 
-  test ("Test request 3 account types") {
+  test("Test request 3 account types") {
     system.actorOf(Props[AccountBalanceRetriever]) !
       GetCustomerAccountBalances(1, Set(Checking, Savings, MoneyMarket))
     receiveOne(10 seconds) match {
-      case result: List[_] =>
+      case result: List[_] ⇒
         result should have size 3
-      case result =>
+      case result ⇒
         assert(condition = false, s"Expect List, got ${result.getClass}")
     }
   }
@@ -218,104 +218,102 @@ class WorkListSpec extends FunSuite {
   var entry2: TestEntry = null
   var entry4: TestEntry = null
 
-  test ("Processing empty WorkList") {
+  test("Processing empty WorkList") {
     // ProcessAndRemove something in the middle
     val processed = workList process {
-      case TestEntry(9) => true
-      case _ => false
+      case TestEntry(9) ⇒ true
+      case _            ⇒ false
     }
     assert(!processed)
   }
 
-  test ("Insert temp entries") {
-    assert(workList.head === null)
-    assert(workList.tail === null)
+  test("Insert temp entries") {
+    assert(workList.head === workList.tail)
 
     val entry0 = TestEntry(0)
-    workList += entry0
+    workList.add(entry0, permanent = false)
 
-    assert(workList.head != null)
-    assert(workList.tail === workList.head)
-    assert(workList.head.ref === entry0)
+    assert(workList.head.next != null)
+    assert(workList.tail === workList.head.next)
+    assert(workList.tail.ref.get === entry0)
 
     val entry1 = TestEntry(1)
-    workList += entry1
+    workList.add(entry1, permanent = false)
 
-    assert(workList.head != workList.tail)
-    assert(workList.head.ref === entry0)
-    assert(workList.tail.ref === entry1)
+    assert(workList.head.next != workList.tail)
+    assert(workList.head.next.ref.get === entry0)
+    assert(workList.tail.ref.get === entry1)
 
     entry2 = TestEntry(2)
-    workList += entry2
+    workList.add(entry2, permanent = false)
 
-    assert(workList.tail.ref === entry2)
+    assert(workList.tail.ref.get === entry2)
 
     val entry3 = TestEntry(3)
-    workList += entry3
+    workList.add(entry3, permanent = false)
 
-    assert(workList.tail.ref === entry3)
+    assert(workList.tail.ref.get === entry3)
   }
 
-  test ("Process temp entries") {
+  test("Process temp entries") {
 
     // ProcessAndRemove something in the middle
-    assert (workList process {
-      case TestEntry(2) => true
-      case _ => false
+    assert(workList process {
+      case TestEntry(2) ⇒ true
+      case _            ⇒ false
     })
 
     // ProcessAndRemove the head
-    assert (workList process {
-      case TestEntry(0) => true
-      case _ => false
+    assert(workList process {
+      case TestEntry(0) ⇒ true
+      case _            ⇒ false
     })
 
     // ProcessAndRemove the tail
-    assert (workList process {
-      case TestEntry(3) => true
-      case _ => false
+    assert(workList process {
+      case TestEntry(3) ⇒ true
+      case _            ⇒ false
     })
   }
 
-  test ("Re-insert permanent entry") {
-    implicit val permanent = true
+  test("Re-insert permanent entry") {
     entry4 = TestEntry(4)
-    workList += entry4
+    workList.add(entry4, permanent = true)
 
-    assert(workList.tail.ref === entry4)
+    assert(workList.tail.ref.get === entry4)
   }
 
-  test ("Process permanent entry") {
-    assert (workList process {
-      case TestEntry(4) => true
-      case _ => false
+  test("Process permanent entry") {
+    assert(workList process {
+      case TestEntry(4) ⇒ true
+      case _            ⇒ false
     })
   }
 
-  test ("Remove permanent entry") {
-    val removed = workList -= entry4
+  test("Remove permanent entry") {
+    val removed = workList remove entry4
     assert(removed)
   }
 
-  test ("Remove temp entry already processed") {
-    val removed = workList -= entry2
+  test("Remove temp entry already processed") {
+    val removed = workList remove entry2
     assert(!removed)
   }
 
-  test ("Process non-matching entries") {
+  test("Process non-matching entries") {
 
     val processed =
       workList process {
-        case TestEntry(2) => true
-        case _ => false
+        case TestEntry(2) ⇒ true
+        case _            ⇒ false
       }
 
     assert(!processed)
 
     val processed2 =
       workList process {
-        case TestEntry(5) => true
-        case _ => false
+        case TestEntry(5) ⇒ true
+        case _            ⇒ false
       }
 
     assert(!processed2)
@@ -325,37 +323,36 @@ class WorkListSpec extends FunSuite {
   val workList2 = WorkList.empty[PartialFunction[Any, Unit]]
 
   val fn1: PartialFunction[Any, Unit] = {
-    case s: String =>
-      implicit val permanent = true
-      workList2 += fn2
-  }
-
-  val fn2: PartialFunction[Any, Unit] = {
-    case s: String =>
-      val result1 = workList2 -= fn2
+    case s: String ⇒
+      val result1 = workList2 remove fn1
       assert(result1 === true, "First remove must return true")
-      val result2 = workList2 -= fn2
+      val result2 = workList2 remove fn1
       assert(result2 === false, "Second remove must return false")
   }
 
-  test ("Reentrant insert") {
-    workList2 += fn1
-    assert(workList2.head != null)
-    assert(workList2.tail == workList2.head)
+  val fn2: PartialFunction[Any, Unit] = {
+    case s: String ⇒
+      workList2.add(fn1, permanent = true)
+  }
+
+  test("Reentrant insert") {
+    workList2.add(fn2, permanent = false)
+    assert(workList2.head.next != null)
+    assert(workList2.tail == workList2.head.next)
 
     // Processing inserted fn1, reentrant adding fn2
-    workList2 process { fn =>
+    workList2 process { fn ⇒
       var processed = true
-      fn.applyOrElse("Foo", (_: Any) => processed = false)
+      fn.applyOrElse("Foo", (_: Any) ⇒ processed = false)
       processed
     }
   }
 
-  test ("Reentrant delete") {
+  test("Reentrant delete") {
     // Processing inserted fn2, should delete itself
-    workList2 process { fn =>
+    workList2 process { fn ⇒
       var processed = true
-      fn.applyOrElse("Foo", (_: Any) => processed = false)
+      fn.applyOrElse("Foo", (_: Any) ⇒ processed = false)
       processed
     }
   }

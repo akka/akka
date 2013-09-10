@@ -20,7 +20,7 @@ trait Aggregator {
    * @return The same receive function.
    */
   def expectOnce(fn: Actor.Receive): Actor.Receive = {
-    expectList += fn
+    expectList.add(fn, permanent = false)
     fn
   }
 
@@ -30,8 +30,7 @@ trait Aggregator {
    * @return The same receive function.
    */
   def expect(fn: Actor.Receive): Actor.Receive = {
-    implicit val permanent = true
-    expectList += fn
+    expectList.add(fn, permanent = true)
     fn
   }
 
@@ -41,7 +40,7 @@ trait Aggregator {
    * @return True if the partial function is removed, false if not found.
    */
   def unexpect(fn: Actor.Receive): Boolean = {
-    expectList -= fn
+    expectList remove fn
   }
 
   /**
@@ -74,11 +73,11 @@ object WorkList {
 
   /**
    * Singly linked list entry implementation for WorkList.
-   * @param ref The item reference
+   * @param ref The item reference, None for head entry
    * @param permanent If the entry is to be kept after processing
    * @tparam T The type of the item
    */
-  class Entry[T](val ref: T, val permanent: Boolean) {
+  class Entry[T](val ref: Option[T], val permanent: Boolean) {
     var next: Entry[T] = null
     var isDeleted = false
   }
@@ -95,20 +94,20 @@ class WorkList[T] {
 
   import WorkList._
 
-  var head: Entry[T] = null
-  var tail: Entry[T] = null
+  val head = new Entry[T](None, true)
+  var tail = head
 
   /**
    * Appends an entry to the work list.
    * @param ref The entry.
    * @return The updated work list.
    */
-  def +=(ref: T)(implicit permanent: Boolean = false) = {
-    if (tail == null) {
-      tail = new Entry[T](ref, permanent)
-      head = tail
+  def add(ref: T, permanent: Boolean) = {
+    if (tail == head) {
+      tail = new Entry[T](Some(ref), permanent)
+      head.next = tail
     } else {
-      tail.next = new Entry[T](ref, permanent)
+      tail.next = new Entry[T](Some(ref), permanent)
       tail = tail.next
     }
     this
@@ -119,11 +118,11 @@ class WorkList[T] {
    * @param ref The entry.
    * @return True if the entry is removed, false if the entry is not found.
    */
-  def -=(ref: T): Boolean = {
+  def remove(ref: T): Boolean = {
 
     @tailrec
     def remove(parent: Entry[T], entry: Entry[T]): Boolean = {
-      if (entry.ref == ref) {
+      if (entry.ref.get == ref) {
         parent.next = entry.next // Remove entry
         if (tail == entry) tail = parent
         entry.isDeleted = true
@@ -132,16 +131,7 @@ class WorkList[T] {
       else false
     }
 
-    // Outer function body...
-    val entry = head
-    if (entry == null) false
-    else if (entry.ref == ref) {
-      head = entry.next // Remove entry at head
-      if (tail == entry) tail = head
-      entry.isDeleted = true
-      true
-    } else if (entry.next != null) remove(entry, entry.next)
-    else false
+    if (head.next == null) false else remove(head, head.next)
   }
 
   /**
@@ -154,7 +144,7 @@ class WorkList[T] {
 
     @tailrec
     def process(parent: Entry[T], entry: Entry[T]): Boolean = {
-      val processed = processFn(entry.ref)
+      val processed = processFn(entry.ref.get)
       if (processed) {
         if (!entry.permanent && !entry.isDeleted) {
           parent.next = entry.next // Remove entry
@@ -166,20 +156,6 @@ class WorkList[T] {
       else false
     }
 
-    // Outer function body...
-    val entry = head
-    if (entry == null) false
-    else {
-      val processed = processFn(entry.ref)
-      if (processed) {
-        if (!entry.permanent && !entry.isDeleted) {
-          head = entry.next // Remove entry at head
-          if (tail == entry) tail = head
-          entry.isDeleted = true
-        }
-        true // Handled
-      } else if (entry.next != null) process(entry, entry.next)
-      else false
-    }
+    if (head.next == null) false else process(head, head.next)
   }
 }

@@ -20,8 +20,9 @@ Introduction
 ------------
 The aggregator pattern allows match patterns to be dynamically added to and removed
 from an actor from inside the message handling logic. All match patterns are called
-from the receive loop and run in the thread handling the incoming message. By
-itself, the dynamically added receive logic will not cause close-overs.
+from the receive loop and run in the thread handling the incoming message. These
+dynamically added patterns and logic can safely read and/or modify this actor's
+mutable state without risking integrity or concurrency issues.
 
 Usage
 -----
