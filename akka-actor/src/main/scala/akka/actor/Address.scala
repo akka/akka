@@ -40,6 +40,9 @@ final case class Address private (protocol: String, system: String, host: Option
    */
   def hasGlobalScope: Boolean = host.isDefined
 
+  // store hashCode
+  @transient override lazy val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
+
   /**
    * Returns the canonical String representation of this Address formatted as:
    *

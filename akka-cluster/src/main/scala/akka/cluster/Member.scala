@@ -90,7 +90,8 @@ object Member {
    */
   implicit val addressOrdering: Ordering[Address] = Ordering.fromLessThan[Address] { (a, b) ⇒
     // cluster node identifier is the host and port of the address; protocol and system is assumed to be the same
-    if (a.host != b.host) a.host.getOrElse("").compareTo(b.host.getOrElse("")) < 0
+    if (a eq b) false
+    else if (a.host != b.host) a.host.getOrElse("").compareTo(b.host.getOrElse("")) < 0
     else if (a.port != b.port) a.port.getOrElse(0) < b.port.getOrElse(0)
     else false
   }

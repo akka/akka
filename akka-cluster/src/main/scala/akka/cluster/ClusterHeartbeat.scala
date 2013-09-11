@@ -330,18 +330,12 @@ private[cluster] case class HeartbeatNodeRing(selfAddress: Address, nodes: Set[A
 
   private val nodeRing: immutable.SortedSet[Address] = {
     implicit val ringOrdering: Ordering[Address] = Ordering.fromLessThan[Address] { (a, b) ⇒
-      val ha = hashFor(a)
-      val hb = hashFor(b)
+      val ha = a.##
+      val hb = b.##
       ha < hb || (ha == hb && Member.addressOrdering.compare(a, b) < 0)
     }
 
     immutable.SortedSet() ++ nodes
-  }
-
-  private def hashFor(node: Address): Int = node match {
-    // cluster node identifier is the host and port of the address; protocol and system is assumed to be the same
-    case Address(_, _, Some(host), Some(port)) ⇒ MurmurHash.stringHash(s"${host}:${port}")
-    case _                                     ⇒ 0
   }
 
   /**
