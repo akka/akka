@@ -63,8 +63,7 @@ private[cluster] case class Gossip(
   overview: GossipOverview = GossipOverview(),
   version: VectorClock = VectorClock()) { // vector clock version
 
-  // TODO can be disabled as optimization
-  assertInvariants()
+  if (Cluster.isAssertInvariantsEnabled) assertInvariants()
 
   private def assertInvariants(): Unit = {
 

@@ -255,8 +255,7 @@ private[cluster] case class ClusterHeartbeatSenderState private (
   ending: Set[Address] = Set.empty,
   heartbeatRequest: Map[Address, Deadline] = Map.empty) {
 
-  // TODO can be disabled as optimization
-  assertInvariants()
+  if (Cluster.isAssertInvariantsEnabled) assertInvariants()
 
   private def assertInvariants(): Unit = {
     val currentAndEnding = current.intersect(ending)

@@ -39,6 +39,15 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
   override def lookup = Cluster
 
   override def createExtension(system: ExtendedActorSystem): Cluster = new Cluster(system)
+
+  /**
+   * INTERNAL API
+   */
+  private[cluster] final val isAssertInvariantsEnabled: Boolean =
+    System.getProperty("akka.cluster.assert", "off").toLowerCase match {
+      case "on" | "true" ⇒ true
+      case _             ⇒ false
+    }
 }
 
 /**
