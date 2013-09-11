@@ -5,6 +5,7 @@ package akka.actor
 
 import akka.dispatch.{ UnboundedDequeBasedMessageQueueSemantics, RequiresMessageQueue, Envelope, DequeBasedMessageQueueSemantics }
 import akka.AkkaException
+import akka.dispatch.Mailboxes
 
 /**
  *  The `Stash` trait enables an actor to temporarily stash away messages that can not or
@@ -65,11 +66,14 @@ trait UnrestrictedStash extends Actor {
    */
   private var theStash = Vector.empty[Envelope]
 
-  /* The capacity of the stash. Configured in the actor's dispatcher config.
+  /* The capacity of the stash. Configured in the actor's mailbox or dispatcher config.
    */
   private val capacity: Int = {
     val dispatcher = context.system.settings.config.getConfig(context.props.dispatcher)
-    val config = dispatcher.withFallback(context.system.settings.config.getConfig("akka.actor.default-mailbox"))
+    val fallback = dispatcher.withFallback(context.system.settings.config.getConfig(Mailboxes.DefaultMailboxId))
+    val config =
+      if (context.props.mailbox == Mailboxes.DefaultMailboxId) fallback
+      else context.system.settings.config.getConfig(context.props.mailbox).withFallback(fallback)
     config.getInt("stash-capacity")
   }
 
