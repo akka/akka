@@ -34,7 +34,6 @@ object MultiNodeClusterSpec {
   def clusterConfig: Config = ConfigFactory.parseString("""
     akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.cluster {
-      auto-down                           = off
       jmx.enabled                         = off
       gossip-interval                     = 200 ms
       leader-actions-interval             = 200 ms

@@ -17,7 +17,7 @@ case class SingletonClusterMultiNodeConfig(failureDetectorPuppet: Boolean) exten
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
       akka.cluster {
-        auto-down                  = on
+        auto-down-unreachable-after = 0s
         failure-detector.threshold = 4
       }
     """)).

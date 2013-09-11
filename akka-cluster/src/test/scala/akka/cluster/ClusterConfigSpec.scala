@@ -37,7 +37,7 @@ class ClusterConfigSpec extends AkkaSpec {
       LeaderActionsInterval must be(1 second)
       UnreachableNodesReaperInterval must be(1 second)
       PublishStatsInterval must be(Duration.Undefined)
-      AutoDown must be(false)
+      AutoDownUnreachableAfter must be(Duration.Undefined)
       MinNrOfMembers must be(1)
       MinNrOfMembersOfRole must be === Map.empty
       Roles must be === Set.empty

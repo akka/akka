@@ -143,11 +143,20 @@ It can also be performed programatically with ``Cluster(system).down(address)``.
 
 You can enable automatic downing with configuration::
 
-      akka.cluster.auto-down = on
+      akka.cluster.auto-down-unreachable-after = 120s
+
+This means that the cluster leader member will change the ``unreachable`` node 
+status to ``down`` automatically after the configured time of unreachability.
 
 Be aware of that using auto-down implies that two separate clusters will
 automatically be formed in case of network partition. That might be
 desired by some applications but not by others.
+
+.. note:: If you have *auto-down* enabled and the failure detector triggers, you
+   can over time end up with a lot of single node clusters if you don't put
+   measures in place to shut down nodes that have become ``unreachable``. This
+   follows from the fact that the ``unreachable`` node will likely see the rest of
+   the cluster as ``unreachable``, become its own leader and form its own cluster.
 
 Leaving
 ^^^^^^^
