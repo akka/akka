@@ -21,6 +21,7 @@ import akka.routing.RoundRobinRouter
 import akka.routing.RoutedActorRef
 import akka.routing.RouterRoutees
 import akka.testkit._
+import akka.remote.transport.ThrottlerTransportAdapter.Direction
 
 object ClusterRoundRobinRoutedActorMultiJvmSpec extends MultiNodeConfig {
 
@@ -85,6 +86,8 @@ object ClusterRoundRobinRoutedActorMultiJvmSpec extends MultiNodeConfig {
 
   nodeConfig(first, second)(ConfigFactory.parseString("""akka.cluster.roles =["a", "c"]"""))
   nodeConfig(third)(ConfigFactory.parseString("""akka.cluster.roles =["b", "c"]"""))
+
+  testTransport(on = true)
 
 }
 
@@ -300,6 +303,31 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
       enterBarrier("after-8")
     }
 
+    "remove routees for unreachable nodes, and add when reachable again" taggedAs LongRunningTest in within(30.seconds) {
+
+      // myservice is already running
+
+      def routees = currentRoutees(router4)
+      def routeeAddresses = (routees map fullAddress).toSet
+
+      runOn(first) {
+        // 4 nodes, 1 routee on each node
+        awaitAssert(currentRoutees(router4).size must be(4))
+
+        testConductor.blackhole(first, second, Direction.Both).await
+
+        awaitAssert(routees.size must be(3))
+        routeeAddresses must not contain (address(second))
+
+        testConductor.passThrough(first, second, Direction.Both).await
+        awaitAssert(routees.size must be(4))
+        routeeAddresses must contain(address(second))
+
+      }
+
+      enterBarrier("after-9")
+    }
+
     "deploy programatically defined routees to other node when a node becomes down" taggedAs LongRunningTest in {
       muteMarkingAsUnreachable()
 
@@ -313,7 +341,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         val downRoutee = routees.find(_.path.address == downAddress).get
 
         cluster.down(downAddress)
-        expectMsgType[Terminated].actor must be(downRoutee)
+        expectMsgType[Terminated](15.seconds).actor must be(downRoutee)
         awaitAssert {
           routeeAddresses must contain(notUsedAddress)
           routeeAddresses must not contain (downAddress)
@@ -330,7 +358,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         replies.values.sum must be(iterationCount)
       }
 
-      enterBarrier("after-9")
+      enterBarrier("after-10")
     }
 
   }

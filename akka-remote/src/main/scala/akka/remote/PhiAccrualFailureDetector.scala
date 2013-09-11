@@ -100,7 +100,9 @@ class PhiAccrualFailureDetector(
 
   private val state = new AtomicReference[State](State(history = firstHeartbeat, timestamp = None))
 
-  override def isAvailable: Boolean = phi < threshold
+  override def isAvailable: Boolean = isAvailable(clock())
+
+  private def isAvailable(timestamp: Long): Boolean = phi(timestamp) < threshold
 
   override def isMonitoring: Boolean = state.get.timestamp.nonEmpty
 
@@ -118,7 +120,9 @@ class PhiAccrualFailureDetector(
       case Some(latestTimestamp) ⇒
         // this is a known connection
         val interval = timestamp - latestTimestamp
-        oldState.history :+ interval
+        // don't use the first heartbeat after failure for the history, since a long pause will skew the stats
+        if (isAvailable(timestamp)) oldState.history :+ interval
+        else oldState.history
     }
 
     val newState = oldState.copy(history = newHistory, timestamp = Some(timestamp)) // record new timestamp
@@ -133,13 +137,15 @@ class PhiAccrualFailureDetector(
    * If a connection does not have any records in failure detector then it is
    * considered healthy.
    */
-  def phi: Double = {
+  def phi: Double = phi(clock())
+
+  private def phi(timestamp: Long): Double = {
     val oldState = state.get
     val oldTimestamp = oldState.timestamp
 
     if (oldTimestamp.isEmpty) 0.0 // treat unmanaged connections, e.g. with zero heartbeats, as healthy connections
     else {
-      val timeDiff = clock() - oldTimestamp.get
+      val timeDiff = timestamp - oldTimestamp.get
 
       val history = oldState.history
       val mean = history.mean

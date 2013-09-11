@@ -26,6 +26,9 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   @volatile
   private var state: CurrentClusterState = CurrentClusterState()
 
+  @volatile
+  private var _reachability: Reachability = Reachability.empty
+
   /**
    * Current internal cluster stats, updated periodically via event bus.
    */
@@ -50,15 +53,22 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
         case e: ClusterDomainEvent ⇒ e match {
           case SeenChanged(convergence, seenBy) ⇒
             state = state.copy(seenBy = seenBy)
+          case ReachabilityChanged(reachability) ⇒
+            _reachability = reachability
           case MemberRemoved(member, _) ⇒
             state = state.copy(members = state.members - member, unreachable = state.unreachable - member)
           case UnreachableMember(member) ⇒
             // replace current member with new member (might have different status, only address is used in equals)
-            state = state.copy(members = state.members - member, unreachable = state.unreachable - member + member)
+            state = state.copy(unreachable = state.unreachable - member + member)
+          case ReachableMember(member) ⇒
+            state = state.copy(unreachable = state.unreachable - member)
           case event: MemberEvent ⇒
             // replace current member with new member (might have different status, only address is used in equals)
+            val newUnreachable =
+              if (state.unreachable.contains(event.member)) state.unreachable - event.member + event.member
+              else state.unreachable
             state = state.copy(members = state.members - event.member + event.member,
-              unreachable = state.unreachable - event.member)
+              unreachable = newUnreachable)
           case LeaderChanged(leader) ⇒
             state = state.copy(leader = leader)
           case RoleLeaderChanged(role, leader) ⇒
@@ -73,7 +83,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
 
   def self: Member = {
     import cluster.selfUniqueAddress
-    state.members.find(_.uniqueAddress == selfUniqueAddress).orElse(state.unreachable.find(_.uniqueAddress == selfUniqueAddress)).
+    state.members.find(_.uniqueAddress == selfUniqueAddress).
       getOrElse(Member(selfUniqueAddress, cluster.selfRoles).copy(status = MemberStatus.Removed))
   }
 
@@ -126,6 +136,8 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
       myself.status != MemberStatus.Down &&
       myself.status != MemberStatus.Removed
   }
+
+  def reachability: Reachability = _reachability
 
   /**
    * Current cluster metrics.

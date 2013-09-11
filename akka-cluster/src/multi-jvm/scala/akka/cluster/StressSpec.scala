@@ -109,7 +109,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       # by tree-width (number of children for each actor) and
       # tree-levels, total number of actors can be calculated by
       # (width * math.pow(width, levels) - 1) / (width - 1)
-      tree-width = 5
+      tree-width = 4
       tree-levels = 4
       report-metrics-interval = 10s
       # scale convergence within timeouts with this factor

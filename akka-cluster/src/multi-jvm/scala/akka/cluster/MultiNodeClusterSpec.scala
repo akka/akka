@@ -38,12 +38,13 @@ object MultiNodeClusterSpec {
       jmx.enabled                         = off
       gossip-interval                     = 200 ms
       leader-actions-interval             = 200 ms
-      unreachable-nodes-reaper-interval   = 200 ms
+      unreachable-nodes-reaper-interval   = 500 ms
       periodic-tasks-initial-delay        = 300 ms
       publish-stats-interval              = 0 s # always, when it happens
-      failure-detector.heartbeat-interval = 400 ms
+      failure-detector.heartbeat-interval = 500 ms
     }
     akka.loglevel = INFO
+    akka.log-dead-letters = off
     akka.log-dead-letters-during-shutdown = off
     akka.remote.log-remote-lifecycle-events = off
     akka.loggers = ["akka.testkit.TestEventListener"]
@@ -114,8 +115,10 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
         classOf[InternalClusterAction.Tick],
         classOf[akka.actor.PoisonPill],
         classOf[akka.dispatch.sysmsg.DeathWatchNotification],
-        akka.remote.transport.AssociationHandle.Disassociated.getClass,
-        akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass,
+        classOf[akka.remote.transport.AssociationHandle.Disassociated],
+        //        akka.remote.transport.AssociationHandle.Disassociated.getClass,
+        classOf[akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying],
+        //        akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass,
         classOf[akka.remote.transport.AssociationHandle.InboundPayload])(sys)
 
     }
@@ -124,6 +127,10 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
   def muteMarkingAsUnreachable(sys: ActorSystem = system): Unit =
     if (!sys.log.isDebugEnabled)
       sys.eventStream.publish(Mute(EventFilter.error(pattern = ".*Marking.* as UNREACHABLE.*")))
+
+  def muteMarkingAsReachable(sys: ActorSystem = system): Unit =
+    if (!sys.log.isDebugEnabled)
+      sys.eventStream.publish(Mute(EventFilter.info(pattern = ".*Marking.* as REACHABLE.*")))
 
   override def afterAll(): Unit = {
     if (!log.isDebugEnabled) {
@@ -292,7 +299,8 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
     }
   }
 
-  def awaitAllReachable(): Unit = awaitAssert(clusterView.unreachableMembers.isEmpty)
+  def awaitAllReachable(): Unit =
+    awaitAssert(clusterView.unreachableMembers must be(Set.empty))
 
   /**
    * Wait until the specified nodes have seen the same gossip overview.

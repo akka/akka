@@ -134,10 +134,10 @@ Automatic vs. Manual Downing
 
 When a member is considered by the failure detector to be unreachable the
 leader is not allowed to perform its duties, such as changing status of
-new joining members to 'Up'. The status of the unreachable member must be
-changed to 'Down'. This can be performed automatically or manually. By
-default it must be done manually, using using :ref:`cluster_jmx_scala` or
-:ref:`cluster_command_line_scala`.
+new joining members to 'Up'. The node must first become reachable again, or the
+status of the unreachable member must be changed to 'Down'. Changing status to 'Down'
+can be performed automatically or manually. By default it must be done manually, using
+:ref:`cluster_jmx_scala` or :ref:`cluster_command_line_scala`.
 
 It can also be performed programatically with ``Cluster(system).down(address)``.
 
@@ -187,10 +187,13 @@ receive ``MemberUp`` for that node, and other nodes.
 The events to track the life-cycle of members are:
 
 * ``ClusterEvent.MemberUp`` - A new member has joined the cluster and its status has been changed to ``Up``.
-* ``ClusterEvent.MemberExited`` - A member is leaving the cluster and its status has been changed to ``Exiting``.
+* ``ClusterEvent.MemberExited`` - A member is leaving the cluster and its status has been changed to ``Exiting``
   Note that the node might already have been shutdown when this event is published on another node.
 * ``ClusterEvent.MemberRemoved`` - Member completely removed from the cluster.
-* ``ClusterEvent.UnreachableMember`` - A member is considered as unreachable by the failure detector.
+* ``ClusterEvent.UnreachableMember`` - A member is considered as unreachable, detected by the failure detector
+  of at least one other node.
+* ``ClusterEvent.ReachableMember`` - A member is considered as reachable again, after having been unreachable.
+  All nodes that previously detected it as unreachable has detected it as reachable again.
 
 There are more types of change events, consult the API documentation
 of classes that extends ``akka.cluster.ClusterEvent.ClusterDomainEvent``
@@ -312,6 +315,22 @@ See :ref:`cluster-client` in the contrib module.
 Failure Detector
 ^^^^^^^^^^^^^^^^
 
+In a cluster each node is monitored by a few (default maximum 5) other nodes, and when
+any of these detects the node as ``unreachable`` that information will spread to
+the rest of the cluster through the gossip. In other words, only one node needs to
+mark a node ``unreachable`` to have the rest of the cluster mark that node ``unreachable``.
+
+The failure detector will also detect if the node becomes ``reachable`` again. When
+all nodes that monitored the ``unreachable`` node detects it as ``reachable`` again
+the cluster, after gossip dissemination, will consider it as ``reachable``. 
+
+If system messages cannot be delivered to a node it will be quarantined and then it
+cannot come back from ``unreachable``. This can happen if the there are too many
+unacknowledged system messages (e.g. watch, Terminated, remote actor deployment, 
+failures of actors supervised by remote parent). Then the node needs to be moved
+to the ``down`` or ``removed`` states and the actor system must be restarted before
+it can join the cluster again.
+
 The nodes in the cluster monitor each other by sending heartbeats to detect if a node is
 unreachable from the rest of the cluster. The heartbeat arrival times is interpreted
 by an implementation of
@@ -375,9 +394,10 @@ Cluster Aware Routers
 
 All :ref:`routers <routing-scala>` can be made aware of member nodes in the cluster, i.e.
 deploying new routees or looking up routees on nodes in the cluster.
-When a node becomes unavailable or leaves the cluster the routees of that node are
+When a node becomes unreachable or leaves the cluster the routees of that node are
 automatically unregistered from the router. When new nodes join the cluster additional
-routees are added to the router, according to the configuration.
+routees are added to the router, according to the configuration. Routees are also added 
+when a node becomes reachable again, after having been unreachable.
 
 There are two distinct types of routers. 
 

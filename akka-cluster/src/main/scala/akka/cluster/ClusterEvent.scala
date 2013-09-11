@@ -10,7 +10,6 @@ import akka.actor.{ Actor, ActorLogging, ActorRef, Address }
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus._
 import akka.event.EventStream
-import akka.actor.AddressTerminated
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 /**
@@ -145,9 +144,22 @@ object ClusterEvent {
   }
 
   /**
+   * Marker interface to facilitate subscription of
+   * both [[UnreachableMember]] and [[ReachableMember]].
+   */
+  sealed trait ReachabilityEvent extends ClusterDomainEvent
+
+  /**
    * A member is considered as unreachable by the failure detector.
    */
-  case class UnreachableMember(member: Member) extends ClusterDomainEvent
+  case class UnreachableMember(member: Member) extends ReachabilityEvent
+
+  /**
+   * A member is considered as reachable by the failure detector
+   * after having been unreachable.
+   * @see [[UnreachableMember]]
+   */
+  case class ReachableMember(member: Member) extends ReachabilityEvent
 
   /**
    * Current snapshot of cluster node metrics. Published to subscribers.
@@ -169,6 +181,11 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
+  private[cluster] case class ReachabilityChanged(reachability: Reachability) extends ClusterDomainEvent
+
+  /**
+   * INTERNAL API
+   */
   private[cluster] case class CurrentInternalStats(
     gossipStats: GossipStats,
     vclockStats: VectorClockStats) extends ClusterDomainEvent
@@ -179,10 +196,24 @@ object ClusterEvent {
   private[cluster] def diffUnreachable(oldGossip: Gossip, newGossip: Gossip): immutable.Seq[UnreachableMember] =
     if (newGossip eq oldGossip) Nil
     else {
-      val newUnreachable = newGossip.overview.unreachable -- oldGossip.overview.unreachable
-      val unreachableEvents = newUnreachable map UnreachableMember
+      val oldUnreachableNodes = oldGossip.overview.reachability.allUnreachableOrTerminated
+      (newGossip.overview.reachability.allUnreachableOrTerminated.collect {
+        case node if !oldUnreachableNodes.contains(node) ⇒
+          UnreachableMember(newGossip.member(node))
+      })(collection.breakOut)
+    }
 
-      immutable.Seq.empty ++ unreachableEvents
+  /**
+   * INTERNAL API
+   */
+  private[cluster] def diffReachable(oldGossip: Gossip, newGossip: Gossip): immutable.Seq[ReachableMember] =
+    if (newGossip eq oldGossip) Nil
+    else {
+      (oldGossip.overview.reachability.allUnreachable.collect {
+        case node if newGossip.hasMember(node) && newGossip.overview.reachability.isReachable(node) ⇒
+          ReachableMember(newGossip.member(node))
+      })(collection.breakOut)
+
     }
 
   /**
@@ -202,10 +233,7 @@ object ClusterEvent {
         // no events for other transitions
       }
 
-      val allNewUnreachable = newGossip.overview.unreachable -- oldGossip.overview.unreachable
-
-      val removedMembers = (oldGossip.members -- newGossip.members -- newGossip.overview.unreachable) ++
-        (oldGossip.overview.unreachable -- newGossip.overview.unreachable)
+      val removedMembers = oldGossip.members -- newGossip.members
       val removedEvents = removedMembers.map(m ⇒ MemberRemoved(m.copy(status = Removed), m.status))
 
       (new VectorBuilder[MemberEvent]() ++= memberEvents ++= removedEvents).result()
@@ -243,6 +271,14 @@ object ClusterEvent {
         List(SeenChanged(newConvergence, newSeenBy.map(_.address)))
       else Nil
     }
+
+  /**
+   * INTERNAL API
+   */
+  private[cluster] def diffReachability(oldGossip: Gossip, newGossip: Gossip): immutable.Seq[ReachabilityChanged] =
+    if (newGossip.overview.reachability eq oldGossip.overview.reachability) Nil
+    else List(ReachabilityChanged(newGossip.overview.reachability))
+
 }
 
 /**
@@ -283,7 +319,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   def publishCurrentClusterState(receiver: Option[ActorRef]): Unit = {
     val state = CurrentClusterState(
       members = latestGossip.members,
-      unreachable = latestGossip.overview.unreachable,
+      unreachable = latestGossip.overview.reachability.allUnreachableOrTerminated map latestGossip.member,
       seenBy = latestGossip.seenBy.map(_.address),
       leader = latestGossip.leader.map(_.address),
       roleLeaderMap = latestGossip.allRoles.map(r ⇒ r -> latestGossip.roleLeader(r).map(_.address))(collection.breakOut))
@@ -307,13 +343,14 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     val oldGossip = latestGossip
     // keep the latestGossip to be sent to new subscribers
     latestGossip = newGossip
-    // first publish the diffUnreachable between the last two gossips
     diffUnreachable(oldGossip, newGossip) foreach publish
+    diffReachable(oldGossip, newGossip) foreach publish
     diffMemberEvents(oldGossip, newGossip) foreach publish
     diffLeader(oldGossip, newGossip) foreach publish
     diffRolesLeader(oldGossip, newGossip) foreach publish
     // publish internal SeenState for testing purposes
     diffSeen(oldGossip, newGossip) foreach publish
+    diffReachability(oldGossip, newGossip) foreach publish
   }
 
   def publishInternalStats(currentStats: CurrentInternalStats): Unit = publish(currentStats)

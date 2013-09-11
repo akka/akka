@@ -213,10 +213,9 @@ object MemberStatus {
  */
 @SerialVersionUID(1L)
 private[cluster] case class UniqueAddress(address: Address, uid: Int) extends Ordered[UniqueAddress] {
-  @transient
-  override lazy val hashCode = scala.util.hashing.MurmurHash3.productHash(this)
+  override def hashCode = uid
 
-  override def compare(that: UniqueAddress): Int = {
+  def compare(that: UniqueAddress): Int = {
     val result = Member.addressOrdering.compare(this.address, that.address)
     if (result == 0) if (this.uid < that.uid) -1 else if (this.uid == that.uid) 0 else 1
     else result
