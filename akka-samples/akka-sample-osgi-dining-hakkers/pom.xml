@@ -16,12 +16,12 @@
         <osgi.version>4.2.0</osgi.version>
         <paxexam.version>2.6.0</paxexam.version>
         <paxswissbox.version>1.6.0</paxswissbox.version>
-        <protobuf.version>2.4.1</protobuf.version>
+        <protobuf.version>2.5.0</protobuf.version>
         <scala.version>2.10.1</scala.version>
         <scala.dep.version>2.10</scala.dep.version>
         <scalatest.version>1.9.1</scalatest.version>
-        <typesafe.config.version>1.0.0</typesafe.config.version>
-        <scalabuff.version>1.2.0</scalabuff.version>
+        <typesafe.config.version>1.0.2</typesafe.config.version>
+        <scalabuff.version>1.3.6</scalabuff.version>
     </properties>
 
     <modules>
