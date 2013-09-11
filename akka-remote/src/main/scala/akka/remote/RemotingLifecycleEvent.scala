@@ -78,6 +78,15 @@ final case class RemotingErrorEvent(cause: Throwable) extends RemotingLifecycleE
   override def toString: String = s"Remoting error: [${cause.getMessage}] [${Logging.stackTraceFor(cause)}]"
 }
 
+@SerialVersionUID(1L)
+case class QuarantinedEvent(address: Address, uid: Int) extends RemotingLifecycleEvent {
+  override def logLevel: Logging.LogLevel = Logging.WarningLevel
+  override val toString: String =
+    s"Association to [$address] having UID [$uid] is irrecoverably failed. UID is now quarantined and all " +
+      "messages to this UID will be delivered to dead letters. Remote actorsystem must be restarted to recover " +
+      "from this situation."
+}
+
 /**
  * INTERNAL API
  */

@@ -274,7 +274,7 @@ private[akka] class ClusterRouterActor(override val supervisorStrategy: Supervis
   // re-subscribe when restart
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent])
-    cluster.subscribe(self, classOf[UnreachableMember])
+    cluster.subscribe(self, classOf[ReachabilityEvent])
   }
   override def postStop(): Unit = cluster.unsubscribe(self)
 
@@ -288,6 +288,13 @@ private[akka] class ClusterRouterActor(override val supervisorStrategy: Supervis
   def cluster: Cluster = routeeProvider.cluster
 
   def fullAddress(actorRef: ActorRef): Address = routeeProvider.fullAddress(actorRef)
+
+  def registerRoutees(member: Member) = {
+    routeeProvider.nodes += member.address
+    // createRoutees will create routees based on
+    // totalInstances and maxInstancesPerNode
+    routeeProvider.createRoutees()
+  }
 
   def unregisterRoutees(member: Member) = {
     val address = member.address
@@ -309,17 +316,18 @@ private[akka] class ClusterRouterActor(override val supervisorStrategy: Supervis
       routeeProvider.createRoutees()
 
     case m: MemberEvent if routeeProvider.isAvailable(m.member) ⇒
-      routeeProvider.nodes += m.member.address
-      // createRoutees will create routees based on
-      // totalInstances and maxInstancesPerNode
-      routeeProvider.createRoutees()
+      registerRoutees(m.member)
 
     case other: MemberEvent ⇒
       // other events means that it is no longer interesting, such as
-      // MemberJoined, MemberLeft, MemberExited, MemberRemoved
+      // MemberExited, MemberRemoved
       unregisterRoutees(other.member)
 
     case UnreachableMember(m) ⇒
       unregisterRoutees(m)
+
+    case ReachableMember(m) ⇒
+      if (routeeProvider.isAvailable(m))
+        registerRoutees(m)
   }
 }

@@ -40,7 +40,7 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with MustMatchers {
       val s = emptyState.addHeartbeatRequest(aa, Deadline.now - 30.seconds).removeOverdueHeartbeatRequest()
       s.heartbeatRequest must be(Map.empty)
       s.active must be(Set.empty)
-      s.ending must be(Map(aa -> 0))
+      s.ending must be(Set(aa))
     }
 
     "remove heartbeatRequest after reset" in {
@@ -56,22 +56,22 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with MustMatchers {
     "remove heartbeatRequest after removeMember" in {
       val s = emptyState.addHeartbeatRequest(aa, Deadline.now + 30.seconds).reset(HashSet(aa, bb)).removeMember(aa)
       s.heartbeatRequest must be(Map.empty)
-      s.ending must be(Map(aa -> 0))
+      s.ending must be(Set(aa))
     }
 
     "remove from ending after addHeartbeatRequest" in {
       val s = emptyState.reset(HashSet(aa, bb)).removeMember(aa)
-      s.ending must be(Map(aa -> 0))
+      s.ending must be(Set(aa))
       val s2 = s.addHeartbeatRequest(aa, Deadline.now + 30.seconds)
       s2.heartbeatRequest.keySet must be(Set(aa))
-      s2.ending must be(Map.empty)
+      s2.ending must be(Set.empty)
     }
 
     "include nodes from reset in active set" in {
       val nodes = HashSet(aa, bb, cc)
       val s = emptyState.reset(nodes)
       s.current must be(nodes)
-      s.ending must be(Map.empty)
+      s.ending must be(Set.empty)
       s.active must be(nodes)
     }
 
@@ -85,21 +85,21 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with MustMatchers {
     "move member to ending set when removing member" in {
       val nodes = HashSet(aa, bb, cc, dd, ee)
       val s = emptyState.reset(nodes)
-      s.ending must be(Map.empty)
+      s.ending must be(Set.empty)
       val included = s.current.head
       val s2 = s.removeMember(included)
-      s2.ending must be(Map(included -> 0))
+      s2.ending must be(Set(included))
       s2.current must not contain (included)
       val s3 = s2.addMember(included)
       s3.current must contain(included)
-      s3.ending.keySet must not contain (included)
+      s3.ending must not contain (included)
     }
 
-    "increase ending count correctly" in {
+    "remove ending correctly" in {
       val s = emptyState.reset(HashSet(aa)).removeMember(aa)
-      s.ending must be(Map(aa -> 0))
-      val s2 = s.increaseEndingCount(aa).increaseEndingCount(aa)
-      s2.ending must be(Map(aa -> 2))
+      s.ending must be(Set(aa))
+      val s2 = s.removeEnding(aa)
+      s2.ending must be(Set.empty)
     }
 
   }

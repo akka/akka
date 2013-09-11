@@ -91,8 +91,6 @@ abstract class UnreachableNodeJoinsAgainSpec
           awaitAssert {
             val members = clusterView.members
             clusterView.unreachableMembers.size must be(roles.size - 1)
-            members.size must be(1)
-            members.map(_.status) must be(Set(MemberStatus.Up))
           }
           clusterView.unreachableMembers.map(_.address) must be((allButVictim map address).toSet)
         }
@@ -105,13 +103,12 @@ abstract class UnreachableNodeJoinsAgainSpec
           awaitAssert {
             val members = clusterView.members
             clusterView.unreachableMembers.size must be(1)
-            members.size must be(roles.size - 1)
-            members.map(_.status) must be(Set(MemberStatus.Up))
           }
           awaitSeenSameState(allButVictim map address: _*)
           // still one unreachable
           clusterView.unreachableMembers.size must be(1)
           clusterView.unreachableMembers.head.address must be(node(victim).address)
+          clusterView.unreachableMembers.head.status must be(MemberStatus.Up)
         }
       }
 
@@ -123,10 +120,12 @@ abstract class UnreachableNodeJoinsAgainSpec
         cluster down victim
       }
 
-      runOn(allBut(victim): _*) {
-        awaitMembersUp(roles.size - 1, Set(victim))
+      val allButVictim = allBut(victim, roles)
+      runOn(allButVictim: _*) {
         // eventually removed
+        awaitMembersUp(roles.size - 1, Set(victim))
         awaitAssert(clusterView.unreachableMembers must be(Set.empty), 15 seconds)
+        awaitAssert(clusterView.members.map(_.address) must be((allButVictim map address).toSet))
 
       }
 

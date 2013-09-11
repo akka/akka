@@ -78,7 +78,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
 
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent])
-    cluster.subscribe(self, classOf[UnreachableMember])
+    cluster.subscribe(self, classOf[ReachabilityEvent])
     logInfo("Metrics collection has started successfully")
   }
 
@@ -91,6 +91,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
     case MemberRemoved(m, _)        ⇒ removeMember(m)
     case MemberExited(m)            ⇒ removeMember(m)
     case UnreachableMember(m)       ⇒ removeMember(m)
+    case ReachableMember(m)         ⇒ if (m.status == Up) addMember(m)
     case _: MemberEvent             ⇒ // not interested in other types of MemberEvent
 
   }
