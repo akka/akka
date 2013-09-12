@@ -148,6 +148,30 @@ class ReachabilitySpec extends WordSpec with MustMatchers {
       merged2.records.toSet must be(merged.records.toSet)
     }
 
+    "merge by taking allowed set into account" in {
+      val r1 = Reachability.empty.unreachable(nodeB, nodeA).unreachable(nodeC, nodeD)
+      val r2 = r1.reachable(nodeB, nodeA).unreachable(nodeD, nodeE).unreachable(nodeC, nodeA)
+      // nodeD not in allowed set
+      val allowed = Set(nodeA, nodeB, nodeC, nodeE)
+      val merged = r1.merge(allowed, r2)
+
+      merged.status(nodeB, nodeA) must be(Reachable)
+      merged.status(nodeC, nodeA) must be(Unreachable)
+      merged.status(nodeC, nodeD) must be(Reachable)
+      merged.status(nodeD, nodeE) must be(Reachable)
+      merged.status(nodeE, nodeA) must be(Reachable)
+
+      merged.isReachable(nodeA) must be(false)
+      merged.isReachable(nodeD) must be(true)
+      merged.isReachable(nodeE) must be(true)
+
+      merged.versions.keySet must be(Set(nodeB, nodeC))
+
+      val merged2 = r2.merge(allowed, r1)
+      merged2.records.toSet must be(merged.records.toSet)
+      merged2.versions must be(merged.versions)
+    }
+
     "merge correctly after pruning" in {
       val r1 = Reachability.empty.unreachable(nodeB, nodeA).unreachable(nodeC, nodeD)
       val r2 = r1.unreachable(nodeA, nodeE)
