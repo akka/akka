@@ -193,7 +193,7 @@ object AkkaBuild extends Build {
     id = "akka-remote",
     base = file("akka-remote"),
     dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test"),
-    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.remote ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.remote ++ Protobuf.settings ++ Seq(
       libraryDependencies ++= Dependencies.remote,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -205,7 +205,7 @@ object AkkaBuild extends Build {
     id = "akka-multi-node-testkit",
     base = file("akka-multi-node-testkit"),
     dependencies = Seq(remote, testkit),
-    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ Protobuf.settings ++ Seq(
       previousArtifact := akkaPreviousArtifact("akka-multi-node-testkit")
     )
   )
@@ -234,7 +234,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ multiJvmSettings ++ OSGi.cluster ++
       scalabuffSettings ++ Seq(
       // this version needs to be reflected in the OSGi.scalabuffImport and dining hackers pom.xml
-      scalabuffVersion in ScalaBuff := "1.2.0",
+      scalabuffVersion in ScalaBuff := "1.3.6",
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -1023,8 +1023,8 @@ object AkkaBuild extends Build {
     def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
     def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.2,2.3)\"".format(packageName)
     def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,1.1.0)\"".format(packageName)
-    def protobufImport(packageName: String = "com.google.protobuf.*") = "%s;version=\"[2.4.0,2.5.0)\"".format(packageName)
-    def scalabuffImport(packageName: String = "net.sandrogrzicic.scalabuff.*") = "%s;version=\"[1.2.0,1.3.0)\"".format(packageName)
+    def protobufImport(packageName: String = "com.google.protobuf.*") = "%s;version=\"[2.5.0,2.6.0)\"".format(packageName)
+    def scalabuffImport(packageName: String = "net.sandrogrzicic.scalabuff.*") = "%s;version=\"[1.3.6,1.4.0)\"".format(packageName)
     def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.10,2.11)\"".format(packageName)
     def optionalResolution(packageName: String) = "%s;resolution:=optional".format(packageName)
   }
@@ -1040,7 +1040,7 @@ object Dependencies {
 
     val config        = "com.typesafe"                % "config"                       % "1.0.2"       // ApacheV2
     val netty         = "io.netty"                    % "netty"                        % "3.6.6.Final" // ApacheV2
-    val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
+    val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.5.0"       // New BSD
     val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % "0.7"         // Modified BSD (Scala)
     val scalaBuffRuntime = "net.sandrogrzicic"       %% "scalabuff-runtime"            % "1.2.0"       // ApacheV2
 
