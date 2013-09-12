@@ -4,10 +4,12 @@
 
 package akka.io
 
-import akka.testkit.AkkaSpec
+import akka.testkit.{ TestProbe, AkkaSpec }
 import akka.util.ByteString
 import akka.TestUtils._
+import concurrent.duration._
 import Tcp._
+import java.net.InetSocketAddress
 
 class TcpIntegrationSpec extends AkkaSpec("""
     akka.loglevel = INFO
@@ -70,6 +72,13 @@ class TcpIntegrationSpec extends AkkaSpec("""
 
       override def bindOptions = List(SO.SendBufferSize(1024))
       override def connectOptions = List(SO.ReceiveBufferSize(1024))
+    }
+    "don't report Connected when endpoint isn't responding" in {
+      val connectCommander = TestProbe()
+      // a "random" endpoint hopefully unavailable
+      val endpoint = new InetSocketAddress("10.226.182.48", 23825)
+      connectCommander.send(IO(Tcp), Connect(endpoint))
+      connectCommander.expectNoMsg(1.second)
     }
   }
 

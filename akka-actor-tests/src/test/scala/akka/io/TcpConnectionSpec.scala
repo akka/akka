@@ -139,6 +139,7 @@ class TcpConnectionSpec extends AkkaSpec("""
 
         serverSideChannel.write(ByteBuffer.wrap("immediatedata".getBytes("ASCII")))
         serverSideChannel.configureBlocking(false)
+        interestCallReceiver.expectMsg(OP_CONNECT)
 
         selector.send(connectionActor, ChannelConnectable)
         userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
@@ -799,7 +800,7 @@ class TcpConnectionSpec extends AkkaSpec("""
     lazy val clientSideChannel = connectionActor.underlyingActor.channel
 
     override def run(body: ⇒ Unit): Unit = super.run {
-      registerCallReceiver.expectMsg(Registration(clientSideChannel, OP_CONNECT))
+      registerCallReceiver.expectMsg(Registration(clientSideChannel, 0))
       registerCallReceiver.sender must be(connectionActor)
       body
     }
@@ -821,6 +822,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         serverSideChannel.configureBlocking(false)
         serverSideChannel must not be (null)
 
+        interestCallReceiver.expectMsg(OP_CONNECT)
         selector.send(connectionActor, ChannelConnectable)
         userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
 
