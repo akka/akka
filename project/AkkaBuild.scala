@@ -232,7 +232,7 @@ object AkkaBuild extends Build {
     id = "akka-cluster",
     base = file("akka-cluster"),
     dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test"),
-    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ multiJvmSettings ++ OSGi.cluster ++ experimentalSettings ++
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ multiJvmSettings ++ OSGi.cluster ++
       scalabuffSettings ++ Seq(
       // this version needs to be reflected in the OSGi.scalabuffImport and dining hackers pom.xml
       scalabuffVersion in ScalaBuff := "1.2.0",
@@ -446,7 +446,7 @@ object AkkaBuild extends Build {
     id = "akka-sample-cluster",
     base = file("akka-samples/akka-sample-cluster"),
     dependencies = Seq(cluster, contrib, remoteTests % "test", testkit % "test"),
-    settings = sampleSettings ++ multiJvmSettings ++ experimentalSettings ++ Seq(
+    settings = sampleSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.clusterSample,
       javaOptions in run ++= Seq(
         "-Djava.library.path=./sigar",
