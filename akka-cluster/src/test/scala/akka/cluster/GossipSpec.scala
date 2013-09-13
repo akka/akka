@@ -60,15 +60,6 @@ class GossipSpec extends WordSpec with MustMatchers {
       merged2.overview.reachability.allUnreachable must be(merged1.overview.reachability.allUnreachable)
     }
 
-    "not have live members with wrong status" in intercept[IllegalArgumentException] {
-      // b2 is Removed
-      Gossip(members = SortedSet(a2, b2))
-    }
-
-    "not have non cluster members in seen table" in intercept[IllegalArgumentException] {
-      Gossip(members = SortedSet(a1, e1)).seen(a1.uniqueAddress).seen(e1.uniqueAddress).seen(b1.uniqueAddress)
-    }
-
     "have leader as first member based on ordering, except Exiting status" in {
       Gossip(members = SortedSet(c2, e2)).leader must be(Some(c2.uniqueAddress))
       Gossip(members = SortedSet(c3, e2)).leader must be(Some(e2.uniqueAddress))
