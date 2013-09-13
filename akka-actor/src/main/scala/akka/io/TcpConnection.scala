@@ -32,15 +32,21 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   import tcp.bufferPool
   import TcpConnection._
 
+  // FIXME: Should come from config
+  private[this] val ReadThrottlingEnabled: Boolean = false
+
   private[this] var pendingWrite: PendingWrite = _
   private[this] var peerClosed = false
   private[this] var writingSuspended = false
   private[this] var interestedInResume: Option[ActorRef] = None
+  private[this] var tokens: Int = if (ReadThrottlingEnabled) 0 else ReceivedMessageSizeLimit
   var closedMessage: CloseInformation = _ // for ConnectionClosed message in postStop
 
   def writePending = pendingWrite ne null
 
   // STATES
+
+  private def replenishTokens(t: Int): Unit = if (t > 0) tokens = t else tokens = ReceivedMessageSizeLimit
 
   /** connection established, waiting for registration from user handler */
   def waitingForRegistration(registration: ChannelRegistration, commander: ActorRef): Receive = {
@@ -72,8 +78,11 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   /** normal connected state */
   def connected(info: ConnectionInfo): Receive =
     handleWriteMessages(info) orElse {
-      case SuspendReading    ⇒ info.registration.disableInterest(OP_READ)
-      case ResumeReading     ⇒ info.registration.enableInterest(OP_READ)
+      case SuspendReading ⇒ info.registration.disableInterest(OP_READ)
+      case ResumeReading(t) ⇒
+        println("### Resumed reading")
+        if (ReadThrottlingEnabled) replenishTokens(t)
+        info.registration.enableInterest(OP_READ)
       case ChannelReadable   ⇒ doRead(info, None)
       case cmd: CloseCommand ⇒ handleClose(info, Some(sender), cmd.event)
     }
@@ -87,8 +96,10 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   /** connection is closing but a write has to be finished first */
   def closingWithPendingWrite(info: ConnectionInfo, closeCommander: Option[ActorRef],
                               closedEvent: ConnectionClosed): Receive = {
-    case SuspendReading  ⇒ info.registration.disableInterest(OP_READ)
-    case ResumeReading   ⇒ info.registration.enableInterest(OP_READ)
+    case SuspendReading ⇒ info.registration.disableInterest(OP_READ)
+    case ResumeReading(t) ⇒
+      if (ReadThrottlingEnabled) replenishTokens(t)
+      info.registration.enableInterest(OP_READ)
     case ChannelReadable ⇒ doRead(info, closeCommander)
 
     case ChannelWritable ⇒
@@ -104,8 +115,10 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
   /** connection is closed on our side and we're waiting from confirmation from the other side */
   def closing(info: ConnectionInfo, closeCommander: Option[ActorRef]): Receive = {
-    case SuspendReading  ⇒ info.registration.disableInterest(OP_READ)
-    case ResumeReading   ⇒ info.registration.enableInterest(OP_READ)
+    case SuspendReading ⇒ info.registration.disableInterest(OP_READ)
+    case ResumeReading(t) ⇒
+      if (ReadThrottlingEnabled) replenishTokens(t)
+      info.registration.enableInterest(OP_READ)
     case ChannelReadable ⇒ doRead(info, closeCommander)
     case Abort           ⇒ handleClose(info, Some(sender), Aborted)
   }
@@ -193,17 +206,23 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
         readBytes match {
           case `maxBufferSpace` ⇒ innerRead(buffer, remainingLimit - maxBufferSpace)
-          case x if x >= 0      ⇒ AllRead
-          case -1               ⇒ EndOfStream
+          case x if x >= 0 ⇒
+            // FIXME: Ugly solution for now
+            if (ReadThrottlingEnabled) tokens = remainingLimit
+            AllRead
+          case -1 ⇒ EndOfStream
           case _ ⇒
             throw new IllegalStateException("Unexpected value returned from read: " + readBytes)
         }
       } else MoreDataWaiting
 
     val buffer = bufferPool.acquire()
-    try innerRead(buffer, ReceivedMessageSizeLimit) match {
-      case AllRead         ⇒ info.registration.enableInterest(OP_READ)
-      case MoreDataWaiting ⇒ self ! ChannelReadable
+    try innerRead(buffer, tokens) match {
+      case AllRead ⇒ info.registration.enableInterest(OP_READ)
+      case MoreDataWaiting ⇒
+        if (ReadThrottlingEnabled)
+          info.registration.disableInterest(OP_READ)
+        else self ! ChannelReadable
       case EndOfStream if channel.socket.isOutputShutdown ⇒
         if (TraceLogging) log.debug("Read returned end-of-stream, our side already closed")
         doCloseConnection(info.handler, closeCommander, ConfirmedClosed)

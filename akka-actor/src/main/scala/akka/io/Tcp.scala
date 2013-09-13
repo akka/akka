@@ -319,7 +319,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * This command needs to be sent to the connection actor after a [[SuspendReading]]
    * command in order to resume reading from the socket.
    */
-  case object ResumeReading extends Command
+  case class ResumeReading(maxBytes: Int) extends Command
 
   /// EVENTS
   /**
@@ -715,7 +715,7 @@ object TcpMessage {
    * This command needs to be sent to the connection actor after a [[Tcp.SuspendReading]]
    * command in order to resume reading from the socket.
    */
-  def resumeReading: Command = ResumeReading
+  def resumeReading(tokens: Int): Command = ResumeReading(tokens)
 
   implicit private def fromJava[T](coll: JIterable[T]): immutable.Traversable[T] = {
     akka.japi.Util.immutableSeq(coll)

@@ -153,9 +153,9 @@ object BackpressureSpec {
         if (hiccups && hiccupStarted == hiccupEnded && ThreadLocalRandom.current.nextInt(1000) == 0) {
           connection ! Management(Tcp.SuspendReading)
           import context.dispatcher
-          system.scheduler.scheduleOnce(100.millis, self, Management(Tcp.ResumeReading))
+          system.scheduler.scheduleOnce(100.millis, self, Management(Tcp.ResumeReading(1000000)))
           hiccupStarted += 1
-        }
+        } else connection ! Management(Tcp.ResumeReading(1000000))
       case m: Management ⇒
         hiccupEnded += 1
         connection ! m

@@ -11,6 +11,7 @@ import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.util.ByteString
 import akka.event.Logging
 import akka.event.LoggingAdapter
+import scala.collection.immutable.Queue
 
 object TcpPipelineHandler {
 
@@ -85,6 +86,8 @@ object TcpPipelineHandler {
    */
   case class Tell(receiver: ActorRef, msg: Any, sender: ActorRef) extends Tcp.Command
 
+  case class Read(tokens: Int)
+
   /**
    * The pipeline may want to emit a [[Tcp.Event]] to the registered handler
    * actor, which is enabled by emitting this [[Tcp.Command]] wrapping an event
@@ -113,10 +116,10 @@ object TcpPipelineHandler {
  *
  * <b>IMPORTANT:</b>
  *
- * Proper function of this actor (and of other pipeline stages like [[TcpReadWriteAdapter]]
+ * Proper function of this actor (and of other pipeline stages like [[akka.io.TcpReadWriteAdapter]]
  * depends on the fact that stages handling TCP commands and events pass unknown
  * subtypes through unaltered. There are more commands and events than are declared
- * within the [[Tcp]] object and you can even define your own.
+ * within the [[akka.io.Tcp]] object and you can even define your own.
  */
 class TcpPipelineHandler[Ctx <: PipelineContext, Cmd, Evt](
   init: TcpPipelineHandler.Init[Ctx, Cmd, Evt],
@@ -133,28 +136,72 @@ class TcpPipelineHandler[Ctx <: PipelineContext, Cmd, Evt](
   context watch handler
 
   val ctx = init.makeContext(context)
+  var tokens = 0
+  val ReaderDriven: Boolean = true // FIXME: from conf
+  val ReadChunkSize: Int = 2 // FIXME: from conf
+  var readQueue = Queue.empty[Evt]
+  var connectionReadPending: Boolean = false
 
-  val pipes = PipelineFactory.buildWithSinkFunctions(ctx, init.stages)({
-    case Success(cmd) ⇒
-      cmd match {
-        case Tell(receiver, msg, sender) ⇒ receiver.tell(msg, sender)
-        case TcpEvent(ev)                ⇒ handler ! ev
-        case _                           ⇒ connection ! cmd
-      }
-    case Failure(ex) ⇒ throw ex
-  }, {
-    case Success(evt) ⇒ handler ! Event(evt)
-    case Failure(ex)  ⇒ throw ex
-  })
+  val pipes = PipelineFactory.buildWithSinkFunctions(ctx, init.stages)(
+    commandSink = {
+      case Success(cmd) ⇒
+        cmd match {
+          case Tell(receiver, msg, sender) ⇒ receiver.tell(msg, sender)
+          case TcpEvent(ev)                ⇒ handler ! ev
+          case _                           ⇒ connection ! cmd
+        }
+      case Failure(ex) ⇒ throw ex
+    },
+    eventSink = {
+      case Success(evt) ⇒ handleEvent(evt)
+      case Failure(ex)  ⇒ throw ex
+    })
+
+  private def handleEvent(ev: Evt): Unit = {
+    if (!ReaderDriven) handler ! Event(ev)
+    else readQueue = readQueue.enqueue(ev)
+  }
 
   def receive = {
-    case Command(cmd)             ⇒ pipes.injectCommand(cmd)
+    case Command(cmd) ⇒ pipes.injectCommand(cmd)
+    case r: Tcp.Received ⇒
+      connectionReadPending = false
+      processRead(r)
     case evt: Tcp.Event           ⇒ pipes.injectEvent(evt)
     case Management(cmd)          ⇒ pipes.managementCommand(cmd)
     case Terminated(`handler`)    ⇒ connection ! Tcp.Abort
-    case Terminated(`connection`) ⇒ context.stop(self)
+    case Terminated(`connection`) ⇒
+      // Get rid of queued messages -- FIXME: another option would be to keep listening for read events until empty
+      readQueue foreach (handler ! Event(_))
+      context.stop(self)
+    case Read(replenishTokens) ⇒
+      // FIXME: Warn if not ReaderDriven
+      tokens = replenishTokens
+      pump()
   }
 
+  private def processRead(ev: Tcp.Event): Unit = {
+    // Feed the pipe
+    pipes.injectEvent(ev)
+    // If we are not reader driven, then the results are already pushed up by the pipeline event sink
+    // Otherwise we have to properly progress depending on our current state
+    if (ReaderDriven) pump()
+  }
+
+  private def pump(): Unit = {
+    // If we  has nothing to serve yet, pull the underlying connection
+    if (readQueue.isEmpty && !connectionReadPending) {
+      connection ! Tcp.ResumeReading(ReadChunkSize)
+      connectionReadPending = true
+    }
+    // While we have something to serve and allowed to serve it, send it up
+    while (readQueue.nonEmpty && tokens > 0) {
+      val (toDeliver, nextQueue) = readQueue.dequeue
+      handler ! Event(toDeliver)
+      readQueue = nextQueue
+      tokens -= 1
+    }
+  }
 }
 
 /**

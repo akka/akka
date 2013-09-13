@@ -294,7 +294,7 @@ class TcpConnectionSpec extends AkkaSpec("""
 
         // the selector interprets StopReading to deregister interest for reading
         interestCallReceiver.expectMsg(-OP_READ)
-        connectionHandler.send(connectionActor, ResumeReading)
+        connectionHandler.send(connectionActor, ResumeReading(100))
         interestCallReceiver.expectMsg(OP_READ)
       }
     }

@@ -10,7 +10,7 @@ import akka.actor.{ Props, ActorLogging, Actor }
 import akka.TestUtils
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration._
-import akka.io.TcpPipelineHandler.Management
+import akka.io.TcpPipelineHandler.{ Read, Management }
 import akka.actor.ActorRef
 import akka.actor.Deploy
 
@@ -78,34 +78,41 @@ class DelimiterFramingSpec extends AkkaSpec("akka.actor.serialize-creators = on"
       "client" + counter.incrementAndGet())
     probe.send(connection, Tcp.Register(handler))
 
+    def writeString(s: String): Unit = probe.send(handler, Command(s))
+    def readString(): String = {
+      probe.send(handler, Read(1))
+      probe.expectMsgType[Event].evt
+    }
+
+    def writeReadAndVerify(req: String, expectedResponse: String): Unit = {
+      writeString(req)
+      readString() must be(expectedResponse)
+    }
+
     def run() {
-      probe.send(handler, Command(s"testone$delimiter"))
-      probe.expectMsg(Event(s"testone$expectedDelimiter"))
-      probe.send(handler, Command(s"two${delimiter}thr"))
-      probe.expectMsg(Event(s"two$expectedDelimiter"))
+      writeReadAndVerify(s"testone$delimiter", s"testone$expectedDelimiter")
+      writeReadAndVerify(s"two${delimiter}thr", s"two$expectedDelimiter")
       probe.expectNoMsg(1.seconds)
-      probe.send(handler, Command(s"ee$delimiter"))
-      probe.expectMsg(Event(s"three$expectedDelimiter"))
+      writeReadAndVerify(s"ee$delimiter", s"three$expectedDelimiter")
       if (delimiter.size > 1) {
         val (first, second) = delimiter.splitAt(1)
 
         // Test a fragmented delimiter
-        probe.send(handler, Command(s"four$first"))
+        writeString(s"four$first")
         probe.expectNoMsg(1.seconds)
-        probe.send(handler, Command(second))
-        probe.expectMsg(Event(s"four$expectedDelimiter"))
+        writeReadAndVerify(second, s"four$expectedDelimiter")
 
         // Test cases of false match on a delimiter fragment
         for (piece ← s"${first}five${first}$delimiter") {
           probe.expectNoMsg(100.milliseconds)
-          probe.send(handler, Command(String.valueOf(piece)))
+          writeString(String.valueOf(piece))
         }
-        probe.expectMsg(Event(s"${first}five${first}$expectedDelimiter"))
+        readString() must be(s"${first}five${first}$expectedDelimiter")
 
       }
-      probe.send(handler, Command(s"${delimiter}${delimiter}"))
-      probe.expectMsg(Event(expectedDelimiter))
-      probe.expectMsg(Event(expectedDelimiter))
+      writeString(s"${delimiter}${delimiter}")
+      readString must be(expectedDelimiter)
+      readString must be(expectedDelimiter)
     }
 
     def close() {
@@ -134,12 +141,16 @@ class DelimiterFramingSpec extends AkkaSpec("akka.actor.serialize-creators = on"
         val connection = sender
         val handler = context.actorOf(TcpPipelineHandler.props(init, sender, self).withDeploy(Deploy.local), "pipeline")
 
+        def readLine(): Unit = handler ! Read(1)
+
         connection ! Tcp.Register(handler)
+        readLine()
 
         context become {
           case Event(data) ⇒
             if (includeDelimiter) sender ! Command(data)
             else sender ! Command(data + delimiter)
+            readLine()
           case Tcp.PeerClosed ⇒ listener ! Tcp.Unbind
           case Tcp.Unbound    ⇒ context.stop(self)
         }
