@@ -5,14 +5,6 @@
 option java_package = "akka.remote.testconductor";
 option optimize_for = SPEED;
 
-/******************************************
-  Compile with:
-  cd ./akka-multi-node-testkit/src/main/protocol
-  protoc TestConductorProtocol.proto --java_out ../java
-  cd ../../../..
-  ./scripts/fix-protobuf.sh
-*******************************************/
-
 message Wrapper {
   optional Hello hello = 1;
   optional EnterBarrier barrier = 2;

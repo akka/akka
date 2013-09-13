@@ -6,14 +6,6 @@ option java_package = "akka.remote";
 option optimize_for = SPEED;
 
 /******************************************
-  Compile with:
-  cd ./akka-remote/src/main/protocol
-  protoc ContainerFormats.proto --java_out ../java
-  cd ../../../..
-  ./scripts/fix-protobuf.sh
-*******************************************/
-
-/******************************************
   ActorSelection related formats
 *******************************************/
 
