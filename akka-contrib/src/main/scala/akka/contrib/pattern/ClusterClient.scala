@@ -28,6 +28,7 @@ import akka.cluster.MemberStatus
 import akka.routing.ConsistentHash
 import akka.routing.MurmurHash
 import akka.actor.Stash
+import akka.actor.Cancellable
 
 object ClusterClient {
 
@@ -36,9 +37,9 @@ object ClusterClient {
    */
   def props(
     initialContacts: Set[ActorSelection],
-    pingInterval: FiniteDuration = 3.second,
+    establishingGetContactsInterval: FiniteDuration = 3.second,
     refreshContactsInterval: FiniteDuration = 1.minute): Props =
-    Props(classOf[ClusterClient], initialContacts, pingInterval, refreshContactsInterval).
+    Props(classOf[ClusterClient], initialContacts, establishingGetContactsInterval, refreshContactsInterval).
       withMailbox("akka.contrib.cluster.client.mailbox")
 
   /**
@@ -46,10 +47,10 @@ object ClusterClient {
    */
   def props(
     initialContacts: java.util.Set[ActorSelection],
-    pingInterval: FiniteDuration,
+    establishingGetContactsInterval: FiniteDuration,
     refreshContactsInterval: FiniteDuration): Props = {
     import scala.collection.JavaConverters._
-    props(initialContacts.asScala.toSet, pingInterval, refreshContactsInterval)
+    props(initialContacts.asScala.toSet, establishingGetContactsInterval, refreshContactsInterval)
   }
 
   /**
@@ -72,7 +73,6 @@ object ClusterClient {
    * INTERNAL API
    */
   private[pattern] object Internal {
-    case object PingTick
     case object RefreshContactsTick
   }
 }
@@ -112,7 +112,7 @@ object ClusterClient {
  */
 class ClusterClient(
   initialContacts: Set[ActorSelection],
-  pingInterval: FiniteDuration,
+  establishingGetContactsInterval: FiniteDuration,
   refreshContactsInterval: FiniteDuration)
   extends Actor with Stash with ActorLogging {
 
@@ -124,14 +124,19 @@ class ClusterClient(
   sendGetContacts()
 
   import context.dispatcher
-  val refreshContactsTask = context.system.scheduler.schedule(
-    refreshContactsInterval, refreshContactsInterval, self, RefreshContactsTick)
-  val pingTask = context.system.scheduler.schedule(pingInterval, pingInterval, self, PingTick)
+  var refreshContactsTask: Option[Cancellable] = None
+  scheduleRefreshContactsTick(establishingGetContactsInterval)
+  self ! RefreshContactsTick
+
+  def scheduleRefreshContactsTick(interval: FiniteDuration): Unit = {
+    refreshContactsTask foreach { _.cancel() }
+    refreshContactsTask = Some(context.system.scheduler.schedule(
+      interval, interval, self, RefreshContactsTick))
+  }
 
   override def postStop(): Unit = {
     super.postStop()
-    refreshContactsTask.cancel()
-    pingTask.cancel()
+    refreshContactsTask foreach { _.cancel() }
   }
 
   def receive = establishing
@@ -145,48 +150,34 @@ class ClusterClient(
     case ActorIdentity(_, Some(receptionist)) ⇒
       context watch receptionist
       log.info("Connected to [{}]", receptionist.path)
+      context.watch(receptionist)
+      scheduleRefreshContactsTick(refreshContactsInterval)
       unstashAll()
       context.become(active(receptionist))
     case ActorIdentity(_, None) ⇒ // ok, use another instead
-    case PingTick               ⇒ sendGetContacts()
-    case Pong                   ⇒
-    case RefreshContactsTick    ⇒
+    case RefreshContactsTick    ⇒ sendGetContacts()
     case msg                    ⇒ stash()
   }
 
   def active(receptionist: ActorRef): Actor.Receive = {
-    def becomeEstablishing(): Unit = {
+    case Send(path, msg, localAffinity) ⇒
+      receptionist forward DistributedPubSubMediator.Send(path, msg, localAffinity)
+    case SendToAll(path, msg) ⇒
+      receptionist forward DistributedPubSubMediator.SendToAll(path, msg)
+    case Publish(topic, msg) ⇒
+      receptionist forward DistributedPubSubMediator.Publish(topic, msg)
+    case RefreshContactsTick ⇒
+      receptionist ! GetContacts
+    case Contacts(contactPoints) ⇒
+      // refresh of contacts
+      if (contactPoints.nonEmpty)
+        contacts = contactPoints
+    case Terminated(`receptionist`) ⇒
       log.info("Lost contact with [{}], restablishing connection", receptionist)
       sendGetContacts()
+      scheduleRefreshContactsTick(establishingGetContactsInterval)
       context.become(establishing)
-    }
-
-    var pongTimestamp = System.nanoTime
-
-    {
-      case Send(path, msg, localAffinity) ⇒
-        receptionist forward DistributedPubSubMediator.Send(path, msg, localAffinity)
-      case SendToAll(path, msg) ⇒
-        receptionist forward DistributedPubSubMediator.SendToAll(path, msg)
-      case Publish(topic, msg) ⇒
-        receptionist forward DistributedPubSubMediator.Publish(topic, msg)
-      case PingTick ⇒
-        if (System.nanoTime - pongTimestamp > 3 * pingInterval.toNanos)
-          becomeEstablishing()
-        else
-          receptionist ! Ping
-      case Pong ⇒
-        pongTimestamp = System.nanoTime
-      case RefreshContactsTick ⇒
-        receptionist ! GetContacts
-      case Terminated(`receptionist`) ⇒
-        becomeEstablishing()
-      case Contacts(contactPoints) ⇒
-        // refresh of contacts
-        if (contactPoints.nonEmpty)
-          contacts = contactPoints
-      case _: ActorIdentity ⇒ // ok, from previous establish, already handled
-    }
+    case _: ActorIdentity ⇒ // ok, from previous establish, already handled
   }
 
   def sendGetContacts(): Unit = {
@@ -320,8 +311,6 @@ object ClusterReceptionist {
     case class Contacts(contactPoints: immutable.IndexedSeq[ActorSelection])
     @SerialVersionUID(1L)
     case object Ping
-    @SerialVersionUID(1L)
-    case object Pong
 
     def roleOption(role: String): Option[String] = role match {
       case null | "" ⇒ None
@@ -334,10 +323,12 @@ object ClusterReceptionist {
      */
     class ClientResponseTunnel(client: ActorRef, timeout: FiniteDuration) extends Actor {
       context.setReceiveTimeout(timeout)
+      context.watch(client)
       def receive = {
-        case Ping           ⇒ // keep alive from client
-        case ReceiveTimeout ⇒ context stop self
-        case msg            ⇒ client forward msg
+        case Ping                 ⇒ // keep alive from client
+        case ReceiveTimeout       ⇒ context stop self
+        case Terminated(`client`) ⇒ context stop self
+        case msg                  ⇒ client forward msg
       }
     }
   }
@@ -422,11 +413,9 @@ class ClusterReceptionist(
 
   def receive = {
     case msg @ (_: Send | _: SendToAll | _: Publish) ⇒
-      pubSubMediator.tell(msg, responseTunnel(sender))
-
-    case Ping ⇒
-      responseTunnel(sender) ! Ping // keep alive
-      sender ! Pong
+      val tunnel = responseTunnel(sender)
+      tunnel ! Ping // keep alive
+      pubSubMediator.tell(msg, tunnel)
 
     case GetContacts ⇒
       // Consistent hashing is used to ensure that the reply to GetContacts
