@@ -81,7 +81,7 @@ object AkkaBuild extends Build {
       
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
-      mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples, channels, channelsTests,
+      persistence, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples, channels, channelsTests,
       multiNodeTestkit)
   )
 
@@ -276,6 +276,16 @@ object AkkaBuild extends Build {
     )
   )
 
+  lazy val persistence = Project(
+    id = "akka-persistence-experimental",
+    base = file("akka-persistence"),
+    dependencies = Seq(actor, testkit % "test->test"),
+    settings = defaultSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.persistence ++ Seq(
+      libraryDependencies ++= Dependencies.persistence,
+      previousArtifact := akkaPreviousArtifact("akka-persistence")
+    )
+  )
+
   val testMailbox = SettingKey[Boolean]("test-mailbox")
 
   lazy val mailboxes = Project(
@@ -431,7 +441,7 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(camelSample, fsmSample, helloSample, helloKernelSample, remoteSample, clusterSample, multiNodeSample, osgiDiningHakkersSample)
+    aggregate = Seq(camelSample, fsmSample, helloSample, helloKernelSample, remoteSample, persistenceSample, clusterSample, multiNodeSample, osgiDiningHakkersSample)
   )
 
   lazy val camelSample = Project(
@@ -466,6 +476,13 @@ object AkkaBuild extends Build {
     id = "akka-sample-remote",
     base = file("akka-samples/akka-sample-remote"),
     dependencies = Seq(actor, remote, kernel),
+    settings = sampleSettings
+  )
+
+  lazy val persistenceSample = Project(
+    id = "akka-sample-persistence",
+    base = file("akka-samples/akka-sample-persistence"),
+    dependencies = Seq(actor, persistence),
     settings = sampleSettings
   )
 
@@ -566,7 +583,8 @@ object AkkaBuild extends Build {
     id = "akka-docs",
     base = file("akka-docs"),
     dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test", channels,
-      remote % "compile;test->test", cluster, slf4j, agent, dataflow, transactor, fileMailbox, zeroMQ, camel, osgi, osgiAries),
+      remote % "compile;test->test", cluster, slf4j, agent, dataflow, transactor, fileMailbox, zeroMQ, camel, osgi, osgiAries,
+      persistence % "compile;test->test"),
     settings = defaultSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
       sphinxPackages in Sphinx <+= baseDirectory { _ / "_sphinx" / "pygments" },
@@ -990,6 +1008,8 @@ object AkkaBuild extends Build {
 
     val transactor = exports(Seq("akka.transactor.*"))
 
+    val persistence = exports(Seq("akka.persistence.*"))
+
     val testkit = exports(Seq("akka.testkit.*"))
 
     val zeroMQ = exports(Seq("akka.zeromq.*"), imports = Seq(protobufImport()) )
@@ -1050,6 +1070,7 @@ object Dependencies {
     val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "1.1.0"       // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
     val osgiCompendium= "org.osgi"                    % "org.osgi.compendium"          % "4.2.0"       // ApacheV2
+    val levelDB      = "org.iq80.leveldb"            % "leveldb"                      % "0.5"         // ApacheV2
 
     // Camel Sample
     val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
@@ -1099,6 +1120,8 @@ object Dependencies {
   val agent = Seq(scalaStm, Test.scalatest, Test.junit)
 
   val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
+
+  val persistence = Seq(levelDB, Test.scalatest, Test.junit, Test.commonsIo)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 

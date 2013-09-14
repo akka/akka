@@ -495,7 +495,7 @@ private[akka] class ActorCell(
     }
   }
 
-  final def receiveMessage(msg: Any): Unit = behaviorStack.head.applyOrElse(msg, actor.unhandled)
+  final def receiveMessage(msg: Any): Unit = actor.aroundReceive(behaviorStack.head, msg)
 
   /*
    * ACTOR CONTEXT IMPLEMENTATION
