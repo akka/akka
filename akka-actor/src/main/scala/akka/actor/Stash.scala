@@ -77,10 +77,13 @@ trait UnrestrictedStash extends Actor {
     config.getInt("stash-capacity")
   }
 
-  /* The actor's deque-based message queue.
+  /**
+   * INTERNAL API.
+   *
+   * The actor's deque-based message queue.
    * `mailbox.queue` is the underlying `Deque`.
    */
-  private val mailbox: DequeBasedMessageQueueSemantics = {
+  protected[akka] val mailbox: DequeBasedMessageQueueSemantics = {
     context.asInstanceOf[ActorCell].mailbox.messageQueue match {
       case queue: DequeBasedMessageQueueSemantics ⇒ queue
       case other ⇒ throw ActorInitializationException(self, s"DequeBasedMailbox required, got: ${other.getClass.getName}\n" +
@@ -116,9 +119,26 @@ trait UnrestrictedStash extends Actor {
    *
    *  The stash is guaranteed to be empty after calling `unstashAll()`.
    */
-  def unstashAll(): Unit = {
+  def unstashAll(): Unit = unstashAll(_ ⇒ true)
+
+  /**
+   * INTERNAL API.
+   *
+   *  Prepends selected messages in the stash, applying `filterPredicate`,  to the
+   *  mailbox, and then clears the stash.
+   *
+   *  Messages from the stash are enqueued to the mailbox until the capacity of the
+   *  mailbox (if any) has been reached. In case a bounded mailbox overflows, a
+   *  `MessageQueueAppendFailedException` is thrown.
+   *
+   *  The stash is guaranteed to be empty after calling `unstashAll(Any => Boolean)`.
+   *
+   *  @param filterPredicate only stashed messages selected by this predicate are
+   *                         prepended to the mailbox.
+   */
+  protected[akka] def unstashAll(filterPredicate: Any ⇒ Boolean): Unit = {
     try {
-      val i = theStash.reverseIterator
+      val i = theStash.reverseIterator.filter(envelope ⇒ filterPredicate(envelope.message))
       while (i.hasNext) mailbox.enqueueFirst(self, i.next())
     } finally {
       theStash = Vector.empty[Envelope]

@@ -12,4 +12,5 @@ Actors
    mailboxes
    routing
    fsm
+   persistence
    testing
