@@ -470,6 +470,16 @@ trait Actor {
   //#receive
 
   /**
+   * INTERNAL API.
+   *
+   * Can be overridden to intercept calls to this actor's current behavior.
+   *
+   * @param receive current behavior.
+   * @param msg current message.
+   */
+  protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = receive.applyOrElse(msg, unhandled)
+
+  /**
    * User overridable definition the strategy to use for supervising
    * child actors.
    */
