@@ -26,7 +26,7 @@ object ConversationRecoveryExample extends App {
       case "init" ⇒ if (counter == 0) self forward Persistent(Ping)
     }
 
-    override def preStartProcessor() = ()
+    override def preStart() = ()
   }
 
   class Pong extends Processor {
@@ -43,7 +43,7 @@ object ConversationRecoveryExample extends App {
       }
     }
 
-    override def preStartProcessor() = ()
+    override def preStart() = ()
   }
 
   val system = ActorSystem("example")

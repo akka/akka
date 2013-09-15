@@ -18,12 +18,12 @@ object ProcessorFailureExample extends App {
       case Persistent(payload: String, _) ⇒ received = payload :: received
     }
 
-    override def preRestartProcessor(reason: Throwable, message: Option[Any]) {
+    override def preRestart(reason: Throwable, message: Option[Any]) {
       message match {
         case Some(p: Persistent) if !recoveryRunning ⇒ delete(p) // mark failing message as deleted
         case _                                       ⇒ // ignore
       }
-      super.preRestartProcessor(reason, message)
+      super.preRestart(reason, message)
     }
   }
 
