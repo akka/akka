@@ -127,7 +127,13 @@ object Member {
     val groupedByAddress = (a.toSeq ++ b.toSeq).groupBy(_.uniqueAddress)
     // pick highest MemberStatus
     (Member.none /: groupedByAddress) {
-      case (acc, (_, members)) ⇒ acc + members.reduceLeft(highestPriorityOf)
+      case (acc, (_, members)) ⇒
+        if (members.size == 2) acc + members.reduceLeft(highestPriorityOf)
+        else {
+          val m = members.head
+          if (Gossip.removeUnreachableWithMemberStatus(m.status)) acc // removed
+          else acc + m
+        }
     }
   }
 

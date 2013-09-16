@@ -104,8 +104,8 @@ class BoundedBlockingQueue[E <: AnyRef](
       @tailrec def pollElement(remainingNanos: Long): E = {
         backing.poll() match {
           case null if remainingNanos <= 0 ⇒ null.asInstanceOf[E]
-          case null ⇒ pollElement(notEmpty.awaitNanos(remainingNanos))
-          case e 	⇒ {
+          case null                        ⇒ pollElement(notEmpty.awaitNanos(remainingNanos))
+          case e ⇒ {
             notFull.signal()
             e
           }
@@ -120,7 +120,7 @@ class BoundedBlockingQueue[E <: AnyRef](
     try {
       backing.poll() match {
         case null ⇒ null.asInstanceOf[E]
-        case e    ⇒
+        case e ⇒
           notFull.signal()
           e
       }
