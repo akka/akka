@@ -698,15 +698,14 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    */
   def adjustedGossipDifferentViewProbability: Double = {
     val g = latestGossip
-    val membersSize = g.membersSize
-    val seenSize = g.overview.seenSize
-    val seenDiff = g.membersSize - g.overview.seenSize
-    if (seenDiff == 0)
+    val upToDateCount = g.overview.seenSize
+    val stragglerCount = g.membersSize - upToDateCount
+    if (stragglerCount == 0)
       -1.0 // all in seen, no bias
     else {
       import math.max
-      val smallCluster = 5
-      GossipDifferentViewProbability / max((g.membersSize / seenDiff) - smallCluster, 1)
+      val smallClusterBias = 5
+      GossipDifferentViewProbability / max((upToDateCount.toDouble / stragglerCount) - smallClusterBias, 1.0)
     }
   }
 
