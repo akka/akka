@@ -8,6 +8,7 @@ import akka.actor._
 import com.typesafe.config.ConfigFactory
 import akka.actor.RootActorPath
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RemoteDeathWatchSpec extends AkkaSpec(ConfigFactory.parseString("""
@@ -36,6 +37,17 @@ akka {
   override def afterTermination() {
     shutdown(other)
   }
+
+  override protected def withFixture(test: NoArgTest): Unit =
+    if (TestKitExtension(other).BufferLogging) {
+      try {
+        super.withFixture(test)
+      } catch {
+        case NonFatal(e) ⇒
+          other.eventStream.publish(TestEvent.Flush)
+          throw e
+      }
+    } else super.withFixture(test)
 
   "receive Terminated when watched node is unknown host" in {
     val path = RootActorPath(Address("akka.tcp", system.name, "unknownhost", 2552)) / "user" / "subject"

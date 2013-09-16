@@ -4,7 +4,6 @@
 package akka.remote
 
 import language.postfixOps
-
 import akka.testkit._
 import akka.actor._
 import com.typesafe.config._
@@ -19,6 +18,9 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.event.{ Logging, NoLogging, LoggingAdapter }
 import akka.remote.transport.netty.{ SSLSettings, NettySSLSupport }
+
+import Configuration.{ CipherConfig, getCipherConfig }
+import scala.util.control.NonFatal
 
 object Configuration {
   // set this in your JAVA_OPTS to see all ssl debug info: "-Djavax.net.debug=ssl,keymanager"
@@ -52,7 +54,7 @@ object Configuration {
         }
       }
     }
-                     """
+    """
 
   case class CipherConfig(runTest: Boolean, config: Config, cipher: String, localPort: Int, remotePort: Int)
 
@@ -86,8 +88,6 @@ object Configuration {
     }
   }
 }
-
-import Configuration.{ CipherConfig, getCipherConfig }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class Ticket1978SHA1PRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("SHA1PRNG", "TLS_RSA_WITH_AES_128_CBC_SHA"))
@@ -132,6 +132,17 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
       shutdown(other)
     }
   }
+
+  override protected def withFixture(test: NoArgTest): Unit =
+    if (TestKitExtension(other).BufferLogging) {
+      try {
+        super.withFixture(test)
+      } catch {
+        case NonFatal(e) ⇒
+          other.eventStream.publish(TestEvent.Flush)
+          throw e
+      }
+    } else super.withFixture(test)
 
   ("-") must {
     if (cipherConfig.runTest) {

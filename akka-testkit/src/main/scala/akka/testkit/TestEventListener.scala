@@ -16,6 +16,8 @@ import akka.actor.NoSerializationVerificationNeeded
 import akka.japi.Util.immutableSeq
 import java.lang.{ Iterable ⇒ JIterable }
 import akka.util.BoxedType
+import akka.actor.Stash
+import akka.actor.ActorRef
 
 /**
  * Implementation helpers of the EventFilter facilities: send `Mute`
@@ -56,6 +58,7 @@ object TestEvent {
      */
     def this(filters: JIterable[EventFilter]) = this(immutableSeq(filters))
   }
+  case object Flush extends TestEvent with NoSerializationVerificationNeeded
 }
 
 /**
@@ -95,6 +98,8 @@ abstract class EventFilter(occurrences: Int) {
    * remove the filter when the block is finished or aborted.
    */
   def intercept[T](code: ⇒ T)(implicit system: ActorSystem): T = {
+    // never buffer when intercept is used
+    system.eventStream publish TestEvent.Flush
     system.eventStream publish TestEvent.Mute(this)
     val leeway = TestKitExtension(system).TestEventFilterLeeway
     try {
@@ -476,14 +481,20 @@ case class DeadLettersFilter(val messageClass: Class[_])(occurrences: Int) exten
  * }
  * </code></pre>
  */
-class TestEventListener extends Logging.DefaultLogger {
+class TestEventListener extends Logging.DefaultLogger with Stash {
   import TestEvent._
 
   var filters: List[EventFilter] = Nil
 
+  override def preStart(): Unit = {
+
+  }
+
   override def receive = {
     case InitializeLogger(bus) ⇒
-      Seq(classOf[Mute], classOf[UnMute], classOf[DeadLetter], classOf[UnhandledMessage]) foreach (bus.subscribe(context.self, _))
+      Seq(classOf[TestEvent], classOf[DeadLetter], classOf[UnhandledMessage]) foreach (bus.subscribe(context.self, _))
+      if (TestKitExtension(context.system).BufferLogging)
+        context become buffering
       sender ! LoggerInitialized
     case Mute(filters)   ⇒ filters foreach addFilter
     case UnMute(filters) ⇒ filters foreach removeFilter
@@ -502,7 +513,15 @@ class TestEventListener extends Logging.DefaultLogger {
     case UnhandledMessage(msg, sender, rcp) ⇒
       val event = Warning(rcp.path.toString, rcp.getClass, "unhandled message from " + sender + ": " + msg)
       if (!filter(event)) print(event)
-    case m ⇒ print(Debug(context.system.name, this.getClass, m))
+    case Flush ⇒ // already flushed
+    case m     ⇒ print(Debug(context.system.name, this.getClass, m))
+  }
+
+  def buffering: Receive = {
+    case Flush ⇒
+      context.unbecome()
+      unstashAll()
+    case msg ⇒ stash()
   }
 
   def filter(event: LogEvent): Boolean = filters exists (f ⇒ try { f(event) } catch { case e: Exception ⇒ false })

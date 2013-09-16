@@ -11,6 +11,8 @@ import akka.remote.RemoteActorRefProvider
 import akka.testkit.TestEvent
 import akka.testkit.EventFilter
 import akka.remote.EndpointException
+import scala.util.control.NonFatal
+import akka.testkit.TestKitExtension
 
 object ThrottlerTransportAdapterSpec {
   val configA: Config = ConfigFactory parseString ("""
@@ -23,7 +25,7 @@ object ThrottlerTransportAdapterSpec {
       remote.netty.tcp.applied-adapters = ["trttl"]
       remote.netty.tcp.port = 0
     }
-                                                   """)
+    """)
 
   class Echo extends Actor {
     override def receive = {
@@ -137,6 +139,17 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
   }
 
   override def afterTermination(): Unit = shutdown(systemB)
+
+  override protected def withFixture(test: NoArgTest): Unit =
+    if (TestKitExtension(systemB).BufferLogging) {
+      try {
+        super.withFixture(test)
+      } catch {
+        case NonFatal(e) ⇒
+          systemB.eventStream.publish(TestEvent.Flush)
+          throw e
+      }
+    } else super.withFixture(test)
 }
 
 class ThrottlerTransportAdapterGenericSpec extends GenericTransportSpec(withAkkaProtocol = true) {

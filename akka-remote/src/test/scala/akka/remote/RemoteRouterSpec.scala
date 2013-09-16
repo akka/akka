@@ -29,7 +29,9 @@ class RemoteRouterSpec extends AkkaSpec("""
         router = round-robin
         nr-of-instances = 4
       }
-    }""") {
+    }
+    akka.test.buffer-logging=off
+    """) {
 
   import RemoteRouterSpec._
 

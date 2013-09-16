@@ -30,6 +30,7 @@ object RemoteNodeRestartDeathWatchMultiJvmSpec extends MultiNodeConfig {
     ConfigFactory.parseString("""
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = off
+      akka.test.buffer-logging = off  
       """)))
 
   testTransport(on = true)

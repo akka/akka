@@ -29,6 +29,7 @@ object RestartFirstSeedNodeMultiJvmSpec extends MultiNodeConfig {
       akka.cluster {
         auto-down = on
       }
+      akka.test.buffer-logging = off
     """)).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
