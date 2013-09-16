@@ -287,7 +287,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
   def awaitMembersUp(
     numberOfMembers: Int,
     canNotBePartOfMemberRing: Set[Address] = Set.empty,
-    timeout: FiniteDuration = 20.seconds): Unit = {
+    timeout: FiniteDuration = 25.seconds): Unit = {
     within(timeout) {
       if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
         awaitAssert(canNotBePartOfMemberRing foreach (a ⇒ clusterView.members.map(_.address) must not contain (a)))

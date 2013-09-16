@@ -22,7 +22,6 @@ class GossipSpec extends WordSpec with MustMatchers {
   val c2 = TestMember(c1.address, Up)
   val c3 = TestMember(c1.address, Exiting)
   val d1 = TestMember(Address("akka.tcp", "sys", "d", 2552), Leaving)
-  val d2 = TestMember(d1.address, Removed)
   val e1 = TestMember(Address("akka.tcp", "sys", "e", 2552), Joining)
   val e2 = TestMember(e1.address, Up)
   val e3 = TestMember(e1.address, Down)
@@ -58,6 +57,22 @@ class GossipSpec extends WordSpec with MustMatchers {
 
       val merged2 = g2 merge g1
       merged2.overview.reachability.allUnreachable must be(merged1.overview.reachability.allUnreachable)
+    }
+
+    "merge members by removing removed members" in {
+      // c3 removed
+      val r1 = Reachability.empty.unreachable(b1.uniqueAddress, a1.uniqueAddress)
+      val g1 = Gossip(members = SortedSet(a1, b1), overview = GossipOverview(reachability = r1))
+      val r2 = r1.unreachable(b1.uniqueAddress, c3.uniqueAddress)
+      val g2 = Gossip(members = SortedSet(a1, b1, c3), overview = GossipOverview(reachability = r2))
+
+      val merged1 = g1 merge g2
+      merged1.members must be(SortedSet(a1, b1))
+      merged1.overview.reachability.allUnreachable must be(Set(a1.uniqueAddress))
+
+      val merged2 = g2 merge g1
+      merged2.overview.reachability.allUnreachable must be(merged1.overview.reachability.allUnreachable)
+      merged2.members must be(merged1.members)
     }
 
     "have leader as first member based on ordering, except Exiting status" in {
