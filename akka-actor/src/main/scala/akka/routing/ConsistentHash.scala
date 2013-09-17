@@ -118,8 +118,10 @@ object ConsistentHash {
   }
 
   private def nodeHashFor(node: Any, vnode: Int): Int = {
-    val baseStr = node.toString + ":"
-    hashFor(baseStr + vnode)
+    import MurmurHash._
+    var h = startHash(node.##)
+    h = extendHash(h, vnode, startMagicA, startMagicB)
+    finalizeHash(h)
   }
 
   private def hashFor(bytes: Array[Byte]): Int = MurmurHash.arrayHash(bytes)
