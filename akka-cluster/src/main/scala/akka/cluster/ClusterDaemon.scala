@@ -285,6 +285,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     case InitJoin                          ⇒ sender ! InitJoinNack(selfAddress)
     case ClusterUserAction.JoinTo(address) ⇒ join(address)
     case JoinSeedNodes(seedNodes)          ⇒ joinSeedNodes(seedNodes)
+    case Join(node, roles)                 ⇒ joiningUninitialized(node, roles)
     case msg: SubscriptionMessage          ⇒ publisher forward msg
   }
 
@@ -292,18 +293,25 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     case Welcome(from, gossip) ⇒ welcome(joinWith, from, gossip)
     case InitJoin              ⇒ sender ! InitJoinNack(selfAddress)
     case ClusterUserAction.JoinTo(address) ⇒
-      context.become(uninitialized)
+      becomeUninitialized()
       join(address)
     case JoinSeedNodes(seedNodes) ⇒
-      context.become(uninitialized)
+      becomeUninitialized()
       joinSeedNodes(seedNodes)
+    case Join(node, roles)        ⇒ joiningUninitialized(node, roles)
     case msg: SubscriptionMessage ⇒ publisher forward msg
     case _: Tick ⇒
       if (deadline.exists(_.isOverdue)) {
-        context.become(uninitialized)
+        becomeUninitialized()
         if (SeedNodes.nonEmpty) joinSeedNodes(SeedNodes)
         else join(joinWith)
       }
+  }
+
+  def becomeUninitialized(): Unit = {
+    // make sure that join process is stopped
+    stopSeedNodeProcess()
+    context.become(uninitialized)
   }
 
   def becomeInitialized(): Unit = {
@@ -311,6 +319,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     // heartbeating doesn't start before Welcome is received
     context.actorOf(Props[ClusterHeartbeatSender].
       withDispatcher(UseDispatcher), name = "heartbeatSender")
+    // make sure that join process is stopped
+    stopSeedNodeProcess()
     context.become(initialized)
   }
 
@@ -351,8 +361,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   def initJoin(): Unit = sender ! InitJoinAck(selfAddress)
 
   def joinSeedNodes(seedNodes: immutable.IndexedSeq[Address]): Unit = {
-    require(seedNodeProcess.isEmpty, "Join seed nodes is already in progress")
     if (seedNodes.nonEmpty) {
+      stopSeedNodeProcess()
       seedNodeProcess =
         if (seedNodes == immutable.IndexedSeq(selfAddress)) {
           self ! ClusterUserAction.JoinTo(selfAddress)
@@ -384,17 +394,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       require(latestGossip.members.isEmpty, "Join can only be done from empty state")
 
       // to support manual join when joining to seed nodes is stuck (no seed nodes available)
-      val snd = sender
-      seedNodeProcess match {
-        case Some(`snd`) ⇒
-          // seedNodeProcess completed, it will stop itself
-          seedNodeProcess = None
-        case Some(s) ⇒
-          // manual join, abort current seedNodeProcess
-          context stop s
-          seedNodeProcess = None
-        case None ⇒ // no seedNodeProcess in progress
-      }
+      stopSeedNodeProcess()
 
       if (address == selfAddress) {
         becomeInitialized()
@@ -407,6 +407,16 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         context.become(tryingToJoin(address, joinDeadline))
         clusterCore(address) ! Join(selfUniqueAddress, cluster.selfRoles)
       }
+    }
+  }
+
+  def stopSeedNodeProcess(): Unit = {
+    seedNodeProcess match {
+      case Some(s) ⇒
+        // manual join, abort current seedNodeProcess
+        context stop s
+        seedNodeProcess = None
+      case None ⇒ // no seedNodeProcess in progress
     }
   }
 
@@ -454,6 +464,16 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         publish(latestGossip)
       }
     }
+  }
+
+  /**
+   * Another node is joining when this node is uninitialized.
+   */
+  def joiningUninitialized(node: UniqueAddress, roles: Set[String]): Unit = {
+    require(latestGossip.members.isEmpty, "Joining an uninitialized node can only be done from empty state")
+    joining(node, roles)
+    if (latestGossip.hasMember(selfUniqueAddress))
+      becomeInitialized()
   }
 
   /**
