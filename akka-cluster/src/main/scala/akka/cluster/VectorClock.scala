@@ -37,35 +37,9 @@ private[cluster] object VectorClock {
     }
   }
 
-  /**
-   * Timestamp representation a unique 'Ordered' timestamp.
-   */
-  @SerialVersionUID(1L)
-  final case class Timestamp(time: Long) extends Ordered[Timestamp] {
-    def max(other: Timestamp) = if (this < other) other else this
-
-    def compare(other: Timestamp) = time compare other.time
-
-    override def toString = "%016x" format time
-  }
-
   object Timestamp {
-    private val counter = new AtomicLong(newTimestamp)
-
-    val zero: Timestamp = Timestamp(0L)
-
-    def apply(): Timestamp = {
-      var newTime: Long = 0L
-      while (newTime == 0) {
-        val last = counter.get
-        val current = newTimestamp
-        val next = if (current > last) current else last + 1
-        if (counter.compareAndSet(last, next)) {
-          newTime = next
-        }
-      }
-      new Timestamp(newTime)
-    }
+    final val Zero = 0L
+    final val EndMarker = Long.MinValue
   }
 
   sealed trait Ordering
@@ -81,7 +55,7 @@ private[cluster] object VectorClock {
   /**
    * Marker to signal that we have reached the end of a vector clock.
    */
-  private val cmpEndMarker = (VectorClock.Node("endmarker"), Timestamp(Int.MinValue))
+  private val cmpEndMarker = (VectorClock.Node("endmarker"), Timestamp.EndMarker)
 
 }
 
@@ -97,14 +71,17 @@ private[cluster] object VectorClock {
  */
 @SerialVersionUID(1L)
 case class VectorClock(
-  versions: TreeMap[VectorClock.Node, VectorClock.Timestamp] = TreeMap.empty[VectorClock.Node, VectorClock.Timestamp]) {
+  versions: TreeMap[VectorClock.Node, Long] = TreeMap.empty[VectorClock.Node, Long]) {
 
   import VectorClock._
 
   /**
    * Increment the version for the node passed as argument. Returns a new VectorClock.
    */
-  def :+(node: Node): VectorClock = copy(versions = versions + (node -> Timestamp()))
+  def :+(node: Node): VectorClock = {
+    val currentTimestamp = versions.getOrElse(node, Timestamp.Zero)
+    copy(versions = versions.updated(node, currentTimestamp + 1))
+  }
 
   /**
    * Returns true if <code>this</code> and <code>that</code> are concurrent else false.
@@ -140,9 +117,9 @@ case class VectorClock(
   private final def compareOnlyTo(that: VectorClock, order: Ordering): Ordering = {
     def nextOrElse[T](iter: Iterator[T], default: T): T = if (iter.hasNext) iter.next() else default
 
-    def compare(i1: Iterator[(Node, Timestamp)], i2: Iterator[(Node, Timestamp)], requestedOrder: Ordering): Ordering = {
+    def compare(i1: Iterator[(Node, Long)], i2: Iterator[(Node, Long)], requestedOrder: Ordering): Ordering = {
       @tailrec
-      def compareNext(nt1: (Node, Timestamp), nt2: (Node, Timestamp), currentOrder: Ordering): Ordering =
+      def compareNext(nt1: (Node, Long), nt2: (Node, Long), currentOrder: Ordering): Ordering =
         if ((requestedOrder ne FullOrder) && (currentOrder ne Same) && (currentOrder ne requestedOrder)) currentOrder
         else if ((nt1 eq cmpEndMarker) && (nt2 eq cmpEndMarker)) currentOrder
         // i1 is empty but i2 is not, so i1 can only be Before
@@ -154,10 +131,9 @@ case class VectorClock(
           val nc = nt1._1 compareTo nt2._1
           if (nc == 0) {
             // both nodes exist compare the timestamps
-            val tc = nt1._2 compareTo nt2._2
             // same timestamp so just continue with the next nodes
-            if (tc == 0) compareNext(nextOrElse(i1, cmpEndMarker), nextOrElse(i2, cmpEndMarker), currentOrder)
-            else if (tc < 0) {
+            if (nt1._2 == nt2._2) compareNext(nextOrElse(i1, cmpEndMarker), nextOrElse(i2, cmpEndMarker), currentOrder)
+            else if (nt1._2 < nt2._2) {
               // t1 is less than t2, so i1 can only be Before
               if (currentOrder eq After) Concurrent
               else compareNext(nextOrElse(i1, cmpEndMarker), nextOrElse(i2, cmpEndMarker), Before)
@@ -204,7 +180,7 @@ case class VectorClock(
   def merge(that: VectorClock): VectorClock = {
     var mergedVersions = that.versions
     for ((node, time) ← versions) {
-      val mergedVersionsCurrentTime = mergedVersions.getOrElse(node, Timestamp.zero)
+      val mergedVersionsCurrentTime = mergedVersions.getOrElse(node, Timestamp.Zero)
       if (time > mergedVersionsCurrentTime)
         mergedVersions = mergedVersions.updated(node, time)
     }

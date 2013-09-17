@@ -20,8 +20,8 @@ object VectorClockPerfSpec {
     }
 
   def copyVectorClock(vc: VectorClock): VectorClock = {
-    val versions = (TreeMap.empty[Node, Timestamp] /: vc.versions) {
-      case (versions, (n, t)) ⇒ versions.updated(Node.fromHash(n), Timestamp(t.time))
+    val versions = (TreeMap.empty[Node, Long] /: vc.versions) {
+      case (versions, (n, t)) ⇒ versions.updated(Node.fromHash(n), t)
     }
     vc.copy(versions = versions)
   }
@@ -42,10 +42,10 @@ class VectorClockPerfSpec extends WordSpec with ShouldMatchers {
   val middleNode = nodes.drop(clockSize / 2).head
   val vcBaseLast = vcBefore :+ lastNode
   val vcAfterLast = vcBaseLast :+ firstNode
-  val vcConcurrentLast = vcBefore :+ lastNode
+  val vcConcurrentLast = vcBaseLast :+ lastNode
   val vcBaseMiddle = vcBefore :+ middleNode
   val vcAfterMiddle = vcBaseMiddle :+ firstNode
-  val vcConcurrentMiddle = vcBefore :+ middleNode
+  val vcConcurrentMiddle = vcBaseMiddle :+ middleNode
 
   def checkThunkFor(vc1: VectorClock, vc2: VectorClock, thunk: (VectorClock, VectorClock) ⇒ Unit, times: Int): Unit = {
     val vcc1 = copyVectorClock(vc1)
