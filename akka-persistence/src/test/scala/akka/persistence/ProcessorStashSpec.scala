@@ -13,7 +13,7 @@ object ProcessorStashSpec {
 
   case object GetState
 
-  class StashingProcessor extends Processor {
+  class StashingProcessor(name: String) extends NamedProcessor(name) {
     var state: List[String] = Nil
 
     val behaviorA: Actor.Receive = {
@@ -38,7 +38,7 @@ object ProcessorStashSpec {
     }
   }
 
-  class RecoveryFailureStashingProcessor extends StashingProcessor {
+  class RecoveryFailureStashingProcessor(name: String) extends StashingProcessor(name) {
     override def preRestartProcessor(reason: Throwable, message: Option[Any]) = {
       message match {
         case Some(m: Persistent) ⇒ if (recoveryRunning) delete(m)
@@ -54,15 +54,14 @@ class ProcessorStashSpec extends AkkaSpec(ProcessorStashSpec.config) with Persis
 
   "A processor" must {
     "support user stash and unstash operations for persistent messages" in {
-      val p1 = system.actorOf(Props[StashingProcessor], name)
+      val p1 = namedProcessor[StashingProcessor]
       p1 ! Persistent("a")
       p1 ! Persistent("b")
       p1 ! Persistent("c")
       p1 ! GetState
       expectMsg(List("a-1", "c-3", "b-2"))
-      stopAndAwaitTermination(p1)
 
-      val p2 = system.actorOf(Props[StashingProcessor], name)
+      val p2 = namedProcessor[StashingProcessor]
       p2 ! Persistent("a")
       p2 ! Persistent("b")
       p2 ! Persistent("c")
@@ -70,16 +69,15 @@ class ProcessorStashSpec extends AkkaSpec(ProcessorStashSpec.config) with Persis
       expectMsg(List("a-1", "c-3", "b-2", "a-4", "c-6", "b-5"))
     }
     "support user stash and unstash operations for persistent and transient messages" in {
-      val p1 = system.actorOf(Props[StashingProcessor], name)
+      val p1 = namedProcessor[StashingProcessor]
       p1 ! Persistent("a")
       p1 ! "x"
       p1 ! Persistent("b")
       p1 ! Persistent("c")
       p1 ! GetState
       expectMsg(List("a-1", "c-3", "x-0", "b-2"))
-      stopAndAwaitTermination(p1)
 
-      val p2 = system.actorOf(Props[StashingProcessor], name)
+      val p2 = namedProcessor[StashingProcessor]
       p2 ! Persistent("a")
       p2 ! "x"
       p2 ! Persistent("b")
@@ -88,16 +86,15 @@ class ProcessorStashSpec extends AkkaSpec(ProcessorStashSpec.config) with Persis
       expectMsg(List("a-1", "c-3", "b-2", "a-4", "c-6", "x-0", "b-5"))
     }
     "support restarts between user stash and unstash operations" in {
-      val p1 = system.actorOf(Props[StashingProcessor], name)
+      val p1 = namedProcessor[StashingProcessor]
       p1 ! Persistent("a")
       p1 ! Persistent("b")
       p1 ! "boom"
       p1 ! Persistent("c")
       p1 ! GetState
       expectMsg(List("a-1", "c-3", "b-2"))
-      stopAndAwaitTermination(p1)
 
-      val p2 = system.actorOf(Props[StashingProcessor], name)
+      val p2 = namedProcessor[StashingProcessor]
       p2 ! Persistent("a")
       p2 ! Persistent("b")
       p2 ! "boom"
@@ -106,16 +103,15 @@ class ProcessorStashSpec extends AkkaSpec(ProcessorStashSpec.config) with Persis
       expectMsg(List("a-1", "c-3", "b-2", "a-4", "c-6", "b-5"))
     }
     "support multiple restarts between user stash and unstash operations" in {
-      val p1 = system.actorOf(Props[RecoveryFailureStashingProcessor], name)
+      val p1 = namedProcessor[RecoveryFailureStashingProcessor]
       p1 ! Persistent("a")
       p1 ! Persistent("b")
       p1 ! Persistent("boom")
       p1 ! Persistent("c")
       p1 ! GetState
       expectMsg(List("a-1", "c-4", "b-2"))
-      stopAndAwaitTermination(p1)
 
-      val p2 = system.actorOf(Props[RecoveryFailureStashingProcessor], name)
+      val p2 = namedProcessor[RecoveryFailureStashingProcessor]
       p2 ! Persistent("a")
       p2 ! Persistent("b")
       p2 ! Persistent("boom")
