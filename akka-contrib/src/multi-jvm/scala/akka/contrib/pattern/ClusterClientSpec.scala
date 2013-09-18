@@ -130,7 +130,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       }
       //#server
 
-      runOn(host1, host2, host3) {
+      runOn(host1, host2, host3, fourth) {
         awaitCount(4)
       }
       enterBarrier("services-replicated")
