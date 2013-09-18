@@ -24,7 +24,7 @@ Akka persistence is a separate jar file. Make sure that you have the following d
 
   <dependency>
     <groupId>com.typesafe.akka</groupId>
-    <artifactId>akka-persistence_@binVersion@</artifactId>
+    <artifactId>akka-persistence-experimental_@binVersion@</artifactId>
     <version>@version@</version>
   </dependency>
 
