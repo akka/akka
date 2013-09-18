@@ -13,7 +13,7 @@ object ProcessorSpec {
 
   case object GetState
 
-  class RecoverTestProcessor extends Processor {
+  class RecoverTestProcessor(name: String) extends NamedProcessor(name) {
     var state = List.empty[String]
     def receive = {
       case "boom"                   ⇒ throw new Exception("boom")
@@ -31,22 +31,22 @@ object ProcessorSpec {
     }
   }
 
-  class RecoverOffTestProcessor extends RecoverTestProcessor with TurnOffRecoverOnStart
+  class RecoverOffTestProcessor(name: String) extends RecoverTestProcessor(name) with TurnOffRecoverOnStart
 
-  class StoredSenderTestProcessor extends Processor {
+  class StoredSenderTestProcessor(name: String) extends NamedProcessor(name) {
     def receive = {
       case Persistent(payload, _) ⇒ sender ! payload
     }
   }
 
-  class RecoveryStatusTestProcessor extends Processor {
+  class RecoveryStatusTestProcessor(name: String) extends NamedProcessor(name) {
     def receive = {
       case Persistent("c", _) if !recoveryRunning    ⇒ sender ! "c"
       case Persistent(payload, _) if recoveryRunning ⇒ sender ! payload
     }
   }
 
-  class BehaviorChangeTestProcessor extends Processor {
+  class BehaviorChangeTestProcessor(name: String) extends NamedProcessor(name) {
     val acceptA: Actor.Receive = {
       case Persistent("a", _) ⇒ {
         sender ! "a"
@@ -64,7 +64,7 @@ object ProcessorSpec {
     def receive = acceptA
   }
 
-  class FsmTestProcessor extends Processor with FSM[String, Int] {
+  class FsmTestProcessor(name: String) extends NamedProcessor(name) with FSM[String, Int] {
     startWith("closed", 0)
 
     when("closed") {
@@ -80,7 +80,7 @@ object ProcessorSpec {
     }
   }
 
-  class OutboundMessageTestProcessor extends Processor {
+  class OutboundMessageTestProcessor(name: String) extends NamedProcessor(name) {
     def receive = {
       case Persistent(payload, snr) ⇒ sender ! Persistent(snr)
     }
@@ -88,8 +88,8 @@ object ProcessorSpec {
 
   class ResumeTestException extends Exception("test")
 
-  class ResumeTestSupervisor extends Actor {
-    val processor = context.actorOf(Props[ResumeTestProcessor], "processor")
+  class ResumeTestSupervisor(name: String) extends Actor {
+    val processor = context.actorOf(Props(classOf[ResumeTestProcessor], name))
 
     override val supervisorStrategy =
       OneForOneStrategy() {
@@ -101,7 +101,7 @@ object ProcessorSpec {
     }
   }
 
-  class ResumeTestProcessor extends Processor {
+  class ResumeTestProcessor(name: String) extends NamedProcessor(name) {
     var state: List[String] = Nil
     def receive = {
       case "boom"                   ⇒ throw new ResumeTestException
@@ -110,7 +110,7 @@ object ProcessorSpec {
     }
   }
 
-  class LastReplayedMsgFailsTestProcessor extends RecoverTestProcessor {
+  class LastReplayedMsgFailsTestProcessor(name: String) extends RecoverTestProcessor(name) {
     override def preRestartProcessor(reason: Throwable, message: Option[Any]) = {
       message match {
         case Some(m: Persistent) ⇒ if (recoveryRunning) delete(m)
@@ -120,7 +120,7 @@ object ProcessorSpec {
     }
   }
 
-  class AnyReplayedMsgFailsTestProcessor extends RecoverTestProcessor {
+  class AnyReplayedMsgFailsTestProcessor(name: String) extends RecoverTestProcessor(name) {
     val failOnReplayedA: Actor.Receive = {
       case Persistent("a", _) if recoveryRunning ⇒ throw new Exception("boom")
     }
@@ -135,34 +135,33 @@ class ProcessorSpec extends AkkaSpec(ProcessorSpec.config) with PersistenceSpec 
   override protected def beforeEach() {
     super.beforeEach()
 
-    val processor = system.actorOf(Props[RecoverTestProcessor], name)
+    val processor = namedProcessor[RecoverTestProcessor]
     processor ! Persistent("a")
     processor ! Persistent("b")
     processor ! GetState
     expectMsg(List("a-1", "b-2"))
-    stopAndAwaitTermination(processor)
   }
 
   "A processor" must {
     "recover state on explicit request" in {
-      val processor = system.actorOf(Props[RecoverOffTestProcessor], name)
+      val processor = namedProcessor[RecoverOffTestProcessor]
       processor ! Recover()
       processor ! GetState
       expectMsg(List("a-1", "b-2"))
     }
     "recover state automatically" in {
-      val processor = system.actorOf(Props[RecoverTestProcessor], name)
+      val processor = namedProcessor[RecoverTestProcessor]
       processor ! GetState
       expectMsg(List("a-1", "b-2"))
     }
     "recover state automatically on restart" in {
-      val processor = system.actorOf(Props[RecoverTestProcessor], name)
+      val processor = namedProcessor[RecoverTestProcessor]
       processor ! "boom"
       processor ! GetState
       expectMsg(List("a-1", "b-2"))
     }
     "buffer new messages until recovery completed" in {
-      val processor = system.actorOf(Props[RecoverOffTestProcessor], name)
+      val processor = namedProcessor[RecoverOffTestProcessor]
       processor ! Persistent("c")
       processor ! Recover()
       processor ! Persistent("d")
@@ -170,7 +169,7 @@ class ProcessorSpec extends AkkaSpec(ProcessorSpec.config) with PersistenceSpec 
       expectMsg(List("a-1", "b-2", "c-3", "d-4"))
     }
     "ignore redundant recovery requests" in {
-      val processor = system.actorOf(Props[RecoverOffTestProcessor], name)
+      val processor = namedProcessor[RecoverOffTestProcessor]
       processor ! Persistent("c")
       processor ! Recover()
       processor ! Persistent("d")
@@ -180,7 +179,7 @@ class ProcessorSpec extends AkkaSpec(ProcessorSpec.config) with PersistenceSpec 
       expectMsg(List("a-1", "b-2", "c-3", "d-4", "e-5"))
     }
     "buffer new messages until restart-recovery completed" in {
-      val processor = system.actorOf(Props[RecoverTestProcessor], name)
+      val processor = namedProcessor[RecoverTestProcessor]
       processor ! "boom"
       processor ! Persistent("c")
       processor ! Persistent("d")
@@ -188,13 +187,13 @@ class ProcessorSpec extends AkkaSpec(ProcessorSpec.config) with PersistenceSpec 
       expectMsg(List("a-1", "b-2", "c-3", "d-4"))
     }
     "allow deletion of journaled messages on failure" in {
-      val processor = system.actorOf(Props[RecoverTestProcessor], name)
+      val processor = namedProcessor[RecoverTestProcessor]
       processor ! Persistent("boom") // journaled message causes failure and will be deleted
       processor ! GetState
       expectMsg(List("a-1", "b-2"))
     }
     "allow deletion of journaled messages on failure and buffer new messages until restart-recovery completed" in {
-      val processor = system.actorOf(Props[RecoverTestProcessor], name)
+      val processor = namedProcessor[RecoverTestProcessor]
       processor ! Persistent("boom") // journaled message causes failure and will be deleted
       processor ! Persistent("c")
       processor ! Persistent("d")
@@ -202,66 +201,63 @@ class ProcessorSpec extends AkkaSpec(ProcessorSpec.config) with PersistenceSpec 
       expectMsg(List("a-1", "b-2", "c-4", "d-5")) // deleted message leaves gap in sequence
     }
     "store sender references and restore them for replayed messages" in {
-      system.actorOf(Props[StoredSenderTestProcessor], name)
+      namedProcessor[StoredSenderTestProcessor]
       List("a", "b") foreach (expectMsg(_))
     }
     "properly indicate its recovery status" in {
-      val processor = system.actorOf(Props[RecoveryStatusTestProcessor], name)
+      val processor = namedProcessor[RecoveryStatusTestProcessor]
       processor ! Persistent("c")
       List("a", "b", "c") foreach (expectMsg(_))
     }
     "continue journaling when changing behavior" in {
-      val processor = system.actorOf(Props[BehaviorChangeTestProcessor], name)
+      val processor = namedProcessor[BehaviorChangeTestProcessor]
       processor ! Persistent("a")
       processor ! Persistent("b")
       List("a", "b", "a", "b") foreach (expectMsg(_))
     }
     "derive outbound messages from the current message" in {
-      val processor = system.actorOf(Props[OutboundMessageTestProcessor], name)
+      val processor = namedProcessor[OutboundMessageTestProcessor]
       processor ! Persistent("c")
       1 to 3 foreach { _ ⇒ expectMsgPF() { case Persistent(payload, snr) ⇒ payload must be(snr) } }
     }
     "support recovery with upper sequence number bound" in {
-      val processor = system.actorOf(Props[RecoverOffTestProcessor], name)
+      val processor = namedProcessor[RecoverOffTestProcessor]
       processor ! Recover(1L)
       processor ! GetState
       expectMsg(List("a-1"))
     }
     "never replace journaled messages" in {
-      val processor1 = system.actorOf(Props[RecoverOffTestProcessor], name)
+      val processor1 = namedProcessor[RecoverOffTestProcessor]
       processor1 ! Recover(1L)
       processor1 ! Persistent("c")
       processor1 ! GetState
       expectMsg(List("a-1", "c-3"))
-      stopAndAwaitTermination(processor1)
 
-      val processor2 = system.actorOf(Props[RecoverOffTestProcessor], name)
+      val processor2 = namedProcessor[RecoverOffTestProcessor]
       processor2 ! Recover()
       processor2 ! GetState
       expectMsg(List("a-1", "b-2", "c-3"))
     }
     "be able to skip restart recovery when being resumed" in {
-      val supervisor1 = system.actorOf(Props[ResumeTestSupervisor], name)
+      val supervisor1 = system.actorOf(Props(classOf[ResumeTestSupervisor], "processor"))
       supervisor1 ! Persistent("a")
       supervisor1 ! Persistent("b")
       supervisor1 ! GetState
       expectMsg(List("a-1", "b-2"))
-      stopAndAwaitTermination(supervisor1)
 
-      val supervisor2 = system.actorOf(Props[ResumeTestSupervisor], name)
+      val supervisor2 = system.actorOf(Props(classOf[ResumeTestSupervisor], "processor"))
       supervisor2 ! Persistent("c")
       supervisor2 ! "boom"
       supervisor2 ! Persistent("d")
       supervisor2 ! GetState
       expectMsg(List("a-1", "b-2", "c-3", "d-4"))
-      stopAndAwaitTermination(supervisor2)
 
-      val supervisor3 = system.actorOf(Props[ResumeTestSupervisor], name)
+      val supervisor3 = system.actorOf(Props(classOf[ResumeTestSupervisor], "processor"))
       supervisor3 ! GetState
       expectMsg(List("a-1", "b-2", "c-3", "d-4"))
     }
     "be able to re-run restart recovery when it fails with last replayed message" in {
-      val processor = system.actorOf(Props[LastReplayedMsgFailsTestProcessor], name)
+      val processor = namedProcessor[LastReplayedMsgFailsTestProcessor]
       processor ! Persistent("c")
       processor ! Persistent("boom")
       processor ! Persistent("d")
@@ -269,13 +265,13 @@ class ProcessorSpec extends AkkaSpec(ProcessorSpec.config) with PersistenceSpec 
       expectMsg(List("a-1", "b-2", "c-3", "d-5"))
     }
     "be able to re-run initial recovery when it fails with a message that is not the last replayed message" in {
-      val processor = system.actorOf(Props[AnyReplayedMsgFailsTestProcessor], name)
+      val processor = namedProcessor[AnyReplayedMsgFailsTestProcessor]
       processor ! Persistent("c")
       processor ! GetState
       expectMsg(List("b-2", "c-3"))
     }
     "be able to re-run restart recovery when it fails with a message that is not the last replayed message" in {
-      val processor = system.actorOf(Props[AnyReplayedMsgFailsTestProcessor], "other") // new processor, no initial replay
+      val processor = system.actorOf(Props(classOf[AnyReplayedMsgFailsTestProcessor], "other")) // new processor, no initial replay
       processor ! Persistent("b")
       processor ! Persistent("a")
       processor ! Persistent("c")
@@ -294,7 +290,7 @@ class ProcessorSpec extends AkkaSpec(ProcessorSpec.config) with PersistenceSpec 
 
   "A processor" can {
     "be a finite state machine" in {
-      val processor = system.actorOf(Props[FsmTestProcessor], name)
+      val processor = namedProcessor[FsmTestProcessor]
       processor ! Persistent("a")
       processor ! Persistent("b")
       List(0, 1, 2, 3) foreach (expectMsg(_))

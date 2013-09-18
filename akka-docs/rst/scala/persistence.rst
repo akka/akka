@@ -22,7 +22,7 @@ Dependencies
 
 Akka persistence is a separate jar file. Make sure that you have the following dependency in your project::
 
-  "com.typesafe.akka" %% "akka-persistence" % "@version@" @crossString@
+  "com.typesafe.akka" %% "akka-persistence-experimental" % "@version@" @crossString@
 
 Architecture
 ============
