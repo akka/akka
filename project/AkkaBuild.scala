@@ -27,7 +27,6 @@ import java.nio.charset.Charset
 import java.util.Properties
 import annotation.tailrec
 import Unidoc.{ JavaDoc, javadocSettings, junidocSources, sunidoc, unidocExclude }
-import scalabuff.ScalaBuffPlugin._
 import com.typesafe.sbt.S3Plugin.{ S3, s3Settings }
 
 object AkkaBuild extends Build {
@@ -52,8 +51,8 @@ object AkkaBuild extends Build {
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Publish.versionSettings ++
-      SphinxSupport.settings ++ Dist.settings ++ s3Settings ++ mimaSettings ++ unidocScaladocSettings ++ 
-      inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
+      SphinxSupport.settings ++ Dist.settings ++ s3Settings ++ mimaSettings ++ unidocScaladocSettings ++
+      Protobuf.settings ++ inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
@@ -193,7 +192,7 @@ object AkkaBuild extends Build {
     id = "akka-remote",
     base = file("akka-remote"),
     dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test"),
-    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.remote ++ Protobuf.settings ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.remote ++ Seq(
       libraryDependencies ++= Dependencies.remote,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -205,7 +204,7 @@ object AkkaBuild extends Build {
     id = "akka-multi-node-testkit",
     base = file("akka-multi-node-testkit"),
     dependencies = Seq(remote, testkit),
-    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ Protobuf.settings ++ Seq(
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ Seq(
       previousArtifact := akkaPreviousArtifact("akka-multi-node-testkit")
     )
   )
@@ -231,10 +230,7 @@ object AkkaBuild extends Build {
     id = "akka-cluster",
     base = file("akka-cluster"),
     dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test"),
-    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ multiJvmSettings ++ OSGi.cluster ++
-      scalabuffSettings ++ Seq(
-      // this version needs to be reflected in the OSGi.scalabuffImport and dining hackers pom.xml
-      scalabuffVersion in ScalaBuff := "1.3.6",
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ multiJvmSettings ++ OSGi.cluster ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -244,7 +240,7 @@ object AkkaBuild extends Build {
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
       previousArtifact := akkaPreviousArtifact("akka-cluster")
     )
-  ) configs (MultiJvm, ScalaBuff)
+  ) configs (MultiJvm)
 
   lazy val slf4j = Project(
     id = "akka-slf4j",
@@ -522,7 +518,7 @@ object AkkaBuild extends Build {
     base = file("akka-samples/akka-sample-osgi-dining-hakkers"),
     settings = parentSettings
   ) aggregate(osgiDiningHakkersSampleApi, osgiDiningHakkersSampleCommand, osgiDiningHakkersSampleCore,
-      osgiDiningHakkersSampleIntegrationTest, uncommons, scalaBuff)
+      osgiDiningHakkersSampleIntegrationTest, uncommons)
 
   lazy val osgiDiningHakkersSampleApi = Project(id = "akka-sample-osgi-dining-hakkers-api",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers/api"),
@@ -552,15 +548,6 @@ object AkkaBuild extends Build {
     )
   )
 
-  //TODO to remove it as soon as the scalabuff gets OSGified, see ticket #3416
-  lazy val scalaBuff = Project(id = "akka-sample-osgi-dining-hakkers-scalaBuff",
-    base = file("akka-samples/akka-sample-osgi-dining-hakkers/scalabuff"),
-    settings = sampleSettings ++ OSGi.osgiDiningHakkersSampleScalaBuff ++ Seq(
-      libraryDependencies ++= Dependencies.scalaBuff,
-      version := "1.2.0"
-    )
-  )
-
   def executeMvnCommands(failureMessage: String, commands: String*) = {
     if ({List("sh", "-c", commands.mkString("cd akka-samples/akka-sample-osgi-dining-hakkers; mvn -U ", " ", "")) !} != 0)
       throw new Exception(failureMessage)
@@ -575,7 +562,7 @@ object AkkaBuild extends Build {
         }})
       else Seq.empty
       )
-  ) dependsOn(osgiDiningHakkersSampleApi, osgiDiningHakkersSampleCommand, osgiDiningHakkersSampleCore, uncommons, scalaBuff)
+  ) dependsOn(osgiDiningHakkersSampleApi, osgiDiningHakkersSampleCommand, osgiDiningHakkersSampleCore, uncommons)
 
 
 
@@ -743,7 +730,8 @@ object AkkaBuild extends Build {
     (if (useOnlyTestTags.isEmpty) Seq.empty else Seq("-n", if (multiNodeEnabled) useOnlyTestTags.mkString("\"", " ", "\"") else useOnlyTestTags.mkString(" ")))
   }
 
-  lazy val defaultSettings = baseSettings ++ formatSettings ++ mimaSettings ++ lsSettings ++ Seq(
+  lazy val defaultSettings = baseSettings ++ formatSettings ++ mimaSettings ++ lsSettings ++
+    Protobuf.settings ++ Seq(
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
     javacOptions in Compile ++= Seq("-encoding", "UTF-8", "-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
@@ -975,7 +963,7 @@ object AkkaBuild extends Build {
 
     val camel = exports(Seq("akka.camel.*"))
 
-    val cluster = exports(Seq("akka.cluster.*"), imports = Seq(scalabuffImport(), protobufImport()))
+    val cluster = exports(Seq("akka.cluster.*"), imports = Seq(protobufImport()))
 
     val fileMailbox = exports(Seq("akka.actor.mailbox.filebased.*"))
 
@@ -995,8 +983,6 @@ object AkkaBuild extends Build {
     val osgiDiningHakkersSampleCore = exports(Seq("")) ++ Seq(OsgiKeys.bundleActivator := Option("akka.sample.osgi.activation.Activator"), OsgiKeys.privatePackage := Seq("akka.sample.osgi.internal", "akka.sample.osgi.activation", "akka.sample.osgi.service"))
 
     val osgiDiningHakkersSampleUncommons = exports(Seq("org.uncommons.maths.random")) ++ Seq(OsgiKeys.privatePackage := Seq("org.uncommons.maths.binary", "org.uncommons.maths", "org.uncommons.maths.number"))
-
-    val osgiDiningHakkersSampleScalaBuff = exports(Seq("net.sandrogrzicic.scalabuff"))
 
     val osgiAries = exports() ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.aries.*"))
 
@@ -1033,8 +1019,7 @@ object AkkaBuild extends Build {
       "akka.camel",
       "akka.camel.internal.component",
       "akka.zeromq",
-      "com.google.protobuf",
-      "net.sandrogrzicic.scalabuff")
+      "com.google.protobuf")
 
     def exports(packages: Seq[String] = Seq(), imports: Seq[String] = Nil) = osgiSettings ++ Seq(
       OsgiKeys.importPackage := imports ++ defaultImports,
@@ -1044,7 +1029,6 @@ object AkkaBuild extends Build {
     def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.2,2.3)\"".format(packageName)
     def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,1.1.0)\"".format(packageName)
     def protobufImport(packageName: String = "com.google.protobuf.*") = "%s;version=\"[2.5.0,2.6.0)\"".format(packageName)
-    def scalabuffImport(packageName: String = "net.sandrogrzicic.scalabuff.*") = "%s;version=\"[1.3.6,1.4.0)\"".format(packageName)
     def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.10,2.11)\"".format(packageName)
     def optionalResolution(packageName: String) = "%s;resolution:=optional".format(packageName)
   }
@@ -1062,7 +1046,6 @@ object Dependencies {
     val netty         = "io.netty"                    % "netty"                        % "3.6.6.Final" // ApacheV2
     val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.5.0"       // New BSD
     val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % "0.7"         // Modified BSD (Scala)
-    val scalaBuffRuntime = "net.sandrogrzicic"       %% "scalabuff-runtime"            % "1.2.0"       // ApacheV2
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.2"       // MIT
     val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % "0.0.7"       // ApacheV2
@@ -1140,8 +1123,6 @@ object Dependencies {
   val osgiDiningHakkerSampleCommand = Seq(osgiCore, osgiCompendium)
 
   val uncommons = Seq(uncommonsMath)
-
-  val scalaBuff = Seq(scalaBuffRuntime)
 
   val osgiAries = Seq(osgiCore, osgiCompendium, ariesBlueprint, Test.ariesProxy)
 
