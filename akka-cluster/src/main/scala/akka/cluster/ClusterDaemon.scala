@@ -665,7 +665,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       val localGossip = latestGossip
 
       val preferredGossipTargets: Vector[UniqueAddress] =
-        if (ThreadLocalRandom.current.nextDouble() < GossipDifferentViewProbability) { // If it's time to try to gossip to some nodes with a different view
+        if (ThreadLocalRandom.current.nextDouble() < adjustedGossipDifferentViewProbability) {
+          // If it's time to try to gossip to some nodes with a different view
           // gossip to a random alive member with preference to a member with older gossip version
           localGossip.members.collect {
             case m if !localGossip.seenByNode(m.uniqueAddress) && validNodeForGossip(m.uniqueAddress) ⇒
@@ -687,6 +688,24 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
           else gossipTo(node)
         }
       }
+    }
+  }
+
+  /**
+   * For large clusters we must avoid shooting down individual
+   * nodes. Therefore the probability is reduced for large clusters
+   * with few members left with different seen version.
+   */
+  def adjustedGossipDifferentViewProbability: Double = {
+    val g = latestGossip
+    val upToDateCount = g.overview.seenSize
+    val stragglerCount = g.membersSize - upToDateCount
+    if (stragglerCount == 0)
+      -1.0 // all in seen, no bias
+    else {
+      import math.max
+      val smallClusterBias = 5
+      GossipDifferentViewProbability / max((upToDateCount.toDouble / stragglerCount) - smallClusterBias, 1.0)
     }
   }
 

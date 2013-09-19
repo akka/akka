@@ -187,7 +187,9 @@ private[cluster] case class Gossip(
 
   def allRoles: Set[String] = members.flatMap(_.roles)
 
-  def isSingletonCluster: Boolean = members.size == 1
+  def isSingletonCluster: Boolean = membersSize == 1
+
+  @transient lazy val membersSize: Int = members.size
 
   def member(node: UniqueAddress): Member = {
     membersMap.getOrElse(node,
@@ -213,6 +215,8 @@ private[cluster] case class Gossip(
 private[cluster] case class GossipOverview(
   seen: Set[UniqueAddress] = Set.empty,
   reachability: Reachability = Reachability.empty) {
+
+  @transient lazy val seenSize: Int = seen.size
 
   override def toString =
     s"GossipOverview(reachability = [$reachability], seen = [${seen.mkString(", ")}])"
