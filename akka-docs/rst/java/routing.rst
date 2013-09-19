@@ -2,125 +2,132 @@
 .. _routing-java:
 
 Routing
-==============
+=======
 
-A Router is an actor that receives messages and efficiently routes them to other actors, known as
-its *routees*.
+Messages can be sent via a router to efficiently route them to destination actors, known as
+its *routees*. A ``Router`` can be used inside or outside of an actor, and you can manage the
+routees yourselves or use a self contained router actor with configuration capabilities.
 
 Different routing strategies can be used, according to your application's needs. Akka comes with
 several useful routing strategies right out of the box. But, as you will see in this chapter, it is
 also possible to :ref:`create your own <custom-router-java>`.
 
-The routers shipped with Akka are:
+.. _simple-router-java:
 
-* ``akka.routing.RoundRobinRouter``
-* ``akka.routing.RandomRouter``
-* ``akka.routing.SmallestMailboxRouter``
-* ``akka.routing.BroadcastRouter``
-* ``akka.routing.ScatterGatherFirstCompletedRouter``
-* ``akka.routing.ConsistentHashingRouter``
+A Simple Router
+^^^^^^^^^^^^^^^
 
-Routers in Action
-^^^^^^^^^^^^^^^^^
+The following example illustrates how to use a ``Router`` and manage the routees from within an actor.
 
-Sending a message to a router is easy.
+.. includecode:: code/docs/jrouting/RouterDocTest.java#router-in-actor
 
-.. code-block:: java
+We create a ``Router`` and specify that it should use ``RoundRobinRoutingLogic`` when routing the
+messages to the routees.
 
-  router.tell(new MyMsg(), sender);
+The routing logic shipped with Akka are:
 
-A router actor forwards messages to its routees according to its routing policy.
+* ``akka.routing.RoundRobinRoutingLogic``
+* ``akka.routing.RandomRoutingLogic``
+* ``akka.routing.SmallestMailboxRoutingLogic``
+* ``akka.routing.BroadcastRoutingLogic``
+* ``akka.routing.ScatterGatherFirstCompletedRoutingLogic``
+* ``akka.routing.ConsistentHashingRoutingLogic``
+
+We create the routees as ordinary child actors wrapped in ``ActorRefRoutee``. We watch
+the routees to be able to replace them if they are terminated.
+
+Sending messages via the router is done with the ``route`` method, as is done for the ``Work`` messages
+in the example above.
+
+The ``Router`` is immutable and the ``RoutingLogic`` is thread safe; meaning that they can also be used
+outside of actors.  
 
 .. note::
 
-    In general, any message sent to a router will be sent onwards to its routees. But there are a
+    In general, any message sent to a router will be sent onwards to its routees, but there is one exception.
+    The special :ref:`broadcast-messages-java` will send to *all* of a router's routees 
+
+A Router Actor
+^^^^^^^^^^^^^^
+
+A router can also be created as a self contained actor that manages the routees itself and
+loads routing logic and other settings from configuration.
+
+This type of router actor comes in two distinct flavors:
+
+* Pool - The router creates routees as child actors and removes them from the router if they
+  terminate.
+  
+* Group - The routee actors are created externally to the router and the router sends
+  messages to the specified path using actor selection, without watching for termination.  
+
+The settings for a router actor can be defined in configuration or programmatically. 
+Although router actors can be defined in the configuration file, they must still be created
+programmatically, i.e. you cannot make a router through external configuration alone.
+If you define the router actor in the configuration file then these settings will be used
+instead of any programmatically provided parameters.
+
+You send messages to the routees via the router actor in the same way as for ordinary actors,
+i.e. via its ``ActorRef``. The router actor forwards messages onto its routees without changing 
+the original sender. When a routee replies to a routed message, the reply will be sent to the 
+original sender, not to the router actor.
+
+.. note::
+
+    In general, any message sent to a router will be sent onwards to its routees, but there are a
     few exceptions. These are documented in the :ref:`router-special-messages-java` section below.
 
-Creating a Router
-*****************
+Pool
+----
 
-Routers and routees are closely intertwined. Router actors are created by specifying the desired
-*routee* :class:`Props` then attaching the router's :class:`RouterConfig`. When you create a router
-actor it will create routees, as needed, as its children.
-
-For example, the following code and configuration snippets show how to create a :ref:`round-robin
-<round-robin-router-java>` router that forwards messages to five ``ExampleActor`` routees. The
+The following code and configuration snippets show how to create a :ref:`round-robin
+<round-robin-router-java>` router that forwards messages to five ``Worker`` routees. The
 routees will be created as the router's children.
 
-.. includecode:: ../scala/code/docs/routing/RouterViaConfigDocSpec.scala#config-round-robin
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-round-robin-pool
 
-.. includecode:: code/docs/jrouting/RouterViaConfigExample.java#configurableRouting
+.. includecode:: code/docs/jrouting/RouterDocTest.java#round-robin-pool-1
 
 Here is the same example, but with the router configuration provided programmatically instead of
 from configuration.
 
-.. includecode:: code/docs/jrouting/RouterViaProgramExample.java#programmaticRoutingNrOfInstances
+.. includecode:: code/docs/jrouting/RouterDocTest.java#round-robin-pool-2
 
-Sometimes, rather than having the router create its routees, it is desirable to create routees
-separately and provide them to the router for its use. You can do this by passing an
-:class:`Iterable` of routees to the router's configuration.
+Remote Deployed Routees
+***********************
 
-The example below shows how to create a router by providing it with the :class:`ActorRef`\s of three
-routee actors.
-
-.. includecode:: code/docs/jrouting/RouterViaProgramExample.java#programmaticRoutingRoutees
-
-Routees can also be specified by providing their path strings instead of their :class:`ActorRef`\s.
-
-.. includecode:: code/docs/jrouting/RouterViaProgramDocTest.java#programmaticRoutingRouteePaths
-
-In addition to being able to supply looked-up remote actors as routees, you can ask the router to
+In addition to being able to create local actors as routees, you can instruct the router to
 deploy its created children on a set of remote hosts. Routees will be deployed in round-robin
 fashion. In order to deploy routees remotely, wrap the router configuration in a
-:class:`RemoteRouterConfig`, attaching the remote addresses of the nodes to deploy to. Remote
+``RemoteRouterConfig``, attaching the remote addresses of the nodes to deploy to. Remote
 deployment requires the ``akka-remote`` module to be included in the classpath.
 
-.. includecode:: code/docs/jrouting/RouterViaProgramExample.java#remoteRoutees
+.. includecode:: code/docs/jrouting/RouterDocTest.java#remoteRoutees
 
-There are a few gotchas to be aware of when creating routers:
+Senders
+*******
 
-* If you define the ``router`` in the configuration file then this value will be used instead of any
-  programmatically provided parameters.
-* Although routers can be configured in the configuration file, they must still be created
-  programmatically, i.e. you cannot make a router through external configuration alone.
-* If you provide the ``routees`` in the router configuration then
-  the value of ``nrOfInstances``, if provided, will be disregarded.
-* When you provide routees programmatically the router will generally ignore the routee
-  :class:`Props`, as it does not need to create routees. However, if you use a :ref:`resizable
-  router <resizable-routers-java>` then the routee :class:`Props` will be used whenever the
-  resizer creates new routees.
 
-Routers, Routees and Senders
-****************************
+When a routee sends a message, it can :ref:`set itself as the sender
+<actors-tell-sender-java>`.
 
-The router forwards messages onto its routees without changing the original sender. When a routee
-replies to a routed message, the reply will be sent to the original sender, not to the router.
+.. includecode:: code/docs/jrouting/RouterDocTest.java#reply-with-self
 
-When a router creates routees, they are created as the routers children. This gives each routee its
-own identity in the actor system.
+However, it is often useful for routees to set the *router* as a sender. For example, you might want
+to set the router as the sender if you want to hide the details of the routees behind the router.
+The following code snippet shows how to set the parent router as sender.
 
-When a routee replies it can :ref:`set itself <actors-tell-sender-java>` as the sender of the reply.
+.. includecode:: code/docs/jrouting/RouterDocTest.java#reply-with-parent
 
-.. includecode:: code/docs/jrouting/RouterViaProgramExample.java#reply-with-self
 
-However, it is often useful for routees to set the *router* as the sender. For example, you might
-want to set the router as the sender if you want to hide the details of the routees behind the
-router. The following code snippet shows how to set the parent router as sender.
+Supervision
+***********
 
-.. includecode:: code/docs/jrouting/RouterViaProgramExample.java#reply-with-parent
-
-Note that different code would be needed if the routees were not children of the router, i.e. if
-they were provided when the router was created.
-
-Routers and Supervision
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Routees can be created by a router or provided to the router when it is created. Any routees that
-are created by a router will be created as the router's children. The router is therefore also the
-children's supervisor.
+Routees that are created by a pool router will be created as the router's children. The router is 
+therefore also the children's supervisor.
 
 The supervision strategy of the router actor can be configured with the
-:meth:`RouterConfig.supervisorStrategy` property. If no configuration is provided, routers default
+``supervisorStrategy`` property of the Pool. If no configuration is provided, routers default
 to a strategy of “always escalate”. This means that errors are passed up to the router's supervisor
 for handling. The router's supervisor will decide what to do about any errors.
 
@@ -140,97 +147,116 @@ by specifying the strategy when defining the router.
 
 Setting the strategy is easily done:
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTest.java
-   :include: supervision
+.. includecode:: code/docs/jrouting/RouterDocTest.java#supervision
 
 .. _note-router-terminated-children-java:
 
 .. note::
 
-  If the child of a router terminates, the router will not automatically spawn
-  a new child. In the event that all children of a router have terminated the
-  router will terminate itself, unless it is a dynamic router, e.g. using
+  If the child of a pool router terminates, the pool router will not automatically spawn
+  a new child. In the event that all children of a pool router have terminated the
+  router will terminate itself unless it is a dynamic router, e.g. using
   a resizer.
+
+Group
+-----
+
+Sometimes, rather than having the router actor create its routees, it is desirable to create routees
+separately and provide them to the router for its use. You can do this by passing an
+paths of the routees to the router's configuration. Messages will be sent with ``ActorSelection`` 
+to these paths.  
+
+The example below shows how to create a router by providing it with the path strings of three
+routee actors. 
+
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-round-robin-group
+
+.. includecode:: code/docs/jrouting/RouterDocTest.java#round-robin-group-1
+
+Here is the same example, but with the router configuration provided programmatically instead of
+from configuration.
+
+.. includecode:: code/docs/jrouting/RouterDocTest.java#round-robin-group-2
+
+The routee actors are created externally from the router:
+
+.. includecode:: code/docs/jrouting/RouterDocTest.java#create-workers
+
+.. includecode:: code/docs/jrouting/RouterDocTest.java#create-worker-actors
+
+The paths may contain protocol and address information for actors running on remote hosts.
+Remoting requires the ``akka-remote`` module to be included in the classpath.
 
 Router usage
 ^^^^^^^^^^^^
 
-In this section we will describe how to use the different router types.
-First we need to create some actors that will be used in the examples:
+In this section we will describe how to create the different types of router actors.
 
-.. includecode:: code/docs/jrouting/PrintlnActor.java#printlnActor
+The router actors in this section are created from within a top level actor named ``parent``. 
+Note that deployment paths in the configuration starts with ``/parent/`` followed by the name
+of the router actor. 
 
-and
-
-.. includecode:: code/docs/jrouting/FibonacciActor.java#fibonacciActor
+.. includecode:: code/docs/jrouting/RouterDocTest.java#create-parent
 
 .. _round-robin-router-java:
 
-RoundRobinRouter
-****************
+RoundRobinPool and RoundRobinGroup
+----------------------------------
+
 Routes in a `round-robin <http://en.wikipedia.org/wiki/Round-robin>`_ fashion to its routees.
-Code example:
 
-.. includecode:: code/docs/jrouting/ParentActor.java#roundRobinRouter
+RoundRobinPool defined in configuration:
 
-When run you should see a similar output to this:
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-round-robin-pool
 
-.. code-block:: scala
+.. includecode:: code/docs/jrouting/RouterDocTest.java#round-robin-pool-1
 
-  Received message '1' in actor $b
-  Received message '2' in actor $c
-  Received message '3' in actor $d
-  Received message '6' in actor $b
-  Received message '4' in actor $e
-  Received message '8' in actor $d
-  Received message '5' in actor $f
-  Received message '9' in actor $e
-  Received message '10' in actor $f
-  Received message '7' in actor $c
+RoundRobinPool defined in code:
 
-If you look closely to the output you can see that each of the routees received two messages which
-is exactly what you would expect from a round-robin router to happen.
-(The name of an actor is automatically created in the format ``$letter`` unless you specify it -
-hence the names printed above.)
+.. includecode:: code/docs/jrouting/RouterDocTest.java#round-robin-pool-2
 
-This is an example of how to define a round-robin router in configuration:
+RoundRobinGroup defined in configuration:
 
-.. includecode:: ../scala/code/docs/routing/RouterViaConfigDocSpec.scala#config-round-robin
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-round-robin-group
 
-RandomRouter
-************
-As the name implies this router type selects one of its routees randomly and forwards
-the message it receives to this routee.
-This procedure will happen each time it receives a message.
-Code example:
+.. includecode:: code/docs/jrouting/RouterDocTest.java#round-robin-group-1
 
-.. includecode:: code/docs/jrouting/ParentActor.java#randomRouter
+RoundRobinGroup defined in code:
 
-When run you should see a similar output to this:
+.. includecode:: code/docs/jrouting/RouterDocTest.java
+   :include: paths,round-robin-group-2
 
-.. code-block:: scala
+RandomPool and RandomGroup
+--------------------------
 
-  Received message '1' in actor $e
-  Received message '2' in actor $c
-  Received message '4' in actor $b
-  Received message '5' in actor $d
-  Received message '3' in actor $e
-  Received message '6' in actor $c
-  Received message '7' in actor $d
-  Received message '8' in actor $e
-  Received message '9' in actor $d
-  Received message '10' in actor $d
+This router type selects one of its routees randomly for each message.
 
-The result from running the random router should be different, or at least random, every time you run it.
-Try to run it a couple of times to verify its behavior if you don't trust us.
+RandomPool defined in configuration:
 
-This is an example of how to define a random router in configuration:
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-random-pool
 
-.. includecode:: ../scala/code/docs/routing/RouterViaConfigDocSpec.scala#config-random
+.. includecode:: code/docs/jrouting/RouterDocTest.java#random-pool-1
 
-SmallestMailboxRouter
-*********************
-A Router that tries to send to the non-suspended routee with fewest messages in mailbox.
+RandomPool defined in code:
+
+.. includecode:: code/docs/jrouting/RouterDocTest.java#random-pool-2
+
+RandomGroup defined in configuration:
+
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-random-group
+
+.. includecode:: code/docs/jrouting/RouterDocTest.java#random-group-1
+
+RandomGroup defined in code:
+
+.. includecode:: code/docs/jrouting/RouterDocTest.java
+   :include: paths,random-group-2
+
+
+SmallestMailboxPool
+-------------------
+
+A Router that tries to send to the non-suspended child routee with fewest messages in mailbox.
 The selection is done in this order:
 
  * pick any idle routee (not processing message) with empty mailbox
@@ -239,36 +265,45 @@ The selection is done in this order:
  * pick any remote routee, remote actors are consider lowest priority,
    since their mailbox size is unknown
 
-Code example:
+SmallestMailboxPool defined in configuration:
 
-.. includecode:: code/docs/jrouting/ParentActor.java#smallestMailboxRouter
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-smallest-mailbox-pool
 
-This is an example of how to define a smallest-mailbox router in configuration:
+.. includecode:: code/docs/jrouting/RouterDocTest.java#smallest-mailbox-pool-1
 
-.. includecode:: ../scala/code/docs/routing/RouterViaConfigDocSpec.scala#config-smallest-mailbox
+SmallestMailboxPool defined in code:
 
-BroadcastRouter
-***************
+.. includecode:: code/docs/jrouting/RouterDocTest.java#smallest-mailbox-pool-2
+
+There is no Group variant of the SmallestMailboxPool because the size of the mailbox
+and the internal dispatching state of the actor is not practically available from the paths
+of the routees.
+
+BroadcastPool and BroadcastGroup 
+--------------------------------
+
 A broadcast router forwards the message it receives to *all* its routees.
-Code example:
 
-.. includecode:: code/docs/jrouting/ParentActor.java#broadcastRouter
+BroadcastPool defined in configuration:
 
-When run you should see a similar output to this:
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-broadcast-pool
 
-.. code-block:: scala
+.. includecode:: code/docs/jrouting/RouterDocTest.java#broadcast-pool-1
 
-  Received message 'this is a broadcast message' in actor $f
-  Received message 'this is a broadcast message' in actor $d
-  Received message 'this is a broadcast message' in actor $e
-  Received message 'this is a broadcast message' in actor $c
-  Received message 'this is a broadcast message' in actor $b
+BroadcastPool defined in code:
 
-As you can see here above each of the routees, five in total, received the broadcast message.
+.. includecode:: code/docs/jrouting/RouterDocTest.java#broadcast-pool-2
 
-This is an example of how to define a broadcast router in configuration:
+BroadcastGroup defined in configuration:
 
-.. includecode:: ../scala/code/docs/routing/RouterViaConfigDocSpec.scala#config-broadcast
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-broadcast-group
+
+.. includecode:: code/docs/jrouting/RouterDocTest.java#broadcast-group-1
+
+BroadcastGroup defined in code:
+
+.. includecode:: code/docs/jrouting/RouterDocTest.java
+   :include: paths,broadcast-group-2
 
 .. note::
 
@@ -276,39 +311,50 @@ This is an example of how to define a broadcast router in configuration:
   broadcast every message, then you can use a non-broadcasting router and use
   :ref:`broadcast-messages-java` as needed.
 
-ScatterGatherFirstCompletedRouter
-*********************************
-The ScatterGatherFirstCompletedRouter will send the message on to all its routees as a future.
-It then waits for first result it gets back. This result will be sent back to original sender.
-Code example:
 
-.. includecode:: code/docs/jrouting/ParentActor.java#scatterGatherFirstCompletedRouter
+ScatterGatherFirstCompletedPool and ScatterGatherFirstCompletedGroup
+--------------------------------------------------------------------
 
-When run you should see this:
+The ScatterGatherFirstCompletedRouter will send the message on to all its routees.
+It then waits for first reply it gets back. This result will be sent back to original sender.
+Other replies are discarded.
 
-.. code-block:: scala
+It is expecting at least one reply within a configured duration, otherwise it will reply with
+``akka.pattern.AskTimeoutException`` in a ``akka.actor.Status.Failure``.
 
-  The result of calculating Fibonacci for 10 is 55
+ScatterGatherFirstCompletedPool defined in configuration:
 
-From the output above you can't really see that all the routees performed the calculation, but they did!
-The result you see is from the first routee that returned its calculation to the router.
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-scatter-gather-pool
 
-This is an example of how to define a scatter-gather router in configuration:
+.. includecode:: code/docs/jrouting/RouterDocTest.java#scatter-gather-pool-1
 
-.. includecode:: ../scala/code/docs/routing/RouterViaConfigDocSpec.scala#config-scatter-gather
+ScatterGatherFirstCompletedPool defined in code:
 
-ConsistentHashingRouter
-***********************
+.. includecode:: code/docs/jrouting/RouterDocTest.java#scatter-gather-pool-2
 
-The ConsistentHashingRouter uses `consistent hashing <http://en.wikipedia.org/wiki/Consistent_hashing>`_
-to select a connection based on the sent message. This 
+ScatterGatherFirstCompletedGroup defined in configuration:
+
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-scatter-gather-group
+
+.. includecode:: code/docs/jrouting/RouterDocTest.java#scatter-gather-group-1
+
+ScatterGatherFirstCompletedGroup defined in code:
+
+.. includecode:: code/docs/jrouting/RouterDocTest.java
+   :include: paths,scatter-gather-group-2
+
+ConsistentHashingPool and ConsistentHashingGroup
+------------------------------------------------
+
+The ConsistentHashingPool uses `consistent hashing <http://en.wikipedia.org/wiki/Consistent_hashing>`_
+to select a routee based on the sent message. This 
 `article <http://weblogs.java.net/blog/tomwhite/archive/2007/11/consistent_hash.html>`_ gives good 
 insight into how consistent hashing is implemented.
 
 There is 3 ways to define what data to use for the consistent hash key.
 
 * You can define ``withHashMapper`` of the router to map incoming
-  messages to their consistent hash key. This makes the the decision
+  messages to their consistent hash key. This makes the decision
   transparent for the sender.
 
 * The messages may implement ``akka.routing.ConsistentHashingRouter.ConsistentHashable``.
@@ -322,40 +368,58 @@ There is 3 ways to define what data to use for the consistent hash key.
 These ways to define the consistent hash key can be use together and at
 the same time for one router. The ``withHashMapper`` is tried first.
 
+
 Code example:
 
-.. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTest.java
-   :include: imports1
+.. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTest.java#cache-actor
 
-.. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTest.java
-   :include: cache-actor
-
-.. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTest.java
-   :include: imports2
-
-.. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTest.java
-   :include: consistent-hashing-router
+.. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTest.java#consistent-hashing-router
 
 In the above example you see that the ``Get`` message implements ``ConsistentHashable`` itself,
 while the ``Entry`` message is wrapped in a ``ConsistentHashableEnvelope``. The ``Evict``
-message is handled by the ``withHashMapper``.
+message is handled by the ``hashMapping`` partial function.
 
-This is an example of how to define a consistent-hashing router in configuration:
+ConsistentHashingPool defined in configuration:
 
-.. includecode:: ../scala/code/docs/routing/RouterViaConfigDocSpec.scala#config-consistent-hashing
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-consistent-hashing-pool
+
+.. includecode:: code/docs/jrouting/RouterDocTest.java#consistent-hashing-pool-1
+
+ConsistentHashingPool defined in code:
+
+.. includecode:: code/docs/jrouting/RouterDocTest.java#consistent-hashing-pool-2
+
+ConsistentHashingGroup defined in configuration:
+
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-consistent-hashing-group
+
+.. includecode:: code/docs/jrouting/RouterDocTest.java#consistent-hashing-group-1
+
+ConsistentHashingGroup defined in code:
+
+.. includecode:: code/docs/jrouting/RouterDocTest.java
+   :include: paths,consistent-hashing-group-2
+
+
+``virtual-nodes-factor`` is the number of virtual nodes per routee that is used in the 
+consistent hash node ring to make the distribution more uniform.
 
 .. _router-special-messages-java:
 
-Handling for Special Messages
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Specially Handled Messages
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Most messages sent to routers will be forwarded according to the routers' usual routing rules.
+Most messages sent to router actors will be forwarded according to the routers' routing logic.
 However there are a few types of messages that have special behavior.
+
+Note that these special messages, except for the ``Broadcast`` message, are only handled by 
+self contained router actors and not by the ``akka.routing.Router`` component described 
+in :ref:`simple-router-java`.
 
 .. _broadcast-messages-java:
 
 Broadcast Messages
-******************
+------------------
 
 A ``Broadcast`` message can be used to send a message to *all* of a router's routees. When a router
 receives a ``Broadcast`` message, it will broadcast that message's *payload* to all routees, no
@@ -364,20 +428,20 @@ matter how that router would normally route its messages.
 The example below shows how you would use a ``Broadcast`` message to send a very important message
 to every routee of a router.
 
-.. includecode:: code/docs/jrouting/RouterViaProgramDocTest.java#broadcastDavyJonesWarning
+.. includecode:: code/docs/jrouting/RouterDocTest.java#broadcastDavyJonesWarning
 
 In this example the router receives the ``Broadcast`` message, extracts its payload
 (``"Watch out for Davy Jones' locker"``), and then sends the payload on to all of the router's
 routees. It is up to each each routee actor to handle the received payload message.
 
 PoisonPill Messages
-*******************
+-------------------
 
 A ``PoisonPill`` message has special handling for all actors, including for routers. When any actor
 receives a ``PoisonPill`` message, that actor will be stopped. See the :ref:`poison-pill-java`
 documentation for details.
 
-.. includecode:: code/docs/jrouting/RouterViaProgramDocTest.java#poisonPill
+.. includecode:: code/docs/jrouting/RouterDocTest.java#poisonPill
 
 For a router, which normally passes on messages to routees, it is important to realise that
 ``PoisonPill`` messages are processed by the router only. ``PoisonPill`` messages sent to a router
@@ -386,16 +450,16 @@ will *not* be sent on to routees.
 However, a ``PoisonPill`` message sent to a router may still affect its routees, because it will
 stop the router and when the router stops it also stops its children. Stopping children is normal
 actor behavior. The router will stop routees that it has created as children. Each child will
-process its current message and then tstop. This may lead to some messages being unprocessed. See
-the documentation on :ref:`stopping-actors-java` for more information.
+process its current message and then stop. This may lead to some messages being unprocessed.
+See the documentation on :ref:`stopping-actors-java` for more information.
 
 If you wish to stop a router and its routees, but you would like the routees to first process all
 the messages currently in their mailboxes, then you should not send a ``PoisonPill`` message to the
-router. Instead you should wrap a ``PoisonPill`` message inside a broadcast message so that each
-routee will the ``PoisonPill`` message directly. Note that this will stop all routees, even if the
+router. Instead you should wrap a ``PoisonPill`` message inside a ``Broadcast`` message so that each
+routee will receive the ``PoisonPill`` message. Note that this will stop all routees, even if the
 routees aren't children of the router, i.e. even routees programmatically provided to the router.
 
-.. includecode:: code/docs/jrouting/RouterViaProgramDocTest.java#broadcastPoisonPill
+.. includecode:: code/docs/jrouting/RouterDocTest.java#broadcastPoisonPill
 
 With the code shown above, each routee will receive a ``PoisonPill`` message. Each routee will
 continue to process its messages as normal, eventually processing the ``PoisonPill``. This will
@@ -410,48 +474,63 @@ a resizer.
   discusses in more detail how ``PoisonPill`` messages can be used to shut down routers and routees.
 
 Kill Messages
-*************
+-------------
 
 ``Kill`` messages are another type of message that has special handling. See
 :ref:`killing-actors-java` for general information about how actors handle ``Kill`` messages.
 
 When a ``Kill`` message is sent to a router the router processes the message internally, and does
-*not* send it on to its routees. The router will throw an :class:`ActorKilledException` and fail. It
+*not* send it on to its routees. The router will throw an ``ActorKilledException`` and fail. It
 will then be either resumed, restarted or terminated, depending how it is supervised.
 
 Routees that are children of the router will also be suspended, and will be affected by the
 supervision directive that is applied to the router. Routees that are not the routers children, i.e.
 those that were created externally to the router, will not be affected.
 
-.. includecode:: code/docs/jrouting/RouterViaProgramDocTest.java#kill
+.. includecode:: code/docs/jrouting/RouterDocTest.java#kill
 
 As with the ``PoisonPill`` message, there is a distinction between killing a router, which
 indirectly kills its children (who happen to be routees), and killing routees directly (some of whom
 may not be children.) To kill routees directly the router should be sent a ``Kill`` message wrapped
 in a ``Broadcast`` message.
 
-.. includecode:: code/docs/jrouting/RouterViaProgramDocTest.java#broadcastKill
+.. includecode:: code/docs/jrouting/RouterDocTest.java#broadcastKill
+
+Managagement Messages
+---------------------
+
+* Sending ``akka.routing.GetRoutees`` to a router actor will make it send back its currently used routees
+  in a ``akka.routing.Routees`` message.
+* Sending ``akka.routing.AddRoutee`` to a router actor will add that routee to its collection of routees.
+* Sending ``akka.routing.RemoveRoutee`` to a router actor will remove that routee to its collection of routees.
+* Sending ``akka.routing.AdjustPoolSize`` to a pool router actor will add or remove that number of routees to
+  its collection of routees.
+
+These management messages may be handled after other messages, so if you send ``AddRoutee`` immediately followed
+an ordinary message you are not guaranteed that the routees have been changed when the ordinary message
+is routed. If you need to know when the change has been applied you can send ``AddRoutee`` followed by ``GetRoutees``
+and when you receive the ``Routees`` reply you know that the preceeding change has been applied.
 
 .. _resizable-routers-java:
 
-Dynamically Resizable Routers
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Dynamically Resizable Pool
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-All routers can be used with a fixed number of routees or with a resize strategy to adjust the number
+All pools can be used with a fixed number of routees or with a resize strategy to adjust the number
 of routees dynamically.
 
-This is an example of how to create a resizable router that is defined in configuration:
+Pool with resizer defined in configuration:
 
-.. includecode:: ../scala/code/docs/routing/RouterViaConfigDocSpec.scala#config-resize
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-resize-pool
 
-.. includecode:: code/docs/jrouting/RouterViaConfigExample.java#configurableRoutingWithResizer
+.. includecode:: code/docs/jrouting/RouterDocTest.java#resize-pool-1
 
 Several more configuration options are available and described in ``akka.actor.deployment.default.resizer``
 section of the reference :ref:`configuration`.
 
-This is an example of how to programmatically create a resizable router:
+Pool with resizer defined in code:
 
-.. includecode:: code/docs/jrouting/RouterViaProgramExample.java#programmaticRoutingWithResizer
+.. includecode:: code/docs/jrouting/RouterDocTest.java#resize-pool-2
 
 *It is also worth pointing out that if you define the ``router`` in the configuration file then this value
 will be used instead of any programmatically sent parameters.*
@@ -460,7 +539,7 @@ will be used instead of any programmatically sent parameters.*
 
   Resizing is triggered by sending messages to the actor pool, but it is not
   completed synchronously; instead a message is sent to the “head”
-  :class:`Router` to perform the size change. Thus you cannot rely on resizing
+  ``RouterActor`` to perform the size change. Thus you cannot rely on resizing
   to instantaneously create new workers when all others are busy, because the
   message just sent will be queued to the mailbox of a busy actor. To remedy
   this, configure the pool to use a balancing dispatcher, see `Configuring
@@ -478,8 +557,8 @@ routees.
 A normal actor can be used for routing messages, but an actor's single-threaded processing can
 become a bottleneck. Routers can achieve much higher throughput with an optimization to the usual
 message-processing pipeline that allows concurrent routing. This is achieved by embedding routers'
-routing logic directly in their :class:`ActorRef` rather than in the router actor. Messages sent to
-a router's :class:`ActorRef` can be immediately routed to the routee, bypassing the single-threaded
+routing logic directly in their ``ActorRef`` rather than in the router actor. Messages sent to
+a router's ``ActorRef`` can be immediately routed to the routee, bypassing the single-threaded
 router actor entirely.
 
 The cost to this is, of course, that the internals of routing code are more complicated than if
@@ -503,82 +582,54 @@ lower maximum throughput is acceptable in your application you may wish to stick
 actors. This section, however, assumes that you wish to get maximum performance and so demonstrates
 how you can create your own router.
 
-The router created in this example is a simple vote counter. It will route the votes to specific vote counter actors.
-In this case we only have two parties the Republicans and the Democrats. We would like a router that forwards all
-democrat related messages to the Democrat actor and all republican related messages to the Republican actor.
+The router created in this example is replicating each message to a few destinations.
 
-We begin with defining the class:
+Start with the routing logic:
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#crRouter
-   :exclude: crRoute
+.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#routing-logic
 
-The next step is to implement the ``createCustomRoute`` method in the class just defined:
+``select`` will be called for each message and in this example pick a few destinations by round-robin,
+by reusing the existing ``RoundRobinRoutingLogic`` and wrap the result in a ``SeveralRoutees``
+instance.  ``SeveralRoutees`` will send the message to all of the supplied routues.
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#crRoute
+The implementation of the routing logic must be thread safe, since it might be used outside of actors.
 
-As you can see above we start off by creating the routees and put them in a collection.
+A unit test of the routing logic: 
 
-Make sure that you don't miss to implement the line below as it is *really* important.
-It registers the routees internally and failing to call this method will
-cause a ``ActorInitializationException`` to be thrown when the router is used.
-Therefore always make sure to do the following in your custom router:
+.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#unit-test-logic
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#crRegisterRoutees
+You could stop here and use the ``RedundancyRoutingLogic`` with a ``akka.routing.Router``
+as described in :ref:`simple-router-java`.
 
-The routing logic is where your magic sauce is applied. In our example it inspects the message types
-and forwards to the correct routee based on this:
+Let us continue and make this into a self contained, configurable, router actor.
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#crRoutingLogic
+Create a class that extends ``PoolBase``, ``GroupBase`` or ``CustomRouterConfig``. That class is a factory
+for the routing logic and holds the configuration for the router. Here we make it a ``Group``.
 
-As you can see above what's returned in the ``CustomRoute`` function, which defines the mapping
-from incoming sender/message to a ``List`` of ``Destination(sender, routee)``.
-The sender is what "parent" the routee should see - changing this could be useful if you for example want
-another actor than the original sender to intermediate the result of the routee (if there is a result).
-For more information about how to alter the original sender we refer to the source code of
-`ScatterGatherFirstCompletedRouter <https://github.com/akka/akka/blob/master/akka-actor/src/main/scala/akka/routing/Routing.scala#L375>`_
+.. includecode:: code/docs/jrouting/RedundancyGroup.java#group
 
-All in all the custom router looks like this:
+This can be used exactly as the router actors provided by Akka.
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#CustomRouter
+.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#usage-1
 
-If you are interested in how to use the VoteCountRouter it looks like this:
+Note that we added a constructor in ``RedundancyGroup`` that takes a ``Config`` parameter.
+That makes it possible to define it in configuration.
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#crTest
+.. includecode:: ../scala/code/docs/routing/CustomRouterDocSpec.scala#jconfig
 
-.. caution::
-
-   When creating a cutom router the resulting RoutedActorRef optimizes the
-   sending of the message so that it does NOT go through the router’s mailbox
-   unless the route returns an empty recipient set.
-
-   This means that the ``route`` function defined in the ``RouterConfig``
-   or the function returned from ``CreateCustomRoute`` in
-   ``CustomRouterConfig`` is evaluated concurrently without protection by
-   the RoutedActorRef: either provide a reentrant (i.e. pure) implementation
-   or do the locking yourself!
-
-
-Configured Custom Router
-************************
-
-It is possible to define configuration properties for custom routers. In the ``router`` property of the deployment
-configuration you define the fully qualified class name of the router class. The router class must extend
-``akka.routing.CustomRouterConfig`` and have constructor with one ``com.typesafe.config.Config`` parameter.
+Note the fully qualified class name in the ``router`` property. The router class must extend
+``akka.routing.RouterConfig`` (``Pool``, ``Group`` or ``CustomRouterConfig``) and have 
+constructor with one ``com.typesafe.config.Config`` parameter.
 The deployment section of the configuration is passed to the constructor.
 
-Custom Resizer
-**************
-
-A router with dynamically resizable number of routees is implemented by providing a ``akka.routing.Resizer``
-in ``resizer`` method of the ``RouterConfig``. See ``akka.routing.DefaultResizer`` for inspiration
-of how to write your own resize strategy.
-
+.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#usage-2
+ 
 Configuring Dispatchers
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 The dispatcher for created children of the router will be taken from
-:class:`Props` as described in :ref:`dispatchers-java`. For a dynamic pool it
-makes sense to configure the :class:`BalancingDispatcher` if the precise
+``Props`` as described in :ref:`dispatchers-java`. For a pool it
+makes sense to configure the ``BalancingDispatcher`` if the precise
 routing is not so important (i.e. no consistent hashing or round-robin is
 required); this enables newly created routees to pick up work immediately by
 stealing it from their siblings.
@@ -591,13 +642,13 @@ stealing it from their siblings.
 
 The “head” router cannot always run on the same dispatcher, because it
 does not process the same type of messages, hence this special actor does
-not use the dispatcher configured in :class:`Props`, but takes the
+not use the dispatcher configured in ``Props``, but takes the
 ``routerDispatcher`` from the :class:`RouterConfig` instead, which defaults to
 the actor system’s default dispatcher. All standard routers allow setting this
 property in their constructor or factory method, custom routers have to
 implement the method in a suitable way.
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#dispatchers
+.. includecode:: code/docs/jrouting/RouterDocTest.java#dispatchers
 
 .. note::
 

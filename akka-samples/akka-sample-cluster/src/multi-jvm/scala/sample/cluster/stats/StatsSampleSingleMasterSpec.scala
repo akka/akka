@@ -37,7 +37,7 @@ object StatsSampleSingleMasterSpecConfig extends MultiNodeConfig {
     #//#router-deploy-config
     akka.actor.deployment {
       /singleton/statsService/workerRouter {
-          router = consistent-hashing
+          router = consistent-hashing-pool
           nr-of-instances = 100
           cluster {
             enabled = on

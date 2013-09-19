@@ -119,8 +119,9 @@ public class ConsistentHashingRouterDocTest {
         }
       };
 
-      ActorRef cache = system.actorOf(Props.create(Cache.class).withRouter(
-        new ConsistentHashingRouter(10).withHashMapper(hashMapper)), 
+      ActorRef cache = system.actorOf(
+          new ConsistentHashingRouter(10).withHashMapper(hashMapper).props(
+              Props.create(Cache.class)), 
         "cache");
 
       cache.tell(new ConsistentHashableEnvelope(

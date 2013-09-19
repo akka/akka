@@ -5,6 +5,8 @@ package docs.routing
 
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
+import akka.routing.FromConfig
+import akka.actor.ActorRef
 
 object ConsistentHashingRouterDocSpec {
 
@@ -39,9 +41,11 @@ class ConsistentHashingRouterDocSpec extends AkkaSpec with ImplicitSender {
 
   "demonstrate usage of ConsistentHashableRouter" in {
 
+    def context = system
+
     //#consistent-hashing-router
     import akka.actor.Props
-    import akka.routing.ConsistentHashingRouter
+    import akka.routing.ConsistentHashingPool
     import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
     import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
 
@@ -49,8 +53,9 @@ class ConsistentHashingRouterDocSpec extends AkkaSpec with ImplicitSender {
       case Evict(key) ⇒ key
     }
 
-    val cache = system.actorOf(Props[Cache].withRouter(ConsistentHashingRouter(10,
-      hashMapping = hashMapping)), name = "cache")
+    val cache: ActorRef =
+      context.actorOf(ConsistentHashingPool(10, hashMapping = hashMapping).
+        props(Props[Cache]), name = "cache")
 
     cache ! ConsistentHashableEnvelope(
       message = Entry("hello", "HELLO"), hashKey = "hello")
@@ -68,6 +73,7 @@ class ConsistentHashingRouterDocSpec extends AkkaSpec with ImplicitSender {
     expectMsg(None)
 
     //#consistent-hashing-router
+
   }
 
 }

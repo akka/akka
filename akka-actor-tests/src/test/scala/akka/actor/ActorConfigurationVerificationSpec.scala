@@ -44,27 +44,28 @@ class ActorConfigurationVerificationSpec extends AkkaSpec(ActorConfigurationVeri
   "An Actor configured with a BalancingDispatcher" must {
     "fail verification with a ConfigurationException if also configured with a RoundRobinRouter" in {
       intercept[ConfigurationException] {
-        system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(2).withDispatcher("balancing-dispatcher")))
+        system.actorOf(RoundRobinRouter(2).withDispatcher("balancing-dispatcher").props(Props[TestActor]))
       }
     }
     "fail verification with a ConfigurationException if also configured with a BroadcastRouter" in {
       intercept[ConfigurationException] {
-        system.actorOf(Props[TestActor].withRouter(BroadcastRouter(2).withDispatcher("balancing-dispatcher")))
+        system.actorOf(BroadcastRouter(2).withDispatcher("balancing-dispatcher").props(Props[TestActor]))
       }
     }
     "fail verification with a ConfigurationException if also configured with a RandomRouter" in {
       intercept[ConfigurationException] {
-        system.actorOf(Props[TestActor].withRouter(RandomRouter(2).withDispatcher("balancing-dispatcher")))
+        system.actorOf(RandomRouter(2).withDispatcher("balancing-dispatcher").props(Props[TestActor]))
       }
     }
     "fail verification with a ConfigurationException if also configured with a SmallestMailboxRouter" in {
       intercept[ConfigurationException] {
-        system.actorOf(Props[TestActor].withRouter(SmallestMailboxRouter(2).withDispatcher("balancing-dispatcher")))
+        system.actorOf(SmallestMailboxRouter(2).withDispatcher("balancing-dispatcher").props(Props[TestActor]))
       }
     }
     "fail verification with a ConfigurationException if also configured with a ScatterGatherFirstCompletedRouter" in {
       intercept[ConfigurationException] {
-        system.actorOf(Props[TestActor].withRouter(ScatterGatherFirstCompletedRouter(nrOfInstances = 2, within = 2 seconds).withDispatcher("balancing-dispatcher")))
+        system.actorOf(ScatterGatherFirstCompletedRouter(nrOfInstances = 2, within = 2 seconds).
+          withDispatcher("balancing-dispatcher").props(Props[TestActor]))
       }
     }
     "not fail verification with a ConfigurationException also not configured with a Router" in {
@@ -73,7 +74,7 @@ class ActorConfigurationVerificationSpec extends AkkaSpec(ActorConfigurationVeri
   }
   "An Actor configured with a non-balancing dispatcher" must {
     "not fail verification with a ConfigurationException if also configured with a Router" in {
-      system.actorOf(Props[TestActor].withDispatcher("pinned-dispatcher").withRouter(RoundRobinRouter(2)))
+      system.actorOf(RoundRobinRouter(2).props(Props[TestActor].withDispatcher("pinned-dispatcher")))
     }
 
     "fail verification if the dispatcher cannot be found" in {
@@ -84,13 +85,13 @@ class ActorConfigurationVerificationSpec extends AkkaSpec(ActorConfigurationVeri
 
     "fail verification if the dispatcher cannot be found for the head of a router" in {
       intercept[ConfigurationException] {
-        system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(1, routerDispatcher = "does not exist")))
+        system.actorOf(RoundRobinRouter(1, routerDispatcher = "does not exist").props(Props[TestActor]))
       }
     }
 
     "fail verification if the dispatcher cannot be found for the routees of a router" in {
       intercept[ConfigurationException] {
-        system.actorOf(Props[TestActor].withDispatcher("does not exist").withRouter(RoundRobinRouter(1)))
+        system.actorOf(RoundRobinRouter(1).props(Props[TestActor].withDispatcher("does not exist")))
       }
     }
   }

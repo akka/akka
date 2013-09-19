@@ -293,7 +293,8 @@ private[akka] class RemoteActorRefProvider(
             case NonFatal(e) ⇒ throw new IllegalArgumentException(s"remote deployment failed for [$path]", e)
           }
 
-        case _ ⇒ local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
+        case _ ⇒
+          local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
       }
     }
 
