@@ -180,6 +180,7 @@ private[remote] class ReliableDeliverySupervisor(
   override val supervisorStrategy = OneForOneStrategy(settings.MaximumRetriesInWindow, settings.RetryWindow, loggingEnabled = false) {
     case e @ (_: InvalidAssociation | _: HopelessAssociation | _: QuarantinedUidException) ⇒ Escalate
     case NonFatal(e) ⇒
+      uidConfirmed = false // Need confirmation of UID again
       if (retryGateEnabled) {
         context.become(gated)
         context.system.scheduler.scheduleOnce(settings.RetryGateClosedFor, self, Ungate)
@@ -198,12 +199,14 @@ private[remote] class ReliableDeliverySupervisor(
   var resendDeadline: Deadline = _
   var lastCumulativeAck: SeqNo = _
   var seqCounter: Long = _
+  var pendingAcks = Vector.empty[Ack]
 
   def reset() {
     resendBuffer = new AckedSendBuffer[Send](settings.SysMsgBufferSize)
     resendDeadline = Deadline.now + settings.SysResendTimeout
     lastCumulativeAck = SeqNo(-1)
     seqCounter = 0L
+    pendingAcks = Vector.empty
   }
 
   reset()
@@ -216,6 +219,18 @@ private[remote] class ReliableDeliverySupervisor(
 
   var writer: ActorRef = createWriter()
   var uid: Option[Int] = handleOrActive map { _.handshakeInfo.uid }
+  // Processing of Acks has to be delayed until the UID after a reconnect is discovered. Depending whether the
+  // UID matches the expected one, pending Acks can be processed, or must be dropped. It is guaranteed that for
+  // any inbound connections (calling createWriter()) the first message from that connection is GotUid() therefore
+  // it serves a separator.
+  // If we already have an inbound handle then UID is initially confirmed.
+  // (This actor is never restarted)
+  var uidConfirmed: Boolean = uid.isDefined
+
+  def unstashAcks(): Unit = {
+    pendingAcks foreach (self ! _)
+    pendingAcks = Vector.empty
+  }
 
   override def postStop(): Unit = {
     // All remaining messages in the buffer has to be delivered to dead letters. It is important to clear the sequence
@@ -242,30 +257,37 @@ private[remote] class ReliableDeliverySupervisor(
     case s: Send ⇒
       handleSend(s)
     case ack: Ack ⇒
-      try resendBuffer = resendBuffer.acknowledge(ack)
-      catch {
-        case NonFatal(e) ⇒
-          throw new InvalidAssociationException("Error encountered while processing system message acknowledgement", e)
-      }
+      if (!uidConfirmed) pendingAcks = pendingAcks :+ ack
+      else {
+        try resendBuffer = resendBuffer.acknowledge(ack)
+        catch {
+          case NonFatal(e) ⇒
+            throw new InvalidAssociationException(s"Error encountered while processing system message acknowledgement $resendBuffer $ack", e)
+        }
 
-      if (lastCumulativeAck < ack.cumulativeAck) {
-        resendDeadline = Deadline.now + settings.SysResendTimeout
-        lastCumulativeAck = ack.cumulativeAck
-      } else if (resendDeadline.isOverdue()) {
-        resendAll()
-        resendDeadline = Deadline.now + settings.SysResendTimeout
+        if (lastCumulativeAck < ack.cumulativeAck) {
+          resendDeadline = Deadline.now + settings.SysResendTimeout
+          lastCumulativeAck = ack.cumulativeAck
+        } else if (resendDeadline.isOverdue()) {
+          resendAll()
+          resendDeadline = Deadline.now + settings.SysResendTimeout
+        }
+        resendNacked()
       }
-      resendNacked()
     case Terminated(_) ⇒
       currentHandle = None
       context.parent ! StoppedReading(self)
       if (resendBuffer.nonAcked.nonEmpty || resendBuffer.nacked.nonEmpty)
         context.system.scheduler.scheduleOnce(settings.SysResendTimeout, self, AttemptSysMsgRedelivery)
       context.become(idle)
-    case GotUid(u) ⇒
+    case GotUid(receivedUid) ⇒
       // New system that has the same address as the old - need to start from fresh state
-      if (uid.isDefined && uid.get != u) reset()
-      uid = Some(u)
+      uidConfirmed = true
+      if (uid.exists(_ != receivedUid)) reset()
+      else unstashAcks()
+      uid = Some(receivedUid)
+      resendAll()
+
     case s: EndpointWriter.StopReading ⇒ writer forward s
   }
 
@@ -273,7 +295,7 @@ private[remote] class ReliableDeliverySupervisor(
     case Ungate ⇒
       if (resendBuffer.nonAcked.nonEmpty || resendBuffer.nacked.nonEmpty) {
         writer = createWriter()
-        resendAll()
+        // Resending will be triggered by the incoming GotUid message after the connection finished
         context.become(receive)
       } else context.become(idle)
     case s @ Send(msg: SystemMessage, _, _, _) ⇒ tryBuffer(s.copy(seqOpt = Some(nextSeq())))
@@ -286,12 +308,12 @@ private[remote] class ReliableDeliverySupervisor(
   def idle: Receive = {
     case s: Send ⇒
       writer = createWriter()
-      resendAll()
+      // Resending will be triggered by the incoming GotUid message after the connection finished
       handleSend(s)
       context.become(receive)
     case AttemptSysMsgRedelivery ⇒
       writer = createWriter()
-      resendAll()
+      // Resending will be triggered by the incoming GotUid message after the connection finished
       context.become(receive)
     case EndpointWriter.FlushAndStop   ⇒ context.stop(self)
     case EndpointWriter.StopReading(w) ⇒ sender ! EndpointWriter.StoppedReading(w)
@@ -310,7 +332,9 @@ private[remote] class ReliableDeliverySupervisor(
     if (send.message.isInstanceOf[SystemMessage]) {
       val sequencedSend = send.copy(seqOpt = Some(nextSeq()))
       tryBuffer(sequencedSend)
-      writer ! sequencedSend
+      // If we have not confirmed the remote UID we cannot transfer the system message at this point just buffer it.
+      // GotUid will kick resendAll() causing the messages to be properly written
+      if (uidConfirmed) writer ! sequencedSend
     } else writer ! send
 
   private def resendNacked(): Unit = resendBuffer.nacked foreach { writer ! _ }
