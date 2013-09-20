@@ -559,7 +559,7 @@ private[akka] class ActorCell(
     try {
       val created = newActor()
       actor = created
-      created.preStart()
+      created.aroundPreStart()
       checkReceiveTimeout
       if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {

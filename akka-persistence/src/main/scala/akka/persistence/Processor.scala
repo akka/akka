@@ -222,9 +222,35 @@ trait Processor extends Actor with Stash {
     _currentState.aroundReceive(receive, message)
   }
 
-  private def nextSequenceNr(): Long = {
-    _sequenceNr += 1L
-    _sequenceNr
+  /**
+   * INTERNAL API.
+   */
+  final override protected[akka] def aroundPreStart(): Unit = {
+    try preStart() finally super.preStart()
+  }
+
+  /**
+   * INTERNAL API.
+   */
+  final override protected[akka] def aroundPostStop(): Unit = {
+    try unstashAll(unstashFilterPredicate) finally postStop()
+  }
+
+  /**
+   * INTERNAL API.
+   */
+  final override protected[akka] def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
+    try {
+      unstashAll(unstashFilterPredicate)
+      unstashAllInternal()
+    } finally {
+      message match {
+        case Some(Written(m))  ⇒ preRestartDefault(reason, Some(m))
+        case Some(Looped(m))   ⇒ preRestartDefault(reason, Some(m))
+        case Some(Replayed(m)) ⇒ preRestartDefault(reason, Some(m))
+        case mo                ⇒ preRestartDefault(reason, None)
+      }
+    }
   }
 
   /**
@@ -232,80 +258,32 @@ trait Processor extends Actor with Stash {
    * a `Recover()` to `self`.
    */
   @throws(classOf[Exception])
-  def preStartProcessor(): Unit = {
+  override def preStart(): Unit = {
     self ! Recover()
   }
-
-  /**
-   * User-overridable callback. Called when a processor is stopped. Empty default implementation.
-   */
-  @throws(classOf[Exception])
-  def postStopProcessor(): Unit = ()
 
   /**
    * User-overridable callback. Called before a processor is restarted. Default implementation sends
    * a `Recover(lastSequenceNr)` message to `self` if `message` is defined, `Recover() otherwise`.
    */
-  @throws(classOf[Exception])
-  def preRestartProcessor(reason: Throwable, message: Option[Any]): Unit = message match {
-    case Some(_) ⇒ self ! Recover(lastSequenceNr)
-    case None    ⇒ self ! Recover()
-  }
-
-  /**
-   * User-overridable callback. Called after a processor has been restarted. Empty default implementation.
-   */
-  @throws(classOf[Exception])
-  def postRestartProcessor(reason: Throwable): Unit = ()
-
-  /**
-   * Calls [[preStartProcessor]].
-   */
-  override def preStart() {
-    preStartProcessor()
-    super.preStart()
-  }
-
-  /**
-   * Calls [[postStopProcessor]] and unstashes all messages from the ''user stash'' that cannot be
-   * replayed. The user stash is empty afterwards.
-   */
-  override def postStop() {
-    postStopProcessor()
-    try unstashAll(unstashFilterPredicate) finally super.postStop()
-  }
-
-  /**
-   * Calls [[preRestartDefault]] and then `super.preRestart()`. If processor implementation
-   * classes want to opt out from stopping child actors, they should override this method and
-   * call [[preRestartDefault]] only.
-   */
-  override def preRestart(reason: Throwable, message: Option[Any]) {
-    try preRestartDefault(reason, message) finally super.preRestart(reason, message)
-  }
-
-  /**
-   * Calls [[preRestartProcessor]] and unstashes all messages from the ''user stash'' that cannot be
-   * replayed. The user stash is empty afterwards.
-   */
-  protected def preRestartDefault(reason: Throwable, message: Option[Any]) {
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     message match {
-      case Some(Written(m))  ⇒ preRestartProcessor(reason, Some(m))
-      case Some(Looped(m))   ⇒ preRestartProcessor(reason, Some(m))
-      case Some(Replayed(m)) ⇒ preRestartProcessor(reason, Some(m))
-      case mo                ⇒ preRestartProcessor(reason, None)
+      case Some(_) ⇒ self ! Recover(lastSequenceNr)
+      case None    ⇒ self ! Recover()
     }
-
-    unstashAll(unstashFilterPredicate)
-    unstashAllInternal()
   }
 
   /**
-   * Calls [[postRestartProcessor]].
+   * Calls [[preRestart]] and then `super.preRestart()`. If processor implementation classes want to
+   * opt out from stopping child actors, they should override this method and call [[preRestart]] only.
    */
-  override def postRestart(reason: Throwable) {
-    postRestartProcessor(reason)
-    super.postRestart(reason)
+  def preRestartDefault(reason: Throwable, message: Option[Any]): Unit = {
+    try preRestart(reason, message) finally super.preRestart(reason, message)
+  }
+
+  private def nextSequenceNr(): Long = {
+    _sequenceNr += 1L
+    _sequenceNr
   }
 
   // -----------------------------------------------------
