@@ -31,13 +31,9 @@ public class ClusterSingletonManagerTest {
 
     //#create-singleton-manager
     system.actorOf(
-      ClusterSingletonManager.defaultProps("consumer", new End(), "worker",
-        new ClusterSingletonPropsFactory() {
-          @Override
-          public Props create(Object handOverData) {
-            return Props.create(Consumer.class, handOverData, queue, testActor);
-          }
-        }), "singleton");
+      ClusterSingletonManager.defaultProps(
+          Props.create(Consumer.class, queue, testActor), "consumer", 
+          new End(), "worker"), "singleton");
     //#create-singleton-manager
   }
 
