@@ -74,7 +74,7 @@ only be received by that processor after recovery completes.
 Recovery customization
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Automated recovery on start can be disabled by overriding ``preStartProcessor`` with an empty implementation.
+Automated recovery on start can be disabled by overriding ``preStart`` with an empty implementation.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#recover-on-start-disabled
 
@@ -82,17 +82,14 @@ In this case, a processor must be recovered explicitly by sending it a ``Recover
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#recover-explicit
 
-If not overridden, ``preStartProcessor`` sends a ``Recover()`` message to ``self``. Applications may also override
-``preStartProcessor`` to define further ``Recover()`` parameters such as an upper sequence number bound, for example.
+If not overridden, ``preStart`` sends a ``Recover()`` message to ``self``. Applications may also override
+``preStart`` to define further ``Recover()`` parameters such as an upper sequence number bound, for example.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#recover-on-start-custom
 
-Automated recovery on restart can be disabled by overriding ``preRestartProcessor`` with an empty implementation.
+Automated recovery on restart can be disabled by overriding ``preRestart`` with an empty implementation.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#recover-on-restart-disabled
-
-This is useful in situations where processors are *resumed* by a supervisor (which keeps accumulated internal
-state and makes a message replay unnecessary).
 
 Recovery status
 ^^^^^^^^^^^^^^^
@@ -110,14 +107,6 @@ A persistent message that caused an exception will be received again by a proces
 a replay of that message during recovery it can be marked as deleted.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#deletion
-
-Life cycle hooks
-----------------
-
-``Processor`` implementation classes should override the ``preStartProcessor``, ``preRestartProcessor``,
-``postRestartProcessor`` and ``postStopProcessor`` life cycle hooks and not ``preStart``, ``preRestart``,
-``postRestart`` and ``postStop`` directly. The latter are nevertheless non-final to allow composition with
-existing traits such as ``akka.actor.FSM``, for example.
 
 Identifiers
 -----------

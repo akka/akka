@@ -65,19 +65,19 @@ public class PersistenceDocTest {
         abstract class MyProcessor1 extends UntypedProcessor {
             //#recover-on-start-disabled
             @Override
-            public void preStartProcessor() {}
+            public void preStart() {}
             //#recover-on-start-disabled
 
             //#recover-on-restart-disabled
             @Override
-            public void preRestartProcessor(Throwable reason, Option<Object> message) {}
+            public void preRestart(Throwable reason, Option<Object> message) {}
             //#recover-on-restart-disabled
         }
 
         abstract class MyProcessor2 extends UntypedProcessor {
             //#recover-on-start-custom
             @Override
-            public void preStartProcessor() {
+            public void preStart() {
                 getSelf().tell(Recover.create(457L), null);
             }
             //#recover-on-start-custom
@@ -86,11 +86,11 @@ public class PersistenceDocTest {
         abstract class MyProcessor3 extends UntypedProcessor {
             //#deletion
             @Override
-            public void preRestartProcessor(Throwable reason, Option<Object> message) throws Exception {
+            public void preRestart(Throwable reason, Option<Object> message) {
                 if (message.isDefined() && message.get() instanceof Persistent) {
                     delete((Persistent) message.get());
                 }
-                super.preRestartProcessor(reason, message);
+                super.preRestart(reason, message);
             }
             //#deletion
         }

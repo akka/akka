@@ -47,5 +47,5 @@ abstract class NamedProcessor(name: String) extends Processor {
 }
 
 trait TurnOffRecoverOnStart { this: Processor ⇒
-  override def preStartProcessor(): Unit = ()
+  override def preStart(): Unit = ()
 }

@@ -22,12 +22,12 @@ object ProcessorSpec {
       case GetState                 ⇒ sender ! state.reverse
     }
 
-    override def preRestartProcessor(reason: Throwable, message: Option[Any]) = {
+    override def preRestart(reason: Throwable, message: Option[Any]) = {
       message match {
         case Some(m: Persistent) ⇒ delete(m) // delete message from journal
         case _                   ⇒ // ignore
       }
-      super.preRestartProcessor(reason, message)
+      super.preRestart(reason, message)
     }
   }
 
@@ -111,12 +111,12 @@ object ProcessorSpec {
   }
 
   class LastReplayedMsgFailsTestProcessor(name: String) extends RecoverTestProcessor(name) {
-    override def preRestartProcessor(reason: Throwable, message: Option[Any]) = {
+    override def preRestart(reason: Throwable, message: Option[Any]) = {
       message match {
         case Some(m: Persistent) ⇒ if (recoveryRunning) delete(m)
         case _                   ⇒
       }
-      super.preRestartProcessor(reason, message)
+      super.preRestart(reason, message)
     }
   }
 

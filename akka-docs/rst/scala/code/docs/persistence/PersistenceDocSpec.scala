@@ -44,16 +44,16 @@ trait PersistenceDocSpec {
   new AnyRef {
     trait MyProcessor1 extends Processor {
       //#recover-on-start-disabled
-      override def preStartProcessor() = ()
+      override def preStart() = ()
       //#recover-on-start-disabled
       //#recover-on-restart-disabled
-      override def preRestartProcessor(reason: Throwable, message: Option[Any]) = ()
+      override def preRestart(reason: Throwable, message: Option[Any]) = ()
       //#recover-on-restart-disabled
     }
 
     trait MyProcessor2 extends Processor {
       //#recover-on-start-custom
-      override def preStartProcessor() {
+      override def preStart() {
         self ! Recover(toSequenceNr = 457L)
       }
       //#recover-on-start-custom
@@ -61,12 +61,12 @@ trait PersistenceDocSpec {
 
     trait MyProcessor3 extends Processor {
       //#deletion
-      override def preRestartProcessor(reason: Throwable, message: Option[Any]) {
+      override def preRestart(reason: Throwable, message: Option[Any]) {
         message match {
           case Some(p: Persistent) ⇒ delete(p)
           case _                   ⇒
         }
-        super.preRestartProcessor(reason, message)
+        super.preRestart(reason, message)
       }
       //#deletion
     }

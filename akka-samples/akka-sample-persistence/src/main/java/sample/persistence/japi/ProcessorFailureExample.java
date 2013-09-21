@@ -32,11 +32,11 @@ public class ProcessorFailureExample {
         }
 
         @Override
-        public void preRestartProcessor(Throwable reason, Option<Object> message) throws Exception {
+        public void preRestart(Throwable reason, Option<Object> message) {
             if (message.isDefined() && message.get() instanceof Persistent) {
                 delete((Persistent) message.get());
             }
-            super.preRestartProcessor(reason, message);
+            super.preRestart(reason, message);
         }
     }
 
