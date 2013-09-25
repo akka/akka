@@ -125,6 +125,43 @@ it receives one of the above close commands.
 All close notifications are sub-types of ``ConnectionClosed`` so listeners who do not need fine-grained close events
 may handle all close events in the same way.
 
+Writing to a connection
+-----------------------
+
+Once a connection has been established data can be sent to it from any actor in the form of a ``Tcp.WriteCommand``.
+``Tcp.WriteCommand`` is an abstract class with three concrete implementations:
+
+Tcp.Write
+  The simplest ``WriteCommand`` implementation which wraps a ``ByteString`` instance and an "ack" event.
+  A ``ByteString`` (as explained in :ref:`this section <ByteString>`) models one or more chunks of immutable
+  in-memory data with a maximum (total) size of 2 GB (2^31 bytes).
+
+Tcp.WriteFile
+  If you want to send "raw" data from a file you can do so efficiently with the ``Tcp.WriteFile`` command.
+  This allows you do designate a (contiguous) chunk of on-disk bytes for sending across the connection without
+  the need to first load them into the JVM memory. As such ``Tcp.WriteFile`` can "hold" more than 2GB of data and
+  an "ack" event if required.
+
+Tcp.CompoundWrite
+  Sometimes you might want to group (or interleave) several ``Tcp.Write`` and/or ``Tcp.WriteFile`` commands into
+  one atomic write command which gets written to the connection in one go. The ``Tcp.CompoundWrite`` allows you
+  to do just that and offers three benefits:
+
+  1. As explained in the following section the TCP connection actor can only handle one single write command at a time.
+     By combining several writes into one ``CompoundWrite`` you can have them be sent across the connection with
+     minimum overhead and without the need to spoon feed them to the connection actor via an *ACK-based* message
+     protocol.
+
+  2. Because a ``WriteCommand`` is atomic you can be sure that no other actor can "inject" other writes into your
+     series of writes if you combine them into one single ``CompoundWrite``. In scenarios where several actors write
+     to the same connection this can be an important feature which can be somewhat hard to achieve otherwise.
+
+  3. The "sub writes" of a ``CompoundWrite`` are regular ``Write`` or ``WriteFile`` commands that themselves can request
+     "ack" events. These ACKs are sent out as soon as the respective "sub write" has been completed. This allows you to
+     attach more than one ACK to a ``Write`` or ``WriteFile`` (by combining it with an empty write that itself requests
+     an ACK) or to have the connection actor acknowledge the progress of transmitting the ``CompoundWrite`` by sending
+     out intermediate ACKs at arbitrary points.
+
 Throttling Reads and Writes
 ---------------------------
 
