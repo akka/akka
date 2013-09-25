@@ -26,12 +26,9 @@ object ClusterSingletonManager {
 
   /**
    * Scala API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]].
-   * Note that the `singletonProps` function is applied when creating
-   * the singleton actor and it must not use members that are not thread safe, e.g.
-   * mutable state in enclosing actor.
    */
   def props(
-    singletonProps: Option[Any] ⇒ Props,
+    singletonProps: Props,
     singletonName: String,
     terminationMessage: Any,
     role: Option[String],
@@ -43,35 +40,28 @@ object ClusterSingletonManager {
 
   /**
    * Java API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]].
-   * Note that the `singletonPropsFactory` is invoked when creating
-   * the singleton actor and it must not use members that are not thread safe, e.g.
-   * mutable state in enclosing actor.
    */
   def props(
+    singletonProps: Props,
     singletonName: String,
     terminationMessage: Any,
     role: String,
     maxHandOverRetries: Int,
     maxTakeOverRetries: Int,
-    retryInterval: FiniteDuration,
-    singletonPropsFactory: ClusterSingletonPropsFactory): Props =
-    props(handOverData ⇒ singletonPropsFactory.create(handOverData.orNull), singletonName, terminationMessage,
+    retryInterval: FiniteDuration): Props =
+    props(singletonProps, singletonName, terminationMessage,
       ClusterSingletonManager.Internal.roleOption(role), maxHandOverRetries, maxTakeOverRetries, retryInterval)
 
   /**
    * Java API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]]
    * with default values.
-   * Note that the `singletonPropsFactory` is invoked when creating
-   * the singleton actor and it must not use members that are not thread safe, e.g.
-   * mutable state in enclosing actor.
    */
   def defaultProps(
+    singletonProps: Props,
     singletonName: String,
     terminationMessage: Any,
-    role: String,
-    singletonPropsFactory: ClusterSingletonPropsFactory): Props =
-    props(handOverData ⇒ singletonPropsFactory.create(handOverData.orNull), singletonName, terminationMessage,
-      ClusterSingletonManager.Internal.roleOption(role))
+    role: String): Props =
+    props(singletonProps, singletonName, terminationMessage, ClusterSingletonManager.Internal.roleOption(role))
 
   /**
    * INTERNAL API
@@ -103,12 +93,9 @@ object ClusterSingletonManager {
     /**
      * Confirmation by the previous oldest that the singleton
      * actor has been terminated and the hand-over process is
-     * completed. The `handOverData` holds the message, if any,
-     * sent from the singleton actor to its parent ClusterSingletonManager
-     * when shutting down. It is passed to the `singletonProps`
-     * factory on the new oldest node.
+     * completed.
      */
-    case class HandOverDone(handOverData: Option[Any])
+    case object HandOverDone
     /**
      * Sent from from previous oldest to new oldest to
      * initiate the normal hand-over process.
@@ -135,11 +122,10 @@ object ClusterSingletonManager {
     case object Uninitialized extends Data
     case class YoungerData(oldestOption: Option[Address]) extends Data
     case class BecomingOldestData(previousOldestOption: Option[Address]) extends Data
-    case class OldestData(singleton: ActorRef, singletonTerminated: Boolean = false,
-                          handOverData: Option[Any] = None) extends Data
-    case class WasOldestData(singleton: ActorRef, singletonTerminated: Boolean, handOverData: Option[Any],
+    case class OldestData(singleton: ActorRef, singletonTerminated: Boolean = false) extends Data
+    case class WasOldestData(singleton: ActorRef, singletonTerminated: Boolean,
                              newOldestOption: Option[Address]) extends Data
-    case class HandingOverData(singleton: ActorRef, handOverTo: Option[ActorRef], handOverData: Option[Any]) extends Data
+    case class HandingOverData(singleton: ActorRef, handOverTo: Option[ActorRef]) extends Data
     case object EndData extends Data
 
     val HandOverRetryTimer = "hand-over-retry"
@@ -264,22 +250,6 @@ object ClusterSingletonManager {
 }
 
 /**
- * Java API. Factory for the [[akka.actor.Props]] of the singleton
- * actor instance. Used in constructor of
- * [[akka.contrib.pattern.ClusterSingletonManager]]
- */
-@SerialVersionUID(1L)
-trait ClusterSingletonPropsFactory extends Serializable {
-  /**
-   * Create the `Props` from the `handOverData` sent from
-   * previous singleton. `handOverData` might be null
-   * when no hand-over took place, or when the there is no need
-   * for sending data to the new singleton.
-   */
-  def create(handOverData: Any): Props
-}
-
-/**
  * Thrown when a consistent state can't be determined within the
  * defined retry limits. Eventually it will reach a stable state and
  * can continue, and that is simplified by starting over with a clean
@@ -305,11 +275,6 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  * there is a short time period when there is no active singleton during the
  * hand-over process.
  *
- * The singleton actor can at any time send a message to its parent
- * ClusterSingletonManager and this message will be passed to the
- * `singletonProps` factory on the new oldest node when a graceful
- * hand-over is performed.
- *
  * The cluster failure detector will notice when oldest node
  * becomes unreachable due to things like JVM crash, hard shut down,
  * or network failure. Then a new oldest node will take over and a
@@ -329,23 +294,13 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  *
  * ==Arguments==
  *
- * '''''singletonProps''''' Factory for [[akka.actor.Props]] of the
- *   singleton actor instance. The `Option` parameter is the the
- *   `handOverData` sent from previous singleton. `handOverData`
- *    might be None when no hand-over took place, or when the there
- *    is no need for sending data to the new singleton. The `handOverData`
- *    is typically passed as parameter to the constructor of the
- *    singleton actor. Note that the `singletonProps` function is applied when creating
- *    the singleton actor and it must not use members that are not thread safe, e.g.
- *    mutable state in enclosing actor.
+ * '''''singletonProps''''' [[akka.actor.Props]] of the singleton actor instance.
  *
  * '''''singletonName''''' The actor name of the child singleton actor.
  *
  * '''''terminationMessage''''' When handing over to a new oldest node
  *   this `terminationMessage` is sent to the singleton actor to tell
- *   it to finish its work, close resources, and stop. It can sending
- *   a message back to the parent ClusterSingletonManager, which will
- *   passed to the `singletonProps` factory on the new oldest node.
+ *   it to finish its work, close resources, and stop.
  *   The hand-over to the new oldest node is completed when the
  *   singleton actor is terminated.
  *   Note that [[akka.actor.PoisonPill]] is a perfectly fine
@@ -380,7 +335,7 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  *   stopped for certain corner cases.
  */
 class ClusterSingletonManager(
-  singletonProps: Option[Any] ⇒ Props,
+  singletonProps: Props,
   singletonName: String,
   terminationMessage: Any,
   role: Option[String],
@@ -472,7 +427,7 @@ class ClusterSingletonManager(
       oldestChangedReceived = true
       if (oldestOption == selfAddressOption && memberCount == 1)
         // alone, oldest immediately
-        gotoOldest(None)
+        gotoOldest()
       else if (oldestOption == selfAddressOption)
         goto(BecomingOldest) using BecomingOldestData(None)
       else
@@ -485,8 +440,8 @@ class ClusterSingletonManager(
       if (oldestOption == selfAddressOption) {
         logInfo("Younger observed OldestChanged: [{} -> myself]", previousOldestOption)
         previousOldestOption match {
-          case None                                 ⇒ gotoOldest(None)
-          case Some(prev) if removed.contains(prev) ⇒ gotoOldest(None)
+          case None                                 ⇒ gotoOldest()
+          case Some(prev) if removed.contains(prev) ⇒ gotoOldest()
           case Some(prev) ⇒
             peer(prev) ! HandOverToMe
             goto(BecomingOldest) using BecomingOldestData(previousOldestOption)
@@ -517,9 +472,9 @@ class ClusterSingletonManager(
       cancelTimer(HandOverRetryTimer)
       stay
 
-    case Event(HandOverDone(handOverData), BecomingOldestData(Some(previousOldest))) ⇒
+    case Event(HandOverDone, BecomingOldestData(Some(previousOldest))) ⇒
       if (sender.path.address == previousOldest)
-        gotoOldest(handOverData)
+        gotoOldest()
       else {
         logInfo("Ignoring HandOverDone in BecomingOldest from [{}]. Expected previous oldest [{}]",
           sender.path.address, previousOldest)
@@ -551,21 +506,21 @@ class ClusterSingletonManager(
         // can't send HandOverToMe, previousOldest unknown for new node (or restart)
         // previous oldest might be down or removed, so no TakeOverFromMe message is received
         logInfo("Timeout in BecomingOldest. Previous oldest unknown, removed and no TakeOver request.")
-        gotoOldest(None)
+        gotoOldest()
       } else
         throw new ClusterSingletonManagerIsStuck(
           s"Becoming singleton oldest was stuck because previous oldest [${previousOldestOption}] is unresponsive")
 
   }
 
-  def gotoOldest(handOverData: Option[Any]): State = {
+  def gotoOldest(): State = {
     logInfo("Singleton manager [{}] starting singleton actor", cluster.selfAddress)
-    val singleton = context watch context.actorOf(singletonProps(handOverData), singletonName)
+    val singleton = context watch context.actorOf(singletonProps, singletonName)
     goto(Oldest) using OldestData(singleton)
   }
 
   when(Oldest) {
-    case Event(OldestChanged(oldestOption), OldestData(singleton, singletonTerminated, handOverData)) ⇒
+    case Event(OldestChanged(oldestOption), OldestData(singleton, singletonTerminated)) ⇒
       oldestChangedReceived = true
       logInfo("Oldest observed OldestChanged: [{} -> {}]", cluster.selfAddress, oldestOption)
       oldestOption match {
@@ -573,30 +528,27 @@ class ClusterSingletonManager(
           // already oldest
           stay
         case Some(a) if !selfExited && removed.contains(a) ⇒
-          gotoHandingOver(singleton, singletonTerminated, handOverData, None)
+          gotoHandingOver(singleton, singletonTerminated, None)
         case Some(a) ⇒
           // send TakeOver request in case the new oldest doesn't know previous oldest
           peer(a) ! TakeOverFromMe
           setTimer(TakeOverRetryTimer, TakeOverRetry(1), retryInterval, repeat = false)
-          goto(WasOldest) using WasOldestData(singleton, singletonTerminated, handOverData, newOldestOption = Some(a))
+          goto(WasOldest) using WasOldestData(singleton, singletonTerminated, newOldestOption = Some(a))
         case None ⇒
           // new oldest will initiate the hand-over
           setTimer(TakeOverRetryTimer, TakeOverRetry(1), retryInterval, repeat = false)
-          goto(WasOldest) using WasOldestData(singleton, singletonTerminated, handOverData, newOldestOption = None)
+          goto(WasOldest) using WasOldestData(singleton, singletonTerminated, newOldestOption = None)
       }
 
-    case Event(HandOverToMe, OldestData(singleton, singletonTerminated, handOverData)) ⇒
-      gotoHandingOver(singleton, singletonTerminated, handOverData, Some(sender))
+    case Event(HandOverToMe, OldestData(singleton, singletonTerminated)) ⇒
+      gotoHandingOver(singleton, singletonTerminated, Some(sender))
 
-    case Event(singletonHandOverMessage, d @ OldestData(singleton, _, _)) if sender == singleton ⇒
-      stay using d.copy(handOverData = Some(singletonHandOverMessage))
-
-    case Event(Terminated(ref), d @ OldestData(singleton, _, _)) if ref == singleton ⇒
+    case Event(Terminated(ref), d @ OldestData(singleton, _)) if ref == singleton ⇒
       stay using d.copy(singletonTerminated = true)
   }
 
   when(WasOldest) {
-    case Event(TakeOverRetry(count), WasOldestData(_, _, _, newOldestOption)) ⇒
+    case Event(TakeOverRetry(count), WasOldestData(_, _, newOldestOption)) ⇒
       if (count <= maxTakeOverRetries) {
         logInfo("Retry [{}], sending TakeOverFromMe to [{}]", count, newOldestOption)
         newOldestOption foreach { peer(_) ! TakeOverFromMe }
@@ -605,49 +557,43 @@ class ClusterSingletonManager(
       } else
         throw new ClusterSingletonManagerIsStuck(s"Expected hand-over to [${newOldestOption}] never occured")
 
-    case Event(HandOverToMe, WasOldestData(singleton, singletonTerminated, handOverData, _)) ⇒
-      gotoHandingOver(singleton, singletonTerminated, handOverData, Some(sender))
+    case Event(HandOverToMe, WasOldestData(singleton, singletonTerminated, _)) ⇒
+      gotoHandingOver(singleton, singletonTerminated, Some(sender))
 
-    case Event(MemberRemoved(m, _), WasOldestData(singleton, singletonTerminated, handOverData, Some(newOldest))) if !selfExited && m.address == newOldest ⇒
+    case Event(MemberRemoved(m, _), WasOldestData(singleton, singletonTerminated, Some(newOldest))) if !selfExited && m.address == newOldest ⇒
       addRemoved(m.address)
-      gotoHandingOver(singleton, singletonTerminated, handOverData, None)
+      gotoHandingOver(singleton, singletonTerminated, None)
 
-    case Event(singletonHandOverMessage, d @ WasOldestData(singleton, _, _, _)) if sender == singleton ⇒
-      stay using d.copy(handOverData = Some(singletonHandOverMessage))
-
-    case Event(Terminated(ref), d @ WasOldestData(singleton, _, _, _)) if ref == singleton ⇒
+    case Event(Terminated(ref), d @ WasOldestData(singleton, _, _)) if ref == singleton ⇒
       stay using d.copy(singletonTerminated = true)
 
   }
 
-  def gotoHandingOver(singleton: ActorRef, singletonTerminated: Boolean, handOverData: Option[Any], handOverTo: Option[ActorRef]): State = {
+  def gotoHandingOver(singleton: ActorRef, singletonTerminated: Boolean, handOverTo: Option[ActorRef]): State = {
     if (singletonTerminated) {
-      handOverDone(handOverTo, handOverData)
+      handOverDone(handOverTo)
     } else {
       handOverTo foreach { _ ! HandOverInProgress }
       singleton ! terminationMessage
-      goto(HandingOver) using HandingOverData(singleton, handOverTo, handOverData)
+      goto(HandingOver) using HandingOverData(singleton, handOverTo)
     }
   }
 
   when(HandingOver) {
-    case (Event(Terminated(ref), HandingOverData(singleton, handOverTo, handOverData))) if ref == singleton ⇒
-      handOverDone(handOverTo, handOverData)
+    case (Event(Terminated(ref), HandingOverData(singleton, handOverTo))) if ref == singleton ⇒
+      handOverDone(handOverTo)
 
-    case Event(HandOverToMe, d @ HandingOverData(singleton, handOverTo, _)) if handOverTo == Some(sender) ⇒
+    case Event(HandOverToMe, d @ HandingOverData(singleton, handOverTo)) if handOverTo == Some(sender) ⇒
       // retry
       sender ! HandOverInProgress
       stay
 
-    case Event(singletonHandOverMessage, d @ HandingOverData(singleton, _, _)) if sender == singleton ⇒
-      stay using d.copy(handOverData = Some(singletonHandOverMessage))
-
   }
 
-  def handOverDone(handOverTo: Option[ActorRef], handOverData: Option[Any]): State = {
+  def handOverDone(handOverTo: Option[ActorRef]): State = {
     val newOldest = handOverTo.map(_.path.address)
     logInfo("Singleton terminated, hand-over done [{} -> {}]", cluster.selfAddress, newOldest)
-    handOverTo foreach { _ ! HandOverDone(handOverData) }
+    handOverTo foreach { _ ! HandOverDone }
     if (selfExited || removed.contains(cluster.selfAddress))
       goto(End) using EndData
     else

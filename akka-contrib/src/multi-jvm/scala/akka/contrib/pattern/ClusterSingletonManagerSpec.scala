@@ -111,15 +111,11 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
   /**
    * The Singleton actor
    */
-  class Consumer(handOverData: Option[Any], queue: ActorRef, delegateTo: ActorRef) extends Actor {
+  class Consumer(queue: ActorRef, delegateTo: ActorRef) extends Actor {
     import Consumer._
     import PointToPointChannel._
 
-    var current: Int = handOverData match {
-      case Some(x: Int) ⇒ x
-      case Some(x)      ⇒ throw new IllegalArgumentException(s"handOverData must be an Int, got [${x}]")
-      case None         ⇒ 0
-    }
+    var current = 0
 
     override def preStart(): Unit = queue ! RegisterConsumer
 
@@ -137,9 +133,6 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
       case End ⇒
         queue ! UnregisterConsumer
       case UnregistrationOk ⇒
-        // reply to ClusterSingletonManager with hand over data,
-        // which will be passed as parameter to new consumer singleton
-        context.parent ! current
         context stop self
       //#consumer-end
     }
@@ -226,8 +219,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
   def createSingleton(): ActorRef = {
     //#create-singleton-manager
     system.actorOf(ClusterSingletonManager.props(
-      singletonProps = handOverData ⇒
-        Props(classOf[Consumer], handOverData, queue, testActor),
+      singletonProps = Props(classOf[Consumer], queue, testActor),
       singletonName = "consumer",
       terminationMessage = End,
       role = Some("worker")),
@@ -238,12 +230,12 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
   def consumer(oldest: RoleName): ActorSelection =
     system.actorSelection(RootActorPath(node(oldest).address) / "user" / "singleton" / "consumer")
 
-  def verifyRegistration(oldest: RoleName, expectedCurrent: Int): Unit = {
+  def verifyRegistration(oldest: RoleName): Unit = {
     enterBarrier("before-" + oldest.name + "-registration-verified")
     runOn(oldest) {
       expectMsg(RegistrationOk)
       consumer(oldest) ! GetCurrent
-      expectMsg(expectedCurrent)
+      expectMsg(0)
     }
     enterBarrier("after-" + oldest.name + "-registration-verified")
   }
@@ -292,7 +284,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
 
       join(first, first)
       awaitMemberUp(memberProbe, first)
-      verifyRegistration(first, expectedCurrent = 0)
+      verifyRegistration(first)
       verifyMsg(first, msg = 1)
 
       // join the observer node as well, which should not influence since it doesn't have the "worker" role
@@ -330,7 +322,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
         Cluster(system) leave node(leaveRole).address
       }
 
-      verifyRegistration(second, expectedCurrent = 6)
+      verifyRegistration(second)
       verifyMsg(second, msg = 7)
 
       runOn(leaveRole) {
@@ -353,19 +345,19 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       enterBarrier("logs-muted")
 
       crash(second)
-      verifyRegistration(third, expectedCurrent = 0)
+      verifyRegistration(third)
       verifyMsg(third, msg = 8)
     }
 
     "take over when two oldest crash in 3 nodes cluster" in within(60 seconds) {
       crash(third, fourth)
-      verifyRegistration(fifth, expectedCurrent = 0)
+      verifyRegistration(fifth)
       verifyMsg(fifth, msg = 9)
     }
 
     "take over when oldest crashes in 2 nodes cluster" in within(60 seconds) {
       crash(fifth)
-      verifyRegistration(sixth, expectedCurrent = 0)
+      verifyRegistration(sixth)
       verifyMsg(sixth, msg = 10)
     }
 
