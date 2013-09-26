@@ -34,7 +34,7 @@ object ProcessorChannelExample extends App {
   }
 
   val system = ActorSystem("example")
-  val processor = system.actorOf(Props(classOf[ExampleProcessor]), "processor")
+  val processor = system.actorOf(Props(classOf[ExampleProcessor]), "processor-1")
 
   implicit val timeout = Timeout(3000)
   import system.dispatcher

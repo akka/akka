@@ -1,16 +1,20 @@
 package docs.persistence
 
 import akka.actor.ActorSystem
-import akka.persistence.{ Recover, Persistent, Processor }
-import akka.testkit.{ ImplicitSender, AkkaSpec }
+import akka.persistence._
+import akka.persistence.SaveSnapshotSucceeded
+import scala.Some
 
 trait PersistenceDocSpec {
   val system: ActorSystem
   val config =
     """
-      //#config
+      //#journal-config
       akka.persistence.journal.leveldb.dir = "target/journal"
-      //#config
+      //#journal-config
+      //#snapshot-config
+      akka.persistence.snapshot-store.local.dir = "target/snapshots"
+      //#snapshot-config
     """
 
   import system._
@@ -63,7 +67,7 @@ trait PersistenceDocSpec {
       //#deletion
       override def preRestart(reason: Throwable, message: Option[Any]) {
         message match {
-          case Some(p: Persistent) ⇒ delete(p)
+          case Some(p: Persistent) ⇒ deleteMessage(p)
           case _                   ⇒
         }
         super.preRestart(reason, message)
@@ -183,5 +187,42 @@ trait PersistenceDocSpec {
       }
     }
     //#fsm-example
+  }
+
+  new AnyRef {
+    //#save-snapshot
+    class MyProcessor extends Processor {
+      var state: Any = _
+
+      def receive = {
+        case "snap"                               ⇒ saveSnapshot(state)
+        case SaveSnapshotSucceeded(metadata)      ⇒ // ...
+        case SaveSnapshotFailed(metadata, reason) ⇒ // ...
+      }
+    }
+    //#save-snapshot
+  }
+
+  new AnyRef {
+    //#snapshot-offer
+    class MyProcessor extends Processor {
+      var state: Any = _
+
+      def receive = {
+        case SnapshotOffer(metadata, offeredSnapshot) ⇒ state = offeredSnapshot
+        case Persistent(payload, sequenceNr)          ⇒ // ...
+      }
+    }
+    //#snapshot-offer
+
+    import akka.actor.Props
+
+    val processor = system.actorOf(Props[MyProcessor])
+
+    //#snapshot-criteria
+    processor ! Recover(fromSnapshot = SnapshotSelectionCriteria(
+      maxSequenceNr = 457L,
+      maxTimestamp = System.currentTimeMillis))
+    //#snapshot-criteria
   }
 }

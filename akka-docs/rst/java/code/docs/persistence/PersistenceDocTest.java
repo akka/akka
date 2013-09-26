@@ -88,7 +88,7 @@ public class PersistenceDocTest {
             @Override
             public void preRestart(Throwable reason, Option<Object> message) {
                 if (message.isDefined() && message.get() instanceof Persistent) {
-                    delete((Persistent) message.get());
+                    deleteMessage((Persistent) message.get());
                 }
                 super.preRestart(reason, message);
             }
@@ -168,5 +168,63 @@ public class PersistenceDocTest {
                 }
             }
         }
+    };
+
+    static Object o4 = new Object() {
+        //#save-snapshot
+        class MyProcessor extends UntypedProcessor {
+            private Object state;
+
+            @Override
+            public void onReceive(Object message) throws Exception {
+                if (message.equals("snap")) {
+                    saveSnapshot(state);
+                } else if (message instanceof SaveSnapshotSucceeded) {
+                    SnapshotMetadata metadata = ((SaveSnapshotSucceeded)message).metadata();
+                    // ...
+                } else if (message instanceof SaveSnapshotFailed) {
+                    SnapshotMetadata metadata = ((SaveSnapshotFailed)message).metadata();
+                    // ...
+                }
+            }
+        }
+        //#save-snapshot
+    };
+
+    static Object o5 = new Object() {
+        //#snapshot-offer
+        class MyProcessor extends UntypedProcessor {
+            private Object state;
+
+            @Override
+            public void onReceive(Object message) throws Exception {
+                if (message instanceof SnapshotOffer) {
+                    state = ((SnapshotOffer)message).snapshot();
+                    // ...
+                } else if (message instanceof Persistent) {
+                    // ...
+                }
+            }
+        }
+        //#snapshot-offer
+
+        class MyActor extends UntypedActor {
+            ActorRef processor;
+
+            public MyActor() {
+                processor = getContext().actorOf(Props.create(MyProcessor.class));
+            }
+
+            public void onReceive(Object message) throws Exception {
+                // ...
+            }
+
+            private void recover() {
+                //#snapshot-criteria
+                processor.tell(Recover.create(SnapshotSelectionCriteria.create(457L, System.currentTimeMillis())), null);
+                //#snapshot-criteria
+            }
+        }
+
     };
 }
