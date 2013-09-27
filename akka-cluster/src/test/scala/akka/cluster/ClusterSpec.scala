@@ -19,7 +19,7 @@ import akka.actor.ActorRef
 object ClusterSpec {
   val config = """
     akka.cluster {
-      auto-down                    = off
+      auto-down-unreachable-after = 0s
       periodic-tasks-initial-delay = 120 seconds // turn off scheduled tasks
       publish-stats-interval = 0 s # always, when it happens
       failure-detector.implementation-class = akka.cluster.FailureDetectorPuppet

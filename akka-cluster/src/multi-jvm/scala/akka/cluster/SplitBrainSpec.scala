@@ -26,7 +26,7 @@ case class SplitBrainMultiNodeConfig(failureDetectorPuppet: Boolean) extends Mul
     withFallback(ConfigFactory.parseString("""
         akka.remote.retry-gate-closed-for = 3 s
         akka.cluster {
-          auto-down = on
+          auto-down-unreachable-after = 1s
           failure-detector.threshold = 4
         }""")).
     withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
@@ -80,14 +80,14 @@ abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
 
       runOn(side1: _*) {
         for (role ← side2) markNodeAsUnavailable(role)
-        // auto-down = on
+        // auto-down
         awaitMembersUp(side1.size, side2.toSet map address)
         assertLeader(side1: _*)
       }
 
       runOn(side2: _*) {
         for (role ← side1) markNodeAsUnavailable(role)
-        // auto-down = on
+        // auto-down
         awaitMembersUp(side2.size, side1.toSet map address)
         assertLeader(side2: _*)
       }

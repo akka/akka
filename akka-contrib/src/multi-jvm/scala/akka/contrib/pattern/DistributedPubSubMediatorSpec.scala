@@ -28,7 +28,7 @@ object DistributedPubSubMediatorSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-down = on
+    akka.cluster.auto-down-unreachable-after = 0s
     """))
 
   object TestChatUser {

@@ -16,7 +16,8 @@ object NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec extends MultiNodeConfig 
   val third = role("third")
 
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(
-    "akka.cluster.auto-down=on")).withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
+    "akka.cluster.auto-down-unreachable-after = 0s")).
+    withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
 class NodeLeavingAndExitingAndBeingRemovedMultiJvmNode1 extends NodeLeavingAndExitingAndBeingRemovedSpec
