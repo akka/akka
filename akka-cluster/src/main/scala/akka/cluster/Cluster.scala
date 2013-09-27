@@ -166,9 +166,12 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
       Await.result((clusterDaemons ? InternalClusterAction.GetClusterCoreRef).mapTo[ActorRef], timeout.duration)
     } catch {
       case NonFatal(e) ⇒
-        log.error(e, "Failed to startup Cluster")
+        log.error(e, "Failed to startup Cluster. You can try to increase 'akka.actor.creation-timeout'.")
         shutdown()
-        throw e
+        // don't re-throw, that would cause the extension to be re-recreated
+        // from shutdown() or other places, which may result in 
+        // InvalidActorNameException: actor name [cluster] is not unique
+        system.deadLetters
     }
   }
 
