@@ -9,6 +9,7 @@ import akka.testkit._
 import akka.remote.{ RARP, EndpointException }
 import akka.remote.transport.FailureInjectorTransportAdapter.{ One, All, Drop }
 import scala.concurrent.Await
+import scala.util.control.NonFatal
 
 object AkkaProtocolStressTest {
   val configA: Config = ConfigFactory parseString ("""
@@ -36,7 +37,7 @@ object AkkaProtocolStressTest {
       }
 
     }
-                                                   """)
+    """)
 
   class SequenceVerifier(remote: ActorRef, controller: ActorRef) extends Actor {
     import context.dispatcher
@@ -112,5 +113,16 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
   }
 
   override def afterTermination(): Unit = shutdown(systemB)
+
+  override protected def withFixture(test: NoArgTest): Unit =
+    if (TestKitExtension(systemB).BufferLogging) {
+      try {
+        super.withFixture(test)
+      } catch {
+        case NonFatal(e) ⇒
+          systemB.eventStream.publish(TestEvent.Flush)
+          throw e
+      }
+    } else super.withFixture(test)
 
 }

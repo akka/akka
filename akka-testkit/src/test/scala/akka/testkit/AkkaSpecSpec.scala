@@ -37,7 +37,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
       import scala.collection.JavaConverters._
       val conf = Map(
         "akka.actor.debug.lifecycle" -> true, "akka.actor.debug.event-stream" -> true,
-        "akka.loglevel" -> "DEBUG", "akka.stdout-loglevel" -> "DEBUG")
+        "akka.loglevel" -> "INFO", "akka.stdout-loglevel" -> "INFO")
       val system = ActorSystem("AkkaSpec1", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
       val spec = new AkkaSpec(system) {
         val ref = Seq(testActor, system.actorOf(Props.empty, "name"))

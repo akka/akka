@@ -74,7 +74,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
 
   // Note that this test uses default configuration,
   // not MultiNodeClusterSpec.clusterConfig
-  commonConfig(ConfigFactory.parseString("""
+  private val cfg = ConfigFactory.parseString("""
     akka.test.cluster-stress-spec {
       infolog = off
       # scale the nr-of-nodes* settings with this factor
@@ -163,7 +163,12 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
         }
       }
     }
-    """))
+    """)
+    
+  commonConfig(
+    if (cfg.getBoolean("akka.test.cluster-stress-spec.infolog")) cfg
+    else ConfigFactory.parseString("akka.test.buffer-logging=on").withFallback(cfg)
+  )
 
   class Settings(conf: Config) {
     private val testConfig = conf.getConfig("akka.test.cluster-stress-spec")
@@ -956,6 +961,12 @@ abstract class StressSpec
     val usedRoles = roles.take(nbrUsedRoles)
     val usedAddresses = usedRoles.map(address(_)).toSet
 
+    val cfg = ConfigFactory.parseString("""
+      akka.test.buffer-logging = off
+      akka.log-dead-letters = off
+      akka.log-dead-letters-during-shutdown = off
+      """).withFallback(system.settings.config)
+
     @tailrec def loop(counter: Int, previousAS: Option[ActorSystem], allPreviousAddresses: Set[Address]): Option[ActorSystem] = {
       if (counter > rounds) previousAS
       else {
@@ -970,7 +981,7 @@ abstract class StressSpec
             val nextAS =
               if (activeRoles contains myself) {
                 previousAS foreach { as ⇒ TestKit.shutdownActorSystem(as) }
-                val sys = ActorSystem(system.name, system.settings.config)
+                val sys = ActorSystem(system.name, cfg)
                 muteLog(sys)
                 Cluster(sys).joinSeedNodes(seedNodes.toIndexedSeq map address)
                 Some(sys)

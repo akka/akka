@@ -15,6 +15,8 @@ package object testkit {
   def filterEvents[T](eventFilters: Iterable[EventFilter])(block: ⇒ T)(implicit system: ActorSystem): T = {
     def now = System.currentTimeMillis
 
+    // never buffer when intercept is used
+    system.eventStream publish TestEvent.Flush
     system.eventStream.publish(TestEvent.Mute(eventFilters.to[immutable.Seq]))
 
     try {

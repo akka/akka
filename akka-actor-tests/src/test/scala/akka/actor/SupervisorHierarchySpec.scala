@@ -73,6 +73,7 @@ object SupervisorHierarchySpec {
     akka.loglevel = INFO
     akka.actor.serialize-messages = off
     akka.actor.debug.fsm = on
+    akka.test.buffer-logging = off  
   """)
 
   class MyDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)

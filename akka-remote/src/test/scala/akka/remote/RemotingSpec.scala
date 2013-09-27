@@ -14,6 +14,7 @@ import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
+import scala.util.control.NonFatal
 
 object RemotingSpec {
 
@@ -113,6 +114,7 @@ object RemotingSpec {
         /looker2/child/grandchild.remote = "akka.test://RemotingSpec@localhost:12345"
       }
     }
+    akka.test.buffer-logging = off  
   """)
 
 }

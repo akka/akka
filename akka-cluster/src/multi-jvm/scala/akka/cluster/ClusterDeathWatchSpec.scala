@@ -35,7 +35,9 @@ object ClusterDeathWatchMultiJvmSpec extends MultiNodeConfig {
   val fourth = role("fourth")
   val fifth = role("fifth")
 
-  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
+  commonConfig(debugConfig(on = false).
+    withFallback(ConfigFactory.parseString("akka.test.buffer-logging = off")).
+    withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 
   deployOn(fourth, """/hello.remote = "@first@" """)
 

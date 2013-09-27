@@ -16,6 +16,7 @@ import akka.actor.Identify
 import akka.actor.ActorIdentity
 import akka.actor.PoisonPill
 import akka.actor.Address
+import scala.util.control.NonFatal
 
 object RemoteWatcherSpec {
 
@@ -79,7 +80,8 @@ class RemoteWatcherSpec extends AkkaSpec(
          hostname = localhost
          port = 0
        }
-     }""") with ImplicitSender {
+     }
+    """) with ImplicitSender {
 
   import RemoteWatcherSpec._
   import RemoteWatcher._
@@ -97,6 +99,17 @@ class RemoteWatcherSpec extends AkkaSpec(
   override def afterTermination() {
     shutdown(remoteSystem)
   }
+
+  override protected def withFixture(test: NoArgTest): Unit =
+    if (TestKitExtension(remoteSystem).BufferLogging) {
+      try {
+        super.withFixture(test)
+      } catch {
+        case NonFatal(e) ⇒
+          remoteSystem.eventStream.publish(TestEvent.Flush)
+          throw e
+      }
+    } else super.withFixture(test)
 
   val heartbeatRspB = HeartbeatRsp(remoteAddressUid)
 

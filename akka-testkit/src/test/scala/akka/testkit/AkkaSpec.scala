@@ -4,8 +4,7 @@
 package akka.testkit
 
 import language.{ postfixOps, reflectiveCalls }
-
-import org.scalatest.{ WordSpecLike, BeforeAndAfterAll, Tag }
+import org.scalatest.{ WordSpecLike, BeforeAndAfterAll, Tag, Suite }
 import org.scalatest.matchers.MustMatchers
 import akka.actor.{ Actor, Props, ActorSystem, PoisonPill, DeadLetter, ActorSystemImpl }
 import akka.event.{ Logging, LoggingAdapter }
@@ -16,6 +15,7 @@ import java.util.concurrent.TimeoutException
 import akka.dispatch.Dispatchers
 import akka.pattern.ask
 import akka.testkit.TestEvent._
+import scala.util.control.NonFatal
 
 object AkkaSpec {
   val testConf: Config = ConfigFactory.parseString("""
@@ -34,7 +34,9 @@ object AkkaSpec {
           }
         }
       }
-                                                    """)
+      """)
+
+  val bufferLoggingOnConf: Config = ConfigFactory.parseString("akka.test.buffer-logging = on")
 
   def mapToConfig(map: Map[String, Any]): Config = {
     import scala.collection.JavaConverters._
@@ -54,10 +56,10 @@ object AkkaSpec {
 }
 
 abstract class AkkaSpec(_system: ActorSystem)
-  extends TestKit(_system) with WordSpecLike with MustMatchers with BeforeAndAfterAll with WatchedByCoroner {
+  extends TestKit(_system) with Suite with WordSpecLike with MustMatchers with BeforeAndAfterAll with WatchedByCoroner {
 
   def this(config: Config) = this(ActorSystem(AkkaSpec.getCallerName(getClass),
-    ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
+    ConfigFactory.load(config.withFallback(AkkaSpec.testConf).withFallback(AkkaSpec.bufferLoggingOnConf))))
 
   def this(s: String) = this(ConfigFactory.parseString(s))
 
@@ -84,6 +86,21 @@ abstract class AkkaSpec(_system: ActorSystem)
   protected def beforeTermination() {}
 
   protected def afterTermination() {}
+
+  override protected def withFixture(test: NoArgTest): Unit =
+    if (TestKitExtension(system).BufferLogging) {
+      val startTime = System.nanoTime()
+      def durationMillis = (System.nanoTime - startTime).nanos.toMillis
+      try {
+        super.withFixture(test)
+        log.info("Succesfull test [{}] in [{} ms]", test.name, durationMillis)
+      } catch {
+        case NonFatal(e) ⇒
+          system.eventStream.publish(TestEvent.Flush)
+          log.error("Failed test [{}] in [{} ms]", test.name, durationMillis)
+          throw e
+      }
+    } else super.withFixture(test)
 
   def spawn(dispatcherId: String = Dispatchers.DefaultDispatcherId)(body: ⇒ Unit): Unit =
     Future(body)(system.dispatchers.lookup(dispatcherId))

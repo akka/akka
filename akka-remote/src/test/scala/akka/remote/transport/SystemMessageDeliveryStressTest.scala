@@ -30,6 +30,7 @@ import akka.testkit.EventFilter
 import akka.event.Logging
 import akka.dispatch.sysmsg.{ Failed, SystemMessage }
 import akka.pattern.pipe
+import scala.util.control.NonFatal
 
 object SystemMessageDeliveryStressTest {
   val baseConfig: Config = ConfigFactory parseString ("""
@@ -55,7 +56,7 @@ object SystemMessageDeliveryStressTest {
       }
 
     }
-                                                   """)
+    """)
 
   class SystemMessageSequenceVerifier(system: ActorSystem, testActor: ActorRef) extends MinimalActorRef {
     val provider = RARP(system).provider
@@ -139,6 +140,17 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
   }
 
   override def afterTermination(): Unit = shutdown(systemB)
+
+  override protected def withFixture(test: NoArgTest): Unit =
+    if (TestKitExtension(systemB).BufferLogging) {
+      try {
+        super.withFixture(test)
+      } catch {
+        case NonFatal(e) ⇒
+          systemB.eventStream.publish(TestEvent.Flush)
+          throw e
+      }
+    } else super.withFixture(test)
 
 }
 
