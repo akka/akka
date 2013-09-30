@@ -34,7 +34,16 @@ abstract class NodeUpSpec
   "A cluster node that is joining another cluster" must {
     "be moved to UP by the leader after a convergence" taggedAs LongRunningTest in {
 
-      awaitClusterUp(first, second)
+      // it should be possible to join an uninitialized node
+      // test race on purpose
+      runOn(first) {
+        cluster.join(second)
+      }
+      runOn(second) {
+        cluster.join(first)
+      }
+
+      awaitMembersUp(2)
 
       enterBarrier("after-1")
     }
