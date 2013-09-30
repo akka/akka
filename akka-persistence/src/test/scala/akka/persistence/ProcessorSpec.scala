@@ -9,9 +9,8 @@ object ProcessorSpec {
       |serialize-creators = on
       |serialize-messages = on
       |akka.persistence.journal.leveldb.dir = "target/journal-processor-spec"
+      |akka.persistence.snapshot-store.local.dir = ${akka.persistence.journal.leveldb.dir}/snapshots
     """.stripMargin
-
-  case object GetState
 
   class RecoverTestProcessor(name: String) extends NamedProcessor(name) {
     var state = List.empty[String]
@@ -24,7 +23,7 @@ object ProcessorSpec {
 
     override def preRestart(reason: Throwable, message: Option[Any]) = {
       message match {
-        case Some(m: Persistent) ⇒ delete(m) // delete message from journal
+        case Some(m: Persistent) ⇒ deleteMessage(m) // delete message from journal
         case _                   ⇒ // ignore
       }
       super.preRestart(reason, message)
@@ -113,7 +112,7 @@ object ProcessorSpec {
   class LastReplayedMsgFailsTestProcessor(name: String) extends RecoverTestProcessor(name) {
     override def preRestart(reason: Throwable, message: Option[Any]) = {
       message match {
-        case Some(m: Persistent) ⇒ if (recoveryRunning) delete(m)
+        case Some(m: Persistent) ⇒ if (recoveryRunning) deleteMessage(m)
         case _                   ⇒
       }
       super.preRestart(reason, message)
@@ -222,13 +221,13 @@ class ProcessorSpec extends AkkaSpec(ProcessorSpec.config) with PersistenceSpec 
     }
     "support recovery with upper sequence number bound" in {
       val processor = namedProcessor[RecoverOffTestProcessor]
-      processor ! Recover(1L)
+      processor ! Recover(toSequenceNr = 1L)
       processor ! GetState
       expectMsg(List("a-1"))
     }
     "never replace journaled messages" in {
       val processor1 = namedProcessor[RecoverOffTestProcessor]
-      processor1 ! Recover(1L)
+      processor1 ! Recover(toSequenceNr = 1L)
       processor1 ! Persistent("c")
       processor1 ! GetState
       expectMsg(List("a-1", "c-3"))

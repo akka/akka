@@ -9,6 +9,7 @@ object ChannelSpec {
       |serialize-creators = on
       |serialize-messages = on
       |akka.persistence.journal.leveldb.dir = "target/journal-channel-spec"
+      |akka.persistence.snapshot-store.local.dir = ${akka.persistence.journal.leveldb.dir}/snapshots
     """.stripMargin
 
   class TestProcessor(name: String) extends NamedProcessor(name) {

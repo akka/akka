@@ -60,8 +60,8 @@ object Persistent {
 
   /**
    * Creates a new persistent message, derived from an implicit current message.
-   * When used inside a [[Processor]], this is the optional current [[Message]]
-   * of that processor.
+   * When used inside a [[Processor]], this is the optional current [[Persistent]]
+   * message of that processor.
    *
    * @param payload payload of the new persistent message.
    * @param currentPersistentMessage optional current persistent message, defaults to `None`.

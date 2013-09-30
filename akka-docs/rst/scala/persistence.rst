@@ -46,7 +46,12 @@ Configuration
 By default, journaled messages are written to a directory named ``journal`` in the current working directory. This
 can be changed by configuration where the specified path can be relative or absolute:
 
-.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#config
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#journal-config
+
+The default storage location of :ref:`snapshots` is a directory named ``snapshots`` in the current working directory.
+This can be changed by configuration where the specified path can be relative or absolute:
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#snapshot-config
 
 .. _processors:
 
@@ -221,6 +226,38 @@ method or by pattern matching
 Persistent messages are assigned sequence numbers on a per-processor basis. A sequence starts at ``1L`` and
 doesn't contain gaps unless a processor marks a message as deleted.
 
+.. _snapshots:
+
+Snapshots
+=========
+
+Snapshots can dramatically reduce recovery times. Processors can save snapshots of internal state by calling the
+``saveSnapshot`` method on ``Processor``. If saving of a snapshot succeeds, the processor will receive a
+``SaveSnapshotSucceeded`` message, otherwise a ``SaveSnapshotFailed`` message
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#save-snapshot
+
+where ``metadata`` is of type ``SnapshotMetadata``:
+
+.. includecode:: ../../../akka-persistence/src/main/scala/akka/persistence/Snapshot.scala#snapshot-metadata
+
+During recovery, the processor is offered a previously saved snapshot via a ``SnapshotOffer`` message from
+which it can initialize internal state.
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#snapshot-offer
+
+The replayed messages that follow the ``SnapshotOffer`` message, if any, are younger than the offered snapshot.
+They finally recover the processor to its current (i.e. latest) state.
+
+In general, a processor is only offered a snapshot if that processor has previously saved one or more snapshots
+and at least one of these snapshots matches the ``SnapshotSelectionCriteria`` that can be specified for recovery.
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#snapshot-criteria
+
+If not specified, they default to ``SnapshotSelectionCriteria.Latest`` which selects the latest (= youngest) snapshot.
+To disable snapshot-based recovery, applications should use ``SnapshotSelectionCriteria.None``. A recovery where no
+saved snapshot matches the specified ``SnapshotSelectionCriteria`` will replay all journaled messages.
+
 Miscellaneous
 =============
 
@@ -234,8 +271,9 @@ State machines can be persisted by mixing in the ``FSM`` trait into processors.
 Upcoming features
 =================
 
-* Snapshot based recovery
-* Configurable serialization
-* Reliable channels
 * Journal plugin API
+* Snapshot store plugin API
+* Reliable channels
+* Custom serialization of messages and snapshots
+* Extended deletion of messages and snapshots
 * ...

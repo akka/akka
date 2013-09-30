@@ -69,17 +69,17 @@ class Channel private (_channelId: Option[String]) extends Actor with Stash {
   import ResolvedDelivery._
 
   private val delivering: Actor.Receive = {
-    case Deliver(p: PersistentImpl, destination, resolve) ⇒ {
-      if (!p.confirms.contains(id)) {
-        val msg = p.copy(channelId = id,
-          confirmTarget = extension.journalFor(p.processorId),
-          confirmMessage = Confirm(p.processorId, p.sequenceNr, id))
+    case Deliver(persistent: PersistentImpl, destination, resolve) ⇒ {
+      if (!persistent.confirms.contains(id)) {
+        val msg = persistent.copy(channelId = id,
+          confirmTarget = extension.journalFor(persistent.processorId),
+          confirmMessage = Confirm(persistent.processorId, persistent.sequenceNr, id))
         resolve match {
-          case Resolve.Sender if !p.resolved ⇒ {
+          case Resolve.Sender if !persistent.resolved ⇒ {
             context.actorOf(Props(classOf[ResolvedSenderDelivery], msg, destination, sender)) ! DeliverResolved
             context.become(buffering, false)
           }
-          case Resolve.Destination if !p.resolved ⇒ {
+          case Resolve.Destination if !persistent.resolved ⇒ {
             context.actorOf(Props(classOf[ResolvedDestinationDelivery], msg, destination, sender)) ! DeliverResolved
             context.become(buffering, false)
           }

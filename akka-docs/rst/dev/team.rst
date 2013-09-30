@@ -19,10 +19,10 @@ Johannes Rudolph     Committer
 Raymond Roestenburg  Committer
 Piotr Gabryanczyk    Committer
 Helena Edelson       Committer                 
+Martin Krasser       Committer
 Henrik Engström      Alumnus
 Peter Vlugter        Alumnus
-Martin Krasser       Alumnus                 
-Derek Williams       Alumnus                 
+Derek Williams       Alumnus
 Debasish Ghosh       Alumnus                   
 Ross McDonald        Alumnus                   
 Eckhart Hertzler     Alumnus
