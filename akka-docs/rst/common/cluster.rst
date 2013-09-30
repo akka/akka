@@ -159,7 +159,8 @@ state with gossip convergence.
 
 The ``leader`` also has the power, if configured so, to "auto-down" a node that
 according to the `Failure Detector`_ is considered ``unreachable``. This means setting
-the ``unreachable`` node status to ``down`` automatically.
+the ``unreachable`` node status to ``down`` automatically after a configured time 
+of unreachability.
 
 
 Seed Nodes

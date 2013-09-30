@@ -59,7 +59,17 @@ final class ClusterSettings(val config: Config, val systemName: String) {
       case _     ⇒ Duration(cc.getMilliseconds(key), MILLISECONDS) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
   }
+
+  @deprecated("akka.cluster.auto-down setting is replaced by akka.cluster.auto-down-unreachable-after", "2.3")
   val AutoDown: Boolean = cc.getBoolean("auto-down")
+  val AutoDownUnreachableAfter: Duration = {
+    val key = "auto-down-unreachable-after"
+    cc.getString(key).toLowerCase match {
+      case "off" ⇒ if (AutoDown) Duration.Zero else Duration.Undefined
+      case _     ⇒ Duration(cc.getMilliseconds(key), MILLISECONDS) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
+    }
+  }
+
   val Roles: Set[String] = immutableSeq(cc.getStringList("roles")).toSet
   val MinNrOfMembers: Int = {
     cc.getInt("min-nr-of-members")

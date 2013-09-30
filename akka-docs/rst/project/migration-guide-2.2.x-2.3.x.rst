@@ -19,3 +19,14 @@ in a graceful leaving scenario has been removed. Valuable state should be persis
 in durable storage instead, e.g. using akka-persistence. The constructor/props parameters
 of ``ClusterSingletonManager`` has been changed to ordinary ``Props`` parameter for the
 singleton actor instead of the factory parameter.
+
+Changed cluster auto-down configuration
+=======================================
+
+``akka.cluster.auto-down`` setting has been replaced by ``akka.cluster.auto-down-unreachable-after``,
+which instructs the cluster to automatically mark unreachable nodes as DOWN after this
+configured time of unreachability. This feature is disabled by default, as it also was in 2.2.x.
+
+During the deprecation phase ``akka.cluster.auto-down=on`` is interpreted at as instant auto-down.
+
+

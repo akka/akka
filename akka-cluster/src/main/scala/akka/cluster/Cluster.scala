@@ -100,6 +100,9 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   logInfo("Starting up...")
 
+  if (settings.AutoDown)
+    log.warning("[akka.cluster.auto-down] setting is replaced by [akka.cluster.auto-down-unreachable-after]")
+
   val failureDetector: FailureDetectorRegistry[Address] = {
     def createFailureDetector(): FailureDetector =
       FailureDetectorLoader.load(settings.FailureDetectorImplementationClass, settings.FailureDetectorConfig, system)
