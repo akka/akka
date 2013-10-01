@@ -20,7 +20,7 @@ object ProcessorFailureExample extends App {
 
     override def preRestart(reason: Throwable, message: Option[Any]) {
       message match {
-        case Some(p: Persistent) if !recoveryRunning ⇒ delete(p) // mark failing message as deleted
+        case Some(p: Persistent) if !recoveryRunning ⇒ deleteMessage(p) // mark failing message as deleted
         case _                                       ⇒ // ignore
       }
       super.preRestart(reason, message)
@@ -28,7 +28,7 @@ object ProcessorFailureExample extends App {
   }
 
   val system = ActorSystem("example")
-  val processor = system.actorOf(Props(classOf[ExampleProcessor]), "processor")
+  val processor = system.actorOf(Props(classOf[ExampleProcessor]), "processor-2")
 
   processor ! Persistent("a")
   processor ! "print"

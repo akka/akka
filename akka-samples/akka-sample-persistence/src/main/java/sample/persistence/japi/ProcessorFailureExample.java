@@ -34,7 +34,7 @@ public class ProcessorFailureExample {
         @Override
         public void preRestart(Throwable reason, Option<Object> message) {
             if (message.isDefined() && message.get() instanceof Persistent) {
-                delete((Persistent) message.get());
+                deleteMessage((Persistent) message.get());
             }
             super.preRestart(reason, message);
         }
@@ -42,7 +42,7 @@ public class ProcessorFailureExample {
 
     public static void main(String... args) throws Exception {
         final ActorSystem system = ActorSystem.create("example");
-        final ActorRef processor = system.actorOf(Props.create(ExampleProcessor.class), "processor");
+        final ActorRef processor = system.actorOf(Props.create(ExampleProcessor.class), "processor-2");
 
         processor.tell(Persistent.create("a"), null);
         processor.tell("print", null);

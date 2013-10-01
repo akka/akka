@@ -31,12 +31,12 @@ import akka.dispatch._
  * state from these messages. New messages sent to a processor during recovery do not interfere with replayed
  * messages, hence applications don't need to wait for a processor to complete its recovery.
  *
- * Automated recovery can be turned off or customized by overriding the [[preStartProcessor]] and
- * [[preRestartProcessor]] life cycle hooks. If automated recovery is turned off, an application can
- * explicitly recover a processor by sending it a [[Recover]] message.
+ * Automated recovery can be turned off or customized by overriding the [[preStart]] and [[preRestart]] life
+ * cycle hooks. If automated recovery is turned off, an application can explicitly recover a processor by
+ * sending it a [[Recover]] message.
  *
  * [[Persistent]] messages are assigned sequence numbers that are generated on a per-processor basis. A sequence
- * starts at `1L` and doesn't contain gaps unless a processor (logically) [[delete]]s a message.
+ * starts at `1L` and doesn't contain gaps unless a processor (logically) deletes a message
  *
  * During recovery, a processor internally buffers new messages until recovery completes, so that new messages
  * do not interfere with replayed messages. This internal buffer (the ''processor stash'') is isolated from the
@@ -47,6 +47,7 @@ import akka.dispatch._
  */
 trait Processor extends Actor with Stash {
   import Journal._
+  import SnapshotStore._
 
   private val extension = Persistence(context.system)
   private val _processorId = extension.processorId(self)
@@ -81,24 +82,37 @@ trait Processor extends Actor with Stash {
     override def toString: String = "recovery pending"
 
     def aroundReceive(receive: Actor.Receive, message: Any): Unit = message match {
-      case Recover(toSnr) ⇒ {
+      case Recover(fromSnap, toSnr) ⇒ {
         _currentState = recoveryStarted
-        journal ! Replay(toSnr, self, processorId)
+        snapshotStore ! LoadSnapshot(processorId, fromSnap, toSnr)
       }
       case _ ⇒ stashInternal()
     }
   }
 
   /**
-   * Processes replayed messages. Changes to `recoverySucceeded` if all replayed
-   * messages have been successfully processed, otherwise, changes to `recoveryFailed`.
-   * In case of a failure, the exception is caught and stored for being thrown later
-   * in `prepareRestart`.
+   * Processes a loaded snapshot and replayed messages, if any. If processing of the loaded
+   * snapshot fails, the exception is thrown immediately. If processing of a replayed message
+   * fails, the exception is caught and stored for being thrown later and state is changed to
+   * `recoveryFailed`.
    */
   private val recoveryStarted = new State {
     override def toString: String = "recovery started"
 
     def aroundReceive(receive: Actor.Receive, message: Any) = message match {
+      case LoadSnapshotCompleted(sso, toSnr) ⇒ sso match {
+        case Some(ss) ⇒ {
+          process(receive, SnapshotOffer(ss.metadata, ss.snapshot))
+          journal ! Replay(ss.metadata.sequenceNr + 1L, toSnr, self, processorId)
+        } case None ⇒ {
+          journal ! Replay(1L, toSnr, self, processorId)
+        }
+      }
+      case ReplayCompleted(maxSnr) ⇒ {
+        _currentState = recoverySucceeded
+        _sequenceNr = maxSnr
+        unstashAllInternal()
+      }
       case Replayed(p) ⇒ try { processPersistent(receive, p) } catch {
         case t: Throwable ⇒ {
           _currentState = recoveryFailed // delay throwing exception to prepareRestart
@@ -106,12 +120,7 @@ trait Processor extends Actor with Stash {
           _recoveryFailureMessage = currentEnvelope
         }
       }
-      case RecoveryEnd(maxSnr) ⇒ {
-        _currentState = recoverySucceeded
-        _sequenceNr = maxSnr
-        unstashAllInternal()
-      }
-      case Recover(_) ⇒ // ignore
+      case r: Recover ⇒ // ignore
       case _          ⇒ stashInternal()
     }
   }
@@ -123,12 +132,14 @@ trait Processor extends Actor with Stash {
     override def toString: String = "recovery finished"
 
     def aroundReceive(receive: Actor.Receive, message: Any) = message match {
-      case Recover(_)        ⇒ // ignore
-      case Replayed(p)       ⇒ processPersistent(receive, p) // can occur after unstash from user stash
-      case Written(p)        ⇒ processPersistent(receive, p)
-      case Looped(p)         ⇒ process(receive, p)
-      case p: PersistentImpl ⇒ journal forward Write(p.copy(processorId = processorId, sequenceNr = nextSequenceNr()), self)
-      case m                 ⇒ journal forward Loop(m, self)
+      case r: Recover               ⇒ // ignore
+      case Replayed(p)              ⇒ processPersistent(receive, p) // can occur after unstash from user stash
+      case Written(p)               ⇒ processPersistent(receive, p)
+      case Looped(p)                ⇒ process(receive, p)
+      case s: SaveSnapshotSucceeded ⇒ process(receive, s)
+      case f: SaveSnapshotFailed    ⇒ process(receive, f)
+      case p: PersistentImpl        ⇒ journal forward Write(p.copy(processorId = processorId, sequenceNr = nextSequenceNr()), self)
+      case m                        ⇒ journal forward Loop(m, self)
     }
   }
 
@@ -141,12 +152,13 @@ trait Processor extends Actor with Stash {
     override def toString: String = "recovery failed"
 
     def aroundReceive(receive: Actor.Receive, message: Any) = message match {
-      case RecoveryEnd(maxSnr) ⇒ {
+      case ReplayCompleted(maxSnr) ⇒ {
         _currentState = prepareRestart
         mailbox.enqueueFirst(self, _recoveryFailureMessage)
       }
       case Replayed(p) ⇒ updateLastSequenceNr(p)
-      case _           ⇒ // ignore
+      case r: Recover  ⇒ // ignore
+      case _           ⇒ stashInternal()
     }
   }
 
@@ -172,7 +184,8 @@ trait Processor extends Actor with Stash {
   private var _recoveryFailureReason: Throwable = _
   private var _recoveryFailureMessage: Envelope = _
 
-  private lazy val journal: ActorRef = extension.journalFor(processorId)
+  private lazy val journal = extension.journalFor(processorId)
+  private lazy val snapshotStore = extension.snapshotStoreFor(processorId)
 
   /**
    * Processor id. Defaults to this processor's path and can be overridden.
@@ -211,8 +224,16 @@ trait Processor extends Actor with Stash {
    * caused an exception. Processors that want to re-receive that persistent message during recovery
    * should not call this method.
    */
-  def delete(persistent: Persistent) {
+  def deleteMessage(persistent: Persistent): Unit = {
     journal ! Delete(persistent)
+  }
+
+  /**
+   * Saves a `snapshot` of this processor's state. If saving succeeds, this processor will receive a
+   * [[SaveSnapshotSucceeded]] message, otherwise a [[SaveSnapshotFailed]] message.
+   */
+  def saveSnapshot(snapshot: Any): Unit = {
+    snapshotStore ! SaveSnapshot(SnapshotMetadata(processorId, lastSequenceNr), snapshot)
   }
 
   /**
@@ -268,7 +289,7 @@ trait Processor extends Actor with Stash {
    */
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     message match {
-      case Some(_) ⇒ self ! Recover(lastSequenceNr)
+      case Some(_) ⇒ self ! Recover(toSequenceNr = lastSequenceNr)
       case None    ⇒ self ! Recover()
     }
   }
@@ -348,12 +369,12 @@ trait Processor extends Actor with Stash {
  * state from these messages. New messages sent to a processor during recovery do not interfere with replayed
  * messages, hence applications don't need to wait for a processor to complete its recovery.
  *
- * Automated recovery can be turned off or customized by overriding the [[preStartProcessor]] and
- * [[preRestartProcessor]] life cycle hooks. If automated recovery is turned off, an application can
- * explicitly recover a processor by sending it a [[Recover]] message.
+ * Automated recovery can be turned off or customized by overriding the [[preStart]] and [[preRestart]] life
+ * cycle hooks. If automated recovery is turned off, an application can explicitly recover a processor by
+ * sending it a [[Recover]] message.
  *
  * [[Persistent]] messages are assigned sequence numbers that are generated on a per-processor basis. A sequence
- * starts at `1L` and doesn't contain gaps unless a processor (logically) [[delete]]s a message.
+ * starts at `1L` and doesn't contain gaps unless a processor (logically) deletes a message.
  *
  * During recovery, a processor internally buffers new messages until recovery completes, so that new messages
  * do not interfere with replayed messages. This internal buffer (the ''processor stash'') is isolated from the
@@ -370,24 +391,4 @@ abstract class UntypedProcessor extends UntypedActor with Processor {
    * Returns the current persistent message or `null` if there is none.
    */
   def getCurrentPersistentMessage = currentPersistentMessage.getOrElse(null)
-}
-
-/**
- * Recovery request for a [[Processor]].
- *
- * @param toSequenceNr upper sequence number bound (inclusive) for replayed messages.
- */
-@SerialVersionUID(1L)
-case class Recover(toSequenceNr: Long = Long.MaxValue)
-
-object Recover {
-  /**
-   * Java API.
-   */
-  def create() = Recover()
-
-  /**
-   * Java API.
-   */
-  def create(toSequenceNr: Long) = Recover(toSequenceNr)
 }

@@ -8,7 +8,6 @@ import akka.actor._
 
 private[persistence] trait JournalFactory {
   /**
-   *
    * Creates a new journal actor.
    */
   def createJournal(implicit factory: ActorRefFactory): ActorRef
@@ -59,27 +58,22 @@ private[persistence] object Journal {
   case class Looped(message: Any)
 
   /**
-   * Instructs a journal to replay persistent messages to `processor`, identified by
-   * `processorId`. Messages are replayed up to sequence number `toSequenceNr` (inclusive).
-   *
-   * @param toSequenceNr upper sequence number bound (inclusive) for replay.
-   * @param processor processor that receives the replayed messages.
-   * @param processorId processor id.
+   * ...
    */
-  case class Replay(toSequenceNr: Long, processor: ActorRef, processorId: String)
+  case class Replay(fromSequenceNr: Long, toSequenceNr: Long, processor: ActorRef, processorId: String)
 
   /**
-   * Wrapper for a replayed `persistent` message.
+   * Reply message to a processor that `persistent` message has been replayed.
    *
    * @param persistent persistent message.
    */
   case class Replayed(persistent: PersistentImpl)
 
   /**
-   * Message sent to a processor after the last [[Replayed]] message.
+   * Reply message to a processor that all `persistent` messages have been replayed.
    *
    * @param maxSequenceNr the highest stored sequence number (for a processor).
    */
-  case class RecoveryEnd(maxSequenceNr: Long)
+  case class ReplayCompleted(maxSequenceNr: Long)
 }
 

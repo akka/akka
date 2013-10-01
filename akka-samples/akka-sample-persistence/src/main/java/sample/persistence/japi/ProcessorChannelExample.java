@@ -41,7 +41,7 @@ public class ProcessorChannelExample {
     public static void main(String... args) throws Exception {
         final ActorSystem system = ActorSystem.create("example");
         final ActorRef destination = system.actorOf(Props.create(ExampleDestination.class));
-        final ActorRef processor = system.actorOf(Props.create(ExampleProcessor.class, destination), "processor");
+        final ActorRef processor = system.actorOf(Props.create(ExampleProcessor.class, destination), "processor-1");
 
         processor.tell(Persistent.create("a"), null);
         processor.tell(Persistent.create("b"), null);

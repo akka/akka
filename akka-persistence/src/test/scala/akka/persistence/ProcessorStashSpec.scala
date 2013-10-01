@@ -9,9 +9,8 @@ object ProcessorStashSpec {
       |serialize-creators = on
       |serialize-messages = on
       |akka.persistence.journal.leveldb.dir = "target/journal-processor-stash-spec"
+      |akka.persistence.snapshot-store.local.dir = ${akka.persistence.journal.leveldb.dir}/snapshots
     """.stripMargin
-
-  case object GetState
 
   class StashingProcessor(name: String) extends NamedProcessor(name) {
     var state: List[String] = Nil
@@ -41,7 +40,7 @@ object ProcessorStashSpec {
   class RecoveryFailureStashingProcessor(name: String) extends StashingProcessor(name) {
     override def preRestart(reason: Throwable, message: Option[Any]) = {
       message match {
-        case Some(m: Persistent) ⇒ if (recoveryRunning) delete(m)
+        case Some(m: Persistent) ⇒ if (recoveryRunning) deleteMessage(m)
         case _                   ⇒
       }
       super.preRestart(reason, message)
