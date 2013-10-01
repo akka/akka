@@ -10,6 +10,7 @@ import akka.io.Inet._
 import com.typesafe.config.Config
 import scala.concurrent.duration._
 import scala.collection.immutable
+import scala.collection.JavaConverters._
 import akka.util.ByteString
 import akka.util.Helpers.Requiring
 import akka.actor._
@@ -240,9 +241,56 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
   object NoAck extends NoAck(null)
 
   /**
-   * Common interface for all write commands, currently [[Write]] and [[WriteFile]].
+   * Common interface for all write commands, currently [[Write]], [[WriteFile]] and [[CompoundWrite]].
    */
-  sealed trait WriteCommand extends Command {
+  sealed abstract class WriteCommand extends Command {
+    /**
+     * Prepends this command with another `Write` or `WriteFile` to form
+     * a `CompoundWrite`.
+     */
+    def +:(other: SimpleWriteCommand): CompoundWrite = CompoundWrite(other, this)
+
+    /**
+     * Prepends this command with a number of other writes.
+     * The first element of the given Iterable becomes the first sub write of a potentially
+     * created `CompoundWrite`.
+     */
+    def ++:(writes: Iterable[WriteCommand]): WriteCommand =
+      writes.foldRight(this) {
+        case (a: SimpleWriteCommand, b) ⇒ a +: b
+        case (a: CompoundWrite, b)      ⇒ a ++: b
+      }
+
+    /**
+     * Java API: prepends this command with another `Write` or `WriteFile` to form
+     * a `CompoundWrite`.
+     */
+    def prepend(that: SimpleWriteCommand): CompoundWrite = that +: this
+
+    /**
+     * Java API: prepends this command with a number of other writes.
+     * The first element of the given Iterable becomes the first sub write of a potentially
+     * created `CompoundWrite`.
+     */
+    def prepend(writes: JIterable[WriteCommand]): WriteCommand = writes.asScala ++: this
+  }
+
+  object WriteCommand {
+    /**
+     * Combines the given number of write commands into one atomic `WriteCommand`.
+     */
+    def apply(writes: Iterable[WriteCommand]): WriteCommand = writes ++: Write.empty
+
+    /**
+     * Java API: combines the given number of write commands into one atomic `WriteCommand`.
+     */
+    def create(writes: JIterable[WriteCommand]): WriteCommand = apply(writes.asScala)
+  }
+
+  /**
+   * Common supertype of [[Write]] and [[WriteFile]].
+   */
+  sealed abstract class SimpleWriteCommand extends WriteCommand {
     require(ack != null, "ack must be non-null. Use NoAck if you don't want acks.")
 
     /**
@@ -255,6 +303,11 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
      * equivalent to the [[#ack]] token not being a of type [[NoAck]].
      */
     def wantsAck: Boolean = !ack.isInstanceOf[NoAck]
+
+    /**
+     * Java API: appends this command with another `WriteCommand` to form a `CompoundWrite`.
+     */
+    def append(that: WriteCommand): CompoundWrite = this +: that
   }
 
   /**
@@ -267,7 +320,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * or have been sent!</b> Unfortunately there is no way to determine whether
    * a particular write has been sent by the O/S.
    */
-  case class Write(data: ByteString, ack: Event) extends WriteCommand
+  case class Write(data: ByteString, ack: Event) extends SimpleWriteCommand
   object Write {
     /**
      * The empty Write doesn't write anything and isn't acknowledged.
@@ -294,9 +347,33 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * or have been sent!</b> Unfortunately there is no way to determine whether
    * a particular write has been sent by the O/S.
    */
-  case class WriteFile(filePath: String, position: Long, count: Long, ack: Event) extends WriteCommand {
+  case class WriteFile(filePath: String, position: Long, count: Long, ack: Event) extends SimpleWriteCommand {
     require(position >= 0, "WriteFile.position must be >= 0")
     require(count > 0, "WriteFile.count must be > 0")
+  }
+
+  /**
+   * A write command which aggregates two other write commands. Using this construct
+   * you can chain a number of [[Write]] and/or [[WriteFile]] commands together in a way
+   * that allows them to be handled as a single write which gets written out to the
+   * network as quickly as possible.
+   * If the sub commands contain `ack` requests they will be honored as soon as the
+   * respective write has been written completely.
+   */
+  case class CompoundWrite(override val head: SimpleWriteCommand, tailCommand: WriteCommand) extends WriteCommand
+    with immutable.Iterable[SimpleWriteCommand] {
+
+    def iterator: Iterator[SimpleWriteCommand] =
+      new Iterator[SimpleWriteCommand] {
+        private[this] var current: WriteCommand = CompoundWrite.this
+        def hasNext: Boolean = current ne null
+        def next(): SimpleWriteCommand =
+          current match {
+            case null                  ⇒ Iterator.empty.next()
+            case CompoundWrite(h, t)   ⇒ current = t; h
+            case x: SimpleWriteCommand ⇒ current = null; x
+          }
+      }
   }
 
   /**
