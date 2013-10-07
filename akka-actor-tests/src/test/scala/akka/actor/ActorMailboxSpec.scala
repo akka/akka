@@ -8,9 +8,10 @@ import com.typesafe.config.ConfigFactory
 import akka.testkit._
 import akka.dispatch._
 import akka.TestUtils.verifyActorTermination
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import akka.ConfigurationException
 import com.typesafe.config.Config
+import java.util.concurrent.TimeUnit
 
 object ActorMailboxSpec {
   val mailboxConf = ConfigFactory.parseString("""
@@ -31,6 +32,22 @@ object ActorMailboxSpec {
       mailbox-requirement = "akka.dispatch.BoundedMessageQueueSemantics"
     }
 
+    balancing-dispatcher {
+      type = BalancingDispatcher
+    }
+
+    balancing-bounded-dispatcher {
+      type = BalancingDispatcher
+      mailbox-push-timeout-time = 10s
+      mailbox-capacity = 1000
+      mailbox-type = "akka.dispatch.BoundedMailbox"
+    }
+
+    requiring-balancing-bounded-dispatcher {
+      type = BalancingDispatcher
+      mailbox-requirement = "akka.actor.ActorMailboxSpec$MCBoundedMessageQueueSemantics"
+    }
+
     unbounded-mailbox {
       mailbox-type = "akka.dispatch.UnboundedMailbox"
     }
@@ -45,6 +62,12 @@ object ActorMailboxSpec {
       mailbox-capacity = 1000
       mailbox-push-timeout-time = 0s
       mailbox-type = "akka.dispatch.BoundedMailbox"
+    }
+
+    mc-bounded-mailbox {
+      mailbox-capacity = 1000
+      mailbox-push-timeout-time = 10s
+      mailbox-type = "akka.actor.ActorMailboxSpec$MCBoundedMailbox"
     }
 
     akka.actor.deployment {
@@ -116,7 +139,12 @@ object ActorMailboxSpec {
         dispatcher = requiring-bounded-dispatcher
       }
     }
-  """)
+
+    akka.actor.mailbox.requirements {
+      "akka.actor.ActorMailboxSpec$MCBoundedMessageQueueSemantics" =
+        mc-bounded-mailbox
+    }
+                                              """)
 
   class QueueReportingActor extends Actor {
     def receive = {
@@ -140,6 +168,18 @@ object ActorMailboxSpec {
     classOf[DequeBasedMessageQueueSemantics],
     classOf[BoundedMessageQueueSemantics],
     classOf[BoundedDequeBasedMessageQueueSemantics])
+
+  trait MCBoundedMessageQueueSemantics extends MessageQueue with MultipleConsumerSemantics
+  case class MCBoundedMailbox(val capacity: Int, val pushTimeOut: FiniteDuration)
+    extends MailboxType with ProducesMessageQueue[MCBoundedMessageQueueSemantics] {
+
+    def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"),
+      Duration(config.getNanoseconds("mailbox-push-timeout-time"), TimeUnit.NANOSECONDS))
+
+    final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
+      new BoundedMailbox.MessageQueue(capacity, pushTimeOut)
+  }
+
 }
 
 class ActorMailboxSpec(conf: Config) extends AkkaSpec(conf) with DefaultTimeout with ImplicitSender {
@@ -305,5 +345,19 @@ class ActorMailboxSpec(conf: Config) extends AkkaSpec(conf) with DefaultTimeout 
         "bounded-deque-require-unbounded-unconfigured-props-mail"))
     }
 
+    "get an unbounded message queue with a balancing dispatcher" in {
+      checkMailboxQueue(Props[QueueReportingActor].withDispatcher("balancing-dispatcher"),
+        "unbounded-balancing", UnboundedMailboxTypes)
+    }
+
+    "get a bounded message queue with a balancing bounded dispatcher" in {
+      checkMailboxQueue(Props[QueueReportingActor].withDispatcher("balancing-bounded-dispatcher"),
+        "bounded-balancing", BoundedMailboxTypes)
+    }
+
+    "get a bounded message queue with a requiring balancing bounded dispatcher" in {
+      checkMailboxQueue(Props[QueueReportingActor].withDispatcher("requiring-balancing-bounded-dispatcher"),
+        "requiring-bounded-balancing", BoundedMailboxTypes)
+    }
   }
 }
