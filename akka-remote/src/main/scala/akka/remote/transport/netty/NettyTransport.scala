@@ -19,7 +19,7 @@ import org.jboss.netty.bootstrap.{ ConnectionlessBootstrap, Bootstrap, ClientBoo
 import org.jboss.netty.buffer.{ ChannelBuffers, ChannelBuffer }
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ DefaultChannelGroup, ChannelGroup, ChannelGroupFuture, ChannelGroupFutureListener }
-import org.jboss.netty.channel.socket.nio.{ NioDatagramChannelFactory, NioServerSocketChannelFactory, NioClientSocketChannelFactory }
+import org.jboss.netty.channel.socket.nio.{ NioWorkerPool, NioDatagramChannelFactory, NioServerSocketChannelFactory, NioClientSocketChannelFactory }
 import org.jboss.netty.handler.codec.frame.{ LengthFieldBasedFrameDecoder, LengthFieldPrepender }
 import org.jboss.netty.handler.ssl.SslHandler
 import scala.concurrent.duration.{ Duration, FiniteDuration, MILLISECONDS }
@@ -29,6 +29,7 @@ import scala.util.control.{ NoStackTrace, NonFatal }
 import akka.util.Helpers.Requiring
 import akka.util.Helpers
 import akka.remote.RARP
+import org.jboss.netty.util.HashedWheelTimer
 
 object NettyTransportSettings {
   sealed trait Mode
@@ -276,16 +277,22 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   private val clientChannelFactory: ChannelFactory = TransportMode match {
     case Tcp ⇒
       val boss, worker = createExecutorService()
-      new NioClientSocketChannelFactory(boss, worker, ClientSocketWorkerPoolSize)
+      // We need to create a HashedWheelTimer here since Netty creates one with a thread that
+      // doesn't respect the akka.daemonic setting
+      new NioClientSocketChannelFactory(boss, 1, new NioWorkerPool(worker, ClientSocketWorkerPoolSize),
+        new HashedWheelTimer(system.threadFactory))
     case Udp ⇒
+      // This does not create a HashedWheelTimer internally
       new NioDatagramChannelFactory(createExecutorService(), ClientSocketWorkerPoolSize)
   }
 
   private val serverChannelFactory: ChannelFactory = TransportMode match {
     case Tcp ⇒
       val boss, worker = createExecutorService()
+      // This does not create a HashedWheelTimer internally
       new NioServerSocketChannelFactory(boss, worker, ServerSocketWorkerPoolSize)
     case Udp ⇒
+      // This does not create a HashedWheelTimer internally
       new NioDatagramChannelFactory(createExecutorService(), ServerSocketWorkerPoolSize)
   }
 
