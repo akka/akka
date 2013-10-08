@@ -50,12 +50,12 @@ Configuration
 By default, journaled messages are written to a directory named ``journal`` in the current working directory. This
 can be changed by configuration where the specified path can be relative or absolute:
 
-.. includecode:: ../scala/code/docs/persistence/PersistenceDocSpec.scala#journal-config
+.. includecode:: ../scala/code/docs/persistence/PersistencePluginDocSpec.scala#journal-config
 
 The default storage location of :ref:`snapshots-java` is a directory named ``snapshots`` in the current working directory.
 This can be changed by configuration where the specified path can be relative or absolute:
 
-.. includecode:: ../scala/code/docs/persistence/PersistenceDocSpec.scala#snapshot-config
+.. includecode:: ../scala/code/docs/persistence/PersistencePluginDocSpec.scala#snapshot-config
 
 .. _processors-java:
 
@@ -69,8 +69,12 @@ A processor can be implemented by extending the abstract ``UntypedProcessor`` cl
 
 Processors only write messages of type ``Persistent`` to the journal, others are received without being persisted.
 When a processor's ``onReceive`` method is called with a ``Persistent`` message it can safely assume that this message
-has been successfully written to the journal. A ``UntypedProcessor`` itself is an ``Actor`` and can therefore
-be instantiated with ``actorOf``.
+has been successfully written to the journal.  If a journal fails to write a ``Persistent`` message then the processor
+receives a ``PersistenceFailure`` message instead of a ``Persistent`` message. In this case, a processor may want to
+inform the sender about the failure, so that the sender can re-send the message, if needed, under the assumption that
+the journal recovered from a temporary failure.
+
+An ``UntypedProcessor`` itself is an ``Actor`` and can therefore be instantiated with ``actorOf``.
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#usage
 
@@ -226,7 +230,7 @@ Snapshots
 
 Snapshots can dramatically reduce recovery times. Processors can save snapshots of internal state by calling the
 ``saveSnapshot`` method on ``Processor``. If saving of a snapshot succeeds, the processor will receive a
-``SaveSnapshotSucceeded`` message, otherwise a ``SaveSnapshotFailed`` message.
+``SaveSnapshotSuccess`` message, otherwise a ``SaveSnapshotFailure`` message.
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#save-snapshot
 
@@ -247,11 +251,59 @@ If not specified, they default to ``SnapshotSelectionCriteria.latest()`` which s
 To disable snapshot-based recovery, applications should use ``SnapshotSelectionCriteria.none()``. A recovery where no
 saved snapshot matches the specified ``SnapshotSelectionCriteria`` will replay all journaled messages.
 
+Storage plugins
+===============
+
+Storage backends for journals and snapshot stores are plugins in akka-persistence. The default journal plugin writes
+messages to LevelDB. The default snapshot store plugin writes snapshots as individual files to the local filesystem.
+Applications can provide their own plugins by implementing a plugin API and activate them by configuration. Plugin
+development requires the following imports:
+
+.. includecode:: code/docs/persistence/PersistencePluginDocTest.java#plugin-imports
+
+Journal plugin API
+------------------
+
+A journal plugin either extends ``SyncWriteJournal`` or ``AsyncWriteJournal``.  ``SyncWriteJournal`` is an
+actor that should be extended when the storage backend API only supports synchronous, blocking writes. The
+methods to be implemented in this case are:
+
+.. includecode:: code/docs/persistence/PersistencePluginDocTest.java#sync-write-plugin-api
+
+``AsyncWriteJournal`` is an actor that should be extended if the storage backend API supports asynchronous,
+non-blocking writes. The methods to be implemented in that case are:
+
+.. includecode:: code/docs/persistence/PersistencePluginDocTest.java#async-write-plugin-api
+
+Message replays are always asynchronous, therefore, any journal plugin must implement:
+
+.. includecode:: code/docs/persistence/PersistencePluginDocTest.java#async-replay-plugin-api
+
+A journal plugin can be activated with the following minimal configuration:
+
+.. includecode:: ../scala/code/docs/persistence/PersistencePluginDocSpec.scala#journal-plugin-config
+
+The specified plugin ``class`` must have a no-arg constructor. The ``plugin-dispatcher`` is the dispatcher
+used for the plugin actor. If not specified, it defaults to ``akka.persistence.dispatchers.default-plugin-dispatcher``
+for ``SyncWriteJournal`` plugins and ``akka.actor.default-dispatcher`` for ``AsyncWriteJournal`` plugins.
+
+Snapshot store plugin API
+-------------------------
+
+A snapshot store plugin must extend the ``SnapshotStore`` actor and implement the following methods:
+
+.. includecode:: code/docs/persistence/PersistencePluginDocTest.java#snapshot-store-plugin-api
+
+A snapshot store plugin can be activated with the following minimal configuration:
+
+.. includecode:: ../scala/code/docs/persistence/PersistencePluginDocSpec.scala#snapshot-store-plugin-config
+
+The specified plugin ``class`` must have a no-arg constructor. The ``plugin-dispatcher`` is the dispatcher
+used for the plugin actor. If not specified, it defaults to ``akka.persistence.dispatchers.default-plugin-dispatcher``.
+
 Upcoming features
 =================
 
-* Journal plugin API
-* Snapshot store plugin API
 * Reliable channels
 * Custom serialization of messages and snapshots
 * Extended deletion of messages and snapshots

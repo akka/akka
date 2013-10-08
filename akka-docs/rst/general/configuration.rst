@@ -391,6 +391,12 @@ akka-agent
 .. literalinclude:: ../../../akka-agent/src/main/resources/reference.conf
    :language: none
 
+akka-persistence
+~~~~~~~~~~~~~~~~
+
+.. literalinclude:: ../../../akka-persistence/src/main/resources/reference.conf
+   :language: none
+
 akka-zeromq
 ~~~~~~~~~~~
 

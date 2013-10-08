@@ -2,31 +2,27 @@ package docs.persistence
 
 import akka.actor.ActorSystem
 import akka.persistence._
-import akka.persistence.SaveSnapshotSucceeded
-import scala.Some
 
 trait PersistenceDocSpec {
   val system: ActorSystem
-  val config =
-    """
-      //#journal-config
-      akka.persistence.journal.leveldb.dir = "target/journal"
-      //#journal-config
-      //#snapshot-config
-      akka.persistence.snapshot-store.local.dir = "target/snapshots"
-      //#snapshot-config
-    """
 
   import system._
 
   new AnyRef {
     //#definition
-    import akka.persistence.{ Persistent, Processor }
+    import akka.persistence.{ Persistent, PersistenceFailure, Processor }
 
     class MyProcessor extends Processor {
       def receive = {
-        case Persistent(payload, sequenceNr) ⇒ // message has been written to journal
-        case other                           ⇒ // message has not been written to journal
+        case Persistent(payload, sequenceNr) ⇒ {
+          // message successfully written to journal
+        }
+        case PersistenceFailure(payload, sequenceNr, cause) ⇒ {
+          // message failed to be written to journal
+        }
+        case other ⇒ {
+          // message not written to journal
+        }
       }
     }
     //#definition
@@ -195,9 +191,9 @@ trait PersistenceDocSpec {
       var state: Any = _
 
       def receive = {
-        case "snap"                               ⇒ saveSnapshot(state)
-        case SaveSnapshotSucceeded(metadata)      ⇒ // ...
-        case SaveSnapshotFailed(metadata, reason) ⇒ // ...
+        case "snap"                                ⇒ saveSnapshot(state)
+        case SaveSnapshotSuccess(metadata)         ⇒ // ...
+        case SaveSnapshotFailure(metadata, reason) ⇒ // ...
       }
     }
     //#save-snapshot

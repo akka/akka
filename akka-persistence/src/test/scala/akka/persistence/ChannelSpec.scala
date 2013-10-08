@@ -1,17 +1,15 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.persistence
+
+import com.typesafe.config._
 
 import akka.actor._
 import akka.testkit._
 
 object ChannelSpec {
-  val config =
-    """
-      |serialize-creators = on
-      |serialize-messages = on
-      |akka.persistence.journal.leveldb.dir = "target/journal-channel-spec"
-      |akka.persistence.snapshot-store.local.dir = ${akka.persistence.journal.leveldb.dir}/snapshots
-    """.stripMargin
-
   class TestProcessor(name: String) extends NamedProcessor(name) {
     val destination = context.actorOf(Props[TestDestination])
     val channel = context.actorOf(Channel.props("channel"))
@@ -42,7 +40,7 @@ object ChannelSpec {
   }
 }
 
-class ChannelSpec extends AkkaSpec(ChannelSpec.config) with PersistenceSpec with ImplicitSender {
+abstract class ChannelSpec(config: Config) extends AkkaSpec(config) with PersistenceSpec with ImplicitSender {
   import ChannelSpec._
 
   override protected def beforeEach() {
@@ -120,3 +118,6 @@ class ChannelSpec extends AkkaSpec(ChannelSpec.config) with PersistenceSpec with
     }
   }
 }
+
+class LeveldbChannelSpec extends ChannelSpec(PersistenceSpec.config("leveldb", "channel"))
+class InmemChannelSpec extends ChannelSpec(PersistenceSpec.config("inmem", "channel"))

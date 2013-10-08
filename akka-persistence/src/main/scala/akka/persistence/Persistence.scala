@@ -7,29 +7,14 @@ package akka.persistence
 import com.typesafe.config.Config
 
 import akka.actor._
-import akka.persistence.journal.leveldb._
-import akka.persistence.snapshot.local._
+import akka.dispatch.Dispatchers
+import akka.persistence.journal.AsyncWriteJournal
 
 /**
  * Persistence extension.
  */
 object Persistence extends ExtensionId[Persistence] with ExtensionIdProvider {
   class Settings(config: Config) {
-    val rootConfig = config.getConfig("akka.persistence")
-
-    val journalsConfig = rootConfig.getConfig("journal")
-    val journalName = journalsConfig.getString("use")
-    val journalConfig = journalsConfig.getConfig(journalName)
-    val journalFactory = journalName match {
-      case "leveldb" ⇒ new LeveldbJournalSettings(journalConfig)
-    }
-
-    val snapshotStoresConfig = rootConfig.getConfig("snapshot-store")
-    val snapshotStoreName = snapshotStoresConfig.getString("use")
-    val snapshotStoreConfig = snapshotStoresConfig.getConfig(snapshotStoreName)
-    val snapshotStoreFactory = snapshotStoreName match {
-      case "local" ⇒ new LocalSnapshotStoreSettings(snapshotStoreConfig)
-    }
   }
 
   /**
@@ -46,9 +31,12 @@ object Persistence extends ExtensionId[Persistence] with ExtensionIdProvider {
  * Persistence extension.
  */
 class Persistence(val system: ExtendedActorSystem) extends Extension {
-  private val settings = new Persistence.Settings(system.settings.config)
-  private val journal = settings.journalFactory.createJournal(system)
-  private val snapshotStore = settings.snapshotStoreFactory.createSnapshotStore(system)
+  private val DefaultPluginDispatcherId = "akka.persistence.dispatchers.default-plugin-dispatcher"
+
+  private val config = system.settings.config.getConfig("akka.persistence")
+  private val snapshotStore = createPlugin("snapshot-store", _ ⇒ DefaultPluginDispatcherId)
+  private val journal = createPlugin("journal", clazz ⇒
+    if (classOf[AsyncWriteJournal].isAssignableFrom(clazz)) Dispatchers.DefaultDispatcherId else DefaultPluginDispatcherId)
 
   /**
    * Returns a snapshot store for a processor identified by `processorId`.
@@ -77,6 +65,15 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * Creates a canonical channel id from a channel actor ref.
    */
   def channelId(channel: ActorRef): String = id(channel)
+
+  private def createPlugin(pluginType: String, dispatcherSelector: Class[_] ⇒ String) = {
+    val pluginConfigPath = config.getString(s"${pluginType}.plugin")
+    val pluginConfig = system.settings.config.getConfig(pluginConfigPath)
+    val pluginClassName = pluginConfig.getString("class")
+    val pluginClass = system.dynamicAccess.getClassFor[AnyRef](pluginClassName).get
+    val pluginDispatcherId = if (pluginConfig.hasPath("plugin-dispatcher")) pluginConfig.getString("plugin-dispatcher") else dispatcherSelector(pluginClass)
+    system.actorOf(Props(pluginClass).withDispatcher(pluginDispatcherId))
+  }
 
   private def id(ref: ActorRef) = ref.path.toStringWithAddress(system.provider.getDefaultAddress)
 }
