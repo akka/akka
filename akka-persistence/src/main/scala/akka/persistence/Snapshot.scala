@@ -4,11 +4,6 @@
 
 package akka.persistence
 
-import java.io._
-
-import akka.actor._
-import akka.util.ClassLoaderObjectInputStream
-
 /**
  * Snapshot metadata.
  *
@@ -21,21 +16,21 @@ case class SnapshotMetadata(processorId: String, sequenceNr: Long, timestamp: Lo
 //#snapshot-metadata
 
 /**
- * Indicates successful saving of a snapshot.
+ * Notification of a snapshot saving success.
  *
  * @param metadata snapshot metadata.
  */
 @SerialVersionUID(1L)
-case class SaveSnapshotSucceeded(metadata: SnapshotMetadata)
+case class SaveSnapshotSuccess(metadata: SnapshotMetadata)
 
 /**
- * Indicates failed saving of a snapshot.
+ * Notification of a snapshot saving success failure.
  *
  * @param metadata snapshot metadata.
- * @param reason failure reason.
+ * @param cause failure cause.
  */
 @SerialVersionUID(1L)
-case class SaveSnapshotFailed(metadata: SnapshotMetadata, reason: Throwable)
+case class SaveSnapshotFailure(metadata: SnapshotMetadata, cause: Throwable)
 
 /**
  * Offers a [[Processor]] a previously saved `snapshot` during recovery. This offer is received
@@ -45,7 +40,7 @@ case class SaveSnapshotFailed(metadata: SnapshotMetadata, reason: Throwable)
 case class SnapshotOffer(metadata: SnapshotMetadata, snapshot: Any)
 
 /**
- * Snapshot selection criteria for recovery.
+ * Selection criteria for loading snapshots.
  *
  * @param maxSequenceNr upper bound for a selected snapshot's sequence number. Default is no upper bound.
  * @param maxTimestamp upper bound for a selected snapshot's timestamp. Default is no upper bound.
@@ -86,109 +81,43 @@ object SnapshotSelectionCriteria {
   def none() = None
 }
 
-// TODO: support application-defined snapshot serializers
-// TODO: support application-defined snapshot access
-
 /**
- * Snapshot serialization extension.
+ * Plugin API.
+ *
+ * A selected snapshot matching [[SnapshotSelectionCriteria]].
+ *
+ * @param metadata snapshot metadata.
+ * @param snapshot snapshot.
  */
-private[persistence] object SnapshotSerialization extends ExtensionId[SnapshotSerialization] with ExtensionIdProvider {
-  def createExtension(system: ExtendedActorSystem): SnapshotSerialization = new SnapshotSerialization(system)
-  def lookup() = SnapshotSerialization
-}
+case class SelectedSnapshot(metadata: SnapshotMetadata, snapshot: Any)
 
-/**
- * Snapshot serialization extension.
- */
-private[persistence] class SnapshotSerialization(val system: ExtendedActorSystem) extends Extension {
-  import akka.serialization.JavaSerializer
-
+object SelectedSnapshot {
   /**
-   * Java serialization based snapshot serializer.
+   * Plugin Java API.
    */
-  val java = new SnapshotSerializer {
-    def serialize(stream: OutputStream, metadata: SnapshotMetadata, state: Any) = {
-      val out = new ObjectOutputStream(stream)
-      JavaSerializer.currentSystem.withValue(system) { out.writeObject(state) }
-    }
-
-    def deserialize(stream: InputStream, metadata: SnapshotMetadata) = {
-      val in = new ClassLoaderObjectInputStream(system.dynamicAccess.classLoader, stream)
-      JavaSerializer.currentSystem.withValue(system) { in.readObject }
-    }
-  }
+  def create(metadata: SnapshotMetadata, snapshot: Any): SelectedSnapshot =
+    SelectedSnapshot(metadata, snapshot)
 }
 
 /**
- * Stream-based snapshot serializer.
+ * Defines messages exchanged between processors and a snapshot store.
  */
-private[persistence] trait SnapshotSerializer {
-  /**
-   * Serializes a `snapshot` to an output stream.
-   */
-  def serialize(stream: OutputStream, metadata: SnapshotMetadata, snapshot: Any): Unit
-
-  /**
-   * Deserializes a snapshot from an input stream.
-   */
-  def deserialize(stream: InputStream, metadata: SnapshotMetadata): Any
-}
-
-/**
- * Input and output stream management for snapshot serialization.
- */
-private[persistence] trait SnapshotAccess {
-  /**
-   * Provides a managed output stream for serializing a snapshot.
-   *
-   * @param metadata snapshot metadata needed to create an output stream.
-   * @param body called with the managed output stream as argument.
-   */
-  def withOutputStream(metadata: SnapshotMetadata)(body: OutputStream ⇒ Unit)
-
-  /**
-   * Provides a managed input stream for deserializing a state object.
-   *
-   * @param metadata snapshot metadata needed to create an input stream.
-   * @param body called with the managed input stream as argument.
-   * @return read snapshot.
-   */
-  def withInputStream(metadata: SnapshotMetadata)(body: InputStream ⇒ Any): Any
-
-  /**
-   * Loads the snapshot metadata of all currently stored snapshots.
-   */
-  def metadata: Set[SnapshotMetadata]
-
-  /**
-   * Deletes the snapshot referenced by `metadata`.
-   */
-  def delete(metadata: SnapshotMetadata)
-}
-
-private[persistence] trait SnapshotStoreFactory {
-  /**
-   * Creates a new snapshot store actor.
-   */
-  def createSnapshotStore(implicit factory: ActorRefFactory): ActorRef
-}
-
-private[persistence] object SnapshotStore {
+private[persistence] object SnapshotProtocol {
   /**
    * Instructs a snapshot store to load a snapshot.
    *
    * @param processorId processor id.
-   * @param criteria criteria for selecting a saved snapshot from which recovery should start.
+   * @param criteria criteria for selecting a snapshot from which recovery should start.
    * @param toSequenceNr upper sequence number bound (inclusive) for recovery.
    */
   case class LoadSnapshot(processorId: String, criteria: SnapshotSelectionCriteria, toSequenceNr: Long)
 
   /**
-   * Reply message to a processor that a snapshot loading attempt has been completed.
+   * Response message to a [[LoadSnapshot]] message.
    *
-   * @param savedSnapshot
+   * @param snapshot loaded snapshot, if any.
    */
-  case class LoadSnapshotCompleted(savedSnapshot: Option[SavedSnapshot], toSequenceNr: Long)
+  case class LoadSnapshotResult(snapshot: Option[SelectedSnapshot], toSequenceNr: Long)
 
   /**
    * Instructs snapshot store to save a snapshot.
@@ -197,12 +126,4 @@ private[persistence] object SnapshotStore {
    * @param snapshot snapshot.
    */
   case class SaveSnapshot(metadata: SnapshotMetadata, snapshot: Any)
-
-  /**
-   * In-memory representation of a saved snapshot.
-   *
-   * @param metadata snapshot metadata.
-   * @param snapshot saved snapshot.
-   */
-  case class SavedSnapshot(metadata: SnapshotMetadata, snapshot: Any)
 }

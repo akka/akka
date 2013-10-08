@@ -43,11 +43,16 @@ import akka.dispatch._
  * ''user stash'' inherited by `akka.actor.Stash`. `Processor` implementation classes can therefore use the
  * ''user stash'' for stashing/unstashing both persistent and transient messages.
  *
+ * Processors can also store snapshots of internal state by calling [[saveSnapshot]]. During recovery, a saved
+ * snapshot is offered to the processor with a [[SnapshotOffer]] message, followed by replayed messages, if any,
+ * that are younger than the snapshot. Default is to offer the latest saved snapshot.
+ *
  * @see [[UntypedProcessor]]
+ * @see [[Recover]]
  */
 trait Processor extends Actor with Stash {
-  import Journal._
-  import SnapshotStore._
+  import JournalProtocol._
+  import SnapshotProtocol._
 
   private val extension = Persistence(context.system)
   private val _processorId = extension.processorId(self)
@@ -100,23 +105,26 @@ trait Processor extends Actor with Stash {
     override def toString: String = "recovery started"
 
     def aroundReceive(receive: Actor.Receive, message: Any) = message match {
-      case LoadSnapshotCompleted(sso, toSnr) ⇒ sso match {
-        case Some(ss) ⇒ {
-          process(receive, SnapshotOffer(ss.metadata, ss.snapshot))
-          journal ! Replay(ss.metadata.sequenceNr + 1L, toSnr, self, processorId)
+      case LoadSnapshotResult(sso, toSnr) ⇒ sso match {
+        case Some(SelectedSnapshot(metadata, snapshot)) ⇒ {
+          process(receive, SnapshotOffer(metadata, snapshot))
+          journal ! Replay(metadata.sequenceNr + 1L, toSnr, processorId, self)
         } case None ⇒ {
-          journal ! Replay(1L, toSnr, self, processorId)
+          journal ! Replay(1L, toSnr, processorId, self)
         }
       }
-      case ReplayCompleted(maxSnr) ⇒ {
+      case ReplaySuccess(maxSnr) ⇒ {
         _currentState = recoverySucceeded
         _sequenceNr = maxSnr
         unstashAllInternal()
       }
+      case ReplayFailure(cause) ⇒ {
+        throw cause
+      }
       case Replayed(p) ⇒ try { processPersistent(receive, p) } catch {
         case t: Throwable ⇒ {
           _currentState = recoveryFailed // delay throwing exception to prepareRestart
-          _recoveryFailureReason = t
+          _recoveryFailureCause = t
           _recoveryFailureMessage = currentEnvelope
         }
       }
@@ -132,14 +140,13 @@ trait Processor extends Actor with Stash {
     override def toString: String = "recovery finished"
 
     def aroundReceive(receive: Actor.Receive, message: Any) = message match {
-      case r: Recover               ⇒ // ignore
-      case Replayed(p)              ⇒ processPersistent(receive, p) // can occur after unstash from user stash
-      case Written(p)               ⇒ processPersistent(receive, p)
-      case Looped(p)                ⇒ process(receive, p)
-      case s: SaveSnapshotSucceeded ⇒ process(receive, s)
-      case f: SaveSnapshotFailed    ⇒ process(receive, f)
-      case p: PersistentImpl        ⇒ journal forward Write(p.copy(processorId = processorId, sequenceNr = nextSequenceNr()), self)
-      case m                        ⇒ journal forward Loop(m, self)
+      case r: Recover             ⇒ // ignore
+      case Replayed(p)            ⇒ processPersistent(receive, p) // can occur after unstash from user stash
+      case WriteSuccess(p)        ⇒ processPersistent(receive, p)
+      case WriteFailure(p, cause) ⇒ process(receive, PersistenceFailure(p.payload, p.sequenceNr, cause))
+      case LoopSuccess(m)         ⇒ process(receive, m)
+      case p: PersistentImpl      ⇒ journal forward Write(p.copy(processorId = processorId, sequenceNr = nextSequenceNr()), self)
+      case m                      ⇒ journal forward Loop(m, self)
     }
   }
 
@@ -152,7 +159,7 @@ trait Processor extends Actor with Stash {
     override def toString: String = "recovery failed"
 
     def aroundReceive(receive: Actor.Receive, message: Any) = message match {
-      case ReplayCompleted(maxSnr) ⇒ {
+      case ReplaySuccess(maxSnr) ⇒ {
         _currentState = prepareRestart
         mailbox.enqueueFirst(self, _recoveryFailureMessage)
       }
@@ -170,7 +177,7 @@ trait Processor extends Actor with Stash {
     override def toString: String = "prepare restart"
 
     def aroundReceive(receive: Actor.Receive, message: Any) = message match {
-      case Replayed(_) ⇒ throw _recoveryFailureReason
+      case Replayed(_) ⇒ throw _recoveryFailureCause
       case _           ⇒ // ignore
     }
   }
@@ -181,7 +188,7 @@ trait Processor extends Actor with Stash {
   private var _currentPersistent: Persistent = _
   private var _currentState: State = recoveryPending
 
-  private var _recoveryFailureReason: Throwable = _
+  private var _recoveryFailureCause: Throwable = _
   private var _recoveryFailureMessage: Envelope = _
 
   private lazy val journal = extension.journalFor(processorId)
@@ -230,7 +237,7 @@ trait Processor extends Actor with Stash {
 
   /**
    * Saves a `snapshot` of this processor's state. If saving succeeds, this processor will receive a
-   * [[SaveSnapshotSucceeded]] message, otherwise a [[SaveSnapshotFailed]] message.
+   * [[SaveSnapshotSuccess]] message, otherwise a [[SaveSnapshotFailure]] message.
    */
   def saveSnapshot(snapshot: Any): Unit = {
     snapshotStore ! SaveSnapshot(SnapshotMetadata(processorId, lastSequenceNr), snapshot)
@@ -266,10 +273,10 @@ trait Processor extends Actor with Stash {
       unstashAllInternal()
     } finally {
       message match {
-        case Some(Written(m))  ⇒ preRestartDefault(reason, Some(m))
-        case Some(Looped(m))   ⇒ preRestartDefault(reason, Some(m))
-        case Some(Replayed(m)) ⇒ preRestartDefault(reason, Some(m))
-        case mo                ⇒ preRestartDefault(reason, None)
+        case Some(WriteSuccess(m)) ⇒ preRestartDefault(reason, Some(m))
+        case Some(LoopSuccess(m))  ⇒ preRestartDefault(reason, Some(m))
+        case Some(Replayed(m))     ⇒ preRestartDefault(reason, Some(m))
+        case mo                    ⇒ preRestartDefault(reason, None)
       }
     }
   }
@@ -312,9 +319,9 @@ trait Processor extends Actor with Stash {
   // -----------------------------------------------------
 
   private def unstashFilterPredicate: Any ⇒ Boolean = {
-    case _: Written  ⇒ false
-    case _: Replayed ⇒ false
-    case _           ⇒ true
+    case _: WriteSuccess ⇒ false
+    case _: Replayed     ⇒ false
+    case _               ⇒ true
   }
 
   private var processorStash = Vector.empty[Envelope]
@@ -381,7 +388,12 @@ trait Processor extends Actor with Stash {
  * ''user stash'' inherited by `akka.actor.Stash`. `Processor` implementation classes can therefore use the
  * ''user stash'' for stashing/unstashing both persistent and transient messages.
  *
+ * Processors can also store snapshots of internal state by calling [[saveSnapshot]]. During recovery, a saved
+ * snapshot is offered to the processor with a [[SnapshotOffer]] message, followed by replayed messages, if any,
+ * that are younger than the snapshot. Default is to offer the latest saved snapshot.
+ *
  * @see [[Processor]]
+ * @see [[Recover]]
  */
 abstract class UntypedProcessor extends UntypedActor with Processor {
 

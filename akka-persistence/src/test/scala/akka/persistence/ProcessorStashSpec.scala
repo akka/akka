@@ -1,17 +1,15 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.persistence
+
+import com.typesafe.config._
 
 import akka.actor._
 import akka.testkit._
 
 object ProcessorStashSpec {
-  val config =
-    """
-      |serialize-creators = on
-      |serialize-messages = on
-      |akka.persistence.journal.leveldb.dir = "target/journal-processor-stash-spec"
-      |akka.persistence.snapshot-store.local.dir = ${akka.persistence.journal.leveldb.dir}/snapshots
-    """.stripMargin
-
   class StashingProcessor(name: String) extends NamedProcessor(name) {
     var state: List[String] = Nil
 
@@ -48,7 +46,7 @@ object ProcessorStashSpec {
   }
 }
 
-class ProcessorStashSpec extends AkkaSpec(ProcessorStashSpec.config) with PersistenceSpec with ImplicitSender {
+abstract class ProcessorStashSpec(config: Config) extends AkkaSpec(config) with PersistenceSpec with ImplicitSender {
   import ProcessorStashSpec._
 
   "A processor" must {
@@ -120,3 +118,6 @@ class ProcessorStashSpec extends AkkaSpec(ProcessorStashSpec.config) with Persis
     }
   }
 }
+
+class LeveldbProcessorStashSpec extends ProcessorStashSpec(PersistenceSpec.config("leveldb", "processor-stash"))
+class InmemProcessorStashSpec extends ProcessorStashSpec(PersistenceSpec.config("inmem", "processor-stash"))

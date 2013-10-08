@@ -6,26 +6,26 @@ package akka.persistence.journal.leveldb
 
 import scala.concurrent.Future
 
-import org.iq80.leveldb.DBIterator
-
-import akka.actor._
 import akka.persistence._
-import akka.persistence.Journal._
+import akka.persistence.journal.AsyncReplay
 
 /**
- * Asynchronous replay support.
+ * LevelDB backed message replay.
  */
-private[persistence] trait LeveldbReplay extends Actor { this: LeveldbJournal ⇒
+private[persistence] trait LeveldbReplay extends AsyncReplay { this: LeveldbJournal ⇒
   import Key._
 
-  private val executionContext = context.system.dispatchers.lookup("akka.persistence.journal.leveldb.replay.dispatcher")
+  private val replayDispatcherId = context.system.settings.config.getString("akka.persistence.journal.leveldb.replay-dispatcher")
+  private val replayDispatcher = context.system.dispatchers.lookup(replayDispatcherId)
 
-  def replayAsync(fromSequenceNr: Long, toSequenceNr: Long, processor: ActorRef, processorId: String): Future[Unit] =
-    Future(replay(fromSequenceNr: Long, toSequenceNr, processor, numericId(processorId), leveldbIterator))(executionContext)
+  def replayAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: PersistentImpl ⇒ Unit): Future[Long] =
+    Future(replay(numericId(processorId), fromSequenceNr: Long, toSequenceNr)(replayCallback))(replayDispatcher)
 
-  private def replay(fromSequenceNr: Long, toSequenceNr: Long, processor: ActorRef, processorId: Int, iter: DBIterator): Unit = {
+  private def replay(processorId: Int, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: PersistentImpl ⇒ Unit): Long = {
+    val iter = leveldbIterator
+
     @scala.annotation.tailrec
-    def go(key: Key)(callback: PersistentImpl ⇒ Unit) {
+    def go(key: Key, replayCallback: PersistentImpl ⇒ Unit) {
       if (iter.hasNext) {
         val nextEntry = iter.next()
         val nextKey = keyFromBytes(nextEntry.getKey)
@@ -33,13 +33,13 @@ private[persistence] trait LeveldbReplay extends Actor { this: LeveldbJournal �
           // end iteration here
         } else if (nextKey.channelId != 0) {
           // phantom confirmation (just advance iterator)
-          go(nextKey)(callback)
+          go(nextKey, replayCallback)
         } else if (key.processorId == nextKey.processorId) {
           val msg = persistentFromBytes(nextEntry.getValue)
           val del = deletion(nextKey)
           val cnf = confirms(nextKey, Nil)
-          if (!del) callback(msg.copy(confirms = cnf))
-          go(nextKey)(callback)
+          replayCallback(msg.copy(confirms = cnf, deleted = del))
+          go(nextKey, replayCallback)
         }
       }
     }
@@ -71,9 +71,17 @@ private[persistence] trait LeveldbReplay extends Actor { this: LeveldbJournal �
     try {
       val startKey = Key(processorId, if (fromSequenceNr < 1L) 1L else fromSequenceNr, 0)
       iter.seek(keyToBytes(startKey))
-      go(startKey) { m ⇒ processor.tell(Replayed(m), extension.system.provider.resolveActorRef(m.sender)) }
+      go(startKey, replayCallback)
+      maxSequenceNr(processorId)
     } finally {
       iter.close()
+    }
+  }
+
+  def maxSequenceNr(processorId: Int) = {
+    leveldb.get(keyToBytes(counterKey(processorId)), leveldbSnapshot) match {
+      case null  ⇒ 0L
+      case bytes ⇒ counterFromBytes(bytes)
     }
   }
 }

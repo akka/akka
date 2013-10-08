@@ -6,17 +6,10 @@ package akka.persistence
 
 import akka.actor._
 
-private[persistence] trait JournalFactory {
-  /**
-   * Creates a new journal actor.
-   */
-  def createJournal(implicit factory: ActorRefFactory): ActorRef
-}
-
 /**
  * Defines messages exchanged between processors, channels and a journal.
  */
-private[persistence] object Journal {
+private[persistence] object JournalProtocol {
   /**
    * Instructs a journal to mark the `persistent` message as deleted.
    * A persistent message marked as deleted is not replayed during recovery.
@@ -34,11 +27,19 @@ private[persistence] object Journal {
   case class Write(persistent: PersistentImpl, processor: ActorRef)
 
   /**
-   * Reply message to a processor that `persistent` message has been journaled.
+   * Reply message to a processor that `persistent` message has been successfully journaled.
    *
    * @param persistent persistent message.
    */
-  case class Written(persistent: PersistentImpl)
+  case class WriteSuccess(persistent: PersistentImpl)
+
+  /**
+   * Reply message to a processor that `persistent` message could not be journaled.
+   *
+   * @param persistent persistent message.
+   * @param cause failure cause.
+   */
+  case class WriteFailure(persistent: PersistentImpl, cause: Throwable)
 
   /**
    * Instructs a journal to loop a `message` back to `processor`, without persisting the
@@ -55,12 +56,17 @@ private[persistence] object Journal {
    *
    * @param message looped message.
    */
-  case class Looped(message: Any)
+  case class LoopSuccess(message: Any)
 
   /**
-   * ...
+   * Instructs a journal to replay messages to `processor`.
+   *
+   * @param fromSequenceNr sequence number where replay should start.
+   * @param toSequenceNr sequence number where replay should end (inclusive).
+   * @param processorId requesting processor id.
+   * @param processor requesting processor.
    */
-  case class Replay(fromSequenceNr: Long, toSequenceNr: Long, processor: ActorRef, processorId: String)
+  case class Replay(fromSequenceNr: Long, toSequenceNr: Long, processorId: String, processor: ActorRef)
 
   /**
    * Reply message to a processor that `persistent` message has been replayed.
@@ -74,6 +80,12 @@ private[persistence] object Journal {
    *
    * @param maxSequenceNr the highest stored sequence number (for a processor).
    */
-  case class ReplayCompleted(maxSequenceNr: Long)
+  case class ReplaySuccess(maxSequenceNr: Long)
+
+  /**
+   * Reply message to a processor that not all `persistent` messages could have been
+   * replayed.
+   */
+  case class ReplayFailure(cause: Throwable)
 }
 
