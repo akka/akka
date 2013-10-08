@@ -1,17 +1,15 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.persistence
+
+import com.typesafe.config._
 
 import akka.actor._
 import akka.testkit._
 
 object ProcessorSpec {
-  val config =
-    """
-      |serialize-creators = on
-      |serialize-messages = on
-      |akka.persistence.journal.leveldb.dir = "target/journal-processor-spec"
-      |akka.persistence.snapshot-store.local.dir = ${akka.persistence.journal.leveldb.dir}/snapshots
-    """.stripMargin
-
   class RecoverTestProcessor(name: String) extends NamedProcessor(name) {
     var state = List.empty[String]
     def receive = {
@@ -128,7 +126,7 @@ object ProcessorSpec {
   }
 }
 
-class ProcessorSpec extends AkkaSpec(ProcessorSpec.config) with PersistenceSpec with ImplicitSender {
+abstract class ProcessorSpec(config: Config) extends AkkaSpec(config) with PersistenceSpec with ImplicitSender {
   import ProcessorSpec._
 
   override protected def beforeEach() {
@@ -296,3 +294,6 @@ class ProcessorSpec extends AkkaSpec(ProcessorSpec.config) with PersistenceSpec 
     }
   }
 }
+
+class LeveldbProcessorSpec extends ProcessorSpec(PersistenceSpec.config("leveldb", "processor"))
+class InmemProcessorSpec extends ProcessorSpec(PersistenceSpec.config("inmem", "processor"))

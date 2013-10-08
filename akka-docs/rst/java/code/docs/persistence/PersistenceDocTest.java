@@ -25,13 +25,20 @@ public class PersistenceDocTest {
         class MyProcessor extends UntypedProcessor {
             public void onReceive(Object message) throws Exception {
                 if (message instanceof Persistent) {
-                    // message has been written to journal
+                    // message successfully written to journal
                     Persistent persistent = (Persistent)message;
                     Object payload = persistent.payload();
                     Long sequenceNr = persistent.sequenceNr();
                     // ...
+                } else if (message instanceof PersistenceFailure) {
+                    // message failed to be written to journal
+                    PersistenceFailure failure = (PersistenceFailure)message;
+                    Object payload = failure.payload();
+                    Long sequenceNr = failure.sequenceNr();
+                    Throwable cause = failure.cause();
+                    // ...
                 } else {
-                    // message has not been written to journal
+                    // message not written to journal
                 }
             }
         }
@@ -179,11 +186,11 @@ public class PersistenceDocTest {
             public void onReceive(Object message) throws Exception {
                 if (message.equals("snap")) {
                     saveSnapshot(state);
-                } else if (message instanceof SaveSnapshotSucceeded) {
-                    SnapshotMetadata metadata = ((SaveSnapshotSucceeded)message).metadata();
+                } else if (message instanceof SaveSnapshotSuccess) {
+                    SnapshotMetadata metadata = ((SaveSnapshotSuccess)message).metadata();
                     // ...
-                } else if (message instanceof SaveSnapshotFailed) {
-                    SnapshotMetadata metadata = ((SaveSnapshotFailed)message).metadata();
+                } else if (message instanceof SaveSnapshotFailure) {
+                    SnapshotMetadata metadata = ((SaveSnapshotFailure)message).metadata();
                     // ...
                 }
             }
@@ -225,6 +232,5 @@ public class PersistenceDocTest {
                 //#snapshot-criteria
             }
         }
-
     };
 }

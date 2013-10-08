@@ -4,12 +4,12 @@
 
 package akka.persistence.journal.leveldb
 
-import akka.actor.Actor
-
 import org.iq80.leveldb.DBIterator
 
+import akka.actor.Actor
+
 /**
- * Persistent mapping of `String`-based processor and channel ids to numeric ids.
+ * LevelDB backed persistent mapping of `String`-based processor and channel ids to numeric ids.
  */
 private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbJournal ⇒
   import Key._

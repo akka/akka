@@ -4,6 +4,8 @@
 
 package akka.persistence
 
+import java.util.{ List ⇒ JList }
+
 import akka.actor.ActorRef
 
 /**
@@ -77,24 +79,74 @@ object Persistent {
 }
 
 /**
- * INTERNAL API.
+ * Plugin API.
  *
- * Internal [[Persistent]] representation.
+ * Internal [[Persistent]] message representation.
+ *
+ * @param resolved `true` by default, `false` for replayed messages. Set to `true` by a channel if this
+ *                message is replayed and its sender reference was resolved. Channels use this field to
+ *                avoid redundant sender reference resolutions.
+ * @param processorId Id of processor that journaled the message.
+ * @param channelId Id of last channel that delivered the message to a destination.
+ * @param sender Serialized sender reference.
+ * @param deleted `true` if this message is marked as deleted.
+ * @param confirms Channel ids of delivery confirmations that are available for this message. Only non-empty
+ *                 for replayed messages.
+ * @param confirmTarget Delivery confirmation target.
+ * @param confirmMessage Delivery confirmation message.
+ *
+ * @see [[Processor]]
+ * @see [[Channel]]
+ * @see [[Deliver]]
  */
-private[persistence] case class PersistentImpl(
+case class PersistentImpl(
   payload: Any,
   sequenceNr: Long = 0L,
   resolved: Boolean = true,
   processorId: String = "",
   channelId: String = "",
   sender: String = "",
+  deleted: Boolean = false,
   confirms: Seq[String] = Nil,
   confirmTarget: ActorRef = null,
   confirmMessage: Confirm = null) extends Persistent {
 
-  def withPayload(payload: Any): Persistent = copy(payload = payload)
-  def confirm(): Unit = if (confirmTarget != null) confirmTarget ! confirmMessage
+  def withPayload(payload: Any): Persistent =
+    copy(payload = payload)
+
+  def confirm(): Unit =
+    if (confirmTarget != null) confirmTarget ! confirmMessage
+
+  import scala.collection.JavaConverters._
+
+  /**
+   * Java Plugin API.
+   */
+  def getConfirms: JList[String] = confirms.asJava
 }
+
+object PersistentImpl {
+  /**
+   * Java Plugin API.
+   */
+  def create(payload: Any, sequenceNr: Long, resolved: Boolean, processorId: String, channelId: String, sender: String, deleted: Boolean, confirms: Seq[String]): PersistentImpl =
+    PersistentImpl(payload, sequenceNr, resolved, processorId, channelId, sender, deleted, confirms)
+
+  /**
+   * Java Plugin API.
+   */
+  def create(payload: Any, sequenceNr: Long, resolved: Boolean, processorId: String, channelId: String, sender: String, deleted: Boolean, confirms: Seq[String], confirmTarget: ActorRef, confirmMessage: Confirm): PersistentImpl =
+    PersistentImpl(payload, sequenceNr, resolved, processorId, channelId, sender, deleted, confirms, confirmTarget, confirmMessage)
+}
+
+/**
+ * Receive by a processor when a journal failed to write a [[Persistent]] message.
+ *
+ * @param payload payload of the persistent message.
+ * @param sequenceNr sequence number of the persistent message.
+ * @param cause failure cause.
+ */
+case class PersistenceFailure(payload: Any, sequenceNr: Long, cause: Throwable)
 
 /**
  * Message to confirm the receipt of a persistent message (sent via a [[Channel]]).

@@ -1,9 +1,15 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.persistence
 
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.reflect.ClassTag
+
+import com.typesafe.config.ConfigFactory
 
 import org.apache.commons.io.FileUtils
 import org.scalatest.BeforeAndAfterEach
@@ -38,8 +44,21 @@ trait PersistenceSpec extends BeforeAndAfterEach { this: AkkaSpec ⇒
   }
 
   override protected def afterTermination() {
-    FileUtils.deleteDirectory(new File(system.settings.config.getString("akka.persistence.journal.leveldb.dir")))
+    List("akka.persistence.journal.leveldb.dir", "akka.persistence.snapshot-store.local.dir") foreach { s ⇒
+      FileUtils.deleteDirectory(new File(system.settings.config.getString(s)))
+    }
   }
+}
+
+object PersistenceSpec {
+  def config(plugin: String, test: String) = ConfigFactory.parseString(
+    s"""
+      |serialize-creators = on
+      |serialize-messages = on
+      |akka.persistence.journal.plugin = "akka.persistence.journal.${plugin}"
+      |akka.persistence.journal.leveldb.dir = "target/journal-${test}-spec"
+      |akka.persistence.snapshot-store.local.dir = "target/snapshots-${test}-spec/"
+    """.stripMargin)
 }
 
 abstract class NamedProcessor(name: String) extends Processor {
