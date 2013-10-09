@@ -275,7 +275,7 @@ object AkkaBuild extends Build {
   lazy val persistence = Project(
     id = "akka-persistence-experimental",
     base = file("akka-persistence"),
-    dependencies = Seq(actor, testkit % "test->test"),
+    dependencies = Seq(actor, remote % "test->test", testkit % "test->test"),
     settings = defaultSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.persistence ++ Seq(
       libraryDependencies ++= Dependencies.persistence,
       previousArtifact := akkaPreviousArtifact("akka-persistence")
@@ -994,7 +994,7 @@ object AkkaBuild extends Build {
 
     val transactor = exports(Seq("akka.transactor.*"))
 
-    val persistence = exports(Seq("akka.persistence.*"))
+    val persistence = exports(Seq("akka.persistence.*"), imports = Seq(protobufImport()))
 
     val testkit = exports(Seq("akka.testkit.*"))
 
@@ -1104,7 +1104,7 @@ object Dependencies {
 
   val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val persistence = Seq(levelDB, Test.scalatest, Test.junit, Test.commonsIo)
+  val persistence = Seq(levelDB, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 

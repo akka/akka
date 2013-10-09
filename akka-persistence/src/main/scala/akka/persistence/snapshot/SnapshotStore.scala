@@ -5,7 +5,6 @@
 package akka.persistence.snapshot
 
 import scala.concurrent.Future
-import scala.util._
 
 import akka.actor._
 import akka.pattern.pipe

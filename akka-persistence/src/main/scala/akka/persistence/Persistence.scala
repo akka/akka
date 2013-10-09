@@ -14,9 +14,6 @@ import akka.persistence.journal.AsyncWriteJournal
  * Persistence extension.
  */
 object Persistence extends ExtensionId[Persistence] with ExtensionIdProvider {
-  class Settings(config: Config) {
-  }
-
   /**
    * Java API.
    */

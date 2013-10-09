@@ -32,9 +32,7 @@ private[leveldb] class LeveldbJournal extends SyncWriteJournal with LeveldbIdMap
   // needed if default processor and channel ids are used
   // (actor paths, which contain deployment information).
 
-  // TODO: use protobuf serializer for PersistentImpl
-  // TODO: use user-defined serializer for payload
-  val serializer = SerializationExtension(context.system).findSerializerFor("")
+  val serialization = SerializationExtension(context.system)
 
   import Key._
 
@@ -55,8 +53,8 @@ private[leveldb] class LeveldbJournal extends SyncWriteJournal with LeveldbIdMap
   def leveldbSnapshot = leveldbReadOptions.snapshot(leveldb.getSnapshot)
   def leveldbIterator = leveldb.iterator(leveldbSnapshot)
 
-  def persistentToBytes(p: PersistentImpl): Array[Byte] = serializer.toBinary(p)
-  def persistentFromBytes(a: Array[Byte]): PersistentImpl = serializer.fromBinary(a).asInstanceOf[PersistentImpl]
+  def persistentToBytes(p: PersistentImpl): Array[Byte] = serialization.serialize(p).get
+  def persistentFromBytes(a: Array[Byte]): PersistentImpl = serialization.deserialize(a, classOf[PersistentImpl]).get
 
   private def withBatch[R](body: WriteBatch ⇒ R): R = {
     val batch = leveldb.createWriteBatch()
