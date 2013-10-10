@@ -332,6 +332,10 @@ private[remote] object EndpointManager {
       case _                                       ⇒ false
     }
 
+    /**
+     * Marking an endpoint as failed means that we will not try to connect to the remote system within
+     * the gated period but it is ok for the remote system to try to connect to us.
+     */
     def markAsFailed(endpoint: ActorRef, timeOfRelease: Deadline): Unit =
       if (isWritable(endpoint)) {
         addressToWritable += writableToAddress(endpoint) -> Gated(timeOfRelease)
@@ -392,7 +396,16 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     OneForOneStrategy(loggingEnabled = false) {
       case InvalidAssociation(localAddress, remoteAddress, _) ⇒
         log.warning("Tried to associate with unreachable remote address [{}]. " +
-          "Address is now quarantined, all messages to this address will be delivered to dead letters.", remoteAddress)
+          "Address is now gated for {} ms, all messages to this address will be delivered to dead letters.",
+          remoteAddress, settings.UnknownAddressGateClosedFor.toMillis)
+        endpoints.markAsFailed(sender, Deadline.now + settings.UnknownAddressGateClosedFor)
+        context.system.eventStream.publish(AddressTerminated(remoteAddress))
+        Stop
+
+      case ShutDownAssociation(localAddress, remoteAddress, _) ⇒
+        log.debug("Remote system with address [{}] has shut down. " +
+          "Address is now gated for {} ms, all messages to this address will be delivered to dead letters.",
+          remoteAddress, settings.UnknownAddressGateClosedFor.toMillis)
         endpoints.markAsFailed(sender, Deadline.now + settings.UnknownAddressGateClosedFor)
         context.system.eventStream.publish(AddressTerminated(remoteAddress))
         Stop
@@ -401,7 +414,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         settings.QuarantineDuration match {
           case d: FiniteDuration ⇒
             log.warning("Association to [{}] having UID [{}] is irrecoverably failed. UID is now quarantined and all " +
-              "messages to this UID will be delivered to dead letters. Remote actorsystem must be restarted to recover " +
+              "messages to this UID will be delivered to dead letters. Remote actor system must be restarted to recover " +
               "from this situation.", remoteAddress, uid)
             endpoints.markAsQuarantined(remoteAddress, uid, Deadline.now + d)
           case _ ⇒ // disabled
@@ -418,9 +431,6 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
           case _ ⇒
         }
         context.system.eventStream.publish(AddressTerminated(remoteAddress))
-        Stop
-
-      case _: QuarantinedUidException ⇒
         Stop
 
       case NonFatal(e) ⇒
