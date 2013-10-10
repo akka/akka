@@ -930,6 +930,7 @@ object AkkaBuild extends Build {
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.EndpointWriter.akka$remote$EndpointWriter$$publishAndThrow"),
       ProblemFilters.exclude[MissingClassProblem]("akka.remote.transport.ThrottlerManager$OriginResolved$"),
       ProblemFilters.exclude[MissingClassProblem]("akka.remote.transport.ThrottlerManager$OriginResolved"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.remote.QuarantinedUidException"),
 
       // inside package akka.camel.internal marked as private[camel] and INTERNAL API (and also inside actor)
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.camel.internal.Registry.supervisorStrategy")
