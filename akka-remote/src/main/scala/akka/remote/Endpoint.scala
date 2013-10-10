@@ -105,16 +105,28 @@ private[remote] class EndpointException(msg: String, cause: Throwable) extends A
 /**
  * INTERNAL API
  */
+private[remote] trait AssociationProblem
+
+/**
+ * INTERNAL API
+ */
+@SerialVersionUID(1L)
+private[remote] case class ShutDownAssociation(localAddress: Address, remoteAddress: Address, cause: Throwable)
+  extends EndpointException("Shut down address: " + remoteAddress, cause) with AssociationProblem
+
+/**
+ * INTERNAL API
+ */
 @SerialVersionUID(1L)
 private[remote] case class InvalidAssociation(localAddress: Address, remoteAddress: Address, cause: Throwable)
-  extends EndpointException("Invalid address: " + remoteAddress, cause)
+  extends EndpointException("Invalid address: " + remoteAddress, cause) with AssociationProblem
 
 /**
  * INTERNAL API
  */
 @SerialVersionUID(1L)
 private[remote] case class HopelessAssociation(localAddress: Address, remoteAddress: Address, uid: Option[Int], cause: Throwable)
-  extends EndpointException("Catastrophic association error.")
+  extends EndpointException("Catastrophic association error.") with AssociationProblem
 
 /**
  * INTERNAL API
@@ -127,13 +139,6 @@ private[remote] class EndpointDisassociatedException(msg: String) extends Endpoi
  */
 @SerialVersionUID(1L)
 private[remote] class EndpointAssociationException(msg: String, cause: Throwable) extends EndpointException(msg, cause)
-
-/**
- * INTERNAL API
- */
-@SerialVersionUID(1L)
-private[remote] class QuarantinedUidException(uid: Int, remoteAddress: Address)
-  extends EndpointException(s"Refused association to [$remoteAddress] because its UID [$uid] is quarantined.")
 
 /**
  * INTERNAL API
@@ -178,7 +183,7 @@ private[remote] class ReliableDeliverySupervisor(
   def retryGateEnabled = settings.RetryGateClosedFor > Duration.Zero
 
   override val supervisorStrategy = OneForOneStrategy(settings.MaximumRetriesInWindow, settings.RetryWindow, loggingEnabled = false) {
-    case e @ (_: InvalidAssociation | _: HopelessAssociation | _: QuarantinedUidException) ⇒ Escalate
+    case e @ (_: AssociationProblem) ⇒ Escalate
     case NonFatal(e) ⇒
       uidConfirmed = false // Need confirmation of UID again
       if (retryGateEnabled) {
@@ -790,7 +795,7 @@ private[remote] class EndpointReader(
     case AssociationHandle.Unknown ⇒
       context.stop(self)
     case AssociationHandle.Shutdown ⇒
-      throw InvalidAssociation(
+      throw ShutDownAssociation(
         localAddress,
         remoteAddress,
         InvalidAssociationException("The remote system terminated the association because it is shutting down."))
