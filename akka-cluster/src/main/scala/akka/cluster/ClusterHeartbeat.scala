@@ -208,7 +208,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   }
 
   def ackEndHeartbeat(from: Address): Unit = {
-    state.removeEnding(from)
+    state = state.removeEnding(from)
   }
 
 }
