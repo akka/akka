@@ -5,7 +5,6 @@ package akka.actor
 
 import language.higherKinds
 import language.postfixOps
-
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.Duration
@@ -30,6 +29,7 @@ import java.util.UUID
 import java.io.{ EOFException, IOException }
 import akka.actor.IOManager.Settings
 import akka.actor.IO.Chunk
+import akka.AkkaException
 
 /**
  * IO messages and iteratees.
@@ -243,7 +243,7 @@ object IO {
   /**
    * Messages used to communicate with an [[akka.actor.IOManager]].
    */
-  sealed trait IOMessage
+  sealed trait IOMessage extends NoSerializationVerificationNeeded
 
   /**
    * Message to an [[akka.actor.IOManager]] to create a ServerSocketChannel
@@ -822,7 +822,7 @@ final class IOManager private (system: ExtendedActorSystem) extends Extension { 
    * IO. It communicates with other actors using subclasses of
    * [[akka.actor.IO.IOMessage]].
    */
-  val actor: ActorRef = system.actorOf(Props(new IOManagerActor(settings)), "io-manager")
+  val actor: ActorRef = system.actorOf(Props(classOf[IOManagerActor], settings), "io-manager")
 
   /**
    * Create a ServerSocketChannel listening on an address. Messages will be
@@ -912,6 +912,13 @@ object IOManager extends ExtensionId[IOManager] with ExtensionIdProvider {
     require(readBufferSize <= Int.MaxValue && readBufferSize > 0)
     require(selectInterval > 0)
   }
+
+  /**
+   * INTERNAL API
+   *
+   * unique message that is sent to ourself to initiate the next select
+   */
+  private[akka] case object Select
 }
 
 /**
@@ -922,6 +929,7 @@ object IOManager extends ExtensionId[IOManager] with ExtensionIdProvider {
 final class IOManagerActor(val settings: Settings) extends Actor with ActorLogging {
   import SelectionKey.{ OP_READ, OP_WRITE, OP_ACCEPT, OP_CONNECT }
   import settings.{ defaultBacklog, selectInterval, readBufferSize }
+  import IOManager.Select
 
   private type ReadChannel = ReadableByteChannel with SelectableChannel
   private type WriteChannel = WritableByteChannel with SelectableChannel
@@ -955,9 +963,6 @@ final class IOManagerActor(val settings: Settings) extends Actor with ActorLoggi
    * when there are no pending events.
    */
   private var fastSelect = false
-
-  /** unique message that is sent to ourself to initiate the next select */
-  private case object Select
 
   /** This method should be called after receiving any message */
   private def run() {
@@ -1038,10 +1043,10 @@ final class IOManagerActor(val settings: Settings) extends Actor with ActorLoggi
         channel register (selector, OP_ACCEPT, server)
         server.owner ! IO.Listening(server, sock.getLocalSocketAddress())
       } catch {
-        case NonFatal(e) ⇒ {
-          channel close ()
-          sender ! Status.Failure(e)
-        }
+        case NonFatal(e) ⇒
+          try { channel close () } finally {
+            sender ! Status.Failure(new AkkaException(s"Failed to listen to [${address}], due to [${e.getMessage}]", e))
+          }
       }
       run()
 
@@ -1054,10 +1059,10 @@ final class IOManagerActor(val settings: Settings) extends Actor with ActorLoggi
         channels update (socket, channel)
         channel register (selector, OP_CONNECT | OP_READ, socket)
       } catch {
-        case NonFatal(e) ⇒ {
-          channel close ()
-          sender ! Status.Failure(e)
-        }
+        case NonFatal(e) ⇒
+          try { channel close () } finally {
+            sender ! Status.Failure(e)
+          }
       }
       run()
 

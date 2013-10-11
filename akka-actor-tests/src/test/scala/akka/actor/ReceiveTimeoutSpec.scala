@@ -11,8 +11,13 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Await
 import java.util.concurrent.TimeoutException
 
+object ReceiveTimeoutSpec {
+  case object Tick
+}
+
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ReceiveTimeoutSpec extends AkkaSpec {
+  import ReceiveTimeoutSpec._
 
   "An actor with receive timeout" must {
 
@@ -33,7 +38,6 @@ class ReceiveTimeoutSpec extends AkkaSpec {
 
     "reschedule timeout after regular receive" in {
       val timeoutLatch = TestLatch()
-      case object Tick
 
       val timeoutActor = system.actorOf(Props(new Actor {
         context.setReceiveTimeout(500 milliseconds)
@@ -53,7 +57,6 @@ class ReceiveTimeoutSpec extends AkkaSpec {
     "be able to turn off timeout if desired" in {
       val count = new AtomicInteger(0)
       val timeoutLatch = TestLatch()
-      case object Tick
 
       val timeoutActor = system.actorOf(Props(new Actor {
         context.setReceiveTimeout(500 milliseconds)

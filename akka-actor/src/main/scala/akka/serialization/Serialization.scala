@@ -5,13 +5,14 @@
 package akka.serialization
 
 import com.typesafe.config.Config
-import akka.actor.{ Extension, ExtendedActorSystem, Address }
+import akka.actor._
 import akka.event.Logging
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable.ArrayBuffer
 import java.io.NotSerializableException
-import scala.util.{ Try, DynamicVariable }
+import scala.util.{ Try, DynamicVariable, Failure }
 import scala.collection.immutable
+import scala.util.control.NonFatal
 
 object Serialization {
 
@@ -21,10 +22,11 @@ object Serialization {
   type ClassSerializer = (Class[_], Serializer)
 
   /**
-   * This holds a reference to the current transport address to be inserted
-   * into local actor refs during serialization.
+   * This holds a reference to the current transport serialization information used for
+   * serializing local actor refs.
+   * INTERNAL API
    */
-  val currentTransportAddress = new DynamicVariable[Address](null)
+  private[akka] val currentTransportInformation = new DynamicVariable[Information](null)
 
   class Settings(val config: Config) {
     val Serializers: Map[String, String] = configToMap("akka.actor.serializers")
@@ -33,6 +35,40 @@ object Serialization {
     private final def configToMap(path: String): Map[String, String] = {
       import scala.collection.JavaConverters._
       config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) ⇒ (k -> v.toString) }
+    }
+  }
+
+  /**
+   * Serialization information needed for serializing local actor refs.
+   * INTERNAL API
+   */
+  private[akka] case class Information(address: Address, system: ActorSystem)
+
+  /**
+   * The serialized path of an actorRef, based on the current transport serialization information.
+   * If there is no external address available for the requested address then the systems default
+   * address will be used.
+   */
+  def serializedActorPath(actorRef: ActorRef): String = {
+    val path = actorRef.path
+    val originalSystem: ExtendedActorSystem = actorRef match {
+      case a: ActorRefWithCell ⇒ a.underlying.system.asInstanceOf[ExtendedActorSystem]
+      case _                   ⇒ null
+    }
+    Serialization.currentTransportInformation.value match {
+      case null ⇒ originalSystem match {
+        case null ⇒ path.toSerializationFormat
+        case system ⇒
+          try path.toSerializationFormatWithAddress(system.provider.getDefaultAddress)
+          catch { case NonFatal(_) ⇒ path.toSerializationFormat }
+      }
+      case Information(address, system) ⇒
+        if (originalSystem == null || originalSystem == system)
+          path.toSerializationFormatWithAddress(address)
+        else {
+          val provider = originalSystem.provider
+          path.toSerializationFormatWithAddress(provider.getExternalAddressFor(address).getOrElse(provider.getDefaultAddress))
+        }
     }
   }
 }
@@ -59,7 +95,14 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * Returns either the resulting object or an Exception if one was thrown.
    */
   def deserialize[T](bytes: Array[Byte], serializerId: Int, clazz: Option[Class[_ <: T]]): Try[T] =
-    Try(serializerByIdentity(serializerId).fromBinary(bytes, clazz).asInstanceOf[T])
+    Try {
+      val serializer = try serializerByIdentity(serializerId) catch {
+        case _: NoSuchElementException ⇒ throw new NotSerializableException(
+          s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
+            "akka.actor.serializers is not in synch between the two systems.")
+      }
+      serializer.fromBinary(bytes, clazz).asInstanceOf[T]
+    }
 
   /**
    * Deserializes the given array of bytes using the specified type to look up what Serializer should be used.
@@ -106,7 +149,9 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
             possibilities(0)._2
         }
         serializerMap.putIfAbsent(clazz, ser) match {
-          case null ⇒ log.debug("Using serializer[{}] for message [{}]", ser.getClass.getName, clazz.getName); ser
+          case null ⇒
+            log.debug("Using serializer[{}] for message [{}]", ser.getClass.getName, clazz.getName)
+            ser
           case some ⇒ some
         }
       case ser ⇒ ser

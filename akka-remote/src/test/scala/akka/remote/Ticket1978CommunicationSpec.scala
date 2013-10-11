@@ -44,6 +44,7 @@ object Configuration {
           trust-store = "%s"
           key-store = "%s"
           key-store-password = "changeme"
+          key-password = "changeme"
           trust-store-password = "changeme"
           protocol = "TLSv1"
           random-number-generator = "%s"
@@ -128,8 +129,7 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
 
   override def afterTermination() {
     if (cipherConfig.runTest) {
-      other.shutdown()
-      other.awaitTermination()
+      shutdown(other)
     }
   }
 
@@ -139,7 +139,10 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
       val otherAddress = other.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.defaultAddress
 
       "support tell" in {
-        val here = system.actorFor(otherAddress.toString + "/user/echo")
+        val here = {
+          system.actorSelection(otherAddress.toString + "/user/echo") ! Identify(None)
+          expectMsgType[ActorIdentity].ref.get
+        }
 
         for (i ← 1 to 1000) here ! (("ping", i))
         for (i ← 1 to 1000) expectMsgPF(timeout.duration) { case (("pong", i), `testActor`) ⇒ true }
@@ -147,7 +150,10 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
 
       "support ask" in {
         import system.dispatcher
-        val here = system.actorFor(otherAddress.toString + "/user/echo")
+        val here = {
+          system.actorSelection(otherAddress.toString + "/user/echo") ! Identify(None)
+          expectMsgType[ActorIdentity].ref.get
+        }
 
         val f = for (i ← 1 to 1000) yield here ? (("ping", i)) mapTo classTag[((String, Int), ActorRef)]
         Await.result(Future.sequence(f), timeout.duration).map(_._1._1).toSet must be(Set("pong"))

@@ -16,13 +16,13 @@ class CreationApplication extends Bootable {
   //#setup
   val system =
     ActorSystem("RemoteCreation", ConfigFactory.load.getConfig("remotecreation"))
-  val localActor = system.actorOf(Props[CreationActor], "creationActor")
-  val remoteActor =
-    system.actorOf(Props[AdvancedCalculatorActor], "advancedCalculator")
+  val remoteActor = system.actorOf(Props[AdvancedCalculatorActor],
+    name = "advancedCalculator")
+  val localActor = system.actorOf(Props(classOf[CreationActor], remoteActor),
+    name = "creationActor")
 
-  def doSomething(op: MathOp) = {
-    localActor ! (remoteActor, op)
-  }
+  def doSomething(op: MathOp): Unit =
+    localActor ! op
   //#setup
 
   def startup() {
@@ -34,14 +34,14 @@ class CreationApplication extends Bootable {
 }
 
 //#actor
-class CreationActor extends Actor {
+class CreationActor(remoteActor: ActorRef) extends Actor {
   def receive = {
-    case (actor: ActorRef, op: MathOp) ⇒ actor ! op
+    case op: MathOp ⇒ remoteActor ! op
     case result: MathResult ⇒ result match {
       case MultiplicationResult(n1, n2, r) ⇒
-        println("Mul result: %d * %d = %d".format(n1, n2, r))
+        printf("Mul result: %d * %d = %d\n", n1, n2, r)
       case DivisionResult(n1, n2, r) ⇒
-        println("Div result: %.0f / %d = %.2f".format(n1, n2, r))
+        printf("Div result: %.0f / %d = %.2f\n", n1, n2, r)
     }
   }
 }

@@ -61,7 +61,7 @@ abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
 
       runOn(first) {
         // kill 'third' node
-        testConductor.shutdown(third, 0).await
+        testConductor.exit(third, 0).await
         markNodeAsUnavailable(thirdAddress)
       }
 
@@ -69,13 +69,12 @@ abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
 
         within(28 seconds) {
           // third becomes unreachable
-          awaitCond(clusterView.unreachableMembers.size == 1)
-          awaitCond(clusterView.members.size == 2)
-          awaitCond(clusterView.members.forall(_.status == MemberStatus.Up))
+          awaitAssert(clusterView.unreachableMembers.size must be(1))
           awaitSeenSameState(first, second)
           // still one unreachable
           clusterView.unreachableMembers.size must be(1)
           clusterView.unreachableMembers.head.address must be(thirdAddress)
+          clusterView.members.size must be(3)
 
         }
       }
@@ -92,33 +91,15 @@ abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
       def memberStatus(address: Address): Option[MemberStatus] =
         clusterView.members.collectFirst { case m if m.address == address ⇒ m.status }
 
-      def assertNotMovedUp(joining: Boolean): Unit = {
-        within(20 seconds) {
-          if (joining) awaitCond(clusterView.members.size == 0)
-          else awaitCond(clusterView.members.size == 2)
-          awaitSeenSameState(first, second, fourth)
-          if (joining) memberStatus(first) must be(None)
-          else memberStatus(first) must be(Some(MemberStatus.Up))
-          if (joining) memberStatus(second) must be(None)
-          else memberStatus(second) must be(Some(MemberStatus.Up))
-          // leader is not allowed to move the new node to Up
-          memberStatus(fourth) must be(None)
-        }
-      }
-
       enterBarrier("after-join")
 
-      runOn(first, second) {
+      runOn(first, second, fourth) {
         for (n ← 1 to 5) {
-          assertNotMovedUp(joining = false)
-          // wait and then check again
-          Thread.sleep(1.second.dilated.toMillis)
-        }
-      }
-
-      runOn(fourth) {
-        for (n ← 1 to 5) {
-          assertNotMovedUp(joining = true)
+          awaitAssert(clusterView.members.size must be(3))
+          awaitSeenSameState(first, second, fourth)
+          memberStatus(first) must be(Some(MemberStatus.Up))
+          memberStatus(second) must be(Some(MemberStatus.Up))
+          memberStatus(fourth) must be(None)
           // wait and then check again
           Thread.sleep(1.second.dilated.toMillis)
         }

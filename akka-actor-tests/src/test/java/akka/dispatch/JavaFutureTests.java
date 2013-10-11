@@ -1,16 +1,14 @@
 package akka.dispatch;
 
-import akka.util.Timeout;
+import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.actor.ActorSystem;
 
 import akka.japi.*;
+import org.junit.ClassRule;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.Promise;
 import scala.concurrent.duration.Duration;
-import akka.testkit.TestKitExtension;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -26,22 +24,12 @@ import akka.testkit.AkkaSpec;
 
 public class JavaFutureTests {
 
-  private static ActorSystem system;
-  private static Timeout t;
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("JavaFutureTests", AkkaSpec.testConf());
 
+  private final ActorSystem system = actorSystemResource.getSystem();
   private final Duration timeout = Duration.create(5, TimeUnit.SECONDS);
-
-  @BeforeClass
-  public static void beforeAll() {
-    system = ActorSystem.create("JavaFutureTests", AkkaSpec.testConf());
-    t = TestKitExtension.get(system).DefaultTimeout();
-  }
-
-  @AfterClass
-  public static void afterAll() {
-    system.shutdown();
-    system = null;
-  }
 
   @Test
   public void mustBeAbleToMapAFuture() throws Exception {

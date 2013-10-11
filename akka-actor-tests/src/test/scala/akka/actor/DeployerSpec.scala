@@ -25,6 +25,12 @@ object DeployerSpec {
           # nr-of-instances ignored when router = from-code
           nr-of-instances = 2
         }
+        /service3 {
+          dispatcher = my-dispatcher
+        }
+        /service4 {
+          mailbox = my-mailbox
+        }
         /service-round-robin {
           router = round-robin
         }
@@ -70,20 +76,49 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
     "be able to parse 'akka.actor.deployment._' with all default values" in {
       val service = "/service1"
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
-      deployment must be('defined)
 
       deployment must be(Some(
         Deploy(
           service,
           deployment.get.config,
           NoRouter,
-          NoScopeGiven)))
+          NoScopeGiven,
+          Deploy.NoDispatcherGiven,
+          Deploy.NoMailboxGiven)))
     }
 
     "use None deployment for undefined service" in {
       val service = "/undefined"
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
       deployment must be(None)
+    }
+
+    "be able to parse 'akka.actor.deployment._' with dispatcher config" in {
+      val service = "/service3"
+      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
+
+      deployment must be(Some(
+        Deploy(
+          service,
+          deployment.get.config,
+          NoRouter,
+          NoScopeGiven,
+          dispatcher = "my-dispatcher",
+          Deploy.NoMailboxGiven)))
+    }
+
+    "be able to parse 'akka.actor.deployment._' with mailbox config" in {
+      val service = "/service4"
+      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
+
+      deployment must be(Some(
+        Deploy(
+          service,
+          deployment.get.config,
+          NoRouter,
+          NoScopeGiven,
+          Deploy.NoDispatcherGiven,
+          mailbox = "my-mailbox")))
     }
 
     "detect invalid number-of-instances" in {
@@ -97,8 +132,25 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
             }
             """, ConfigParseOptions.defaults).withFallback(AkkaSpec.testConf)
 
-        ActorSystem("invalid", invalidDeployerConf).shutdown()
+        shutdown(ActorSystem("invalid-number-of-instances", invalidDeployerConf))
       }
+    }
+
+    "detect invalid deployment path" in {
+      val e = intercept[InvalidActorNameException] {
+        val invalidDeployerConf = ConfigFactory.parseString("""
+            akka.actor.deployment {
+              /gul/ubåt {
+                router = round-robin
+                nr-of-instances = 2
+              }
+            }
+            """, ConfigParseOptions.defaults).withFallback(AkkaSpec.testConf)
+
+        shutdown(ActorSystem("invalid-path", invalidDeployerConf))
+      }
+      e.getMessage must include("[ubåt]")
+      e.getMessage must include("[/gul/ubåt]")
     }
 
     "be able to parse 'akka.actor.deployment._' with from-code router" in {

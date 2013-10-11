@@ -23,7 +23,7 @@ object TestActivators {
 class PingPongActorSystemActivator extends ActorSystemActivator {
 
   def configure(context: BundleContext, system: ActorSystem) {
-    system.actorOf(Props(new PongActor), name = "pong")
+    system.actorOf(Props[PongActor], name = "pong")
     registerService(context, system)
   }
 

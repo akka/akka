@@ -84,7 +84,9 @@ For the pdf version of the docs::
 
     sbt sphinx:generate-pdf
 
-    open <project-dir>/akka-docs/target/sphinx/latex/Akka.pdf
+    open <project-dir>/akka-docs/target/sphinx/latex/AkkaJava.pdf
+    or
+    open <project-dir>/akka-docs/target/sphinx/latex/AkkaScala.pdf
 
 Installing Sphinx on OS X
 -------------------------

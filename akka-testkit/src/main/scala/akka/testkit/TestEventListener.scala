@@ -4,18 +4,18 @@
 package akka.testkit
 
 import language.existentials
-
 import scala.util.matching.Regex
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 import akka.actor.{ DeadLetter, ActorSystem, Terminated, UnhandledMessage }
-import akka.dispatch.{ SystemMessage, Terminate }
+import akka.dispatch.sysmsg.{ SystemMessage, Terminate }
 import akka.event.Logging.{ Warning, LogEvent, InitializeLogger, Info, Error, Debug, LoggerInitialized }
 import akka.event.Logging
 import akka.actor.NoSerializationVerificationNeeded
 import akka.japi.Util.immutableSeq
 import java.lang.{ Iterable ⇒ JIterable }
+import akka.util.BoxedType
 
 /**
  * Implementation helpers of the EventFilter facilities: send `Mute`
@@ -43,7 +43,7 @@ object TestEvent {
   }
   case class Mute(filters: immutable.Seq[EventFilter]) extends TestEvent with NoSerializationVerificationNeeded {
     /**
-     * Java API
+     * Java API: create a Mute command from a list of filters
      */
     def this(filters: JIterable[EventFilter]) = this(immutableSeq(filters))
   }
@@ -52,7 +52,7 @@ object TestEvent {
   }
   case class UnMute(filters: immutable.Seq[EventFilter]) extends TestEvent with NoSerializationVerificationNeeded {
     /**
-     * Java API
+     * Java API: create an UnMute command from a list of filters
      */
     def this(filters: JIterable[EventFilter]) = this(immutableSeq(filters))
   }
@@ -277,7 +277,7 @@ case class ErrorFilter(
   }
 
   /**
-   * Java API
+   * Java API: create an ErrorFilter
    *
    * @param source
    *   apply this filter only to events from the given source; do not filter on source if this is given as <code>null</code>
@@ -326,7 +326,7 @@ case class WarningFilter(
   }
 
   /**
-   * Java API
+   * Java API: create a WarningFilter
    *
    * @param source
    *   apply this filter only to events from the given source; do not filter on source if this is given as <code>null</code>
@@ -369,7 +369,7 @@ case class InfoFilter(
   }
 
   /**
-   * Java API
+   * Java API: create an InfoFilter
    *
    * @param source
    *   apply this filter only to events from the given source; do not filter on source if this is given as <code>null</code>
@@ -412,7 +412,7 @@ case class DebugFilter(
   }
 
   /**
-   * Java API
+   * Java API: create a DebugFilter
    *
    * @param source
    *   apply this filter only to events from the given source; do not filter on source if this is given as <code>null</code>
@@ -445,6 +445,25 @@ case class CustomEventFilter(test: PartialFunction[LogEvent, Boolean])(occurrenc
   }
 }
 
+object DeadLettersFilter {
+  def apply[T](implicit t: ClassTag[T]): DeadLettersFilter =
+    new DeadLettersFilter(t.runtimeClass.asInstanceOf[Class[T]])(Int.MaxValue)
+}
+/**
+ * Filter which matches DeadLetter events, if the wrapped message conforms to the
+ * given type.
+ */
+case class DeadLettersFilter(val messageClass: Class[_])(occurrences: Int) extends EventFilter(occurrences) {
+
+  def matches(event: LogEvent) = {
+    event match {
+      case Warning(_, _, msg) ⇒ BoxedType(messageClass) isInstance msg
+      case _                  ⇒ false
+    }
+  }
+
+}
+
 /**
  * EventListener for running tests, which allows selectively filtering out
  * expected messages. To use it, include something like this into
@@ -469,15 +488,16 @@ class TestEventListener extends Logging.DefaultLogger {
     case Mute(filters)   ⇒ filters foreach addFilter
     case UnMute(filters) ⇒ filters foreach removeFilter
     case event: LogEvent ⇒ if (!filter(event)) print(event)
-    case DeadLetter(msg: SystemMessage, _, rcp) ⇒
-      if (!msg.isInstanceOf[Terminate]) {
-        val event = Warning(rcp.path.toString, rcp.getClass, "received dead system message: " + msg)
-        if (!filter(event)) print(event)
-      }
     case DeadLetter(msg, snd, rcp) ⇒
-      if (!msg.isInstanceOf[Terminated]) {
-        val event = Warning(rcp.path.toString, rcp.getClass, "received dead letter from " + snd + ": " + msg)
-        if (!filter(event)) print(event)
+      if (!msg.isInstanceOf[Terminate]) {
+        val event = Warning(rcp.path.toString, rcp.getClass, msg)
+        if (!filter(event)) {
+          val msgStr =
+            if (msg.isInstanceOf[SystemMessage]) "received dead system message: " + msg
+            else "received dead letter from " + snd + ": " + msg
+          val event2 = Warning(rcp.path.toString, rcp.getClass, msgStr)
+          if (!filter(event2)) print(event2)
+        }
       }
     case UnhandledMessage(msg, sender, rcp) ⇒
       val event = Warning(rcp.path.toString, rcp.getClass, "unhandled message from " + sender + ": " + msg)

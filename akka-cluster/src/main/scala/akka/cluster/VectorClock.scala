@@ -5,81 +5,30 @@
 package akka.cluster
 
 import akka.AkkaException
-import akka.event.Logging
-import akka.actor.ActorSystem
 
 import System.{ currentTimeMillis ⇒ newTimestamp }
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicLong
-
-class VectorClockException(message: String) extends AkkaException(message)
-
-/**
- * Trait to be extended by classes that wants to be versioned using a VectorClock.
- */
-trait Versioned[T] {
-  def version: VectorClock
-  def :+(node: VectorClock.Node): T
-}
-
-/**
- * Utility methods for comparing Versioned instances.
- */
-object Versioned {
-
-  /**
-   * The result of comparing two Versioned objects.
-   * Either:
-   * {{{
-   *   1) v1 is BEFORE v2               => Before
-   *   2) v1 is AFTER t2                => After
-   *   3) v1 happens CONCURRENTLY to v2 => Concurrent
-   * }}}
-   */
-  sealed trait Ordering
-  case object Before extends Ordering
-  case object After extends Ordering
-  case object Concurrent extends Ordering
-
-  /**
-   * Returns or 'Ordering' for the two 'Versioned' instances.
-   */
-  def compare[T <: Versioned[T]](versioned1: Versioned[T], versioned2: Versioned[T]): Ordering = {
-    if (versioned1.version <> versioned2.version) Concurrent
-    else if (versioned1.version < versioned2.version) Before
-    else After
-  }
-
-  /**
-   * Returns the Versioned that have the latest version.
-   */
-  def latestVersionOf[T <: Versioned[T]](versioned1: T, versioned2: T): T = {
-    compare(versioned1, versioned2) match {
-      case Concurrent ⇒ versioned2
-      case Before     ⇒ versioned2
-      case After      ⇒ versioned1
-    }
-  }
-}
+import scala.collection.immutable.TreeMap
+import scala.annotation.tailrec
 
 /**
  * VectorClock module with helper classes and methods.
  *
  * Based on code from the 'vlock' VectorClock library by Coda Hale.
  */
-object VectorClock {
+private[cluster] object VectorClock {
 
   /**
    * Hash representation of a versioned node name.
    */
-  sealed trait Node extends Serializable
+  type Node = String
 
   object Node {
-    private case class NodeImpl(name: String) extends Node {
-      override def toString(): String = "Node(" + name + ")"
-    }
 
-    def apply(name: String): Node = NodeImpl(hash(name))
+    def apply(name: String): Node = hash(name)
+
+    def fromHash(hash: String): Node = hash
 
     private def hash(name: String): String = {
       val digester = MessageDigest.getInstance("MD5")
@@ -88,38 +37,26 @@ object VectorClock {
     }
   }
 
-  /**
-   * Timestamp representation a unique 'Ordered' timestamp.
-   */
-  case class Timestamp private (time: Long) extends Ordered[Timestamp] {
-    def max(other: Timestamp) = {
-      if (this < other) other
-      else this
-    }
-
-    def compare(other: Timestamp) = time compare other.time
-
-    override def toString = "%016x" format time
-  }
-
   object Timestamp {
-    private val counter = new AtomicLong(newTimestamp)
-
-    val zero: Timestamp = Timestamp(0L)
-
-    def apply(): Timestamp = {
-      var newTime: Long = 0L
-      while (newTime == 0) {
-        val last = counter.get
-        val current = newTimestamp
-        val next = if (current > last) current else last + 1
-        if (counter.compareAndSet(last, next)) {
-          newTime = next
-        }
-      }
-      new Timestamp(newTime)
-    }
+    final val Zero = 0L
+    final val EndMarker = Long.MinValue
   }
+
+  sealed trait Ordering
+  case object After extends Ordering
+  case object Before extends Ordering
+  case object Same extends Ordering
+  case object Concurrent extends Ordering
+  /**
+   * Marker to ensure that we do a full order comparison instead of bailing out early.
+   */
+  private case object FullOrder extends Ordering
+
+  /**
+   * Marker to signal that we have reached the end of a vector clock.
+   */
+  private val cmpEndMarker = (VectorClock.Node("endmarker"), Timestamp.EndMarker)
+
 }
 
 /**
@@ -132,62 +69,122 @@ object VectorClock {
  *
  * Based on code from the 'vlock' VectorClock library by Coda Hale.
  */
+@SerialVersionUID(1L)
 case class VectorClock(
-  timestamp: VectorClock.Timestamp = VectorClock.Timestamp(),
-  versions: Map[VectorClock.Node, VectorClock.Timestamp] = Map.empty[VectorClock.Node, VectorClock.Timestamp])
-  extends PartiallyOrdered[VectorClock] {
+  versions: TreeMap[VectorClock.Node, Long] = TreeMap.empty[VectorClock.Node, Long]) {
 
   import VectorClock._
 
   /**
    * Increment the version for the node passed as argument. Returns a new VectorClock.
    */
-  def :+(node: Node): VectorClock = copy(versions = versions + (node -> Timestamp()))
+  def :+(node: Node): VectorClock = {
+    val currentTimestamp = versions.getOrElse(node, Timestamp.Zero)
+    copy(versions = versions.updated(node, currentTimestamp + 1))
+  }
 
   /**
    * Returns true if <code>this</code> and <code>that</code> are concurrent else false.
    */
-  def <>(that: VectorClock): Boolean = tryCompareTo(that) == None
+  def <>(that: VectorClock): Boolean = compareOnlyTo(that, Concurrent) eq Concurrent
+
+  /**
+   * Returns true if <code>this</code> is before <code>that</code> else false.
+   */
+  def <(that: VectorClock): Boolean = compareOnlyTo(that, Before) eq Before
+
+  /**
+   * Returns true if <code>this</code> is after <code>that</code> else false.
+   */
+  def >(that: VectorClock): Boolean = compareOnlyTo(that, After) eq After
 
   /**
    * Returns true if this VectorClock has the same history as the 'that' VectorClock else false.
    */
-  def ==(that: VectorClock): Boolean = versions == that.versions
+  def ==(that: VectorClock): Boolean = compareOnlyTo(that, Same) eq Same
 
   /**
-   * For the 'PartiallyOrdered' trait, to allow natural comparisons using <, > and ==.
-   * <p/>
-   * Compare two vector clocks. The outcomes will be one of the following:
+   * Vector clock comparison according to the semantics described by compareTo, with the ability to bail
+   * out early if the we can't reach the Ordering that we are looking for.
+   *
+   * The ordering always starts with Same and can then go to Same, Before or After
+   * If we're on After we can only go to After or Concurrent
+   * If we're on Before we can only go to Before or Concurrent
+   * If we go to Concurrent we exit the loop immediately
+   *
+   * If you send in the ordering FullOrder, you will get a full comparison.
+   */
+  private final def compareOnlyTo(that: VectorClock, order: Ordering): Ordering = {
+    def nextOrElse[T](iter: Iterator[T], default: T): T = if (iter.hasNext) iter.next() else default
+
+    def compare(i1: Iterator[(Node, Long)], i2: Iterator[(Node, Long)], requestedOrder: Ordering): Ordering = {
+      @tailrec
+      def compareNext(nt1: (Node, Long), nt2: (Node, Long), currentOrder: Ordering): Ordering =
+        if ((requestedOrder ne FullOrder) && (currentOrder ne Same) && (currentOrder ne requestedOrder)) currentOrder
+        else if ((nt1 eq cmpEndMarker) && (nt2 eq cmpEndMarker)) currentOrder
+        // i1 is empty but i2 is not, so i1 can only be Before
+        else if (nt1 eq cmpEndMarker) { if (currentOrder eq After) Concurrent else Before }
+        // i2 is empty but i1 is not, so i1 can only be After
+        else if (nt2 eq cmpEndMarker) { if (currentOrder eq Before) Concurrent else After }
+        else {
+          // compare the nodes
+          val nc = nt1._1 compareTo nt2._1
+          if (nc == 0) {
+            // both nodes exist compare the timestamps
+            // same timestamp so just continue with the next nodes
+            if (nt1._2 == nt2._2) compareNext(nextOrElse(i1, cmpEndMarker), nextOrElse(i2, cmpEndMarker), currentOrder)
+            else if (nt1._2 < nt2._2) {
+              // t1 is less than t2, so i1 can only be Before
+              if (currentOrder eq After) Concurrent
+              else compareNext(nextOrElse(i1, cmpEndMarker), nextOrElse(i2, cmpEndMarker), Before)
+            } else {
+              // t2 is less than t1, so i1 can only be After
+              if (currentOrder eq Before) Concurrent
+              else compareNext(nextOrElse(i1, cmpEndMarker), nextOrElse(i2, cmpEndMarker), After)
+            }
+          } else if (nc < 0) {
+            // this node only exists in i1 so i1 can only be After
+            if (currentOrder eq Before) Concurrent
+            else compareNext(nextOrElse(i1, cmpEndMarker), nt2, After)
+          } else {
+            // this node only exists in i2 so i1 can only be Before
+            if (currentOrder eq After) Concurrent
+            else compareNext(nt1, nextOrElse(i2, cmpEndMarker), Before)
+          }
+        }
+
+      compareNext(nextOrElse(i1, cmpEndMarker), nextOrElse(i2, cmpEndMarker), Same)
+    }
+
+    if ((this eq that) || (this.versions eq that.versions)) Same
+    else compare(this.versions.iterator, that.versions.iterator, if (order eq Concurrent) FullOrder else order)
+  }
+
+  /**
+   * Compare two vector clocks. The outcome will be one of the following:
    * <p/>
    * {{{
-   *   1. Clock 1 is BEFORE (>)      Clock 2 if there exists an i such that c1(i) <= c2(i) and there does not exist a j such that c1(j) > c2(j).
-   *   2. Clock 1 is CONCURRENT (<>) to Clock 2 if there exists an i, j such that c1(i) < c2(i) and c1(j) > c2(j).
-   *   3. Clock 1 is AFTER (<)       Clock 2 otherwise.
+   *   1. Clock 1 is SAME (==)       as Clock 2 iff for all i c1(i) == c2(i)
+   *   2. Clock 1 is BEFORE (<)      Clock 2 iff for all i c1(i) <= c2(i) and there exist a j such that c1(j) < c2(j)
+   *   3. Clock 1 is AFTER (>)       Clock 2 iff for all i c1(i) >= c2(i) and there exist a j such that c1(j) > c2(j).
+   *   4. Clock 1 is CONCURRENT (<>) to Clock 2 otherwise.
    * }}}
    */
-  def tryCompareTo[V >: VectorClock <% PartiallyOrdered[V]](vclock: V): Option[Int] = {
-    def compare(versions1: Map[Node, Timestamp], versions2: Map[Node, Timestamp]): Boolean = {
-      versions1.forall { case ((n, t)) ⇒ t <= versions2.getOrElse(n, Timestamp.zero) } &&
-        (versions1.exists { case ((n, t)) ⇒ t < versions2.getOrElse(n, Timestamp.zero) } ||
-          (versions1.size < versions2.size))
-    }
-    vclock match {
-      case VectorClock(_, otherVersions) ⇒
-        if (compare(versions, otherVersions)) Some(-1)
-        else if (compare(otherVersions, versions)) Some(1)
-        else if (versions == otherVersions) Some(0)
-        else None
-      case _ ⇒ None
-    }
+  def compareTo(that: VectorClock): Ordering = {
+    compareOnlyTo(that, FullOrder)
   }
 
   /**
    * Merges this VectorClock with another VectorClock. E.g. merges its versioned history.
    */
   def merge(that: VectorClock): VectorClock = {
-    val mergedVersions = scala.collection.mutable.Map.empty[Node, Timestamp] ++ that.versions
-    for ((node, time) ← versions) mergedVersions(node) = time max mergedVersions.getOrElse(node, time)
-    VectorClock(timestamp, Map.empty[Node, Timestamp] ++ mergedVersions)
+    var mergedVersions = that.versions
+    for ((node, time) ← versions) {
+      val mergedVersionsCurrentTime = mergedVersions.getOrElse(node, Timestamp.Zero)
+      if (time > mergedVersionsCurrentTime)
+        mergedVersions = mergedVersions.updated(node, time)
+    }
+    VectorClock(mergedVersions)
   }
 
   override def toString = versions.map { case ((n, t)) ⇒ n + " -> " + t }.mkString("VectorClock(", ", ", ")")

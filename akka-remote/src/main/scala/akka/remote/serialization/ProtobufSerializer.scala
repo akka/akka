@@ -4,12 +4,10 @@
 
 package akka.remote.serialization
 
+import akka.actor.{ ExtendedActorSystem, ActorRef }
+import akka.remote.WireFormats.ActorRefData
 import akka.serialization.{ Serializer, Serialization }
 import com.google.protobuf.Message
-import akka.actor.DynamicAccess
-import akka.remote.RemoteProtocol.ActorRefProtocol
-import akka.actor.ActorSystem
-import akka.actor.ActorRef
 
 object ProtobufSerializer {
 
@@ -17,12 +15,8 @@ object ProtobufSerializer {
    * Helper to serialize an [[akka.actor.ActorRef]] to Akka's
    * protobuf representation.
    */
-  def serializeActorRef(ref: ActorRef): ActorRefProtocol = {
-    val identifier: String = Serialization.currentTransportAddress.value match {
-      case null    ⇒ ref.path.toString
-      case address ⇒ ref.path.toStringWithAddress(address)
-    }
-    ActorRefProtocol.newBuilder.setPath(identifier).build
+  def serializeActorRef(ref: ActorRef): ActorRefData = {
+    ActorRefData.newBuilder.setPath(Serialization.serializedActorPath(ref)).build
   }
 
   /**
@@ -30,8 +24,8 @@ object ProtobufSerializer {
    * from Akka's protobuf representation in the supplied
    * [[akka.actor.ActorSystem]].
    */
-  def deserializeActorRef(system: ActorSystem, refProtocol: ActorRefProtocol): ActorRef =
-    system.actorFor(refProtocol.getPath)
+  def deserializeActorRef(system: ExtendedActorSystem, refProtocol: ActorRefData): ActorRef =
+    system.provider.resolveActorRef(refProtocol.getPath)
 }
 
 /**

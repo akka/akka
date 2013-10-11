@@ -23,7 +23,7 @@ object PatternSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class PatternSpec extends AkkaSpec {
+class PatternSpec extends AkkaSpec("akka.actor.serialize-messages = off") {
   implicit val ec = system.dispatcher
   import PatternSpec._
 
@@ -44,7 +44,7 @@ class PatternSpec extends AkkaSpec {
     "complete Future with AskTimeoutException when actor not terminated within timeout" in {
       val target = system.actorOf(Props[TargetActor])
       val latch = TestLatch()
-      target ! (latch, remaining)
+      target ! ((latch, remaining))
       intercept[AskTimeoutException] { Await.result(gracefulStop(target, 500 millis), remaining) }
       latch.open()
     }

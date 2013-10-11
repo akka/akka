@@ -1,34 +1,43 @@
 package akka.actor;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import akka.testkit.TestProbe;
 
-import com.typesafe.config.ConfigFactory;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 public class StashJavaAPI {
 
-  private static ActorSystem system;
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("StashJavaAPI", ActorWithBoundedStashSpec.testConf());
 
-  @BeforeClass
-  public static void beforeAll() {
-    system = ActorSystem.create("StashJavaAPI",
-        ConfigFactory.parseString(ActorWithStashSpec.testConf()));
-  }
+  private final ActorSystem system = actorSystemResource.getSystem();
 
-  @AfterClass
-  public static void afterAll() {
-    system.shutdown();
-    system = null;
+  private void testAStashApi(Props props) {
+      ActorRef ref = system.actorOf(props);
+      final TestProbe probe = new TestProbe(system);
+      probe.send(ref, "Hello");
+      probe.send(ref, "Hello2");
+      probe.send(ref, "Hello12");
+      probe.expectMsg(5);
   }
 
   @Test
   public void mustBeAbleToUseStash() {
-    ActorRef ref = system.actorOf(new Props(StashJavaAPITestActor.class)
-        .withDispatcher("my-dispatcher"));
-    ref.tell("Hello", ref);
-    ref.tell("Hello", ref);
-    ref.tell(new Object(), null);
+    testAStashApi(Props.create(StashJavaAPITestActors.WithStash.class));
   }
+
+  @Test
+  public void mustBeAbleToUseUnboundedStash() {
+    testAStashApi(Props.create(StashJavaAPITestActors.WithUnboundedStash.class));
+  }
+
+  @Test
+  public void mustBeAbleToUseUnrestrictedStash() {
+    testAStashApi(Props.create(StashJavaAPITestActors.WithUnrestrictedStash.class)
+            .withMailbox("akka.actor.mailbox.unbounded-deque-based"));
+  }
+
 
 }

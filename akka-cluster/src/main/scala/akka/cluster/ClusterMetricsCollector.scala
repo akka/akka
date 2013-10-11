@@ -46,7 +46,8 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   import context.dispatcher
   val cluster = Cluster(context.system)
   import cluster.{ selfAddress, scheduler, settings }
-  import settings._
+  import cluster.settings._
+  import cluster.InfoLogger._
 
   /**
    * The node ring gossipped that contains only members that are Up.
@@ -76,22 +77,22 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
     MetricsInterval, self, MetricsTick)
 
   override def preStart(): Unit = {
-    cluster.subscribe(self, classOf[InstantMemberEvent])
-    cluster.subscribe(self, classOf[UnreachableMember])
-    log.info("Metrics collection has started successfully on node [{}]", selfAddress)
+    cluster.subscribe(self, classOf[MemberEvent])
+    cluster.subscribe(self, classOf[ReachabilityEvent])
+    logInfo("Metrics collection has started successfully")
   }
 
   def receive = {
     case GossipTick                 ⇒ gossip()
     case MetricsTick                ⇒ collect()
     case msg: MetricsGossipEnvelope ⇒ receiveGossip(msg)
-    case state: InstantClusterState ⇒ receiveState(state)
-    case state: CurrentClusterState ⇒ // enough with InstantClusterState
-    case InstantMemberUp(m)         ⇒ addMember(m)
-    case InstantMemberDowned(m)     ⇒ removeMember(m)
-    case InstantMemberRemoved(m)    ⇒ removeMember(m)
+    case state: CurrentClusterState ⇒ receiveState(state)
+    case MemberUp(m)                ⇒ addMember(m)
+    case MemberRemoved(m, _)        ⇒ removeMember(m)
+    case MemberExited(m)            ⇒ removeMember(m)
     case UnreachableMember(m)       ⇒ removeMember(m)
-    case _: InstantMemberEvent      ⇒ // not interested in other types of InstantMemberEvent
+    case ReachableMember(m)         ⇒ if (m.status == Up) addMember(m)
+    case _: MemberEvent             ⇒ // not interested in other types of MemberEvent
 
   }
 
@@ -119,7 +120,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   /**
    * Updates the initial node ring for those nodes that are [[akka.cluster.MemberStatus.Up]].
    */
-  def receiveState(state: InstantClusterState): Unit =
+  def receiveState(state: CurrentClusterState): Unit =
     nodes = state.members collect { case m if m.status == Up ⇒ m.address }
 
   /**
@@ -129,7 +130,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
    * @see [[akka.cluster.ClusterMetricsCollector.collect( )]]
    */
   def collect(): Unit = {
-    latestGossip :+= collector.sample
+    latestGossip :+= collector.sample()
     publish()
   }
 
@@ -142,7 +143,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
     // about nodes that are known here, otherwise removed nodes can come back
     val otherGossip = envelope.gossip.filter(nodes)
     latestGossip = latestGossip merge otherGossip
-    publish()
+    // changes will be published in the period collect task
     if (!envelope.reply)
       replyGossipTo(envelope.from)
   }
@@ -159,7 +160,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
     sendGossip(address, MetricsGossipEnvelope(selfAddress, latestGossip, reply = true))
 
   def sendGossip(address: Address, envelope: MetricsGossipEnvelope): Unit =
-    context.actorFor(self.path.toStringWithAddress(address)) ! envelope
+    context.actorSelection(self.path.toStringWithAddress(address)) ! envelope
 
   def selectRandomNode(addresses: immutable.IndexedSeq[Address]): Option[Address] =
     if (addresses.isEmpty) None else Some(addresses(ThreadLocalRandom.current nextInt addresses.size))
@@ -183,6 +184,7 @@ private[cluster] object MetricsGossip {
  *
  * @param nodes metrics per node
  */
+@SerialVersionUID(1L)
 private[cluster] case class MetricsGossip(nodes: Set[NodeMetrics]) {
 
   /**
@@ -222,10 +224,11 @@ private[cluster] case class MetricsGossip(nodes: Set[NodeMetrics]) {
  * INTERNAL API
  * Envelope adding a sender address to the gossip.
  */
+@SerialVersionUID(1L)
 private[cluster] case class MetricsGossipEnvelope(from: Address, gossip: MetricsGossip, reply: Boolean)
   extends ClusterMessage
 
-object EWMA {
+private[cluster] object EWMA {
   /**
    * math.log(2)
    */
@@ -269,7 +272,8 @@ object EWMA {
  *             This value is always used as the previous EWMA to calculate the new EWMA.
  *
  */
-private[cluster] case class EWMA(value: Double, alpha: Double) extends ClusterMessage {
+@SerialVersionUID(1L)
+private[cluster] case class EWMA(value: Double, alpha: Double) {
 
   require(0.0 <= alpha && alpha <= 1.0, "alpha must be between 0.0 and 1.0")
 
@@ -293,19 +297,20 @@ private[cluster] case class EWMA(value: Double, alpha: Double) extends ClusterMe
  * Equality of Metric is based on its name.
  *
  * @param name the metric name
- * @param value the metric value, which may or may not be defined, it must be a valid numerical value,
- *   see [[akka.cluster.MetricNumericConverter.defined()]]
+ * @param value the metric value, which must be a valid numerical value,
+ *   a valid value is neither negative nor NaN/Infinite.
  * @param average the data stream of the metric value, for trending over time. Metrics that are already
  *   averages (e.g. system load average) or finite (e.g. as number of processors), are not trended.
  */
-case class Metric private (name: String, value: Number, private val average: Option[EWMA])
-  extends ClusterMessage with MetricNumericConverter {
+@SerialVersionUID(1L)
+case class Metric private[cluster] (name: String, value: Number, private[cluster] val average: Option[EWMA])
+  extends MetricNumericConverter {
 
   require(defined(value), s"Invalid Metric [$name] value [$value]")
 
   /**
-   * If defined ( [[akka.cluster.MetricNumericConverter.defined()]] ), updates the new
-   * data point, and if defined, updates the data stream. Returns the updated metric.
+   * Updates the data point, and if defined, updates the data stream (average).
+   * Returns the updated metric.
    */
   def :+(latest: Metric): Metric =
     if (this sameAs latest) average match {
@@ -380,7 +385,8 @@ object Metric extends MetricNumericConverter {
  * @param timestamp the time of sampling, in milliseconds since midnight, January 1, 1970 UTC
  * @param metrics the set of sampled [[akka.actor.Metric]]
  */
-case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Metric] = Set.empty[Metric]) extends ClusterMessage {
+@SerialVersionUID(1L)
+case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Metric] = Set.empty[Metric]) {
 
   /**
    * Returns the most recent data.
@@ -475,6 +481,7 @@ object StandardMetrics {
    * @param max the maximum amount of memory (in bytes) that can be used for JVM memory management.
    *   Can be undefined on some OS.
    */
+  @SerialVersionUID(1L)
   case class HeapMemory(address: Address, timestamp: Long, used: Long, committed: Long, max: Option[Long]) {
     require(committed > 0L, "committed heap expected to be > 0 bytes")
     require(max.isEmpty || max.get > 0L, "max heap expected to be > 0 bytes")
@@ -518,6 +525,7 @@ object StandardMetrics {
    *   much more it could theoretically.
    * @param processors the number of available processors
    */
+  @SerialVersionUID(1L)
   case class Cpu(
     address: Address,
     timestamp: Long,
@@ -568,13 +576,15 @@ private[cluster] trait MetricNumericConverter {
 }
 
 /**
- * INTERNAL API
+ * Implementations of cluster system metrics extends this trait.
  */
-private[cluster] trait MetricsCollector extends Closeable {
+trait MetricsCollector extends Closeable {
   /**
    * Samples and collects new data points.
+   * This method is invoked periodically and should return
+   * current metrics for this node.
    */
-  def sample: NodeMetrics
+  def sample(): NodeMetrics
 }
 
 /**
@@ -605,7 +615,7 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
    * Samples and collects new data points.
    * Creates a new instance each time.
    */
-  def sample: NodeMetrics = NodeMetrics(address, newTimestamp, metrics)
+  def sample(): NodeMetrics = NodeMetrics(address, newTimestamp, metrics)
 
   def metrics: Set[Metric] = {
     val heap = heapMemoryUsage
@@ -678,8 +688,6 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
  *
  * The constructor will by design throw exception if org.hyperic.sigar.Sigar can't be loaded, due
  * to missing classes or native libraries.
- *
- * TODO switch to Scala reflection
  *
  * @param address The [[akka.actor.Address]] of the node being sampled
  * @param decay how quickly the exponential weighting of past data is decayed
@@ -776,10 +784,11 @@ private[cluster] object MetricsCollector {
       Try(new SigarMetricsCollector(system)) match {
         case Success(sigarCollector) ⇒ sigarCollector
         case Failure(e) ⇒
-          log.info("Metrics will be retreived from MBeans, and may be incorrect on some platforms. " +
-            "To increase metric accuracy add the 'sigar.jar' to the classpath and the appropriate " +
-            "platform-specific native libary to 'java.library.path'. Reason: " +
-            e.toString)
+          Cluster(system).InfoLogger.logInfo(
+            "Metrics will be retreived from MBeans, and may be incorrect on some platforms. " +
+              "To increase metric accuracy add the 'sigar.jar' to the classpath and the appropriate " +
+              "platform-specific native libary to 'java.library.path'. Reason: " +
+              e.toString)
           new JmxMetricsCollector(system)
       }
 

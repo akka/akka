@@ -50,9 +50,9 @@ final case class AssociationErrorEvent(
   cause: Throwable,
   localAddress: Address,
   remoteAddress: Address,
-  inbound: Boolean) extends AssociationEvent {
+  inbound: Boolean,
+  logLevel: Logging.LogLevel) extends AssociationEvent {
   protected override def eventName: String = "AssociationError"
-  override def logLevel: Logging.LogLevel = Logging.ErrorLevel
   override def toString: String = s"${super.toString}: Error [${cause.getMessage}] [${Logging.stackTraceFor(cause)}]"
   def getCause: Throwable = cause
 }
@@ -78,12 +78,21 @@ final case class RemotingErrorEvent(cause: Throwable) extends RemotingLifecycleE
   override def toString: String = s"Remoting error: [${cause.getMessage}] [${Logging.stackTraceFor(cause)}]"
 }
 
+@SerialVersionUID(1L)
+case class QuarantinedEvent(address: Address, uid: Int) extends RemotingLifecycleEvent {
+  override def logLevel: Logging.LogLevel = Logging.WarningLevel
+  override val toString: String =
+    s"Association to [$address] having UID [$uid] is irrecoverably failed. UID is now quarantined and all " +
+      "messages to this UID will be delivered to dead letters. Remote actorsystem must be restarted to recover " +
+      "from this situation."
+}
+
 /**
  * INTERNAL API
  */
-private[remote] class EventPublisher(system: ActorSystem, log: LoggingAdapter, logEvents: Boolean) {
+private[remote] class EventPublisher(system: ActorSystem, log: LoggingAdapter, logLevel: Logging.LogLevel) {
   def notifyListeners(message: RemotingLifecycleEvent): Unit = {
     system.eventStream.publish(message)
-    if (logEvents) log.log(message.logLevel, "{}", message)
+    if (logLevel <= message.logLevel) log.log(message.logLevel, "{}", message)
   }
 }

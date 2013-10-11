@@ -47,9 +47,9 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
   }
 
   override def afterAll {
-    appLogging.shutdown()
-    appAuto.shutdown()
-    appLifecycle.shutdown()
+    TestKit.shutdownActorSystem(appLogging)
+    TestKit.shutdownActorSystem(appAuto)
+    TestKit.shutdownActorSystem(appLifecycle)
   }
 
   "A LoggingReceive" must {
@@ -192,9 +192,9 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
           EventFilter[ActorKilledException](occurrences = 1) intercept {
             actor ! Kill
             val set = receiveWhile(messages = 3) {
-              case Logging.Error(_: ActorKilledException, `aname`, `aclass`, "Kill") ⇒ 1
-              case Logging.Debug(`aname`, `aclass`, "restarting")                    ⇒ 2
-              case Logging.Debug(`aname`, `aclass`, "restarted")                     ⇒ 3
+              case Logging.Error(_: ActorKilledException, `aname`, _, "Kill") ⇒ 1
+              case Logging.Debug(`aname`, `aclass`, "restarting")             ⇒ 2
+              case Logging.Debug(`aname`, `aclass`, "restarted")              ⇒ 3
             }.toSet
             expectNoMsg(Duration.Zero)
             assert(set == Set(1, 2, 3), set + " was not Set(1, 2, 3)")

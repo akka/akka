@@ -10,9 +10,8 @@ import com.google.protobuf.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.{ Actor, ActorRef, Deploy, ExtendedActorSystem, NoScopeGiven, Props, Scope }
 import akka.remote.DaemonMsgCreate
-import akka.remote.RemoteProtocol.{ DaemonMsgCreateProtocol, DeployProtocol, PropsProtocol }
+import akka.remote.WireFormats.{ DaemonMsgCreateData, DeployData, PropsData }
 import akka.routing.{ NoRouter, RouterConfig }
-import akka.actor.FromClassCreator
 import scala.reflect.ClassTag
 import util.{ Failure, Success }
 
@@ -28,6 +27,7 @@ import util.{ Failure, Success }
 private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends Serializer {
   import ProtobufSerializer.serializeActorRef
   import ProtobufSerializer.deserializeActorRef
+  import Deploy.NoDispatcherGiven
 
   def includeManifest: Boolean = false
   def identifier = 3
@@ -36,31 +36,29 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
     case DaemonMsgCreate(props, deploy, path, supervisor) ⇒
 
-      def deployProto(d: Deploy): DeployProtocol = {
-        val builder = DeployProtocol.newBuilder.setPath(d.path)
+      def deployProto(d: Deploy): DeployData = {
+        val builder = DeployData.newBuilder.setPath(d.path)
         if (d.config != ConfigFactory.empty)
           builder.setConfig(serialize(d.config))
         if (d.routerConfig != NoRouter)
           builder.setRouterConfig(serialize(d.routerConfig))
         if (d.scope != NoScopeGiven)
           builder.setScope(serialize(d.scope))
+        if (d.dispatcher != NoDispatcherGiven)
+          builder.setDispatcher(d.dispatcher)
         builder.build
       }
 
       def propsProto = {
-        val builder = PropsProtocol.newBuilder.
-          setDispatcher(props.dispatcher).
-          setDeploy(deployProto(props.deploy))
-        props.creator match {
-          case FromClassCreator(clazz) ⇒ builder.setFromClassCreator(clazz.getName)
-          case creator                 ⇒ builder.setCreator(serialize(creator))
-        }
-        if (props.routerConfig != NoRouter)
-          builder.setRouterConfig(serialize(props.routerConfig))
+        val builder = PropsData.newBuilder
+          .setClazz(props.clazz.getName)
+          .setDeploy(deployProto(props.deploy))
+        props.args map serialize foreach builder.addArgs
+        props.args map (_.getClass.getName) foreach builder.addClasses
         builder.build
       }
 
-      DaemonMsgCreateProtocol.newBuilder.
+      DaemonMsgCreateData.newBuilder.
         setProps(propsProto).
         setDeploy(deployProto(deploy)).
         setPath(path).
@@ -73,9 +71,9 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
   }
 
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
-    val proto = DaemonMsgCreateProtocol.parseFrom(bytes)
+    val proto = DaemonMsgCreateData.parseFrom(bytes)
 
-    def deploy(protoDeploy: DeployProtocol): Deploy = {
+    def deploy(protoDeploy: DeployData): Deploy = {
       val config =
         if (protoDeploy.hasConfig) deserialize(protoDeploy.getConfig, classOf[Config])
         else ConfigFactory.empty
@@ -85,25 +83,18 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
       val scope =
         if (protoDeploy.hasScope) deserialize(protoDeploy.getScope, classOf[Scope])
         else NoScopeGiven
-      Deploy(protoDeploy.getPath, config, routerConfig, scope)
+      val dispatcher =
+        if (protoDeploy.hasDispatcher) protoDeploy.getDispatcher
+        else NoDispatcherGiven
+      Deploy(protoDeploy.getPath, config, routerConfig, scope, dispatcher)
     }
 
     def props = {
-      val creator =
-        if (proto.getProps.hasFromClassCreator)
-          FromClassCreator(system.dynamicAccess.getClassFor[Actor](proto.getProps.getFromClassCreator).get)
-        else
-          deserialize(proto.getProps.getCreator, classOf[() ⇒ Actor])
-
-      val routerConfig =
-        if (proto.getProps.hasRouterConfig) deserialize(proto.getProps.getRouterConfig, classOf[RouterConfig])
-        else NoRouter
-
-      Props(
-        creator = creator,
-        dispatcher = proto.getProps.getDispatcher,
-        routerConfig = routerConfig,
-        deploy = deploy(proto.getProps.getDeploy))
+      import scala.collection.JavaConverters._
+      val clazz = system.dynamicAccess.getClassFor[AnyRef](proto.getProps.getClazz).get
+      val args: Vector[AnyRef] = (proto.getProps.getArgsList.asScala zip proto.getProps.getClassesList.asScala)
+        .map(p ⇒ deserialize(p._1, system.dynamicAccess.getClassFor[AnyRef](p._2).get))(collection.breakOut)
+      Props(deploy(proto.getProps.getDeploy), clazz, args)
     }
 
     DaemonMsgCreate(
@@ -113,7 +104,7 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
       supervisor = deserializeActorRef(system, proto.getSupervisor))
   }
 
-  protected def serialize(any: AnyRef): ByteString = ByteString.copyFrom(serialization.serialize(any).get)
+  protected def serialize(any: Any): ByteString = ByteString.copyFrom(serialization.serialize(any.asInstanceOf[AnyRef]).get)
 
   protected def deserialize[T: ClassTag](data: ByteString, clazz: Class[T]): T = {
     val bytes = data.toByteArray

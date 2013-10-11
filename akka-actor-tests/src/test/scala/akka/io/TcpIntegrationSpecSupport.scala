@@ -5,12 +5,12 @@
 package akka.io
 
 import scala.annotation.tailrec
+import scala.collection.immutable
 import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.actor.ActorRef
-import scala.collection.immutable
 import akka.io.Inet.SocketOption
+import akka.TestUtils._
 import Tcp._
-import TestUtils._
 
 trait TcpIntegrationSpecSupport { _: AkkaSpec ⇒
 
@@ -23,7 +23,7 @@ trait TcpIntegrationSpecSupport { _: AkkaSpec ⇒
     def bindServer(): Unit = {
       val bindCommander = TestProbe()
       bindCommander.send(IO(Tcp), Bind(bindHandler.ref, endpoint, options = bindOptions))
-      bindCommander.expectMsg(Bound)
+      bindCommander.expectMsg(Bound(endpoint))
     }
 
     def establishNewClientConnection(): (TestProbe, ActorRef, TestProbe, ActorRef) = {

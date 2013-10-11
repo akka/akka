@@ -2,7 +2,7 @@
 .. _serialization-java:
 
 #####################
- Serialization (Java)
+ Serialization
 #####################
 
 Akka has a built-in Extension for serialization,
@@ -75,10 +75,10 @@ Programmatic
 If you want to programmatically serialize/deserialize using Akka Serialization,
 here's some examples:
 
-.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTest.java
    :include: imports
 
-.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTest.java
    :include: programmatic
 
 For more information, have a look at the ``ScalaDoc`` for ``akka.serialization._``
@@ -96,10 +96,10 @@ Creating new Serializers
 First you need to create a class definition of your ``Serializer``,
 which is done by extending ``akka.serialization.JSerializer``, like this:
 
-.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTest.java
    :include: imports
 
-.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTest.java
    :include: my-own-serializer
    :exclude: ...
 
@@ -109,20 +109,17 @@ list which classes that should be serialized using it.
 Serializing ActorRefs
 ---------------------
 
-All ActorRefs are serializable using JavaSerializer, but in case you are writing your own serializer,
-you might want to know how to serialize and deserialize them properly, here's the magic incantation:
+All ActorRefs are serializable using JavaSerializer, but in case you are writing your
+own serializer, you might want to know how to serialize and deserialize them properly.
+In the general case, the local address to be used depends on the type of remote
+address which shall be the recipient of the serialized information. Use
+:meth:`Serialization.serializedActorPath(actorRef)` like this:
 
-.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTest.java
    :include: imports
 
-.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTest.java
    :include: actorref-serializer
-
-.. note::
-  
-  ``ActorPath.toStringWithAddress`` only differs from ``toString`` if the
-  address does not already have ``host`` and ``port`` components, i.e. it only
-  inserts address information for local addresses.
 
 This assumes that serialization happens in the context of sending a message
 through the remote transport. There are other uses of serialization, though,
@@ -133,15 +130,26 @@ Storing a local actor path might be the right choice if the retrieval happens
 in the same logical context, but it is not enough when deserializing it on a
 different network host: for that it would need to include the system’s remote
 transport address. An actor system is not limited to having just one remote
-transport per se, which makes this question a bit more interesting.
+transport per se, which makes this question a bit more interesting. To find out
+the appropriate address to use when sending to ``remoteAddr`` you can use
+:meth:`ActorRefProvider.getExternalAddressFor(remoteAddr)` like this:
 
-In the general case, the local address to be used depends on the type of remote
-address which shall be the recipient of the serialized information. Use
-:meth:`ActorRefProvider.getExternalAddressFor(remoteAddr)` to query the system
-for the appropriate address to use when sending to ``remoteAddr``:
-
-.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTest.java
    :include: external-address
+
+.. note::
+  
+  ``ActorPath.toSerializationFormatWithAddress`` differs from ``toString`` if the
+  address does not already have ``host`` and ``port`` components, i.e. it only
+  inserts address information for local addresses.
+  
+  ``toSerializationFormatWithAddress`` also adds the unique id of the actor, which will
+  change when the actor is stopped and then created again with the same name.
+  Sending messages to a reference pointing the old actor will not be delivered
+  to the new actor. If you do not want this behavior, e.g. in case of long term
+  storage of the reference, you can use ``toStringWithAddress``, which does not
+  include the unique id.
+
 
 This requires that you know at least which type of address will be supported by
 the system which will deserialize the resulting actor reference; if you have no
@@ -152,7 +160,7 @@ lenient as Akka’s RemoteActorRefProvider).
 There is also a default remote address which is the one used by cluster support
 (and typical systems have just this one); you can get it like this:
 
-.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTest.java
    :include: external-address-default
 
 Deep serialization of Actors

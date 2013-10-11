@@ -5,7 +5,7 @@ package akka.actor
 
 import language.postfixOps
 import akka.testkit._
-import org.scalatest.junit.JUnitSuite
+import org.scalatest.junit.JUnitSuiteLike
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -19,7 +19,7 @@ import com.typesafe.config.Config
 import java.util.concurrent.{ LinkedBlockingQueue, BlockingQueue, TimeUnit }
 import akka.util.Switch
 
-class JavaExtensionSpec extends JavaExtension with JUnitSuite
+class JavaExtensionSpec extends JavaExtension with JUnitSuiteLike
 
 object TestExtension extends ExtensionId[TestExtension] with ExtensionIdProvider {
   def lookup = this
@@ -84,11 +84,10 @@ object ActorSystemSpec {
 
   class SlowDispatcher(_config: Config, _prerequisites: DispatcherPrerequisites) extends MessageDispatcherConfigurator(_config, _prerequisites) {
     private val instance = new Dispatcher(
-      prerequisites,
+      this,
       config.getString("id"),
       config.getInt("throughput"),
       Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
-      mailboxType,
       configureExecutor(),
       Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) {
       val doneIt = new Switch
@@ -125,6 +124,10 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
   "An ActorSystem" must {
 
+    "use scala.concurrent.Future's InternalCallbackEC" in {
+      system.asInstanceOf[ActorSystemImpl].internalCallingThreadExecutionContext.getClass.getName must be === "scala.concurrent.Future$InternalCallbackExecutor$"
+    }
+
     "reject invalid names" in {
       for (
         n ← Seq(
@@ -142,7 +145,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     }
 
     "allow valid names" in {
-      ActorSystem("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-").shutdown()
+      shutdown(ActorSystem("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"))
     }
 
     "support extensions" in {
@@ -150,6 +153,17 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       system.hasExtension(TestExtension) must be(true)
       TestExtension(system).system must be === system
       system.extension(TestExtension).system must be === system
+    }
+
+    "log dead letters" in {
+      val sys = ActorSystem("LogDeadLetters", ConfigFactory.parseString("akka.loglevel=INFO").withFallback(AkkaSpec.testConf))
+      try {
+        val a = sys.actorOf(Props[ActorSystemSpec.Terminater])
+        EventFilter.info(pattern = "not delivered", occurrences = 1).intercept {
+          a ! "run"
+          a ! "boom"
+        }(sys)
+      } finally shutdown(sys)
     }
 
     "run termination callbacks in order" in {
@@ -194,14 +208,14 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       val system = ActorSystem()
       system.isTerminated must be(false)
       system.shutdown()
-      system.awaitTermination()
+      system.awaitTermination(10 seconds)
       system.isTerminated must be(true)
     }
 
     "throw RejectedExecutionException when shutdown" in {
       val system2 = ActorSystem("AwaitTermination", AkkaSpec.testConf)
       system2.shutdown()
-      system2.awaitTermination(5 seconds)
+      system2.awaitTermination(10 seconds)
 
       intercept[RejectedExecutionException] {
         system2.registerOnTermination { println("IF YOU SEE THIS THEN THERE'S A BUG HERE") }
@@ -210,7 +224,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
     "reliably create waves of actors" in {
       import system.dispatcher
-      implicit val timeout = Timeout(30 seconds)
+      implicit val timeout = Timeout((20 seconds).dilated)
       val waves = for (i ← 1 to 3) yield system.actorOf(Props[ActorSystemSpec.Waves]) ? 50000
       Await.result(Future.sequence(waves), timeout.duration + 5.seconds) must be === Seq("done", "done", "done")
     }
@@ -248,7 +262,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     "shut down when /user fails" in {
       implicit val system = ActorSystem("Stop", AkkaSpec.testConf)
       EventFilter[ActorKilledException]() intercept {
-        system.actorFor("/user") ! Kill
+        system.actorSelection("/user") ! Kill
         awaitCond(system.isTerminated)
       }
     }
@@ -270,7 +284,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       val t = probe.expectMsg(Terminated(a)(existenceConfirmed = true, addressTerminated = false))
       t.existenceConfirmed must be(true)
       t.addressTerminated must be(false)
-      system.shutdown()
+      shutdown(system)
     }
 
     "shut down when /user escalates" in {

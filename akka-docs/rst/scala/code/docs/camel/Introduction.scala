@@ -7,12 +7,12 @@ import language.postfixOps
 import akka.util.Timeout
 
 object Introduction {
-  def foo = {
+  def foo(): Unit = {
     //#Consumer-mina
     import akka.camel.{ CamelMessage, Consumer }
 
     class MyEndpoint extends Consumer {
-      def endpointUri = "mina:tcp://localhost:6200?textline=true"
+      def endpointUri = "mina2:tcp://localhost:6200?textline=true"
 
       def receive = {
         case msg: CamelMessage ⇒ { /* ... */ }
@@ -27,7 +27,7 @@ object Introduction {
     val mina = system.actorOf(Props[MyEndpoint])
     //#Consumer-mina
   }
-  def bar = {
+  def bar(): Unit = {
     //#Consumer
     import akka.camel.{ CamelMessage, Consumer }
 
@@ -41,7 +41,7 @@ object Introduction {
     }
     //#Consumer
   }
-  def baz = {
+  def baz(): Unit = {
     //#Producer
     import akka.actor.Actor
     import akka.camel.{ Producer, Oneway }
@@ -82,7 +82,7 @@ object Introduction {
     import scala.concurrent.duration._
 
     class MyEndpoint extends Consumer {
-      def endpointUri = "mina:tcp://localhost:6200?textline=true"
+      def endpointUri = "mina2:tcp://localhost:6200?textline=true"
 
       def receive = {
         case msg: CamelMessage ⇒ { /* ... */ }

@@ -45,14 +45,14 @@ abstract class ClientDowningNodeThatIsUnreachableSpec(multiNodeConfig: ClientDow
 
       runOn(first) {
         // kill 'third' node
-        testConductor.shutdown(third, 0).await
+        testConductor.exit(third, 0).await
         markNodeAsUnavailable(thirdAddress)
 
         // mark 'third' node as DOWN
         cluster.down(thirdAddress)
         enterBarrier("down-third-node")
 
-        awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Set(thirdAddress))
+        awaitMembersUp(numberOfMembers = 3, canNotBePartOfMemberRing = Set(thirdAddress))
         clusterView.members.exists(_.address == thirdAddress) must be(false)
       }
 
@@ -63,7 +63,7 @@ abstract class ClientDowningNodeThatIsUnreachableSpec(multiNodeConfig: ClientDow
       runOn(second, fourth) {
         enterBarrier("down-third-node")
 
-        awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Set(thirdAddress))
+        awaitMembersUp(numberOfMembers = 3, canNotBePartOfMemberRing = Set(thirdAddress))
       }
 
       enterBarrier("await-completion")

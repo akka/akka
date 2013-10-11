@@ -2,7 +2,7 @@
 .. _serialization-scala:
 
 ######################
- Serialization (Scala)
+ Serialization
 ######################
 
 Akka has a built-in Extension for serialization,
@@ -101,17 +101,14 @@ list which classes that should be serialized using it.
 Serializing ActorRefs
 ---------------------
 
-All ActorRefs are serializable using JavaSerializer, but in case you are writing your own serializer,
-you might want to know how to serialize and deserialize them properly, here's the magic incantation:
+All ActorRefs are serializable using JavaSerializer, but in case you are writing your
+own serializer, you might want to know how to serialize and deserialize them properly.
+In the general case, the local address to be used depends on the type of remote
+address which shall be the recipient of the serialized information. Use
+:meth:`Serialization.serializedActorPath(actorRef)` like this:
 
 .. includecode:: code/docs/serialization/SerializationDocSpec.scala
    :include: imports,actorref-serializer
-
-.. note::
-  
-  ``ActorPath.toStringWithAddress`` only differs from ``toString`` if the
-  address does not already have ``host`` and ``port`` components, i.e. it only
-  inserts address information for local addresses.
 
 This assumes that serialization happens in the context of sending a message
 through the remote transport. There are other uses of serialization, though,
@@ -122,15 +119,26 @@ Storing a local actor path might be the right choice if the retrieval happens
 in the same logical context, but it is not enough when deserializing it on a
 different network host: for that it would need to include the system’s remote
 transport address. An actor system is not limited to having just one remote
-transport per se, which makes this question a bit more interesting.
-
-In the general case, the local address to be used depends on the type of remote
-address which shall be the recipient of the serialized information. Use
-:meth:`ActorRefProvider.getExternalAddressFor(remoteAddr)` to query the system
-for the appropriate address to use when sending to ``remoteAddr``:
+transport per se, which makes this question a bit more interesting. To find out
+the appropriate address to use when sending to ``remoteAddr`` you can use
+:meth:`ActorRefProvider.getExternalAddressFor(remoteAddr)` like this:
 
 .. includecode:: code/docs/serialization/SerializationDocSpec.scala
    :include: external-address
+
+.. note::
+  
+  ``ActorPath.toSerializationFormatWithAddress`` differs from ``toString`` if the
+  address does not already have ``host`` and ``port`` components, i.e. it only
+  inserts address information for local addresses. 
+
+  ``toSerializationFormatWithAddress`` also adds the unique id of the actor, which will
+  change when the actor is stopped and then created again with the same name.
+  Sending messages to a reference pointing the old actor will not be delivered
+  to the new actor. If you don't want this behavior, e.g. in case of long term
+  storage of the reference, you can use ``toStringWithAddress``, which doesn't
+  include the unique id.
+
 
 This requires that you know at least which type of address will be supported by
 the system which will deserialize the resulting actor reference; if you have no

@@ -19,12 +19,16 @@ import akka.pattern.ask
  * @since 1.1
  */
 class TestActorRef[T <: Actor](
-  _system: ActorSystemImpl,
-  _prerequisites: DispatcherPrerequisites,
+  _system: ActorSystem,
   _props: Props,
-  _supervisor: InternalActorRef,
+  _supervisor: ActorRef,
   name: String)
   extends {
+    val props =
+      _props.withDispatcher(
+        if (_props.deploy.dispatcher == Deploy.NoDispatcherGiven) CallingThreadDispatcher.Id
+        else _props.dispatcher)
+    val dispatcher = _system.dispatchers.lookup(props.dispatcher)
     private val disregard = _supervisor match {
       case l: LocalActorRef ⇒ l.underlying.reserveChild(name)
       case r: RepointableActorRef ⇒ r.underlying match {
@@ -35,11 +39,11 @@ class TestActorRef[T <: Actor](
       case s ⇒ _system.log.error("trying to attach child {} to unknown type of supervisor {}, this is not going to end well", name, s.getClass)
     }
   } with LocalActorRef(
-    _system,
-    _props.withDispatcher(
-      if (_props.dispatcher == Dispatchers.DefaultDispatcherId) CallingThreadDispatcher.Id
-      else _props.dispatcher),
-    _supervisor,
+    _system.asInstanceOf[ActorSystemImpl],
+    props,
+    dispatcher,
+    _system.mailboxes.getMailboxType(props, dispatcher.configurator.config),
+    _supervisor.asInstanceOf[InternalActorRef],
     _supervisor.path / name) {
 
   // we need to start ourselves since the creation of an actor has been split into initialization and starting
@@ -47,8 +51,9 @@ class TestActorRef[T <: Actor](
 
   import TestActorRef.InternalGetActor
 
-  override def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
-    new ActorCell(system, ref, props, supervisor) {
+  protected override def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props,
+                                      dispatcher: MessageDispatcher, supervisor: InternalActorRef): ActorCell =
+    new ActorCell(system, ref, props, dispatcher, supervisor) {
       override def autoReceiveMessage(msg: Envelope) {
         msg.message match {
           case InternalGetActor ⇒ sender ! actor
@@ -122,9 +127,9 @@ object TestActorRef {
     "$" + akka.util.Helpers.base64(l)
   }
 
-  def apply[T <: Actor](factory: ⇒ T)(implicit system: ActorSystem): TestActorRef[T] = apply[T](Props(factory), randomName)
+  def apply[T <: Actor](factory: ⇒ T)(implicit system: ActorSystem): TestActorRef[T] = apply[T](Props.empty.withCreator(factory), randomName)
 
-  def apply[T <: Actor](factory: ⇒ T, name: String)(implicit system: ActorSystem): TestActorRef[T] = apply[T](Props(factory), name)
+  def apply[T <: Actor](factory: ⇒ T, name: String)(implicit system: ActorSystem): TestActorRef[T] = apply[T](Props.empty.withCreator(factory), name)
 
   def apply[T <: Actor](props: Props)(implicit system: ActorSystem): TestActorRef[T] = apply[T](props, randomName)
 
@@ -132,7 +137,8 @@ object TestActorRef {
     apply[T](props, system.asInstanceOf[ActorSystemImpl].guardian, name)
 
   def apply[T <: Actor](props: Props, supervisor: ActorRef, name: String)(implicit system: ActorSystem): TestActorRef[T] = {
-    new TestActorRef(system.asInstanceOf[ActorSystemImpl], system.dispatchers.prerequisites, props, supervisor.asInstanceOf[InternalActorRef], name)
+    val sysImpl = system.asInstanceOf[ActorSystemImpl]
+    new TestActorRef(sysImpl, props, supervisor.asInstanceOf[InternalActorRef], name)
   }
 
   def apply[T <: Actor](implicit t: ClassTag[T], system: ActorSystem): TestActorRef[T] = apply[T](randomName)
@@ -148,7 +154,14 @@ object TestActorRef {
   }), name)
 
   /**
-   * Java API
+   * Java API: create a TestActorRef in the given system for the given props,
+   * with the given name.
    */
   def create[T <: Actor](system: ActorSystem, props: Props, name: String): TestActorRef[T] = apply(props, name)(system)
+
+  /**
+   * Java API: create a TestActorRef in the given system for the given props,
+   * with a random name.
+   */
+  def create[T <: Actor](system: ActorSystem, props: Props): TestActorRef[T] = apply(props)(system)
 }

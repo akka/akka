@@ -4,7 +4,6 @@
 
 package docs.serialization {
 
-  import org.scalatest.matchers.MustMatchers
   import akka.testkit._
   //#imports
   import akka.actor.{ ActorRef, ActorSystem }
@@ -16,7 +15,6 @@ package docs.serialization {
   import akka.actor.ExtendedActorSystem
   import akka.actor.Extension
   import akka.actor.Address
-  import akka.remote.RemoteActorRefProvider
 
   //#my-own-serializer
   class MyOwnSerializer extends Serializer {
@@ -66,7 +64,7 @@ package docs.serialization {
       //#serialize-messages-config
       val a = ActorSystem("system", config)
       a.settings.SerializeAllMessages must be(true)
-      a.shutdown()
+      shutdown(a)
     }
 
     "demonstrate configuration of serialize creators" in {
@@ -81,7 +79,7 @@ package docs.serialization {
       //#serialize-creators-config
       val a = ActorSystem("system", config)
       a.settings.SerializeAllCreators must be(true)
-      a.shutdown()
+      shutdown(a)
     }
 
     "demonstrate configuration of serializers" in {
@@ -99,7 +97,7 @@ package docs.serialization {
     """)
       //#serialize-serializers-config
       val a = ActorSystem("system", config)
-      a.shutdown()
+      shutdown(a)
     }
 
     "demonstrate configuration of serialization-bindings" in {
@@ -128,7 +126,7 @@ package docs.serialization {
       SerializationExtension(a).serializerFor(classOf[String]).getClass must equal(classOf[JavaSerializer])
       SerializationExtension(a).serializerFor(classOf[Customer]).getClass must equal(classOf[JavaSerializer])
       SerializationExtension(a).serializerFor(classOf[java.lang.Boolean]).getClass must equal(classOf[MyOwnSerializer])
-      a.shutdown()
+      shutdown(a)
     }
 
     "demonstrate the programmatic API" in {
@@ -154,31 +152,23 @@ package docs.serialization {
       back must equal(original)
 
       //#programmatic
-      system.shutdown()
+      shutdown(system)
     }
 
     "demonstrate serialization of ActorRefs" in {
       val theActorRef: ActorRef = system.deadLetters
-      val theActorSystem: ActorSystem = system
+      val extendedSystem: ExtendedActorSystem = system.asInstanceOf[ExtendedActorSystem]
 
       //#actorref-serializer
       // Serialize
       // (beneath toBinary)
+      val identifier: String = Serialization.serializedActorPath(theActorRef)
 
-      // If there is no transportAddress,
-      // it means that either this Serializer isn't called
-      // within a piece of code that sets it,
-      // so either you need to supply your own,
-      // or simply use the local path.
-      val identifier: String = Serialization.currentTransportAddress.value match {
-        case null    ⇒ theActorRef.path.toString
-        case address ⇒ theActorRef.path.toStringWithAddress(address)
-      }
       // Then just serialize the identifier however you like
 
       // Deserialize
       // (beneath fromBinary)
-      val deserializedActorRef = theActorSystem actorFor identifier
+      val deserializedActorRef = extendedSystem.provider.resolveActorRef(identifier)
       // Then just use the ActorRef
       //#actorref-serializer
 
@@ -192,7 +182,8 @@ package docs.serialization {
       }
 
       def serializeTo(ref: ActorRef, remote: Address): String =
-        ref.path.toStringWithAddress(ExternalAddress(theActorSystem).addressFor(remote))
+        ref.path.toSerializationFormatWithAddress(ExternalAddress(extendedSystem).
+          addressFor(remote))
       //#external-address
     }
 
@@ -207,7 +198,8 @@ package docs.serialization {
       }
 
       def serializeAkkaDefault(ref: ActorRef): String =
-        ref.path.toStringWithAddress(ExternalAddress(theActorSystem).addressForAkka)
+        ref.path.toSerializationFormatWithAddress(ExternalAddress(theActorSystem).
+          addressForAkka)
       //#external-address-default
     }
   }

@@ -4,10 +4,8 @@
 package akka.remote.testconductor
 
 import language.postfixOps
-
 import com.typesafe.config.ConfigFactory
-import akka.actor.Props
-import akka.actor.Actor
+import akka.actor.{Props, Actor, ActorIdentity, Identify, Deploy}
 import scala.concurrent.Await
 import scala.concurrent.Awaitable
 import scala.concurrent.duration._
@@ -36,7 +34,10 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with ST
 
   def initialParticipants = 2
 
-  lazy val echo = system.actorFor(node(master) / "user" / "echo")
+  lazy val echo = {
+    system.actorSelection(node(master) / "user" / "echo") ! Identify(None)
+    expectMsgType[ActorIdentity].ref.get
+  }
 
   "A TestConductor" must {
 
@@ -46,7 +47,7 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with ST
           def receive = {
             case x ⇒ testActor ! x; sender ! x
           }
-        }), "echo")
+        }).withDeploy(Deploy.local), "echo")
       }
 
       enterBarrier("name")

@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 import java.lang.String
 import akka.camel._
 import internal.{ DefaultCamel, CamelExchangeAdapter }
-import org.scalatest.{ Suite, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
+import org.scalatest.{ Suite, WordSpecLike, BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.camel.TestSupport._
 import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
 import org.mockito.{ ArgumentMatcher, Matchers, Mockito }
@@ -30,7 +30,7 @@ import akka.util.Timeout
 import akka.actor._
 import akka.testkit._
 
-class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with ActorProducerFixture {
+class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike with MustMatchers with ActorProducerFixture {
   implicit val timeout = Timeout(10 seconds)
 
   "ActorProducer" when {
@@ -147,7 +147,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
 
     "asynchronous" when {
 
-      def verifyFailureIsSet {
+      def verifyFailureIsSet(): Unit = {
         producer.processExchangeAdapter(exchange, asyncCallback)
         asyncCallback.awaitCalled()
         verify(exchange).setFailure(any[FailureResult])
@@ -158,7 +158,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
         "consumer actor doesnt exist" must {
           "set failure message on exchange" in {
             producer = given(actor = null, outCapable = true)
-            verifyFailureIsSet
+            verifyFailureIsSet()
           }
         }
 
@@ -226,7 +226,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
         "consumer actor doesnt exist" must {
           "set failure message on exchange" in {
             producer = given(actor = null, outCapable = false)
-            verifyFailureIsSet
+            verifyFailureIsSet()
           }
         }
 
@@ -325,7 +325,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
   }
 }
 
-trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach { self: TestKit with MustMatchers with Suite ⇒
+private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach { self: TestKit with MustMatchers with Suite ⇒
   var camel: Camel = _
   var exchange: CamelExchangeAdapter = _
   var callback: AsyncCallback = _
@@ -379,7 +379,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
   }
 
   override protected def afterAll() {
-    system.shutdown()
+    shutdown(system)
   }
 
   def msg(s: String) = CamelMessage(s, Map.empty)
@@ -427,9 +427,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
   }
 
   def echoActor = system.actorOf(Props(new Actor {
-    def receive = {
-      case msg ⇒ sender ! "received " + msg
-    }
+    def receive = { case msg ⇒ sender ! "received " + msg }
   }), name = "echoActor")
 
 }

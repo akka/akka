@@ -44,18 +44,18 @@ public class RouterViaConfigExample {
     ActorSystem system = ActorSystem.create("Example", config);
     //#configurableRouting
     ActorRef router = system.actorOf(
-      new Props(ExampleActor.class).withRouter(new FromConfig()), "myrouter1");
+      Props.create(ExampleActor.class).withRouter(new FromConfig()), "myrouter1");
     //#configurableRouting
     for (int i = 1; i <= 10; i++) {
-      router.tell(new ExampleActor.Message(i), null);
+      router.tell(new ExampleActor.Message(i), ActorRef.noSender());
     }
 
     //#configurableRoutingWithResizer
     ActorRef router2 = system.actorOf(
-      new Props(ExampleActor.class).withRouter(new FromConfig()), "myrouter2");
+      Props.create(ExampleActor.class).withRouter(new FromConfig()), "myrouter2");
     //#configurableRoutingWithResizer
     for (int i = 1; i <= 10; i++) {
-      router2.tell(new ExampleActor.Message(i), null);
+      router2.tell(new ExampleActor.Message(i), ActorRef.noSender());
     }
   }
 }

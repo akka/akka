@@ -7,6 +7,7 @@ package akka.dispatch
 import java.util.concurrent._
 import akka.event.Logging.{ Error, LogEventException }
 import akka.actor._
+import akka.dispatch.sysmsg._
 import akka.event.EventStream
 import com.typesafe.config.Config
 import akka.util.{ Unsafe, Index }
@@ -16,117 +17,19 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
+import scala.util.Try
+import scala.util.Failure
+import akka.util.Reflect
+import java.lang.reflect.ParameterizedType
 
 final case class Envelope private (val message: Any, val sender: ActorRef)
 
 object Envelope {
-  def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope =
+  def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope = {
+    if (message == null) throw new InvalidMessageException("Message is null")
     new Envelope(message, if (sender ne Actor.noSender) sender else system.deadLetters)
-}
-
-/**
- * This message is sent directly after the Supervise system message in order
- * to form a barrier wrt. the first real message sent by the child, so that e.g.
- * Failed() cannot overtake Supervise(). Processing this does nothing.
- *
- * Detailed explanation:
- *
- * The race happens because Supervise and Failed may be queued between the
- * parent's check for system messages and dequeue(). Thus, if the parent
- * processes the NullMessage first (by way of that tiny race window), it is
- * guaranteed to then find the Supervise system message in its mailbox prior
- * to turning its attention to the next real message.
- */
-case object NullMessage extends AutoReceivedMessage
-
-/**
- * INTERNAL API
- */
-private[akka] object SystemMessage {
-  @tailrec
-  final def size(list: SystemMessage, acc: Int = 0): Int = {
-    if (list eq null) acc else size(list.next, acc + 1)
-  }
-
-  @tailrec
-  final def reverse(list: SystemMessage, acc: SystemMessage = null): SystemMessage = {
-    if (list eq null) acc else {
-      val next = list.next
-      list.next = acc
-      reverse(next, list)
-    }
   }
 }
-
-/**
- * System messages are handled specially: they form their own queue within
- * each actor’s mailbox. This queue is encoded in the messages themselves to
- * avoid extra allocations and overhead. The next pointer is a normal var, and
- * it does not need to be volatile because in the enqueuing method its update
- * is immediately succeeded by a volatile write and all reads happen after the
- * volatile read in the dequeuing thread. Afterwards, the obtained list of
- * system messages is handled in a single thread only and not ever passed around,
- * hence no further synchronization is needed.
- *
- * INTERNAL API
- *
- * ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
- */
-private[akka] sealed trait SystemMessage extends PossiblyHarmful with Serializable {
-  @transient
-  var next: SystemMessage = _
-}
-
-/**
- * INTERNAL API
- */
-@SerialVersionUID(-4836972106317757555L)
-private[akka] case class Create(uid: Int) extends SystemMessage // send to self from Dispatcher.register
-/**
- * INTERNAL API
- */
-@SerialVersionUID(686735569005808256L)
-private[akka] case class Recreate(cause: Throwable) extends SystemMessage // sent to self from ActorCell.restart
-/**
- * INTERNAL API
- */
-@SerialVersionUID(7270271967867221401L)
-private[akka] case class Suspend() extends SystemMessage // sent to self from ActorCell.suspend
-/**
- * INTERNAL API
- */
-@SerialVersionUID(-2567504317093262591L)
-private[akka] case class Resume(causedByFailure: Throwable) extends SystemMessage // sent to self from ActorCell.resume
-/**
- * INTERNAL API
- */
-@SerialVersionUID(708873453777219599L)
-private[akka] case class Terminate() extends SystemMessage // sent to self from ActorCell.stop
-/**
- * INTERNAL API
- */
-@SerialVersionUID(3245747602115485675L)
-private[akka] case class Supervise(child: ActorRef, async: Boolean, uid: Int) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
-/**
- * INTERNAL API
- */
-@SerialVersionUID(5513569382760799668L)
-private[akka] case class ChildTerminated(child: ActorRef) extends SystemMessage // sent to supervisor from ActorCell.doTerminate
-/**
- * INTERNAL API
- */
-@SerialVersionUID(3323205435124174788L)
-private[akka] case class Watch(watchee: ActorRef, watcher: ActorRef) extends SystemMessage // sent to establish a DeathWatch
-/**
- * INTERNAL API
- */
-@SerialVersionUID(6363620903363658256L)
-private[akka] case class Unwatch(watchee: ActorRef, watcher: ActorRef) extends SystemMessage // sent to tear down a DeathWatch
-/**
- * INTERNAL API
- */
-@SerialVersionUID(-5475916034683997987L)
-private[akka] case object NoMessage extends SystemMessage // switched into the mailbox to signal termination
 
 final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cleanup: () ⇒ Unit) extends Batchable {
   final override def isBatchable: Boolean = runnable match {
@@ -160,7 +63,7 @@ private[akka] object MessageDispatcher {
   // since this is a compile-time constant, scalac will elide code behind if (MessageDispatcher.debug) (RK checked with 2.9.1)
   final val debug = false // Deliberately without type ascription to make it a compile-time constant
   lazy val actors = new Index[MessageDispatcher, ActorRef](16, _ compareTo _)
-  def printActors: Unit =
+  def printActors(): Unit =
     if (debug) {
       for {
         d ← actors.keys
@@ -180,11 +83,14 @@ private[akka] object MessageDispatcher {
     }
 }
 
-abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) extends AbstractMessageDispatcher with BatchingExecutor with ExecutionContext {
+abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator) extends AbstractMessageDispatcher with BatchingExecutor with ExecutionContext {
 
   import MessageDispatcher._
   import AbstractMessageDispatcher.{ inhabitantsOffset, shutdownScheduleOffset }
-  import prerequisites._
+  import configurator.prerequisites
+
+  val mailboxes = prerequisites.mailboxes
+  val eventStream = prerequisites.eventStream
 
   @volatile private[this] var _inhabitantsDoNotCallMeDirectly: Long = _ // DO NOT TOUCH!
   @volatile private[this] var _shutdownScheduleDoNotCallMeDirectly: Int = _ // DO NOT TOUCH!
@@ -210,7 +116,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   /**
    *  Creates and returns a mailbox for the given actor.
    */
-  protected[akka] def createMailbox(actor: Cell): Mailbox //FIXME should this really be private[akka]?
+  protected[akka] def createMailbox(actor: Cell, mailboxType: MailboxType): Mailbox
 
   /**
    * Identifier of this dispatcher, corresponds to the full key
@@ -246,8 +152,8 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   }
 
   override def reportFailure(t: Throwable): Unit = t match {
-    case e: LogEventException ⇒ prerequisites.eventStream.publish(e.event)
-    case _                    ⇒ prerequisites.eventStream.publish(Error(t, getClass.getName, getClass, t.getMessage))
+    case e: LogEventException ⇒ eventStream.publish(e.event)
+    case _                    ⇒ eventStream.publish(Error(t, getClass.getName, getClass, t.getMessage))
   }
 
   @tailrec
@@ -265,7 +171,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
 
   private def scheduleShutdownAction(): Unit = {
     // IllegalStateException is thrown if scheduler has been shutdown
-    try scheduler.scheduleOnce(shutdownTimeout, shutdownAction)(new ExecutionContext {
+    try prerequisites.scheduler.scheduleOnce(shutdownTimeout, shutdownAction)(new ExecutionContext {
       override def execute(runnable: Runnable): Unit = runnable.run()
       override def reportFailure(t: Throwable): Unit = MessageDispatcher.this.reportFailure(t)
     }) catch {
@@ -293,7 +199,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   protected[akka] def unregister(actor: ActorCell) {
     if (debug) actors.remove(this, actor.self)
     addInhabitants(-1)
-    val mailBox = actor.swapMailbox(deadLetterMailbox)
+    val mailBox = actor.swapMailbox(mailboxes.deadLetterMailbox)
     mailBox.becomeClosed()
     mailBox.cleanUp()
   }
@@ -328,7 +234,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   /**
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
    */
-  def suspend(actor: ActorCell): Unit = {
+  protected[akka] def suspend(actor: ActorCell): Unit = {
     val mbox = actor.mailbox
     if ((mbox.actor eq actor) && (mbox.dispatcher eq this))
       mbox.suspend()
@@ -337,7 +243,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   /*
    * After the call to this method, the dispatcher must begin any new message processing for the specified reference
    */
-  def resume(actor: ActorCell): Unit = {
+  protected[akka] def resume(actor: ActorCell): Unit = {
     val mbox = actor.mailbox
     if ((mbox.actor eq actor) && (mbox.dispatcher eq this) && mbox.resume())
       registerForExecution(mbox, false, false)
@@ -410,32 +316,6 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
    * each invocation or return the same instance every time.
    */
   def dispatcher(): MessageDispatcher
-
-  /**
-   * Returns a factory for the [[akka.dispatch.Mailbox]] given the configuration.
-   * Default implementation instantiate the [[akka.dispatch.MailboxType]] specified
-   * as FQCN in mailbox-type config property. If mailbox-type is unspecified (empty)
-   * then [[akka.dispatch.UnboundedMailbox]] is used when capacity is < 1,
-   * otherwise [[akka.dispatch.BoundedMailbox]].
-   */
-  def mailboxType(): MailboxType = {
-    config.getString("mailbox-type") match {
-      case "" ⇒
-        if (config.getInt("mailbox-capacity") < 1) UnboundedMailbox()
-        else new BoundedMailbox(prerequisites.settings, config)
-      case "unbounded" ⇒ UnboundedMailbox()
-      case "bounded"   ⇒ new BoundedMailbox(prerequisites.settings, config)
-      case fqcn ⇒
-        val args = List(classOf[ActorSystem.Settings] -> prerequisites.settings, classOf[Config] -> config)
-        prerequisites.dynamicAccess.createInstanceFor[MailboxType](fqcn, args).recover({
-          case exception ⇒
-            throw new IllegalArgumentException(
-              ("Cannot instantiate MailboxType [%s], defined in [%s], " +
-                "make sure it has constructor with [akka.actor.ActorSystem.Settings, com.typesafe.config.Config] parameters")
-                .format(fqcn, config.getString("id")), exception)
-        }).get
-    }
-  }
 
   def configureExecutor(): ExecutorServiceConfigurator = {
     config.getString("executor") match {

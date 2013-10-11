@@ -24,15 +24,18 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
       {
         import config._
 
-        getString("akka.version") must equal("2.2-SNAPSHOT")
-        settings.ConfigVersion must equal("2.2-SNAPSHOT")
+        getString("akka.version") must equal("2.3-SNAPSHOT")
+        settings.ConfigVersion must equal("2.3-SNAPSHOT")
 
         getBoolean("akka.daemonic") must equal(false)
-        getBoolean("akka.actor.serialize-messages") must equal(false)
-        settings.SerializeAllMessages must equal(false)
+
+        // WARNING: This setting must be off in the default reference.conf, but must be on when running
+        // the test suite.
+        getBoolean("akka.actor.serialize-messages") must equal(true)
+        settings.SerializeAllMessages must equal(true)
 
         getInt("akka.scheduler.ticks-per-wheel") must equal(512)
-        getMilliseconds("akka.scheduler.tick-duration") must equal(100)
+        getMilliseconds("akka.scheduler.tick-duration") must equal(10)
         getString("akka.scheduler.implementation") must equal("akka.actor.LightArrayRevolverScheduler")
 
         getBoolean("akka.daemonic") must be(false)
@@ -53,6 +56,12 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
 
         getMilliseconds("akka.logger-startup-timeout") must be(5.seconds.toMillis)
         settings.LoggerStartTimeout.duration must be(5.seconds)
+
+        getInt("akka.log-dead-letters") must be(10)
+        settings.LogDeadLetters must be(10)
+
+        getBoolean("akka.log-dead-letters-during-shutdown") must be(true)
+        settings.LogDeadLettersDuringShutdown must be(true)
       }
 
       {
@@ -63,9 +72,6 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         {
           c.getString("type") must equal("Dispatcher")
           c.getString("executor") must equal("fork-join-executor")
-          c.getInt("mailbox-capacity") must equal(-1)
-          c.getMilliseconds("mailbox-push-timeout-time") must equal(10 * 1000)
-          c.getString("mailbox-type") must be("")
           c.getMilliseconds("shutdown-timeout") must equal(1 * 1000)
           c.getInt("throughput") must equal(5)
           c.getMilliseconds("throughput-deadline-time") must equal(0)
@@ -132,6 +138,18 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
 
           ioExtSettings.defaultBacklog must be(1000)
           io.getInt("default-backlog") must be(ioExtSettings.defaultBacklog)
+        }
+      }
+
+      {
+        val c = config.getConfig("akka.actor.default-mailbox")
+
+        // general mailbox config
+
+        {
+          c.getInt("mailbox-capacity") must equal(1000)
+          c.getMilliseconds("mailbox-push-timeout-time") must equal(10 * 1000)
+          c.getString("mailbox-type") must be("akka.dispatch.UnboundedMailbox")
         }
       }
     }

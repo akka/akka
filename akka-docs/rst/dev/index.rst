@@ -1,5 +1,5 @@
-Information for Developers
-==========================
+Information for Akka Developers
+===============================
 
 .. toctree::
    :maxdepth: 2

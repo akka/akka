@@ -55,7 +55,7 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
         }
         callingThreadLock.compareAndSet(1, 0) // Disable the lock
       }
-      Await.result(p.future, timeout.duration) must be === ()
+      Await.result(p.future, timeout.duration) must be === (())
     }
 
     "be able to avoid starvation when Batching is used and Await/blocking is called" in {
@@ -136,7 +136,7 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
       sec.isEmpty must be === true
     }
 
-    "should relinquish thread when suspended" in {
+    "relinquish thread when suspended" in {
       val submissions = new AtomicInteger(0)
       val counter = new AtomicInteger(0)
       val underlying = new ExecutionContext {

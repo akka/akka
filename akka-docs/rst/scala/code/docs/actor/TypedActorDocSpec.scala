@@ -4,17 +4,16 @@
 package docs.actor
 
 import language.postfixOps
-
-//#imports
 import scala.concurrent.{ Promise, Future, Await }
 import scala.concurrent.duration._
 import akka.actor.{ ActorContext, TypedActor, TypedProps }
-
-//#imports
-
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
 import akka.testkit._
+//#typed-actor-impl
+//Mr funny man avoids printing to stdout AND keeping docs alright
+import java.lang.String.{ valueOf ⇒ println }
+import akka.actor.ActorRef
 
 //#typed-actor-iface
 trait Squarer {
@@ -46,8 +45,6 @@ class SquarerImpl(val name: String) extends Squarer {
   def squareNow(i: Int): Int = i * i
   //#typed-actor-impl-methods
 }
-//#typed-actor-impl
-import java.lang.String.{ valueOf ⇒ println } //Mr funny man avoids printing to stdout AND keeping docs alright
 //#typed-actor-supercharge
 trait Foo {
   def doFoo(times: Int): Unit = println("doFoo(" + times + ")")
@@ -145,12 +142,13 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   }
 
   "proxy any ActorRef" in {
+    val actorRefToRemoteActor: ActorRef = system.deadLetters
     //#typed-actor-remote
     val typedActor: Foo with Bar =
       TypedActor(system).
         typedActorOf(
           TypedProps[FooBar],
-          system.actorFor("akka://SomeSystem@somehost:2552/user/some/foobar"))
+          actorRefToRemoteActor)
     //Use "typedActor" as a FooBar
     //#typed-actor-remote
   }

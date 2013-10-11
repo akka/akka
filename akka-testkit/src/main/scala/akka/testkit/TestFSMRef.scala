@@ -8,6 +8,8 @@ import akka.actor._
 import scala.concurrent.duration.Duration
 import akka.dispatch.DispatcherPrerequisites
 import scala.concurrent.duration.FiniteDuration
+import akka.dispatch.MessageDispatcher
+import akka.dispatch.MailboxType
 
 /**
  * This is a specialised form of the TestActorRef with support for querying and
@@ -34,12 +36,11 @@ import scala.concurrent.duration.FiniteDuration
  * @since 1.2
  */
 class TestFSMRef[S, D, T <: Actor](
-  system: ActorSystemImpl,
-  _prerequisites: DispatcherPrerequisites,
+  system: ActorSystem,
   props: Props,
-  supervisor: InternalActorRef,
+  supervisor: ActorRef,
   name: String)(implicit ev: T <:< FSM[S, D])
-  extends TestActorRef(system, _prerequisites, props, supervisor, name) {
+  extends TestActorRef[T](system, props, supervisor, name) {
 
   private def fsm: T = underlyingActor
 
@@ -93,11 +94,11 @@ object TestFSMRef {
 
   def apply[S, D, T <: Actor](factory: ⇒ T)(implicit ev: T <:< FSM[S, D], system: ActorSystem): TestFSMRef[S, D, T] = {
     val impl = system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
-    new TestFSMRef(impl, system.dispatchers.prerequisites, Props(creator = () ⇒ factory), impl.guardian.asInstanceOf[InternalActorRef], TestActorRef.randomName)
+    new TestFSMRef(impl, Props(creator = () ⇒ factory), impl.guardian.asInstanceOf[InternalActorRef], TestActorRef.randomName)
   }
 
   def apply[S, D, T <: Actor](factory: ⇒ T, name: String)(implicit ev: T <:< FSM[S, D], system: ActorSystem): TestFSMRef[S, D, T] = {
     val impl = system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
-    new TestFSMRef(impl, system.dispatchers.prerequisites, Props(creator = () ⇒ factory), impl.guardian.asInstanceOf[InternalActorRef], name)
+    new TestFSMRef(impl, Props(creator = () ⇒ factory), impl.guardian.asInstanceOf[InternalActorRef], name)
   }
 }

@@ -5,7 +5,7 @@ package akka.testkit
 
 import language.{ postfixOps, reflectiveCalls }
 
-import org.scalatest.{ WordSpec, BeforeAndAfterAll, Tag }
+import org.scalatest.{ WordSpecLike, BeforeAndAfterAll, Tag }
 import org.scalatest.matchers.MustMatchers
 import akka.actor.{ Actor, Props, ActorSystem, PoisonPill, DeadLetter, ActorSystemImpl }
 import akka.event.{ Logging, LoggingAdapter }
@@ -15,6 +15,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import java.util.concurrent.TimeoutException
 import akka.dispatch.Dispatchers
 import akka.pattern.ask
+import akka.testkit.TestEvent._
 
 object AkkaSpec {
   val testConf: Config = ConfigFactory.parseString("""
@@ -41,7 +42,8 @@ object AkkaSpec {
   }
 
   def getCallerName(clazz: Class[_]): String = {
-    val s = Thread.currentThread.getStackTrace map (_.getClassName) drop 1 dropWhile (_ matches ".*AkkaSpec.?$")
+    val s = (Thread.currentThread.getStackTrace map (_.getClassName) drop 1)
+      .dropWhile(_ matches "(java.lang.Thread|.*AkkaSpec.?$)")
     val reduced = s.lastIndexWhere(_ == clazz.getName) match {
       case -1 ⇒ s
       case z  ⇒ s drop (z + 1)
@@ -52,7 +54,7 @@ object AkkaSpec {
 }
 
 abstract class AkkaSpec(_system: ActorSystem)
-  extends TestKit(_system) with WordSpec with MustMatchers with BeforeAndAfterAll {
+  extends TestKit(_system) with WordSpecLike with MustMatchers with BeforeAndAfterAll with WatchedByCoroner {
 
   def this(config: Config) = this(ActorSystem(AkkaSpec.getCallerName(getClass),
     ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
@@ -66,18 +68,15 @@ abstract class AkkaSpec(_system: ActorSystem)
   val log: LoggingAdapter = Logging(system, this.getClass)
 
   final override def beforeAll {
+    startCoroner
     atStartup()
   }
 
   final override def afterAll {
     beforeTermination()
-    system.shutdown()
-    try system.awaitTermination(5 seconds) catch {
-      case _: TimeoutException ⇒
-        system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
-        println(system.asInstanceOf[ActorSystemImpl].printTree)
-    }
+    shutdown(system)
     afterTermination()
+    stopCoroner()
   }
 
   protected def atStartup() {}
@@ -88,4 +87,15 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   def spawn(dispatcherId: String = Dispatchers.DefaultDispatcherId)(body: ⇒ Unit): Unit =
     Future(body)(system.dispatchers.lookup(dispatcherId))
+
+  override def expectedTestDuration: FiniteDuration = 60 seconds
+
+  def muteDeadLetters(messageClasses: Class[_]*)(sys: ActorSystem = system): Unit =
+    if (!sys.log.isDebugEnabled) {
+      def mute(clazz: Class[_]): Unit =
+        sys.eventStream.publish(Mute(DeadLettersFilter(clazz)(occurrences = Int.MaxValue)))
+      if (messageClasses.isEmpty) mute(classOf[AnyRef])
+      else messageClasses foreach mute
+    }
+
 }

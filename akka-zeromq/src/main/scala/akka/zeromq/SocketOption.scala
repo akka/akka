@@ -77,7 +77,7 @@ class Context(numIoThreads: Int) extends SocketMeta {
 
   def poller: Poller = context.poller
 
-  def term: Unit = context.term
+  def term(): Unit = context.term()
 }
 
 /**
@@ -229,7 +229,8 @@ object ZMQMessage {
     if ((frames eq null) || frames.length == 0) empty else new ZMQMessage(frames.to[immutable.Seq])
 
   /**
-   * Java API
+   * Java API: create a message from the given frames
+   *
    * @param frames the frames of the returned ZMQMessage
    * @return a ZMQMessage with the given frames
    */

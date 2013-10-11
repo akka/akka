@@ -21,7 +21,7 @@ You can then add multi-JVM testing to ``project/Build.scala`` by including the `
 settings and config. Please note that MultiJvm test sources are located in ``src/multi-jvm/...``,
 and not in ``src/test/...``.
 
-Here is an example Build.scala file that uses the MultiJvm plugin:
+Here is an example Build.scala file for sbt 0.12 that uses the MultiJvm plugin:
 
 .. parsed-literal::
 
@@ -72,11 +72,35 @@ Here is an example Build.scala file that uses the MultiJvm plugin:
            "test" @crossString@,
          "com.typesafe.akka" %% "akka-multi-node-testkit" % "@version@" %
            "test" @crossString@,
-         "org.scalatest"     %% "scalatest" % "1.9.1" % "test",
-         "junit"              % "junit" % "4.5" % "test"
+         "org.scalatest"     %% "scalatest" % "1.9.2-SNAP2" % "test",
+         "junit"              % "junit" % "4.10" % "test"
        )
      }
    }
+
+If you are using sbt 0.13 the multiJvmSettings in the Build.scala file looks like this instead:
+
+.. parsed-literal::
+
+   lazy val multiJvmSettings = SbtMultiJvm.multiJvmSettings ++ Seq(
+     // make sure that MultiJvm test are compiled by the default test compilation
+     compile in MultiJvm <<= (compile in MultiJvm) triggeredBy (compile in Test),
+     // disable parallel tests
+     parallelExecution in Test := false,
+     // make sure that MultiJvm tests are executed by the default test target
+     executeTests in Test <<=
+       ((executeTests in Test), (executeTests in MultiJvm)) map {
+         case ((testResults), (multiJvmResults)) =>
+           val overall =
+             if (testResults.overall.id < multiJvmResults.overall.id)
+               multiJvmResults.overall
+             else
+               testResults.overall
+           Tests.Output(overall,
+             testResults.events ++ multiJvmResults.events,
+             testResults.summaries ++ multiJvmResults.summaries)
+     }
+   )
 
 You can specify JVM options for the forked JVMs::
 

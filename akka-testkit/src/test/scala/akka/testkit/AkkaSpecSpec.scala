@@ -28,7 +28,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
           a ! 42
         }
       } finally {
-        system.shutdown()
+        TestKit.shutdownActorSystem(system)
       }
     }
 
@@ -43,28 +43,28 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
         val ref = Seq(testActor, system.actorOf(Props.empty, "name"))
       }
       spec.ref foreach (_.isTerminated must not be true)
-      system.shutdown()
+      TestKit.shutdownActorSystem(system)
       spec.awaitCond(spec.ref forall (_.isTerminated), 2 seconds)
     }
 
-    "must stop correctly when sending PoisonPill to rootGuardian" in {
+    "stop correctly when sending PoisonPill to rootGuardian" in {
       val system = ActorSystem("AkkaSpec2", AkkaSpec.testConf)
       val spec = new AkkaSpec(system) {}
       val latch = new TestLatch(1)(system)
       system.registerOnTermination(latch.countDown())
 
-      system.actorFor("/") ! PoisonPill
+      system.actorSelection("/") ! PoisonPill
 
       Await.ready(latch, 2 seconds)
     }
 
-    "must enqueue unread messages from testActor to deadLetters" in {
+    "enqueue unread messages from testActor to deadLetters" in {
       val system, otherSystem = ActorSystem("AkkaSpec3", AkkaSpec.testConf)
 
       try {
         var locker = Seq.empty[DeadLetter]
         implicit val timeout = TestKitExtension(system).DefaultTimeout
-        implicit val davyJones = otherSystem.actorOf(Props(new Actor {
+        val davyJones = otherSystem.actorOf(Props(new Actor {
           def receive = {
             case m: DeadLetter ⇒ locker :+= m
             case "Die!"        ⇒ sender ! "finally gone"; context.stop(self)
@@ -74,7 +74,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
         system.eventStream.subscribe(davyJones, classOf[DeadLetter])
 
         val probe = new TestProbe(system)
-        probe.ref ! 42
+        probe.ref.tell(42, davyJones)
         /*
        * this will ensure that the message is actually received, otherwise it
        * may happen that the system.stop() suspends the testActor before it had
@@ -86,15 +86,15 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
 
         val latch = new TestLatch(1)(system)
         system.registerOnTermination(latch.countDown())
-        system.shutdown()
+        TestKit.shutdownActorSystem(system)
         Await.ready(latch, 2 seconds)
         Await.result(davyJones ? "Die!", timeout.duration) must be === "finally gone"
 
         // this will typically also contain log messages which were sent after the logger shutdown
         locker must contain(DeadLetter(42, davyJones, probe.ref))
       } finally {
-        system.shutdown()
-        otherSystem.shutdown()
+        TestKit.shutdownActorSystem(system)
+        TestKit.shutdownActorSystem(otherSystem)
       }
     }
   }

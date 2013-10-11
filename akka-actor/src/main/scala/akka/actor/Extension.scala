@@ -18,8 +18,51 @@ import scala.reflect.ClassTag
  * The extension itself can be created in any way desired and has full access
  * to the ActorSystem implementation.
  *
- * This trait is only a marker interface to signify an Akka Extension, see
- * [[akka.actor.ExtensionKey]] for a concise way of formulating extensions.
+ * This trait is only a marker interface to signify an Akka Extension. This is
+ * how an extension is normally constructed.
+ *
+ * Scala API:
+ *
+ * {{{
+ * object MyExt extends ExtensionId[Ext] with ExtensionIdProvider {
+ *
+ *   override def lookup = MyExt
+ *
+ *   override def createExtension(system: ExtendedActorSystem): Ext = new Ext(system)
+ *
+ *   // Java API: retrieve the extension for the given system.
+ *   override def get(system: ActorSystem): UdpExt = super.get(system)
+ * }
+ *
+ * class Ext(system: ExtendedActorSystem) extends Extension {
+ *   ...
+ * }
+ * }}}
+ *
+ * Java API:
+ *
+ * {{{
+ * public class MyExt extends AbstractExtensionId<MyExtImpl>
+ *   implements ExtensionIdProvider {
+ *   public final static MyExt MyExtProvider = new MyExt();
+ *
+ *   private MyExt() {}
+ *
+ *   public MyExt lookup() {
+ *     return MyExt.MyExtProvider;
+ *   }
+ *
+ *   public MyExtImpl createExtension(ExtendedActorSystem system) {
+ *     return new MyExtImpl();
+ *   }
+ * }
+ *
+ * public class MyExtImpl implements Extension {
+ *    ...
+ * }
+ * }}}
+ *
+ * See also [[akka.actor.ExtensionKey]] for a concise way of formulating extensions.
  */
 trait Extension
 
@@ -81,7 +124,7 @@ trait ExtensionIdProvider {
  * {{{
  * object MyExt extends ExtensionKey[Ext]
  *
- * class Ext(system: ExtendedActorSystem) extends MyExt {
+ * class Ext(system: ExtendedActorSystem) extends Extension {
  *   ...
  * }
  * }}}
@@ -90,12 +133,18 @@ trait ExtensionIdProvider {
  *
  * {{{
  * public class MyExt extends Extension {
- *   static final ExtensionKey<MyExt> key = new ExtensionKey<MyExt>(MyExt.class);
+ *   public static final ExtensionKey<MyExt> key = new ExtensionKey<MyExt>(MyExt.class);
  *
  *   public MyExt(ExtendedActorSystem system) {
  *     ...
  *   }
+ * }
  * }}}
+ *
+ * Note: Don't use this class if the extension is written in Scala and consumed in
+ * Eclipse Java projects. JDT has problems resolving correct type for the
+ * `get` method.
+ *
  */
 abstract class ExtensionKey[T <: Extension](implicit m: ClassTag[T]) extends ExtensionId[T] with ExtensionIdProvider {
   def this(clazz: Class[T]) = this()(ClassTag(clazz))

@@ -25,9 +25,9 @@ class DangerousActor extends Actor with ActorLogging {
     new CircuitBreaker(context.system.scheduler,
       maxFailures = 5,
       callTimeout = 10.seconds,
-      resetTimeout = 1.minute).onOpen(notifyMeOnOpen)
+      resetTimeout = 1.minute).onOpen(notifyMeOnOpen())
 
-  def notifyMeOnOpen =
+  def notifyMeOnOpen(): Unit =
     log.warning("My CircuitBreaker is now open, and will not close for one minute")
   //#circuit-breaker-initialization
 

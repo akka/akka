@@ -35,13 +35,45 @@ trait ClusterNodeMBean {
   def getUnreachable: String
 
   /*
-   * String that will list all nodes in the node ring as follows:
+   * JSON format of the status of all nodes in the cluster as follows:
    * {{{
-   * Members:
-   *         Member(address = akka://system0@localhost:5550, status = Up)
-   *         Member(address = akka://system1@localhost:5551, status = Up)
-   * Unreachable:
-   *         Member(address = akka://system2@localhost:5553, status = Down)
+   * {
+   *   "self-address": "akka://system@host1:2552",
+   *   "members": [
+   *     {
+   *       "address": "akka://system@host1:2552",
+   *       "status": "Up"
+   *     },
+   *     {
+   *       "address": "akka://system@host2:2552",
+   *       "status": "Up"
+   *     },
+   *     {
+   *       "address": "akka://system@host3:2552",
+   *       "status": "Down"
+   *     },
+   *     {
+   *       "address": "akka://system@host4:2552",
+   *       "status": "Joining"
+   *     }
+   *   ],
+   *   "unreachable": [
+   *     {
+   *       "node": "akka://system@host2:2552",
+   *       "observed-by": [
+   *         "akka://system@host1:2552",
+   *         "akka://system@host3:2552"
+   *       ]
+   *     },
+   *     {
+   *       "node": "akka://system@host3:2552",
+   *       "observed-by": [
+   *         "akka://system@host1:2552",
+   *         "akka://system@host2:2552"
+   *       ]
+   *     }
+   *   ]
+   * }
    * }}}
    */
   def getClusterStatus: String
@@ -91,6 +123,7 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
   private val mBeanServer = ManagementFactory.getPlatformMBeanServer
   private val clusterMBeanName = new ObjectName("akka:type=Cluster")
   private def clusterView = cluster.readView
+  import cluster.InfoLogger._
 
   /**
    * Creates the cluster JMX MBean and registers it in the MBean server.
@@ -101,9 +134,33 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
       // JMX attributes (bean-style)
 
       def getClusterStatus: String = {
-        val unreachable = clusterView.unreachableMembers
-        "\nMembers:\n\t" + clusterView.members.mkString("\n\t") +
-          { if (unreachable.nonEmpty) "\nUnreachable:\n\t" + unreachable.mkString("\n\t") else "" }
+        val members = clusterView.members.toSeq.sorted(Member.ordering).map { m ⇒
+          s"""{
+              |      "address": "${m.address}",
+              |      "status": "${m.status}"
+              |    }""".stripMargin
+        } mkString (",\n    ")
+
+        val unreachable = clusterView.reachability.observersGroupedByUnreachable.toSeq.sortBy(_._1).map {
+          case (subject, observers) ⇒
+            s"""{
+              |      "node": "${subject.address}",
+              |      "observed-by": [
+              |        ${observers.toSeq.sorted.map(_.address).mkString("\"", "\",\n        \"", "\"")}
+              |      ]
+              |    }""".stripMargin
+        } mkString (",\n")
+
+        s"""{
+        |  "self-address": "${clusterView.selfAddress}",
+        |  "members": [
+        |    ${members}
+        |  ],
+        |  "unreachable": [
+        |    ${unreachable}
+        |  ]
+        |}
+        |""".stripMargin
       }
 
       def getMembers: String =
@@ -130,7 +187,7 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
     }
     try {
       mBeanServer.registerMBean(mbean, clusterMBeanName)
-      log.info("Cluster Node [{}] - registered cluster JMX MBean [{}]", clusterView.selfAddress, clusterMBeanName)
+      logInfo("Registered cluster JMX MBean [{}]", clusterMBeanName)
     } catch {
       case e: InstanceAlreadyExistsException ⇒ // ignore - we are running multiple cluster nodes in the same JVM (probably for testing)
     }

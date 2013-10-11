@@ -11,7 +11,7 @@ import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.model.RouteDefinition
 
 /**
- * For internal use only.
+ * INTERNAL API
  * Builder of a route to a target which can be an actor.
  *
  * @param endpointUri endpoint URI of the consumer actor.

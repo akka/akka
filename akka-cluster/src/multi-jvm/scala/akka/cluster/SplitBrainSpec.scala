@@ -24,9 +24,9 @@ case class SplitBrainMultiNodeConfig(failureDetectorPuppet: Boolean) extends Mul
 
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
-        akka.remote.retry-latch-closed-for = 3 s
+        akka.remote.retry-gate-closed-for = 3 s
         akka.cluster {
-          auto-down = on
+          auto-down-unreachable-after = 1s
           failure-detector.threshold = 4
         }""")).
     withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
@@ -67,8 +67,7 @@ abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
       enterBarrier("after-1")
     }
 
-    "detect network partition and mark nodes on other side as unreachable" taggedAs LongRunningTest in {
-      val thirdAddress = address(third)
+    "detect network partition and mark nodes on other side as unreachable and form new cluster" taggedAs LongRunningTest in within(30 seconds) {
       enterBarrier("before-split")
 
       runOn(first) {
@@ -79,42 +78,21 @@ abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
       }
       enterBarrier("after-split")
 
-      runOn(side1.last) {
+      runOn(side1: _*) {
         for (role ← side2) markNodeAsUnavailable(role)
-      }
-      runOn(side2.last) {
-        for (role ← side1) markNodeAsUnavailable(role)
-      }
-
-      runOn(side1: _*) {
-        awaitCond(clusterView.unreachableMembers.map(_.address) == (side2.toSet map address), 25 seconds)
-      }
-      runOn(side2: _*) {
-        awaitCond(clusterView.unreachableMembers.map(_.address) == (side1.toSet map address), 25 seconds)
-      }
-
-      enterBarrier("after-2")
-    }
-
-    "auto-down the other nodes and form new cluster with potentially new leader" taggedAs LongRunningTest in {
-
-      runOn(side1: _*) {
-        // auto-down = on
-        awaitCond(clusterView.unreachableMembers.forall(m ⇒ m.status == MemberStatus.Down), 15 seconds)
-        clusterView.unreachableMembers.map(_.address) must be(side2.toSet map address)
-        awaitUpConvergence(side1.size, side2.toSet map address)
+        // auto-down
+        awaitMembersUp(side1.size, side2.toSet map address)
         assertLeader(side1: _*)
       }
 
       runOn(side2: _*) {
-        // auto-down = on
-        awaitCond(clusterView.unreachableMembers.forall(m ⇒ m.status == MemberStatus.Down), 15 seconds)
-        clusterView.unreachableMembers.map(_.address) must be(side1.toSet map address)
-        awaitUpConvergence(side2.size, side1.toSet map address)
+        for (role ← side1) markNodeAsUnavailable(role)
+        // auto-down
+        awaitMembersUp(side2.size, side1.toSet map address)
         assertLeader(side2: _*)
       }
 
-      enterBarrier("after-3")
+      enterBarrier("after-2")
     }
 
   }

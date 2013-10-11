@@ -79,7 +79,7 @@ class ActorFireForgetRequestReplySpec extends AkkaSpec with BeforeAndAfterEach w
       state.s must be("ReplyImplicit")
     }
 
-    "should shutdown crashed temporary actor" in {
+    "shutdown crashed temporary actor" in {
       filterEvents(EventFilter[Exception]("Expected exception")) {
         val supervisor = system.actorOf(Props(new Supervisor(
           OneForOneStrategy(maxNrOfRetries = 0)(List(classOf[Exception])))))

@@ -15,14 +15,14 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
 
   implicit val timeout: Timeout = Timeout(15 seconds)
 
-  def checkZeroMQInstallation =
+  def checkZeroMQInstallation() =
     try {
       zmq.version match {
         case ZeroMQVersion(x, y, _) if x >= 3 || (x >= 2 && y >= 1) ⇒ Unit
         case version ⇒ invalidZeroMQVersion(version)
       }
     } catch {
-      case e: LinkageError ⇒ zeroMQNotInstalled
+      case e: LinkageError ⇒ zeroMQNotInstalled()
     }
 
   def invalidZeroMQVersion(version: ZeroMQVersion) {
@@ -30,19 +30,19 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
     pending
   }
 
-  def zeroMQNotInstalled {
+  def zeroMQNotInstalled(): Unit = {
     info("WARNING: The tests are not run because ZeroMQ is not installed. Version >= 2.1.x required.")
     pending
   }
 
   val endpoint = "tcp://127.0.0.1:%s" format { val s = new java.net.ServerSocket(0); try s.getLocalPort finally s.close() }
 
-  // this must stay a def for checkZeroMQInstallation to work correctly
+  // this must stay a def for checkZeroMQInstallation() to work correctly
   def zmq = ZeroMQExtension(system)
 
   "ConcurrentSocketActor" should {
     "support pub-sub connections" in {
-      checkZeroMQInstallation
+      checkZeroMQInstallation()
       val subscriberProbe = TestProbe()
       val context = Context()
       val publisher = zmq.newSocket(SocketType.Pub, context, Bind(endpoint))
@@ -58,7 +58,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
 
       try {
         subscriberProbe.expectMsg(Connecting)
-        val msgNumbers = subscriberProbe.receiveWhile(2 seconds) {
+        val msgNumbers = subscriberProbe.receiveWhile(3 seconds) {
           case msg: ZMQMessage if msg.frames.size == 2 ⇒
             msg.frames(1).length must be(0)
             msg
@@ -69,7 +69,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
         msgGenerator.cancel()
         system stop publisher
         system stop subscriber
-        subscriberProbe.receiveWhile(1 seconds) {
+        subscriberProbe.receiveWhile(3 seconds) {
           case msg ⇒ msg
         }.last must equal(Closed)
         awaitCond(publisher.isTerminated)
@@ -79,7 +79,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
     }
 
     "support req-rep connections" in {
-      checkZeroMQInstallation
+      checkZeroMQInstallation()
       val requesterProbe = TestProbe()
       val replierProbe = TestProbe()
       val context = Context()
@@ -106,7 +106,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
     }
 
     "should support push-pull connections" in {
-      checkZeroMQInstallation
+      checkZeroMQInstallation()
       val pullerProbe = TestProbe()
       val context = Context()
       val pusher = zmq.newSocket(SocketType.Push, context, Bind(endpoint))

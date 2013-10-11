@@ -55,11 +55,10 @@ abstract class DynamicAccess {
 }
 
 /**
- * This is the default [[akka.actor.DynamicAccess]] implementation used by [[akka.actor.ActorSystemImpl]]
+ * This is the default [[akka.actor.DynamicAccess]] implementation used by [[akka.actor.ExtendedActorSystem]]
  * unless overridden. It uses reflection to turn fully-qualified class names into `Class[_]` objects
  * and creates instances from there using `getDeclaredConstructor()` and invoking that. The class loader
- * to be used for all this is determined by the [[akka.actor.ActorSystemImpl]]’s `findClassLoader` method
- * by default.
+ * to be used for all this is determined by the actor system’s class loader by default.
  */
 class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAccess {
 

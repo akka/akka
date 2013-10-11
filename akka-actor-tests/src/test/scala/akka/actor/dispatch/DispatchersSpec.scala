@@ -3,18 +3,15 @@
  */
 package akka.actor.dispatch
 
-import language.postfixOps
-
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
+import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.reflect.ClassTag
-import akka.dispatch._
-import akka.testkit.AkkaSpec
-import akka.testkit.ImplicitSender
-import scala.collection.JavaConverters._
+
 import com.typesafe.config.ConfigFactory
-import akka.actor.Actor
-import akka.actor.Props
-import scala.concurrent.duration._
+
+import akka.ConfigurationException
+import akka.actor.{ Actor, ActorRef, Props }
+import akka.dispatch.{ BalancingDispatcher, Dispatcher, Dispatchers, MessageDispatcher, PinnedDispatcher }
+import akka.testkit.{ AkkaSpec, ImplicitSender }
 
 object DispatchersSpec {
   val config = """
@@ -33,6 +30,14 @@ object DispatchersSpec {
         type = BalancingDispatcher
       }
     }
+    akka.actor.deployment {
+      /echo1 {
+        dispatcher = myapp.mydispatcher
+      }
+      /echo2 {
+        dispatcher = myapp.mydispatcher
+      }
+     }
     """
 
   class ThreadNameEcho extends Actor {
@@ -73,6 +78,14 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
       withFallback(defaultDispatcherConfig)))).toMap
   }
 
+  def assertMyDispatcherIsUsed(actor: ActorRef): Unit = {
+    actor ! "what's the name?"
+    val Expected = "(DispatchersSpec-myapp.mydispatcher-[1-9][0-9]*)".r
+    expectMsgPF(remaining) {
+      case Expected(x) ⇒
+    }
+  }
+
   "Dispatchers" must {
 
     "use defined properties" in {
@@ -85,9 +98,10 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
       dispatcher.id must be("myapp.mydispatcher")
     }
 
-    "use default dispatcher for missing config" in {
-      val dispatcher = lookup("myapp.other-dispatcher")
-      dispatcher must be === defaultGlobalDispatcher
+    "complain about missing config" in {
+      intercept[ConfigurationException] {
+        lookup("myapp.other-dispatcher")
+      }
     }
 
     "have only one default dispatcher" in {
@@ -96,8 +110,8 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
       dispatcher must be === system.dispatcher
     }
 
-    "throw IllegalArgumentException if type does not exist" in {
-      intercept[IllegalArgumentException] {
+    "throw ConfigurationException if type does not exist" in {
+      intercept[ConfigurationException] {
         from(ConfigFactory.parseMap(Map(tipe -> "typedoesntexist", id -> "invalid-dispatcher").asJava).
           withFallback(defaultDispatcherConfig))
       }
@@ -115,11 +129,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
     }
 
     "include system name and dispatcher id in thread names for fork-join-executor" in {
-      system.actorOf(Props[ThreadNameEcho].withDispatcher("myapp.mydispatcher")) ! "what's the name?"
-      val Expected = "(DispatchersSpec-myapp.mydispatcher-[1-9][0-9]*)".r
-      expectMsgPF(remaining) {
-        case Expected(x) ⇒
-      }
+      assertMyDispatcherIsUsed(system.actorOf(Props[ThreadNameEcho].withDispatcher("myapp.mydispatcher")))
     }
 
     "include system name and dispatcher id in thread names for thread-pool-executor" in {
@@ -152,6 +162,15 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
       expectMsgPF(remaining) {
         case Expected(x) ⇒
       }
+    }
+
+    "use dispatcher in deployment config" in {
+      assertMyDispatcherIsUsed(system.actorOf(Props[ThreadNameEcho], name = "echo1"))
+    }
+
+    "use dispatcher in deployment config, trumps code" in {
+      assertMyDispatcherIsUsed(
+        system.actorOf(Props[ThreadNameEcho].withDispatcher("myapp.my-pinned-dispatcher"), name = "echo2"))
     }
 
   }

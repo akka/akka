@@ -38,11 +38,9 @@ abstract class NodeMembershipSpec
 
       runOn(first, second) {
         cluster.join(first)
-        awaitCond(clusterView.members.size == 2)
+        awaitAssert(clusterView.members.size must be(2))
         assertMembers(clusterView.members, first, second)
-        awaitCond {
-          clusterView.members.forall(_.status == MemberStatus.Up)
-        }
+        awaitAssert(clusterView.members.map(_.status) must be(Set(MemberStatus.Up)))
       }
 
       enterBarrier("after-1")
@@ -54,13 +52,24 @@ abstract class NodeMembershipSpec
         cluster.join(first)
       }
 
-      awaitCond(clusterView.members.size == 3)
+      awaitAssert(clusterView.members.size must be(3))
       assertMembers(clusterView.members, first, second, third)
-      awaitCond {
-        clusterView.members.forall(_.status == MemberStatus.Up)
-      }
+      awaitAssert(clusterView.members.map(_.status) must be(Set(MemberStatus.Up)))
 
       enterBarrier("after-2")
+    }
+
+    "correct member age" taggedAs LongRunningTest in {
+      val firstMember = clusterView.members.find(_.address == address(first)).get
+      val secondMember = clusterView.members.find(_.address == address(second)).get
+      val thirdMember = clusterView.members.find(_.address == address(third)).get
+      firstMember.isOlderThan(thirdMember) must be(true)
+      thirdMember.isOlderThan(firstMember) must be(false)
+      secondMember.isOlderThan(thirdMember) must be(true)
+      thirdMember.isOlderThan(secondMember) must be(false)
+
+      enterBarrier("after-3")
+
     }
   }
 }

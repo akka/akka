@@ -24,25 +24,26 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
   with BeforeAndAfterEach with ImplicitSender {
 
   var publisher: ActorRef = _
-  val aUp = Member(Address("akka.tcp", "sys", "a", 2552), Up)
+  val aUp = TestMember(Address("akka.tcp", "sys", "a", 2552), Up)
   val aLeaving = aUp.copy(status = Leaving)
-  val aExiting = aUp.copy(status = Exiting)
-  val aRemoved = aUp.copy(status = Removed)
-  val bUp = Member(Address("akka.tcp", "sys", "b", 2552), Up)
-  val bRemoved = bUp.copy(status = Removed)
-  val cJoining = Member(Address("akka.tcp", "sys", "c", 2552), Joining)
+  val aExiting = aLeaving.copy(status = Exiting)
+  val aRemoved = aExiting.copy(status = Removed)
+  val bExiting = TestMember(Address("akka.tcp", "sys", "b", 2552), Exiting)
+  val bRemoved = bExiting.copy(status = Removed)
+  val cJoining = TestMember(Address("akka.tcp", "sys", "c", 2552), Joining, Set("GRP"))
   val cUp = cJoining.copy(status = Up)
   val cRemoved = cUp.copy(status = Removed)
-  val dUp = Member(Address("akka.tcp", "sys", "a", 2551), Up)
+  val a51Up = TestMember(Address("akka.tcp", "sys", "a", 2551), Up)
+  val dUp = TestMember(Address("akka.tcp", "sys", "d", 2552), Up, Set("GRP"))
 
-  val g0 = Gossip(members = SortedSet(aUp)).seen(aUp.address)
-  val g1 = Gossip(members = SortedSet(aUp, bUp, cJoining)).seen(aUp.address).seen(bUp.address).seen(cJoining.address)
-  val g2 = Gossip(members = SortedSet(aUp, bUp, cUp)).seen(aUp.address)
-  val g3 = g2.seen(bUp.address).seen(cUp.address)
-  val g4 = Gossip(members = SortedSet(dUp, aUp, bUp, cUp)).seen(aUp.address)
-  val g5 = Gossip(members = SortedSet(dUp, aUp, bUp, cUp)).seen(aUp.address).seen(bUp.address).seen(cUp.address).seen(dUp.address)
-  val g6 = Gossip(members = SortedSet(aLeaving, bUp, cUp)).seen(aUp.address)
-  val g7 = Gossip(members = SortedSet(aExiting, bUp, cUp)).seen(aUp.address)
+  val g0 = Gossip(members = SortedSet(aUp)).seen(aUp.uniqueAddress)
+  val g1 = Gossip(members = SortedSet(aUp, bExiting, cJoining)).seen(aUp.uniqueAddress).seen(bExiting.uniqueAddress).seen(cJoining.uniqueAddress)
+  val g2 = Gossip(members = SortedSet(aUp, bExiting, cUp)).seen(aUp.uniqueAddress)
+  val g3 = g2.seen(bExiting.uniqueAddress).seen(cUp.uniqueAddress)
+  val g4 = Gossip(members = SortedSet(a51Up, aUp, bExiting, cUp)).seen(aUp.uniqueAddress)
+  val g5 = Gossip(members = SortedSet(a51Up, aUp, bExiting, cUp)).seen(aUp.uniqueAddress).seen(bExiting.uniqueAddress).seen(cUp.uniqueAddress).seen(a51Up.uniqueAddress)
+  val g6 = Gossip(members = SortedSet(aLeaving, bExiting, cUp)).seen(aUp.uniqueAddress)
+  val g7 = Gossip(members = SortedSet(aExiting, bExiting, cUp)).seen(aUp.uniqueAddress)
 
   // created in beforeEach
   var memberSubscriber: TestProbe = _
@@ -60,80 +61,64 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
 
   "ClusterDomainEventPublisher" must {
 
-    "not publish MemberUp when there is no convergence" in {
-      publisher ! PublishChanges(g2)
-    }
-
-    "publish MemberEvents when there is convergence" in {
+    "publish MemberUp" in {
       publisher ! PublishChanges(g2)
       publisher ! PublishChanges(g3)
-      memberSubscriber.expectMsg(MemberUp(bUp))
+      memberSubscriber.expectMsg(MemberExited(bExiting))
       memberSubscriber.expectMsg(MemberUp(cUp))
     }
 
-    "publish leader changed when new leader after convergence" in {
+    "publish leader changed" in {
       publisher ! PublishChanges(g4)
+      memberSubscriber.expectMsg(MemberUp(a51Up))
+      memberSubscriber.expectMsg(MemberExited(bExiting))
+      memberSubscriber.expectMsg(MemberUp(cUp))
+      memberSubscriber.expectMsg(LeaderChanged(Some(a51Up.address)))
       memberSubscriber.expectNoMsg(1 second)
-
-      publisher ! PublishChanges(g5)
-      memberSubscriber.expectMsg(MemberUp(dUp))
-      memberSubscriber.expectMsg(MemberUp(bUp))
-      memberSubscriber.expectMsg(MemberUp(cUp))
-      memberSubscriber.expectMsg(LeaderChanged(Some(dUp.address)))
-    }
-
-    "publish leader changed when new leader and convergence both before and after" in {
-      // convergence both before and after
-      publisher ! PublishChanges(g3)
-      memberSubscriber.expectMsg(MemberUp(bUp))
-      memberSubscriber.expectMsg(MemberUp(cUp))
-      publisher ! PublishChanges(g5)
-      memberSubscriber.expectMsg(MemberUp(dUp))
-      memberSubscriber.expectMsg(LeaderChanged(Some(dUp.address)))
     }
 
     "publish leader changed when old leader leaves and is removed" in {
       publisher ! PublishChanges(g3)
-      memberSubscriber.expectMsg(MemberUp(bUp))
+      memberSubscriber.expectMsg(MemberExited(bExiting))
       memberSubscriber.expectMsg(MemberUp(cUp))
       publisher ! PublishChanges(g6)
       memberSubscriber.expectNoMsg(1 second)
       publisher ! PublishChanges(g7)
+      memberSubscriber.expectMsg(MemberExited(aExiting))
+      memberSubscriber.expectMsg(LeaderChanged(Some(cUp.address)))
       memberSubscriber.expectNoMsg(1 second)
       // at the removed member a an empty gossip is the last thing
       publisher ! PublishChanges(Gossip.empty)
-      memberSubscriber.expectMsg(MemberLeft(aLeaving))
-      memberSubscriber.expectMsg(MemberExited(aExiting))
-      memberSubscriber.expectMsg(LeaderChanged(Some(bUp.address)))
-      memberSubscriber.expectMsg(MemberRemoved(aRemoved))
-      memberSubscriber.expectMsg(MemberRemoved(bRemoved))
-      memberSubscriber.expectMsg(MemberRemoved(cRemoved))
+      memberSubscriber.expectMsg(MemberRemoved(aRemoved, Exiting))
+      memberSubscriber.expectMsg(MemberRemoved(bRemoved, Exiting))
+      memberSubscriber.expectMsg(MemberRemoved(cRemoved, Up))
       memberSubscriber.expectMsg(LeaderChanged(None))
     }
 
-    "not publish leader changed when not convergence" in {
+    "not publish leader changed when same leader" in {
       publisher ! PublishChanges(g4)
+      memberSubscriber.expectMsg(MemberUp(a51Up))
+      memberSubscriber.expectMsg(MemberExited(bExiting))
+      memberSubscriber.expectMsg(MemberUp(cUp))
+      memberSubscriber.expectMsg(LeaderChanged(Some(a51Up.address)))
+
+      publisher ! PublishChanges(g5)
       memberSubscriber.expectNoMsg(1 second)
     }
 
-    "not publish leader changed when changed convergence but still same leader" in {
-      publisher ! PublishChanges(g5)
-      memberSubscriber.expectMsg(MemberUp(dUp))
-      memberSubscriber.expectMsg(MemberUp(bUp))
-      memberSubscriber.expectMsg(MemberUp(cUp))
-      memberSubscriber.expectMsg(LeaderChanged(Some(dUp.address)))
-
-      publisher ! PublishChanges(g4)
-      memberSubscriber.expectNoMsg(1 second)
-
-      publisher ! PublishChanges(g5)
-      memberSubscriber.expectNoMsg(1 second)
+    "publish role leader changed" in {
+      val subscriber = TestProbe()
+      publisher ! Subscribe(subscriber.ref, classOf[RoleLeaderChanged])
+      subscriber.expectMsgType[CurrentClusterState]
+      publisher ! PublishChanges(Gossip(members = SortedSet(cJoining, dUp)))
+      subscriber.expectMsg(RoleLeaderChanged("GRP", Some(dUp.address)))
+      publisher ! PublishChanges(Gossip(members = SortedSet(cUp, dUp)))
+      subscriber.expectMsg(RoleLeaderChanged("GRP", Some(cUp.address)))
     }
 
     "send CurrentClusterState when subscribe" in {
       val subscriber = TestProbe()
       publisher ! Subscribe(subscriber.ref, classOf[ClusterDomainEvent])
-      subscriber.expectMsgType[InstantClusterState]
       subscriber.expectMsgType[CurrentClusterState]
       // but only to the new subscriber
       memberSubscriber.expectNoMsg(1 second)
@@ -147,36 +132,8 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
       publisher ! PublishChanges(g3)
       subscriber.expectNoMsg(1 second)
       // but memberSubscriber is still subscriber
-      memberSubscriber.expectMsg(MemberUp(bUp))
+      memberSubscriber.expectMsg(MemberExited(bExiting))
       memberSubscriber.expectMsg(MemberUp(cUp))
-    }
-
-    "publish clean state when PublishStart" in {
-      val subscriber = TestProbe()
-      publisher ! Subscribe(subscriber.ref, classOf[ClusterDomainEvent])
-      subscriber.expectMsgType[InstantClusterState]
-      subscriber.expectMsgType[CurrentClusterState]
-      publisher ! PublishChanges(g3)
-      subscriber.expectMsg(InstantMemberUp(bUp))
-      subscriber.expectMsg(InstantMemberUp(cUp))
-      subscriber.expectMsg(MemberUp(bUp))
-      subscriber.expectMsg(MemberUp(cUp))
-      subscriber.expectMsgType[SeenChanged]
-
-      publisher ! PublishStart
-      subscriber.expectMsgType[CurrentClusterState] must be(CurrentClusterState())
-    }
-
-    "publish immediately when subscribing to InstantMemberEvent" in {
-      val subscriber = TestProbe()
-      publisher ! Subscribe(subscriber.ref, classOf[InstantMemberEvent])
-      subscriber.expectMsgType[InstantClusterState]
-      publisher ! PublishChanges(g2)
-      subscriber.expectMsg(InstantMemberUp(bUp))
-      subscriber.expectMsg(InstantMemberUp(cUp))
-      subscriber.expectNoMsg(1 second)
-      publisher ! PublishChanges(g3)
-      subscriber.expectNoMsg(1 second)
     }
 
     "publish SeenChanged" in {
@@ -193,7 +150,7 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
 
     "publish Removed when stopped" in {
       publisher ! PoisonPill
-      memberSubscriber.expectMsg(MemberRemoved(aRemoved))
+      memberSubscriber.expectMsg(MemberRemoved(aRemoved, Up))
     }
 
   }

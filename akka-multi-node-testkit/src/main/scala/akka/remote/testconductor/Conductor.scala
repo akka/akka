@@ -4,7 +4,7 @@
 package akka.remote.testconductor
 
 import language.postfixOps
-import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props }
+import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props, NoSerializationVerificationNeeded }
 import RemoteConnection.getAddrString
 import TestConductorProtocol._
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent }
@@ -25,6 +25,7 @@ import scala.reflect.classTag
 import akka.ConfigurationException
 import akka.AkkaException
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.actor.Deploy
 
 /**
  * The conductor is the one orchestrating the test: it governs the
@@ -64,7 +65,7 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def startController(participants: Int, name: RoleName, controllerPort: InetSocketAddress): Future[InetSocketAddress] = {
     if (_controller ne null) throw new RuntimeException("TestConductorServer was already started")
-    _controller = system.actorOf(Props(new Controller(participants, controllerPort)), "controller")
+    _controller = system.actorOf(Props(classOf[Controller], participants, controllerPort), "controller")
     import Settings.BarrierTimeout
     import system.dispatcher
     controller ? GetSockAddr flatMap { case sockAddr: InetSocketAddress ⇒ startClient(name, sockAddr) map (_ ⇒ sockAddr) }
@@ -87,7 +88,7 @@ trait Conductor { this: TestConductorExt ⇒
    * according to the given rate, the previous packet completion and the current
    * packet length. In case of large packets they are split up if the calculated
    * send pause would exceed `akka.testconductor.packet-split-threshold`
-   * (roughly). All of this uses the system’s HashedWheelTimer, which is not
+   * (roughly). All of this uses the system’s scheduler, which is not
    * terribly precise and will execute tasks later than they are schedule (even
    * on average), but that is countered by using the actual execution time for
    * determining how much to send, leading to the correct output rate, but with
@@ -179,12 +180,26 @@ trait Conductor { this: TestConductorExt ⇒
    * @param node is the symbolic name of the node which is to be affected
    * @param exitValue is the return code which shall be given to System.exit
    */
-  def shutdown(node: RoleName, exitValue: Int): Future[Done] = {
+  def exit(node: RoleName, exitValue: Int): Future[Done] = {
     import Settings.QueryTimeout
     import system.dispatcher
     // the recover is needed to handle ClientDisconnectedException exception,
     // which is normal during shutdown
-    controller ? Terminate(node, exitValue) mapTo classTag[Done] recover { case _: ClientDisconnectedException ⇒ Done }
+    controller ? Terminate(node, Some(exitValue)) mapTo classTag[Done] recover { case _: ClientDisconnectedException ⇒ Done }
+  }
+
+  /**
+   * Tell the actor system at the remote node to shut itself down. The node will also be
+   * removed, so that the remaining nodes may still pass subsequent barriers.
+   *
+   * @param node is the symbolic name of the node which is to be affected
+   */
+  def shutdown(node: RoleName): Future[Done] = {
+    import Settings.QueryTimeout
+    import system.dispatcher
+    // the recover is needed to handle ClientDisconnectedException exception,
+    // which is normal during shutdown
+    controller ? Terminate(node, None) mapTo classTag[Done] recover { case _: ClientDisconnectedException ⇒ Done }
   }
 
   /**
@@ -336,7 +351,7 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
       stay
   }
 
-  initialize
+  initialize()
 }
 
 /**
@@ -347,7 +362,7 @@ private[akka] object Controller {
   class ClientDisconnectedException(msg: String) extends AkkaException(msg) with NoStackTrace
   case object GetNodes
   case object GetSockAddr
-  case class CreateServerFSM(channel: Channel)
+  case class CreateServerFSM(channel: Channel) extends NoSerializationVerificationNeeded
 
   case class NodeInfo(name: RoleName, addr: Address, fsm: ActorRef)
 }
@@ -399,7 +414,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
     case CreateServerFSM(channel) ⇒
       val (ip, port) = channel.getRemoteAddress match { case s: InetSocketAddress ⇒ (s.getAddress.getHostAddress, s.getPort) }
       val name = ip + ":" + port + "-server" + generation.next
-      sender ! context.actorOf(Props(new ServerFSM(self, channel)), name)
+      sender ! context.actorOf(Props(classOf[ServerFSM], self, channel).withDeploy(Deploy.local), name)
     case c @ NodeInfo(name, addr, fsm) ⇒
       barrier forward c
       if (nodes contains name) {
@@ -574,7 +589,7 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
       throw BarrierTimeout(d)
   }
 
-  initialize
+  initialize()
 
   def handleBarrier(data: Data): State = {
     log.debug("handleBarrier({})", data)

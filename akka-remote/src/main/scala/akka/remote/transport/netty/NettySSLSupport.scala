@@ -14,6 +14,7 @@ import java.io.{ IOException, FileNotFoundException, FileInputStream }
 import java.security._
 import javax.net.ssl.{ KeyManagerFactory, TrustManager, TrustManagerFactory, SSLContext }
 import org.jboss.netty.handler.ssl.SslHandler
+import scala.util.Try
 
 /**
  * INTERNAL API
@@ -22,25 +23,29 @@ private[akka] class SSLSettings(config: Config) {
 
   import config._
 
-  val SSLKeyStore = Option(getString("key-store")).filter(_.length > 0)
-  val SSLTrustStore = Option(getString("trust-store")).filter(_.length > 0)
-  val SSLKeyStorePassword = Option(getString("key-store-password")).filter(_.length > 0)
+  private def emptyIsNone(s: String): Option[String] = Option(s).filter(_.length > 0)
 
-  val SSLTrustStorePassword = Option(getString("trust-store-password")).filter(_.length > 0)
+  val SSLKeyStore = emptyIsNone(getString("key-store"))
+  val SSLTrustStore = emptyIsNone(getString("trust-store"))
+  val SSLKeyStorePassword = emptyIsNone(getString("key-store-password"))
+  val SSLKeyPassword = emptyIsNone(getString("key-password"))
+
+  val SSLTrustStorePassword = emptyIsNone(getString("trust-store-password"))
 
   val SSLEnabledAlgorithms = immutableSeq(getStringList("enabled-algorithms")).to[Set]
 
-  val SSLProtocol = Option(getString("protocol")).filter(_.length > 0)
+  val SSLProtocol = emptyIsNone(getString("protocol"))
 
-  val SSLRandomNumberGenerator = Option(getString("random-number-generator")).filter(_.length > 0)
+  val SSLRandomNumberGenerator = emptyIsNone(getString("random-number-generator"))
 
-  // FIXME: Change messages to reflect new configuration
   if (SSLProtocol.isEmpty) throw new ConfigurationException(
     "Configuration option 'akka.remote.netty.ssl.enable-ssl is turned on but no protocol is defined in 'akka.remote.netty.ssl.security.protocol'.")
   if (SSLKeyStore.isEmpty && SSLTrustStore.isEmpty) throw new ConfigurationException(
     "Configuration option 'akka.remote.netty.ssl.enable-ssl is turned on but no key/trust store is defined in 'akka.remote.netty.ssl.security.key-store' / 'akka.remote.netty.ssl.security.trust-store'.")
   if (SSLKeyStore.isDefined && SSLKeyStorePassword.isEmpty) throw new ConfigurationException(
     "Configuration option 'akka.remote.netty.ssl.security.key-store' is defined but no key-store password is defined in 'akka.remote.netty.ssl.security.key-store-password'.")
+  if (SSLKeyStore.isDefined && SSLKeyPassword.isEmpty) throw new ConfigurationException(
+    "Configuration option 'akka.remote.netty.ssl.security.key-store' is defined but no key password is defined in 'akka.remote.netty.ssl.security.key-password'.")
   if (SSLTrustStore.isDefined && SSLTrustStorePassword.isEmpty) throw new ConfigurationException(
     "Configuration option 'akka.remote.netty.ssl.security.trust-store' is defined but no trust-store password is defined in 'akka.remote.netty.ssl.security.trust-store-password'.")
 }
@@ -92,7 +97,7 @@ private[akka] object NettySSLSupport {
           trustManagerFactory.init({
             val trustStore = KeyStore.getInstance(KeyStore.getDefaultType)
             val fin = new FileInputStream(trustStorePath)
-            try trustStore.load(fin, trustStorePassword.toCharArray) finally fin.close()
+            try trustStore.load(fin, trustStorePassword.toCharArray) finally Try(fin.close())
             trustStore
           })
           trustManagerFactory.getTrustManagers
@@ -133,27 +138,40 @@ private[akka] object NettySSLSupport {
   def initializeServerSSL(settings: SSLSettings, log: LoggingAdapter): SslHandler = {
     log.debug("Server SSL is enabled, initialising ...")
 
-    def constructServerContext(settings: SSLSettings, log: LoggingAdapter, keyStorePath: String, keyStorePassword: String, protocol: String): Option[SSLContext] =
+    def constructServerContext(settings: SSLSettings, log: LoggingAdapter, keyStorePath: String, keyStorePassword: String, keyPassword: String, protocol: String): Option[SSLContext] =
       try {
         val rng = initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, log)
         val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
         factory.init({
           val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
           val fin = new FileInputStream(keyStorePath)
-          try keyStore.load(fin, keyStorePassword.toCharArray) finally fin.close()
+          try keyStore.load(fin, keyStorePassword.toCharArray) finally Try(fin.close())
           keyStore
-        }, keyStorePassword.toCharArray)
-        Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(factory.getKeyManagers, null, rng); ctx }
+        }, keyPassword.toCharArray)
+
+        val trustManagers: Option[Array[TrustManager]] = settings.SSLTrustStore map {
+          path ⇒
+            val pwd = settings.SSLTrustStorePassword.map(_.toCharArray).orNull
+            val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
+            trustManagerFactory.init({
+              val trustStore = KeyStore.getInstance(KeyStore.getDefaultType)
+              val fin = new FileInputStream(path)
+              try trustStore.load(fin, pwd) finally Try(fin.close())
+              trustStore
+            })
+            trustManagerFactory.getTrustManagers
+        }
+        Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(factory.getKeyManagers, trustManagers.orNull, rng); ctx }
       } catch {
         case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Server SSL connection could not be established because key store could not be loaded", e)
         case e: IOException              ⇒ throw new RemoteTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
         case e: GeneralSecurityException ⇒ throw new RemoteTransportException("Server SSL connection could not be established because SSL context could not be constructed", e)
       }
 
-    ((settings.SSLKeyStore, settings.SSLKeyStorePassword, settings.SSLProtocol) match {
-      case (Some(keyStore), Some(password), Some(protocol)) ⇒ constructServerContext(settings, log, keyStore, password, protocol)
-      case (keyStore, password, protocol) ⇒ throw new GeneralSecurityException(
-        "SSL key store settings went missing. [key-store: %s] [key-store-password: %s] [protocol: %s]".format(keyStore, password, protocol))
+    ((settings.SSLKeyStore, settings.SSLKeyStorePassword, settings.SSLKeyPassword, settings.SSLProtocol) match {
+      case (Some(keyStore), Some(storePassword), Some(keyPassword), Some(protocol)) ⇒ constructServerContext(settings, log, keyStore, storePassword, keyPassword, protocol)
+      case (keyStore, storePassword, keyPassword, protocol) ⇒ throw new GeneralSecurityException(
+        s"SSL key store settings went missing. [key-store: $keyStore] [key-store-password: $storePassword] [key-password: $keyPassword] [protocol: $protocol]")
     }) match {
       case Some(context) ⇒
         log.debug("Using server SSL context to create SSLEngine ...")

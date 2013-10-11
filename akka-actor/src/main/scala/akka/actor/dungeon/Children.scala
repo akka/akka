@@ -163,15 +163,20 @@ private[akka] trait Children { this: ActorCell ⇒
       case null           ⇒ throw new InvalidActorNameException("actor name must not be null")
       case ""             ⇒ throw new InvalidActorNameException("actor name must not be empty")
       case ElementRegex() ⇒ name
-      case _              ⇒ throw new InvalidActorNameException("illegal actor name '" + name + "', must conform to " + ElementRegex)
+      case _              ⇒ throw new InvalidActorNameException(s"illegal actor name [$name], must conform to $ElementRegex")
     }
   }
 
   private def makeChild(cell: ActorCell, props: Props, name: String, async: Boolean, systemService: Boolean): ActorRef = {
-    if (cell.system.settings.SerializeAllCreators && !props.creator.isInstanceOf[NoSerializationVerificationNeeded]) {
-      val ser = SerializationExtension(cell.system)
-      ser.deserialize(ser.serialize(props.creator).get, props.creator.getClass).get
-    }
+    if (cell.system.settings.SerializeAllCreators && !systemService && props.deploy.scope != LocalScope)
+      try {
+        val ser = SerializationExtension(cell.system)
+        props.args forall (arg ⇒
+          arg.isInstanceOf[NoSerializationVerificationNeeded] ||
+            ser.deserialize(ser.serialize(arg.asInstanceOf[AnyRef]).get, arg.getClass).get != null)
+      } catch {
+        case NonFatal(e) ⇒ throw new IllegalArgumentException(s"pre-creation serialization check failed at [${cell.self.path}/$name]", e)
+      }
     /*
      * in case we are currently terminating, fail external attachChild requests
      * (internal calls cannot happen anyway because we are suspended)
@@ -182,9 +187,14 @@ private[akka] trait Children { this: ActorCell ⇒
       // this name will either be unreserved or overwritten with a real child below
       val actor =
         try {
-          cell.provider.actorOf(cell.systemImpl, props, cell.self, cell.self.path / name,
+          val childPath = new ChildActorPath(cell.self.path, name, ActorCell.newUid())
+          cell.provider.actorOf(cell.systemImpl, props, cell.self, childPath,
             systemService = systemService, deploy = None, lookupDeploy = true, async = async)
         } catch {
+          case e: InterruptedException ⇒
+            unreserveChild(name)
+            Thread.interrupted() // clear interrupted flag before throwing according to java convention
+            throw e
           case NonFatal(e) ⇒
             unreserveChild(name)
             throw e

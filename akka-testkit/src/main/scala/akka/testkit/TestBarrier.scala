@@ -38,5 +38,5 @@ class TestBarrier(count: Int) {
     }
   }
 
-  def reset = barrier.reset
+  def reset(): Unit = barrier.reset()
 }

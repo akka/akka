@@ -5,7 +5,7 @@ package akka.remote.testconductor
 
 import language.postfixOps
 
-import akka.actor.{ Props, AddressFromURIString, ActorRef, Actor, OneForOneStrategy, SupervisorStrategy, PoisonPill }
+import akka.actor._
 import akka.testkit.{ AkkaSpec, ImplicitSender, EventFilter, TestProbe, TimingTest }
 import scala.concurrent.duration._
 import akka.event.Logging
@@ -240,9 +240,10 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
         expectMsg(ToClient(Done))
         b ! Remove(B)
         b ! Remove(A)
-        EventFilter[BarrierEmpty](occurrences = 1) intercept {
+        EventFilter.warning(start = "cannot remove", occurrences = 1) intercept {
           b ! Remove(A)
         }
+        Thread.sleep(5000)
       }
     }
 
@@ -522,7 +523,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
 
   private def withController(participants: Int)(f: (ActorRef) ⇒ Unit): Unit = {
     system.actorOf(Props(new Actor {
-      val controller = context.actorOf(Props(new Controller(participants, new InetSocketAddress(InetAddress.getLocalHost, 0))))
+      val controller = context.actorOf(Props(classOf[Controller], participants, new InetSocketAddress(InetAddress.getLocalHost, 0)))
       controller ! GetSockAddr
       override def supervisorStrategy = OneForOneStrategy() {
         case x ⇒ testActor ! Failed(controller, x); SupervisorStrategy.Restart
@@ -530,7 +531,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       def receive = {
         case x: InetSocketAddress ⇒ testActor ! controller
       }
-    }))
+    }).withDeploy(Deploy.local))
     val actor = expectMsgType[ActorRef]
     f(actor)
     actor ! PoisonPill // clean up so network connections don't accumulate during test run
@@ -549,7 +550,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       def receive = {
         case _ ⇒ sender ! barrier
       }
-    })) ! ""
+    }).withDeploy(Deploy.local)) ! ""
     expectMsgType[ActorRef]
   }
 

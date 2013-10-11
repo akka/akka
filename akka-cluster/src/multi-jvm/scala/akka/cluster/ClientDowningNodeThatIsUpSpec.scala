@@ -4,6 +4,7 @@
 package akka.cluster
 
 import com.typesafe.config.ConfigFactory
+import scala.concurrent.duration._
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
@@ -50,7 +51,7 @@ abstract class ClientDowningNodeThatIsUpSpec(multiNodeConfig: ClientDowningNodeT
 
         markNodeAsUnavailable(thirdAddress)
 
-        awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Set(thirdAddress))
+        awaitMembersUp(numberOfMembers = 3, canNotBePartOfMemberRing = Set(thirdAddress))
         clusterView.members.exists(_.address == thirdAddress) must be(false)
       }
 
@@ -61,7 +62,7 @@ abstract class ClientDowningNodeThatIsUpSpec(multiNodeConfig: ClientDowningNodeT
       runOn(second, fourth) {
         enterBarrier("down-third-node")
 
-        awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Set(thirdAddress))
+        awaitMembersUp(numberOfMembers = 3, canNotBePartOfMemberRing = Set(thirdAddress))
       }
 
       enterBarrier("await-completion")

@@ -115,11 +115,9 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
   def startRouter(name: String): ActorRef = {
     val router = system.actorOf(Props[Routee].withRouter(ClusterRouterConfig(
       local = AdaptiveLoadBalancingRouter(HeapMetricsSelector),
-      settings = ClusterRouterSettings(totalInstances = 10, maxInstancesPerNode = 1))), name)
-    awaitCond {
-      // it may take some time until router receives cluster member events
-      currentRoutees(router).size == roles.size
-    }
+      settings = ClusterRouterSettings(totalInstances = 10, maxInstancesPerNode = 1, useRole = None))), name)
+    // it may take some time until router receives cluster member events
+    awaitAssert { currentRoutees(router).size must be(roles.size) }
     currentRoutees(router).map(fullAddress).toSet must be(roles.map(address).toSet)
     router
   }
@@ -170,7 +168,6 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
 
       runOn(first) {
         val router2 = startRouter("router2")
-        router2
 
         // collect some metrics before we start
         Thread.sleep(cluster.settings.MetricsInterval.toMillis * 10)
@@ -193,10 +190,8 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
     "create routees from configuration" taggedAs LongRunningTest in {
       runOn(first) {
         val router3 = system.actorOf(Props[Memory].withRouter(FromConfig()), "router3")
-        awaitCond {
-          // it may take some time until router receives cluster member events
-          currentRoutees(router3).size == 9
-        }
+        // it may take some time until router receives cluster member events
+        awaitAssert { currentRoutees(router3).size must be(9) }
         currentRoutees(router3).map(fullAddress).toSet must be(Set(address(first)))
       }
       enterBarrier("after-4")
@@ -205,10 +200,8 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
     "create routees from cluster.enabled configuration" taggedAs LongRunningTest in {
       runOn(first) {
         val router4 = system.actorOf(Props[Memory].withRouter(FromConfig()), "router4")
-        awaitCond {
-          // it may take some time until router receives cluster member events
-          currentRoutees(router4).size == 6
-        }
+        // it may take some time until router receives cluster member events
+        awaitAssert { currentRoutees(router4).size must be(6) }
         currentRoutees(router4).map(fullAddress).toSet must be(Set(
           address(first), address(second), address(third)))
       }

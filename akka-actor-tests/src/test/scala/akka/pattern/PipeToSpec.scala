@@ -1,0 +1,95 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+package akka.pattern
+
+import akka.testkit.AkkaSpec
+import akka.testkit.TestProbe
+import scala.concurrent.Future
+import akka.actor.Status
+
+class PipeToSpec extends AkkaSpec {
+
+  import system.dispatcher
+
+  "PipeTo" must {
+
+    "work" in {
+      val p = TestProbe()
+      Future(42) pipeTo p.ref
+      p.expectMsg(42)
+    }
+
+    "signal failure" in {
+      val p = TestProbe()
+      Future.failed(new Exception("failed")) pipeTo p.ref
+      p.expectMsgType[Status.Failure].cause.getMessage must be("failed")
+    }
+
+    "pick up an implicit sender" in {
+      val p = TestProbe()
+      implicit val s = testActor
+      Future(42) pipeTo p.ref
+      p.expectMsg(42)
+      p.lastSender must be(s)
+    }
+
+    "work in Java form" in {
+      val p = TestProbe()
+      pipe(Future(42)) to p.ref
+      p.expectMsg(42)
+    }
+
+    "work in Java form with sender" in {
+      val p = TestProbe()
+      pipe(Future(42)) to (p.ref, testActor)
+      p.expectMsg(42)
+      p.lastSender must be(testActor)
+    }
+
+  }
+
+  "PipeToSelection" must {
+
+    "work" in {
+      val p = TestProbe()
+      val sel = system.actorSelection(p.ref.path)
+      Future(42) pipeToSelection sel
+      p.expectMsg(42)
+    }
+
+    "signal failure" in {
+      val p = TestProbe()
+      val sel = system.actorSelection(p.ref.path)
+      Future.failed(new Exception("failed")) pipeToSelection sel
+      p.expectMsgType[Status.Failure].cause.getMessage must be("failed")
+    }
+
+    "pick up an implicit sender" in {
+      val p = TestProbe()
+      val sel = system.actorSelection(p.ref.path)
+      implicit val s = testActor
+      Future(42) pipeToSelection sel
+      p.expectMsg(42)
+      p.lastSender must be(s)
+    }
+
+    "work in Java form" in {
+      val p = TestProbe()
+      val sel = system.actorSelection(p.ref.path)
+      pipe(Future(42)) to sel
+      p.expectMsg(42)
+    }
+
+    "work in Java form with sender" in {
+      val p = TestProbe()
+      val sel = system.actorSelection(p.ref.path)
+      pipe(Future(42)) to (sel, testActor)
+      p.expectMsg(42)
+      p.lastSender must be(testActor)
+    }
+
+  }
+
+}

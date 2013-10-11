@@ -1,7 +1,7 @@
 .. _akka-testkit:
 
 ##############################
-Testing Actor Systems (Scala)
+Testing Actor Systems
 ##############################
 
 .. toctree::
@@ -82,11 +82,10 @@ Due to a limitation in Scala’s type inference, there is only the factory metho
 shown above, so you will probably write code like ``TestFSMRef(new MyFSM)``
 instead of the hypothetical :class:`ActorRef`-inspired ``TestFSMRef[MyFSM]``.
 All methods shown above directly access the FSM state without any
-synchronization; this is perfectly alright if the
-:class:`CallingThreadDispatcher` is used (which is the default for
-:class:`TestFSMRef`) and no other threads are involved, but it may lead to
-surprises if you were to actually exercise timer events, because those are
-executed on the :obj:`Scheduler` thread.
+synchronization; this is perfectly alright if the :class:`CallingThreadDispatcher` 
+is used and no other threads are involved, but it may lead to surprises if you
+were to actually exercise timer events, because those are executed on the 
+:obj:`Scheduler` thread.
 
 Testing the Actor's Behavior
 ----------------------------
@@ -303,6 +302,15 @@ with message flows:
     the :obj:`max` duration is used up. The interval defaults to 100 ms and the
     maximum defaults to the time remaining in the innermost enclosing
     :ref:`within <TestKit.within>` block.
+
+  * :meth:`awaitAssert(a: => Any, max: Duration, interval: Duration)`
+
+    Poll the given assert function every :obj:`interval` until it does not throw
+    an exception or the :obj:`max` duration is used up. If the timeout expires the 
+    last exception is thrown. The interval defaults to 100 ms and the maximum defaults
+    to the time remaining in the innermost enclosing :ref:`within <TestKit.within>` 
+    block.The interval defaults to 100 ms and the maximum defaults to the time 
+    remaining in the innermost enclosing :ref:`within <TestKit.within>` block.  
 
   * :meth:`ignoreMsg(pf: PartialFunction[AnyRef, Boolean])`
 
@@ -698,7 +706,7 @@ All these messages are logged at ``DEBUG`` level. To summarize, you can enable
 full logging of actor activities using this configuration fragment::
 
   akka {
-    loglevel = DEBUG
+    loglevel = "DEBUG"
     actor {
       debug {
         receive = on

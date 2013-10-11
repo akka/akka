@@ -3,8 +3,8 @@ package sample.cluster.simple.japi;
 import akka.actor.UntypedActor;
 import akka.cluster.ClusterEvent.ClusterDomainEvent;
 import akka.cluster.ClusterEvent.CurrentClusterState;
-import akka.cluster.ClusterEvent.MemberJoined;
 import akka.cluster.ClusterEvent.MemberUp;
+import akka.cluster.ClusterEvent.MemberRemoved;
 import akka.cluster.ClusterEvent.UnreachableMember;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
@@ -18,10 +18,6 @@ public class SimpleClusterListener extends UntypedActor {
       CurrentClusterState state = (CurrentClusterState) message;
       log.info("Current members: {}", state.members());
 
-    } else if (message instanceof MemberJoined) {
-      MemberJoined mJoined = (MemberJoined) message;
-      log.info("Member joined: {}", mJoined);
-
     } else if (message instanceof MemberUp) {
       MemberUp mUp = (MemberUp) message;
       log.info("Member is Up: {}", mUp.member());
@@ -29,6 +25,10 @@ public class SimpleClusterListener extends UntypedActor {
     } else if (message instanceof UnreachableMember) {
       UnreachableMember mUnreachable = (UnreachableMember) message;
       log.info("Member detected as unreachable: {}", mUnreachable.member());
+
+    } else if (message instanceof MemberRemoved) {
+      MemberRemoved mRemoved = (MemberRemoved) message;
+      log.info("Member is Removed: {}", mRemoved.member());
 
     } else if (message instanceof ClusterDomainEvent) {
       // ignore

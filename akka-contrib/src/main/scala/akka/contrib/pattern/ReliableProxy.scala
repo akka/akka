@@ -26,7 +26,8 @@ object ReliableProxy {
         } else {
           log.debug("received msg of {} from {} with wrong serial", msg.asInstanceOf[AnyRef].getClass, snd)
         }
-      case Terminated(`target`) ⇒ context stop self
+      //TODO use exact match of target when all actor references have uid, i.e. actorFor has been removed
+      case Terminated(a) if a.path == target.path ⇒ context stop self
     }
   }
 
@@ -44,7 +45,7 @@ object ReliableProxy {
   case class Ack(serial: Int)
   case object Tick
 
-  def receiver(target: ActorRef): Props = Props(new Receiver(target))
+  def receiver(target: ActorRef): Props = Props(classOf[Receiver], target)
 
   sealed trait State
   case object Idle extends State
@@ -73,16 +74,17 @@ import ReliableProxy._
  * situations or other VM errors).
  *
  * You can create a reliable connection like this:
+ *
+ * In Scala:
+ *
  * {{{
- * val proxy = context.actorOf(Props(new ReliableProxy(target)))
+ * val proxy = context.actorOf(Props(classOf[ReliableProxy], target))
  * }}}
- * or in Java:
+ *
+ * In Java:
+ *
  * {{{
- * final ActorRef proxy = getContext().actorOf(new Props(new UntypedActorFactory() {
- *   public Actor create() {
- *     return new ReliableProxy(target);
- *   }
- * }));
+ * final ActorRef proxy = getContext().actorOf(Props.create(ReliableProxy.class target));
  * }}}
  *
  * '''''Please note:''''' the tunnel is uni-directional, and original sender

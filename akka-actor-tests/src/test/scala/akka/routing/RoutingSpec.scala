@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger
 object RoutingSpec {
 
   val config = """
+    akka.actor.serialize-messages = off
     akka.actor.deployment {
       /router1 {
         router = round-robin
@@ -72,6 +73,8 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
   implicit val ec = system.dispatcher
   import akka.routing.RoutingSpec._
 
+  muteDeadLetters(classOf[akka.dispatch.sysmsg.DeathWatchNotification])()
+
   "routers in general" must {
 
     "evict terminated routees" in {
@@ -82,9 +85,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       watch(router)
       watch(c2)
       system.stop(c2)
-      expectMsgPF() {
-        case t @ Terminated(`c2`) if t.existenceConfirmed == true ⇒ t
-      }
+      expectTerminated(c2).existenceConfirmed must be === true
       // it might take a while until the Router has actually processed the Terminated message
       awaitCond {
         router ! ""
@@ -95,9 +96,27 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         res == Seq(c1, c1)
       }
       system.stop(c1)
-      expectMsgPF() {
-        case t @ Terminated(`router`) if t.existenceConfirmed == true ⇒ t
+      expectTerminated(router).existenceConfirmed must be === true
+    }
+
+    "not terminate when resizer is used" in {
+      val latch = TestLatch(1)
+      val resizer = new Resizer {
+        def isTimeForResize(messageCounter: Long): Boolean = messageCounter == 0
+        def resize(routeeProvider: RouteeProvider): Unit = {
+          routeeProvider.createRoutees(nrOfInstances = 2)
+          latch.countDown()
+        }
       }
+      val router = system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(resizer = Some(resizer))))
+      watch(router)
+      Await.ready(latch, remaining)
+      router ! CurrentRoutees
+      val routees = expectMsgType[RouterRoutees].routees
+      routees.size must be(2)
+      routees foreach system.stop
+      // expect no Terminated
+      expectNoMsg(2.seconds)
     }
 
     "be able to send their routees" in {
@@ -132,7 +151,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       expectMsgType[RouterRoutees].routees.size must be(3)
       watch(router)
       system.stop(router)
-      expectMsgType[Terminated]
+      expectTerminated(router)
     }
 
     "use configured nr-of-instances when router is specified" in {
@@ -169,14 +188,26 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         RoundRobinRouter(1, supervisorStrategy = escalator)))
       //#supervision
       router ! CurrentRoutees
-      EventFilter[ActorKilledException](occurrences = 2) intercept {
+      EventFilter[ActorKilledException](occurrences = 1) intercept {
         expectMsgType[RouterRoutees].routees.head ! Kill
       }
       expectMsgType[ActorKilledException]
 
       val router2 = system.actorOf(Props.empty.withRouter(RoundRobinRouter(1).withSupervisorStrategy(escalator)))
       router2 ! CurrentRoutees
-      EventFilter[ActorKilledException](occurrences = 2) intercept {
+      EventFilter[ActorKilledException](occurrences = 1) intercept {
+        expectMsgType[RouterRoutees].routees.head ! Kill
+      }
+      expectMsgType[ActorKilledException]
+    }
+
+    "set supplied supervisorStrategy for FromConfig" in {
+      val escalator = OneForOneStrategy() {
+        case e ⇒ testActor ! e; SupervisorStrategy.Escalate
+      }
+      val router = system.actorOf(Props.empty.withRouter(FromConfig.withSupervisorStrategy(escalator)), "router1")
+      router ! CurrentRoutees
+      EventFilter[ActorKilledException](occurrences = 1) intercept {
         expectMsgType[RouterRoutees].routees.head ! Kill
       }
       expectMsgType[ActorKilledException]
@@ -194,7 +225,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         override def postRestart(reason: Throwable): Unit = testActor ! "restarted"
       }).withRouter(RoundRobinRouter(3))
       val router = expectMsgType[ActorRef]
-      EventFilter[Exception]("die", occurrences = 2) intercept {
+      EventFilter[Exception]("die", occurrences = 1) intercept {
         router ! "die"
       }
       expectMsgType[Exception].getMessage must be("die")
@@ -203,7 +234,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       expectMsg("restarted")
     }
 
-    "must start in-line for context.actorOf()" in {
+    "start in-line for context.actorOf()" in {
       system.actorOf(Props(new Actor {
         def receive = {
           case "start" ⇒
@@ -379,19 +410,19 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
       val busy = TestLatch(1)
       val received0 = TestLatch(1)
-      router ! (busy, received0)
+      router ! ((busy, received0))
       Await.ready(received0, TestLatch.DefaultTimeout)
 
       val received1 = TestLatch(1)
-      router ! (1, received1)
+      router ! ((1, received1))
       Await.ready(received1, TestLatch.DefaultTimeout)
 
       val received2 = TestLatch(1)
-      router ! (2, received2)
+      router ! ((2, received2))
       Await.ready(received2, TestLatch.DefaultTimeout)
 
       val received3 = TestLatch(1)
-      router ! (3, received3)
+      router ! ((3, received3))
       Await.ready(received3, TestLatch.DefaultTimeout)
 
       busy.countDown()
@@ -548,9 +579,10 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
   "router FromConfig" must {
     "throw suitable exception when not configured" in {
-      intercept[ConfigurationException] {
-        system.actorOf(Props.empty.withRouter(FromConfig))
-      }.getMessage.contains("application.conf") must be(true)
+      val e = intercept[ConfigurationException] {
+        system.actorOf(Props[TestActor].withRouter(FromConfig), "routerNotDefined")
+      }
+      e.getMessage must include("routerNotDefined")
     }
 
     "allow external configuration" in {
@@ -560,9 +592,10 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       try {
         sys.actorOf(Props.empty.withRouter(FromConfig), "routed")
       } finally {
-        sys.shutdown()
+        shutdown(sys)
       }
     }
+
     "support custom router" in {
       val myrouter = system.actorOf(Props.empty.withRouter(FromConfig), "myrouter")
       myrouter.isTerminated must be(false)

@@ -1,4 +1,4 @@
-Typed Actors (Scala)
+Typed Actors
 ====================
 
 Akka Typed Actors is an implementation of the `Active Objects <http://en.wikipedia.org/wiki/Active_object>`_ pattern.
@@ -30,10 +30,10 @@ blog post <http://letitcrash.com/post/19074284309/when-to-use-typedactors>`_.
 
 A bit more background: TypedActors can very easily be abused as RPC, and that
 is an abstraction which is `well-known
-<http://labs.oracle.com/techrep/1994/abstract-29.html>`_ to be leaky. Hence
-TypedActors are not what we think of first when we talk about making highly
-scalable concurrent software easier to write correctly. They have their niche,
-use them sparingly.
+<http://doc.akka.io/docs/misc/smli_tr-94-29.pdf>`_
+to be leaky. Hence TypedActors are not what we think of first when we talk
+about making highly scalable concurrent software easier to write correctly.
+They have their niche, use them sparingly.
 
 The tools of the trade
 ----------------------
@@ -204,7 +204,7 @@ Proxying
 --------
 
 You can use the ``typedActorOf`` that takes a TypedProps and an ActorRef to proxy the given ActorRef as a TypedActor.
-This is usable if you want to communicate remotely with TypedActors on other machines, just look them up with ``actorFor`` and pass the ``ActorRef`` to ``typedActorOf``.
+This is usable if you want to communicate remotely with TypedActors on other machines, just pass the ``ActorRef`` to ``typedActorOf``.
 
 .. note::
 
@@ -213,7 +213,7 @@ This is usable if you want to communicate remotely with TypedActors on other mac
 Lookup & Remoting
 -----------------
 
-Since ``TypedActors`` are backed by ``Akka Actors``, you can use ``actorFor`` together with ``typedActorOf`` to proxy ``ActorRefs`` potentially residing on remote nodes.
+Since ``TypedActors`` are backed by ``Akka Actors``, you can use ``typedActorOf`` to proxy ``ActorRefs`` potentially residing on remote nodes.
 
 .. includecode:: code/docs/actor/TypedActorDocSpec.scala#typed-actor-remote
 

@@ -35,7 +35,7 @@ object ConsistentHashingRouter {
    * the hash, but the data to be hashed.
    *
    * If returning an `Array[Byte]` or String it will be used as is,
-   * otherwise the configured [[akka.akka.serialization.Serializer]]
+   * otherwise the configured [[akka.serialization.Serializer]]
    * will be applied to the returned data.
    *
    * If messages can't implement this interface themselves,
@@ -67,7 +67,7 @@ object ConsistentHashingRouter {
    * the hash that is to be returned, but the data to be hashed.
    *
    * If returning an `Array[Byte]` or String it will be used as is,
-   * otherwise the configured [[akka.akka.serialization.Serializer]]
+   * otherwise the configured [[akka.serialization.Serializer]]
    * will be applied to the returned data.
    */
   type ConsistentHashMapping = PartialFunction[Any, Any]
@@ -88,13 +88,14 @@ object ConsistentHashingRouter {
    * this mapping.
    *
    * If returning an `Array[Byte]` or String it will be used as is,
-   * otherwise the configured [[akka.akka.serialization.Serializer]]
+   * otherwise the configured [[akka.serialization.Serializer]]
    * will be applied to the returned data.
    */
   trait ConsistentHashMapper {
     def hashKey(message: Any): Any
   }
 }
+
 /**
  * A Router that uses consistent hashing to select a connection based on the
  * sent message.
@@ -126,18 +127,21 @@ object ConsistentHashingRouter {
  *
  * <h1>Supervision Setup</h1>
  *
- * The router creates a “head” actor which supervises and/or monitors the
- * routees. Instances are created as children of this actor, hence the
- * children are not supervised by the parent of the router. Common choices are
- * to always escalate (meaning that fault handling is always applied to all
- * children simultaneously; this is the default) or use the parent’s strategy,
- * which will result in routed children being treated individually, but it is
- * possible as well to use Routers to give different supervisor strategies to
- * different groups of children.
+ * Any routees that are created by a router will be created as the router's children.
+ * The router is therefore also the children's supervisor.
+ *
+ * The supervision strategy of the router actor can be configured with
+ * [[#withSupervisorStrategy]]. If no strategy is provided, routers default to
+ * a strategy of “always escalate”. This means that errors are passed up to the
+ * router's supervisor for handling.
+ *
+ * The router's supervisor will treat the error as an error with the router itself.
+ * Therefore a directive to stop or restart will cause the router itself to stop or
+ * restart. The router, in turn, will cause its children to stop and restart.
  *
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
- * @param virtualNodesFactor number of virtual nodes per node, used in [[akka.routing.ConsistantHash]]
+ * @param virtualNodesFactor number of virtual nodes per node, used in [[akka.routing.ConsistentHash]]
  * @param hashMapping partial function from message to the data to
  *   use for the consistent hash key
  */
@@ -148,25 +152,23 @@ case class ConsistentHashingRouter(
   val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy,
   val virtualNodesFactor: Int = 0,
   val hashMapping: ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping)
-  extends RouterConfig with ConsistentHashingLike {
+  extends RouterConfig with ConsistentHashingLike with OverrideUnsetConfig[ConsistentHashingRouter] {
 
   /**
-   * Constructor that sets nrOfInstances to be created.
-   * Java API
+   * Java API: Constructor that sets nrOfInstances to be created.
    */
   def this(nr: Int) = this(nrOfInstances = nr)
 
   /**
-   * Constructor that sets the routees to be used.
-   * Java API
+   * Java API: Constructor that sets the routees to be used.
+   *
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
   def this(routeePaths: java.lang.Iterable[String]) = this(routees = immutableSeq(routeePaths))
 
   /**
-   * Constructor that sets the resizer to be used.
-   * Java API
+   * Java API: Constructor that sets the resizer to be used.
    */
   def this(resizer: Resizer) = this(resizer = Some(resizer))
 
@@ -182,7 +184,12 @@ case class ConsistentHashingRouter(
   def withSupervisorStrategy(strategy: SupervisorStrategy): ConsistentHashingRouter = copy(supervisorStrategy = strategy)
 
   /**
-   * Java API for setting the number of virtual nodes per node, used in [[akka.routing.ConsistantHash]]
+   * Java API for setting the resizer to be used.
+   */
+  def withResizer(resizer: Resizer): ConsistentHashingRouter = copy(resizer = Some(resizer))
+
+  /**
+   * Java API for setting the number of virtual nodes per node, used in [[akka.routing.ConsistentHash]]
    */
   def withVirtualNodesFactor(vnodes: Int): ConsistentHashingRouter = copy(virtualNodesFactor = vnodes)
 
@@ -197,20 +204,15 @@ case class ConsistentHashingRouter(
   }
 
   /**
-   * Uses the resizer of the given RouterConfig if this RouterConfig
-   * doesn't have one, i.e. the resizer defined in code is used if
+   * Uses the resizer and/or the supervisor strategy of the given Routerconfig
+   * if this RouterConfig doesn't have one, i.e. the resizer defined in code is used if
    * resizer was not defined in config.
-   * Uses the the `hashMapping` defined in code, since
-   * that can't be defined in configuration.
+   * Uses the the `hashMapping` defined in code, since that can't be defined in configuration.
    */
   override def withFallback(other: RouterConfig): RouterConfig = other match {
-    case _: FromConfig | _: NoRouter ⇒ this
-    case otherRouter: ConsistentHashingRouter ⇒
-      val useResizer =
-        if (this.resizer.isEmpty && otherRouter.resizer.isDefined) otherRouter.resizer
-        else this.resizer
-      copy(resizer = useResizer, hashMapping = otherRouter.hashMapping)
-    case _ ⇒ throw new IllegalArgumentException("Expected ConsistentHashingRouter, got [%s]".format(other))
+    case _: FromConfig | _: NoRouter          ⇒ this.overrideUnsetConfig(other)
+    case otherRouter: ConsistentHashingRouter ⇒ (copy(hashMapping = otherRouter.hashMapping)).overrideUnsetConfig(other)
+    case _                                    ⇒ throw new IllegalArgumentException("Expected ConsistentHashingRouter, got [%s]".format(other))
   }
 }
 

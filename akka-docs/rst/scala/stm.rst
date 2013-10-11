@@ -2,7 +2,7 @@
 .. _stm-scala:
 
 #######################################
- Software Transactional Memory (Scala)
+ Software Transactional Memory
 #######################################
 
 

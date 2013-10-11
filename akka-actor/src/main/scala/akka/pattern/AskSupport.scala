@@ -7,7 +7,7 @@ import language.implicitConversions
 
 import java.util.concurrent.TimeoutException
 import akka.actor._
-import akka.dispatch._
+import akka.dispatch.sysmsg._
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.concurrent.{ Future, Promise, ExecutionContext }
@@ -41,7 +41,7 @@ trait AskSupport {
    * val future = actor.ask(message)(timeout) // => ask(actor, message)(timeout)
    * }}}
    *
-   * All of the above use an implicit [[akka.actor.Timeout]].
+   * All of the above use an implicit [[akka.util.Timeout]].
    */
   implicit def ask(actorRef: ActorRef): AskableActorRef = new AskableActorRef(actorRef)
 
@@ -74,6 +74,53 @@ trait AskSupport {
    * See [[scala.concurrent.Future]] for a description of `flow`
    */
   def ask(actorRef: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] = actorRef ? message
+
+  /**
+   * Import this implicit conversion to gain `?` and `ask` methods on
+   * [[akka.actor.ActorSelection]], which will defer to the
+   * `ask(actorSelection, message)(timeout)` method defined here.
+   *
+   * {{{
+   * import akka.pattern.ask
+   *
+   * val future = selection ? message             // => ask(selection, message)
+   * val future = selection ask message           // => ask(selection, message)
+   * val future = selection.ask(message)(timeout) // => ask(selection, message)(timeout)
+   * }}}
+   *
+   * All of the above use an implicit [[akka.util.Timeout]].
+   */
+  implicit def ask(actorSelection: ActorSelection): AskableActorSelection = new AskableActorSelection(actorSelection)
+
+  /**
+   * Sends a message asynchronously and returns a [[scala.concurrent.Future]]
+   * holding the eventual reply message; this means that the target actor
+   * needs to send the result to the `sender` reference provided. The Future
+   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
+   * given timeout has expired; this is independent from any timeout applied
+   * while awaiting a result for this future (i.e. in
+   * `Await.result(..., timeout)`).
+   *
+   * <b>Warning:</b>
+   * When using future callbacks, inside actors you need to carefully avoid closing over
+   * the containing actor’s object, i.e. do not call methods or access mutable state
+   * on the enclosing actor from within the callback. This would break the actor
+   * encapsulation and may introduce synchronization bugs and race conditions because
+   * the callback will be scheduled concurrently to the enclosing actor. Unfortunately
+   * there is not yet a way to detect these illegal accesses at compile time.
+   *
+   * <b>Recommended usage:</b>
+   *
+   * {{{
+   *   val f = ask(selection, request)(timeout)
+   *   flow {
+   *     EnrichedRequest(request, f())
+   *   } pipeTo nextActor
+   * }}}
+   *
+   * See [[scala.concurrent.Future]] for a description of `flow`
+   */
+  def ask(actorSelection: ActorSelection, message: Any)(implicit timeout: Timeout): Future[Any] = actorSelection ? message
 }
 
 /*
@@ -84,16 +131,37 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
   def ask(message: Any)(implicit timeout: Timeout): Future[Any] = actorRef match {
     case ref: InternalActorRef if ref.isTerminated ⇒
       actorRef ! message
-      Future.failed[Any](new AskTimeoutException("Recipient[%s] had already been terminated." format actorRef))
+      Future.failed[Any](new AskTimeoutException(s"Recipient[$actorRef] had already been terminated."))
     case ref: InternalActorRef ⇒
-      if (timeout.duration.length <= 0) Future.failed[Any](new IllegalArgumentException("Timeout length for an `ask` must be greater or equal to 1.  Question not sent to [%s]" format actorRef))
+      if (timeout.duration.length <= 0)
+        Future.failed[Any](new IllegalArgumentException(s"Timeout length must not be negative, question not sent to [$actorRef]"))
       else {
-        val provider = ref.provider
-        val a = PromiseActorRef(provider, timeout)
+        val a = PromiseActorRef(ref.provider, timeout)
         actorRef.tell(message, a)
         a.result.future
       }
-    case _ ⇒ Future.failed[Any](new IllegalArgumentException("Unsupported type of ActorRef for the recipient. Question not sent to [%s]" format actorRef))
+    case _ ⇒ Future.failed[Any](new IllegalArgumentException(s"Unsupported recipient ActorRef type, question not sent to [$actorRef]"))
+  }
+
+  def ?(message: Any)(implicit timeout: Timeout): Future[Any] = ask(message)(timeout)
+}
+
+/*
+ * Implementation class of the “ask” pattern enrichment of ActorSelection
+ */
+final class AskableActorSelection(val actorSel: ActorSelection) extends AnyVal {
+
+  def ask(message: Any)(implicit timeout: Timeout): Future[Any] = actorSel.anchor match {
+    case ref: InternalActorRef ⇒
+      if (timeout.duration.length <= 0)
+        Future.failed[Any](
+          new IllegalArgumentException(s"Timeout length must not be negative, question not sent to [$actorSel]"))
+      else {
+        val a = PromiseActorRef(ref.provider, timeout)
+        actorSel.tell(message, a)
+        a.result.future
+      }
+    case _ ⇒ Future.failed[Any](new IllegalArgumentException(s"Unsupported recipient ActorRef type, question not sent to [$actorSel]"))
   }
 
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] = ask(message)(timeout)
@@ -166,6 +234,9 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
 
   override def getParent: InternalActorRef = provider.tempContainer
 
+  def internalCallingThreadExecutionContext: ExecutionContext =
+    provider.guardian.underlying.systemImpl.internalCallingThreadExecutionContext
+
   /**
    * Contract of this method:
    * Must always return the same ActorPath, which must have
@@ -193,19 +264,24 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = state match {
     case Stopped | _: StoppedWithPath ⇒ provider.deadLetters ! message
-    case _ ⇒ if (!(result.tryComplete(
-      message match {
-        case Status.Success(r) ⇒ Success(r)
-        case Status.Failure(f) ⇒ Failure(f)
-        case other             ⇒ Success(other)
-      }))) provider.deadLetters ! message
+    case _ ⇒
+      if (message == null) throw new InvalidMessageException("Message is null")
+      if (!(result.tryComplete(
+        message match {
+          case Status.Success(r) ⇒ Success(r)
+          case Status.Failure(f) ⇒ Failure(f)
+          case other             ⇒ Success(other)
+        }))) provider.deadLetters ! message
   }
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {
-    case _: Terminate ⇒ stop()
+    case _: Terminate                      ⇒ stop()
+    case DeathWatchNotification(a, ec, at) ⇒ this.!(Terminated(a)(existenceConfirmed = ec, addressTerminated = at))
     case Watch(watchee, watcher) ⇒
       if (watchee == this && watcher != this) {
-        if (!addWatcher(watcher)) watcher ! Terminated(watchee)(existenceConfirmed = true, addressTerminated = false)
+        if (!addWatcher(watcher))
+          // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+          watcher.sendSystemMessage(DeathWatchNotification(watchee, existenceConfirmed = true, addressTerminated = false))
       } else System.err.println("BUG: illegal Watch(%s,%s) for %s".format(watchee, watcher, this))
     case Unwatch(watchee, watcher) ⇒
       if (watchee == this && watcher != this) remWatcher(watcher)
@@ -213,7 +289,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
     case _ ⇒
   }
 
-  override def isTerminated: Boolean = state match {
+  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") override def isTerminated: Boolean = state match {
     case Stopped | _: StoppedWithPath ⇒ true
     case _                            ⇒ false
   }
@@ -224,8 +300,11 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
       result tryComplete Failure(new ActorKilledException("Stopped"))
       val watchers = clearWatchers()
       if (!watchers.isEmpty) {
-        val termination = Terminated(this)(existenceConfirmed = true, addressTerminated = false)
-        watchers foreach { _.tell(termination, this) }
+        watchers foreach { watcher ⇒
+          // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+          watcher.asInstanceOf[InternalActorRef]
+            .sendSystemMessage(DeathWatchNotification(watcher, existenceConfirmed = true, addressTerminated = false))
+        }
       }
     }
     state match {
@@ -248,10 +327,11 @@ private[akka] object PromiseActorRef {
   private case class StoppedWithPath(path: ActorPath)
 
   def apply(provider: ActorRefProvider, timeout: Timeout): PromiseActorRef = {
-    implicit val ec = provider.dispatcher // TODO should we take an ExecutionContext in the method signature?
     val result = Promise[Any]()
+    val scheduler = provider.guardian.underlying.system.scheduler
     val a = new PromiseActorRef(provider, result)
-    val f = provider.scheduler.scheduleOnce(timeout.duration) { result tryComplete Failure(new AskTimeoutException("Timed out")) }
+    implicit val ec = a.internalCallingThreadExecutionContext
+    val f = scheduler.scheduleOnce(timeout.duration) { result tryComplete Failure(new AskTimeoutException("Timed out")) }
     result.future onComplete { _ ⇒ try a.stop() finally f.cancel() }
     a
   }

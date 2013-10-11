@@ -9,6 +9,8 @@ import scala.collection.immutable
 import akka.actor.{ Actor, ActorRef, ActorSystemImpl, Address, Props }
 import akka.cluster.ClusterEvent._
 import akka.actor.PoisonPill
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.actor.Deploy
 
 /**
  * INTERNAL API
@@ -24,11 +26,14 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   @volatile
   private var state: CurrentClusterState = CurrentClusterState()
 
+  @volatile
+  private var _reachability: Reachability = Reachability.empty
+
   /**
    * Current internal cluster stats, updated periodically via event bus.
    */
   @volatile
-  private var _latestStats = ClusterStats()
+  private var _latestStats = CurrentInternalStats(GossipStats(), VectorClockStats())
 
   /**
    * Current cluster metrics, updated periodically via event bus.
@@ -40,7 +45,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
 
   // create actor that subscribes to the cluster eventBus to update current read view state
   private val eventBusListener: ActorRef = {
-    cluster.system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new Actor {
+    cluster.system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
       override def preStart(): Unit = cluster.subscribe(self, classOf[ClusterDomainEvent])
       override def postStop(): Unit = cluster.unsubscribe(self)
 
@@ -48,31 +53,38 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
         case e: ClusterDomainEvent ⇒ e match {
           case SeenChanged(convergence, seenBy) ⇒
             state = state.copy(seenBy = seenBy)
-          case MemberRemoved(member) ⇒
+          case ReachabilityChanged(reachability) ⇒
+            _reachability = reachability
+          case MemberRemoved(member, _) ⇒
             state = state.copy(members = state.members - member, unreachable = state.unreachable - member)
           case UnreachableMember(member) ⇒
             // replace current member with new member (might have different status, only address is used in equals)
-            state = state.copy(members = state.members - member, unreachable = state.unreachable - member + member)
-          case MemberDowned(member) ⇒
-            // replace current member with new member (might have different status, only address is used in equals)
-            state = state.copy(members = state.members - member, unreachable = state.unreachable - member + member)
+            state = state.copy(unreachable = state.unreachable - member + member)
+          case ReachableMember(member) ⇒
+            state = state.copy(unreachable = state.unreachable - member)
           case event: MemberEvent ⇒
             // replace current member with new member (might have different status, only address is used in equals)
+            val newUnreachable =
+              if (state.unreachable.contains(event.member)) state.unreachable - event.member + event.member
+              else state.unreachable
             state = state.copy(members = state.members - event.member + event.member,
-              unreachable = state.unreachable - event.member)
-          case LeaderChanged(leader)                          ⇒ state = state.copy(leader = leader)
-          case s: CurrentClusterState                         ⇒ state = s
-          case CurrentInternalStats(stats)                    ⇒ _latestStats = stats
-          case ClusterMetricsChanged(nodes)                   ⇒ _clusterMetrics = nodes
-          case _: InstantClusterState | _: InstantMemberEvent ⇒ // not used here
+              unreachable = newUnreachable)
+          case LeaderChanged(leader) ⇒
+            state = state.copy(leader = leader)
+          case RoleLeaderChanged(role, leader) ⇒
+            state = state.copy(roleLeaderMap = state.roleLeaderMap + (role -> leader))
+          case s: CurrentClusterState       ⇒ state = s
+          case stats: CurrentInternalStats  ⇒ _latestStats = stats
+          case ClusterMetricsChanged(nodes) ⇒ _clusterMetrics = nodes
         }
       }
-    }).withDispatcher(cluster.settings.UseDispatcher), name = "clusterEventBusListener")
+    }).withDispatcher(cluster.settings.UseDispatcher).withDeploy(Deploy.local), name = "clusterEventBusListener")
   }
 
   def self: Member = {
-    state.members.find(_.address == selfAddress).orElse(state.unreachable.find(_.address == selfAddress)).
-      getOrElse(Member(selfAddress, MemberStatus.Removed))
+    import cluster.selfUniqueAddress
+    state.members.find(_.uniqueAddress == selfUniqueAddress).
+      getOrElse(Member(selfUniqueAddress, cluster.selfRoles).copy(status = MemberStatus.Removed))
   }
 
   /**
@@ -125,10 +137,18 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
       myself.status != MemberStatus.Removed
   }
 
+  def reachability: Reachability = _reachability
+
   /**
    * Current cluster metrics.
    */
   def clusterMetrics: Set[NodeMetrics] = _clusterMetrics
+
+  /**
+   * INTERNAL API
+   */
+  private[cluster] def refreshCurrentState(): Unit =
+    cluster.sendCurrentClusterState(eventBusListener)
 
   /**
    * INTERNAL API
@@ -139,7 +159,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   /**
    * INTERNAL API
    */
-  private[cluster] def latestStats: ClusterStats = _latestStats
+  private[cluster] def latestStats: CurrentInternalStats = _latestStats
 
   /**
    * Unsubscribe to cluster events.

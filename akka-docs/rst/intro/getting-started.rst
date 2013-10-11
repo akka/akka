@@ -10,18 +10,13 @@ later installed on you machine.
 Getting Started Guides and Template Projects
 --------------------------------------------
 
-The best way to start learning Akka is to download the Typesafe Stack and either try out
-the Akka Getting Started Tutorials or check out one of Akka Template Projects. Both comes
-in several flavours depending on your development environment preferences.
-
-- `Download Typesafe Stack <http://typesafe.com/stack/download>`_
-- `Getting Started Tutorials <http://typesafe.com/resources/getting-started>`_
-- `Template Projects <http://typesafe.com/stack/download#template>`_
+The best way to start learning Akka is to download `Typesafe Activator <http://typesafe.com/platform/getstarted>`_
+and try out one of Akka Template Projects.
 
 Download
 --------
 
-There are several ways to download Akka. You can download it as part of the Typesafe Stack
+There are several ways to download Akka. You can download it as part of the Typesafe Platform
 (as described above). You can download the full distribution with microkernel, which includes
 all modules. Or you can use a build tool like Maven or SBT to download dependencies from the
 Akka Maven repository.
@@ -36,6 +31,8 @@ Akka is very modular and consists of several JARs containing different features.
 - ``akka-agent`` – Agents, integrated with Scala STM
 
 - ``akka-camel`` – Apache Camel integration
+
+- ``akka-cluster`` – Cluster membership management, elastic routers.
 
 - ``akka-dataflow`` – add-on to SIP-14 futures supporting implicit
   continuation-passing style
@@ -75,9 +72,6 @@ mailing list.
 - ``akka-channels-experimental`` – Typed Channels on top of untyped Actors,
   using Scala 2.10 macros
 
-- ``akka-cluster-experimental`` – Cluster membership management, leader
-  election, elastic routers.
-
 - ``akka-contrib`` – an assortment of contributions which may or may not be
   moved into core modules, see :ref:`akka-contrib` for more details.
 
@@ -113,7 +107,9 @@ application jar in the ``deploy`` directory and use the scripts in the ``bin``
 directory.
 
 More information is available in the documentation of the
-:ref:`microkernel-scala` / :ref:`microkernel-java`.
+:ref:`Microkernel (Scala) <microkernel-scala>` / :ref:`Microkernel (Java) <microkernel-java>`.
+
+.. _build-tool:
 
 Using a build tool
 ------------------
@@ -230,6 +226,15 @@ Using Akka with NetBeans
 ------------------------
 
 Setup SBT project and then use `sbt-netbeans-plugin <https://github.com/remeniuk/sbt-netbeans-plugin>`_ to generate a NetBeans project.
+
+Do not use -optimize Scala compiler flag
+----------------------------------------
+
+.. warning::
+
+  Akka has not been compiled or tested with -optimize Scala compiler flag.
+  Strange behavior has been reported by users that have tried it.
+
 
 Build from sources
 ------------------

@@ -14,18 +14,17 @@ class GossipSpec extends WordSpec with MustMatchers {
 
   import MemberStatus._
 
-  val a1 = Member(Address("akka.tcp", "sys", "a", 2552), Up)
-  val a2 = Member(Address("akka.tcp", "sys", "a", 2552), Joining)
-  val b1 = Member(Address("akka.tcp", "sys", "b", 2552), Up)
-  val b2 = Member(Address("akka.tcp", "sys", "b", 2552), Removed)
-  val c1 = Member(Address("akka.tcp", "sys", "c", 2552), Leaving)
-  val c2 = Member(Address("akka.tcp", "sys", "c", 2552), Up)
-  val c3 = Member(Address("akka.tcp", "sys", "c", 2552), Exiting)
-  val d1 = Member(Address("akka.tcp", "sys", "d", 2552), Leaving)
-  val d2 = Member(Address("akka.tcp", "sys", "d", 2552), Removed)
-  val e1 = Member(Address("akka.tcp", "sys", "e", 2552), Joining)
-  val e2 = Member(Address("akka.tcp", "sys", "e", 2552), Up)
-  val e3 = Member(Address("akka.tcp", "sys", "e", 2552), Down)
+  val a1 = TestMember(Address("akka.tcp", "sys", "a", 2552), Up)
+  val a2 = TestMember(a1.address, Joining)
+  val b1 = TestMember(Address("akka.tcp", "sys", "b", 2552), Up)
+  val b2 = TestMember(b1.address, Removed)
+  val c1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Leaving)
+  val c2 = TestMember(c1.address, Up)
+  val c3 = TestMember(c1.address, Exiting)
+  val d1 = TestMember(Address("akka.tcp", "sys", "d", 2552), Leaving)
+  val e1 = TestMember(Address("akka.tcp", "sys", "e", 2552), Joining)
+  val e2 = TestMember(e1.address, Up)
+  val e3 = TestMember(e1.address, Down)
 
   "A Gossip" must {
 
@@ -39,86 +38,80 @@ class GossipSpec extends WordSpec with MustMatchers {
 
       val merged1 = g1 merge g2
       merged1.members must be(SortedSet(a2, c1, e1))
-      merged1.members.toSeq.map(_.status) must be(Seq(Joining, Leaving, Joining))
+      merged1.members.toSeq.map(_.status) must be(Seq(Up, Leaving, Up))
 
       val merged2 = g2 merge g1
       merged2.members must be(SortedSet(a2, c1, e1))
-      merged2.members.toSeq.map(_.status) must be(Seq(Joining, Leaving, Joining))
+      merged2.members.toSeq.map(_.status) must be(Seq(Up, Leaving, Up))
 
     }
 
-    "merge unreachable by status priority" in {
-      val g1 = Gossip(members = Gossip.emptyMembers, overview = GossipOverview(unreachable = Set(a1, b1, c1, d1)))
-      val g2 = Gossip(members = Gossip.emptyMembers, overview = GossipOverview(unreachable = Set(a2, b2, c2, d2)))
+    "merge unreachable" in {
+      val r1 = Reachability.empty.unreachable(b1.uniqueAddress, a1.uniqueAddress).unreachable(b1.uniqueAddress, c1.uniqueAddress)
+      val g1 = Gossip(members = SortedSet(a1, b1, c1), overview = GossipOverview(reachability = r1))
+      val r2 = Reachability.empty.unreachable(a1.uniqueAddress, d1.uniqueAddress)
+      val g2 = Gossip(members = SortedSet(a1, b1, c1, d1), overview = GossipOverview(reachability = r2))
 
       val merged1 = g1 merge g2
-      merged1.overview.unreachable must be(Set(a2, b2, c1, d2))
-      merged1.overview.unreachable.toSeq.sorted.map(_.status) must be(Seq(Joining, Removed, Leaving, Removed))
+      merged1.overview.reachability.allUnreachable must be(Set(a1.uniqueAddress, c1.uniqueAddress, d1.uniqueAddress))
 
       val merged2 = g2 merge g1
-      merged2.overview.unreachable must be(Set(a2, b2, c1, d2))
-      merged2.overview.unreachable.toSeq.sorted.map(_.status) must be(Seq(Joining, Removed, Leaving, Removed))
-
+      merged2.overview.reachability.allUnreachable must be(merged1.overview.reachability.allUnreachable)
     }
 
-    "merge by excluding unreachable from members" in {
-      val g1 = Gossip(members = SortedSet(a1, b1), overview = GossipOverview(unreachable = Set(c1, d1)))
-      val g2 = Gossip(members = SortedSet(a2, c2), overview = GossipOverview(unreachable = Set(b2, d2)))
+    "merge members by removing removed members" in {
+      // c3 removed
+      val r1 = Reachability.empty.unreachable(b1.uniqueAddress, a1.uniqueAddress)
+      val g1 = Gossip(members = SortedSet(a1, b1), overview = GossipOverview(reachability = r1))
+      val r2 = r1.unreachable(b1.uniqueAddress, c3.uniqueAddress)
+      val g2 = Gossip(members = SortedSet(a1, b1, c3), overview = GossipOverview(reachability = r2))
 
       val merged1 = g1 merge g2
-      merged1.members must be(SortedSet(a2))
-      merged1.members.toSeq.map(_.status) must be(Seq(Joining))
-      merged1.overview.unreachable must be(Set(b2, c1, d2))
-      merged1.overview.unreachable.toSeq.sorted.map(_.status) must be(Seq(Removed, Leaving, Removed))
+      merged1.members must be(SortedSet(a1, b1))
+      merged1.overview.reachability.allUnreachable must be(Set(a1.uniqueAddress))
 
       val merged2 = g2 merge g1
-      merged2.members must be(SortedSet(a2))
-      merged2.members.toSeq.map(_.status) must be(Seq(Joining))
-      merged2.overview.unreachable must be(Set(b2, c1, d2))
-      merged2.overview.unreachable.toSeq.sorted.map(_.status) must be(Seq(Removed, Leaving, Removed))
-
-    }
-
-    "merge by allowing Down -> Joining" in {
-      val g1 = Gossip(members = SortedSet(a1, b1), overview = GossipOverview(unreachable = Set(e3)))
-      val g2 = Gossip(members = SortedSet(a1, b1, e1), overview = GossipOverview(unreachable = Set.empty))
-
-      val merged2 = g2 merge g1
-      merged2.members must be(SortedSet(a1, b1, e1))
-      merged2.members.toSeq.map(_.status) must be(Seq(Up, Up, Joining))
-      merged2.overview.unreachable must be(Set.empty)
-    }
-
-    "start with fresh seen table after merge" in {
-      val g1 = Gossip(members = SortedSet(a1, e1)).seen(a1.address).seen(a1.address)
-      val g2 = Gossip(members = SortedSet(a2, e2)).seen(e2.address).seen(e2.address)
-
-      val merged1 = g1 merge g2
-      merged1.overview.seen.isEmpty must be(true)
-
-      val merged2 = g2 merge g1
-      merged2.overview.seen.isEmpty must be(true)
-
-    }
-
-    "not have node in both members and unreachable" in intercept[IllegalArgumentException] {
-      Gossip(members = SortedSet(a1, b1), overview = GossipOverview(unreachable = Set(b2)))
-    }
-
-    "not have live members with wrong status" in intercept[IllegalArgumentException] {
-      // b2 is Removed
-      Gossip(members = SortedSet(a2, b2))
-    }
-
-    "not have non cluster members in seen table" in intercept[IllegalArgumentException] {
-      Gossip(members = SortedSet(a1, e1)).seen(a1.address).seen(e1.address).seen(b1.address)
+      merged2.overview.reachability.allUnreachable must be(merged1.overview.reachability.allUnreachable)
+      merged2.members must be(merged1.members)
     }
 
     "have leader as first member based on ordering, except Exiting status" in {
-      Gossip(members = SortedSet(c2, e2)).leader must be(Some(c2.address))
-      Gossip(members = SortedSet(c3, e2)).leader must be(Some(e2.address))
-      Gossip(members = SortedSet(c3)).leader must be(Some(c3.address))
+      Gossip(members = SortedSet(c2, e2)).leader must be(Some(c2.uniqueAddress))
+      Gossip(members = SortedSet(c3, e2)).leader must be(Some(e2.uniqueAddress))
+      Gossip(members = SortedSet(c3)).leader must be(Some(c3.uniqueAddress))
     }
 
+    "merge seen table correctly" in {
+      val vclockNode = VectorClock.Node("something")
+      val g1 = (Gossip(members = SortedSet(a1, b1, c1, d1)) :+ vclockNode).seen(a1.uniqueAddress).seen(b1.uniqueAddress)
+      val g2 = (Gossip(members = SortedSet(a1, b1, c1, d1)) :+ vclockNode).seen(a1.uniqueAddress).seen(c1.uniqueAddress)
+      val g3 = (g1 copy (version = g2.version)).seen(d1.uniqueAddress)
+
+      def checkMerged(merged: Gossip) {
+        val seen = merged.overview.seen.toSeq
+        seen.length must be(0)
+
+        merged seenByNode (a1.uniqueAddress) must be(false)
+        merged seenByNode (b1.uniqueAddress) must be(false)
+        merged seenByNode (c1.uniqueAddress) must be(false)
+        merged seenByNode (d1.uniqueAddress) must be(false)
+        merged seenByNode (e1.uniqueAddress) must be(false)
+      }
+
+      checkMerged(g3 merge g2)
+      checkMerged(g2 merge g3)
+    }
+
+    "know who is youngest" in {
+      // a2 and e1 is Joining
+      val g1 = Gossip(members = SortedSet(a2, b1.copyUp(3), e1), overview = GossipOverview(reachability =
+        Reachability.empty.unreachable(a2.uniqueAddress, e1.uniqueAddress)))
+      g1.youngestMember must be(b1)
+      val g2 = Gossip(members = SortedSet(a2, b1.copyUp(3), e1), overview = GossipOverview(reachability =
+        Reachability.empty.unreachable(a2.uniqueAddress, b1.uniqueAddress).unreachable(a2.uniqueAddress, e1.uniqueAddress)))
+      g2.youngestMember must be(b1)
+      val g3 = Gossip(members = SortedSet(a2, b1.copyUp(3), e2.copyUp(4)))
+      g3.youngestMember must be(e2)
+    }
   }
 }

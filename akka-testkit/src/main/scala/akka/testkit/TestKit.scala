@@ -4,16 +4,21 @@
 package akka.testkit
 
 import language.postfixOps
-
 import scala.annotation.{ varargs, tailrec }
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
-import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque, TimeUnit, atomic }
+import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 import akka.actor._
 import akka.actor.Actor._
 import akka.util.{ Timeout, BoxedType }
+import scala.util.control.NonFatal
+import scala.Some
+import java.util.concurrent.TimeUnit
+import akka.actor.IllegalActorStateException
+import akka.actor.DeadLetter
+import akka.actor.Terminated
 
 object TestActor {
   type Ignore = Option[PartialFunction[Any, Boolean]]
@@ -32,10 +37,10 @@ object TestActor {
     def run(sender: ActorRef, msg: Any): AutoPilot = sys.error("must not call")
   }
 
-  case class SetIgnore(i: Ignore)
-  case class Watch(ref: ActorRef)
-  case class UnWatch(ref: ActorRef)
-  case class SetAutoPilot(ap: AutoPilot)
+  case class SetIgnore(i: Ignore) extends NoSerializationVerificationNeeded
+  case class Watch(ref: ActorRef) extends NoSerializationVerificationNeeded
+  case class UnWatch(ref: ActorRef) extends NoSerializationVerificationNeeded
+  case class SetAutoPilot(ap: AutoPilot) extends NoSerializationVerificationNeeded
 
   trait Message {
     def msg: AnyRef
@@ -50,7 +55,7 @@ object TestActor {
   val FALSE = (x: Any) ⇒ false
 
   // make creator serializable, for VerifySerializabilitySpec
-  def props(queue: BlockingDeque[Message]): Props = Props(new TestActor(queue))
+  def props(queue: BlockingDeque[Message]): Props = Props(classOf[TestActor], queue)
 }
 
 class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
@@ -228,6 +233,38 @@ trait TestKitBase {
   }
 
   /**
+   * Await until the given assert does not throw an exception or the timeout
+   * expires, whichever comes first. If the timeout expires the last exception
+   * is thrown.
+   *
+   * If no timeout is given, take it from the innermost enclosing `within`
+   * block.
+   *
+   * Note that the timeout is scaled using Duration.dilated,
+   * which uses the configuration entry "akka.test.timefactor".
+   */
+  def awaitAssert(a: ⇒ Any, max: Duration = Duration.Undefined, interval: Duration = 800.millis) {
+    val _max = remainingOrDilated(max)
+    val stop = now + _max
+
+    @tailrec
+    def poll(t: Duration) {
+      val failed =
+        try { a; false } catch {
+          case NonFatal(e) ⇒
+            if ((now + t) >= stop) throw e
+            true
+        }
+      if (failed) {
+        Thread.sleep(t.toMillis)
+        poll((stop - now) min interval)
+      }
+    }
+
+    poll(_max min interval)
+  }
+
+  /**
    * Execute code block while bounding its execution time between `min` and
    * `max`. `within` blocks may be nested. All methods in this trait which
    * take maximum wait times are available in a version which implicitly uses
@@ -309,6 +346,17 @@ trait TestKitBase {
     assert(f.isDefinedAt(o), "expected: " + hint + " but got unexpected message " + o)
     f(o)
   }
+
+  /**
+   * Receive one message from the test actor and assert that it is the Terminated message of the given ActorRef.
+   * Wait time is bounded by the given duration, with an AssertionFailure being thrown in case of timeout.
+   *
+   * @return the received Terminated message
+   */
+  def expectTerminated(target: ActorRef, max: Duration = Duration.Undefined): Terminated =
+    expectMsgPF(max, "Terminated " + target) {
+      case t @ Terminated(`target`) ⇒ t
+    }
 
   /**
    * Hybrid of expectMsgPF and receiveWhile: receive messages while the
@@ -428,10 +476,18 @@ trait TestKitBase {
    */
   def expectMsgAllOf[T](max: FiniteDuration, obj: T*): immutable.Seq[T] = expectMsgAllOf_internal(max.dilated, obj: _*)
 
+  private def checkMissingAndUnexpected(missing: Seq[Any], unexpected: Seq[Any],
+                                        missingMessage: String, unexpectedMessage: String): Unit = {
+    assert(missing.isEmpty && unexpected.isEmpty,
+      (if (missing.isEmpty) "" else missing.mkString(missingMessage + " [", ", ", "] ")) +
+        (if (unexpected.isEmpty) "" else unexpected.mkString(unexpectedMessage + " [", ", ", "]")))
+  }
+
   private def expectMsgAllOf_internal[T](max: FiniteDuration, obj: T*): immutable.Seq[T] = {
     val recv = receiveN_internal(obj.size, max)
-    obj foreach (x ⇒ assert(recv exists (x == _), "not found " + x))
-    recv foreach (x ⇒ assert(obj exists (x == _), "found unexpected " + x))
+    val missing = obj filterNot (x ⇒ recv exists (x == _))
+    val unexpected = recv filterNot (x ⇒ obj exists (x == _))
+    checkMissingAndUnexpected(missing, unexpected, "not found", "found unexpected")
     recv.asInstanceOf[immutable.Seq[T]]
   }
 
@@ -452,8 +508,9 @@ trait TestKitBase {
 
   private def internalExpectMsgAllClassOf[T](max: FiniteDuration, obj: Class[_ <: T]*): immutable.Seq[T] = {
     val recv = receiveN_internal(obj.size, max)
-    obj foreach (x ⇒ assert(recv exists (_.getClass eq BoxedType(x)), "not found " + x))
-    recv foreach (x ⇒ assert(obj exists (c ⇒ BoxedType(c) eq x.getClass), "found non-matching object " + x))
+    val missing = obj filterNot (x ⇒ recv exists (_.getClass eq BoxedType(x)))
+    val unexpected = recv filterNot (x ⇒ obj exists (c ⇒ BoxedType(c) eq x.getClass))
+    checkMissingAndUnexpected(missing, unexpected, "not found", "found non-matching object(s)")
     recv.asInstanceOf[immutable.Seq[T]]
   }
 
@@ -477,8 +534,9 @@ trait TestKitBase {
 
   private def internalExpectMsgAllConformingOf[T](max: FiniteDuration, obj: Class[_ <: T]*): immutable.Seq[T] = {
     val recv = receiveN_internal(obj.size, max)
-    obj foreach (x ⇒ assert(recv exists (BoxedType(x) isInstance _), "not found " + x))
-    recv foreach (x ⇒ assert(obj exists (c ⇒ BoxedType(c) isInstance x), "found non-matching object " + x))
+    val missing = obj filterNot (x ⇒ recv exists (BoxedType(x) isInstance _))
+    val unexpected = recv filterNot (x ⇒ obj exists (c ⇒ BoxedType(c) isInstance x))
+    checkMissingAndUnexpected(missing, unexpected, "not found", "found non-matching object(s)")
     recv.asInstanceOf[immutable.Seq[T]]
   }
 
@@ -592,6 +650,18 @@ trait TestKitBase {
     }
   }
 
+  /**
+   * Shut down an actor system and wait for termination.
+   * On failure debug output will be logged about the remaining actors in the system.
+   *
+   * If verifySystemShutdown is true, then an exception will be thrown on failure.
+   */
+  def shutdown(actorSystem: ActorSystem,
+               duration: Duration = 5.seconds.dilated.min(10.seconds),
+               verifySystemShutdown: Boolean = false) {
+    TestKit.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
+  }
+
   private def format(u: TimeUnit, d: Duration) = "%.3f %s".format(d.toUnit(u), u.toString.toLowerCase)
 }
 
@@ -669,11 +739,30 @@ object TestKit {
   def now: Duration = System.nanoTime().nanos
 
   /**
-   * Java API. Scale timeouts (durations) during tests with the configured
+   * Java API: Scale timeouts (durations) during tests with the configured
    * 'akka.test.timefactor'.
    */
   def dilated(duration: Duration, system: ActorSystem): Duration =
     duration * TestKitExtension(system).TestTimeFactor
+
+  /**
+   * Shut down an actor system and wait for termination.
+   * On failure debug output will be logged about the remaining actors in the system.
+   *
+   * If verifySystemShutdown is true, then an exception will be thrown on failure.
+   */
+  def shutdownActorSystem(actorSystem: ActorSystem,
+                          duration: Duration = 10 seconds,
+                          verifySystemShutdown: Boolean = false): Unit = {
+    actorSystem.shutdown()
+    try actorSystem.awaitTermination(duration) catch {
+      case _: TimeoutException ⇒
+        val msg = "Failed to stop [%s] within [%s] \n%s".format(actorSystem.name, duration,
+          actorSystem.asInstanceOf[ActorSystemImpl].printTree)
+        if (verifySystemShutdown) throw new RuntimeException(msg)
+        else actorSystem.log.warning(msg)
+    }
+  }
 }
 
 /**
@@ -745,4 +834,14 @@ private[testkit] abstract class CachingPartialFunction[A, B <: AnyRef] extends s
   var cache: B = _
   final def isDefinedAt(x: A): Boolean = try { cache = `match`(x); true } catch { case NoMatch ⇒ cache = null.asInstanceOf[B]; false }
   final override def apply(x: A): B = cache
+}
+
+/**
+ * Wrapper for implicit conversion to add dilated function to Duration.
+ */
+class TestDuration(duration: FiniteDuration) {
+  def dilated(implicit system: ActorSystem): FiniteDuration = {
+    // this cast will succeed unless TestTimeFactor is non-finite (which would be a misconfiguration)
+    (duration * TestKitExtension(system).TestTimeFactor).asInstanceOf[FiniteDuration]
+  }
 }

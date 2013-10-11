@@ -57,6 +57,29 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
 
   }
 
+  "A LocalActorRef's ActorCell" must {
+    "not retain its original Props when terminated" in {
+      val GetChild = "GetChild"
+      val a = watch(system.actorOf(Props(new Actor {
+        val child = context.actorOf(Props.empty)
+        def receive = { case `GetChild` ⇒ sender ! child }
+      })))
+      a.tell(GetChild, testActor)
+      val child = expectMsgType[ActorRef]
+      val childProps1 = child.asInstanceOf[LocalActorRef].underlying.props
+      childProps1 must be(Props.empty)
+      system stop a
+      expectTerminated(a)
+      // the fields are cleared after the Terminated message has been sent,
+      // so we need to check for a reasonable time after we receive it
+      awaitAssert({
+        val childProps2 = child.asInstanceOf[LocalActorRef].underlying.props
+        childProps2 must not be theSameInstanceAs(childProps1)
+        childProps2 must be theSameInstanceAs ActorCell.terminatedProps
+      }, 1 second)
+    }
+  }
+
   "An ActorRefFactory" must {
     implicit val ec = system.dispatcher
     "only create one instance of an actor with a specific address in a concurrent environment" in {

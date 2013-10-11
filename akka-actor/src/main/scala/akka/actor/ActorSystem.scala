@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.event._
 import akka.dispatch._
+import akka.dispatch.sysmsg.{ SystemMessageList, EarliestFirstSystemMessageList, LatestFirstSystemMessageList, SystemMessage }
 import akka.japi.Util.immutableSeq
 import akka.actor.dungeon.ChildrenContainer
 import akka.util._
@@ -22,7 +23,7 @@ import scala.util.control.{ NonFatal, ControlThrowable }
 
 object ActorSystem {
 
-  val Version: String = "2.2-SNAPSHOT"
+  val Version: String = "2.3-SNAPSHOT"
 
   val EnvHome: Option[String] = System.getenv("AKKA_HOME") match {
     case null | "" | "." ⇒ None
@@ -150,6 +151,12 @@ object ActorSystem {
     @deprecated("use LoggerStartTimeout)", "2.2")
     final val EventHandlerStartTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.event-handler-startup-timeout"), MILLISECONDS))
     final val LogConfigOnStart: Boolean = config.getBoolean("akka.log-config-on-start")
+    final val LogDeadLetters: Int = config.getString("akka.log-dead-letters").toLowerCase match {
+      case "off" | "false" ⇒ 0
+      case "on" | "true"   ⇒ Int.MaxValue
+      case _               ⇒ config.getInt("akka.log-dead-letters")
+    }
+    final val LogDeadLettersDuringShutdown: Boolean = config.getBoolean("akka.log-dead-letters-during-shutdown")
 
     final val AddLoggingReceive: Boolean = getBoolean("akka.actor.debug.receive")
     final val DebugAutoReceive: Boolean = getBoolean("akka.actor.debug.autoreceive")
@@ -177,6 +184,7 @@ object ActorSystem {
      * Returns the String representation of the Config that this Settings is backed by
      */
     override def toString: String = config.root.render
+
   }
 
   /**
@@ -216,17 +224,11 @@ object ActorSystem {
  *
  * // Scala
  * system.actorOf(Props[MyActor], "name")
- * system.actorOf(Props[MyActor])
- * system.actorOf(Props(new MyActor(...)))
+ * system.actorOf(Props(classOf[MyActor], arg1, arg2), "name")
  *
  * // Java
- * system.actorOf(MyActor.class);
- * system.actorOf(Props(new Creator<MyActor>() {
- *   public MyActor create() { ... }
- * });
- * system.actorOf(Props(new Creator<MyActor>() {
- *   public MyActor create() { ... }
- * }, "name");
+ * system.actorOf(Props.create(MyActor.class), "name");
+ * system.actorOf(Props.create(MyActor.class, arg1, arg2), "name");
  * }}}
  *
  * Where no name is given explicitly, one will be automatically generated.
@@ -258,22 +260,22 @@ abstract class ActorSystem extends ActorRefFactory {
   def logConfiguration(): Unit
 
   /**
-   * Construct a path below the application guardian to be used with [[ActorSystem.actorFor]].
+   * Construct a path below the application guardian to be used with [[ActorSystem.actorSelection]].
    */
   def /(name: String): ActorPath
 
   /**
-   * ''Java API'': Create a new child actor path.
+   * Java API: Create a new child actor path.
    */
   def child(child: String): ActorPath = /(child)
 
   /**
-   * Construct a path below the application guardian to be used with [[ActorSystem.actorFor]].
+   * Construct a path below the application guardian to be used with [[ActorSystem.actorSelection]].
    */
   def /(name: Iterable[String]): ActorPath
 
   /**
-   * ''Java API'': Recursively create a descendant’s path by appending all child names.
+   * Java API: Recursively create a descendant’s path by appending all child names.
    */
   def descendant(names: java.lang.Iterable[String]): ActorPath = /(immutableSeq(names))
 
@@ -325,6 +327,11 @@ abstract class ActorSystem extends ActorRefFactory {
   implicit def dispatcher: ExecutionContext
 
   /**
+   * Helper object for looking up configured mailbox types.
+   */
+  def mailboxes: Mailboxes
+
+  /**
    * Register a block of code (callback) to run after ActorSystem.shutdown has been issued and
    * all actors in this actor system have been stopped.
    * Multiple code blocks may be registered by calling this method multiple times.
@@ -338,15 +345,13 @@ abstract class ActorSystem extends ActorRefFactory {
   def registerOnTermination[T](code: ⇒ T): Unit
 
   /**
-   * Register a block of code (callback) to run after ActorSystem.shutdown has been issued and
+   * Java API: Register a block of code (callback) to run after ActorSystem.shutdown has been issued and
    * all actors in this actor system have been stopped.
    * Multiple code blocks may be registered by calling this method multiple times.
    * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
    *
    * @throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
-   *
-   * Java API
    */
   def registerOnTermination(code: Runnable): Unit
 
@@ -461,6 +466,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   import ActorSystem._
 
+  @volatile private var logDeadLetterListener: Option[ActorRef] = None
   final val settings: Settings = new Settings(classLoader, applicationConfig, name)
 
   protected def uncaughtExceptionHandler: Thread.UncaughtExceptionHandler =
@@ -539,7 +545,6 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
       classOf[String] -> name,
       classOf[Settings] -> settings,
       classOf[EventStream] -> eventStream,
-      classOf[Scheduler] -> scheduler,
       classOf[DynamicAccess] -> dynamicAccess)
 
     dynamicAccess.createInstanceFor[ActorRefProvider](ProviderClass, arguments).get
@@ -547,28 +552,19 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   def deadLetters: ActorRef = provider.deadLetters
 
-  //FIXME Why do we need this at all?
-  val deadLetterQueue: MessageQueue = new MessageQueue {
-    def enqueue(receiver: ActorRef, envelope: Envelope): Unit =
-      deadLetters.tell(DeadLetter(envelope.message, envelope.sender, receiver), envelope.sender)
-    def dequeue() = null
-    def hasMessages = false
-    def numberOfMessages = 0
-    def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = ()
-  }
-  //FIXME Why do we need this at all?
-  val deadLetterMailbox: Mailbox = new Mailbox(deadLetterQueue) {
-    becomeClosed()
-    def systemEnqueue(receiver: ActorRef, handle: SystemMessage): Unit =
-      deadLetters ! DeadLetter(handle, receiver, receiver)
-    def systemDrain(newContents: SystemMessage): SystemMessage = null
-    def hasSystemMessages = false
-  }
+  val mailboxes: Mailboxes = new Mailboxes(settings, eventStream, dynamicAccess, deadLetters)
 
   val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(
-    threadFactory, eventStream, deadLetterMailbox, scheduler, dynamicAccess, settings))
+    threadFactory, eventStream, scheduler, dynamicAccess, settings, mailboxes))
 
   val dispatcher: ExecutionContext = dispatchers.defaultGlobalDispatcher
+
+  val internalCallingThreadExecutionContext: ExecutionContext =
+    dynamicAccess.getObjectFor[ExecutionContext]("scala.concurrent.Future$InternalCallbackExecutor$").getOrElse(
+      new ExecutionContext with BatchingExecutor {
+        override protected def unbatchedExecute(r: Runnable): Unit = r.run()
+        override def reportFailure(t: Throwable): Unit = dispatcher reportFailure t
+      })
 
   def terminationFuture: Future[Unit] = provider.terminationFuture
   def lookupRoot: InternalActorRef = provider.rootGuardian
@@ -581,6 +577,8 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   private lazy val _start: this.type = {
     // the provider is expected to start default loggers, LocalActorRefProvider does this
     provider.init(this)
+    if (settings.LogDeadLetters > 0)
+      logDeadLetterListener = Some(systemActorOf(Props[DeadLetterListener], "deadLetterListener"))
     registerOnTermination(stopScheduler())
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
@@ -601,7 +599,10 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   def awaitTermination() = awaitTermination(Duration.Inf)
   def isTerminated = terminationCallbacks.isTerminated
 
-  def shutdown(): Unit = guardian.stop()
+  def shutdown(): Unit = {
+    if (!settings.LogDeadLettersDuringShutdown) logDeadLetterListener foreach stop
+    guardian.stop()
+  }
 
   //#create-scheduler
   /**
@@ -722,7 +723,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
           indent + node.path.name + " " + Logging.simpleName(node)
       }
     }
-    printNode(actorFor("/"), "")
+    printNode(lookupRoot, "")
   }
 
   final class TerminationCallbacks extends Runnable with Awaitable[Unit] {

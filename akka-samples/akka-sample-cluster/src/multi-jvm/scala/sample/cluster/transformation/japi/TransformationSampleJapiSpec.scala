@@ -6,7 +6,7 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.WordSpec
+import org.scalatest.WordSpecLike
 import org.scalatest.matchers.MustMatchers
 
 import akka.actor.Props
@@ -29,10 +29,15 @@ object TransformationSampleJapiSpecConfig extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString("""
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-join = off
     # don't use sigar for tests, native lib not in path
     akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
     """))
+
+  nodeConfig(frontend1, frontend2)(
+    ConfigFactory.parseString("akka.cluster.roles =[frontend]"))
+
+  nodeConfig(backend1, backend2, backend3)(
+    ConfigFactory.parseString("akka.cluster.roles =[backend]"))
 
 }
 
@@ -44,7 +49,7 @@ class TransformationSampleJapiSpecMultiJvmNode4 extends TransformationSampleJapi
 class TransformationSampleJapiSpecMultiJvmNode5 extends TransformationSampleJapiSpec
 
 abstract class TransformationSampleJapiSpec extends MultiNodeSpec(TransformationSampleJapiSpecConfig)
-  with WordSpec with MustMatchers with BeforeAndAfterAll with ImplicitSender {
+  with WordSpecLike with MustMatchers with BeforeAndAfterAll with ImplicitSender {
 
   import TransformationSampleJapiSpecConfig._
 
@@ -80,7 +85,7 @@ abstract class TransformationSampleJapiSpec extends MultiNodeSpec(Transformation
       testConductor.enter("backend1-started")
 
       runOn(frontend1) {
-        assertServiceOk
+        assertServiceOk()
       }
 
       testConductor.enter("frontend1-backend1-ok")
@@ -100,7 +105,7 @@ abstract class TransformationSampleJapiSpec extends MultiNodeSpec(Transformation
       testConductor.enter("all-started")
 
       runOn(frontend1, frontend2) {
-        assertServiceOk
+        assertServiceOk()
       }
 
       testConductor.enter("all-ok")
@@ -109,18 +114,13 @@ abstract class TransformationSampleJapiSpec extends MultiNodeSpec(Transformation
 
   }
 
-  def assertServiceOk: Unit = {
-    val transformationFrontend = system.actorFor("akka://" + system.name + "/user/frontend")
+  def assertServiceOk(): Unit = {
+    val transformationFrontend = system.actorSelection("akka://" + system.name + "/user/frontend")
     // eventually the service should be ok,
     // backends might not have registered initially
-    awaitCond {
+    awaitAssert {
       transformationFrontend ! new TransformationJob("hello")
-      expectMsgPF() {
-        case unavailble: JobFailed ⇒ false
-        case r: TransformationResult ⇒
-          r.getText must be("HELLO")
-          true
-      }
+      expectMsgType[TransformationResult](1.second).getText must be("HELLO")
     }
   }
 

@@ -7,7 +7,7 @@ import language.postfixOps
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import akka.actor.{ ActorLogging, ActorRef, Address, Actor, RootActorPath, Props }
+import akka.actor.{ ActorLogging, ActorRef, ActorSelection, Address, Actor, RootActorPath, Props }
 import akka.cluster.ClusterEvent._
 import akka.routing.MurmurHash
 
@@ -26,6 +26,12 @@ private[akka] object ClusterHeartbeatReceiver {
    * this node.
    */
   case class EndHeartbeat(from: Address) extends ClusterMessage
+
+  /**
+   * Acknowledgment that `EndHeartbeat` was received and heartbeating
+   * can stop.
+   */
+  case class EndHeartbeatAck(from: Address) extends ClusterMessage
 }
 
 /**
@@ -39,10 +45,13 @@ private[cluster] final class ClusterHeartbeatReceiver extends Actor with ActorLo
   import ClusterHeartbeatReceiver._
 
   val failureDetector = Cluster(context.system).failureDetector
+  val selfEndHeartbeatAck = EndHeartbeatAck(Cluster(context.system).selfAddress)
 
   def receive = {
-    case Heartbeat(from)    ⇒ failureDetector heartbeat from
-    case EndHeartbeat(from) ⇒ failureDetector remove from
+    case Heartbeat(from) ⇒ failureDetector heartbeat from
+    case EndHeartbeat(from) ⇒
+      failureDetector remove from
+      sender ! selfEndHeartbeatAck
   }
 
 }
@@ -88,6 +97,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   val cluster = Cluster(context.system)
   import cluster.{ selfAddress, scheduler }
   import cluster.settings._
+  import cluster.InfoLogger._
   import context.dispatcher
 
   val selfHeartbeat = Heartbeat(selfAddress)
@@ -101,8 +111,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
     HeartbeatInterval, self, HeartbeatTick)
 
   override def preStart(): Unit = {
-    cluster.subscribe(self, classOf[InstantMemberEvent])
-    cluster.subscribe(self, classOf[UnreachableMember])
+    cluster.subscribe(self, classOf[MemberEvent])
   }
 
   override def postStop(): Unit = {
@@ -113,33 +122,48 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   /**
    * Looks up and returns the remote cluster heartbeat connection for the specific address.
    */
-  def heartbeatReceiver(address: Address): ActorRef =
-    context.actorFor(RootActorPath(address) / "system" / "cluster" / "heartbeatReceiver")
+  def heartbeatReceiver(address: Address): ActorSelection =
+    context.actorSelection(RootActorPath(address) / "system" / "cluster" / "heartbeatReceiver")
 
   /**
    * Looks up and returns the remote cluster heartbeat sender for the specific address.
    */
-  def heartbeatSender(address: Address): ActorRef = context.actorFor(self.path.toStringWithAddress(address))
+  def heartbeatSender(address: Address): ActorSelection =
+    context.actorSelection(self.path.toStringWithAddress(address))
 
   def receive = {
     case HeartbeatTick                ⇒ heartbeat()
-    case InstantMemberUp(m)           ⇒ addMember(m)
-    case UnreachableMember(m)         ⇒ removeMember(m)
-    case InstantMemberDowned(m)       ⇒ removeMember(m)
-    case InstantMemberRemoved(m)      ⇒ removeMember(m)
-    case s: InstantClusterState       ⇒ reset(s)
-    case _: CurrentClusterState       ⇒ // enough with InstantClusterState
-    case _: InstantMemberEvent        ⇒ // not interested in other types of InstantMemberEvent
+    case MemberUp(m)                  ⇒ addMember(m)
+    case MemberRemoved(m, _)          ⇒ removeMember(m)
+    case s: CurrentClusterState       ⇒ reset(s)
+    case MemberExited(m)              ⇒ memberExited(m)
+    case _: MemberEvent               ⇒ // not interested in other types of MemberEvent
     case HeartbeatRequest(from)       ⇒ addHeartbeatRequest(from)
     case SendHeartbeatRequest(to)     ⇒ sendHeartbeatRequest(to)
     case ExpectedFirstHeartbeat(from) ⇒ triggerFirstHeartbeat(from)
+    case EndHeartbeatAck(from)        ⇒ ackEndHeartbeat(from)
   }
 
-  def reset(snapshot: InstantClusterState): Unit = state = state.reset(snapshot.members.map(_.address))
+  def reset(snapshot: CurrentClusterState): Unit =
+    state = state.reset(snapshot.members.map(_.address)(collection.breakOut))
 
   def addMember(m: Member): Unit = if (m.address != selfAddress) state = state addMember m.address
 
-  def removeMember(m: Member): Unit = if (m.address != selfAddress) state = state removeMember m.address
+  def removeMember(m: Member): Unit = {
+    if (m.uniqueAddress == cluster.selfUniqueAddress)
+      // This cluster node will be shutdown, but stop this actor immediately
+      // to prevent it from sending out anything more and avoid sending EndHeartbeat.
+      context stop self
+    else
+      state = state removeMember m.address
+  }
+
+  def memberExited(m: Member): Unit =
+    if (m.uniqueAddress == cluster.selfUniqueAddress) {
+      // This cluster node will be shutdown, but stop this actor immediately
+      // to prevent it from sending out anything more and avoid sending EndHeartbeat.
+      context stop self
+    }
 
   def addHeartbeatRequest(address: Address): Unit =
     if (address != selfAddress) state = state.addHeartbeatRequest(address, Deadline.now + HeartbeatRequestTimeToLive)
@@ -155,7 +179,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
 
   def triggerFirstHeartbeat(address: Address): Unit =
     if (!cluster.failureDetector.isMonitoring(address)) {
-      log.info("Trigger extra expected heartbeat from [{}]", address)
+      logInfo("Trigger extra expected heartbeat from [{}]", address)
       cluster.failureDetector.heartbeat(address)
     }
 
@@ -167,15 +191,12 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
       heartbeatReceiver(to) ! selfHeartbeat
     }
 
-    // When sending heartbeats to a node is stopped a few `EndHeartbeat` messages is
-    // sent to notify it that no more heartbeats will be sent.
-    for ((to, count) ← state.ending) {
+    // When sending heartbeats to a node is stopped a `EndHeartbeat` messages are
+    // sent to notify it that no more heartbeats will be sent. This will continue
+    // until `EndHeartbeatAck` is received.
+    for (to ← state.ending) {
       log.debug("Cluster Node [{}] - EndHeartbeat to [{}]", cluster.selfAddress, to)
       heartbeatReceiver(to) ! selfEndHeartbeat
-      if (count == NumberOfEndHeartbeats)
-        state = state.removeEnding(to)
-      else
-        state = state.increaseEndingCount(to)
     }
 
     // request heartbeats from expected sender node if no heartbeat messages has been received
@@ -184,6 +205,10 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
         scheduler.scheduleOnce(HeartbeatRequestDelay, self, SendHeartbeatRequest(address))
     }
 
+  }
+
+  def ackEndHeartbeat(from: Address): Unit = {
+    state.removeEnding(from)
   }
 
 }
@@ -209,7 +234,7 @@ private[cluster] object ClusterHeartbeatSenderState {
     val curr = ring.myReceivers
     // start ending process for nodes not selected any more
     // abort ending process for nodes that have been selected again
-    val end = old.ending ++ (old.current -- curr).map(_ -> 0) -- curr
+    val end = old.ending ++ (old.current -- curr) -- curr
     old.copy(ring = ring, current = curr, ending = end, heartbeatRequest = old.heartbeatRequest -- curr)
   }
 
@@ -227,14 +252,13 @@ private[cluster] object ClusterHeartbeatSenderState {
 private[cluster] case class ClusterHeartbeatSenderState private (
   ring: HeartbeatNodeRing,
   current: Set[Address] = Set.empty,
-  ending: Map[Address, Int] = Map.empty,
+  ending: Set[Address] = Set.empty,
   heartbeatRequest: Map[Address, Deadline] = Map.empty) {
 
-  // FIXME can be disabled as optimization
-  assertInvariants
+  if (Cluster.isAssertInvariantsEnabled) assertInvariants()
 
-  private def assertInvariants: Unit = {
-    val currentAndEnding = current.intersect(ending.keySet)
+  private def assertInvariants(): Unit = {
+    val currentAndEnding = current.intersect(ending)
     require(currentAndEnding.isEmpty,
       s"Same nodes in current and ending not allowed, got [${currentAndEnding}]")
 
@@ -254,7 +278,7 @@ private[cluster] case class ClusterHeartbeatSenderState private (
 
   val active: Set[Address] = current ++ heartbeatRequest.keySet
 
-  def reset(nodes: Set[Address]): ClusterHeartbeatSenderState = {
+  def reset(nodes: immutable.HashSet[Address]): ClusterHeartbeatSenderState = {
     ClusterHeartbeatSenderState(nodes.foldLeft(this) { _ removeHeartbeatRequest _ }, ring.copy(nodes = nodes + ring.selfAddress))
   }
 
@@ -266,7 +290,7 @@ private[cluster] case class ClusterHeartbeatSenderState private (
 
   private def removeHeartbeatRequest(address: Address): ClusterHeartbeatSenderState = {
     if (heartbeatRequest contains address)
-      copy(heartbeatRequest = heartbeatRequest - address, ending = ending + (address -> 0))
+      copy(heartbeatRequest = heartbeatRequest - address, ending = ending + address)
     else this
   }
 
@@ -282,12 +306,10 @@ private[cluster] case class ClusterHeartbeatSenderState private (
     val overdue = heartbeatRequest collect { case (address, deadline) if deadline.isOverdue ⇒ address }
     if (overdue.isEmpty) this
     else
-      copy(ending = ending ++ overdue.map(_ -> 0), heartbeatRequest = heartbeatRequest -- overdue)
+      copy(ending = ending ++ overdue, heartbeatRequest = heartbeatRequest -- overdue)
   }
 
   def removeEnding(a: Address): ClusterHeartbeatSenderState = copy(ending = ending - a)
-
-  def increaseEndingCount(a: Address): ClusterHeartbeatSenderState = copy(ending = ending + (a -> (ending(a) + 1)))
 
 }
 
@@ -307,18 +329,12 @@ private[cluster] case class HeartbeatNodeRing(selfAddress: Address, nodes: Set[A
 
   private val nodeRing: immutable.SortedSet[Address] = {
     implicit val ringOrdering: Ordering[Address] = Ordering.fromLessThan[Address] { (a, b) ⇒
-      val ha = hashFor(a)
-      val hb = hashFor(b)
+      val ha = a.##
+      val hb = b.##
       ha < hb || (ha == hb && Member.addressOrdering.compare(a, b) < 0)
     }
 
     immutable.SortedSet() ++ nodes
-  }
-
-  private def hashFor(node: Address): Int = node match {
-    // cluster node identifier is the host and port of the address; protocol and system is assumed to be the same
-    case Address(_, _, Some(host), Some(port)) ⇒ MurmurHash.stringHash(s"${host}:${port}")
-    case _                                     ⇒ 0
   }
 
   /**

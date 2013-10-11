@@ -23,7 +23,7 @@ object FaultHandlingDocSample extends App {
   import Worker._
 
   val config = ConfigFactory.parseString("""
-    akka.loglevel = DEBUG
+    akka.loglevel = "DEBUG"
     akka.actor.debug {
       receive = on
       lifecycle = on
@@ -168,7 +168,7 @@ class CounterService extends Actor {
 
     case Entry(k, v) if k == key && counter == None ⇒
       // Reply from Storage of the initial value, now we can create the Counter
-      val c = context.actorOf(Props(new Counter(key, v)))
+      val c = context.actorOf(Props(classOf[Counter], key, v))
       counter = Some(c)
       // Tell the counter to use current storage
       c ! UseStorage(storage)
@@ -204,7 +204,7 @@ class CounterService extends Actor {
         if (backlog.size >= MaxBacklog)
           throw new ServiceUnavailable(
             "CounterService not available, lack of initial value")
-        backlog = backlog :+ (sender, msg)
+        backlog :+= (sender -> msg)
     }
   }
 

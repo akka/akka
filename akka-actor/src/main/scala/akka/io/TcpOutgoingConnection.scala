@@ -4,13 +4,16 @@
 
 package akka.io
 
-import akka.actor.ActorRef
-import akka.io.Inet.SocketOption
-import akka.io.SelectionHandler._
-import akka.io.Tcp._
 import java.io.IOException
 import java.nio.channels.{ SelectionKey, SocketChannel }
+import java.net.ConnectException
 import scala.collection.immutable
+import scala.concurrent.duration._
+import akka.actor.{ ReceiveTimeout, ActorRef }
+import akka.io.Inet.SocketOption
+import akka.io.TcpConnection.CloseInformation
+import akka.io.SelectionHandler._
+import akka.io.Tcp._
 
 /**
  * An actor handling the connection state machine for an outgoing connection
@@ -19,9 +22,10 @@ import scala.collection.immutable
  * INTERNAL API
  */
 private[io] class TcpOutgoingConnection(_tcp: TcpExt,
+                                        channelRegistry: ChannelRegistry,
                                         commander: ActorRef,
                                         connect: Connect)
-  extends TcpConnection(TcpOutgoingConnection.newSocketChannel(), _tcp) {
+  extends TcpConnection(_tcp, SocketChannel.open().configureBlocking(false).asInstanceOf[SocketChannel]) {
 
   import connect._
 
@@ -29,39 +33,59 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
 
   localAddress.foreach(channel.socket.bind)
   options.foreach(_.beforeConnect(channel.socket))
-  selector ! RegisterChannel(channel, SelectionKey.OP_CONNECT)
+  channelRegistry.register(channel, SelectionKey.OP_CONNECT)
+  timeout foreach context.setReceiveTimeout //Initiate connection timeout if supplied
+
+  private def stop(): Unit = stopWith(CloseInformation(Set(commander), connect.failureMessage))
+
+  private def reportConnectFailure(thunk: ⇒ Unit): Unit = {
+    try {
+      thunk
+    } catch {
+      case e: IOException ⇒
+        log.debug("Could not establish connection to [{}] due to {}", remoteAddress, e)
+        stop()
+    }
+  }
 
   def receive: Receive = {
-    case ChannelRegistered ⇒
+    case registration: ChannelRegistration ⇒
       log.debug("Attempting connection to [{}]", remoteAddress)
-      if (channel.connect(remoteAddress))
-        completeConnect(commander, options)
-      else {
-        context.become(connecting(commander, options))
+      reportConnectFailure {
+        if (channel.connect(remoteAddress))
+          completeConnect(registration, commander, options)
+        else
+          context.become(connecting(registration, commander, options, tcp.Settings.FinishConnectRetries))
       }
   }
 
-  def connecting(commander: ActorRef, options: immutable.Traversable[SocketOption]): Receive = {
-    case ChannelConnectable ⇒
-      try {
-        val connected = channel.finishConnect()
-        assert(connected, "Connectable channel failed to connect")
-        log.debug("Connection established")
-        completeConnect(commander, options)
-      } catch {
-        case e: IOException ⇒ handleError(commander, e)
-      }
-  }
+  def connecting(registration: ChannelRegistration, commander: ActorRef,
+                 options: immutable.Traversable[SocketOption], remainingFinishConnectRetries: Int): Receive = {
+    {
+      case ChannelConnectable ⇒
+        reportConnectFailure {
+          if (channel.finishConnect()) {
+            if (timeout.isDefined) context.setReceiveTimeout(Duration.Undefined) // Clear the timeout
+            log.debug("Connection established to [{}]", remoteAddress)
+            completeConnect(registration, commander, options)
+          } else {
+            if (remainingFinishConnectRetries > 0) {
+              context.system.scheduler.scheduleOnce(1.millisecond) {
+                channelRegistry.register(channel, SelectionKey.OP_CONNECT)
+              }(context.dispatcher)
+              context.become(connecting(registration, commander, options, remainingFinishConnectRetries - 1))
+            } else {
+              log.debug("Could not establish connection because finishConnect " +
+                "never returned true (consider increasing akka.io.tcp.finish-connect-retries)")
+              stop()
+            }
+          }
+        }
 
-}
-
-/**
- * INTERNAL API
- */
-private[io] object TcpOutgoingConnection {
-  private def newSocketChannel() = {
-    val channel = SocketChannel.open()
-    channel.configureBlocking(false)
-    channel
+      case ReceiveTimeout ⇒
+        if (timeout.isDefined) context.setReceiveTimeout(Duration.Undefined) // Clear the timeout
+        log.debug("Connect timeout expired, could not establish connection to [{}]", remoteAddress)
+        stop()
+    }
   }
 }

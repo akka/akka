@@ -62,7 +62,7 @@ object AkkaKernelPlugin extends Plugin {
       Seq(dist <<= (dist in Dist), distNeedsPackageBin)
 
   private def distTask: Initialize[Task[File]] =
-    (distConfig, sourceDirectory, crossTarget, dependencyClasspath, projectDependencies, allDependencies, buildStructure, state) map { (conf, src, tgt, cp, projDeps, allDeps, buildStruct, st) ⇒
+    (thisProject, distConfig, sourceDirectory, crossTarget, dependencyClasspath, allDependencies, buildStructure, state) map { (project, conf, src, tgt, cp, allDeps, buildStruct, st) ⇒
 
       if (isKernelProject(allDeps)) {
         val log = st.log
@@ -71,7 +71,7 @@ object AkkaKernelPlugin extends Plugin {
         val distDeployPath = conf.outputDirectory / "deploy"
         val distLibPath = conf.outputDirectory / "lib"
 
-        val subProjectDependencies: Set[SubProjectInfo] = allSubProjectDependencies(projDeps, buildStruct, st)
+        val subProjectDependencies: Set[SubProjectInfo] = allSubProjectDependencies(project, buildStruct, st)
 
         log.info("Creating distribution %s ..." format conf.outputDirectory)
         IO.createDirectory(conf.outputDirectory)
@@ -132,23 +132,18 @@ object AkkaKernelPlugin extends Plugin {
       DistScript("start.bat", distBatScript, true))
 
     private def distShScript =
-      """|#!/bin/sh
-    |
-    |AKKA_HOME="$(cd "$(cd "$(dirname "$0")"; pwd -P)"/..; pwd)"
-    |AKKA_CLASSPATH="$AKKA_HOME/config:$AKKA_HOME/lib/*"
-    |JAVA_OPTS="%s"
-    |
-    |java $JAVA_OPTS -cp "$AKKA_CLASSPATH" -Dakka.home="$AKKA_HOME" %s%s "$@"
-    |""".stripMargin.format(jvmOptions, mainClass, if (bootClass.nonEmpty) " " + bootClass else "")
+      ("#!/bin/sh\n\n" +
+        "AKKA_HOME=\"$(cd \"$(cd \"$(dirname \"$0\")\"; pwd -P)\"/..; pwd)\"\n" +
+        "AKKA_CLASSPATH=\"$AKKA_HOME/config:$AKKA_HOME/lib/*\"\n" +
+        "JAVA_OPTS=\"%s\"\n\n" +
+        "java $JAVA_OPTS -cp \"$AKKA_CLASSPATH\" -Dakka.home=\"$AKKA_HOME\" %s%s \"$@\"\n").format(jvmOptions, mainClass, if (bootClass.nonEmpty) " " + bootClass else "")
 
     private def distBatScript =
-      """|@echo off
-    |set AKKA_HOME=%%~dp0..
-    |set AKKA_CLASSPATH=%%AKKA_HOME%%\config;%%AKKA_HOME%%\lib\*
-    |set JAVA_OPTS=%s
-    |
-    |java %%JAVA_OPTS%% -cp "%%AKKA_CLASSPATH%%" -Dakka.home="%%AKKA_HOME%%" %s%s %%*
-    |""".stripMargin.format(jvmOptions, mainClass, if (bootClass.nonEmpty) " " + bootClass else "")
+      ("@echo off\r\n\r\n" +
+        "set AKKA_HOME=%%~dp0..\r\n" +
+        "set AKKA_CLASSPATH=%%AKKA_HOME%%\\config;%%AKKA_HOME%%\\lib\\*\r\n" +
+        "set JAVA_OPTS=%s\r\n\r\n" +
+        "java %%JAVA_OPTS%% -cp \"%%AKKA_CLASSPATH%%\" -Dakka.home=\"%%AKKA_HOME%%\" %s%s %%*\r\n").format(jvmOptions, mainClass, if (bootClass.nonEmpty) " " + bootClass else "")
 
     private def setExecutable(target: File, executable: Boolean): Option[String] = {
       val success = target.setExecutable(executable, false)
@@ -184,17 +179,22 @@ object AkkaKernelPlugin extends Plugin {
     libs.map(_.asFile).filter(libFilter)
   }
 
-  private def allSubProjectDependencies(projDeps: Seq[ModuleID], buildStruct: BuildStructure, state: State): Set[SubProjectInfo] = {
+  private def includeProject(project: ResolvedProject, parent: ResolvedProject): Boolean = {
+    parent.uses.exists {
+      case ProjectRef(uri, id) ⇒ id == project.id
+      case _                   ⇒ false
+    }
+  }
+
+  private def allSubProjectDependencies(project: ResolvedProject, buildStruct: BuildStructure, state: State): Set[SubProjectInfo] = {
     val buildUnit = buildStruct.units(buildStruct.root)
     val uri = buildStruct.root
     val allProjects = buildUnit.defined.map {
       case (id, proj) ⇒ (ProjectRef(uri, id) -> proj)
     }
 
-    val projDepsNames = projDeps.map(_.name)
-    def include(project: ResolvedProject): Boolean = projDepsNames.exists(_ == project.id)
     val subProjects: Seq[SubProjectInfo] = allProjects.collect {
-      case (projRef, project) if include(project) ⇒ projectInfo(projRef, project, buildStruct, state, allProjects)
+      case (projRef, proj) if includeProject(proj, project) ⇒ projectInfo(projRef, proj, buildStruct, state, allProjects)
     }.toList
 
     val allSubProjects = subProjects.map(_.recursiveSubProjects).flatten.toSet
@@ -213,19 +213,8 @@ object AkkaKernelPlugin extends Plugin {
       }
     }
 
-    def evaluateTask[T](taskKey: sbt.Project.ScopedKey[sbt.Task[T]]) = {
-      EvaluateTask(buildStruct, taskKey, state, projectRef).map(_._2)
-    }
-
-    val projDeps: Seq[ModuleID] = evaluateTask(Keys.projectDependencies) match {
-      case Some(Value(moduleIds)) ⇒ moduleIds
-      case _                      ⇒ Seq.empty
-    }
-
-    val projDepsNames = projDeps.map(_.name)
-    def include(project: ResolvedProject): Boolean = projDepsNames.exists(_ == project.id)
     val subProjects = allProjects.collect {
-      case (projRef, proj) if include(proj) ⇒ projectInfo(projRef, proj, buildStruct, state, allProjects)
+      case (projRef, proj) if includeProject(proj, project) ⇒ projectInfo(projRef, proj, buildStruct, state, allProjects)
     }.toList
 
     val target = setting(Keys.crossTarget, "Missing crossTarget directory")

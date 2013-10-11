@@ -22,7 +22,7 @@ import support.TypeConverterSupport
 import scala.util.{ Failure, Success, Try }
 
 /**
- * For internal use only.
+ * INTERNAL API
  * Creates Camel [[org.apache.camel.Endpoint]]s that send messages to [[akka.camel.Consumer]] actors through an [[akka.camel.internal.component.ActorProducer]].
  * The `ActorComponent` is a Camel [[org.apache.camel.Component]].
  *
@@ -42,7 +42,7 @@ private[camel] class ActorComponent(camel: Camel, system: ActorSystem) extends D
 }
 
 /**
- * For internal use only.
+ * INTERNAL API
  * Does what an endpoint does, creates consumers and producers for the component. The `ActorEndpoint` is a Camel [[org.apache.camel.Endpoint]] that is used to
  * receive messages from Camel. Sending messages from the `ActorComponent` is not supported, a [[akka.camel.Producer]] actor should be used instead.
  *
@@ -85,7 +85,7 @@ private[camel] class ActorEndpoint(uri: String,
 }
 
 /**
- * For internal use only.
+ * INTERNAL API
  * Configures the `ActorEndpoint`. This needs to be a `bean` for Camel purposes.
  *
  */
@@ -127,7 +127,8 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
   def process(exchange: Exchange, callback: AsyncCallback): Boolean = processExchangeAdapter(new CamelExchangeAdapter(exchange), callback)
 
   /**
-   * For internal use only. Processes the [[akka.camel.internal.CamelExchangeAdapter]]
+   * INTERNAL API
+   * Processes the [[akka.camel.internal.CamelExchangeAdapter]]
    * @param exchange the [[akka.camel.internal.CamelExchangeAdapter]]
    */
   private[camel] def processExchangeAdapter(exchange: CamelExchangeAdapter): Unit = {
@@ -137,7 +138,8 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
   }
 
   /**
-   * For internal use only. Processes the [[akka.camel.internal.CamelExchangeAdapter]].
+   * INTERNAL API
+   * Processes the [[akka.camel.internal.CamelExchangeAdapter]].
    * This method is blocking when the exchange is inOnly. The method returns true if it executed synchronously/blocking.
    * @param exchange the [[akka.camel.internal.CamelExchangeAdapter]]
    * @param callback the callback
@@ -162,6 +164,8 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
           case Failure(e: TimeoutException)    ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
           case Failure(throwable)              ⇒ exchange.setFailure(FailureResult(throwable))
         }
+
+      // FIXME #3074 how do we solve this with actorSelection?
       val async = try actorFor(endpoint.path).ask(messageFor(exchange))(Timeout(endpoint.replyTimeout)) catch { case NonFatal(e) ⇒ Future.failed(e) }
       implicit val ec = camel.system.dispatcher // FIXME which ExecutionContext should be used here?
       async.onComplete(action andThen { _ ⇒ callback.done(false) })
@@ -170,6 +174,7 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
 
   }
 
+  // FIXME #3074 how do we solve this with actorSelection?
   private def fireAndForget(message: CamelMessage, exchange: CamelExchangeAdapter): Unit =
     try { actorFor(endpoint.path) ! message } catch { case NonFatal(e) ⇒ exchange.setFailure(new FailureResult(e)) }
 
@@ -181,7 +186,8 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
 }
 
 /**
- * For internal use only. Converts Strings to [[scala.concurrent.duration.Duration]]
+ * INTERNAL API
+ * Converts Strings to [[scala.concurrent.duration.Duration]]
  */
 private[camel] object DurationTypeConverter extends TypeConverterSupport {
 
@@ -195,7 +201,8 @@ private[camel] object DurationTypeConverter extends TypeConverterSupport {
 }
 
 /**
- * For internal use only. An endpoint to an [[akka.actor.ActorRef]]
+ * INTERNAL API
+ * An endpoint to an [[akka.actor.ActorRef]]
  * @param actorPath the String representation of the path to the actor
  */
 private[camel] case class ActorEndpointPath private (actorPath: String) {
@@ -205,6 +212,7 @@ private[camel] case class ActorEndpointPath private (actorPath: String) {
   require(actorPath.startsWith("akka://"))
 
   def findActorIn(system: ActorSystem): Option[ActorRef] = {
+    // FIXME #3074 how do we solve this with actorSelection?
     val ref = system.actorFor(actorPath)
     if (ref.isTerminated) None else Some(ref)
   }
@@ -239,7 +247,8 @@ object CamelPath {
 }
 
 /**
- * For internal use only. Companion of `ActorEndpointPath`
+ * INTERNAL API
+ * Companion of `ActorEndpointPath`
  */
 private[camel] case object ActorEndpointPath {
 

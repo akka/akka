@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote.testconductor
 
@@ -71,7 +71,6 @@ private[akka] object RemoteConnection {
     case _                    ⇒ "[unknown]"
   }
 
-  def shutdown(channel: Channel) = {
-    channel.getFactory.releaseExternalResources()
-  }
+  def shutdown(channel: Channel) =
+    try channel.close() finally try channel.getFactory.shutdown() finally channel.getFactory.releaseExternalResources()
 }

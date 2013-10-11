@@ -3,6 +3,7 @@ package akka.actor.mailbox.filebased
 import language.postfixOps
 
 import akka.actor.mailbox._
+import scala.concurrent.duration._
 import org.apache.commons.io.FileUtils
 import akka.dispatch.Mailbox
 
@@ -27,18 +28,13 @@ class FileBasedMailboxSpec extends DurableMailboxSpec("File", FileBasedMailboxSp
     "read the file-based section" in {
       settings.QueuePath must be("file-based")
       settings.CircuitBreakerMaxFailures must be(5)
-
-      import scala.concurrent.duration._
-
       settings.CircuitBreakerCallTimeout must be(5 seconds)
     }
   }
 
-  def isDurableMailbox(m: Mailbox): Boolean = m.messageQueue.isInstanceOf[FileBasedMessageQueue]
+  private[akka] def isDurableMailbox(m: Mailbox): Boolean = m.messageQueue.isInstanceOf[FileBasedMessageQueue]
 
-  def clean() {
-    FileUtils.deleteDirectory(new java.io.File(settings.QueuePath))
-  }
+  def clean(): Unit = FileUtils.deleteDirectory(new java.io.File(settings.QueuePath))
 
   override def atStartup() {
     clean()

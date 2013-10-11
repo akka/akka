@@ -1,7 +1,7 @@
 .. _akka-testkit-java:
 
 ##############################
-Testing Actor Systems (Java)
+Testing Actor Systems
 ##############################
 
 As with any piece of software, automated tests are a very important part of the
@@ -281,6 +281,13 @@ code blocks:
     This general construct is not connected with the test kit’s message
     reception, the embedded condition can compute the boolean result from
     anything in scope.
+
+    * **AwaitAssert**
+
+    .. includecode:: code/docs/testkit/TestKitDocTest.java#test-awaitAssert
+
+    This general construct is not connected with the test kit’s message
+    reception, the embedded assert can check anything in scope.
 
 There are also cases where not all messages sent to the test kit are actually
 relevant to the test, but removing them would mean altering the actors under
@@ -618,7 +625,7 @@ All these messages are logged at ``DEBUG`` level. To summarize, you can enable
 full logging of actor activities using this configuration fragment::
 
   akka {
-    loglevel = DEBUG
+    loglevel = "DEBUG"
     actor {
       debug {
         autoreceive = on

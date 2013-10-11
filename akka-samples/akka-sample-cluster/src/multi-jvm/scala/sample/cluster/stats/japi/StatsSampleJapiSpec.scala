@@ -14,7 +14,7 @@ import sample.cluster.stats.japi.StatsMessages._
 import akka.remote.testkit.MultiNodeConfig
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.WordSpec
+import org.scalatest.WordSpecLike
 import org.scalatest.matchers.MustMatchers
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
@@ -30,7 +30,7 @@ object StatsSampleJapiSpecConfig extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString("""
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-join = off
+    akka.cluster.roles = [compute]
     # don't use sigar for tests, native lib not in path
     akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
     akka.actor.deployment {
@@ -41,6 +41,7 @@ object StatsSampleJapiSpecConfig extends MultiNodeConfig {
             enabled = on
             routees-path = "/user/statsWorker"
             allow-local-routees = on
+            use-role = compute
           }
         }
     }
@@ -54,7 +55,7 @@ class StatsSampleJapiSpecMultiJvmNode2 extends StatsSampleJapiSpec
 class StatsSampleJapiSpecMultiJvmNode3 extends StatsSampleJapiSpec
 
 abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConfig)
-  with WordSpec with MustMatchers with BeforeAndAfterAll
+  with WordSpecLike with MustMatchers with BeforeAndAfterAll
   with ImplicitSender {
 
   import StatsSampleJapiSpecConfig._
@@ -80,10 +81,8 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
       system.actorOf(Props[StatsWorker], "statsWorker")
       system.actorOf(Props[StatsService], "statsService")
 
-      expectMsgAllOf(
-        MemberUp(Member(firstAddress, MemberStatus.Up)),
-        MemberUp(Member(secondAddress, MemberStatus.Up)),
-        MemberUp(Member(thirdAddress, MemberStatus.Up)))
+      receiveN(3).collect { case MemberUp(m) => m.address }.toSet must be (
+           Set(firstAddress, secondAddress, thirdAddress))
 
       Cluster(system).unsubscribe(testActor)
 
@@ -92,30 +91,25 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
 
     "show usage of the statsService from one node" in within(15 seconds) {
       runOn(second) {
-        assertServiceOk
+        assertServiceOk()
       }
 
       testConductor.enter("done-2")
     }
 
-    def assertServiceOk: Unit = {
-      val service = system.actorFor(node(third) / "user" / "statsService")
+    def assertServiceOk(): Unit = {
+      val service = system.actorSelection(node(third) / "user" / "statsService")
       // eventually the service should be ok,
       // first attempts might fail because worker actors not started yet
-      awaitCond {
+      awaitAssert {
         service ! new StatsJob("this is the text that will be analyzed")
-        expectMsgPF() {
-          case unavailble: JobFailed ⇒ false
-          case r: StatsResult ⇒
-            r.getMeanWordLength must be(3.875 plusOrMinus 0.001)
-            true
-        }
+        expectMsgType[StatsResult](1.second).getMeanWordLength must be(3.875 plusOrMinus 0.001)
       }
     }
     //#test-statsService
 
     "show usage of the statsService from all nodes" in within(15 seconds) {
-      assertServiceOk
+      assertServiceOk()
 
       testConductor.enter("done-3")
     }

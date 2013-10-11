@@ -111,6 +111,8 @@ implementation; it is always possible to add stricter guarantees on top of
 basic ones, but it is not possible to retro-actively remove guarantees in order
 to gain more performance.
 
+.. _message-ordering:
+
 Discussion: Message Ordering
 ----------------------------
 
@@ -152,6 +154,22 @@ Causal transitive ordering would imply that ``M2`` is never received before
 ``M1`` at actor ``C`` (though any of them might be lost). This ordering can be
 violated due to different message delivery latencies when ``A``, ``B`` and
 ``C`` reside on different network hosts, see more below.
+
+Communication of failure
+........................
+
+Please note, that the ordering guarantees discussed above only hold for user messages between actors. Failure of a child
+of an actor is communicated by special system messages that are not ordered relative to ordinary user messages. In
+particular:
+
+  Child actor ``C`` sends message ``M`` to its parent ``P``
+
+  Child actor fails with failure ``F``
+
+  Parent actor ``P`` might receive the two events either in order ``M``, ``F`` or ``F``, ``M``
+
+The reason for this is that internal system messages has their own mailboxes therefore the ordering of enqueue calls of
+a user and system message cannot guarantee the ordering of their dequeue times.
 
 The Rules for In-JVM (Local) Message Sends
 ==========================================
@@ -282,6 +300,11 @@ snapshots to speed up the process). Read a lot more about `Event Sourcing`_.
 Martin Krasser has written an implementation of event sourcing principles on
 top of Akka called `eventsourced`_, including support for guaranteed delivery
 semantics as described in the previous section.
+
+A successor of `eventsourced` is now part of Akka (see :ref:`persistence`) which
+is a general solution for actor state persistence. It journals messages before
+they are received by an actor and can be used to implement both event sourcing
+and command sourcing.
 
 .. _Event Sourcing: http://martinfowler.com/eaaDev/EventSourcing.html
 .. _eventsourced: https://github.com/eligosource/eventsourced

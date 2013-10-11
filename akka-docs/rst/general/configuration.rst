@@ -3,6 +3,17 @@
 Configuration
 =============
 
+You can start using Akka without defining any configuration, since sensible default values
+are provided. Later on you might need to amend the settings to change the default behavior
+or adapt for specific runtime environments. Typical examples of settings that you
+might amend:
+
+* log level and logger backend
+* enable remoting
+* message serializers
+* definition of routers
+* tuning of dispatchers
+
 Akka uses the `Typesafe Config Library
 <https://github.com/typesafehub/config>`_, which might also be a good choice
 for the configuration of your own application or library built with or without
@@ -84,12 +95,12 @@ A custom ``application.conf`` might look like this::
 
     # Log level used by the configured loggers (see "loggers") as soon
     # as they have been started; before that, see "stdout-loglevel"
-    # Options: ERROR, WARNING, INFO, DEBUG
-    loglevel = DEBUG
+    # Options: OFF, ERROR, WARNING, INFO, DEBUG
+    loglevel = "DEBUG"
 
     # Log level for the very basic logger activated during AkkaApplication startup
-    # Options: ERROR, WARNING, INFO, DEBUG
-    stdout-loglevel = DEBUG
+    # Options: OFF, ERROR, WARNING, INFO, DEBUG
+    stdout-loglevel = "DEBUG"
 
     actor {
       default-dispatcher {
@@ -171,7 +182,7 @@ and parsed by the actor system can be displayed like this:
 .. code-block:: java
 
   final ActorSystem system = ActorSystem.create();
-  println(system.settings());
+  System.out.println(system.settings());
   // this is a shortcut for system.settings().config().root().render()
 
 A Word About ClassLoaders
@@ -211,11 +222,11 @@ from the whole class path, it is easiest to utilize that functionality and
 differentiate actor systems within the hierarchy of the configuration::
 
   myapp1 {
-    akka.loglevel = WARNING
+    akka.loglevel = "WARNING"
     my.own.setting = 43
   }
   myapp2 {
-    akka.loglevel = ERROR
+    akka.loglevel = "ERROR"
     app2.setting = "appname"
   }
   my.own.setting = 42
@@ -234,15 +245,17 @@ system is this
 
 .. code-block:: ruby
 
-  akka.loglevel = WARNING
+  akka.loglevel = "WARNING"
   my.own.setting = 43
   my.other.setting = "hello"
   // plus myapp1 and myapp2 subtrees
 
 while in the second one, only the “akka” subtree is lifted, with the following
-result::
+result
 
-  akka.loglevel = ERROR
+.. code-block:: ruby
+
+  akka.loglevel = "ERROR"
   my.own.setting = 42
   my.other.setting = "hello"
   // plus myapp1 and myapp2 subtrees
@@ -354,6 +367,18 @@ akka-testkit
 .. literalinclude:: ../../../akka-testkit/src/main/resources/reference.conf
    :language: none
 
+akka-camel
+~~~~~~~~~~
+
+.. literalinclude:: ../../../akka-camel/src/main/resources/reference.conf
+   :language: none
+
+akka-cluster
+~~~~~~~~~~~~
+
+.. literalinclude:: ../../../akka-cluster/src/main/resources/reference.conf
+   :language: none
+
 akka-transactor
 ~~~~~~~~~~~~~~~
 
@@ -364,6 +389,12 @@ akka-agent
 ~~~~~~~~~~
 
 .. literalinclude:: ../../../akka-agent/src/main/resources/reference.conf
+   :language: none
+
+akka-persistence
+~~~~~~~~~~~~~~~~
+
+.. literalinclude:: ../../../akka-persistence/src/main/resources/reference.conf
    :language: none
 
 akka-zeromq

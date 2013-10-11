@@ -19,8 +19,7 @@ import akka.actor.ActorRef
 object ClusterSpec {
   val config = """
     akka.cluster {
-      auto-join                    = off
-      auto-down                    = off
+      auto-down-unreachable-after = 0s
       periodic-tasks-initial-delay = 120 seconds // turn off scheduled tasks
       publish-stats-interval = 0 s # always, when it happens
       failure-detector.implementation-class = akka.cluster.FailureDetectorPuppet
@@ -38,8 +37,7 @@ object ClusterSpec {
 class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
   import ClusterSpec._
 
-  // FIXME: temporary workaround. See #2663
-  val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[ClusterActorRefProvider].transport.defaultAddress
+  val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
 
   val cluster = Cluster(system)
   def clusterView = cluster.readView
@@ -61,22 +59,19 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "initially become singleton cluster when joining itself and reach convergence" in {
-      clusterView.members.size must be(0) // auto-join = off
+      clusterView.members.size must be(0)
       cluster.join(selfAddress)
-      Thread.sleep(5000)
+      leaderActions() // Joining -> Up
       awaitCond(clusterView.isSingletonCluster)
       clusterView.self.address must be(selfAddress)
       clusterView.members.map(_.address) must be(Set(selfAddress))
-      clusterView.status must be(MemberStatus.Joining)
-      leaderActions()
-      awaitCond(clusterView.status == MemberStatus.Up)
+      awaitAssert(clusterView.status must be(MemberStatus.Up))
     }
 
     "publish CurrentClusterState to subscribers when requested" in {
       try {
         cluster.subscribe(testActor, classOf[ClusterEvent.ClusterDomainEvent])
         // first, is in response to the subscription
-        expectMsgClass(classOf[ClusterEvent.InstantClusterState])
         expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
 
         cluster.publishCurrentClusterState()

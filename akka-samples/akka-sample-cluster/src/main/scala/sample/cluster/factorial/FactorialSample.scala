@@ -22,11 +22,14 @@ object FactorialFrontend {
   def main(args: Array[String]): Unit = {
     val upToN = if (args.isEmpty) 200 else args(0).toInt
 
-    val system = ActorSystem("ClusterSystem", ConfigFactory.load("factorial"))
-    system.log.info("Factorials will start when 3 members in the cluster.")
+    val config = ConfigFactory.parseString("akka.cluster.roles = [frontend]").
+      withFallback(ConfigFactory.load("factorial"))
+
+    val system = ActorSystem("ClusterSystem", config)
+    system.log.info("Factorials will start when 2 backend members in the cluster.")
     //#registerOnUp
     Cluster(system) registerOnMemberUp {
-      system.actorOf(Props(new FactorialFrontend(upToN, repeat = true)),
+      system.actorOf(Props(classOf[FactorialFrontend], upToN, true),
         name = "factorialFrontend")
     }
     //#registerOnUp
@@ -36,7 +39,7 @@ object FactorialFrontend {
 //#frontend
 class FactorialFrontend(upToN: Int, repeat: Boolean) extends Actor with ActorLogging {
 
-  val backend = context.actorOf(Props[FactorialBackend].withRouter(FromConfig),
+  val backend = context.actorOf(Props.empty.withRouter(FromConfig),
     name = "factorialBackendRouter")
 
   override def preStart(): Unit = sendJobs()
@@ -58,11 +61,14 @@ class FactorialFrontend(upToN: Int, repeat: Boolean) extends Actor with ActorLog
 
 object FactorialBackend {
   def main(args: Array[String]): Unit = {
-    // Override the configuration of the port
-    // when specified as program argument
-    if (args.nonEmpty) System.setProperty("akka.remote.netty.tcp.port", args(0))
+    // Override the configuration of the port when specified as program argument
+    val config =
+      (if (args.nonEmpty) ConfigFactory.parseString(s"akka.remote.netty.tcp.port=${args(0)}")
+      else ConfigFactory.empty).withFallback(
+        ConfigFactory.parseString("akka.cluster.roles = [backend]")).
+        withFallback(ConfigFactory.load("factorial"))
 
-    val system = ActorSystem("ClusterSystem", ConfigFactory.load("factorial"))
+    val system = ActorSystem("ClusterSystem", config)
     system.actorOf(Props[FactorialBackend], name = "factorialBackend")
 
     system.actorOf(Props[MetricsListener], name = "metricsListener")
@@ -140,11 +146,11 @@ abstract class FactorialFrontend2 extends Actor {
   import akka.cluster.routing.AdaptiveLoadBalancingRouter
   import akka.cluster.routing.HeapMetricsSelector
 
-  val backend = context.actorOf(Props[FactorialBackend].withRouter(
+  val backend = context.actorOf(Props.empty.withRouter(
     ClusterRouterConfig(AdaptiveLoadBalancingRouter(HeapMetricsSelector),
       ClusterRouterSettings(
-        totalInstances = 100, routeesPath = "/user/statsWorker",
-        allowLocalRoutees = true))),
+        totalInstances = 100, routeesPath = "/user/factorialBackend",
+        allowLocalRoutees = true, useRole = Some("backend")))),
     name = "factorialBackendRouter2")
   //#router-lookup-in-code
 }
@@ -161,7 +167,7 @@ abstract class FactorialFrontend3 extends Actor {
     ClusterRouterConfig(AdaptiveLoadBalancingRouter(
       SystemLoadAverageMetricsSelector), ClusterRouterSettings(
       totalInstances = 100, maxInstancesPerNode = 3,
-      allowLocalRoutees = false))),
+      allowLocalRoutees = false, useRole = Some("backend")))),
     name = "factorialBackendRouter3")
   //#router-deploy-in-code
 }

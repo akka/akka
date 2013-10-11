@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit
 import akka.util.Timeout
 import org.zeromq.ZMQException
 import scala.concurrent.duration.FiniteDuration
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 /**
  * A Model to represent a version of the zeromq library
@@ -62,74 +63,74 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
    * @return the [[akka.actor.Props]]
    */
   def newSocketProps(socketParameters: SocketOption*): Props = {
-    verifyZeroMQVersion
+    verifyZeroMQVersion()
     require(socketParameters exists {
       case s: SocketType.ZMQSocketType ⇒ true
       case _                           ⇒ false
     }, "A socket type is required")
     val params = socketParameters.to[immutable.Seq]
-    Props(new ConcurrentSocketActor(params)).withDispatcher("akka.zeromq.socket-dispatcher")
+    Props(classOf[ConcurrentSocketActor], params).withDispatcher("akka.zeromq.socket-dispatcher")
   }
 
   /**
-   * Java API helper
-   * Factory method to create the [[akka.actor.Props]] to build a ZeroMQ Publisher socket actor.
+   * Java API: Factory method to create the [[akka.actor.Props]] to build a ZeroMQ Publisher socket actor.
+   *
    * @param socketParameters a varargs list of [[akka.zeromq.SocketOption]] to configure the socket
    * @return the [[akka.actor.Props]]
    */
   def newPubSocketProps(socketParameters: SocketOption*): Props = newSocketProps((SocketType.Pub +: socketParameters): _*)
 
   /**
-   * Java API helper
-   * Factory method to create the [[akka.actor.Props]] to build a ZeroMQ Subscriber socket actor.
+   * Java API: Factory method to create the [[akka.actor.Props]] to build a ZeroMQ Subscriber socket actor.
+   *
    * @param socketParameters a varargs list of [[akka.zeromq.SocketOption]] to configure the socket
    * @return the [[akka.actor.Props]]
    */
   def newSubSocketProps(socketParameters: SocketOption*): Props = newSocketProps((SocketType.Sub +: socketParameters): _*)
 
   /**
-   * Java API helper
-   * Factory method to create the [[akka.actor.Props]] to build a ZeroMQ Dealer socket actor.
+   * Java API: Factory method to create the [[akka.actor.Props]] to build a ZeroMQ Dealer socket actor.
+   *
    * @param socketParameters a varargs list of [[akka.zeromq.SocketOption]] to configure the socket
    * @return the [[akka.actor.Props]]
    */
   def newDealerSocketProps(socketParameters: SocketOption*): Props = newSocketProps((SocketType.Dealer +: socketParameters): _*)
 
   /**
-   * Java API helper
-   * Factory method to create the [[akka.actor.Props]] to build a ZeroMQ Router socket actor.
+   * Java API: Factory method to create the [[akka.actor.Props]] to build a ZeroMQ Router socket actor.
+   *
    * @param socketParameters a varargs list of [[akka.zeromq.SocketOption]] to configure the socket
    * @return the [[akka.actor.Props]]
    */
   def newRouterSocketProps(socketParameters: SocketOption*): Props = newSocketProps((SocketType.Router +: socketParameters): _*)
 
   /**
-   * Java API helper
-   * Factory method to create the [[akka.actor.Props]] to build a ZeroMQ Push socket actor.
+   * Java API: Factory method to create the [[akka.actor.Props]] to build a ZeroMQ Push socket actor.
+   *
    * @param socketParameters a varargs list of [[akka.zeromq.SocketOption]] to configure the socket
    * @return the [[akka.actor.Props]]
    */
   def newPushSocketProps(socketParameters: SocketOption*): Props = newSocketProps((SocketType.Push +: socketParameters): _*)
 
   /**
-   * Java API helper
-   * Factory method to create the [[akka.actor.Props]] to build a ZeroMQ Pull socket actor.
+   * Java API: Factory method to create the [[akka.actor.Props]] to build a ZeroMQ Pull socket actor.
+   *
    * @param socketParameters a varargs list of [[akka.zeromq.SocketOption]] to configure the socket
    * @return the [[akka.actor.Props]]
    */
   def newPullSocketProps(socketParameters: SocketOption*): Props = newSocketProps((SocketType.Pull +: socketParameters): _*)
 
   /**
-   * Java API helper
-   * Factory method to create the [[akka.actor.Props]] to build a ZeroMQ Req socket actor.
+   * Java API: Factory method to create the [[akka.actor.Props]] to build a ZeroMQ Req socket actor.
+   *
    * @param socketParameters a varargs list of [[akka.zeromq.SocketOption]] to configure the socket
    * @return the [[akka.actor.Props]]
    */
   def newReqSocketProps(socketParameters: SocketOption*): Props = newSocketProps((SocketType.Rep +: socketParameters): _*)
 
   /**
-   * Java API helper
-   * Factory method to create the [[akka.actor.Props]] to build a ZeroMQ Rep socket actor.
+   * Java API: Factory method to create the [[akka.actor.Props]] to build a ZeroMQ Rep socket actor.
+   *
    * @param socketParameters a varargs list of [[akka.zeromq.SocketOption]] to configure the socket
    * @return the [[akka.actor.Props]]
    */
@@ -239,9 +240,9 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
   def newRepSocket(socketParameters: Array[SocketOption]): ActorRef = newSocket((SocketType.Rep +: socketParameters): _*)
 
   private val zeromqGuardian: ActorRef = {
-    verifyZeroMQVersion
+    verifyZeroMQVersion()
 
-    system.actorOf(Props(new Actor {
+    system.actorOf(Props(new Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
       import SupervisorStrategy._
       override def supervisorStrategy = OneForOneStrategy() {
         case ex: ZMQException if nonfatal(ex) ⇒ Resume
@@ -257,7 +258,7 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
     }), "zeromq")
   }
 
-  private def verifyZeroMQVersion = {
+  private def verifyZeroMQVersion(): Unit = {
     require(
       JZMQ.getFullVersion > ZeroMQExtension.minVersion,
       "Unsupported ZeroMQ version: %s, akka needs at least: %s".format(JZMQ.getVersionString, ZeroMQExtension.minVersionString))

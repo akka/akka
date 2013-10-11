@@ -9,19 +9,15 @@ public class HttpSample {
     // run the example in the MicroKernel. Just add the three lines below
     // to your boot class.
     ActorSystem system = ActorSystem.create("some-system");
-    final ActorRef httpTransformer = system.actorOf(new Props(HttpTransformer.class));
+    
+    final ActorRef httpTransformer = system.actorOf(
+        Props.create(HttpTransformer.class));
 
-    final ActorRef httpProducer = system.actorOf(new Props(new UntypedActorFactory(){
-      public Actor create() {
-        return new HttpProducer(httpTransformer);
-      }
-    }));
-
-    ActorRef httpConsumer = system.actorOf(new Props(new UntypedActorFactory(){
-      public Actor create() {
-        return new HttpConsumer(httpProducer);
-      }
-    }));
+    final ActorRef httpProducer = system.actorOf(
+        Props.create(HttpProducer.class, httpTransformer));
+    
+    final ActorRef httpConsumer = system.actorOf(
+        Props.create(HttpConsumer.class, httpProducer));
     //#HttpExample
   }
 }

@@ -13,20 +13,14 @@ import scala.concurrent.duration._
 import akka.actor.Props
 import akka.actor.Actor
 import akka.cluster.MemberStatus._
+import akka.actor.Deploy
 
 object MembershipChangeListenerExitingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
 
-  commonConfig(
-    debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString("""
-        akka.cluster {
-          unreachable-nodes-reaper-interval = 300 s # turn "off" reaping to unreachable node set
-        }
-      """)
-        .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet)))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
 class MembershipChangeListenerExitingMultiJvmNode1 extends MembershipChangeListenerExitingSpec
@@ -61,11 +55,11 @@ abstract class MembershipChangeListenerExitingSpec
                 exitingLatch.countDown()
             case MemberExited(m) if m.address == secondAddress ⇒
               exitingLatch.countDown()
-            case MemberRemoved(m) if m.address == secondAddress ⇒
+            case MemberRemoved(m, Exiting) if m.address == secondAddress ⇒
               removedLatch.countDown()
             case _ ⇒ // ignore
           }
-        })), classOf[MemberEvent])
+        }).withDeploy(Deploy.local)), classOf[MemberEvent])
         enterBarrier("registered-listener")
         exitingLatch.await
         removedLatch.await
@@ -83,7 +77,7 @@ abstract class MembershipChangeListenerExitingSpec
               exitingLatch.countDown()
             case _ ⇒ // ignore
           }
-        })), classOf[MemberEvent])
+        }).withDeploy(Deploy.local)), classOf[MemberEvent])
         enterBarrier("registered-listener")
         exitingLatch.await
       }

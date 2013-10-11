@@ -3,15 +3,15 @@ package akka.camel.internal
 import language.postfixOps
 import org.scalatest.matchers.MustMatchers
 import scala.concurrent.duration._
-import org.scalatest.{ GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, WordSpec }
+import org.scalatest.{ GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, WordSpecLike }
 import akka.actor.{ Props, ActorSystem }
 import akka.camel._
 import akka.testkit.{ TimingTest, TestProbe, TestKit }
 import akka.camel.internal.ActivationProtocol._
 
-class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen {
+class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpecLike with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen {
 
-  override protected def afterAll() { system.shutdown() }
+  override protected def afterAll() { shutdown(system) }
 
   var actor: TestProbe = _
   var awaiting: Awaiting = _

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.contrib.pattern
@@ -22,12 +22,15 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
-import akka.testkit.ImplicitSender
 import akka.testkit.TestEvent._
 import akka.actor.Terminated
+import akka.actor.Identify
+import akka.actor.ActorIdentity
+import akka.actor.ActorSelection
 
 object ClusterSingletonManagerSpec extends MultiNodeConfig {
   val controller = role("controller")
+  val observer = role("observer")
   val first = role("first")
   val second = role("second")
   val third = role("third")
@@ -39,11 +42,11 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-join = off
-    akka.cluster.auto-down = on
+    akka.cluster.auto-down-unreachable-after = 0s
     """))
 
-  testTransport(on = true)
+  nodeConfig(first, second, third, fourth, fifth, sixth)(
+    ConfigFactory.parseString("akka.cluster.roles =[worker]"))
 
   object PointToPointChannel {
     case object RegisterConsumer
@@ -108,15 +111,11 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
   /**
    * The Singleton actor
    */
-  class Consumer(handOverData: Option[Any], queue: ActorRef, delegateTo: ActorRef) extends Actor {
+  class Consumer(queue: ActorRef, delegateTo: ActorRef) extends Actor {
     import Consumer._
     import PointToPointChannel._
 
-    var current: Int = handOverData match {
-      case Some(x: Int) ⇒ x
-      case Some(x)      ⇒ throw new IllegalArgumentException(s"handOverData must be an Int, got [${x}]")
-      case None         ⇒ 0
-    }
+    var current = 0
 
     override def preStart(): Unit = queue ! RegisterConsumer
 
@@ -134,34 +133,40 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
       case End ⇒
         queue ! UnregisterConsumer
       case UnregistrationOk ⇒
-        // reply to ClusterSingletonManager with hand over data,
-        // which will be passed as parameter to new leader consumer
-        context.parent ! current
         context stop self
       //#consumer-end
     }
   }
 
-  // documentation of how to keep track of the leader address in user land
+  // documentation of how to keep track of the oldest member in user land
   //#singleton-proxy
   class ConsumerProxy extends Actor {
-    // subscribe to LeaderChanged, re-subscribe when restart
+
+    // subscribe to MemberEvent, re-subscribe when restart
     override def preStart(): Unit =
-      Cluster(context.system).subscribe(self, classOf[LeaderChanged])
+      Cluster(context.system).subscribe(self, classOf[MemberEvent])
     override def postStop(): Unit =
       Cluster(context.system).unsubscribe(self)
 
-    var leaderAddress: Option[Address] = None
+    val role = "worker"
+    // sort by age, oldest first
+    val ageOrdering = Ordering.fromLessThan[Member] { (a, b) ⇒ a.isOlderThan(b) }
+    var membersByAge: immutable.SortedSet[Member] =
+      immutable.SortedSet.empty(ageOrdering)
 
     def receive = {
-      case state: CurrentClusterState ⇒ leaderAddress = state.leader
-      case LeaderChanged(leader)      ⇒ leaderAddress = leader
-      case other                      ⇒ consumer foreach { _ forward other }
+      case state: CurrentClusterState ⇒
+        membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.collect {
+          case m if m.hasRole(role) ⇒ m
+        }
+      case MemberUp(m)         ⇒ if (m.hasRole(role)) membersByAge += m
+      case MemberRemoved(m, _) ⇒ if (m.hasRole(role)) membersByAge -= m
+      case other               ⇒ consumer foreach { _.tell(other, sender) }
     }
 
-    def consumer: Option[ActorRef] =
-      leaderAddress map (a ⇒ context.actorFor(RootActorPath(a) /
-        "user" / "singleton" / "consumer"))
+    def consumer: Option[ActorSelection] =
+      membersByAge.headOption map (m ⇒ context.actorSelection(
+        RootActorPath(m.address) / "user" / "singleton" / "consumer"))
   }
   //#singleton-proxy
 
@@ -174,6 +179,7 @@ class ClusterSingletonManagerMultiJvmNode4 extends ClusterSingletonManagerSpec
 class ClusterSingletonManagerMultiJvmNode5 extends ClusterSingletonManagerSpec
 class ClusterSingletonManagerMultiJvmNode6 extends ClusterSingletonManagerSpec
 class ClusterSingletonManagerMultiJvmNode7 extends ClusterSingletonManagerSpec
+class ClusterSingletonManagerMultiJvmNode8 extends ClusterSingletonManagerSpec
 
 class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerSpec) with STMultiNodeSpec with ImplicitSender {
   import ClusterSingletonManagerSpec._
@@ -182,55 +188,73 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
 
   override def initialParticipants = roles.size
 
-  //#sort-cluster-roles
-  // Sort the roles in the order used by the cluster.
-  lazy val sortedClusterRoles: immutable.IndexedSeq[RoleName] = {
-    implicit val clusterOrdering: Ordering[RoleName] = new Ordering[RoleName] {
-      import Member.addressOrdering
-      def compare(x: RoleName, y: RoleName) =
-        addressOrdering.compare(node(x).address, node(y).address)
-    }
-    roles.filterNot(_ == controller).toVector.sorted
-  }
-  //#sort-cluster-roles
+  val identifyProbe = TestProbe()
 
-  def queue: ActorRef = system.actorFor(node(controller) / "user" / "queue")
+  val controllerRootActorPath = node(controller)
+
+  def queue: ActorRef = {
+    // this is used from inside actor construction, i.e. other thread, and must therefore not call `node(controller`
+    system.actorSelection(controllerRootActorPath / "user" / "queue").tell(Identify("queue"), identifyProbe.ref)
+    identifyProbe.expectMsgType[ActorIdentity].ref.get
+  }
+
+  def join(from: RoleName, to: RoleName): Unit = {
+    runOn(from) {
+      Cluster(system) join node(to).address
+      if (Cluster(system).selfRoles.contains("worker")) createSingleton()
+    }
+  }
+
+  def awaitMemberUp(memberProbe: TestProbe, nodes: RoleName*): Unit = {
+    runOn(nodes.filterNot(_ == nodes.head): _*) {
+      memberProbe.expectMsgType[MemberUp](15.seconds).member.address must be(node(nodes.head).address)
+    }
+    runOn(nodes.head) {
+      memberProbe.receiveN(nodes.size, 15.seconds).collect { case MemberUp(m) ⇒ m.address }.toSet must be(
+        nodes.map(node(_).address).toSet)
+    }
+    enterBarrier(nodes.head.name + "-up")
+  }
 
   def createSingleton(): ActorRef = {
     //#create-singleton-manager
-    system.actorOf(Props(new ClusterSingletonManager(
-      singletonProps = handOverData ⇒
-        Props(new Consumer(handOverData, queue, testActor)),
+    system.actorOf(ClusterSingletonManager.props(
+      singletonProps = Props(classOf[Consumer], queue, testActor),
       singletonName = "consumer",
-      terminationMessage = End)),
+      terminationMessage = End,
+      role = Some("worker")),
       name = "singleton")
     //#create-singleton-manager
   }
 
-  def consumer(leader: RoleName): ActorRef =
-    system.actorFor(RootActorPath(node(leader).address) / "user" / "singleton" / "consumer")
+  def consumer(oldest: RoleName): ActorSelection =
+    system.actorSelection(RootActorPath(node(oldest).address) / "user" / "singleton" / "consumer")
 
-  def verify(leader: RoleName, msg: Int, expectedCurrent: Int): Unit = {
-    enterBarrier("before-" + leader.name + "-verified")
-    runOn(leader) {
+  def verifyRegistration(oldest: RoleName): Unit = {
+    enterBarrier("before-" + oldest.name + "-registration-verified")
+    runOn(oldest) {
       expectMsg(RegistrationOk)
-      consumer(leader) ! GetCurrent
-      expectMsg(expectedCurrent)
+      consumer(oldest) ! GetCurrent
+      expectMsg(0)
     }
-    enterBarrier(leader.name + "-active")
+    enterBarrier("after-" + oldest.name + "-registration-verified")
+  }
+
+  def verifyMsg(oldest: RoleName, msg: Int): Unit = {
+    enterBarrier("before-" + msg + "-verified")
 
     runOn(controller) {
       queue ! msg
       // make sure it's not terminated, which would be wrong
       expectNoMsg(1 second)
     }
-    runOn(leader) {
-      expectMsg(msg)
+    runOn(oldest) {
+      expectMsg(5.seconds, msg)
     }
-    runOn(sortedClusterRoles.filterNot(_ == leader): _*) {
+    runOn(roles.filterNot(r ⇒ r == oldest || r == controller || r == observer): _*) {
       expectNoMsg(1 second)
     }
-    enterBarrier(leader.name + "-verified")
+    enterBarrier("after-" + msg + "-verified")
   }
 
   def crash(roles: RoleName*): Unit = {
@@ -239,15 +263,18 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       expectMsg(ResetOk)
       roles foreach { r ⇒
         log.info("Shutdown [{}]", node(r).address)
-        testConductor.shutdown(r, 0).await
+        testConductor.exit(r, 0).await
       }
     }
   }
 
   "A ClusterSingletonManager" must {
 
-    "startup in single member cluster" in within(10 seconds) {
-      log.info("Sorted cluster nodes [{}]", sortedClusterRoles.map(node(_).address).mkString(", "))
+    "startup 6 node cluster" in within(60 seconds) {
+
+      val memberProbe = TestProbe()
+      Cluster(system).subscribe(memberProbe.ref, classOf[MemberUp])
+      memberProbe.expectMsgClass(classOf[CurrentClusterState])
 
       runOn(controller) {
         // watch that it is not terminated, which would indicate misbehaviour
@@ -255,99 +282,83 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       }
       enterBarrier("queue-started")
 
-      runOn(sortedClusterRoles(5)) {
-        Cluster(system) join node(sortedClusterRoles(5)).address
-        createSingleton()
-      }
+      join(first, first)
+      awaitMemberUp(memberProbe, first)
+      verifyRegistration(first)
+      verifyMsg(first, msg = 1)
 
-      verify(sortedClusterRoles.last, msg = 1, expectedCurrent = 0)
+      // join the observer node as well, which should not influence since it doesn't have the "worker" role
+      join(observer, first)
+      awaitMemberUp(memberProbe, observer, first)
+
+      join(second, first)
+      awaitMemberUp(memberProbe, second, observer, first)
+      verifyMsg(first, msg = 2)
+
+      join(third, first)
+      awaitMemberUp(memberProbe, third, second, observer, first)
+      verifyMsg(first, msg = 3)
+
+      join(fourth, first)
+      awaitMemberUp(memberProbe, fourth, third, second, observer, first)
+      verifyMsg(first, msg = 4)
+
+      join(fifth, first)
+      awaitMemberUp(memberProbe, fifth, fourth, third, second, observer, first)
+      verifyMsg(first, msg = 5)
+
+      join(sixth, first)
+      awaitMemberUp(memberProbe, sixth, fifth, fourth, third, second, observer, first)
+      verifyMsg(first, msg = 6)
+
+      enterBarrier("after-1")
     }
 
-    "hand over when new leader joins to 1 node cluster" in within(15 seconds) {
-      val newLeaderRole = sortedClusterRoles(4)
-      runOn(newLeaderRole) {
-        Cluster(system) join node(sortedClusterRoles.last).address
-        createSingleton()
-      }
-
-      verify(newLeaderRole, msg = 2, expectedCurrent = 1)
-    }
-
-    "hand over when new leader joins to 2 nodes cluster" in within(15 seconds) {
-      val newLeaderRole = sortedClusterRoles(3)
-      runOn(newLeaderRole) {
-        Cluster(system) join node(sortedClusterRoles.last).address
-        createSingleton()
-      }
-
-      verify(newLeaderRole, msg = 3, expectedCurrent = 2)
-    }
-
-    "hand over when adding three new potential leaders to 3 nodes cluster" in within(60 seconds) {
-      // this test will result in restart after retry timeout
-      // because the new leader will not know about the real previous leader and the
-      // previous leader sortedClusterRoles(3) will first think that sortedClusterRoles(2)
-      // is the new leader
-      runOn(controller) {
-        queue ! Reset
-        expectMsg(ResetOk)
-      }
-      runOn(sortedClusterRoles(2)) {
-        // previous leader
-        Cluster(system) join node(sortedClusterRoles(3)).address
-        createSingleton()
-      }
-      runOn(sortedClusterRoles(1)) {
-        Cluster(system) join node(sortedClusterRoles(4)).address
-        createSingleton()
-      }
-      runOn(sortedClusterRoles(0)) {
-        Cluster(system) join node(sortedClusterRoles(5)).address
-        createSingleton()
-      }
-
-      verify(sortedClusterRoles(0), msg = 4, expectedCurrent = 0)
-    }
-
-    "hand over when leader leaves in 6 nodes cluster " in within(30 seconds) {
-      //#test-leave
-      val leaveRole = sortedClusterRoles(0)
-      val newLeaderRole = sortedClusterRoles(1)
+    "hand over when oldest leaves in 6 nodes cluster " in within(30 seconds) {
+      val leaveRole = first
+      val newOldestRole = second
 
       runOn(leaveRole) {
         Cluster(system) leave node(leaveRole).address
       }
-      //#test-leave
 
-      verify(newLeaderRole, msg = 5, expectedCurrent = 4)
+      verifyRegistration(second)
+      verifyMsg(second, msg = 7)
 
       runOn(leaveRole) {
-        val singleton = system.actorFor("/user/singleton")
-        watch(singleton)
-        expectMsgType[Terminated].actor must be(singleton)
+        system.actorSelection("/user/singleton").tell(Identify("singleton"), identifyProbe.ref)
+        identifyProbe.expectMsgPF() {
+          case ActorIdentity("singleton", None) ⇒ // already terminated
+          case ActorIdentity("singleton", Some(singleton)) ⇒
+            watch(singleton)
+            expectTerminated(singleton)
+        }
       }
 
       enterBarrier("after-leave")
     }
 
-    "take over when leader crashes in 5 nodes cluster" in within(35 seconds) {
-      system.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*")))
-      system.eventStream.publish(Mute(EventFilter.error(pattern = ".*Disassociated.*")))
-      system.eventStream.publish(Mute(EventFilter.error(pattern = ".*Association failed.*")))
+    "take over when oldest crashes in 5 nodes cluster" in within(60 seconds) {
+      // mute logging of deadLetters during shutdown of systems
+      if (!log.isDebugEnabled)
+        system.eventStream.publish(Mute(DeadLettersFilter[Any]))
       enterBarrier("logs-muted")
 
-      crash(sortedClusterRoles(1))
-      verify(sortedClusterRoles(2), msg = 6, expectedCurrent = 0)
+      crash(second)
+      verifyRegistration(third)
+      verifyMsg(third, msg = 8)
     }
 
-    "take over when two leaders crash in 3 nodes cluster" in within(45 seconds) {
-      crash(sortedClusterRoles(2), sortedClusterRoles(3))
-      verify(sortedClusterRoles(4), msg = 7, expectedCurrent = 0)
+    "take over when two oldest crash in 3 nodes cluster" in within(60 seconds) {
+      crash(third, fourth)
+      verifyRegistration(fifth)
+      verifyMsg(fifth, msg = 9)
     }
 
-    "take over when leader crashes in 2 nodes cluster" in within(25 seconds) {
-      crash(sortedClusterRoles(4))
-      verify(sortedClusterRoles(5), msg = 6, expectedCurrent = 0)
+    "take over when oldest crashes in 2 nodes cluster" in within(60 seconds) {
+      crash(fifth)
+      verifyRegistration(sixth)
+      verifyMsg(sixth, msg = 10)
     }
 
   }

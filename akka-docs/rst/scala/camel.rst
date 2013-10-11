@@ -2,24 +2,8 @@
 .. _camel-scala:
 
 ##############
- Camel (Scala)
+ Camel
 ##############
-
-Additional Resources
-====================
-For an introduction to akka-camel 2, see also the Peter Gabryanczyk's talk `Migrating akka-camel module to Akka 2.x`_.
-
-For an introduction to akka-camel 1, see also the `Appendix E - Akka and Camel`_
-(pdf) of the book `Camel in Action`_.
-
-.. _Appendix E - Akka and Camel: http://www.manning.com/ibsen/appEsample.pdf
-.. _Camel in Action: http://www.manning.com/ibsen/
-.. _Migrating akka-camel module to Akka 2.x: http://skillsmatter.com/podcast/scala/akka-2-x
-
-Other, more advanced external articles (for version 1) are:
-
-* `Akka Consumer Actors: New Features and Best Practices <http://krasserm.blogspot.com/2011/02/akka-consumer-actors-new-features-and.html>`_
-* `Akka Producer Actors: New Features and Best Practices <http://krasserm.blogspot.com/2011/02/akka-producer-actor-new-features-and.html>`_
 
 Introduction
 ============
@@ -327,6 +311,19 @@ allocation of a thread for the duration of an in-out message exchange. There's
 also a :ref:`camel-async-example` that implements both, an asynchronous
 consumer and an asynchronous producer, with the jetty component.
 
+If the used Camel component is blocking it might be necessary to use a separate
+:ref:`dispatcher <dispatchers-scala>` for the producer. The Camel processor is 
+invoked by a child actor of the producer and the dispatcher can be defined in 
+the deployment section of the configuration. For example, if your producer actor 
+has path ``/user/integration/output`` the dispatcher of the child actor can be 
+defined with::
+
+  akka.actor.deployment {
+    /integration/output/* {
+      dispatcher = my-dispatcher
+    }
+  }
+
 .. _Camel components: http://camel.apache.org/components.html
 .. _subset of components: http://camel.apache.org/asynchronous-routing-engine.html
 .. _Jetty component: http://camel.apache.org/jetty.html
@@ -407,7 +404,7 @@ The following URI options are supported:
 |              |          |         | See also :ref:`camel-acknowledgements`.   |
 +--------------+----------+---------+-------------------------------------------+
 
-Here's an actor endpoint URI example containing an actor uuid::
+Here's an actor endpoint URI example containing an actor path::
 
    akka://some-system/user/myconsumer?autoAck=false&replyTimeout=100+millis
 
@@ -489,7 +486,7 @@ is then forwarded to the ``HttpTransformer`` actor which replaces all occurrence
 of *Akka* with *AKKA*. The transformation result is sent back the HttpConsumer
 which finally returns it to the browser.
 
-.. image:: ../modules/camel-async-interact.png
+.. image:: ../images/camel-async-interact.png
 
 Implementing the example actor classes and wiring them together is rather easy
 as shown in the following snippet.
@@ -506,7 +503,7 @@ side. The following high-level sequence diagram illustrates that.
 .. _Jetty continuations: http://wiki.eclipse.org/Jetty/Feature/Continuations
 .. _Jetty's asynchronous HTTP client: http://wiki.eclipse.org/Jetty/Tutorial/HttpClient
 
-.. image:: ../modules/camel-async-sequence.png
+.. image:: ../images/camel-async-sequence.png
 
 Custom Camel route example
 --------------------------
@@ -515,7 +512,7 @@ This section also demonstrates the combined usage of a ``Producer`` and a
 ``Consumer`` actor as well as the inclusion of a custom Camel route. The
 following figure gives an overview.
 
-.. image:: ../modules/camel-custom-route.png
+.. image:: ../images/camel-custom-route.png
 
 * A consumer actor receives a message from an HTTP client
 
@@ -570,3 +567,19 @@ seconds:
 
 For more information about the Camel Quartz component, see here:
 http://camel.apache.org/quartz.html
+
+Additional Resources
+====================
+For an introduction to akka-camel 2, see also the Peter Gabryanczyk's talk `Migrating akka-camel module to Akka 2.x`_.
+
+For an introduction to akka-camel 1, see also the `Appendix E - Akka and Camel`_
+(pdf) of the book `Camel in Action`_.
+
+.. _Appendix E - Akka and Camel: http://www.manning.com/ibsen/appEsample.pdf
+.. _Camel in Action: http://www.manning.com/ibsen/
+.. _Migrating akka-camel module to Akka 2.x: http://skillsmatter.com/podcast/scala/akka-2-x
+
+Other, more advanced external articles (for version 1) are:
+
+* `Akka Consumer Actors: New Features and Best Practices <http://krasserm.blogspot.com/2011/02/akka-consumer-actors-new-features-and.html>`_
+* `Akka Producer Actors: New Features and Best Practices <http://krasserm.blogspot.com/2011/02/akka-producer-actor-new-features-and.html>`_

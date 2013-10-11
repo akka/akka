@@ -14,8 +14,6 @@ import java.util.concurrent.TimeUnit
 import akka.AkkaException
 
 /**
- * Marker trait for throttlers.
- *
  * == Throttling ==
  * A <em>throttler</em> is an actor that is defined through a <em>target actor</em> and a <em>rate</em>
  * (of type [[akka.contrib.throttle.Throttler.Rate]]). You set or change the target and rate at any time through the `SetTarget(target)`
@@ -24,7 +22,7 @@ import akka.AkkaException
  * a speed that respects the given rate. If no target is currently defined then the messages will be queued
  * and will be delivered as soon as a target gets set.
  *
- * A [[akka.contrib.throttle.Throttler]] understands actor messages of type
+ * A throttler understands actor messages of type
  * [[akka.contrib.throttle.Throttler.SetTarget]], [[akka.contrib.throttle.Throttler.SetRate]], in
  * addition to any other messages, which the throttler will consider as messages to be sent to
  * the target.
@@ -53,20 +51,13 @@ import akka.AkkaException
  * can be handled in parallel.
  *
  * @see [[akka.contrib.throttle.TimerBasedThrottler]]
- */
-trait Throttler { this: Actor ⇒ }
-
-/**
- * Message types understood by [[akka.contrib.throttle.Throttler]]'s.
- *
- * @see [[akka.contrib.throttle.Throttler]]
  * @see [[akka.contrib.throttle.Throttler.Rate]]
  */
 object Throttler {
   /**
    * A rate used for throttling.
    *
-   * There are some shorthands available to construct rates:
+   * Scala API: There are some shorthands available to construct rates:
    * {{{
    *  import java.util.concurrent.TimeUnit._
    *  import scala.concurrent.duration.{ Duration, FiniteDuration }
@@ -91,7 +82,7 @@ object Throttler {
   }
 
   /**
-   * Set the target of a [[akka.contrib.throttle.Throttler]].
+   * Set the target of a throttler.
    *
    * You may change a throttler's target at any time.
    *
@@ -103,10 +94,20 @@ object Throttler {
    *  and eventually be delivered when a new target is set. If `target` is not `None`, the currently queued messages
    *  as well as any messages received in the the future will be delivered to the new target at a rate not exceeding the current throttler's rate.
    */
-  case class SetTarget(target: Option[ActorRef])
+  case class SetTarget(target: Option[ActorRef]) {
+    /**
+     * Java API:
+     * @param target if `target` is `null`, the throttler will stop delivering messages and the messages already received
+     *  but not yet delivered, as well as any messages received in the future will be queued
+     *  and eventually be delivered when a new target is set. If `target` is not `null`, the currently queued messages
+     *  as well as any messages received in the the future will be delivered to the new target at a rate not exceeding
+     *  the current throttler's rate.
+     */
+    def this(target: ActorRef) = this(Option(target))
+  }
 
   /**
-   * Set the rate of a [[akka.contrib.throttle.Throttler]].
+   * Set the rate of a throttler.
    *
    * You may change a throttler's rate at any time.
    *
@@ -132,27 +133,27 @@ object Throttler {
 }
 
 /**
- * Implementation-specific internals.
+ * INTERNAL API
  */
-object TimerBasedThrottler {
-  private[throttle] case object Tick
+private[throttle] object TimerBasedThrottler {
+  case object Tick
 
   // States of the FSM: A `TimerBasedThrottler` is in state `Active` iff the timer is running.
-  private[throttle] sealed trait State
-  private[throttle] case object Idle extends State
-  private[throttle] case object Active extends State
+  sealed trait State
+  case object Idle extends State
+  case object Active extends State
 
   // Messages, as we queue them to be sent later
-  private[throttle] case class Message(message: Any, sender: ActorRef)
+  case class Message(message: Any, sender: ActorRef)
 
   // The data of the FSM
-  private[throttle] sealed case class Data(target: Option[ActorRef],
-                                           callsLeftInThisPeriod: Int,
-                                           queue: Q[Message])
+  case class Data(target: Option[ActorRef],
+                  callsLeftInThisPeriod: Int,
+                  queue: Q[Message])
 }
 
 /**
- * A [[akka.contrib.throttle.Throttler]] that uses a timer to control the message delivery rate.
+ * A throttler that uses a timer to control the message delivery rate.
  *
  * ==Example==
  * For example, if you set a rate like "3 messages in 1 second", the throttler
@@ -160,13 +161,17 @@ object TimerBasedThrottler {
  * sending out further messages:
  * {{{
  *   // A simple actor that prints whatever it receives
- *   val printer = system.actorOf(Props(new Actor {
+ *   class Printer extends Actor {
  *     def receive = {
  *       case x => println(x)
  *     }
- *   }))
+ *   }
+ *
+ *   val printer = system.actorOf(Props[Printer], "printer")
+ *
  *   // The throttler for this example, setting the rate
- *   val throttler = system.actorOf(Props(new TimerBasedThrottler(3 msgsPer (1.second))))
+ *   val throttler = system.actorOf(Props(classOf[TimerBasedThrottler], 3 msgsPer 1.second))
+ *
  *   // Set the target
  *   throttler ! SetTarget(Some(printer))
  *   // These three messages will be sent to the printer immediately
@@ -208,7 +213,7 @@ object TimerBasedThrottler {
  *
  * @see [[akka.contrib.throttle.Throttler]]
  */
-class TimerBasedThrottler(var rate: Rate) extends Actor with Throttler with FSM[State, Data] {
+class TimerBasedThrottler(var rate: Rate) extends Actor with FSM[State, Data] {
   startWith(Idle, Data(None, rate.numberOfCalls, Q()))
 
   // Idle: no messages, or target not set
@@ -276,7 +281,7 @@ class TimerBasedThrottler(var rate: Rate) extends Actor with Throttler with FSM[
     case Active -> Idle ⇒ stopTimer()
   }
 
-  initialize
+  initialize()
 
   private def startTimer(rate: Rate) = setTimer("morePermits", Tick, rate.duration, true)
   private def stopTimer() = cancelTimer("morePermits")

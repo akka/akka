@@ -14,7 +14,7 @@ import scala.concurrent.{ Await, Awaitable, Future, Promise, ExecutionContext }
 import scala.util.control.NonFatal
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
-import org.scalatest.junit.JUnitSuite
+import org.scalatest.junit.JUnitSuiteLike
 import scala.runtime.NonLocalReturnControl
 import akka.pattern.ask
 import java.lang.{ IllegalStateException, ArithmeticException }
@@ -41,16 +41,20 @@ object FutureSpec {
 
   class TestDelayActor(await: TestLatch) extends Actor {
     def receive = {
-      case "Hello"   ⇒ FutureSpec.ready(await, TestLatch.DefaultTimeout); sender ! "World"
+      case "Hello" ⇒
+        FutureSpec.ready(await, TestLatch.DefaultTimeout); sender ! "World"
       case "NoReply" ⇒ FutureSpec.ready(await, TestLatch.DefaultTimeout)
       case "Failure" ⇒
         FutureSpec.ready(await, TestLatch.DefaultTimeout)
         sender ! Status.Failure(new RuntimeException("Expected exception; to test fault-tolerance"))
     }
   }
+
+  case class Req[T](req: T)
+  case class Res[T](res: T)
 }
 
-class JavaFutureSpec extends JavaFutureTests with JUnitSuite
+class JavaFutureSpec extends JavaFutureTests with JUnitSuiteLike
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with DefaultTimeout {
@@ -267,8 +271,6 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
       "support pattern matching within a for-comprehension" in {
         filterException[NoSuchElementException] {
-          case class Req[T](req: T)
-          case class Res[T](res: T)
           val actor = system.actorOf(Props(new Actor {
             def receive = {
               case Req(s: String) ⇒ sender ! Res(s.length)
@@ -439,12 +441,12 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         Await.result(Future.fold(List[Future[Int]]())(0)(_ + _), timeout.duration) must be(0)
       }
 
-      "shouldReduceResults" in {
+      "reduce results" in {
         val futures = (1 to 10).toList map { i ⇒ Future(i) }
         assert(Await.result(Future.reduce(futures)(_ + _), remaining) === 55)
       }
 
-      "shouldReduceResultsWithException" in {
+      "reduce results with Exception" in {
         filterException[IllegalArgumentException] {
           val futures = (1 to 10).toList map {
             case 6 ⇒ Future(throw new IllegalArgumentException("shouldReduceResultsWithException: expected"))
@@ -454,13 +456,13 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         }
       }
 
-      "shouldReduceThrowIAEOnEmptyInput" in {
+      "throw IllegalArgumentException on empty input to reduce" in {
         filterException[IllegalArgumentException] {
           intercept[java.util.NoSuchElementException] { Await.result(Future.reduce(List[Future[Int]]())(_ + _), timeout.duration) }
         }
       }
 
-      "receiveShouldExecuteOnComplete" in {
+      "execute onSuccess when received ask reply" in {
         val latch = new TestLatch
         val actor = system.actorOf(Props[TestActor])
         actor ? "Hello" onSuccess { case "World" ⇒ latch.open() }
@@ -468,7 +470,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         system.stop(actor)
       }
 
-      "shouldTraverseFutures" in {
+      "traverse Futures" in {
         val oddActor = system.actorOf(Props(new Actor {
           var counter = 1
           def receive = {
@@ -487,7 +489,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         assert(Await.result(Future.traverse(list)(x ⇒ Future(x * 2 - 1)), timeout.duration).sum === 10000)
       }
 
-      "shouldHandleThrowables" in {
+      "handle Throwables" in {
         class ThrowableTest(m: String) extends Throwable(m)
 
         EventFilter[ThrowableTest](occurrences = 4) intercept {
@@ -507,7 +509,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         }
       }
 
-      "shouldBlockUntilResult" in {
+      "block until result" in {
         val latch = new TestLatch
 
         val f = Future { FutureSpec.ready(latch, 5 seconds); 5 }
@@ -572,12 +574,12 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         FutureSpec.ready(f4, timeout.duration) must be('completed)
       }
 
-      "should not deadlock with nested await (ticket 1313)" in {
-        val simple = Future() map (_ ⇒ Await.result((Future(()) map (_ ⇒ ())), timeout.duration))
+      "not deadlock with nested await (ticket 1313)" in {
+        val simple = Future(()) map (_ ⇒ Await.result((Future(()) map (_ ⇒ ())), timeout.duration))
         FutureSpec.ready(simple, timeout.duration) must be('completed)
 
         val l1, l2 = new TestLatch
-        val complex = Future() map { _ ⇒
+        val complex = Future(()) map { _ ⇒
           val nested = Future(())
           nested foreach (_ ⇒ l1.open())
           FutureSpec.ready(l1, TestLatch.DefaultTimeout) // make sure nested is completed
@@ -589,7 +591,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
       "re-use the same thread for nested futures with batching ExecutionContext" in {
         val failCount = new java.util.concurrent.atomic.AtomicInteger
-        val f = Future() flatMap { _ ⇒
+        val f = Future(()) flatMap { _ ⇒
           val originalThread = Thread.currentThread
           // run some nested futures
           val nested =

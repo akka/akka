@@ -5,19 +5,63 @@
 package akka.contrib.pattern
 
 import scala.concurrent.duration._
+import scala.collection.immutable
 import akka.actor.Actor
 import akka.actor.Actor.Receive
+import akka.actor.Deploy
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
+import akka.actor.ActorSelection
 import akka.actor.Address
 import akka.actor.FSM
 import akka.actor.Props
 import akka.actor.Terminated
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
+import akka.cluster.Member
+import akka.cluster.MemberStatus
 import akka.AkkaException
 
 object ClusterSingletonManager {
+
+  /**
+   * Scala API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]].
+   */
+  def props(
+    singletonProps: Props,
+    singletonName: String,
+    terminationMessage: Any,
+    role: Option[String],
+    maxHandOverRetries: Int = 20,
+    maxTakeOverRetries: Int = 15,
+    retryInterval: FiniteDuration = 1.second): Props =
+    Props(classOf[ClusterSingletonManager], singletonProps, singletonName, terminationMessage, role,
+      maxHandOverRetries, maxTakeOverRetries, retryInterval).withDeploy(Deploy.local)
+
+  /**
+   * Java API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]].
+   */
+  def props(
+    singletonProps: Props,
+    singletonName: String,
+    terminationMessage: Any,
+    role: String,
+    maxHandOverRetries: Int,
+    maxTakeOverRetries: Int,
+    retryInterval: FiniteDuration): Props =
+    props(singletonProps, singletonName, terminationMessage,
+      ClusterSingletonManager.Internal.roleOption(role), maxHandOverRetries, maxTakeOverRetries, retryInterval)
+
+  /**
+   * Java API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]]
+   * with default values.
+   */
+  def defaultProps(
+    singletonProps: Props,
+    singletonName: String,
+    terminationMessage: Any,
+    role: String): Props =
+    props(singletonProps, singletonName, terminationMessage, ClusterSingletonManager.Internal.roleOption(role))
 
   /**
    * INTERNAL API
@@ -35,62 +79,65 @@ object ClusterSingletonManager {
    */
   private object Internal {
     /**
-     * Sent from new leader to previous leader to initate the
+     * Sent from new oldest to previous oldest to initate the
      * hand-over process. `HandOverInProgress` and `HandOverDone`
      * are expected replies.
      */
     case object HandOverToMe
     /**
-     * Confirmation by the previous leader that the hand
+     * Confirmation by the previous oldest that the hand
      * over process, shut down of the singleton actor, has
      * started.
      */
     case object HandOverInProgress
     /**
-     * Confirmation by the previous leader that the singleton
+     * Confirmation by the previous oldest that the singleton
      * actor has been terminated and the hand-over process is
-     * completed. The `handOverData` holds the message, if any,
-     * sent from the singleton actor to its parent ClusterSingletonManager
-     * when shutting down. It is passed to the `singletonProps`
-     * factory on the new leader node.
+     * completed.
      */
-    case class HandOverDone(handOverData: Option[Any])
+    case object HandOverDone
     /**
-     * Sent from from previous leader to new leader to
+     * Sent from from previous oldest to new oldest to
      * initiate the normal hand-over process.
      * Especially useful when new node joins and becomes
-     * leader immediately, without knowing who was previous
-     * leader.
+     * oldest immediately, without knowing who was previous
+     * oldest.
      */
     case object TakeOverFromMe
 
     case class HandOverRetry(count: Int)
     case class TakeOverRetry(count: Int)
     case object Cleanup
-    case object StartLeaderChangedBuffer
+    case object StartOldestChangedBuffer
 
     case object Start extends State
-    case object Leader extends State
-    case object NonLeader extends State
-    case object BecomingLeader extends State
-    case object WasLeader extends State
+    case object Oldest extends State
+    case object Younger extends State
+    case object BecomingOldest extends State
+    case object WasOldest extends State
     case object HandingOver extends State
     case object TakeOver extends State
+    case object End extends State
 
     case object Uninitialized extends Data
-    case class NonLeaderData(leaderOption: Option[Address]) extends Data
-    case class BecomingLeaderData(previousLeaderOption: Option[Address]) extends Data
-    case class LeaderData(singleton: ActorRef, singletonTerminated: Boolean = false,
-                          handOverData: Option[Any] = None) extends Data
-    case class WasLeaderData(singleton: ActorRef, singletonTerminated: Boolean, handOverData: Option[Any],
-                             newLeaderOption: Option[Address]) extends Data
-    case class HandingOverData(singleton: ActorRef, handOverTo: Option[ActorRef], handOverData: Option[Any]) extends Data
+    case class YoungerData(oldestOption: Option[Address]) extends Data
+    case class BecomingOldestData(previousOldestOption: Option[Address]) extends Data
+    case class OldestData(singleton: ActorRef, singletonTerminated: Boolean = false) extends Data
+    case class WasOldestData(singleton: ActorRef, singletonTerminated: Boolean,
+                             newOldestOption: Option[Address]) extends Data
+    case class HandingOverData(singleton: ActorRef, handOverTo: Option[ActorRef]) extends Data
+    case object EndData extends Data
 
     val HandOverRetryTimer = "hand-over-retry"
     val TakeOverRetryTimer = "take-over-retry"
     val CleanupTimer = "cleanup"
 
-    object LeaderChangedBuffer {
+    def roleOption(role: String): Option[String] = role match {
+      case null | "" ⇒ None
+      case _         ⇒ Some(role)
+    }
+
+    object OldestChangedBuffer {
       /**
        * Request to deliver one more event.
        */
@@ -98,72 +145,108 @@ object ClusterSingletonManager {
       /**
        * The first event, corresponding to CurrentClusterState.
        */
-      case class InitialLeaderState(leader: Option[Address], memberCount: Int)
+      case class InitialOldestState(oldest: Option[Address], memberCount: Int)
+
+      case class OldestChanged(oldest: Option[Address])
     }
 
     /**
-     * Notifications of [[akka.cluster.ClusterEvent.LeaderChanged]] is tunneled
+     * Notifications of member events that track oldest member is tunneled
      * via this actor (child of ClusterSingletonManager) to be able to deliver
-     * one change at a time. Avoiding simultaneous leader changes simplifies
+     * one change at a time. Avoiding simultaneous changes simplifies
      * the process in ClusterSingletonManager. ClusterSingletonManager requests
      * next event with `GetNext` when it is ready for it. Only one outstanding
      * `GetNext` request is allowed. Incoming events are buffered and delivered
      * upon `GetNext` request.
      */
-    class LeaderChangedBuffer extends Actor {
-      import LeaderChangedBuffer._
+    class OldestChangedBuffer(role: Option[String]) extends Actor {
+      import OldestChangedBuffer._
       import context.dispatcher
 
       val cluster = Cluster(context.system)
-      var changes = Vector.empty[AnyRef]
-      var memberCount = 0
+      // sort by age, oldest first
+      val ageOrdering = Ordering.fromLessThan[Member] { (a, b) ⇒ a.isOlderThan(b) }
+      var membersByAge: immutable.SortedSet[Member] = immutable.SortedSet.empty(ageOrdering)
 
-      // subscribe to LeaderChanged, re-subscribe when restart
-      override def preStart(): Unit = cluster.subscribe(self, classOf[LeaderChanged])
+      var changes = Vector.empty[AnyRef]
+
+      // subscribe to MemberEvent, re-subscribe when restart
+      override def preStart(): Unit = {
+        cluster.subscribe(self, classOf[MemberEvent])
+      }
       override def postStop(): Unit = cluster.unsubscribe(self)
 
+      def matchingRole(member: Member): Boolean = role match {
+        case None    ⇒ true
+        case Some(r) ⇒ member.hasRole(r)
+      }
+
+      def trackChange(block: () ⇒ Unit): Unit = {
+        val before = membersByAge.headOption
+        block()
+        val after = membersByAge.headOption
+        if (before != after)
+          changes :+= OldestChanged(after.map(_.address))
+      }
+
+      def handleInitial(state: CurrentClusterState): Unit = {
+        membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.collect {
+          case m if m.status == MemberStatus.Up && matchingRole(m) ⇒ m
+        }
+        val initial = InitialOldestState(membersByAge.headOption.map(_.address), membersByAge.size)
+        changes :+= initial
+      }
+
+      def add(m: Member): Unit = {
+        if (matchingRole(m))
+          trackChange { () ⇒ membersByAge += m }
+      }
+
+      def remove(m: Member): Unit = {
+        if (matchingRole(m))
+          trackChange { () ⇒ membersByAge -= m }
+      }
+
+      def sendFirstChange(): Unit = {
+        val event = changes.head
+        changes = changes.tail
+        context.parent ! event
+      }
+
       def receive = {
-        case state: CurrentClusterState ⇒
-          changes :+= InitialLeaderState(state.leader, state.members.size)
-        case event: LeaderChanged ⇒
-          changes :+= event
+        case state: CurrentClusterState ⇒ handleInitial(state)
+        case MemberUp(m)                ⇒ add(m)
+        case mEvent: MemberEvent if (mEvent.isInstanceOf[MemberExited] || mEvent.isInstanceOf[MemberRemoved]) ⇒
+          remove(mEvent.member)
         case GetNext if changes.isEmpty ⇒
           context.become(deliverNext, discardOld = false)
         case GetNext ⇒
-          val event = changes.head
-          changes = changes.tail
-          context.parent ! event
+          sendFirstChange()
       }
 
       // the buffer was empty when GetNext was received, deliver next event immediately
       def deliverNext: Actor.Receive = {
         case state: CurrentClusterState ⇒
-          context.parent ! InitialLeaderState(state.leader, state.members.size)
+          handleInitial(state)
+          sendFirstChange()
           context.unbecome()
-        case event: LeaderChanged ⇒
-          context.parent ! event
-          context.unbecome()
+        case MemberUp(m) ⇒
+          add(m)
+          if (changes.nonEmpty) {
+            sendFirstChange()
+            context.unbecome()
+          }
+        case mEvent: MemberEvent if (mEvent.isInstanceOf[MemberExited] || mEvent.isInstanceOf[MemberRemoved]) ⇒
+          remove(mEvent.member)
+          if (changes.nonEmpty) {
+            sendFirstChange()
+            context.unbecome()
+          }
       }
 
     }
 
   }
-}
-
-/**
- * Java API. Factory for the [[akka.actor.Props]] of the singleton
- * actor instance. Used in constructor of
- * [[akka.contrib.pattern.ClusterSingletonManager]]
- */
-@SerialVersionUID(1L)
-trait ClusterSingletonPropsFactory extends Serializable {
-  /**
-   * Create the `Props` from the `handOverData` sent from
-   * previous singleton. `handOverData` might be null
-   * when no hand-over took place, or when the there is no need
-   * for sending data to the new singleton.
-   */
-  def create(handOverData: Any): Props
 }
 
 /**
@@ -176,174 +259,145 @@ trait ClusterSingletonPropsFactory extends Serializable {
 class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(message, null)
 
 /**
- * Manages a cluster wide singleton actor instance, i.e.
- * at most one singleton instance is running at any point in time.
- * The ClusterSingletonManager is supposed to be started on all
- * nodes in the cluster with `actorOf`. The actual singleton is
- * started on the leader node of the cluster by creating a child
+ * Manages singleton actor instance among all cluster nodes or a group
+ * of nodes tagged with a specific role. At most one singleton instance
+ * is running at any point in time.
+ *
+ * The ClusterSingletonManager is supposed to be started on all nodes,
+ * or all nodes with specified role, in the cluster with `actorOf`.
+ * The actual singleton is started on the oldest node by creating a child
  * actor from the supplied `singletonProps`.
  *
- * The singleton actor is always running on the leader member, which is
- * nothing more than the address currently sorted first in the member
- * ring. This can change when adding or removing members. A graceful hand
- * over can normally be performed when joining a new node that becomes
- * leader or removing current leader node. Be aware that there is a
- * short time period when there is no active singleton during the
+ * The singleton actor is always running on the oldest member, which can
+ * be determined by [[akka.cluster.Member#isOlderThan]].
+ * This can change when removing members. A graceful hand over can normally
+ * be performed when current oldest node is leaving the cluster. Be aware that
+ * there is a short time period when there is no active singleton during the
  * hand-over process.
  *
- * The singleton actor can at any time send a message to its parent
- * ClusterSingletonManager and this message will be passed to the
- * `singletonProps` factory on the new leader node when a graceful
- * hand-over is performed.
- *
- * The cluster failure detector will notice when a leader node
+ * The cluster failure detector will notice when oldest node
  * becomes unreachable due to things like JVM crash, hard shut down,
- * or network failure. Then a new leader node will take over and a
+ * or network failure. Then a new oldest node will take over and a
  * new singleton actor is created. For these failure scenarios there
  * will not be a graceful hand-over, but more than one active singletons
  * is prevented by all reasonable means. Some corner cases are eventually
  * resolved by configurable timeouts.
  *
- * You access the singleton actor with `actorFor` using the names you have
+ * You access the singleton actor with `actorSelection` using the names you have
  * specified when creating the ClusterSingletonManager. You can subscribe to
- * [[akka.cluster.ClusterEvent.LeaderChanged]] to keep track of which node
- * it is supposed to be running on. Alternatively the singleton actor may
- * broadcast its existence when it is started.
+ * [[akka.cluster.ClusterEvent.MemberEvent]] and sort the members by age
+ * ([[akka.cluster.ClusterEvent.Member#isOlderThan]]) to keep track of oldest member.
+ * Alternatively the singleton actor may broadcast its existence when it is started.
+ *
+ * Use factory method [[ClusterSingletonManager#props] to create the
+ * [[akka.actor.Props]] for the actor.
  *
  * ==Arguments==
  *
- * '''''singletonProps''''' Factory for [[akka.actor.Props]] of the
- *   singleton actor instance. The `Option` parameter is the the
- *   `handOverData` sent from previous singleton. `handOverData`
- *    might be None when no hand-over took place, or when the there
- *    is no need for sending data to the new singleton. The `handOverData`
- *    is typically passed as parameter to the constructor of the
- *    singleton actor.
+ * '''''singletonProps''''' [[akka.actor.Props]] of the singleton actor instance.
  *
  * '''''singletonName''''' The actor name of the child singleton actor.
  *
- * '''''terminationMessage''''' When handing over to a new leader node
+ * '''''terminationMessage''''' When handing over to a new oldest node
  *   this `terminationMessage` is sent to the singleton actor to tell
- *   it to finish its work, close resources, and stop. It can sending
- *   a message back to the parent ClusterSingletonManager, which will
- *   passed to the `singletonProps` factory on the new leader node.
- *   The hand-over to the new leader node is completed when the
+ *   it to finish its work, close resources, and stop.
+ *   The hand-over to the new oldest node is completed when the
  *   singleton actor is terminated.
  *   Note that [[akka.actor.PoisonPill]] is a perfectly fine
  *   `terminationMessage` if you only need to stop the actor.
  *
- * '''''maxHandOverRetries''''' When a node is becoming leader it sends
- *   hand-over request to previous leader. This is retried with the
- *   `retryInterval` until the previous leader confirms that the hand
+ * '''''role''''' Singleton among the nodes tagged with specified role.
+ *   If the role is not specified it's a singleton among all nodes in
+ *   the cluster.
+ *
+ * '''''maxHandOverRetries''''' When a node is becoming oldest it sends
+ *   hand-over request to previous oldest. This is retried with the
+ *   `retryInterval` until the previous oldest confirms that the hand
  *   over has started, or this `maxHandOverRetries` limit has been
  *   reached. If the retry limit is reached it takes the decision to be
- *   the new leader if previous leader is unknown (typically removed or
- *   downed), otherwise it initiates a new round by throwing
+ *   the new oldest if previous oldest is unknown (typically removed),
+ *   otherwise it initiates a new round by throwing
  *   [[akka.contrib.pattern.ClusterSingletonManagerIsStuck]] and expecting
  *   restart with fresh state. For a cluster with many members you might
  *   need to increase this retry limit because it takes longer time to
  *   propagate changes across all nodes.
  *
- * '''''maxTakeOverRetries''''' When a leader node is not leader any more
- *   it sends take over request to the new leader to initiate the normal
+ * '''''maxTakeOverRetries''''' When a oldest node is not oldest any more
+ *   it sends take over request to the new oldest to initiate the normal
  *   hand-over process. This is especially useful when new node joins and becomes
- *   leader immediately, without knowing who was previous leader. This is retried
+ *   oldest immediately, without knowing who was previous oldest. This is retried
  *   with the `retryInterval` until this retry limit has been reached. If the retry
  *   limit is reached it initiates a new round by throwing
  *   [[akka.contrib.pattern.ClusterSingletonManagerIsStuck]] and expecting
  *   restart with fresh state. This will also cause the singleton actor to be
  *   stopped. `maxTakeOverRetries` must be less than `maxHandOverRetries` to
- *   ensure that new leader doesn't start singleton actor before previous is
+ *   ensure that new oldest doesn't start singleton actor before previous is
  *   stopped for certain corner cases.
- *
- * '''''loggingEnabled''''' Logging of what is going on at info log level.
  */
 class ClusterSingletonManager(
-  singletonProps: Option[Any] ⇒ Props,
+  singletonProps: Props,
   singletonName: String,
   terminationMessage: Any,
-  maxHandOverRetries: Int = 20,
-  maxTakeOverRetries: Int = 15,
-  retryInterval: FiniteDuration = 1.second,
-  loggingEnabled: Boolean = true)
+  role: Option[String],
+  maxHandOverRetries: Int,
+  maxTakeOverRetries: Int,
+  retryInterval: FiniteDuration)
   extends Actor with FSM[ClusterSingletonManager.State, ClusterSingletonManager.Data] {
 
-  // to ensure that new leader doesn't start singleton actor before previous is stopped for certain corner cases
+  // to ensure that new oldest doesn't start singleton actor before previous is stopped for certain corner cases
   require(maxTakeOverRetries < maxHandOverRetries,
     s"maxTakeOverRetries [${maxTakeOverRetries}]must be < maxHandOverRetries [${maxHandOverRetries}]")
 
-  /**
-   * Full Java API constructor.
-   */
-  def this(
-    singletonName: String,
-    terminationMessage: Any,
-    maxHandOverRetries: Int,
-    maxTakeOverRetries: Int,
-    retryInterval: FiniteDuration,
-    loggingEnabled: Boolean,
-    singletonPropsFactory: ClusterSingletonPropsFactory) =
-    this(handOverData ⇒ singletonPropsFactory.create(handOverData.orNull), singletonName, terminationMessage,
-      maxHandOverRetries, maxTakeOverRetries, retryInterval)
-
-  /**
-   * Java API constructor with default values.
-   */
-  def this(
-    singletonName: String,
-    terminationMessage: Any,
-    singletonPropsFactory: ClusterSingletonPropsFactory) =
-    this(handOverData ⇒ singletonPropsFactory.create(handOverData.orNull), singletonName, terminationMessage)
-
   import ClusterSingletonManager._
   import ClusterSingletonManager.Internal._
-  import ClusterSingletonManager.Internal.LeaderChangedBuffer._
+  import ClusterSingletonManager.Internal.OldestChangedBuffer._
 
   val cluster = Cluster(context.system)
   val selfAddressOption = Some(cluster.selfAddress)
-  // started when when self member is Up
-  var leaderChangedBuffer: ActorRef = _
-  // Previous GetNext request delivered event and new GetNext is to be sent
-  var leaderChangedReceived = true
+  import cluster.settings.LogInfo
 
-  // keep track of previously downed members
-  var downed = Map.empty[Address, Deadline]
+  require(role.forall(cluster.selfRoles.contains),
+    s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
+
+  // started when when self member is Up
+  var oldestChangedBuffer: ActorRef = _
+  // Previous GetNext request delivered event and new GetNext is to be sent
+  var oldestChangedReceived = true
+
+  var selfExited = false
+
   // keep track of previously removed members
   var removed = Map.empty[Address, Deadline]
-
-  def addDowned(address: Address): Unit =
-    downed += address -> (Deadline.now + 15.minutes)
 
   def addRemoved(address: Address): Unit =
     removed += address -> (Deadline.now + 15.minutes)
 
   def cleanupOverdueNotMemberAnyMore(): Unit = {
-    downed = downed filter { case (address, deadline) ⇒ deadline.hasTimeLeft }
     removed = removed filter { case (address, deadline) ⇒ deadline.hasTimeLeft }
   }
 
   def logInfo(message: String): Unit =
-    if (loggingEnabled) log.info(message)
+    if (LogInfo) log.info(message)
 
   def logInfo(template: String, arg1: Any): Unit =
-    if (loggingEnabled) log.info(template, arg1)
+    if (LogInfo) log.info(template, arg1)
 
   def logInfo(template: String, arg1: Any, arg2: Any): Unit =
-    if (loggingEnabled) log.info(template, arg1, arg2)
+    if (LogInfo) log.info(template, arg1, arg2)
 
   override def preStart(): Unit = {
     super.preStart()
     require(!cluster.isTerminated, "Cluster node must not be terminated")
 
     // subscribe to cluster changes, re-subscribe when restart
-    cluster.subscribe(self, classOf[MemberDowned])
+    cluster.subscribe(self, classOf[MemberExited])
     cluster.subscribe(self, classOf[MemberRemoved])
 
     setTimer(CleanupTimer, Cleanup, 1.minute, repeat = true)
 
-    // defer subscription to LeaderChanged to avoid some jitter when
+    // defer subscription to avoid some jitter when
     // starting/joining several nodes at the same time
-    cluster.registerOnMemberUp(self ! StartLeaderChangedBuffer)
+    cluster.registerOnMemberUp(self ! StartOldestChangedBuffer)
   }
 
   override def postStop(): Unit = {
@@ -352,64 +406,65 @@ class ClusterSingletonManager(
     super.postStop()
   }
 
-  def peer(at: Address): ActorRef = context.actorFor(self.path.toStringWithAddress(at))
+  def peer(at: Address): ActorSelection = context.actorSelection(self.path.toStringWithAddress(at))
 
-  def getNextLeaderChanged(): Unit =
-    if (leaderChangedReceived) {
-      leaderChangedReceived = false
-      leaderChangedBuffer ! GetNext
+  def getNextOldestChanged(): Unit =
+    if (oldestChangedReceived) {
+      oldestChangedReceived = false
+      oldestChangedBuffer ! GetNext
     }
 
   startWith(Start, Uninitialized)
 
   when(Start) {
-    case Event(StartLeaderChangedBuffer, _) ⇒
-      leaderChangedBuffer = context.actorOf(Props[LeaderChangedBuffer].withDispatcher(context.props.dispatcher))
-      getNextLeaderChanged()
+    case Event(StartOldestChangedBuffer, _) ⇒
+      oldestChangedBuffer = context.actorOf(Props(classOf[OldestChangedBuffer], role).
+        withDispatcher(context.props.dispatcher))
+      getNextOldestChanged()
       stay
 
-    case Event(InitialLeaderState(leaderOption, memberCount), _) ⇒
-      leaderChangedReceived = true
-      if (leaderOption == selfAddressOption && memberCount == 1)
-        // alone, leader immediately
-        gotoLeader(None)
-      else if (leaderOption == selfAddressOption)
-        goto(BecomingLeader) using BecomingLeaderData(None)
+    case Event(InitialOldestState(oldestOption, memberCount), _) ⇒
+      oldestChangedReceived = true
+      if (oldestOption == selfAddressOption && memberCount == 1)
+        // alone, oldest immediately
+        gotoOldest()
+      else if (oldestOption == selfAddressOption)
+        goto(BecomingOldest) using BecomingOldestData(None)
       else
-        goto(NonLeader) using NonLeaderData(leaderOption)
+        goto(Younger) using YoungerData(oldestOption)
   }
 
-  when(NonLeader) {
-    case Event(LeaderChanged(leaderOption), NonLeaderData(previousLeaderOption)) ⇒
-      leaderChangedReceived = true
-      if (leaderOption == selfAddressOption) {
-        logInfo("NonLeader observed LeaderChanged: [{} -> myself]", previousLeaderOption)
-        previousLeaderOption match {
-          case None                                ⇒ gotoLeader(None)
-          case Some(prev) if downed.contains(prev) ⇒ gotoLeader(None)
+  when(Younger) {
+    case Event(OldestChanged(oldestOption), YoungerData(previousOldestOption)) ⇒
+      oldestChangedReceived = true
+      if (oldestOption == selfAddressOption) {
+        logInfo("Younger observed OldestChanged: [{} -> myself]", previousOldestOption)
+        previousOldestOption match {
+          case None                                 ⇒ gotoOldest()
+          case Some(prev) if removed.contains(prev) ⇒ gotoOldest()
           case Some(prev) ⇒
             peer(prev) ! HandOverToMe
-            goto(BecomingLeader) using BecomingLeaderData(previousLeaderOption)
+            goto(BecomingOldest) using BecomingOldestData(previousOldestOption)
         }
       } else {
-        logInfo("NonLeader observed LeaderChanged: [{} -> {}]", previousLeaderOption, leaderOption)
-        getNextLeaderChanged()
-        stay using NonLeaderData(leaderOption)
+        logInfo("Younger observed OldestChanged: [{} -> {}]", previousOldestOption, oldestOption)
+        getNextOldestChanged()
+        stay using YoungerData(oldestOption)
       }
 
-    case Event(MemberDowned(m), NonLeaderData(Some(previousLeader))) if m.address == previousLeader ⇒
-      logInfo("Previous leader downed [{}]", m.address)
-      addDowned(m.address)
-      // transition when LeaderChanged
-      stay using NonLeaderData(None)
+    case Event(MemberRemoved(m, _), YoungerData(Some(previousOldest))) if m.address == previousOldest ⇒
+      logInfo("Previous oldest removed [{}]", m.address)
+      addRemoved(m.address)
+      // transition when OldestChanged
+      stay using YoungerData(None)
 
-    case Event(MemberRemoved(m), _) if m.address == cluster.selfAddress ⇒
+    case Event(MemberRemoved(m, _), _) if m.address == cluster.selfAddress ⇒
       logInfo("Self removed, stopping ClusterSingletonManager")
       stop()
 
   }
 
-  when(BecomingLeader) {
+  when(BecomingOldest) {
 
     case Event(HandOverInProgress, _) ⇒
       // confirmation that the hand-over process has started
@@ -417,149 +472,151 @@ class ClusterSingletonManager(
       cancelTimer(HandOverRetryTimer)
       stay
 
-    case Event(HandOverDone(handOverData), BecomingLeaderData(Some(previousLeader))) ⇒
-      if (sender.path.address == previousLeader)
-        gotoLeader(handOverData)
+    case Event(HandOverDone, BecomingOldestData(Some(previousOldest))) ⇒
+      if (sender.path.address == previousOldest)
+        gotoOldest()
       else {
-        logInfo("Ignoring HandOverDone in BecomingLeader from [{}]. Expected previous leader [{}]",
-          sender.path.address, previousLeader)
+        logInfo("Ignoring HandOverDone in BecomingOldest from [{}]. Expected previous oldest [{}]",
+          sender.path.address, previousOldest)
         stay
       }
 
-    case Event(MemberDowned(m), BecomingLeaderData(Some(previousLeader))) if m.address == previousLeader ⇒
-      logInfo("Previous leader [{}] downed", previousLeader)
-      addDowned(m.address)
-      gotoLeader(None)
-
-    case Event(TakeOverFromMe, BecomingLeaderData(None)) ⇒
-      sender ! HandOverToMe
-      stay using BecomingLeaderData(Some(sender.path.address))
-
-    case Event(TakeOverFromMe, BecomingLeaderData(Some(previousLeader))) ⇒
-      if (previousLeader == sender.path.address) sender ! HandOverToMe
-      else logInfo("Ignoring TakeOver request in BecomingLeader from [{}]. Expected previous leader [{}]",
-        sender.path.address, previousLeader)
+    case Event(MemberRemoved(m, _), BecomingOldestData(Some(previousOldest))) if m.address == previousOldest ⇒
+      logInfo("Previous oldest [{}] removed", previousOldest)
+      addRemoved(m.address)
       stay
 
-    case Event(HandOverRetry(count), BecomingLeaderData(previousLeaderOption)) ⇒
+    case Event(TakeOverFromMe, BecomingOldestData(None)) ⇒
+      sender ! HandOverToMe
+      stay using BecomingOldestData(Some(sender.path.address))
+
+    case Event(TakeOverFromMe, BecomingOldestData(Some(previousOldest))) ⇒
+      if (previousOldest == sender.path.address) sender ! HandOverToMe
+      else logInfo("Ignoring TakeOver request in BecomingOldest from [{}]. Expected previous oldest [{}]",
+        sender.path.address, previousOldest)
+      stay
+
+    case Event(HandOverRetry(count), BecomingOldestData(previousOldestOption)) ⇒
       if (count <= maxHandOverRetries) {
-        logInfo("Retry [{}], sending HandOverToMe to [{}]", count, previousLeaderOption)
-        previousLeaderOption foreach { peer(_) ! HandOverToMe }
+        logInfo("Retry [{}], sending HandOverToMe to [{}]", count, previousOldestOption)
+        previousOldestOption foreach { peer(_) ! HandOverToMe }
         setTimer(HandOverRetryTimer, HandOverRetry(count + 1), retryInterval, repeat = false)
-      } else if (previousLeaderOption.isEmpty) {
-        // can't send HandOverToMe, previousLeader unknown for new node (or restart)
-        // previous leader might be down or removed, so no TakeOverFromMe message is received
-        logInfo("Timeout in BecomingLeader. Previous leader unknown and no TakeOver request.")
-        gotoLeader(None)
+        stay()
+      } else if (previousOldestOption forall removed.contains) {
+        // can't send HandOverToMe, previousOldest unknown for new node (or restart)
+        // previous oldest might be down or removed, so no TakeOverFromMe message is received
+        logInfo("Timeout in BecomingOldest. Previous oldest unknown, removed and no TakeOver request.")
+        gotoOldest()
       } else
         throw new ClusterSingletonManagerIsStuck(
-          s"Becoming singleton leader was stuck because previous leader [${previousLeaderOption}] is unresponsive")
+          s"Becoming singleton oldest was stuck because previous oldest [${previousOldestOption}] is unresponsive")
 
   }
 
-  def gotoLeader(handOverData: Option[Any]): State = {
+  def gotoOldest(): State = {
     logInfo("Singleton manager [{}] starting singleton actor", cluster.selfAddress)
-    val singleton = context watch context.actorOf(singletonProps(handOverData), singletonName)
-    goto(Leader) using LeaderData(singleton)
+    val singleton = context watch context.actorOf(singletonProps, singletonName)
+    goto(Oldest) using OldestData(singleton)
   }
 
-  when(Leader) {
-    case Event(LeaderChanged(leaderOption), LeaderData(singleton, singletonTerminated, handOverData)) ⇒
-      leaderChangedReceived = true
-      logInfo("Leader observed LeaderChanged: [{} -> {}]", cluster.selfAddress, leaderOption)
-      leaderOption match {
+  when(Oldest) {
+    case Event(OldestChanged(oldestOption), OldestData(singleton, singletonTerminated)) ⇒
+      oldestChangedReceived = true
+      logInfo("Oldest observed OldestChanged: [{} -> {}]", cluster.selfAddress, oldestOption)
+      oldestOption match {
         case Some(a) if a == cluster.selfAddress ⇒
-          // already leader
+          // already oldest
           stay
-        case Some(a) if downed.contains(a) || removed.contains(a) ⇒
-          gotoHandingOver(singleton, singletonTerminated, handOverData, None)
+        case Some(a) if !selfExited && removed.contains(a) ⇒
+          gotoHandingOver(singleton, singletonTerminated, None)
         case Some(a) ⇒
-          // send TakeOver request in case the new leader doesn't know previous leader
+          // send TakeOver request in case the new oldest doesn't know previous oldest
           peer(a) ! TakeOverFromMe
           setTimer(TakeOverRetryTimer, TakeOverRetry(1), retryInterval, repeat = false)
-          goto(WasLeader) using WasLeaderData(singleton, singletonTerminated, handOverData, newLeaderOption = Some(a))
+          goto(WasOldest) using WasOldestData(singleton, singletonTerminated, newOldestOption = Some(a))
         case None ⇒
-          // new leader will initiate the hand-over
+          // new oldest will initiate the hand-over
           setTimer(TakeOverRetryTimer, TakeOverRetry(1), retryInterval, repeat = false)
-          goto(WasLeader) using WasLeaderData(singleton, singletonTerminated, handOverData, newLeaderOption = None)
+          goto(WasOldest) using WasOldestData(singleton, singletonTerminated, newOldestOption = None)
       }
 
-    case Event(HandOverToMe, LeaderData(singleton, singletonTerminated, handOverData)) ⇒
-      gotoHandingOver(singleton, singletonTerminated, handOverData, Some(sender))
+    case Event(HandOverToMe, OldestData(singleton, singletonTerminated)) ⇒
+      gotoHandingOver(singleton, singletonTerminated, Some(sender))
 
-    case Event(singletonHandOverMessage, d @ LeaderData(singleton, _, _)) if sender == singleton ⇒
-      stay using d.copy(handOverData = Some(singletonHandOverMessage))
-
-    case Event(Terminated(ref), d @ LeaderData(singleton, _, _)) if ref == singleton ⇒
+    case Event(Terminated(ref), d @ OldestData(singleton, _)) if ref == singleton ⇒
       stay using d.copy(singletonTerminated = true)
   }
 
-  when(WasLeader) {
-    case Event(TakeOverRetry(count), WasLeaderData(_, _, _, newLeaderOption)) ⇒
+  when(WasOldest) {
+    case Event(TakeOverRetry(count), WasOldestData(_, _, newOldestOption)) ⇒
       if (count <= maxTakeOverRetries) {
-        logInfo("Retry [{}], sending TakeOverFromMe to [{}]", count, newLeaderOption)
-        newLeaderOption foreach { peer(_) ! TakeOverFromMe }
+        logInfo("Retry [{}], sending TakeOverFromMe to [{}]", count, newOldestOption)
+        newOldestOption foreach { peer(_) ! TakeOverFromMe }
         setTimer(TakeOverRetryTimer, TakeOverRetry(count + 1), retryInterval, repeat = false)
         stay
       } else
-        throw new ClusterSingletonManagerIsStuck(s"Expected hand-over to [${newLeaderOption}] never occured")
+        throw new ClusterSingletonManagerIsStuck(s"Expected hand-over to [${newOldestOption}] never occured")
 
-    case Event(HandOverToMe, WasLeaderData(singleton, singletonTerminated, handOverData, _)) ⇒
-      gotoHandingOver(singleton, singletonTerminated, handOverData, Some(sender))
+    case Event(HandOverToMe, WasOldestData(singleton, singletonTerminated, _)) ⇒
+      gotoHandingOver(singleton, singletonTerminated, Some(sender))
 
-    case Event(MemberDowned(m), WasLeaderData(singleton, singletonTerminated, handOverData, Some(newLeader))) if m.address == newLeader ⇒
-      addDowned(m.address)
-      gotoHandingOver(singleton, singletonTerminated, handOverData, None)
+    case Event(MemberRemoved(m, _), WasOldestData(singleton, singletonTerminated, Some(newOldest))) if !selfExited && m.address == newOldest ⇒
+      addRemoved(m.address)
+      gotoHandingOver(singleton, singletonTerminated, None)
 
-    case Event(singletonHandOverMessage, d @ WasLeaderData(singleton, _, _, _)) if sender == singleton ⇒
-      stay using d.copy(handOverData = Some(singletonHandOverMessage))
-
-    case Event(Terminated(ref), d @ WasLeaderData(singleton, _, _, _)) if ref == singleton ⇒
+    case Event(Terminated(ref), d @ WasOldestData(singleton, _, _)) if ref == singleton ⇒
       stay using d.copy(singletonTerminated = true)
 
   }
 
-  def gotoHandingOver(singleton: ActorRef, singletonTerminated: Boolean, handOverData: Option[Any], handOverTo: Option[ActorRef]): State = {
+  def gotoHandingOver(singleton: ActorRef, singletonTerminated: Boolean, handOverTo: Option[ActorRef]): State = {
     if (singletonTerminated) {
-      handOverDone(handOverTo, handOverData)
+      handOverDone(handOverTo)
     } else {
       handOverTo foreach { _ ! HandOverInProgress }
       singleton ! terminationMessage
-      goto(HandingOver) using HandingOverData(singleton, handOverTo, handOverData)
+      goto(HandingOver) using HandingOverData(singleton, handOverTo)
     }
   }
 
   when(HandingOver) {
-    case (Event(Terminated(ref), HandingOverData(singleton, handOverTo, handOverData))) if ref == singleton ⇒
-      handOverDone(handOverTo, handOverData)
+    case (Event(Terminated(ref), HandingOverData(singleton, handOverTo))) if ref == singleton ⇒
+      handOverDone(handOverTo)
 
-    case Event(HandOverToMe, d @ HandingOverData(singleton, handOverTo, _)) if handOverTo == Some(sender) ⇒
+    case Event(HandOverToMe, d @ HandingOverData(singleton, handOverTo)) if handOverTo == Some(sender) ⇒
       // retry
       sender ! HandOverInProgress
       stay
 
-    case Event(singletonHandOverMessage, d @ HandingOverData(singleton, _, _)) if sender == singleton ⇒
-      stay using d.copy(handOverData = Some(singletonHandOverMessage))
-
   }
 
-  def handOverDone(handOverTo: Option[ActorRef], handOverData: Option[Any]): State = {
-    val newLeader = handOverTo.map(_.path.address)
-    logInfo("Singleton terminated, hand-over done [{} -> {}]", cluster.selfAddress, newLeader)
-    handOverTo foreach { _ ! HandOverDone(handOverData) }
-    goto(NonLeader) using NonLeaderData(newLeader)
+  def handOverDone(handOverTo: Option[ActorRef]): State = {
+    val newOldest = handOverTo.map(_.path.address)
+    logInfo("Singleton terminated, hand-over done [{} -> {}]", cluster.selfAddress, newOldest)
+    handOverTo foreach { _ ! HandOverDone }
+    if (selfExited || removed.contains(cluster.selfAddress))
+      goto(End) using EndData
+    else
+      goto(Younger) using YoungerData(newOldest)
+  }
+
+  when(End) {
+    case Event(MemberRemoved(m, _), _) if m.address == cluster.selfAddress ⇒
+      logInfo("Self removed, stopping ClusterSingletonManager")
+      stop()
   }
 
   whenUnhandled {
     case Event(_: CurrentClusterState, _) ⇒ stay
-    case Event(MemberRemoved(m), _) ⇒
-      logInfo("Member removed [{}]", m.address)
-      // if self removed, it will be stopped onTranstion to NonLeader
-      addRemoved(m.address)
+    case Event(MemberExited(m), _) ⇒
+      if (m.address == cluster.selfAddress) {
+        selfExited = true
+        logInfo("Exited [{}]", m.address)
+      }
       stay
-    case Event(MemberDowned(m), _) ⇒
-      logInfo("Member downed [{}]", m.address)
-      addDowned(m.address)
+    case Event(MemberRemoved(m, _), _) ⇒
+      if (!selfExited) logInfo("Member removed [{}]", m.address)
+      addRemoved(m.address)
       stay
     case Event(TakeOverFromMe, _) ⇒
       logInfo("Ignoring TakeOver request in [{}] from [{}].", stateName, sender.path.address)
@@ -574,22 +631,23 @@ class ClusterSingletonManager(
   }
 
   onTransition {
-    case _ -> BecomingLeader ⇒ setTimer(HandOverRetryTimer, HandOverRetry(1), retryInterval, repeat = false)
+    case _ -> BecomingOldest ⇒ setTimer(HandOverRetryTimer, HandOverRetry(1), retryInterval, repeat = false)
   }
 
   onTransition {
-    case BecomingLeader -> _ ⇒ cancelTimer(HandOverRetryTimer)
-    case WasLeader -> _      ⇒ cancelTimer(TakeOverRetryTimer)
+    case BecomingOldest -> _ ⇒ cancelTimer(HandOverRetryTimer)
+    case WasOldest -> _      ⇒ cancelTimer(TakeOverRetryTimer)
   }
 
   onTransition {
-    case _ -> (NonLeader | Leader) ⇒ getNextLeaderChanged()
+    case _ -> (Younger | Oldest) ⇒ getNextOldestChanged()
   }
 
   onTransition {
-    case _ -> NonLeader if removed.contains(cluster.selfAddress) || downed.contains(cluster.selfAddress) ⇒
+    case _ -> (Younger | End) if removed.contains(cluster.selfAddress) ⇒
       logInfo("Self removed, stopping ClusterSingletonManager")
-      stop()
+      // note that FSM.stop() can't be used in onTransition
+      context.stop(self)
   }
 
 }

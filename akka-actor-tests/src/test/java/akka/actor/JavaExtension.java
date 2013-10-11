@@ -3,14 +3,10 @@
  */
 package akka.actor;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
+import akka.testkit.AkkaJUnitActorSystemResource;
+import org.junit.*;
 import akka.testkit.AkkaSpec;
-
 import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.Config;
 
 import static org.junit.Assert.*;
 
@@ -47,20 +43,13 @@ public class JavaExtension {
     }
   }
 
-  private static ActorSystem system;
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("JavaExtension",
+      ConfigFactory.parseString("akka.extensions = [ \"akka.actor.JavaExtension$TestExtensionId\" ]")
+      .withFallback(AkkaSpec.testConf()));
 
-  @BeforeClass
-  public static void beforeAll() {
-    Config c = ConfigFactory.parseString("akka.extensions = [ \"akka.actor.JavaExtension$TestExtensionId\" ]")
-        .withFallback(AkkaSpec.testConf());
-    system = ActorSystem.create("JavaExtension", c);
-  }
-
-  @AfterClass
-  public static void afterAll() {
-    system.shutdown();
-    system = null;
-  }
+  private final ActorSystem system = actorSystemResource.getSystem();
 
   @Test
   public void mustBeAccessible() {

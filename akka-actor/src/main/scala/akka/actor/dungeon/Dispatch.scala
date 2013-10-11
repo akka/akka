@@ -5,15 +5,16 @@
 package akka.actor.dungeon
 
 import scala.annotation.tailrec
-import akka.dispatch.{ Terminate, SystemMessage, Suspend, Resume, Recreate, MessageDispatcher, Mailbox, Envelope, Create }
+import akka.dispatch.{ MessageDispatcher, Mailbox, Envelope }
+import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
 import akka.util.Unsafe
-import akka.dispatch.NullMessage
-import akka.actor.{ NoSerializationVerificationNeeded, InvalidMessageException, ActorRef, ActorCell }
+import akka.actor._
 import akka.serialization.SerializationExtension
 import scala.util.control.NonFatal
 import scala.util.control.Exception.Catcher
-import scala.concurrent.ExecutionContext
+import akka.dispatch.MailboxType
+import akka.dispatch.ProducesMessageQueue
 
 private[akka] trait Dispatch { this: ActorCell ⇒
 
@@ -31,8 +32,6 @@ private[akka] trait Dispatch { this: ActorCell ⇒
 
   final def numberOfMessages: Int = mailbox.numberOfMessages
 
-  val dispatcher: MessageDispatcher = system.dispatchers.lookup(props.dispatcher)
-
   final def isTerminated: Boolean = mailbox.isClosed
 
   /**
@@ -40,21 +39,39 @@ private[akka] trait Dispatch { this: ActorCell ⇒
    * reasonably different from the previous UID of a possible actor with the same path,
    * which can be achieved by using ThreadLocalRandom.current.nextInt().
    */
-  final def init(uid: Int, sendSupervise: Boolean): this.type = {
+  final def init(sendSupervise: Boolean, mailboxType: MailboxType): this.type = {
     /*
      * Create the mailbox and enqueue the Create() message to ensure that
      * this is processed before anything else.
      */
-    swapMailbox(dispatcher.createMailbox(this))
+    val mbox = dispatcher.createMailbox(this, mailboxType)
+
+    /*
+     * The mailboxType was calculated taking into account what the MailboxType
+     * has promised to produce. If that was more than the default, then we need
+     * to reverify here because the dispatcher may well have screwed it up.
+     */
+    // we need to delay the failure to the point of actor creation so we can handle
+    // it properly in the normal way
+    val actorClass = props.actorClass
+    val createMessage = mailboxType match {
+      case _: ProducesMessageQueue[_] if system.mailboxes.hasRequiredType(actorClass) ⇒
+        val req = system.mailboxes.getRequiredType(actorClass)
+        if (req isInstance mbox.messageQueue) Create(None)
+        else Create(Some(ActorInitializationException(self,
+          s"Actor [$self] requires mailbox type [$req] got [${mbox.messageQueue.getClass.getName}]")))
+      case _ ⇒ Create(None)
+    }
+
+    swapMailbox(mbox)
     mailbox.setActor(this)
 
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-    mailbox.systemEnqueue(self, Create(uid))
+    mailbox.systemEnqueue(self, createMessage)
 
     if (sendSupervise) {
       // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-      parent.sendSystemMessage(akka.dispatch.Supervise(self, async = false, uid))
-      parent ! NullMessage // read ScalaDoc of NullMessage to see why
+      parent.sendSystemMessage(akka.dispatch.sysmsg.Supervise(self, async = false))
     }
     this
   }
@@ -62,7 +79,7 @@ private[akka] trait Dispatch { this: ActorCell ⇒
   /**
    * Start this cell, i.e. attach it to the dispatcher.
    */
-  final def start(): this.type = {
+  def start(): this.type = {
     // This call is expected to start off the actor by scheduling its mailbox.
     dispatcher.attach(this)
     this
@@ -90,11 +107,15 @@ private[akka] trait Dispatch { this: ActorCell ⇒
 
   def sendMessage(msg: Envelope): Unit =
     try {
-      val m = msg.message.asInstanceOf[AnyRef]
-      if (m eq null) throw new InvalidMessageException("Message is null")
-      if (system.settings.SerializeAllMessages && !m.isInstanceOf[NoSerializationVerificationNeeded]) {
-        val s = SerializationExtension(system)
-        s.deserialize(s.serialize(m).get, m.getClass).get
+      if (system.settings.SerializeAllMessages) {
+        val unwrapped = (msg.message match {
+          case DeadLetter(wrapped, _, _) ⇒ wrapped
+          case other                     ⇒ other
+        }).asInstanceOf[AnyRef]
+        if (!unwrapped.isInstanceOf[NoSerializationVerificationNeeded]) {
+          val s = SerializationExtension(system)
+          s.deserialize(s.serialize(unwrapped).get, unwrapped.getClass).get
+        }
       }
       dispatcher.dispatch(this, msg)
     } catch handleException

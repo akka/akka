@@ -20,6 +20,7 @@ import akka.actor.TypedActor._
 import java.util.concurrent.atomic.AtomicReference
 import java.lang.IllegalStateException
 import java.util.concurrent.{ TimeoutException, TimeUnit, CountDownLatch }
+import akka.testkit.TimingTest
 
 object TypedActorSpec {
 
@@ -69,9 +70,9 @@ object TypedActorSpec {
 
     def futurePigdog(): Future[String]
 
-    def futurePigdog(delay: Long): Future[String]
+    def futurePigdog(delay: FiniteDuration): Future[String]
 
-    def futurePigdog(delay: Long, numbered: Int): Future[String]
+    def futurePigdog(delay: FiniteDuration, numbered: Int): Future[String]
 
     def futureComposePigdogFrom(foo: Foo): Future[String]
 
@@ -89,10 +90,10 @@ object TypedActorSpec {
     def optionPigdog(): Option[String]
 
     @throws(classOf[TimeoutException])
-    def optionPigdog(delay: Long): Option[String]
+    def optionPigdog(delay: FiniteDuration): Option[String]
 
     @throws(classOf[TimeoutException])
-    def joptionPigdog(delay: Long): JOption[String]
+    def joptionPigdog(delay: FiniteDuration): JOption[String]
 
     def nullFuture(): Future[Any] = null
 
@@ -118,30 +119,30 @@ object TypedActorSpec {
 
     def futurePigdog(): Future[String] = Promise.successful(pigdog).future
 
-    def futurePigdog(delay: Long): Future[String] = {
-      Thread.sleep(delay)
+    def futurePigdog(delay: FiniteDuration): Future[String] = {
+      Thread.sleep(delay.toMillis)
       futurePigdog
     }
 
-    def futurePigdog(delay: Long, numbered: Int): Future[String] = {
-      Thread.sleep(delay)
+    def futurePigdog(delay: FiniteDuration, numbered: Int): Future[String] = {
+      Thread.sleep(delay.toMillis)
       Promise.successful(pigdog + numbered).future
     }
 
     def futureComposePigdogFrom(foo: Foo): Future[String] = {
       implicit val timeout = TypedActor(TypedActor.context.system).DefaultReturnTimeout
-      foo.futurePigdog(500).map(_.toUpperCase)
+      foo.futurePigdog(500 millis).map(_.toUpperCase)
     }
 
     def optionPigdog(): Option[String] = Some(pigdog)
 
-    def optionPigdog(delay: Long): Option[String] = {
-      Thread.sleep(delay)
+    def optionPigdog(delay: FiniteDuration): Option[String] = {
+      Thread.sleep(delay.toMillis)
       Some(pigdog)
     }
 
-    def joptionPigdog(delay: Long): JOption[String] = {
-      Thread.sleep(delay)
+    def joptionPigdog(delay: FiniteDuration): JOption[String] = {
+      Thread.sleep(delay.toMillis)
       JOption.some(pigdog)
     }
 
@@ -301,7 +302,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
 
     "be able to call Future-returning methods non-blockingly" in {
       val t = newFooBar
-      val f = t.futurePigdog(200)
+      val f = t.futurePigdog(200 millis)
       f.isCompleted must be(false)
       Await.result(f, timeout.duration) must be("Pigdog")
       mustStop(t)
@@ -309,24 +310,30 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
 
     "be able to call multiple Future-returning methods non-blockingly" in within(timeout.duration) {
       val t = newFooBar
-      val futures = for (i ← 1 to 20) yield (i, t.futurePigdog(20, i))
+      val futures = for (i ← 1 to 20) yield (i, t.futurePigdog(20 millis, i))
       for ((i, f) ← futures) {
         Await.result(f, remaining) must be("Pigdog" + i)
       }
       mustStop(t)
     }
 
-    "be able to call methods returning Java Options" in {
+    "be able to call methods returning Java Options" taggedAs TimingTest in {
       val t = newFooBar(1 second)
-      t.joptionPigdog(500).get must be("Pigdog")
-      t.joptionPigdog(1500) must be(JOption.none[String])
+      t.joptionPigdog(100 millis).get must be("Pigdog")
+      t.joptionPigdog(2 seconds) must be(JOption.none[String])
       mustStop(t)
     }
 
-    "be able to call methods returning Scala Options" in {
+    "be able to handle AskTimeoutException as None" taggedAs TimingTest in {
+      val t = newFooBar(200 millis)
+      t.joptionPigdog(600 millis) must be(JOption.none[String])
+      mustStop(t)
+    }
+
+    "be able to call methods returning Scala Options" taggedAs TimingTest in {
       val t = newFooBar(1 second)
-      t.optionPigdog(500).get must be("Pigdog")
-      t.optionPigdog(1500) must be(None)
+      t.optionPigdog(100 millis).get must be("Pigdog")
+      t.optionPigdog(2 seconds) must be(None)
       mustStop(t)
     }
 
@@ -393,8 +400,8 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
 
     "be able to support implementation only typed actors" in within(timeout.duration) {
       val t: Foo = TypedActor(system).typedActorOf(TypedProps[Bar]())
-      val f = t.futurePigdog(200)
-      val f2 = t.futurePigdog(0)
+      val f = t.futurePigdog(200 millis)
+      val f2 = t.futurePigdog(Duration.Zero)
       f2.isCompleted must be(false)
       f.isCompleted must be(false)
       Await.result(f, remaining) must equal(Await.result(f2, remaining))
@@ -412,7 +419,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       val thais = for (i ← 1 to 60) yield newFooBar("pooled-dispatcher", 6 seconds)
       val iterator = new CyclicIterator(thais)
 
-      val results = for (i ← 1 to 120) yield (i, iterator.next.futurePigdog(200L, i))
+      val results = for (i ← 1 to 120) yield (i, iterator.next.futurePigdog(200 millis, i))
 
       for ((i, r) ← results) Await.result(r, remaining) must be("Pigdog" + i)
 

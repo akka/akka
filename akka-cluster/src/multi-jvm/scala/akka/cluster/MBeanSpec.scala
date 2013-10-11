@@ -67,8 +67,8 @@ abstract class MBeanSpec
       }
       awaitClusterUp(first)
       runOn(first) {
-        awaitCond(mbeanServer.getAttribute(mbeanName, "MemberStatus") == "Up")
-        awaitCond(mbeanServer.getAttribute(mbeanName, "Leader") == address(first).toString)
+        awaitAssert(mbeanServer.getAttribute(mbeanName, "MemberStatus") must be("Up"))
+        awaitAssert(mbeanServer.getAttribute(mbeanName, "Leader") must be(address(first).toString))
         mbeanServer.getAttribute(mbeanName, "Singleton").asInstanceOf[Boolean] must be(true)
         mbeanServer.getAttribute(mbeanName, "Members") must be(address(first).toString)
         mbeanServer.getAttribute(mbeanName, "Unreachable") must be("")
@@ -83,31 +83,83 @@ abstract class MBeanSpec
       }
       enterBarrier("joined")
 
-      awaitUpConvergence(4)
+      awaitMembersUp(4)
       assertMembers(clusterView.members, roles.map(address(_)): _*)
-      awaitCond(mbeanServer.getAttribute(mbeanName, "MemberStatus") == "Up")
+      awaitAssert(mbeanServer.getAttribute(mbeanName, "MemberStatus") must be("Up"))
       val expectedMembers = roles.sorted.map(address(_)).mkString(",")
-      awaitCond(mbeanServer.getAttribute(mbeanName, "Members") == expectedMembers)
+      awaitAssert(mbeanServer.getAttribute(mbeanName, "Members") must be(expectedMembers))
       val expectedLeader = address(roleOfLeader())
-      awaitCond(mbeanServer.getAttribute(mbeanName, "Leader") == expectedLeader.toString)
+      awaitAssert(mbeanServer.getAttribute(mbeanName, "Leader") must be(expectedLeader.toString))
       mbeanServer.getAttribute(mbeanName, "Singleton").asInstanceOf[Boolean] must be(false)
 
       enterBarrier("after-4")
     }
 
-    "support down" taggedAs LongRunningTest in {
-      val fourthAddress = address(fourth)
+    val fourthAddress = address(fourth)
+
+    "format cluster status as JSON with full reachability info" taggedAs LongRunningTest in within(30 seconds) {
       runOn(first) {
-        testConductor.shutdown(fourth, 0).await
+        testConductor.exit(fourth, 0).await
       }
       enterBarrier("fourth-shutdown")
 
       runOn(first, second, third) {
-        awaitCond(mbeanServer.getAttribute(mbeanName, "Unreachable") == fourthAddress.toString)
-        val expectedMembers = Seq(first, second, third).sorted.map(address(_)).mkString(",")
-        awaitCond(mbeanServer.getAttribute(mbeanName, "Members") == expectedMembers)
+        awaitAssert(mbeanServer.getAttribute(mbeanName, "Unreachable") must be(fourthAddress.toString))
+        val expectedMembers = Seq(first, second, third, fourth).sorted.map(address(_)).mkString(",")
+        awaitAssert(mbeanServer.getAttribute(mbeanName, "Members") must be(expectedMembers))
       }
       enterBarrier("fourth-unreachable")
+
+      runOn(first) {
+        val sortedNodes = Vector(first, second, third, fourth).sorted.map(address(_))
+        val unreachableObservedBy = Vector(first, second, third).sorted.map(address(_))
+        val expectedJson =
+          s"""{
+             |  "self-address": "${address(first)}",
+             |  "members": [
+             |    {
+             |      "address": "${sortedNodes(0)}",
+             |      "status": "Up"
+             |    },
+             |    {
+             |      "address": "${sortedNodes(1)}",
+             |      "status": "Up"
+             |    },
+             |    {
+             |      "address": "${sortedNodes(2)}",
+             |      "status": "Up"
+             |    },
+             |    {
+             |      "address": "${sortedNodes(3)}",
+             |      "status": "Up"
+             |    }
+             |  ],
+             |  "unreachable": [
+             |    {
+             |      "node": "${address(fourth)}",
+             |      "observed-by": [
+             |        "${unreachableObservedBy(0)}",
+             |        "${unreachableObservedBy(1)}",
+             |        "${unreachableObservedBy(2)}"
+             |      ]
+             |    }
+             |  ]
+             |}
+             |""".stripMargin
+
+        // awaitAssert to make sure that all nodes detects unreachable
+        within(5.seconds) {
+          awaitAssert(mbeanServer.getAttribute(mbeanName, "ClusterStatus") must be(expectedJson))
+        }
+      }
+
+      enterBarrier("after-5")
+
+    }
+
+    "support down" taggedAs LongRunningTest in within(20 seconds) {
+
+      // fourth unreachable in previous step
 
       runOn(second) {
         mbeanServer.invoke(mbeanName, "down", Array(fourthAddress.toString), Array("java.lang.String"))
@@ -115,11 +167,12 @@ abstract class MBeanSpec
       enterBarrier("fourth-down")
 
       runOn(first, second, third) {
-        awaitUpConvergence(3, canNotBePartOfMemberRing = Set(fourthAddress))
+        awaitMembersUp(3, canNotBePartOfMemberRing = Set(fourthAddress))
         assertMembers(clusterView.members, first, second, third)
+        awaitAssert(mbeanServer.getAttribute(mbeanName, "Unreachable") must be(""))
       }
 
-      enterBarrier("after-5")
+      enterBarrier("after-6")
     }
 
     "support leave" taggedAs LongRunningTest in within(20 seconds) {
@@ -128,21 +181,20 @@ abstract class MBeanSpec
       }
       enterBarrier("third-left")
       runOn(first, second) {
-        awaitUpConvergence(2)
+        awaitMembersUp(2)
         assertMembers(clusterView.members, first, second)
         val expectedMembers = Seq(first, second).sorted.map(address(_)).mkString(",")
-        awaitCond(mbeanServer.getAttribute(mbeanName, "Members") == expectedMembers)
+        awaitAssert(mbeanServer.getAttribute(mbeanName, "Members") must be(expectedMembers))
       }
       runOn(third) {
         awaitCond(cluster.isTerminated)
         // mbean should be unregistered, i.e. throw InstanceNotFoundException
-        awaitCond(Try { mbeanServer.getMBeanInfo(mbeanName); false } recover {
-          case e: InstanceNotFoundException ⇒ true
-          case _                            ⇒ false
-        } get)
+        awaitAssert(intercept[InstanceNotFoundException] {
+          mbeanServer.getMBeanInfo(mbeanName)
+        })
       }
 
-      enterBarrier("after-6")
+      enterBarrier("after-7")
     }
 
   }

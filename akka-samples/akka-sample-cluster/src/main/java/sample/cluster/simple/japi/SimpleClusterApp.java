@@ -18,7 +18,7 @@ public class SimpleClusterApp {
     ActorSystem system = ActorSystem.create("ClusterSystem");
 
     // Create an actor that handles cluster domain events
-    ActorRef clusterListener = system.actorOf(new Props(
+    ActorRef clusterListener = system.actorOf(Props.create(
         SimpleClusterListener.class), "clusterListener");
 
     // Add subscription of cluster events

@@ -1,6 +1,6 @@
 .. _dispatchers-scala:
 
-Dispatchers (Scala)
+Dispatchers
 ===================
 
 An Akka ``MessageDispatcher`` is what makes Akka Actors "tick", it is the engine of the machine so to speak.
@@ -25,16 +25,8 @@ Dispatchers implement the :class:`ExecutionContext` interface and can thus be us
 Setting the dispatcher for an Actor
 -----------------------------------
 
-So in case you want to give your ``Actor`` a different dispatcher than the default, you need to do two things, of which the first is:
-
-.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#defining-dispatcher
-
-.. note::
-    The "dispatcherId" you specify in withDispatcher is in fact a path into your configuration.
-    So in this example it's a top-level section, but you could for instance put it as a sub-section,
-    where you'd use periods to denote sub-sections, like this: ``"foo.bar.my-dispatcher"``
-
-And then you just need to configure that dispatcher in your configuration:
+So in case you want to give your ``Actor`` a different dispatcher than the default, you need to do two things, of which the first 
+is to configure the dispatcher:
 
 .. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#my-dispatcher-config
 
@@ -43,6 +35,24 @@ And here's another example that uses the "thread-pool-executor":
 .. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#my-thread-pool-dispatcher-config
 
 For more options, see the default-dispatcher section of the :ref:`configuration`.
+
+Then you create the actor as usual and define the dispatcher in the deployment configuration.
+
+.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#defining-dispatcher-in-config
+
+.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#dispatcher-deployment-config
+
+An alternative to the deployment configuration is to define the dispatcher in code.
+If you define the ``dispatcher`` in the deployment configuration then this value will be used instead
+of programmatically provided parameter.
+
+.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#defining-dispatcher-in-code
+
+.. note::
+    The dispatcher you specify in ``withDispatcher`` and the ``dispatcher`` property in the deployment 
+    configuration is in fact a path into your configuration.
+    So in this example it's a top-level section, but you could for instance put it as a sub-section,
+    where you'd use periods to denote sub-sections, like this: ``"foo.bar.my-dispatcher"``
 
 Types of dispatchers
 --------------------
@@ -133,104 +143,3 @@ Note that it's not guaranteed that the *same* thread is used over time, since th
 is used for ``PinnedDispatcher`` to keep resource usage down in case of idle actors. To use the same
 thread all the time you need to add ``thread-pool-executor.allow-core-timeout=off`` to the
 configuration of the ``PinnedDispatcher``.
-
-Mailboxes
----------
-
-An Akka ``Mailbox`` holds the messages that are destined for an ``Actor``.
-Normally each ``Actor`` has its own mailbox, but with example a ``BalancingDispatcher`` all actors with the same ``BalancingDispatcher`` will share a single instance.
-
-Builtin implementations
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Akka comes shipped with a number of default mailbox implementations:
-
-* UnboundedMailbox
-
-  - Backed by a ``java.util.concurrent.ConcurrentLinkedQueue``
-
-  - Blocking: No
-
-  - Bounded: No
-
-* BoundedMailbox
-
-  - Backed by a ``java.util.concurrent.LinkedBlockingQueue``
-
-  - Blocking: Yes
-
-  - Bounded: Yes
-
-* UnboundedPriorityMailbox
-
-  - Backed by a ``java.util.concurrent.PriorityBlockingQueue``
-
-  - Blocking: Yes
-
-  - Bounded: No
-
-* BoundedPriorityMailbox
-
-  - Backed by a ``java.util.PriorityBlockingQueue`` wrapped in an ``akka.util.BoundedBlockingQueue``
-
-  - Blocking: Yes
-
-  - Bounded: Yes
-
-* Durable mailboxes, see :ref:`durable-mailboxes`.
-
-Mailbox configuration examples
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-How to create a PriorityMailbox:
-
-.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#prio-mailbox
-
-And then add it to the configuration:
-
-.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#prio-dispatcher-config
-
-And then an example on how you would use it:
-
-.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#prio-dispatcher
-
-Creating your own Mailbox type
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-An example is worth a thousand quacks:
-
-.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#mailbox-implementation-example
-
-And then you just specify the FQCN of your MailboxType as the value of the "mailbox-type" in the dispatcher configuration.
-
-.. note::
-
-  Make sure to include a constructor which takes
-  ``akka.actor.ActorSystem.Settings`` and ``com.typesafe.config.Config``
-  arguments, as this constructor is invoked reflectively to construct your
-  mailbox type. The config passed in as second argument is that section from
-  the configuration which describes the dispatcher using this mailbox type; the
-  mailbox type will be instantiated once for each dispatcher using it.
-
-Special Semantics of ``system.actorOf``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-In order to make ``system.actorOf`` both synchronous and non-blocking while
-keeping the return type :class:`ActorRef` (and the semantics that the returned
-ref is fully functional), special handling takes place for this case. Behind
-the scenes, a hollow kind of actor reference is constructed, which is sent to
-the system’s guardian actor who actually creates the actor and its context and
-puts those inside the reference. Until that has happened, messages sent to the
-:class:`ActorRef` will be queued locally, and only upon swapping the real
-filling in will they be transferred into the real mailbox. Thus,
-
-.. code-block:: scala
-
-   val props: Props = ...
-   // this actor uses MyCustomMailbox, which is assumed to be a singleton
-   system.actorOf(props.withDispatcher("myCustomMailbox")) ! "bang"
-   assert(MyCustomMailbox.instance.getLastEnqueuedMessage == "bang")
-
-will probably fail; you will have to allow for some time to pass and retry the
-check à la :meth:`TestKit.awaitCond`.
-

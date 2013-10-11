@@ -23,7 +23,7 @@ akka {
         port = 0
     }
 }
-                                                                      """)) with ImplicitSender with DefaultTimeout with DeathWatchSpec {
+""")) with ImplicitSender with DefaultTimeout with DeathWatchSpec {
 
   val other = ActorSystem("other", ConfigFactory.parseString("akka.remote.netty.tcp.port=2666")
     .withFallback(system.settings.config))
@@ -34,7 +34,7 @@ akka {
   }
 
   override def afterTermination() {
-    other.shutdown()
+    shutdown(other)
   }
 
   "receive Terminated when watched node is unknown host" in {
@@ -44,9 +44,15 @@ akka {
       def receive = {
         case t: Terminated ⇒ testActor ! t.actor.path
       }
-    }), name = "observer2")
+    }).withDeploy(Deploy.local), name = "observer2")
 
     expectMsg(60.seconds, path)
+  }
+
+  "receive ActorIdentity(None) when identified node is unknown host" in {
+    val path = RootActorPath(Address("akka.tcp", system.name, "unknownhost2", 2552)) / "user" / "subject"
+    system.actorSelection(path) ! Identify(path)
+    expectMsg(60.seconds, ActorIdentity(path, None))
   }
 
 }

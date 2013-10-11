@@ -67,7 +67,7 @@ object SupervisorSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender with DefaultTimeout {
+class SupervisorSpec extends AkkaSpec("akka.actor.serialize-messages = off") with BeforeAndAfterEach with ImplicitSender with DefaultTimeout {
 
   import SupervisorSpec._
 
@@ -171,7 +171,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         override def preStart() { preStarts += 1; testActor ! ("preStart" + preStarts) }
         override def postStop() { postStops += 1; testActor ! ("postStop" + postStops) }
         def receive = {
-          case "crash" ⇒ testActor ! "crashed"; throw new RuntimeException("Expected")
+          case "crash" ⇒ { testActor ! "crashed"; throw new RuntimeException("Expected") }
           case "ping"  ⇒ sender ! "pong"
         }
       }
@@ -335,7 +335,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       ping(actor3)
     }
 
-    "must attempt restart when exception during restart" in {
+    "attempt restart when exception during restart" in {
       val inits = new AtomicInteger(0)
       val supervisor = system.actorOf(Props(new Supervisor(
         OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = 10 seconds)(classOf[Exception] :: Nil))))
@@ -376,7 +376,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       system.stop(supervisor)
     }
 
-    "must not lose system messages when a NonFatal exception occurs when processing a system message" in {
+    "not lose system messages when a NonFatal exception occurs when processing a system message" in {
       val parent = system.actorOf(Props(new Actor {
         override val supervisorStrategy = OneForOneStrategy()({
           case e: IllegalStateException if e.getMessage == "OHNOES" ⇒ throw e
@@ -385,27 +385,37 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         val child = context.watch(context.actorOf(Props(new Actor {
           override def postRestart(reason: Throwable): Unit = testActor ! "child restarted"
           def receive = {
-            case l: TestLatch ⇒ Await.ready(l, 5 seconds); throw new IllegalStateException("OHNOES")
+            case l: TestLatch ⇒ { Await.ready(l, 5 seconds); throw new IllegalStateException("OHNOES") }
             case "test"       ⇒ sender ! "child green"
           }
         }), "child"))
 
         override def postRestart(reason: Throwable): Unit = testActor ! "parent restarted"
 
+        // Overriding to disable auto-unwatch
+        override def preRestart(reason: Throwable, msg: Option[Any]): Unit = {
+          context.children foreach context.stop
+          postStop()
+        }
+
         def receive = {
-          case t @ Terminated(`child`) ⇒ testActor ! "child terminated"
-          case l: TestLatch            ⇒ child ! l
-          case "test"                  ⇒ sender ! "green"
-          case "testchild"             ⇒ child forward "test"
+          case Terminated(a) if a.path == child.path ⇒ testActor ! "child terminated"
+          case l: TestLatch                          ⇒ child ! l
+          case "test"                                ⇒ sender ! "green"
+          case "testchild"                           ⇒ child forward "test"
+          case "testchildAndAck"                     ⇒ child forward "test"; sender ! "ack"
         }
       }))
 
       val latch = TestLatch()
       parent ! latch
-      parent ! "testchild"
-      EventFilter[IllegalStateException]("OHNOES", occurrences = 2) intercept {
-        latch.countDown()
-      }
+      parent ! "testchildAndAck"
+      expectMsg("ack")
+      filterEvents(
+        EventFilter[IllegalStateException]("OHNOES", occurrences = 1),
+        EventFilter.warning(pattern = "dead.*test", occurrences = 1)) {
+          latch.countDown()
+        }
       expectMsg("parent restarted")
       expectMsg("child terminated")
       parent ! "test"

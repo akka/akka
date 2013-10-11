@@ -6,8 +6,8 @@ import akka.sbt.AkkaKernelPlugin.{ Dist, outputDirectory, distJvmOptions}
 
 object HelloKernelBuild extends Build {
   val Organization = "akka.sample"
-  val Version      = "2.2-SNAPSHOT"
-  val ScalaVersion = "2.10.0"
+  val Version      = "2.3-SNAPSHOT"
+  val ScalaVersion = "2.10.2"
 
   lazy val HelloKernel = Project(
     id = "hello-kernel",
@@ -29,8 +29,6 @@ object HelloKernelBuild extends Build {
   )
   
   lazy val defaultSettings = buildSettings ++ Seq(
-    resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
-
     // compile options
     scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
     javacOptions  ++= Seq("-Xlint:unchecked", "-Xlint:deprecation")
@@ -49,7 +47,7 @@ object Dependencies {
 object Dependency {
   // Versions
   object V {
-    val Akka      = "2.2-SNAPSHOT"
+    val Akka      = "2.3-SNAPSHOT"
   }
 
   val akkaKernel = "com.typesafe.akka" %% "akka-kernel" % V.Akka

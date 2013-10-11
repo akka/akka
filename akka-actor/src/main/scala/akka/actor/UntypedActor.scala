@@ -27,7 +27,7 @@ import akka.japi.{ Creator }
  * {{{
  *  public class SampleUntypedActor extends UntypedActor {
  *
- *    public class Reply {
+ *    public static class Reply implements java.io.Serializable {
  *      final public ActorRef sender;
  *      final public Result result;
  *      Reply(ActorRef sender, Result result) {
@@ -59,33 +59,37 @@ import akka.japi.{ Creator }
  *
  *    public void onReceive(Object message) throws Exception {
  *      if (message instanceof String) {
- *        String msg = (String)message;
+ *        String msg = (String) message;
  *
  *        if (msg.equals("UseSender")) {
  *          // Reply to original sender of message
- *          getSender().tell(msg + ":" + getSelf());
+ *          getSender().tell(msg, getSelf());
  *
  *        } else if (msg.equals("SendToSelf")) {
  *          // Send message to the actor itself recursively
- *          getSelf().tell("SomeOtherMessage");
+ *          getSelf().tell("SomeOtherMessage", getSelf());
  *
  *        } else if (msg.equals("ErrorKernelWithDirectReply")) {
  *          // Send work to one-off child which will reply directly to original sender
- *          getContext().actorOf(new Props(Worker.class)).tell("DoSomeDangerousWork", getSender());
+ *          getContext().actorOf(Props.create(Worker.class)).tell("DoSomeDangerousWork", getSender());
  *
  *        } else if (msg.equals("ErrorKernelWithReplyHere")) {
  *          // Send work to one-off child and collect the answer, reply handled further down
- *          getContext().actorOf(new Props(Worker.class)).tell("DoWorkAndReplyToMe");
+ *          getContext().actorOf(Props.create(Worker.class)).tell("DoWorkAndReplyToMe", getSelf());
  *
- *        } else throw new IllegalArgumentException("Unknown message: " + message);
+ *        } else {
+ *          unhandled(message);
+ *        }
  *
  *      } else if (message instanceof Reply) {
  *
  *        final Reply reply = (Reply) message;
  *        // might want to do some processing/book-keeping here
- *        reply.sender.tell(reply.result);
+ *        reply.sender.tell(reply.result, getSelf());
  *
- *      } else throw new IllegalArgumentException("Unknown message: " + message);
+ *      } else {
+ *        unhandled(message);
+ *      }
  *    }
  *  }
  * }}}
@@ -107,7 +111,7 @@ abstract class UntypedActor extends Actor {
   def getContext(): UntypedActorContext = context.asInstanceOf[UntypedActorContext]
 
   /**
-   * Returns the 'self' reference.
+   * Returns the ActorRef for this actor.
    */
   def getSelf(): ActorRef = self
 
@@ -131,6 +135,7 @@ abstract class UntypedActor extends Actor {
    * Actor are automatically started asynchronously when created.
    * Empty default implementation.
    */
+  @throws(classOf[Exception])
   override def preStart(): Unit = super.preStart()
 
   /**
@@ -139,6 +144,7 @@ abstract class UntypedActor extends Actor {
    * Is called asynchronously after 'actor.stop()' is invoked.
    * Empty default implementation.
    */
+  @throws(classOf[Exception])
   override def postStop(): Unit = super.postStop()
 
   /**
@@ -147,6 +153,7 @@ abstract class UntypedActor extends Actor {
    * Is called on a crashed Actor right BEFORE it is restarted to allow clean
    * up of resources before Actor is terminated.
    */
+  @throws(classOf[Exception])
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = super.preRestart(reason, message)
 
   /**
@@ -154,12 +161,24 @@ abstract class UntypedActor extends Actor {
    * <p/>
    * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
    */
+  @throws(classOf[Exception])
   override def postRestart(reason: Throwable): Unit = super.postRestart(reason)
 
   final def receive = { case msg ⇒ onReceive(msg) }
+
+  /**
+   * Recommended convention is to call this method if the message
+   * isn't handled in [[#onReceive]] (e.g. unknown message type).
+   * By default it fails with either a [[akka.actor.DeathPactException]] (in
+   * case of an unhandled [[akka.actor.Terminated]] message) or publishes an [[akka.actor.UnhandledMessage]]
+   * to the actor's system's [[akka.event.EventStream]].
+   */
+  override def unhandled(message: Any): Unit = super.unhandled(message)
+
 }
 
 /**
  * Factory closure for an UntypedActor, to be used with 'Actors.actorOf(factory)'.
  */
+@deprecated("use Creator<T> instead", "2.2")
 trait UntypedActorFactory extends Creator[Actor] with Serializable

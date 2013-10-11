@@ -54,10 +54,9 @@ public class TransformationBackend extends UntypedActor {
     }
   }
 
-  //try to register to all nodes, even though there
-  // might not be any frontend on all nodes
   void register(Member member) {
-    getContext().actorFor(member.address() + "/user/frontend").tell(
+    if (member.hasRole("frontend"))
+      getContext().actorSelection(member.address() + "/user/frontend").tell(
         BACKEND_REGISTRATION, getSelf());
   }
 }

@@ -27,7 +27,7 @@ class EndpointRegistrySpec extends AkkaSpec {
       reg.isWritable(actorA) must be(true)
       reg.isReadOnly(actorA) must be(false)
 
-      reg.isQuarantined(address1) must be(false)
+      reg.isQuarantined(address1, 42) must be(false)
     }
 
     "be able to register a read-only endpoint" in {
@@ -40,7 +40,7 @@ class EndpointRegistrySpec extends AkkaSpec {
       reg.writableEndpointWithPolicyFor(address1) must be === None
       reg.isWritable(actorA) must be(false)
       reg.isReadOnly(actorA) must be(true)
-      reg.isQuarantined(address1) must be(false)
+      reg.isQuarantined(address1, 42) must be(false)
     }
 
     "be able to register a writable and a read-only endpoint correctly" in {
@@ -89,13 +89,13 @@ class EndpointRegistrySpec extends AkkaSpec {
       reg.registerWritableEndpoint(address2, actorB)
       val deadline = Deadline.now
       reg.markAsFailed(actorA, deadline)
-      reg.markAsQuarantined(address2, null)
+      reg.markAsQuarantined(address2, 42, deadline)
 
       reg.unregisterEndpoint(actorA)
       reg.unregisterEndpoint(actorB)
 
       reg.writableEndpointWithPolicyFor(address1) must be === Some(Gated(deadline))
-      reg.writableEndpointWithPolicyFor(address2) must be === Some(Quarantined(null))
+      reg.writableEndpointWithPolicyFor(address2) must be === Some(Quarantined(42, deadline))
 
     }
 
@@ -107,7 +107,7 @@ class EndpointRegistrySpec extends AkkaSpec {
       reg.markAsFailed(actorA, Deadline.now)
       val farInTheFuture = Deadline.now + Duration(60, SECONDS)
       reg.markAsFailed(actorB, farInTheFuture)
-      reg.pruneGatedEntries()
+      reg.prune()
 
       reg.writableEndpointWithPolicyFor(address1) must be === None
       reg.writableEndpointWithPolicyFor(address2) must be === Some(Gated(farInTheFuture))
@@ -115,11 +115,13 @@ class EndpointRegistrySpec extends AkkaSpec {
 
     "be able to register Quarantined policy for an address" in {
       val reg = new EndpointRegistry
+      val deadline = Deadline.now + 30.minutes
 
       reg.writableEndpointWithPolicyFor(address1) must be === None
-      reg.markAsQuarantined(address1, null)
-      reg.isQuarantined(address1) must be(true)
-      reg.writableEndpointWithPolicyFor(address1) must be === Some(Quarantined(null))
+      reg.markAsQuarantined(address1, 42, deadline)
+      reg.isQuarantined(address1, 42) must be(true)
+      reg.isQuarantined(address1, 33) must be(false)
+      reg.writableEndpointWithPolicyFor(address1) must be === Some(Quarantined(42, deadline))
     }
 
   }

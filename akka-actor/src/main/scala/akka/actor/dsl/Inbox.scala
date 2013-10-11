@@ -21,16 +21,10 @@ import akka.pattern.ask
 import akka.actor.ActorDSL
 import akka.actor.Props
 
-trait Inbox { this: ActorDSL.type ⇒
-
-  protected trait InboxExtension { this: Extension ⇒
-    val DSLInboxQueueSize = config.getInt("inbox-size")
-
-    val inboxNr = new AtomicInteger
-    val inboxProps = Props(new InboxActor(DSLInboxQueueSize))
-
-    def newReceiver: ActorRef = mkChild(inboxProps, "inbox-" + inboxNr.incrementAndGet)
-  }
+/**
+ * INTERNAL API
+ */
+private[akka] object Inbox {
 
   private sealed trait Query {
     def deadline: Deadline
@@ -43,7 +37,24 @@ trait Inbox { this: ActorDSL.type ⇒
   private case class Select(deadline: Deadline, predicate: PartialFunction[Any, Any], client: ActorRef = null) extends Query {
     def withClient(c: ActorRef) = copy(client = c)
   }
+  private case class StartWatch(target: ActorRef)
   private case object Kick
+
+}
+
+trait Inbox { this: ActorDSL.type ⇒
+
+  import Inbox._
+
+  protected trait InboxExtension { this: Extension ⇒
+    val DSLInboxQueueSize = config.getInt("inbox-size")
+
+    val inboxNr = new AtomicInteger
+    val inboxProps = Props(classOf[InboxActor], ActorDSL, DSLInboxQueueSize)
+
+    def newReceiver: ActorRef = mkChild(inboxProps, "inbox-" + inboxNr.incrementAndGet)
+  }
+
   private implicit val deadlineOrder: Ordering[Query] = new Ordering[Query] {
     def compare(left: Query, right: Query): Int = left.deadline.time compare right.deadline.time
   }
@@ -96,6 +107,7 @@ trait Inbox { this: ActorDSL.type ⇒
           }
           currentSelect = null
         }
+      case StartWatch(target) ⇒ context watch target
       case Kick ⇒
         val now = Deadline.now
         val pred = (q: Query) ⇒ q.deadline.time < now.time
@@ -112,7 +124,7 @@ trait Inbox { this: ActorDSL.type ⇒
         else {
           currentMsg = msg
           clients.dequeueFirst(clientPredicate) match {
-            case Some(q) ⇒ clientsByTimeout -= q; q.client ! msg
+            case Some(q) ⇒ { clientsByTimeout -= q; q.client ! msg }
             case None    ⇒ enqueueMessage(msg)
           }
           currentMsg = null
@@ -128,7 +140,8 @@ trait Inbox { this: ActorDSL.type ⇒
         import context.dispatcher
         if (currentDeadline.isEmpty) {
           currentDeadline = Some((next, context.system.scheduler.scheduleOnce(next.timeLeft, self, Kick)))
-        } else if (currentDeadline.get._1 != next) {
+        } else {
+          // must not rely on the Scheduler to not fire early (for robustness)
           currentDeadline.get._2.cancel()
           currentDeadline = Some((next, context.system.scheduler.scheduleOnce(next.timeLeft, self, Kick)))
         }
@@ -151,9 +164,14 @@ trait Inbox { this: ActorDSL.type ⇒
    */
   def inbox()(implicit system: ActorSystem): Inbox = new Inbox(system)
 
-  class Inbox(system: ActorSystem) {
+  class Inbox(system: ActorSystem) extends akka.actor.Inbox {
 
     val receiver: ActorRef = Extension(system).newReceiver
+
+    // Java API
+    def getRef: ActorRef = receiver
+    def send(target: ActorRef, msg: AnyRef): Unit = target.tell(msg, receiver)
+
     private val defaultTimeout: FiniteDuration = Extension(system).DSLDefaultTimeout
 
     /**
@@ -187,6 +205,12 @@ trait Inbox { this: ActorDSL.type ⇒
       implicit val t = Timeout(timeout + extraTime)
       predicate(Await.result(receiver ? Select(Deadline.now + timeout, predicate), Duration.Inf))
     }
+
+    /**
+     * Make the inbox’s actor watch the target actor such that reception of the
+     * Terminated message can then be awaited.
+     */
+    def watch(target: ActorRef): Unit = receiver ! StartWatch(target)
 
     /**
      * Overridden finalizer which will try to stop the actor once this Inbox

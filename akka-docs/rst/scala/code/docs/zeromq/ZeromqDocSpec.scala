@@ -4,7 +4,6 @@
 package docs.zeromq
 
 import language.postfixOps
-
 import scala.concurrent.duration._
 import akka.actor.{ Actor, Props }
 import akka.util.ByteString
@@ -12,6 +11,7 @@ import akka.testkit._
 import akka.zeromq.{ ZeroMQVersion, ZeroMQExtension, SocketType, Bind }
 import java.text.SimpleDateFormat
 import java.util.Date
+import akka.actor.ActorRef
 
 object ZeromqDocSpec {
 
@@ -99,7 +99,8 @@ object ZeromqDocSpec {
     def receive = {
       // the first frame is the topic, second is the message
       case m: ZMQMessage if m.frames(0).utf8String == "health.heap" ⇒
-        val Heap(timestamp, used, max) = ser.deserialize(m.frames(1).toArray, classOf[Heap]).get
+        val Heap(timestamp, used, max) =
+          ser.deserialize(m.frames(1).toArray, classOf[Heap]).get
         if ((used.toDouble / max) > 0.9) count += 1
         else count = 0
         if (count > 10) log.warning("Need more memory, using {} %",
@@ -122,18 +123,25 @@ class ZeromqDocSpec extends AkkaSpec("akka.loglevel=INFO") {
       Bind("tcp://127.0.0.1:21231"))
     //#pub-socket
 
-    //#sub-socket
     import akka.zeromq._
-    val listener = system.actorOf(Props(new Actor {
-      def receive: Receive = {
-        case Connecting    ⇒ //...
-        case m: ZMQMessage ⇒ //...
-        case _             ⇒ //...
+    val sub: { def subSocket: ActorRef; def listener: ActorRef } = new AnyRef {
+      //#sub-socket
+      import akka.zeromq._
+
+      class Listener extends Actor {
+        def receive: Receive = {
+          case Connecting    ⇒ //...
+          case m: ZMQMessage ⇒ //...
+          case _             ⇒ //...
+        }
       }
-    }))
-    val subSocket = ZeroMQExtension(system).newSocket(SocketType.Sub,
-      Listener(listener), Connect("tcp://127.0.0.1:21231"), SubscribeAll)
-    //#sub-socket
+
+      val listener = system.actorOf(Props(classOf[Listener], this))
+      val subSocket = ZeroMQExtension(system).newSocket(SocketType.Sub,
+        Listener(listener), Connect("tcp://127.0.0.1:21231"), SubscribeAll)
+      //#sub-socket
+    }
+    val listener = sub.listener
 
     //#sub-topic-socket
     val subTopicSocket = ZeroMQExtension(system).newSocket(SocketType.Sub,
@@ -149,7 +157,7 @@ class ZeromqDocSpec extends AkkaSpec("akka.loglevel=INFO") {
     pubSocket ! ZMQMessage(ByteString("foo.bar"), ByteString(payload))
     //#pub-topic
 
-    system.stop(subSocket)
+    system.stop(sub.subSocket)
     system.stop(subTopicSocket)
 
     //#high-watermark

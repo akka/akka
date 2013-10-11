@@ -1,4 +1,4 @@
-Dataflow Concurrency (Scala)
+Dataflow Concurrency
 ============================
 
 Description

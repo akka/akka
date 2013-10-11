@@ -1,7 +1,7 @@
 .. _event-bus-java:
 
 ################
-Event Bus (Java)
+Event Bus
 ################
 
 Originally conceived as a way to send messages to groups of actors, the
@@ -20,6 +20,12 @@ implementing a simple interface:
 - :meth:`public void publish(E event)` publishes an event, which first is classified
   according to the specific bus (see `Classifiers`_) and then published to all
   subscribers for the obtained classifier
+
+.. note::
+
+    Please note that the EventBus does not preserve the sender of the
+    published messages. If you need a reference to the original sender
+    you have to provide it inside the message.
 
 This mechanism is used in different places within Akka, e.g. the
 :ref:`DeathWatch <deathwatch-java>` and the `Event Stream`_. Implementations
@@ -158,12 +164,12 @@ Classification`_ which enables registering to related sets of channels (as is
 used for :class:`RemoteLifeCycleMessage`). The following example demonstrates
 how a simple subscription works. Given a simple actor:
 
-.. includecode:: code/docs/event/LoggingDocTestBase.java#imports-deadletter
-.. includecode:: code/docs/event/LoggingDocTestBase.java#deadletter-actor
+.. includecode:: code/docs/event/LoggingDocTest.java#imports-deadletter
+.. includecode:: code/docs/event/LoggingDocTest.java#deadletter-actor
 
 it can be subscribed like this:
 
-.. includecode:: code/docs/event/LoggingDocTestBase.java#deadletters
+.. includecode:: code/docs/event/LoggingDocTest.java#deadletters
 
 Default Handlers
 ----------------

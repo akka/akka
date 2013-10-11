@@ -60,7 +60,7 @@ class DataflowSpec extends AkkaSpec with DefaultTimeout {
         val x = Future("Hello")
         val y = x map (_.length)
 
-        val r = flow(x() + " " + y.map(_ / 0).map(_.toString).apply, 100)
+        val r = flow(x() + " " + y.map(_ / 0).map(_.toString).apply)
 
         intercept[java.lang.ArithmeticException](Await.result(r, timeout.duration))
       }
@@ -74,7 +74,7 @@ class DataflowSpec extends AkkaSpec with DefaultTimeout {
         val x = Future(3)
         val y = (actor ? "Hello").mapTo[Int]
 
-        val r = flow(x() + y(), 100)
+        val r = flow(x() + y())
 
         intercept[ClassCastException](Await.result(r, timeout.duration))
       }
@@ -290,7 +290,7 @@ class DataflowSpec extends AkkaSpec with DefaultTimeout {
       assert(Await.result(z.future, timeout.duration) === 42)
     }
 
-    "should capture first exception with dataflow" in {
+    "capture first exception with dataflow" in {
       val f1 = flow { 40 / 0 }
       intercept[java.lang.ArithmeticException](Await result (f1, TestLatch.DefaultTimeout))
     }

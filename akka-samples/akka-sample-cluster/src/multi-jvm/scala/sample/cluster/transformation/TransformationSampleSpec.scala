@@ -6,7 +6,7 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.WordSpec
+import org.scalatest.WordSpecLike
 import org.scalatest.matchers.MustMatchers
 
 import akka.actor.Props
@@ -28,11 +28,15 @@ object TransformationSampleSpecConfig extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString("""
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-join = off
     # don't use sigar for tests, native lib not in path
     akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
     """))
 
+  nodeConfig(frontend1, frontend2)(
+    ConfigFactory.parseString("akka.cluster.roles =[frontend]"))
+
+  nodeConfig(backend1, backend2, backend3)(
+    ConfigFactory.parseString("akka.cluster.roles =[backend]"))
 }
 
 // need one concrete test class per node
@@ -43,7 +47,7 @@ class TransformationSampleSpecMultiJvmNode4 extends TransformationSampleSpec
 class TransformationSampleSpecMultiJvmNode5 extends TransformationSampleSpec
 
 abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSampleSpecConfig)
-  with WordSpec with MustMatchers with BeforeAndAfterAll with ImplicitSender {
+  with WordSpecLike with MustMatchers with BeforeAndAfterAll with ImplicitSender {
 
   import TransformationSampleSpecConfig._
 
@@ -79,7 +83,7 @@ abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSamp
       testConductor.enter("backend1-started")
 
       runOn(frontend1) {
-        assertServiceOk
+        assertServiceOk()
       }
 
       testConductor.enter("frontend1-backend1-ok")
@@ -100,7 +104,7 @@ abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSamp
       testConductor.enter("all-started")
 
       runOn(frontend1, frontend2) {
-        assertServiceOk
+        assertServiceOk()
       }
 
       testConductor.enter("all-ok")
@@ -109,18 +113,13 @@ abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSamp
 
   }
 
-  def assertServiceOk: Unit = {
-    val transformationFrontend = system.actorFor("akka://" + system.name + "/user/frontend")
+  def assertServiceOk(): Unit = {
+    val transformationFrontend = system.actorSelection("akka://" + system.name + "/user/frontend")
     // eventually the service should be ok,
     // backends might not have registered initially
-    awaitCond {
+    awaitAssert {
       transformationFrontend ! TransformationJob("hello")
-      expectMsgPF() {
-        case unavailble: JobFailed ⇒ false
-        case TransformationResult(result) ⇒
-          result must be("HELLO")
-          true
-      }
+      expectMsgType[TransformationResult](1.second).text must be("HELLO")
     }
   }
 

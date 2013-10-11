@@ -6,7 +6,7 @@ package akka.pattern
 
 import akka.actor._
 import akka.util.{ Timeout }
-import akka.dispatch.{ Unwatch, Watch }
+import akka.dispatch.sysmsg.{ Unwatch, Watch }
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scala.util.Success
@@ -36,26 +36,28 @@ trait GracefulStopSupport {
    *
    * If the target actor isn't terminated within the timeout the [[scala.concurrent.Future]]
    * is completed with failure [[akka.pattern.AskTimeoutException]].
+   *
+   * If you want to invoke specalized stopping logic on your target actor instead of PoisonPill, you can pass your
+   * stop command as a parameter:
+   * {{{
+   *   gracefulStop(someChild, timeout, MyStopGracefullyMessage).onComplete {
+   *      // Do something after someChild being stopped
+   *   }
+   * }}}
    */
-  def gracefulStop(target: ActorRef, timeout: FiniteDuration)(implicit system: ActorSystem): Future[Boolean] = {
+  def gracefulStop(target: ActorRef, timeout: FiniteDuration, stopMessage: Any = PoisonPill): Future[Boolean] = {
     if (target.isTerminated) Future successful true
-    else system match {
-      case e: ExtendedActorSystem ⇒
-        import e.dispatcher // TODO take implicit ExecutionContext/MessageDispatcher in method signature?
-        val internalTarget = target.asInstanceOf[InternalActorRef]
-        val ref = PromiseActorRef(e.provider, Timeout(timeout))
-        internalTarget.sendSystemMessage(Watch(target, ref))
-        val f = ref.result.future
-        f onComplete { // Just making sure we're not leaking here
-          case Success(Terminated(`target`)) ⇒ ()
-          case _                             ⇒ internalTarget.sendSystemMessage(Unwatch(target, ref))
-        }
-        target ! PoisonPill
-        f map {
-          case Terminated(`target`) ⇒ true
-          case _                    ⇒ false
-        }
-      case s ⇒ throw new IllegalArgumentException("Unknown ActorSystem implementation: '" + s + "'")
+    else {
+      val internalTarget = target.asInstanceOf[InternalActorRef]
+      val ref = PromiseActorRef(internalTarget.provider, Timeout(timeout))
+      internalTarget.sendSystemMessage(Watch(internalTarget, ref))
+      target.tell(stopMessage, Actor.noSender)
+      ref.result.future.transform(
+        {
+          case Terminated(t) if t.path == target.path ⇒ true
+          case _                                      ⇒ { internalTarget.sendSystemMessage(Unwatch(target, ref)); false }
+        },
+        t ⇒ { internalTarget.sendSystemMessage(Unwatch(target, ref)); t })(ref.internalCallingThreadExecutionContext)
     }
   }
 }

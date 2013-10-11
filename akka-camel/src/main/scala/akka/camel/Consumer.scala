@@ -30,7 +30,7 @@ trait Consumer extends Actor with CamelSupport {
     super.preStart()
     // Possible FIXME. registering the endpoint here because of problems
     // with order of execution of trait body in the Java version (UntypedConsumerActor)
-    // where getEndpointUri is called before its constructor (where a uri is set to return from getEndpointUri) 
+    // where getEndpointUri is called before its constructor (where a uri is set to return from getEndpointUri)
     // and remains null. CustomRouteTest provides a test to verify this.
     register()
   }
@@ -71,7 +71,7 @@ trait Consumer extends Actor with CamelSupport {
   }
 
   /**
-   * Java API. Returns the [[akka.dispatch.Mapper]] function that will be used as a route definition handler
+   * Java API: Returns the [[akka.dispatch.Mapper]] function that will be used as a route definition handler
    * for creating custom route to this consumer. By default it returns an identity function, override this method to
    * return a custom route definition handler. The [[akka.dispatch.Mapper]] is not allowed to close over 'this', meaning it is
    * not allowed to refer to the actor instance itself, since that can easily cause concurrent shared state issues.
@@ -88,7 +88,7 @@ private[camel] object Consumer {
   }
 }
 /**
- * For internal use only.
+ * INTERNAL API
  * Captures the configuration of the Consumer.
  */
 private[camel] case class ConsumerConfig(activationTimeout: FiniteDuration, replyTimeout: FiniteDuration, autoAck: Boolean, onRouteDefinition: RouteDefinition ⇒ ProcessorDefinition[_]) extends NoSerializationVerificationNeeded

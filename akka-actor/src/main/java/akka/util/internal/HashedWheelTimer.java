@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import akka.dispatch.SystemMessage;
+import akka.dispatch.sysmsg.SystemMessage;
 import akka.util.Helpers;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
@@ -86,6 +86,7 @@ import akka.util.Unsafe;
  * cannot be queued. If no such exception is thrown, the job must be executed
  * (or returned upon stop()).
  */
+@Deprecated
 public class HashedWheelTimer implements Timer {
     private final Worker worker = new Worker();
     final Thread workerThread;

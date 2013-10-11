@@ -23,6 +23,7 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.io.ObjectStreamException
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
+import akka.pattern.AskTimeoutException
 
 /**
  * A TypedActorFactory is something that can created TypedActor instances.
@@ -73,7 +74,8 @@ trait TypedActorFactory {
   def typedActorOf[R <: AnyRef, T <: R](props: TypedProps[T]): R = {
     val proxyVar = new AtomVar[R] //Chicken'n'egg-resolver
     val c = props.creator //Cache this to avoid closing over the Props
-    val ap = props.actorProps.withCreator(new TypedActor.TypedActor[R, T](proxyVar, c()))
+    val i = props.interfaces //Cache this to avoid closing over the Props
+    val ap = props.actorProps.withCreator(new TypedActor.TypedActor[R, T](proxyVar, c(), i))
     typedActor.createActorRefProxy(props, proxyVar, actorFactory.actorOf(ap))
   }
 
@@ -83,7 +85,8 @@ trait TypedActorFactory {
   def typedActorOf[R <: AnyRef, T <: R](props: TypedProps[T], name: String): R = {
     val proxyVar = new AtomVar[R] //Chicken'n'egg-resolver
     val c = props.creator //Cache this to avoid closing over the Props
-    val ap = props.actorProps.withCreator(new akka.actor.TypedActor.TypedActor[R, T](proxyVar, c()))
+    val i = props.interfaces //Cache this to avoid closing over the Props
+    val ap = props.actorProps.withCreator(new akka.actor.TypedActor.TypedActor[R, T](proxyVar, c(), i))
     typedActor.createActorRefProxy(props, proxyVar, actorFactory.actorOf(ap, name))
   }
 
@@ -244,10 +247,15 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    *
    * Implementation of TypedActor as an Actor
    */
-  private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyVar: AtomVar[R], createInstance: ⇒ T) extends Actor {
-    val me = withContext[T](createInstance)
+  private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyVar: AtomVar[R], createInstance: ⇒ T, interfaces: immutable.Seq[Class[_]]) extends Actor {
+    // if we were remote deployed we need to create a local proxy
+    if (!context.parent.asInstanceOf[InternalActorRef].isLocal)
+      TypedActor.get(context.system).createActorRefProxy(
+        TypedProps(interfaces, createInstance), proxyVar, context.self)
 
-    override def supervisorStrategy(): SupervisorStrategy = me match {
+    private val me = withContext[T](createInstance)
+
+    override def supervisorStrategy: SupervisorStrategy = me match {
       case l: Supervisor ⇒ l.supervisorStrategy
       case _             ⇒ super.supervisorStrategy
     }
@@ -421,8 +429,10 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           case m if m.returnsJOption || m.returnsOption ⇒
             val f = ask(actor, m)(timeout)
             (try { Await.ready(f, timeout.duration).value } catch { case _: TimeoutException ⇒ None }) match {
-              case None | Some(Success(NullResponse)) ⇒ if (m.returnsJOption) JOption.none[Any] else None
-              case Some(t: Try[_])                    ⇒ t.get.asInstanceOf[AnyRef]
+              case None | Some(Success(NullResponse)) | Some(Failure(_: AskTimeoutException)) ⇒
+                if (m.returnsJOption) JOption.none[Any] else None
+              case Some(t: Try[_]) ⇒
+                t.get.asInstanceOf[AnyRef]
             }
           case m ⇒ Await.result(ask(actor, m)(timeout), timeout.duration) match {
             case NullResponse ⇒ null
@@ -503,6 +513,12 @@ object TypedProps {
    */
   def apply[T <: AnyRef: ClassTag](): TypedProps[T] =
     new TypedProps[T](implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]])
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def apply[T <: AnyRef](interfaces: immutable.Seq[Class[_]], creator: ⇒ T): TypedProps[T] =
+    new TypedProps[T](interfaces, () ⇒ creator)
 }
 
 /**
@@ -529,24 +545,20 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
       creator = instantiator(implementation))
 
   /**
-   * Uses the supplied Creator as the factory for the TypedActor implementation,
+   * Java API: Uses the supplied Creator as the factory for the TypedActor implementation,
    * and that has the specified interface,
    * or if the interface class is not an interface, all the interfaces it implements,
    * appended in the sequence of interfaces.
-   *
-   * Java API.
    */
   def this(interface: Class[_ >: T], implementation: Creator[T]) =
     this(interfaces = TypedProps.extractInterfaces(interface),
       creator = implementation.create _)
 
   /**
-   * Uses the supplied class as the factory for the TypedActor implementation,
+   * Java API: Uses the supplied class as the factory for the TypedActor implementation,
    * and that has the specified interface,
    * or if the interface class is not an interface, all the interfaces it implements,
    * appended in the sequence of interfaces.
-   *
-   * Java API.
    */
   def this(interface: Class[_ >: T], implementation: Class[T]) =
     this(interfaces = TypedProps.extractInterfaces(interface),
@@ -563,15 +575,13 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def withDeploy(d: Deploy): TypedProps[T] = copy(deploy = d)
 
   /**
-   * @return a new TypedProps that will use the specified ClassLoader to create its proxy class in
+   * Java API: return a new TypedProps that will use the specified ClassLoader to create its proxy class in
    * If loader is null, it will use the bootstrap classloader.
-   *
-   * Java API
    */
   def withLoader(loader: ClassLoader): TypedProps[T] = withLoader(Option(loader))
 
   /**
-   * @return a new TypedProps that will use the specified ClassLoader to create its proxy class in
+   * Scala API: return a new TypedProps that will use the specified ClassLoader to create its proxy class in
    * If loader is null, it will use the bootstrap classloader.
    *
    * Scala API
@@ -579,18 +589,16 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def withLoader(loader: Option[ClassLoader]): TypedProps[T] = this.copy(loader = loader)
 
   /**
-   * @return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
+   * Java API: return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
    * if null is specified, it will use the default timeout as specified in the configuration.
-   *
-   * Java API
    */
   def withTimeout(timeout: Timeout): TypedProps[T] = this.copy(timeout = Option(timeout))
 
   /**
-   * @return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
+   * Scala API: return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
    * if None is specified, it will use the default timeout as specified in the configuration.
    *
-   * Scala API
+   *
    */
   def withTimeout(timeout: Option[Timeout]): TypedProps[T] = this.copy(timeout = timeout)
 
@@ -612,7 +620,10 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   /**
    * Returns the akka.actor.Props representation of this TypedProps
    */
-  def actorProps(): Props = if (dispatcher == Props.default.dispatcher) Props.default else Props(dispatcher = dispatcher)
+  def actorProps(): Props =
+    if (dispatcher == Props.default.dispatcher)
+      Props.default.withDeploy(deploy)
+    else Props(dispatcher = dispatcher).withDeploy(deploy)
 }
 
 /**

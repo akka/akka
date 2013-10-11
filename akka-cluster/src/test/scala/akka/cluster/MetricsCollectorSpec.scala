@@ -98,7 +98,7 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
       c.processors.isDefined must be(true)
     }
 
-    "collect 50 node metrics samples in an acceptable duration" taggedAs LongRunningTest in within(7 seconds) {
+    "collect 50 node metrics samples in an acceptable duration" taggedAs LongRunningTest in within(10 seconds) {
       (1 to 50) foreach { _ ⇒
         val sample = collector.sample
         sample.metrics.size must be >= (3)
@@ -128,5 +128,5 @@ trait MetricsCollectorFactory { this: AkkaSpec ⇒
           new JmxMetricsCollector(selfAddress, defaultDecayFactor)
       }.get
 
-  def isSigar(collector: MetricsCollector): Boolean = collector.isInstanceOf[SigarMetricsCollector]
+  private[cluster] def isSigar(collector: MetricsCollector): Boolean = collector.isInstanceOf[SigarMetricsCollector]
 }

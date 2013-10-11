@@ -5,21 +5,14 @@
 package akka.actor.dsl
 
 import scala.concurrent.Await
-import akka.actor.ActorLogging
+import akka.actor._
 import scala.collection.immutable.TreeSet
 import scala.concurrent.duration._
-import akka.actor.Cancellable
-import akka.actor.{ Actor, Stash, SupervisorStrategy }
 import scala.collection.mutable.Queue
-import akka.actor.{ ActorSystem, ActorRefFactory }
-import akka.actor.ActorRef
 import akka.util.Timeout
-import akka.actor.Status
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 import akka.pattern.ask
-import akka.actor.ActorDSL
-import akka.actor.Props
 import scala.reflect.ClassTag
 
 trait Creators { this: ActorDSL.type ⇒
@@ -154,10 +147,7 @@ trait Creators { this: ActorDSL.type ⇒
   trait ActWithStash extends Act with Stash
 
   private def mkProps(classOfActor: Class[_], ctor: () ⇒ Actor): Props =
-    if (classOf[Stash].isAssignableFrom(classOfActor))
-      Props(creator = ctor, dispatcher = "akka.actor.default-stash-dispatcher")
-    else
-      Props(creator = ctor)
+    Props(classOf[TypedCreatorFunctionConsumer], classOfActor, ctor)
 
   /**
    * Create an actor from the given thunk which must produce an [[akka.actor.Actor]].

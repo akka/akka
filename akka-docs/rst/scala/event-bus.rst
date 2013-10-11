@@ -1,7 +1,7 @@
 .. _event-bus-scala:
 
 #################
-Event Bus (Scala)
+Event Bus
 #################
 
 
@@ -21,6 +21,12 @@ implementing a simple interface:
 - :meth:`publish(event: Event)` publishes an event, which first is classified
   according to the specific bus (see `Classifiers`_) and then published to all
   subscribers for the obtained classifier
+
+.. note::
+
+    Please note that the EventBus does not preserve the sender of the
+    published messages. If you need a reference to the original sender
+    you have to provide it inside the message.
 
 This mechanism is used in different places within Akka, e.g. the
 :ref:`DeathWatch <deathwatch-scala>` and the `Event Stream`_. Implementations

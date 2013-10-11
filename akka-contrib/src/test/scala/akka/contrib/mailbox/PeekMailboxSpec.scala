@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.contrib.mailbox
 
 import com.typesafe.config.ConfigFactory
@@ -41,7 +44,7 @@ class PeekMailboxSpec extends AkkaSpec("""
   "A PeekMailbox" must {
 
     "retry messages" in {
-      val a = system.actorOf(Props(new PeekActor(1)).withDispatcher("peek-dispatcher"))
+      val a = system.actorOf(Props(classOf[PeekActor], 1).withDispatcher("peek-dispatcher"))
       a ! "hello"
       expectMsg("hello")
       EventFilter[RuntimeException]("DONTWANNA", occurrences = 1) intercept {
@@ -54,7 +57,7 @@ class PeekMailboxSpec extends AkkaSpec("""
     }
 
     "put a bound on retries" in {
-      val a = system.actorOf(Props(new PeekActor(0)).withDispatcher("peek-dispatcher"))
+      val a = system.actorOf(Props(classOf[PeekActor], 0).withDispatcher("peek-dispatcher"))
       EventFilter[RuntimeException]("DONTWANNA", occurrences = 3) intercept {
         a ! "hello"
       }
@@ -66,7 +69,7 @@ class PeekMailboxSpec extends AkkaSpec("""
     }
 
     "not waste messages on double-ack()" in {
-      val a = system.actorOf(Props(new PeekActor(0)).withDispatcher("peek-dispatcher"))
+      val a = system.actorOf(Props(classOf[PeekActor], 0).withDispatcher("peek-dispatcher"))
       a ! DoubleAck
       a ! Check
       expectMsg(Check)
@@ -74,14 +77,14 @@ class PeekMailboxSpec extends AkkaSpec("""
 
     "support cleanup" in {
       system.eventStream.subscribe(testActor, classOf[DeadLetter])
-      val a = system.actorOf(Props(new PeekActor(0)).withDispatcher("peek-dispatcher"))
+      val a = system.actorOf(Props(classOf[PeekActor], 0).withDispatcher("peek-dispatcher"))
       watch(a)
       EventFilter[RuntimeException]("DONTWANNA", occurrences = 1) intercept {
         a ! "DIE" // stays in the mailbox
       }
       expectMsg("DIE")
       expectMsgType[DeadLetter].message must be("DIE")
-      expectMsgType[Terminated].actor must be(a)
+      expectTerminated(a)
     }
 
   }

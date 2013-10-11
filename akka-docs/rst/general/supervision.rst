@@ -23,7 +23,7 @@ a choice of the following four options:
 #. Resume the subordinate, keeping its accumulated internal state
 #. Restart the subordinate, clearing out its accumulated internal state
 #. Terminate the subordinate permanently
-#. Escalate the failure
+#. Escalate the failure, thereby failing itself
 
 It is important to always view an actor as part of a supervision hierarchy,
 which explains the existence of the fourth choice (as a supervisor also is
@@ -54,6 +54,15 @@ sound design decisions. It should be noted that this also guarantees that
 actors cannot be orphaned or attached to supervisors from the outside, which
 might otherwise catch them unawares. In addition, this yields a natural and
 clean shutdown procedure for (sub-trees of) actor applications.
+
+.. warning::
+
+  Supervision related parent-child communication happens by special system
+  messages that have their own mailboxes separate from user messages. This
+  implies that supervision related events are not deterministically
+  ordered relative to ordinary messages. In general, the user cannot influence
+  the order of normal messages and failure notifications. For details and
+  example see the :ref:`message-ordering` section.
 
 .. _toplevel-supervisors:
 
@@ -189,13 +198,6 @@ Another common use case is that an actor needs to fail in the absence of an
 external resource, which may also be one of its own children. If a third party
 terminates a child by way of the ``system.stop(child)`` method or sending a
 :class:`PoisonPill`, the supervisor might well be affected.
-
-.. warning::
-
-  DeathWatch for Akka Remote does not (yet) get triggered by connection failures –
-  which means that if the parent node or the network goes down, nobody will get notified.
-  This feature may be added in a future release of Akka Remoting.
-  Akka Cluster, however, has such functionality.
 
 One-For-One Strategy vs. All-For-One Strategy
 ---------------------------------------------

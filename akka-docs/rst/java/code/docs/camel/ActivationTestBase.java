@@ -6,10 +6,11 @@ package docs.camel;
     import akka.camel.Camel;
     import akka.camel.CamelExtension;
     import akka.camel.javaapi.UntypedConsumerActor;
+    import akka.testkit.JavaTestKit;
+    import akka.testkit.TestKit;
     import akka.util.Timeout;
     import scala.concurrent.Future;
     import scala.concurrent.duration.Duration;
-    import scala.concurrent.duration.FiniteDuration;
     import static java.util.concurrent.TimeUnit.SECONDS;
 //#CamelActivation
 
@@ -17,13 +18,14 @@ import org.junit.Test;
 
 public class ActivationTestBase {
 
+  @SuppressWarnings("unused")
   @Test
   public void testActivation() {
     //#CamelActivation
 
     // ..
     ActorSystem system = ActorSystem.create("some-system");
-    Props props = new Props(MyConsumer.class);
+    Props props = Props.create(MyConsumer.class);
     ActorRef producer = system.actorOf(props,"myproducer");
     Camel camel = CamelExtension.get(system);
     // get a future reference to the activation of the endpoint of the Consumer Actor
@@ -38,7 +40,7 @@ public class ActivationTestBase {
     Future<ActorRef> deactivationFuture = camel.deactivationFutureFor(producer,
       timeout, system.dispatcher());
     //#CamelDeactivation
-    system.shutdown();
+    JavaTestKit.shutdownActorSystem(system);
   }
 
   public static class MyConsumer extends UntypedConsumerActor {

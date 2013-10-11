@@ -67,19 +67,24 @@ trait LoggingBus extends ActorEventBus {
     _logLevel = level
   }
 
-  /**
-   * Internal Akka use only
-   */
-  private[akka] def startStdoutLogger(config: Settings) {
+  private def setUpStdoutLogger(config: Settings) {
     val level = levelFor(config.StdoutLogLevel) getOrElse {
+      // only log initialization errors directly with StandardOutLogger.print
       StandardOutLogger.print(Error(new LoggerException, simpleName(this), this.getClass, "unknown akka.stdout-loglevel " + config.StdoutLogLevel))
       ErrorLevel
     }
     AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(StandardOutLogger, classFor(l)))
     guard.withGuard {
-      loggers = Seq(StandardOutLogger)
+      loggers :+= StandardOutLogger
       _logLevel = level
     }
+  }
+
+  /**
+   * Internal Akka use only
+   */
+  private[akka] def startStdoutLogger(config: Settings) {
+    setUpStdoutLogger(config)
     publish(Debug(simpleName(this), this.getClass, "StandardOutLogger started"))
   }
 
@@ -89,7 +94,8 @@ trait LoggingBus extends ActorEventBus {
   private[akka] def startDefaultLoggers(system: ActorSystemImpl) {
     val logName = simpleName(this) + "(" + system + ")"
     val level = levelFor(system.settings.LogLevel) getOrElse {
-      StandardOutLogger.print(Error(new LoggerException, logName, this.getClass, "unknown akka.stdout-loglevel " + system.settings.LogLevel))
+      // only log initialization errors directly with StandardOutLogger.print
+      StandardOutLogger.print(Error(new LoggerException, logName, this.getClass, "unknown akka.loglevel " + system.settings.LogLevel))
       ErrorLevel
     }
     try {
@@ -99,7 +105,7 @@ trait LoggingBus extends ActorEventBus {
           case loggers ⇒ loggers
         }
         case loggers ⇒
-          StandardOutLogger.print(Warning(logName, this.getClass, "[akka.event-handlers] config is deprecated, use [akka.loggers]"))
+          publish(Warning(logName, this.getClass, "[akka.event-handlers] config is deprecated, use [akka.loggers]"))
           loggers
       }
       val myloggers =
@@ -145,10 +151,10 @@ trait LoggingBus extends ActorEventBus {
   /**
    * Internal Akka use only
    */
-  private[akka] def stopDefaultLoggers() {
+  private[akka] def stopDefaultLoggers(system: ActorSystem) {
     val level = _logLevel // volatile access before reading loggers
     if (!(loggers contains StandardOutLogger)) {
-      AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(StandardOutLogger, classFor(l)))
+      setUpStdoutLogger(system.settings)
       publish(Debug(simpleName(this), this.getClass, "shutting down: StandardOutLogger started"))
     }
     for {
@@ -173,7 +179,7 @@ trait LoggingBus extends ActorEventBus {
     val actor = system.systemActorOf(Props(clazz), name)
     implicit def timeout =
       if (system.settings.EventHandlerStartTimeout.duration >= Duration.Zero) {
-        StandardOutLogger.print(Warning(logName, this.getClass,
+        publish(Warning(logName, this.getClass,
           "[akka.event-handler-startup-timeout] config is deprecated, use [akka.logger-startup-timeout]"))
         system.settings.EventHandlerStartTimeout
       } else system.settings.LoggerStartTimeout
@@ -360,7 +366,7 @@ object LogSource {
  * your own, make sure to handle these four event types plus the <code>InitializeLogger</code>
  * message which is sent before actually attaching it to the logging bus.
  *
- * Logging is configured in <code>akka.conf</code> by setting (some of) the following:
+ * Logging is configured by setting (some of) the following:
  *
  * <pre><code>
  * akka {
@@ -425,16 +431,25 @@ object Logging {
   final val DebugLevel = LogLevel(4)
 
   /**
+   * Internal Akka use only
+   *
+   * Don't include the OffLevel in the AllLogLevels since we should never subscribe
+   * to some kind of OffEvent.
+   */
+  private final val OffLevel = LogLevel(Int.MinValue)
+
+  /**
    * Returns the LogLevel associated with the given string,
    * valid inputs are upper or lowercase (not mixed) versions of:
    * "error", "warning", "info" and "debug"
    */
-  def levelFor(s: String): Option[LogLevel] = s match {
-    case "ERROR" | "error"     ⇒ Some(ErrorLevel)
-    case "WARNING" | "warning" ⇒ Some(WarningLevel)
-    case "INFO" | "info"       ⇒ Some(InfoLevel)
-    case "DEBUG" | "debug"     ⇒ Some(DebugLevel)
-    case unknown               ⇒ None
+  def levelFor(s: String): Option[LogLevel] = s.toLowerCase match {
+    case "off"     ⇒ Some(OffLevel)
+    case "error"   ⇒ Some(ErrorLevel)
+    case "warning" ⇒ Some(WarningLevel)
+    case "info"    ⇒ Some(InfoLevel)
+    case "debug"   ⇒ Some(DebugLevel)
+    case unknown   ⇒ None
   }
 
   /**
@@ -555,12 +570,17 @@ object Logging {
   /**
    * Base type of LogEvents
    */
-  sealed trait LogEvent {
+  sealed trait LogEvent extends NoSerializationVerificationNeeded {
     /**
      * The thread that created this log event
      */
     @transient
     val thread: Thread = Thread.currentThread
+
+    /**
+     * When this LogEvent was created according to System.currentTimeMillis
+     */
+    val timestamp: Long = System.currentTimeMillis
 
     /**
      * The LogLevel of this LogEvent
@@ -660,6 +680,7 @@ object Logging {
     import java.text.SimpleDateFormat
     import java.util.Date
 
+    private val date = new Date()
     private val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.SSS")
     private val errorFormat = "[ERROR] [%s] [%s] [%s] %s%s".intern
     private val errorFormatWithoutCause = "[ERROR] [%s] [%s] [%s] %s".intern
@@ -667,7 +688,10 @@ object Logging {
     private val infoFormat = "[INFO] [%s] [%s] [%s] %s".intern
     private val debugFormat = "[DEBUG] [%s] [%s] [%s] %s".intern
 
-    def timestamp(): String = synchronized { dateFormat.format(new Date) } // SDF isn't threadsafe
+    def timestamp(event: LogEvent): String = synchronized {
+      date.setTime(event.timestamp)
+      dateFormat.format(date)
+    } // SDF isn't threadsafe
 
     def print(event: Any): Unit = event match {
       case e: Error   ⇒ error(e)
@@ -680,7 +704,7 @@ object Logging {
     def error(event: Error): Unit = {
       val f = if (event.cause == Error.NoCause) errorFormatWithoutCause else errorFormat
       println(f.format(
-        timestamp,
+        timestamp(event),
         event.thread.getName,
         event.logSource,
         event.message,
@@ -689,21 +713,21 @@ object Logging {
 
     def warning(event: Warning): Unit =
       println(warningFormat.format(
-        timestamp,
+        timestamp(event),
         event.thread.getName,
         event.logSource,
         event.message))
 
     def info(event: Info): Unit =
       println(infoFormat.format(
-        timestamp,
+        timestamp(event),
         event.thread.getName,
         event.logSource,
         event.message))
 
     def debug(event: Debug): Unit =
       println(debugFormat.format(
-        timestamp,
+        timestamp(event),
         event.thread.getName,
         event.logSource,
         event.message))
@@ -713,14 +737,16 @@ object Logging {
    * Actor-less logging implementation for synchronous logging to standard
    * output. This logger is always attached first in order to be able to log
    * failures during application start-up, even before normal logging is
-   * started. Its log level can be configured by setting
-   * <code>akka.stdout-loglevel</code> in <code>akka.conf</code>.
+   * started. Its log level can be defined by configuration setting
+   * <code>akka.stdout-loglevel</code>.
    */
   class StandardOutLogger extends MinimalActorRef with StdOutLogger {
     val path: ActorPath = new RootActorPath(Address("akka", "all-systems"), "/StandardOutLogger")
     def provider: ActorRefProvider = throw new UnsupportedOperationException("StandardOutLogger does not provide")
     override val toString = "StandardOutLogger"
-    override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = print(message)
+    override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit =
+      if (message == null) throw new InvalidMessageException("Message is null")
+      else print(message)
   }
 
   val StandardOutLogger = new StandardOutLogger
@@ -797,42 +823,160 @@ trait LoggingAdapter {
    * The rest is just the widening of the API for the user's convenience.
    */
 
+  /**
+   * Log message at error level, including the exception that caused the error.
+   * @see [[LoggingAdapter]]
+   */
   def error(cause: Throwable, message: String): Unit = { if (isErrorEnabled) notifyError(cause, message) }
+  /**
+   * Message template with 1 replacement argument.
+   * @see [[LoggingAdapter]]
+   */
   def error(cause: Throwable, template: String, arg1: Any): Unit = { if (isErrorEnabled) notifyError(cause, format1(template, arg1)) }
+  /**
+   * Message template with 2 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
   def error(cause: Throwable, template: String, arg1: Any, arg2: Any): Unit = { if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2)) }
+  /**
+   * Message template with 3 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
   def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2, arg3)) }
+  /**
+   * Message template with 4 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
   def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2, arg3, arg4)) }
 
+  /**
+   * Log message at error level, without providing the exception that caused the error.
+   * @see [[LoggingAdapter]]
+   */
   def error(message: String): Unit = { if (isErrorEnabled) notifyError(message) }
+  /**
+   * Message template with 1 replacement argument.
+   * @see [[LoggingAdapter]]
+   */
   def error(template: String, arg1: Any): Unit = { if (isErrorEnabled) notifyError(format1(template, arg1)) }
+  /**
+   * Message template with 2 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
   def error(template: String, arg1: Any, arg2: Any): Unit = { if (isErrorEnabled) notifyError(format(template, arg1, arg2)) }
+  /**
+   * Message template with 3 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
   def error(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3)) }
+  /**
+   * Message template with 4 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
   def error(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3, arg4)) }
 
+  /**
+   * Log message at warning level.
+   * @see [[LoggingAdapter]]
+   */
   def warning(message: String): Unit = { if (isWarningEnabled) notifyWarning(message) }
+  /**
+   * Message template with 1 replacement argument.
+   * @see [[LoggingAdapter]]
+   */
   def warning(template: String, arg1: Any): Unit = { if (isWarningEnabled) notifyWarning(format1(template, arg1)) }
+  /**
+   * Message template with 2 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
   def warning(template: String, arg1: Any, arg2: Any): Unit = { if (isWarningEnabled) notifyWarning(format(template, arg1, arg2)) }
+  /**
+   * Message template with 3 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
   def warning(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3)) }
+  /**
+   * Message template with 4 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
   def warning(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3, arg4)) }
 
+  /**
+   * Log message at info level.
+   * @see [[LoggingAdapter]]
+   */
   def info(message: String) { if (isInfoEnabled) notifyInfo(message) }
+  /**
+   * Message template with 1 replacement argument.
+   * @see [[LoggingAdapter]]
+   */
   def info(template: String, arg1: Any): Unit = { if (isInfoEnabled) notifyInfo(format1(template, arg1)) }
+  /**
+   * Message template with 2 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
   def info(template: String, arg1: Any, arg2: Any): Unit = { if (isInfoEnabled) notifyInfo(format(template, arg1, arg2)) }
+  /**
+   * Message template with 3 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
   def info(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isInfoEnabled) notifyInfo(format(template, arg1, arg2, arg3)) }
+  /**
+   * Message template with 4 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
   def info(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isInfoEnabled) notifyInfo(format(template, arg1, arg2, arg3, arg4)) }
 
+  /**
+   * Log message at debug level.
+   * @see [[LoggingAdapter]]
+   */
   def debug(message: String) { if (isDebugEnabled) notifyDebug(message) }
+  /**
+   * Message template with 1 replacement argument.
+   * @see [[LoggingAdapter]]
+   */
   def debug(template: String, arg1: Any): Unit = { if (isDebugEnabled) notifyDebug(format1(template, arg1)) }
+  /**
+   * Message template with 2 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
   def debug(template: String, arg1: Any, arg2: Any): Unit = { if (isDebugEnabled) notifyDebug(format(template, arg1, arg2)) }
+  /**
+   * Message template with 3 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
   def debug(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isDebugEnabled) notifyDebug(format(template, arg1, arg2, arg3)) }
+  /**
+   * Message template with 4 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
   def debug(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isDebugEnabled) notifyDebug(format(template, arg1, arg2, arg3, arg4)) }
 
+  /**
+   * Log message at the specified log level.
+   */
   def log(level: Logging.LogLevel, message: String) { if (isEnabled(level)) notifyLog(level, message) }
+  /**
+   * Message template with 1 replacement argument.
+   */
   def log(level: Logging.LogLevel, template: String, arg1: Any): Unit = { if (isEnabled(level)) notifyLog(level, format1(template, arg1)) }
+  /**
+   * Message template with 2 replacement arguments.
+   */
   def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any): Unit = { if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2)) }
+  /**
+   * Message template with 3 replacement arguments.
+   */
   def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2, arg3)) }
+  /**
+   * Message template with 4 replacement arguments.
+   */
   def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2, arg3, arg4)) }
 
+  /**
+   * @return true if the specified log level is enabled
+   */
   final def isEnabled(level: Logging.LogLevel): Boolean = level match {
     case Logging.ErrorLevel   ⇒ isErrorEnabled
     case Logging.WarningLevel ⇒ isWarningEnabled
@@ -854,7 +998,7 @@ trait LoggingAdapter {
   }
 
   def format(t: String, arg: Any*): String = {
-    val sb = new StringBuilder(64)
+    val sb = new java.lang.StringBuilder(64)
     var p = 0
     var rest = t
     while (p < arg.length) {
@@ -872,7 +1016,10 @@ trait LoggingAdapter {
     sb.append(rest).toString
   }
 }
-//FIXME DOCUMENT
+
+/**
+ * [[LoggingAdapter]] that publishes [[akka.event.Logging.LogEvent]] to event stream.
+ */
 class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class[_]) extends LoggingAdapter {
 
   import Logging._

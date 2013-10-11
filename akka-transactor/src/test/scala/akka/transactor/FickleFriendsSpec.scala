@@ -113,9 +113,9 @@ class FickleFriendsSpec extends AkkaSpec with BeforeAndAfterAll {
   val numCounters = 2
 
   def actorOfs = {
-    def createCounter(i: Int) = system.actorOf(Props(new FickleCounter("counter" + i)))
+    def createCounter(i: Int) = system.actorOf(Props(classOf[FickleCounter], "counter" + i))
     val counters = (1 to numCounters) map createCounter
-    val coordinator = system.actorOf(Props(new Coordinator("coordinator")))
+    val coordinator = system.actorOf(Props(classOf[Coordinator], "coordinator"))
     (counters, coordinator)
   }
 

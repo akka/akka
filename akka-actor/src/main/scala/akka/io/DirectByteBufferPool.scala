@@ -14,6 +14,8 @@ trait BufferPool {
 }
 
 /**
+ * INTERNAL API
+ *
  * A buffer pool which keeps a free list of direct buffers of a specified default
  * size in a simple fixed size stack.
  *

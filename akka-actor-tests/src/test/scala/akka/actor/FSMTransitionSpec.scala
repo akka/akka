@@ -25,7 +25,7 @@ object FSMTransitionSpec {
     whenUnhandled {
       case Event("reply", _) ⇒ stay replying "reply"
     }
-    initialize
+    initialize()
     override def preRestart(reason: Throwable, msg: Option[Any]) { target ! "restarted" }
   }
 
@@ -93,6 +93,30 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
       }
     }
 
+    "not leak memory in nextState" in {
+      val fsmref = system.actorOf(Props(new Actor with FSM[Int, ActorRef] {
+        startWith(0, null)
+        when(0) {
+          case Event("switch", _) ⇒ goto(1) using sender
+        }
+        onTransition {
+          case x -> y ⇒ nextStateData ! (x -> y)
+        }
+        when(1) {
+          case Event("test", _) ⇒
+            try {
+              sender ! s"failed: ${nextStateData}"
+            } catch {
+              case _: IllegalStateException ⇒ sender ! "ok"
+            }
+            stay
+        }
+      }))
+      fsmref ! "switch"
+      expectMsg((0, 1))
+      fsmref ! "test"
+      expectMsg("ok")
+    }
   }
 
 }

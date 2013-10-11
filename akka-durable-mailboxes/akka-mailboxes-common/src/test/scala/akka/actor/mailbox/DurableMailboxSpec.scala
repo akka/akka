@@ -10,7 +10,7 @@ import java.util.concurrent.TimeoutException
 
 import scala.annotation.tailrec
 
-import org.scalatest.{ WordSpec, BeforeAndAfterAll }
+import org.scalatest.{ WordSpecLike, BeforeAndAfterAll }
 import org.scalatest.matchers.MustMatchers
 
 import com.typesafe.config.{ ConfigFactory, Config }
@@ -55,7 +55,7 @@ object DurableMailboxSpec {
  * The id of the dispatcher must be the same as the `<backendName>-dispatcher`.
  */
 abstract class DurableMailboxSpec(system: ActorSystem, val backendName: String)
-  extends TestKit(system) with WordSpec with MustMatchers with BeforeAndAfterAll {
+  extends TestKit(system) with WordSpecLike with MustMatchers with BeforeAndAfterAll {
 
   import DurableMailboxSpecActorFactory._
 
@@ -80,7 +80,7 @@ abstract class DurableMailboxSpec(system: ActorSystem, val backendName: String)
   protected def atStartup() {}
 
   final override def afterAll {
-    system.shutdown()
+    TestKit.shutdownActorSystem(system)
     try system.awaitTermination(5 seconds) catch {
       case _: TimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
     }

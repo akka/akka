@@ -11,12 +11,13 @@ import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
 import akka.event.Logging.InitializeLogger
 import akka.pattern.gracefulStop
-import akka.testkit.{ TestProbe, AkkaSpec }
+import akka.testkit.{ EventFilter, TestEvent, TestProbe, AkkaSpec }
 
 object EventStreamSpec {
 
   val config = ConfigFactory.parseString("""
       akka {
+        actor.serialize-messages = off
         stdout-loglevel = WARNING
         loglevel = INFO
         loggers = ["akka.event.EventStreamSpec$MyLog", "%s"]
@@ -25,6 +26,7 @@ object EventStreamSpec {
 
   val configUnhandled = ConfigFactory.parseString("""
       akka {
+        actor.serialize-messages = off
         stdout-loglevel = WARNING
         loglevel = DEBUG
         actor.debug.unhandled = on
@@ -104,7 +106,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         expectMsgAllOf(m, Logging.Debug(sys.deadLetters.path.toString, sys.deadLetters.getClass, "unhandled message from " + sys.deadLetters + ": 42"))
         sys.eventStream.unsubscribe(testActor)
       } finally {
-        sys.shutdown()
+        shutdown(sys)
       }
     }
 
@@ -132,16 +134,16 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       val c = new C
       val bus = new EventStream(false)
       within(2 seconds) {
-        bus.subscribe(testActor, classOf[B2]) === true
+        bus.subscribe(testActor, classOf[B2]) must be === true
         bus.publish(c)
         bus.publish(b2)
         expectMsg(b2)
-        bus.subscribe(testActor, classOf[A]) === true
+        bus.subscribe(testActor, classOf[A]) must be === true
         bus.publish(c)
         expectMsg(c)
         bus.publish(b1)
         expectMsg(b1)
-        bus.unsubscribe(testActor, classOf[B1]) === true
+        bus.unsubscribe(testActor, classOf[B1]) must be === true
         bus.publish(c)
         bus.publish(b2)
         bus.publish(a)

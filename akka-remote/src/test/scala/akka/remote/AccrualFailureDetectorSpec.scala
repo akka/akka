@@ -26,7 +26,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
     def createFailureDetector(
       threshold: Double = 8.0,
       maxSampleSize: Int = 1000,
-      minStdDeviation: FiniteDuration = 10.millis,
+      minStdDeviation: FiniteDuration = 100.millis,
       acceptableLostDuration: FiniteDuration = Duration.Zero,
       firstHeartbeatEstimate: FiniteDuration = 1.second,
       clock: Clock = FailureDetector.defaultClock) =
@@ -120,19 +120,21 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
     }
 
     "mark node as available if it starts heartbeat again after being marked dead due to detection of failure" in {
-      val timeInterval = List[Long](0, 1000, 100, 1100, 7000, 100, 1000, 100, 100)
-      val fd = createFailureDetector(threshold = 3, clock = fakeTimeGenerator(timeInterval))
+      // 1000 regular intervals, 5 minute pause, and then a short pause again that should trigger unreachable again
+      val regularIntervals = 0L +: Vector.fill(999)(1000L)
+      val timeIntervals = regularIntervals :+ (5 * 60 * 1000L) :+ 100L :+ 900L :+ 100L :+ 7000L :+ 100L :+ 900L :+ 100L :+ 900L
+      val fd = createFailureDetector(threshold = 8, acceptableLostDuration = 3.seconds, clock = fakeTimeGenerator(timeIntervals))
 
-      fd.heartbeat() //0
-      fd.heartbeat() //1000
-      fd.heartbeat() //1100
-      fd.isAvailable must be(true) //1200
-      fd.isAvailable must be(false) //8200
-      fd.heartbeat() //8300
-      fd.heartbeat() //9300
-      fd.heartbeat() //9400
-
-      fd.isAvailable must be(true) //9500
+      for (_ ← 0 until 1000) fd.heartbeat()
+      fd.isAvailable must be(false) // after the long pause
+      fd.heartbeat()
+      fd.isAvailable must be(true)
+      fd.heartbeat()
+      fd.isAvailable must be(false) // after the 7 seconds pause
+      fd.heartbeat()
+      fd.isAvailable must be(true)
+      fd.heartbeat()
+      fd.isAvailable must be(true)
     }
 
     "accept some configured missing heartbeats" in {
@@ -164,7 +166,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
     }
 
     "use maxSampleSize heartbeats" in {
-      val timeInterval = List[Long](0, 100, 100, 100, 100, 600, 1000, 1000, 1000, 1000, 1000)
+      val timeInterval = List[Long](0, 100, 100, 100, 100, 600, 500, 500, 500, 500, 500)
       val fd = createFailureDetector(maxSampleSize = 3, clock = fakeTimeGenerator(timeInterval))
 
       // 100 ms interval
@@ -173,12 +175,12 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
       fd.heartbeat() //200
       fd.heartbeat() //300
       val phi1 = fd.phi //400
-      // 1000 ms interval, should become same phi when 100 ms intervals have been dropped
+      // 500 ms interval, should become same phi when 100 ms intervals have been dropped
       fd.heartbeat() //1000
+      fd.heartbeat() //1500
       fd.heartbeat() //2000
-      fd.heartbeat() //3000
-      fd.heartbeat() //4000
-      val phi2 = fd.phi //5000
+      fd.heartbeat() //2500
+      val phi2 = fd.phi //3000
       phi2 must be(phi1.plusOrMinus(0.001))
     }
 
@@ -211,7 +213,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
       val history5 = history4 :+ 80
       history5.mean must be(103.333333 plusOrMinus 0.00001)
       history5.variance must be(688.88888889 plusOrMinus 0.00001)
-
     }
+
   }
 }

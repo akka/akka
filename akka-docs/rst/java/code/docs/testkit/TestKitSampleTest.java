@@ -43,7 +43,8 @@ public class TestKitSampleTest {
   
   @AfterClass
   public static void teardown() {
-    system.shutdown();
+    JavaTestKit.shutdownActorSystem(system);
+    system = null;
   }
 
   @Test
@@ -53,7 +54,7 @@ public class TestKitSampleTest {
      * if you want to receive actor replies or use Within(), etc.
      */
     new JavaTestKit(system) {{
-      final Props props = new Props(SomeActor.class);
+      final Props props = Props.create(SomeActor.class);
       final ActorRef subject = system.actorOf(props);
 
       // can also use JavaTestKit “from the outside”

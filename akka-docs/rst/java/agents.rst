@@ -1,7 +1,7 @@
 .. _agents-java:
 
 ##############
- Agents (Java)
+ Agents
 ##############
 
 Agents in Akka are inspired by `agents in Clojure`_.

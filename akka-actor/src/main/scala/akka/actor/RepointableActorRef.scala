@@ -10,12 +10,12 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 
 import scala.annotation.tailrec
-import scala.concurrent.forkjoin.ThreadLocalRandom
 
 import akka.actor.dungeon.ChildrenContainer
 import akka.event.Logging.Warning
 import akka.util.Unsafe
 import akka.dispatch._
+import akka.dispatch.sysmsg._
 import util.Try
 
 /**
@@ -29,6 +29,8 @@ import util.Try
 private[akka] class RepointableActorRef(
   val system: ActorSystemImpl,
   val props: Props,
+  val dispatcher: MessageDispatcher,
+  val mailboxType: MailboxType,
   val supervisor: InternalActorRef,
   val path: ActorPath)
   extends ActorRefWithCell with RepointableRef {
@@ -73,10 +75,9 @@ private[akka] class RepointableActorRef(
   def initialize(async: Boolean): this.type =
     underlying match {
       case null ⇒
-        val uid = ThreadLocalRandom.current.nextInt()
-        swapCell(new UnstartedCell(system, this, props, supervisor, uid))
+        swapCell(new UnstartedCell(system, this, props, supervisor))
         swapLookup(underlying)
-        supervisor.sendSystemMessage(Supervise(this, async, uid))
+        supervisor.sendSystemMessage(Supervise(this, async))
         if (!async) point()
         this
       case other ⇒ throw new IllegalStateException("initialize called more than once!")
@@ -112,7 +113,7 @@ private[akka] class RepointableActorRef(
    * unstarted cell. The cell must be fully functional.
    */
   def newCell(old: UnstartedCell): Cell =
-    new ActorCell(system, this, props, supervisor).init(old.uid, sendSupervise = false)
+    new ActorCell(system, this, props, dispatcher, supervisor).init(sendSupervise = false, mailboxType)
 
   def start(): Unit = ()
 
@@ -130,7 +131,7 @@ private[akka] class RepointableActorRef(
     case _                ⇒ true
   }
 
-  def isTerminated: Boolean = underlying.isTerminated
+  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") def isTerminated: Boolean = underlying.isTerminated
 
   def provider: ActorRefProvider = system.provider
 
@@ -144,9 +145,11 @@ private[akka] class RepointableActorRef(
         case ".." ⇒ getParent.getChild(name)
         case ""   ⇒ getChild(name)
         case other ⇒
-          lookup.getChildByName(other) match {
-            case Some(crs: ChildRestartStats) ⇒ crs.child.asInstanceOf[InternalActorRef].getChild(name)
-            case _                            ⇒ Nobody
+          val (childName, uid) = ActorCell.splitNameAndUid(other)
+          lookup.getChildByName(childName) match {
+            case Some(crs: ChildRestartStats) if uid == ActorCell.undefinedUid || uid == crs.uid ⇒
+              crs.child.asInstanceOf[InternalActorRef].getChild(name)
+            case _ ⇒ Nobody
           }
       }
     } else this
@@ -156,14 +159,13 @@ private[akka] class RepointableActorRef(
   def sendSystemMessage(message: SystemMessage) = underlying.sendSystemMessage(message)
 
   @throws(classOf[java.io.ObjectStreamException])
-  protected def writeReplace(): AnyRef = SerializedActorRef(path)
+  protected def writeReplace(): AnyRef = SerializedActorRef(this)
 }
 
 private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
                                   val self: RepointableActorRef,
                                   val props: Props,
-                                  val supervisor: InternalActorRef,
-                                  val uid: Int) extends Cell {
+                                  val supervisor: InternalActorRef) extends Cell {
 
   /*
    * This lock protects all accesses to this cell’s queues. It also ensures
@@ -220,36 +222,32 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
     }
   }
 
-  // FIXME: once we have guaranteed delivery of system messages, hook this in!
-  def sendSystemMessage(msg: SystemMessage): Unit =
-    if (lock.tryLock(timeout.length, timeout.unit)) {
-      try {
-        val cell = self.underlying
-        if (cellIsReady(cell)) {
-          cell.sendSystemMessage(msg)
-        } else {
-          // systemMessages that are sent during replace need to jump to just after the last system message in the queue, so it's processed before other messages
-          val wasEnqueued = if ((self.lookup ne this) && (self.underlying eq this) && !queue.isEmpty()) {
-            @tailrec def tryEnqueue(i: JListIterator[Any] = queue.listIterator(), insertIntoIndex: Int = -1): Boolean =
-              if (i.hasNext())
-                tryEnqueue(i,
-                  if (i.next().isInstanceOf[SystemMessage]) i.nextIndex() // update last sysmsg seen so far
-                  else insertIntoIndex) // or just keep the last seen one
-              else if (insertIntoIndex == -1) queue.offer(msg)
-              else Try(queue.add(insertIntoIndex, msg)).isSuccess
-            tryEnqueue()
-          } else queue.offer(msg)
+  def sendSystemMessage(msg: SystemMessage): Unit = {
+    lock.lock // we cannot lose system messages, ever, and we cannot throw an Error from here as well
+    try {
+      val cell = self.underlying
+      if (cellIsReady(cell)) {
+        cell.sendSystemMessage(msg)
+      } else {
+        // systemMessages that are sent during replace need to jump to just after the last system message in the queue, so it's processed before other messages
+        val wasEnqueued = if ((self.lookup ne this) && (self.underlying eq this) && !queue.isEmpty()) {
+          @tailrec def tryEnqueue(i: JListIterator[Any] = queue.listIterator(), insertIntoIndex: Int = -1): Boolean =
+            if (i.hasNext())
+              tryEnqueue(i,
+                if (i.next().isInstanceOf[SystemMessage]) i.nextIndex() // update last sysmsg seen so far
+                else insertIntoIndex) // or just keep the last seen one
+            else if (insertIntoIndex == -1) queue.offer(msg)
+            else Try(queue.add(insertIntoIndex, msg)).isSuccess
+          tryEnqueue()
+        } else queue.offer(msg)
 
-          if (!wasEnqueued) {
-            system.eventStream.publish(Warning(self.path.toString, getClass, "dropping system message " + msg + " due to enqueue failure"))
-            system.deadLetters ! DeadLetter(msg, self, self)
-          } else if (Mailbox.debug) println(s"$self temp queueing system $msg")
-        }
-      } finally lock.unlock()
-    } else {
-      system.eventStream.publish(Warning(self.path.toString, getClass, "dropping system message " + msg + " due to lock timeout"))
-      system.deadLetters ! DeadLetter(msg, self, self)
-    }
+        if (!wasEnqueued) {
+          system.eventStream.publish(Warning(self.path.toString, getClass, "dropping system message " + msg + " due to enqueue failure"))
+          system.deadLetters ! DeadLetter(msg, self, self)
+        } else if (Mailbox.debug) println(s"$self temp queueing system $msg")
+      }
+    } finally lock.unlock()
+  }
 
   def isLocal = true
 

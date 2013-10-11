@@ -16,6 +16,7 @@ import akka.util.Timeout
 import akka.remote.testconductor.{ TestConductorExt, TestConductor, RoleName }
 import akka.remote.RemoteActorRefProvider
 import akka.testkit._
+import akka.testkit.TestEvent._
 import scala.concurrent.duration._
 import akka.remote.testconductor.RoleName
 import akka.actor.RootActorPath
@@ -101,7 +102,6 @@ abstract class MultiNodeConfig {
       if (_testTransport) ConfigFactory.parseString(
         """
            akka.remote.netty.tcp.applied-adapters = [trttl, gremlin]
-           akka.remote.retry-gate-closed-for = 1 s
         """)
       else ConfigFactory.empty
 
@@ -268,17 +268,11 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
         }
       }
     }
-    system.shutdown()
-    val shutdownTimeout = 5.seconds.dilated
-    try system.awaitTermination(shutdownTimeout) catch {
-      case _: TimeoutException ⇒
-        val msg = "Failed to stop [%s] within [%s] \n%s".format(system.name, shutdownTimeout,
-          system.asInstanceOf[ActorSystemImpl].printTree)
-        if (verifySystemShutdown) throw new RuntimeException(msg)
-        else system.log.warning(msg)
-    }
+    shutdown(system)
     afterTermination()
   }
+
+  def shutdownTimeout: FiniteDuration = 5.seconds.dilated
 
   /**
    * Override this and return `true` to assert that the
@@ -293,12 +287,12 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
   /**
    * Override this method to do something when the whole test is starting up.
    */
-  protected def atStartup(): Unit = {}
+  protected def atStartup(): Unit = ()
 
   /**
    * Override this method to do something when the whole test is terminating.
    */
-  protected def afterTermination(): Unit = {}
+  protected def afterTermination(): Unit = ()
 
   /**
    * All registered roles
@@ -354,10 +348,18 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
    * return that as an ActorPath for easy composition:
    *
    * {{{
-   * val serviceA = system.actorFor(node("master") / "user" / "serviceA")
+   * val serviceA = system.actorSelection(node("master") / "user" / "serviceA")
    * }}}
    */
   def node(role: RoleName): ActorPath = RootActorPath(testConductor.getAddressFor(role).await)
+
+  def muteDeadLetters(messageClasses: Class[_]*)(sys: ActorSystem = system): Unit =
+    if (!sys.log.isDebugEnabled) {
+      def mute(clazz: Class[_]): Unit =
+        sys.eventStream.publish(Mute(DeadLettersFilter(clazz)(occurrences = Int.MaxValue)))
+      if (messageClasses.isEmpty) mute(classOf[AnyRef])
+      else messageClasses foreach mute
+    }
 
   /**
    * Enrich `.await()` onto all Awaitables, using remaining duration from the innermost
@@ -429,7 +431,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
  * Example trait for MultiNodeSpec with ScalaTest
  *
  * {{{
- * trait STMultiNodeSpec extends MultiNodeSpecCallbacks with WordSpec with MustMatchers with BeforeAndAfterAll {
+ * trait STMultiNodeSpec extends MultiNodeSpecCallbacks with WordSpecLike with MustMatchers with BeforeAndAfterAll {
  *   override def beforeAll() = multiNodeSpecBeforeAll()
  *   override def afterAll() = multiNodeSpecAfterAll()
  * }

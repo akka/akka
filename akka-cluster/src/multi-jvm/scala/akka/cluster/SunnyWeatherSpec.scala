@@ -25,9 +25,6 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
   // not MultiNodeClusterSpec.clusterConfig
   commonConfig(ConfigFactory.parseString("""
     akka.actor.provider = akka.cluster.ClusterActorRefProvider
-    akka.cluster {
-      auto-join = off
-    }
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.loglevel = INFO
     akka.remote.log-remote-lifecycle-events = off
@@ -73,7 +70,7 @@ abstract class SunnyWeatherSpec
       for (n ← 1 to 30) {
         enterBarrier("period-" + n)
         unexpected.get must be(SortedSet.empty)
-        awaitUpConvergence(roles.size)
+        awaitMembersUp(roles.size)
         assertLeaderIn(roles)
         if (n % 5 == 0) log.debug("Passed period [{}]", n)
         Thread.sleep(1000)

@@ -37,11 +37,26 @@ object Helpers {
     }
   }
 
+  /**
+   * Converts a "currentTimeMillis"-obtained timestamp accordingly:
+   *   "$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC"
+   * @param timestamp a "currentTimeMillis"-obtained timestamp
+   * @return A String formatted like: $hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC
+   */
+  def currentTimeMillisToUTCString(timestamp: Long): String = {
+    val timeOfDay = timestamp % 86400000L
+    val hours = timeOfDay / 3600000L
+    val minutes = timeOfDay / 60000L % 60
+    val seconds = timeOfDay / 1000L % 60
+    val ms = timeOfDay % 1000
+    f"$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC"
+  }
+
   final val base64chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+~"
 
   @tailrec
-  def base64(l: Long, sb: StringBuilder = new StringBuilder("$")): String = {
-    sb += base64chars.charAt(l.toInt & 63)
+  def base64(l: Long, sb: java.lang.StringBuilder = new java.lang.StringBuilder("$")): String = {
+    sb append base64chars.charAt(l.toInt & 63)
     val next = l >>> 6
     if (next == 0) sb.toString
     else base64(next, sb)

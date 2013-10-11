@@ -5,32 +5,35 @@ package docs.testkit;
 
 import static org.junit.Assert.*;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import akka.testkit.*;
+import docs.actor.mailbox.DurableMailboxDocSpec;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.Config;
 
 import akka.actor.ActorKilledException;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Kill;
+import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.Terminated;
 import akka.actor.UntypedActor;
-import akka.actor.UntypedActorFactory;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
-import akka.testkit.CallingThreadDispatcher;
-import akka.testkit.TestActor;
 import akka.testkit.TestActor.AutoPilot;
-import akka.testkit.TestActorRef;
-import akka.testkit.JavaTestKit;
 import scala.concurrent.duration.Duration;
 
 public class TestKitDocTest {
-  
+
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+    new AkkaJUnitActorSystemResource("TestKitDocTest",
+      ConfigFactory.parseString("akka.loggers = [akka.testkit.TestEventListener]"));
+
+  private final ActorSystem system = actorSystemResource.getSystem();
+
   //#test-actor-ref
   static class MyActor extends UntypedActor {
     public void onReceive(Object o) throws Exception {
@@ -42,48 +45,31 @@ public class TestKitDocTest {
     }
     public boolean testMe() { return true; }
   }
-  
-  //#test-actor-ref
-  
-  private static ActorSystem system;
-  
-  @BeforeClass
-  public static void setup() {
-    final Config config = ConfigFactory.parseString(
-        "akka.loggers = [akka.testkit.TestEventListener]");
-    system = ActorSystem.create("demoSystem", config);
-  }
-  
-  @AfterClass
-  public static void cleanup() {
-    system.shutdown();
-  }
 
-  //#test-actor-ref
   @Test
   public void demonstrateTestActorRef() {
-    final Props props = new Props(MyActor.class);
+    final Props props = Props.create(MyActor.class);
     final TestActorRef<MyActor> ref = TestActorRef.create(system, props, "testA");
     final MyActor actor = ref.underlyingActor();
     assertTrue(actor.testMe());
   }
   //#test-actor-ref
-  
+
   @Test
   public void demonstrateAsk() throws Exception {
     //#test-behavior
-    final Props props = new Props(MyActor.class);
+    final Props props = Props.create(MyActor.class);
     final TestActorRef<MyActor> ref = TestActorRef.create(system, props, "testB");
     final Future<Object> future = akka.pattern.Patterns.ask(ref, "say42", 3000);
     assertTrue(future.isCompleted());
     assertEquals(42, Await.result(future, Duration.Zero()));
     //#test-behavior
   }
-  
+
   @Test
   public void demonstrateExceptions() {
     //#test-expecting-exceptions
-    final Props props = new Props(MyActor.class);
+    final Props props = Props.create(MyActor.class);
     final TestActorRef<MyActor> ref = TestActorRef.create(system, props, "myActor");
     try {
       ref.receive(new Exception("expected"));
@@ -93,12 +79,12 @@ public class TestKitDocTest {
     }
     //#test-expecting-exceptions
   }
-  
+
   @Test
   public void demonstrateWithin() {
     //#test-within
     new JavaTestKit(system) {{
-      getRef().tell(42, null);
+      getRef().tell(42, ActorRef.noSender());
       new Within(Duration.Zero(), Duration.create(1, "second")) {
         // do not put code outside this method, will run afterwards
         public void run() {
@@ -108,12 +94,12 @@ public class TestKitDocTest {
     }};
     //#test-within
   }
-  
+
   @Test
   public void demonstrateExpectMsg() {
     //#test-expectmsg
     new JavaTestKit(system) {{
-      getRef().tell(42, null);
+      getRef().tell(42, ActorRef.noSender());
       final String out = new ExpectMsg<String>("match hint") {
           // do not put code outside this method, will run afterwards
           protected String match(Object in) {
@@ -128,15 +114,15 @@ public class TestKitDocTest {
     }};
     //#test-expectmsg
   }
-  
+
   @Test
   public void demonstrateReceiveWhile() {
     //#test-receivewhile
     new JavaTestKit(system) {{
-      getRef().tell(42, null);
-      getRef().tell(43, null);
-      getRef().tell("hello", null);
-      final String[] out = 
+      getRef().tell(42, ActorRef.noSender());
+      getRef().tell(43, ActorRef.noSender());
+      getRef().tell("hello", ActorRef.noSender());
+      final String[] out =
         new ReceiveWhile<String>(String.class, duration("1 second")) {
           // do not put code outside this method, will run afterwards
           protected String match(Object in) {
@@ -168,12 +154,12 @@ public class TestKitDocTest {
       //#test-receivewhile-full
     }};
   }
-  
+
   @Test
   public void demonstrateAwaitCond() {
     //#test-awaitCond
     new JavaTestKit(system) {{
-      getRef().tell(42, null);
+      getRef().tell(42, ActorRef.noSender());
       new AwaitCond(
             duration("1 second"),  // maximum wait time
             duration("100 millis") // interval at which to check the condition
@@ -187,17 +173,35 @@ public class TestKitDocTest {
     }};
     //#test-awaitCond
   }
-  
+
   @Test
-  @SuppressWarnings("unchecked") // due to generic varargs
+  public void demonstrateAwaitAssert() {
+    //#test-awaitAssert
+    new JavaTestKit(system) {{
+      getRef().tell(42, ActorRef.noSender());
+      new AwaitAssert(
+            duration("1 second"),  // maximum wait time
+            duration("100 millis") // interval at which to check the condition
+            ) {
+        // do not put code outside this method, will run afterwards
+        protected void check() {
+          assertEquals(msgAvailable(), true);
+        }
+      };
+    }};
+    //#test-awaitAssert
+  }
+
+  @Test
+  @SuppressWarnings({ "unchecked", "unused" }) // due to generic varargs
   public void demonstrateExpect() {
     new JavaTestKit(system) {{
-      getRef().tell("hello", null);
-      getRef().tell("hello", null);
-      getRef().tell("hello", null);
-      getRef().tell("world", null);
-      getRef().tell(42, null);
-      getRef().tell(42, null);
+      getRef().tell("hello", ActorRef.noSender());
+      getRef().tell("hello", ActorRef.noSender());
+      getRef().tell("hello", ActorRef.noSender());
+      getRef().tell("world", ActorRef.noSender());
+      getRef().tell(42, ActorRef.noSender());
+      getRef().tell(42, ActorRef.noSender());
       //#test-expect
       final String hello = expectMsgEquals("hello");
       final Object   any = expectMsgAnyOf("hello", "world");
@@ -206,8 +210,8 @@ public class TestKitDocTest {
       final Number j     = expectMsgAnyClassOf(Integer.class, Long.class);
       expectNoMsg();
       //#test-expect
-      getRef().tell("receveN-1", null);
-      getRef().tell("receveN-2", null);
+      getRef().tell("receveN-1", ActorRef.noSender());
+      getRef().tell("receveN-2", ActorRef.noSender());
       //#test-expect
       final Object[] two = receiveN(2);
       //#test-expect
@@ -218,7 +222,7 @@ public class TestKitDocTest {
       assertArrayEquals(new String[] {"hello", "world"}, all);
     }};
   }
-  
+
   @Test
   public void demonstrateIgnoreMsg() {
     //#test-ignoreMsg
@@ -229,12 +233,12 @@ public class TestKitDocTest {
           return msg instanceof String;
         }
       };
-      getRef().tell("hello", null);
-      getRef().tell(42, null);
+      getRef().tell("hello", ActorRef.noSender());
+      getRef().tell(42, ActorRef.noSender());
       expectMsgEquals(42);
       // remove message filter
       ignoreNoMsg();
-      getRef().tell("hello", null);
+      getRef().tell("hello", ActorRef.noSender());
       expectMsgEquals("hello");
     }};
     //#test-ignoreMsg
@@ -250,34 +254,30 @@ public class TestKitDocTest {
     }};
     //#duration-dilation
   }
-  
+
   @Test
   public void demonstrateProbe() {
     //#test-probe
-    // simple actor which just forwards messages
-    class Forwarder extends UntypedActor {
-      final ActorRef target;
-      public Forwarder(ActorRef target) {
-        this.target = target;
-      }
-      public void onReceive(Object msg) {
-        target.forward(msg, getContext());
-      }
-    }
-    
     new JavaTestKit(system) {{
+      // simple actor which just forwards messages
+      class Forwarder extends UntypedActor {
+        final ActorRef target;
+        @SuppressWarnings("unused")
+        public Forwarder(ActorRef target) {
+          this.target = target;
+        }
+        public void onReceive(Object msg) {
+          target.forward(msg, getContext());
+        }
+      }
+      
       // create a test probe
       final JavaTestKit probe = new JavaTestKit(system);
-      
+
       // create a forwarder, injecting the probe’s testActor
-      final Props props = new Props(new UntypedActorFactory() {
-        private static final long serialVersionUID = 8927158735963950216L;
-        public UntypedActor create() {
-          return new Forwarder(probe.getRef());
-        }
-      });
+      final Props props = Props.create(Forwarder.class, this, probe.getRef());
       final ActorRef forwarder = system.actorOf(props, "forwarder");
-      
+
       // verify correct forwarding
       forwarder.tell(42, getRef());
       probe.expectMsgEquals(42);
@@ -285,7 +285,7 @@ public class TestKitDocTest {
     }};
     //#test-probe
   }
-  
+
   @Test
   public void demonstrateSpecialProbe() {
     //#test-special-probe
@@ -300,25 +300,26 @@ public class TestKitDocTest {
       }
 
       final MyProbe probe = new MyProbe();
-      probe.getRef().tell("hello", null);
+      probe.getRef().tell("hello", ActorRef.noSender());
       probe.assertHello();
     }};
     //#test-special-probe
   }
-  
+
   @Test
   public void demonstrateWatch() {
-    final ActorRef target = system.actorFor("/buh");
+    final ActorRef target = system.actorOf(Props.create(MyActor.class));
     //#test-probe-watch
     new JavaTestKit(system) {{
       final JavaTestKit probe = new JavaTestKit(system);
       probe.watch(target);
+      target.tell(PoisonPill.getInstance(), ActorRef.noSender());
       final Terminated msg = probe.expectMsgClass(Terminated.class);
       assertEquals(msg.getActor(), target);
     }};
     //#test-probe-watch
   }
-  
+
   @Test
   public void demonstrateReply() {
     //#test-probe-reply
@@ -332,7 +333,7 @@ public class TestKitDocTest {
     }};
     //#test-probe-reply
   }
-  
+
   @Test
   public void demonstrateForward() {
     //#test-probe-forward
@@ -346,7 +347,7 @@ public class TestKitDocTest {
     }};
     //#test-probe-forward
   }
-  
+
   @Test
   public void demonstrateWithinProbe() {
     try {
@@ -364,7 +365,7 @@ public class TestKitDocTest {
       // expected to fail
     }
   }
-  
+
   @Test
   public void demonstrateAutoPilot() {
     //#test-auto-pilot
@@ -373,7 +374,7 @@ public class TestKitDocTest {
       // install auto-pilot
       probe.setAutoPilot(new TestActor.AutoPilot() {
         public AutoPilot run(ActorRef sender, Object msg) {
-          sender.tell(msg, null);
+          sender.tell(msg, ActorRef.noSender());
           return noAutoPilot();
         }
       });
@@ -386,33 +387,33 @@ public class TestKitDocTest {
     }};
     //#test-auto-pilot
   }
-  
+
   // only compilation
   public void demonstrateCTD() {
     //#calling-thread-dispatcher
     system.actorOf(
-      new Props(MyActor.class)
+      Props.create(MyActor.class)
         .withDispatcher(CallingThreadDispatcher.Id()));
     //#calling-thread-dispatcher
   }
-  
+
   @Test
   public void demonstrateEventFilter() {
     //#test-event-filter
     new JavaTestKit(system) {{
-      assertEquals("demoSystem", system.name());
+      assertEquals("TestKitDocTest", system.name());
       final ActorRef victim = system.actorOf(Props.empty(), "victim");
-      
+
       final int result = new EventFilter<Integer>(ActorKilledException.class) {
         protected Integer run() {
-          victim.tell(Kill.getInstance(), null);
+          victim.tell(Kill.getInstance(), ActorRef.noSender());
           return 42;
         }
-      }.from("akka://demoSystem/user/victim").occurrences(1).exec();
-      
+      }.from("akka://TestKitDocTest/user/victim").occurrences(1).exec();
+
       assertEquals(42, result);
     }};
     //#test-event-filter
   }
-  
+
 }

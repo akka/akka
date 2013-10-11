@@ -18,6 +18,9 @@ import scala.concurrent.duration._
 import scala.collection.immutable
 import java.util.concurrent.ConcurrentHashMap
 import akka.remote.DefaultFailureDetectorRegistry
+import akka.actor.ActorRef
+import akka.actor.Actor
+import akka.actor.RootActorPath
 
 object MultiNodeClusterSpec {
 
@@ -31,34 +34,63 @@ object MultiNodeClusterSpec {
   def clusterConfig: Config = ConfigFactory.parseString("""
     akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.cluster {
-      auto-join                           = off
-      auto-down                           = off
       jmx.enabled                         = off
       gossip-interval                     = 200 ms
       leader-actions-interval             = 200 ms
-      unreachable-nodes-reaper-interval   = 200 ms
+      unreachable-nodes-reaper-interval   = 500 ms
       periodic-tasks-initial-delay        = 300 ms
       publish-stats-interval              = 0 s # always, when it happens
-      failure-detector.heartbeat-interval = 400 ms
+      failure-detector.heartbeat-interval = 500 ms
     }
     akka.loglevel = INFO
+    akka.log-dead-letters = off
+    akka.log-dead-letters-during-shutdown = off
     akka.remote.log-remote-lifecycle-events = off
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.test {
       single-expect-default = 5 s
     }
     """)
+
+  // sometimes we need to coordinate test shutdown with messages instead of barriers
+  object EndActor {
+    case object SendEnd
+    case object End
+    case object EndAck
+  }
+
+  class EndActor(testActor: ActorRef, target: Option[Address]) extends Actor {
+    import EndActor._
+    def receive = {
+      case SendEnd ⇒
+        target foreach { t ⇒
+          context.actorSelection(RootActorPath(t) / self.path.elements) ! End
+        }
+      case End ⇒
+        testActor forward End
+        sender ! EndAck
+      case EndAck ⇒
+        testActor forward EndAck
+    }
+  }
 }
 
-trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeSpec ⇒
+trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner { self: MultiNodeSpec ⇒
 
   override def initialParticipants = roles.size
 
   private val cachedAddresses = new ConcurrentHashMap[RoleName, Address]
 
   override def atStartup(): Unit = {
+    startCoroner()
     muteLog()
   }
+
+  override def afterTermination(): Unit = {
+    stopCoroner()
+  }
+
+  override def expectedTestDuration = 60.seconds
 
   def muteLog(sys: ActorSystem = system): Unit = {
     if (!sys.log.isDebugEnabled) {
@@ -72,11 +104,22 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
           sys.eventStream.publish(Mute(EventFilter.info(pattern = s)))
         }
 
-      Seq(".*received dead letter from.*ClientDisconnected",
-        ".*received dead letter from.*deadLetters.*PoisonPill",
-        ".*installing context org.jboss.netty.channel.DefaultChannelPipeline.*") foreach { s ⇒
-          sys.eventStream.publish(Mute(EventFilter.warning(pattern = s)))
-        }
+      muteDeadLetters(
+        classOf[ClusterHeartbeatReceiver.Heartbeat],
+        classOf[ClusterHeartbeatReceiver.EndHeartbeat],
+        classOf[GossipEnvelope],
+        classOf[GossipStatus],
+        classOf[MetricsGossipEnvelope],
+        classOf[ClusterEvent.ClusterMetricsChanged],
+        classOf[InternalClusterAction.Tick],
+        classOf[akka.actor.PoisonPill],
+        classOf[akka.dispatch.sysmsg.DeathWatchNotification],
+        classOf[akka.remote.transport.AssociationHandle.Disassociated],
+        //        akka.remote.transport.AssociationHandle.Disassociated.getClass,
+        classOf[akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying],
+        //        akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass,
+        classOf[akka.remote.transport.AssociationHandle.InboundPayload])(sys)
+
     }
   }
 
@@ -84,13 +127,13 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
     if (!sys.log.isDebugEnabled)
       sys.eventStream.publish(Mute(EventFilter.error(pattern = ".*Marking.* as UNREACHABLE.*")))
 
-  def muteDeadLetters(sys: ActorSystem = system): Unit =
+  def muteMarkingAsReachable(sys: ActorSystem = system): Unit =
     if (!sys.log.isDebugEnabled)
-      sys.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*")))
+      sys.eventStream.publish(Mute(EventFilter.info(pattern = ".*Marking.* as REACHABLE.*")))
 
   override def afterAll(): Unit = {
     if (!log.isDebugEnabled) {
-      muteDeadLetters()
+      muteDeadLetters()()
       system.eventStream.setLogLevel(ErrorLevel)
     }
     super.afterAll()
@@ -146,17 +189,10 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
   def startClusterNode(): Unit = {
     if (clusterView.members.isEmpty) {
       cluster join myself
-      awaitCond(clusterView.members.exists(_.address == address(myself)))
+      awaitAssert(clusterView.members.map(_.address) must contain(address(myself)))
     } else
       clusterView.self
   }
-
-  /**
-   * Initialize the cluster with the specified member
-   * nodes (roles). First node will be started first
-   * and others will join the first.
-   */
-  def startCluster(roles: RoleName*): Unit = awaitStartCluster(false, roles.to[immutable.Seq])
 
   /**
    * Initialize the cluster of the specified member
@@ -164,9 +200,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
    * First node will be started first  and others will join
    * the first.
    */
-  def awaitClusterUp(roles: RoleName*): Unit = awaitStartCluster(true, roles.to[immutable.Seq])
-
-  private def awaitStartCluster(upConvergence: Boolean = true, roles: immutable.Seq[RoleName]): Unit = {
+  def awaitClusterUp(roles: RoleName*): Unit = {
     runOn(roles.head) {
       // make sure that the node-to-join is started before other join
       startClusterNode()
@@ -175,10 +209,31 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
     if (roles.tail.contains(myself)) {
       cluster.join(roles.head)
     }
-    if (upConvergence && roles.contains(myself)) {
-      awaitUpConvergence(numberOfMembers = roles.length)
+    if (roles.contains(myself)) {
+      awaitMembersUp(numberOfMembers = roles.length)
     }
     enterBarrier(roles.map(_.name).mkString("-") + "-joined")
+  }
+
+  /**
+   * Join the specific node within the given period by sending repeated join
+   * requests at periodic intervals until we succeed.
+   */
+  def joinWithin(joinNode: RoleName, max: Duration = remaining, interval: Duration = 1.second): Unit = {
+    def memberInState(member: Address, status: Seq[MemberStatus]): Boolean =
+      clusterView.members.exists { m ⇒ (m.address == member) && status.contains(m.status) }
+
+    cluster join joinNode
+    awaitCond({
+      clusterView.refreshCurrentState()
+      if (memberInState(joinNode, List(MemberStatus.up)) &&
+        memberInState(myself, List(MemberStatus.Joining, MemberStatus.Up)))
+        true
+      else {
+        cluster join joinNode
+        false
+      }
+    }, max, interval)
   }
 
   /**
@@ -192,6 +247,13 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
     expectedAddresses.sorted.zipWithIndex.foreach { case (a, i) ⇒ members(i).address must be(a) }
   }
 
+  /**
+   * Note that this can only be used for a cluster with all members
+   * in Up status, i.e. use `awaitMembersUp` before using this method.
+   * The reason for that is that the cluster leader is preferably a
+   * member with status Up or Leaving and that information can't
+   * be determined from the `RoleName`.
+   */
   def assertLeader(nodesInCluster: RoleName*): Unit =
     if (nodesInCluster.contains(myself)) assertLeaderIn(nodesInCluster.to[immutable.Seq])
 
@@ -199,6 +261,12 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
    * Assert that the cluster has elected the correct leader
    * out of all nodes in the cluster. First
    * member in the cluster ring is expected leader.
+   *
+   * Note that this can only be used for a cluster with all members
+   * in Up status, i.e. use `awaitMembersUp` before using this method.
+   * The reason for that is that the cluster leader is preferably a
+   * member with status Up or Leaving and that information can't
+   * be determined from the `RoleName`.
    */
   def assertLeaderIn(nodesInCluster: immutable.Seq[RoleName]): Unit =
     if (nodesInCluster.contains(myself)) {
@@ -212,38 +280,48 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
     }
 
   /**
-   * Wait until the expected number of members has status Up and convergence has been reached.
+   * Wait until the expected number of members has status Up has been reached.
    * Also asserts that nodes in the 'canNotBePartOfMemberRing' are *not* part of the cluster ring.
    */
-  def awaitUpConvergence(
+  def awaitMembersUp(
     numberOfMembers: Int,
     canNotBePartOfMemberRing: Set[Address] = Set.empty,
-    timeout: FiniteDuration = 20.seconds): Unit = {
+    timeout: FiniteDuration = 25.seconds): Unit = {
     within(timeout) {
       if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
-        awaitCond(
-          canNotBePartOfMemberRing forall (address ⇒ !(clusterView.members exists (_.address == address))))
-      awaitCond(clusterView.members.size == numberOfMembers)
-      awaitCond(clusterView.members.forall(_.status == MemberStatus.Up))
+        awaitAssert(canNotBePartOfMemberRing foreach (a ⇒ clusterView.members.map(_.address) must not contain (a)))
+      awaitAssert(clusterView.members.size must be(numberOfMembers))
+      awaitAssert(clusterView.members.map(_.status) must be(Set(MemberStatus.Up)))
       // clusterView.leader is updated by LeaderChanged, await that to be updated also
       val expectedLeader = clusterView.members.headOption.map(_.address)
-      awaitCond(clusterView.leader == expectedLeader)
+      awaitAssert(clusterView.leader must be(expectedLeader))
     }
   }
+
+  def awaitAllReachable(): Unit =
+    awaitAssert(clusterView.unreachableMembers must be(Set.empty))
 
   /**
    * Wait until the specified nodes have seen the same gossip overview.
    */
   def awaitSeenSameState(addresses: Address*): Unit =
-    awaitCond((addresses.toSet -- clusterView.seenBy).isEmpty)
+    awaitAssert((addresses.toSet -- clusterView.seenBy) must be(Set.empty))
 
+  /**
+   * Leader according to the address ordering of the roles.
+   * Note that this can only be used for a cluster with all members
+   * in Up status, i.e. use `awaitMembersUp` before using this method.
+   * The reason for that is that the cluster leader is preferably a
+   * member with status Up or Leaving and that information can't
+   * be determined from the `RoleName`.
+   */
   def roleOfLeader(nodesInCluster: immutable.Seq[RoleName] = roles): RoleName = {
     nodesInCluster.length must not be (0)
     nodesInCluster.sorted.head
   }
 
   /**
-   * Sort the roles in the order used by the cluster.
+   * Sort the roles in the address order used by the cluster node ring.
    */
   implicit val clusterOrdering: Ordering[RoleName] = new Ordering[RoleName] {
     import Member.addressOrdering

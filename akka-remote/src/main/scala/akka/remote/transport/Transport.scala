@@ -4,21 +4,22 @@
 package akka.remote.transport
 
 import scala.concurrent.{ Promise, Future }
-import akka.actor.{ ActorRef, Address }
+import akka.actor.{ NoSerializationVerificationNeeded, ActorRef, Address }
 import akka.util.ByteString
 import akka.remote.transport.AssociationHandle.HandleEventListener
 import akka.AkkaException
+import scala.util.control.NoStackTrace
 
 object Transport {
 
-  trait AssociationEvent
+  trait AssociationEvent extends NoSerializationVerificationNeeded
 
   /**
    * Indicates that the association setup request is invalid, and it is impossible to recover (malformed IP address,
    * hostname, etc.).
    */
   @SerialVersionUID(1L)
-  case class InvalidAssociationException(msg: String, cause: Throwable) extends AkkaException(msg, cause)
+  case class InvalidAssociationException(msg: String, cause: Throwable = null) extends AkkaException(msg, cause) with NoStackTrace
 
   /**
    * Message sent to a [[akka.remote.transport.Transport.AssociationEventListener]] registered to a transport
@@ -119,12 +120,14 @@ trait Transport {
   def associate(remoteAddress: Address): Future[AssociationHandle]
 
   /**
-   * Shuts down the transport layer and releases all the corresponding resources. Shutdown is asynchronous, may be
-   * called multiple times and does not return a success indication.
+   * Shuts down the transport layer and releases all the corresponding resources. Shutdown is asynchronous signalling
+   * the end of the shutdown by completing the returned future.
    *
    * The transport SHOULD try flushing pending writes before becoming completely closed.
+   * @return
+   *   Future signalling the completion of shutdown
    */
-  def shutdown(): Unit
+  def shutdown(): Future[Boolean]
 
   /**
    * This method allows upper layers to send management commands to the transport. It is the responsibility of the
@@ -142,7 +145,7 @@ object AssociationHandle {
   /**
    * Trait for events that the registered listener for an [[akka.remote.transport.AssociationHandle]] might receive.
    */
-  sealed trait HandleEvent
+  sealed trait HandleEvent extends NoSerializationVerificationNeeded
 
   /**
    * Message sent to the listener registered to an association (via the Promise returned by
@@ -157,8 +160,20 @@ object AssociationHandle {
 
   /**
    * Message sent to the listener registered to an association
+   *
+   * @param info
+   *   information about the reason of disassociation
    */
-  case object Disassociated extends HandleEvent
+  case class Disassociated(info: DisassociateInfo) extends HandleEvent
+
+  /**
+   * Supertype of possible disassociation reasons
+   */
+  sealed trait DisassociateInfo
+
+  case object Unknown extends DisassociateInfo
+  case object Shutdown extends DisassociateInfo
+  case object Quarantined extends DisassociateInfo
 
   /**
    * An interface that needs to be implemented by the user of an [[akka.remote.transport.AssociationHandle]]

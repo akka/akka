@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.contrib.jul
 
 import com.typesafe.config.ConfigFactory
@@ -58,7 +61,7 @@ class JavaLoggerSpec extends AkkaSpec(JavaLoggerSpec.config) {
     }
 
     "log info without stackTrace" in {
-      producer ! ("{} is the magic number", 3)
+      producer ! (("{} is the magic number", 3))
 
       val record = expectMsgType[logging.LogRecord]
 

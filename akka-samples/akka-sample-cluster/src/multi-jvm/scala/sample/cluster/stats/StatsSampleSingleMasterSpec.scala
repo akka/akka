@@ -4,7 +4,7 @@ import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.WordSpec
+import org.scalatest.WordSpecLike
 import org.scalatest.matchers.MustMatchers
 import akka.actor.PoisonPill
 import akka.actor.Props
@@ -23,7 +23,7 @@ object StatsSampleSingleMasterSpecConfig extends MultiNodeConfig {
   // register the named roles (nodes) of the test
   val first = role("first")
   val second = role("second")
-  val third = role("thrid")
+  val third = role("third")
 
   // this configuration will be used for all nodes
   // note that no fixed host names and ports are used
@@ -31,7 +31,7 @@ object StatsSampleSingleMasterSpecConfig extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-join = off
+    akka.cluster.roles = [compute]
     # don't use sigar for tests, native lib not in path
     akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
     #//#router-deploy-config
@@ -43,6 +43,7 @@ object StatsSampleSingleMasterSpecConfig extends MultiNodeConfig {
             enabled = on
             max-nr-of-instances-per-node = 3
             allow-local-routees = off
+            use-role = compute
           }
         }
     }
@@ -57,7 +58,7 @@ class StatsSampleSingleMasterSpecMultiJvmNode2 extends StatsSampleSingleMasterSp
 class StatsSampleSingleMasterSpecMultiJvmNode3 extends StatsSampleSingleMasterSpec
 
 abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSingleMasterSpecConfig)
-  with WordSpec with MustMatchers with BeforeAndAfterAll with ImplicitSender {
+  with WordSpecLike with MustMatchers with BeforeAndAfterAll with ImplicitSender {
 
   import StatsSampleSingleMasterSpecConfig._
 
@@ -72,18 +73,20 @@ abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSing
       Cluster(system).subscribe(testActor, classOf[MemberUp])
       expectMsgClass(classOf[CurrentClusterState])
 
-      Cluster(system) join node(first).address
+      val firstAddress = node(first).address
+      val secondAddress = node(second).address
+      val thirdAddress = node(third).address
 
-      expectMsgAllOf(
-        MemberUp(Member(node(first).address, MemberStatus.Up)),
-        MemberUp(Member(node(second).address, MemberStatus.Up)),
-        MemberUp(Member(node(third).address, MemberStatus.Up)))
+      Cluster(system) join firstAddress
+
+       receiveN(3).collect { case MemberUp(m) => m.address }.toSet must be (
+           Set(firstAddress, secondAddress, thirdAddress))
 
       Cluster(system).unsubscribe(testActor)
 
-      system.actorOf(Props(new ClusterSingletonManager(
-        singletonProps = _ ⇒ Props[StatsService], singletonName = "statsService",
-        terminationMessage = PoisonPill)), name = "singleton")
+      system.actorOf(ClusterSingletonManager.props(
+        singletonProps = Props[StatsService], singletonName = "statsService",
+        terminationMessage = PoisonPill, role = Some("compute")), name = "singleton")
 
       system.actorOf(Props[StatsFacade], "statsFacade")
 
@@ -91,18 +94,14 @@ abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSing
     }
 
     "show usage of the statsFacade" in within(40 seconds) {
-      val facade = system.actorFor(RootActorPath(node(third).address) / "user" / "statsFacade")
+      val facade = system.actorSelection(RootActorPath(node(third).address) / "user" / "statsFacade")
 
       // eventually the service should be ok,
       // service and worker nodes might not be up yet
-      awaitCond {
+      awaitAssert {
         facade ! StatsJob("this is the text that will be analyzed")
-        expectMsgPF() {
-          case unavailble: JobFailed ⇒ false
-          case StatsResult(meanWordLength) ⇒
-            meanWordLength must be(3.875 plusOrMinus 0.001)
-            true
-        }
+        expectMsgType[StatsResult](1.second).meanWordLength must be(
+          3.875 plusOrMinus 0.001)
       }
 
       testConductor.enter("done")

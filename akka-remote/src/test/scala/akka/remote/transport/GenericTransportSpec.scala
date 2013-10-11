@@ -80,8 +80,8 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
       Await.result(transportA.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
       awaitCond(registry.transportsReady(addressATest))
 
-      // TestTransport throws IllegalArgumentException when trying to associate with non-existing system
-      intercept[IllegalArgumentException] { Await.result(transportA.associate(nonExistingAddress), timeout.duration) }
+      // TestTransport throws InvalidAssociationException when trying to associate with non-existing system
+      intercept[InvalidAssociationException] { Await.result(transportA.associate(nonExistingAddress), timeout.duration) }
     }
 
     "successfully send PDUs" in {
@@ -116,8 +116,7 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
       }
 
       registry.logSnapshot.exists {
-        case WriteAttempt(sender, recipient, sentPdu) ⇒
-          sender == addressATest && recipient == addressBTest && sentPdu == pdu
+        case WriteAttempt(`addressATest`, `addressBTest`, sentPdu) ⇒ sentPdu == pdu
         case _ ⇒ false
       } must be(true)
     }
@@ -148,15 +147,17 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
       handleA.disassociate()
 
       expectMsgPF(timeout.duration) {
-        case Disassociated ⇒
+        case Disassociated(_) ⇒
       }
 
       awaitCond(!registry.existsAssociation(addressATest, addressBTest))
 
-      registry.logSnapshot exists {
-        case DisassociateAttempt(requester, remote) if requester == addressATest && remote == addressBTest ⇒ true
-        case _ ⇒ false
-      } must be(true)
+      awaitCond {
+        registry.logSnapshot exists {
+          case DisassociateAttempt(`addressATest`, `addressBTest`) ⇒ true
+          case _ ⇒ false
+        }
+      }
     }
 
   }

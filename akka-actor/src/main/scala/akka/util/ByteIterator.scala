@@ -522,6 +522,22 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
     else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
   }
 
+  /**
+   * Get a Long from this iterator where only the least significant `n`
+   * bytes were encoded.
+   */
+  def getLongPart(n: Int)(implicit byteOrder: ByteOrder): Long = {
+    if (byteOrder == ByteOrder.BIG_ENDIAN) {
+      var x = 0L
+      (1 to n) foreach (_ ⇒ x = (x << 8) | (next() & 0xff))
+      x
+    } else if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
+      var x = 0L
+      (0 until n) foreach (i ⇒ x |= (next() & 0xff) << 8 * i)
+      x
+    } else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
+  }
+
   def getFloat(implicit byteOrder: ByteOrder): Float =
     java.lang.Float.intBitsToFloat(getInt(byteOrder))
 

@@ -9,7 +9,7 @@ import language.postfixOps
 import scala.util.Random
 
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.WordSpec
+import org.scalatest.WordSpecLike
 import org.scalatest.matchers.ShouldMatchers
 
 import com.typesafe.config.ConfigFactory
@@ -31,21 +31,21 @@ class TestKitUsageSpec
   extends TestKit(ActorSystem("TestKitUsageSpec",
     ConfigFactory.parseString(TestKitUsageSpec.config)))
   with DefaultTimeout with ImplicitSender
-  with WordSpec with ShouldMatchers with BeforeAndAfterAll {
+  with WordSpecLike with ShouldMatchers with BeforeAndAfterAll {
   import TestKitUsageSpec._
 
-  val echoRef = system.actorOf(Props(new EchoActor))
-  val forwardRef = system.actorOf(Props(new ForwardingActor(testActor)))
-  val filterRef = system.actorOf(Props(new FilteringActor(testActor)))
+  val echoRef = system.actorOf(Props[EchoActor])
+  val forwardRef = system.actorOf(Props(classOf[ForwardingActor], testActor))
+  val filterRef = system.actorOf(Props(classOf[FilteringActor], testActor))
   val randomHead = Random.nextInt(6)
   val randomTail = Random.nextInt(10)
   val headList = immutable.Seq().padTo(randomHead, "0")
   val tailList = immutable.Seq().padTo(randomTail, "1")
   val seqRef =
-    system.actorOf(Props(new SequencingActor(testActor, headList, tailList)))
+    system.actorOf(Props(classOf[SequencingActor], testActor, headList, tailList))
 
   override def afterAll {
-    system.shutdown()
+    shutdown(system)
   }
 
   "An EchoActor" should {
@@ -146,8 +146,8 @@ object TestKitUsageSpec {
    * like to test that the interesting value is received and that you cant
    * be bothered with the rest
    */
-  class SequencingActor(next: ActorRef, head: immutable.Seq[String], tail: immutable.Seq[String])
-    extends Actor {
+  class SequencingActor(next: ActorRef, head: immutable.Seq[String],
+                        tail: immutable.Seq[String]) extends Actor {
     def receive = {
       case msg ⇒ {
         head foreach { next ! _ }

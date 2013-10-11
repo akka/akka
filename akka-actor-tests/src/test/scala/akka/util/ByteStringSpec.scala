@@ -39,7 +39,7 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
   implicit val arbitraryByteStringSlice: Arbitrary[ByteStringSlice] = Arbitrary {
     for {
       xs ← arbitraryByteString.arbitrary
-      from ← choose(0, xs.length)
+      from ← choose(0, xs.length - 1)
       until ← choose(from, xs.length)
     } yield (xs, from, until)
   }
@@ -67,6 +67,17 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
   val arbitraryDoubleArray: Arbitrary[Array[Double]] = Arbitrary { Gen.sized { n ⇒ Gen.containerOfN[Array, Double](n, arbitrary[Double]) } }
   implicit val arbitraryDoubleArraySlice: Arbitrary[ArraySlice[Double]] = arbSlice(arbitraryDoubleArray)
 
+  type ArrayNumBytes[A] = (Array[A], Int)
+
+  implicit val arbitraryLongArrayNumBytes: Arbitrary[ArrayNumBytes[Long]] = Arbitrary {
+    for {
+      xs ← arbitraryLongArray.arbitrary
+      from ← choose(0, xs.length)
+      until ← choose(from, xs.length)
+      bytes ← choose(0, 8)
+    } yield (xs.slice(from, until), bytes)
+  }
+
   def likeVector(bs: ByteString)(body: IndexedSeq[Byte] ⇒ Any): Boolean = {
     val vec = Vector(bs: _*)
     body(bs) == body(vec)
@@ -89,7 +100,7 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
     val (bsAIt, bsBIt) = (a.iterator, b.iterator)
     val (vecAIt, vecBIt) = (Vector(a: _*).iterator.buffered, Vector(b: _*).iterator.buffered)
     (body(bsAIt, bsBIt) == body(vecAIt, vecBIt)) &&
-      (!strict || (bsAIt.toSeq, bsBIt.toSeq) == (vecAIt.toSeq, vecBIt.toSeq))
+      (!strict || (bsAIt.toSeq -> bsBIt.toSeq) == (vecAIt.toSeq -> vecBIt.toSeq))
   }
 
   def likeVecBld(body: Builder[Byte, _] ⇒ Unit): Boolean = {
@@ -110,9 +121,9 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
     bytes.asByteBuffer.order(byteOrder).asShortBuffer.get(reference, 0, n)
     val input = bytes.iterator
     val decoded = Array.ofDim[Short](n)
-    for (i ← 0 to a - 1) decoded(i) = input.getShort(byteOrder)
+    for (i ← 0 until a) decoded(i) = input.getShort(byteOrder)
     input.getShorts(decoded, a, b - a)(byteOrder)
-    for (i ← b to n - 1) decoded(i) = input.getShort(byteOrder)
+    for (i ← b until n) decoded(i) = input.getShort(byteOrder)
     (decoded.toSeq == reference.toSeq) && (input.toSeq == bytes.drop(n * elemSize))
   }
 
@@ -124,9 +135,9 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
     bytes.asByteBuffer.order(byteOrder).asIntBuffer.get(reference, 0, n)
     val input = bytes.iterator
     val decoded = Array.ofDim[Int](n)
-    for (i ← 0 to a - 1) decoded(i) = input.getInt(byteOrder)
+    for (i ← 0 until a) decoded(i) = input.getInt(byteOrder)
     input.getInts(decoded, a, b - a)(byteOrder)
-    for (i ← b to n - 1) decoded(i) = input.getInt(byteOrder)
+    for (i ← b until n) decoded(i) = input.getInt(byteOrder)
     (decoded.toSeq == reference.toSeq) && (input.toSeq == bytes.drop(n * elemSize))
   }
 
@@ -138,9 +149,9 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
     bytes.asByteBuffer.order(byteOrder).asLongBuffer.get(reference, 0, n)
     val input = bytes.iterator
     val decoded = Array.ofDim[Long](n)
-    for (i ← 0 to a - 1) decoded(i) = input.getLong(byteOrder)
+    for (i ← 0 until a) decoded(i) = input.getLong(byteOrder)
     input.getLongs(decoded, a, b - a)(byteOrder)
-    for (i ← b to n - 1) decoded(i) = input.getLong(byteOrder)
+    for (i ← b until n) decoded(i) = input.getLong(byteOrder)
     (decoded.toSeq == reference.toSeq) && (input.toSeq == bytes.drop(n * elemSize))
   }
 
@@ -152,9 +163,9 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
     bytes.asByteBuffer.order(byteOrder).asFloatBuffer.get(reference, 0, n)
     val input = bytes.iterator
     val decoded = Array.ofDim[Float](n)
-    for (i ← 0 to a - 1) decoded(i) = input.getFloat(byteOrder)
+    for (i ← 0 until a) decoded(i) = input.getFloat(byteOrder)
     input.getFloats(decoded, a, b - a)(byteOrder)
-    for (i ← b to n - 1) decoded(i) = input.getFloat(byteOrder)
+    for (i ← b until n) decoded(i) = input.getFloat(byteOrder)
     ((decoded.toSeq map floatToRawIntBits) == (reference.toSeq map floatToRawIntBits)) &&
       (input.toSeq == bytes.drop(n * elemSize))
   }
@@ -167,70 +178,85 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
     bytes.asByteBuffer.order(byteOrder).asDoubleBuffer.get(reference, 0, n)
     val input = bytes.iterator
     val decoded = Array.ofDim[Double](n)
-    for (i ← 0 to a - 1) decoded(i) = input.getDouble(byteOrder)
+    for (i ← 0 until a) decoded(i) = input.getDouble(byteOrder)
     input.getDoubles(decoded, a, b - a)(byteOrder)
-    for (i ← b to n - 1) decoded(i) = input.getDouble(byteOrder)
+    for (i ← b until n) decoded(i) = input.getDouble(byteOrder)
     ((decoded.toSeq map doubleToRawLongBits) == (reference.toSeq map doubleToRawLongBits)) &&
       (input.toSeq == bytes.drop(n * elemSize))
   }
 
   def testShortEncoding(slice: ArraySlice[Short], byteOrder: ByteOrder): Boolean = {
     val elemSize = 2
-    val (data, from, until) = slice
+    val (data, from, to) = slice
     val reference = Array.ofDim[Byte](data.length * elemSize)
     ByteBuffer.wrap(reference).order(byteOrder).asShortBuffer.put(data)
     val builder = ByteString.newBuilder
-    for (i ← 0 to from - 1) builder.putShort(data(i))(byteOrder)
-    builder.putShorts(data, from, until - from)(byteOrder)
-    for (i ← until to data.length - 1) builder.putShort(data(i))(byteOrder)
+    for (i ← 0 until from) builder.putShort(data(i))(byteOrder)
+    builder.putShorts(data, from, to - from)(byteOrder)
+    for (i ← to until data.length) builder.putShort(data(i))(byteOrder)
     reference.toSeq == builder.result
   }
 
   def testIntEncoding(slice: ArraySlice[Int], byteOrder: ByteOrder): Boolean = {
     val elemSize = 4
-    val (data, from, until) = slice
+    val (data, from, to) = slice
     val reference = Array.ofDim[Byte](data.length * elemSize)
     ByteBuffer.wrap(reference).order(byteOrder).asIntBuffer.put(data)
     val builder = ByteString.newBuilder
-    for (i ← 0 to from - 1) builder.putInt(data(i))(byteOrder)
-    builder.putInts(data, from, until - from)(byteOrder)
-    for (i ← until to data.length - 1) builder.putInt(data(i))(byteOrder)
+    for (i ← 0 until from) builder.putInt(data(i))(byteOrder)
+    builder.putInts(data, from, to - from)(byteOrder)
+    for (i ← to until data.length) builder.putInt(data(i))(byteOrder)
     reference.toSeq == builder.result
   }
 
   def testLongEncoding(slice: ArraySlice[Long], byteOrder: ByteOrder): Boolean = {
     val elemSize = 8
-    val (data, from, until) = slice
+    val (data, from, to) = slice
     val reference = Array.ofDim[Byte](data.length * elemSize)
     ByteBuffer.wrap(reference).order(byteOrder).asLongBuffer.put(data)
     val builder = ByteString.newBuilder
-    for (i ← 0 to from - 1) builder.putLong(data(i))(byteOrder)
-    builder.putLongs(data, from, until - from)(byteOrder)
-    for (i ← until to data.length - 1) builder.putLong(data(i))(byteOrder)
+    for (i ← 0 until from) builder.putLong(data(i))(byteOrder)
+    builder.putLongs(data, from, to - from)(byteOrder)
+    for (i ← to until data.length) builder.putLong(data(i))(byteOrder)
     reference.toSeq == builder.result
+  }
+
+  def testLongPartEncoding(anb: ArrayNumBytes[Long], byteOrder: ByteOrder): Boolean = {
+    val elemSize = 8
+    val (data, nBytes) = anb
+
+    val reference = Array.ofDim[Byte](data.length * elemSize)
+    ByteBuffer.wrap(reference).order(byteOrder).asLongBuffer.put(data)
+    val builder = ByteString.newBuilder
+    for (i ← 0 until data.length) builder.putLongPart(data(i), nBytes)(byteOrder)
+
+    reference.zipWithIndex.collect({ // Since there is no partial put on LongBuffer, we need to collect only the interesting bytes
+      case (r, i) if byteOrder == ByteOrder.LITTLE_ENDIAN && i % elemSize < nBytes            ⇒ r
+      case (r, i) if byteOrder == ByteOrder.BIG_ENDIAN && i % elemSize >= (elemSize - nBytes) ⇒ r
+    }).toSeq == builder.result
   }
 
   def testFloatEncoding(slice: ArraySlice[Float], byteOrder: ByteOrder): Boolean = {
     val elemSize = 4
-    val (data, from, until) = slice
+    val (data, from, to) = slice
     val reference = Array.ofDim[Byte](data.length * elemSize)
     ByteBuffer.wrap(reference).order(byteOrder).asFloatBuffer.put(data)
     val builder = ByteString.newBuilder
-    for (i ← 0 to from - 1) builder.putFloat(data(i))(byteOrder)
-    builder.putFloats(data, from, until - from)(byteOrder)
-    for (i ← until to data.length - 1) builder.putFloat(data(i))(byteOrder)
+    for (i ← 0 until from) builder.putFloat(data(i))(byteOrder)
+    builder.putFloats(data, from, to - from)(byteOrder)
+    for (i ← to until data.length) builder.putFloat(data(i))(byteOrder)
     reference.toSeq == builder.result
   }
 
   def testDoubleEncoding(slice: ArraySlice[Double], byteOrder: ByteOrder): Boolean = {
     val elemSize = 8
-    val (data, from, until) = slice
+    val (data, from, to) = slice
     val reference = Array.ofDim[Byte](data.length * elemSize)
     ByteBuffer.wrap(reference).order(byteOrder).asDoubleBuffer.put(data)
     val builder = ByteString.newBuilder
-    for (i ← 0 to from - 1) builder.putDouble(data(i))(byteOrder)
-    builder.putDoubles(data, from, until - from)(byteOrder)
-    for (i ← until to data.length - 1) builder.putDouble(data(i))(byteOrder)
+    for (i ← 0 until from) builder.putDouble(data(i))(byteOrder)
+    builder.putDoubles(data, from, to - from)(byteOrder)
+    for (i ← to until data.length) builder.putDouble(data(i))(byteOrder)
     reference.toSeq == builder.result
   }
 
@@ -405,12 +431,12 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
       "getting Bytes, using getByte and getBytes" in {
         // mixing getByte and getBytes here for more rigorous testing
         check { slice: ByteStringSlice ⇒
-          val (bytes, from, until) = slice
+          val (bytes, from, to) = slice
           val input = bytes.iterator
           val output = Array.ofDim[Byte](bytes.length)
-          for (i ← 0 to from - 1) output(i) = input.getByte
-          input.getBytes(output, from, until - from)
-          for (i ← until to bytes.length - 1) output(i) = input.getByte
+          for (i ← 0 until from) output(i) = input.getByte
+          input.getBytes(output, from, to - from)
+          for (i ← to until bytes.length) output(i) = input.getByte
           (output.toSeq == bytes) && (input.isEmpty)
         }
       }
@@ -418,9 +444,9 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
       "getting Bytes, using the InputStream wrapper" in {
         // combining skip and both read methods here for more rigorous testing
         check { slice: ByteStringSlice ⇒
-          val (bytes, from, until) = slice
+          val (bytes, from, to) = slice
           val a = (0 max from) min bytes.length
-          val b = (a max until) min bytes.length
+          val b = (a max to) min bytes.length
           val input = bytes.iterator
           val output = Array.ofDim[Byte](bytes.length)
 
@@ -435,7 +461,7 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
           }
           if (eof) throw new RuntimeException("Unexpected EOF")
 
-          for (i ← b to bytes.length - 1) output(i) = input.asInputStream.read().toByte
+          for (i ← b until bytes.length) output(i) = input.asInputStream.read().toByte
 
           (output.toSeq.drop(a) == bytes.drop(a)) &&
             (input.asInputStream.read() == -1) &&
@@ -488,11 +514,11 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
       "putting Bytes, using putByte and putBytes" in {
         // mixing putByte and putBytes here for more rigorous testing
         check { slice: ArraySlice[Byte] ⇒
-          val (data, from, until) = slice
+          val (data, from, to) = slice
           val builder = ByteString.newBuilder
-          for (i ← 0 to from - 1) builder.putByte(data(i))
-          builder.putBytes(data, from, until - from)
-          for (i ← until to data.length - 1) builder.putByte(data(i))
+          for (i ← 0 until from) builder.putByte(data(i))
+          builder.putBytes(data, from, to - from)
+          for (i ← to until data.length) builder.putByte(data(i))
           data.toSeq == builder.result
         }
       }
@@ -500,11 +526,11 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
       "putting Bytes, using the OutputStream wrapper" in {
         // mixing the write methods here for more rigorous testing
         check { slice: ArraySlice[Byte] ⇒
-          val (data, from, until) = slice
+          val (data, from, to) = slice
           val builder = ByteString.newBuilder
-          for (i ← 0 to from - 1) builder.asOutputStream.write(data(i).toInt)
-          builder.asOutputStream.write(data, from, until - from)
-          for (i ← until to data.length - 1) builder.asOutputStream.write(data(i).toInt)
+          for (i ← 0 until from) builder.asOutputStream.write(data(i).toInt)
+          builder.asOutputStream.write(data, from, to - from)
+          for (i ← to until data.length) builder.asOutputStream.write(data(i).toInt)
           data.toSeq == builder.result
         }
       }
@@ -517,6 +543,8 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
       "encoding Int in little-endian" in { check { slice: ArraySlice[Int] ⇒ testIntEncoding(slice, LITTLE_ENDIAN) } }
       "encoding Long in big-endian" in { check { slice: ArraySlice[Long] ⇒ testLongEncoding(slice, BIG_ENDIAN) } }
       "encoding Long in little-endian" in { check { slice: ArraySlice[Long] ⇒ testLongEncoding(slice, LITTLE_ENDIAN) } }
+      "encoding LongPart in big-endian" in { check { slice: ArrayNumBytes[Long] ⇒ testLongPartEncoding(slice, BIG_ENDIAN) } }
+      "encoding LongPart in little-endian" in { check { slice: ArrayNumBytes[Long] ⇒ testLongPartEncoding(slice, LITTLE_ENDIAN) } }
       "encoding Float in big-endian" in { check { slice: ArraySlice[Float] ⇒ testFloatEncoding(slice, BIG_ENDIAN) } }
       "encoding Float in little-endian" in { check { slice: ArraySlice[Float] ⇒ testFloatEncoding(slice, LITTLE_ENDIAN) } }
       "encoding Double in big-endian" in { check { slice: ArraySlice[Double] ⇒ testDoubleEncoding(slice, BIG_ENDIAN) } }

@@ -6,6 +6,7 @@ package sample.remote.calculator.java;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import akka.actor.UntypedActor;
 import akka.kernel.Bootable;
 import com.typesafe.config.ConfigFactory;
 
@@ -13,18 +14,19 @@ import com.typesafe.config.ConfigFactory;
 public class JCreationApplication implements Bootable {
   private ActorSystem system;
   private ActorRef actor;
-  private ActorRef remoteActor;
 
   public JCreationApplication() {
     system = ActorSystem.create("CreationApplication", ConfigFactory.load()
         .getConfig("remotecreation"));
-    actor = system.actorOf(new Props(JCreationActor.class));
-    remoteActor = system.actorOf(new Props(JAdvancedCalculatorActor.class),
-        "advancedCalculator");
+    final ActorRef remoteActor = system.actorOf(Props.create(
+      JAdvancedCalculatorActor.class), "advancedCalculator");
+    actor = system.actorOf(Props.create(JCreationActor.class, remoteActor), 
+      "creationActor");
+
   }
 
   public void doSomething(Op.MathOp mathOp) {
-    actor.tell(new InternalMsg.MathOpMsg(remoteActor, mathOp), null);
+    actor.tell(mathOp, null);
   }
 
   @Override

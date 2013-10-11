@@ -21,6 +21,7 @@ class CountExtensionImpl extends Extension {
 //#extension
 
 //#extensionid
+import akka.actor.ActorSystem
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.ExtendedActorSystem
@@ -37,6 +38,11 @@ object CountExtension
   //This method will be called by Akka
   // to instantiate our Extension
   override def createExtension(system: ExtendedActorSystem) = new CountExtensionImpl
+
+  /**
+   * Java API: retrieve the Count extension for the given system.
+   */
+  override def get(system: ActorSystem): CountExtensionImpl = super.get(system)
 }
 //#extensionid
 

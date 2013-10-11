@@ -5,7 +5,6 @@
 package akka.cluster.routing
 
 import java.util.Arrays
-
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.collection.immutable
 import akka.actor.Actor
@@ -23,14 +22,8 @@ import akka.cluster.StandardMetrics.Cpu
 import akka.cluster.StandardMetrics.HeapMemory
 import akka.event.Logging
 import akka.japi.Util.immutableSeq
-import akka.routing.Broadcast
-import akka.routing.Destination
-import akka.routing.FromConfig
-import akka.routing.NoRouter
-import akka.routing.Resizer
-import akka.routing.Route
-import akka.routing.RouteeProvider
-import akka.routing.RouterConfig
+import akka.routing._
+import akka.actor.Deploy
 
 object AdaptiveLoadBalancingRouter {
   private val escalateStrategy: SupervisorStrategy = OneForOneStrategy() {
@@ -42,7 +35,7 @@ object AdaptiveLoadBalancingRouter {
  * A Router that performs load balancing of messages to cluster nodes based on
  * cluster metric data.
  *
- * It uses random selection of routees based probabilities derived from
+ * It uses random selection of routees based on probabilities derived from
  * the remaining capacity of corresponding node.
  *
  * Please note that providing both 'nrOfInstances' and 'routees' does not make logical
@@ -55,14 +48,17 @@ object AdaptiveLoadBalancingRouter {
  *
  * <h1>Supervision Setup</h1>
  *
- * The router creates a “head” actor which supervises and/or monitors the
- * routees. Instances are created as children of this actor, hence the
- * children are not supervised by the parent of the router. Common choices are
- * to always escalate (meaning that fault handling is always applied to all
- * children simultaneously; this is the default) or use the parent’s strategy,
- * which will result in routed children being treated individually, but it is
- * possible as well to use Routers to give different supervisor strategies to
- * different groups of children.
+ * Any routees that are created by a router will be created as the router's children.
+ * The router is therefore also the children's supervisor.
+ *
+ * The supervision strategy of the router actor can be configured with
+ * [[#withSupervisorStrategy]]. If no strategy is provided, routers default to
+ * a strategy of “always escalate”. This means that errors are passed up to the
+ * router's supervisor for handling.
+ *
+ * The router's supervisor will treat the error as an error with the router itself.
+ * Therefore a directive to stop or restart will cause the router itself to stop or
+ * restart. The router, in turn, will cause its children to stop and restart.
  *
  * @param metricsSelector decides what probability to use for selecting a routee, based
  *   on remaining capacity as indicated by the node metrics
@@ -76,19 +72,19 @@ case class AdaptiveLoadBalancingRouter(
   override val resizer: Option[Resizer] = None,
   val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
   val supervisorStrategy: SupervisorStrategy = AdaptiveLoadBalancingRouter.escalateStrategy)
-  extends RouterConfig with AdaptiveLoadBalancingRouterLike {
+  extends RouterConfig with AdaptiveLoadBalancingRouterLike with OverrideUnsetConfig[AdaptiveLoadBalancingRouter] {
 
   /**
-   * Constructor that sets nrOfInstances to be created.
-   * Java API
+   * Java API: Constructor that sets nrOfInstances to be created.
+   *
    * @param selector the selector is responsible for producing weighted mix of routees from the node metrics
    * @param nr number of routees to create
    */
   def this(selector: MetricsSelector, nr: Int) = this(metricsSelector = selector, nrOfInstances = nr)
 
   /**
-   * Constructor that sets the routees to be used.
-   * Java API
+   * Java API: Constructor that sets the routees to be used.
+   *
    * @param selector the selector is responsible for producing weighted mix of routees from the node metrics
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
@@ -97,8 +93,8 @@ case class AdaptiveLoadBalancingRouter(
     this(metricsSelector = selector, routees = immutableSeq(routeePaths))
 
   /**
-   * Constructor that sets the resizer to be used.
-   * Java API
+   * Java API: Constructor that sets the resizer to be used.
+   *
    * @param selector the selector is responsible for producing weighted mix of routees from the node metrics
    */
   def this(selector: MetricsSelector, resizer: Resizer) =
@@ -118,17 +114,17 @@ case class AdaptiveLoadBalancingRouter(
     copy(supervisorStrategy = strategy)
 
   /**
-   * Uses the resizer of the given RouterConfig if this RouterConfig
-   * doesn't have one, i.e. the resizer defined in code is used if
+   * Java API for setting the resizer to be used.
+   */
+  def withResizer(resizer: Resizer): AdaptiveLoadBalancingRouter = copy(resizer = Some(resizer))
+
+  /**
+   * Uses the resizer and/or the supervisor strategy of the given Routerconfig
+   * if this RouterConfig doesn't have one, i.e. the resizer defined in code is used if
    * resizer was not defined in config.
    */
   override def withFallback(other: RouterConfig): RouterConfig = other match {
-    case _: FromConfig | _: NoRouter ⇒ this
-    case otherRouter: AdaptiveLoadBalancingRouter ⇒
-      val useResizer =
-        if (this.resizer.isEmpty && otherRouter.resizer.isDefined) otherRouter.resizer
-        else this.resizer
-      copy(resizer = useResizer)
+    case _: FromConfig | _: NoRouter | _: AdaptiveLoadBalancingRouter ⇒ this.overrideUnsetConfig(other)
     case _ ⇒ throw new IllegalArgumentException("Expected AdaptiveLoadBalancingRouter, got [%s]".format(other))
   }
 
@@ -138,7 +134,7 @@ case class AdaptiveLoadBalancingRouter(
  * INTERNAL API.
  *
  * This strategy is a metrics-aware router which performs load balancing of messages to
- * cluster nodes based on cluster metric data. It consumes [[akka.cluster.ClusterMetricsChanged]]
+ * cluster nodes based on cluster metric data. It consumes [[akka.cluster.ClusterEvent.ClusterMetricsChanged]]
  * events and the [[akka.cluster.routing.MetricsSelector]] creates an mix of
  * weighted routees based on the node metrics. Messages are routed randomly to the
  * weighted routees, i.e. nodes with lower load are more likely to be used than nodes with
@@ -186,7 +182,7 @@ trait AdaptiveLoadBalancingRouterLike { this: RouterConfig ⇒
           metricsSelector.weights(metrics)))
       }
 
-    }).withDispatcher(routerDispatcher), name = "metricsListener")
+    }).withDispatcher(routerDispatcher).withDeploy(Deploy.local), name = "metricsListener")
 
     def getNext(): ActorRef = weightedRoutees match {
       case Some(weighted) ⇒
@@ -307,7 +303,7 @@ abstract class MixMetricsSelectorBase(selectors: immutable.IndexedSeq[CapacityMe
   extends CapacityMetricsSelector {
 
   /**
-   * Java API
+   * Java API: construct a mix-selector from a sequence of selectors
    */
   def this(selectors: java.lang.Iterable[CapacityMetricsSelector]) = this(immutableSeq(selectors).toVector)
 
@@ -317,7 +313,7 @@ abstract class MixMetricsSelectorBase(selectors: immutable.IndexedSeq[CapacityMe
     combined.foldLeft(Map.empty[Address, (Double, Int)].withDefaultValue((0.0, 0))) {
       case (acc, (address, capacity)) ⇒
         val (sum, count) = acc(address)
-        acc + (address -> (sum + capacity, count + 1))
+        acc + (address -> ((sum + capacity, count + 1)))
     }.map {
       case (addr, (sum, count)) ⇒ (addr -> sum / count)
     }
@@ -403,7 +399,7 @@ private[cluster] class WeightedRoutees(refs: immutable.IndexedSeq[ActorRef], sel
     buckets
   }
 
-  def isEmpty: Boolean = buckets.length == 0
+  def isEmpty: Boolean = buckets.length == 0 || buckets(buckets.length - 1) == 0
 
   def total: Int = {
     require(!isEmpty, "WeightedRoutees must not be used when empty")

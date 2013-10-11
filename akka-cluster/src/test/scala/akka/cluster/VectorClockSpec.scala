@@ -4,9 +4,7 @@
 
 package akka.cluster
 
-import java.net.InetSocketAddress
 import akka.testkit.AkkaSpec
-import akka.actor.ActorSystem
 
 class VectorClockSpec extends AkkaSpec {
   import VectorClock._
@@ -113,12 +111,25 @@ class VectorClockSpec extends AkkaSpec {
       val clock4_1 = clock3_1 :+ Node("2")
       val clock5_1 = clock4_1 :+ Node("3")
 
-      val clock1_2 = VectorClock()
+      val clock1_2 = clock4_1
       val clock2_2 = clock1_2 :+ Node("2")
       val clock3_2 = clock2_2 :+ Node("2")
 
       clock5_1 <> clock3_2 must be(true)
       clock3_2 <> clock5_1 must be(true)
+    }
+
+    "pass misc comparison test 8" in {
+      val clock1_1 = VectorClock()
+      val clock2_1 = clock1_1 :+ Node.fromHash("1")
+      val clock3_1 = clock2_1 :+ Node.fromHash("3")
+
+      val clock1_2 = clock3_1 :+ Node.fromHash("2")
+
+      val clock4_1 = clock3_1 :+ Node.fromHash("3")
+
+      clock4_1 <> clock1_2 must be(true)
+      clock1_2 <> clock4_1 must be(true)
     }
 
     "correctly merge two clocks" in {
@@ -132,7 +143,7 @@ class VectorClockSpec extends AkkaSpec {
       val clock4_1 = clock3_1 :+ node2
       val clock5_1 = clock4_1 :+ node3
 
-      val clock1_2 = VectorClock()
+      val clock1_2 = clock4_1
       val clock2_2 = clock1_2 :+ node2
       val clock3_2 = clock2_2 :+ node2
 
@@ -199,7 +210,6 @@ class VectorClockSpec extends AkkaSpec {
     "pass blank clock incrementing" in {
       val node1 = Node("1")
       val node2 = Node("2")
-      val node3 = Node("3")
 
       val v1 = VectorClock()
       val v2 = VectorClock()
@@ -234,86 +244,6 @@ class VectorClockSpec extends AkkaSpec {
 
       (c1 > a2) must equal(true)
       (c1 > b1) must equal(true)
-    }
-  }
-
-  "An instance of Versioned" must {
-    class TestVersioned(val version: VectorClock = VectorClock()) extends Versioned[TestVersioned] {
-      def :+(node: Node): TestVersioned = new TestVersioned(version :+ node)
-    }
-
-    import Versioned.latestVersionOf
-
-    "have zero versions when created" in {
-      val versioned = new TestVersioned()
-      versioned.version.versions must be(Map())
-    }
-
-    "happen before an identical versioned with a single additional event" in {
-      val versioned1_1 = new TestVersioned()
-      val versioned2_1 = versioned1_1 :+ Node("1")
-      val versioned3_1 = versioned2_1 :+ Node("2")
-      val versioned4_1 = versioned3_1 :+ Node("1")
-
-      val versioned1_2 = new TestVersioned()
-      val versioned2_2 = versioned1_2 :+ Node("1")
-      val versioned3_2 = versioned2_2 :+ Node("2")
-      val versioned4_2 = versioned3_2 :+ Node("1")
-      val versioned5_2 = versioned4_2 :+ Node("3")
-
-      latestVersionOf[TestVersioned](versioned4_1, versioned5_2) must be(versioned5_2)
-    }
-
-    "pass misc comparison test 1" in {
-      var versioned1_1 = new TestVersioned()
-      val versioned2_1 = versioned1_1 :+ Node("1")
-
-      val versioned1_2 = new TestVersioned()
-      val versioned2_2 = versioned1_2 :+ Node("2")
-
-      latestVersionOf[TestVersioned](versioned2_1, versioned2_2) must be(versioned2_2)
-    }
-
-    "pass misc comparison test 2" in {
-      val versioned1_3 = new TestVersioned()
-      val versioned2_3 = versioned1_3 :+ Node("1")
-      val versioned3_3 = versioned2_3 :+ Node("2")
-      val versioned4_3 = versioned3_3 :+ Node("1")
-
-      val versioned1_4 = new TestVersioned()
-      val versioned2_4 = versioned1_4 :+ Node("1")
-      val versioned3_4 = versioned2_4 :+ Node("1")
-      val versioned4_4 = versioned3_4 :+ Node("3")
-
-      latestVersionOf[TestVersioned](versioned4_3, versioned4_4) must be(versioned4_4)
-    }
-
-    "pass misc comparison test 3" in {
-      val versioned1_1 = new TestVersioned()
-      val versioned2_1 = versioned1_1 :+ Node("2")
-      val versioned3_1 = versioned2_1 :+ Node("2")
-
-      val versioned1_2 = new TestVersioned()
-      val versioned2_2 = versioned1_2 :+ Node("1")
-      val versioned3_2 = versioned2_2 :+ Node("2")
-      val versioned4_2 = versioned3_2 :+ Node("2")
-      val versioned5_2 = versioned4_2 :+ Node("3")
-
-      latestVersionOf[TestVersioned](versioned3_1, versioned5_2) must be(versioned5_2)
-    }
-
-    "pass misc comparison test 4" in {
-      val versioned1_1 = new TestVersioned()
-      val versioned2_1 = versioned1_1 :+ Node("1")
-      val versioned3_1 = versioned2_1 :+ Node("2")
-      val versioned4_1 = versioned3_1 :+ Node("2")
-      val versioned5_1 = versioned4_1 :+ Node("3")
-
-      val versioned1_2 = new TestVersioned()
-      val versioned2_2 = versioned1_2 :+ Node("2")
-      val versioned3_2 = versioned2_2 :+ Node("2")
-
-      latestVersionOf[TestVersioned](versioned5_1, versioned3_2) must be(versioned3_2)
     }
   }
 }

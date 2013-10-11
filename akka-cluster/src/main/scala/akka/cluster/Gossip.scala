@@ -4,7 +4,6 @@
 
 package akka.cluster
 
-import akka.actor.Address
 import scala.collection.immutable
 import MemberStatus._
 
@@ -17,6 +16,12 @@ private[cluster] object Gossip {
 
   def apply(members: immutable.SortedSet[Member]) =
     if (members.isEmpty) empty else empty.copy(members = members)
+
+  private val leaderMemberStatus = Set[MemberStatus](Up, Leaving)
+  private val convergenceMemberStatus = Set[MemberStatus](Up, Leaving)
+  val convergenceSkipUnreachableWithMemberStatus = Set[MemberStatus](Down, Exiting)
+  val removeUnreachableWithMemberStatus = Set[MemberStatus](Down, Exiting)
+
 }
 
 /**
@@ -43,7 +48,7 @@ private[cluster] object Gossip {
  * When a `Gossip` is received the version (vector clock) is used to determine if the
  * received `Gossip` is newer or older than the current local `Gossip`. The received `Gossip`
  * and local `Gossip` is merged in case of conflicting version, i.e. vector clocks without
- * same history. When merged the seen table is cleared.
+ * same history.
  *
  * When a node is told by the user to leave the cluster the leader will move it to `Leaving`
  * and then rebalance and repartition the cluster and start hand-off by migrating the actors
@@ -52,35 +57,33 @@ private[cluster] object Gossip {
  * `Removed` by removing it from the `members` set and sending a `Removed` command to the
  * removed node telling it to shut itself down.
  */
+@SerialVersionUID(1L)
 private[cluster] case class Gossip(
   members: immutable.SortedSet[Member], // sorted set of members with their status, sorted by address
   overview: GossipOverview = GossipOverview(),
-  version: VectorClock = VectorClock()) // vector clock version
-  extends ClusterMessage // is a serializable cluster message
-  with Versioned[Gossip] {
+  version: VectorClock = VectorClock()) { // vector clock version
 
-  // FIXME can be disabled as optimization
-  assertInvariants
+  if (Cluster.isAssertInvariantsEnabled) assertInvariants()
 
-  private def assertInvariants: Unit = {
-    val unreachableAndLive = members.intersect(overview.unreachable)
-    if (unreachableAndLive.nonEmpty)
-      throw new IllegalArgumentException("Same nodes in both members and unreachable is not allowed, got [%s]"
-        format unreachableAndLive.mkString(", "))
+  private def assertInvariants(): Unit = {
 
-    val allowedLiveMemberStatuses: Set[MemberStatus] = Set(Joining, Up, Leaving, Exiting)
-    def hasNotAllowedLiveMemberStatus(m: Member) = !allowedLiveMemberStatuses.contains(m.status)
-    if (members exists hasNotAllowedLiveMemberStatus)
-      throw new IllegalArgumentException("Live members must have status [%s], got [%s]"
-        format (allowedLiveMemberStatuses.mkString(", "),
-          (members filter hasNotAllowedLiveMemberStatus).mkString(", ")))
+    if (members.exists(_.status == Removed))
+      throw new IllegalArgumentException(s"Live members must have status [${Removed}], " +
+        s"got [${members.filter(_.status == Removed)}]")
 
-    val seenButNotMember = overview.seen.keySet -- members.map(_.address) -- overview.unreachable.map(_.address)
+    val inReachabilityButNotMember = overview.reachability.allObservers -- members.map(_.uniqueAddress)
+    if (inReachabilityButNotMember.nonEmpty)
+      throw new IllegalArgumentException("Nodes not part of cluster in reachability table, got [%s]"
+        format inReachabilityButNotMember.mkString(", "))
+
+    val seenButNotMember = overview.seen -- members.map(_.uniqueAddress)
     if (seenButNotMember.nonEmpty)
       throw new IllegalArgumentException("Nodes not part of cluster have marked the Gossip as seen, got [%s]"
         format seenButNotMember.mkString(", "))
-
   }
+
+  @transient private lazy val membersMap: Map[UniqueAddress, Member] =
+    members.map(m ⇒ m.uniqueAddress -> m)(collection.breakOut)
 
   /**
    * Increments the version for this 'Node'.
@@ -97,21 +100,34 @@ private[cluster] case class Gossip(
 
   /**
    * Marks the gossip as seen by this node (address) by updating the address entry in the 'gossip.overview.seen'
-   * Map with the VectorClock (version) for the new gossip.
    */
-  def seen(address: Address): Gossip = {
-    if (overview.seen.contains(address) && overview.seen(address) == version) this
-    else this copy (overview = overview copy (seen = overview.seen + (address -> version)))
+  def seen(node: UniqueAddress): Gossip = {
+    if (seenByNode(node)) this
+    else this copy (overview = overview copy (seen = overview.seen + node))
   }
 
   /**
-   * The nodes that have seen current version of the Gossip.
+   * Marks the gossip as seen by only this node (address) by replacing the 'gossip.overview.seen'
    */
-  def seenBy: Set[Address] = {
-    overview.seen.collect {
-      case (address, vclock) if vclock == version ⇒ address
-    }.toSet
+  def onlySeen(node: UniqueAddress): Gossip = {
+    this copy (overview = overview copy (seen = Set(node)))
   }
+
+  /**
+   * The nodes that have seen the current version of the Gossip.
+   */
+  def seenBy: Set[UniqueAddress] = overview.seen
+
+  /**
+   * Has this Gossip been seen by this node.
+   */
+  def seenByNode(node: UniqueAddress): Boolean = overview.seen(node)
+
+  /**
+   * Merges the seen table of two Gossip instances.
+   */
+  def mergeSeen(that: Gossip): Gossip =
+    this copy (overview = overview copy (seen = overview.seen ++ that.overview.seen))
 
   /**
    * Merges two Gossip instances including membership tables, and the VectorClock histories.
@@ -122,22 +138,17 @@ private[cluster] case class Gossip(
     // 1. merge vector clocks
     val mergedVClock = this.version merge that.version
 
-    // 2. merge unreachable by selecting the single Member with highest MemberStatus out of the Member groups
-    // FIXME allowing Down -> Joining should be adjusted as part of ticket #2788
-    val mergedUnreachable = Member.pickHighestPriority(
-      this.overview.unreachable.filterNot(m1 ⇒
-        m1.status == Down && that.members.exists(m2 ⇒ m2.status == Joining && m2.address == m1.address)),
-      that.overview.unreachable.filterNot(m1 ⇒
-        m1.status == Down && this.members.exists(m2 ⇒ m2.status == Joining && m2.address == m1.address)))
+    // 2. merge members by selecting the single Member with highest MemberStatus out of the Member groups
+    val mergedMembers = Gossip.emptyMembers ++ Member.pickHighestPriority(this.members, that.members)
 
-    // 3. merge members by selecting the single Member with highest MemberStatus out of the Member groups,
-    //    and exclude unreachable
-    val mergedMembers = Gossip.emptyMembers ++ Member.pickHighestPriority(this.members, that.members).filterNot(mergedUnreachable.contains)
+    // 3. merge reachability table by picking records with highest version
+    val mergedReachability = this.overview.reachability.merge(mergedMembers.map(_.uniqueAddress),
+      that.overview.reachability)
 
-    // 4. fresh seen table
-    val mergedSeen = Map.empty[Address, VectorClock]
+    // 4. Nobody can have seen this new gossip yet
+    val mergedSeen = Set.empty[UniqueAddress]
 
-    Gossip(mergedMembers, GossipOverview(mergedSeen, mergedUnreachable), mergedVClock)
+    Gossip(mergedMembers, GossipOverview(mergedSeen, mergedReachability), mergedVClock)
   }
 
   /**
@@ -147,83 +158,83 @@ private[cluster] case class Gossip(
    * @return true if convergence have been reached and false if not
    */
   def convergence: Boolean = {
-    val unreachable = overview.unreachable
-    val seen = overview.seen
-
     // First check that:
     //   1. we don't have any members that are unreachable, or
-    //   2. all unreachable members in the set have status DOWN
+    //   2. all unreachable members in the set have status DOWN or EXITING
     // Else we can't continue to check for convergence
-    // When that is done we check that all the entries in the 'seen' table have the same vector clock version
-    // and that all members exists in seen table
-    val hasUnreachable = unreachable.nonEmpty && unreachable.exists { _.status != Down }
-    def allMembersInSeen = members.forall(m ⇒ seen.contains(m.address))
-
-    def seenSame: Boolean =
-      if (seen.isEmpty) {
-        // if both seen and members are empty, then every(no)body has seen the same thing
-        members.isEmpty
-      } else {
-        val values = seen.values
-        val seenHead = values.head
-        values.forall(_ == seenHead)
-      }
-
-    !hasUnreachable && allMembersInSeen && seenSame
+    // When that is done we check that all members with a convergence
+    // status is in the seen table and has the latest vector clock
+    // version
+    val unreachable = overview.reachability.allUnreachableOrTerminated map member
+    unreachable.forall(m ⇒ Gossip.convergenceSkipUnreachableWithMemberStatus(m.status)) &&
+      !members.exists(m ⇒ Gossip.convergenceMemberStatus(m.status) && !seenByNode(m.uniqueAddress))
   }
 
-  def isLeader(address: Address): Boolean = leader == Some(address)
+  def isLeader(node: UniqueAddress): Boolean = leader == Some(node)
 
-  def leader: Option[Address] = members.find(_.status != Exiting).orElse(members.headOption).map(_.address)
+  def leader: Option[UniqueAddress] = leaderOf(members)
+
+  def roleLeader(role: String): Option[UniqueAddress] = leaderOf(members.filter(_.hasRole(role)))
+
+  private def leaderOf(mbrs: immutable.SortedSet[Member]): Option[UniqueAddress] = {
+    val reachableMembers =
+      if (overview.reachability.isAllReachable) mbrs
+      else mbrs.filter(m ⇒ overview.reachability.isReachable(m.uniqueAddress))
+    if (reachableMembers.isEmpty) None
+    else reachableMembers.find(m ⇒ Gossip.leaderMemberStatus(m.status)).
+      orElse(Some(reachableMembers.min(Member.leaderStatusOrdering))).map(_.uniqueAddress)
+  }
+
+  def allRoles: Set[String] = members.flatMap(_.roles)
 
   def isSingletonCluster: Boolean = members.size == 1
 
-  /**
-   * Returns true if the node is in the unreachable set
-   */
-  def isUnreachable(address: Address): Boolean =
-    overview.unreachable exists { _.address == address }
+  def member(node: UniqueAddress): Member = {
+    membersMap.getOrElse(node,
+      Member.removed(node)) // placeholder for removed member
+  }
 
-  def member(address: Address): Member = {
-    members.find(_.address == address).orElse(overview.unreachable.find(_.address == address)).
-      getOrElse(Member(address, Removed))
+  def hasMember(node: UniqueAddress): Boolean = membersMap.contains(node)
+
+  def youngestMember: Member = {
+    require(members.nonEmpty, "No youngest when no members")
+    members.maxBy(m ⇒ if (m.upNumber == Int.MaxValue) 0 else m.upNumber)
   }
 
   override def toString =
-    "Gossip(" +
-      "overview = " + overview +
-      ", members = [" + members.mkString(", ") +
-      "], version = " + version +
-      ")"
+    s"Gossip(members = [${members.mkString(", ")}], overview = ${overview}, version = ${version})"
 }
 
 /**
  * INTERNAL API
  * Represents the overview of the cluster, holds the cluster convergence table and set with unreachable nodes.
  */
+@SerialVersionUID(1L)
 private[cluster] case class GossipOverview(
-  seen: Map[Address, VectorClock] = Map.empty,
-  unreachable: Set[Member] = Set.empty) {
-
-  def isNonDownUnreachable(address: Address): Boolean =
-    unreachable.exists { m ⇒ m.address == address && m.status != Down }
+  seen: Set[UniqueAddress] = Set.empty,
+  reachability: Reachability = Reachability.empty) {
 
   override def toString =
-    "GossipOverview(seen = [" + seen.mkString(", ") +
-      "], unreachable = [" + unreachable.mkString(", ") +
-      "])"
+    s"GossipOverview(reachability = [$reachability], seen = [${seen.mkString(", ")}])"
 }
 
 /**
  * INTERNAL API
- * Envelope adding a sender address to the gossip.
+ * Envelope adding a sender and receiver address to the gossip.
+ * The reason for including the receiver address is to be able to
+ * ignore messages that were intended for a previous incarnation of
+ * the node with same host:port. The `uid` in the `UniqueAddress` is
+ * different in that case.
  */
-private[cluster] case class GossipEnvelope(from: Address, gossip: Gossip, conversation: Boolean = true) extends ClusterMessage
+@SerialVersionUID(1L)
+private[cluster] case class GossipEnvelope(from: UniqueAddress, to: UniqueAddress, gossip: Gossip) extends ClusterMessage
 
 /**
  * INTERNAL API
- * When conflicting versions of received and local [[akka.cluster.Gossip]] is detected
- * it's forwarded to the leader for conflict resolution.
+ * When there are no known changes to the node ring a `GossipStatus`
+ * initiates a gossip chat between two members. If the receiver has a newer
+ * version it replies with a `GossipEnvelope`. If receiver has older version
+ * it replies with its `GossipStatus`. Same versions ends the chat immediately.
  */
-private[cluster] case class GossipMergeConflict(a: GossipEnvelope, b: GossipEnvelope) extends ClusterMessage
-
+@SerialVersionUID(1L)
+private[cluster] case class GossipStatus(from: UniqueAddress, version: VectorClock) extends ClusterMessage

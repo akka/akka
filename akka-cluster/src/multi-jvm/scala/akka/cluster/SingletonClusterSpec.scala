@@ -17,8 +17,7 @@ case class SingletonClusterMultiNodeConfig(failureDetectorPuppet: Boolean) exten
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
       akka.cluster {
-        auto-join                  = on
-        auto-down                  = on
+        auto-down-unreachable-after = 0s
         failure-detector.threshold = 4
       }
     """)).
@@ -44,9 +43,12 @@ abstract class SingletonClusterSpec(multiNodeConfig: SingletonClusterMultiNodeCo
 
   "A cluster of 2 nodes" must {
 
-    "become singleton cluster when started with 'auto-join=on' and 'seed-nodes=[]'" taggedAs LongRunningTest in {
-      awaitUpConvergence(1)
-      clusterView.isSingletonCluster must be(true)
+    "become singleton cluster when started with seed-nodes" taggedAs LongRunningTest in {
+      runOn(first) {
+        cluster.joinSeedNodes(Vector(first))
+        awaitMembersUp(1)
+        clusterView.isSingletonCluster must be(true)
+      }
 
       enterBarrier("after-1")
     }
@@ -62,16 +64,24 @@ abstract class SingletonClusterSpec(multiNodeConfig: SingletonClusterMultiNodeCo
     "become singleton cluster when one node is shutdown" taggedAs LongRunningTest in {
       runOn(first) {
         val secondAddress = address(second)
-        testConductor.shutdown(second, 0).await
+        testConductor.exit(second, 0).await
 
         markNodeAsUnavailable(secondAddress)
 
-        awaitUpConvergence(numberOfMembers = 1, canNotBePartOfMemberRing = Set(secondAddress), 30.seconds)
+        awaitMembersUp(numberOfMembers = 1, canNotBePartOfMemberRing = Set(secondAddress), 30.seconds)
         clusterView.isSingletonCluster must be(true)
         awaitCond(clusterView.isLeader)
       }
 
       enterBarrier("after-3")
+    }
+
+    "leave and shutdown itself when singleton cluster" taggedAs LongRunningTest in {
+      runOn(first) {
+        cluster.leave(first)
+        awaitCond(cluster.isTerminated, 5.seconds)
+      }
+      enterBarrier("after-4")
     }
   }
 }

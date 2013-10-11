@@ -37,11 +37,43 @@ case class Message(s: String)
 
 //#context-actorOf
 class FirstActor extends Actor {
-  val myActor = context.actorOf(Props[MyActor], name = "myactor")
-  //#context-actorOf
+  val child = context.actorOf(Props[MyActor], name = "myChild")
+  //#plus-some-behavior
   def receive = {
     case x ⇒ sender ! x
   }
+  //#plus-some-behavior
+}
+//#context-actorOf
+
+class ActorWithArgs(arg: String) extends Actor {
+  def receive = { case _ ⇒ () }
+}
+
+class DemoActorWrapper extends Actor {
+  //#props-factory
+  object DemoActor {
+    /**
+     * Create Props for an actor of this type.
+     * @param name The name to be passed to this actor’s constructor.
+     * @return a Props for creating this actor, which can then be further configured
+     *         (e.g. calling `.withDispatcher()` on it)
+     */
+    def props(name: String): Props = Props(classOf[DemoActor], name)
+  }
+
+  class DemoActor(name: String) extends Actor {
+    def receive = {
+      case x ⇒ // some behavior
+    }
+  }
+
+  // ...
+
+  context.actorOf(DemoActor.props("hello"))
+  //#props-factory
+
+  def receive = Actor.emptyBehavior
 }
 
 class AnonymousActor extends Actor {
@@ -61,11 +93,21 @@ class AnonymousActor extends Actor {
   //#anonymous-actor
 }
 
-//#system-actorOf
-object Main extends App {
-  val system = ActorSystem("MySystem")
-  val myActor = system.actorOf(Props[MyActor], name = "myactor")
-  //#system-actorOf
+class Hook extends Actor {
+  var child: ActorRef = _
+  //#preStart
+  override def preStart() {
+    child = context.actorOf(Props[MyActor], "child")
+  }
+  //#preStart
+  def receive = Actor.emptyBehavior
+  //#postStop
+  override def postStop() {
+    //#clean-up-some-resources
+    ()
+    //#clean-up-some-resources
+  }
+  //#postStop
 }
 
 class ReplyException extends Actor {
@@ -139,48 +181,26 @@ class SpecificActor extends GenericActor {
 case class MyMsg(subject: String)
 //#receive-orElse
 
-//#receive-orElse2
-trait ComposableActor extends Actor {
-  private var receives: List[Receive] = List()
-  protected def registerReceive(receive: Receive) {
-    receives = receive :: receives
-  }
-
-  def receive = receives reduce { _ orElse _ }
-}
-
-class MyComposableActor extends ComposableActor {
-  override def preStart() {
-    registerReceive({
-      case "foo" ⇒ /* Do something */
-    })
-
-    registerReceive({
-      case "bar" ⇒ /* Do something */
-    })
-  }
-}
-
-//#receive-orElse2
 class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
   "import context" in {
-    //#import-context
-    class FirstActor extends Actor {
-      import context._
-      val myActor = actorOf(Props[MyActor], name = "myactor")
-      def receive = {
-        case x ⇒ myActor ! x
+    new AnyRef {
+      //#import-context
+      class FirstActor extends Actor {
+        import context._
+        val myActor = actorOf(Props[MyActor], name = "myactor")
+        def receive = {
+          case x ⇒ myActor ! x
+        }
       }
+      //#import-context
+
+      val first = system.actorOf(Props(classOf[FirstActor], this), name = "first")
+      system.stop(first)
     }
-    //#import-context
-
-    val first = system.actorOf(Props(new FirstActor), name = "first")
-    system.stop(first)
-
   }
 
-  "creating actor with AkkaSpec.actorOf" in {
+  "creating actor with system.actorOf" in {
     val myActor = system.actorOf(Props[MyActor])
 
     // testing the actor
@@ -206,44 +226,99 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   }
 
   "creating actor with constructor" in {
-    class MyActor(arg: String) extends Actor {
-      def receive = { case _ ⇒ () }
-    }
-
     //#creating-constructor
     // allows passing in arguments to the MyActor constructor
-    val myActor = system.actorOf(Props(new MyActor("...")), name = "myactor")
+    val myActor = system.actorOf(Props[MyActor], name = "myactor")
     //#creating-constructor
 
     system.stop(myActor)
   }
 
   "creating a Props config" in {
-    //#creating-props-config
+    //#creating-props
     import akka.actor.Props
-    val props1 = Props.empty
-    val props2 = Props[MyActor]
-    val props3 = Props(new MyActor)
+
+    val props1 = Props[MyActor]
+    val props3 = Props(classOf[ActorWithArgs], "arg")
+    //#creating-props
+
+    //#creating-props-deprecated
+    // DEPRECATED: old case class signature
     val props4 = Props(
       creator = { () ⇒ new MyActor },
       dispatcher = "my-dispatcher")
+
+    // DEPRECATED due to duplicate functionality with Props.apply()
     val props5 = props1.withCreator(new MyActor)
-    val props6 = props5.withDispatcher("my-dispatcher")
-    //#creating-props-config
+
+    // DEPRECATED due to duplicate functionality with Props.apply()
+    val props6 = props1.withCreator(classOf[MyActor])
+
+    // NOT RECOMMENDED: encourages to close over enclosing class
+    val props7 = Props(new MyActor)
+    //#creating-props-deprecated
   }
 
   "creating actor with Props" in {
-    //#creating-props
-    import akka.actor.Props
-    val myActor = system.actorOf(Props[MyActor].withDispatcher("my-dispatcher"),
-      name = "myactor2")
-    //#creating-props
+    //#system-actorOf
+    import akka.actor.ActorSystem
 
-    system.stop(myActor)
+    // ActorSystem is a heavy object: create only one per application
+    val system = ActorSystem("mySystem")
+    val myActor = system.actorOf(Props[MyActor], "myactor2")
+    //#system-actorOf
+    shutdown(system)
+  }
+
+  "creating actor with IndirectActorProducer" in {
+    class Echo(name: String) extends Actor {
+      def receive = {
+        case n: Int ⇒ sender ! name
+        case message ⇒
+          val target = testActor
+          //#forward
+          target forward message
+        //#forward
+      }
+    }
+
+    val a: { def actorRef: ActorRef } = new AnyRef {
+      val applicationContext = this
+
+      //#creating-indirectly
+      import akka.actor.IndirectActorProducer
+
+      class DependencyInjector(applicationContext: AnyRef, beanName: String)
+        extends IndirectActorProducer {
+
+        override def actorClass = classOf[Actor]
+        override def produce =
+          //#obtain-fresh-Actor-instance-from-DI-framework
+          new Echo(beanName)
+
+        def this(beanName: String) = this("", beanName)
+        //#obtain-fresh-Actor-instance-from-DI-framework
+      }
+
+      val actorRef = system.actorOf(
+        Props(classOf[DependencyInjector], applicationContext, "hello"),
+        "helloBean")
+      //#creating-indirectly
+    }
+    val actorRef = a.actorRef
+
+    val message = 42
+    implicit val self = testActor
+    //#tell
+    actorRef ! message
+    //#tell
+    expectMsg("hello")
+    actorRef ! "huhu"
+    expectMsg("huhu")
   }
 
   "using implicit timeout" in {
-    val myActor = system.actorOf(Props(new FirstActor))
+    val myActor = system.actorOf(Props[FirstActor])
     //#using-implicit-timeout
     import scala.concurrent.duration._
     import akka.util.Timeout
@@ -256,7 +331,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   }
 
   "using explicit timeout" in {
-    val myActor = system.actorOf(Props(new FirstActor))
+    val myActor = system.actorOf(Props[FirstActor])
     //#using-explicit-timeout
     import scala.concurrent.duration._
     import akka.pattern.ask
@@ -285,28 +360,28 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#receive-timeout
   }
 
-  "using hot-swap" in {
-    //#hot-swap-actor
-    class HotSwapActor extends Actor {
-      import context._
-      def angry: Receive = {
-        case "foo" ⇒ sender ! "I am already angry?"
-        case "bar" ⇒ become(happy)
-      }
-
-      def happy: Receive = {
-        case "bar" ⇒ sender ! "I am already happy :-)"
-        case "foo" ⇒ become(angry)
-      }
-
-      def receive = {
-        case "foo" ⇒ become(angry)
-        case "bar" ⇒ become(happy)
-      }
+  //#hot-swap-actor
+  class HotSwapActor extends Actor {
+    import context._
+    def angry: Receive = {
+      case "foo" ⇒ sender ! "I am already angry?"
+      case "bar" ⇒ become(happy)
     }
-    //#hot-swap-actor
 
-    val actor = system.actorOf(Props(new HotSwapActor), name = "hot")
+    def happy: Receive = {
+      case "bar" ⇒ sender ! "I am already happy :-)"
+      case "foo" ⇒ become(angry)
+    }
+
+    def receive = {
+      case "foo" ⇒ become(angry)
+      case "bar" ⇒ become(happy)
+    }
+  }
+  //#hot-swap-actor
+
+  "using hot-swap" in {
+    val actor = system.actorOf(Props(classOf[HotSwapActor], this), name = "hot")
   }
 
   "using Stash" in {
@@ -330,24 +405,77 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   }
 
   "using watch" in {
-    //#watch
-    import akka.actor.{ Actor, Props, Terminated }
+    new AnyRef {
+      //#watch
+      import akka.actor.{ Actor, Props, Terminated }
 
-    class WatchActor extends Actor {
-      val child = context.actorOf(Props.empty, "child")
-      context.watch(child) // <-- this is the only call needed for registration
-      var lastSender = system.deadLetters
+      class WatchActor extends Actor {
+        val child = context.actorOf(Props.empty, "child")
+        context.watch(child) // <-- this is the only call needed for registration
+        var lastSender = system.deadLetters
 
-      def receive = {
-        case "kill"              ⇒ context.stop(child); lastSender = sender
-        case Terminated(`child`) ⇒ lastSender ! "finished"
+        def receive = {
+          case "kill" ⇒
+            context.stop(child); lastSender = sender
+          case Terminated(`child`) ⇒ lastSender ! "finished"
+        }
       }
+      //#watch
+      val a = system.actorOf(Props(classOf[WatchActor], this))
+      implicit val sender = testActor
+      a ! "kill"
+      expectMsg("finished")
     }
-    //#watch
-    val a = system.actorOf(Props(new WatchActor))
-    implicit val sender = testActor
-    a ! "kill"
-    expectMsg("finished")
+  }
+
+  "demonstrate ActorSelection" in {
+    val context = system
+    //#selection-local
+    // will look up this absolute path
+    context.actorSelection("/user/serviceA/aggregator")
+    // will look up sibling beneath same supervisor
+    context.actorSelection("../joe")
+    //#selection-local
+    //#selection-wildcard
+    // will look all children to serviceB with names starting with worker
+    context.actorSelection("/user/serviceB/worker*")
+    // will look up all siblings beneath same supervisor
+    context.actorSelection("../*")
+    //#selection-wildcard
+    //#selection-remote
+    context.actorSelection("akka.tcp://app@otherhost:1234/user/serviceB")
+    //#selection-remote
+  }
+
+  "using Identify" in {
+    new AnyRef {
+      //#identify
+      import akka.actor.{ Actor, Props, Identify, ActorIdentity, Terminated }
+
+      class Follower extends Actor {
+        val identifyId = 1
+        context.actorSelection("/user/another") ! Identify(identifyId)
+
+        def receive = {
+          case ActorIdentity(`identifyId`, Some(ref)) ⇒
+            context.watch(ref)
+            context.become(active(ref))
+          case ActorIdentity(`identifyId`, None) ⇒ context.stop(self)
+
+        }
+
+        def active(another: ActorRef): Actor.Receive = {
+          case Terminated(`another`) ⇒ context.stop(self)
+        }
+      }
+      //#identify
+
+      val a = system.actorOf(Props.empty)
+      val b = system.actorOf(Props(classOf[Follower], this))
+      watch(b)
+      system.stop(a)
+      expectMsgType[akka.actor.Terminated].actor must be === b
+    }
   }
 
   "using pattern gracefulStop" in {
@@ -357,7 +485,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     import scala.concurrent.Await
 
     try {
-      val stopped: Future[Boolean] = gracefulStop(actorRef, 5 seconds)(system)
+      val stopped: Future[Boolean] = gracefulStop(actorRef, 5 seconds)
       Await.result(stopped, 6 seconds)
       // the actor has been stopped
     } catch {
@@ -389,29 +517,31 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#ask-pipeTo
   }
 
-  "replying with own or other sender" in {
-    val actor = system.actorOf(Props(new Actor {
-      def receive = {
-        case ref: ActorRef ⇒
-          //#reply-with-sender
-          sender.tell("reply", context.parent) // replies will go back to parent
-          sender.!("reply")(context.parent) // alternative syntax (beware of the parens!)
+  class Replier extends Actor {
+    def receive = {
+      case ref: ActorRef ⇒
         //#reply-with-sender
-        case x ⇒
-          //#reply-without-sender
-          sender ! x // replies will go to this actor
+        sender.tell("reply", context.parent) // replies will go back to parent
+        sender.!("reply")(context.parent) // alternative syntax (beware of the parens!)
+      //#reply-with-sender
+      case x ⇒
         //#reply-without-sender
-      }
-    }))
+        sender ! x // replies will go to this actor
+      //#reply-without-sender
+    }
+  }
+
+  "replying with own or other sender" in {
+    val actor = system.actorOf(Props(classOf[Replier], this))
     implicit val me = testActor
     actor ! 42
     expectMsg(42)
     lastSender must be === actor
     actor ! me
     expectMsg("reply")
-    lastSender must be === system.actorFor("/user")
+    lastSender.path.elements.mkString("/", "/", "") must be === "/user"
     expectMsg("reply")
-    lastSender must be === system.actorFor("/user")
+    lastSender.path.elements.mkString("/", "/", "") must be === "/user"
   }
 
   "using ActorDSL outside of akka.actor package" in {
@@ -420,6 +550,61 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       superviseWith(OneForOneStrategy() { case _ ⇒ Stop; Restart; Resume; Escalate })
       superviseWith(AllForOneStrategy() { case _ ⇒ Stop; Restart; Resume; Escalate })
     })
+  }
+
+  //#receive-orElse2
+  class PartialFunctionBuilder[A, B] {
+    import scala.collection.immutable.Vector
+
+    // Abbreviate to make code fit
+    type PF = PartialFunction[A, B]
+
+    private var pfsOption: Option[Vector[PF]] = Some(Vector.empty)
+
+    private def mapPfs[C](f: Vector[PF] ⇒ (Option[Vector[PF]], C)): C = {
+      pfsOption.fold(throw new IllegalStateException("Already built"))(f) match {
+        case (newPfsOption, result) ⇒ {
+          pfsOption = newPfsOption
+          result
+        }
+      }
+    }
+
+    def +=(pf: PF): Unit =
+      mapPfs { case pfs ⇒ (Some(pfs :+ pf), ()) }
+
+    def result(): PF =
+      mapPfs { case pfs ⇒ (None, pfs.foldLeft[PF](Map.empty) { _ orElse _ }) }
+  }
+
+  trait ComposableActor extends Actor {
+    protected lazy val receiveBuilder = new PartialFunctionBuilder[Any, Unit]
+    final def receive = receiveBuilder.result()
+  }
+
+  trait TheirComposableActor extends ComposableActor {
+    receiveBuilder += {
+      case "foo" ⇒ sender ! "foo received"
+    }
+  }
+
+  class MyComposableActor extends TheirComposableActor {
+    receiveBuilder += {
+      case "bar" ⇒ sender ! "bar received"
+    }
+  }
+  //#receive-orElse2
+
+  "using ComposableActor" in {
+    val composed = system.actorOf(Props(classOf[MyComposableActor], this))
+    implicit val me = testActor
+    composed ! "foo"
+    expectMsg("foo received")
+    composed ! "bar"
+    expectMsg("bar received")
+    EventFilter.warning(pattern = ".*unhandled message from.*baz", occurrences = 1) intercept {
+      composed ! "baz"
+    }
   }
 
 }

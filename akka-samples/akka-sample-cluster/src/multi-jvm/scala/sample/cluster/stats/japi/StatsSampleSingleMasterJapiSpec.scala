@@ -4,7 +4,7 @@ import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.WordSpec
+import org.scalatest.WordSpecLike
 import org.scalatest.matchers.MustMatchers
 import akka.actor.PoisonPill
 import akka.actor.Props
@@ -19,7 +19,6 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
 import sample.cluster.stats.japi.StatsMessages._
-import akka.contrib.pattern.ClusterSingletonPropsFactory
 
 object StatsSampleSingleMasterJapiSpecConfig extends MultiNodeConfig {
   // register the named roles (nodes) of the test
@@ -33,7 +32,7 @@ object StatsSampleSingleMasterJapiSpecConfig extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-join = off
+    akka.cluster.roles = [compute]
     # don't use sigar for tests, native lib not in path
     akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
     akka.actor.deployment {
@@ -44,6 +43,7 @@ object StatsSampleSingleMasterJapiSpecConfig extends MultiNodeConfig {
             enabled = on
             max-nr-of-instances-per-node = 3
             allow-local-routees = off
+            use-role = compute
           }
         }
     }
@@ -57,7 +57,7 @@ class StatsSampleSingleMasterJapiSpecMultiJvmNode2 extends StatsSampleSingleMast
 class StatsSampleSingleMasterJapiSpecMultiJvmNode3 extends StatsSampleSingleMasterJapiSpec
 
 abstract class StatsSampleSingleMasterJapiSpec extends MultiNodeSpec(StatsSampleSingleMasterJapiSpecConfig)
-  with WordSpec with MustMatchers with BeforeAndAfterAll with ImplicitSender {
+  with WordSpecLike with MustMatchers with BeforeAndAfterAll with ImplicitSender {
 
   import StatsSampleSingleMasterJapiSpecConfig._
 
@@ -72,21 +72,22 @@ abstract class StatsSampleSingleMasterJapiSpec extends MultiNodeSpec(StatsSample
       Cluster(system).subscribe(testActor, classOf[MemberUp])
       expectMsgClass(classOf[CurrentClusterState])
 
-      Cluster(system) join node(first).address
+      val firstAddress = node(first).address
+      val secondAddress = node(second).address
+      val thirdAddress = node(third).address
 
-      expectMsgAllOf(
-        MemberUp(Member(node(first).address, MemberStatus.Up)),
-        MemberUp(Member(node(second).address, MemberStatus.Up)),
-        MemberUp(Member(node(third).address, MemberStatus.Up)))
+      Cluster(system) join firstAddress
+
+      receiveN(3).collect { case MemberUp(m) => m.address }.toSet must be (
+           Set(firstAddress, secondAddress, thirdAddress))
 
       Cluster(system).unsubscribe(testActor)
 
-      system.actorOf(Props(new ClusterSingletonManager(
+      system.actorOf(ClusterSingletonManager.defaultProps(
+        Props[StatsService],  
         singletonName = "statsService",
         terminationMessage = PoisonPill,
-        singletonPropsFactory = new ClusterSingletonPropsFactory {
-          def create(handOverData: Any) = Props[StatsService]
-        })), name = "singleton")
+        role = null), name = "singleton")
 
       system.actorOf(Props[StatsFacade], "statsFacade")
 
@@ -94,18 +95,13 @@ abstract class StatsSampleSingleMasterJapiSpec extends MultiNodeSpec(StatsSample
     }
 
     "show usage of the statsFacade" in within(40 seconds) {
-      val facade = system.actorFor(RootActorPath(node(third).address) / "user" / "statsFacade")
+      val facade = system.actorSelection(RootActorPath(node(third).address) / "user" / "statsFacade")
 
       // eventually the service should be ok,
       // service and worker nodes might not be up yet
-      awaitCond {
+      awaitAssert {
         facade ! new StatsJob("this is the text that will be analyzed")
-        expectMsgPF() {
-          case unavailble: JobFailed ⇒ false
-          case r: StatsResult ⇒
-            r.getMeanWordLength must be(3.875 plusOrMinus 0.001)
-            true
-        }
+        expectMsgType[StatsResult](1.second).getMeanWordLength must be(3.875 plusOrMinus 0.001)
       }
 
       testConductor.enter("done")

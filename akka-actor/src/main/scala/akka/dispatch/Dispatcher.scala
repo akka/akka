@@ -7,12 +7,15 @@ package akka.dispatch
 import akka.event.Logging.Error
 import akka.actor.ActorCell
 import akka.event.Logging
+import akka.dispatch.sysmsg.SystemMessage
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ ExecutorService, RejectedExecutionException }
 import scala.concurrent.forkjoin.ForkJoinPool
 import scala.concurrent.duration.Duration
 import scala.concurrent.Awaitable
 import scala.concurrent.duration.FiniteDuration
+import scala.annotation.tailrec
+import java.lang.reflect.ParameterizedType
 
 /**
  * The event-based ``Dispatcher`` binds a set of Actors to a thread pool backed up by a
@@ -27,14 +30,15 @@ import scala.concurrent.duration.FiniteDuration
  *                   Larger values (or zero or negative) increase throughput, smaller values increase fairness
  */
 class Dispatcher(
-  _prerequisites: DispatcherPrerequisites,
+  _configurator: MessageDispatcherConfigurator,
   val id: String,
   val throughput: Int,
   val throughputDeadlineTime: Duration,
-  val mailboxType: MailboxType,
   executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
   val shutdownTimeout: FiniteDuration)
-  extends MessageDispatcher(_prerequisites) {
+  extends MessageDispatcher(_configurator) {
+
+  import configurator.prerequisites._
 
   private class LazyExecutorServiceDelegate(factory: ExecutorServiceFactory) extends ExecutorServiceDelegate {
     lazy val executor: ExecutorService = factory.createExecutorService
@@ -42,7 +46,7 @@ class Dispatcher(
   }
 
   @volatile private var executorServiceDelegate: LazyExecutorServiceDelegate =
-    new LazyExecutorServiceDelegate(executorServiceFactoryProvider.createExecutorServiceFactory(id, prerequisites.threadFactory))
+    new LazyExecutorServiceDelegate(executorServiceFactoryProvider.createExecutorServiceFactory(id, threadFactory))
 
   protected final def executorService: ExecutorServiceDelegate = executorServiceDelegate
 
@@ -76,7 +80,7 @@ class Dispatcher(
           executorService execute invocation
         } catch {
           case e2: RejectedExecutionException ⇒
-            prerequisites.eventStream.publish(Error(e, getClass.getName, getClass, "executeTask was rejected twice!"))
+            eventStream.publish(Error(e, getClass.getName, getClass, "executeTask was rejected twice!"))
             throw e2
         }
     }
@@ -85,8 +89,9 @@ class Dispatcher(
   /**
    * INTERNAL API
    */
-  protected[akka] def createMailbox(actor: akka.actor.Cell): Mailbox =
+  protected[akka] def createMailbox(actor: akka.actor.Cell, mailboxType: MailboxType): Mailbox = {
     new Mailbox(mailboxType.create(Some(actor.self), Some(actor.system))) with DefaultSystemMessageQueue
+  }
 
   /**
    * INTERNAL API
@@ -120,7 +125,7 @@ class Dispatcher(
             } catch { //Retry once
               case e: RejectedExecutionException ⇒
                 mbox.setAsIdle()
-                prerequisites.eventStream.publish(Error(e, getClass.getName, getClass, "registerForExecution was rejected twice!"))
+                eventStream.publish(Error(e, getClass.getName, getClass, "registerForExecution was rejected twice!"))
                 throw e
             }
         }

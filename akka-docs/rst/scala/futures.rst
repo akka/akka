@@ -1,6 +1,6 @@
 .. _futures-scala:
 
-Futures (Scala)
+Futures
 ===============
 
 
@@ -88,6 +88,11 @@ Or failures:
 
 .. includecode:: code/docs/future/FutureDocSpec.scala
    :include: failed
+
+It is also possible to create an empty ``Promise``, to be filled later, and obtain the corresponding ``Future``:
+
+.. includecode:: code/docs/future/FutureDocSpec.scala
+   :include: promise
 
 Functional Futures
 ------------------

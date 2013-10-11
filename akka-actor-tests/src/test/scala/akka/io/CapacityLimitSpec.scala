@@ -5,10 +5,14 @@
 package akka.io
 
 import akka.testkit.{ TestProbe, AkkaSpec }
+import akka.TestUtils._
 import Tcp._
-import TestUtils._
 
-class CapacityLimitSpec extends AkkaSpec("akka.loglevel = ERROR\nakka.io.tcp.max-channels = 4")
+class CapacityLimitSpec extends AkkaSpec("""
+    akka.loglevel = ERROR
+    akka.io.tcp.max-channels = 4
+    akka.actor.serialize-creators = on
+    """)
   with TcpIntegrationSpecSupport {
 
   "The TCP transport implementation" should {
@@ -19,12 +23,13 @@ class CapacityLimitSpec extends AkkaSpec("akka.loglevel = ERROR\nakka.io.tcp.max
       // we now have three channels registered: a listener, a server connection and a client connection
       // so register one more channel
       val commander = TestProbe()
-      commander.send(IO(Tcp), Bind(bindHandler.ref, temporaryServerAddress()))
-      commander.expectMsg(Bound)
+      val addresses = temporaryServerAddresses(2)
+      commander.send(IO(Tcp), Bind(bindHandler.ref, addresses(0)))
+      commander.expectMsg(Bound(addresses(0)))
 
       // we are now at the configured max-channel capacity of 4
 
-      val bindToFail = Bind(bindHandler.ref, temporaryServerAddress())
+      val bindToFail = Bind(bindHandler.ref, addresses(1))
       commander.send(IO(Tcp), bindToFail)
       commander.expectMsgType[CommandFailed].cmd must be theSameInstanceAs (bindToFail)
 

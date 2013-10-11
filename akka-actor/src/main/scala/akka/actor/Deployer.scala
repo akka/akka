@@ -13,6 +13,12 @@ import akka.util.WildcardTree
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 
+object Deploy {
+  final val NoDispatcherGiven = ""
+  final val NoMailboxGiven = ""
+  val local = Deploy(scope = LocalScope)
+}
+
 /**
  * This class represents deployment configuration for a given actor path. It is
  * marked final in order to guarantee stable merge semantics (i.e. what
@@ -25,15 +31,17 @@ import scala.annotation.tailrec
  * not needed when just doing deploy-as-you-go:
  *
  * {{{
- * context.actorOf(someProps, "someName", Deploy(scope = RemoteScope("someOtherNodeName")))
+ * val remoteProps = someProps.withDeploy(Deploy(scope = RemoteScope("someOtherNodeName")))
  * }}}
  */
-@SerialVersionUID(1L)
+@SerialVersionUID(2L)
 final case class Deploy(
   path: String = "",
   config: Config = ConfigFactory.empty,
   routerConfig: RouterConfig = NoRouter,
-  scope: Scope = NoScopeGiven) {
+  scope: Scope = NoScopeGiven,
+  dispatcher: String = Deploy.NoDispatcherGiven,
+  mailbox: String = Deploy.NoMailboxGiven) {
 
   /**
    * Java API to create a Deploy with the given RouterConfig
@@ -55,8 +63,15 @@ final case class Deploy(
    * precedence. The “path” of the other Deploy is not taken into account. All
    * other members are merged using ``<X>.withFallback(other.<X>)``.
    */
-  def withFallback(other: Deploy): Deploy =
-    Deploy(path, config.withFallback(other.config), routerConfig.withFallback(other.routerConfig), scope.withFallback(other.scope))
+  def withFallback(other: Deploy): Deploy = {
+    Deploy(
+      path,
+      config.withFallback(other.config),
+      routerConfig.withFallback(other.routerConfig),
+      scope.withFallback(other.scope),
+      if (dispatcher == Deploy.NoDispatcherGiven) other.dispatcher else dispatcher,
+      if (mailbox == Deploy.NoMailboxGiven) other.mailbox else mailbox)
+  }
 }
 
 /**
@@ -85,6 +100,7 @@ abstract class LocalScope extends Scope
  * which do not set a different scope. It is also the only scope handled by
  * the LocalActorRefProvider.
  */
+@SerialVersionUID(1L)
 case object LocalScope extends LocalScope {
   /**
    * Java API: get the singleton instance
@@ -99,6 +115,7 @@ case object LocalScope extends LocalScope {
  */
 @SerialVersionUID(1L)
 abstract class NoScopeGiven extends Scope
+@SerialVersionUID(1L)
 case object NoScopeGiven extends NoScopeGiven {
   def withFallback(other: Scope): Scope = other
 
@@ -132,8 +149,19 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
   def lookup(path: Iterator[String]): Option[Deploy] = deployments.get().find(path).data
 
   def deploy(d: Deploy): Unit = {
-    @tailrec def add(path: Array[String], d: Deploy, w: WildcardTree[Deploy] = deployments.get): Unit =
+    @tailrec def add(path: Array[String], d: Deploy, w: WildcardTree[Deploy] = deployments.get): Unit = {
+      import ActorPath.ElementRegex
+      for (i ← 0 until path.length) path(i) match {
+        case "" ⇒
+          throw new InvalidActorNameException(s"actor name in deployment [${d.path}] must not be empty")
+        case ElementRegex() ⇒ // ok
+        case name ⇒
+          throw new InvalidActorNameException(
+            s"illegal actor name [$name] in deployment [${d.path}], must conform to $ElementRegex")
+      }
+
       if (!deployments.compareAndSet(w, w.insert(path.iterator, d))) add(path, d)
+    }
 
     add(d.path.split("/").drop(1), d)
   }
@@ -141,7 +169,9 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
   def parseConfig(key: String, config: Config): Option[Deploy] = {
     val deployment = config.withFallback(default)
     val router = createRouterConfig(deployment.getString("router"), key, config, deployment)
-    Some(Deploy(key, deployment, router, NoScopeGiven))
+    val dispatcher = deployment.getString("dispatcher")
+    val mailbox = deployment.getString("mailbox")
+    Some(Deploy(key, deployment, router, NoScopeGiven, dispatcher, mailbox))
   }
 
   /**

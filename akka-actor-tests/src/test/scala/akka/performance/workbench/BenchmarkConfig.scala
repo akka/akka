@@ -4,8 +4,11 @@ import com.typesafe.config.ConfigFactory
 object BenchmarkConfig {
   private val benchmarkConfig = ConfigFactory.parseString("""
     akka {
-        loggers = ["akka.testkit.TestEventListener"]
-        loglevel = "WARNING"
+      loggers = ["akka.testkit.TestEventListener"]
+      loglevel = "WARNING"
+      actor {
+        serialize-messages = off
+      }
     }
 
     benchmark {

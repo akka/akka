@@ -1,17 +1,15 @@
 /**
- * Copyright (C) 2009-2010 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote
 
-import akka.dispatch.SystemMessage
-import akka.event.{ LoggingAdapter, Logging }
 import akka.AkkaException
-import akka.serialization.Serialization
-import akka.remote.RemoteProtocol._
 import akka.actor._
+import akka.event.{ Logging, LoggingAdapter }
 import scala.collection.immutable
 import scala.concurrent.Future
+import scala.util.control.NoStackTrace
 
 /**
  * RemoteTransportException represents a general failure within a RemoteTransport,
@@ -21,11 +19,18 @@ import scala.concurrent.Future
 class RemoteTransportException(message: String, cause: Throwable) extends AkkaException(message, cause)
 
 /**
+ * [[RemoteTransportException]] without stack trace.
+ */
+@SerialVersionUID(1L)
+class RemoteTransportExceptionNoStackTrace(message: String, cause: Throwable)
+  extends RemoteTransportException(message, cause) with NoStackTrace
+
+/**
  * INTERNAL API
  *
  * The remote transport is responsible for sending and receiving messages.
  * Each transport has an address, which it should provide in
- * Serialization.currentTransportAddress (thread-local) while serializing
+ * Serialization.currentTransportInformation (thread-local) while serializing
  * actor references (which might also be part of messages). This address must
  * be available (i.e. fully initialized) by the time the first message is
  * received or when the start() method returns, whatever happens first.
@@ -76,6 +81,13 @@ private[akka] abstract class RemoteTransport(val system: ExtendedActorSystem, va
    * A Logger that can be used to log issues that may occur
    */
   def log: LoggingAdapter
+
+  /**
+   * Marks a remote system as out of sync and prevents reconnects until the quarantine timeout elapses.
+   * @param address Address of the remote system to be quarantined
+   * @param uid UID of the remote system
+   */
+  def quarantine(address: Address, uid: Int): Unit
 
   /**
    * When this method returns true, some functionality will be turned off for security purposes.

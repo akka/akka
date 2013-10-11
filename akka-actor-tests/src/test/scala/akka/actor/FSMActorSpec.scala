@@ -34,6 +34,9 @@ object FSMActorSpec {
   case object Locked extends LockState
   case object Open extends LockState
 
+  case object Hello
+  case object Bye
+
   class Lock(code: String, timeout: FiniteDuration, latches: Latches) extends Actor with FSM[LockState, CodeState] {
 
     import latches._
@@ -46,7 +49,7 @@ object FSMActorSpec {
           case incomplete if incomplete.length < code.length ⇒
             stay using CodeState(incomplete, code)
           case codeTry if (codeTry == code) ⇒ {
-            doUnlock
+            doUnlock()
             goto(Open) using CodeState("", code) forMax timeout
           }
           case wrong ⇒ {
@@ -60,7 +63,7 @@ object FSMActorSpec {
 
     when(Open) {
       case Event(StateTimeout, _) ⇒ {
-        doLock
+        doLock()
         goto(Locked)
       }
     }
@@ -87,19 +90,15 @@ object FSMActorSpec {
     onTermination {
       case StopEvent(FSM.Shutdown, Locked, _) ⇒
         // stop is called from lockstate with shutdown as reason...
-        terminatedLatch.open
+        terminatedLatch.open()
     }
 
     // initialize the lock
-    initialize
+    initialize()
 
-    private def doLock() {
-      lockedLatch.open
-    }
+    private def doLock(): Unit = lockedLatch.open()
 
-    private def doUnlock = {
-      unlockedLatch.open
-    }
+    private def doUnlock(): Unit = unlockedLatch.open()
   }
 
   case class CodeState(soFar: String, code: String)
@@ -148,8 +147,6 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       }
 
       val answerLatch = TestLatch()
-      object Hello
-      object Bye
       val tester = system.actorOf(Props(new Actor {
         def receive = {
           case Hello   ⇒ lock ! "hello"
@@ -258,7 +255,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
 
     "log events and transitions if asked to do so" in {
       import scala.collection.JavaConverters._
-      val config = ConfigFactory.parseMap(Map("akka.loglevel" -> "DEBUG",
+      val config = ConfigFactory.parseMap(Map("akka.loglevel" -> "DEBUG", "akka.actor.serialize-messages" -> "off",
         "akka.actor.debug.fsm" -> true).asJava).withFallback(system.settings.config)
       val fsmEventSystem = ActorSystem("fsmEvent", config)
       try {
@@ -299,7 +296,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
           }
         }
       } finally {
-        fsmEventSystem.shutdown()
+        TestKit.shutdownActorSystem(fsmEventSystem)
       }
     }
 

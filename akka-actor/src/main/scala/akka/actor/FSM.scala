@@ -27,27 +27,27 @@ object FSM {
 
   /**
    * Message type which is sent directly to the subscribed actor in
-   * [[akka.actor.FSM.SubscribeTransitionCallback]] before sending any
+   * [[akka.actor.FSM.SubscribeTransitionCallBack]] before sending any
    * [[akka.actor.FSM.Transition]] messages.
    */
   case class CurrentState[S](fsmRef: ActorRef, state: S)
 
   /**
    * Message type which is used to communicate transitions between states to
-   * all subscribed listeners (use [[akka.actor.FSM.SubscribeTransitionCallback]]).
+   * all subscribed listeners (use [[akka.actor.FSM.SubscribeTransitionCallBack]]).
    */
   case class Transition[S](fsmRef: ActorRef, from: S, to: S)
 
   /**
-   * Send this to an [[akka.actor.FSM]] to request first the [[akka.actor.CurrentState]]
-   * and then a series of [[akka.actor.Transition]] updates. Cancel the subscription
-   * using [[akka.actor.FSM.UnsubscribeTransitionCallback]].
+   * Send this to an [[akka.actor.FSM]] to request first the [[FSM.CurrentState]]
+   * and then a series of [[FSM.Transition]] updates. Cancel the subscription
+   * using [[FSM.UnsubscribeTransitionCallBack]].
    */
   case class SubscribeTransitionCallBack(actorRef: ActorRef)
 
   /**
    * Unsubscribe from [[akka.actor.FSM.Transition]] notifications which was
-   * effected by sending the corresponding [[akka.actor.FSM.SubscribeTransitionCallback]].
+   * effected by sending the corresponding [[akka.actor.FSM.SubscribeTransitionCallBack]].
    */
   case class UnsubscribeTransitionCallBack(actorRef: ActorRef)
 
@@ -87,7 +87,9 @@ object FSM {
   /**
    * INTERNAL API
    */
-  private[akka] case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(context: ActorContext) {
+  // FIXME: what about the cancellable?
+  private[akka] case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(context: ActorContext)
+    extends NoSerializationVerificationNeeded {
     private var ref: Option[Cancellable] = _
     private val scheduler = context.system.scheduler
     private implicit val executionContext = context.dispatcher
@@ -184,7 +186,7 @@ object FSM {
  *         case Ev(SomeMsg) => ... // convenience when data not needed
  *     }
  *     when(Two, stateTimeout = 5 seconds) { ... }
- *     initialize
+ *     initialize()
  *   }
  * </pre>
  *
@@ -242,8 +244,7 @@ object FSM {
  *   isTimerActive("tock")
  * </pre>
  */
-trait FSM[S, D] extends Listeners with ActorLogging {
-  this: Actor ⇒
+trait FSM[S, D] extends Actor with Listeners with ActorLogging {
 
   import FSM._
 
@@ -287,7 +288,9 @@ trait FSM[S, D] extends Listeners with ActorLogging {
     register(stateName, stateFunction, Option(stateTimeout))
 
   /**
-   * Set initial state. Call this method from the constructor before the #initialize method.
+   * Set initial state. Call this method from the constructor before the [[#initialize]] method.
+   * If different state is needed after a restart this method, followed by [[#initialize]], can
+   * be used in the actor life cycle hooks [[akka.actor.Actor#preStart]] and [[akka.actor.Actor#postRestart]].
    *
    * @param stateName initial state designator
    * @param stateData initial state data
@@ -343,7 +346,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
    * @param repeat send once if false, scheduleAtFixedRate if true
    * @return current state descriptor
    */
-  final def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean): State = {
+  final def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean): Unit = {
     if (debugEvent)
       log.debug("setting " + (if (repeat) "repeating " else "") + "timer '" + name + "'/" + timeout + ": " + msg)
     if (timers contains name) {
@@ -352,7 +355,6 @@ trait FSM[S, D] extends Listeners with ActorLogging {
     val timer = Timer(name, msg, repeat, timerGen.next)(context)
     timer.schedule(self, timeout)
     timers(name) = timer
-    stay
   }
 
   /**
@@ -449,9 +451,12 @@ trait FSM[S, D] extends Listeners with ActorLogging {
 
   /**
    * Verify existence of initial state and setup timers. This should be the
-   * last call within the constructor.
+   * last call within the constructor, or [[akka.actor.Actor#preStart]] and
+   * [[akka.actor.Actor#postRestart]]
+   *
+   * @see [[#startWith]]
    */
-  final def initialize: Unit = makeTransition(currentState)
+  final def initialize(): Unit = makeTransition(currentState)
 
   /**
    * Return current state name (i.e. object of type S)
@@ -466,7 +471,10 @@ trait FSM[S, D] extends Listeners with ActorLogging {
   /**
    * Return next state data (available in onTransition handlers)
    */
-  final def nextStateData = nextState.stateData
+  final def nextStateData = nextState match {
+    case null ⇒ throw new IllegalStateException("nextStateData is only available during onTransition")
+    case x    ⇒ x.stateData
+  }
 
   /*
    * ****************************************************************
@@ -553,12 +561,12 @@ trait FSM[S, D] extends Listeners with ActorLogging {
         processMsg(msg, t)
       }
     case SubscribeTransitionCallBack(actorRef) ⇒
-      // TODO use DeathWatch to clean up list
+      // TODO Use context.watch(actor) and receive Terminated(actor) to clean up list
       listeners.add(actorRef)
       // send current state back as reference point
       actorRef ! CurrentState(self, currentState.stateName)
     case Listen(actorRef) ⇒
-      // TODO use DeathWatch to clean up list
+      // TODO Use context.watch(actor) and receive Terminated(actor) to clean up list
       listeners.add(actorRef)
       // send current state back as reference point
       actorRef ! CurrentState(self, currentState.stateName)
@@ -611,6 +619,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
         this.nextState = nextState
         handleTransition(currentState.stateName, nextState.stateName)
         gossip(Transition(self, currentState.stateName, nextState.stateName))
+        this.nextState = null
       }
       currentState = nextState
       val timeout = if (currentState.timeout.isDefined) currentState.timeout else stateTimeouts(currentState.stateName)
@@ -638,16 +647,13 @@ trait FSM[S, D] extends Listeners with ActorLogging {
      * since the new instance will initialize fresh using startWith()
      */
     terminate(stay withStopReason Shutdown)
+    super.postStop()
   }
 
   private def terminate(nextState: State): Unit = {
     if (currentState.stopReason.isEmpty) {
       val reason = nextState.stopReason.get
-      reason match {
-        case Failure(ex: Throwable) ⇒ log.error(ex, "terminating due to Failure")
-        case Failure(msg: AnyRef)   ⇒ log.error(msg.toString)
-        case _                      ⇒
-      }
+      logTermination(reason)
       for (timer ← timers.values) timer.cancel()
       timers.clear()
       currentState = nextState
@@ -659,16 +665,26 @@ trait FSM[S, D] extends Listeners with ActorLogging {
   }
 
   /**
+   * By default [[FSM.Failure]] is logged at error level and other reason
+   * types are not logged. It is possible to override this behavior.
+   */
+  protected def logTermination(reason: Reason): Unit = reason match {
+    case Failure(ex: Throwable) ⇒ log.error(ex, "terminating due to Failure")
+    case Failure(msg: AnyRef)   ⇒ log.error(msg.toString)
+    case _                      ⇒
+  }
+
+  /**
    * All messages sent to the [[akka.actor.FSM]] will be wrapped inside an
    * `Event`, which allows pattern matching to extract both state and data.
    */
-  case class Event(event: Any, stateData: D)
+  case class Event(event: Any, stateData: D) extends NoSerializationVerificationNeeded
 
   /**
    * Case class representing the state of the [[akka.actor.FSM]] whithin the
    * `onTermination` block.
    */
-  case class StopEvent(reason: Reason, currentState: S, stateData: D)
+  case class StopEvent(reason: Reason, currentState: S, stateData: D) extends NoSerializationVerificationNeeded
 }
 
 /**

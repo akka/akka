@@ -11,9 +11,26 @@ import akka.testkit.AkkaSpec
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import scala.concurrent.duration._
-import akka.actor.{ Props, Actor, PoisonPill, ActorSystem }
+import akka.actor._
+import docs.dispatcher.DispatcherDocSpec.MyBoundedActor
 
 object DispatcherDocSpec {
+  val javaConfig = """
+     //#prio-dispatcher-config-java
+     prio-dispatcher {
+       mailbox-type = "docs.dispatcher.DispatcherDocTest$MyPrioMailbox"
+       //Other dispatcher configuration goes here
+     }
+     //#prio-dispatcher-config-java
+
+    //#prio-mailbox-config-java
+    prio-mailbox {
+      mailbox-type = "docs.dispatcher.DispatcherDocSpec$MyPrioMailbox"
+      //Other mailbox configuration goes here
+    }
+    //#prio-mailbox-config-java
+  """
+
   val config = """
     //#my-dispatcher-config
     my-dispatcher {
@@ -74,7 +91,7 @@ object DispatcherDocSpec {
         core-pool-size-factor = 8.0
         max-pool-size-factor  = 16.0
       }
-      # Specifies the bounded capacity of the mailbox queue
+      # Specifies the bounded capacity of the message queue
       mailbox-capacity = 100
       throughput = 3
     }
@@ -94,15 +111,49 @@ object DispatcherDocSpec {
     //#prio-dispatcher-config
     prio-dispatcher {
       mailbox-type = "docs.dispatcher.DispatcherDocSpec$MyPrioMailbox"
+      //Other dispatcher configuration goes here
     }
     //#prio-dispatcher-config
 
-    //#prio-dispatcher-config-java
-    prio-dispatcher-java {
-      mailbox-type = "docs.dispatcher.DispatcherDocTestBase$MyPrioMailbox"
-      //Other dispatcher configuration goes here
+    //#dispatcher-deployment-config
+    akka.actor.deployment {
+      /myactor {
+        dispatcher = my-dispatcher
+      }
     }
-    //#prio-dispatcher-config-java
+    //#dispatcher-deployment-config
+
+    //#prio-mailbox-config
+    prio-mailbox {
+      mailbox-type = "docs.dispatcher.DispatcherDocSpec$MyPrioMailbox"
+      //Other mailbox configuration goes here
+    }
+    //#prio-mailbox-config
+
+    //#mailbox-deployment-config
+
+    akka.actor.deployment {
+      /priomailboxactor {
+        mailbox = prio-mailbox
+      }
+    }
+    //#mailbox-deployment-config
+
+    //#bounded-mailbox-config
+    bounded-mailbox {
+      mailbox-type = "akka.dispatch.BoundedMailbox"
+      mailbox-capacity = 1000
+      mailbox-push-timeout-time = 10s
+    }
+    //#bounded-mailbox-config
+
+    //#required-mailbox-config
+
+    akka.actor.mailbox.requirements {
+      "akka.dispatch.BoundedMessageQueueSemantics" = bounded-mailbox
+    }
+    //#required-mailbox-config
+
   """
 
   //#prio-mailbox
@@ -136,6 +187,14 @@ object DispatcherDocSpec {
     }
   }
 
+  //#required-mailbox-class
+  import akka.dispatch.RequiresMessageQueue
+  import akka.dispatch.BoundedMessageQueueSemantics
+
+  class MyBoundedActor extends MyActor
+    with RequiresMessageQueue[BoundedMessageQueueSemantics]
+  //#required-mailbox-class
+
   //#mailbox-implementation-example
   class MyUnboundedMailbox extends akka.dispatch.MailboxType {
     import akka.actor.{ ActorRef, ActorSystem }
@@ -144,8 +203,7 @@ object DispatcherDocSpec {
     import akka.dispatch.{
       Envelope,
       MessageQueue,
-      QueueBasedMessageQueue,
-      UnboundedMessageQueueSemantics
+      UnboundedQueueBasedMessageQueue
     }
 
     // This constructor signature must exist, it will be called by Akka
@@ -154,7 +212,7 @@ object DispatcherDocSpec {
     // The create method is called to create the MessageQueue
     final override def create(owner: Option[ActorRef],
                               system: Option[ActorSystem]): MessageQueue =
-      new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
+      new UnboundedQueueBasedMessageQueue {
         final val queue = new ConcurrentLinkedQueue[Envelope]()
       }
   }
@@ -165,13 +223,21 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
 
   import DispatcherDocSpec.MyActor
 
-  "defining dispatcher" in {
+  "defining dispatcher in config" in {
     val context = system
-    //#defining-dispatcher
+    //#defining-dispatcher-in-config
+    import akka.actor.Props
+    val myActor = context.actorOf(Props[MyActor], "myactor")
+    //#defining-dispatcher-in-config
+  }
+
+  "defining dispatcher in code" in {
+    val context = system
+    //#defining-dispatcher-in-code
     import akka.actor.Props
     val myActor =
       context.actorOf(Props[MyActor].withDispatcher("my-dispatcher"), "myactor1")
-    //#defining-dispatcher
+    //#defining-dispatcher-in-code
   }
 
   "defining dispatcher with bounded queue" in {
@@ -193,12 +259,33 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
     //#lookup
   }
 
-  "defining priority dispatcher" in {
-    //#prio-dispatcher
+  "defining mailbox in config" in {
+    val context = system
+    //#defining-mailbox-in-config
+    import akka.actor.Props
+    val myActor = context.actorOf(Props[MyActor], "priomailboxactor")
+    //#defining-mailbox-in-config
+  }
 
-    // We create a new Actor that just prints out what it processes
-    val a = system.actorOf(
-      Props(new Actor {
+  "defining mailbox in code" in {
+    val context = system
+    //#defining-mailbox-in-code
+    import akka.actor.Props
+    val myActor = context.actorOf(Props[MyActor].withMailbox("prio-mailbox"))
+    //#defining-mailbox-in-code
+  }
+
+  "using a required mailbox" in {
+    val context = system
+    val myActor = context.actorOf(Props[MyBoundedActor])
+  }
+
+  "defining priority dispatcher" in {
+    new AnyRef {
+      //#prio-dispatcher
+
+      // We create a new Actor that just prints out what it processes
+      class Logger extends Actor {
         val log: LoggingAdapter = Logging(context.system, this)
 
         self ! 'lowpriority
@@ -213,21 +300,25 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
         def receive = {
           case x ⇒ log.info(x.toString)
         }
-      }).withDispatcher("prio-dispatcher"))
+      }
+      val a = system.actorOf(Props(classOf[Logger], this).withDispatcher(
+        "prio-dispatcher"))
 
-    /*
-    Logs:
-      'highpriority
-      'highpriority
-      'pigdog
-      'pigdog2
-      'pigdog3
-      'lowpriority
-      'lowpriority
-    */
-    //#prio-dispatcher
+      /*
+       * Logs:
+       * 'highpriority
+       * 'highpriority
+       * 'pigdog
+       * 'pigdog2
+       * 'pigdog3
+       * 'lowpriority
+       * 'lowpriority
+       */
+      //#prio-dispatcher
 
-    awaitCond(a.isTerminated, 5 seconds)
+      watch(a)
+      expectMsgPF() { case Terminated(`a`) ⇒ () }
+    }
   }
 
   "defining balancing dispatcher" in {

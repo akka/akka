@@ -12,7 +12,7 @@ import org.apache.camel.component.mock.MockEndpoint
 import scala.concurrent.Await
 import akka.camel.TestSupport.SharedCamelSystem
 import akka.actor.SupervisorStrategy.Stop
-import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll, WordSpec }
+import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll, WordSpecLike }
 import akka.actor._
 import akka.pattern._
 import scala.concurrent.duration._
@@ -24,14 +24,14 @@ import akka.actor.Status.Failure
 /**
  * Tests the features of the Camel Producer.
  */
-class ProducerFeatureTest extends TestKit(ActorSystem("test", AkkaSpec.testConf)) with WordSpec with BeforeAndAfterAll with BeforeAndAfterEach with MustMatchers {
+class ProducerFeatureTest extends TestKit(ActorSystem("test", AkkaSpec.testConf)) with WordSpecLike with BeforeAndAfterAll with BeforeAndAfterEach with MustMatchers {
 
   import ProducerFeatureTest._
   implicit def camel = CamelExtension(system)
 
   override protected def afterAll() {
     super.afterAll()
-    system.shutdown()
+    shutdown(system)
   }
 
   val camelContext = camel.context
@@ -282,7 +282,7 @@ object ProducerFeatureTest {
     }
 
     override def postStop() {
-      for (msg ← lastMessage; aref ← lastSender) context.parent ! (aref, msg)
+      for (msg ← lastMessage; aref ← lastSender) context.parent ! ((aref, msg))
       super.postStop()
     }
   }

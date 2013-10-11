@@ -12,18 +12,16 @@ import scala.concurrent.duration._
 import akka.actor.Props
 import akka.actor.Actor
 import akka.cluster.MemberStatus._
+import akka.actor.Deploy
 
 object LeaderLeavingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
 
-  commonConfig(
-    debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString("""
-          # turn off unreachable reaper
-          akka.cluster.unreachable-nodes-reaper-interval = 300 s""")
-        .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet)))
+  commonConfig(debugConfig(on = false).
+    withFallback(ConfigFactory.parseString("akka.cluster.auto-down-unreachable-after = 0s")).
+    withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
 class LeaderLeavingMultiJvmNode1 extends LeaderLeavingSpec
@@ -37,8 +35,6 @@ abstract class LeaderLeavingSpec
   import LeaderLeavingMultiJvmSpec._
   import ClusterEvent._
 
-  val leaderHandoffWaitingTime = 30.seconds
-
   "A LEADER that is LEAVING" must {
 
     "be moved to LEAVING, then to EXITING, then to REMOVED, then be shut down and then a new LEADER should be elected" taggedAs LongRunningTest in {
@@ -47,7 +43,7 @@ abstract class LeaderLeavingSpec
 
       val oldLeaderAddress = clusterView.leader.get
 
-      within(leaderHandoffWaitingTime) {
+      within(30.seconds) {
 
         if (clusterView.isLeader) {
 
@@ -58,45 +54,39 @@ abstract class LeaderLeavingSpec
 
           // verify that the LEADER is shut down
           awaitCond(cluster.isTerminated)
+          enterBarrier("leader-shutdown")
 
         } else {
 
-          val leavingLatch = TestLatch()
           val exitingLatch = TestLatch()
 
           cluster.subscribe(system.actorOf(Props(new Actor {
             def receive = {
               case state: CurrentClusterState ⇒
-                if (state.members.exists(m ⇒ m.address == oldLeaderAddress && m.status == Leaving))
-                  leavingLatch.countDown()
                 if (state.members.exists(m ⇒ m.address == oldLeaderAddress && m.status == Exiting))
                   exitingLatch.countDown()
-              case MemberLeft(m) if m.address == oldLeaderAddress ⇒ leavingLatch.countDown()
               case MemberExited(m) if m.address == oldLeaderAddress ⇒ exitingLatch.countDown()
               case _ ⇒ // ignore
             }
-          })), classOf[MemberEvent])
+          }).withDeploy(Deploy.local)), classOf[MemberEvent])
           enterBarrier("registered-listener")
 
           enterBarrier("leader-left")
 
-          val expectedAddresses = roles.toSet map address
-          awaitCond(clusterView.members.map(_.address) == expectedAddresses)
-
-          // verify that the LEADER is LEAVING
-          leavingLatch.await
-
           // verify that the LEADER is EXITING
           exitingLatch.await
 
+          enterBarrier("leader-shutdown")
+          markNodeAsUnavailable(oldLeaderAddress)
+
           // verify that the LEADER is no longer part of the 'members' set
-          awaitCond(clusterView.members.forall(_.address != oldLeaderAddress))
+          awaitAssert(clusterView.members.map(_.address) must not contain (oldLeaderAddress))
 
           // verify that the LEADER is not part of the 'unreachable' set
-          awaitCond(clusterView.unreachableMembers.forall(_.address != oldLeaderAddress))
+          awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (oldLeaderAddress))
 
           // verify that we have a new LEADER
-          awaitCond(clusterView.leader != oldLeaderAddress)
+          awaitAssert(clusterView.leader must not be (oldLeaderAddress))
         }
 
         enterBarrier("finished")

@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.camel.internal
 
 import akka.camel.internal.component.{ DurationTypeConverter, ActorComponent }
@@ -17,7 +20,7 @@ import org.apache.camel.model.RouteDefinition
 import akka.actor.{ ExtendedActorSystem, ActorRef, Props, ActorSystem }
 
 /**
- * For internal use only.
+ * INTERNAL API
  * Creates an instance of the Camel subsystem.
  *
  * @param system is used to create internal actors needed by camel instance.
@@ -27,9 +30,6 @@ import akka.actor.{ ExtendedActorSystem, ActorRef, Props, ActorSystem }
  */
 private[camel] class DefaultCamel(val system: ExtendedActorSystem) extends Camel {
   val supervisor = system.actorOf(Props[CamelSupervisor], "camel-supervisor")
-  /**
-   * For internal use only.
-   */
   private[camel] implicit val log = Logging(system, "Camel")
 
   lazy val context: DefaultCamelContext = {
@@ -49,7 +49,7 @@ private[camel] class DefaultCamel(val system: ExtendedActorSystem) extends Camel
   /**
    * Starts camel and underlying camel context and template.
    * Only the creator of Camel should start and stop it.
-   * @see akka.camel.DefaultCamel#stop()
+   * @see akka.camel.DefaultCamel#shutdown()
    */
   def start(): this.type = {
     context.start()

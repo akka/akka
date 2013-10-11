@@ -1,0 +1,264 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+option java_package = "akka.cluster.protobuf.msg";
+option optimize_for = SPEED;
+
+/****************************************
+ * Cluster User Messages
+ ****************************************/
+
+/**
+ * Leave
+ * Sends an Address
+ */
+
+/**
+ * Down
+ * Sends an Address
+ */
+
+/****************************************
+ * Internal Cluster Action Messages
+ ****************************************/
+
+/**
+ * Join
+ */
+message Join {
+  required UniqueAddress node = 1;
+  repeated string roles = 2;
+}
+
+/**
+ * Welcome, reply to Join
+ */
+message Welcome {
+  required UniqueAddress from = 1;
+  required Gossip gossip = 2;
+}
+
+/**
+ * InitJoin
+ * Sends Empty
+ */
+
+/**
+ * InitJoinAck
+ * Sends an Address
+ */
+
+/**
+ * InitJoinNack
+ * Sends an Address
+ */
+
+
+/****************************************
+ * Cluster Heartbeat Messages
+ ****************************************/
+
+/**
+ * Heartbeat
+ * Sends an Address
+ */
+
+/**
+ * EndHeartbeat
+ * Sends an Address
+ */
+
+ /**
+ * EndHeartbeatAck
+ * Sends an Address
+ */
+
+/**
+ * HeartbeatRequest
+ * Sends an Address
+ */
+
+/****************************************
+ * Cluster Gossip Messages
+ ****************************************/
+
+/**
+ * Gossip Envelope
+ */
+message GossipEnvelope {
+  required UniqueAddress from = 1;
+  required UniqueAddress to = 2;
+  required Gossip gossip = 3;
+}
+
+/**
+ * Gossip Status
+ */
+message GossipStatus {
+  required UniqueAddress from = 1;
+  repeated string allHashes = 2;
+  required VectorClock version = 3;
+}
+
+/**
+ * Gossip
+ */
+message Gossip {
+  repeated UniqueAddress allAddresses = 1;
+  repeated string allRoles = 2;
+  repeated string allHashes = 3;
+  repeated Member members = 4;
+  required GossipOverview overview = 5;
+  required VectorClock version = 6;
+}
+
+/**
+ * Gossip Overview
+ */
+message GossipOverview {
+  /* This is the address indexes for the nodes that have seen this gossip */
+  repeated int32 seen = 1;
+  repeated ObserverReachability observerReachability = 2;
+}
+
+/**
+ * Reachability
+ */
+message ObserverReachability {
+  required int32 addressIndex = 1;
+  required int64 version = 4;
+  repeated SubjectReachability subjectReachability = 2;
+}
+
+message SubjectReachability {
+  required int32 addressIndex = 1;
+  required ReachabilityStatus status = 3;
+  required int64 version = 4;
+}
+
+/**
+ * Reachability status
+ */
+enum ReachabilityStatus {
+  Reachable = 0;
+  Unreachable = 1;
+  Terminated = 2;
+}
+
+
+/**
+ * Member
+ */
+message Member {
+  required int32 addressIndex = 1;
+  required int32 upNumber = 2;
+  required MemberStatus status = 3;
+  repeated int32 rolesIndexes = 4 [packed = true];
+}
+
+/**
+ * Member Status
+ */
+enum MemberStatus {
+  Joining = 0;
+  Up = 1;
+  Leaving = 2;
+  Exiting = 3;
+  Down = 4;
+  Removed = 5;
+}
+
+/**
+ * Vector Clock
+ */
+message VectorClock {
+  message Version {
+    required int32 hashIndex = 1;
+    required int64 timestamp = 2;
+  }
+  // the timestamp could be removed but left for test data compatibility
+  optional int64 timestamp = 1;
+  repeated Version versions = 2;
+}
+
+/****************************************
+ * Metrics Gossip Messages
+ ****************************************/
+
+/**
+ * Metrics Gossip Envelope
+ */
+message MetricsGossipEnvelope {
+  required Address from = 1;
+  required MetricsGossip gossip = 2;
+  required bool reply = 3;
+}
+
+/**
+ * Metrics Gossip
+ */
+message MetricsGossip {
+  repeated Address allAddresses = 1;
+  repeated string allMetricNames = 2;
+  repeated NodeMetrics nodeMetrics = 3;
+}
+
+/**
+ * Node Metrics
+ */
+message NodeMetrics {
+  enum NumberType {
+    Serialized = 0;
+    Double = 1;
+    Float = 2;
+    Integer = 3;
+    Long = 4;
+  }
+  message Number {
+    required NumberType type = 1;
+    optional uint32 value32 = 2;
+    optional uint64 value64 = 3;
+    optional bytes serialized = 4;
+  }
+  message EWMA {
+    required double value = 1;
+    required double alpha = 2;
+  }
+  message Metric {
+    required int32 nameIndex = 1;
+    required Number number = 2;
+    optional EWMA ewma = 3;
+  }
+  required int32 addressIndex = 1;
+  required int64 timestamp = 2;
+  repeated Metric metrics = 3;
+}
+
+/****************************************
+ * Common Datatypes and Messages
+ ****************************************/
+
+/**
+ * An empty message
+ */
+ message Empty {
+ }
+
+/**
+ * Defines a remote address.
+ */
+message Address {
+  required string system = 1;
+  required string hostname = 2;
+  required uint32 port = 3;
+  optional string protocol = 4;
+}
+
+/**
+ * Defines a remote address with uid.
+ */
+message UniqueAddress {
+  required Address address = 1;
+  required uint32 uid = 2;
+}
