@@ -4,9 +4,21 @@
 Persistence
 ###########
 
-This section describes an early access version of the Akka persistence module. Akka persistence is heavily inspired
-by the `eventsourced`_ library. It follows the same concepts and architecture of `eventsourced`_ but significantly
-differs on API and implementation level.
+Akka persistence enables stateful actors to persist their internal state so that it can be recovered when an actor
+is started, restarted by a supervisor or migrated in a cluster. It also allows stateful actors to recover from JVM
+crashes, for example. The key concept behind Akka persistence is that only changes to an actor's internal state are
+persisted but never its current state directly (except for optional snapshots). These changes are only ever appended
+to storage, nothing is ever mutated, which allows for very high transaction rates and efficient replication. Stateful
+actors are recovered by replaying stored changes to these actors from which they can rebuild internal state. This can
+be either the full history of changes or starting from a snapshot of internal actor state which can dramatically
+reduce recovery times.
+
+Storage backends for state changes and snapshots are pluggable in Akka persistence. Currently, these are written to
+the local filesystem. Distributed and replicated storage, with the possibility of scaling writes, will be available
+soon.
+
+Akka persistence is inspired by the `eventsourced`_ library. It follows the same concepts and architecture of
+`eventsourced`_ but significantly differs on API and implementation level.
 
 .. warning::
 
@@ -31,12 +43,19 @@ Akka persistence is a separate jar file. Make sure that you have the following d
 Architecture
 ============
 
-* *Processor*: A processor is a persistent actor. Messages sent to a processor are written to a journal before
-  its ``onReceive`` method is called. When a processor is started or restarted, journaled messages are replayed
+* *Processor*: A processor is a persistent, stateful actor. Messages sent to a processor are written to a journal
+  before its ``onReceive`` method is called. When a processor is started or restarted, journaled messages are replayed
   to that processor, so that it can recover internal state from these messages.
 
 * *Channel*: Channels are used by processors to communicate with other actors. They prevent that replayed messages
   are redundantly delivered to these actors.
+
+* *Journal*: A journal stores the sequence of messages sent to a processor. An application can control which messages
+  are stored and which are received by the processor without being journaled. The storage backend of a journal is
+  pluggable.
+
+* *Snapshot store*: A snapshot store persists snapshots of a processor's internal state. Snapshots are used for
+  optimizing recovery times. The storage backend of a snapshot store is pluggable.
 
 Use cases
 =========
@@ -69,10 +88,11 @@ A processor can be implemented by extending the abstract ``UntypedProcessor`` cl
 
 Processors only write messages of type ``Persistent`` to the journal, others are received without being persisted.
 When a processor's ``onReceive`` method is called with a ``Persistent`` message it can safely assume that this message
-has been successfully written to the journal.  If a journal fails to write a ``Persistent`` message then the processor
-receives a ``PersistenceFailure`` message instead of a ``Persistent`` message. In this case, a processor may want to
-inform the sender about the failure, so that the sender can re-send the message, if needed, under the assumption that
-the journal recovered from a temporary failure.
+has been successfully written to the journal. If a journal fails to write a ``Persistent`` message then the processor
+is stopped, by default. If an application wants that a processors continues to run on persistence failures it must
+handle ``PersistenceFailure`` messages. In this case, a processor may want to inform the sender about the failure,
+so that the sender can re-send the message, if needed, under the assumption that the journal recovered from a
+temporary failure.
 
 An ``UntypedProcessor`` itself is an ``Actor`` and can therefore be instantiated with ``actorOf``.
 
@@ -268,16 +288,16 @@ A journal plugin either extends ``SyncWriteJournal`` or ``AsyncWriteJournal``.  
 actor that should be extended when the storage backend API only supports synchronous, blocking writes. The
 methods to be implemented in this case are:
 
-.. includecode:: code/docs/persistence/PersistencePluginDocTest.java#sync-write-plugin-api
+.. includecode:: ../../../akka-persistence/src/main/java/akka/persistence/journal/japi/SyncWritePlugin.java#sync-write-plugin-api
 
 ``AsyncWriteJournal`` is an actor that should be extended if the storage backend API supports asynchronous,
 non-blocking writes. The methods to be implemented in that case are:
 
-.. includecode:: code/docs/persistence/PersistencePluginDocTest.java#async-write-plugin-api
+.. includecode:: ../../../akka-persistence/src/main/java/akka/persistence/journal/japi/AsyncWritePlugin.java#async-write-plugin-api
 
 Message replays are always asynchronous, therefore, any journal plugin must implement:
 
-.. includecode:: code/docs/persistence/PersistencePluginDocTest.java#async-replay-plugin-api
+.. includecode:: ../../../akka-persistence/src/main/java/akka/persistence/journal/japi/AsyncReplayPlugin.java#async-replay-plugin-api
 
 A journal plugin can be activated with the following minimal configuration:
 
@@ -292,7 +312,7 @@ Snapshot store plugin API
 
 A snapshot store plugin must extend the ``SnapshotStore`` actor and implement the following methods:
 
-.. includecode:: code/docs/persistence/PersistencePluginDocTest.java#snapshot-store-plugin-api
+.. includecode:: ../../../akka-persistence/src/main/java/akka/persistence/snapshot/japi/SnapshotStorePlugin.java#snapshot-store-plugin-api
 
 A snapshot store plugin can be activated with the following minimal configuration:
 
@@ -301,10 +321,25 @@ A snapshot store plugin can be activated with the following minimal configuratio
 The specified plugin ``class`` must have a no-arg constructor. The ``plugin-dispatcher`` is the dispatcher
 used for the plugin actor. If not specified, it defaults to ``akka.persistence.dispatchers.default-plugin-dispatcher``.
 
+Custom serialization
+====================
+
+Serialization of snapshots and payloads of ``Persistent`` messages is configurable with Akka's
+:ref:`serialization-java` infrastructure. For example, if an application wants to serialize
+
+* payloads of type ``MyPayload`` with a custom ``MyPayloadSerializer`` and
+* snapshots of type ``MySnapshot`` with a custom ``MySnapshotSerializer``
+
+it must add
+
+.. includecode:: ../scala/code/docs/persistence/PersistenceSerializerDocSpec.scala#custom-serializer-config
+
+to the application configuration. If not specified, a default serializer is used, which is the ``JavaSerializer``
+in this example.
+
 Upcoming features
 =================
 
 * Reliable channels
-* Custom serialization of messages and snapshots
 * Extended deletion of messages and snapshots
 * ...

@@ -4,8 +4,15 @@
 
 package akka.persistence
 
+import akka.AkkaException
 import akka.actor._
 import akka.dispatch._
+
+/**
+ * Thrown by a [[Processor]] if a journal failed to replay all requested messages.
+ */
+@SerialVersionUID(1L)
+case class ReplayFailureException(message: String, cause: Throwable) extends AkkaException(message, cause)
 
 /**
  * An actor that persists (journals) messages of type [[Persistent]]. Messages of other types are not persisted.
@@ -119,7 +126,8 @@ trait Processor extends Actor with Stash {
         unstashAllInternal()
       }
       case ReplayFailure(cause) ⇒ {
-        throw cause
+        val errorMsg = s"Replay failure by journal (processor id = [${processorId}])"
+        throw new ReplayFailureException(errorMsg, cause)
       }
       case Replayed(p) ⇒ try { processPersistent(receive, p) } catch {
         case t: Throwable ⇒ {
@@ -140,13 +148,22 @@ trait Processor extends Actor with Stash {
     override def toString: String = "recovery finished"
 
     def aroundReceive(receive: Actor.Receive, message: Any) = message match {
-      case r: Recover             ⇒ // ignore
-      case Replayed(p)            ⇒ processPersistent(receive, p) // can occur after unstash from user stash
-      case WriteSuccess(p)        ⇒ processPersistent(receive, p)
-      case WriteFailure(p, cause) ⇒ process(receive, PersistenceFailure(p.payload, p.sequenceNr, cause))
-      case LoopSuccess(m)         ⇒ process(receive, m)
-      case p: PersistentImpl      ⇒ journal forward Write(p.copy(processorId = processorId, sequenceNr = nextSequenceNr()), self)
-      case m                      ⇒ journal forward Loop(m, self)
+      case r: Recover      ⇒ // ignore
+      case Replayed(p)     ⇒ processPersistent(receive, p) // can occur after unstash from user stash
+      case WriteSuccess(p) ⇒ processPersistent(receive, p)
+      case WriteFailure(p, cause) ⇒ {
+        val notification = PersistenceFailure(p.payload, p.sequenceNr, cause)
+        if (receive.isDefinedAt(notification)) process(receive, notification)
+        else {
+          val errorMsg = "Processor killed after persistence failure " +
+            s"(processor id = [${processorId}], sequence nr = [${p.sequenceNr}], payload class = [${p.payload.getClass.getName}]). " +
+            "To avoid killing processors on persistence failure, a processor must handle PersistenceFailure messages."
+          throw new ActorKilledException(errorMsg)
+        }
+      }
+      case LoopSuccess(m)    ⇒ process(receive, m)
+      case p: PersistentImpl ⇒ journal forward Write(p.copy(processorId = processorId, sequenceNr = nextSequenceNr()), self)
+      case m                 ⇒ journal forward Loop(m, self)
     }
   }
 
@@ -159,7 +176,7 @@ trait Processor extends Actor with Stash {
     override def toString: String = "recovery failed"
 
     def aroundReceive(receive: Actor.Receive, message: Any) = message match {
-      case ReplaySuccess(maxSnr) ⇒ {
+      case ReplaySuccess(_) | ReplayFailure(_) ⇒ {
         _currentState = prepareRestart
         mailbox.enqueueFirst(self, _recoveryFailureMessage)
       }

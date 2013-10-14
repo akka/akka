@@ -14,6 +14,8 @@ import scala.util._
 import akka.actor.ActorLogging
 import akka.persistence._
 import akka.persistence.snapshot._
+import akka.persistence.serialization._
+import akka.serialization.SerializationExtension
 
 /**
  * INTERNAL API.
@@ -27,8 +29,7 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
   private val streamDispatcher = context.system.dispatchers.lookup(config.getString("stream-dispatcher"))
   private val snapshotDir = new File(config.getString("dir"))
 
-  // TODO: make snapshot serializer configurable
-  private val snapshotSerializer = SnapshotSerialization(context.system).java
+  private val serializationExtension = SerializationExtension(context.system)
   private var snapshotMetadata = Map.empty[String, SortedSet[SnapshotMetadata]]
 
   def loadAsync(processorId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] =
@@ -57,8 +58,8 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     def load(metadata: SortedSet[SnapshotMetadata]): Option[SelectedSnapshot] = metadata.lastOption match {
       case None ⇒ None
       case Some(md) ⇒ {
-        Try(withInputStream(md)(snapshotSerializer.deserialize(_, md))) match {
-          case Success(s) ⇒ Some(SelectedSnapshot(md, s))
+        Try(withInputStream(md)(deserialize)) match {
+          case Success(s) ⇒ Some(SelectedSnapshot(md, s.data))
           case Failure(e) ⇒ {
             log.error(e, s"error loading snapshot ${md}")
             load(metadata.init) // try older snapshot
@@ -84,12 +85,18 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
   }
 
   private def save(metadata: SnapshotMetadata, snapshot: Any): Unit =
-    withOutputStream(metadata)(snapshotSerializer.serialize(_, metadata, snapshot))
+    withOutputStream(metadata)(serialize(_, Snapshot(snapshot)))
 
-  private def withOutputStream(metadata: SnapshotMetadata)(p: (OutputStream) ⇒ Unit) =
+  protected def deserialize(inputStream: InputStream): Snapshot =
+    serializationExtension.deserialize(streamToBytes(inputStream), classOf[Snapshot]).get
+
+  protected def serialize(outputStream: OutputStream, snapshot: Snapshot): Unit =
+    outputStream.write(serializationExtension.findSerializerFor(snapshot).toBinary(snapshot))
+
+  private def withOutputStream(metadata: SnapshotMetadata)(p: (OutputStream) ⇒ Unit): Unit =
     withStream(new BufferedOutputStream(new FileOutputStream(snapshotFile(metadata))), p)
 
-  private def withInputStream(metadata: SnapshotMetadata)(p: (InputStream) ⇒ Any) =
+  private def withInputStream[T](metadata: SnapshotMetadata)(p: (InputStream) ⇒ T): T =
     withStream(new BufferedInputStream(new FileInputStream(snapshotFile(metadata))), p)
 
   private def withStream[A <: Closeable, B](stream: A, p: A ⇒ B): B =

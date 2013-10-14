@@ -23,14 +23,14 @@ trait SyncWriteJournal extends Actor with AsyncReplay {
   final def receive = {
     case Write(persistent, processor) ⇒ {
       val sdr = if (sender.isInstanceOf[PromiseActorRef]) context.system.deadLetters else sender
-      Try(write(persistent.copy(sender = Serialization.serializedActorPath(sdr), resolved = false, confirmTarget = null, confirmMessage = null))) match {
+      Try(write(persistent.copy(sender = sdr, resolved = false, confirmTarget = null, confirmMessage = null))) match {
         case Success(_) ⇒ processor forward WriteSuccess(persistent)
         case Failure(e) ⇒ processor forward WriteFailure(persistent, e); throw e
       }
     }
     case Replay(fromSequenceNr, toSequenceNr, processorId, processor) ⇒ {
       replayAsync(processorId, fromSequenceNr, toSequenceNr) { p ⇒
-        if (!p.deleted) processor.tell(Replayed(p), extension.system.provider.resolveActorRef(p.sender))
+        if (!p.deleted) processor.tell(Replayed(p), p.sender)
       } map {
         maxSnr ⇒ ReplaySuccess(maxSnr)
       } recover {

@@ -1,0 +1,31 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+option java_package = "akka.persistence.serialization";
+option optimize_for = SPEED;
+
+message PersistentMessage {
+  optional PersistentPayload payload = 1;
+  optional int64 sequenceNr = 2;
+  optional string processorId = 3;
+  optional string channelId = 4;
+  optional bool deleted = 5;
+  optional bool resolved = 6;
+  repeated string confirms = 8;
+  optional ConfirmMessage confirmMessage = 10;
+  optional string confirmTarget = 9;
+  optional string sender = 7;
+}
+
+message PersistentPayload {
+  required int32 serializerId = 1;
+  required bytes payload = 2;
+  optional bytes payloadManifest = 3;
+}
+
+message ConfirmMessage {
+  optional string processorId = 1;
+  optional int64 sequenceNr = 2;
+  optional string channelId = 3;
+}

@@ -20,7 +20,6 @@ trait AsyncWriteJournal extends Actor with AsyncReplay {
   import AsyncWriteJournal._
   import context.dispatcher
 
-  private val extension = Persistence(context.system)
   private val resequencer = context.actorOf(Props[Resequencer])
   private var resequencerCounter = 1L
 
@@ -29,7 +28,7 @@ trait AsyncWriteJournal extends Actor with AsyncReplay {
       val csdr = sender
       val cctr = resequencerCounter
       val psdr = if (sender.isInstanceOf[PromiseActorRef]) context.system.deadLetters else sender
-      writeAsync(persistent.copy(sender = Serialization.serializedActorPath(psdr), resolved = false, confirmTarget = null, confirmMessage = null)) map {
+      writeAsync(persistent.copy(sender = psdr, resolved = false, confirmTarget = null, confirmMessage = null)) map {
         _ ⇒ Desequenced(WriteSuccess(persistent), cctr, processor, csdr)
       } recover {
         case e ⇒ Desequenced(WriteFailure(persistent, e), cctr, processor, csdr)
@@ -40,7 +39,7 @@ trait AsyncWriteJournal extends Actor with AsyncReplay {
       // Send replayed messages and replay result to processor directly. No need
       // to resequence replayed messages relative to written and looped messages.
       replayAsync(processorId, fromSequenceNr, toSequenceNr) { p ⇒
-        if (!p.deleted) processor.tell(Replayed(p), extension.system.provider.resolveActorRef(p.sender))
+        if (!p.deleted) processor.tell(Replayed(p), p.sender)
       } map {
         maxSnr ⇒ ReplaySuccess(maxSnr)
       } recover {
