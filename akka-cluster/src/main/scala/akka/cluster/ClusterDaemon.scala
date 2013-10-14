@@ -292,7 +292,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     case InitJoin                          ⇒ sender ! InitJoinNack(selfAddress)
     case ClusterUserAction.JoinTo(address) ⇒ join(address)
     case JoinSeedNodes(seedNodes)          ⇒ joinSeedNodes(seedNodes)
-    case Join(node, roles)                 ⇒ joiningUninitialized(node, roles)
     case msg: SubscriptionMessage          ⇒ publisher forward msg
   }
 
@@ -305,7 +304,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     case JoinSeedNodes(seedNodes) ⇒
       becomeUninitialized()
       joinSeedNodes(seedNodes)
-    case Join(node, roles)        ⇒ joiningUninitialized(node, roles)
     case msg: SubscriptionMessage ⇒ publisher forward msg
     case _: Tick ⇒
       if (deadline.exists(_.isOverdue)) {
@@ -471,16 +469,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         publish(latestGossip)
       }
     }
-  }
-
-  /**
-   * Another node is joining when this node is uninitialized.
-   */
-  def joiningUninitialized(node: UniqueAddress, roles: Set[String]): Unit = {
-    require(latestGossip.members.isEmpty, "Joining an uninitialized node can only be done from empty state")
-    joining(node, roles)
-    if (latestGossip.hasMember(selfUniqueAddress))
-      becomeInitialized()
   }
 
   /**
