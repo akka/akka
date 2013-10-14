@@ -182,6 +182,19 @@ private[remote] class ReliableDeliverySupervisor(
 
   def retryGateEnabled = settings.RetryGateClosedFor > Duration.Zero
 
+  var autoResendTimer: Option[Cancellable] = None
+
+  def scheduleAutoResend(): Unit = if (resendBuffer.nacked.nonEmpty || resendBuffer.nonAcked.nonEmpty) {
+    if (autoResendTimer.isEmpty)
+      autoResendTimer = Some(context.system.scheduler.scheduleOnce(settings.SysResendTimeout, self, AttemptSysMsgRedelivery))
+  }
+
+  def rescheduleAutoResend(): Unit = {
+    autoResendTimer.foreach(_.cancel())
+    autoResendTimer = None
+    scheduleAutoResend()
+  }
+
   override val supervisorStrategy = OneForOneStrategy(settings.MaximumRetriesInWindow, settings.RetryWindow, loggingEnabled = false) {
     case e @ (_: AssociationProblem) ⇒ Escalate
     case NonFatal(e) ⇒
@@ -201,14 +214,13 @@ private[remote] class ReliableDeliverySupervisor(
   var currentHandle: Option[AkkaProtocolHandle] = handleOrActive
 
   var resendBuffer: AckedSendBuffer[Send] = _
-  var resendDeadline: Deadline = _
   var lastCumulativeAck: SeqNo = _
   var seqCounter: Long = _
   var pendingAcks = Vector.empty[Ack]
 
   def reset() {
     resendBuffer = new AckedSendBuffer[Send](settings.SysMsgBufferSize)
-    resendDeadline = Deadline.now + settings.SysResendTimeout
+    scheduleAutoResend()
     lastCumulativeAck = SeqNo(-1)
     seqCounter = 0L
     pendingAcks = Vector.empty
@@ -271,14 +283,17 @@ private[remote] class ReliableDeliverySupervisor(
         }
 
         if (lastCumulativeAck < ack.cumulativeAck) {
-          resendDeadline = Deadline.now + settings.SysResendTimeout
           lastCumulativeAck = ack.cumulativeAck
-        } else if (resendDeadline.isOverdue()) {
-          resendAll()
-          resendDeadline = Deadline.now + settings.SysResendTimeout
-        }
+          // Cumulative ack is progressing, we might not need to resend non-acked messages yet.
+          // If this progression stops, the timer will eventually kick in, since scheduleAutoResend
+          // does not cancel existing timers (see the "else" case).
+          rescheduleAutoResend()
+        } else scheduleAutoResend()
+
         resendNacked()
       }
+    case AttemptSysMsgRedelivery ⇒
+      if (uidConfirmed) resendAll()
     case Terminated(_) ⇒
       currentHandle = None
       context.parent ! StoppedReading(self)
@@ -347,6 +362,7 @@ private[remote] class ReliableDeliverySupervisor(
   private def resendAll(): Unit = {
     resendNacked()
     resendBuffer.nonAcked foreach { writer ! _ }
+    rescheduleAutoResend()
   }
 
   private def tryBuffer(s: Send): Unit =
@@ -551,8 +567,6 @@ private[remote] class EndpointWriter(
               log.debug("sending message {}", msgLog)
             }
 
-            ackDeadline = newAckDeadline
-
             val pdu = codec.constructMessage(
               recipient.localAddressToUse,
               recipient,
@@ -560,6 +574,9 @@ private[remote] class EndpointWriter(
               senderOption,
               seqOption = seqOption,
               ackOption = lastAck)
+
+            ackDeadline = newAckDeadline
+            lastAck = None
 
             val pduSize = pdu.size
             remoteMetrics.logPayloadBytes(msg, pduSize)
@@ -627,7 +644,6 @@ private[remote] class EndpointWriter(
       stop()
     case Event(OutboundAck(ack), _) ⇒
       lastAck = Some(ack)
-      trySendPureAck()
       stay()
     case Event(AckIdleCheckTimer, _) ⇒ stay() // Ignore
   }
@@ -654,7 +670,10 @@ private[remote] class EndpointWriter(
   }
 
   private def trySendPureAck(): Unit = for (h ← handle; ack ← lastAck)
-    if (h.write(codec.constructPureAck(ack))) ackDeadline = newAckDeadline
+    if (h.write(codec.constructPureAck(ack))) {
+      ackDeadline = newAckDeadline
+      lastAck = None
+    }
 
   private def startReadEndpoint(handle: AkkaProtocolHandle): Some[ActorRef] = {
     val newReader =
@@ -810,6 +829,7 @@ private[remote] class EndpointReader(
   private def deliverAndAck(): Unit = {
     val (updatedBuffer, deliver, ack) = ackedReceiveBuffer.extractDeliverable
     ackedReceiveBuffer = updatedBuffer
+
     // Notify writer that some messages can be acked
     context.parent ! OutboundAck(ack)
     deliver foreach { m ⇒
