@@ -9,6 +9,6 @@ import akka.event.Logging.Warning
 class Slf4jEventHandler extends Slf4jLogger {
 
   self ! Warning(getClass.getName, getClass,
-    s"[${getClass.getName}] is depreceated, use [${classOf[Slf4jLogger].getName}] instead")
+    s"[${getClass.getName}] is deprecated, use [${classOf[Slf4jLogger].getName}] instead")
 
 }
