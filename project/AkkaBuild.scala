@@ -933,7 +933,70 @@ object AkkaBuild extends Build {
       ProblemFilters.exclude[MissingClassProblem]("akka.remote.QuarantinedUidException"),
 
       // inside package akka.camel.internal marked as private[camel] and INTERNAL API (and also inside actor)
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.camel.internal.Registry.supervisorStrategy")
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.camel.internal.Registry.supervisorStrategy"),
+
+      // refactoring of internal akka.io.TcpConnection implementation for supporting CompoundWrites
+      // TODO: shorten with `ProblemFilters.excludePackage("akka.io.TcpConnection#PendingBufferWrite")`, etc.
+      // after sbt-mima-plugin 0.1.6 has been published
+      // (also add a ticket to MiMa for reducing the verbosity of exclusion defs like below even further)
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection.createWrite"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection.PendingWriteFile"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection.PendingBufferWrite"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection.writeFileRunnable"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.io.TcpConnection$SendBufferFull"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.io.TcpConnection$SendBufferFull$"),
+      ProblemFilters.exclude[MissingTypesProblem]("akka.io.TcpConnection$PendingBufferWrite"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.io.TcpConnection$PendingBufferWrite$"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.copy$default$3"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.remainingData"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.wantsAck"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.copy"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.copy$default$1"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.copy$default$2"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.toString"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.productPrefix"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.productArity"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.hasData"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.this"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.canEqual"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.equals"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.productElement"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.consume"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.hashCode"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.ack"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.copy$default$4"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.productIterator"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingBufferWrite.buffer"),
+      ProblemFilters.exclude[MissingTypesProblem]("akka.io.TcpConnection$PendingWriteFile"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.io.TcpConnection$PendingWriteFile$"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.copy$default$3"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.write"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.alreadyWritten"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.wantsAck"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.copy"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.copy$default$2"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.copy$default$1"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.toString"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.productPrefix"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.fileChannel"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.currentPosition"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.productArity"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.this"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.canEqual"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.equals"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.productElement"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.remainingBytes"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.hashCode"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.ack"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.copy$default$4"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.updatedWrite"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.TcpConnection#PendingWriteFile.productIterator"),
+      ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.io.TcpConnection$PendingWrite"),
+
+      // API additions for Tcp.CompoundWrite support ("method ... does not have a correspondent in *old* version")
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.Tcp#WriteCommand.prepend"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.Tcp#WriteCommand.+:"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.Tcp#WriteCommand.++:")
     )
   }
 

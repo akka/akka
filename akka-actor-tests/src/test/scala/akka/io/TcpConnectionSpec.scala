@@ -24,7 +24,8 @@ import akka.util.{ Helpers, ByteString }
 import akka.TestUtils._
 
 object TcpConnectionSpec {
-  case object Ack extends Event
+  case class Ack(i: Int) extends Event
+  object Ack extends Ack(0)
   case class Registration(channel: SelectableChannel, initialOps: Int) extends NoSerializationVerificationNeeded
 }
 
@@ -152,10 +153,6 @@ class TcpConnectionSpec extends AkkaSpec("""
       run {
         val writer = TestProbe()
 
-        // directly acknowledge an empty write
-        writer.send(connectionActor, Write(ByteString.empty, Ack))
-        writer.expectMsg(Ack)
-
         // reply to write commander with Ack
         val ackedWrite = Write(ByteString("testdata"), Ack)
         val buffer = ByteBuffer.allocate(100)
@@ -174,8 +171,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         writer.expectNoMsg(500.millis)
         pullFromServerSide(remaining = 10, into = buffer)
         buffer.flip()
-        buffer.limit must be(10)
-        ByteString(buffer).take(10).decodeString("ASCII") must be("morestuff!")
+        ByteString(buffer).utf8String must be("morestuff!")
       }
     }
 
@@ -224,6 +220,29 @@ class TcpConnectionSpec extends AkkaSpec("""
         writer.send(connectionActor, WriteFile(testFile.getAbsolutePath, 0, size, Ack))
         pullFromServerSide(size, 1000000)
         writer.expectMsg(Ack)
+      }
+    }
+
+    "write a CompoundWrite to the network and produce correct ACKs" in new EstablishedConnectionTest() {
+      run {
+        val writer = TestProbe()
+        val compoundWrite =
+          Write(ByteString("test1"), Ack(1)) +:
+            Write(ByteString("test2")) +:
+            Write(ByteString.empty, Ack(3)) +:
+            Write(ByteString("test4"), Ack(4))
+
+        // reply to write commander with Ack
+        val buffer = ByteBuffer.allocate(100)
+        serverSideChannel.read(buffer) must be(0)
+        writer.send(connectionActor, compoundWrite)
+
+        pullFromServerSide(remaining = 15, into = buffer)
+        buffer.flip()
+        ByteString(buffer).utf8String must be("test1test2test4")
+        writer.expectMsg(Ack(1))
+        writer.expectMsg(Ack(3))
+        writer.expectMsg(Ack(4))
       }
     }
 
