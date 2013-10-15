@@ -110,6 +110,8 @@ The seed nodes can be started in any order and it is not necessary to have all
 seed nodes running, but the node configured as the first element in the ``seed-nodes``
 configuration list must be started when initially starting a cluster, otherwise the 
 other seed-nodes will not become initialized and no other node can join the cluster. 
+The reason for the special first seed node is to avoid forming separated islands when
+starting from an empty cluster.
 It is quickest to start all configured seed nodes at the same time (order doesn't matter), 
 otherwise it can take up to the configured ``seed-node-timeout`` until the nodes
 can join.
@@ -122,7 +124,15 @@ If you don't configure the seed nodes you need to join manually, using :ref:`clu
 or :ref:`cluster_command_line_java`. You can join to any node in the cluster. It doesn't 
 have to be configured as a seed node.
 
-Joining can also be performed programatically with ``Cluster.get(system).join(address)``.
+Joining can also be performed programatically with ``Cluster.get(system).join``. Note that
+you can only join to an existing cluster member, which means that for bootstrapping some
+node must join itself.
+
+You may also use ``Cluster.get(system).joinSeedNodes``, which is attractive when dynamically 
+discovering other nodes at startup by using some external tool or API. When using 
+``joinSeedNodes`` you should not include the node itself except for the node that is 
+supposed to be the first seed node, and that should be placed first in parameter to 
+``joinSeedNodes``.
 
 Unsuccessful join attempts are automatically retried after the time period defined in 
 configuration property ``retry-unsuccessful-join-after``. When using ``seed-nodes`` this
