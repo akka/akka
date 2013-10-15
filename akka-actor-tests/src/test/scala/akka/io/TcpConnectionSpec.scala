@@ -544,6 +544,16 @@ class TcpConnectionSpec extends AkkaSpec("""
         }
       }
 
+    "report failed connection attempt when target cannot be resolved" in
+      new UnacceptedConnectionTest() {
+        val address = new InetSocketAddress("notthere.local", 666)
+        override lazy val connectionActor = createConnectionActorWithoutRegistration(serverAddress = address)
+        run {
+          connectionActor ! newChannelRegistration
+          userHandler.expectMsg(30.seconds, CommandFailed(Connect(address)))
+        }
+      }
+
     "report failed connection attempt when timing out" in
       new UnacceptedConnectionTest() {
         override lazy val connectionActor = createConnectionActor(serverAddress = UnboundAddress, timeout = Option(100.millis))
@@ -758,16 +768,24 @@ class TcpConnectionSpec extends AkkaSpec("""
     def createConnectionActor(serverAddress: InetSocketAddress = serverAddress,
                               options: immutable.Seq[SocketOption] = Nil,
                               timeout: Option[FiniteDuration] = None): TestActorRef[TcpOutgoingConnection] = {
-      val ref = TestActorRef(
-        new TcpOutgoingConnection(Tcp(system), this, userHandler.ref, Connect(serverAddress, options = options, timeout = timeout)) {
-          override def postRestart(reason: Throwable): Unit = context.stop(self) // ensure we never restart
-        })
-      ref ! new ChannelRegistration {
+      val ref = createConnectionActorWithoutRegistration(serverAddress, options, timeout)
+      ref ! newChannelRegistration
+      ref
+    }
+
+    def newChannelRegistration: ChannelRegistration =
+      new ChannelRegistration {
         def enableInterest(op: Int): Unit = interestCallReceiver.ref ! op
         def disableInterest(op: Int): Unit = interestCallReceiver.ref ! -op
       }
-      ref
-    }
+
+    def createConnectionActorWithoutRegistration(serverAddress: InetSocketAddress = serverAddress,
+                                                 options: immutable.Seq[SocketOption] = Nil,
+                                                 timeout: Option[FiniteDuration] = None): TestActorRef[TcpOutgoingConnection] =
+      TestActorRef(
+        new TcpOutgoingConnection(Tcp(system), this, userHandler.ref, Connect(serverAddress, options = options, timeout = timeout)) {
+          override def postRestart(reason: Throwable): Unit = context.stop(self) // ensure we never restart
+        })
   }
 
   trait SmallRcvBuffer { _: LocalServerTest ⇒
