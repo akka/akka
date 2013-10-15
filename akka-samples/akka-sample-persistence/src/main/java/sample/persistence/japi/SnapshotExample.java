@@ -51,6 +51,8 @@ public class SnapshotExample {
             } else if (message.equals("print")) {
                 System.out.println("current state = " + state);
             } else if (message.equals("snap")) {
+                // IMPORTANT: create a copy of snapshot
+                // because ExampleState is mutable !!!
                 saveSnapshot(state.copy());
             }
         }
