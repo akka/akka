@@ -3,6 +3,15 @@
  */
 package docs.dispatcher;
 
+import akka.dispatch.RequiresMessageQueue;
+import akka.testkit.AkkaSpec;
+import com.typesafe.config.ConfigFactory;
+import docs.actor.MyBoundedUntypedActor;
+import docs.actor.MyUntypedActor;
+import org.junit.ClassRule;
+import org.junit.Test;
+import scala.concurrent.ExecutionContext;
+
 //#imports
 import akka.actor.*;
 //#imports
@@ -18,34 +27,13 @@ import akka.dispatch.PriorityGenerator;
 import akka.dispatch.UnboundedPriorityMailbox;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.JavaTestKit;
-import akka.testkit.TestKit;
 import com.typesafe.config.Config;
 
 //#imports-prio-mailbox
 
-//#imports-custom
-import akka.dispatch.Envelope;
-import akka.dispatch.MessageQueue;
-import akka.dispatch.MailboxType;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
-//#imports-custom
-
 //#imports-required-mailbox
 
 //#imports-required-mailbox
-
-import docs.actor.MyBoundedUntypedActor;
-import org.junit.ClassRule;
-import org.junit.Test;
-import scala.Option;
-import scala.concurrent.ExecutionContext;
-
-import com.typesafe.config.ConfigFactory;
-
-import docs.actor.MyUntypedActor;
-import akka.testkit.AkkaSpec;
 
 public class DispatcherDocTest {
 
@@ -185,34 +173,29 @@ public class DispatcherDocTest {
   }
   //#prio-mailbox
 
-  static
-  //#mailbox-implementation-example
-  public class MyUnboundedMailbox implements MailboxType {
-
-    // This constructor signature must exist, it will be called by Akka
-    public MyUnboundedMailbox(ActorSystem.Settings settings, Config config) {
-      // put your initialization code here
-    }
-
-    // The create method is called to create the MessageQueue
-    public MessageQueue create(Option<ActorRef> owner, Option<ActorSystem> system) {
-      return new MessageQueue() {
-        private final Queue<Envelope> queue = new ConcurrentLinkedQueue<Envelope>();
-        
-        // these must be implemented; queue used as example
-        public void enqueue(ActorRef receiver, Envelope handle) {
-          queue.offer(handle);
-        }
-        public Envelope dequeue() { return queue.poll(); }
-        public int numberOfMessages() { return queue.size(); }
-        public boolean hasMessages() { return !queue.isEmpty(); }
-        public void cleanUp(ActorRef owner, MessageQueue deadLetters) {
-          for (Envelope handle: queue) {
-            deadLetters.enqueue(owner, handle);
-          }
-        }
-      };
-    }
+  @Test
+  public void requiredMailboxDispatcher() throws Exception {
+    ActorRef myActor = system.actorOf(Props.create(MyUntypedActor.class)
+      .withDispatcher("custom-dispatcher"));
   }
-  //#mailbox-implementation-example
+
+  static
+  //#require-mailbox-on-actor
+  public class MySpecialActor extends UntypedActor implements
+    RequiresMessageQueue<MyUnboundedJMessageQueueSemantics> {
+    //#require-mailbox-on-actor
+    @Override
+    public void onReceive(Object message) throws Exception {
+      unhandled(message);
+    }
+    //#require-mailbox-on-actor
+    // ...
+  }
+  //#require-mailbox-on-actor
+
+  @Test
+  public void requiredMailboxActor() throws Exception {
+    ActorRef myActor = system.actorOf(Props.create(MySpecialActor.class));
+  }
+
 }

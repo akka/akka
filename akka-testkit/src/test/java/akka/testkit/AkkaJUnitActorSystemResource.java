@@ -34,10 +34,16 @@ public class AkkaJUnitActorSystemResource extends ExternalResource {
   private final Config config;
 
   private ActorSystem createSystem(String name, Config config) {
-    if (config == null)
-      return ActorSystem.create(name);
-    else
-      return ActorSystem.create(name, config);
+    try {
+      if (config == null)
+        return ActorSystem.create(name);
+      else
+        return ActorSystem.create(name, config);
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+      return null;
+    }
   }
 
   public AkkaJUnitActorSystemResource(String name, Config config) {
