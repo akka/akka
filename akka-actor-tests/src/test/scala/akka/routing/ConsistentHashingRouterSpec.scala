@@ -4,11 +4,9 @@
 package akka.routing
 
 import scala.concurrent.Await
-
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
-import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
@@ -21,12 +19,12 @@ object ConsistentHashingRouterSpec {
   val config = """
     akka.actor.deployment {
       /router1 {
-        router = consistent-hashing
+        router = consistent-hashing-pool
         nr-of-instances = 3
         virtual-nodes-factor = 17
       }
       /router2 {
-        router = consistent-hashing
+        router = consistent-hashing-pool
         nr-of-instances = 5
       }
     }
@@ -34,7 +32,8 @@ object ConsistentHashingRouterSpec {
 
   class Echo extends Actor {
     def receive = {
-      case _ ⇒ sender ! self
+      case x: ConsistentHashableEnvelope ⇒ sender ! s"Unexpected envelope: $x"
+      case _                             ⇒ sender ! self
     }
   }
 
@@ -49,14 +48,14 @@ object ConsistentHashingRouterSpec {
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ConsistentHashingRouterSpec extends AkkaSpec(ConsistentHashingRouterSpec.config) with DefaultTimeout with ImplicitSender {
-  import akka.routing.ConsistentHashingRouterSpec._
+  import ConsistentHashingRouterSpec._
   implicit val ec = system.dispatcher
 
-  val router1 = system.actorOf(Props[Echo].withRouter(FromConfig()), "router1")
+  val router1 = system.actorOf(FromConfig.props(Props[Echo]), "router1")
 
   "consistent hashing router" must {
     "create routees from configuration" in {
-      val currentRoutees = Await.result(router1 ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees]
+      val currentRoutees = Await.result(router1 ? GetRoutees, remaining).asInstanceOf[Routees]
       currentRoutees.routees.size must be(3)
     }
 
@@ -77,12 +76,12 @@ class ConsistentHashingRouterSpec extends AkkaSpec(ConsistentHashingRouterSpec.c
       expectMsg(destinationC)
     }
 
-    "select destination with defined consistentHashRoute" in {
+    "select destination with defined hashMapping" in {
       def hashMapping: ConsistentHashMapping = {
         case Msg2(key, data) ⇒ key
       }
-      val router2 = system.actorOf(Props[Echo].withRouter(ConsistentHashingRouter(
-        hashMapping = hashMapping)), "router2")
+      val router2 = system.actorOf(ConsistentHashingPool(nrOfInstances = 1, hashMapping = hashMapping).
+        props(Props[Echo]), "router2")
 
       router2 ! Msg2("a", "A")
       val destinationA = expectMsgType[ActorRef]
