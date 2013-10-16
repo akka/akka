@@ -136,7 +136,8 @@ object PersistentImpl {
 }
 
 /**
- * Received by a processor when a journal failed to write a [[Persistent]] message.
+ * Sent to a [[Processor]] when a journal failed to write a [[Persistent]] message. If
+ * not handled, an `akka.actor.ActorKilledException` is thrown by that processor.
  *
  * @param payload payload of the persistent message.
  * @param sequenceNr sequence number of the persistent message.

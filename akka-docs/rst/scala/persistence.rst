@@ -53,12 +53,6 @@ Architecture
 * *Snapshot store*: A snapshot store persists snapshots of a processor's internal state. Snapshots are used for
   optimizing recovery times. The storage backend of a snapshot store is pluggable.
 
-Use cases
-=========
-
-* TODO: describe command sourcing
-* TODO: describe event sourcing
-
 Configuration
 =============
 
@@ -281,6 +275,61 @@ and at least one of these snapshots matches the ``SnapshotSelectionCriteria`` th
 If not specified, they default to ``SnapshotSelectionCriteria.Latest`` which selects the latest (= youngest) snapshot.
 To disable snapshot-based recovery, applications should use ``SnapshotSelectionCriteria.None``. A recovery where no
 saved snapshot matches the specified ``SnapshotSelectionCriteria`` will replay all journaled messages.
+
+.. _event-sourcing:
+
+Event sourcing
+==============
+
+In all the examples so far, messages that change a processor's state have been sent as ``Persistent`` messages
+by an application, so that they can be replayed during recovery. From this point of view, the journal acts as
+a write-ahead-log for whatever ``Persistent`` messages a processor receives. This is also known as *command
+sourcing*. Commands, however, may fail and some applications cannot tolerate command failures during recovery.
+
+For these applications `Event Sourcing`_ is a better choice. Applied to Akka persistence, the basic idea behind
+event sourcing is quite simple. A processor receives a (non-persistent) command which is first validated if it
+can be applied to the current state. Here, validation can mean anything, from simple inspection of a command
+message's fields up to a conversation with several external services, for example. If validation succeeds, events
+are generated from the command, representing the effect of the command. These events are then persisted and, after
+successful persistence, used to change a processor's state. When the processor needs to be recovered, only the
+persisted events are replayed of which we know that they can be successfully applied. In other words, events
+cannot fail when being replayed to a processor, in contrast to commands. Eventsourced processors may of course
+also process commands that do not change application state, such as query commands, for example.
+
+.. _Event Sourcing: http://martinfowler.com/eaaDev/EventSourcing.html
+
+Akka persistence supports event sourcing with the ``EventsourcedProcessor`` trait (which implements event sourcing
+as a pattern on top of command sourcing). A processor that extends this trait does not handle ``Persistent`` messages
+directly but uses the ``persist`` method to persist and handle events. The behavior of an ``EventsourcedProcessor``
+is defined by implementing ``receiveReplay`` and ``receiveCommand``. This is best explained with an example (which
+is also part of ``akka-sample-persistence``).
+
+.. includecode:: ../../../akka-samples/akka-sample-persistence/src/main/scala/sample/persistence/EventsourcedExample.scala#eventsourced-example
+
+The example defines two data types, ``Cmd`` and ``Evt`` to represent commands and events, respectively. The
+``state`` of the ``ExampleProcessor`` is a list of persisted event data contained in ``ExampleState``.
+
+The processor's ``receiveReplay`` method defines how ``state`` is updated during recovery by handling ``Evt``
+and ``SnapshotOffer`` messages. The processor's ``receiveCommand`` method is a command handler. In this example,
+a command is handled by generating two events which are then persisted and handled. Events are persisted by calling
+``persist`` with an event (or a sequence of events) as first argument and an event handler as second argument.
+
+The ``persist`` method persists events asynchronously and the event handler is executed for successfully persisted
+events. Successfully persisted events are internally sent back to the processor as separate messages which trigger
+the event handler execution. An event handler may therefore close over processor state and mutate it. The sender
+of a persisted event is the sender of the corresponding command. This allows event handlers to reply to the sender
+of a command (not shown).
+
+The main responsibility of an event handler is changing processor state using event data and notifying others
+about successful state changes by publishing events.
+
+When persisting events with ``persist`` it is guaranteed that the processor will not receive new commands between
+the ``persist`` call and the execution(s) of the associated event handler. This also holds for multiple ``persist``
+calls in context of a single command.
+
+The example also demonstrates how to change the processor's default behavior, defined by ``receiveCommand``, to
+another behavior, defined by ``otherCommandHandler``, and back using ``context.become()`` and ``context.unbecome()``.
+See also the API docs of ``persist`` for further details.
 
 Storage plugins
 ===============
