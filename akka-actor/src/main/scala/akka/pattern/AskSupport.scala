@@ -136,7 +136,7 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
       if (timeout.duration.length <= 0)
         Future.failed[Any](new IllegalArgumentException(s"Timeout length must not be negative, question not sent to [$actorRef]"))
       else {
-        val a = PromiseActorRef(ref.provider, timeout)
+        val a = PromiseActorRef(ref.provider, timeout, targetName = actorRef.toString)
         actorRef.tell(message, a)
         a.result.future
       }
@@ -157,7 +157,7 @@ final class AskableActorSelection(val actorSel: ActorSelection) extends AnyVal {
         Future.failed[Any](
           new IllegalArgumentException(s"Timeout length must not be negative, question not sent to [$actorSel]"))
       else {
-        val a = PromiseActorRef(ref.provider, timeout)
+        val a = PromiseActorRef(ref.provider, timeout, targetName = actorSel.toString)
         actorSel.tell(message, a)
         a.result.future
       }
@@ -326,12 +326,14 @@ private[akka] object PromiseActorRef {
   private case object Stopped
   private case class StoppedWithPath(path: ActorPath)
 
-  def apply(provider: ActorRefProvider, timeout: Timeout): PromiseActorRef = {
+  def apply(provider: ActorRefProvider, timeout: Timeout, targetName: String): PromiseActorRef = {
     val result = Promise[Any]()
     val scheduler = provider.guardian.underlying.system.scheduler
     val a = new PromiseActorRef(provider, result)
     implicit val ec = a.internalCallingThreadExecutionContext
-    val f = scheduler.scheduleOnce(timeout.duration) { result tryComplete Failure(new AskTimeoutException("Timed out")) }
+    val f = scheduler.scheduleOnce(timeout.duration) {
+      result tryComplete Failure(new AskTimeoutException(s"Ask timed out on [$targetName]"))
+    }
     result.future onComplete { _ ⇒ try a.stop() finally f.cancel() }
     a
   }
