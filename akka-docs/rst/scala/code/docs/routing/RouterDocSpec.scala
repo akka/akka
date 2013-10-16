@@ -140,8 +140,19 @@ akka.actor.deployment {
 }
 #//#config-resize-pool
 
+#//#config-pool-dispatcher
+akka.actor.deployment {
+  /poolWithDispatcher {
+    router = random-pool
+    nr-of-instances = 5
+    pool-dispatcher {
+      type = BalancingDispatcher
+    }
+  }
+}
+#//#config-pool-dispatcher
+    
 router-dispatcher {}
-workers-dispatcher {}
 """
 
   case class Work(payload: String)
@@ -351,10 +362,10 @@ class RouterDocSpec extends AkkaSpec(RouterDocSpec.config) with ImplicitSender {
   "demonstrate dispatcher" in {
     //#dispatchers
     val router: ActorRef = system.actorOf(
-      // “head” will run on "router-dispatcher" dispatcher
-      RoundRobinPool(5, routerDispatcher = "router-dispatcher").props(Props[Worker])
-        // Worker routees will run on "workers-dispatcher" dispatcher
-        .withDispatcher("workers-dispatcher"))
+      // “head” router actor will run on "router-dispatcher" dispatcher
+      // Worker routees will run on "pool-dispatcher" dispatcher  
+      RandomPool(5, routerDispatcher = "router-dispatcher").props(Props[Worker]),
+      name = "poolWithDispatcher")
     //#dispatchers
   }
 
@@ -410,8 +421,8 @@ class RouterDocSpec extends AkkaSpec(RouterDocSpec.config) with ImplicitSender {
     import akka.actor.{ Address, AddressFromURIString }
     import akka.remote.routing.RemoteRouterConfig
     val addresses = Seq(
-      Address("akka", "remotesys", "otherhost", 1234),
-      AddressFromURIString("akka://othersys@anotherhost:1234"))
+      Address("akka.tcp", "remotesys", "otherhost", 1234),
+      AddressFromURIString("akka.tcp://othersys@anotherhost:1234"))
     val routerRemote = system.actorOf(
       RemoteRouterConfig(RoundRobinPool(5), addresses).props(Props[Echo]))
     //#remoteRoutees
