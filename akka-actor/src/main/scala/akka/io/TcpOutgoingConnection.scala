@@ -32,7 +32,7 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
 
   localAddress.foreach(channel.socket.bind)
   options.foreach(_.beforeConnect(channel.socket))
-  channelRegistry.register(channel, SelectionKey.OP_CONNECT)
+  channelRegistry.register(channel, 0)
   timeout foreach context.setReceiveTimeout //Initiate connection timeout if supplied
 
   private def stop(): Unit = stopWith(CloseInformation(Set(commander), connect.failureMessage))
@@ -53,8 +53,10 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
       reportConnectFailure {
         if (channel.connect(remoteAddress))
           completeConnect(registration, commander, options)
-        else
+        else {
+          registration.enableInterest(SelectionKey.OP_CONNECT)
           context.become(connecting(registration, commander, options, tcp.Settings.FinishConnectRetries))
+        }
       }
   }
 
