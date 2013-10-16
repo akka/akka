@@ -25,7 +25,7 @@ import akka.routing.Routees
 
 object AdaptiveLoadBalancingRouterMultiJvmSpec extends MultiNodeConfig {
 
-  class Routee extends Actor {
+  class Echo extends Actor {
     def receive = {
       case _ ⇒ sender ! Reply(Cluster(context.system).selfAddress)
     }
@@ -117,7 +117,7 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
     val router = system.actorOf(ClusterRouterPool(
       local = AdaptiveLoadBalancingPool(HeapMetricsSelector),
       settings = ClusterRouterPoolSettings(totalInstances = 10, maxInstancesPerNode = 1, allowLocalRoutees = true, useRole = None)).
-      props(Props[Routee]),
+      props(Props[Echo]),
       name)
     // it may take some time until router receives cluster member events
     awaitAssert { currentRoutees(router).size must be(roles.size) }

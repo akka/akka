@@ -90,8 +90,7 @@ private[akka] class ClusterActorRefProvider(
 private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: DynamicAccess) extends RemoteDeployer(_settings, _pm) {
   override def parseConfig(path: String, config: Config): Option[Deploy] = {
 
-    // For backwards compatibility we must add this fake routees.paths so that the deployer creates a Group
-    // even though routees.paths is not defined. This will be cleaned up by ticket #3627
+    // For backwards compatibility we must transform 'cluster.routees-path' to 'routees.paths'
     val config2 =
       if (config.hasPath("cluster.routees-path"))
         config.withFallback(ConfigFactory.parseString(s"""routees.paths=["${config.getString("cluster.routees-path")}"]"""))

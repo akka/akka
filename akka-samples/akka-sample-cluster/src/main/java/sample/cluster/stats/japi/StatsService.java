@@ -3,6 +3,7 @@ package sample.cluster.stats.japi;
 import java.util.Collections;
 
 import sample.cluster.stats.japi.StatsMessages.StatsJob;
+
 //#imports
 import akka.actor.ActorRef;
 import akka.actor.Props;
@@ -60,13 +61,13 @@ public class StatsService extends UntypedActor {
 abstract class StatsService2 extends UntypedActor {
   //#router-lookup-in-code
   int totalInstances = 100;
-  String routeesPath = "/user/statsWorker";
+  Iterable<String> routeesPaths = Collections.singletonList("/user/statsWorker");
   boolean allowLocalRoutees = true;
   String useRole = "compute";
   ActorRef workerRouter = getContext().actorOf(
       new ClusterRouterGroup(
-          new ConsistentHashingGroup(Collections.<String>emptyList()), new ClusterRouterGroupSettings(
-              totalInstances, routeesPath, allowLocalRoutees, useRole)).props(),
+          new ConsistentHashingGroup(routeesPaths), new ClusterRouterGroupSettings(
+              totalInstances, routeesPaths, allowLocalRoutees, useRole)).props(),
       "workerRouter2");
   //#router-lookup-in-code
 }

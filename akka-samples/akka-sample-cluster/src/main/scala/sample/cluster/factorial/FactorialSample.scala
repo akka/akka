@@ -149,7 +149,7 @@ abstract class FactorialFrontend2 extends Actor {
   val backend = context.actorOf(
     ClusterRouterGroup(AdaptiveLoadBalancingGroup(HeapMetricsSelector),
       ClusterRouterGroupSettings(
-        totalInstances = 100, routeesPath = "/user/factorialBackend",
+        totalInstances = 100, routeesPaths = List("/user/factorialBackend"),
         allowLocalRoutees = true, useRole = Some("backend"))).props(),
     name = "factorialBackendRouter2")
   //#router-lookup-in-code
