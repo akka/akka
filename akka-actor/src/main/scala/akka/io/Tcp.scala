@@ -115,11 +115,15 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * @param remoteAddress is the address to connect to
    * @param localAddress optionally specifies a specific address to bind to
    * @param options Please refer to the [[SO]] object for a list of all supported options.
+   * @param correlationId An optional object that will be returned in the [[Connected]] message
+   *                      if the connection has been successfully established. Useful for
+   *                      distinguishing between responses if multiple connections are initiated by the same sender.
    */
   case class Connect(remoteAddress: InetSocketAddress,
                      localAddress: Option[InetSocketAddress] = None,
                      options: immutable.Traversable[SocketOption] = Nil,
-                     timeout: Option[FiniteDuration] = None) extends Command
+                     timeout: Option[FiniteDuration] = None,
+                     correlationId: Option[Any] = None) extends Command
 
   /**
    * The Bind message is send to the TCP manager actor, which is obtained via
@@ -139,11 +143,17 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    *                kernel will hold for this port before refusing connections.
    *
    * @param options Please refer to the [[SO]] object for a list of all supported options.
+   *
+   * @param connectionCorrelationId An optional object that will be returned in the [[Connected]] messages
+   *                                for inbound accepted inbound connections. Useful for distinguishing
+   *                                [[Connected]] message representing inbound connections from outbound ones.
+   *                                See [[Connect#correlationId]]
    */
   case class Bind(handler: ActorRef,
                   localAddress: InetSocketAddress,
                   backlog: Int = 100,
-                  options: immutable.Traversable[SocketOption] = Nil) extends Command
+                  options: immutable.Traversable[SocketOption] = Nil,
+                  connectionCorrelationId: Option[Any] = None) extends Command
 
   /**
    * This message must be sent to a TCP connection actor after receiving the
@@ -416,7 +426,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * in the [[Bind]] message. The connection is characterized by the `remoteAddress`
    * and `localAddress` TCP endpoints.
    */
-  case class Connected(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress) extends Event
+  case class Connected(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress, correlationTag: Option[Any]) extends Event
 
   /**
    * Whenever a command cannot be completed, the queried actor will reply with

@@ -17,23 +17,25 @@ trait TcpIntegrationSpecSupport { _: AkkaSpec ⇒
   class TestSetup {
     val bindHandler = TestProbe()
     val endpoint = temporaryServerAddress()
+    val InboundTag = Some("inbound")
+    val OutboundTag = Some("outbound")
 
     bindServer()
 
     def bindServer(): Unit = {
       val bindCommander = TestProbe()
-      bindCommander.send(IO(Tcp), Bind(bindHandler.ref, endpoint, options = bindOptions))
+      bindCommander.send(IO(Tcp), Bind(bindHandler.ref, endpoint, options = bindOptions, connectionCorrelationId = InboundTag))
       bindCommander.expectMsg(Bound(endpoint))
     }
 
     def establishNewClientConnection(): (TestProbe, ActorRef, TestProbe, ActorRef) = {
       val connectCommander = TestProbe()
-      connectCommander.send(IO(Tcp), Connect(endpoint, options = connectOptions))
-      val Connected(`endpoint`, localAddress) = connectCommander.expectMsgType[Connected]
+      connectCommander.send(IO(Tcp), Connect(endpoint, options = connectOptions, correlationId = OutboundTag))
+      val Connected(`endpoint`, localAddress, OutboundTag) = connectCommander.expectMsgType[Connected]
       val clientHandler = TestProbe()
       connectCommander.sender ! Register(clientHandler.ref)
 
-      val Connected(`localAddress`, `endpoint`) = bindHandler.expectMsgType[Connected]
+      val Connected(`localAddress`, `endpoint`, InboundTag) = bindHandler.expectMsgType[Connected]
       val serverHandler = TestProbe()
       bindHandler.sender ! Register(serverHandler.ref)
 
