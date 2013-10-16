@@ -8,6 +8,7 @@ import akka.actor.ActorRef
 import akka.actor.ActorSelection
 import akka.actor.InternalActorRef
 import akka.japi.Util.immutableSeq
+import akka.actor.NoSerializationVerificationNeeded
 
 /**
  * The interface of the routing logic that is used in a [[Router]] to select
@@ -15,7 +16,7 @@ import akka.japi.Util.immutableSeq
  *
  * The implementation must be thread safe.
  */
-trait RoutingLogic {
+trait RoutingLogic extends NoSerializationVerificationNeeded {
   /**
    * Pick the destination for a given message. Normally it picks one of the
    * passed `routees`, but in the end it is up to the implementation to
