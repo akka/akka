@@ -9,7 +9,7 @@ import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
-import akka.actor.{ IOManager, ActorSystem }
+import akka.actor.ActorSystem
 import akka.event.Logging.DefaultLogger
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -126,19 +126,6 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
           settings.DebugRouterMisconfiguration must be(false)
         }
 
-        // IO config
-        {
-          val io = config.getConfig("akka.io")
-          val ioExtSettings = IOManager(system).settings
-          ioExtSettings.readBufferSize must be(8192)
-          io.getBytes("read-buffer-size") must be(ioExtSettings.readBufferSize)
-
-          ioExtSettings.selectInterval must be(100)
-          io.getInt("select-interval") must be(ioExtSettings.selectInterval)
-
-          ioExtSettings.defaultBacklog must be(1000)
-          io.getInt("default-backlog") must be(ioExtSettings.defaultBacklog)
-        }
       }
 
       {
