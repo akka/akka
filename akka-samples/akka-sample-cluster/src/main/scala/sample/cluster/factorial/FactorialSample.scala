@@ -39,7 +39,7 @@ object FactorialFrontend {
 //#frontend
 class FactorialFrontend(upToN: Int, repeat: Boolean) extends Actor with ActorLogging {
 
-  val backend = context.actorOf(Props.empty.withRouter(FromConfig),
+  val backend = context.actorOf(FromConfig.props(),
     name = "factorialBackendRouter")
 
   override def preStart(): Unit = sendJobs()
@@ -141,16 +141,16 @@ class MetricsListener extends Actor with ActorLogging {
 // not used, only for documentation
 abstract class FactorialFrontend2 extends Actor {
   //#router-lookup-in-code
-  import akka.cluster.routing.ClusterRouterConfig
-  import akka.cluster.routing.ClusterRouterSettings
-  import akka.cluster.routing.AdaptiveLoadBalancingRouter
+  import akka.cluster.routing.ClusterRouterGroup
+  import akka.cluster.routing.ClusterRouterGroupSettings
+  import akka.cluster.routing.AdaptiveLoadBalancingGroup
   import akka.cluster.routing.HeapMetricsSelector
 
-  val backend = context.actorOf(Props.empty.withRouter(
-    ClusterRouterConfig(AdaptiveLoadBalancingRouter(HeapMetricsSelector),
-      ClusterRouterSettings(
+  val backend = context.actorOf(
+    ClusterRouterGroup(AdaptiveLoadBalancingGroup(HeapMetricsSelector),
+      ClusterRouterGroupSettings(
         totalInstances = 100, routeesPath = "/user/factorialBackend",
-        allowLocalRoutees = true, useRole = Some("backend")))),
+        allowLocalRoutees = true, useRole = Some("backend"))).props(),
     name = "factorialBackendRouter2")
   //#router-lookup-in-code
 }
@@ -158,16 +158,16 @@ abstract class FactorialFrontend2 extends Actor {
 // not used, only for documentation
 abstract class FactorialFrontend3 extends Actor {
   //#router-deploy-in-code
-  import akka.cluster.routing.ClusterRouterConfig
-  import akka.cluster.routing.ClusterRouterSettings
-  import akka.cluster.routing.AdaptiveLoadBalancingRouter
+  import akka.cluster.routing.ClusterRouterPool
+  import akka.cluster.routing.ClusterRouterPoolSettings
+  import akka.cluster.routing.AdaptiveLoadBalancingPool
   import akka.cluster.routing.SystemLoadAverageMetricsSelector
 
-  val backend = context.actorOf(Props[FactorialBackend].withRouter(
-    ClusterRouterConfig(AdaptiveLoadBalancingRouter(
-      SystemLoadAverageMetricsSelector), ClusterRouterSettings(
+  val backend = context.actorOf(
+    ClusterRouterPool(AdaptiveLoadBalancingPool(
+      SystemLoadAverageMetricsSelector), ClusterRouterPoolSettings(
       totalInstances = 100, maxInstancesPerNode = 3,
-      allowLocalRoutees = false, useRole = Some("backend")))),
+      allowLocalRoutees = false, useRole = Some("backend"))).props(Props[FactorialBackend]),
     name = "factorialBackendRouter3")
   //#router-deploy-in-code
 }

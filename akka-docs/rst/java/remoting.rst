@@ -233,7 +233,7 @@ This is also done via configuration::
     actor {
       deployment {
         /serviceA/aggregation {
-          router = "round-robin"
+          router = "round-robin-pool"
           nr-of-instances = 10
           target {
             nodes = ["akka.tcp://app@10.0.0.2:2552", "akka://app@10.0.0.3:2552"]

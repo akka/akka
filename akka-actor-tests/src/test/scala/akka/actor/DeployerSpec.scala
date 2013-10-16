@@ -162,37 +162,56 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
     }
 
     "be able to parse 'akka.actor.deployment._' with round-robin router" in {
-      assertRouting("/service-round-robin", RoundRobinRouter(1), "/service-round-robin")
+      assertRouting("/service-round-robin", RoundRobinPool(1), "/service-round-robin")
     }
 
     "be able to parse 'akka.actor.deployment._' with random router" in {
-      assertRouting("/service-random", RandomRouter(1), "/service-random")
+      assertRouting("/service-random", RandomPool(1), "/service-random")
     }
 
     "be able to parse 'akka.actor.deployment._' with scatter-gather router" in {
-      assertRouting("/service-scatter-gather", ScatterGatherFirstCompletedRouter(nrOfInstances = 1, within = 2 seconds), "/service-scatter-gather")
+      assertRouting("/service-scatter-gather", ScatterGatherFirstCompletedPool(nrOfInstances = 1, within = 2 seconds), "/service-scatter-gather")
     }
 
     "be able to parse 'akka.actor.deployment._' with consistent-hashing router" in {
-      assertRouting("/service-consistent-hashing", ConsistentHashingRouter(1), "/service-consistent-hashing")
+      assertRouting("/service-consistent-hashing", ConsistentHashingPool(1), "/service-consistent-hashing")
     }
 
     "be able to parse 'akka.actor.deployment._' with router resizer" in {
       val resizer = DefaultResizer()
-      assertRouting("/service-resizer", RoundRobinRouter(resizer = Some(resizer)), "/service-resizer")
+      assertRouting("/service-resizer", RoundRobinPool(nrOfInstances = 0, resizer = Some(resizer)), "/service-resizer")
     }
 
     "be able to use wildcards" in {
-      assertRouting("/some/wildcardmatch", RandomRouter(1), "/some/*")
-      assertRouting("/somewildcardmatch/some", ScatterGatherFirstCompletedRouter(nrOfInstances = 1, within = 2 seconds), "/*/some")
+      assertRouting("/some/wildcardmatch", RandomPool(1), "/some/*")
+      assertRouting("/somewildcardmatch/some", ScatterGatherFirstCompletedPool(nrOfInstances = 1, within = 2 seconds), "/*/some")
+    }
+
+    "have correct router mappings" in {
+      val mapping = system.asInstanceOf[ActorSystemImpl].provider.deployer.routerTypeMapping
+      mapping("from-code") must be(classOf[akka.routing.NoRouter].getName)
+      mapping("round-robin-pool") must be(classOf[akka.routing.RoundRobinPool].getName)
+      mapping("round-robin-group") must be(classOf[akka.routing.RoundRobinGroup].getName)
+      mapping("random-pool") must be(classOf[akka.routing.RandomPool].getName)
+      mapping("random-group") must be(classOf[akka.routing.RandomGroup].getName)
+      mapping("smallest-mailbox-pool") must be(classOf[akka.routing.SmallestMailboxPool].getName)
+      mapping("broadcast-pool") must be(classOf[akka.routing.BroadcastPool].getName)
+      mapping("broadcast-group") must be(classOf[akka.routing.BroadcastGroup].getName)
+      mapping("scatter-gather-pool") must be(classOf[akka.routing.ScatterGatherFirstCompletedPool].getName)
+      mapping("scatter-gather-group") must be(classOf[akka.routing.ScatterGatherFirstCompletedGroup].getName)
+      mapping("consistent-hashing-pool") must be(classOf[akka.routing.ConsistentHashingPool].getName)
+      mapping("consistent-hashing-group") must be(classOf[akka.routing.ConsistentHashingGroup].getName)
     }
 
     def assertRouting(service: String, expected: RouterConfig, expectPath: String): Unit = {
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
       deployment.map(_.path).getOrElse("NOT FOUND") must be(expectPath)
       deployment.get.routerConfig.getClass must be(expected.getClass)
-      deployment.get.routerConfig.resizer must be(expected.resizer)
       deployment.get.scope must be(NoScopeGiven)
+      expected match {
+        case pool: Pool ⇒ deployment.get.routerConfig.asInstanceOf[Pool].resizer must be(pool.resizer)
+        case _          ⇒
+      }
     }
   }
 }

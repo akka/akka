@@ -3,201 +3,164 @@
  */
 package docs.jrouting;
 
-import static akka.pattern.Patterns.ask;
-import static docs.jrouting.CustomRouterDocTest.Message.DemocratCountResult;
-import static docs.jrouting.CustomRouterDocTest.Message.DemocratVote;
-import static docs.jrouting.CustomRouterDocTest.Message.RepublicanCountResult;
-import static docs.jrouting.CustomRouterDocTest.Message.RepublicanVote;
-import static org.junit.Assert.assertEquals;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
+import akka.routing.FromConfig;
+import akka.routing.RoundRobinRoutingLogic;
+import akka.routing.Routee;
+import akka.routing.RoutingLogic;
+import akka.routing.SeveralRoutees;
 import akka.testkit.AkkaJUnitActorSystemResource;
-import org.junit.*;
 
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
+import org.junit.ClassRule;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
+
+import com.typesafe.config.ConfigFactory;
+
+import scala.collection.immutable.IndexedSeq;
+import static akka.japi.Util.immutableIndexedSeq;
+import docs.jrouting.RouterDocTest.Parent;
+import docs.jrouting.RouterDocTest.Workers;
+import docs.routing.CustomRouterDocSpec;
+import akka.testkit.JavaTestKit;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.actor.OneForOneStrategy;
 import akka.actor.Props;
-import akka.actor.SupervisorStrategy;
+//#imports1
 import akka.actor.UntypedActor;
-import akka.dispatch.Dispatchers;
-import akka.routing.CustomRoute;
-import akka.routing.CustomRouterConfig;
-import akka.routing.Destination;
-import akka.routing.RoundRobinRouter;
-import akka.routing.RouteeProvider;
-import akka.testkit.AkkaSpec;
-import akka.util.Timeout;
-import com.typesafe.config.ConfigFactory;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
+//#imports1
+
 
 public class CustomRouterDocTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
-    new AkkaJUnitActorSystemResource(
-      "CustomRouterDocTest", ConfigFactory.load(ConfigFactory.parseString(
-          "head{}\nworkers{}").withFallback(AkkaSpec.testConf())));
+    new AkkaJUnitActorSystemResource("CustomRouterDocTest", 
+        ConfigFactory.parseString(CustomRouterDocSpec.jconfig()));
 
   private final ActorSystem system = actorSystemResource.getSystem();
-  
-  public static class MyActor extends UntypedActor {
-    @Override public void onReceive(Object o) {}
-  }
-  
-  @Test
-  public void demonstrateDispatchers() {
-    //#dispatchers
-    final ActorRef router = system.actorOf(Props.create(MyActor.class)
-      // “head” router will run on "head" dispatcher
-      .withRouter(new RoundRobinRouter(5).withDispatcher("head"))
-      // MyActor “workers” will run on "workers" dispatcher
-      .withDispatcher("workers"));
-    //#dispatchers
-  }
-  
-  @Test
-  public void demonstrateSupervisor() {
-    //#supervision
-    final SupervisorStrategy strategy =
-      new OneForOneStrategy(5, Duration.create("1 minute"),
-         Collections.<Class<? extends Throwable>>singletonList(Exception.class));
-    final ActorRef router = system.actorOf(Props.create(MyActor.class)
-        .withRouter(new RoundRobinRouter(5).withSupervisorStrategy(strategy)));
-    //#supervision
-  }
 
-  //#crTest
-  @Test
-  public void countVotesAsIntendedNotAsInFlorida() throws Exception {
-    ActorRef routedActor = system.actorOf(
-      Props.empty().withRouter(new VoteCountRouter()));
-    routedActor.tell(DemocratVote, ActorRef.noSender());
-    routedActor.tell(DemocratVote, ActorRef.noSender());
-    routedActor.tell(RepublicanVote, ActorRef.noSender());
-    routedActor.tell(DemocratVote, ActorRef.noSender());
-    routedActor.tell(RepublicanVote, ActorRef.noSender());
-    Timeout timeout = new Timeout(Duration.create(1, "seconds"));
-    Future<Object> democratsResult =
-      ask(routedActor, DemocratCountResult, timeout);
-    Future<Object> republicansResult =
-      ask(routedActor, RepublicanCountResult, timeout);
-
-    assertEquals(3, Await.result(democratsResult, timeout.duration()));
-    assertEquals(2, Await.result(republicansResult, timeout.duration()));
-  }
-
-  //#crTest
-
-  //#CustomRouter
-  //#crMessages
-  enum Message {
-    DemocratVote, DemocratCountResult, RepublicanVote, RepublicanCountResult
-  }
-
-  //#crMessages
-  //#CustomRouter
   static
-  //#CustomRouter
-  //#crActors
-  public class DemocratActor extends UntypedActor {
-    int counter = 0;
-
-    public void onReceive(Object msg) {
-      switch ((Message) msg) {
-      case DemocratVote:
-        counter++;
-        break;
-      case DemocratCountResult:
-        getSender().tell(counter, getSelf());
-        break;
-      default:
-        unhandled(msg);
-      }
-    }
-  }
-
-  //#crActors
-  //#CustomRouter
-  static
-  //#CustomRouter
-  //#crActors
-  public class RepublicanActor extends UntypedActor {
-    int counter = 0;
-
-    public void onReceive(Object msg) {
-      switch ((Message) msg) {
-      case RepublicanVote:
-        counter++;
-        break;
-      case RepublicanCountResult:
-        getSender().tell(counter, getSelf());
-        break;
-      default:
-        unhandled(msg);
-      }
-    }
-  }
-
-  //#crActors
-  //#CustomRouter
-  static
-  //#CustomRouter
-  //#crRouter
-  public class VoteCountRouter extends CustomRouterConfig {
+  //#routing-logic
+  public class RedundancyRoutingLogic implements RoutingLogic {
+    private final int nbrCopies;
     
-    @Override public String routerDispatcher() {
-      return Dispatchers.DefaultDispatcherId();
+    public RedundancyRoutingLogic(int nbrCopies) {
+      this.nbrCopies = nbrCopies;  
     }
+    RoundRobinRoutingLogic roundRobin = new RoundRobinRoutingLogic();
     
-    @Override public SupervisorStrategy supervisorStrategy() {
-      return SupervisorStrategy.defaultStrategy();
-    }
-
-    //#crRoute
     @Override
-    public CustomRoute createCustomRoute(RouteeProvider routeeProvider) {
-      final ActorRef democratActor =
-        routeeProvider.context().actorOf(Props.create(DemocratActor.class), "d");
-      final ActorRef republicanActor =
-        routeeProvider.context().actorOf(Props.create(RepublicanActor.class), "r");
-      List<ActorRef> routees =
-        Arrays.asList(new ActorRef[] { democratActor, republicanActor });
-
-      //#crRegisterRoutees
-      routeeProvider.registerRoutees(routees);
-      //#crRegisterRoutees
-
-      //#crRoutingLogic
-      return new CustomRoute() {
-        @Override
-        public scala.collection.immutable.Seq<Destination> destinationsFor(
-            ActorRef sender, Object msg) {
-          switch ((Message) msg) {
-          case DemocratVote:
-          case DemocratCountResult:
-            return akka.japi.Util.immutableSingletonSeq(
-              new Destination(sender, democratActor));
-          case RepublicanVote:
-          case RepublicanCountResult:
-            return akka.japi.Util.immutableSingletonSeq(
-              new Destination(sender, republicanActor));
-          default:
-            throw new IllegalArgumentException("Unknown message: " + msg);
-          }
-        }
-      };
-      //#crRoutingLogic
+    public Routee select(Object message, IndexedSeq<Routee> routees) {
+      List<Routee> targets = new ArrayList<Routee>();
+      for (int i = 0; i < nbrCopies; i++) {
+        targets.add(roundRobin.select(message, routees));
+      }
+      return new SeveralRoutees(targets);
     }
-    //#crRoute
+  }
+  //#routing-logic
+  
+  static 
+  //#unit-test-logic
+  public final class TestRoutee implements Routee {
+    public final int n;
 
+    public TestRoutee(int n) {
+      this.n = n;
+    }
+
+    @Override
+    public void send(Object message, ActorRef sender) {
+    }
+
+    @Override
+    public int hashCode() {
+      return n;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return (obj instanceof TestRoutee) && 
+        n == ((TestRoutee) obj).n;
+    }
   }
 
-  //#crRouter
-  //#CustomRouter
+  //#unit-test-logic
+  
+  static public class Storage extends UntypedActor {
+    public void onReceive(Object msg) {
+      getSender().tell(msg, getSelf());
+    }
+  }
+  
+  @Test
+  public void unitTestRoutingLogic() {
+    //#unit-test-logic
+    RedundancyRoutingLogic logic = new RedundancyRoutingLogic(3);
+
+    List<Routee> routeeList = new ArrayList<Routee>();
+    for (int n = 1; n <= 7; n++) {
+      routeeList.add(new TestRoutee(n));
+    }
+    IndexedSeq<Routee> routees = immutableIndexedSeq(routeeList);
+
+    SeveralRoutees r1 = (SeveralRoutees) logic.select("msg", routees);
+    assertEquals(r1.getRoutees().get(0), routeeList.get(0));
+    assertEquals(r1.getRoutees().get(1), routeeList.get(1));
+    assertEquals(r1.getRoutees().get(2), routeeList.get(2));
+    
+    SeveralRoutees r2 = (SeveralRoutees) logic.select("msg", routees);
+    assertEquals(r2.getRoutees().get(0), routeeList.get(3));
+    assertEquals(r2.getRoutees().get(1), routeeList.get(4));
+    assertEquals(r2.getRoutees().get(2), routeeList.get(5));
+
+    SeveralRoutees r3 = (SeveralRoutees) logic.select("msg", routees);
+    assertEquals(r3.getRoutees().get(0), routeeList.get(6));
+    assertEquals(r3.getRoutees().get(1), routeeList.get(0));
+    assertEquals(r3.getRoutees().get(2), routeeList.get(1));
+
+    //#unit-test-logic
+  }
+
+  @Test
+  public void demonstrateUsageOfCustomRouter() {
+    new JavaTestKit(system) {{
+      //#usage-1
+      for (int n = 1; n <= 10; n++) {
+        system.actorOf(Props.create(Storage.class), "s" + n);
+      }
+
+      List<String> paths = new ArrayList<String>();
+      for (int n = 1; n <= 10; n++) {
+        paths.add("/user/s" + n);
+      }
+
+      ActorRef redundancy1 =
+        system.actorOf(new RedundancyGroup(paths, 3).props(),
+          "redundancy1");
+      redundancy1.tell("important", getTestActor());
+      //#usage-1
+
+      for (int i = 0; i < 3; i++) {
+        expectMsgEquals("important");
+      }
+
+      //#usage-2
+      ActorRef redundancy2 = system.actorOf(FromConfig.getInstance().props(),
+        "redundancy2");
+      redundancy2.tell("very important", getTestActor());
+      //#usage-2
+
+      for (int i = 0; i < 5; i++) {
+        expectMsgEquals("very important");
+      }
+    }};
+  }
+
 }

@@ -735,16 +735,15 @@ private[akka] class LocalActorRefProvider private[akka] (
         if (!system.dispatchers.hasDispatcher(d.routerConfig.routerDispatcher))
           throw new ConfigurationException(s"Dispatcher [${p.dispatcher}] not configured for router of $path")
 
-        val routerProps =
-          Props(p.deploy.copy(dispatcher = p.routerConfig.routerDispatcher),
-            classOf[RoutedActorCell.RouterCreator], Vector(p.routerConfig))
+        val routerProps = Props(p.deploy.copy(dispatcher = p.routerConfig.routerDispatcher),
+          classOf[RoutedActorCell.RouterActorCreator], Vector(p.routerConfig))
         val routeeProps = p.withRouter(NoRouter)
 
         try {
           val routerDispatcher = system.dispatchers.lookup(p.routerConfig.routerDispatcher)
           val routerMailbox = system.mailboxes.getMailboxType(routerProps, routerDispatcher.configurator.config)
 
-          // the RouteeProvider uses context.actorOf() to create the routees, which does not allow us to pass
+          // routers use context.actorOf() to create the routees, which does not allow us to pass
           // these through, but obtain them here for early verification
           val routeeDispatcher = system.dispatchers.lookup(p.dispatcher)
           val routeeMailbox = system.mailboxes.getMailboxType(routeeProps, routeeDispatcher.configurator.config)

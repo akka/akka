@@ -429,12 +429,12 @@ when a node becomes reachable again, after having been unreachable.
 
 There are two distinct types of routers. 
 
-* **Router that lookup existing actors and use them as routees.** The routees can be shared between
-  routers running on different nodes in the cluster. One example of a use case for this
-  type of router is a service running on some backend nodes in the cluster and 
-  used by routers running on front-end nodes in the cluster.
+* **Group - router that sends messages to the specified path using actor selection** 
+  The routees can be shared between routers running on different nodes in the cluster. 
+  One example of a use case for this type of router is a service running on some backend 
+  nodes in the cluster and used by routers running on front-end nodes in the cluster.
 
-* **Router that creates new routees as child actors and deploy them on remote nodes.** 
+* **Pool - router that creates routees as child actors and deploys them on remote nodes.** 
   Each router will have its own routee instances. For example, if you start a router
   on 3 nodes in a 10 nodes cluster you will have 30 routee actors in total if the router is
   configured to use one inctance per node. The routees created by the the different routers
@@ -442,11 +442,11 @@ There are two distinct types of routers.
   is a single master that coordinate jobs and delegates the actual work to routees running 
   on other nodes in the cluster.
 
-Router with Lookup of Routees
------------------------------
+Router with Group of Routees
+----------------------------
 
-When using a router with routees looked up on the cluster member nodes, i.e. the routees
-are already running, the configuration for a router looks like this:
+When using a ``Group`` you must start the routee actors on the cluster member nodes.
+That is not done by the router. The configuration for a group looks like this:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#router-lookup-config
 
@@ -472,10 +472,11 @@ The same type of router could also have been defined in code:
 
 See :ref:`cluster_configuration_java` section for further descriptions of the settings.
 
-Router Example with Lookup of Routees
--------------------------------------
+Router Example with Group of Routees
+------------------------------------
 
-Let's take a look at how to use a cluster aware router with lookup of routees.
+Let's take a look at how to use a cluster aware router with a group of routees, 
+i.e. router sending to the paths of the routees.
 
 The example application provides a service to calculate statistics for a text.
 When some text is sent to the service it splits it into words, and delegates the task
@@ -533,10 +534,10 @@ service nodes and 1 client::
   mvn exec:java \
     -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleMain"
 
-Router with Remote Deployed Routees
------------------------------------
+Router with Pool of Remote Deployed Routees
+-------------------------------------------
 
-When using a router with routees created and deployed on the cluster member nodes
+When using a ``Pool`` with routees created and deployed on the cluster member nodes
 the configuration for a router looks like this:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSingleMasterSpec.scala#router-deploy-config
@@ -555,8 +556,8 @@ The same type of router could also have been defined in code:
 
 See :ref:`cluster_configuration_java` section for further descriptions of the settings.
 
-Router Example with Remote Deployed Routees
--------------------------------------------
+Router Example with Pool of Remote Deployed Routees
+---------------------------------------------------
 
 Let's take a look at how to use a cluster aware router on single master node that creates
 and deploys workers. To keep track of a single master we use the :ref:`cluster-singleton` 
@@ -626,7 +627,7 @@ Download the native Sigar libraries from `Maven Central <http://repo1.maven.org/
 Adaptive Load Balancing
 -----------------------
 
-The ``AdaptiveLoadBalancingRouter`` performs load balancing of messages to cluster nodes based on the cluster metrics data.
+The ``AdaptiveLoadBalancingPool`` / ``AdaptiveLoadBalancingGroup`` performs load balancing of messages to cluster nodes based on the cluster metrics data.
 It uses random selection of routees with probabilities derived from the remaining capacity of the corresponding node.
 It can be configured to use a specific MetricsSelector to produce the probabilities, a.k.a. weights:
 

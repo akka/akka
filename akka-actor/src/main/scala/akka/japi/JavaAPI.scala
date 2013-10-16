@@ -210,4 +210,10 @@ object Util {
     }
 
   def immutableSingletonSeq[T](value: T): immutable.Seq[T] = value :: Nil
+
+  /**
+   * Turns an [[java.lang.Iterable]] into an immutable Scala IndexedSeq (by copying it).
+   */
+  def immutableIndexedSeq[T](iterable: java.lang.Iterable[T]): immutable.IndexedSeq[T] =
+    immutableSeq(iterable).toVector
 }
