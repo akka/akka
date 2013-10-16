@@ -58,7 +58,7 @@ The basic strategy is to declare the actor, mixing in the :class:`FSM` trait
 and specifying the possible states and data values as type parameters. Within
 the body of the actor a DSL is used for declaring the state machine:
 
- * :meth:`startsWith` defines the initial state and initial data
+ * :meth:`startWith` defines the initial state and initial data
  * then there is one :meth:`when(<state>) { ... }` declaration per state to be
    handled (could potentially be multiple ones, the passed
    :class:`PartialFunction` will be concatenated using :meth:`orElse`)
