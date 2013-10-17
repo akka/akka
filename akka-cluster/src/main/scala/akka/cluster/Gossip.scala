@@ -6,6 +6,8 @@ package akka.cluster
 
 import scala.collection.immutable
 import MemberStatus._
+import akka.cluster.protobuf.ClusterMessageSerializer
+import scala.concurrent.duration.Deadline
 
 /**
  * INTERNAL API
@@ -218,6 +220,14 @@ private[cluster] case class GossipOverview(
     s"GossipOverview(reachability = [$reachability], seen = [${seen.mkString(", ")}])"
 }
 
+object GossipEnvelope {
+  def apply(from: UniqueAddress, to: UniqueAddress, gossip: Gossip): GossipEnvelope =
+    new GossipEnvelope(from, to, gossip, null, null)
+
+  def apply(from: UniqueAddress, to: UniqueAddress, serDeadline: Deadline, ser: () ⇒ Gossip): GossipEnvelope =
+    new GossipEnvelope(from, to, null, serDeadline, ser)
+}
+
 /**
  * INTERNAL API
  * Envelope adding a sender and receiver address to the gossip.
@@ -226,8 +236,36 @@ private[cluster] case class GossipOverview(
  * the node with same host:port. The `uid` in the `UniqueAddress` is
  * different in that case.
  */
-@SerialVersionUID(1L)
-private[cluster] case class GossipEnvelope(from: UniqueAddress, to: UniqueAddress, gossip: Gossip) extends ClusterMessage
+@SerialVersionUID(2L)
+private[cluster] class GossipEnvelope private (
+  val from: UniqueAddress,
+  val to: UniqueAddress,
+  @volatile var g: Gossip,
+  serDeadline: Deadline,
+  @transient @volatile var ser: () ⇒ Gossip) extends ClusterMessage {
+
+  def gossip: Gossip = {
+    deserialize()
+    g
+  }
+
+  private def deserialize(): Unit = {
+    if ((g eq null) && (ser ne null)) {
+      if (serDeadline.hasTimeLeft)
+        g = ser()
+      else
+        g = Gossip.empty
+      ser = null
+    }
+  }
+
+  @throws(classOf[java.io.ObjectStreamException])
+  private def writeReplace(): AnyRef = {
+    deserialize()
+    this
+  }
+
+}
 
 /**
  * INTERNAL API
