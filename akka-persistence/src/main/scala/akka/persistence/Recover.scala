@@ -4,6 +4,8 @@
 
 package akka.persistence
 
+import akka.AkkaException
+
 /**
  * Instructs a processor to recover itself. Recovery will start from a snapshot if the processor has
  * previously saved one or more snapshots and at least one of these snapshots matches the specified
@@ -53,3 +55,17 @@ object Recover {
   def create(fromSnapshot: SnapshotSelectionCriteria, toSequenceNr: Long) =
     Recover(fromSnapshot, toSequenceNr)
 }
+
+/**
+ * Sent to a [[Processor]] after failed recovery. If not handled, a
+ * [[RecoveryFailureException]] is thrown by that processor.
+ */
+@SerialVersionUID(1L)
+case class RecoveryFailure(cause: Throwable)
+
+/**
+ * Thrown by a [[Processor]] if a journal failed to replay all requested messages.
+ */
+@SerialVersionUID(1L)
+case class RecoveryFailureException(message: String, cause: Throwable) extends AkkaException(message, cause)
+

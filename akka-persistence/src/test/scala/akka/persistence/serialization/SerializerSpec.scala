@@ -123,18 +123,15 @@ object MessageSerializerRemotingSpec {
     }
   }
 
-  def port(system: ActorSystem, protocol: String) =
-    addr(system, protocol).port.get
-
-  def addr(system: ActorSystem, protocol: String) =
-    system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+  def port(system: ActorSystem) =
+    system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress.port.get
 }
 
 class MessageSerializerRemotingSpec extends AkkaSpec(config(systemA).withFallback(config(customSerializers, remoteCommon))) with ImplicitSender {
   import MessageSerializerRemotingSpec._
 
   val remoteSystem = ActorSystem("remote", config(systemB).withFallback(config(customSerializers, remoteCommon)))
-  val localActor = system.actorOf(Props(classOf[LocalActor], port(remoteSystem, "tcp")))
+  val localActor = system.actorOf(Props(classOf[LocalActor], port(remoteSystem)))
 
   override protected def atStartup() {
     remoteSystem.actorOf(Props[RemoteActor], "remote")

@@ -295,19 +295,8 @@ components may consume the event stream as a means to replicate the component’
 state on a different continent or to react to changes). If the component’s
 state is lost—due to a machine failure or by being pushed out of a cache—it can
 easily be reconstructed by replaying the event stream (usually employing
-snapshots to speed up the process). Read a lot more about `Event Sourcing`_.
-
-Martin Krasser has written an implementation of event sourcing principles on
-top of Akka called `eventsourced`_, including support for guaranteed delivery
-semantics as described in the previous section.
-
-A successor of `eventsourced` is now part of Akka (see :ref:`persistence`) which
-is a general solution for actor state persistence. It journals messages before
-they are received by an actor and can be used to implement both event sourcing
-and command sourcing.
-
-.. _Event Sourcing: http://martinfowler.com/eaaDev/EventSourcing.html
-.. _eventsourced: https://github.com/eligosource/eventsourced
+snapshots to speed up the process). :ref:`event-sourcing` is supported by
+Akka (see :ref:`persistence`).
 
 Mailbox with Explicit Acknowledgement
 -------------------------------------
