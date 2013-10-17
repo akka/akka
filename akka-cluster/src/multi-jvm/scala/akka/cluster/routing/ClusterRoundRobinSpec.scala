@@ -30,7 +30,7 @@ import akka.routing.Routees
 object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
 
   class SomeActor(routeeType: RouteeType) extends Actor {
-    def this() = this(DeployRoutee)
+    def this() = this(PoolRoutee)
 
     def receive = {
       case "hit" ⇒ sender ! Reply(routeeType, self)
@@ -40,8 +40,8 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
   case class Reply(routeeType: RouteeType, ref: ActorRef)
 
   sealed trait RouteeType extends Serializable
-  object DeployRoutee extends RouteeType
-  object LookupRoutee extends RouteeType
+  object PoolRoutee extends RouteeType
+  object GroupRoutee extends RouteeType
 
   val first = role("first")
   val second = role("second")
@@ -71,10 +71,8 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
         /router4 {
           router = round-robin
           nr-of-instances = 10
-          cluster {
-            enabled = on
-            routees-path = "/user/myservice"
-          }
+          routees.paths = ["/user/myserviceA", "/user/myserviceB"]
+          cluster.enabled = on
         }
         /router5 {
           router = round-robin
@@ -153,7 +151,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
           router1 ! "hit"
         }
 
-        val replies = receiveReplies(DeployRoutee, iterationCount)
+        val replies = receiveReplies(PoolRoutee, iterationCount)
 
         replies(first) must be > (0)
         replies(second) must be > (0)
@@ -169,19 +167,20 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
 
       // cluster consists of first and second
 
-      system.actorOf(Props(classOf[SomeActor], LookupRoutee), "myservice")
+      system.actorOf(Props(classOf[SomeActor], GroupRoutee), "myserviceA")
+      system.actorOf(Props(classOf[SomeActor], GroupRoutee), "myserviceB")
       enterBarrier("myservice-started")
 
       runOn(first) {
-        // 2 nodes, 1 routee on each node
-        awaitAssert(currentRoutees(router4).size must be(2))
+        // 2 nodes, 2 routees on each node
+        awaitAssert(currentRoutees(router4).size must be(4))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
           router4 ! "hit"
         }
 
-        val replies = receiveReplies(LookupRoutee, iterationCount)
+        val replies = receiveReplies(GroupRoutee, iterationCount)
 
         replies(first) must be > (0)
         replies(second) must be > (0)
@@ -207,7 +206,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
           router1 ! "hit"
         }
 
-        val replies = receiveReplies(DeployRoutee, iterationCount)
+        val replies = receiveReplies(PoolRoutee, iterationCount)
 
         replies.values.foreach { _ must be > (0) }
         replies.values.sum must be(iterationCount)
@@ -221,15 +220,15 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
       // cluster consists of first, second, third and fourth
 
       runOn(first) {
-        // 4 nodes, 1 routee on each node
-        awaitAssert(currentRoutees(router4).size must be(4))
+        // 4 nodes, 2 routee on each node
+        awaitAssert(currentRoutees(router4).size must be(8))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
           router4 ! "hit"
         }
 
-        val replies = receiveReplies(LookupRoutee, iterationCount)
+        val replies = receiveReplies(GroupRoutee, iterationCount)
 
         replies.values.foreach { _ must be > (0) }
         replies.values.sum must be(iterationCount)
@@ -249,7 +248,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
           router3 ! "hit"
         }
 
-        val replies = receiveReplies(DeployRoutee, iterationCount)
+        val replies = receiveReplies(PoolRoutee, iterationCount)
 
         replies(first) must be(0)
         replies(second) must be > (0)
@@ -271,7 +270,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
           router5 ! "hit"
         }
 
-        val replies = receiveReplies(DeployRoutee, iterationCount)
+        val replies = receiveReplies(PoolRoutee, iterationCount)
 
         replies(first) must be > (0)
         replies(second) must be > (0)
@@ -296,7 +295,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
           router2 ! "hit"
         }
 
-        val replies = receiveReplies(DeployRoutee, iterationCount)
+        val replies = receiveReplies(PoolRoutee, iterationCount)
 
         // note that router2 has totalInstances = 3, maxInstancesPerNode = 1
         val routees = currentRoutees(router2)
@@ -317,16 +316,16 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
       def routeeAddresses = (routees map { case ActorSelectionRoutee(sel) ⇒ fullAddress(sel.anchor) }).toSet
 
       runOn(first) {
-        // 4 nodes, 1 routee on each node
-        awaitAssert(currentRoutees(router4).size must be(4))
+        // 4 nodes, 2 routees on each node
+        awaitAssert(currentRoutees(router4).size must be(8))
 
         testConductor.blackhole(first, second, Direction.Both).await
 
-        awaitAssert(routees.size must be(3))
+        awaitAssert(routees.size must be(6))
         routeeAddresses must not contain (address(second))
 
         testConductor.passThrough(first, second, Direction.Both).await
-        awaitAssert(routees.size must be(4))
+        awaitAssert(routees.size must be(8))
         routeeAddresses must contain(address(second))
 
       }
@@ -360,7 +359,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
           router2 ! "hit"
         }
 
-        val replies = receiveReplies(DeployRoutee, iterationCount)
+        val replies = receiveReplies(PoolRoutee, iterationCount)
 
         routeeAddresses.size must be(3)
         replies.values.sum must be(iterationCount)

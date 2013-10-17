@@ -457,14 +457,12 @@ That is not done by the router. The configuration for a group looks like this:
   available at that point it will be removed from the router and it will only re-try when the 
   cluster members are changed.
 
-It is the relative actor path defined in ``routees-path`` that identify what actor to lookup. 
+It is the relative actor paths defined in ``routees.paths`` that identify what actor to lookup. 
 It is possible to limit the lookup of routees to member nodes tagged with a certain role by
 specifying ``use-role``.
 
-``nr-of-instances`` defines total number of routees in the cluster, but there will not be
-more than one per node. That routee actor could easily fan out to local children if more parallelism 
-is needed. Setting ``nr-of-instances`` to a high value will result in new routees
-added to the router when nodes join the cluster.
+``nr-of-instances`` defines total number of routees in the cluster. Setting ``nr-of-instances`` 
+to a high value will result in new routees added to the router when nodes join the cluster.
 
 The same type of router could also have been defined in code:
 
@@ -506,7 +504,7 @@ The service that receives text from users and splits it up into words, delegates
 Note, nothing cluster specific so far, just plain actors.
 
 All nodes start ``StatsService`` and ``StatsWorker`` actors. Remember, routees are the workers in this case.
-The router is configured with ``routees-path``:
+The router is configured with ``routees.paths``:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf#config-router-lookup
 

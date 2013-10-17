@@ -230,7 +230,7 @@ abstract class StatsService2 extends Actor {
 
   val workerRouter = context.actorOf(
     ClusterRouterGroup(ConsistentHashingGroup(Nil), ClusterRouterGroupSettings(
-      totalInstances = 100, routeesPath = "/user/statsWorker",
+      totalInstances = 100, routeesPaths = List("/user/statsWorker"),
       allowLocalRoutees = true, useRole = Some("compute"))).props(),
     name = "workerRouter2")
   //#router-lookup-in-code
