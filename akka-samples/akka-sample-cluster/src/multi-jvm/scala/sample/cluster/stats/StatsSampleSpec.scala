@@ -34,9 +34,9 @@ object StatsSampleSpecConfig extends MultiNodeConfig {
       /statsService/workerRouter {
           router = consistent-hashing-group
           nr-of-instances = 100
+          routees.paths = ["/user/statsWorker"]
           cluster {
             enabled = on
-            routees-path = "/user/statsWorker"
             allow-local-routees = on
             use-role = compute
           }

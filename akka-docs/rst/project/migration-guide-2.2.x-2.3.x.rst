@@ -73,10 +73,22 @@ Example in Java::
     getContext().actorOf(new RoundRobinPool(5).props(Props.create(Worker.class)), 
         "router2");
 
+To support multiple routee paths for a cluster aware router sending to paths the deployment configuration
+property ``cluster.routees-path`` has been changed to string list ``routees.paths`` property.
+The old ``cluster.routees-path`` is deprecated, but still working during the deprecation phase.
+
+Example::
+
+    /router4 {
+      router = round-robin
+      nr-of-instances = 10
+      routees.paths = ["/user/myserviceA", "/user/myserviceB"]
+      cluster.enabled = on
+    }
+
 The API for creating custom routers and resizers have changed without keeping the old API as deprecated. 
 That should be a an API used by only a few users and they should be able to migrate to the new API
 without much trouble.
 
 Read more about the new routers in the :ref:`documentation for Scala <routing-scala>` and 
 :ref:`documentation for Java <routing-java>`.
- 

@@ -147,9 +147,9 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       /master-node-2/workers {
         router = round-robin-group
         nr-of-instances = 100
+        routees.paths = ["/user/worker"]
         cluster {
           enabled = on
-          routees-path = "/user/worker"
           allow-local-routees = on
         }
       }

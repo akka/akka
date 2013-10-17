@@ -219,11 +219,11 @@ final case class AdaptiveLoadBalancingGroup(
    * Java API
    * @param metricsSelector decides what probability to use for selecting a routee, based
    *   on remaining capacity as indicated by the node metrics
-   * @param routeePaths string representation of the actor paths of the routees, messages are
+   * @param routeesPaths string representation of the actor paths of the routees, messages are
    *   sent with [[akka.actor.ActorSelection]] to these paths
    */
   def this(metricsSelector: MetricsSelector,
-           routeePaths: java.lang.Iterable[String]) = this(paths = immutableSeq(routeePaths))
+           routeesPaths: java.lang.Iterable[String]) = this(paths = immutableSeq(routeesPaths))
 
   override def createRouter(system: ActorSystem): Router =
     new Router(AdaptiveLoadBalancingRoutingLogic(system, metricsSelector))
@@ -566,11 +566,11 @@ case class AdaptiveLoadBalancingRouter(
    * Java API: Constructor that sets the routees to be used.
    *
    * @param selector the selector is responsible for producing weighted mix of routees from the node metrics
-   * @param routeePaths string representation of the actor paths of the routees that will be looked up
+   * @param routeesPaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(selector: MetricsSelector, routeePaths: java.lang.Iterable[String]) =
-    this(metricsSelector = selector, routees = immutableSeq(routeePaths))
+  def this(selector: MetricsSelector, routeesPaths: java.lang.Iterable[String]) =
+    this(metricsSelector = selector, routees = immutableSeq(routeesPaths))
 
   /**
    * Java API: Constructor that sets the resizer to be used.

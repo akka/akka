@@ -149,7 +149,7 @@ final case class ClusterRouterConfig(local: DeprecatedRouterConfig, settings: Cl
       new ClusterRouterPoolActor(local.supervisorStrategy, ClusterRouterPoolSettings(settings.totalInstances,
         settings.maxInstancesPerNode, settings.allowLocalRoutees, settings.useRole))
     else
-      new ClusterRouterGroupActor(ClusterRouterGroupSettings(settings.totalInstances, settings.routeesPath,
+      new ClusterRouterGroupActor(ClusterRouterGroupSettings(settings.totalInstances, List(settings.routeesPath),
         settings.allowLocalRoutees, settings.useRole))
 
   override def supervisorStrategy: SupervisorStrategy = local.supervisorStrategy
