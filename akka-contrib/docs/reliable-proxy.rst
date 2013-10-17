@@ -71,12 +71,12 @@ Since this implementation does not offer much in the way of configuration,
 simply instantiate a proxy wrapping some target reference. From Java it looks
 like this:
 
-.. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ReliableProxyTest.java#import
-.. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ReliableProxyTest.java#demo-proxy
+.. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ReliableProxyTest.java
+   :include: import,demo-proxy
 
 And from Scala like this:
 
-.. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ReliableProxySpec.scala#demo
+.. includecode:: @contribSrc@/src/test/scala/akka/contrib/pattern/ReliableProxyDocSpec.scala#demo
 
 Since the :class:`ReliableProxy` actor is an :ref:`fsm-scala`, it also offers
 the capability to subscribe to state transitions. If you need to know when all
