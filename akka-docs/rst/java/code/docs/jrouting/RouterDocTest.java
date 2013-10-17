@@ -317,12 +317,11 @@ public class RouterDocTest {
   public void demonstrateDispatcher() {
     //#dispatchers
     Props props = 
-      // “head” will run on "router-dispatcher" dispatcher
-      new RoundRobinPool(5).withDispatcher("router-dispatcher").props(
-        Props.create(Worker.class))
-        // Worker routees will run on "workers-dispatcher" dispatcher
-        .withDispatcher("workers-dispatcher");
-    ActorRef router = system.actorOf(props);
+      // “head” router actor will run on "router-dispatcher" dispatcher
+      // Worker routees will run on "pool-dispatcher" dispatcher  
+      new RandomPool(5).withDispatcher("router-dispatcher").props(
+        Props.create(Worker.class));
+    ActorRef router = system.actorOf(props, "poolWithDispatcher");
     //#dispatchers
   }
   
@@ -390,8 +389,8 @@ public class RouterDocTest {
   public void demonstrateRemoteDeploy() {
     //#remoteRoutees
     Address[] addresses = {
-      new Address("akka", "remotesys", "otherhost", 1234),
-      AddressFromURIString.parse("akka://othersys@anotherhost:1234")};
+      new Address("akka.tcp", "remotesys", "otherhost", 1234),
+      AddressFromURIString.parse("akka.tcp://othersys@anotherhost:1234")};
     ActorRef routerRemote = system.actorOf(
       new RemoteRouterConfig(new RoundRobinPool(5), addresses).props(
         Props.create(Echo.class)));

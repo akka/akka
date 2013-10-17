@@ -626,16 +626,24 @@ The deployment section of the configuration is passed to the constructor.
 Configuring Dispatchers
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-The dispatcher for created children of the router will be taken from
+The dispatcher for created children of the pool will be taken from
 ``Props`` as described in :ref:`dispatchers-scala`. For a pool it
 makes sense to configure the ``BalancingDispatcher`` if the precise
 routing is not so important (i.e. no consistent hashing or round-robin is
 required); this enables newly created routees to pick up work immediately by
 stealing it from their siblings.
 
+To make it easy to define the dispatcher of the routees of the pool you can
+define the dispatcher inline in the deployment section of the config.
+
+.. includecode:: code/docs/routing/RouterDocSpec.scala#config-pool-dispatcher
+
+That is the only thing you need to do enable a dedicated dispatcher for a
+pool.
+
 .. note::
 
-   If you provide a collection of actors to route to, then they will still use the same dispatcher
+   If you use a group of actors and route to their paths, then they will still use the same dispatcher
    that was configured for them in their ``Props``, it is not possible to change an actors dispatcher
    after it has been created.
 

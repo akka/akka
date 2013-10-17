@@ -193,7 +193,8 @@ final case class ClusterRouterPool(local: Pool, settings: ClusterRouterPoolSetti
    */
   override private[akka] def newRoutee(routeeProps: Props, context: ActorContext): Routee = {
     val name = "c" + childNameCounter.incrementAndGet
-    val ref = context.asInstanceOf[ActorCell].attachChild(routeeProps, name, systemService = false)
+    val ref = context.asInstanceOf[ActorCell].attachChild(
+      local.enrichWithPoolDispatcher(routeeProps, context), name, systemService = false)
     ActorRefRoutee(ref)
   }
 
