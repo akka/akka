@@ -85,7 +85,7 @@ nacked messages it may need to keep a buffer of pending messages.
   the I/O driver has successfully processed the write. The Ack/Nack protocol described here is a means of flow control
   not error handling. In other words, data may still be lost, even if every write is acknowledged.
 
-.. _ByteString:
+.. _bytestring_java:
 
 ByteString
 ^^^^^^^^^^

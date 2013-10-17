@@ -130,12 +130,14 @@ final case class AdaptiveLoadBalancingPool(
   metricsSelector: MetricsSelector = MixMetricsSelector,
   override val nrOfInstances: Int = 0,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
-  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
+  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+  override val usePoolDispatcher: Boolean = false)
   extends Pool {
 
   def this(config: Config, dynamicAccess: DynamicAccess) =
     this(nrOfInstances = config.getInt("nr-of-instances"),
-      metricsSelector = MetricsSelector.fromConfig(config, dynamicAccess))
+      metricsSelector = MetricsSelector.fromConfig(config, dynamicAccess),
+      usePoolDispatcher = config.hasPath("pool-dispatcher"))
 
   /**
    * Java API

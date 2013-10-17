@@ -134,7 +134,7 @@ Once a connection has been established data can be sent to it from any actor in 
 
 Tcp.Write
   The simplest ``WriteCommand`` implementation which wraps a ``ByteString`` instance and an "ack" event.
-  A ``ByteString`` (as explained in :ref:`this section <ByteString>`) models one or more chunks of immutable
+  A ``ByteString`` (as explained in :ref:`this section <bytestring_scala>`) models one or more chunks of immutable
   in-memory data with a maximum (total) size of 2 GB (2^31 bytes).
 
 Tcp.WriteFile

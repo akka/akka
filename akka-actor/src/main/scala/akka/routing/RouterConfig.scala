@@ -182,10 +182,27 @@ trait Pool extends RouterConfig {
   def nrOfInstances: Int
 
   /**
+   * Use a dedicated dispatcher for the routees of the pool.
+   * The dispatcher is defined in 'pool-dispatcher' configuration property in the
+   * deployment section of the router.
+   */
+  def usePoolDispatcher: Boolean = false
+
+  /**
    * INTERNAL API
    */
   private[akka] def newRoutee(routeeProps: Props, context: ActorContext): Routee =
-    ActorRefRoutee(context.actorOf(routeeProps))
+    ActorRefRoutee(context.actorOf(enrichWithPoolDispatcher(routeeProps, context)))
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def enrichWithPoolDispatcher(routeeProps: Props, context: ActorContext): Props =
+    if (usePoolDispatcher && routeeProps.dispatcher == Dispatchers.DefaultDispatcherId)
+      routeeProps.withDispatcher("akka.actor.deployment." + context.self.path.elements.drop(1).mkString("/", "/", "")
+        + ".pool-dispatcher")
+    else
+      routeeProps
 
   /**
    * Pool with dynamically resizable number of routees return the [[akka.routing.Resizer]]

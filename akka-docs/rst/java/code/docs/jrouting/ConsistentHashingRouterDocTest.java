@@ -4,22 +4,27 @@
 package docs.jrouting;
 
 import akka.testkit.AkkaJUnitActorSystemResource;
+
 import org.junit.ClassRule;
 import org.junit.Test;
+
 import akka.testkit.JavaTestKit;
 import akka.actor.ActorSystem;
 
 //#imports1
 import akka.actor.UntypedActor;
 import akka.routing.ConsistentHashingRouter.ConsistentHashable;
+
 import java.util.Map;
 import java.util.HashMap;
 import java.io.Serializable;
 //#imports1
 
+
 //#imports2
 import akka.actor.Props;
 import akka.actor.ActorRef;
+import akka.routing.ConsistentHashingPool;
 import akka.routing.ConsistentHashingRouter;
 import akka.routing.ConsistentHashingRouter.ConsistentHashMapper;
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope;
@@ -120,7 +125,7 @@ public class ConsistentHashingRouterDocTest {
       };
 
       ActorRef cache = system.actorOf(
-          new ConsistentHashingRouter(10).withHashMapper(hashMapper).props(
+          new ConsistentHashingPool(10).withHashMapper(hashMapper).props(
               Props.create(Cache.class)), 
         "cache");
 

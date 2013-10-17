@@ -29,6 +29,9 @@ object ConfiguredLocalRoutingSpec {
           /config {
             router = random-pool
             nr-of-instances = 4
+            pool-dispatcher {
+              type = BalancingDispatcher
+            }
           }
           /paths {
             router = random-group
@@ -100,7 +103,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
 
     "be overridable in config" in {
       val actor = system.actorOf(RoundRobinPool(12).props(routeeProps = Props[EchoProps]), "config")
-      routerConfig(actor) must be === RandomPool(4)
+      routerConfig(actor) must be === RandomPool(nrOfInstances = 4, usePoolDispatcher = true)
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
@@ -120,7 +123,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
     "be overridable in config even with explicit deployment" in {
       val actor = system.actorOf(FromConfig.props(routeeProps = Props[EchoProps]).
         withDeploy(Deploy(routerConfig = RoundRobinPool(12))), "config")
-      routerConfig(actor) must be === RandomPool(4)
+      routerConfig(actor) must be === RandomPool(nrOfInstances = 4, usePoolDispatcher = true)
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
