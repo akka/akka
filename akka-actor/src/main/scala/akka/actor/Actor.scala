@@ -282,6 +282,37 @@ trait ActorLogging { this: Actor ⇒
   val log = akka.event.Logging(context.system, this)
 }
 
+/**
+ * Scala API: Mix in DiagnosticActorLogging into your Actor to easily obtain a reference to a logger with MDC support,
+ * which is available under the name "log".
+ * In the example bellow "the one who knocks" will be available under the key "iam" for using it in the logback pattern.
+ *
+ * {{{
+ * class MyActor extends Actor with DiagnosticActorLogging {
+ *
+ *   override def mdc(currentMessage: Any): MDC = {
+ *     Map("iam", "the one who knocks")
+ *   }
+ *
+ *   def receive = {
+ *     case "pigdog" => log.info("We've got yet another pigdog on our hands")
+ *   }
+ * }
+ * }}}
+ */
+trait DiagnosticActorLogging extends Actor {
+  import akka.event.Logging._
+  val log = akka.event.Logging(this)
+  def mdc(currentMessage: Any): MDC = emptyMDC
+
+  override protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = try {
+    log.mdc(mdc(msg))
+    super.aroundReceive(receive, msg)
+  } finally {
+    log.clearMDC()
+  }
+}
+
 object Actor {
   /**
    * Type alias representing a Receive-expression for Akka Actors.
