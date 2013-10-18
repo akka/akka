@@ -5,7 +5,7 @@
 package akka.io
 
 import java.io.{ File, IOException }
-import java.net.{ URLClassLoader, ConnectException, InetSocketAddress, SocketException, SocketTimeoutException }
+import java.net.{ URLClassLoader, InetSocketAddress }
 import java.nio.ByteBuffer
 import java.nio.channels._
 import java.nio.channels.spi.SelectorProvider
@@ -22,6 +22,7 @@ import akka.actor._
 import akka.testkit.{ AkkaSpec, EventFilter, TestActorRef, TestProbe }
 import akka.util.{ Helpers, ByteString }
 import akka.TestUtils._
+import java.util.Random
 
 object TcpConnectionSpec {
   case class Ack(i: Int) extends Event
@@ -173,6 +174,28 @@ class TcpConnectionSpec extends AkkaSpec("""
         pullFromServerSide(remaining = 10, into = buffer)
         buffer.flip()
         ByteString(buffer).utf8String must be("morestuff!")
+      }
+    }
+
+    "send big buffers to network correctly" in new EstablishedConnectionTest() {
+      run {
+        val bufferSize = 512 * 1024 // 256kB are too few
+        val random = new Random(0)
+        val testBytes = new Array[Byte](bufferSize)
+        random.nextBytes(testBytes)
+        val testData = ByteString(testBytes)
+
+        val writer = TestProbe()
+
+        val write = Write(testData, Ack)
+        val buffer = ByteBuffer.allocate(bufferSize)
+        serverSideChannel.read(buffer) must be(0)
+        writer.send(connectionActor, write)
+        pullFromServerSide(remaining = bufferSize, into = buffer)
+        buffer.flip()
+        buffer.limit must be(bufferSize)
+
+        ByteString(buffer) must be(testData)
       }
     }
 
