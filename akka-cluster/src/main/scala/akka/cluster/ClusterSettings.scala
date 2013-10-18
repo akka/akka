@@ -86,6 +86,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     case id ⇒ id
   }
   val GossipDifferentViewProbability: Double = cc.getDouble("gossip-different-view-probability")
+  val ReduceGossipDifferentViewProbability: Int = cc.getInt("reduce-gossip-different-view-probability")
   val SchedulerTickDuration: FiniteDuration = Duration(cc.getMilliseconds("scheduler.tick-duration"), MILLISECONDS)
   val SchedulerTicksPerWheel: Int = cc.getInt("scheduler.ticks-per-wheel")
   val MetricsEnabled: Boolean = cc.getBoolean("metrics.enabled")
