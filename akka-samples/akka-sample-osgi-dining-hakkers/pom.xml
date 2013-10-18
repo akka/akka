@@ -9,7 +9,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <akka.version>2.3-SNAPSHOT</akka.version>
+        <akka.version>2.3-M1</akka.version>
         <karaf.version>2.3.0</karaf.version>
         <karaf.tooling.exam.version>${karaf.version}</karaf.tooling.exam.version>
         <netty.version>3.6.2.Final</netty.version>
