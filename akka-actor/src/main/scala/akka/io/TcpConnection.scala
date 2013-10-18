@@ -348,9 +348,9 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
         } else if (data.nonEmpty) {
           buffer.clear()
-          val copied = remainingData.copyToBuffer(buffer)
+          val copied = data.copyToBuffer(buffer)
           buffer.flip()
-          writeToChannel(remainingData drop copied)
+          writeToChannel(data drop copied)
 
         } else {
           if (!ack.isInstanceOf[NoAck]) commander ! ack
