@@ -89,7 +89,7 @@ message Welcome {
 message GossipEnvelope {
   required UniqueAddress from = 1;
   required UniqueAddress to = 2;
-  required Gossip gossip = 3;
+  required bytes serializedGossip = 3;
 }
 
 /**

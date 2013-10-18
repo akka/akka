@@ -29,6 +29,7 @@ class ClusterConfigSpec extends AkkaSpec {
       RetryUnsuccessfulJoinAfter must be(10 seconds)
       PeriodicTasksInitialDelay must be(1 seconds)
       GossipInterval must be(1 second)
+      GossipTimeToLive must be(2 seconds)
       HeartbeatInterval must be(1 second)
       MonitoredByNrOfMembers must be(5)
       HeartbeatRequestDelay must be(10 seconds)

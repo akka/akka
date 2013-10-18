@@ -600,7 +600,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     val remoteGossip = envelope.gossip
     val localGossip = latestGossip
 
-    if (envelope.to != selfUniqueAddress) {
+    if (remoteGossip eq Gossip.empty) {
+      log.debug("Cluster Node [{}] - Ignoring received gossip from [{}] to protect against overload", selfAddress, from)
+      Ignored
+    } else if (envelope.to != selfUniqueAddress) {
       logInfo("Ignoring received gossip intended for someone else, from [{}] to [{}]", from.address, envelope.to)
       Ignored
     } else if (!remoteGossip.overview.reachability.isReachable(selfUniqueAddress)) {
