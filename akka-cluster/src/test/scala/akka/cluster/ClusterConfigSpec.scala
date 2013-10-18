@@ -45,6 +45,7 @@ class ClusterConfigSpec extends AkkaSpec {
       JmxEnabled must be(true)
       UseDispatcher must be(Dispatchers.DefaultDispatcherId)
       GossipDifferentViewProbability must be(0.8 plusOrMinus 0.0001)
+      ReduceGossipDifferentViewProbability must be(400)
       SchedulerTickDuration must be(33 millis)
       SchedulerTicksPerWheel must be(512)
       MetricsEnabled must be(true)
