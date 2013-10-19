@@ -294,7 +294,7 @@ class WorkMapSpec extends FunSuiteLike {
 
   }
 
-  test("Append two lists") {
+  test("Append two work maps") {
     workMap.removeAll()
     0 to 4 foreach { id ⇒ workMap.add(TestEntry(id), permanent = false) }
 
@@ -306,7 +306,7 @@ class WorkMapSpec extends FunSuiteLike {
     assert(workMap.size === 10)
   }
 
-  test("Clear list") {
+  test("Clear work map") {
     workMap.removeAll()
     assert(workMap.size === 0)
   }
