@@ -87,7 +87,7 @@ class WorkMap[A] {
 
   private val underlying = mutable.LinkedHashMap.empty[A, Status]
 
-  def add(item: A, permanent: Boolean): this.type = {
+  def add(item: A, permanent: Boolean): WorkMap[A] = {
     underlying += item -> new Status(permanent)
     this
   }
