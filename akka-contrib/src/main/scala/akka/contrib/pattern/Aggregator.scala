@@ -12,12 +12,9 @@ import scala.collection.mutable
 trait Aggregator {
   this: Actor ⇒
 
-  class ReceiveStatus(val permanent: Boolean) { var isDeleted = false }
-  type ReceiveStatusMap = mutable.LinkedHashMap[Actor.Receive, ReceiveStatus]
-
   private var processing = false
-  private val expectMap: ReceiveStatusMap = mutable.LinkedHashMap.empty
-  private val addBuffer: ReceiveStatusMap = mutable.LinkedHashMap.empty
+  private val expectMap = WorkMap.empty[Actor.Receive]
+  private val addBuffer = WorkMap.empty[Actor.Receive]
 
   /**
    * Adds the partial function to the receive set, to be removed on first match.
@@ -25,8 +22,8 @@ trait Aggregator {
    * @return The same receive function.
    */
   def expectOnce(fn: Actor.Receive): Actor.Receive = {
-    if (processing) addBuffer += fn -> new ReceiveStatus(permanent = false)
-    else expectMap += fn -> new ReceiveStatus(permanent = false)
+    if (processing) addBuffer.add(fn, permanent = false)
+    else expectMap.add(fn, permanent = false)
     fn
   }
 
@@ -36,8 +33,8 @@ trait Aggregator {
    * @return The same receive function.
    */
   def expect(fn: Actor.Receive): Actor.Receive = {
-    if (processing) addBuffer += fn -> new ReceiveStatus(permanent = true)
-    else expectMap += fn -> new ReceiveStatus(permanent = true)
+    if (processing) addBuffer.add(fn, permanent = true)
+    else expectMap.add(fn, permanent = true)
     fn
   }
 
@@ -47,8 +44,8 @@ trait Aggregator {
    * @return True if the partial function is removed, false if not found.
    */
   def unexpect(fn: Actor.Receive): Boolean = {
-    if (remove(fn, expectMap)) true
-    else if (processing && remove(fn, addBuffer)) true
+    if (expectMap.remove(fn)) true
+    else if (processing && addBuffer.remove(fn)) true
     else false
   }
 
@@ -67,37 +64,65 @@ trait Aggregator {
   def handleMessage(msg: Any): Boolean = {
     processing = true
     try {
-      process { fn ⇒
+      expectMap.process { fn ⇒
         var processed = true
         fn.applyOrElse(msg, (_: Any) ⇒ processed = false)
         processed
       }
     } finally {
       processing = false
-      expectMap ++= addBuffer
-      addBuffer.clear()
+      expectMap.addAll(addBuffer)
+      addBuffer.removeAll()
     }
   }
+}
 
-  private def remove(fn: Actor.Receive, map: ReceiveStatusMap): Boolean = {
-    map.get(fn) match {
+object WorkMap {
+  class Status(val permanent: Boolean) { var isDeleted = false }
+  def empty[A]: WorkMap[A] = new WorkMap[A]
+}
+
+class WorkMap[A] {
+  import WorkMap._
+
+  private val underlying = mutable.LinkedHashMap.empty[A, Status]
+
+  def add(item: A, permanent: Boolean): this.type = {
+    underlying += item -> new Status(permanent)
+    this
+  }
+
+  def remove(item: A): Boolean = {
+    underlying.get(item) match {
       case Some(status) ⇒
         status.isDeleted = true
-        map -= fn
+        underlying -= item
         true
       case None ⇒ false
     }
   }
 
-  private def process(f: Actor.Receive ⇒ Boolean): Boolean = {
-    expectMap.find { case (fn, _) ⇒ f(fn) } match {
+  def process(f: A ⇒ Boolean): Boolean = {
+    underlying.find { case (item, _) ⇒ f(item) } match {
       case Some((recv, status)) ⇒
         if (!status.permanent && !status.isDeleted) {
-          expectMap -= recv
+          underlying -= recv
           status.isDeleted = true
         }
         true
       case None ⇒ false
     }
   }
+
+  def addAll(other: WorkMap[A]): WorkMap[A] = {
+    underlying ++= other.underlying
+    this
+  }
+
+  def removeAll(): WorkMap[A] = {
+    underlying.clear()
+    this
+  }
+
+  def size: Int = underlying.size
 }
