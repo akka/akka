@@ -212,15 +212,15 @@ class AggregatorSpec extends TestKit(ActorSystem("test")) with ImplicitSender wi
 
 case class TestEntry(id: Int)
 
-class WorkMapSpec extends FunSuiteLike {
+class WorkListSpec extends FunSuiteLike {
 
-  val workMap = WorkMap.empty[TestEntry]
+  val workList = WorkList.empty[TestEntry]
   var entry2: TestEntry = null
   var entry4: TestEntry = null
 
-  test("Processing empty WorkMap") {
+  test("Processing empty WorkList") {
     // ProcessAndRemove something in the middle
-    val processed = workMap process {
+    val processed = workList process {
       case TestEntry(9) ⇒ true
       case _            ⇒ false
     }
@@ -229,28 +229,28 @@ class WorkMapSpec extends FunSuiteLike {
 
   test("Process temp entries") {
     val entry0 = TestEntry(0)
-    workMap.add(entry0, permanent = false)
+    workList.add(entry0, permanent = false)
     val entry1 = TestEntry(1)
-    workMap.add(entry1, permanent = false)
+    workList.add(entry1, permanent = false)
     entry2 = TestEntry(2)
-    workMap.add(entry2, permanent = false)
+    workList.add(entry2, permanent = false)
     val entry3 = TestEntry(3)
-    workMap.add(entry3, permanent = false)
+    workList.add(entry3, permanent = false)
 
     // ProcessAndRemove something in the middle
-    assert(workMap process {
+    assert(workList process {
       case TestEntry(2) ⇒ true
       case _            ⇒ false
     })
 
     // ProcessAndRemove the head
-    assert(workMap process {
+    assert(workList process {
       case TestEntry(0) ⇒ true
       case _            ⇒ false
     })
 
     // ProcessAndRemove the tail
-    assert(workMap process {
+    assert(workList process {
       case TestEntry(3) ⇒ true
       case _            ⇒ false
     })
@@ -258,26 +258,26 @@ class WorkMapSpec extends FunSuiteLike {
 
   test("Process permanent entry") {
     entry4 = TestEntry(4)
-    workMap.add(entry4, permanent = true)
-    assert(workMap process {
+    workList.add(entry4, permanent = true)
+    assert(workList process {
       case TestEntry(4) ⇒ true
       case _            ⇒ false
     })
   }
 
   test("Remove permanent entry") {
-    val removed = workMap remove entry4
+    val removed = workList remove entry4
     assert(removed)
   }
 
   test("Remove temp entry already processed") {
-    val removed = workMap remove entry2
+    val removed = workList remove entry2
     assert(!removed)
   }
 
   test("Process non-matching entries") {
     val processed =
-      workMap process {
+      workList process {
         case TestEntry(2) ⇒ true
         case _            ⇒ false
       }
@@ -285,7 +285,7 @@ class WorkMapSpec extends FunSuiteLike {
     assert(!processed)
 
     val processed2 =
-      workMap process {
+      workList process {
         case TestEntry(5) ⇒ true
         case _            ⇒ false
       }
@@ -295,43 +295,43 @@ class WorkMapSpec extends FunSuiteLike {
   }
 
   test("Append two work maps") {
-    workMap.removeAll()
-    0 to 4 foreach { id ⇒ workMap.add(TestEntry(id), permanent = false) }
+    workList.removeAll()
+    0 to 4 foreach { id ⇒ workList.add(TestEntry(id), permanent = false) }
 
-    val l2 = new WorkMap[TestEntry]
+    val l2 = new WorkList[TestEntry]
     5 to 9 foreach { id ⇒ l2.add(TestEntry(id), permanent = true) }
 
-    workMap addAll l2
+    workList addAll l2
 
-    assert(workMap.size === 10)
+    assert(workList.size === 10)
   }
 
   test("Clear work map") {
-    workMap.removeAll()
-    assert(workMap.size === 0)
+    workList.removeAll()
+    assert(workList.size === 0)
   }
 
-  val workMap2 = WorkMap.empty[PartialFunction[Any, Unit]]
+  val workList2 = WorkList.empty[PartialFunction[Any, Unit]]
 
   val fn1: PartialFunction[Any, Unit] = {
     case s: String ⇒
-      val result1 = workMap2 remove fn1
+      val result1 = workList2 remove fn1
       assert(result1 === true, "First remove must return true")
-      val result2 = workMap2 remove fn1
+      val result2 = workList2 remove fn1
       assert(result2 === false, "Second remove must return false")
   }
 
   val fn2: PartialFunction[Any, Unit] = {
     case s: String ⇒
-      workMap2.add(fn1, permanent = true)
+      workList2.add(fn1, permanent = true)
   }
 
   test("Reentrant insert") {
-    workMap2.add(fn2, permanent = false)
-    assert(workMap2.size === 1)
+    workList2.add(fn2, permanent = false)
+    assert(workList2.size === 1)
 
     // Processing inserted fn1, reentrant adding fn2
-    workMap2 process { fn ⇒
+    workList2 process { fn ⇒
       var processed = true
       fn.applyOrElse("Foo", (_: Any) ⇒ processed = false)
       processed
@@ -340,7 +340,7 @@ class WorkMapSpec extends FunSuiteLike {
 
   test("Reentrant delete") {
     // Processing inserted fn2, should delete itself
-    workMap2 process { fn ⇒
+    workList2 process { fn ⇒
       var processed = true
       fn.applyOrElse("Foo", (_: Any) ⇒ processed = false)
       processed

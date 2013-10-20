@@ -13,8 +13,8 @@ trait Aggregator {
   this: Actor ⇒
 
   private var processing = false
-  private val expectMap = WorkMap.empty[Actor.Receive]
-  private val addBuffer = WorkMap.empty[Actor.Receive]
+  private val expectList = WorkList.empty[Actor.Receive]
+  private val addBuffer = WorkList.empty[Actor.Receive]
 
   /**
    * Adds the partial function to the receive set, to be removed on first match.
@@ -23,7 +23,7 @@ trait Aggregator {
    */
   def expectOnce(fn: Actor.Receive): Actor.Receive = {
     if (processing) addBuffer.add(fn, permanent = false)
-    else expectMap.add(fn, permanent = false)
+    else expectList.add(fn, permanent = false)
     fn
   }
 
@@ -34,7 +34,7 @@ trait Aggregator {
    */
   def expect(fn: Actor.Receive): Actor.Receive = {
     if (processing) addBuffer.add(fn, permanent = true)
-    else expectMap.add(fn, permanent = true)
+    else expectList.add(fn, permanent = true)
     fn
   }
 
@@ -44,7 +44,7 @@ trait Aggregator {
    * @return True if the partial function is removed, false if not found.
    */
   def unexpect(fn: Actor.Receive): Boolean = {
-    if (expectMap.remove(fn)) true
+    if (expectList.remove(fn)) true
     else if (processing && addBuffer.remove(fn)) true
     else false
   }
@@ -64,49 +64,49 @@ trait Aggregator {
   def handleMessage(msg: Any): Boolean = {
     processing = true
     try {
-      expectMap.process { fn ⇒
+      expectList.process { fn ⇒
         var processed = true
         fn.applyOrElse(msg, (_: Any) ⇒ processed = false)
         processed
       }
     } finally {
       processing = false
-      expectMap.addAll(addBuffer)
+      expectList.addAll(addBuffer)
       addBuffer.removeAll()
     }
   }
 }
 
-object WorkMap {
-  class Status(val permanent: Boolean) { var isDeleted = false }
-  def empty[A]: WorkMap[A] = new WorkMap[A]
+object WorkList {
+  class Status[A](val item: A, val permanent: Boolean) { var isDeleted = false }
+  def empty[A]: WorkList[A] = new WorkList[A]
 }
 
-class WorkMap[A] {
-  import WorkMap._
+class WorkList[A] {
+  import WorkList._
 
-  private val underlying = mutable.LinkedHashMap.empty[A, Status]
+  private val underlying = mutable.ArrayBuffer.empty[Status[A]]
 
-  def add(item: A, permanent: Boolean): WorkMap[A] = {
-    underlying += item -> new Status(permanent)
+  def add(item: A, permanent: Boolean): WorkList[A] = {
+    underlying += new Status(item, permanent)
     this
   }
 
   def remove(item: A): Boolean = {
-    underlying.get(item) match {
+    underlying.find { _.item == item } match {
       case Some(status) ⇒
         status.isDeleted = true
-        underlying -= item
+        underlying -= status
         true
       case None ⇒ false
     }
   }
 
   def process(f: A ⇒ Boolean): Boolean = {
-    underlying.find { case (item, _) ⇒ f(item) } match {
-      case Some((recv, status)) ⇒
+    underlying.find { s ⇒ f(s.item) } match {
+      case Some(status) ⇒
         if (!status.permanent && !status.isDeleted) {
-          underlying -= recv
+          underlying -= status
           status.isDeleted = true
         }
         true
@@ -114,12 +114,12 @@ class WorkMap[A] {
     }
   }
 
-  def addAll(other: WorkMap[A]): WorkMap[A] = {
+  def addAll(other: WorkList[A]): WorkList[A] = {
     underlying ++= other.underlying
     this
   }
 
-  def removeAll(): WorkMap[A] = {
+  def removeAll(): WorkList[A] = {
     underlying.clear()
     this
   }
