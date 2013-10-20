@@ -93,24 +93,26 @@ class WorkList[A] {
   }
 
   def remove(item: A): Boolean = {
-    underlying.find { _.item == item } match {
-      case Some(status) ⇒
+    underlying.indexWhere { _.item == item } match {
+      case -1 ⇒ false
+      case idx ⇒
+        val status = underlying(idx)
         status.isDeleted = true
-        underlying -= status
+        underlying.remove(idx)
         true
-      case None ⇒ false
     }
   }
 
   def process(f: A ⇒ Boolean): Boolean = {
-    underlying.find { s ⇒ f(s.item) } match {
-      case Some(status) ⇒
+    underlying.indexWhere { s ⇒ f(s.item) } match {
+      case -1 ⇒ false
+      case idx ⇒
+        val status = underlying(idx)
         if (!status.permanent && !status.isDeleted) {
-          underlying -= status
+          underlying.remove(idx)
           status.isDeleted = true
         }
         true
-      case None ⇒ false
     }
   }
 
