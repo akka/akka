@@ -127,8 +127,34 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
   private def uniqueAddressToProto(uniqueAddress: UniqueAddress): cm.UniqueAddress.Builder =
     cm.UniqueAddress.newBuilder().setAddress(addressToProto(uniqueAddress.address)).setUid(uniqueAddress.uid)
 
+  // we don't care about races here since it's just a cache
+  @volatile
+  private var protocolCache: String = null
+  @volatile
+  private var systemCache: String = null
+
+  private def getProtocol(address: cm.Address): String = {
+    val p = address.getProtocol
+    val pc = protocolCache
+    if (pc == p) pc
+    else {
+      protocolCache = p
+      p
+    }
+  }
+
+  private def getSystem(address: cm.Address): String = {
+    val s = address.getSystem
+    val sc = systemCache
+    if (sc == s) sc
+    else {
+      systemCache = s
+      s
+    }
+  }
+
   private def addressFromProto(address: cm.Address): Address =
-    Address(address.getProtocol, address.getSystem, address.getHostname, address.getPort)
+    Address(getProtocol(address), getSystem(address), address.getHostname, address.getPort)
 
   private def uniqueAddressFromProto(uniqueAddress: cm.UniqueAddress): UniqueAddress =
     UniqueAddress(addressFromProto(uniqueAddress.getAddress), uniqueAddress.getUid)
