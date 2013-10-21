@@ -383,7 +383,9 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
 
 
       enterBarrier("verified-delta-with-many")
-      awaitCount(13 + many)
+      within (10.seconds) {
+        awaitCount(13 + many)
+      }
 
       enterBarrier("after-12")
     }
