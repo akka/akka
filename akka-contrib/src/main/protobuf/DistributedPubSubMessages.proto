@@ -1,0 +1,70 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+option java_package = "akka.contrib.pattern.protobuf.msg";
+option optimize_for = SPEED;
+
+message Status {
+  message Version {
+    required Address address = 1;
+    required int64 timestamp = 2;
+  }
+  repeated Version versions = 1;
+}
+
+message Delta {
+  message Entry {
+    required string key = 1;
+    required int64 version = 2;
+    optional string ref = 3; 
+  }
+  message Bucket {
+    required Address owner = 1;
+    required int64 version = 2;
+    repeated Entry content = 3;
+  }
+  repeated Bucket buckets = 1;
+}
+
+/**
+ * Defines a remote address.
+ */
+message Address {
+  required string system = 1;
+  required string hostname = 2;
+  required uint32 port = 3;
+  optional string protocol = 4;
+}
+
+/**
+ * Send normally local, but it is also used by the ClusterClient.
+ */
+message Send {
+  required string path = 1;
+  required bool localAffinity = 2;
+  required Payload payload = 3; 
+}
+
+/**
+ * SendToAll normally local, but it is also used by the ClusterClient.
+ */
+message SendToAll {
+  required string path = 1;
+  required bool allButSelf = 2;
+  required Payload payload = 3; 
+}
+
+/**
+ * Publish normally local, but it is also used by the ClusterClient.
+ */
+message Publish {
+  required string topic = 1;
+  required Payload payload = 3; 
+}
+
+message Payload {
+  required bytes enclosedMessage = 1;
+  required int32 serializerId = 2;
+  optional bytes messageManifest = 4;
+}
