@@ -347,3 +347,9 @@ and register that as the recipient of inbound traffic and ourselves as
 recipient for the decrypted payload data. The we send a greeting to the server
 and forward any replies to some ``listener`` actor.
 
+.. warning::
+
+  The SslTlsSupport does not support messages that are larger than the size
+  of the send buffer on the socket. Trying to send such a message will result
+  in a ``CommandFailed``. If you need to send large messages over SSL, then
+  they have to be sent in chunks.
