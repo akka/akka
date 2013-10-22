@@ -63,7 +63,8 @@ private[cluster] object Gossip {
 private[cluster] case class Gossip(
   members: immutable.SortedSet[Member], // sorted set of members with their status, sorted by address
   overview: GossipOverview = GossipOverview(),
-  version: VectorClock = VectorClock()) { // vector clock version
+  version: VectorClock = VectorClock(),
+  hop: Option[Int] = None) { // vector clock version
 
   if (Cluster.isAssertInvariantsEnabled) assertInvariants()
 
@@ -149,6 +150,8 @@ private[cluster] case class Gossip(
 
     // 4. Nobody can have seen this new gossip yet
     val mergedSeen = Set.empty[UniqueAddress]
+
+    // Merge does not copy the hop count -- it is set by the boost process itself
 
     Gossip(mergedMembers, GossipOverview(mergedSeen, mergedReachability), mergedVClock)
   }

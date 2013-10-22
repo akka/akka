@@ -111,8 +111,6 @@ private[cluster] object InternalClusterAction {
 
   case object GossipTick extends Tick
 
-  case object GossipSpeedupTick extends Tick
-
   case object HeartbeatTick extends Tick
 
   case object ReapUnreachableTick extends Tick
@@ -227,6 +225,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   protected def selfUniqueAddress = cluster.selfUniqueAddress
 
   val NumberOfGossipsBeforeShutdownWhenLeaderExits = 3
+  val BootstrapHops = 4
 
   def vclockName(node: UniqueAddress): String = node.address + "-" + node.uid
   val vclockNode = VectorClock.Node(vclockName(selfUniqueAddress))
@@ -335,7 +334,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     case msg: GossipEnvelope              ⇒ receiveGossip(msg)
     case msg: GossipStatus                ⇒ receiveGossipStatus(msg)
     case GossipTick                       ⇒ gossipTick()
-    case GossipSpeedupTick                ⇒ gossipSpeedupTick()
     case ReapUnreachableTick              ⇒ reapUnreachableMembers()
     case LeaderActionsTick                ⇒ leaderActions()
     case PublishStatsTick                 ⇒ publishInternalStats()
@@ -660,6 +658,12 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         }
       }
 
+      gossipType match {
+        case Merge ⇒ gossipBoost(0) // Start boosting
+        case Newer ⇒ for (h ← latestGossip.hop) if (h < BootstrapHops) gossipBoost(h) // continue boosting
+        case _     ⇒ // absorb boosting
+      }
+
       publish(latestGossip)
 
       val selfStatus = latestGossip.member(selfUniqueAddress).status
@@ -676,17 +680,26 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
   def gossipTick(): Unit = {
     gossip()
-    if (isGossipSpeedupNeeded) {
-      scheduler.scheduleOnce(GossipInterval / 3, self, GossipSpeedupTick)
-      scheduler.scheduleOnce(GossipInterval * 2 / 3, self, GossipSpeedupTick)
-    }
   }
 
-  def gossipSpeedupTick(): Unit =
-    if (isGossipSpeedupNeeded) gossip()
-
-  def isGossipSpeedupNeeded: Boolean =
-    (latestGossip.overview.seen.size < latestGossip.members.size / 2)
+  def gossipBoost(currentHop: Int): Unit = {
+    val validNodes = latestGossip.members.toIndexedSeq.collect {
+      case m if latestGossip.hasMember(m.uniqueAddress) &&
+        latestGossip.overview.reachability.isReachable(m.uniqueAddress) ⇒ m.uniqueAddress
+    }
+    val size = validNodes.size
+    if (size > 0) {
+      latestGossip = latestGossip.copy(hop = Some(currentHop + 1))
+      val delta = size / (1 << (currentHop << 1)) // 4^hop
+      val pivot = validNodes.indexOf(selfUniqueAddress)
+      val targetNodes = Set(
+        validNodes((pivot + delta) % size),
+        validNodes((pivot + 2 * delta) % size),
+        validNodes((pivot + 3 * delta) % size))
+      targetNodes foreach gossipTo
+      latestGossip = latestGossip.copy(hop = None)
+    } else gossip()
+  }
 
   /**
    * Initiates a new round of gossip.
@@ -695,7 +708,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     log.debug("Cluster Node [{}] - Initiating new round of gossip", selfAddress)
 
     if (!isSingletonCluster) {
-      val localGossip = latestGossip
+      val localGossip = latestGossip.copy(hop = None) // Random gossip does not include hop information
 
       val preferredGossipTargets: Vector[UniqueAddress] =
         if (ThreadLocalRandom.current.nextDouble() < adjustedGossipDifferentViewProbability) {
@@ -964,6 +977,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     val seenVersionedGossip = versionedGossip onlySeen (selfUniqueAddress)
     // Update the state with the new gossip
     latestGossip = seenVersionedGossip
+    gossipBoost(0) // Initiate boosting
   }
 
   def publish(newGossip: Gossip): Unit = {
