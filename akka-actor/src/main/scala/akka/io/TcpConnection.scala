@@ -4,7 +4,7 @@
 
 package akka.io
 
-import java.net.InetSocketAddress
+import java.net.{ SocketException, InetSocketAddress }
 import java.nio.channels.SelectionKey._
 import java.io.{ FileInputStream, IOException }
 import java.nio.channels.{ FileChannel, SocketChannel }
@@ -250,9 +250,12 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       context.become(closingWithPendingWrite(info, closeCommander, closedEvent))
     case ConfirmedClosed ⇒ // shutdown output and wait for confirmation
       if (TraceLogging) log.debug("Got ConfirmedClose command, sending FIN.")
-      channel.socket.shutdownOutput()
 
-      if (peerClosed) // if peer closed first, the socket is now fully closed
+      // If peer closed first, the socket is now fully closed.
+      // Also, if shutdownOutput threw an exception we expect this to be an indication
+      // that the peer closed first or concurrently with this code running.
+      // also see http://bugs.sun.com/view_bug.do?bug_id=4516760
+      if (peerClosed || !safeShutdownOutput())
         doCloseConnection(info.handler, closeCommander, closedEvent)
       else context.become(closing(info, closeCommander))
     case _ ⇒ // close now
@@ -270,6 +273,13 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     log.debug("Closing connection due to IO error {}", exception)
     stopWith(CloseInformation(Set(handler), ErrorClosed(extractMsg(exception))))
   }
+  def safeShutdownOutput(): Boolean =
+    try {
+      channel.socket().shutdownOutput()
+      true
+    } catch {
+      case _: SocketException ⇒ false
+    }
 
   @tailrec private[this] def extractMsg(t: Throwable): String =
     if (t == null) "unknown"
