@@ -6,7 +6,6 @@ package akka.contrib.pattern
 import akka.testkit.{ ImplicitSender, TestKit }
 import org.scalatest.FunSuiteLike
 import org.scalatest.matchers.ShouldMatchers
-import scala.annotation.tailrec
 
 //#demo-code
 import scala.collection._
@@ -228,35 +227,15 @@ class WorkListSpec extends FunSuiteLike {
     assert(!processed)
   }
 
-  test("Insert temp entries") {
-    assert(workList.head === workList.tail)
-
+  test("Process temp entries") {
     val entry0 = TestEntry(0)
     workList.add(entry0, permanent = false)
-
-    assert(workList.head.next != null)
-    assert(workList.tail === workList.head.next)
-    assert(workList.tail.ref.get === entry0)
-
     val entry1 = TestEntry(1)
     workList.add(entry1, permanent = false)
-
-    assert(workList.head.next != workList.tail)
-    assert(workList.head.next.ref.get === entry0)
-    assert(workList.tail.ref.get === entry1)
-
     entry2 = TestEntry(2)
     workList.add(entry2, permanent = false)
-
-    assert(workList.tail.ref.get === entry2)
-
     val entry3 = TestEntry(3)
     workList.add(entry3, permanent = false)
-
-    assert(workList.tail.ref.get === entry3)
-  }
-
-  test("Process temp entries") {
 
     // ProcessAndRemove something in the middle
     assert(workList process {
@@ -277,14 +256,9 @@ class WorkListSpec extends FunSuiteLike {
     })
   }
 
-  test("Re-insert permanent entry") {
+  test("Process permanent entry") {
     entry4 = TestEntry(4)
     workList.add(entry4, permanent = true)
-
-    assert(workList.tail.ref.get === entry4)
-  }
-
-  test("Process permanent entry") {
     assert(workList process {
       case TestEntry(4) ⇒ true
       case _            ⇒ false
@@ -302,7 +276,6 @@ class WorkListSpec extends FunSuiteLike {
   }
 
   test("Process non-matching entries") {
-
     val processed =
       workList process {
         case TestEntry(2) ⇒ true
@@ -321,7 +294,7 @@ class WorkListSpec extends FunSuiteLike {
 
   }
 
-  test("Append two lists") {
+  test("Append two work lists") {
     workList.removeAll()
     0 to 4 foreach { id ⇒ workList.add(TestEntry(id), permanent = false) }
 
@@ -330,22 +303,12 @@ class WorkListSpec extends FunSuiteLike {
 
     workList addAll l2
 
-    @tailrec
-    def checkEntries(id: Int, entry: WorkList.Entry[TestEntry]): Int = {
-      if (entry == null) id
-      else {
-        assert(entry.ref.get.id === id)
-        checkEntries(id + 1, entry.next)
-      }
-    }
-
-    assert(checkEntries(0, workList.head.next) === 10)
+    assert(workList.size === 10)
   }
 
-  test("Clear list") {
+  test("Clear work list") {
     workList.removeAll()
-    assert(workList.head.next === null)
-    assert(workList.tail === workList.head)
+    assert(workList.size === 0)
   }
 
   val workList2 = WorkList.empty[PartialFunction[Any, Unit]]
@@ -365,8 +328,7 @@ class WorkListSpec extends FunSuiteLike {
 
   test("Reentrant insert") {
     workList2.add(fn2, permanent = false)
-    assert(workList2.head.next != null)
-    assert(workList2.tail == workList2.head.next)
+    assert(workList2.size === 1)
 
     // Processing inserted fn1, reentrant adding fn2
     workList2 process { fn ⇒
