@@ -333,12 +333,25 @@ class TcpConnectionSpec extends AkkaSpec("""
 
     "respect StopReading and ResumeReading" in new EstablishedConnectionTest() {
       run {
+        serverSideChannel.write(ByteBuffer.wrap("testdata".getBytes("ASCII")))
         connectionHandler.send(connectionActor, SuspendReading)
 
-        // the selector interprets StopReading to deregister interest for reading
+        // the selector interprets SuspendReading to deregister interest for reading
         interestCallReceiver.expectMsg(-OP_READ)
+
+        // this simulates a race condition where ChannelReadable was already underway while
+        // processing SuspendReading
+        selector.send(connectionActor, ChannelReadable)
+
+        // this ChannelReadable should be properly ignored, even if data is already pending
+        interestCallReceiver.expectNoMsg(100.millis)
+        connectionHandler.expectNoMsg(100.millis)
+
         connectionHandler.send(connectionActor, ResumeReading)
         interestCallReceiver.expectMsg(OP_READ)
+
+        // data should be received only after ResumeReading
+        expectReceivedString("testdata")
       }
     }
 
