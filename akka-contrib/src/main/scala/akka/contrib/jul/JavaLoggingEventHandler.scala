@@ -9,6 +9,6 @@ import akka.event.Logging.Warning
 class JavaLoggingEventHandler extends JavaLogger {
 
   self ! Warning(getClass.getName, getClass,
-    s"[${getClass.getName}] is depreceated, use [${classOf[JavaLogger].getName}] instead")
+    s"[${getClass.getName}] is deprecated, use [${classOf[JavaLogger].getName}] instead")
 
 }
