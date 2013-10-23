@@ -81,8 +81,8 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
       system.actorOf(Props[StatsWorker], "statsWorker")
       system.actorOf(Props[StatsService], "statsService")
 
-      receiveN(3).collect { case MemberUp(m) => m.address }.toSet must be (
-           Set(firstAddress, secondAddress, thirdAddress))
+      receiveN(3).collect { case MemberUp(m) ⇒ m.address }.toSet must be(
+        Set(firstAddress, secondAddress, thirdAddress))
 
       Cluster(system).unsubscribe(testActor)
 

@@ -78,13 +78,13 @@ abstract class StatsSampleSingleMasterJapiSpec extends MultiNodeSpec(StatsSample
 
       Cluster(system) join firstAddress
 
-      receiveN(3).collect { case MemberUp(m) => m.address }.toSet must be (
-           Set(firstAddress, secondAddress, thirdAddress))
+      receiveN(3).collect { case MemberUp(m) ⇒ m.address }.toSet must be(
+        Set(firstAddress, secondAddress, thirdAddress))
 
       Cluster(system).unsubscribe(testActor)
 
       system.actorOf(ClusterSingletonManager.defaultProps(
-        Props[StatsService],  
+        Props[StatsService],
         singletonName = "statsService",
         terminationMessage = PoisonPill,
         role = null), name = "singleton")

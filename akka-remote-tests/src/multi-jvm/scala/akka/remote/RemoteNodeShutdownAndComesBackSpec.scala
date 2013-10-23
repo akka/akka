@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor._
 import akka.remote.testconductor.RoleName
-import akka.remote.transport.ThrottlerTransportAdapter.{ForceDisassociate, Direction}
+import akka.remote.transport.ThrottlerTransportAdapter.{ ForceDisassociate, Direction }
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
@@ -35,8 +35,8 @@ object RemoteNodeShutdownAndComesBackSpec extends MultiNodeConfig {
 
   class Subject extends Actor {
     def receive = {
-      case "shutdown" => context.system.shutdown()
-      case msg ⇒ sender ! msg
+      case "shutdown" ⇒ context.system.shutdown()
+      case msg        ⇒ sender ! msg
     }
   }
 
@@ -47,7 +47,7 @@ class RemoteNodeShutdownAndComesBackMultiJvmNode2 extends RemoteNodeShutdownAndC
 
 abstract class RemoteNodeShutdownAndComesBackSpec
   extends MultiNodeSpec(RemoteNodeShutdownAndComesBackSpec)
-          with STMultiNodeSpec with ImplicitSender {
+  with STMultiNodeSpec with ImplicitSender {
 
   import RemoteNodeShutdownAndComesBackSpec._
 
@@ -136,7 +136,6 @@ abstract class RemoteNodeShutdownAndComesBackSpec
                     }
                     """).withFallback(system.settings.config))
         freshSystem.actorOf(Props[Subject], "subject")
-
 
         freshSystem.awaitTermination(30.seconds)
       }

@@ -90,7 +90,7 @@ class Channel private (_channelId: Option[String]) extends Actor with Stash {
   }
 
   private val buffering: Actor.Receive = {
-    case DeliveredResolved | DeliveredUnresolved ⇒ context.unbecome(); unstashAll() // TODO: optimize
+    case DeliveredResolved | DeliveredUnresolved ⇒ { context.unbecome(); unstashAll() } // TODO: optimize
     case _: Deliver                              ⇒ stash()
   }
 
@@ -232,9 +232,9 @@ private trait ResolvedDelivery extends Actor {
 
   def receive = {
     case DeliverResolved             ⇒ context.actorSelection(path) ! Identify(1)
-    case ActorIdentity(1, Some(ref)) ⇒ onResolveSuccess(ref); shutdown(DeliveredResolved)
-    case ActorIdentity(1, None)      ⇒ onResolveFailure(); shutdown(DeliveredUnresolved)
-    case ReceiveTimeout              ⇒ onResolveFailure(); shutdown(DeliveredUnresolved)
+    case ActorIdentity(1, Some(ref)) ⇒ { onResolveSuccess(ref); shutdown(DeliveredResolved) }
+    case ActorIdentity(1, None)      ⇒ { onResolveFailure(); shutdown(DeliveredUnresolved) }
+    case ReceiveTimeout              ⇒ { onResolveFailure(); shutdown(DeliveredUnresolved) }
   }
 
   def shutdown(message: Any) {
