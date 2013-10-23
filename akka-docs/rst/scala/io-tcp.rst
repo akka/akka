@@ -329,3 +329,9 @@ It should be noted that communication with the :class:`TcpPipelineHandler`
 wraps commands and events in the inner types of the ``init`` object in order to
 keep things well separated.
 
+.. warning::
+
+  The SslTlsSupport does not support messages that are larger than the size
+  of the send buffer on the socket. Trying to send such a message will result
+  in a ``CommandFailed``. If you need to send large messages over SSL, then
+  they have to be sent in chunks.
