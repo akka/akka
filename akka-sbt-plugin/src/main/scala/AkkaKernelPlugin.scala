@@ -9,7 +9,7 @@ import sbt.Keys._
 import sbt.Load.BuildStructure
 import sbt.classpath.ClasspathUtilities
 import sbt.Project.Initialize
-import sbt.CommandSupport._
+import sbt.CommandUtil._
 import java.io.File
 
 object AkkaKernelPlugin extends Plugin {
