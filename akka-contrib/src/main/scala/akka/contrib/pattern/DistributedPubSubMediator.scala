@@ -42,8 +42,9 @@ object DistributedPubSubMediator {
     role: Option[String],
     routingLogic: RoutingLogic = RandomRoutingLogic(),
     gossipInterval: FiniteDuration = 1.second,
-    removedTimeToLive: FiniteDuration = 2.minutes): Props =
-    Props(classOf[DistributedPubSubMediator], role, routingLogic, gossipInterval, removedTimeToLive)
+    removedTimeToLive: FiniteDuration = 2.minutes,
+    maxDeltaElements: Int = 500): Props =
+    Props(classOf[DistributedPubSubMediator], role, routingLogic, gossipInterval, removedTimeToLive, maxDeltaElements)
 
   /**
    * Java API: Factory method for `DistributedPubSubMediator` [[akka.actor.Props]].
@@ -52,8 +53,9 @@ object DistributedPubSubMediator {
     role: String,
     routingLogic: RoutingLogic,
     gossipInterval: FiniteDuration,
-    removedTimeToLive: FiniteDuration): Props =
-    props(Internal.roleOption(role), routingLogic, gossipInterval, removedTimeToLive)
+    removedTimeToLive: FiniteDuration,
+    maxDeltaElements: Int): Props =
+    props(Internal.roleOption(role), routingLogic, gossipInterval, removedTimeToLive, maxDeltaElements)
 
   /**
    * Java API: Factory method for `DistributedPubSubMediator` [[akka.actor.Props]]
@@ -213,7 +215,8 @@ class DistributedPubSubMediator(
   role: Option[String],
   routingLogic: RoutingLogic,
   gossipInterval: FiniteDuration,
-  removedTimeToLive: FiniteDuration)
+  removedTimeToLive: FiniteDuration,
+  maxDeltaElements: Int)
   extends Actor with ActorLogging {
 
   import DistributedPubSubMediator._
@@ -404,13 +407,22 @@ class DistributedPubSubMediator(
   def collectDelta(otherVersions: Map[Address, Long]): immutable.Iterable[Bucket] = {
     // missing entries are represented by version 0
     val filledOtherVersions = myVersions.map { case (k, _) ⇒ k -> 0L } ++ otherVersions
+    var count = 0
     filledOtherVersions.collect {
-      case (owner, v) if registry(owner).version > v ⇒
+      case (owner, v) if registry(owner).version > v && count < maxDeltaElements ⇒
         val bucket = registry(owner)
         val deltaContent = bucket.content.filter {
           case (_, value) ⇒ value.version > v
         }
-        bucket.copy(content = deltaContent)
+        count += deltaContent.size
+        if (count <= maxDeltaElements)
+          bucket.copy(content = deltaContent)
+        else {
+          // exceeded the maxDeltaElements, pick the elements with lowest versions
+          val sortedContent = deltaContent.toVector.sortBy(_._2.version)
+          val chunk = sortedContent.take(maxDeltaElements - (count - sortedContent.size))
+          bucket.copy(content = chunk.toMap, version = chunk.last._2.version)
+        }
     }
   }
 
@@ -482,11 +494,13 @@ class DistributedPubSubExtension(system: ExtendedActorSystem) extends Extension 
         case "round-robin"        ⇒ RoundRobinRoutingLogic()
         case "consistent-hashing" ⇒ ConsistentHashingRoutingLogic(system)
         case "broadcast"          ⇒ BroadcastRoutingLogic()
+        case other                ⇒ throw new IllegalArgumentException(s"Unknown 'routing-logic': [$other]")
       }
       val gossipInterval = Duration(config.getMilliseconds("gossip-interval"), MILLISECONDS)
       val removedTimeToLive = Duration(config.getMilliseconds("removed-time-to-live"), MILLISECONDS)
+      val maxDeltaElements = config.getInt("max-delta-elements")
       val name = config.getString("name")
-      system.actorOf(DistributedPubSubMediator.props(role, routingLogic, gossipInterval, removedTimeToLive),
+      system.actorOf(DistributedPubSubMediator.props(role, routingLogic, gossipInterval, removedTimeToLive, maxDeltaElements),
         name)
     }
   }
