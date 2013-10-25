@@ -43,7 +43,7 @@ object DistributedPubSubMediator {
     routingLogic: RoutingLogic = RandomRoutingLogic(),
     gossipInterval: FiniteDuration = 1.second,
     removedTimeToLive: FiniteDuration = 2.minutes,
-    maxDeltaElements: Int = 500): Props =
+    maxDeltaElements: Int = 3000): Props =
     Props(classOf[DistributedPubSubMediator], role, routingLogic, gossipInterval, removedTimeToLive, maxDeltaElements)
 
   /**
@@ -69,14 +69,14 @@ object DistributedPubSubMediator {
   @SerialVersionUID(1L) case class Unsubscribe(topic: String, ref: ActorRef)
   @SerialVersionUID(1L) case class SubscribeAck(subscribe: Subscribe)
   @SerialVersionUID(1L) case class UnsubscribeAck(unsubscribe: Unsubscribe)
-  @SerialVersionUID(1L) case class Publish(topic: String, msg: Any)
-  @SerialVersionUID(1L) case class Send(path: String, msg: Any, localAffinity: Boolean) {
+  @SerialVersionUID(1L) case class Publish(topic: String, msg: Any) extends DistributedPubSubMessage
+  @SerialVersionUID(1L) case class Send(path: String, msg: Any, localAffinity: Boolean) extends DistributedPubSubMessage {
     /**
      * Convenience constructor with `localAffinity` false
      */
     def this(path: String, msg: Any) = this(path, msg, localAffinity = false)
   }
-  @SerialVersionUID(1L) case class SendToAll(path: String, msg: Any, allButSelf: Boolean = false) {
+  @SerialVersionUID(1L) case class SendToAll(path: String, msg: Any, allButSelf: Boolean = false) extends DistributedPubSubMessage {
     def this(path: String, msg: Any) = this(path, msg, allButSelf = false)
   }
 
@@ -101,9 +101,9 @@ object DistributedPubSubMediator {
     }
 
     @SerialVersionUID(1L)
-    case class Status(versions: Map[Address, Long])
+    case class Status(versions: Map[Address, Long]) extends DistributedPubSubMessage
     @SerialVersionUID(1L)
-    case class Delta(buckets: immutable.Iterable[Bucket])
+    case class Delta(buckets: immutable.Iterable[Bucket]) extends DistributedPubSubMessage
 
     case object GossipTick
 
@@ -153,6 +153,11 @@ object DistributedPubSubMediator {
     }
   }
 }
+
+/**
+ * Marker trait for remote messages with special serializer.
+ */
+trait DistributedPubSubMessage extends Serializable
 
 /**
  * This actor manages a registry of actor references and replicates
