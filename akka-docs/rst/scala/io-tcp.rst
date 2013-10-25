@@ -331,7 +331,8 @@ keep things well separated.
 
 .. warning::
 
-  The SslTlsSupport does not support messages that are larger than the size
-  of the send buffer on the socket. Trying to send such a message will result
-  in a ``CommandFailed``. If you need to send large messages over SSL, then
-  they have to be sent in chunks.
+  The SslTlsSupport currently does not support using a ``Tcp.WriteCommand``
+  other than ``Tcp.Write``, like for example ``Tcp.WriteFile``. It also doesn't
+  support messages that are larger than the size of the send buffer on the socket.
+  Trying to send such a message will result in a ``CommandFailed``. If you need
+  to send large messages over SSL, then they have to be sent in chunks.
