@@ -125,59 +125,6 @@ case object ReceiveTimeout extends ReceiveTimeout {
 }
 
 /**
- * INTERNAL API
- * ActorRefFactory.actorSelection returns a special ref which sends these
- * nested path descriptions whenever using ! on them, the idea being that the
- * message is delivered by active routing of the various actors involved.
- */
-private[akka] sealed trait SelectionPath extends AutoReceivedMessage with PossiblyHarmful
-
-/**
- * INTERNAL API
- */
-@SerialVersionUID(1L)
-private[akka] case class SelectChildName(name: String, next: Any) extends SelectionPath {
-
-  def wrappedMessage: Any = {
-    @tailrec def rec(nx: Any): Any = nx match {
-      case SelectChildName(_, n)    ⇒ rec(n)
-      case SelectChildPattern(_, n) ⇒ rec(n)
-      case SelectParent(n)          ⇒ rec(n)
-      case x                        ⇒ x
-    }
-    rec(next)
-  }
-
-  def identifyRequest: Option[Identify] = wrappedMessage match {
-    case x: Identify ⇒ Some(x)
-    case _           ⇒ None
-  }
-
-  def allChildNames: immutable.Iterable[String] = {
-    @tailrec def rec(nx: Any, acc: List[String]): List[String] = nx match {
-      case SelectChildName(name, n)       ⇒ rec(n, name :: acc)
-      case SelectChildPattern(_, n)       ⇒ throw new IllegalArgumentException("SelectChildPattern not allowed")
-      case SelectParent(n) if acc.isEmpty ⇒ rec(n, acc)
-      case SelectParent(n)                ⇒ rec(n, acc.tail)
-      case _                              ⇒ acc
-    }
-    rec(this, Nil).reverse
-  }
-}
-
-/**
- * INTERNAL API
- */
-@SerialVersionUID(1L)
-private[akka] case class SelectChildPattern(pattern: Pattern, next: Any) extends SelectionPath
-
-/**
- * INTERNAL API
- */
-@SerialVersionUID(1L)
-private[akka] case class SelectParent(next: Any) extends SelectionPath
-
-/**
  * IllegalActorStateException is thrown when a core invariant in the Actor implementation has been violated.
  * For instance, if you try to create an Actor that doesn't extend Actor.
  */

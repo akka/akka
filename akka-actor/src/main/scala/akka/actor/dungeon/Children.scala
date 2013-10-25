@@ -135,6 +135,22 @@ private[akka] trait Children { this: ActorCell ⇒
 
   protected def getAllChildStats: immutable.Iterable[ChildRestartStats] = childrenRefs.stats
 
+  override def getSingleChild(name: String): InternalActorRef =
+    if (name.indexOf('#') == -1) {
+      // optimization for the non-uid case
+      getChildByName(name) match {
+        case Some(crs: ChildRestartStats) ⇒ crs.child.asInstanceOf[InternalActorRef]
+        case _                            ⇒ Nobody
+      }
+    } else {
+      val (childName, uid) = ActorCell.splitNameAndUid(name)
+      getChildByName(childName) match {
+        case Some(crs: ChildRestartStats) if uid == ActorCell.undefinedUid || uid == crs.uid ⇒
+          crs.child.asInstanceOf[InternalActorRef]
+        case _ ⇒ Nobody
+      }
+    }
+
   protected def removeChildAndGetStateChange(child: ActorRef): Option[SuspendReason] = {
     @tailrec def removeChild(ref: ActorRef): ChildrenContainer = {
       val c = childrenRefs

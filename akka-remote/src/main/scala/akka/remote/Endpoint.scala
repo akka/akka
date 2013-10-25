@@ -74,7 +74,10 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
           case msg: PossiblyHarmful if UntrustedMode ⇒
             log.debug("operating in UntrustedMode, dropping inbound PossiblyHarmful message of type {}", msg.getClass)
           case msg: SystemMessage ⇒ l.sendSystemMessage(msg)
-          case msg                ⇒ l.!(msg)(sender)
+          case sel: ActorSelectionMessage ⇒
+            // run the receive logic for ActorSelectionMessage here to make sure it is not stuck on busy user actor
+            ActorSelection.deliverSelection(l, sender, sel)
+          case msg ⇒ l.!(msg)(sender)
         }
 
       case r @ (_: RemoteRef | _: RepointableRef) if !r.isLocal && !UntrustedMode ⇒
