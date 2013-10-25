@@ -33,7 +33,7 @@ class ClusterConfigSpec extends AkkaSpec {
       HeartbeatInterval must be(1 second)
       MonitoredByNrOfMembers must be(5)
       HeartbeatRequestDelay must be(10 seconds)
-      HeartbeatExpectedResponseAfter must be(3 seconds)
+      HeartbeatExpectedResponseAfter must be(5 seconds)
       HeartbeatRequestTimeToLive must be(1 minute)
       LeaderActionsInterval must be(1 second)
       UnreachableNodesReaperInterval must be(1 second)
