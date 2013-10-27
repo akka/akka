@@ -1,5 +1,7 @@
 package akka.persistence.serialization
 
+import scala.collection.immutable
+
 import com.typesafe.config._
 
 import akka.actor._
@@ -118,8 +120,9 @@ object MessageSerializerRemotingSpec {
 
   class RemoteActor extends Actor {
     def receive = {
-      case Persistent(MyPayload(data), _) ⇒ sender ! data
-      case Confirm(pid, snr, cid)         ⇒ sender ! s"${pid},${snr},${cid}"
+      case PersistentBatch(Persistent(MyPayload(data), _) +: tail) ⇒ sender ! data
+      case Persistent(MyPayload(data), _)                          ⇒ sender ! data
+      case Confirm(pid, snr, cid)                                  ⇒ sender ! s"${pid},${snr},${cid}"
     }
   }
 
@@ -147,10 +150,13 @@ class MessageSerializerRemotingSpec extends AkkaSpec(config(systemA).withFallbac
       localActor ! Persistent(MyPayload("a"))
       expectMsg(".a.")
     }
+    "custom-serialize persistent message batches during remoting" in {
+      localActor ! PersistentBatch(immutable.Seq(Persistent(MyPayload("a"))))
+      expectMsg(".a.")
+    }
     "serialize confirmation messages during remoting" in {
       localActor ! Confirm("a", 2, "b")
       expectMsg("a,2,b")
-
     }
   }
 }

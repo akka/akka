@@ -8,6 +8,692 @@ public final class MessageFormats {
   public static void registerAllExtensions(
       com.google.protobuf.ExtensionRegistry registry) {
   }
+  public interface PersistentMessageBatchOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+
+    // repeated .PersistentMessage batch = 1;
+    /**
+     * <code>repeated .PersistentMessage batch = 1;</code>
+     */
+    java.util.List<akka.persistence.serialization.MessageFormats.PersistentMessage> 
+        getBatchList();
+    /**
+     * <code>repeated .PersistentMessage batch = 1;</code>
+     */
+    akka.persistence.serialization.MessageFormats.PersistentMessage getBatch(int index);
+    /**
+     * <code>repeated .PersistentMessage batch = 1;</code>
+     */
+    int getBatchCount();
+    /**
+     * <code>repeated .PersistentMessage batch = 1;</code>
+     */
+    java.util.List<? extends akka.persistence.serialization.MessageFormats.PersistentMessageOrBuilder> 
+        getBatchOrBuilderList();
+    /**
+     * <code>repeated .PersistentMessage batch = 1;</code>
+     */
+    akka.persistence.serialization.MessageFormats.PersistentMessageOrBuilder getBatchOrBuilder(
+        int index);
+  }
+  /**
+   * Protobuf type {@code PersistentMessageBatch}
+   */
+  public static final class PersistentMessageBatch extends
+      com.google.protobuf.GeneratedMessage
+      implements PersistentMessageBatchOrBuilder {
+    // Use PersistentMessageBatch.newBuilder() to construct.
+    private PersistentMessageBatch(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private PersistentMessageBatch(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private static final PersistentMessageBatch defaultInstance;
+    public static PersistentMessageBatch getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    public PersistentMessageBatch getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private PersistentMessageBatch(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 10: {
+              if (!((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
+                batch_ = new java.util.ArrayList<akka.persistence.serialization.MessageFormats.PersistentMessage>();
+                mutable_bitField0_ |= 0x00000001;
+              }
+              batch_.add(input.readMessage(akka.persistence.serialization.MessageFormats.PersistentMessage.PARSER, extensionRegistry));
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        if (((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
+          batch_ = java.util.Collections.unmodifiableList(batch_);
+        }
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return akka.persistence.serialization.MessageFormats.internal_static_PersistentMessageBatch_descriptor;
+    }
+
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.persistence.serialization.MessageFormats.internal_static_PersistentMessageBatch_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.persistence.serialization.MessageFormats.PersistentMessageBatch.class, akka.persistence.serialization.MessageFormats.PersistentMessageBatch.Builder.class);
+    }
+
+    public static com.google.protobuf.Parser<PersistentMessageBatch> PARSER =
+        new com.google.protobuf.AbstractParser<PersistentMessageBatch>() {
+      public PersistentMessageBatch parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new PersistentMessageBatch(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<PersistentMessageBatch> getParserForType() {
+      return PARSER;
+    }
+
+    // repeated .PersistentMessage batch = 1;
+    public static final int BATCH_FIELD_NUMBER = 1;
+    private java.util.List<akka.persistence.serialization.MessageFormats.PersistentMessage> batch_;
+    /**
+     * <code>repeated .PersistentMessage batch = 1;</code>
+     */
+    public java.util.List<akka.persistence.serialization.MessageFormats.PersistentMessage> getBatchList() {
+      return batch_;
+    }
+    /**
+     * <code>repeated .PersistentMessage batch = 1;</code>
+     */
+    public java.util.List<? extends akka.persistence.serialization.MessageFormats.PersistentMessageOrBuilder> 
+        getBatchOrBuilderList() {
+      return batch_;
+    }
+    /**
+     * <code>repeated .PersistentMessage batch = 1;</code>
+     */
+    public int getBatchCount() {
+      return batch_.size();
+    }
+    /**
+     * <code>repeated .PersistentMessage batch = 1;</code>
+     */
+    public akka.persistence.serialization.MessageFormats.PersistentMessage getBatch(int index) {
+      return batch_.get(index);
+    }
+    /**
+     * <code>repeated .PersistentMessage batch = 1;</code>
+     */
+    public akka.persistence.serialization.MessageFormats.PersistentMessageOrBuilder getBatchOrBuilder(
+        int index) {
+      return batch_.get(index);
+    }
+
+    private void initFields() {
+      batch_ = java.util.Collections.emptyList();
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+
+      for (int i = 0; i < getBatchCount(); i++) {
+        if (!getBatch(i).isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      for (int i = 0; i < batch_.size(); i++) {
+        output.writeMessage(1, batch_.get(i));
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      for (int i = 0; i < batch_.size(); i++) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(1, batch_.get(i));
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static akka.persistence.serialization.MessageFormats.PersistentMessageBatch parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentMessageBatch parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentMessageBatch parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentMessageBatch parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentMessageBatch parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentMessageBatch parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentMessageBatch parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentMessageBatch parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentMessageBatch parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentMessageBatch parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(akka.persistence.serialization.MessageFormats.PersistentMessageBatch prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code PersistentMessageBatch}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements akka.persistence.serialization.MessageFormats.PersistentMessageBatchOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.persistence.serialization.MessageFormats.internal_static_PersistentMessageBatch_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.persistence.serialization.MessageFormats.internal_static_PersistentMessageBatch_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.persistence.serialization.MessageFormats.PersistentMessageBatch.class, akka.persistence.serialization.MessageFormats.PersistentMessageBatch.Builder.class);
+      }
+
+      // Construct using akka.persistence.serialization.MessageFormats.PersistentMessageBatch.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getBatchFieldBuilder();
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        if (batchBuilder_ == null) {
+          batch_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000001);
+        } else {
+          batchBuilder_.clear();
+        }
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return akka.persistence.serialization.MessageFormats.internal_static_PersistentMessageBatch_descriptor;
+      }
+
+      public akka.persistence.serialization.MessageFormats.PersistentMessageBatch getDefaultInstanceForType() {
+        return akka.persistence.serialization.MessageFormats.PersistentMessageBatch.getDefaultInstance();
+      }
+
+      public akka.persistence.serialization.MessageFormats.PersistentMessageBatch build() {
+        akka.persistence.serialization.MessageFormats.PersistentMessageBatch result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public akka.persistence.serialization.MessageFormats.PersistentMessageBatch buildPartial() {
+        akka.persistence.serialization.MessageFormats.PersistentMessageBatch result = new akka.persistence.serialization.MessageFormats.PersistentMessageBatch(this);
+        int from_bitField0_ = bitField0_;
+        if (batchBuilder_ == null) {
+          if (((bitField0_ & 0x00000001) == 0x00000001)) {
+            batch_ = java.util.Collections.unmodifiableList(batch_);
+            bitField0_ = (bitField0_ & ~0x00000001);
+          }
+          result.batch_ = batch_;
+        } else {
+          result.batch_ = batchBuilder_.build();
+        }
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof akka.persistence.serialization.MessageFormats.PersistentMessageBatch) {
+          return mergeFrom((akka.persistence.serialization.MessageFormats.PersistentMessageBatch)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(akka.persistence.serialization.MessageFormats.PersistentMessageBatch other) {
+        if (other == akka.persistence.serialization.MessageFormats.PersistentMessageBatch.getDefaultInstance()) return this;
+        if (batchBuilder_ == null) {
+          if (!other.batch_.isEmpty()) {
+            if (batch_.isEmpty()) {
+              batch_ = other.batch_;
+              bitField0_ = (bitField0_ & ~0x00000001);
+            } else {
+              ensureBatchIsMutable();
+              batch_.addAll(other.batch_);
+            }
+            onChanged();
+          }
+        } else {
+          if (!other.batch_.isEmpty()) {
+            if (batchBuilder_.isEmpty()) {
+              batchBuilder_.dispose();
+              batchBuilder_ = null;
+              batch_ = other.batch_;
+              bitField0_ = (bitField0_ & ~0x00000001);
+              batchBuilder_ = 
+                com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                   getBatchFieldBuilder() : null;
+            } else {
+              batchBuilder_.addAllMessages(other.batch_);
+            }
+          }
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        for (int i = 0; i < getBatchCount(); i++) {
+          if (!getBatch(i).isInitialized()) {
+            
+            return false;
+          }
+        }
+        return true;
+      }
+
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        akka.persistence.serialization.MessageFormats.PersistentMessageBatch parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (akka.persistence.serialization.MessageFormats.PersistentMessageBatch) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      // repeated .PersistentMessage batch = 1;
+      private java.util.List<akka.persistence.serialization.MessageFormats.PersistentMessage> batch_ =
+        java.util.Collections.emptyList();
+      private void ensureBatchIsMutable() {
+        if (!((bitField0_ & 0x00000001) == 0x00000001)) {
+          batch_ = new java.util.ArrayList<akka.persistence.serialization.MessageFormats.PersistentMessage>(batch_);
+          bitField0_ |= 0x00000001;
+         }
+      }
+
+      private com.google.protobuf.RepeatedFieldBuilder<
+          akka.persistence.serialization.MessageFormats.PersistentMessage, akka.persistence.serialization.MessageFormats.PersistentMessage.Builder, akka.persistence.serialization.MessageFormats.PersistentMessageOrBuilder> batchBuilder_;
+
+      /**
+       * <code>repeated .PersistentMessage batch = 1;</code>
+       */
+      public java.util.List<akka.persistence.serialization.MessageFormats.PersistentMessage> getBatchList() {
+        if (batchBuilder_ == null) {
+          return java.util.Collections.unmodifiableList(batch_);
+        } else {
+          return batchBuilder_.getMessageList();
+        }
+      }
+      /**
+       * <code>repeated .PersistentMessage batch = 1;</code>
+       */
+      public int getBatchCount() {
+        if (batchBuilder_ == null) {
+          return batch_.size();
+        } else {
+          return batchBuilder_.getCount();
+        }
+      }
+      /**
+       * <code>repeated .PersistentMessage batch = 1;</code>
+       */
+      public akka.persistence.serialization.MessageFormats.PersistentMessage getBatch(int index) {
+        if (batchBuilder_ == null) {
+          return batch_.get(index);
+        } else {
+          return batchBuilder_.getMessage(index);
+        }
+      }
+      /**
+       * <code>repeated .PersistentMessage batch = 1;</code>
+       */
+      public Builder setBatch(
+          int index, akka.persistence.serialization.MessageFormats.PersistentMessage value) {
+        if (batchBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureBatchIsMutable();
+          batch_.set(index, value);
+          onChanged();
+        } else {
+          batchBuilder_.setMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .PersistentMessage batch = 1;</code>
+       */
+      public Builder setBatch(
+          int index, akka.persistence.serialization.MessageFormats.PersistentMessage.Builder builderForValue) {
+        if (batchBuilder_ == null) {
+          ensureBatchIsMutable();
+          batch_.set(index, builderForValue.build());
+          onChanged();
+        } else {
+          batchBuilder_.setMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .PersistentMessage batch = 1;</code>
+       */
+      public Builder addBatch(akka.persistence.serialization.MessageFormats.PersistentMessage value) {
+        if (batchBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureBatchIsMutable();
+          batch_.add(value);
+          onChanged();
+        } else {
+          batchBuilder_.addMessage(value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .PersistentMessage batch = 1;</code>
+       */
+      public Builder addBatch(
+          int index, akka.persistence.serialization.MessageFormats.PersistentMessage value) {
+        if (batchBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureBatchIsMutable();
+          batch_.add(index, value);
+          onChanged();
+        } else {
+          batchBuilder_.addMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .PersistentMessage batch = 1;</code>
+       */
+      public Builder addBatch(
+          akka.persistence.serialization.MessageFormats.PersistentMessage.Builder builderForValue) {
+        if (batchBuilder_ == null) {
+          ensureBatchIsMutable();
+          batch_.add(builderForValue.build());
+          onChanged();
+        } else {
+          batchBuilder_.addMessage(builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .PersistentMessage batch = 1;</code>
+       */
+      public Builder addBatch(
+          int index, akka.persistence.serialization.MessageFormats.PersistentMessage.Builder builderForValue) {
+        if (batchBuilder_ == null) {
+          ensureBatchIsMutable();
+          batch_.add(index, builderForValue.build());
+          onChanged();
+        } else {
+          batchBuilder_.addMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .PersistentMessage batch = 1;</code>
+       */
+      public Builder addAllBatch(
+          java.lang.Iterable<? extends akka.persistence.serialization.MessageFormats.PersistentMessage> values) {
+        if (batchBuilder_ == null) {
+          ensureBatchIsMutable();
+          super.addAll(values, batch_);
+          onChanged();
+        } else {
+          batchBuilder_.addAllMessages(values);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .PersistentMessage batch = 1;</code>
+       */
+      public Builder clearBatch() {
+        if (batchBuilder_ == null) {
+          batch_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000001);
+          onChanged();
+        } else {
+          batchBuilder_.clear();
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .PersistentMessage batch = 1;</code>
+       */
+      public Builder removeBatch(int index) {
+        if (batchBuilder_ == null) {
+          ensureBatchIsMutable();
+          batch_.remove(index);
+          onChanged();
+        } else {
+          batchBuilder_.remove(index);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .PersistentMessage batch = 1;</code>
+       */
+      public akka.persistence.serialization.MessageFormats.PersistentMessage.Builder getBatchBuilder(
+          int index) {
+        return getBatchFieldBuilder().getBuilder(index);
+      }
+      /**
+       * <code>repeated .PersistentMessage batch = 1;</code>
+       */
+      public akka.persistence.serialization.MessageFormats.PersistentMessageOrBuilder getBatchOrBuilder(
+          int index) {
+        if (batchBuilder_ == null) {
+          return batch_.get(index);  } else {
+          return batchBuilder_.getMessageOrBuilder(index);
+        }
+      }
+      /**
+       * <code>repeated .PersistentMessage batch = 1;</code>
+       */
+      public java.util.List<? extends akka.persistence.serialization.MessageFormats.PersistentMessageOrBuilder> 
+           getBatchOrBuilderList() {
+        if (batchBuilder_ != null) {
+          return batchBuilder_.getMessageOrBuilderList();
+        } else {
+          return java.util.Collections.unmodifiableList(batch_);
+        }
+      }
+      /**
+       * <code>repeated .PersistentMessage batch = 1;</code>
+       */
+      public akka.persistence.serialization.MessageFormats.PersistentMessage.Builder addBatchBuilder() {
+        return getBatchFieldBuilder().addBuilder(
+            akka.persistence.serialization.MessageFormats.PersistentMessage.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .PersistentMessage batch = 1;</code>
+       */
+      public akka.persistence.serialization.MessageFormats.PersistentMessage.Builder addBatchBuilder(
+          int index) {
+        return getBatchFieldBuilder().addBuilder(
+            index, akka.persistence.serialization.MessageFormats.PersistentMessage.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .PersistentMessage batch = 1;</code>
+       */
+      public java.util.List<akka.persistence.serialization.MessageFormats.PersistentMessage.Builder> 
+           getBatchBuilderList() {
+        return getBatchFieldBuilder().getBuilderList();
+      }
+      private com.google.protobuf.RepeatedFieldBuilder<
+          akka.persistence.serialization.MessageFormats.PersistentMessage, akka.persistence.serialization.MessageFormats.PersistentMessage.Builder, akka.persistence.serialization.MessageFormats.PersistentMessageOrBuilder> 
+          getBatchFieldBuilder() {
+        if (batchBuilder_ == null) {
+          batchBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+              akka.persistence.serialization.MessageFormats.PersistentMessage, akka.persistence.serialization.MessageFormats.PersistentMessage.Builder, akka.persistence.serialization.MessageFormats.PersistentMessageOrBuilder>(
+                  batch_,
+                  ((bitField0_ & 0x00000001) == 0x00000001),
+                  getParentForChildren(),
+                  isClean());
+          batch_ = null;
+        }
+        return batchBuilder_;
+      }
+
+      // @@protoc_insertion_point(builder_scope:PersistentMessageBatch)
+    }
+
+    static {
+      defaultInstance = new PersistentMessageBatch(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:PersistentMessageBatch)
+  }
+
   public interface PersistentMessageOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
 
@@ -3060,6 +3746,11 @@ public final class MessageFormats {
   }
 
   private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_PersistentMessageBatch_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_PersistentMessageBatch_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_PersistentMessage_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
@@ -3083,38 +3774,46 @@ public final class MessageFormats {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\024MessageFormats.proto\"\371\001\n\021PersistentMes" +
-      "sage\022#\n\007payload\030\001 \001(\0132\022.PersistentPayloa" +
-      "d\022\022\n\nsequenceNr\030\002 \001(\003\022\023\n\013processorId\030\003 \001" +
-      "(\t\022\021\n\tchannelId\030\004 \001(\t\022\017\n\007deleted\030\005 \001(\010\022\020" +
-      "\n\010resolved\030\006 \001(\010\022\020\n\010confirms\030\010 \003(\t\022\'\n\016co" +
-      "nfirmMessage\030\n \001(\0132\017.ConfirmMessage\022\025\n\rc" +
-      "onfirmTarget\030\t \001(\t\022\016\n\006sender\030\007 \001(\t\"S\n\021Pe" +
-      "rsistentPayload\022\024\n\014serializerId\030\001 \002(\005\022\017\n" +
-      "\007payload\030\002 \002(\014\022\027\n\017payloadManifest\030\003 \001(\014\"" +
-      "L\n\016ConfirmMessage\022\023\n\013processorId\030\001 \001(\t\022\022",
-      "\n\nsequenceNr\030\002 \001(\003\022\021\n\tchannelId\030\003 \001(\tB\"\n" +
-      "\036akka.persistence.serializationH\001"
+      "\n\024MessageFormats.proto\";\n\026PersistentMess" +
+      "ageBatch\022!\n\005batch\030\001 \003(\0132\022.PersistentMess" +
+      "age\"\371\001\n\021PersistentMessage\022#\n\007payload\030\001 \001" +
+      "(\0132\022.PersistentPayload\022\022\n\nsequenceNr\030\002 \001" +
+      "(\003\022\023\n\013processorId\030\003 \001(\t\022\021\n\tchannelId\030\004 \001" +
+      "(\t\022\017\n\007deleted\030\005 \001(\010\022\020\n\010resolved\030\006 \001(\010\022\020\n" +
+      "\010confirms\030\010 \003(\t\022\'\n\016confirmMessage\030\n \001(\0132" +
+      "\017.ConfirmMessage\022\025\n\rconfirmTarget\030\t \001(\t\022" +
+      "\016\n\006sender\030\007 \001(\t\"S\n\021PersistentPayload\022\024\n\014" +
+      "serializerId\030\001 \002(\005\022\017\n\007payload\030\002 \002(\014\022\027\n\017p",
+      "ayloadManifest\030\003 \001(\014\"L\n\016ConfirmMessage\022\023" +
+      "\n\013processorId\030\001 \001(\t\022\022\n\nsequenceNr\030\002 \001(\003\022" +
+      "\021\n\tchannelId\030\003 \001(\tB\"\n\036akka.persistence.s" +
+      "erializationH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
         public com.google.protobuf.ExtensionRegistry assignDescriptors(
             com.google.protobuf.Descriptors.FileDescriptor root) {
           descriptor = root;
-          internal_static_PersistentMessage_descriptor =
+          internal_static_PersistentMessageBatch_descriptor =
             getDescriptor().getMessageTypes().get(0);
+          internal_static_PersistentMessageBatch_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_PersistentMessageBatch_descriptor,
+              new java.lang.String[] { "Batch", });
+          internal_static_PersistentMessage_descriptor =
+            getDescriptor().getMessageTypes().get(1);
           internal_static_PersistentMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_PersistentMessage_descriptor,
               new java.lang.String[] { "Payload", "SequenceNr", "ProcessorId", "ChannelId", "Deleted", "Resolved", "Confirms", "ConfirmMessage", "ConfirmTarget", "Sender", });
           internal_static_PersistentPayload_descriptor =
-            getDescriptor().getMessageTypes().get(1);
+            getDescriptor().getMessageTypes().get(2);
           internal_static_PersistentPayload_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_PersistentPayload_descriptor,
               new java.lang.String[] { "SerializerId", "Payload", "PayloadManifest", });
           internal_static_ConfirmMessage_descriptor =
-            getDescriptor().getMessageTypes().get(2);
+            getDescriptor().getMessageTypes().get(3);
           internal_static_ConfirmMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ConfirmMessage_descriptor,

@@ -4,12 +4,12 @@
 
 package akka.persistence.journal
 
+import scala.collection.immutable
 import scala.util._
 
 import akka.actor.Actor
 import akka.pattern.{ pipe, PromiseActorRef }
 import akka.persistence._
-import akka.serialization.Serialization
 
 /**
  * Abstract journal, optimized for synchronous writes.
@@ -23,9 +23,16 @@ trait SyncWriteJournal extends Actor with AsyncReplay {
   final def receive = {
     case Write(persistent, processor) ⇒ {
       val sdr = if (sender.isInstanceOf[PromiseActorRef]) context.system.deadLetters else sender
-      Try(write(persistent.copy(sender = sdr, resolved = false, confirmTarget = null, confirmMessage = null))) match {
+      Try(write(persistent.prepareWrite(sdr))) match {
         case Success(_) ⇒ processor forward WriteSuccess(persistent)
         case Failure(e) ⇒ processor forward WriteFailure(persistent, e); throw e
+      }
+    }
+    case WriteBatch(persistentBatch, processor) ⇒ {
+      val sdr = if (sender.isInstanceOf[PromiseActorRef]) context.system.deadLetters else sender
+      Try(writeBatch(persistentBatch.map(_.prepareWrite(sdr)))) match {
+        case Success(_) ⇒ persistentBatch.foreach(processor forward WriteSuccess(_))
+        case Failure(e) ⇒ persistentBatch.foreach(processor forward WriteFailure(_, e)); throw e
       }
     }
     case Replay(fromSequenceNr, toSequenceNr, processorId, processor) ⇒ {
@@ -56,6 +63,14 @@ trait SyncWriteJournal extends Actor with AsyncReplay {
    * Synchronously writes a `persistent` message to the journal.
    */
   def write(persistent: PersistentImpl): Unit
+
+  /**
+   * Plugin API.
+   *
+   * Synchronously writes a batch of persistent messages to the journal. The batch write
+   * must be atomic i.e. either all persistent messages in the batch are written or none.
+   */
+  def writeBatch(persistentBatch: immutable.Seq[PersistentImpl]): Unit
 
   /**
    * Plugin API.

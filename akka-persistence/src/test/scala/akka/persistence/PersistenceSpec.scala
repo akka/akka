@@ -8,6 +8,7 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.reflect.ClassTag
+import scala.util.control.NoStackTrace
 
 import com.typesafe.config.ConfigFactory
 
@@ -53,12 +54,12 @@ trait PersistenceSpec extends BeforeAndAfterEach { this: AkkaSpec ⇒
 object PersistenceSpec {
   def config(plugin: String, test: String) = ConfigFactory.parseString(
     s"""
-      |serialize-creators = on
-      |serialize-messages = on
-      |akka.persistence.journal.plugin = "akka.persistence.journal.${plugin}"
-      |akka.persistence.journal.leveldb.dir = "target/journal-${test}-spec"
-      |akka.persistence.snapshot-store.local.dir = "target/snapshots-${test}-spec/"
-    """.stripMargin)
+      serialize-creators = on
+      serialize-messages = on
+      akka.persistence.journal.plugin = "akka.persistence.journal.${plugin}"
+      akka.persistence.journal.leveldb.dir = "target/journal-${test}-spec"
+      akka.persistence.snapshot-store.local.dir = "target/snapshots-${test}-spec/"
+    """)
 }
 
 abstract class NamedProcessor(name: String) extends Processor {
@@ -68,5 +69,7 @@ abstract class NamedProcessor(name: String) extends Processor {
 trait TurnOffRecoverOnStart { this: Processor ⇒
   override def preStart(): Unit = ()
 }
+
+class TestException(msg: String) extends Exception(msg) with NoStackTrace
 
 case object GetState

@@ -20,6 +20,14 @@ interface AsyncWritePlugin {
     /**
      * Plugin Java API.
      *
+     * Asynchronously writes a batch of persistent messages to the journal. The batch write
+     * must be atomic i.e. either all persistent messages in the batch are written or none.
+     */
+    Future<Void> doWriteBatchAsync(Iterable<PersistentImpl> persistentBatch);
+
+    /**
+     * Plugin Java API.
+     *
      * Asynchronously marks a `persistent` message as deleted.
      */
     Future<Void> doDeleteAsync(PersistentImpl persistent);

@@ -331,6 +331,20 @@ The example also demonstrates how to change the processor's default behavior, de
 another behavior, defined by ``otherCommandHandler``, and back using ``context.become()`` and ``context.unbecome()``.
 See also the API docs of ``persist`` for further details.
 
+Batch writes
+============
+
+Applications may also send a batch of ``Persistent`` messages to a processor via a ``PersistentBatch`` message.
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#batch-write
+
+``Persistent`` messages contained in a ``PersistentBatch`` message are written to the journal atomically but are
+received  by the processor separately (as ``Persistent`` messages). They are also replayed separately. Batch writes
+can not only increase the throughput of a processor but may also be necessary for consistency reasons. For example,
+in :ref:`event-sourcing`, all events that are generated and persisted by a single command are batch-written to the
+journal. The recovery of an ``EventsourcedProcessor`` will therefore never be done partially i.e. with only a subset
+of events persisted by a single command.
+
 Storage plugins
 ===============
 

@@ -5,6 +5,10 @@
 option java_package = "akka.persistence.serialization";
 option optimize_for = SPEED;
 
+message PersistentMessageBatch {
+  repeated PersistentMessage batch = 1;
+}
+
 message PersistentMessage {
   optional PersistentPayload payload = 1;
   optional int64 sequenceNr = 2;

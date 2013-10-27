@@ -6,6 +6,8 @@ package akka.persistence.journal.leveldb
 
 import java.io.File
 
+import scala.collection.immutable
+
 import org.iq80.leveldb._
 
 import akka.persistence._
@@ -36,11 +38,11 @@ private[leveldb] class LeveldbJournal extends SyncWriteJournal with LeveldbIdMap
 
   import Key._
 
-  def write(persistent: PersistentImpl) = withBatch { batch ⇒
-    val nid = numericId(persistent.processorId)
-    batch.put(keyToBytes(counterKey(nid)), counterToBytes(persistent.sequenceNr))
-    batch.put(keyToBytes(Key(nid, persistent.sequenceNr, 0)), persistentToBytes(persistent))
-  }
+  def write(persistent: PersistentImpl) =
+    withBatch(batch ⇒ addToBatch(persistent, batch))
+
+  def writeBatch(persistentBatch: immutable.Seq[PersistentImpl]) =
+    withBatch(batch ⇒ persistentBatch.foreach(persistent ⇒ addToBatch(persistent, batch)))
 
   def delete(persistent: PersistentImpl) {
     leveldb.put(keyToBytes(deletionKey(numericId(persistent.processorId), persistent.sequenceNr)), Array.empty[Byte])
@@ -55,6 +57,12 @@ private[leveldb] class LeveldbJournal extends SyncWriteJournal with LeveldbIdMap
 
   def persistentToBytes(p: PersistentImpl): Array[Byte] = serialization.serialize(p).get
   def persistentFromBytes(a: Array[Byte]): PersistentImpl = serialization.deserialize(a, classOf[PersistentImpl]).get
+
+  private def addToBatch(persistent: PersistentImpl, batch: WriteBatch): Unit = {
+    val nid = numericId(persistent.processorId)
+    batch.put(keyToBytes(counterKey(nid)), counterToBytes(persistent.sequenceNr))
+    batch.put(keyToBytes(Key(nid, persistent.sequenceNr, 0)), persistentToBytes(persistent))
+  }
 
   private def withBatch[R](body: WriteBatch ⇒ R): R = {
     val batch = leveldb.createWriteBatch()

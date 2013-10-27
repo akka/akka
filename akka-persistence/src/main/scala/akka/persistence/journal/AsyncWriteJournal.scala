@@ -4,6 +4,7 @@
 
 package akka.persistence.journal
 
+import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util._
 
@@ -11,7 +12,6 @@ import akka.actor._
 import akka.pattern.{ pipe, PromiseActorRef }
 import akka.persistence._
 import akka.persistence.JournalProtocol._
-import akka.serialization.Serialization
 
 /**
  * Abstract journal, optimized for asynchronous, non-blocking writes.
@@ -28,12 +28,25 @@ trait AsyncWriteJournal extends Actor with AsyncReplay {
       val csdr = sender
       val cctr = resequencerCounter
       val psdr = if (sender.isInstanceOf[PromiseActorRef]) context.system.deadLetters else sender
-      writeAsync(persistent.copy(sender = psdr, resolved = false, confirmTarget = null, confirmMessage = null)) map {
+      writeAsync(persistent.prepareWrite(psdr)) map {
         _ ⇒ Desequenced(WriteSuccess(persistent), cctr, processor, csdr)
       } recover {
         case e ⇒ Desequenced(WriteFailure(persistent, e), cctr, processor, csdr)
       } pipeTo (resequencer)
       resequencerCounter += 1
+    }
+    case WriteBatch(persistentBatch, processor) ⇒ {
+      val csdr = sender
+      val cctr = resequencerCounter
+      val psdr = if (sender.isInstanceOf[PromiseActorRef]) context.system.deadLetters else sender
+      def resequence(f: PersistentImpl ⇒ Any) = persistentBatch.zipWithIndex.foreach {
+        case (p, i) ⇒ resequencer ! Desequenced(f(p), cctr + i, processor, csdr)
+      }
+      writeBatchAsync(persistentBatch.map(_.prepareWrite(psdr))) onComplete {
+        case Success(_) ⇒ resequence(WriteSuccess(_))
+        case Failure(e) ⇒ resequence(WriteFailure(_, e))
+      }
+      resequencerCounter += persistentBatch.length
     }
     case Replay(fromSequenceNr, toSequenceNr, processorId, processor) ⇒ {
       // Send replayed messages and replay result to processor directly. No need
@@ -72,6 +85,14 @@ trait AsyncWriteJournal extends Actor with AsyncReplay {
    * Asynchronously writes a `persistent` message to the journal.
    */
   def writeAsync(persistent: PersistentImpl): Future[Unit]
+
+  /**
+   * Plugin API.
+   *
+   * Asynchronously writes a batch of persistent messages to the journal. The batch write
+   * must be atomic i.e. either all persistent messages in the batch are written or none.
+   */
+  def writeBatchAsync(persistentBatch: immutable.Seq[PersistentImpl]): Future[Unit]
 
   /**
    * Plugin API.

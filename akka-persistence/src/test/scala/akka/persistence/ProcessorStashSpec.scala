@@ -18,8 +18,8 @@ object ProcessorStashSpec {
       case Persistent("b", snr)  ⇒ update("b", snr)
       case Persistent("c", snr)  ⇒ update("c", snr); unstashAll()
       case "x"                   ⇒ update("x")
-      case "boom"                ⇒ throw new Exception("boom")
-      case Persistent("boom", _) ⇒ throw new Exception("boom")
+      case "boom"                ⇒ throw new TestException("boom")
+      case Persistent("boom", _) ⇒ throw new TestException("boom")
       case GetState              ⇒ sender ! state.reverse
     }
 
