@@ -23,7 +23,7 @@ object EventsourcedSpec {
     }
 
     val commonBehavior: Receive = {
-      case "boom"   ⇒ throw new Exception("boom")
+      case "boom"   ⇒ throw new TestException("boom")
       case GetState ⇒ sender ! events.reverse
     }
 
@@ -164,6 +164,51 @@ object EventsourcedSpec {
     }
   }
 
+  class UserStashManyProcessor(name: String) extends ExampleProcessor(name) {
+    val receiveCommand: Receive = commonBehavior orElse {
+      case Cmd("a") ⇒ persist(Evt("a")) { evt ⇒
+        updateState(evt)
+        context.become(processC)
+      }
+      case Cmd("b-1") ⇒ persist(Evt("b-1"))(updateState)
+      case Cmd("b-2") ⇒ persist(Evt("b-2"))(updateState)
+    }
+
+    val processC: Receive = {
+      case Cmd("c") ⇒ {
+        persist(Evt("c")) { evt ⇒
+          updateState(evt)
+          context.unbecome()
+        }
+        unstashAll()
+      }
+      case other ⇒ stash()
+    }
+  }
+
+  class UserStashFailureProcessor(name: String) extends ExampleProcessor(name) {
+    val receiveCommand: Receive = commonBehavior orElse {
+      case Cmd(data) ⇒ {
+        if (data == "b-2") throw new TestException("boom")
+        persist(Evt(data)) { event ⇒
+          updateState(event)
+          if (data == "a") context.become(otherCommandHandler)
+        }
+      }
+    }
+
+    val otherCommandHandler: Receive = {
+      case Cmd("c") ⇒ {
+        persist(Evt("c")) { event ⇒
+          updateState(event)
+          context.unbecome()
+        }
+        unstashAll()
+      }
+      case other ⇒ stash()
+    }
+  }
+
   class AnyValEventProcessor(name: String) extends ExampleProcessor(name) {
     val receiveCommand: Receive = {
       case Cmd("a") ⇒ persist(5)(evt ⇒ sender ! evt)
@@ -272,7 +317,7 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
       processor ! Cmd("a")
       expectMsg("a")
     }
-    "not interfere with the user stash" in {
+    "support user stash operations" in {
       val processor = namedProcessor[UserStashProcessor]
       processor ! Cmd("a")
       processor ! Cmd("b")
@@ -280,6 +325,25 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
       expectMsg("b")
       expectMsg("c")
       expectMsg("a")
+    }
+    "support user stash operations with several stashed messages" in {
+      val processor = namedProcessor[UserStashManyProcessor]
+      val n = 10
+      val cmds = 1 to n flatMap (_ ⇒ List(Cmd("a"), Cmd("b-1"), Cmd("b-2"), Cmd("c")))
+      val evts = 1 to n flatMap (_ ⇒ List("a", "c", "b-1", "b-2"))
+
+      cmds foreach (processor ! _)
+      processor ! GetState
+      expectMsg((List("a-1", "a-2") ++ evts))
+    }
+    "support user stash operations under failures" in {
+      val processor = namedProcessor[UserStashFailureProcessor]
+      val bs = 1 to 10 map ("b-" + _)
+      processor ! Cmd("a")
+      bs foreach (processor ! Cmd(_))
+      processor ! Cmd("c")
+      processor ! GetState
+      expectMsg(List("a-1", "a-2", "a", "c") ++ bs.filter(_ != "b-2"))
     }
     "be able to persist events that extend AnyVal" in {
       val processor = namedProcessor[AnyValEventProcessor]

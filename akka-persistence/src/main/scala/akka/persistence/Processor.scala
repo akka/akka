@@ -4,6 +4,8 @@
 
 package akka.persistence
 
+import scala.collection.immutable
+
 import akka.actor._
 import akka.dispatch._
 
@@ -49,6 +51,7 @@ import akka.dispatch._
  *
  * @see [[UntypedProcessor]]
  * @see [[Recover]]
+ * @see [[PersistentBatch]]
  */
 trait Processor extends Actor with Stash {
   import JournalProtocol._
@@ -151,9 +154,10 @@ trait Processor extends Actor with Stash {
           throw new ActorKilledException(errorMsg)
         }
       }
-      case LoopSuccess(m)    ⇒ process(receive, m)
-      case p: PersistentImpl ⇒ journal forward Write(p.copy(processorId = processorId, sequenceNr = nextSequenceNr()), self)
-      case m                 ⇒ journal forward Loop(m, self)
+      case LoopSuccess(m)      ⇒ process(receive, m)
+      case p: PersistentImpl   ⇒ journal forward Write(p.copy(processorId = processorId, sequenceNr = nextSequenceNr()), self)
+      case pb: PersistentBatch ⇒ journal forward WriteBatch(pb.persistentImplList.map(_.copy(processorId = processorId, sequenceNr = nextSequenceNr())), self)
+      case m                   ⇒ journal forward Loop(m, self)
     }
   }
 
@@ -362,6 +366,16 @@ trait Processor extends Actor with Stash {
     def stash(): Unit =
       theStash :+= currentEnvelope
 
+    def prepend(others: immutable.Seq[Envelope]): Unit =
+      others.reverseIterator.foreach(env ⇒ theStash = env +: theStash)
+
+    def unstash(): Unit = try {
+      if (theStash.nonEmpty) {
+        mailbox.enqueueFirst(self, theStash.head)
+        theStash = theStash.tail
+      }
+    }
+
     def unstashAll(): Unit = try {
       val i = theStash.reverseIterator
       while (i.hasNext) mailbox.enqueueFirst(self, i.next())
@@ -377,7 +391,24 @@ trait Processor extends Actor with Stash {
  * Processor specific stash used internally to avoid interference with user stash.
  */
 private[persistence] trait ProcessorStash {
+  /**
+   * Appends the current message to this stash.
+   */
   def stash()
+
+  /**
+   * Prepends `others` to this stash.
+   */
+  def prepend(others: immutable.Seq[Envelope])
+
+  /**
+   * Unstashes a single message from this stash.
+   */
+  def unstash()
+
+  /**
+   * Unstashes all messages from this stash.
+   */
   def unstashAll()
 }
 
@@ -434,6 +465,7 @@ private[persistence] trait ProcessorStash {
  *
  * @see [[Processor]]
  * @see [[Recover]]
+ * @see [[PersistentBatch]]
  */
 abstract class UntypedProcessor extends UntypedActor with Processor {
 

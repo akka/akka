@@ -18,6 +18,14 @@ interface SyncWritePlugin {
     /**
      * Plugin Java API.
      *
+     * Synchronously writes a batch of persistent messages to the journal. The batch write
+     * must be atomic i.e. either all persistent messages in the batch are written or none.
+     */
+    void doWriteBatch(Iterable<PersistentImpl> persistentBatch);
+
+    /**
+     * Plugin Java API.
+     *
      * Synchronously marks a `persistent` message as deleted.
      */
     void doDelete(PersistentImpl persistent) throws Exception;

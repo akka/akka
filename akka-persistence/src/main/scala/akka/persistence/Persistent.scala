@@ -4,9 +4,13 @@
 
 package akka.persistence
 
+import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ List ⇒ JList }
 
+import scala.collection.immutable
+
 import akka.actor.ActorRef
+import akka.japi.Util.immutableSeq
 
 /**
  * Persistent message.
@@ -79,6 +83,27 @@ object Persistent {
 }
 
 /**
+ * Instructs a [[Processor]] to atomically write the contained [[Persistent]] messages to the
+ * journal. The processor receives the written messages individually as [[Persistent]] messages.
+ * During recovery, they are also replayed individually.
+ */
+case class PersistentBatch(persistentBatch: immutable.Seq[Persistent]) {
+  /**
+   * INTERNAL API.
+   */
+  private[persistence] def persistentImplList: List[PersistentImpl] =
+    persistentBatch.toList.asInstanceOf[List[PersistentImpl]]
+}
+
+object PersistentBatch {
+  /**
+   * JAVA API.
+   */
+  def create(persistentBatch: JIterable[Persistent]) =
+    PersistentBatch(immutableSeq(persistentBatch))
+}
+
+/**
  * Plugin API.
  *
  * Internal [[Persistent]] message representation.
@@ -123,6 +148,9 @@ case class PersistentImpl(
    * Java Plugin API.
    */
   def getConfirms: JList[String] = confirms.asJava
+
+  private[persistence] def prepareWrite(sender: ActorRef) =
+    copy(sender = sender, resolved = false, confirmTarget = null, confirmMessage = null)
 }
 
 object PersistentImpl {

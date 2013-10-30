@@ -22,19 +22,36 @@ private[persistence] trait Eventsourced extends Processor {
   }
 
   /**
+   * Processor recovery state. Waits for recovery completion and then changes to
+   * `processingCommands`
+   */
+  private val recovering: State = new State {
+    def aroundReceive(receive: Receive, message: Any) {
+      Eventsourced.super.aroundReceive(receive, message)
+      message match {
+        case _: ReplaySuccess | _: ReplayFailure ⇒ currentState = processingCommands
+        case _                                   ⇒
+      }
+    }
+  }
+
+  /**
    * Command processing state. If event persistence is pending after processing a
    * command, event persistence is triggered and state changes to `persistingEvents`.
+   *
+   * There's no need to loop commands though the journal any more i.e. they can now be
+   * directly offered as `LoopSuccess` to the state machine implemented by `Processor`.
    */
   private val processingCommands: State = new State {
-    def aroundReceive(receive: Receive, message: Any) = message match {
-      case m if (persistInvocations.isEmpty) ⇒ {
-        Eventsourced.super.aroundReceive(receive, m)
-        if (!persistInvocations.isEmpty) {
-          persistInvocations = persistInvocations.reverse
-          persistCandidates = persistCandidates.reverse
-          persistCandidates.foreach(self forward Persistent(_))
-          currentState = persistingEvents
-        }
+    def aroundReceive(receive: Receive, message: Any) {
+      Eventsourced.super.aroundReceive(receive, LoopSuccess(message))
+      if (!persistInvocations.isEmpty) {
+        currentState = persistingEvents
+        Eventsourced.super.aroundReceive(receive, PersistentBatch(persistentEventBatch.reverse))
+        persistInvocations = persistInvocations.reverse
+        persistentEventBatch = Nil
+      } else {
+        processorStash.unstash()
       }
     }
   }
@@ -46,9 +63,13 @@ private[persistence] trait Eventsourced extends Processor {
    */
   private val persistingEvents: State = new State {
     def aroundReceive(receive: Receive, message: Any) = message match {
-      case p: PersistentImpl if identical(p.payload, persistCandidates.head) ⇒ {
-        Eventsourced.super.aroundReceive(receive, message)
-        persistCandidates = persistCandidates.tail
+      case PersistentBatch(b) ⇒ {
+        b.foreach(deleteMessage)
+        throw new UnsupportedOperationException("Persistent command batches not supported")
+      }
+      case p: PersistentImpl ⇒ {
+        deleteMessage(p)
+        throw new UnsupportedOperationException("Persistent commands not supported")
       }
       case WriteSuccess(p) if identical(p.payload, persistInvocations.head._1) ⇒ {
         withCurrentPersistent(p)(p ⇒ persistInvocations.head._2(p.payload))
@@ -65,7 +86,7 @@ private[persistence] trait Eventsourced extends Processor {
       persistInvocations = persistInvocations.tail
       if (persistInvocations.isEmpty) {
         currentState = processingCommands
-        processorStash.unstashAll()
+        processorStash.unstash()
       }
     }
 
@@ -74,9 +95,9 @@ private[persistence] trait Eventsourced extends Processor {
   }
 
   private var persistInvocations: List[(Any, Any ⇒ Unit)] = Nil
-  private var persistCandidates: List[Any] = Nil
+  private var persistentEventBatch: List[PersistentImpl] = Nil
 
-  private var currentState: State = processingCommands
+  private var currentState: State = recovering
   private val processorStash = createProcessorStash
 
   /**
@@ -103,7 +124,7 @@ private[persistence] trait Eventsourced extends Processor {
    */
   final def persist[A](event: A)(handler: A ⇒ Unit): Unit = {
     persistInvocations = (event, handler.asInstanceOf[Any ⇒ Unit]) :: persistInvocations
-    persistCandidates = event :: persistCandidates
+    persistentEventBatch = PersistentImpl(event) :: persistentEventBatch
   }
 
   /**
@@ -137,11 +158,34 @@ private[persistence] trait Eventsourced extends Processor {
    */
   def receiveCommand: Receive
 
+  override def unstashAll() {
+    // Internally, all messages are processed by unstashing them from
+    // the internal stash one-by-one. Hence, an unstashAll() from the
+    // user stash must be prepended to the internal stash.
+    processorStash.prepend(clearStash())
+  }
+
   /**
    * INTERNAL API.
    */
   final override protected[akka] def aroundReceive(receive: Receive, message: Any) {
     currentState.aroundReceive(receive, message)
+  }
+
+  /**
+   * Calls `super.preRestart` then unstashes all messages from the internal stash.
+   */
+  override def preRestart(reason: Throwable, message: Option[Any]) {
+    super.preRestart(reason, message)
+    processorStash.unstashAll()
+  }
+
+  /**
+   * Calls `super.postStop` then unstashes all messages from the internal stash.
+   */
+  override def postStop() {
+    super.postStop()
+    processorStash.unstashAll()
   }
 
   /**
@@ -242,7 +286,9 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
    * Command handler. Typically validates commands against current state (and/or by
    * communication with other actors). On successful validation, one or more events are
    * derived from a command and these events are then persisted by calling `persist`.
-   * Commands sent to event sourced processors should not be [[Persistent]] messages.
+   * Commands sent to event sourced processors must not be [[Persistent]] or
+   * [[PersistentBatch]] messages. In this case an `UnsupportedOperationException` is
+   * thrown by the processor.
    */
   def onReceiveCommand(msg: Any): Unit
 }

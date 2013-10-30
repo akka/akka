@@ -4,6 +4,8 @@
 
 package akka.persistence
 
+import scala.collection.immutable.Seq
+
 import com.typesafe.config._
 
 import akka.actor._
@@ -13,8 +15,8 @@ object ProcessorSpec {
   class RecoverTestProcessor(name: String) extends NamedProcessor(name) {
     var state = List.empty[String]
     def receive = {
-      case "boom"                   ⇒ throw new Exception("boom")
-      case Persistent("boom", _)    ⇒ throw new Exception("boom")
+      case "boom"                   ⇒ throw new TestException("boom")
+      case Persistent("boom", _)    ⇒ throw new TestException("boom")
       case Persistent(payload, snr) ⇒ state = s"${payload}-${snr}" :: state
       case GetState                 ⇒ sender ! state.reverse
     }
@@ -83,7 +85,7 @@ object ProcessorSpec {
     }
   }
 
-  class ResumeTestException extends Exception("test")
+  class ResumeTestException extends TestException("test")
 
   class ResumeTestSupervisor(name: String) extends Actor {
     val processor = context.actorOf(Props(classOf[ResumeTestProcessor], name))
@@ -119,7 +121,7 @@ object ProcessorSpec {
 
   class AnyReplayedMsgFailsTestProcessor(name: String) extends RecoverTestProcessor(name) {
     val failOnReplayedA: Actor.Receive = {
-      case Persistent("a", _) if recoveryRunning ⇒ throw new Exception("boom")
+      case Persistent("a", _) if recoveryRunning ⇒ throw new TestException("boom")
     }
 
     override def receive = failOnReplayedA orElse super.receive
@@ -282,6 +284,13 @@ abstract class ProcessorSpec(config: Config) extends AkkaSpec(config) with Persi
       processor ! Persistent("j")
       processor ! GetState
       expectMsg(List("b-1", "c-3", "d-4", "e-5", "f-6", "g-7", "h-8", "i-9", "j-10"))
+    }
+    "support batch writes" in {
+      val processor = namedProcessor[RecoverTestProcessor]
+      processor ! PersistentBatch(Seq(Persistent("c"), Persistent("d"), Persistent("e")))
+      processor ! Persistent("f")
+      processor ! GetState
+      expectMsg(List("a-1", "b-2", "c-3", "d-4", "e-5", "f-6"))
     }
   }
 

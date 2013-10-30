@@ -46,6 +46,11 @@ public class PersistencePluginDocTest {
         }
 
         @Override
+        public Future<Void> doWriteBatchAsync(Iterable<PersistentImpl> persistentBatch) {
+            return null;
+        }
+
+        @Override
         public Future<Void> doDeleteAsync(PersistentImpl persistent) {
             return null;
         }

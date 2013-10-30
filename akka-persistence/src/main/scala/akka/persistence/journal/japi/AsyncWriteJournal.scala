@@ -4,7 +4,8 @@
 
 package akka.persistence.journal.japi
 
-import scala.concurrent.Future
+import scala.collection.immutable
+import scala.collection.JavaConverters._
 
 import akka.persistence.journal.{ AsyncWriteJournal ⇒ SAsyncWriteJournal }
 import akka.persistence.PersistentImpl
@@ -19,6 +20,9 @@ abstract class AsyncWriteJournal extends AsyncReplay with SAsyncWriteJournal wit
 
   final def writeAsync(persistent: PersistentImpl) =
     doWriteAsync(persistent).map(Unit.unbox)
+
+  final def writeBatchAsync(persistentBatch: immutable.Seq[PersistentImpl]) =
+    doWriteBatchAsync(persistentBatch.asJava).map(Unit.unbox)
 
   final def deleteAsync(persistent: PersistentImpl) =
     doDeleteAsync(persistent).map(Unit.unbox)
