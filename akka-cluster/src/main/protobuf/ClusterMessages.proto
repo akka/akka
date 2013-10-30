@@ -111,6 +111,7 @@ message Gossip {
   repeated Member members = 4;
   required GossipOverview overview = 5;
   required VectorClock version = 6;
+  optional int32 hop = 7;
 }
 
 /**

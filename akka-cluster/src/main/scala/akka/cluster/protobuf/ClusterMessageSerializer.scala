@@ -224,9 +224,11 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
     val overview = cm.GossipOverview.newBuilder.addAllSeen(seen.asJava).
       addAllObserverReachability(reachability.map(_.build).asJava)
 
-    cm.Gossip.newBuilder().addAllAllAddresses(allAddresses.map(uniqueAddressToProto(_).build).asJava).
+    val builder = cm.Gossip.newBuilder().addAllAllAddresses(allAddresses.map(uniqueAddressToProto(_).build).asJava).
       addAllAllRoles(allRoles.asJava).addAllAllHashes(allHashes.asJava).addAllMembers(members.map(_.build).asJava).
       setOverview(overview).setVersion(vectorClockToProto(gossip.version, hashMapping))
+    gossip.hop foreach { builder.setHop(_) }
+    builder
   }
 
   private def vectorClockToProto(version: VectorClock, hashMapping: Map[String, Int]): cm.VectorClock.Builder = {
@@ -290,7 +292,9 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
     val seen: Set[UniqueAddress] = gossip.getOverview.getSeenList.asScala.map(addressMapping(_))(breakOut)
     val overview = GossipOverview(seen, reachability)
 
-    Gossip(members, overview, vectorClockFromProto(gossip.getVersion, hashMapping))
+    val hop = if (gossip.hasHop) Some(gossip.getHop) else None
+
+    Gossip(members, overview, vectorClockFromProto(gossip.getVersion, hashMapping), hop)
   }
 
   private def vectorClockFromProto(version: cm.VectorClock, hashMapping: immutable.Seq[String]) = {

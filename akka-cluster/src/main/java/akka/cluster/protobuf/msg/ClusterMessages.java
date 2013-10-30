@@ -3565,6 +3565,16 @@ public final class ClusterMessages {
      * <code>required .VectorClock version = 6;</code>
      */
     akka.cluster.protobuf.msg.ClusterMessages.VectorClockOrBuilder getVersionOrBuilder();
+
+    // optional int32 hop = 7;
+    /**
+     * <code>optional int32 hop = 7;</code>
+     */
+    boolean hasHop();
+    /**
+     * <code>optional int32 hop = 7;</code>
+     */
+    int getHop();
   }
   /**
    * Protobuf type {@code Gossip}
@@ -3678,6 +3688,11 @@ public final class ClusterMessages {
                 version_ = subBuilder.buildPartial();
               }
               bitField0_ |= 0x00000002;
+              break;
+            }
+            case 56: {
+              bitField0_ |= 0x00000004;
+              hop_ = input.readInt32();
               break;
             }
           }
@@ -3908,6 +3923,22 @@ public final class ClusterMessages {
       return version_;
     }
 
+    // optional int32 hop = 7;
+    public static final int HOP_FIELD_NUMBER = 7;
+    private int hop_;
+    /**
+     * <code>optional int32 hop = 7;</code>
+     */
+    public boolean hasHop() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>optional int32 hop = 7;</code>
+     */
+    public int getHop() {
+      return hop_;
+    }
+
     private void initFields() {
       allAddresses_ = java.util.Collections.emptyList();
       allRoles_ = com.google.protobuf.LazyStringArrayList.EMPTY;
@@ -3915,6 +3946,7 @@ public final class ClusterMessages {
       members_ = java.util.Collections.emptyList();
       overview_ = akka.cluster.protobuf.msg.ClusterMessages.GossipOverview.getDefaultInstance();
       version_ = akka.cluster.protobuf.msg.ClusterMessages.VectorClock.getDefaultInstance();
+      hop_ = 0;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -3974,6 +4006,9 @@ public final class ClusterMessages {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeMessage(6, version_);
       }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeInt32(7, hop_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -4016,6 +4051,10 @@ public final class ClusterMessages {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(6, version_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(7, hop_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -4170,6 +4209,8 @@ public final class ClusterMessages {
           versionBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000020);
+        hop_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000040);
         return this;
       }
 
@@ -4244,6 +4285,10 @@ public final class ClusterMessages {
         } else {
           result.version_ = versionBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.hop_ = hop_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -4337,6 +4382,9 @@ public final class ClusterMessages {
         }
         if (other.hasVersion()) {
           mergeVersion(other.getVersion());
+        }
+        if (other.hasHop()) {
+          setHop(other.getHop());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -5291,6 +5339,39 @@ public final class ClusterMessages {
           version_ = null;
         }
         return versionBuilder_;
+      }
+
+      // optional int32 hop = 7;
+      private int hop_ ;
+      /**
+       * <code>optional int32 hop = 7;</code>
+       */
+      public boolean hasHop() {
+        return ((bitField0_ & 0x00000040) == 0x00000040);
+      }
+      /**
+       * <code>optional int32 hop = 7;</code>
+       */
+      public int getHop() {
+        return hop_;
+      }
+      /**
+       * <code>optional int32 hop = 7;</code>
+       */
+      public Builder setHop(int value) {
+        bitField0_ |= 0x00000040;
+        hop_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 hop = 7;</code>
+       */
+      public Builder clearHop() {
+        bitField0_ = (bitField0_ & ~0x00000040);
+        hop_ = 0;
+        onChanged();
+        return this;
       }
 
       // @@protoc_insertion_point(builder_scope:Gossip)
@@ -16745,48 +16826,49 @@ public final class ClusterMessages {
       "(\0132\016.UniqueAddress\022\030\n\020serializedGossip\030\003" +
       " \002(\014\"^\n\014GossipStatus\022\034\n\004from\030\001 \002(\0132\016.Uni" +
       "queAddress\022\021\n\tallHashes\030\002 \003(\t\022\035\n\007version" +
-      "\030\003 \002(\0132\014.VectorClock\"\257\001\n\006Gossip\022$\n\014allAd" +
+      "\030\003 \002(\0132\014.VectorClock\"\274\001\n\006Gossip\022$\n\014allAd" +
       "dresses\030\001 \003(\0132\016.UniqueAddress\022\020\n\010allRole",
       "s\030\002 \003(\t\022\021\n\tallHashes\030\003 \003(\t\022\030\n\007members\030\004 " +
       "\003(\0132\007.Member\022!\n\010overview\030\005 \002(\0132\017.GossipO" +
-      "verview\022\035\n\007version\030\006 \002(\0132\014.VectorClock\"S" +
-      "\n\016GossipOverview\022\014\n\004seen\030\001 \003(\005\0223\n\024observ" +
-      "erReachability\030\002 \003(\0132\025.ObserverReachabil" +
-      "ity\"p\n\024ObserverReachability\022\024\n\014addressIn" +
-      "dex\030\001 \002(\005\022\017\n\007version\030\004 \002(\003\0221\n\023subjectRea" +
-      "chability\030\002 \003(\0132\024.SubjectReachability\"a\n" +
-      "\023SubjectReachability\022\024\n\014addressIndex\030\001 \002" +
-      "(\005\022#\n\006status\030\003 \002(\0162\023.ReachabilityStatus\022",
-      "\017\n\007version\030\004 \002(\003\"i\n\006Member\022\024\n\014addressInd" +
-      "ex\030\001 \002(\005\022\020\n\010upNumber\030\002 \002(\005\022\035\n\006status\030\003 \002" +
-      "(\0162\r.MemberStatus\022\030\n\014rolesIndexes\030\004 \003(\005B" +
-      "\002\020\001\"y\n\013VectorClock\022\021\n\ttimestamp\030\001 \001(\003\022&\n" +
-      "\010versions\030\002 \003(\0132\024.VectorClock.Version\032/\n" +
-      "\007Version\022\021\n\thashIndex\030\001 \002(\005\022\021\n\ttimestamp" +
-      "\030\002 \002(\003\"^\n\025MetricsGossipEnvelope\022\026\n\004from\030" +
-      "\001 \002(\0132\010.Address\022\036\n\006gossip\030\002 \002(\0132\016.Metric" +
-      "sGossip\022\r\n\005reply\030\003 \002(\010\"j\n\rMetricsGossip\022" +
-      "\036\n\014allAddresses\030\001 \003(\0132\010.Address\022\026\n\016allMe",
-      "tricNames\030\002 \003(\t\022!\n\013nodeMetrics\030\003 \003(\0132\014.N" +
-      "odeMetrics\"\230\003\n\013NodeMetrics\022\024\n\014addressInd" +
-      "ex\030\001 \002(\005\022\021\n\ttimestamp\030\002 \002(\003\022$\n\007metrics\030\003" +
-      " \003(\0132\023.NodeMetrics.Metric\032e\n\006Number\022%\n\004t" +
-      "ype\030\001 \002(\0162\027.NodeMetrics.NumberType\022\017\n\007va" +
-      "lue32\030\002 \001(\r\022\017\n\007value64\030\003 \001(\004\022\022\n\nserializ" +
-      "ed\030\004 \001(\014\032$\n\004EWMA\022\r\n\005value\030\001 \002(\001\022\r\n\005alpha" +
-      "\030\002 \002(\001\032a\n\006Metric\022\021\n\tnameIndex\030\001 \002(\005\022#\n\006n" +
-      "umber\030\002 \002(\0132\023.NodeMetrics.Number\022\037\n\004ewma" +
-      "\030\003 \001(\0132\021.NodeMetrics.EWMA\"J\n\nNumberType\022",
-      "\016\n\nSerialized\020\000\022\n\n\006Double\020\001\022\t\n\005Float\020\002\022\013" +
-      "\n\007Integer\020\003\022\010\n\004Long\020\004\"\007\n\005Empty\"K\n\007Addres" +
-      "s\022\016\n\006system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004p" +
-      "ort\030\003 \002(\r\022\020\n\010protocol\030\004 \001(\t\"7\n\rUniqueAdd" +
-      "ress\022\031\n\007address\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002" +
-      " \002(\r*D\n\022ReachabilityStatus\022\r\n\tReachable\020" +
-      "\000\022\017\n\013Unreachable\020\001\022\016\n\nTerminated\020\002*T\n\014Me" +
-      "mberStatus\022\013\n\007Joining\020\000\022\006\n\002Up\020\001\022\013\n\007Leavi" +
-      "ng\020\002\022\013\n\007Exiting\020\003\022\010\n\004Down\020\004\022\013\n\007Removed\020\005" +
-      "B\035\n\031akka.cluster.protobuf.msgH\001"
+      "verview\022\035\n\007version\030\006 \002(\0132\014.VectorClock\022\013" +
+      "\n\003hop\030\007 \001(\005\"S\n\016GossipOverview\022\014\n\004seen\030\001 " +
+      "\003(\005\0223\n\024observerReachability\030\002 \003(\0132\025.Obse" +
+      "rverReachability\"p\n\024ObserverReachability" +
+      "\022\024\n\014addressIndex\030\001 \002(\005\022\017\n\007version\030\004 \002(\003\022" +
+      "1\n\023subjectReachability\030\002 \003(\0132\024.SubjectRe" +
+      "achability\"a\n\023SubjectReachability\022\024\n\014add" +
+      "ressIndex\030\001 \002(\005\022#\n\006status\030\003 \002(\0162\023.Reacha",
+      "bilityStatus\022\017\n\007version\030\004 \002(\003\"i\n\006Member\022" +
+      "\024\n\014addressIndex\030\001 \002(\005\022\020\n\010upNumber\030\002 \002(\005\022" +
+      "\035\n\006status\030\003 \002(\0162\r.MemberStatus\022\030\n\014rolesI" +
+      "ndexes\030\004 \003(\005B\002\020\001\"y\n\013VectorClock\022\021\n\ttimes" +
+      "tamp\030\001 \001(\003\022&\n\010versions\030\002 \003(\0132\024.VectorClo" +
+      "ck.Version\032/\n\007Version\022\021\n\thashIndex\030\001 \002(\005" +
+      "\022\021\n\ttimestamp\030\002 \002(\003\"^\n\025MetricsGossipEnve" +
+      "lope\022\026\n\004from\030\001 \002(\0132\010.Address\022\036\n\006gossip\030\002" +
+      " \002(\0132\016.MetricsGossip\022\r\n\005reply\030\003 \002(\010\"j\n\rM" +
+      "etricsGossip\022\036\n\014allAddresses\030\001 \003(\0132\010.Add",
+      "ress\022\026\n\016allMetricNames\030\002 \003(\t\022!\n\013nodeMetr" +
+      "ics\030\003 \003(\0132\014.NodeMetrics\"\230\003\n\013NodeMetrics\022" +
+      "\024\n\014addressIndex\030\001 \002(\005\022\021\n\ttimestamp\030\002 \002(\003" +
+      "\022$\n\007metrics\030\003 \003(\0132\023.NodeMetrics.Metric\032e" +
+      "\n\006Number\022%\n\004type\030\001 \002(\0162\027.NodeMetrics.Num" +
+      "berType\022\017\n\007value32\030\002 \001(\r\022\017\n\007value64\030\003 \001(" +
+      "\004\022\022\n\nserialized\030\004 \001(\014\032$\n\004EWMA\022\r\n\005value\030\001" +
+      " \002(\001\022\r\n\005alpha\030\002 \002(\001\032a\n\006Metric\022\021\n\tnameInd" +
+      "ex\030\001 \002(\005\022#\n\006number\030\002 \002(\0132\023.NodeMetrics.N" +
+      "umber\022\037\n\004ewma\030\003 \001(\0132\021.NodeMetrics.EWMA\"J",
+      "\n\nNumberType\022\016\n\nSerialized\020\000\022\n\n\006Double\020\001" +
+      "\022\t\n\005Float\020\002\022\013\n\007Integer\020\003\022\010\n\004Long\020\004\"\007\n\005Em" +
+      "pty\"K\n\007Address\022\016\n\006system\030\001 \002(\t\022\020\n\010hostna" +
+      "me\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010protocol\030\004 \001(\t" +
+      "\"7\n\rUniqueAddress\022\031\n\007address\030\001 \002(\0132\010.Add" +
+      "ress\022\013\n\003uid\030\002 \002(\r*D\n\022ReachabilityStatus\022" +
+      "\r\n\tReachable\020\000\022\017\n\013Unreachable\020\001\022\016\n\nTermi" +
+      "nated\020\002*T\n\014MemberStatus\022\013\n\007Joining\020\000\022\006\n\002" +
+      "Up\020\001\022\013\n\007Leaving\020\002\022\013\n\007Exiting\020\003\022\010\n\004Down\020\004" +
+      "\022\013\n\007Removed\020\005B\035\n\031akka.cluster.protobuf.m",
+      "sgH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -16822,7 +16904,7 @@ public final class ClusterMessages {
           internal_static_Gossip_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Gossip_descriptor,
-              new java.lang.String[] { "AllAddresses", "AllRoles", "AllHashes", "Members", "Overview", "Version", });
+              new java.lang.String[] { "AllAddresses", "AllRoles", "AllHashes", "Members", "Overview", "Version", "Hop", });
           internal_static_GossipOverview_descriptor =
             getDescriptor().getMessageTypes().get(5);
           internal_static_GossipOverview_fieldAccessorTable = new
