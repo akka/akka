@@ -378,8 +378,10 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   override def isResponsibleFor(address: Address): Boolean = true //TODO: Add configurable subnet filtering
 
   // TODO: This should be factored out to an async (or thread-isolated) name lookup service #2960
-  def addressToSocketAddress(addr: Address): Future[InetSocketAddress] =
-    Future { new InetSocketAddress(InetAddress.getByName(addr.host.get), addr.port.get) }
+  def addressToSocketAddress(addr: Address): Future[InetSocketAddress] = addr match {
+    case Address(_, _, Some(host), Some(port)) ⇒ Future { new InetSocketAddress(InetAddress.getByName(host), port) }
+    case _                                     ⇒ Future.failed(new IllegalArgumentException(s"Address [$addr] does not contain host or port information."))
+  }
 
   override def listen: Future[(Address, Promise[AssociationEventListener])] = {
     for {

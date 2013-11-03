@@ -111,6 +111,8 @@ private[cluster] object InternalClusterAction {
 
   case object GossipTick extends Tick
 
+  case object GossipSpeedupTick extends Tick
+
   case object HeartbeatTick extends Tick
 
   case object ReapUnreachableTick extends Tick
@@ -292,7 +294,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     case InitJoin                          ⇒ sender ! InitJoinNack(selfAddress)
     case ClusterUserAction.JoinTo(address) ⇒ join(address)
     case JoinSeedNodes(seedNodes)          ⇒ joinSeedNodes(seedNodes)
-    case Join(node, roles)                 ⇒ joiningUninitialized(node, roles)
     case msg: SubscriptionMessage          ⇒ publisher forward msg
   }
 
@@ -305,7 +306,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     case JoinSeedNodes(seedNodes) ⇒
       becomeUninitialized()
       joinSeedNodes(seedNodes)
-    case Join(node, roles)        ⇒ joiningUninitialized(node, roles)
     case msg: SubscriptionMessage ⇒ publisher forward msg
     case _: Tick ⇒
       if (deadline.exists(_.isOverdue)) {
@@ -334,7 +334,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   def initialized: Actor.Receive = {
     case msg: GossipEnvelope              ⇒ receiveGossip(msg)
     case msg: GossipStatus                ⇒ receiveGossipStatus(msg)
-    case GossipTick                       ⇒ gossip()
+    case GossipTick                       ⇒ gossipTick()
+    case GossipSpeedupTick                ⇒ gossipSpeedupTick()
     case ReapUnreachableTick              ⇒ reapUnreachableMembers()
     case LeaderActionsTick                ⇒ leaderActions()
     case PublishStatsTick                 ⇒ publishInternalStats()
@@ -474,16 +475,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   }
 
   /**
-   * Another node is joining when this node is uninitialized.
-   */
-  def joiningUninitialized(node: UniqueAddress, roles: Set[String]): Unit = {
-    require(latestGossip.members.isEmpty, "Joining an uninitialized node can only be done from empty state")
-    joining(node, roles)
-    if (latestGossip.hasMember(selfUniqueAddress))
-      becomeInitialized()
-  }
-
-  /**
    * Reply from Join request.
    */
   def welcome(joinWith: Address, from: UniqueAddress, gossip: Gossip): Unit = {
@@ -609,7 +600,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     val remoteGossip = envelope.gossip
     val localGossip = latestGossip
 
-    if (envelope.to != selfUniqueAddress) {
+    if (remoteGossip eq Gossip.empty) {
+      log.debug("Cluster Node [{}] - Ignoring received gossip from [{}] to protect against overload", selfAddress, from)
+      Ignored
+    } else if (envelope.to != selfUniqueAddress) {
       logInfo("Ignoring received gossip intended for someone else, from [{}] to [{}]", from.address, envelope.to)
       Ignored
     } else if (!remoteGossip.overview.reachability.isReachable(selfUniqueAddress)) {
@@ -680,7 +674,19 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     }
   }
 
-  def mergeRate(count: Long): Double = (count * 1000.0) / GossipInterval.toMillis
+  def gossipTick(): Unit = {
+    gossip()
+    if (isGossipSpeedupNeeded) {
+      scheduler.scheduleOnce(GossipInterval / 3, self, GossipSpeedupTick)
+      scheduler.scheduleOnce(GossipInterval * 2 / 3, self, GossipSpeedupTick)
+    }
+  }
+
+  def gossipSpeedupTick(): Unit =
+    if (isGossipSpeedupNeeded) gossip()
+
+  def isGossipSpeedupNeeded: Boolean =
+    (latestGossip.overview.seen.size < latestGossip.members.size / 2)
 
   /**
    * Initiates a new round of gossip.
@@ -692,7 +698,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       val localGossip = latestGossip
 
       val preferredGossipTargets: Vector[UniqueAddress] =
-        if (ThreadLocalRandom.current.nextDouble() < GossipDifferentViewProbability) { // If it's time to try to gossip to some nodes with a different view
+        if (ThreadLocalRandom.current.nextDouble() < adjustedGossipDifferentViewProbability) {
+          // If it's time to try to gossip to some nodes with a different view
           // gossip to a random alive member with preference to a member with older gossip version
           localGossip.members.collect {
             case m if !localGossip.seenByNode(m.uniqueAddress) && validNodeForGossip(m.uniqueAddress) ⇒
@@ -713,6 +720,33 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
           if (localGossip.seenByNode(node)) gossipStatusTo(node)
           else gossipTo(node)
         }
+      }
+    }
+  }
+
+  /**
+   * For large clusters we should avoid shooting down individual
+   * nodes. Therefore the probability is reduced for large clusters.
+   */
+  def adjustedGossipDifferentViewProbability: Double = {
+    val size = latestGossip.members.size
+    val low = ReduceGossipDifferentViewProbability
+    val high = low * 3
+    // start reduction when cluster is larger than configured ReduceGossipDifferentViewProbability
+    if (size <= low)
+      GossipDifferentViewProbability
+    else {
+      // don't go lower than 1/10 of the configured GossipDifferentViewProbability
+      val minP = GossipDifferentViewProbability / 10
+      if (size >= high)
+        minP
+      else {
+        // linear reduction of the probability with increasing number of nodes
+        // from ReduceGossipDifferentViewProbability at ReduceGossipDifferentViewProbability nodes
+        // to ReduceGossipDifferentViewProbability / 10 at ReduceGossipDifferentViewProbability * 3 nodes
+        // i.e. default from 0.8 at 400 nodes, to 0.08 at 1600 nodes
+        val k = (minP - GossipDifferentViewProbability) / (high - low)
+        GossipDifferentViewProbability + (size - low) * k
       }
     }
   }

@@ -1,7 +1,12 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package docs.persistence
 
 //#plugin-imports
 import scala.concurrent.Future
+import scala.collection.immutable.Seq
 //#plugin-imports
 
 import com.typesafe.config._
@@ -65,6 +70,7 @@ class PersistencePluginDocSpec extends WordSpec {
 
 class MyJournal extends AsyncWriteJournal {
   def writeAsync(persistent: PersistentImpl): Future[Unit] = ???
+  def writeBatchAsync(persistentBatch: Seq[PersistentImpl]): Future[Unit] = ???
   def deleteAsync(persistent: PersistentImpl): Future[Unit] = ???
   def confirmAsync(processorId: String, sequenceNr: Long, channelId: String): Future[Unit] = ???
   def replayAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: (PersistentImpl) ⇒ Unit): Future[Long] = ???

@@ -33,7 +33,8 @@ trait AsyncReplay {
    * @param processorId processor id.
    * @param fromSequenceNr sequence number where replay should start.
    * @param toSequenceNr sequence number where replay should end (inclusive).
-   * @param replayCallback called to replay a single message.
+   * @param replayCallback called to replay a single message. Can be called from any
+   *                       thread.
    *
    * @see [[AsyncWriteJournal]]
    * @see [[SyncWriteJournal]]

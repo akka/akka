@@ -4,6 +4,8 @@
 
 package akka.persistence
 
+import scala.collection.immutable
+
 import akka.actor._
 import akka.dispatch._
 
@@ -49,6 +51,7 @@ import akka.dispatch._
  *
  * @see [[UntypedProcessor]]
  * @see [[Recover]]
+ * @see [[PersistentBatch]]
  */
 trait Processor extends Actor with Stash {
   import JournalProtocol._
@@ -69,15 +72,8 @@ trait Processor extends Actor with Stash {
     protected def process(receive: Actor.Receive, message: Any) =
       receive.applyOrElse(message, unhandled)
 
-    protected def processPersistent(receive: Actor.Receive, persistent: Persistent) = try {
-      _currentPersistent = persistent
-      updateLastSequenceNr(persistent)
-      receive.applyOrElse(persistent, unhandled)
-    } finally _currentPersistent = null
-
-    protected def updateLastSequenceNr(persistent: Persistent) {
-      if (persistent.sequenceNr > _lastSequenceNr) _lastSequenceNr = persistent.sequenceNr
-    }
+    protected def processPersistent(receive: Actor.Receive, persistent: Persistent) =
+      withCurrentPersistent(persistent)(receive.applyOrElse(_, unhandled))
   }
 
   /**
@@ -91,7 +87,7 @@ trait Processor extends Actor with Stash {
         _currentState = recoveryStarted
         snapshotStore ! LoadSnapshot(processorId, fromSnap, toSnr)
       }
-      case _ ⇒ stashInternal()
+      case _ ⇒ processorStash.stash()
     }
   }
 
@@ -116,10 +112,15 @@ trait Processor extends Actor with Stash {
       case ReplaySuccess(maxSnr) ⇒ {
         _currentState = recoverySucceeded
         _sequenceNr = maxSnr
-        unstashAllInternal()
+        processorStash.unstashAll()
       }
       case ReplayFailure(cause) ⇒ {
-        throw cause
+        val notification = RecoveryFailure(cause)
+        if (receive.isDefinedAt(notification)) process(receive, notification)
+        else {
+          val errorMsg = s"Replay failure by journal (processor id = [${processorId}])"
+          throw new RecoveryFailureException(errorMsg, cause)
+        }
       }
       case Replayed(p) ⇒ try { processPersistent(receive, p) } catch {
         case t: Throwable ⇒ {
@@ -129,7 +130,7 @@ trait Processor extends Actor with Stash {
         }
       }
       case r: Recover ⇒ // ignore
-      case _          ⇒ stashInternal()
+      case _          ⇒ processorStash.stash()
     }
   }
 
@@ -140,13 +141,23 @@ trait Processor extends Actor with Stash {
     override def toString: String = "recovery finished"
 
     def aroundReceive(receive: Actor.Receive, message: Any) = message match {
-      case r: Recover             ⇒ // ignore
-      case Replayed(p)            ⇒ processPersistent(receive, p) // can occur after unstash from user stash
-      case WriteSuccess(p)        ⇒ processPersistent(receive, p)
-      case WriteFailure(p, cause) ⇒ process(receive, PersistenceFailure(p.payload, p.sequenceNr, cause))
-      case LoopSuccess(m)         ⇒ process(receive, m)
-      case p: PersistentImpl      ⇒ journal forward Write(p.copy(processorId = processorId, sequenceNr = nextSequenceNr()), self)
-      case m                      ⇒ journal forward Loop(m, self)
+      case r: Recover      ⇒ // ignore
+      case Replayed(p)     ⇒ processPersistent(receive, p) // can occur after unstash from user stash
+      case WriteSuccess(p) ⇒ processPersistent(receive, p)
+      case WriteFailure(p, cause) ⇒ {
+        val notification = PersistenceFailure(p.payload, p.sequenceNr, cause)
+        if (receive.isDefinedAt(notification)) process(receive, notification)
+        else {
+          val errorMsg = "Processor killed after persistence failure " +
+            s"(processor id = [${processorId}], sequence nr = [${p.sequenceNr}], payload class = [${p.payload.getClass.getName}]). " +
+            "To avoid killing processors on persistence failure, a processor must handle PersistenceFailure messages."
+          throw new ActorKilledException(errorMsg)
+        }
+      }
+      case LoopSuccess(m)      ⇒ process(receive, m)
+      case p: PersistentImpl   ⇒ journal forward Write(p.copy(processorId = processorId, sequenceNr = nextSequenceNr()), self)
+      case pb: PersistentBatch ⇒ journal forward WriteBatch(pb.persistentImplList.map(_.copy(processorId = processorId, sequenceNr = nextSequenceNr())), self)
+      case m                   ⇒ journal forward Loop(m, self)
     }
   }
 
@@ -159,13 +170,13 @@ trait Processor extends Actor with Stash {
     override def toString: String = "recovery failed"
 
     def aroundReceive(receive: Actor.Receive, message: Any) = message match {
-      case ReplaySuccess(maxSnr) ⇒ {
+      case ReplaySuccess(_) | ReplayFailure(_) ⇒ {
         _currentState = prepareRestart
         mailbox.enqueueFirst(self, _recoveryFailureMessage)
       }
       case Replayed(p) ⇒ updateLastSequenceNr(p)
       case r: Recover  ⇒ // ignore
-      case _           ⇒ stashInternal()
+      case _           ⇒ processorStash.stash()
     }
   }
 
@@ -246,7 +257,23 @@ trait Processor extends Actor with Stash {
   /**
    * INTERNAL API.
    */
-  final override protected[akka] def aroundReceive(receive: Actor.Receive, message: Any): Unit = {
+  protected[persistence] def withCurrentPersistent(persistent: Persistent)(body: Persistent ⇒ Unit): Unit = try {
+    _currentPersistent = persistent
+    updateLastSequenceNr(persistent)
+    body(persistent)
+  } finally _currentPersistent = null
+
+  /**
+   * INTERNAL API.
+   */
+  protected[persistence] def updateLastSequenceNr(persistent: Persistent) {
+    if (persistent.sequenceNr > _lastSequenceNr) _lastSequenceNr = persistent.sequenceNr
+  }
+
+  /**
+   * INTERNAL API.
+   */
+  override protected[akka] def aroundReceive(receive: Actor.Receive, message: Any): Unit = {
     _currentState.aroundReceive(receive, message)
   }
 
@@ -270,7 +297,7 @@ trait Processor extends Actor with Stash {
   final override protected[akka] def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
     try {
       unstashAll(unstashFilterPredicate)
-      unstashAllInternal()
+      processorStash.unstashAll()
     } finally {
       message match {
         case Some(WriteSuccess(m)) ⇒ preRestartDefault(reason, Some(m))
@@ -318,27 +345,71 @@ trait Processor extends Actor with Stash {
   //  Processor-internal stash
   // -----------------------------------------------------
 
-  private def unstashFilterPredicate: Any ⇒ Boolean = {
+  private val unstashFilterPredicate: Any ⇒ Boolean = {
     case _: WriteSuccess ⇒ false
     case _: Replayed     ⇒ false
     case _               ⇒ true
   }
 
-  private var processorStash = Vector.empty[Envelope]
-
-  private def stashInternal(): Unit = {
-    processorStash :+= currentEnvelope
-  }
-
-  private def unstashAllInternal(): Unit = try {
-    val i = processorStash.reverseIterator
-    while (i.hasNext) mailbox.enqueueFirst(self, i.next())
-  } finally {
-    processorStash = Vector.empty[Envelope]
-  }
+  private val processorStash =
+    createProcessorStash
 
   private def currentEnvelope: Envelope =
     context.asInstanceOf[ActorCell].currentMessage
+
+  /**
+   * INTERNAL API.
+   */
+  private[persistence] def createProcessorStash = new ProcessorStash {
+    var theStash = Vector.empty[Envelope]
+
+    def stash(): Unit =
+      theStash :+= currentEnvelope
+
+    def prepend(others: immutable.Seq[Envelope]): Unit =
+      others.reverseIterator.foreach(env ⇒ theStash = env +: theStash)
+
+    def unstash(): Unit = try {
+      if (theStash.nonEmpty) {
+        mailbox.enqueueFirst(self, theStash.head)
+        theStash = theStash.tail
+      }
+    }
+
+    def unstashAll(): Unit = try {
+      val i = theStash.reverseIterator
+      while (i.hasNext) mailbox.enqueueFirst(self, i.next())
+    } finally {
+      theStash = Vector.empty[Envelope]
+    }
+  }
+}
+
+/**
+ * INTERNAL API.
+ *
+ * Processor specific stash used internally to avoid interference with user stash.
+ */
+private[persistence] trait ProcessorStash {
+  /**
+   * Appends the current message to this stash.
+   */
+  def stash()
+
+  /**
+   * Prepends `others` to this stash.
+   */
+  def prepend(others: immutable.Seq[Envelope])
+
+  /**
+   * Unstashes a single message from this stash.
+   */
+  def unstash()
+
+  /**
+   * Unstashes all messages from this stash.
+   */
+  def unstashAll()
 }
 
 /**
@@ -394,6 +465,7 @@ trait Processor extends Actor with Stash {
  *
  * @see [[Processor]]
  * @see [[Recover]]
+ * @see [[PersistentBatch]]
  */
 abstract class UntypedProcessor extends UntypedActor with Processor {
 
@@ -404,3 +476,4 @@ abstract class UntypedProcessor extends UntypedActor with Processor {
    */
   def getCurrentPersistentMessage = currentPersistentMessage.getOrElse(null)
 }
+

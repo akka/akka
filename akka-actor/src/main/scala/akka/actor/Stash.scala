@@ -83,7 +83,7 @@ trait UnrestrictedStash extends Actor {
    * The actor's deque-based message queue.
    * `mailbox.queue` is the underlying `Deque`.
    */
-  protected[akka] val mailbox: DequeBasedMessageQueueSemantics = {
+  private[akka] val mailbox: DequeBasedMessageQueueSemantics = {
     context.asInstanceOf[ActorCell].mailbox.messageQueue match {
       case queue: DequeBasedMessageQueueSemantics ⇒ queue
       case other ⇒ throw ActorInitializationException(self, s"DequeBasedMailbox required, got: ${other.getClass.getName}\n" +
@@ -136,13 +136,24 @@ trait UnrestrictedStash extends Actor {
    *  @param filterPredicate only stashed messages selected by this predicate are
    *                         prepended to the mailbox.
    */
-  protected[akka] def unstashAll(filterPredicate: Any ⇒ Boolean): Unit = {
+  private[akka] def unstashAll(filterPredicate: Any ⇒ Boolean): Unit = {
     try {
       val i = theStash.reverseIterator.filter(envelope ⇒ filterPredicate(envelope.message))
       while (i.hasNext) mailbox.enqueueFirst(self, i.next())
     } finally {
       theStash = Vector.empty[Envelope]
     }
+  }
+
+  /**
+   * INTERNAL API.
+   *
+   * Clears the stash and and returns all envelopes that have not been unstashed.
+   */
+  private[akka] def clearStash(): Vector[Envelope] = {
+    val stashed = theStash
+    theStash = Vector.empty[Envelope]
+    stashed
   }
 
   /**

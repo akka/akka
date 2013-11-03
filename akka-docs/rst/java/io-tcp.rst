@@ -133,7 +133,7 @@ Once a connection has been established data can be sent to it from any actor in 
 
 Tcp.Write
   The simplest ``WriteCommand`` implementation which wraps a ``ByteString`` instance and an "ack" event.
-  A ``ByteString`` (as explained in :ref:`this section <ByteString>`) models one or more chunks of immutable
+  A ``ByteString`` (as explained in :ref:`this section <bytestring_java>`) models one or more chunks of immutable
   in-memory data with a maximum (total) size of 2 GB (2^31 bytes).
 
 Tcp.WriteFile
@@ -347,3 +347,10 @@ and register that as the recipient of inbound traffic and ourselves as
 recipient for the decrypted payload data. The we send a greeting to the server
 and forward any replies to some ``listener`` actor.
 
+.. warning::
+
+  The SslTlsSupport currently does not support using a ``Tcp.WriteCommand``
+  other than ``Tcp.Write``, like for example ``Tcp.WriteFile``. It also doesn't
+  support messages that are larger than the size of the send buffer on the socket.
+  Trying to send such a message will result in a ``CommandFailed``. If you need
+  to send large messages over SSL, then they have to be sent in chunks.

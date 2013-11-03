@@ -4,9 +4,13 @@
 
 package akka.persistence
 
+import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ List ⇒ JList }
 
+import scala.collection.immutable
+
 import akka.actor.ActorRef
+import akka.japi.Util.immutableSeq
 
 /**
  * Persistent message.
@@ -79,17 +83,38 @@ object Persistent {
 }
 
 /**
+ * Instructs a [[Processor]] to atomically write the contained [[Persistent]] messages to the
+ * journal. The processor receives the written messages individually as [[Persistent]] messages.
+ * During recovery, they are also replayed individually.
+ */
+case class PersistentBatch(persistentBatch: immutable.Seq[Persistent]) {
+  /**
+   * INTERNAL API.
+   */
+  private[persistence] def persistentImplList: List[PersistentImpl] =
+    persistentBatch.toList.asInstanceOf[List[PersistentImpl]]
+}
+
+object PersistentBatch {
+  /**
+   * JAVA API.
+   */
+  def create(persistentBatch: JIterable[Persistent]) =
+    PersistentBatch(immutableSeq(persistentBatch))
+}
+
+/**
  * Plugin API.
  *
  * Internal [[Persistent]] message representation.
  *
- * @param resolved `true` by default, `false` for replayed messages. Set to `true` by a channel if this
- *                message is replayed and its sender reference was resolved. Channels use this field to
- *                avoid redundant sender reference resolutions.
  * @param processorId Id of processor that journaled the message.
  * @param channelId Id of last channel that delivered the message to a destination.
  * @param sender Serialized sender reference.
  * @param deleted `true` if this message is marked as deleted.
+ * @param resolved `true` by default, `false` for replayed messages. Set to `true` by a channel if this
+ *                message is replayed and its sender reference was resolved. Channels use this field to
+ *                avoid redundant sender reference resolutions.
  * @param confirms Channel ids of delivery confirmations that are available for this message. Only non-empty
  *                 for replayed messages.
  * @param confirmTarget Delivery confirmation target.
@@ -102,14 +127,14 @@ object Persistent {
 case class PersistentImpl(
   payload: Any,
   sequenceNr: Long = 0L,
-  resolved: Boolean = true,
-  processorId: String = "",
-  channelId: String = "",
-  sender: String = "",
+  processorId: String = PersistentImpl.Undefined,
+  channelId: String = PersistentImpl.Undefined,
   deleted: Boolean = false,
+  resolved: Boolean = true,
   confirms: Seq[String] = Nil,
+  confirmMessage: Confirm = null,
   confirmTarget: ActorRef = null,
-  confirmMessage: Confirm = null) extends Persistent {
+  sender: ActorRef = null) extends Persistent {
 
   def withPayload(payload: Any): Persistent =
     copy(payload = payload)
@@ -123,24 +148,24 @@ case class PersistentImpl(
    * Java Plugin API.
    */
   def getConfirms: JList[String] = confirms.asJava
+
+  private[persistence] def prepareWrite(sender: ActorRef) =
+    copy(sender = sender, resolved = false, confirmTarget = null, confirmMessage = null)
 }
 
 object PersistentImpl {
-  /**
-   * Java Plugin API.
-   */
-  def create(payload: Any, sequenceNr: Long, resolved: Boolean, processorId: String, channelId: String, sender: String, deleted: Boolean, confirms: Seq[String]): PersistentImpl =
-    PersistentImpl(payload, sequenceNr, resolved, processorId, channelId, sender, deleted, confirms)
+  val Undefined = ""
 
   /**
    * Java Plugin API.
    */
-  def create(payload: Any, sequenceNr: Long, resolved: Boolean, processorId: String, channelId: String, sender: String, deleted: Boolean, confirms: Seq[String], confirmTarget: ActorRef, confirmMessage: Confirm): PersistentImpl =
-    PersistentImpl(payload, sequenceNr, resolved, processorId, channelId, sender, deleted, confirms, confirmTarget, confirmMessage)
+  def create(payload: Any, sequenceNr: Long, processorId: String, channelId: String, deleted: Boolean, resolved: Boolean, confirms: Seq[String], confirmMessage: Confirm, confirmTarget: ActorRef, sender: ActorRef): PersistentImpl =
+    PersistentImpl(payload, sequenceNr, processorId, channelId, deleted, resolved, confirms, confirmMessage, confirmTarget, sender)
 }
 
 /**
- * Receive by a processor when a journal failed to write a [[Persistent]] message.
+ * Sent to a [[Processor]] when a journal failed to write a [[Persistent]] message. If
+ * not handled, an `akka.actor.ActorKilledException` is thrown by that processor.
  *
  * @param payload payload of the persistent message.
  * @param sequenceNr sequence number of the persistent message.
@@ -149,6 +174,8 @@ object PersistentImpl {
 case class PersistenceFailure(payload: Any, sequenceNr: Long, cause: Throwable)
 
 /**
+ * Internal API.
+ *
  * Message to confirm the receipt of a persistent message (sent via a [[Channel]]).
  */
 @SerialVersionUID(1L)

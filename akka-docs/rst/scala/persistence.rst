@@ -4,9 +4,21 @@
 Persistence
 ###########
 
-This section describes an early access version of the Akka persistence module. Akka persistence is heavily inspired
-by the `eventsourced`_ library. It follows the same concepts and architecture of `eventsourced`_ but significantly
-differs on API and implementation level.
+Akka persistence enables stateful actors to persist their internal state so that it can be recovered when an actor
+is started, restarted by a supervisor or migrated in a cluster. It also allows stateful actors to recover from JVM
+crashes, for example. The key concept behind Akka persistence is that only changes to an actor's internal state are
+persisted but never its current state directly (except for optional snapshots). These changes are only ever appended
+to storage, nothing is ever mutated, which allows for very high transaction rates and efficient replication. Stateful
+actors are recovered by replaying stored changes to these actors from which they can rebuild internal state. This can
+be either the full history of changes or starting from a snapshot of internal actor state which can dramatically
+reduce recovery times.
+
+Storage backends for state changes and snapshots are pluggable in Akka persistence. Currently, these are written to
+the local filesystem. Distributed and replicated storage, with the possibility of scaling writes, will be available
+soon.
+
+Akka persistence is inspired by the `eventsourced`_ library. It follows the same concepts and architecture of
+`eventsourced`_ but significantly differs on API and implementation level.
 
 .. warning::
 
@@ -27,18 +39,19 @@ Akka persistence is a separate jar file. Make sure that you have the following d
 Architecture
 ============
 
-* *Processor*: A processor is a persistent actor. Messages sent to a processor are written to a journal before
-  its ``receive`` method is called. When a processor is started or restarted, journaled messages are replayed
+* *Processor*: A processor is a persistent, stateful actor. Messages sent to a processor are written to a journal
+  before its ``receive`` method is called. When a processor is started or restarted, journaled messages are replayed
   to that processor, so that it can recover internal state from these messages.
 
 * *Channel*: Channels are used by processors to communicate with other actors. They prevent that replayed messages
   are redundantly delivered to these actors.
 
-Use cases
-=========
+* *Journal*: A journal stores the sequence of messages sent to a processor. An application can control which messages
+  are stored and which are received by the processor without being journaled. The storage backend of a journal is
+  pluggable.
 
-* TODO: describe command sourcing
-* TODO: describe event sourcing
+* *Snapshot store*: A snapshot store persists snapshots of a processor's internal state. Snapshots are used for
+  optimizing recovery times. The storage backend of a snapshot store is pluggable.
 
 Configuration
 =============
@@ -65,9 +78,10 @@ A processor can be implemented by extending the ``Processor`` trait and implemen
 Processors only write messages of type ``Persistent`` to the journal, others are received without being persisted.
 When a processor's ``receive`` method is called with a ``Persistent`` message it can safely assume that this message
 has been successfully written to the journal. If a journal fails to write a ``Persistent`` message then the processor
-receives a ``PersistenceFailure`` message instead of a ``Persistent`` message. In this case, a processor may want to
-inform the sender about the failure, so that the sender can re-send the message, if needed, under the assumption that
-the journal recovered from a temporary failure.
+is stopped, by default. If an application wants that a processors continues to run on persistence failures it must
+handle ``PersistenceFailure`` messages. In this case, a processor may want to inform the sender about the failure,
+so that the sender can re-send the message, if needed, under the assumption that the journal recovered from a
+temporary failure.
 
 A ``Processor`` itself is an ``Actor`` and can therefore be instantiated with ``actorOf``.
 
@@ -262,6 +276,75 @@ If not specified, they default to ``SnapshotSelectionCriteria.Latest`` which sel
 To disable snapshot-based recovery, applications should use ``SnapshotSelectionCriteria.None``. A recovery where no
 saved snapshot matches the specified ``SnapshotSelectionCriteria`` will replay all journaled messages.
 
+.. _event-sourcing:
+
+Event sourcing
+==============
+
+In all the examples so far, messages that change a processor's state have been sent as ``Persistent`` messages
+by an application, so that they can be replayed during recovery. From this point of view, the journal acts as
+a write-ahead-log for whatever ``Persistent`` messages a processor receives. This is also known as *command
+sourcing*. Commands, however, may fail and some applications cannot tolerate command failures during recovery.
+
+For these applications `Event Sourcing`_ is a better choice. Applied to Akka persistence, the basic idea behind
+event sourcing is quite simple. A processor receives a (non-persistent) command which is first validated if it
+can be applied to the current state. Here, validation can mean anything, from simple inspection of a command
+message's fields up to a conversation with several external services, for example. If validation succeeds, events
+are generated from the command, representing the effect of the command. These events are then persisted and, after
+successful persistence, used to change a processor's state. When the processor needs to be recovered, only the
+persisted events are replayed of which we know that they can be successfully applied. In other words, events
+cannot fail when being replayed to a processor, in contrast to commands. Eventsourced processors may of course
+also process commands that do not change application state, such as query commands, for example.
+
+.. _Event Sourcing: http://martinfowler.com/eaaDev/EventSourcing.html
+
+Akka persistence supports event sourcing with the ``EventsourcedProcessor`` trait (which implements event sourcing
+as a pattern on top of command sourcing). A processor that extends this trait does not handle ``Persistent`` messages
+directly but uses the ``persist`` method to persist and handle events. The behavior of an ``EventsourcedProcessor``
+is defined by implementing ``receiveReplay`` and ``receiveCommand``. This is best explained with an example (which
+is also part of ``akka-sample-persistence``).
+
+.. includecode:: ../../../akka-samples/akka-sample-persistence/src/main/scala/sample/persistence/EventsourcedExample.scala#eventsourced-example
+
+The example defines two data types, ``Cmd`` and ``Evt`` to represent commands and events, respectively. The
+``state`` of the ``ExampleProcessor`` is a list of persisted event data contained in ``ExampleState``.
+
+The processor's ``receiveReplay`` method defines how ``state`` is updated during recovery by handling ``Evt``
+and ``SnapshotOffer`` messages. The processor's ``receiveCommand`` method is a command handler. In this example,
+a command is handled by generating two events which are then persisted and handled. Events are persisted by calling
+``persist`` with an event (or a sequence of events) as first argument and an event handler as second argument.
+
+The ``persist`` method persists events asynchronously and the event handler is executed for successfully persisted
+events. Successfully persisted events are internally sent back to the processor as separate messages which trigger
+the event handler execution. An event handler may therefore close over processor state and mutate it. The sender
+of a persisted event is the sender of the corresponding command. This allows event handlers to reply to the sender
+of a command (not shown).
+
+The main responsibility of an event handler is changing processor state using event data and notifying others
+about successful state changes by publishing events.
+
+When persisting events with ``persist`` it is guaranteed that the processor will not receive new commands between
+the ``persist`` call and the execution(s) of the associated event handler. This also holds for multiple ``persist``
+calls in context of a single command.
+
+The example also demonstrates how to change the processor's default behavior, defined by ``receiveCommand``, to
+another behavior, defined by ``otherCommandHandler``, and back using ``context.become()`` and ``context.unbecome()``.
+See also the API docs of ``persist`` for further details.
+
+Batch writes
+============
+
+Applications may also send a batch of ``Persistent`` messages to a processor via a ``PersistentBatch`` message.
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#batch-write
+
+``Persistent`` messages contained in a ``PersistentBatch`` message are written to the journal atomically but are
+received  by the processor separately (as ``Persistent`` messages). They are also replayed separately. Batch writes
+can not only increase the throughput of a processor but may also be necessary for consistency reasons. For example,
+in :ref:`event-sourcing`, all events that are generated and persisted by a single command are batch-written to the
+journal. The recovery of an ``EventsourcedProcessor`` will therefore never be done partially i.e. with only a subset
+of events persisted by a single command.
+
 Storage plugins
 ===============
 
@@ -312,6 +395,22 @@ A snapshot store plugin can be activated with the following minimal configuratio
 The specified plugin ``class`` must have a no-arg constructor. The ``plugin-dispatcher`` is the dispatcher
 used for the plugin actor. If not specified, it defaults to ``akka.persistence.dispatchers.default-plugin-dispatcher``.
 
+Custom serialization
+====================
+
+Serialization of snapshots and payloads of ``Persistent`` messages is configurable with Akka's
+:ref:`serialization-scala` infrastructure. For example, if an application wants to serialize
+
+* payloads of type ``MyPayload`` with a custom ``MyPayloadSerializer`` and
+* snapshots of type ``MySnapshot`` with a custom ``MySnapshotSerializer``
+
+it must add
+
+.. includecode:: code/docs/persistence/PersistenceSerializerDocSpec.scala#custom-serializer-config
+
+to the application configuration. If not specified, a default serializer is used, which is the ``JavaSerializer``
+in this example.
+
 Miscellaneous
 =============
 
@@ -326,6 +425,5 @@ Upcoming features
 =================
 
 * Reliable channels
-* Custom serialization of messages and snapshots
 * Extended deletion of messages and snapshots
 * ...

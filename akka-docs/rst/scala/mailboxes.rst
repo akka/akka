@@ -197,7 +197,7 @@ Creating your own Mailbox type
 
 An example is worth a thousand quacks:
 
-.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#mailbox-implementation-example
+.. includecode:: ../scala/code/docs/dispatcher/MyUnboundedMailbox.scala#mailbox-implementation-example
 
 And then you just specify the FQCN of your MailboxType as the value of the "mailbox-type" in the dispatcher
 configuration, or the mailbox configuration.
@@ -211,6 +211,15 @@ configuration, or the mailbox configuration.
   the configuration which describes the dispatcher or mailbox setting using
   this mailbox type; the mailbox type will be instantiated once for each
   dispatcher or mailbox setting using it.
+
+You can also use the mailbox as a requirement on the dispatcher like this:
+
+.. includecode:: code/docs/dispatcher/DispatcherDocSpec.scala#custom-mailbox-config-java
+
+
+Or by defining the requirement on your actor class like this:
+
+.. includecode:: code/docs/dispatcher/DispatcherDocSpec.scala#require-mailbox-on-actor
 
 
 Special Semantics of ``system.actorOf``

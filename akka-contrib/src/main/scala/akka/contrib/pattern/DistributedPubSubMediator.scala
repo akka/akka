@@ -8,7 +8,6 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import java.net.URLEncoder
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorPath
@@ -25,6 +24,14 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.cluster.Member
 import akka.cluster.MemberStatus
+import akka.routing.RandomRoutingLogic
+import akka.routing.RoutingLogic
+import akka.routing.Routee
+import akka.routing.ActorRefRoutee
+import akka.routing.Router
+import akka.routing.RoundRobinRoutingLogic
+import akka.routing.ConsistentHashingRoutingLogic
+import akka.routing.BroadcastRoutingLogic
 
 object DistributedPubSubMediator {
 
@@ -33,18 +40,22 @@ object DistributedPubSubMediator {
    */
   def props(
     role: Option[String],
+    routingLogic: RoutingLogic = RandomRoutingLogic(),
     gossipInterval: FiniteDuration = 1.second,
-    removedTimeToLive: FiniteDuration = 2.minutes): Props =
-    Props(classOf[DistributedPubSubMediator], role, gossipInterval, removedTimeToLive)
+    removedTimeToLive: FiniteDuration = 2.minutes,
+    maxDeltaElements: Int = 3000): Props =
+    Props(classOf[DistributedPubSubMediator], role, routingLogic, gossipInterval, removedTimeToLive, maxDeltaElements)
 
   /**
    * Java API: Factory method for `DistributedPubSubMediator` [[akka.actor.Props]].
    */
   def props(
     role: String,
+    routingLogic: RoutingLogic,
     gossipInterval: FiniteDuration,
-    removedTimeToLive: FiniteDuration): Props =
-    props(Internal.roleOption(role), gossipInterval, removedTimeToLive)
+    removedTimeToLive: FiniteDuration,
+    maxDeltaElements: Int): Props =
+    props(Internal.roleOption(role), routingLogic, gossipInterval, removedTimeToLive, maxDeltaElements)
 
   /**
    * Java API: Factory method for `DistributedPubSubMediator` [[akka.actor.Props]]
@@ -58,9 +69,14 @@ object DistributedPubSubMediator {
   @SerialVersionUID(1L) case class Unsubscribe(topic: String, ref: ActorRef)
   @SerialVersionUID(1L) case class SubscribeAck(subscribe: Subscribe)
   @SerialVersionUID(1L) case class UnsubscribeAck(unsubscribe: Unsubscribe)
-  @SerialVersionUID(1L) case class Publish(topic: String, msg: Any)
-  @SerialVersionUID(1L) case class Send(path: String, msg: Any, localAffinity: Boolean)
-  @SerialVersionUID(1L) case class SendToAll(path: String, msg: Any, allButSelf: Boolean = false) {
+  @SerialVersionUID(1L) case class Publish(topic: String, msg: Any) extends DistributedPubSubMessage
+  @SerialVersionUID(1L) case class Send(path: String, msg: Any, localAffinity: Boolean) extends DistributedPubSubMessage {
+    /**
+     * Convenience constructor with `localAffinity` false
+     */
+    def this(path: String, msg: Any) = this(path, msg, localAffinity = false)
+  }
+  @SerialVersionUID(1L) case class SendToAll(path: String, msg: Any, allButSelf: Boolean = false) extends DistributedPubSubMessage {
     def this(path: String, msg: Any) = this(path, msg, allButSelf = false)
   }
 
@@ -80,12 +96,14 @@ object DistributedPubSubMediator {
       content: Map[String, ValueHolder])
 
     @SerialVersionUID(1L)
-    case class ValueHolder(version: Long, ref: Option[ActorRef])
+    case class ValueHolder(version: Long, ref: Option[ActorRef]) {
+      @transient lazy val routee: Option[Routee] = ref map ActorRefRoutee
+    }
 
     @SerialVersionUID(1L)
-    case class Status(versions: Map[Address, Long])
+    case class Status(versions: Map[Address, Long]) extends DistributedPubSubMessage
     @SerialVersionUID(1L)
-    case class Delta(buckets: immutable.Iterable[Bucket])
+    case class Delta(buckets: immutable.Iterable[Bucket]) extends DistributedPubSubMessage
 
     case object GossipTick
 
@@ -137,6 +155,11 @@ object DistributedPubSubMediator {
 }
 
 /**
+ * Marker trait for remote messages with special serializer.
+ */
+trait DistributedPubSubMessage extends Serializable
+
+/**
  * This actor manages a registry of actor references and replicates
  * the entries to peer actors among all cluster nodes or a group of nodes
  * tagged with a specific role.
@@ -156,13 +179,14 @@ object DistributedPubSubMediator {
  *
  * 1. [[DistributedPubSubMediator.Send]] -
  * The message will be delivered to one recipient with a matching path, if any such
- * exists in the registry. If several entries match the path the message will be delivered
- * to one random destination. The sender of the message can specify that local
- * affinity is preferred, i.e. the message is sent to an actor in the same local actor
- * system as the used mediator actor, if any such exists, otherwise random to any other
- * matching entry. A typical usage of this mode is private chat to one other user in
- * an instant messaging application. It can also be used for distributing tasks to workers,
- * like a random router.
+ * exists in the registry. If several entries match the path the message will be sent
+ * via the supplied `routingLogic` (default random) to one destination. The sender of the
+ * message can specify that local affinity is preferred, i.e. the message is sent to an actor
+ * in the same local actor system as the used mediator actor, if any such exists, otherwise
+ * route to any other matching entry. A typical usage of this mode is private chat to one
+ * other user in an instant messaging application. It can also be used for distributing
+ * tasks to registered workers, like a cluster aware router where the routees dynamically
+ * can register themselves.
  *
  * 2. [[DistributedPubSubMediator.SendToAll]] -
  * The message will be delivered to all recipients with a matching path. Actors with
@@ -194,8 +218,10 @@ object DistributedPubSubMediator {
  */
 class DistributedPubSubMediator(
   role: Option[String],
+  routingLogic: RoutingLogic,
   gossipInterval: FiniteDuration,
-  removedTimeToLive: FiniteDuration)
+  removedTimeToLive: FiniteDuration,
+  maxDeltaElements: Int)
   extends Actor with ActorLogging {
 
   import DistributedPubSubMediator._
@@ -250,14 +276,14 @@ class DistributedPubSubMediator(
         case Some(ValueHolder(_, Some(ref))) if localAffinity ⇒
           ref forward msg
         case _ ⇒
-          val refs = (for {
+          val routees = (for {
             (_, bucket) ← registry
             valueHolder ← bucket.content.get(path)
-            ref ← valueHolder.ref
-          } yield ref).toVector
+            routee ← valueHolder.routee
+          } yield routee).toVector
 
-          if (refs.nonEmpty)
-            refs(ThreadLocalRandom.current.nextInt(refs.size)) forward msg
+          if (routees.nonEmpty)
+            Router(routingLogic, routees).route(msg, sender)
       }
 
     case SendToAll(path, msg, skipSenderNode) ⇒
@@ -386,13 +412,22 @@ class DistributedPubSubMediator(
   def collectDelta(otherVersions: Map[Address, Long]): immutable.Iterable[Bucket] = {
     // missing entries are represented by version 0
     val filledOtherVersions = myVersions.map { case (k, _) ⇒ k -> 0L } ++ otherVersions
+    var count = 0
     filledOtherVersions.collect {
-      case (owner, v) if registry(owner).version > v ⇒
+      case (owner, v) if registry(owner).version > v && count < maxDeltaElements ⇒
         val bucket = registry(owner)
         val deltaContent = bucket.content.filter {
           case (_, value) ⇒ value.version > v
         }
-        bucket.copy(content = deltaContent)
+        count += deltaContent.size
+        if (count <= maxDeltaElements)
+          bucket.copy(content = deltaContent)
+        else {
+          // exceeded the maxDeltaElements, pick the elements with lowest versions
+          val sortedContent = deltaContent.toVector.sortBy(_._2.version)
+          val chunk = sortedContent.take(maxDeltaElements - (count - sortedContent.size))
+          bucket.copy(content = chunk.toMap, version = chunk.last._2.version)
+        }
     }
   }
 
@@ -459,10 +494,18 @@ class DistributedPubSubExtension(system: ExtendedActorSystem) extends Extension 
     if (isTerminated)
       system.deadLetters
     else {
+      val routingLogic = config.getString("routing-logic") match {
+        case "random"             ⇒ RandomRoutingLogic()
+        case "round-robin"        ⇒ RoundRobinRoutingLogic()
+        case "consistent-hashing" ⇒ ConsistentHashingRoutingLogic(system)
+        case "broadcast"          ⇒ BroadcastRoutingLogic()
+        case other                ⇒ throw new IllegalArgumentException(s"Unknown 'routing-logic': [$other]")
+      }
       val gossipInterval = Duration(config.getMilliseconds("gossip-interval"), MILLISECONDS)
       val removedTimeToLive = Duration(config.getMilliseconds("removed-time-to-live"), MILLISECONDS)
+      val maxDeltaElements = config.getInt("max-delta-elements")
       val name = config.getString("name")
-      system.actorOf(DistributedPubSubMediator.props(role, gossipInterval, removedTimeToLive),
+      system.actorOf(DistributedPubSubMediator.props(role, routingLogic, gossipInterval, removedTimeToLive, maxDeltaElements),
         name)
     }
   }

@@ -4,6 +4,8 @@
 
 package akka.persistence
 
+import scala.collection.immutable
+
 import akka.actor._
 
 /**
@@ -17,6 +19,14 @@ private[persistence] object JournalProtocol {
    * @param persistent persistent message.
    */
   case class Delete(persistent: Persistent)
+
+  /**
+   * Instructs a journal to persist a sequence of messages.
+   *
+   * @param persistentBatch batch of messages to be persisted.
+   * @param processor requesting processor.
+   */
+  case class WriteBatch(persistentBatch: immutable.Seq[PersistentImpl], processor: ActorRef)
 
   /**
    * Instructs a journal to persist a message.

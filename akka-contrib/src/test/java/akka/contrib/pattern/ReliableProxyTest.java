@@ -4,56 +4,90 @@
 
 package akka.contrib.pattern;
 
+import java.util.concurrent.TimeUnit;
+
 import akka.testkit.AkkaJUnitActorSystemResource;
+
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
-import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.FSM;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
-import akka.actor.UntypedActorFactory;
 import akka.testkit.TestProbe;
 
 //#import
 import akka.contrib.pattern.ReliableProxy;
+
+
 //#import
 
 public class ReliableProxyTest {
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource =
-    new AkkaJUnitActorSystemResource("ReliableProxyTest");
+  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("ReliableProxyTest");
 
   private final ActorSystem system = actorSystemResource.getSystem();
+
+  static//#demo-proxy
+  public class ProxyParent extends UntypedActor {
+    private final ActorRef proxy;
+
+    public ProxyParent(ActorRef target) {
+      proxy = getContext().actorOf(
+          Props.create(ReliableProxy.class, target,
+              Duration.create(100, TimeUnit.MILLISECONDS)));
+    }
+
+    public void onReceive(Object msg) {
+      if ("hello".equals(msg)) {
+        proxy.tell("world!", getSelf());
+      }
+    }
+  }
+
+  //#demo-proxy
+
+  static//#demo-transition
+  public class ProxyTransitionParent extends UntypedActor {
+    private final ActorRef proxy;
+    private ActorRef client = null;
+
+    public ProxyTransitionParent(ActorRef target) {
+      proxy = getContext().actorOf(
+          Props.create(ReliableProxy.class, target,
+              Duration.create(100, TimeUnit.MILLISECONDS)));
+      proxy.tell(new FSM.SubscribeTransitionCallBack(getSelf()), getSelf());
+    }
+
+    public void onReceive(Object msg) {
+      if ("hello".equals(msg)) {
+        proxy.tell("world!", getSelf());
+        client = getSender();
+      } else if (msg instanceof FSM.CurrentState<?>) {
+        // get initial state
+      } else if (msg instanceof FSM.Transition<?>) {
+        @SuppressWarnings("unchecked")
+        final FSM.Transition<ReliableProxy.State> transition =
+          (FSM.Transition<ReliableProxy.State>) msg;
+        assert transition.fsmRef().equals(proxy);
+        if (transition.to().equals(ReliableProxy.idle())) {
+          client.tell("done", getSelf());
+        }
+      }
+    }
+  }
+
+  //#demo-transition
 
   @Test
   public void demonstrateUsage() {
     final TestProbe probe = TestProbe.apply(system);
     final ActorRef target = probe.ref();
-    final ActorRef parent = system.actorOf(new Props(new UntypedActorFactory() {
-      private static final long serialVersionUID = 1L;
-
-      public Actor create() {
-        return new UntypedActor() {
-
-          //#demo-proxy
-          final ActorRef proxy = getContext().actorOf(
-              Props.create(ReliableProxy.class, target, Duration.create(100, "millis")));
-
-          public void onReceive(Object msg) {
-            if ("hello".equals(msg)) {
-              proxy.tell("world!", getSelf());
-            }
-          }
-          //#demo-proxy
-        };
-      }
-    }));
+    final ActorRef parent = system.actorOf(Props.create(ProxyParent.class, target));
     parent.tell("hello", null);
     probe.expectMsg("world!");
   }
@@ -61,40 +95,7 @@ public class ReliableProxyTest {
   @Test
   public void demonstrateTransitions() {
     final ActorRef target = system.deadLetters();
-    final ActorRef parent = system.actorOf(new Props(new UntypedActorFactory() {
-      private static final long serialVersionUID = 1L;
-
-      public Actor create() {
-        return new UntypedActor() {
-
-          //#demo-transition
-          final ActorRef proxy = getContext().actorOf(Props.create(ReliableProxy.class, target,
-            Duration.create(100, "millis")));
-          ActorRef client = null;
-          {
-            proxy.tell(new FSM.SubscribeTransitionCallBack(getSelf()), getSelf());
-          }
-
-          public void onReceive(Object msg) {
-            if ("hello".equals(msg)) {
-              proxy.tell("world!", getSelf());
-              client = getSender();
-            } else if (msg instanceof FSM.CurrentState<?>) {
-              // get initial state
-            } else if (msg instanceof FSM.Transition<?>) {
-              @SuppressWarnings("unchecked")
-              final FSM.Transition<ReliableProxy.State> transition =
-                  (FSM.Transition<ReliableProxy.State>) msg;
-              assert transition.fsmRef().equals(proxy);
-              if (transition.to().equals(ReliableProxy.idle())) {
-                client.tell("done", getSelf());
-              }
-            }
-          }
-          //#demo-transition
-        };
-      }
-    }));
+    final ActorRef parent = system.actorOf(Props.create(ProxyTransitionParent.class, target));
     final TestProbe probe = TestProbe.apply(system);
     parent.tell("hello", probe.ref());
     probe.expectMsg("done");

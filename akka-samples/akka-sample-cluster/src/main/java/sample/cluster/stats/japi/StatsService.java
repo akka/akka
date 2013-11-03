@@ -1,13 +1,19 @@
 package sample.cluster.stats.japi;
 
+import java.util.Collections;
+
 import sample.cluster.stats.japi.StatsMessages.StatsJob;
+
 //#imports
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
-import akka.cluster.routing.ClusterRouterConfig;
-import akka.cluster.routing.ClusterRouterSettings;
-import akka.routing.ConsistentHashingRouter;
+import akka.cluster.routing.ClusterRouterGroup;
+import akka.cluster.routing.ClusterRouterPool;
+import akka.cluster.routing.ClusterRouterGroupSettings;
+import akka.cluster.routing.ClusterRouterPoolSettings;
+import akka.routing.ConsistentHashingGroup;
+import akka.routing.ConsistentHashingPool;
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope;
 import akka.routing.FromConfig;
 //#imports
@@ -19,7 +25,7 @@ public class StatsService extends UntypedActor {
   // have a router with only lookup of routees you can use Props.empty()
   // instead of Props.create(StatsWorker.class).
   ActorRef workerRouter = getContext().actorOf(
-      Props.create(StatsWorker.class).withRouter(FromConfig.getInstance()),
+      FromConfig.getInstance().props(Props.create(StatsWorker.class)),
       "workerRouter");
 
   @Override
@@ -55,13 +61,13 @@ public class StatsService extends UntypedActor {
 abstract class StatsService2 extends UntypedActor {
   //#router-lookup-in-code
   int totalInstances = 100;
-  String routeesPath = "/user/statsWorker";
+  Iterable<String> routeesPaths = Collections.singletonList("/user/statsWorker");
   boolean allowLocalRoutees = true;
   String useRole = "compute";
   ActorRef workerRouter = getContext().actorOf(
-      Props.empty().withRouter(new ClusterRouterConfig(
-          new ConsistentHashingRouter(0), new ClusterRouterSettings(
-              totalInstances, routeesPath, allowLocalRoutees, useRole))),
+      new ClusterRouterGroup(
+          new ConsistentHashingGroup(routeesPaths), new ClusterRouterGroupSettings(
+              totalInstances, routeesPaths, allowLocalRoutees, useRole)).props(),
       "workerRouter2");
   //#router-lookup-in-code
 }
@@ -74,9 +80,10 @@ abstract class StatsService3 extends UntypedActor {
   boolean allowLocalRoutees = false;
   String useRole = "compute";
   ActorRef workerRouter = getContext().actorOf(
-      Props.create(StatsWorker.class).withRouter(new ClusterRouterConfig(
-          new ConsistentHashingRouter(0), new ClusterRouterSettings(
-              totalInstances, maxInstancesPerNode, allowLocalRoutees, useRole))),
+      new ClusterRouterPool(
+          new ConsistentHashingPool(0), new ClusterRouterPoolSettings(
+              totalInstances, maxInstancesPerNode, allowLocalRoutees, useRole)).
+              props(Props.create(StatsWorker.class)),
       "workerRouter3");
   //#router-deploy-in-code
 }

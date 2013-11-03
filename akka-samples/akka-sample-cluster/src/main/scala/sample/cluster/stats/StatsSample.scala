@@ -37,7 +37,7 @@ class StatsService extends Actor {
   // This router is used both with lookup and deploy of routees. If you
   // have a router with only lookup of routees you can use Props.empty
   // instead of Props[StatsWorker.class].
-  val workerRouter = context.actorOf(Props[StatsWorker].withRouter(FromConfig),
+  val workerRouter = context.actorOf(FromConfig.props(Props[StatsWorker]),
     name = "workerRouter")
 
   def receive = {
@@ -224,14 +224,14 @@ class StatsSampleClient(servicePath: String) extends Actor {
 // not used, only for documentation
 abstract class StatsService2 extends Actor {
   //#router-lookup-in-code
-  import akka.cluster.routing.ClusterRouterConfig
-  import akka.cluster.routing.ClusterRouterSettings
-  import akka.routing.ConsistentHashingRouter
+  import akka.cluster.routing.ClusterRouterGroup
+  import akka.cluster.routing.ClusterRouterGroupSettings
+  import akka.routing.ConsistentHashingGroup
 
-  val workerRouter = context.actorOf(Props.empty.withRouter(
-    ClusterRouterConfig(ConsistentHashingRouter(), ClusterRouterSettings(
-      totalInstances = 100, routeesPath = "/user/statsWorker",
-      allowLocalRoutees = true, useRole = Some("compute")))),
+  val workerRouter = context.actorOf(
+    ClusterRouterGroup(ConsistentHashingGroup(Nil), ClusterRouterGroupSettings(
+      totalInstances = 100, routeesPaths = List("/user/statsWorker"),
+      allowLocalRoutees = true, useRole = Some("compute"))).props(),
     name = "workerRouter2")
   //#router-lookup-in-code
 }
@@ -239,14 +239,14 @@ abstract class StatsService2 extends Actor {
 // not used, only for documentation
 abstract class StatsService3 extends Actor {
   //#router-deploy-in-code
-  import akka.cluster.routing.ClusterRouterConfig
-  import akka.cluster.routing.ClusterRouterSettings
-  import akka.routing.ConsistentHashingRouter
+  import akka.cluster.routing.ClusterRouterPool
+  import akka.cluster.routing.ClusterRouterPoolSettings
+  import akka.routing.ConsistentHashingPool
 
-  val workerRouter = context.actorOf(Props[StatsWorker].withRouter(
-    ClusterRouterConfig(ConsistentHashingRouter(), ClusterRouterSettings(
+  val workerRouter = context.actorOf(
+    ClusterRouterPool(ConsistentHashingPool(0), ClusterRouterPoolSettings(
       totalInstances = 100, maxInstancesPerNode = 3,
-      allowLocalRoutees = false, useRole = None))),
+      allowLocalRoutees = false, useRole = None)).props(Props[StatsWorker]),
     name = "workerRouter3")
   //#router-deploy-in-code
 }

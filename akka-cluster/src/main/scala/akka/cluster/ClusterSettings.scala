@@ -50,6 +50,9 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   }
   val PeriodicTasksInitialDelay: FiniteDuration = Duration(cc.getMilliseconds("periodic-tasks-initial-delay"), MILLISECONDS)
   val GossipInterval: FiniteDuration = Duration(cc.getMilliseconds("gossip-interval"), MILLISECONDS)
+  val GossipTimeToLive: FiniteDuration = {
+    Duration(cc.getMilliseconds("gossip-time-to-live"), MILLISECONDS)
+  } requiring (_ > Duration.Zero, "gossip-time-to-live must be > 0")
   val LeaderActionsInterval: FiniteDuration = Duration(cc.getMilliseconds("leader-actions-interval"), MILLISECONDS)
   val UnreachableNodesReaperInterval: FiniteDuration = Duration(cc.getMilliseconds("unreachable-nodes-reaper-interval"), MILLISECONDS)
   val PublishStatsInterval: Duration = {
@@ -86,6 +89,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     case id ⇒ id
   }
   val GossipDifferentViewProbability: Double = cc.getDouble("gossip-different-view-probability")
+  val ReduceGossipDifferentViewProbability: Int = cc.getInt("reduce-gossip-different-view-probability")
   val SchedulerTickDuration: FiniteDuration = Duration(cc.getMilliseconds("scheduler.tick-duration"), MILLISECONDS)
   val SchedulerTicksPerWheel: Int = cc.getInt("scheduler.ticks-per-wheel")
   val MetricsEnabled: Boolean = cc.getBoolean("metrics.enabled")

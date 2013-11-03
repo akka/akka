@@ -10,14 +10,24 @@ import akka.testkit.AkkaSpec
 import java.math.BigInteger
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ClusterMessageSerializerSpec extends AkkaSpec {
+class ClusterMessageSerializerSpec extends AkkaSpec(
+  "akka.actor.provider = akka.cluster.ClusterActorRefProvider") {
 
   val serializer = new ClusterMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
 
   def checkSerialization(obj: AnyRef): Unit = {
     val blob = serializer.toBinary(obj)
     val ref = serializer.fromBinary(blob, obj.getClass)
-    ref must be(obj)
+    obj match {
+      case env: GossipEnvelope ⇒
+        val env2 = obj.asInstanceOf[GossipEnvelope]
+        env2.from must be(env.from)
+        env2.to must be(env.to)
+        env2.gossip must be(env.gossip)
+      case _ ⇒
+        ref must be(obj)
+    }
+
   }
 
   import MemberStatus._

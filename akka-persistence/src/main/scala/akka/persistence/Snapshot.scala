@@ -16,7 +16,7 @@ case class SnapshotMetadata(processorId: String, sequenceNr: Long, timestamp: Lo
 //#snapshot-metadata
 
 /**
- * Notification of a snapshot saving success.
+ * Sent to a [[Processor]] after successful saving of a snapshot.
  *
  * @param metadata snapshot metadata.
  */
@@ -24,7 +24,7 @@ case class SnapshotMetadata(processorId: String, sequenceNr: Long, timestamp: Lo
 case class SaveSnapshotSuccess(metadata: SnapshotMetadata)
 
 /**
- * Notification of a snapshot saving success failure.
+ * Sent to a [[Processor]] after failed saving of a snapshot.
  *
  * @param metadata snapshot metadata.
  * @param cause failure cause.

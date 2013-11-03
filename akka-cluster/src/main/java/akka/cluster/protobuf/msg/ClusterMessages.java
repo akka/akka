@@ -1717,19 +1717,15 @@ public final class ClusterMessages {
      */
     akka.cluster.protobuf.msg.ClusterMessages.UniqueAddressOrBuilder getToOrBuilder();
 
-    // required .Gossip gossip = 3;
+    // required bytes serializedGossip = 3;
     /**
-     * <code>required .Gossip gossip = 3;</code>
+     * <code>required bytes serializedGossip = 3;</code>
      */
-    boolean hasGossip();
+    boolean hasSerializedGossip();
     /**
-     * <code>required .Gossip gossip = 3;</code>
+     * <code>required bytes serializedGossip = 3;</code>
      */
-    akka.cluster.protobuf.msg.ClusterMessages.Gossip getGossip();
-    /**
-     * <code>required .Gossip gossip = 3;</code>
-     */
-    akka.cluster.protobuf.msg.ClusterMessages.GossipOrBuilder getGossipOrBuilder();
+    com.google.protobuf.ByteString getSerializedGossip();
   }
   /**
    * Protobuf type {@code GossipEnvelope}
@@ -1814,16 +1810,8 @@ public final class ClusterMessages {
               break;
             }
             case 26: {
-              akka.cluster.protobuf.msg.ClusterMessages.Gossip.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000004) == 0x00000004)) {
-                subBuilder = gossip_.toBuilder();
-              }
-              gossip_ = input.readMessage(akka.cluster.protobuf.msg.ClusterMessages.Gossip.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(gossip_);
-                gossip_ = subBuilder.buildPartial();
-              }
               bitField0_ |= 0x00000004;
+              serializedGossip_ = input.readBytes();
               break;
             }
           }
@@ -1910,32 +1898,26 @@ public final class ClusterMessages {
       return to_;
     }
 
-    // required .Gossip gossip = 3;
-    public static final int GOSSIP_FIELD_NUMBER = 3;
-    private akka.cluster.protobuf.msg.ClusterMessages.Gossip gossip_;
+    // required bytes serializedGossip = 3;
+    public static final int SERIALIZEDGOSSIP_FIELD_NUMBER = 3;
+    private com.google.protobuf.ByteString serializedGossip_;
     /**
-     * <code>required .Gossip gossip = 3;</code>
+     * <code>required bytes serializedGossip = 3;</code>
      */
-    public boolean hasGossip() {
+    public boolean hasSerializedGossip() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
     /**
-     * <code>required .Gossip gossip = 3;</code>
+     * <code>required bytes serializedGossip = 3;</code>
      */
-    public akka.cluster.protobuf.msg.ClusterMessages.Gossip getGossip() {
-      return gossip_;
-    }
-    /**
-     * <code>required .Gossip gossip = 3;</code>
-     */
-    public akka.cluster.protobuf.msg.ClusterMessages.GossipOrBuilder getGossipOrBuilder() {
-      return gossip_;
+    public com.google.protobuf.ByteString getSerializedGossip() {
+      return serializedGossip_;
     }
 
     private void initFields() {
       from_ = akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance();
       to_ = akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance();
-      gossip_ = akka.cluster.protobuf.msg.ClusterMessages.Gossip.getDefaultInstance();
+      serializedGossip_ = com.google.protobuf.ByteString.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -1950,7 +1932,7 @@ public final class ClusterMessages {
         memoizedIsInitialized = 0;
         return false;
       }
-      if (!hasGossip()) {
+      if (!hasSerializedGossip()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -1959,10 +1941,6 @@ public final class ClusterMessages {
         return false;
       }
       if (!getTo().isInitialized()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!getGossip().isInitialized()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -1980,7 +1958,7 @@ public final class ClusterMessages {
         output.writeMessage(2, to_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeMessage(3, gossip_);
+        output.writeBytes(3, serializedGossip_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -2001,7 +1979,7 @@ public final class ClusterMessages {
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(3, gossip_);
+          .computeBytesSize(3, serializedGossip_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -2118,7 +2096,6 @@ public final class ClusterMessages {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getFromFieldBuilder();
           getToFieldBuilder();
-          getGossipFieldBuilder();
         }
       }
       private static Builder create() {
@@ -2139,11 +2116,7 @@ public final class ClusterMessages {
           toBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000002);
-        if (gossipBuilder_ == null) {
-          gossip_ = akka.cluster.protobuf.msg.ClusterMessages.Gossip.getDefaultInstance();
-        } else {
-          gossipBuilder_.clear();
-        }
+        serializedGossip_ = com.google.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
@@ -2192,11 +2165,7 @@ public final class ClusterMessages {
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
         }
-        if (gossipBuilder_ == null) {
-          result.gossip_ = gossip_;
-        } else {
-          result.gossip_ = gossipBuilder_.build();
-        }
+        result.serializedGossip_ = serializedGossip_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -2219,8 +2188,8 @@ public final class ClusterMessages {
         if (other.hasTo()) {
           mergeTo(other.getTo());
         }
-        if (other.hasGossip()) {
-          mergeGossip(other.getGossip());
+        if (other.hasSerializedGossip()) {
+          setSerializedGossip(other.getSerializedGossip());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -2235,7 +2204,7 @@ public final class ClusterMessages {
           
           return false;
         }
-        if (!hasGossip()) {
+        if (!hasSerializedGossip()) {
           
           return false;
         }
@@ -2244,10 +2213,6 @@ public final class ClusterMessages {
           return false;
         }
         if (!getTo().isInitialized()) {
-          
-          return false;
-        }
-        if (!getGossip().isInitialized()) {
           
           return false;
         }
@@ -2507,121 +2472,40 @@ public final class ClusterMessages {
         return toBuilder_;
       }
 
-      // required .Gossip gossip = 3;
-      private akka.cluster.protobuf.msg.ClusterMessages.Gossip gossip_ = akka.cluster.protobuf.msg.ClusterMessages.Gossip.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
-          akka.cluster.protobuf.msg.ClusterMessages.Gossip, akka.cluster.protobuf.msg.ClusterMessages.Gossip.Builder, akka.cluster.protobuf.msg.ClusterMessages.GossipOrBuilder> gossipBuilder_;
+      // required bytes serializedGossip = 3;
+      private com.google.protobuf.ByteString serializedGossip_ = com.google.protobuf.ByteString.EMPTY;
       /**
-       * <code>required .Gossip gossip = 3;</code>
+       * <code>required bytes serializedGossip = 3;</code>
        */
-      public boolean hasGossip() {
+      public boolean hasSerializedGossip() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       /**
-       * <code>required .Gossip gossip = 3;</code>
+       * <code>required bytes serializedGossip = 3;</code>
        */
-      public akka.cluster.protobuf.msg.ClusterMessages.Gossip getGossip() {
-        if (gossipBuilder_ == null) {
-          return gossip_;
-        } else {
-          return gossipBuilder_.getMessage();
-        }
+      public com.google.protobuf.ByteString getSerializedGossip() {
+        return serializedGossip_;
       }
       /**
-       * <code>required .Gossip gossip = 3;</code>
+       * <code>required bytes serializedGossip = 3;</code>
        */
-      public Builder setGossip(akka.cluster.protobuf.msg.ClusterMessages.Gossip value) {
-        if (gossipBuilder_ == null) {
-          if (value == null) {
-            throw new NullPointerException();
-          }
-          gossip_ = value;
-          onChanged();
-        } else {
-          gossipBuilder_.setMessage(value);
-        }
-        bitField0_ |= 0x00000004;
-        return this;
-      }
-      /**
-       * <code>required .Gossip gossip = 3;</code>
-       */
-      public Builder setGossip(
-          akka.cluster.protobuf.msg.ClusterMessages.Gossip.Builder builderForValue) {
-        if (gossipBuilder_ == null) {
-          gossip_ = builderForValue.build();
-          onChanged();
-        } else {
-          gossipBuilder_.setMessage(builderForValue.build());
-        }
-        bitField0_ |= 0x00000004;
-        return this;
-      }
-      /**
-       * <code>required .Gossip gossip = 3;</code>
-       */
-      public Builder mergeGossip(akka.cluster.protobuf.msg.ClusterMessages.Gossip value) {
-        if (gossipBuilder_ == null) {
-          if (((bitField0_ & 0x00000004) == 0x00000004) &&
-              gossip_ != akka.cluster.protobuf.msg.ClusterMessages.Gossip.getDefaultInstance()) {
-            gossip_ =
-              akka.cluster.protobuf.msg.ClusterMessages.Gossip.newBuilder(gossip_).mergeFrom(value).buildPartial();
-          } else {
-            gossip_ = value;
-          }
-          onChanged();
-        } else {
-          gossipBuilder_.mergeFrom(value);
-        }
-        bitField0_ |= 0x00000004;
-        return this;
-      }
-      /**
-       * <code>required .Gossip gossip = 3;</code>
-       */
-      public Builder clearGossip() {
-        if (gossipBuilder_ == null) {
-          gossip_ = akka.cluster.protobuf.msg.ClusterMessages.Gossip.getDefaultInstance();
-          onChanged();
-        } else {
-          gossipBuilder_.clear();
-        }
-        bitField0_ = (bitField0_ & ~0x00000004);
-        return this;
-      }
-      /**
-       * <code>required .Gossip gossip = 3;</code>
-       */
-      public akka.cluster.protobuf.msg.ClusterMessages.Gossip.Builder getGossipBuilder() {
-        bitField0_ |= 0x00000004;
+      public Builder setSerializedGossip(com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        serializedGossip_ = value;
         onChanged();
-        return getGossipFieldBuilder().getBuilder();
+        return this;
       }
       /**
-       * <code>required .Gossip gossip = 3;</code>
+       * <code>required bytes serializedGossip = 3;</code>
        */
-      public akka.cluster.protobuf.msg.ClusterMessages.GossipOrBuilder getGossipOrBuilder() {
-        if (gossipBuilder_ != null) {
-          return gossipBuilder_.getMessageOrBuilder();
-        } else {
-          return gossip_;
-        }
-      }
-      /**
-       * <code>required .Gossip gossip = 3;</code>
-       */
-      private com.google.protobuf.SingleFieldBuilder<
-          akka.cluster.protobuf.msg.ClusterMessages.Gossip, akka.cluster.protobuf.msg.ClusterMessages.Gossip.Builder, akka.cluster.protobuf.msg.ClusterMessages.GossipOrBuilder> 
-          getGossipFieldBuilder() {
-        if (gossipBuilder_ == null) {
-          gossipBuilder_ = new com.google.protobuf.SingleFieldBuilder<
-              akka.cluster.protobuf.msg.ClusterMessages.Gossip, akka.cluster.protobuf.msg.ClusterMessages.Gossip.Builder, akka.cluster.protobuf.msg.ClusterMessages.GossipOrBuilder>(
-                  gossip_,
-                  getParentForChildren(),
-                  isClean());
-          gossip_ = null;
-        }
-        return gossipBuilder_;
+      public Builder clearSerializedGossip() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        serializedGossip_ = getDefaultInstance().getSerializedGossip();
+        onChanged();
+        return this;
       }
 
       // @@protoc_insertion_point(builder_scope:GossipEnvelope)
@@ -16856,53 +16740,53 @@ public final class ClusterMessages {
       "\n\025ClusterMessages.proto\"3\n\004Join\022\034\n\004node\030" +
       "\001 \002(\0132\016.UniqueAddress\022\r\n\005roles\030\002 \003(\t\"@\n\007" +
       "Welcome\022\034\n\004from\030\001 \002(\0132\016.UniqueAddress\022\027\n" +
-      "\006gossip\030\002 \002(\0132\007.Gossip\"c\n\016GossipEnvelope" +
+      "\006gossip\030\002 \002(\0132\007.Gossip\"d\n\016GossipEnvelope" +
       "\022\034\n\004from\030\001 \002(\0132\016.UniqueAddress\022\032\n\002to\030\002 \002" +
-      "(\0132\016.UniqueAddress\022\027\n\006gossip\030\003 \002(\0132\007.Gos" +
-      "sip\"^\n\014GossipStatus\022\034\n\004from\030\001 \002(\0132\016.Uniq" +
-      "ueAddress\022\021\n\tallHashes\030\002 \003(\t\022\035\n\007version\030" +
-      "\003 \002(\0132\014.VectorClock\"\257\001\n\006Gossip\022$\n\014allAdd" +
-      "resses\030\001 \003(\0132\016.UniqueAddress\022\020\n\010allRoles",
-      "\030\002 \003(\t\022\021\n\tallHashes\030\003 \003(\t\022\030\n\007members\030\004 \003" +
-      "(\0132\007.Member\022!\n\010overview\030\005 \002(\0132\017.GossipOv" +
-      "erview\022\035\n\007version\030\006 \002(\0132\014.VectorClock\"S\n" +
-      "\016GossipOverview\022\014\n\004seen\030\001 \003(\005\0223\n\024observe" +
-      "rReachability\030\002 \003(\0132\025.ObserverReachabili" +
-      "ty\"p\n\024ObserverReachability\022\024\n\014addressInd" +
-      "ex\030\001 \002(\005\022\017\n\007version\030\004 \002(\003\0221\n\023subjectReac" +
-      "hability\030\002 \003(\0132\024.SubjectReachability\"a\n\023" +
-      "SubjectReachability\022\024\n\014addressIndex\030\001 \002(" +
-      "\005\022#\n\006status\030\003 \002(\0162\023.ReachabilityStatus\022\017",
-      "\n\007version\030\004 \002(\003\"i\n\006Member\022\024\n\014addressInde" +
-      "x\030\001 \002(\005\022\020\n\010upNumber\030\002 \002(\005\022\035\n\006status\030\003 \002(" +
-      "\0162\r.MemberStatus\022\030\n\014rolesIndexes\030\004 \003(\005B\002" +
-      "\020\001\"y\n\013VectorClock\022\021\n\ttimestamp\030\001 \001(\003\022&\n\010" +
-      "versions\030\002 \003(\0132\024.VectorClock.Version\032/\n\007" +
-      "Version\022\021\n\thashIndex\030\001 \002(\005\022\021\n\ttimestamp\030" +
-      "\002 \002(\003\"^\n\025MetricsGossipEnvelope\022\026\n\004from\030\001" +
-      " \002(\0132\010.Address\022\036\n\006gossip\030\002 \002(\0132\016.Metrics" +
-      "Gossip\022\r\n\005reply\030\003 \002(\010\"j\n\rMetricsGossip\022\036" +
-      "\n\014allAddresses\030\001 \003(\0132\010.Address\022\026\n\016allMet",
-      "ricNames\030\002 \003(\t\022!\n\013nodeMetrics\030\003 \003(\0132\014.No" +
-      "deMetrics\"\230\003\n\013NodeMetrics\022\024\n\014addressInde" +
-      "x\030\001 \002(\005\022\021\n\ttimestamp\030\002 \002(\003\022$\n\007metrics\030\003 " +
-      "\003(\0132\023.NodeMetrics.Metric\032e\n\006Number\022%\n\004ty" +
-      "pe\030\001 \002(\0162\027.NodeMetrics.NumberType\022\017\n\007val" +
-      "ue32\030\002 \001(\r\022\017\n\007value64\030\003 \001(\004\022\022\n\nserialize" +
-      "d\030\004 \001(\014\032$\n\004EWMA\022\r\n\005value\030\001 \002(\001\022\r\n\005alpha\030" +
-      "\002 \002(\001\032a\n\006Metric\022\021\n\tnameIndex\030\001 \002(\005\022#\n\006nu" +
-      "mber\030\002 \002(\0132\023.NodeMetrics.Number\022\037\n\004ewma\030" +
-      "\003 \001(\0132\021.NodeMetrics.EWMA\"J\n\nNumberType\022\016",
-      "\n\nSerialized\020\000\022\n\n\006Double\020\001\022\t\n\005Float\020\002\022\013\n" +
-      "\007Integer\020\003\022\010\n\004Long\020\004\"\007\n\005Empty\"K\n\007Address" +
-      "\022\016\n\006system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004po" +
-      "rt\030\003 \002(\r\022\020\n\010protocol\030\004 \001(\t\"7\n\rUniqueAddr" +
-      "ess\022\031\n\007address\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002 " +
-      "\002(\r*D\n\022ReachabilityStatus\022\r\n\tReachable\020\000" +
-      "\022\017\n\013Unreachable\020\001\022\016\n\nTerminated\020\002*T\n\014Mem" +
-      "berStatus\022\013\n\007Joining\020\000\022\006\n\002Up\020\001\022\013\n\007Leavin" +
-      "g\020\002\022\013\n\007Exiting\020\003\022\010\n\004Down\020\004\022\013\n\007Removed\020\005B" +
-      "\035\n\031akka.cluster.protobuf.msgH\001"
+      "(\0132\016.UniqueAddress\022\030\n\020serializedGossip\030\003" +
+      " \002(\014\"^\n\014GossipStatus\022\034\n\004from\030\001 \002(\0132\016.Uni" +
+      "queAddress\022\021\n\tallHashes\030\002 \003(\t\022\035\n\007version" +
+      "\030\003 \002(\0132\014.VectorClock\"\257\001\n\006Gossip\022$\n\014allAd" +
+      "dresses\030\001 \003(\0132\016.UniqueAddress\022\020\n\010allRole",
+      "s\030\002 \003(\t\022\021\n\tallHashes\030\003 \003(\t\022\030\n\007members\030\004 " +
+      "\003(\0132\007.Member\022!\n\010overview\030\005 \002(\0132\017.GossipO" +
+      "verview\022\035\n\007version\030\006 \002(\0132\014.VectorClock\"S" +
+      "\n\016GossipOverview\022\014\n\004seen\030\001 \003(\005\0223\n\024observ" +
+      "erReachability\030\002 \003(\0132\025.ObserverReachabil" +
+      "ity\"p\n\024ObserverReachability\022\024\n\014addressIn" +
+      "dex\030\001 \002(\005\022\017\n\007version\030\004 \002(\003\0221\n\023subjectRea" +
+      "chability\030\002 \003(\0132\024.SubjectReachability\"a\n" +
+      "\023SubjectReachability\022\024\n\014addressIndex\030\001 \002" +
+      "(\005\022#\n\006status\030\003 \002(\0162\023.ReachabilityStatus\022",
+      "\017\n\007version\030\004 \002(\003\"i\n\006Member\022\024\n\014addressInd" +
+      "ex\030\001 \002(\005\022\020\n\010upNumber\030\002 \002(\005\022\035\n\006status\030\003 \002" +
+      "(\0162\r.MemberStatus\022\030\n\014rolesIndexes\030\004 \003(\005B" +
+      "\002\020\001\"y\n\013VectorClock\022\021\n\ttimestamp\030\001 \001(\003\022&\n" +
+      "\010versions\030\002 \003(\0132\024.VectorClock.Version\032/\n" +
+      "\007Version\022\021\n\thashIndex\030\001 \002(\005\022\021\n\ttimestamp" +
+      "\030\002 \002(\003\"^\n\025MetricsGossipEnvelope\022\026\n\004from\030" +
+      "\001 \002(\0132\010.Address\022\036\n\006gossip\030\002 \002(\0132\016.Metric" +
+      "sGossip\022\r\n\005reply\030\003 \002(\010\"j\n\rMetricsGossip\022" +
+      "\036\n\014allAddresses\030\001 \003(\0132\010.Address\022\026\n\016allMe",
+      "tricNames\030\002 \003(\t\022!\n\013nodeMetrics\030\003 \003(\0132\014.N" +
+      "odeMetrics\"\230\003\n\013NodeMetrics\022\024\n\014addressInd" +
+      "ex\030\001 \002(\005\022\021\n\ttimestamp\030\002 \002(\003\022$\n\007metrics\030\003" +
+      " \003(\0132\023.NodeMetrics.Metric\032e\n\006Number\022%\n\004t" +
+      "ype\030\001 \002(\0162\027.NodeMetrics.NumberType\022\017\n\007va" +
+      "lue32\030\002 \001(\r\022\017\n\007value64\030\003 \001(\004\022\022\n\nserializ" +
+      "ed\030\004 \001(\014\032$\n\004EWMA\022\r\n\005value\030\001 \002(\001\022\r\n\005alpha" +
+      "\030\002 \002(\001\032a\n\006Metric\022\021\n\tnameIndex\030\001 \002(\005\022#\n\006n" +
+      "umber\030\002 \002(\0132\023.NodeMetrics.Number\022\037\n\004ewma" +
+      "\030\003 \001(\0132\021.NodeMetrics.EWMA\"J\n\nNumberType\022",
+      "\016\n\nSerialized\020\000\022\n\n\006Double\020\001\022\t\n\005Float\020\002\022\013" +
+      "\n\007Integer\020\003\022\010\n\004Long\020\004\"\007\n\005Empty\"K\n\007Addres" +
+      "s\022\016\n\006system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004p" +
+      "ort\030\003 \002(\r\022\020\n\010protocol\030\004 \001(\t\"7\n\rUniqueAdd" +
+      "ress\022\031\n\007address\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002" +
+      " \002(\r*D\n\022ReachabilityStatus\022\r\n\tReachable\020" +
+      "\000\022\017\n\013Unreachable\020\001\022\016\n\nTerminated\020\002*T\n\014Me" +
+      "mberStatus\022\013\n\007Joining\020\000\022\006\n\002Up\020\001\022\013\n\007Leavi" +
+      "ng\020\002\022\013\n\007Exiting\020\003\022\010\n\004Down\020\004\022\013\n\007Removed\020\005" +
+      "B\035\n\031akka.cluster.protobuf.msgH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -16926,7 +16810,7 @@ public final class ClusterMessages {
           internal_static_GossipEnvelope_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_GossipEnvelope_descriptor,
-              new java.lang.String[] { "From", "To", "Gossip", });
+              new java.lang.String[] { "From", "To", "SerializedGossip", });
           internal_static_GossipStatus_descriptor =
             getDescriptor().getMessageTypes().get(3);
           internal_static_GossipStatus_fieldAccessorTable = new

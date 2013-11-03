@@ -1,3 +1,7 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package docs.persistence
 
 import akka.actor.ActorSystem
@@ -220,5 +224,23 @@ trait PersistenceDocSpec {
       maxSequenceNr = 457L,
       maxTimestamp = System.currentTimeMillis))
     //#snapshot-criteria
+  }
+
+  new AnyRef {
+    import akka.actor.Props
+    //#batch-write
+    class MyProcessor extends Processor {
+      def receive = {
+        case Persistent("a", _) ⇒ // ...
+        case Persistent("b", _) ⇒ // ...
+      }
+    }
+
+    val system = ActorSystem("example")
+    val processor = system.actorOf(Props[MyProcessor])
+
+    processor ! PersistentBatch(Vector(Persistent("a"), Persistent("b")))
+    //#batch-write
+    system.shutdown()
   }
 }

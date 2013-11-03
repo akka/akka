@@ -1,9 +1,15 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package docs.persistence;
 
 import scala.Option;
 
 import akka.actor.*;
 import akka.persistence.*;
+
+import static java.util.Arrays.asList;
 
 public class PersistenceDocTest {
 
@@ -232,5 +238,32 @@ public class PersistenceDocTest {
                 //#snapshot-criteria
             }
         }
+    };
+
+    static Object o6 = new Object() {
+        //#batch-write
+        class MyProcessor extends UntypedProcessor {
+            public void onReceive(Object message) throws Exception {
+                if (message instanceof Persistent) {
+                    Persistent p = (Persistent)message;
+                    if (p.payload().equals("a")) { /* ... */ }
+                    if (p.payload().equals("b")) { /* ... */ }
+                }
+            }
+        }
+
+        class Example {
+            final ActorSystem system = ActorSystem.create("example");
+            final ActorRef processor = system.actorOf(Props.create(MyProcessor.class));
+
+            public void batchWrite() {
+                processor.tell(PersistentBatch.create(asList(
+                        Persistent.create("a"),
+                        Persistent.create("b"))), null);
+            }
+
+            // ...
+        }
+        //#batch-write
     };
 }

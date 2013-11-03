@@ -145,7 +145,9 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   }
 
   def reset(snapshot: CurrentClusterState): Unit =
-    state = state.reset(snapshot.members.map(_.address)(collection.breakOut))
+    state = state.reset(snapshot.members.collect {
+      case m if m.status == MemberStatus.Up ⇒ m.address
+    }(collection.breakOut))
 
   def addMember(m: Member): Unit = if (m.address != selfAddress) state = state addMember m.address
 
@@ -178,7 +180,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
     }
 
   def triggerFirstHeartbeat(address: Address): Unit =
-    if (!cluster.failureDetector.isMonitoring(address)) {
+    if (!cluster.failureDetector.isMonitoring(address) && state.ring.mySenders.contains(address)) {
       logInfo("Trigger extra expected heartbeat from [{}]", address)
       cluster.failureDetector.heartbeat(address)
     }
@@ -208,7 +210,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   }
 
   def ackEndHeartbeat(from: Address): Unit = {
-    state.removeEnding(from)
+    state = state.removeEnding(from)
   }
 
 }

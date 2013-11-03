@@ -134,7 +134,7 @@ Once a connection has been established data can be sent to it from any actor in 
 
 Tcp.Write
   The simplest ``WriteCommand`` implementation which wraps a ``ByteString`` instance and an "ack" event.
-  A ``ByteString`` (as explained in :ref:`this section <ByteString>`) models one or more chunks of immutable
+  A ``ByteString`` (as explained in :ref:`this section <bytestring_scala>`) models one or more chunks of immutable
   in-memory data with a maximum (total) size of 2 GB (2^31 bytes).
 
 Tcp.WriteFile
@@ -329,3 +329,10 @@ It should be noted that communication with the :class:`TcpPipelineHandler`
 wraps commands and events in the inner types of the ``init`` object in order to
 keep things well separated.
 
+.. warning::
+
+  The SslTlsSupport currently does not support using a ``Tcp.WriteCommand``
+  other than ``Tcp.Write``, like for example ``Tcp.WriteFile``. It also doesn't
+  support messages that are larger than the size of the send buffer on the socket.
+  Trying to send such a message will result in a ``CommandFailed``. If you need
+  to send large messages over SSL, then they have to be sent in chunks.

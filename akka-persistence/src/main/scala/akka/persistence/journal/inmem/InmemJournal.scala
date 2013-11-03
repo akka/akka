@@ -4,6 +4,7 @@
 
 package akka.persistence.journal.inmem
 
+import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -29,6 +30,9 @@ private[persistence] class InmemJournal extends AsyncWriteJournal {
   def writeAsync(persistent: PersistentImpl): Future[Unit] =
     (store ? Write(persistent)).mapTo[Unit]
 
+  def writeBatchAsync(persistentBatch: immutable.Seq[PersistentImpl]): Future[Unit] =
+    (store ? WriteBatch(persistentBatch)).mapTo[Unit]
+
   def deleteAsync(persistent: PersistentImpl): Future[Unit] =
     (store ? Delete(persistent)).mapTo[Unit]
 
@@ -47,6 +51,7 @@ private[persistence] class InmemStore extends Actor {
 
   def receive = {
     case Write(p)               ⇒ add(p); success()
+    case WriteBatch(pb)         ⇒ pb.foreach(add); success()
     case Delete(p)              ⇒ update(p.processorId, p.sequenceNr)(_.copy(deleted = true)); success()
     case Confirm(pid, snr, cid) ⇒ update(pid, snr)(p ⇒ p.copy(confirms = cid +: p.confirms)); success()
     case Replay(pid, fromSnr, toSnr, callback) ⇒ {
@@ -84,6 +89,7 @@ private[persistence] class InmemStore extends Actor {
 
 private[persistence] object InmemStore {
   case class Write(p: PersistentImpl)
+  case class WriteBatch(pb: Seq[PersistentImpl])
   case class Delete(p: PersistentImpl)
   case class Confirm(processorId: String, sequenceNr: Long, channelId: String)
   case class Replay(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, replayCallback: (PersistentImpl) ⇒ Unit)

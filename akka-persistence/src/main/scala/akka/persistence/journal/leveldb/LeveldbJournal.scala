@@ -6,6 +6,8 @@ package akka.persistence.journal.leveldb
 
 import java.io.File
 
+import scala.collection.immutable
+
 import org.iq80.leveldb._
 
 import akka.persistence._
@@ -32,17 +34,15 @@ private[leveldb] class LeveldbJournal extends SyncWriteJournal with LeveldbIdMap
   // needed if default processor and channel ids are used
   // (actor paths, which contain deployment information).
 
-  // TODO: use protobuf serializer for PersistentImpl
-  // TODO: use user-defined serializer for payload
-  val serializer = SerializationExtension(context.system).findSerializerFor("")
+  val serialization = SerializationExtension(context.system)
 
   import Key._
 
-  def write(persistent: PersistentImpl) = withBatch { batch ⇒
-    val nid = numericId(persistent.processorId)
-    batch.put(keyToBytes(counterKey(nid)), counterToBytes(persistent.sequenceNr))
-    batch.put(keyToBytes(Key(nid, persistent.sequenceNr, 0)), persistentToBytes(persistent))
-  }
+  def write(persistent: PersistentImpl) =
+    withBatch(batch ⇒ addToBatch(persistent, batch))
+
+  def writeBatch(persistentBatch: immutable.Seq[PersistentImpl]) =
+    withBatch(batch ⇒ persistentBatch.foreach(persistent ⇒ addToBatch(persistent, batch)))
 
   def delete(persistent: PersistentImpl) {
     leveldb.put(keyToBytes(deletionKey(numericId(persistent.processorId), persistent.sequenceNr)), Array.empty[Byte])
@@ -55,8 +55,14 @@ private[leveldb] class LeveldbJournal extends SyncWriteJournal with LeveldbIdMap
   def leveldbSnapshot = leveldbReadOptions.snapshot(leveldb.getSnapshot)
   def leveldbIterator = leveldb.iterator(leveldbSnapshot)
 
-  def persistentToBytes(p: PersistentImpl): Array[Byte] = serializer.toBinary(p)
-  def persistentFromBytes(a: Array[Byte]): PersistentImpl = serializer.fromBinary(a).asInstanceOf[PersistentImpl]
+  def persistentToBytes(p: PersistentImpl): Array[Byte] = serialization.serialize(p).get
+  def persistentFromBytes(a: Array[Byte]): PersistentImpl = serialization.deserialize(a, classOf[PersistentImpl]).get
+
+  private def addToBatch(persistent: PersistentImpl, batch: WriteBatch): Unit = {
+    val nid = numericId(persistent.processorId)
+    batch.put(keyToBytes(counterKey(nid)), counterToBytes(persistent.sequenceNr))
+    batch.put(keyToBytes(Key(nid, persistent.sequenceNr, 0)), persistentToBytes(persistent))
+  }
 
   private def withBatch[R](body: WriteBatch ⇒ R): R = {
     val batch = leveldb.createWriteBatch()
