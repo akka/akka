@@ -15,7 +15,7 @@
     </feature>
 
     <feature name='protobuf' description='Protobuf feature' version='${protobuf.version}' resolver='(obr)'>
-        <bundle start-level="20">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.protobuf-java/${protobuf.version}_1</bundle>
+        <bundle start-level="20">mvn:com.google.protobuf/protobuf-java/${protobuf.version}</bundle>
     </feature>
 
     <feature name='netty' description='Netty feature' version='${netty.version}' resolver='(obr)'>

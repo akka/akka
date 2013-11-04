@@ -129,7 +129,7 @@ Add texlive bin to $PATH:
 
 ::
 
-  /usr/local/texlive/2012basic/bin/universal-darwin
+  /usr/local/texlive/2013basic/bin/universal-darwin
 
 Add missing tex packages:
 
