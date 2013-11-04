@@ -14,9 +14,9 @@ object ProcessorStashSpec {
     var state: List[String] = Nil
 
     val behaviorA: Actor.Receive = {
-      case Persistent("a", snr)  ⇒ update("a", snr); context.become(behaviorB)
+      case Persistent("a", snr)  ⇒ { update("a", snr); context.become(behaviorB) }
       case Persistent("b", snr)  ⇒ update("b", snr)
-      case Persistent("c", snr)  ⇒ update("c", snr); unstashAll()
+      case Persistent("c", snr)  ⇒ { update("c", snr); unstashAll() }
       case "x"                   ⇒ update("x")
       case "boom"                ⇒ throw new TestException("boom")
       case Persistent("boom", _) ⇒ throw new TestException("boom")
@@ -24,7 +24,7 @@ object ProcessorStashSpec {
     }
 
     val behaviorB: Actor.Receive = {
-      case Persistent("b", _) ⇒ stash(); context.become(behaviorA)
+      case Persistent("b", _) ⇒ { stash(); context.become(behaviorA) }
       case "x"                ⇒ stash()
     }
 

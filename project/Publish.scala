@@ -67,19 +67,19 @@ object Publish {
   }
 
   def akkaPublishTo: Initialize[Option[Resolver]] = {
-    (defaultPublishTo, version) { (default, v) =>
+    (defaultPublishTo, version) { (defaultPT, v) =>
       akkaPublishRepository orElse
       sonatypeRepo(v) orElse
-      Some(Resolver.file("Default Local Repository", default))
+      Some(Resolver.file("Default Local Repository", defaultPT))
     }
   }
 
   def akkaPluginPublishTo: Initialize[Option[Resolver]] = {
-    (defaultPublishTo, version) { (default, version) =>
-      pluginPublishLocally(default) orElse
+    (defaultPublishTo, version) { (defaultPT, version) =>
+      pluginPublishLocally(defaultPT) orElse
       akkaPublishRepository orElse
       pluginRepo(version) orElse
-      Some(Resolver.file("Default Local Repository", default))
+      Some(Resolver.file("Default Local Repository", defaultPT))
     }
   }
 
@@ -103,9 +103,9 @@ object Publish {
   def akkaCredentials: Seq[Credentials] =
     Option(System.getProperty("akka.publish.credentials", null)) map (f => Credentials(new File(f))) toSeq
 
-  def pluginPublishLocally(default: File): Option[Resolver] =
+  def pluginPublishLocally(defaultPT: File): Option[Resolver] =
     Option(sys.props("publish.plugin.locally")) collect { case pl if pl.toLowerCase == "true" =>
-      Resolver.file("Default Local Repository", default)
+      Resolver.file("Default Local Repository", defaultPT)
     }
 
   // timestamped versions

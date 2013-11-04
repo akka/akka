@@ -50,10 +50,18 @@ private[persistence] class InmemStore extends Actor {
   var messages = Map.empty[String, Vector[PersistentImpl]]
 
   def receive = {
-    case Write(p)               ⇒ add(p); success()
-    case WriteBatch(pb)         ⇒ pb.foreach(add); success()
-    case Delete(p)              ⇒ update(p.processorId, p.sequenceNr)(_.copy(deleted = true)); success()
-    case Confirm(pid, snr, cid) ⇒ update(pid, snr)(p ⇒ p.copy(confirms = cid +: p.confirms)); success()
+    case Write(p) ⇒
+      add(p)
+      success()
+    case WriteBatch(pb) ⇒
+      pb.foreach(add)
+      success()
+    case Delete(p) ⇒
+      update(p.processorId, p.sequenceNr)(_.copy(deleted = true))
+      success()
+    case Confirm(pid, snr, cid) ⇒
+      update(pid, snr)(p ⇒ p.copy(confirms = cid +: p.confirms))
+      success()
     case Replay(pid, fromSnr, toSnr, callback) ⇒ {
       for {
         ms ← messages.get(pid)

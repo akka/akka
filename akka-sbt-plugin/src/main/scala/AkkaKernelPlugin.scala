@@ -6,10 +6,10 @@ package akka.sbt
 
 import sbt._
 import sbt.Keys._
-import sbt.Load.BuildStructure
+import sbt.BuildStructure
 import sbt.classpath.ClasspathUtilities
-import sbt.Project.Initialize
-import sbt.CommandSupport._
+import sbt.Def.Initialize
+import sbt.CommandUtil._
 import java.io.File
 
 object AkkaKernelPlugin extends Plugin {
@@ -51,7 +51,7 @@ object AkkaKernelPlugin extends Plugin {
       distClean <<= distCleanTask,
       dependencyClasspath <<= (dependencyClasspath in Runtime),
       unmanagedResourceDirectories <<= (unmanagedResourceDirectories in Runtime),
-      outputDirectory <<= target / "dist",
+      outputDirectory <<= target { t ⇒ t / "dist" },
       configSourceDirs <<= defaultConfigSourceDirs,
       distJvmOptions := "-Xms1024M -Xmx1024M -Xss1M -XX:MaxPermSize=256M -XX:+UseParallelGC",
       distMainClass := "akka.kernel.Main",
