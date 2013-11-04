@@ -104,7 +104,7 @@ Add the Homebrew Python path to your $PATH:
 
 ::
 
-  /usr/local/Cellar/python/2.7.1/bin
+  /usr/local/Cellar/python/2.7.5/bin
 
 
 More information in case of trouble:
@@ -142,3 +142,12 @@ Add missing tex packages:
   sudo tlmgr install wrapfig
   sudo tlmgr install helvetic
   sudo tlmgr install courier
+  sudo tlmgr install multirow
+
+If you get the error "unknown locale: UTF-8" when generating the documentation the solution is to define the following environment variables:
+
+::
+
+  export LANG=en_US.UTF-8
+  export LC_ALL=en_US.UTF-8
+
