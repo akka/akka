@@ -60,13 +60,14 @@ Our example interface:
 
 .. includecode:: code/docs/actor/TypedActorDocSpec.scala
    :include: imports,typed-actor-iface
-   :exclude: typed-actor-iface-methods
 
-Our example implementation of that interface:
+Alright, now we've got some methods we can call, but we need to implement those in SquarerImpl.
 
 .. includecode:: code/docs/actor/TypedActorDocSpec.scala
    :include: imports,typed-actor-impl
-   :exclude: typed-actor-impl-methods
+
+Excellent, now we have an interface and an implementation of that interface,
+and we know how to create a Typed Actor from that, so let's look at calling these methods.
 
 The most trivial way of creating a Typed Actor instance
 of our Squarer:
@@ -81,18 +82,6 @@ If you need to call a specific constructor you do it like this:
    :include: typed-actor-create2
 
 Since you supply a Props, you can specify which dispatcher to use, what the default timeout should be used and more.
-Now, our Squarer doesn't have any methods, so we'd better add those.
-
-.. includecode:: code/docs/actor/TypedActorDocSpec.scala
-   :include: imports,typed-actor-iface
-
-Alright, now we've got some methods we can call, but we need to implement those in SquarerImpl.
-
-.. includecode:: code/docs/actor/TypedActorDocSpec.scala
-   :include: imports,typed-actor-impl
-
-Excellent, now we have an interface and an implementation of that interface,
-and we know how to create a Typed Actor from that, so let's look at calling these methods.
 
 Method dispatch semantics
 -------------------------

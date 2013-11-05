@@ -10,7 +10,7 @@ import akka.actor.{ ActorContext, TypedActor, TypedProps }
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
 import akka.testkit._
-//#typed-actor-impl
+
 //Mr funny man avoids printing to stdout AND keeping docs alright
 import java.lang.String.{ valueOf ⇒ println }
 import akka.actor.ActorRef
@@ -34,26 +34,24 @@ class SquarerImpl(val name: String) extends Squarer {
 
   def this() = this("default")
   //#typed-actor-impl-methods
-  import TypedActor.dispatcher //So we can create Promises
-
   def squareDontCare(i: Int): Unit = i * i //Nobody cares :(
 
-  def square(i: Int): Future[Int] = Promise.successful(i * i).future
+  def square(i: Int): Future[Int] = Future.successful(i * i)
 
   def squareNowPlease(i: Int): Option[Int] = Some(i * i)
 
   def squareNow(i: Int): Int = i * i
   //#typed-actor-impl-methods
 }
+//#typed-actor-impl
 //#typed-actor-supercharge
 trait Foo {
   def doFoo(times: Int): Unit = println("doFoo(" + times + ")")
 }
 
 trait Bar {
-  import TypedActor.dispatcher //So we have an implicit dispatcher for our Promise
   def doBar(str: String): Future[String] =
-    Promise.successful(str.toUpperCase).future
+    Future.successful(str.toUpperCase)
 }
 
 class FooBar extends Foo with Bar
