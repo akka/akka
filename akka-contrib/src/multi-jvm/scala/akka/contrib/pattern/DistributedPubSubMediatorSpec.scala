@@ -348,13 +348,13 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
 
     "transfer delta correctly" in {
       val firstAddress = node(first).address
-          val secondAddress = node(second).address
-          val thirdAddress = node(third).address
+      val secondAddress = node(second).address
+      val thirdAddress = node(third).address
 
       runOn(first) {
         mediator ! Status(versions = Map.empty)
         val deltaBuckets = expectMsgType[Delta].buckets
-        deltaBuckets.size must be (3)
+        deltaBuckets.size must be(3)
         deltaBuckets.find(_.owner == firstAddress).get.content.size must be(7)
         deltaBuckets.find(_.owner == secondAddress).get.content.size must be(6)
         deltaBuckets.find(_.owner == thirdAddress).get.content.size must be(2)
@@ -364,26 +364,25 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
       // this test is configured with max-delta-elements = 500
       val many = 1010
       runOn(first) {
-        for (i <- 0 until many)
+        for (i ← 0 until many)
           mediator ! Put(createChatUser("u" + (1000 + i)))
 
         mediator ! Status(versions = Map.empty)
         val deltaBuckets1 = expectMsgType[Delta].buckets
-        deltaBuckets1.map(_.content.size).sum must be (500)
+        deltaBuckets1.map(_.content.size).sum must be(500)
 
-        mediator ! Status(versions = deltaBuckets1.map(b => b.owner -> b.version).toMap)
+        mediator ! Status(versions = deltaBuckets1.map(b ⇒ b.owner -> b.version).toMap)
         val deltaBuckets2 = expectMsgType[Delta].buckets
-        deltaBuckets1.map(_.content.size).sum must be (500)
+        deltaBuckets1.map(_.content.size).sum must be(500)
 
-        mediator ! Status(versions = deltaBuckets2.map(b => b.owner -> b.version).toMap)
+        mediator ! Status(versions = deltaBuckets2.map(b ⇒ b.owner -> b.version).toMap)
         val deltaBuckets3 = expectMsgType[Delta].buckets
 
-        deltaBuckets3.map(_.content.size).sum must be (7 + 6 + 2 + many - 500 - 500)
+        deltaBuckets3.map(_.content.size).sum must be(7 + 6 + 2 + many - 500 - 500)
       }
 
-
       enterBarrier("verified-delta-with-many")
-      within (10.seconds) {
+      within(10.seconds) {
         awaitCount(13 + many)
       }
 
