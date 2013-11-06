@@ -480,6 +480,14 @@ a denial of service attack). :class:`PossiblyHarmful` covers the predefined
 messages like :class:`PoisonPill` and :class:`Kill`, but it can also be added
 as a marker trait to user-defined messages.
 
+Messages sent with actor selection are by default discarded in untrusted mode, but
+permission to receive actor selection messages can be granted to specific actors
+defined in configuration::
+
+    akka.remote.trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
+
+The actual message must still not be of type :class:`PossiblyHarmful`.
+
 In summary, the following operations are ignored by a system configured in
 untrusted mode when incoming via the remoting layer:
 
@@ -488,6 +496,7 @@ untrusted mode when incoming via the remoting layer:
 * ``system.stop()``, :class:`PoisonPill`, :class:`Kill`
 * sending any message which extends from the :class:`PossiblyHarmful` marker
   interface, which includes :class:`Terminated`
+* messages sent with actor selection, unless destination defined in ``trusted-selection-paths``.
 
 .. note::
 
