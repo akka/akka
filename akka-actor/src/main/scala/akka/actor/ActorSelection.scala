@@ -33,9 +33,22 @@ abstract class ActorSelection extends Serializable {
   @deprecated("use the two-arg variant (typically getSelf() as second arg)", "2.2")
   def tell(msg: Any): Unit = tell(msg, Actor.noSender)
 
+  /**
+   * Sends the specified message to the sender, i.e. fire-and-forget
+   * semantics, including the sender reference if possible.
+   *
+   * Pass [[ActorRef#noSender]] or `null` as sender if there is nobody to reply to
+   */
   def tell(msg: Any, sender: ActorRef): Unit =
     ActorSelection.deliverSelection(anchor.asInstanceOf[InternalActorRef], sender,
       ActorSelectionMessage(msg, path))
+
+  /**
+   * Forwards the message and passes the original sender actor as the sender.
+   *
+   * Works, no matter whether originally sent with tell/'!' or ask/'?'.
+   */
+  def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender)
 
   /**
    * Resolve the [[ActorRef]] matching this selection.
