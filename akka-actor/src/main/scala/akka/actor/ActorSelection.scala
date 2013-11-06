@@ -26,27 +26,16 @@ import akka.dispatch.ExecutionContexts
 abstract class ActorSelection extends Serializable {
   this: ScalaActorSelection ⇒
 
-  import ActorSelection.PatternHolder
-
   protected[akka] val anchor: ActorRef
 
-  protected val path: immutable.IndexedSeq[AnyRef]
+  protected val path: immutable.IndexedSeq[SelectionPathElement]
 
   @deprecated("use the two-arg variant (typically getSelf() as second arg)", "2.2")
   def tell(msg: Any): Unit = tell(msg, Actor.noSender)
 
-  def tell(msg: Any, sender: ActorRef): Unit = {
-    @tailrec def toMessage(msg: Any, path: immutable.IndexedSeq[AnyRef], index: Int): Any =
-      if (index < 0) msg
-      else toMessage(
-        path(index) match {
-          case ".."             ⇒ SelectParent(msg)
-          case s: String        ⇒ SelectChildName(s, msg)
-          case p: PatternHolder ⇒ SelectChildPattern(p.pat, msg)
-        }, path, index - 1)
-
-    anchor.tell(toMessage(msg, path, path.length - 1), sender)
-  }
+  def tell(msg: Any, sender: ActorRef): Unit =
+    ActorSelection.deliverSelection(anchor.asInstanceOf[InternalActorRef], sender,
+      ActorSelectionMessage(msg, path))
 
   /**
    * Resolve the [[ActorRef]] matching this selection.
@@ -108,11 +97,6 @@ object ActorSelection {
   //This cast is safe because the self-type of ActorSelection requires that it mixes in ScalaActorSelection
   implicit def toScala(sel: ActorSelection): ScalaActorSelection = sel.asInstanceOf[ScalaActorSelection]
 
-  @SerialVersionUID(1L) private case class PatternHolder(str: String) {
-    val pat = Helpers.makePattern(str)
-    override def toString = str
-  }
-
   /**
    * Construct an ActorSelection from the given string representing a path
    * relative to the given target. This operation has to create all the
@@ -128,14 +112,68 @@ object ActorSelection {
    * intention is to send messages frequently.
    */
   def apply(anchorRef: ActorRef, elements: Iterable[String]): ActorSelection = {
-    val compiled: immutable.IndexedSeq[AnyRef] = elements.collect({
-      case x if !x.isEmpty ⇒ if ((x.indexOf('?') != -1) || (x.indexOf('*') != -1)) PatternHolder(x) else x
+    val compiled: immutable.IndexedSeq[SelectionPathElement] = elements.collect({
+      case x if !x.isEmpty ⇒
+        if ((x.indexOf('?') != -1) || (x.indexOf('*') != -1)) SelectChildPattern(x)
+        else if (x == "..") SelectParent
+        else SelectChildName(x)
     })(scala.collection.breakOut)
     new ActorSelection with ScalaActorSelection {
       override val anchor = anchorRef
       override val path = compiled
     }
   }
+
+  /**
+   * INTERNAL API
+   * The receive logic for ActorSelectionMessage. The idea is to recursively descend as far as possible
+   * with local refs and hand over to that “foreign” child when we encounter it.
+   */
+  private[akka] def deliverSelection(anchor: InternalActorRef, sender: ActorRef, sel: ActorSelectionMessage): Unit =
+    if (sel.elements.isEmpty)
+      anchor.tell(sel.msg, sender)
+    else {
+      val iter = sel.elements.iterator
+
+      @tailrec def rec(ref: InternalActorRef): Unit = {
+        ref match {
+          case refWithCell: ActorRefWithCell ⇒
+            iter.next() match {
+              case SelectParent ⇒
+                val parent = ref.getParent
+                if (iter.isEmpty)
+                  parent.tell(sel.msg, sender)
+                else
+                  rec(parent)
+              case SelectChildName(name) ⇒
+                val child = refWithCell.getSingleChild(name)
+                if (child == Nobody)
+                  sel.identifyRequest foreach { x ⇒ sender ! ActorIdentity(x.messageId, None) }
+                else if (iter.isEmpty)
+                  child.tell(sel.msg, sender)
+                else
+                  rec(child)
+              case p: SelectChildPattern ⇒
+                // fan-out when there is a wildcard
+                val chldr = refWithCell.children
+                if (iter.isEmpty)
+                  for (c ← chldr if p.pattern.matcher(c.path.name).matches)
+                    c.tell(sel.msg, sender)
+                else {
+                  val m = sel.copy(elements = iter.toVector)
+                  for (c ← chldr if p.pattern.matcher(c.path.name).matches)
+                    deliverSelection(c.asInstanceOf[InternalActorRef], sender, m)
+                }
+            }
+
+          case _ ⇒
+            // foreign ref, continue by sending ActorSelectionMessage to it with remaining elements
+            ref.tell(sel.copy(elements = iter.toVector), sender)
+        }
+      }
+
+      rec(anchor)
+    }
 }
 
 /**
@@ -146,6 +184,53 @@ trait ScalaActorSelection {
   this: ActorSelection ⇒
 
   def !(msg: Any)(implicit sender: ActorRef = Actor.noSender) = tell(msg, sender)
+}
+
+/**
+ * INTERNAL API
+ * ActorRefFactory.actorSelection returns a ActorSelection which sends these
+ * nested path descriptions whenever using ! on them, the idea being that the
+ * message is delivered by traversing the various actor paths involved.
+ */
+@SerialVersionUID(1L)
+private[akka] case class ActorSelectionMessage(msg: Any, elements: immutable.Iterable[SelectionPathElement])
+  extends AutoReceivedMessage with PossiblyHarmful {
+
+  def identifyRequest: Option[Identify] = msg match {
+    case x: Identify ⇒ Some(x)
+    case _           ⇒ None
+  }
+}
+
+/**
+ * INTERNAL API
+ */
+@SerialVersionUID(1L)
+private[akka] sealed trait SelectionPathElement
+
+/**
+ * INTERNAL API
+ */
+@SerialVersionUID(2L)
+private[akka] case class SelectChildName(name: String) extends SelectionPathElement {
+  override def toString: String = name
+}
+
+/**
+ * INTERNAL API
+ */
+@SerialVersionUID(2L)
+private[akka] case class SelectChildPattern(patternStr: String) extends SelectionPathElement {
+  val pattern: Pattern = Helpers.makePattern(patternStr)
+  override def toString: String = patternStr
+}
+
+/**
+ * INTERNAL API
+ */
+@SerialVersionUID(2L)
+private[akka] case object SelectParent extends SelectionPathElement {
+  override def toString: String = ".."
 }
 
 /**

@@ -13,6 +13,7 @@ import akka.actor.ActorRefWithCell
 import akka.actor.ActorRefScope
 import akka.util.Switch
 import akka.actor.RootActorPath
+import akka.actor.ActorSelectionMessage
 import akka.actor.SelectParent
 import akka.actor.SelectChildName
 import akka.actor.SelectChildPattern
@@ -120,18 +121,30 @@ private[akka] class RemoteSystemDaemon(
           }
       }
 
-    case SelectParent(m) ⇒ getParent.tell(m, sender)
-
-    case s @ SelectChildName(name, m) ⇒
-      getChild(s.allChildNames.iterator) match {
-        case Nobody ⇒
-          s.identifyRequest foreach { x ⇒ sender ! ActorIdentity(x.messageId, None) }
-        case child ⇒
-          child.tell(s.wrappedMessage, sender)
+    case sel: ActorSelectionMessage ⇒
+      val (concatenatedChildNames, m) = {
+        val iter = sel.elements.iterator
+        // find child elements, and the message to send, which is a remaining ActorSelectionMessage
+        // in case of SelectChildPattern, otherwise the the actual message of the selection
+        @tailrec def rec(acc: List[String]): (List[String], Any) =
+          if (iter.isEmpty)
+            (acc.reverse, sel.msg)
+          else {
+            iter.next() match {
+              case SelectChildName(name)       ⇒ rec(name :: acc)
+              case SelectParent if acc.isEmpty ⇒ rec(acc)
+              case SelectParent                ⇒ rec(acc.tail)
+              case pat: SelectChildPattern     ⇒ (acc.reverse, sel.copy(elements = pat +: iter.toVector))
+            }
+          }
+        rec(Nil)
       }
-
-    case SelectChildPattern(p, m) ⇒
-      log.error("SelectChildPattern not allowed in actorSelection of remote deployed actors")
+      getChild(concatenatedChildNames.iterator) match {
+        case Nobody ⇒
+          sel.identifyRequest foreach { x ⇒ sender ! ActorIdentity(x.messageId, None) }
+        case child ⇒
+          child.tell(m, sender)
+      }
 
     case Identify(messageId) ⇒ sender ! ActorIdentity(messageId, Some(this))
 
