@@ -149,8 +149,23 @@ class PhiAccrualFailureDetector(
     }
   }
 
-  private[akka] def phi(timeDiff: Long, mean: Double, stdDeviation: Double): Double =
-    -math.log10(1.0 - cumulativeDistributionFunction(timeDiff, mean, stdDeviation))
+  /**
+   * Calculation of phi, derived from the Cumulative distribution function for
+   * N(mean, stdDeviation) normal distribution, given by
+   * 1.0 / (1.0 + math.exp(-y * (1.5976 + 0.070566 * y * y)))
+   * where y = (x - mean) / standard_deviation
+   * This is an approximation defined in β Mathematics Handbook (Logistic approximation).
+   * Error is 0.00014 at +- 3.16
+   * The calculated value is equivalent to -log10(1 - CDF(y))
+   */
+  private[akka] def phi(timeDiff: Long, mean: Double, stdDeviation: Double): Double = {
+    val y = (timeDiff - mean) / stdDeviation
+    val e = math.exp(-y * (1.5976 + 0.070566 * y * y))
+    if (timeDiff > mean)
+      -math.log10(e / (1.0 + e))
+    else
+      -math.log10(1.0 - 1.0 / (1.0 + e))
+  }
 
   private val minStdDeviationMillis = minStdDeviation.toMillis
 
