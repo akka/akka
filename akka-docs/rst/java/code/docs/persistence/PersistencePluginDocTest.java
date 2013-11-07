@@ -36,22 +36,22 @@ public class PersistencePluginDocTest {
 
     class MyAsyncJournal extends AsyncWriteJournal {
         @Override
-        public Future<Long> doReplayAsync(String processorId, long fromSequenceNr, long toSequenceNr, Procedure<PersistentImpl> replayCallback) {
+        public Future<Long> doReplayAsync(String processorId, long fromSequenceNr, long toSequenceNr, Procedure<PersistentRepr> replayCallback) {
             return null;
         }
 
         @Override
-        public Future<Void> doWriteAsync(PersistentImpl persistent) {
+        public Future<Void> doWriteAsync(PersistentRepr persistent) {
             return null;
         }
 
         @Override
-        public Future<Void> doWriteBatchAsync(Iterable<PersistentImpl> persistentBatch) {
+        public Future<Void> doWriteBatchAsync(Iterable<PersistentRepr> persistentBatch) {
             return null;
         }
 
         @Override
-        public Future<Void> doDeleteAsync(PersistentImpl persistent) {
+        public Future<Void> doDeleteAsync(String processorId, long sequenceNr, boolean physical) {
             return null;
         }
 

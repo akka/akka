@@ -142,8 +142,8 @@ public class PersistenceDocTest {
 
         class MyDestination extends UntypedActor {
             public void onReceive(Object message) throws Exception {
-                if (message instanceof Persistent) {
-                    Persistent p = (Persistent)message;
+                if (message instanceof ConfirmablePersistent) {
+                    ConfirmablePersistent p = (ConfirmablePersistent)message;
                     System.out.println("received " + p.payload());
                     p.confirm();
                 }
@@ -265,5 +265,20 @@ public class PersistenceDocTest {
             // ...
         }
         //#batch-write
+    };
+
+    static Object o7 = new Object() {
+        abstract class MyProcessor extends UntypedProcessor {
+            ActorRef destination;
+
+            public void foo() {
+                //#persistent-channel-example
+                final ActorRef channel = getContext().actorOf(PersistentChannel.props(),
+                        "myPersistentChannel");
+
+                channel.tell(Deliver.create(Persistent.create("example"), destination), getSelf());
+                //#persistent-channel-example
+            }
+        }
     };
 }

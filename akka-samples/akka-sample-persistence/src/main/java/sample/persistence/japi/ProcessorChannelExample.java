@@ -30,8 +30,8 @@ public class ProcessorChannelExample {
     public static class ExampleDestination extends UntypedActor {
         @Override
         public void onReceive(Object message) throws Exception {
-            if (message instanceof Persistent) {
-                Persistent msg = (Persistent)message;
+            if (message instanceof ConfirmablePersistent) {
+                ConfirmablePersistent msg = (ConfirmablePersistent)message;
                 msg.confirm();
                 System.out.println("received " + msg.payload());
             }

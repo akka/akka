@@ -57,6 +57,9 @@ Architecture
 * *Snapshot store*: A snapshot store persists snapshots of a processor's internal state. Snapshots are used for
   optimizing recovery times. The storage backend of a snapshot store is pluggable.
 
+* *Event sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
+  development of event sourced applications (see section :ref:`event-sourcing-java`)
+
 Configuration
 =============
 
@@ -115,7 +118,8 @@ If not overridden, ``preStart`` sends a ``Recover`` message to ``getSelf()``. Ap
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#recover-on-start-custom
 
-Automated recovery on restart can be disabled by overriding ``preRestart`` with an empty implementation.
+Upper sequence number bounds can be used to recover a processor to past state instead of current state. Automated
+recovery on restart can be disabled by overriding ``preRestart`` with an empty implementation.
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#recover-on-restart-disabled
 
@@ -132,9 +136,18 @@ Failure handling
 ^^^^^^^^^^^^^^^^
 
 A persistent message that caused an exception will be received again by a processor after restart. To prevent
-a replay of that message during recovery it can be marked as deleted.
+a replay of that message during recovery it can be deleted.
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#deletion
+
+Message deletion
+----------------
+
+A processor can delete messages by calling the ``delete`` method with a ``Persistent`` message object or a
+sequence number as argument. An optional ``physical`` parameter specifies whether the message shall be
+physically deleted from the journal or only marked as deleted. In both cases, the message won't be replayed.
+Later extensions to Akka persistence will allow to replay messages that have been marked as deleted which can
+be useful for debugging purposes, for example.
 
 Identifiers
 -----------
@@ -152,7 +165,7 @@ should override ``processorId``.
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#processor-id-override
 
-Later versions of the Akka persistence module will likely offer a possibility to migrate processor ids.
+Later versions of Akka persistence will likely offer a possibility to migrate processor ids.
 
 Channels
 ========
@@ -166,21 +179,57 @@ message is retained by a channel if its previous delivery has been confirmed by 
 A channel is ready to use once it has been created, no recovery or further activation is needed. A ``Deliver``
 request  instructs a channel to send a ``Persistent`` message to a destination where the sender of the ``Deliver``
 request is forwarded to the destination. A processor may also reply to a message sender directly by using
-``getSender()`` as channel destination.
+``getSender()`` as channel destination (not shown).
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#channel-example-reply
 
-Channel destinations confirm the delivery of a ``Persistent`` message by calling its ``confirm()`` method. This
-(asynchronously) writes a confirmation entry to the journal. Replayed messages internally contain these confirmation
-entries which allows a channel to decide if a message should be retained or not.
+Persistent messages delivered by a channel are of type ``ConfirmablePersistent``. It extends ``Persistent`` and
+adds a ``confirm()`` method. Channel destinations confirm the delivery of a ``ConfirmablePersistent`` message by
+calling ``confirm()``. This (asynchronously) writes a confirmation entry to the journal. Replayed messages
+internally contain these confirmation entries which allows a channel to decide if a message should be retained or
+not. ``ConfirmablePersistent`` messages can be used whereever ``Persistent`` messages are expected, which allows
+processors to be used as channel destinations, for example.
+
+Message re-delivery
+-------------------
 
 If an application crashes after a destination called ``confirm()`` but before the confirmation entry could have
-been written to the journal then the unconfirmed message will be delivered again during next recovery and it is
-the destination's responsibility to detect the duplicate or simply process the message again if it's an idempotent
-receiver. Duplicates can be detected, for example, by tracking sequence numbers.
+been written to the journal then the unconfirmed message will be re-delivered during next recovery of the sending
+processor. It is the destination's responsibility to detect the duplicate or simply process the message again if
+it's an idempotent receiver. Duplicates can be detected, for example, by tracking sequence numbers.
 
-Currently, channels do not store ``Deliver`` requests or retry delivery on network or destination failures. This
-feature (*reliable channels*) will be available soon.
+Although a channel prevents message loss in case of sender (JVM) crashes it doesn't attempt re-deliveries if a
+destination is unavailable. To achieve reliable communication with a (remote) target, a channel destination may
+want to use the :ref:`reliable-proxy` or add the message to a queue that is managed by a third party message
+broker, for example. In latter case, the channel destination will first add the received message to the queue
+and then call ``confirm()`` on the received ``ConfirmablePersistent`` message.
+
+Persistent channels
+-------------------
+
+Channels created with ``Channel.props`` do not persist messages. This is not necessary because these (transient)
+channels shall only be used in combination with a sending processor that takes care of message persistence.
+
+However, if an application wants to use a channel standalone (without a sending processor), to prevent message
+loss in case of a sender (JVM) crash, it should use a persistent channel which can be created with ``PersistentChannel.props``.
+A persistent channel additionally persists messages before they are delivered. Persistence is achieved by an
+internal processor that delegates delivery to a transient channel. A persistent channel, when used standalone,
+can therefore provide the same message re-delivery semantics as a transient channel in combination with an
+application-defined processor.
+
+  .. includecode:: code/docs/persistence/PersistenceDocTest.java#persistent-channel-example
+
+By default, a persistent channel doesn't reply whether a ``Persistent`` message, sent with ``Deliver``, has been
+successfully persisted or not. This can be enabled by creating the channel with the ``persistentReply`` parameter
+set to ``true``: ``PersistentChannel.props(true)``. With this setting, either the successfully persisted message
+is replied to the sender or a ``PersistenceFailure``. In case of a persistence failure, the sender should re-send
+the message.
+
+Using a persistent channel in combination with an application-defined processor can make sense if destinations are
+unavailable for a long time and an application doesn't want to buffer all messages in memory (but write them to the
+journal instead). In this case, delivery can be disabled with ``DisableDelivery`` (to stop delivery and persist-only)
+and re-enabled with ``EnableDelivery``. A disabled channel that receives ``EnableDelivery`` will restart itself and
+re-deliver all persisted, unconfirmed messages before serving new ``Deliver`` requests.
 
 Sender resolution
 -----------------
@@ -208,7 +257,8 @@ Identifiers
 In the same way as :ref:`processors-java`, channels also have an identifier that defaults to a channel's path. A channel
 identifier can therefore be customized by using a custom actor name at channel creation. As already mentioned, this
 works well when using local actor references but may cause problems with remote actor references. In this case, an
-application-defined channel id should be provided as argument to ``Channel.props(String)``
+application-defined channel id should be provided as argument to ``Channel.props(String)`` or
+``PersistentChannel.props(String)``.
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#channel-id-override
 
@@ -234,8 +284,8 @@ Sequence number
 ---------------
 
 The sequence number of a ``Persistent`` message can be obtained via its ``sequenceNr`` method. Persistent
-messages are assigned sequence numbers on a per-processor basis. A sequence starts at ``1L`` and doesn't contain
-gaps unless a processor marks a message as deleted.
+messages are assigned sequence numbers on a per-processor basis (or per persistent channel basis if used
+standalone). A sequence starts at ``1L`` and doesn't contain gaps unless a processor deletes a message.
 
 .. _snapshots-java:
 
@@ -331,8 +381,9 @@ Applications may also send a batch of ``Persistent`` messages to a processor via
 received  by the processor separately (as ``Persistent`` messages). They are also replayed separately. Batch writes
 can not only increase the throughput of a processor but may also be necessary for consistency reasons. For example,
 in :ref:`event-sourcing-java`, all events that are generated and persisted by a single command are batch-written to
-the journal. The recovery of an ``UntypedEventsourcedProcessor`` will therefore never be done partially i.e. with
-only a subset of events persisted by a single command.
+the journal (even if ``persist`` is called multiple times per command). The recovery of an
+``UntypedEventsourcedProcessor`` will therefore never be done partially i.e. with only a subset of events persisted
+by a single command.
 
 Storage plugins
 ===============
@@ -399,10 +450,3 @@ it must add
 
 to the application configuration. If not specified, a default serializer is used, which is the ``JavaSerializer``
 in this example.
-
-Upcoming features
-=================
-
-* Reliable channels
-* Extended deletion of messages and snapshots
-* ...

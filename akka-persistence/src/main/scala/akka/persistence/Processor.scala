@@ -4,8 +4,6 @@
 
 package akka.persistence
 
-import scala.collection.immutable
-
 import akka.actor._
 import akka.dispatch._
 
@@ -53,7 +51,7 @@ import akka.dispatch._
  * @see [[Recover]]
  * @see [[PersistentBatch]]
  */
-trait Processor extends Actor with Stash {
+trait Processor extends Actor with Stash with StashFactory {
   import JournalProtocol._
   import SnapshotProtocol._
 
@@ -155,8 +153,8 @@ trait Processor extends Actor with Stash {
         }
       }
       case LoopSuccess(m)      ⇒ process(receive, m)
-      case p: PersistentImpl   ⇒ journal forward Write(p.copy(processorId = processorId, sequenceNr = nextSequenceNr()), self)
-      case pb: PersistentBatch ⇒ journal forward WriteBatch(pb.persistentImplList.map(_.copy(processorId = processorId, sequenceNr = nextSequenceNr())), self)
+      case p: PersistentRepr   ⇒ journal forward Write(p.update(processorId = processorId, sequenceNr = nextSequenceNr()), self)
+      case pb: PersistentBatch ⇒ journal forward WriteBatch(pb.persistentReprList.map(_.update(processorId = processorId, sequenceNr = nextSequenceNr())), self)
       case m                   ⇒ journal forward Loop(m, self)
     }
   }
@@ -241,9 +239,50 @@ trait Processor extends Actor with Stash {
    * recovery. This method is usually called inside `preRestartProcessor` when a persistent message
    * caused an exception. Processors that want to re-receive that persistent message during recovery
    * should not call this method.
+   *
+   * @param persistent persistent message to be marked as deleted.
+   * @throws IllegalArgumentException if `persistent` message has not been persisted by this
+   *                                  processor.
    */
   def deleteMessage(persistent: Persistent): Unit = {
-    journal ! Delete(persistent)
+    deleteMessage(persistent, false)
+  }
+
+  /**
+   * Deletes a `persistent` message. If `physical` is set to `false` (default), the persistent
+   * message is marked as deleted in the journal, otherwise it is physically deleted from the
+   * journal. A deleted message is not replayed during recovery. This method is usually called
+   * inside `preRestartProcessor` when a persistent message caused an exception. Processors that
+   * want to re-receive that persistent message during recovery should not call this method.
+   *
+   * @param persistent persistent message to be deleted.
+   * @param physical if `false` (default), the message is marked as deleted, otherwise it is
+   *                 physically deleted.
+   * @throws IllegalArgumentException if `persistent` message has not been persisted by this
+   *                                  processor.
+   */
+  def deleteMessage(persistent: Persistent, physical: Boolean): Unit = {
+    val impl = persistent.asInstanceOf[PersistentRepr]
+    if (impl.processorId != processorId)
+      throw new IllegalArgumentException(
+        s"persistent message to be deleted (processor id = [${impl.processorId}], sequence number = [${impl.sequenceNr}]) " +
+          s"has not been persisted by this processor (processor id = [${processorId}])")
+    else deleteMessage(impl.sequenceNr, physical)
+  }
+
+  /**
+   * Deletes a persistent message identified by `sequenceNr`. If `physical` is set to `false`,
+   * the persistent message is marked as deleted in the journal, otherwise it is physically
+   * deleted from the journal. A deleted message is not replayed during recovery. This method
+   * is usually called inside `preRestartProcessor` when a persistent message caused an exception.
+   * Processors that want to re-receive that persistent message during recovery should not call
+   * this method.
+   *
+   * @param sequenceNr sequence number of the persistent message to be deleted.
+   * @param physical if `false`, the message is marked as deleted, otherwise it is physically deleted.
+   */
+  def deleteMessage(sequenceNr: Long, physical: Boolean): Unit = {
+    journal ! Delete(processorId, sequenceNr, physical)
   }
 
   /**
@@ -351,71 +390,25 @@ trait Processor extends Actor with Stash {
     case _               ⇒ true
   }
 
-  private val processorStash =
-    createProcessorStash
+  private val processorStash = createStash()
 
   private def currentEnvelope: Envelope =
     context.asInstanceOf[ActorCell].currentMessage
-
-  /**
-   * INTERNAL API.
-   */
-  private[persistence] def createProcessorStash = new ProcessorStash {
-    var theStash = Vector.empty[Envelope]
-
-    def stash(): Unit =
-      theStash :+= currentEnvelope
-
-    def prepend(others: immutable.Seq[Envelope]): Unit =
-      others.reverseIterator.foreach(env ⇒ theStash = env +: theStash)
-
-    def unstash(): Unit = try {
-      if (theStash.nonEmpty) {
-        mailbox.enqueueFirst(self, theStash.head)
-        theStash = theStash.tail
-      }
-    }
-
-    def unstashAll(): Unit = try {
-      val i = theStash.reverseIterator
-      while (i.hasNext) mailbox.enqueueFirst(self, i.next())
-    } finally {
-      theStash = Vector.empty[Envelope]
-    }
-  }
 }
 
 /**
- * INTERNAL API.
+ * Sent to a [[Processor]] when a journal failed to write a [[Persistent]] message. If
+ * not handled, an `akka.actor.ActorKilledException` is thrown by that processor.
  *
- * Processor specific stash used internally to avoid interference with user stash.
+ * @param payload payload of the persistent message.
+ * @param sequenceNr sequence number of the persistent message.
+ * @param cause failure cause.
  */
-private[persistence] trait ProcessorStash {
-  /**
-   * Appends the current message to this stash.
-   */
-  def stash()
-
-  /**
-   * Prepends `others` to this stash.
-   */
-  def prepend(others: immutable.Seq[Envelope])
-
-  /**
-   * Unstashes a single message from this stash.
-   */
-  def unstash()
-
-  /**
-   * Unstashes all messages from this stash.
-   */
-  def unstashAll()
-}
+case class PersistenceFailure(payload: Any, sequenceNr: Long, cause: Throwable)
 
 /**
- * Java API.
- *
- * An actor that persists (journals) messages of type [[Persistent]]. Messages of other types are not persisted.
+ * Java API: an actor that persists (journals) messages of type [[Persistent]]. Messages of other types
+ * are not persisted.
  *
  * {{{
  * import akka.persistence.Persistent;
@@ -468,12 +461,8 @@ private[persistence] trait ProcessorStash {
  * @see [[PersistentBatch]]
  */
 abstract class UntypedProcessor extends UntypedActor with Processor {
-
   /**
-   * Java API.
-   *
-   * Returns the current persistent message or `null` if there is none.
+   * Java API. returns the current persistent message or `null` if there is none.
    */
   def getCurrentPersistentMessage = currentPersistentMessage.getOrElse(null)
 }
-

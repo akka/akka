@@ -69,11 +69,11 @@ class PersistencePluginDocSpec extends WordSpec {
 }
 
 class MyJournal extends AsyncWriteJournal {
-  def writeAsync(persistent: PersistentImpl): Future[Unit] = ???
-  def writeBatchAsync(persistentBatch: Seq[PersistentImpl]): Future[Unit] = ???
-  def deleteAsync(persistent: PersistentImpl): Future[Unit] = ???
+  def writeAsync(persistent: PersistentRepr): Future[Unit] = ???
+  def writeBatchAsync(persistentBatch: Seq[PersistentRepr]): Future[Unit] = ???
+  def deleteAsync(processorId: String, sequenceNr: Long, physical: Boolean): Future[Unit] = ???
   def confirmAsync(processorId: String, sequenceNr: Long, channelId: String): Future[Unit] = ???
-  def replayAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: (PersistentImpl) ⇒ Unit): Future[Long] = ???
+  def replayAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: (PersistentRepr) ⇒ Unit): Future[Long] = ???
 }
 
 class MySnapshotStore extends SnapshotStore {

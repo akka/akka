@@ -12,9 +12,7 @@ import akka.persistence.*;
 interface SnapshotStorePlugin {
     //#snapshot-store-plugin-api
     /**
-     * Plugin Java API.
-     *
-     * Asynchronously loads a snapshot.
+     * Java API, Plugin API: asynchronously loads a snapshot.
      *
      * @param processorId processor id.
      * @param criteria selection criteria for loading.
@@ -22,9 +20,7 @@ interface SnapshotStorePlugin {
     Future<Option<SelectedSnapshot>> doLoadAsync(String processorId, SnapshotSelectionCriteria criteria);
 
     /**
-     * Plugin Java API.
-     *
-     * Asynchronously saves a snapshot.
+     * Java API, Plugin API: asynchronously saves a snapshot.
      *
      * @param metadata snapshot metadata.
      * @param snapshot snapshot.
@@ -32,18 +28,14 @@ interface SnapshotStorePlugin {
     Future<Void> doSaveAsync(SnapshotMetadata metadata, Object snapshot);
 
     /**
-     * Plugin Java API.
-     *
-     * Called after successful saving of a snapshot.
+     * Java API, Plugin API: called after successful saving of a snapshot.
      *
      * @param metadata snapshot metadata.
      */
     void onSaved(SnapshotMetadata metadata) throws Exception;
 
     /**
-     * Plugin Java API.
-     *
-     * Deletes the snapshot identified by `metadata`.
+     * Java API, Plugin API: deletes the snapshot identified by `metadata`.
      *
      * @param metadata snapshot metadata.
      */

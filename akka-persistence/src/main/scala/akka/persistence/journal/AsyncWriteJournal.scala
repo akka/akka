@@ -1,4 +1,5 @@
 /**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  * Copyright (C) 2012-2013 Eligotech BV.
  */
 
@@ -39,7 +40,7 @@ trait AsyncWriteJournal extends Actor with AsyncReplay {
       val csdr = sender
       val cctr = resequencerCounter
       val psdr = if (sender.isInstanceOf[PromiseActorRef]) context.system.deadLetters else sender
-      def resequence(f: PersistentImpl ⇒ Any) = persistentBatch.zipWithIndex.foreach {
+      def resequence(f: PersistentRepr ⇒ Any) = persistentBatch.zipWithIndex.foreach {
         case (p, i) ⇒ resequencer ! Desequenced(f(p), cctr + i, processor, csdr)
       }
       writeBatchAsync(persistentBatch.map(_.prepareWrite(psdr))) onComplete {
@@ -66,9 +67,9 @@ trait AsyncWriteJournal extends Actor with AsyncReplay {
       }
       context.system.eventStream.publish(c)
     }
-    case Delete(persistent: PersistentImpl) ⇒ {
-      deleteAsync(persistent) onComplete {
-        case Success(_) ⇒ // TODO: publish success to event stream
+    case d @ Delete(processorId, sequenceNr, physical) ⇒ {
+      deleteAsync(processorId, sequenceNr, physical) onComplete {
+        case Success(_) ⇒ context.system.eventStream.publish(d)
         case Failure(e) ⇒ // TODO: publish failure to event stream
       }
     }
@@ -80,31 +81,26 @@ trait AsyncWriteJournal extends Actor with AsyncReplay {
 
   //#journal-plugin-api
   /**
-   * Plugin API.
-   *
-   * Asynchronously writes a `persistent` message to the journal.
+   * Plugin API: asynchronously writes a `persistent` message to the journal.
    */
-  def writeAsync(persistent: PersistentImpl): Future[Unit]
+  def writeAsync(persistent: PersistentRepr): Future[Unit]
 
   /**
-   * Plugin API.
-   *
-   * Asynchronously writes a batch of persistent messages to the journal. The batch write
-   * must be atomic i.e. either all persistent messages in the batch are written or none.
+   * Plugin API: asynchronously writes a batch of persistent messages to the journal.
+   * The batch write must be atomic i.e. either all persistent messages in the batch
+   * are written or none.
    */
-  def writeBatchAsync(persistentBatch: immutable.Seq[PersistentImpl]): Future[Unit]
+  def writeBatchAsync(persistentBatch: immutable.Seq[PersistentRepr]): Future[Unit]
 
   /**
-   * Plugin API.
-   *
-   * Asynchronously marks a `persistent` message as deleted.
+   * Plugin API: asynchronously deletes a persistent message. If `physical` is set to
+   * `false`, the persistent message is marked as deleted, otherwise it is physically
+   * deleted.
    */
-  def deleteAsync(persistent: PersistentImpl): Future[Unit]
+  def deleteAsync(processorId: String, sequenceNr: Long, physical: Boolean): Future[Unit]
 
   /**
-   * Plugin API.
-   *
-   * Asynchronously writes a delivery confirmation to the journal.
+   * Plugin API: asynchronously writes a delivery confirmation to the journal.
    */
   def confirmAsync(processorId: String, sequenceNr: Long, channelId: String): Future[Unit]
   //#journal-plugin-api

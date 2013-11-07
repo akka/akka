@@ -64,11 +64,11 @@ private[persistence] trait Eventsourced extends Processor {
   private val persistingEvents: State = new State {
     def aroundReceive(receive: Receive, message: Any) = message match {
       case PersistentBatch(b) ⇒ {
-        b.foreach(deleteMessage)
+        b.foreach(p ⇒ deleteMessage(p, true))
         throw new UnsupportedOperationException("Persistent command batches not supported")
       }
-      case p: PersistentImpl ⇒ {
-        deleteMessage(p)
+      case p: PersistentRepr ⇒ {
+        deleteMessage(p, true)
         throw new UnsupportedOperationException("Persistent commands not supported")
       }
       case WriteSuccess(p) if identical(p.payload, persistInvocations.head._1) ⇒ {
@@ -95,10 +95,10 @@ private[persistence] trait Eventsourced extends Processor {
   }
 
   private var persistInvocations: List[(Any, Any ⇒ Unit)] = Nil
-  private var persistentEventBatch: List[PersistentImpl] = Nil
+  private var persistentEventBatch: List[PersistentRepr] = Nil
 
   private var currentState: State = recovering
-  private val processorStash = createProcessorStash
+  private val processorStash = createStash()
 
   /**
    * Asynchronously persists `event`. On successful persistence, `handler` is called with the
@@ -124,12 +124,13 @@ private[persistence] trait Eventsourced extends Processor {
    */
   final def persist[A](event: A)(handler: A ⇒ Unit): Unit = {
     persistInvocations = (event, handler.asInstanceOf[Any ⇒ Unit]) :: persistInvocations
-    persistentEventBatch = PersistentImpl(event) :: persistentEventBatch
+    persistentEventBatch = PersistentRepr(event) :: persistentEventBatch
   }
 
   /**
    * Asynchronously persists `events` in specified order. This is equivalent to calling
-   * `persist[A](event: A)(handler: A => Unit)` multiple times with the same `handler`.
+   * `persist[A](event: A)(handler: A => Unit)` multiple times with the same `handler`,
+   * except that `events` are persisted atomically with this method.
    *
    * @param events events to be persisted.
    * @param handler handler for each persisted `events`
@@ -211,9 +212,7 @@ trait EventsourcedProcessor extends Processor with Eventsourced {
 }
 
 /**
- * Java API.
- *
- * An event sourced processor.
+ * Java API: an event sourced processor.
  */
 abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Eventsourced {
   final def onReceive(message: Any) = initialBehavior(message)
@@ -227,9 +226,7 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
   }
 
   /**
-   * Java API.
-   *
-   * Asynchronously persists `event`. On successful persistence, `handler` is called with the
+   * Java API: asynchronously persists `event`. On successful persistence, `handler` is called with the
    * persisted event. It is guaranteed that no new commands will be received by a processor
    * between a call to `persist` and the execution of its `handler`. This also holds for
    * multiple `persist` calls per received command. Internally, this is achieved by stashing new
@@ -254,10 +251,9 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
     persist(event)(event ⇒ handler(event))
 
   /**
-   * Java API.
-   *
-   * Asynchronously persists `events` in specified order. This is equivalent to calling
-   * `persist[A](event: A, handler: Procedure[A])` multiple times with the same `handler`.
+   * Java API: asynchronously persists `events` in specified order. This is equivalent to calling
+   * `persist[A](event: A, handler: Procedure[A])` multiple times with the same `handler`,
+   * except that `events` are persisted atomically with this method.
    *
    * @param events events to be persisted.
    * @param handler handler for each persisted `events`
@@ -266,9 +262,7 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
     persist(Util.immutableSeq(events))(event ⇒ handler(event))
 
   /**
-   * Java API.
-   *
-   * Replay handler that receives persisted events during recovery. If a state snapshot
+   * Java API: replay handler that receives persisted events during recovery. If a state snapshot
    * has been captured and saved, this handler will receive a [[SnapshotOffer]] message
    * followed by events that are younger than the offered snapshot.
    *
@@ -281,9 +275,7 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
   def onReceiveReplay(msg: Any): Unit
 
   /**
-   * Java API.
-   *
-   * Command handler. Typically validates commands against current state (and/or by
+   * Java API: command handler. Typically validates commands against current state (and/or by
    * communication with other actors). On successful validation, one or more events are
    * derived from a command and these events are then persisted by calling `persist`.
    * Commands sent to event sourced processors must not be [[Persistent]] or
