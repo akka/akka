@@ -14,11 +14,11 @@ import scala.collection.immutable
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class HeartbeatNodeRingSpec extends WordSpec with MustMatchers {
 
-  val aa = Address("akka.tcp", "sys", "aa", 2552)
-  val bb = Address("akka.tcp", "sys", "bb", 2552)
-  val cc = Address("akka.tcp", "sys", "cc", 2552)
-  val dd = Address("akka.tcp", "sys", "dd", 2552)
-  val ee = Address("akka.tcp", "sys", "ee", 2552)
+  val aa = UniqueAddress(Address("akka.tcp", "sys", "aa", 2552), 1)
+  val bb = UniqueAddress(Address("akka.tcp", "sys", "bb", 2552), 2)
+  val cc = UniqueAddress(Address("akka.tcp", "sys", "cc", 2552), 3)
+  val dd = UniqueAddress(Address("akka.tcp", "sys", "dd", 2552), 4)
+  val ee = UniqueAddress(Address("akka.tcp", "sys", "ee", 2552), 5)
 
   val nodes = Set(aa, bb, cc, dd, ee)
 
@@ -42,19 +42,9 @@ class HeartbeatNodeRingSpec extends WordSpec with MustMatchers {
       HeartbeatNodeRing(cc, nodes, 6).myReceivers must be(expected)
     }
 
-    "have matching senders and receivers" in {
-      val ring = HeartbeatNodeRing(cc, nodes, 3)
-      ring.mySenders must be(ring.senders(cc))
-
-      for (sender ← nodes; receiver ← ring.receivers(sender)) {
-        ring.senders(receiver) must contain(sender)
-      }
-    }
-
     "pick none when alone" in {
       val ring = HeartbeatNodeRing(cc, Set(cc), 3)
       ring.myReceivers must be(Set())
-      ring.mySenders must be(Set())
     }
 
   }

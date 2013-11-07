@@ -92,3 +92,10 @@ without much trouble.
 
 Read more about the new routers in the :ref:`documentation for Scala <routing-scala>` and 
 :ref:`documentation for Java <routing-java>`.
+
+Changed cluster expected-response-after configuration
+=====================================================
+
+Configuration property ``akka.cluster.failure-detector.heartbeat-request.expected-response-after`` 
+has been renamed to ``akka.cluster.failure-detector.expected-response-after``.
+ 
