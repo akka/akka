@@ -276,6 +276,7 @@ object AkkaBuild extends Build {
     base = file("akka-persistence"),
     dependencies = Seq(actor, remote % "test->test", testkit % "test->test"),
     settings = defaultSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.persistence ++ Seq(
+      fork in Test := true,
       libraryDependencies ++= Dependencies.persistence,
       previousArtifact := akkaPreviousArtifact("akka-persistence")
     )
@@ -1067,7 +1068,8 @@ object Dependencies {
     val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "1.1.0"       // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
     val osgiCompendium= "org.osgi"                    % "org.osgi.compendium"          % "4.2.0"       // ApacheV2
-    val levelDB      = "org.iq80.leveldb"            % "leveldb"                      % "0.5"         // ApacheV2
+    val levelDB       = "org.iq80.leveldb"            % "leveldb"                      % "0.5"         // ApacheV2
+    val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"               % "1.7"         // New BSD
 
     // Camel Sample
     val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
@@ -1118,7 +1120,7 @@ object Dependencies {
 
   val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val persistence = Seq(levelDB, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
+  val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
