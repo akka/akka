@@ -47,11 +47,11 @@ trait SyncWriteJournal extends Actor with AsyncReplay {
     }
     case c @ Confirm(processorId, sequenceNr, channelId) ⇒ {
       confirm(processorId, sequenceNr, channelId)
-      context.system.eventStream.publish(c) // TODO: turn off by default and allow to turn on by configuration
+      if (extension.publishPluginCommands) context.system.eventStream.publish(c)
     }
-    case d @ Delete(processorId, sequenceNr, physical) ⇒ {
-      delete(processorId, sequenceNr, physical)
-      context.system.eventStream.publish(d) // TODO: turn off by default and allow to turn on by configuration
+    case d @ Delete(processorId, fromSequenceNr, toSequenceNr, permanent) ⇒ {
+      delete(processorId, fromSequenceNr, toSequenceNr, permanent)
+      if (extension.publishPluginCommands) context.system.eventStream.publish(d)
     }
     case Loop(message, processor) ⇒ {
       processor forward LoopSuccess(message)
@@ -72,11 +72,14 @@ trait SyncWriteJournal extends Actor with AsyncReplay {
   def writeBatch(persistentBatch: immutable.Seq[PersistentRepr]): Unit
 
   /**
-   * Plugin API: synchronously deletes a persistent message. If `physical` is set to
-   * `false`, the persistent message is marked as deleted, otherwise it is physically
-   * deleted.
+   * Plugin API: synchronously deletes all persistent messages within the range from
+   * `fromSequenceNr` to `toSequenceNr` (both inclusive). If `permanent` is set to
+   * `false`, the persistent messages are marked as deleted, otherwise they are
+   * permanently deleted.
+   *
+   * @see [[AsyncReplay]]
    */
-  def delete(processorId: String, sequenceNr: Long, physical: Boolean): Unit
+  def delete(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean): Unit
 
   /**
    * Plugin API: synchronously writes a delivery confirmation to the journal.

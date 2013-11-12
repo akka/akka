@@ -20,8 +20,8 @@ abstract class SyncWriteJournal extends AsyncReplay with SSyncWriteJournal with 
   final def writeBatch(persistentBatch: immutable.Seq[PersistentRepr]) =
     doWriteBatch(persistentBatch.asJava)
 
-  final def delete(processorId: String, sequenceNr: Long, physical: Boolean) =
-    doDelete(processorId, sequenceNr, physical)
+  final def delete(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean) =
+    doDelete(processorId, fromSequenceNr, toSequenceNr, permanent)
 
   final def confirm(processorId: String, sequenceNr: Long, channelId: String) =
     doConfirm(processorId, sequenceNr, channelId)

@@ -138,11 +138,12 @@ a replay of that message during recovery it can be deleted.
 Message deletion
 ----------------
 
-A processor can delete messages by calling the ``delete`` method with a ``Persistent`` message object or a
-sequence number as argument. An optional ``physical`` parameter specifies whether the message shall be
-physically deleted from the journal or only marked as deleted. In both cases, the message won't be replayed.
-Later extensions to Akka persistence will allow to replay messages that have been marked as deleted which can
-be useful for debugging purposes, for example.
+A processor can delete a single message by calling the ``deleteMessage`` method with the sequence number of
+that message as argument. An optional ``permanent`` parameter specifies whether the message shall be permanently
+deleted from the journal or only marked as deleted. In both cases, the message won't be replayed. Later extensions
+to Akka persistence will allow to replay messages that have been marked as deleted which can be useful for debugging
+purposes, for example. To delete all messages (journaled by a single processor) up to a specified sequence number,
+processors can call the ``deleteMessages`` method.
 
 Identifiers
 -----------
@@ -325,6 +326,13 @@ and at least one of these snapshots matches the ``SnapshotSelectionCriteria`` th
 If not specified, they default to ``SnapshotSelectionCriteria.Latest`` which selects the latest (= youngest) snapshot.
 To disable snapshot-based recovery, applications should use ``SnapshotSelectionCriteria.None``. A recovery where no
 saved snapshot matches the specified ``SnapshotSelectionCriteria`` will replay all journaled messages.
+
+Snapshot deletion
+-----------------
+
+A processor can delete a single snapshot by calling the ``deleteSnapshot`` method with the sequence number and the
+timestamp of the snapshot as argument. To bulk-delete snapshots that match a specified ``SnapshotSelectionCriteria``
+argument, processors can call the ``deleteSnapshots`` method.
 
 .. _event-sourcing:
 

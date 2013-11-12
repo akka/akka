@@ -4,8 +4,6 @@
 
 package akka.persistence
 
-import com.typesafe.config.Config
-
 import akka.actor._
 import akka.dispatch.Dispatchers
 import akka.persistence.journal.AsyncWriteJournal
@@ -34,6 +32,13 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   private val snapshotStore = createPlugin("snapshot-store", _ ⇒ DefaultPluginDispatcherId)
   private val journal = createPlugin("journal", clazz ⇒
     if (classOf[AsyncWriteJournal].isAssignableFrom(clazz)) Dispatchers.DefaultDispatcherId else DefaultPluginDispatcherId)
+
+  private[persistence] val publishPluginCommands: Boolean = {
+    val path = "publish-plugin-commands"
+    // this config option is only used internally (for testing
+    // purposes) and is therefore not defined in reference.conf
+    config.hasPath(path) && config.getBoolean(path)
+  }
 
   /**
    * Returns a snapshot store for a processor identified by `processorId`.
@@ -69,7 +74,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
     val pluginClassName = pluginConfig.getString("class")
     val pluginClass = system.dynamicAccess.getClassFor[AnyRef](pluginClassName).get
     val pluginDispatcherId = if (pluginConfig.hasPath("plugin-dispatcher")) pluginConfig.getString("plugin-dispatcher") else dispatcherSelector(pluginClass)
-    system.actorOf(Props(pluginClass).withDispatcher(pluginDispatcherId))
+    system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(pluginClass).withDispatcher(pluginDispatcherId), pluginType)
   }
 
   private def id(ref: ActorRef) = ref.path.toStringWithAddress(system.provider.getDefaultAddress)

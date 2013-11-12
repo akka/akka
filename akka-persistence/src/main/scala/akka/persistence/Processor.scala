@@ -235,54 +235,57 @@ trait Processor extends Actor with Stash with StashFactory {
   implicit def currentPersistentMessage: Option[Persistent] = Option(_currentPersistent)
 
   /**
-   * Marks the `persistent` message as deleted. A message marked as deleted is not replayed during
-   * recovery. This method is usually called inside `preRestartProcessor` when a persistent message
-   * caused an exception. Processors that want to re-receive that persistent message during recovery
-   * should not call this method.
+   * Marks a persistent message, identified by `sequenceNr`, as deleted. A message marked as deleted is
+   * not replayed during recovery. This method is usually called inside `preRestartProcessor` when a
+   * persistent message caused an exception. Processors that want to re-receive that persistent message
+   * during recovery should not call this method.
    *
-   * @param persistent persistent message to be marked as deleted.
-   * @throws IllegalArgumentException if `persistent` message has not been persisted by this
-   *                                  processor.
+   * @param sequenceNr sequence number of the persistent message to be deleted.
    */
-  def deleteMessage(persistent: Persistent): Unit = {
-    deleteMessage(persistent, false)
+  def deleteMessage(sequenceNr: Long): Unit = {
+    deleteMessage(sequenceNr, false)
   }
 
   /**
-   * Deletes a `persistent` message. If `physical` is set to `false` (default), the persistent
-   * message is marked as deleted in the journal, otherwise it is physically deleted from the
-   * journal. A deleted message is not replayed during recovery. This method is usually called
-   * inside `preRestartProcessor` when a persistent message caused an exception. Processors that
-   * want to re-receive that persistent message during recovery should not call this method.
-   *
-   * @param persistent persistent message to be deleted.
-   * @param physical if `false` (default), the message is marked as deleted, otherwise it is
-   *                 physically deleted.
-   * @throws IllegalArgumentException if `persistent` message has not been persisted by this
-   *                                  processor.
-   */
-  def deleteMessage(persistent: Persistent, physical: Boolean): Unit = {
-    val impl = persistent.asInstanceOf[PersistentRepr]
-    if (impl.processorId != processorId)
-      throw new IllegalArgumentException(
-        s"persistent message to be deleted (processor id = [${impl.processorId}], sequence number = [${impl.sequenceNr}]) " +
-          s"has not been persisted by this processor (processor id = [${processorId}])")
-    else deleteMessage(impl.sequenceNr, physical)
-  }
-
-  /**
-   * Deletes a persistent message identified by `sequenceNr`. If `physical` is set to `false`,
-   * the persistent message is marked as deleted in the journal, otherwise it is physically
+   * Deletes a persistent message identified by `sequenceNr`. If `permanent` is set to `false`,
+   * the persistent message is marked as deleted in the journal, otherwise it is permanently
    * deleted from the journal. A deleted message is not replayed during recovery. This method
    * is usually called inside `preRestartProcessor` when a persistent message caused an exception.
    * Processors that want to re-receive that persistent message during recovery should not call
    * this method.
    *
+   * Later extensions may also allow a replay of messages that have been marked as deleted which can
+   * be useful in debugging environments.
+   *
    * @param sequenceNr sequence number of the persistent message to be deleted.
-   * @param physical if `false`, the message is marked as deleted, otherwise it is physically deleted.
+   * @param permanent if `false`, the message is marked as deleted, otherwise it is permanently deleted.
    */
-  def deleteMessage(sequenceNr: Long, physical: Boolean): Unit = {
-    journal ! Delete(processorId, sequenceNr, physical)
+  def deleteMessage(sequenceNr: Long, permanent: Boolean): Unit = {
+    journal ! Delete(processorId, sequenceNr, sequenceNr, permanent)
+  }
+
+  /**
+   * Marks all persistent messages with sequence numbers less than or equal `toSequenceNr` as deleted.
+   *
+   * @param toSequenceNr upper sequence number bound of persistent messages to be deleted.
+   */
+  def deleteMessages(toSequenceNr: Long): Unit = {
+    deleteMessages(toSequenceNr, false)
+  }
+
+  /**
+   * Deletes all persistent messages with sequence numbers less than or equal `toSequenceNr`. If `permanent`
+   * is set to `false`, the persistent messages are marked as deleted in the journal, otherwise
+   * they permanently deleted from the journal.
+   *
+   * Later extensions may also allow a replay of messages that have been marked as deleted which can
+   * be useful in debugging environments.
+   *
+   * @param toSequenceNr upper sequence number bound of persistent messages to be deleted.
+   * @param permanent if `false`, the message is marked as deleted, otherwise it is permanently deleted.
+   */
+  def deleteMessages(toSequenceNr: Long, permanent: Boolean): Unit = {
+    journal ! Delete(processorId, 1L, toSequenceNr, permanent)
   }
 
   /**
@@ -291,6 +294,20 @@ trait Processor extends Actor with Stash with StashFactory {
    */
   def saveSnapshot(snapshot: Any): Unit = {
     snapshotStore ! SaveSnapshot(SnapshotMetadata(processorId, lastSequenceNr), snapshot)
+  }
+
+  /**
+   * Deletes a snapshot identified by `sequenceNr` and `timestamp`.
+   */
+  def deleteSnapshot(sequenceNr: Long, timestamp: Long): Unit = {
+    snapshotStore ! DeleteSnapshot(SnapshotMetadata(processorId, sequenceNr, timestamp))
+  }
+
+  /**
+   * Deletes all snapshots matching `criteria`.
+   */
+  def deleteSnapshots(criteria: SnapshotSelectionCriteria): Unit = {
+    snapshotStore ! DeleteSnapshots(processorId, criteria)
   }
 
   /**

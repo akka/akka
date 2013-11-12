@@ -22,8 +22,8 @@ abstract class AsyncWriteJournal extends AsyncReplay with SAsyncWriteJournal wit
   final def writeBatchAsync(persistentBatch: immutable.Seq[PersistentRepr]) =
     doWriteBatchAsync(persistentBatch.asJava).map(Unit.unbox)
 
-  final def deleteAsync(processorId: String, sequenceNr: Long, physical: Boolean) =
-    doDeleteAsync(processorId, sequenceNr, physical).map(Unit.unbox)
+  final def deleteAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean) =
+    doDeleteAsync(processorId, fromSequenceNr, toSequenceNr, permanent).map(Unit.unbox)
 
   final def confirmAsync(processorId: String, sequenceNr: Long, channelId: String) =
     doConfirmAsync(processorId, sequenceNr, channelId).map(Unit.unbox)

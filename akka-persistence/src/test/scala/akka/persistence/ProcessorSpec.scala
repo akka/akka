@@ -23,7 +23,7 @@ object ProcessorSpec {
 
     override def preRestart(reason: Throwable, message: Option[Any]) = {
       message match {
-        case Some(m: Persistent) ⇒ deleteMessage(m) // delete message from journal
+        case Some(m: Persistent) ⇒ deleteMessage(m.sequenceNr) // delete message from journal
         case _                   ⇒ // ignore
       }
       super.preRestart(reason, message)
@@ -112,7 +112,7 @@ object ProcessorSpec {
   class LastReplayedMsgFailsTestProcessor(name: String) extends RecoverTestProcessor(name) {
     override def preRestart(reason: Throwable, message: Option[Any]) = {
       message match {
-        case Some(m: Persistent) ⇒ if (recoveryRunning) deleteMessage(m)
+        case Some(m: Persistent) ⇒ if (recoveryRunning) deleteMessage(m.sequenceNr)
         case _                   ⇒
       }
       super.preRestart(reason, message)
@@ -126,10 +126,22 @@ object ProcessorSpec {
 
     override def receive = failOnReplayedA orElse super.receive
   }
+
+  case class Delete1(snr: Long)
+  case class DeleteN(toSnr: Long)
+
+  class DeleteMessageTestProcessor(name: String) extends RecoverTestProcessor(name) {
+    override def receive = {
+      case Delete1(snr)   ⇒ deleteMessage(snr)
+      case DeleteN(toSnr) ⇒ deleteMessages(toSnr)
+      case m              ⇒ super.receive(m)
+    }
+  }
 }
 
 abstract class ProcessorSpec(config: Config) extends AkkaSpec(config) with PersistenceSpec with ImplicitSender {
   import ProcessorSpec._
+  import JournalProtocol._
 
   override protected def beforeEach() {
     super.beforeEach()
@@ -291,6 +303,40 @@ abstract class ProcessorSpec(config: Config) extends AkkaSpec(config) with Persi
       processor ! Persistent("f")
       processor ! GetState
       expectMsg(List("a-1", "b-2", "c-3", "d-4", "e-5", "f-6"))
+    }
+    "support single message deletions" in {
+      val deleteProbe = TestProbe()
+
+      system.eventStream.subscribe(deleteProbe.ref, classOf[Delete])
+
+      val processor1 = namedProcessor[DeleteMessageTestProcessor]
+      processor1 ! Persistent("c")
+      processor1 ! Persistent("d")
+      processor1 ! Persistent("e")
+      processor1 ! Delete1(4)
+      deleteProbe.expectMsgType[Delete]
+
+      val processor2 = namedProcessor[DeleteMessageTestProcessor]
+      processor2 ! GetState
+
+      expectMsg(List("a-1", "b-2", "c-3", "e-5"))
+    }
+    "support bulk message deletions" in {
+      val deleteProbe = TestProbe()
+
+      system.eventStream.subscribe(deleteProbe.ref, classOf[Delete])
+
+      val processor1 = namedProcessor[DeleteMessageTestProcessor]
+      processor1 ! Persistent("c")
+      processor1 ! Persistent("d")
+      processor1 ! Persistent("e")
+      processor1 ! DeleteN(4)
+      deleteProbe.expectMsgType[Delete]
+
+      val processor2 = namedProcessor[DeleteMessageTestProcessor]
+      processor2 ! GetState
+
+      expectMsg(List("e-5"))
     }
   }
 

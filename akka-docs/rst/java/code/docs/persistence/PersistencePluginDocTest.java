@@ -32,6 +32,10 @@ public class PersistencePluginDocTest {
         @Override
         public void doDelete(SnapshotMetadata metadata) throws Exception {
         }
+
+        @Override
+        public void doDelete(String processorId, SnapshotSelectionCriteria criteria) throws Exception {
+        }
     }
 
     class MyAsyncJournal extends AsyncWriteJournal {
@@ -51,7 +55,7 @@ public class PersistencePluginDocTest {
         }
 
         @Override
-        public Future<Void> doDeleteAsync(String processorId, long sequenceNr, boolean physical) {
+        public Future<Void> doDeleteAsync(String processorId, long fromSequenceNr, long toSequenceNr, boolean permanent) {
             return null;
         }
 

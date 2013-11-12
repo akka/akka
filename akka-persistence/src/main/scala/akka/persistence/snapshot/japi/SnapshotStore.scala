@@ -27,4 +27,8 @@ abstract class SnapshotStore extends SSnapshotStore with SnapshotStorePlugin {
 
   final def delete(metadata: SnapshotMetadata) =
     doDelete(metadata)
+
+  final def delete(processorId: String, criteria: SnapshotSelectionCriteria) =
+    doDelete(processorId: String, criteria: SnapshotSelectionCriteria)
+
 }

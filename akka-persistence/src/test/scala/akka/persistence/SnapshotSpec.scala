@@ -28,10 +28,22 @@ object SnapshotSpec {
     }
     override def preStart() = ()
   }
+
+  case class Delete1(metadata: SnapshotMetadata)
+  case class DeleteN(criteria: SnapshotSelectionCriteria)
+
+  class DeleteSnapshotTestProcessor(name: String, probe: ActorRef) extends LoadSnapshotTestProcessor(name, probe) {
+    override def receive = {
+      case Delete1(metadata) ⇒ deleteSnapshot(metadata.sequenceNr, metadata.timestamp)
+      case DeleteN(criteria) ⇒ deleteSnapshots(criteria)
+      case other             ⇒ super.receive(other)
+    }
+  }
 }
 
 class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot")) with PersistenceSpec with ImplicitSender {
   import SnapshotSpec._
+  import SnapshotProtocol._
 
   override protected def beforeEach() {
     super.beforeEach()
@@ -133,6 +145,69 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot"
       expectMsg("a-1")
       expectMsg("b-2")
       expectMsg("c-3")
+    }
+    "support single message deletions" in {
+      val deleteProbe = TestProbe()
+
+      val processor1 = system.actorOf(Props(classOf[DeleteSnapshotTestProcessor], name, testActor))
+      val processorId = name
+
+      system.eventStream.subscribe(deleteProbe.ref, classOf[DeleteSnapshot])
+
+      // recover processor from 3rd snapshot and then delete snapshot
+      processor1 ! Recover(toSequenceNr = 4)
+      processor1 ! "done"
+
+      val metadata = expectMsgPF() {
+        case (md @ SnapshotMetadata(`processorId`, 4, _), state) ⇒ {
+          state must be(List("a-1", "b-2", "c-3", "d-4").reverse)
+          md
+        }
+      }
+      expectMsg("done")
+
+      processor1 ! Delete1(metadata)
+      deleteProbe.expectMsgType[DeleteSnapshot]
+
+      // recover processor from 2nd snapshot (3rd was deleted) plus replayed messages
+      val processor2 = system.actorOf(Props(classOf[DeleteSnapshotTestProcessor], name, testActor))
+
+      processor2 ! Recover(toSequenceNr = 4)
+      expectMsgPF() {
+        case (md @ SnapshotMetadata(`processorId`, 2, _), state) ⇒ {
+          state must be(List("a-1", "b-2").reverse)
+          md
+        }
+      }
+      expectMsg("c-3")
+      expectMsg("d-4")
+    }
+    "support bulk message deletions" in {
+      val deleteProbe = TestProbe()
+
+      val processor1 = system.actorOf(Props(classOf[DeleteSnapshotTestProcessor], name, testActor))
+      val processorId = name
+
+      system.eventStream.subscribe(deleteProbe.ref, classOf[DeleteSnapshots])
+
+      // recover processor and the delete first three (= all) snapshots
+      processor1 ! Recover(toSequenceNr = 4)
+      processor1 ! DeleteN(SnapshotSelectionCriteria(maxSequenceNr = 4))
+      expectMsgPF() {
+        case (md @ SnapshotMetadata(`processorId`, 4, _), state) ⇒ {
+          state must be(List("a-1", "b-2", "c-3", "d-4").reverse)
+        }
+      }
+      deleteProbe.expectMsgType[DeleteSnapshots]
+
+      // recover processor from replayed messages (all snapshots deleted)
+      val processor2 = system.actorOf(Props(classOf[DeleteSnapshotTestProcessor], name, testActor))
+
+      processor2 ! Recover(toSequenceNr = 4)
+      expectMsg("a-1")
+      expectMsg("b-2")
+      expectMsg("c-3")
+      expectMsg("d-4")
     }
   }
 }

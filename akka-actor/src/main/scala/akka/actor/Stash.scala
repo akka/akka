@@ -164,10 +164,11 @@ private[akka] trait StashSupport {
   }
 
   /**
-   * Prepends `others` to this stash.
+   * Prepends `others` to this stash. This method is optimized for a large stash and
+   * small `others`.
    */
   private[akka] def prepend(others: immutable.Seq[Envelope]): Unit =
-    others.reverseIterator.foreach(env ⇒ theStash = env +: theStash)
+    theStash = others.foldRight(theStash)((e, s) ⇒ e +: s)
 
   /**
    *  Prepends the oldest message in the stash to the mailbox, and then removes that
