@@ -116,7 +116,7 @@ object SupervisorHierarchySpec {
   val stateCache = new ConcurrentHashMap[ActorPath, HierarchyState]()
   @volatile var ignoreFailConstr = false
 
-  class Hierarchy(size: Int, breadth: Int, listener: ActorRef, myLevel: Int) extends Actor {
+  class Hierarchy(size: Int, breadth: Int, listener: ActorRef, myLevel: Int, random: Random) extends Actor {
 
     var log = Vector.empty[Event]
 
@@ -152,13 +152,13 @@ object SupervisorHierarchySpec {
       val s = size - 1 // subtract myself
       val kidInfo: Map[ActorPath, Int] =
         if (s > 0) {
-          val kids = Random.nextInt(Math.min(breadth, s)) + 1
+          val kids = random.nextInt(Math.min(breadth, s)) + 1
           val sizes = s / kids
           var rest = s % kids
           val propsTemplate = Props.empty.withDispatcher("hierarchy")
           (1 to kids).map { (id) ⇒
             val kidSize = if (rest > 0) { rest -= 1; sizes + 1 } else sizes
-            val props = propsTemplate.withCreator(new Hierarchy(kidSize, breadth, listener, myLevel + 1))
+            val props = propsTemplate.withCreator(new Hierarchy(kidSize, breadth, listener, myLevel + 1, random))
             (context.watch(context.actorOf(props, id.toString)).path, kidSize)
           }(collection.breakOut)
         } else Map()
@@ -226,7 +226,7 @@ object SupervisorHierarchySpec {
           val name = childPath.name
           if (context.child(name).isEmpty) {
             listener ! Died(childPath)
-            val props = Props(new Hierarchy(kidSize, breadth, listener, myLevel + 1)).withDispatcher("hierarchy")
+            val props = Props(new Hierarchy(kidSize, breadth, listener, myLevel + 1, random)).withDispatcher("hierarchy")
             context.watch(context.actorOf(props, name))
           }
       }
@@ -275,7 +275,7 @@ object SupervisorHierarchySpec {
           setFlags(f.directive)
           stateCache.put(self.path, stateCache.get(self.path).copy(failConstr = f.copy()))
           throw f
-        case "ping"      ⇒ { Thread.sleep((Random.nextFloat * 1.03).toLong); sender ! "pong" }
+        case "ping"      ⇒ { Thread.sleep((random.nextFloat * 1.03).toLong); sender ! "pong" }
         case Dump(0)     ⇒ abort("dump")
         case Dump(level) ⇒ context.children foreach (_ ! Dump(level - 1))
         case Terminated(ref) ⇒
@@ -288,7 +288,7 @@ object SupervisorHierarchySpec {
             if (!context.child(name).exists(_ != ref)) {
               listener ! Died(ref.path)
               val kids = stateCache.get(self.path).kids(ref.path)
-              val props = Props(new Hierarchy(kids, breadth, listener, myLevel + 1)).withDispatcher("hierarchy")
+              val props = Props(new Hierarchy(kids, breadth, listener, myLevel + 1, random)).withDispatcher("hierarchy")
               context.watch(context.actorOf(props, name))
             }
             // Otherwise it is a Terminated from an old child. Ignore.
@@ -397,6 +397,9 @@ object SupervisorHierarchySpec {
   class StressTest(testActor: ActorRef, size: Int, breadth: Int) extends Actor with LoggingFSM[State, Int] {
     import context.system
 
+    val randomSeed = System.nanoTime()
+    val random = new Random(randomSeed)
+
     // don’t escalate from this one!
     override val supervisorStrategy = OneForOneStrategy() {
       case f: Failure ⇒ f.directive
@@ -410,7 +413,7 @@ object SupervisorHierarchySpec {
     var idleChildren = Vector.empty[ActorRef]
     var pingChildren = Set.empty[ActorRef]
 
-    val nextJob = Iterator.continually(Random.nextFloat match {
+    val nextJob = Iterator.continually(random.nextFloat match {
       case x if x >= 0.5 ⇒
         // ping one child
         val pick = ((x - 0.5) * 2 * idleChildren.size).toInt
@@ -443,7 +446,7 @@ object SupervisorHierarchySpec {
 
     when(Idle) {
       case Event(Init, _) ⇒
-        hierarchy = context.watch(context.actorOf(Props(new Hierarchy(size, breadth, self, 0)).withDispatcher("hierarchy"), "head"))
+        hierarchy = context.watch(context.actorOf(Props(new Hierarchy(size, breadth, self, 0, random)).withDispatcher("hierarchy"), "head"))
         setTimer("phase", StateTimeout, 5 seconds, false)
         goto(Init)
     }
@@ -474,7 +477,7 @@ object SupervisorHierarchySpec {
 
     val workSchedule = 50.millis
 
-    private def random012: Int = Random.nextFloat match {
+    private def random012: Int = random.nextFloat match {
       case x if x > 0.1  ⇒ 0
       case x if x > 0.03 ⇒ 1
       case _             ⇒ 2
@@ -501,7 +504,7 @@ object SupervisorHierarchySpec {
             val f = Failure(dir, stop = random012 > 0, depth = random012, failPre = random012, failPost = random012, failConstr = random012,
               stopKids = random012 match {
                 case 0 ⇒ 0
-                case 1 ⇒ Random.nextInt(breadth / 2)
+                case 1 ⇒ random.nextInt(breadth / 2)
                 case 2 ⇒ 1000
               })
             ref ! f
@@ -677,6 +680,7 @@ object SupervisorHierarchySpec {
           println("Error: " + ref + " " + msg)
           log map (l ⇒ (l.time, ref, l.identity, l.msg.toString))
       }
+      println("random seed: " + randomSeed)
       merged.sorted.distinct foreach println
     }
 
