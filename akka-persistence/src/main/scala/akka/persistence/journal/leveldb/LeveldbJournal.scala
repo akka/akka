@@ -1,4 +1,5 @@
 /**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  * Copyright (C) 2012-2013 Eligotech BV.
  */
 
@@ -38,14 +39,18 @@ private[leveldb] class LeveldbJournal extends SyncWriteJournal with LeveldbIdMap
 
   import Key._
 
-  def write(persistent: PersistentImpl) =
+  def write(persistent: PersistentRepr) =
     withBatch(batch ⇒ addToBatch(persistent, batch))
 
-  def writeBatch(persistentBatch: immutable.Seq[PersistentImpl]) =
+  def writeBatch(persistentBatch: immutable.Seq[PersistentRepr]) =
     withBatch(batch ⇒ persistentBatch.foreach(persistent ⇒ addToBatch(persistent, batch)))
 
-  def delete(persistent: PersistentImpl) {
-    leveldb.put(keyToBytes(deletionKey(numericId(persistent.processorId), persistent.sequenceNr)), Array.empty[Byte])
+  def delete(processorId: String, sequenceNr: Long, physical: Boolean) {
+    if (physical)
+      // TODO: delete confirmations and deletion markers, if any.
+      leveldb.delete(keyToBytes(Key(numericId(processorId), sequenceNr, 0)))
+    else
+      leveldb.put(keyToBytes(deletionKey(numericId(processorId), sequenceNr)), Array.empty[Byte])
   }
 
   def confirm(processorId: String, sequenceNr: Long, channelId: String) {
@@ -55,10 +60,10 @@ private[leveldb] class LeveldbJournal extends SyncWriteJournal with LeveldbIdMap
   def leveldbSnapshot = leveldbReadOptions.snapshot(leveldb.getSnapshot)
   def leveldbIterator = leveldb.iterator(leveldbSnapshot)
 
-  def persistentToBytes(p: PersistentImpl): Array[Byte] = serialization.serialize(p).get
-  def persistentFromBytes(a: Array[Byte]): PersistentImpl = serialization.deserialize(a, classOf[PersistentImpl]).get
+  def persistentToBytes(p: PersistentRepr): Array[Byte] = serialization.serialize(p).get
+  def persistentFromBytes(a: Array[Byte]): PersistentRepr = serialization.deserialize(a, classOf[PersistentRepr]).get
 
-  private def addToBatch(persistent: PersistentImpl, batch: WriteBatch): Unit = {
+  private def addToBatch(persistent: PersistentRepr, batch: WriteBatch): Unit = {
     val nid = numericId(persistent.processorId)
     batch.put(keyToBytes(counterKey(nid)), counterToBytes(persistent.sequenceNr))
     batch.put(keyToBytes(Key(nid, persistent.sequenceNr, 0)), persistentToBytes(persistent))

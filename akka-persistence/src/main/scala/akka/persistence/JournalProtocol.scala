@@ -13,12 +13,12 @@ import akka.actor._
  */
 private[persistence] object JournalProtocol {
   /**
-   * Instructs a journal to mark the `persistent` message as deleted.
-   * A persistent message marked as deleted is not replayed during recovery.
-   *
-   * @param persistent persistent message.
+   * Instructs a journal to delete a persistent message identified by `processorId`
+   * and `sequenceNr`. If `physical` is set to `false`, the persistent message is
+   * marked as deleted in the journal, otherwise it is physically deleted from the
+   * journal.
    */
-  case class Delete(persistent: Persistent)
+  case class Delete(processorId: String, sequenceNr: Long, physical: Boolean)
 
   /**
    * Instructs a journal to persist a sequence of messages.
@@ -26,7 +26,7 @@ private[persistence] object JournalProtocol {
    * @param persistentBatch batch of messages to be persisted.
    * @param processor requesting processor.
    */
-  case class WriteBatch(persistentBatch: immutable.Seq[PersistentImpl], processor: ActorRef)
+  case class WriteBatch(persistentBatch: immutable.Seq[PersistentRepr], processor: ActorRef)
 
   /**
    * Instructs a journal to persist a message.
@@ -34,14 +34,14 @@ private[persistence] object JournalProtocol {
    * @param persistent message to be persisted.
    * @param processor requesting processor.
    */
-  case class Write(persistent: PersistentImpl, processor: ActorRef)
+  case class Write(persistent: PersistentRepr, processor: ActorRef)
 
   /**
    * Reply message to a processor that `persistent` message has been successfully journaled.
    *
    * @param persistent persistent message.
    */
-  case class WriteSuccess(persistent: PersistentImpl)
+  case class WriteSuccess(persistent: PersistentRepr)
 
   /**
    * Reply message to a processor that `persistent` message could not be journaled.
@@ -49,7 +49,7 @@ private[persistence] object JournalProtocol {
    * @param persistent persistent message.
    * @param cause failure cause.
    */
-  case class WriteFailure(persistent: PersistentImpl, cause: Throwable)
+  case class WriteFailure(persistent: PersistentRepr, cause: Throwable)
 
   /**
    * Instructs a journal to loop a `message` back to `processor`, without persisting the
@@ -83,7 +83,7 @@ private[persistence] object JournalProtocol {
    *
    * @param persistent persistent message.
    */
-  case class Replayed(persistent: PersistentImpl)
+  case class Replayed(persistent: PersistentRepr)
 
   /**
    * Reply message to a processor that all `persistent` messages have been replayed.

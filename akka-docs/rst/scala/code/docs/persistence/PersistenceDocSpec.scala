@@ -117,7 +117,7 @@ trait PersistenceDocSpec {
 
     class MyDestination extends Actor {
       def receive = {
-        case p @ Persistent(payload, _) ⇒ {
+        case p @ ConfirmablePersistent(payload, _) ⇒ {
           println(s"received ${payload}")
           p.confirm()
         }
@@ -242,5 +242,18 @@ trait PersistenceDocSpec {
     processor ! PersistentBatch(Vector(Persistent("a"), Persistent("b")))
     //#batch-write
     system.shutdown()
+  }
+
+  new AnyRef {
+    import akka.actor._
+    trait MyActor extends Actor {
+      val destination: ActorRef = null
+      //#persistent-channel-example
+      val channel = context.actorOf(PersistentChannel.props(),
+        name = "myPersistentChannel")
+
+      channel ! Deliver(Persistent("example"), destination)
+      //#persistent-channel-example
+    }
   }
 }

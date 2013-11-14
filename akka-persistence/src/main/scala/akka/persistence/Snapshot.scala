@@ -1,4 +1,5 @@
 /**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  * Copyright (C) 2012-2013 Eligotech BV.
  */
 
@@ -82,9 +83,7 @@ object SnapshotSelectionCriteria {
 }
 
 /**
- * Plugin API.
- *
- * A selected snapshot matching [[SnapshotSelectionCriteria]].
+ * Plugin API: a selected snapshot matching [[SnapshotSelectionCriteria]].
  *
  * @param metadata snapshot metadata.
  * @param snapshot snapshot.

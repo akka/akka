@@ -1,4 +1,5 @@
 /**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  * Copyright (C) 2012-2013 Eligotech BV.
  */
 
@@ -48,8 +49,9 @@ trait SyncWriteJournal extends Actor with AsyncReplay {
       confirm(processorId, sequenceNr, channelId)
       context.system.eventStream.publish(c) // TODO: turn off by default and allow to turn on by configuration
     }
-    case Delete(persistent: PersistentImpl) ⇒ {
-      delete(persistent)
+    case d @ Delete(processorId, sequenceNr, physical) ⇒ {
+      delete(processorId, sequenceNr, physical)
+      context.system.eventStream.publish(d) // TODO: turn off by default and allow to turn on by configuration
     }
     case Loop(message, processor) ⇒ {
       processor forward LoopSuccess(message)
@@ -58,31 +60,26 @@ trait SyncWriteJournal extends Actor with AsyncReplay {
 
   //#journal-plugin-api
   /**
-   * Plugin API.
-   *
-   * Synchronously writes a `persistent` message to the journal.
+   * Plugin API: synchronously writes a `persistent` message to the journal.
    */
-  def write(persistent: PersistentImpl): Unit
+  def write(persistent: PersistentRepr): Unit
 
   /**
-   * Plugin API.
-   *
-   * Synchronously writes a batch of persistent messages to the journal. The batch write
-   * must be atomic i.e. either all persistent messages in the batch are written or none.
+   * Plugin API: synchronously writes a batch of persistent messages to the journal.
+   * The batch write must be atomic i.e. either all persistent messages in the batch
+   * are written or none.
    */
-  def writeBatch(persistentBatch: immutable.Seq[PersistentImpl]): Unit
+  def writeBatch(persistentBatch: immutable.Seq[PersistentRepr]): Unit
 
   /**
-   * Plugin API.
-   *
-   * Synchronously marks a `persistent` message as deleted.
+   * Plugin API: synchronously deletes a persistent message. If `physical` is set to
+   * `false`, the persistent message is marked as deleted, otherwise it is physically
+   * deleted.
    */
-  def delete(persistent: PersistentImpl): Unit
+  def delete(processorId: String, sequenceNr: Long, physical: Boolean): Unit
 
   /**
-   * Plugin API.
-   *
-   * Synchronously writes a delivery confirmation to the journal.
+   * Plugin API: synchronously writes a delivery confirmation to the journal.
    */
   def confirm(processorId: String, sequenceNr: Long, channelId: String): Unit
   //#journal-plugin-api

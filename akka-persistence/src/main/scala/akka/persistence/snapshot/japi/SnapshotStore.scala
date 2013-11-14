@@ -11,9 +11,7 @@ import akka.persistence._
 import akka.persistence.snapshot.{ SnapshotStore ⇒ SSnapshotStore }
 
 /**
- * Java API.
- *
- * Abstract snapshot store.
+ * Java API: abstract snapshot store.
  */
 abstract class SnapshotStore extends SSnapshotStore with SnapshotStorePlugin {
   import context.dispatcher

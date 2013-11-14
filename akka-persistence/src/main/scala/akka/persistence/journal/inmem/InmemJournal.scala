@@ -27,19 +27,19 @@ private[persistence] class InmemJournal extends AsyncWriteJournal {
 
   import InmemStore._
 
-  def writeAsync(persistent: PersistentImpl): Future[Unit] =
+  def writeAsync(persistent: PersistentRepr): Future[Unit] =
     (store ? Write(persistent)).mapTo[Unit]
 
-  def writeBatchAsync(persistentBatch: immutable.Seq[PersistentImpl]): Future[Unit] =
+  def writeBatchAsync(persistentBatch: immutable.Seq[PersistentRepr]): Future[Unit] =
     (store ? WriteBatch(persistentBatch)).mapTo[Unit]
 
-  def deleteAsync(persistent: PersistentImpl): Future[Unit] =
-    (store ? Delete(persistent)).mapTo[Unit]
+  def deleteAsync(processorId: String, sequenceNr: Long, physical: Boolean): Future[Unit] =
+    (store ? Delete(processorId, sequenceNr, physical)).mapTo[Unit]
 
   def confirmAsync(processorId: String, sequenceNr: Long, channelId: String): Future[Unit] =
     (store ? Confirm(processorId, sequenceNr, channelId)).mapTo[Unit]
 
-  def replayAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: (PersistentImpl) ⇒ Unit): Future[Long] =
+  def replayAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: (PersistentRepr) ⇒ Unit): Future[Long] =
     (store ? Replay(processorId, fromSequenceNr, toSequenceNr, replayCallback)).mapTo[Long]
 }
 
@@ -47,7 +47,7 @@ private[persistence] class InmemStore extends Actor {
   import InmemStore._
 
   // processor id => persistent message
-  var messages = Map.empty[String, Vector[PersistentImpl]]
+  var messages = Map.empty[String, Vector[PersistentRepr]]
 
   def receive = {
     case Write(p) ⇒
@@ -56,11 +56,14 @@ private[persistence] class InmemStore extends Actor {
     case WriteBatch(pb) ⇒
       pb.foreach(add)
       success()
-    case Delete(p) ⇒
-      update(p.processorId, p.sequenceNr)(_.copy(deleted = true))
+    case Delete(pid, snr, false) ⇒
+      update(pid, snr)(_.update(deleted = true))
+      success()
+    case Delete(pid, snr, true) ⇒
+      delete(pid, snr)
       success()
     case Confirm(pid, snr, cid) ⇒
-      update(pid, snr)(p ⇒ p.copy(confirms = cid +: p.confirms))
+      update(pid, snr)(p ⇒ p.update(confirms = cid +: p.confirms))
       success()
     case Replay(pid, fromSnr, toSnr, callback) ⇒ {
       for {
@@ -76,13 +79,18 @@ private[persistence] class InmemStore extends Actor {
   private def success(reply: Any = ()) =
     sender ! reply
 
-  private def add(p: PersistentImpl) = messages = messages + (messages.get(p.processorId) match {
+  private def add(p: PersistentRepr) = messages = messages + (messages.get(p.processorId) match {
     case Some(ms) ⇒ p.processorId -> (ms :+ p)
     case None     ⇒ p.processorId -> Vector(p)
   })
 
-  private def update(pid: String, snr: Long)(f: PersistentImpl ⇒ PersistentImpl) = messages = messages.get(pid) match {
+  private def update(pid: String, snr: Long)(f: PersistentRepr ⇒ PersistentRepr) = messages = messages.get(pid) match {
     case Some(ms) ⇒ messages + (pid -> ms.map(sp ⇒ if (sp.sequenceNr == snr) f(sp) else sp))
+    case None     ⇒ messages
+  }
+
+  private def delete(pid: String, snr: Long) = messages = messages.get(pid) match {
+    case Some(ms) ⇒ messages + (pid -> ms.filterNot(_.sequenceNr == snr))
     case None     ⇒ messages
   }
 
@@ -96,9 +104,9 @@ private[persistence] class InmemStore extends Actor {
 }
 
 private[persistence] object InmemStore {
-  case class Write(p: PersistentImpl)
-  case class WriteBatch(pb: Seq[PersistentImpl])
-  case class Delete(p: PersistentImpl)
+  case class Write(p: PersistentRepr)
+  case class WriteBatch(pb: Seq[PersistentRepr])
+  case class Delete(processorId: String, sequenceNr: Long, physical: Boolean)
   case class Confirm(processorId: String, sequenceNr: Long, channelId: String)
-  case class Replay(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, replayCallback: (PersistentImpl) ⇒ Unit)
+  case class Replay(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, replayCallback: (PersistentRepr) ⇒ Unit)
 }

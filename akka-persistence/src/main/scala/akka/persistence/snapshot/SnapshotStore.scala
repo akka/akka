@@ -1,4 +1,5 @@
 /**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  * Copyright (C) 2012-2013 Eligotech BV.
  */
 
@@ -47,9 +48,7 @@ trait SnapshotStore extends Actor {
 
   //#snapshot-store-plugin-api
   /**
-   * Plugin API.
-   *
-   * Asynchronously loads a snapshot.
+   * Plugin API: asynchronously loads a snapshot.
    *
    * @param processorId processor id.
    * @param criteria selection criteria for loading.
@@ -57,9 +56,7 @@ trait SnapshotStore extends Actor {
   def loadAsync(processorId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]]
 
   /**
-   * Plugin API.
-   *
-   * Asynchronously saves a snapshot.
+   * Plugin API: asynchronously saves a snapshot.
    *
    * @param metadata snapshot metadata.
    * @param snapshot snapshot.
@@ -67,18 +64,14 @@ trait SnapshotStore extends Actor {
   def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit]
 
   /**
-   * Plugin API.
-   *
-   * Called after successful saving of a snapshot.
+   * Plugin API: called after successful saving of a snapshot.
    *
    * @param metadata snapshot metadata.
    */
   def saved(metadata: SnapshotMetadata)
 
   /**
-   * Plugin API.
-   *
-   * Deletes the snapshot identified by `metadata`.
+   * Plugin API: deletes the snapshot identified by `metadata`.
    *
    * @param metadata snapshot metadata.
    */
