@@ -18,6 +18,7 @@ object ActorSelectionSpec {
   case class SelectString(path: String) extends Query
   case class SelectPath(path: ActorPath) extends Query
   case class GetSender(to: ActorRef) extends Query
+  case class Forward(path: String, msg: Any) extends Query
 
   val p = Props[Node]
 
@@ -27,6 +28,8 @@ object ActorSelectionSpec {
       case SelectString(path) ⇒ sender ! context.actorSelection(path)
       case SelectPath(path)   ⇒ sender ! context.actorSelection(path)
       case GetSender(ref)     ⇒ ref ! sender
+      case Forward(path, msg) ⇒ context.actorSelection(path).forward(msg)
+      case msg                ⇒ sender ! msg
     }
   }
 
@@ -355,6 +358,12 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
         d.sender must be(testActor)
         d.recipient.path.elements.mkString("/", "/", "") must (equal("/user/top/child1/a") or equal("/user/top/child2/a"))
       }
+    }
+
+    "forward to selection" in {
+      c2.tell(Forward("c21", "hello"), testActor)
+      expectMsg("hello")
+      lastSender must be(c21)
     }
 
   }
