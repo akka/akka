@@ -19,6 +19,7 @@ import akka.actor.SelectChildName
 import akka.actor.SelectChildPattern
 import akka.actor.Identify
 import akka.actor.ActorIdentity
+import akka.actor.EmptyLocalActorRef
 
 /**
  * INTERNAL API
@@ -141,7 +142,9 @@ private[akka] class RemoteSystemDaemon(
       }
       getChild(concatenatedChildNames.iterator) match {
         case Nobody ⇒
-          sel.identifyRequest foreach { x ⇒ sender ! ActorIdentity(x.messageId, None) }
+          val emptyRef = new EmptyLocalActorRef(system.provider, path / sel.elements.map(_.toString),
+            system.eventStream)
+          emptyRef.tell(sel, sender)
         case child ⇒
           child.tell(m, sender)
       }

@@ -147,9 +147,11 @@ object ActorSelection {
                   rec(parent)
               case SelectChildName(name) ⇒
                 val child = refWithCell.getSingleChild(name)
-                if (child == Nobody)
-                  sel.identifyRequest foreach { x ⇒ sender ! ActorIdentity(x.messageId, None) }
-                else if (iter.isEmpty)
+                if (child == Nobody) {
+                  val emptyRef = new EmptyLocalActorRef(refWithCell.provider, anchor.path / sel.elements.map(_.toString),
+                    refWithCell.underlying.system.eventStream)
+                  emptyRef.tell(sel, sender)
+                } else if (iter.isEmpty)
                   child.tell(sel.msg, sender)
                 else
                   rec(child)

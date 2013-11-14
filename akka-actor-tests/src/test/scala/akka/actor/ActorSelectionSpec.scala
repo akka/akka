@@ -328,6 +328,34 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
       ActorSelection(c21, "../*/hello").toString must be(s"ActorSelection[Actor[akka://ActorSelectionSpec/user/c2/c21#${c21.path.uid}]/../*/hello]")
     }
 
+    "send ActorSelection targeted to missing actor to deadLetters" in {
+      val p = TestProbe()
+      system.eventStream.subscribe(p.ref, classOf[DeadLetter])
+      system.actorSelection("/user/missing").tell("boom", testActor)
+      val d = p.expectMsgType[DeadLetter]
+      d.message must be("boom")
+      d.sender must be(testActor)
+      d.recipient.path.elements.mkString("/", "/", "") must be("/user/missing")
+    }
+
+    "send ActorSelection wildcard targeted to missing actor to deadLetters" in {
+      val top = system.actorOf(p, "top")
+      top ! Create("child1")
+      top ! Create("child2")
+
+      val probe = TestProbe()
+      system.eventStream.subscribe(probe.ref, classOf[DeadLetter])
+      system.actorSelection("/user/top/*/a").tell("wild", testActor)
+      // wildcard matches both child1 and child2
+      val d1 = probe.expectMsgType[DeadLetter]
+      val d2 = probe.expectMsgType[DeadLetter]
+      List(d1, d2) foreach { d ⇒
+        d.message must be("wild")
+        d.sender must be(testActor)
+        d.recipient.path.elements.mkString("/", "/", "") must (equal("/user/top/child1/a") or equal("/user/top/child2/a"))
+      }
+    }
+
   }
 
 }
