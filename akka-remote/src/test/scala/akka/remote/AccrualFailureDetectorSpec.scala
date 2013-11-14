@@ -37,22 +37,29 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
         acceptableLostDuration,
         firstHeartbeatEstimate = firstHeartbeatEstimate)(clock = clock)
 
+    def cdf(phi: Double) = 1.0 - math.pow(10, -phi)
+
     "use good enough cumulative distribution function" in {
       val fd = createFailureDetector()
-      fd.cumulativeDistributionFunction(0.0, 0, 1) must be(0.5 plusOrMinus (0.001))
-      fd.cumulativeDistributionFunction(0.6, 0, 1) must be(0.7257 plusOrMinus (0.001))
-      fd.cumulativeDistributionFunction(1.5, 0, 1) must be(0.9332 plusOrMinus (0.001))
-      fd.cumulativeDistributionFunction(2.0, 0, 1) must be(0.97725 plusOrMinus (0.01))
-      fd.cumulativeDistributionFunction(2.5, 0, 1) must be(0.9379 plusOrMinus (0.1))
-      fd.cumulativeDistributionFunction(3.5, 0, 1) must be(0.99977 plusOrMinus (0.1))
-      fd.cumulativeDistributionFunction(4.0, 0, 1) must be(0.99997 plusOrMinus (0.1))
+      cdf(fd.phi(0, 0, 10)) must be(0.5 plusOrMinus (0.001))
+      cdf(fd.phi(6L, 0, 10)) must be(0.7257 plusOrMinus (0.001))
+      cdf(fd.phi(15L, 0, 10)) must be(0.9332 plusOrMinus (0.001))
+      cdf(fd.phi(20L, 0, 10)) must be(0.97725 plusOrMinus (0.001))
+      cdf(fd.phi(25L, 0, 10)) must be(0.99379 plusOrMinus (0.001))
+      cdf(fd.phi(35L, 0, 10)) must be(0.99977 plusOrMinus (0.001))
+      cdf(fd.phi(40L, 0, 10)) must be(0.99997 plusOrMinus (0.0001))
 
-      for (x :: y :: Nil ← (0.0 to 4.0 by 0.1).toList.sliding(2)) {
-        fd.cumulativeDistributionFunction(x, 0, 1) must be < (
-          fd.cumulativeDistributionFunction(y, 0, 1))
+      for (x :: y :: Nil ← (0 to 40).toList.sliding(2)) {
+        fd.phi(x, 0, 10) must be < (fd.phi(y, 0, 10))
       }
 
-      fd.cumulativeDistributionFunction(2.2, 2.0, 0.3) must be(0.7475 plusOrMinus (0.001))
+      cdf(fd.phi(22, 20.0, 3)) must be(0.7475 plusOrMinus (0.001))
+    }
+
+    "handle outliers without losing precision or hitting exceptions" in {
+      val fd = createFailureDetector()
+      fd.phi(10L, 0, 1) must be(38.0 plusOrMinus 1.0)
+      fd.phi(-25L, 0, 1) must be(0.0)
     }
 
     "return realistic phi values" in {
