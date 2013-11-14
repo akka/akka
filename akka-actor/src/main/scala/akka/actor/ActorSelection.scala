@@ -70,10 +70,13 @@ abstract class ActorSelection extends Serializable {
   def resolveOne(timeout: FiniteDuration): Future[ActorRef] = resolveOne()(timeout)
 
   override def toString: String = {
-    (new java.lang.StringBuilder).append("ActorSelection[").
-      append(anchor.toString).
-      append(path.mkString("/", "/", "")).
-      append("]").toString
+    val builder = new java.lang.StringBuilder()
+    builder.append("ActorSelection[Anchor(").append(anchor.path)
+    if (anchor.path.uid != ActorCell.undefinedUid)
+      builder.append("#").append(anchor.path.uid)
+
+    builder.append("), Path(").append(path.mkString("/", "/", "")).append(")]")
+    builder.toString
   }
 
   override def equals(obj: Any): Boolean = obj match {

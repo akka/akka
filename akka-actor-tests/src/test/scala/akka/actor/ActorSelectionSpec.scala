@@ -325,7 +325,8 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
     }
 
     "print nicely" in {
-      ActorSelection(c21, "../*/hello").toString must be(s"ActorSelection[Actor[akka://ActorSelectionSpec/user/c2/c21#${c21.path.uid}]/../*/hello]")
+      ActorSelection(c21, "../*/hello").toString must be(
+        s"ActorSelection[Anchor(akka://ActorSelectionSpec/user/c2/c21#${c21.path.uid}), Path(/../*/hello)]")
     }
 
     "send ActorSelection targeted to missing actor to deadLetters" in {
