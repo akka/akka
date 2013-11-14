@@ -231,6 +231,7 @@ class LightArrayRevolverScheduler(config: Config,
   override def schedule(initialDelay: FiniteDuration,
                         delay: FiniteDuration,
                         runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = {
+    checkMaxDelay(roundUp(delay).toNanos)
     val preparedEC = executor.prepare()
     try new AtomicReference[Cancellable](InitialRepeatMarker) with Cancellable { self ⇒
       compareAndSet(InitialRepeatMarker, schedule(
@@ -304,13 +305,22 @@ class LightArrayRevolverScheduler(config: Config,
     } else if (stopped.get != null) {
       throw new SchedulerException("cannot enqueue after timer shutdown")
     } else {
-      val ticks = (delay.toNanos / tickNanos).toInt
+      val delayNanos = delay.toNanos
+      checkMaxDelay(delayNanos)
+
+      val ticks = (delayNanos / tickNanos).toInt
       val task = new TaskHolder(r, ticks, ec)
       queue.add(task)
       if (stopped.get != null && task.cancel())
         throw new SchedulerException("cannot enqueue after timer shutdown")
       task
     }
+
+  private def checkMaxDelay(delayNanos: Long): Unit =
+    if (delayNanos / tickNanos > Int.MaxValue)
+      // 1 second margin in the error message due to rounding
+      throw new IllegalArgumentException(s"Task scheduled with [${delayNanos.nanos.toSeconds}] seconds delay, " +
+        s"which is too far in future, maximum delay is [${(tickNanos * Int.MaxValue).nanos.toSeconds - 1}] seconds")
 
   private val stopped = new AtomicReference[Promise[immutable.Seq[TimerTask]]]
   private def stop(): Future[immutable.Seq[TimerTask]] = {
@@ -351,6 +361,8 @@ class LightArrayRevolverScheduler(config: Config,
               (ticks * tickNanos) + // adding the desired delay
               tickNanos - 1 // rounding up
               ) / tickNanos).toInt // and converting to slot number
+            // tick is an Int that will wrap around, but toInt of futureTick gives us modulo operations
+            // and the difference (offset) will be correct in any case 
             val offset = futureTick - tick
             val bucket = futureTick & wheelMask
             node.value.ticks = offset
