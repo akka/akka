@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NoStackTrace
+import scala.util.Try
 
 @SerialVersionUID(1L)
 case class FailureInjectorException(msg: String) extends AkkaException(msg) with NoStackTrace
@@ -57,6 +58,7 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
 
   private def rng = ThreadLocalRandom.current()
   private val log = Logging(extendedSystem, "FailureInjector (gremlin)")
+  private val shouldDebugLog: Boolean = extendedSystem.settings.config.getBoolean("akka.remote.gremlin.debug")
 
   @volatile private var upstreamListener: Option[AssociationEventListener] = None
   private[transport] val addressChaosTable = new ConcurrentHashMap[Address, GremlinMode]()
@@ -90,7 +92,7 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
 
   protected def interceptAssociate(remoteAddress: Address, statusPromise: Promise[AssociationHandle]): Unit = {
     // Association is simulated to be failed if there was either an inbound or outbound message drop
-    if (shouldDropInbound(remoteAddress) || shouldDropOutbound(remoteAddress))
+    if (shouldDropInbound(remoteAddress, Unit, "interceptAssociate") || shouldDropOutbound(remoteAddress, Unit, "interceptAssociate"))
       statusPromise.failure(new FailureInjectorException("Simulated failure of association to " + remoteAddress))
     else
       statusPromise.completeWith(wrappedTransport.associate(remoteAddress).map { handle ⇒
@@ -100,7 +102,7 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
   }
 
   def notify(ev: AssociationEvent): Unit = ev match {
-    case InboundAssociation(handle) if shouldDropInbound(handle.remoteAddress) ⇒ //Ignore
+    case InboundAssociation(handle) if shouldDropInbound(handle.remoteAddress, ev, "notify") ⇒ //Ignore
     case _ ⇒ upstreamListener match {
       case Some(listener) ⇒ listener notify interceptInboundAssociation(ev)
       case None           ⇒
@@ -112,14 +114,22 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
     case _                          ⇒ ev
   }
 
-  def shouldDropInbound(remoteAddress: Address): Boolean = chaosMode(remoteAddress) match {
-    case PassThru              ⇒ false
-    case Drop(_, inboundDropP) ⇒ rng.nextDouble() <= inboundDropP
+  def shouldDropInbound(remoteAddress: Address, instance: Any, debugMessage: String): Boolean = chaosMode(remoteAddress) match {
+    case PassThru ⇒ false
+    case Drop(_, inboundDropP) ⇒
+      if (rng.nextDouble() <= inboundDropP) {
+        if (shouldDebugLog) log.debug("Dropping inbound [{}] for [{}] {}", instance.getClass, remoteAddress, debugMessage)
+        true
+      } else false
   }
 
-  def shouldDropOutbound(remoteAddress: Address): Boolean = chaosMode(remoteAddress) match {
-    case PassThru               ⇒ false
-    case Drop(outboundDropP, _) ⇒ rng.nextDouble() <= outboundDropP
+  def shouldDropOutbound(remoteAddress: Address, instance: Any, debugMessage: String): Boolean = chaosMode(remoteAddress) match {
+    case PassThru ⇒ false
+    case Drop(outboundDropP, _) ⇒
+      if (rng.nextDouble() <= outboundDropP) {
+        if (shouldDebugLog) log.debug("Dropping outbound [{}] for [{}] {}", instance.getClass, remoteAddress, debugMessage)
+        true
+      } else false
   }
 
   def chaosMode(remoteAddress: Address): GremlinMode = {
@@ -147,13 +157,13 @@ private[remote] case class FailureInjectorHandle(_wrappedHandle: AssociationHand
   }
 
   override def write(payload: ByteString): Boolean =
-    if (!gremlinAdapter.shouldDropOutbound(wrappedHandle.remoteAddress)) wrappedHandle.write(payload)
+    if (!gremlinAdapter.shouldDropOutbound(wrappedHandle.remoteAddress, payload, "handler.write")) wrappedHandle.write(payload)
     else true
 
   override def disassociate(): Unit = wrappedHandle.disassociate()
 
   override def notify(ev: HandleEvent): Unit =
-    if (!gremlinAdapter.shouldDropInbound(wrappedHandle.remoteAddress))
+    if (!gremlinAdapter.shouldDropInbound(wrappedHandle.remoteAddress, ev, "handler.notify"))
       upstreamListener notify ev
 
 }
