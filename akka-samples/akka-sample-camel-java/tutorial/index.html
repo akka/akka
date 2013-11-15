@@ -1,0 +1,163 @@
+<!-- <html> -->
+<head>
+    <title>Akka Camel Samples with Java</title>
+</head>
+
+<body>
+
+<div>
+<p>
+This tutorial contains 3 samples of 
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/java/camel.html" target="_blank">Akka Camel</a>.
+</p>
+
+<ul>
+<li>Asynchronous routing and transformation</li>
+<li>Custom Camel route</li>
+<li>Quartz scheduler</li>
+</ul>
+
+</div>
+
+<div>
+
+<h2>Asynchronous routing and transformation</h2>
+
+<p>
+This example demonstrates how to implement consumer and producer actors that
+support 
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/java/camel.html#Asynchronous_routing" target="_blank">
+Asynchronous routing</a> with their Camel endpoints. The sample
+application transforms the content of the Akka homepage, <a href="http://akka.io" target="_blank">http://akka.io</a>,
+by replacing every occurrence of *Akka* with *AKKA*.
+</p>
+
+<p>
+To run this example, go to the <a href="#run" class="shortcut">Run</a>
+tab, and start the application main class <code>sample.camel.http.HttpExample</code> if it's not already started.
+Then  direct the browser to <a href="http://localhost:8875" target="_blank">http://localhost:8875</a> and the
+transformed Akka homepage should be displayed. Please note that this example will probably not work if you're
+behind an HTTP proxy.
+</p>
+
+<p>
+The following figure gives an overview how the example actors interact with
+external systems and with each other. A browser sends a GET request to
+http://localhost:8875 which is the published endpoint of the
+<a href="#code/src/main/java/sample/camel/http/HttpConsumer.java" class="shortcut">HttpConsumer</a>
+actor. The <code>HttpConsumer</code>actor forwards the requests to the
+<a href="#code/src/main/java/sample/camel/http/HttpProducer.java" class="shortcut">HttpProducer.java</a>
+actor which retrieves the Akka homepage from http://akka.io. The retrieved HTML
+is then forwarded to the 
+<a href="#code/src/main/java/sample/camel/http/HttpTransformer.java" class="shortcut">HttpTransformer.java</a>
+actor which replaces all occurrences of *Akka* with *AKKA*. The transformation result is sent back the HttpConsumer
+which finally returns it to the browser.
+</p>
+
+<img src="tutorial/camel-async-interact.png" width="400" />
+
+<p>
+Implementing the example actor classes and wiring them together is rather easy
+as shown in <a href="#code/src/main/java/sample/camel/http/HttpConsumer.java" class="shortcut">HttpConsumer.java</a>,
+<a href="#code/src/main/java/sample/camel/http/HttpProducer.java" class="shortcut">HttpProducer.java</a> and
+<a href="#code/src/main/java/sample/camel/http/HttpTransformer.java" class="shortcut">HttpTransformer.java</a>.
+</p>
+
+
+<p>
+The <a href="http://camel.apache.org/jetty.html" target="_blank">jetty endpoints</a> of HttpConsumer and 
+HttpProducer support asynchronous in-out message exchanges and do not allocate threads for the full duration of
+the exchange. This is achieved by using <a href="http://wiki.eclipse.org/Jetty/Feature/Continuations" target="_blank">Jetty continuations</a>
+on the consumer-side and by using <a href="http://wiki.eclipse.org/Jetty/Tutorial/HttpClient" target="_blank">Jetty's asynchronous HTTP client</a>
+on the producer side. The following high-level sequence diagram illustrates that.
+</p>
+
+<img src="tutorial/camel-async-sequence.png" width="400" />
+
+</div>
+<div>
+
+<h2>Custom Camel route example</h2>
+
+<p>
+This section also demonstrates the combined usage of a
+<a href="#code/src/main/java/sample/camel/route/RouteProducer.java" class="shortcut">RouteProducer</a> and a
+<a href="#code/src/main/java/sample/camel/route/RouteConsumer.java" class="shortcut">RouteConsumer</a>
+actor as well as the inclusion of a 
+<a href="#code/src/main/java/sample/camel/route/CustomRouteSample.java" class="shortcut">custom Camel route</a>.
+The following figure gives an overview.
+</p>
+
+<img src="tutorial/camel-custom-route.png" width="400" />
+
+<ul>
+<li>A consumer actor receives a message from an HTTP client</li>
+
+<li>It forwards the message to another actor that transforms the message (encloses
+  the original message into hyphens)</li>
+
+<li>The transformer actor forwards the transformed message to a producer actor</li>
+
+<li>The producer actor sends the message to a custom Camel route beginning at the
+  <code>direct:welcome</code> endpoint</li>
+
+<li>A processor (transformer) in the custom Camel route prepends "Welcome" to the
+  original message and creates a result message</li>
+
+<li>The producer actor sends the result back to the consumer actor which returns
+  it to the HTTP client</li>
+</ul>
+
+<p>
+The producer actor knows where to reply the message to because the consumer and
+transformer actors have forwarded the original sender reference as well. The
+application configuration and the route starting from direct:welcome are done in the code above.
+</p>
+
+<p>
+To run this example, go to the <a href="#run" class="shortcut">Run</a>
+tab, and start the application main class <code>sample.camel.route.CustomRouteExample</code>
+</p>
+
+<p>
+POST a message to <code>http://localhost:8877/camel/welcome</code>.
+</p>
+
+<pre><code>
+   curl -H "Content-Type: text/plain" -d "Anke" http://localhost:8877/camel/welcome
+</code></pre>
+
+<p>
+The response should be:
+</p>
+
+<pre><code>
+   Welcome - Anke -
+</code></pre>
+
+</div>
+<div>
+
+<h2>Quartz Scheduler Example</h2>
+
+<p>
+Here is an example showing how simple it is to implement a cron-style scheduler by
+using the Camel Quartz component in Akka.
+</p>
+<p>
+Open <a href="#code/src/main/java/sample/camel/quartz/MyQuartzActor.java" class="shortcut">MyQuartzActor.java</a>.
+</p>
+<p>
+The example creates a "timer" actor which fires a message every 2
+seconds.
+</p>
+
+<p>
+For more information about the Camel Quartz component, see here:
+<a href="http://camel.apache.org/quartz.html" target="_blank">http://camel.apache.org/quartz.html</a>
+</p>
+
+</div>
+
+</body>
+</html>

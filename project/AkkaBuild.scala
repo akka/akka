@@ -446,12 +446,19 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(camelSample, fsmSample, mainSampleJava, mainSampleScala, helloKernelSample, remoteSample, persistenceSample, clusterSample, multiNodeSample, osgiDiningHakkersSample)
+    aggregate = Seq(camelSampleJava, camelSampleScala, fsmSample, mainSampleJava, mainSampleScala, helloKernelSample, remoteSample, persistenceSample, clusterSample, multiNodeSample, osgiDiningHakkersSample)
   )
 
-  lazy val camelSample = Project(
-    id = "akka-sample-camel",
-    base = file("akka-samples/akka-sample-camel"),
+  lazy val camelSampleJava = Project(
+    id = "akka-sample-camel-java",
+    base = file("akka-samples/akka-sample-camel-java"),
+    dependencies = Seq(actor, camel),
+    settings = sampleSettings ++ Seq(libraryDependencies ++= Dependencies.camelSample)
+  )
+  
+  lazy val camelSampleScala = Project(
+    id = "akka-sample-camel-scala",
+    base = file("akka-samples/akka-sample-camel-scala"),
     dependencies = Seq(actor, camel),
     settings = sampleSettings ++ Seq(libraryDependencies ++= Dependencies.camelSample)
   )
