@@ -28,6 +28,54 @@ object LoggingDocSpec {
   }
   //#my-actor
 
+  import akka.event.Logging
+
+  class MdcActor extends Actor {
+    val log = Logging(this)
+    def receive = {
+
+      case _ ⇒ {
+        //#mdc
+        val mdc = Map("requestId" -> 1234, "visitorId" -> 5678)
+        log.mdc(mdc)
+
+        // Log something
+        log.info("Starting new request")
+
+        log.clearMDC()
+        //#mdc
+      }
+    }
+  }
+
+  //#mdc-actor
+  import Logging.MDC
+
+  case class Req(work: String, visitorId: Int)
+
+  class MdcActorMixin extends Actor with akka.actor.DiagnosticActorLogging {
+    var reqId = 0
+
+    override def mdc(currentMessage: Any): MDC = {
+      reqId += 1
+      val always = Map("requestId" -> reqId)
+      val perMessage = currentMessage match {
+        case r: Req => Map("visitorId" -> r.visitorId)
+        case _      => Map()
+      }
+      always ++ perMessage
+    }
+
+    def receive: Receive = {
+      case r: Req => {
+        log.info(s"Starting new request: ${r.work}")
+      }
+    }
+  }
+
+  //#mdc-actor
+
+
   //#my-event-listener
   import akka.event.Logging.InitializeLogger
   import akka.event.Logging.LoggerInitialized
@@ -69,11 +117,21 @@ object LoggingDocSpec {
 
 class LoggingDocSpec extends AkkaSpec {
 
-  import LoggingDocSpec.MyActor
+  import LoggingDocSpec.{MyActor, MdcActor, MdcActorMixin, Req}
 
   "use a logging actor" in {
     val myActor = system.actorOf(Props[MyActor])
     myActor ! "test"
+  }
+
+  "use a MDC logging actor" in {
+    val mdcActor = system.actorOf(Props[MdcActor])
+    mdcActor ! "some request"
+  }
+
+  "use a MDC logging actor by mixin" in {
+    val mdcActor = system.actorOf(Props[MdcActorMixin])
+    mdcActor ! Req("some request", 5678)
   }
 
   "allow registration to dead letters" in {

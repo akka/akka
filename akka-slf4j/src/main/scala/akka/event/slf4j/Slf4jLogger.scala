@@ -63,7 +63,7 @@ class Slf4jLogger extends Actor with SLF4JLogging {
       withMdc(logSource, event) {
         cause match {
           case Error.NoCause | null ⇒ Logger(logClass, logSource).error(if (message != null) message.toString else null)
-          case cause                ⇒ Logger(logClass, logSource).error(if (message != null) message.toString else cause.getLocalizedMessage, cause)
+          case _                    ⇒ Logger(logClass, logSource).error(if (message != null) message.toString else cause.getLocalizedMessage, cause)
         }
       }
 
@@ -86,10 +86,12 @@ class Slf4jLogger extends Actor with SLF4JLogging {
     MDC.put(mdcAkkaSourceAttributeName, logSource)
     MDC.put(mdcThreadAttributeName, logEvent.thread.getName)
     MDC.put(mdcAkkaTimestamp, formatTimestamp(logEvent.timestamp))
+    logEvent.mdc foreach { case (k, v) ⇒ MDC.put(k, String.valueOf(v)) }
     try logStatement finally {
       MDC.remove(mdcAkkaSourceAttributeName)
       MDC.remove(mdcThreadAttributeName)
       MDC.remove(mdcAkkaTimestamp)
+      logEvent.mdc.keys.foreach(k ⇒ MDC.remove(k))
     }
   }
 

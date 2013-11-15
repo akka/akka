@@ -22,6 +22,13 @@ import org.junit.Test;
 import akka.testkit.JavaTestKit;
 import scala.Option;
 
+//#imports-mdc
+import akka.event.Logging;
+import akka.event.DiagnosticLoggingAdapter;
+import java.util.HashMap;
+import java.util.Map;
+//#imports-mdc
+
 //#imports-deadletter
 import akka.actor.Props;
 import akka.actor.ActorRef;
@@ -37,6 +44,14 @@ public class LoggingDocTest {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(Props.create(MyActor.class, this));
     myActor.tell("test", ActorRef.noSender());
+    JavaTestKit.shutdownActorSystem(system);
+  }
+
+  @Test
+  public void useLoggingActorWithMDC() {
+    ActorSystem system = ActorSystem.create("MyDiagnosticSystem");
+    ActorRef mdcActor = system.actorOf(Props.create(MdcActor.class, this));
+    mdcActor.tell("some request", ActorRef.noSender());
     JavaTestKit.shutdownActorSystem(system);
   }
 
@@ -85,6 +100,27 @@ public class LoggingDocTest {
   }
 
   //#my-actor
+
+  //#mdc-actor
+  class MdcActor extends UntypedActor {
+
+      final DiagnosticLoggingAdapter log = Logging.getLogger(this);
+
+      public void onReceive(Object message) {
+
+          Map<String, Object> mdc;
+          mdc = new HashMap<String, Object>();
+          mdc.put("requestId", 1234);
+          mdc.put("visitorId", 5678);
+          log.setMDC(mdc);
+
+          log.info("Starting new request");
+
+          log.clearMDC();
+      }
+  }
+
+  //#mdc-actor
 
   //#my-event-listener
   class MyEventListener extends UntypedActor {
