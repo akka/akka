@@ -43,7 +43,11 @@ class BundleDelegatingClassLoader(bundle: Bundle, classLoader: Option[ClassLoade
 
   protected override def loadClass(name: String, resolve: Boolean): Class[_] = {
     val clazz = try {
-      try findClass(name) catch { case _: ClassNotFoundException if classLoader.isDefined ⇒ classLoader.get.loadClass(name) } // First fall back to secondary loader
+      try findClass(name) catch {
+        case _: ClassNotFoundException if classLoader.isDefined ⇒
+          println("falling back for " + name + " to " + classLoader)
+          classLoader.get.loadClass(name)
+      } // First fall back to secondary loader
     } catch {
       case cnfe: ClassNotFoundException ⇒
         throw new ClassNotFoundException("%s from bundle %s (%s)".format(name, bundle.getBundleId, bundle.getSymbolicName), cnfe) // IF we have no secondary loader or that failed as well, wrap and rethrow

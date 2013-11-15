@@ -55,7 +55,7 @@ object OsgiActorSystemFactory {
   /**
    * Class loader of akka-actor bundle.
    */
-  def akkaActorClassLoader = classOf[ActorSystem].getClassLoader
+  def akkaActorClassLoader = classOf[ActorSystemActivator].getClassLoader
 
   /*
    * Create an [[OsgiActorSystemFactory]] instance to set up Akka in an OSGi environment
