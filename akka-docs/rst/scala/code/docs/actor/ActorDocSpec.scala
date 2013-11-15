@@ -55,22 +55,22 @@ class DemoActorWrapper extends Actor {
   object DemoActor {
     /**
      * Create Props for an actor of this type.
-     * @param name The name to be passed to this actor’s constructor.
+     * @param magciNumber The magic number to be passed to this actor’s constructor.
      * @return a Props for creating this actor, which can then be further configured
      *         (e.g. calling `.withDispatcher()` on it)
      */
-    def props(name: String): Props = Props(classOf[DemoActor], name)
+    def props(magicNumber: Int): Props = Props(classOf[DemoActor], magicNumber)
   }
 
-  class DemoActor(name: String) extends Actor {
+  class DemoActor(magicNumber: Int) extends Actor {
     def receive = {
-      case x ⇒ // some behavior
+      case x: Int ⇒ sender ! (x + magicNumber)
     }
   }
 
   // ...
 
-  context.actorOf(DemoActor.props("hello"))
+  context.actorOf(DemoActor.props(42), "demo")
   //#props-factory
 
   def receive = Actor.emptyBehavior
