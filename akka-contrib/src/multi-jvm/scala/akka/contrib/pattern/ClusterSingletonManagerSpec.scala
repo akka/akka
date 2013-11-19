@@ -27,6 +27,7 @@ import akka.actor.Terminated
 import akka.actor.Identify
 import akka.actor.ActorIdentity
 import akka.actor.ActorSelection
+import akka.cluster.MemberStatus
 
 object ClusterSingletonManagerSpec extends MultiNodeConfig {
   val controller = role("controller")
@@ -156,9 +157,8 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
 
     def receive = {
       case state: CurrentClusterState ⇒
-        membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.collect {
-          case m if m.hasRole(role) ⇒ m
-        }
+        membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.filter(m ⇒
+          m.status == MemberStatus.Up && m.hasRole(role))
       case MemberUp(m)         ⇒ if (m.hasRole(role)) membersByAge += m
       case MemberRemoved(m, _) ⇒ if (m.hasRole(role)) membersByAge -= m
       case other               ⇒ consumer foreach { _.tell(other, sender) }

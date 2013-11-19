@@ -21,6 +21,7 @@ import akka.cluster.ClusterEvent.CurrentClusterState;
 import akka.cluster.ClusterEvent.MemberEvent;
 import akka.cluster.ClusterEvent.MemberUp;
 import akka.cluster.ClusterEvent.MemberRemoved;
+import akka.cluster.MemberStatus;
 
 public class ClusterSingletonManagerTest {
 
@@ -30,10 +31,8 @@ public class ClusterSingletonManagerTest {
     final ActorRef testActor = null;
 
     //#create-singleton-manager
-    system.actorOf(
-      ClusterSingletonManager.defaultProps(
-          Props.create(Consumer.class, queue, testActor), "consumer", 
-          new End(), "worker"), "singleton");
+    system.actorOf(ClusterSingletonManager.defaultProps(Props.create(Consumer.class, queue, testActor), "consumer",
+        new End(), "worker"), "singleton");
     //#create-singleton-manager
   }
 
@@ -75,7 +74,7 @@ public class ClusterSingletonManagerTest {
         CurrentClusterState state = (CurrentClusterState) message;
         List<Member> members = new ArrayList<Member>();
         for (Member m : state.getMembers()) {
-          if (m.hasRole(role))
+          if (m.status().equals(MemberStatus.up()) && m.hasRole(role))
             members.add(m);
         }
         membersByAge.clear();
@@ -101,15 +100,16 @@ public class ClusterSingletonManagerTest {
     }
 
     ActorSelection currentMaster() {
-      return getContext().actorSelection(membersByAge.first().address() +
-          "/user/singleton/statsService");
+      return getContext().actorSelection(membersByAge.first().address() + "/user/singleton/statsService");
     }
 
   }
+
   //#singleton-proxy
 
+  public static class End {
+  }
 
-  public static class End {}
-
-  public static class Consumer {}
+  public static class Consumer {
+  }
 }
