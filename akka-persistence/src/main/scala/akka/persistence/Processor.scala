@@ -4,6 +4,8 @@
 
 package akka.persistence
 
+import scala.annotation.tailrec
+
 import akka.actor._
 import akka.dispatch._
 
@@ -58,6 +60,8 @@ trait Processor extends Actor with Stash with StashFactory {
   private val extension = Persistence(context.system)
   private val _processorId = extension.processorId(self)
 
+  import extension.maxBatchSize
+
   /**
    * Processor state.
    */
@@ -81,10 +85,9 @@ trait Processor extends Actor with Stash with StashFactory {
     override def toString: String = "recovery pending"
 
     def aroundReceive(receive: Actor.Receive, message: Any): Unit = message match {
-      case Recover(fromSnap, toSnr) ⇒ {
+      case Recover(fromSnap, toSnr) ⇒
         _currentState = recoveryStarted
         snapshotStore ! LoadSnapshot(processorId, fromSnap, toSnr)
-      }
       case _ ⇒ processorStash.stash()
     }
   }
@@ -100,32 +103,28 @@ trait Processor extends Actor with Stash with StashFactory {
 
     def aroundReceive(receive: Actor.Receive, message: Any) = message match {
       case LoadSnapshotResult(sso, toSnr) ⇒ sso match {
-        case Some(SelectedSnapshot(metadata, snapshot)) ⇒ {
+        case Some(SelectedSnapshot(metadata, snapshot)) ⇒
           process(receive, SnapshotOffer(metadata, snapshot))
           journal ! Replay(metadata.sequenceNr + 1L, toSnr, processorId, self)
-        } case None ⇒ {
+        case None ⇒
           journal ! Replay(1L, toSnr, processorId, self)
-        }
       }
-      case ReplaySuccess(maxSnr) ⇒ {
+      case ReplaySuccess(maxSnr) ⇒
         _currentState = recoverySucceeded
         _sequenceNr = maxSnr
         processorStash.unstashAll()
-      }
-      case ReplayFailure(cause) ⇒ {
+      case ReplayFailure(cause) ⇒
         val notification = RecoveryFailure(cause)
         if (receive.isDefinedAt(notification)) process(receive, notification)
         else {
           val errorMsg = s"Replay failure by journal (processor id = [${processorId}])"
           throw new RecoveryFailureException(errorMsg, cause)
         }
-      }
       case Replayed(p) ⇒ try { processPersistent(receive, p) } catch {
-        case t: Throwable ⇒ {
+        case t: Throwable ⇒
           _currentState = recoveryFailed // delay throwing exception to prepareRestart
           _recoveryFailureCause = t
           _recoveryFailureMessage = currentEnvelope
-        }
       }
       case r: Recover ⇒ // ignore
       case _          ⇒ processorStash.stash()
@@ -138,11 +137,13 @@ trait Processor extends Actor with Stash with StashFactory {
   private val recoverySucceeded = new State {
     override def toString: String = "recovery finished"
 
+    private var batching = false
+
     def aroundReceive(receive: Actor.Receive, message: Any) = message match {
       case r: Recover      ⇒ // ignore
       case Replayed(p)     ⇒ processPersistent(receive, p) // can occur after unstash from user stash
       case WriteSuccess(p) ⇒ processPersistent(receive, p)
-      case WriteFailure(p, cause) ⇒ {
+      case WriteFailure(p, cause) ⇒
         val notification = PersistenceFailure(p.payload, p.sequenceNr, cause)
         if (receive.isDefinedAt(notification)) process(receive, notification)
         else {
@@ -151,11 +152,36 @@ trait Processor extends Actor with Stash with StashFactory {
             "To avoid killing processors on persistence failure, a processor must handle PersistenceFailure messages."
           throw new ActorKilledException(errorMsg)
         }
-      }
-      case LoopSuccess(m)      ⇒ process(receive, m)
-      case p: PersistentRepr   ⇒ journal forward Write(p.update(processorId = processorId, sequenceNr = nextSequenceNr()), self)
-      case pb: PersistentBatch ⇒ journal forward WriteBatch(pb.persistentReprList.map(_.update(processorId = processorId, sequenceNr = nextSequenceNr())), self)
-      case m                   ⇒ journal forward Loop(m, self)
+      case LoopSuccess(m) ⇒ process(receive, m)
+      case WriteBatchSuccess | WriteBatchFailure(_) ⇒
+        if (processorBatch.isEmpty) batching = false else journalBatch()
+      case p: PersistentRepr ⇒
+        addToBatch(p)
+        if (!batching || maxBatchSizeReached) journalBatch()
+      case pb: PersistentBatch ⇒
+        // submit all batched messages before submitting this user batch (isolated)
+        if (!processorBatch.isEmpty) journalBatch()
+        addToBatch(pb)
+        journalBatch()
+      case m ⇒
+        // submit all batched messages before looping this message
+        if (processorBatch.isEmpty) batching = false else journalBatch()
+        journal forward Loop(m, self)
+    }
+
+    def addToBatch(p: PersistentRepr): Unit =
+      processorBatch = processorBatch :+ p.update(processorId = processorId, sequenceNr = nextSequenceNr(), sender = sender)
+
+    def addToBatch(pb: PersistentBatch): Unit =
+      pb.persistentReprList.foreach(addToBatch)
+
+    def maxBatchSizeReached: Boolean =
+      processorBatch.length >= maxBatchSize
+
+    def journalBatch(): Unit = {
+      journal ! WriteBatch(processorBatch, self)
+      processorBatch = Vector.empty
+      batching = true
     }
   }
 
@@ -168,13 +194,20 @@ trait Processor extends Actor with Stash with StashFactory {
     override def toString: String = "recovery failed"
 
     def aroundReceive(receive: Actor.Receive, message: Any) = message match {
-      case ReplaySuccess(_) | ReplayFailure(_) ⇒ {
-        _currentState = prepareRestart
-        mailbox.enqueueFirst(self, _recoveryFailureMessage)
-      }
-      case Replayed(p) ⇒ updateLastSequenceNr(p)
-      case r: Recover  ⇒ // ignore
-      case _           ⇒ processorStash.stash()
+      case ReplayFailure(_) ⇒
+        replayCompleted()
+        // journal couldn't tell the maximum stored sequence number, hence the next
+        // replay must be a full replay (up to the highest stored sequence number)
+        _lastSequenceNr = Long.MaxValue
+      case ReplaySuccess(_) ⇒ replayCompleted()
+      case Replayed(p)      ⇒ updateLastSequenceNr(p)
+      case r: Recover       ⇒ // ignore
+      case _                ⇒ processorStash.stash()
+    }
+
+    def replayCompleted(): Unit = {
+      _currentState = prepareRestart
+      mailbox.enqueueFirst(self, _recoveryFailureMessage)
     }
   }
 
@@ -190,6 +223,8 @@ trait Processor extends Actor with Stash with StashFactory {
       case _           ⇒ // ignore
     }
   }
+
+  private var processorBatch = Vector.empty[PersistentRepr]
 
   private var _sequenceNr: Long = 0L
   private var _lastSequenceNr: Long = 0L
@@ -352,8 +387,9 @@ trait Processor extends Actor with Stash with StashFactory {
    */
   final override protected[akka] def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
     try {
-      unstashAll(unstashFilterPredicate)
+      processorStash.prepend(processorBatch.map(p ⇒ Envelope(p, p.sender, context.system)))
       processorStash.unstashAll()
+      unstashAll(unstashFilterPredicate)
     } finally {
       message match {
         case Some(WriteSuccess(m)) ⇒ preRestartDefault(reason, Some(m))

@@ -29,12 +29,18 @@ private[persistence] object JournalProtocol {
   case class WriteBatch(persistentBatch: immutable.Seq[PersistentRepr], processor: ActorRef)
 
   /**
-   * Instructs a journal to persist a message.
-   *
-   * @param persistent message to be persisted.
-   * @param processor requesting processor.
+   * Reply message to a processor if a batch write succeeded. This message is received before
+   * all subsequent [[WriteSuccess]] messages.
    */
-  case class Write(persistent: PersistentRepr, processor: ActorRef)
+  case object WriteBatchSuccess
+
+  /**
+   * Reply message to a processor if a batch write failed. This message is received before
+   * all subsequent [[WriteFailure]] messages.
+   *
+   * @param cause failure cause.
+   */
+  case class WriteBatchFailure(cause: Throwable)
 
   /**
    * Reply message to a processor that `persistent` message has been successfully journaled.

@@ -9,6 +9,8 @@ import org.iq80.leveldb.DBIterator
 import akka.actor.Actor
 
 /**
+ * INTERNAL API.
+ *
  * LevelDB backed persistent mapping of `String`-based processor and channel ids to numeric ids.
  */
 private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbJournal ⇒

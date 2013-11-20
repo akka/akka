@@ -14,11 +14,8 @@ import akka.persistence.PersistentRepr
  * Java API: abstract journal, optimized for synchronous writes.
  */
 abstract class SyncWriteJournal extends AsyncReplay with SSyncWriteJournal with SyncWritePlugin {
-  final def write(persistent: PersistentRepr) =
-    doWrite(persistent)
-
-  final def writeBatch(persistentBatch: immutable.Seq[PersistentRepr]) =
-    doWriteBatch(persistentBatch.asJava)
+  final def write(persistentBatch: immutable.Seq[PersistentRepr]) =
+    doWrite(persistentBatch.asJava)
 
   final def delete(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean) =
     doDelete(processorId, fromSequenceNr, toSequenceNr, permanent)

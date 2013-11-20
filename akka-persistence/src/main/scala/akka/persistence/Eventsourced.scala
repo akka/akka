@@ -26,6 +26,8 @@ private[persistence] trait Eventsourced extends Processor {
    * `processingCommands`
    */
   private val recovering: State = new State {
+    override def toString: String = "recovering"
+
     def aroundReceive(receive: Receive, message: Any) {
       Eventsourced.super.aroundReceive(receive, message)
       message match {
@@ -43,6 +45,8 @@ private[persistence] trait Eventsourced extends Processor {
    * directly offered as `LoopSuccess` to the state machine implemented by `Processor`.
    */
   private val processingCommands: State = new State {
+    override def toString: String = "processing commands"
+
     def aroundReceive(receive: Receive, message: Any) {
       Eventsourced.super.aroundReceive(receive, LoopSuccess(message))
       if (!persistInvocations.isEmpty) {
@@ -62,24 +66,24 @@ private[persistence] trait Eventsourced extends Processor {
    * messages are stashed internally.
    */
   private val persistingEvents: State = new State {
+    override def toString: String = "persisting events"
+
     def aroundReceive(receive: Receive, message: Any) = message match {
-      case PersistentBatch(b) ⇒ {
+      case PersistentBatch(b) ⇒
         b.foreach(p ⇒ deleteMessage(p.sequenceNr, true))
         throw new UnsupportedOperationException("Persistent command batches not supported")
-      }
-      case p: PersistentRepr ⇒ {
+      case p: PersistentRepr ⇒
         deleteMessage(p.sequenceNr, true)
         throw new UnsupportedOperationException("Persistent commands not supported")
-      }
-      case WriteSuccess(p) if identical(p.payload, persistInvocations.head._1) ⇒ {
+      case WriteSuccess(p) if identical(p.payload, persistInvocations.head._1) ⇒
         withCurrentPersistent(p)(p ⇒ persistInvocations.head._2(p.payload))
         onWriteComplete()
-      }
-      case e @ WriteFailure(p, _) if identical(p.payload, persistInvocations.head._1) ⇒ {
+      case e @ WriteFailure(p, _) if identical(p.payload, persistInvocations.head._1) ⇒
         Eventsourced.super.aroundReceive(receive, message) // stops actor by default
         onWriteComplete()
-      }
-      case other ⇒ processorStash.stash()
+      case s @ WriteBatchSuccess ⇒ Eventsourced.super.aroundReceive(receive, s)
+      case f: WriteBatchFailure  ⇒ Eventsourced.super.aroundReceive(receive, f)
+      case other                 ⇒ processorStash.stash()
     }
 
     def onWriteComplete(): Unit = {
@@ -177,16 +181,16 @@ private[persistence] trait Eventsourced extends Processor {
    * Calls `super.preRestart` then unstashes all messages from the internal stash.
    */
   override def preRestart(reason: Throwable, message: Option[Any]) {
-    super.preRestart(reason, message)
     processorStash.unstashAll()
+    super.preRestart(reason, message)
   }
 
   /**
    * Calls `super.postStop` then unstashes all messages from the internal stash.
    */
   override def postStop() {
-    super.postStop()
     processorStash.unstashAll()
+    super.postStop()
   }
 
   /**

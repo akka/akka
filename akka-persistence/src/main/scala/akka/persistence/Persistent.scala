@@ -9,9 +9,9 @@ import java.util.{ List ⇒ JList }
 
 import scala.collection.immutable
 
-import akka.actor.ActorRef
+import akka.actor.{ ActorContext, ActorRef }
 import akka.japi.Util.immutableSeq
-
+import akka.pattern.PromiseActorRef
 import akka.persistence.serialization.Message
 
 /**
@@ -177,8 +177,20 @@ trait PersistentRepr extends Persistent with Message {
    */
   def sender: ActorRef
 
+  /**
+   * INTERNAL API.
+   */
   private[persistence] def prepareWrite(sender: ActorRef): PersistentRepr
 
+  /**
+   * INTERNAL API.
+   */
+  private[persistence] def prepareWrite()(implicit context: ActorContext): PersistentRepr =
+    prepareWrite(if (sender.isInstanceOf[PromiseActorRef]) context.system.deadLetters else sender)
+
+  /**
+   * INTERNAL API.
+   */
   private[persistence] def update(
     sequenceNr: Long = sequenceNr,
     processorId: String = processorId,
@@ -186,7 +198,8 @@ trait PersistentRepr extends Persistent with Message {
     resolved: Boolean = resolved,
     confirms: immutable.Seq[String] = confirms,
     confirmMessage: Confirm = confirmMessage,
-    confirmTarget: ActorRef = confirmTarget): PersistentRepr
+    confirmTarget: ActorRef = confirmTarget,
+    sender: ActorRef = sender): PersistentRepr
 }
 
 object PersistentRepr {
@@ -250,8 +263,9 @@ private[persistence] case class PersistentImpl(
     resolved: Boolean,
     confirms: immutable.Seq[String],
     confirmMessage: Confirm,
-    confirmTarget: ActorRef) =
-    copy(sequenceNr = sequenceNr, processorId = processorId, deleted = deleted, confirms = confirms)
+    confirmTarget: ActorRef,
+    sender: ActorRef) =
+    copy(sequenceNr = sequenceNr, processorId = processorId, deleted = deleted, confirms = confirms, sender = sender)
 
   val resolved: Boolean = false
   val confirmable: Boolean = false
@@ -284,8 +298,8 @@ private[persistence] case class ConfirmablePersistentImpl(
   def prepareWrite(sender: ActorRef) =
     copy(sender = sender, resolved = false, confirmMessage = null, confirmTarget = null)
 
-  def update(sequenceNr: Long, processorId: String, deleted: Boolean, resolved: Boolean, confirms: immutable.Seq[String], confirmMessage: Confirm, confirmTarget: ActorRef) =
-    copy(sequenceNr = sequenceNr, processorId = processorId, deleted = deleted, resolved = resolved, confirms = confirms, confirmMessage = confirmMessage, confirmTarget = confirmTarget)
+  def update(sequenceNr: Long, processorId: String, deleted: Boolean, resolved: Boolean, confirms: immutable.Seq[String], confirmMessage: Confirm, confirmTarget: ActorRef, sender: ActorRef) =
+    copy(sequenceNr = sequenceNr, processorId = processorId, deleted = deleted, resolved = resolved, confirms = confirms, confirmMessage = confirmMessage, confirmTarget = confirmTarget, sender = sender)
 }
 
 private[persistence] object ConfirmablePersistentImpl {

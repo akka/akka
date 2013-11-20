@@ -65,15 +65,13 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     @scala.annotation.tailrec
     def load(metadata: SortedSet[SnapshotMetadata]): Option[SelectedSnapshot] = metadata.lastOption match {
       case None ⇒ None
-      case Some(md) ⇒ {
+      case Some(md) ⇒
         Try(withInputStream(md)(deserialize)) match {
           case Success(s) ⇒ Some(SelectedSnapshot(md, s.data))
-          case Failure(e) ⇒ {
+          case Failure(e) ⇒
             log.error(e, s"error loading snapshot ${md}")
             load(metadata.init) // try older snapshot
-          }
         }
-      }
     }
 
     // Heuristics:

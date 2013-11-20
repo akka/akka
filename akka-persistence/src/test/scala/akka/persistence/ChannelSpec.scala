@@ -15,15 +15,13 @@ object ChannelSpec {
     val channel = context.actorOf(channelProps)
 
     def receive = {
-      case m @ Persistent(s: String, _) if s.startsWith("a") ⇒ {
+      case m @ Persistent(s: String, _) if s.startsWith("a") ⇒
         // forward to destination via channel,
         // destination replies to initial sender
         channel forward Deliver(m.withPayload(s"fw: ${s}"), destination)
-      }
-      case m @ Persistent(s: String, _) if s.startsWith("b") ⇒ {
+      case m @ Persistent(s: String, _) if s.startsWith("b") ⇒
         // reply to sender via channel
         channel ! Deliver(m.withPayload(s"re: ${s}"), sender)
-      }
     }
   }
 
