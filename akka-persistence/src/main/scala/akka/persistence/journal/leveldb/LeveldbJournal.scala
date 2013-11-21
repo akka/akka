@@ -22,7 +22,7 @@ import akka.serialization.SerializationExtension
  */
 private[leveldb] class LeveldbJournal extends SyncWriteJournal with LeveldbIdMapping with LeveldbReplay {
   val config = context.system.settings.config.getConfig("akka.persistence.journal.leveldb")
-  val native = config.getBoolean("native")
+  val nativeLeveldb = config.getBoolean("native")
 
   val leveldbOptions = new Options().createIfMissing(true)
   val leveldbReadOptions = new ReadOptions().verifyChecksums(config.getBoolean("checksum"))
@@ -31,7 +31,7 @@ private[leveldb] class LeveldbJournal extends SyncWriteJournal with LeveldbIdMap
   var leveldb: DB = _
 
   def leveldbFactory =
-    if (native) org.fusesource.leveldbjni.JniDBFactory.factory
+    if (nativeLeveldb) org.fusesource.leveldbjni.JniDBFactory.factory
     else org.iq80.leveldb.impl.Iq80DBFactory.factory
 
   // TODO: support migration of processor and channel ids
@@ -86,7 +86,7 @@ private[leveldb] class LeveldbJournal extends SyncWriteJournal with LeveldbIdMap
   }
 
   override def preStart() {
-    leveldb = leveldbFactory.open(leveldbDir, if (native) leveldbOptions else leveldbOptions.compressionType(CompressionType.NONE))
+    leveldb = leveldbFactory.open(leveldbDir, if (nativeLeveldb) leveldbOptions else leveldbOptions.compressionType(CompressionType.NONE))
     super.preStart()
   }
 
