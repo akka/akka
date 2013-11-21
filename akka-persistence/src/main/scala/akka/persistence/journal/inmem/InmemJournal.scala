@@ -33,8 +33,8 @@ private[persistence] class InmemJournal extends AsyncWriteJournal {
   def writeBatchAsync(persistentBatch: immutable.Seq[PersistentRepr]): Future[Unit] =
     (store ? WriteBatch(persistentBatch)).mapTo[Unit]
 
-  def deleteAsync(processorId: String, sequenceNr: Long, physical: Boolean): Future[Unit] =
-    (store ? Delete(processorId, sequenceNr, physical)).mapTo[Unit]
+  def deleteAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean): Future[Unit] =
+    (store ? Delete(processorId, fromSequenceNr, toSequenceNr, permanent)).mapTo[Unit]
 
   def confirmAsync(processorId: String, sequenceNr: Long, channelId: String): Future[Unit] =
     (store ? Confirm(processorId, sequenceNr, channelId)).mapTo[Unit]
@@ -56,11 +56,11 @@ private[persistence] class InmemStore extends Actor {
     case WriteBatch(pb) ⇒
       pb.foreach(add)
       success()
-    case Delete(pid, snr, false) ⇒
-      update(pid, snr)(_.update(deleted = true))
+    case Delete(pid, fsnr, tsnr, false) ⇒
+      fsnr to tsnr foreach { snr ⇒ update(pid, snr)(_.update(deleted = true)) }
       success()
-    case Delete(pid, snr, true) ⇒
-      delete(pid, snr)
+    case Delete(pid, fsnr, tsnr, true) ⇒
+      fsnr to tsnr foreach { snr ⇒ delete(pid, snr) }
       success()
     case Confirm(pid, snr, cid) ⇒
       update(pid, snr)(p ⇒ p.update(confirms = cid +: p.confirms))
@@ -106,7 +106,7 @@ private[persistence] class InmemStore extends Actor {
 private[persistence] object InmemStore {
   case class Write(p: PersistentRepr)
   case class WriteBatch(pb: Seq[PersistentRepr])
-  case class Delete(processorId: String, sequenceNr: Long, physical: Boolean)
+  case class Delete(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean)
   case class Confirm(processorId: String, sequenceNr: Long, channelId: String)
   case class Replay(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, replayCallback: (PersistentRepr) ⇒ Unit)
 }

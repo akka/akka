@@ -71,7 +71,7 @@ class PersistencePluginDocSpec extends WordSpec {
 class MyJournal extends AsyncWriteJournal {
   def writeAsync(persistent: PersistentRepr): Future[Unit] = ???
   def writeBatchAsync(persistentBatch: Seq[PersistentRepr]): Future[Unit] = ???
-  def deleteAsync(processorId: String, sequenceNr: Long, physical: Boolean): Future[Unit] = ???
+  def deleteAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean): Future[Unit] = ???
   def confirmAsync(processorId: String, sequenceNr: Long, channelId: String): Future[Unit] = ???
   def replayAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: (PersistentRepr) ⇒ Unit): Future[Long] = ???
 }
@@ -79,6 +79,7 @@ class MyJournal extends AsyncWriteJournal {
 class MySnapshotStore extends SnapshotStore {
   def loadAsync(processorId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = ???
   def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = ???
-  def saved(metadata: SnapshotMetadata) {}
-  def delete(metadata: SnapshotMetadata) {}
+  def saved(metadata: SnapshotMetadata): Unit = ???
+  def delete(metadata: SnapshotMetadata): Unit = ???
+  def delete(processorId: String, criteria: SnapshotSelectionCriteria): Unit = ???
 }

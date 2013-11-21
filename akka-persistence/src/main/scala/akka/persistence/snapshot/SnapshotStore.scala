@@ -18,6 +18,8 @@ trait SnapshotStore extends Actor {
   import SnapshotProtocol._
   import context.dispatcher
 
+  private val extension = Persistence(context.system)
+
   final def receive = {
     case LoadSnapshot(processorId, criteria, toSequenceNr) ⇒ {
       val p = sender
@@ -43,6 +45,14 @@ trait SnapshotStore extends Actor {
     case evt @ SaveSnapshotFailure(metadata, _) ⇒ {
       delete(metadata)
       sender ! evt // sender is processor
+    }
+    case d @ DeleteSnapshot(metadata) ⇒ {
+      delete(metadata)
+      if (extension.publishPluginCommands) context.system.eventStream.publish(d)
+    }
+    case d @ DeleteSnapshots(processorId, criteria) ⇒ {
+      delete(processorId, criteria)
+      if (extension.publishPluginCommands) context.system.eventStream.publish(d)
     }
   }
 
@@ -75,6 +85,15 @@ trait SnapshotStore extends Actor {
    *
    * @param metadata snapshot metadata.
    */
+
   def delete(metadata: SnapshotMetadata)
+
+  /**
+   * Plugin API: deletes all snapshots matching `criteria`.
+   *
+   * @param processorId processor id.
+   * @param criteria selection criteria for deleting.
+   */
+  def delete(processorId: String, criteria: SnapshotSelectionCriteria)
   //#snapshot-store-plugin-api
 }

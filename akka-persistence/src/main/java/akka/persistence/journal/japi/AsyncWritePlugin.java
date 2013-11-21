@@ -23,11 +23,14 @@ interface AsyncWritePlugin {
     Future<Void> doWriteBatchAsync(Iterable<PersistentRepr> persistentBatch);
 
     /**
-     * Java API, Plugin API: asynchronously deletes a persistent message. If `physical`
-     * is set to `false`, the persistent message is marked as deleted, otherwise it is
-     * physically deleted.
+     * Java API, Plugin API: asynchronously deletes all persistent messages within the
+     * range  from `fromSequenceNr` to `toSequenceNr`. If `permanent` is set to `false`,
+     * the persistent messages are marked as deleted, otherwise they are permanently
+     * deleted.
+     *
+     * @see AsyncReplayPlugin
      */
-    Future<Void> doDeleteAsync(String processorId, long sequenceNr, boolean physical);
+    Future<Void> doDeleteAsync(String processorId, long fromSequenceNr, long toSequenceNr, boolean permanent);
 
     /**
      * Java API, Plugin API: asynchronously writes a delivery confirmation to the

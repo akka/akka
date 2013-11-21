@@ -54,6 +54,13 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     snapshotFile(metadata).delete()
   }
 
+  def delete(processorId: String, criteria: SnapshotSelectionCriteria) = {
+    snapshotMetadata.get(processorId) match {
+      case Some(mds) ⇒ mds.filter(criteria.matches).foreach(delete)
+      case None      ⇒
+    }
+  }
+
   private def load(processorId: String, criteria: SnapshotSelectionCriteria): Option[SelectedSnapshot] = {
     @scala.annotation.tailrec
     def load(metadata: SortedSet[SnapshotMetadata]): Option[SelectedSnapshot] = metadata.lastOption match {
@@ -78,11 +85,7 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     //
     // TODO: make number of loading attempts configurable
 
-    for {
-      md ← load(metadata(processorId).filter(md ⇒
-        md.sequenceNr <= criteria.maxSequenceNr &&
-          md.timestamp <= criteria.maxTimestamp).takeRight(3))
-    } yield md
+    for (md ← load(metadata(processorId).filter(criteria.matches).takeRight(3))) yield md
   }
 
   private def save(metadata: SnapshotMetadata, snapshot: Any): Unit =

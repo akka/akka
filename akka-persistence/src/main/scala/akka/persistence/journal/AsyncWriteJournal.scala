@@ -21,6 +21,8 @@ trait AsyncWriteJournal extends Actor with AsyncReplay {
   import AsyncWriteJournal._
   import context.dispatcher
 
+  private val extension = Persistence(context.system)
+
   private val resequencer = context.actorOf(Props[Resequencer])
   private var resequencerCounter = 1L
 
@@ -62,14 +64,14 @@ trait AsyncWriteJournal extends Actor with AsyncReplay {
     }
     case c @ Confirm(processorId, sequenceNr, channelId) ⇒ {
       confirmAsync(processorId, sequenceNr, channelId) onComplete {
-        case Success(_) ⇒ context.system.eventStream.publish(c)
+        case Success(_) ⇒ if (extension.publishPluginCommands) context.system.eventStream.publish(c)
         case Failure(e) ⇒ // TODO: publish failure to event stream
       }
       context.system.eventStream.publish(c)
     }
-    case d @ Delete(processorId, sequenceNr, physical) ⇒ {
-      deleteAsync(processorId, sequenceNr, physical) onComplete {
-        case Success(_) ⇒ context.system.eventStream.publish(d)
+    case d @ Delete(processorId, fromSequenceNr, toSequenceNr, permanent) ⇒ {
+      deleteAsync(processorId, fromSequenceNr, toSequenceNr, permanent) onComplete {
+        case Success(_) ⇒ if (extension.publishPluginCommands) context.system.eventStream.publish(d)
         case Failure(e) ⇒ // TODO: publish failure to event stream
       }
     }
@@ -93,11 +95,14 @@ trait AsyncWriteJournal extends Actor with AsyncReplay {
   def writeBatchAsync(persistentBatch: immutable.Seq[PersistentRepr]): Future[Unit]
 
   /**
-   * Plugin API: asynchronously deletes a persistent message. If `physical` is set to
-   * `false`, the persistent message is marked as deleted, otherwise it is physically
-   * deleted.
+   * Plugin API: asynchronously deletes all persistent messages within the range from
+   * `fromSequenceNr` to `toSequenceNr` (both inclusive). If `permanent` is set to
+   * `false`, the persistent messages are marked as deleted, otherwise they are
+   * permanently deleted.
+   *
+   * @see [[AsyncReplay]]
    */
-  def deleteAsync(processorId: String, sequenceNr: Long, physical: Boolean): Future[Unit]
+  def deleteAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean): Future[Unit]
 
   /**
    * Plugin API: asynchronously writes a delivery confirmation to the journal.

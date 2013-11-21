@@ -29,7 +29,7 @@ trait AsyncReplay {
    * message must be contained in that message's `confirms` sequence.
    *
    * @param processorId processor id.
-   * @param fromSequenceNr sequence number where replay should start.
+   * @param fromSequenceNr sequence number where replay should start (inclusive).
    * @param toSequenceNr sequence number where replay should end (inclusive).
    * @param replayCallback called to replay a single message. Can be called from any
    *                       thread.

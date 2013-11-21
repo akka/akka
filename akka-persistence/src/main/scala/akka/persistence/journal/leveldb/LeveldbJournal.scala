@@ -48,12 +48,14 @@ private[leveldb] class LeveldbJournal extends SyncWriteJournal with LeveldbIdMap
   def writeBatch(persistentBatch: immutable.Seq[PersistentRepr]) =
     withBatch(batch ⇒ persistentBatch.foreach(persistent ⇒ addToBatch(persistent, batch)))
 
-  def delete(processorId: String, sequenceNr: Long, physical: Boolean) {
-    if (physical)
-      // TODO: delete confirmations and deletion markers, if any.
-      leveldb.delete(keyToBytes(Key(numericId(processorId), sequenceNr, 0)))
-    else
-      leveldb.put(keyToBytes(deletionKey(numericId(processorId), sequenceNr)), Array.empty[Byte])
+  def delete(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean) = withBatch { batch ⇒
+    val nid = numericId(processorId)
+    if (permanent) fromSequenceNr to toSequenceNr foreach { sequenceNr ⇒
+      batch.delete(keyToBytes(Key(nid, sequenceNr, 0))) // TODO: delete confirmations and deletion markers, if any.
+    }
+    else fromSequenceNr to toSequenceNr foreach { sequenceNr ⇒
+      batch.put(keyToBytes(deletionKey(nid, sequenceNr)), Array.empty[Byte])
+    }
   }
 
   def confirm(processorId: String, sequenceNr: Long, channelId: String) {

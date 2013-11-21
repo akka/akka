@@ -101,7 +101,7 @@ public class PersistenceDocTest {
             @Override
             public void preRestart(Throwable reason, Option<Object> message) {
                 if (message.isDefined() && message.get() instanceof Persistent) {
-                    deleteMessage((Persistent) message.get());
+                    deleteMessage(((Persistent) message.get()).sequenceNr());
                 }
                 super.preRestart(reason, message);
             }

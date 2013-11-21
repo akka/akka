@@ -13,12 +13,12 @@ import akka.actor._
  */
 private[persistence] object JournalProtocol {
   /**
-   * Instructs a journal to delete a persistent message identified by `processorId`
-   * and `sequenceNr`. If `physical` is set to `false`, the persistent message is
-   * marked as deleted in the journal, otherwise it is physically deleted from the
-   * journal.
+   * Instructs a journal to delete all persistent messages with sequence numbers in
+   * the range from `fromSequenceNr` to `toSequenceNr` (both inclusive). If `permanent`
+   * is set to `false`, the persistent messages are marked as deleted in the journal,
+   * otherwise they are permanently deleted from the journal.
    */
-  case class Delete(processorId: String, sequenceNr: Long, physical: Boolean)
+  case class Delete(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean)
 
   /**
    * Instructs a journal to persist a sequence of messages.

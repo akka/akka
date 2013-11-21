@@ -56,6 +56,7 @@ object PersistenceSpec {
     s"""
       serialize-creators = on
       serialize-messages = on
+      akka.persistence.publish-plugin-commands = on
       akka.persistence.journal.plugin = "akka.persistence.journal.${plugin}"
       akka.persistence.journal.leveldb.dir = "target/journal-${test}-spec"
       akka.persistence.snapshot-store.local.dir = "target/snapshots-${test}-spec/"

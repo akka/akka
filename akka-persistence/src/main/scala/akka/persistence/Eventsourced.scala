@@ -64,11 +64,11 @@ private[persistence] trait Eventsourced extends Processor {
   private val persistingEvents: State = new State {
     def aroundReceive(receive: Receive, message: Any) = message match {
       case PersistentBatch(b) ⇒ {
-        b.foreach(p ⇒ deleteMessage(p, true))
+        b.foreach(p ⇒ deleteMessage(p.sequenceNr, true))
         throw new UnsupportedOperationException("Persistent command batches not supported")
       }
       case p: PersistentRepr ⇒ {
-        deleteMessage(p, true)
+        deleteMessage(p.sequenceNr, true)
         throw new UnsupportedOperationException("Persistent commands not supported")
       }
       case WriteSuccess(p) if identical(p.payload, persistInvocations.head._1) ⇒ {

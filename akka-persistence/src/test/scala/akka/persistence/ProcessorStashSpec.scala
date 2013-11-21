@@ -38,7 +38,7 @@ object ProcessorStashSpec {
   class RecoveryFailureStashingProcessor(name: String) extends StashingProcessor(name) {
     override def preRestart(reason: Throwable, message: Option[Any]) = {
       message match {
-        case Some(m: Persistent) ⇒ if (recoveryRunning) deleteMessage(m)
+        case Some(m: Persistent) ⇒ if (recoveryRunning) deleteMessage(m.sequenceNr)
         case _                   ⇒
       }
       super.preRestart(reason, message)

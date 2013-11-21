@@ -67,7 +67,7 @@ trait PersistenceDocSpec {
       //#deletion
       override def preRestart(reason: Throwable, message: Option[Any]) {
         message match {
-          case Some(p: Persistent) ⇒ deleteMessage(p)
+          case Some(p: Persistent) ⇒ deleteMessage(p.sequenceNr)
           case _                   ⇒
         }
         super.preRestart(reason, message)
