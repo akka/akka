@@ -71,7 +71,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
 
         system.actorSelection(node(remote) / "user" / "echo") ! Identify("echo")
         target = expectMsgType[ActorIdentity].ref.get
-        proxy = system.actorOf(Props(classOf[ReliableProxy], target, 100.millis, 0), "proxy")
+        proxy = system.actorOf(ReliableProxy.props(target, 100.millis, 120.seconds), "proxy")
         //#demo
         proxy ! FSM.SubscribeTransitionCallBack(testActor)
         expectState(Idle)

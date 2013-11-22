@@ -9,7 +9,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
 import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -43,7 +42,7 @@ public class ReliableProxyTest {
 
           //#demo-proxy
           final ActorRef proxy = getContext().actorOf(
-              Props.create(ReliableProxy.class, target, Duration.create(100, "millis"), 0));
+              ReliableProxy.props(target, Duration.create(100, "millis"), Duration.create(120, "seconds")));
 
           public void onReceive(Object msg) {
             if ("hello".equals(msg)) {
@@ -68,7 +67,8 @@ public class ReliableProxyTest {
         return new UntypedActor() {
 
           //#demo-transition
-          final ActorRef proxy = getContext().actorOf(Props.create(ReliableProxy.class, target, Duration.create(100, "millis"), 0));
+          final ActorRef proxy = getContext().actorOf(
+                  ReliableProxy.props(target, Duration.create(100, "millis"), Duration.create(120, "seconds")));
           ActorRef client = null;
           {
             proxy.tell(new FSM.SubscribeTransitionCallBack(getSelf()), getSelf());
