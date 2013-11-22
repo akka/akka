@@ -47,10 +47,8 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
     InternalClusterAction.InitJoin.getClass -> (_ ⇒ InternalClusterAction.InitJoin),
     classOf[InternalClusterAction.InitJoinAck] -> (bytes ⇒ InternalClusterAction.InitJoinAck(addressFromBinary(bytes))),
     classOf[InternalClusterAction.InitJoinNack] -> (bytes ⇒ InternalClusterAction.InitJoinNack(addressFromBinary(bytes))),
-    classOf[ClusterHeartbeatReceiver.Heartbeat] -> (bytes ⇒ ClusterHeartbeatReceiver.Heartbeat(addressFromBinary(bytes))),
-    classOf[ClusterHeartbeatReceiver.EndHeartbeat] -> (bytes ⇒ ClusterHeartbeatReceiver.EndHeartbeat(addressFromBinary(bytes))),
-    classOf[ClusterHeartbeatReceiver.EndHeartbeatAck] -> (bytes ⇒ ClusterHeartbeatReceiver.EndHeartbeatAck(addressFromBinary(bytes))),
-    classOf[ClusterHeartbeatSender.HeartbeatRequest] -> (bytes ⇒ ClusterHeartbeatSender.HeartbeatRequest(addressFromBinary(bytes))),
+    classOf[ClusterHeartbeatSender.Heartbeat] -> (bytes ⇒ ClusterHeartbeatSender.Heartbeat(addressFromBinary(bytes))),
+    classOf[ClusterHeartbeatSender.HeartbeatRsp] -> (bytes ⇒ ClusterHeartbeatSender.HeartbeatRsp(uniqueAddressFromBinary(bytes))),
     classOf[GossipStatus] -> gossipStatusFromBinary,
     classOf[GossipEnvelope] -> gossipEnvelopeFromBinary,
     classOf[MetricsGossipEnvelope] -> metricsGossipEnvelopeFromBinary)
@@ -60,20 +58,18 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
   def identifier = 5
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case ClusterHeartbeatReceiver.Heartbeat(from)       ⇒ addressToProtoByteArray(from)
-    case m: GossipEnvelope                              ⇒ gossipEnvelopeToProto(m).toByteArray
-    case m: GossipStatus                                ⇒ gossipStatusToProto(m).toByteArray
-    case m: MetricsGossipEnvelope                       ⇒ compress(metricsGossipEnvelopeToProto(m))
-    case InternalClusterAction.Join(node, roles)        ⇒ joinToProto(node, roles).toByteArray
-    case InternalClusterAction.Welcome(from, gossip)    ⇒ compress(welcomeToProto(from, gossip))
-    case ClusterUserAction.Leave(address)               ⇒ addressToProtoByteArray(address)
-    case ClusterUserAction.Down(address)                ⇒ addressToProtoByteArray(address)
-    case InternalClusterAction.InitJoin                 ⇒ cm.Empty.getDefaultInstance.toByteArray
-    case InternalClusterAction.InitJoinAck(address)     ⇒ addressToProtoByteArray(address)
-    case InternalClusterAction.InitJoinNack(address)    ⇒ addressToProtoByteArray(address)
-    case ClusterHeartbeatReceiver.EndHeartbeat(from)    ⇒ addressToProtoByteArray(from)
-    case ClusterHeartbeatReceiver.EndHeartbeatAck(from) ⇒ addressToProtoByteArray(from)
-    case ClusterHeartbeatSender.HeartbeatRequest(from)  ⇒ addressToProtoByteArray(from)
+    case ClusterHeartbeatSender.Heartbeat(from)      ⇒ addressToProtoByteArray(from)
+    case ClusterHeartbeatSender.HeartbeatRsp(from)   ⇒ uniqueAddressToProtoByteArray(from)
+    case m: GossipEnvelope                           ⇒ gossipEnvelopeToProto(m).toByteArray
+    case m: GossipStatus                             ⇒ gossipStatusToProto(m).toByteArray
+    case m: MetricsGossipEnvelope                    ⇒ compress(metricsGossipEnvelopeToProto(m))
+    case InternalClusterAction.Join(node, roles)     ⇒ joinToProto(node, roles).toByteArray
+    case InternalClusterAction.Welcome(from, gossip) ⇒ compress(welcomeToProto(from, gossip))
+    case ClusterUserAction.Leave(address)            ⇒ addressToProtoByteArray(address)
+    case ClusterUserAction.Down(address)             ⇒ addressToProtoByteArray(address)
+    case InternalClusterAction.InitJoin              ⇒ cm.Empty.getDefaultInstance.toByteArray
+    case InternalClusterAction.InitJoinAck(address)  ⇒ addressToProtoByteArray(address)
+    case InternalClusterAction.InitJoinNack(address) ⇒ addressToProtoByteArray(address)
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass}")
   }
@@ -126,6 +122,9 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
 
   private def uniqueAddressToProto(uniqueAddress: UniqueAddress): cm.UniqueAddress.Builder =
     cm.UniqueAddress.newBuilder().setAddress(addressToProto(uniqueAddress.address)).setUid(uniqueAddress.uid)
+
+  private def uniqueAddressToProtoByteArray(uniqueAddress: UniqueAddress): Array[Byte] =
+    uniqueAddressToProto(uniqueAddress).build.toByteArray
 
   // we don't care about races here since it's just a cache
   @volatile

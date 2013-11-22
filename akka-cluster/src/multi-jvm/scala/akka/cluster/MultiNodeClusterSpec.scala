@@ -105,8 +105,8 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
         }
 
       muteDeadLetters(
-        classOf[ClusterHeartbeatReceiver.Heartbeat],
-        classOf[ClusterHeartbeatReceiver.EndHeartbeat],
+        classOf[ClusterHeartbeatSender.Heartbeat],
+        classOf[ClusterHeartbeatSender.HeartbeatRsp],
         classOf[GossipEnvelope],
         classOf[GossipStatus],
         classOf[MetricsGossipEnvelope],

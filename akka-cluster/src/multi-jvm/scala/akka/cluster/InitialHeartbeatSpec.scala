@@ -21,7 +21,6 @@ object InitialHeartbeatMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
-      akka.cluster.failure-detector.heartbeat-request.grace-period = 3 s
       akka.cluster.failure-detector.threshold = 4""")).
     withFallback(MultiNodeClusterSpec.clusterConfig))
 
@@ -43,26 +42,35 @@ abstract class InitialHeartbeatSpec
   "A member" must {
 
     "detect failure even though no heartbeats have been received" taggedAs LongRunningTest in {
+      val firstAddress = address(first)
       val secondAddress = address(second)
       awaitClusterUp(first)
 
       runOn(first) {
         within(10 seconds) {
-          awaitAssert {
+          awaitAssert({
             cluster.sendCurrentClusterState(testActor)
             expectMsgType[CurrentClusterState].members.map(_.address) must contain(secondAddress)
-          }
+          }, interval = 50.millis)
         }
       }
       runOn(second) {
         cluster.join(first)
+        within(10 seconds) {
+          awaitAssert({
+            cluster.sendCurrentClusterState(testActor)
+            expectMsgType[CurrentClusterState].members.map(_.address) must contain(firstAddress)
+          }, interval = 50.millis)
+        }
       }
       enterBarrier("second-joined")
 
       runOn(controller) {
-        // it is likely that first has not started sending heartbeats to second yet
-        // Direction must be Receive because the gossip from first to second must pass through
-        testConductor.blackhole(first, second, Direction.Receive).await
+        // It is likely that second has not started heartbeating to first yet,
+        // and when it does the messages doesn't go through and the first extra heartbeat is triggered.
+        // If the first heartbeat arrives, it will detect the failure anyway but not really exercise the
+        // part that we are trying to test here.
+        testConductor.blackhole(first, second, Direction.Both).await
       }
 
       runOn(second) {

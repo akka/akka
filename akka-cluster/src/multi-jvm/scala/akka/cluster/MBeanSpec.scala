@@ -148,7 +148,7 @@ abstract class MBeanSpec
              |""".stripMargin
 
         // awaitAssert to make sure that all nodes detects unreachable
-        within(5.seconds) {
+        within(15.seconds) {
           awaitAssert(mbeanServer.getAttribute(mbeanName, "ClusterStatus") must be(expectedJson))
         }
       }
