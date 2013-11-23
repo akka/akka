@@ -60,21 +60,20 @@ object LoggingDocSpec {
       reqId += 1
       val always = Map("requestId" -> reqId)
       val perMessage = currentMessage match {
-        case r: Req => Map("visitorId" -> r.visitorId)
-        case _      => Map()
+        case r: Req ⇒ Map("visitorId" -> r.visitorId)
+        case _      ⇒ Map()
       }
       always ++ perMessage
     }
 
     def receive: Receive = {
-      case r: Req => {
+      case r: Req ⇒ {
         log.info(s"Starting new request: ${r.work}")
       }
     }
   }
 
   //#mdc-actor
-
 
   //#my-event-listener
   import akka.event.Logging.InitializeLogger
@@ -117,7 +116,7 @@ object LoggingDocSpec {
 
 class LoggingDocSpec extends AkkaSpec {
 
-  import LoggingDocSpec.{MyActor, MdcActor, MdcActorMixin, Req}
+  import LoggingDocSpec.{ MyActor, MdcActor, MdcActorMixin, Req }
 
   "use a logging actor" in {
     val myActor = system.actorOf(Props[MyActor])
