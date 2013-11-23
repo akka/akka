@@ -130,7 +130,7 @@ The Way In-Between: Expecting Exceptions
 If you want to test the actor behavior, including hotswapping, but without
 involving a dispatcher and without having the :class:`TestActorRef` swallow
 any thrown exceptions, then there is another mode available for you: just use
-the :meth:`receive` method :class:`TestActorRef`, which will be forwarded to the
+the :meth:`receive` method on :class:`TestActorRef`, which will be forwarded to the
 underlying actor:
 
 .. includecode:: code/docs/testkit/TestkitDocSpec.scala#test-expecting-exceptions

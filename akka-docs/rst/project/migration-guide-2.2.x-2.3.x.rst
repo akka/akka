@@ -239,3 +239,10 @@ It is recommended to use this new convention::
     sender() ! "reply"
 
 However, it is not mandatory to use parens and you do not have to change anything.
+
+ReliableProxy Constructor Changed
+=================================
+
+The constructor of ``ReliableProxy`` in ``akka-contrib`` has been changed to support reconnection.
+Use the new props factory methods, ``ReliableProxy.props``.
+ 

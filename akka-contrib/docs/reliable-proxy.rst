@@ -61,20 +61,32 @@ actor system) must be considered as one when evaluating the reliability of this
 communication channel. The benefit is that the network in-between is taken out
 of that equation.
 
-When the target actor terminates, the proxy will terminate as well (on the
-terms of :ref:`deathwatch-java` / :ref:`deathwatch-scala`).
+Connecting to the target
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``proxy`` tries to connect to the ``target`` using the mechanism outlined in
+:ref:`actorSelection-scala`.  Once connected, if the ``tunnel`` terminates the ``proxy``
+will optionally try to reconnect to the target using using the same process.
+
+Note that during the reconnection process there is a possibility that a message
+could be delivered to the ``target`` more than once.  Consider the case where a message
+is delivered to the ``target`` and the target system crashes before the ACK
+is sent to the ``sender``.  After the ``proxy`` reconnects to the ``target`` it
+will start resending all of the messages that it has not received an ACK for and
+the message that it never got an ACK for will be redelivered.  Either this possibility
+should be considered in the design of the ``target`` or reconnection should be disabled.
 
 How to use it
 -------------
 
 Since this implementation does not offer much in the way of configuration,
-simply instantiate a proxy wrapping some target reference. From Java it looks
-like this:
+simply instantiate a proxy wrapping a target ``ActorRef`` or ``ActorPath``. From Java it looks
+like this (using an ``ActorPath``):
 
 .. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ReliableProxyTest.java
    :include: import,demo-proxy
 
-And from Scala like this:
+And from Scala like this (using an ``ActorRef``):
 
 .. includecode:: @contribSrc@/src/test/scala/akka/contrib/pattern/ReliableProxyDocSpec.scala#demo
 
@@ -91,6 +103,15 @@ From Scala it would look like so:
 
 .. includecode:: @contribSrc@/src/test/scala/akka/contrib/pattern/ReliableProxyDocSpec.scala#demo-transition
 
+Configuration
+^^^^^^^^^^^^^
+
+* Set ``akka.reliable-proxy.debug`` to ``on`` to turn on extra debug logging for your
+  :class:`ReliableProxy` actors.
+* ``akka.reliable-proxy.default-connect-interval`` is used only if you create a :class:`ReliableProxy`
+  with no reconnections (that is, ``reconnectAfter == None``). The default value is ``500 ms``.  In this
+  case the :class:`ReliableProxy` will send an ``Identify`` message to the *target* every 500 milliseconds
+  to try to resolve the :class:`ActorPath` to an :class:`ActorRef` so that messages can be sent to the *target*.
 
 The Actor Contract
 ------------------
@@ -99,14 +120,17 @@ Message it Processes
 ^^^^^^^^^^^^^^^^^^^^
 
 * :class:`FSM.SubscribeTransitionCallBack` and :class:`FSM.UnsubscribeTransitionCallBack`, see :ref:`fsm-scala`
-* internal messages declared within :obj:`ReliableProxy`, *not for external use*
+* :class:`ReliableProxy.Unsent`, see the API documentation for details.
 * any other message is transferred through the reliable tunnel and forwarded to the designated target actor
 
 Messages it Sends
 ^^^^^^^^^^^^^^^^^
 
 * :class:`FSM.CurrentState` and :class:`FSM.Transition`, see :ref:`fsm-scala`
- 
+* :class:`ReliableProxy.TargetChanged` is sent to the FSM transition subscribers if the proxy reconnects to a
+  new target.
+* :class:`ReliableProxy.ProxyTerminated` is sent to the FSM transition subscribers if the proxy is stopped.
+
 Exceptions it Escalates
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -120,4 +144,7 @@ Arguments it Takes
   messages, ``B`` in the above illustration.
 * *retryAfter* is the timeout for receiving ACK messages from the remote
   end-point; once it fires, all outstanding message sends will be retried.
-
+* *reconnectAfter* is an optional interval between connection attempts. It is also used as the interval
+  between receiving a ``Terminated`` for the tunnel and attempting to reconnect to the target actor.
+* *maxConnectAttempts* is an optional maximum number of attempts to connect to the target while in
+  the ``Connecting`` state.
