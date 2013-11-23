@@ -38,8 +38,9 @@ public class ReliableProxyTest {
 
     public ProxyParent(ActorRef target) {
       proxy = getContext().actorOf(
-          Props.create(ReliableProxy.class, target,
-              Duration.create(100, TimeUnit.MILLISECONDS)));
+          ReliableProxy.props(target,
+              Duration.create(100, TimeUnit.MILLISECONDS),
+              Duration.create(120, TimeUnit.SECONDS)));
     }
 
     public void onReceive(Object msg) {
@@ -58,8 +59,9 @@ public class ReliableProxyTest {
 
     public ProxyTransitionParent(ActorRef target) {
       proxy = getContext().actorOf(
-          Props.create(ReliableProxy.class, target,
-              Duration.create(100, TimeUnit.MILLISECONDS)));
+          ReliableProxy.props(target,
+              Duration.create(100, TimeUnit.MILLISECONDS),
+              Duration.create(120, TimeUnit.SECONDS)));
       proxy.tell(new FSM.SubscribeTransitionCallBack(getSelf()), getSelf());
     }
 

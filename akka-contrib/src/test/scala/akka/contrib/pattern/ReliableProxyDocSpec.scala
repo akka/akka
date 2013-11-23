@@ -19,7 +19,7 @@ object ReliableProxyDocSpec {
   import akka.contrib.pattern.ReliableProxy
 
   class ProxyParent(target: ActorRef) extends Actor {
-    val proxy = context.actorOf(Props(classOf[ReliableProxy], target, 100.millis))
+    val proxy = context.actorOf(ReliableProxy.props(target, 100.millis, 120.seconds))
 
     def receive = {
       case "hello" ⇒ proxy ! "world!"
@@ -29,7 +29,7 @@ object ReliableProxyDocSpec {
 
   //#demo-transition
   class ProxyTransitionParent(target: ActorRef) extends Actor {
-    val proxy = context.actorOf(Props(classOf[ReliableProxy], target, 100.millis))
+    val proxy = context.actorOf(ReliableProxy.props(target, 100.millis, 120.seconds))
     proxy ! FSM.SubscribeTransitionCallBack(self)
 
     var client: ActorRef = _
