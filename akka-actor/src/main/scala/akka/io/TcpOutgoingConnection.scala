@@ -55,13 +55,12 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
           completeConnect(registration, commander, options)
         else {
           registration.enableInterest(SelectionKey.OP_CONNECT)
-          context.become(connecting(registration, commander, options, tcp.Settings.FinishConnectRetries))
+          context.become(connecting(registration, tcp.Settings.FinishConnectRetries))
         }
       }
   }
 
-  def connecting(registration: ChannelRegistration, commander: ActorRef,
-                 options: immutable.Traversable[SocketOption], remainingFinishConnectRetries: Int): Receive = {
+  def connecting(registration: ChannelRegistration, remainingFinishConnectRetries: Int): Receive = {
     {
       case ChannelConnectable ⇒
         reportConnectFailure {
@@ -74,7 +73,7 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
               context.system.scheduler.scheduleOnce(1.millisecond) {
                 channelRegistry.register(channel, SelectionKey.OP_CONNECT)
               }(context.dispatcher)
-              context.become(connecting(registration, commander, options, remainingFinishConnectRetries - 1))
+              context.become(connecting(registration, remainingFinishConnectRetries - 1))
             } else {
               log.debug("Could not establish connection because finishConnect " +
                 "never returned true (consider increasing akka.io.tcp.finish-connect-retries)")
