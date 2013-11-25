@@ -13,7 +13,7 @@ import akka.pattern.ask
 import scala.concurrent.duration._
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.junit.JUnitSuite
+import org.scalatest.junit.JUnitSuiteLike
 
 object ActorWithStashSpec {
 
@@ -79,7 +79,7 @@ object ActorWithStashSpec {
 
 }
 
-class JavaActorWithStashSpec extends StashJavaAPI with JUnitSuite
+class JavaActorWithStashSpec extends StashJavaAPI with JUnitSuiteLike
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with DefaultTimeout with BeforeAndAfterEach {

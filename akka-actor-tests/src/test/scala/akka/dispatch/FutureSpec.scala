@@ -14,13 +14,14 @@ import scala.concurrent.{ Await, Awaitable, Future, Promise, ExecutionContext }
 import scala.util.control.NonFatal
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
-import org.scalatest.junit.JUnitSuite
+import org.scalatest.junit.JUnitSuiteLike
 import scala.runtime.NonLocalReturnControl
 import akka.pattern.ask
 import java.lang.{ IllegalStateException, ArithmeticException }
 import java.util.concurrent._
 import scala.reflect.{ ClassTag, classTag }
 import scala.util.{ Failure, Success, Try }
+import org.scalacheck.Gen
 
 object FutureSpec {
 
@@ -54,11 +55,12 @@ object FutureSpec {
   case class Res[T](res: T)
 }
 
-class JavaFutureSpec extends JavaFutureTests with JUnitSuite
+class JavaFutureSpec extends JavaFutureTests with JUnitSuiteLike
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with DefaultTimeout {
   import FutureSpec._
+
   implicit val ec: ExecutionContext = system.dispatcher
   "A Promise" when {
     "never completed" must {
@@ -730,14 +732,14 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
     val genIntAction = for {
       n ← arbitrary[Int]
-      a ← oneOf(IntAdd(n), IntSub(n), IntMul(n), IntDiv(n))
+      a ← Gen.oneOf(IntAdd(n), IntSub(n), IntMul(n), IntDiv(n))
     } yield a
 
     val genMapAction = genIntAction map (MapAction(_))
 
     val genFlatMapAction = genIntAction map (FlatMapAction(_))
 
-    oneOf(genMapAction, genFlatMapAction)
+    Gen.oneOf(genMapAction, genFlatMapAction)
 
   }
 

@@ -7,10 +7,10 @@ package akka.camel
 import org.apache.camel.impl.{ DefaultExchange, DefaultMessage }
 import akka.camel.TestSupport.SharedCamelSystem
 import org.scalatest.matchers.MustMatchers
-import org.scalatest.WordSpec
+import org.scalatest.WordSpecLike
 
 //TODO merge it with MessageScalaTest
-class CamelMessageTest extends MustMatchers with WordSpec with SharedCamelSystem {
+class CamelMessageTest extends MustMatchers with WordSpecLike with SharedCamelSystem {
 
   "CamelMessage" must {
 

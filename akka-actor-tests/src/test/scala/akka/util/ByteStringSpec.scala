@@ -477,7 +477,7 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
           buffer.flip()
           val array = Array.ofDim[Byte](bytes.size)
           buffer.get(array)
-          bytes == array.toSeq
+          bytes equals array.toSeq
         }
       }
     }

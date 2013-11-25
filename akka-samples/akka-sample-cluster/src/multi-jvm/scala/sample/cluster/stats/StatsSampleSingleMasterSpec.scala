@@ -4,7 +4,7 @@ import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.WordSpec
+import org.scalatest.WordSpecLike
 import org.scalatest.matchers.MustMatchers
 import akka.actor.PoisonPill
 import akka.actor.Props
@@ -58,7 +58,7 @@ class StatsSampleSingleMasterSpecMultiJvmNode2 extends StatsSampleSingleMasterSp
 class StatsSampleSingleMasterSpecMultiJvmNode3 extends StatsSampleSingleMasterSpec
 
 abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSingleMasterSpecConfig)
-  with WordSpec with MustMatchers with BeforeAndAfterAll with ImplicitSender {
+  with WordSpecLike with MustMatchers with BeforeAndAfterAll with ImplicitSender {
 
   import StatsSampleSingleMasterSpecConfig._
 
