@@ -28,7 +28,8 @@ import java.nio.charset.Charset
 import java.util.Properties
 import annotation.tailrec
 import Unidoc.{ JavaDoc, javadocSettings, junidocSources, sunidoc, unidocExclude }
-import scalabuff.ScalaBuffPlugin._
+// We only publish akka-actor from this branch, so ignore this
+//import scalabuff.ScalaBuffPlugin._
 import com.typesafe.sbt.S3Plugin.{ S3, s3Settings }
 
 object AkkaBuild extends Build {
@@ -39,7 +40,7 @@ object AkkaBuild extends Build {
 
   val enableMiMa = true
 
-  val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.11.0-M5")
+  val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.11.0-M7")
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
@@ -82,7 +83,7 @@ object AkkaBuild extends Build {
       
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
-      mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples, channels, channelsTests,
+      mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples, // channels, channelsTests,
       multiNodeTestkit)
   )
 
@@ -233,9 +234,11 @@ object AkkaBuild extends Build {
     base = file("akka-cluster"),
     dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test"),
     settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ multiJvmSettings ++ OSGi.cluster ++
-      scalabuffSettings ++ Seq(
+      // We only publish akka-actor from this branch, so ignore this
+      //scalabuffSettings ++
+      Seq(
       // this version needs to be reflected in the OSGi.scalabuffImport and dining hackers pom.xml
-      scalabuffVersion in ScalaBuff := "1.2.0",
+      //scalabuffVersion in ScalaBuff := "1.2.0",
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -245,7 +248,7 @@ object AkkaBuild extends Build {
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
       previousArtifact := akkaPreviousArtifact("akka-cluster")
     )
-  ) configs (MultiJvm, ScalaBuff)
+  ) configs (MultiJvm) //, ScalaBuff)
 
   lazy val slf4j = Project(
     id = "akka-slf4j",
@@ -1121,6 +1124,12 @@ object AkkaBuild extends Build {
 
 object Dependencies {
 
+  // this issue will be fixed in M8, for now need to exclude M6 modules used to compile the M7 compiler
+  def excludeM6Modules(m: ModuleID) = (m
+    exclude("org.scala-lang.modules", "scala-parser-combinators_2.11.0-M6")
+    exclude("org.scala-lang.modules", "scala-xml_2.11.0-M6")
+  )
+
   object Compile {
     // Compile
     val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.10.3" exclude("org.slf4j", "slf4j-api") // ApacheV2
@@ -1128,11 +1137,11 @@ object Dependencies {
     val config        = "com.typesafe"                % "config"                       % "1.0.2"       // ApacheV2
     val netty         = "io.netty"                    % "netty"                        % "3.6.6.Final" // ApacheV2
     val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
-    val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % "0.7"         // Modified BSD (Scala)
+    val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % "0.8-SNAPSHOT" // local build // Modified BSD (Scala)
     val scalaBuffRuntime = "net.sandrogrzicic"       %% "scalabuff-runtime"            % "1.2.0"       // ApacheV2
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.2"       // MIT
-    val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % "0.0.7"       // ApacheV2
+    val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % "0.1.0-SNAPSHOT" // local build // ApacheV2
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
     val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "0.3.2"       // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
@@ -1157,8 +1166,8 @@ object Dependencies {
       val logback      = "ch.qos.logback"              % "logback-classic"              % "1.0.7"            % "test" // EPL 1.0 / LGPL 2.1
       val mockito      = "org.mockito"                 % "mockito-all"                  % "1.8.1"            % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
-      val scalatest    = "org.scalatest"              %% "scalatest"                    % "2.0.M7"        % "test" // ApacheV2
-      val scalacheck   = "org.scalacheck"             %% "scalacheck"                   % "1.10.1"           % "test" // New BSD
+      val scalatest    = excludeM6Modules("org.scalatest"              %% "scalatest"                    % "2.0.1-SNAP4"      % "test") // ApacheV2
+      val scalacheck   = excludeM6Modules("org.scalacheck"             %% "scalacheck"                   % "1.11.1"           % "test") // New BSD
       val ariesProxy   = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3"              % "test" // ApacheV2
       val pojosr       = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"            % "test" // ApacheV2
       val tinybundles  = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
@@ -1205,7 +1214,8 @@ object Dependencies {
 
   val uncommons = Seq(uncommonsMath)
 
-  val scalaBuff = Seq(scalaBuffRuntime)
+  // We only publish akka-actor from this branch, so ignore this
+  val scalaBuff = Seq.empty //Seq(scalaBuffRuntime)
 
   val osgiAries = Seq(osgiCore, osgiCompendium, ariesBlueprint, Test.ariesProxy)
 

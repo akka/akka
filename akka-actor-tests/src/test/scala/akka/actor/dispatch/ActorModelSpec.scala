@@ -135,12 +135,12 @@ object ActorModelSpec {
     }
 
     protected[akka] abstract override def register(actor: ActorCell) {
-      assert(getStats(actor.self).registers.incrementAndGet() == 1)
+      require(getStats(actor.self).registers.incrementAndGet() == 1)
       super.register(actor)
     }
 
     protected[akka] abstract override def unregister(actor: ActorCell) {
-      assert(getStats(actor.self).unregisters.incrementAndGet() == 1)
+      require(getStats(actor.self).unregisters.incrementAndGet() == 1)
       super.unregister(actor)
     }
 
