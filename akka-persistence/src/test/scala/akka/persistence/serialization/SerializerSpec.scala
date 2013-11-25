@@ -1,3 +1,7 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.persistence.serialization
 
 import scala.collection.immutable
@@ -10,12 +14,6 @@ import akka.serialization._
 import akka.testkit._
 
 object SerializerSpecConfigs {
-  val common =
-    """
-      serialize-creators = on
-      serialize-messages = on
-    """
-
   val customSerializers =
     """
       akka.actor {
@@ -50,7 +48,7 @@ object SerializerSpecConfigs {
   val systemB = "akka.remote.netty.tcp.port = 0"
 
   def config(configs: String*): Config =
-    configs.foldLeft(ConfigFactory.parseString(common))((r, c) ⇒ r.withFallback(ConfigFactory.parseString(c)))
+    configs.foldLeft(ConfigFactory.empty)((r, c) ⇒ r.withFallback(ConfigFactory.parseString(c)))
 }
 
 import SerializerSpecConfigs._

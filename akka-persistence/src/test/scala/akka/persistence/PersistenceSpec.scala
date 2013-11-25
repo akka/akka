@@ -46,10 +46,10 @@ trait PersistenceSpec extends BeforeAndAfterEach with Cleanup { this: AkkaSpec �
 }
 
 object PersistenceSpec {
-  def config(plugin: String, test: String) = ConfigFactory.parseString(
+  def config(plugin: String, test: String, serialization: String = "on") = ConfigFactory.parseString(
     s"""
-      serialize-creators = on
-      serialize-messages = on
+      akka.actor.serialize-creators = ${serialization}
+      akka.actor.serialize-messages = ${serialization}
       akka.persistence.publish-plugin-commands = on
       akka.persistence.journal.plugin = "akka.persistence.journal.${plugin}"
       akka.persistence.journal.leveldb.dir = "target/journal-${test}-spec"
@@ -60,6 +60,7 @@ object PersistenceSpec {
 trait Cleanup { this: AkkaSpec ⇒
   val storageLocations = List(
     "akka.persistence.journal.leveldb.dir",
+    "akka.persistence.journal.leveldb-shared.store.dir",
     "akka.persistence.snapshot-store.local.dir").map(s ⇒ new File(system.settings.config.getString(s)))
 
   override protected def atStartup() {

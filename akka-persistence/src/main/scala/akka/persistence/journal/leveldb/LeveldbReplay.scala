@@ -15,16 +15,16 @@ import akka.persistence.journal.AsyncReplay
  *
  * LevelDB backed message replay.
  */
-private[persistence] trait LeveldbReplay extends AsyncReplay { this: LeveldbJournal ⇒
+private[persistence] trait LeveldbReplay extends AsyncReplay { this: LeveldbStore ⇒
   import Key._
 
-  private val replayDispatcherId = context.system.settings.config.getString("akka.persistence.journal.leveldb.replay-dispatcher")
-  private val replayDispatcher = context.system.dispatchers.lookup(replayDispatcherId)
+  private lazy val replayDispatcherId = config.getString("replay-dispatcher")
+  private lazy val replayDispatcher = context.system.dispatchers.lookup(replayDispatcherId)
 
   def replayAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: PersistentRepr ⇒ Unit): Future[Long] =
     Future(replay(numericId(processorId), fromSequenceNr: Long, toSequenceNr)(replayCallback))(replayDispatcher)
 
-  private def replay(processorId: Int, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: PersistentRepr ⇒ Unit): Long = {
+  def replay(processorId: Int, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: PersistentRepr ⇒ Unit): Long = {
     val iter = leveldbIterator
 
     @scala.annotation.tailrec

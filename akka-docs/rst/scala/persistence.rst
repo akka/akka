@@ -56,19 +56,6 @@ Architecture
 * *Event sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
   development of event sourced applications (see section :ref:`event-sourcing`)
 
-Configuration
-=============
-
-By default, journaled messages are written to a directory named ``journal`` in the current working directory. This
-can be changed by configuration where the specified path can be relative or absolute:
-
-.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#journal-config
-
-The default storage location of :ref:`snapshots` is a directory named ``snapshots`` in the current working directory.
-This can be changed by configuration where the specified path can be relative or absolute:
-
-.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#snapshot-config
-
 .. _processors:
 
 Processors
@@ -418,10 +405,11 @@ will therefore never be done partially i.e. with only a subset of events persist
 Storage plugins
 ===============
 
-Storage backends for journals and snapshot stores are plugins in akka-persistence. The default journal plugin writes
-messages to LevelDB. The default snapshot store plugin writes snapshots as individual files to the local filesystem.
-Applications can provide their own plugins by implementing a plugin API and activate them by configuration. Plugin
-development requires the following imports:
+Storage backends for journals and snapshot stores are plugins in akka-persistence. The default journal plugin
+writes messages to LevelDB (see :ref:`local-leveldb-journal`). The default snapshot store plugin writes snapshots
+as individual files to the local filesystem (see :ref:`local-snapshot-store`). Applications can provide their own
+plugins by implementing a plugin API and activate them by configuration. Plugin development requires the following
+imports:
 
 .. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#plugin-imports
 
@@ -464,6 +452,74 @@ A snapshot store plugin can be activated with the following minimal configuratio
 
 The specified plugin ``class`` must have a no-arg constructor. The ``plugin-dispatcher`` is the dispatcher
 used for the plugin actor. If not specified, it defaults to ``akka.persistence.dispatchers.default-plugin-dispatcher``.
+
+Pre-packaged plugins
+====================
+
+.. _local-leveldb-journal:
+
+Local LevelDB journal
+---------------------
+
+The default journal plugin is ``akka.persistence.journal.leveldb`` which writes messages to a local LevelDB
+instance. The default location of the LevelDB files is a directory named ``journal`` in the current working
+directory. This location can be changed by configuration where the specified path can be relative or absolute:
+
+.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#journal-config
+
+With this plugin, each actor system runs its own private LevelDB instance.
+
+Shared LevelDB journal
+----------------------
+
+A LevelDB instance can also be shared by multiple actor systems (on the same or on different nodes). This, for
+example, allows processors to failover to a backup node, assuming that the node, where the shared instance is
+runnning, is accessible from the backup node.
+
+.. warning::
+
+  A shared LevelDB instance is a single point of failure and should therefore only be used for testing
+  purposes.
+
+A shared LevelDB instance can be created by instantiating the ``SharedLeveldbStore`` actor.
+
+.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#shared-store-creation
+
+By default, the shared instance writes journaled messages to a local directory named ``journal`` in the current
+working directory. The storage location can be changed by configuration:
+
+.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#shared-store-config
+
+Actor systems that use a shared LevelDB store must activate the ``akka.persistence.journal.leveldb-shared``
+plugin.
+
+.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#shared-journal-config
+
+This plugin must be initialized by injecting the (remote) ``SharedLeveldbStore`` actor reference. Injection is
+done by calling the ``SharedLeveldbJournal.setStore`` method with the actor reference as argument.
+
+.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#shared-store-usage
+
+Internal journal commands (sent by processors) are buffered until injection completes. Injection is idempotent
+i.e. only the first injection is used.
+
+.. _local-snapshot-store:
+
+Local snapshot store
+--------------------
+
+The default snapshot store plugin is ``akka.persistence.snapshot-store.local`` which writes snapshot files to
+the local filesystem. The default storage location is a directory named ``snapshots`` in the current working
+directory. This can be changed by configuration where the specified path can be relative or absolute:
+
+.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#snapshot-config
+
+Planned plugins
+---------------
+
+* Shared snapshot store (SPOF, for testing purposes)
+* HA snapshot store backed by a distributed file system
+* HA journal backed by a distributed (NoSQL) data store
 
 Custom serialization
 ====================
