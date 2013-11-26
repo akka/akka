@@ -445,7 +445,7 @@ Remote actor addresses may also be looked up, if :ref:`remoting <remoting-java>`
 
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#selection-remote
 
-An example demonstrating remote actor look-up is given in :ref:`remote-lookup-sample-java`.
+An example demonstrating remote actor look-up is given in :ref:`remote-sample-java`.
 
 .. note::
 

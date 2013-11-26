@@ -446,7 +446,7 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(camelSampleJava, camelSampleScala, fsmSample, mainSampleJava, mainSampleScala, helloKernelSample, remoteSample, persistenceSample, clusterSample, multiNodeSample, osgiDiningHakkersSample)
+    aggregate = Seq(camelSampleJava, camelSampleScala, fsmSample, mainSampleJava, mainSampleScala, helloKernelSample, remoteSampleJava, remoteSampleScala, persistenceSample, clusterSample, multiNodeSample, osgiDiningHakkersSample)
   )
 
   lazy val camelSampleJava = Project(
@@ -491,10 +491,17 @@ object AkkaBuild extends Build {
     settings = sampleSettings
   )
 
-  lazy val remoteSample = Project(
-    id = "akka-sample-remote",
-    base = file("akka-samples/akka-sample-remote"),
-    dependencies = Seq(actor, remote, kernel),
+  lazy val remoteSampleJava = Project(
+    id = "akka-sample-remote-java",
+    base = file("akka-samples/akka-sample-remote-java"),
+    dependencies = Seq(actor, remote),
+    settings = sampleSettings
+  )
+  
+  lazy val remoteSampleScala = Project(
+    id = "akka-sample-remote-scala",
+    base = file("akka-samples/akka-sample-remote-scala"),
+    dependencies = Seq(actor, remote),
     settings = sampleSettings
   )
 

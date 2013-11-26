@@ -528,7 +528,7 @@ Remote actor addresses may also be looked up, if :ref:`remoting <remoting-scala>
 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#selection-remote
 
-An example demonstrating actor look-up is given in :ref:`remote-lookup-sample-scala`.
+An example demonstrating actor look-up is given in :ref:`remote-sample-scala`.
 
 .. note::
 

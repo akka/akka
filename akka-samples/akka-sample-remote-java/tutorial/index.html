@@ -1,0 +1,256 @@
+<!-- <html> -->
+<head>
+<title>Akka Remote Samples with Java</title>
+</head>
+
+<body>
+
+<div>
+<p>
+In order to showcase the <a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/java/remoting.html" target="_blank">remote capabilities of Akka</a>
+we thought a remote calculator could do the trick.
+This sample demonstrates both remote deployment and look-up of remote actors.
+</p>
+</div>
+
+<div>
+<h2>Lookup Remote Actors</h2>
+<p>
+This sample involves two actor systems.
+</p>
+
+<ul>
+<li><b>CalculatorSystem</b> listens on port 2552 and starts one actor, the
+<a href="#code/src/main/java/sample/remote/calculator/CalculatorActor.java" class="shortcut">CalculatorActor</a>
+that provides a service for arithmetic operations.</li>
+<li><b>LookupSystem</b> listens on port 2553 and starts one actor, the
+<a href="#code/src/main/java/sample/remote/calculator/LookupActor.java" class="shortcut">LookupActor</a>
+that sends operations to the remote calculator service.</li>
+</ul>
+
+<p>
+Open <a href="#code/src/main/java/sample/remote/calculator/LookupApplication.java" class="shortcut">LookupApplication.java</a>.
+</p>
+
+<p>
+There you see how the two actor systems and actors are started. In this first step they are running in the same JVM process,
+but you can run them in separate processes as described later. Note that this changes nothing in the configuration or implementation.
+</p>
+
+<p>
+The two actor systems use different configuration, which is where the listen port is defined.
+The CalculatorSystem uses <a href="#code/src/main/resources/calculator.conf" class="shortcut">calculator.conf</a>
+and the LookupSystem uses <a href="#code/src/main/resources/remotelookup.conf" class="shortcut">remotelookup.conf</a>.
+</p>
+
+<p>
+Note that the configuration files also import the 
+<a href="#code/src/main/resources/common.conf" class="shortcut">common.conf</a>.
+This enables the remoting by installing the RemoteActorRefProvider and chooses the default remote transport.
+Be sure to replace the default IP 127.0.0.1 with the real address the system is reachable
+by if you deploy onto multiple machines!
+</p>
+
+<p>
+The <a href="#code/src/main/java/sample/remote/calculator/CalculatorActor.java" class="shortcut">CalculatorActor</a>
+does not illustrate anything exciting. More interesting is the 
+<a href="#code/src/main/java/sample/remote/calculator/LookupActor.java" class="shortcut">LookupActor</a>.
+It takes a String <code>path</code> as constructor parameter. This is the full path, including the remote
+address of the calculator service. Observe how the actor system name of the path matches the remote system’s
+name, as do IP and port number. Top-level actors are always created below the "/user" guardian, which supervises them.
+</p>
+
+<pre><code>
+"akka.tcp://CalculatorSystem@127.0.0.1:2552/user/calculator"
+</code></pre>
+
+<p>
+First it sends an <code>Identify</code> message to the actor selection of the path.
+The remote calculator actor will reply with <code>ActorIdentity</code> containing its <code>ActorRef</code>.
+<code>Identify</code> is a built-in message that all Actors will understand and automatically reply to with a
+<code>ActorIdentity</code>. If the identification fails it will be retried after the scheduled timeout
+by the <code>LookupActor</code>.
+</p>
+
+<p>
+Note how none of the code is specific to remoting, this also applies when talking to a local actor which
+might terminate and be recreated. That is what we call Location Transparency.
+</p>
+
+<p>
+Once it has the <code>ActorRef</code> of the remote service it can <code>watch</code> it. The remote system
+might be shutdown and later started up again, then <code>Terminated</code> is received on the watching
+side and it can retry the identification to establish a connection to the new remote system.
+</p>
+
+</div>
+
+<div>
+<h2>Run the Lookup Sample</h2>
+
+<p>
+To run this sample, go to the <a href="#run" class="shortcut">Run</a>
+tab, and start the application main class <code>sample.remote.calculator.LookupApplication</code> if it is not already started.
+</p>
+
+<p>
+In the log pane you should see something like:
+</p>
+
+<pre><code>
+Started LookupSystem
+Calculating 74 - 42
+Sub result: 74 - 42 = 32
+Calculating 15 + 71
+Add result: 15 + 71 = 86
+</code></pre>
+
+<p>
+The two actor systems are running in the same JVM process. It can be more interesting to run them in separate
+processes. Stop the application in the <a href="#run" class="shortcut">Run</a> tab and then open two
+terminal windows.
+</p>
+
+<p>
+Start the CalculatorSystem in the first terminal window with the following command (on one line):
+</p>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "run-main sample.remote.calculator.LookupApplication Calculator"		
+</code></pre>
+
+<p>
+Start the LookupSystem in the second terminal window with the following command (on one line):
+</p>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "run-main sample.remote.calculator.LookupApplication Lookup"		
+</code></pre>
+
+<p>
+Thereafter you can try to shutdown the CalculatorSystem in the first terminal window with 
+'ctrl-c' and then start it again. In the second terminal window you should see the
+failure detection and then how the successful calculation results are logged again when it has
+established a connection to the new system.
+</p>
+
+</div>
+
+<div>
+<h2>Create Remote Actors</h2>
+<p>
+This sample involves two actor systems.
+</p>
+
+<ul>
+<li><b>CalculatorWorkerSystem</b> listens on port 2552</li>
+<li><b>CreationSystem</b> listens on port 2554 and starts one actor, the
+<a href="#code/src/main/java/sample/remote/calculator/CreationActor.java" class="shortcut">CreationActor</a>
+that creates remote calculator worker actors in the CalculatorWorkerSystem and sends operations to them.</li>
+</ul>
+
+<p>
+Open <a href="#code/src/main/java/sample/remote/calculator/CreationApplication.java" class="shortcut">CreationApplication.java</a>.
+</p>
+
+<p>
+There you see how the two actor systems and actors are started. In this first step they are running in the same JVM process,
+but you can run them in separate processes as described later.
+</p>
+
+<p>
+The two actor systems use different configuration, which is where the listen port is defined.
+The CalculatorWorkerSystem uses <a href="#code/src/main/resources/calculator.conf" class="shortcut">calculator.conf</a>
+and the CreationSystem uses <a href="#code/src/main/resources/remotecreation.conf" class="shortcut">remotecreation.conf</a>.
+</p>
+
+<p>
+Note that the configuration files also import the 
+<a href="#code/src/main/resources/common.conf" class="shortcut">common.conf</a>.
+This enables the remoting by installing the RemoteActorRefProvider and chooses the default remote transport.
+Be sure to replace the default IP 127.0.0.1 with the real address the system is reachable
+by if you deploy onto multiple machines!
+</p>
+
+<p>
+The <a href="#code/src/main/java/sample/remote/calculator/CreationActor.java" class="shortcut">CreationActor</a>
+creates a child <a href="#code/src/main/java/sample/remote/calculator/CalculatorActor.java" class="shortcut">CalculatorActor</a>
+for each incoming <code>MathOp</code> message. The 
+<a href="#code/src/main/resources/remotecreation.conf" class="shortcut">configuration</a> contains a deployment section that
+matches these child actors and defines that the actors are to be deployed at the remote system. The wildcard (*) is needed
+because the child actors are created with unique anonymous names. 
+</p>
+
+<pre><code>
+akka.actor.deployment {
+  /creationActor/* {
+    remote = "akka.tcp://CalculatorWorkerSystem@127.0.0.1:2552"
+  }
+}
+</code></pre>
+
+<p>
+Error handling, i.e. supervision, works exactly in the same way as if the child actor was a local child actor.
+In addtion, in case of network failures or JVM crash the child will be terminated and automatically removed
+from the parent even though they are located on different machines.
+</p>
+
+</div>
+
+<div>
+<h2>Run the Creation Sample</h2>
+
+<p>
+To run this sample, go to the <a href="#run" class="shortcut">Run</a>
+tab, and start the application main class <code>sample.remote.calculator.CreationApplication</code> if it is not already started.
+</p>
+
+<p>
+In the log pane you should see something like:
+</p>
+
+<pre><code>
+Started CreationSystem
+Calculating 7135 / 62
+Div result: 7135 / 62 = 115.08
+Calculating 0 * 9
+Mul result: 0 * 9 = 0
+</code></pre>
+
+<p>
+The two actor systems are running in the same JVM process. It can be more interesting to run them in separate
+processes. Stop the application in the <a href="#run" class="shortcut">Run</a> tab and then open two
+terminal windows.
+</p>
+
+<p>
+Start the CalculatorWorkerSystem in the first terminal window with the following command (on one line):
+</p>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "run-main sample.remote.calculator.CreationApplication CalculatorWorker"		
+</code></pre>
+
+<p>
+Start the CreationSystem in the second terminal window with the following command (on one line):
+</p>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "run-main sample.remote.calculator.CreationApplication Creation"		
+</code></pre>
+
+<p>
+Thereafter you can try to shutdown the CalculatorWorkerSystem in the first terminal window with 
+'ctrl-c' and then start it again. In the second terminal window you should see the
+failure detection and then how the successful calculation results are logged again when it has
+established a connection to the new system.
+</p>
+
+</div>
+
+</body>
+</html>
