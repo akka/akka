@@ -11,16 +11,16 @@ import scala.util.Try
 
 object ReliableProxy {
   def props(target: ActorRef, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration,
-            maxReconnects: Option[Int]): Props = {
+            maxReconnects: Int): Props = {
     Props(classOf[ReliableProxy], target, retryAfter, reconnectAfter, maxReconnects)
   }
 
   def props(target: ActorRef, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration): Props = {
-    props(target, retryAfter, reconnectAfter, None)
+    props(target, retryAfter, reconnectAfter, 0)
   }
 
-  class Receiver(target: ActorRef) extends Actor with DebugLogging {
-    var lastSerial = 0
+  class Receiver(target: ActorRef, initialSerial: Int) extends Actor with DebugLogging {
+    var lastSerial = initialSerial
 
     context.watch(target)
 
@@ -33,7 +33,7 @@ object ReliableProxy {
         } else if (compare(serial, lastSerial) <= 0) {
           sender() ! Ack(serial)
         } else {
-          logDebug(s"Received message from $snd with wrong serial: $msg")
+          logDebug("Received message from {} with wrong serial: {}", snd, msg)
         }
       case Terminated(`target`) ⇒ context stop self
     }
@@ -52,18 +52,13 @@ object ReliableProxy {
     }
   }
 
+  def receiver(target: ActorRef, currentSerial: Int): Props = Props(classOf[Receiver], target, currentSerial)
+
   // Internal messages
   case class Message(msg: Any, sender: ActorRef, serial: Int)
-  case class Ack(serial: Int)
-  case object Tick
-  case object ReconnectTick
-
-  /**
-   *  Wrap a message in NoRetry to have the proxy send the message directly to the target
-   *  (not through the tunnel) without retrying.  This is useful if you need to send unreliable
-   *  messages to the target but don't want to track changing target ActorRefs in your actor.
-   */
-  case class NoRetry(msg: Any)
+  private case class Ack(serial: Int)
+  private case object Tick
+  private case object ReconnectTick
 
   /**
    * TargetChanged is sent to transition subscribers when the target ActorRef has changed
@@ -78,8 +73,6 @@ object ReliableProxy {
   case class ProxyTerminated(actor: ActorRef, outstanding: Unsent)
   case class Unsent(queue: Vector[Message])
 
-  def receiver(target: ActorRef): Props = Props(classOf[Receiver], target)
-
   sealed trait State
   case object Idle extends State
   case object Active extends State
@@ -93,7 +86,13 @@ object ReliableProxy {
   trait DebugLogging extends ActorLogging { this: Actor ⇒
     val debug = Try(context.system.settings.config.getBoolean("akka.actor.debug.reliable-proxy")) getOrElse false
 
-    def logDebug(s: String) = if (debug) log.debug(s"$s [$self]")
+    def enabled = debug && log.isDebugEnabled
+
+    def addSelf(template: String) = s"$template [$self]"
+
+    def logDebug(template: String, arg1: Any, arg2: Any): Unit = if (enabled) log.debug(addSelf(template), arg1, arg2)
+
+    def logDebug(template: String, arg1: Any): Unit = if (enabled) log.debug(addSelf(template), arg1)
   }
 }
 
@@ -115,6 +114,8 @@ import ReliableProxy._
  * situations or other VM errors).
  *
  * You can create a reliable connection like this:
+ *
+ * In Scala:
  * {{{
  * val proxy = context.actorOf(ReliableProxy.props(target, 100.millis, 120.seconds)
  * }}}
@@ -131,16 +132,16 @@ import ReliableProxy._
  *
  * ==Message Types==
  *
- * This actor is an akka.actor.FSM, hence it offers the service of
+ * This actor is an [[akka.actor.FSM]], hence it offers the service o
  * transition callbacks to those actors which subscribe using the
  * ``SubscribeTransitionCallBack`` and ``UnsubscribeTransitionCallBack``
- * messages; see akka.actor.FSM for more documentation. The proxy will
- * transition into ReliableProxy.Active state when ACKs are outstanding and
- * return to the ReliableProxy.Idle state when every message send so far
+ * messages; see [[akka.actor.FSM]] for more documentation. The proxy will
+ * transition into [[ReliableProxy.Active]] state when ACKs are outstanding and
+ * return to the [[ReliableProxy.Idle]] state when every message send so far
  * has been confirmed by the peer end-point.
  *
  * If a communication failure causes the tunnel to terminate via Remote Deathwatch
- * the proxy will transition into ReliableProxy.Reconnect state. In this state the
+ * the proxy will transition into [[ReliableProxy.Reconnect]] state. In this state the
  * proxy will repeatedly send Identify messages to ActorSelection(target.path) in
  * order to obtain a new ActorRef for the target.  When an ActorIdentity for the
  * target is received a new tunnel will be created and the proxy will transition to
@@ -155,9 +156,6 @@ import ReliableProxy._
  * If an Unsent message is sent to this actor the messages contained within it will
  * be relayed through the tunnel to the target.
  *
- * If a NoRetry message is sent the message it wraps will be forwarded to the target
- * directly (ie, not through the tunnel).  NoRetry messages have no delivery guarantees.
- *
  * Any other message type sent to this actor will be delivered via a remote-deployed
  * child actor to the designated target. All other message types declared in the
  * companion object are for internal use only and not to be sent from the outside.
@@ -169,7 +167,7 @@ import ReliableProxy._
  *
  * ==Arguments==
  *
- * '''''target''''' is the akka.actor.ActorRef to which all messages will be
+ * '''''target''''' is the [[akka.actor.ActorRef]] to which all messages will be
  * forwarded which are sent to this actor. It can be any type of actor reference,
  * but the “remote” tunnel endpoint will be deployed on the node where the target
  * ref points to.
@@ -185,29 +183,31 @@ import ReliableProxy._
  * tunnel. Use None for unlimited.
  */
 class ReliableProxy(target: ActorRef, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration,
-                    maxReconnects: Option[Int])
+                    maxReconnects: Int)
   extends Actor with LoggingFSM[State, Vector[Message]] with DebugLogging {
 
-  var currentSerial: Int = _
+  var tunnel: ActorRef = _
+  var currentSerial: Int = 0
+  var lastAckSerial: Int = _
   var currentTarget: ActorRef = _
   var attemptedReconnects: Int = _
 
-  def createTunnel(target: ActorRef): ActorRef = {
-    logDebug(s"Creating new tunnel for $target")
-    val t = context.actorOf(receiver(target).withDeploy(Deploy(scope = RemoteScope(target.path.address))), "tunnel")
+  def createTunnel(target: ActorRef): Unit = {
+    logDebug("Creating new tunnel for {}", target)
+    tunnel = context.actorOf(receiver(target, lastAckSerial).
+      withDeploy(Deploy(scope = RemoteScope(target.path.address))), "tunnel")
 
-    context.watch(t)
-    currentSerial = 0 // New tunnel expects first message to start with 1
+    context.watch(tunnel)
     currentTarget = target
     attemptedReconnects = 0
     resetBackoff()
-    t
   }
 
   if (target.path.address.host.isEmpty && self.path.address == target.path.address) {
-    logDebug(s"Unnecessary to use ReliableProxy for local target: $target")
+    logDebug("Unnecessary to use ReliableProxy for local target: {}", target)
   }
-  var tunnel = createTunnel(target)
+
+  createTunnel(target)
 
   val resendTimer = "resend"
   val reconnectTimer = "reconnect"
@@ -217,7 +217,7 @@ class ReliableProxy(target: ActorRef, retryAfter: FiniteDuration, reconnectAfter
   }
 
   override def postStop() {
-    logDebug(s"Stopping proxy and sending ${stateData.size} messages to parent in Unsent")
+    logDebug("Stopping proxy and sending {} messages to parent in Unsent", stateData.size)
     gossip(ProxyTerminated(self, Unsent(stateData)))
     super.postStop()
   }
@@ -227,9 +227,7 @@ class ReliableProxy(target: ActorRef, retryAfter: FiniteDuration, reconnectAfter
   when(Idle) {
     case Event(Terminated(_), _) ⇒ terminated()
     case Event(Ack(_), _)        ⇒ stay()
-    case Event(Unsent(msgs), _)  ⇒ goto(Active) using resend(msgs)
-    case Event(NoRetry(msg), _)  ⇒
-      currentTarget forward msg; stay()
+    case Event(Unsent(msgs), _)  ⇒ goto(Active) using resend(updateSerial(msgs))
     case Event(msg, _)           ⇒ goto(Active) using Vector(send(msg, sender))
   }
 
@@ -244,6 +242,7 @@ class ReliableProxy(target: ActorRef, retryAfter: FiniteDuration, reconnectAfter
       terminated()
     case Event(Ack(serial), queue) ⇒
       val q = queue dropWhile (m ⇒ compare(m.serial, serial) <= 0)
+      if (compare(serial, lastAckSerial) > 0) lastAckSerial = serial
       scheduleTick()
       if (q.isEmpty) goto(Idle) using Vector.empty
       else stay using q
@@ -252,11 +251,8 @@ class ReliableProxy(target: ActorRef, retryAfter: FiniteDuration, reconnectAfter
       queue foreach { tunnel ! _ }
       scheduleTick()
       stay()
-    case Event(Unsent(msgs), _) ⇒
-      stay using resend(msgs)
-    case Event(NoRetry(msg), _) ⇒
-      currentTarget forward msg
-      stay()
+    case Event(Unsent(msgs), queue) ⇒
+      stay using queue ++ resend(updateSerial(msgs))
     case Event(msg, queue) ⇒
       stay using (queue :+ send(msg, sender))
   }
@@ -267,26 +263,24 @@ class ReliableProxy(target: ActorRef, retryAfter: FiniteDuration, reconnectAfter
     case Event(ActorIdentity(_, Some(actor)), queue) ⇒
       val curr = currentTarget
       cancelTimer(reconnectTimer)
-      tunnel = createTunnel(actor)
+      createTunnel(actor)
       if (currentTarget != curr) gossip(TargetChanged(currentTarget))
       if (queue.isEmpty) goto(Idle) else goto(Active) using resend(queue)
     case Event(ActorIdentity(_, None), _) ⇒
       stay()
     case Event(ReconnectTick, _) ⇒
-      if (maxReconnects exists (_ == attemptedReconnects)) {
-        logDebug(s"Failed to reconnect after $attemptedReconnects")
+      if (maxReconnects != 0 && attemptedReconnects == maxReconnects) {
+        logDebug("Failed to reconnect after {}", attemptedReconnects)
         stop()
       } else {
-        logDebug(s"${context.actorSelection(target.path)} ! ${Identify(target.path)}")
+        logDebug("{} ! {}", context.actorSelection(target.path), Identify(target.path))
         context.actorSelection(target.path) ! Identify(target.path)
         scheduleReconnectTick()
         attemptedReconnects += 1
         stay()
       }
-    case Event(NoRetry(msg), _) ⇒ // Drop msg
-      stay()
     case Event(Unsent(msgs), queue) ⇒
-      stay using queue ++ msgs
+      stay using queue ++ updateSerial(msgs)
     case Event(msg, queue) ⇒
       stay using (queue :+ Message(msg, sender, nextSerial()))
   }
@@ -304,23 +298,25 @@ class ReliableProxy(target: ActorRef, retryAfter: FiniteDuration, reconnectAfter
     m
   }
 
-  // Send q messages with new serial #s
+  def updateSerial(q: Vector[Message]) = q map (_.copy(serial = nextSerial()))
+
   def resend(q: Vector[Message]): Vector[Message] = {
     logResend(q.size)
-    q map { case Message(msg, sender, _) ⇒ send(msg, sender) }
+    q foreach { tunnel ! _ }
+    q
   }
 
   def logResend(size: Int): Unit =
-    logDebug(s"Resending $size messages through tunnel")
+    logDebug("Resending {} messages through tunnel", size)
 
   def terminated(): State = {
-    logDebug(s"Terminated: $target")
+    logDebug("Terminated: {}", target)
     goto(Reconnect)
   }
 
   def scheduleReconnectTick(): Unit = {
     val delay = nextBackoff()
-    logDebug(s"Will attempt to reconnect to ${target.path} in $delay")
+    logDebug("Will attempt to reconnect to {} in {}", target.path, delay)
     setTimer(reconnectTimer, ReconnectTick, delay, repeat = false)
   }
 
