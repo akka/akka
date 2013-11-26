@@ -66,6 +66,27 @@ object ActorWithStashSpec {
     }
   }
 
+  class WatchedActor extends Actor {
+    def receive = Actor.emptyBehavior
+  }
+
+  class TerminatedMessageStashingActor(probe: ActorRef) extends Actor with Stash {
+    val watched = context.watch(context.actorOf(Props[WatchedActor]))
+    var stashed = false
+
+    context.stop(watched)
+
+    def receive = {
+      case Terminated(`watched`) ⇒
+        if (!stashed) {
+          stash()
+          stashed = true
+          unstashAll()
+        }
+        probe ! "terminated"
+    }
+  }
+
   object state {
     @volatile
     var s: String = ""
@@ -155,6 +176,12 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
 
       Await.ready(restartLatch, 10 seconds)
       Await.ready(hasMsgLatch, 10 seconds)
+    }
+
+    "re-receive unstashed Terminated messages" in {
+      system.actorOf(Props(classOf[TerminatedMessageStashingActor], testActor))
+      expectMsg("terminated")
+      expectMsg("terminated")
     }
   }
 
