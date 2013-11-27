@@ -18,9 +18,7 @@ import com.typesafe.sbt.SbtSite.site
 import com.typesafe.sbt.site.SphinxSupport
 import com.typesafe.sbt.site.SphinxSupport.{ enableOutput, generatePdf, generatedPdf, generateEpub, generatedEpub, sphinxInputs, sphinxPackages, Sphinx }
 import com.typesafe.sbt.preprocess.Preprocess.{ preprocess, preprocessExts, preprocessVars, simplePreprocess }
-import ls.Plugin.{ lsSettings, LsKeys }
 import java.lang.Boolean.getBoolean
-import LsKeys.{ lsync, docsUrl => lsDocsUrl, tags => lsTags }
 import java.io.{PrintWriter, InputStreamReader, FileInputStream, File}
 import java.nio.charset.Charset
 import java.util.Properties
@@ -799,7 +797,7 @@ object AkkaBuild extends Build {
     else Seq.empty
   }
 
-  lazy val defaultSettings = baseSettings ++ mimaSettings ++ lsSettings ++ resolverSettings ++
+  lazy val defaultSettings = baseSettings ++ mimaSettings ++ resolverSettings ++
     Protobuf.settings ++ Seq(
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
@@ -811,12 +809,8 @@ object AkkaBuild extends Build {
 
     ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
-    description in lsync := "Akka is the platform for the next generation of event-driven, scalable and fault-tolerant architectures on the JVM.",
-    homepage in lsync := Some(url("http://akka.io")),
-    lsTags in lsync := Seq("actors", "stm", "concurrency", "distributed", "fault-tolerance", "scala", "java", "futures", "dataflow", "remoting"),
-    lsDocsUrl in lsync := Some(url("http://akka.io/docs")),
-    licenses in lsync := Seq(("Apache 2", url("http://www.apache.org/licenses/LICENSE-2.0.html"))),
-    externalResolvers in lsync := Seq("Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases"),
+    licenses := Seq(("Apache License, Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
+    homepage := Some(url("http://akka.io/")),
 
     initialCommands :=
       """|import language.postfixOps
