@@ -16,11 +16,8 @@ import akka.persistence.PersistentRepr
 abstract class AsyncWriteJournal extends AsyncReplay with SAsyncWriteJournal with AsyncWritePlugin {
   import context.dispatcher
 
-  final def writeAsync(persistent: PersistentRepr) =
-    doWriteAsync(persistent).map(Unit.unbox)
-
-  final def writeBatchAsync(persistentBatch: immutable.Seq[PersistentRepr]) =
-    doWriteBatchAsync(persistentBatch.asJava).map(Unit.unbox)
+  final def writeAsync(persistentBatch: immutable.Seq[PersistentRepr]) =
+    doWriteAsync(persistentBatch.asJava).map(Unit.unbox)
 
   final def deleteAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean) =
     doDeleteAsync(processorId, fromSequenceNr, toSequenceNr, permanent).map(Unit.unbox)

@@ -20,7 +20,7 @@ import akka.serialization.SerializationExtension
  *
  * LevelDB backed journal.
  */
-private[leveldb] class LeveldbJournal extends SyncWriteJournal with LeveldbIdMapping with LeveldbReplay {
+private[persistence] class LeveldbJournal extends SyncWriteJournal with LeveldbIdMapping with LeveldbReplay {
   val config = context.system.settings.config.getConfig("akka.persistence.journal.leveldb")
   val nativeLeveldb = config.getBoolean("native")
 
@@ -42,10 +42,7 @@ private[leveldb] class LeveldbJournal extends SyncWriteJournal with LeveldbIdMap
 
   import Key._
 
-  def write(persistent: PersistentRepr) =
-    withBatch(batch ⇒ addToBatch(persistent, batch))
-
-  def writeBatch(persistentBatch: immutable.Seq[PersistentRepr]) =
+  def write(persistentBatch: immutable.Seq[PersistentRepr]) =
     withBatch(batch ⇒ persistentBatch.foreach(persistent ⇒ addToBatch(persistent, batch)))
 
   def delete(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean) = withBatch { batch ⇒

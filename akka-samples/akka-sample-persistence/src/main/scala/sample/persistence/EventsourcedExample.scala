@@ -32,26 +32,24 @@ class ExampleProcessor extends EventsourcedProcessor {
   }
 
   val receiveCommand: Receive = {
-    case Cmd(data) ⇒ {
+    case Cmd(data) ⇒
       persist(Evt(s"${data}-${numEvents}"))(updateState)
       persist(Evt(s"${data}-${numEvents + 1}")) { event ⇒
         updateState(event)
         context.system.eventStream.publish(event)
         if (data == "foo") context.become(otherCommandHandler)
       }
-    }
     case "snap"  ⇒ saveSnapshot(state)
     case "print" ⇒ println(state)
   }
 
   val otherCommandHandler: Receive = {
-    case Cmd("bar") ⇒ {
+    case Cmd("bar") ⇒
       persist(Evt(s"bar-${numEvents}")) { event ⇒
         updateState(event)
         context.unbecome()
       }
       unstashAll()
-    }
     case other ⇒ stash()
   }
 }

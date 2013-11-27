@@ -69,10 +69,9 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot"
       processor ! Recover()
 
       expectMsgPF() {
-        case (SnapshotMetadata(`processorId`, 4, timestamp), state) ⇒ {
+        case (SnapshotMetadata(`processorId`, 4, timestamp), state) ⇒
           state must be(List("a-1", "b-2", "c-3", "d-4").reverse)
           timestamp must be > (0L)
-        }
       }
       expectMsg("e-5")
       expectMsg("f-6")
@@ -84,10 +83,9 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot"
       processor ! Recover(toSequenceNr = 3)
 
       expectMsgPF() {
-        case (SnapshotMetadata(`processorId`, 2, timestamp), state) ⇒ {
+        case (SnapshotMetadata(`processorId`, 2, timestamp), state) ⇒
           state must be(List("a-1", "b-2").reverse)
           timestamp must be > (0L)
-        }
       }
       expectMsg("c-3")
     }
@@ -99,10 +97,9 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot"
       processor ! "done"
 
       expectMsgPF() {
-        case (SnapshotMetadata(`processorId`, 4, timestamp), state) ⇒ {
+        case (SnapshotMetadata(`processorId`, 4, timestamp), state) ⇒
           state must be(List("a-1", "b-2", "c-3", "d-4").reverse)
           timestamp must be > (0L)
-        }
       }
       expectMsg("done")
     }
@@ -113,10 +110,9 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot"
       processor ! Recover(fromSnapshot = SnapshotSelectionCriteria(maxSequenceNr = 2))
 
       expectMsgPF() {
-        case (SnapshotMetadata(`processorId`, 2, timestamp), state) ⇒ {
+        case (SnapshotMetadata(`processorId`, 2, timestamp), state) ⇒
           state must be(List("a-1", "b-2").reverse)
           timestamp must be > (0L)
-        }
       }
       expectMsg("c-3")
       expectMsg("d-4")
@@ -130,10 +126,9 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot"
       processor ! Recover(fromSnapshot = SnapshotSelectionCriteria(maxSequenceNr = 2), toSequenceNr = 3)
 
       expectMsgPF() {
-        case (SnapshotMetadata(`processorId`, 2, timestamp), state) ⇒ {
+        case (SnapshotMetadata(`processorId`, 2, timestamp), state) ⇒
           state must be(List("a-1", "b-2").reverse)
           timestamp must be > (0L)
-        }
       }
       expectMsg("c-3")
     }
@@ -159,10 +154,9 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot"
       processor1 ! "done"
 
       val metadata = expectMsgPF() {
-        case (md @ SnapshotMetadata(`processorId`, 4, _), state) ⇒ {
+        case (md @ SnapshotMetadata(`processorId`, 4, _), state) ⇒
           state must be(List("a-1", "b-2", "c-3", "d-4").reverse)
           md
-        }
       }
       expectMsg("done")
 
@@ -174,10 +168,9 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot"
 
       processor2 ! Recover(toSequenceNr = 4)
       expectMsgPF() {
-        case (md @ SnapshotMetadata(`processorId`, 2, _), state) ⇒ {
+        case (md @ SnapshotMetadata(`processorId`, 2, _), state) ⇒
           state must be(List("a-1", "b-2").reverse)
           md
-        }
       }
       expectMsg("c-3")
       expectMsg("d-4")
@@ -194,9 +187,8 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot"
       processor1 ! Recover(toSequenceNr = 4)
       processor1 ! DeleteN(SnapshotSelectionCriteria(maxSequenceNr = 4))
       expectMsgPF() {
-        case (md @ SnapshotMetadata(`processorId`, 4, _), state) ⇒ {
+        case (md @ SnapshotMetadata(`processorId`, 4, _), state) ⇒
           state must be(List("a-1", "b-2", "c-3", "d-4").reverse)
-        }
       }
       deleteProbe.expectMsgType[DeleteSnapshots]
 

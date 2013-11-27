@@ -21,15 +21,14 @@ trait SnapshotStore extends Actor {
   private val extension = Persistence(context.system)
 
   final def receive = {
-    case LoadSnapshot(processorId, criteria, toSequenceNr) ⇒ {
+    case LoadSnapshot(processorId, criteria, toSequenceNr) ⇒
       val p = sender
       loadAsync(processorId, criteria.limit(toSequenceNr)) map {
         sso ⇒ LoadSnapshotResult(sso, toSequenceNr)
       } recover {
         case e ⇒ LoadSnapshotResult(None, toSequenceNr)
       } pipeTo (p)
-    }
-    case SaveSnapshot(metadata, snapshot) ⇒ {
+    case SaveSnapshot(metadata, snapshot) ⇒
       val p = sender
       val md = metadata.copy(timestamp = System.currentTimeMillis)
       saveAsync(md, snapshot) map {
@@ -37,23 +36,18 @@ trait SnapshotStore extends Actor {
       } recover {
         case e ⇒ SaveSnapshotFailure(metadata, e)
       } to (self, p)
-    }
-    case evt @ SaveSnapshotSuccess(metadata) ⇒ {
+    case evt @ SaveSnapshotSuccess(metadata) ⇒
       saved(metadata)
       sender ! evt // sender is processor
-    }
-    case evt @ SaveSnapshotFailure(metadata, _) ⇒ {
+    case evt @ SaveSnapshotFailure(metadata, _) ⇒
       delete(metadata)
       sender ! evt // sender is processor
-    }
-    case d @ DeleteSnapshot(metadata) ⇒ {
+    case d @ DeleteSnapshot(metadata) ⇒
       delete(metadata)
       if (extension.publishPluginCommands) context.system.eventStream.publish(d)
-    }
-    case d @ DeleteSnapshots(processorId, criteria) ⇒ {
+    case d @ DeleteSnapshots(processorId, criteria) ⇒
       delete(processorId, criteria)
       if (extension.publishPluginCommands) context.system.eventStream.publish(d)
-    }
   }
 
   //#snapshot-store-plugin-api

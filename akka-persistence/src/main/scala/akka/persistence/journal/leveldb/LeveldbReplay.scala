@@ -11,6 +11,8 @@ import akka.persistence._
 import akka.persistence.journal.AsyncReplay
 
 /**
+ * INTERNAL API.
+ *
  * LevelDB backed message replay.
  */
 private[persistence] trait LeveldbReplay extends AsyncReplay { this: LeveldbJournal ⇒

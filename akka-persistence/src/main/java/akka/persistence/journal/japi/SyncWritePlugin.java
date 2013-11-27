@@ -9,16 +9,11 @@ import akka.persistence.PersistentRepr;
 interface SyncWritePlugin {
     //#sync-write-plugin-api
     /**
-     * Java API, Plugin API: synchronously writes a `persistent` message to the journal.
-     */
-    void doWrite(PersistentRepr persistent) throws Exception;
-
-    /**
      * Java API, Plugin API: synchronously writes a batch of persistent messages to the
      * journal. The batch write must be atomic i.e. either all persistent messages in the
      * batch are written or none.
      */
-    void doWriteBatch(Iterable<PersistentRepr> persistentBatch);
+    void doWrite(Iterable<PersistentRepr> persistentBatch);
 
     /**
      * Java API, Plugin API: synchronously deletes all persistent messages within the

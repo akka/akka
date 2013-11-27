@@ -16,20 +16,18 @@ object ProcessorChannelExample extends App {
     var received: List[Persistent] = Nil
 
     def receive = {
-      case p @ Persistent(payload, _) ⇒ {
+      case p @ Persistent(payload, _) ⇒
         println(s"processed ${payload}")
         channel forward Deliver(p.withPayload(s"processed ${payload}"), destination)
-      }
     }
   }
 
   class ExampleDestination extends Actor {
     def receive = {
-      case p @ ConfirmablePersistent(payload, snr) ⇒ {
+      case p @ ConfirmablePersistent(payload, snr) ⇒
         println(s"received ${payload}")
         sender ! s"re: ${payload} (${snr})"
         p.confirm()
-      }
     }
   }
 

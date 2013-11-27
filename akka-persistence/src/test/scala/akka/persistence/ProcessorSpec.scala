@@ -47,17 +47,15 @@ object ProcessorSpec {
 
   class BehaviorChangeTestProcessor(name: String) extends NamedProcessor(name) {
     val acceptA: Actor.Receive = {
-      case Persistent("a", _) ⇒ {
+      case Persistent("a", _) ⇒
         sender ! "a"
         context.become(acceptB)
-      }
     }
 
     val acceptB: Actor.Receive = {
-      case Persistent("b", _) ⇒ {
+      case Persistent("b", _) ⇒
         sender ! "b"
         context.become(acceptA)
-      }
     }
 
     def receive = acceptA
@@ -67,15 +65,13 @@ object ProcessorSpec {
     startWith("closed", 0)
 
     when("closed") {
-      case Event(Persistent("a", _), counter) ⇒ {
+      case Event(Persistent("a", _), counter) ⇒
         goto("open") using (counter + 1) replying (counter)
-      }
     }
 
     when("open") {
-      case Event(Persistent("b", _), counter) ⇒ {
+      case Event(Persistent("b", _), counter) ⇒
         goto("closed") using (counter + 1) replying (counter)
-      }
     }
   }
 

@@ -11,16 +11,11 @@ import akka.persistence.PersistentRepr;
 interface AsyncWritePlugin {
     //#async-write-plugin-api
     /**
-     * Java API, Plugin API: asynchronously writes a `persistent` message to the journal.
-     */
-    Future<Void> doWriteAsync(PersistentRepr persistent);
-
-    /**
      * Java API, Plugin API: asynchronously writes a batch of persistent messages to the
      * journal. The batch write must be atomic i.e. either all persistent messages in the
      * batch are written or none.
      */
-    Future<Void> doWriteBatchAsync(Iterable<PersistentRepr> persistentBatch);
+    Future<Void> doWriteAsync(Iterable<PersistentRepr> persistentBatch);
 
     /**
      * Java API, Plugin API: asynchronously deletes all persistent messages within the

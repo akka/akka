@@ -50,9 +50,15 @@ case class SnapshotOffer(metadata: SnapshotMetadata, snapshot: Any)
  */
 @SerialVersionUID(1L)
 case class SnapshotSelectionCriteria(maxSequenceNr: Long = Long.MaxValue, maxTimestamp: Long = Long.MaxValue) {
+  /**
+   * INTERNAL API.
+   */
   private[persistence] def limit(toSequenceNr: Long): SnapshotSelectionCriteria =
     if (toSequenceNr < maxSequenceNr) copy(maxSequenceNr = toSequenceNr) else this
 
+  /**
+   * INTERNAL API.
+   */
   private[persistence] def matches(metadata: SnapshotMetadata): Boolean =
     metadata.sequenceNr <= maxSequenceNr && metadata.timestamp <= maxTimestamp
 }

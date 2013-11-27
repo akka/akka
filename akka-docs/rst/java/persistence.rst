@@ -381,17 +381,28 @@ another behavior, defined by ``otherCommandHandler``, and back using ``getContex
 Batch writes
 ============
 
-Applications may also send a batch of ``Persistent`` messages to a processor via a ``PersistentBatch`` message.
+To optimize throughput, an ``UntypedProcessor`` internally batches received ``Persistent`` messages under high load before
+writing them to the journal (as a single batch). The batch size dynamically grows from 1 under low and moderate loads
+to a configurable maximum size (default is ``200``) under high load.
+
+.. includecode:: ../scala/code/docs/persistence/PersistencePluginDocSpec.scala#max-batch-size
+
+A new batch write is triggered by a processor as soon as a batch reaches the maximum size or if the journal completed
+writing the previous batch. Batch writes are never timer-based which keeps latencies as low as possible.
+
+Applications that want to have more explicit control over batch writes and batch sizes can send processors
+``PersistentBatch`` messages.
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#batch-write
 
-``Persistent`` messages contained in a ``PersistentBatch`` message are written to the journal atomically but are
-received  by the processor separately (as ``Persistent`` messages). They are also replayed separately. Batch writes
-can not only increase the throughput of a processor but may also be necessary for consistency reasons. For example,
-in :ref:`event-sourcing-java`, all events that are generated and persisted by a single command are batch-written to
-the journal (even if ``persist`` is called multiple times per command). The recovery of an
-``UntypedEventsourcedProcessor`` will therefore never be done partially i.e. with only a subset of events persisted
-by a single command.
+``Persistent`` messages contained in a ``PersistentBatch`` message are always written atomically, even if the batch
+size is greater than ``max-batch-size``. Also, a ``PersistentBatch`` is written isolated from other batches.
+``Persistent`` messages contained in a ``PersistentBatch`` are received individually by a processor.
+
+``PersistentBatch`` messages, for example, are used internally by an ``UntypedEventsourcedProcessor`` to ensure atomic
+writes of events. All events that are persisted in context of a single command are written as single batch to the
+journal (even if ``persist`` is called multiple times per command). The recovery of an ``UntypedEventsourcedProcessor``
+will therefore never be done partially i.e. with only a subset of events persisted by a single command.
 
 Storage plugins
 ===============

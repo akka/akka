@@ -23,6 +23,9 @@ import akka.persistence.snapshot._
 object PersistencePluginDocSpec {
   val config =
     """
+      //#max-batch-size
+      akka.persistence.journal.max-batch-size = 200
+      //#max-batch-size
       //#journal-config
       akka.persistence.journal.leveldb.dir = "target/journal"
       //#journal-config
@@ -69,8 +72,7 @@ class PersistencePluginDocSpec extends WordSpec {
 }
 
 class MyJournal extends AsyncWriteJournal {
-  def writeAsync(persistent: PersistentRepr): Future[Unit] = ???
-  def writeBatchAsync(persistentBatch: Seq[PersistentRepr]): Future[Unit] = ???
+  def writeAsync(persistentBatch: Seq[PersistentRepr]): Future[Unit] = ???
   def deleteAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean): Future[Unit] = ???
   def confirmAsync(processorId: String, sequenceNr: Long, channelId: String): Future[Unit] = ???
   def replayAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: (PersistentRepr) ⇒ Unit): Future[Long] = ???

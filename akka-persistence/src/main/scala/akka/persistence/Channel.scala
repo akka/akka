@@ -23,10 +23,9 @@ import akka.persistence.serialization.Message
  *   val channel = context.actorOf(Channel.props(), "myChannel")
  *
  *   def receive = {
- *     case m @ Persistent(payload, _) => {
+ *     case m @ Persistent(payload, _) =>
  *       // forward modified message to destination
  *       channel forward Deliver(m.withPayload(s"fw: ${payload}"), destination)
- *     }
  *   }
  * }
  * }}}
@@ -39,10 +38,9 @@ import akka.persistence.serialization.Message
  *   val channel = context.actorOf(Channel.props(), "myChannel")
  *
  *   def receive = {
- *     case m @ Persistent(payload, _) => {
+ *     case m @ Persistent(payload, _) =>
  *       // reply modified message to sender
  *       channel ! Deliver(m.withPayload(s"re: ${payload}"), sender)
- *     }
  *   }
  * }
  * }}}
@@ -78,28 +76,27 @@ sealed class Channel private[akka] (_channelId: Option[String]) extends Actor wi
   import ResolvedDelivery._
 
   private val delivering: Actor.Receive = {
-    case Deliver(persistent: PersistentRepr, destination, resolve) ⇒ {
+    case Deliver(persistent: PersistentRepr, destination, resolve) ⇒
       if (!persistent.confirms.contains(id)) {
         val prepared = prepareDelivery(persistent)
         resolve match {
-          case Resolve.Sender if !prepared.resolved ⇒ {
+          case Resolve.Sender if !prepared.resolved ⇒
             context.actorOf(Props(classOf[ResolvedSenderDelivery], prepared, destination, sender)) ! DeliverResolved
             context.become(buffering, false)
-          }
-          case Resolve.Destination if !prepared.resolved ⇒ {
+          case Resolve.Destination if !prepared.resolved ⇒
             context.actorOf(Props(classOf[ResolvedDestinationDelivery], prepared, destination, sender)) ! DeliverResolved
             context.become(buffering, false)
-          }
           case _ ⇒ destination tell (prepared, sender)
         }
       }
       unstash()
-    }
   }
 
   private val buffering: Actor.Receive = {
-    case DeliveredResolved | DeliveredUnresolved ⇒ { context.unbecome(); unstash() }
-    case _: Deliver                              ⇒ stash()
+    case DeliveredResolved | DeliveredUnresolved ⇒
+      context.unbecome()
+      unstash()
+    case _: Deliver ⇒ stash()
   }
 
   def receive = delivering
@@ -164,7 +161,7 @@ final class PersistentChannel private[akka] (_channelId: Option[String], persist
   }
 
   def receiveCommand: Receive = {
-    case d @ Deliver(persistent: PersistentRepr, destination, resolve) ⇒ {
+    case d @ Deliver(persistent: PersistentRepr, destination, resolve) ⇒
       if (!persistent.confirms.contains(processorId)) {
         persist(d) { _ ⇒
           val prepared = prepareDelivery(persistent)
@@ -179,7 +176,6 @@ final class PersistentChannel private[akka] (_channelId: Option[String], persist
             deliver(prepared, destination, resolve)
         }
       }
-    }
     case c: Confirm                                 ⇒ deleteMessage(c.sequenceNr, true)
     case DisableDelivery                            ⇒ deliveryEnabled = false
     case EnableDelivery if (!deliveryEnabled)       ⇒ throw new ChannelRestartRequiredException
@@ -393,10 +389,17 @@ private trait ResolvedDelivery extends Actor {
   def onResolveFailure(): Unit
 
   def receive = {
-    case DeliverResolved             ⇒ context.actorSelection(path) ! Identify(1)
-    case ActorIdentity(1, Some(ref)) ⇒ { onResolveSuccess(ref); shutdown(DeliveredResolved) }
-    case ActorIdentity(1, None)      ⇒ { onResolveFailure(); shutdown(DeliveredUnresolved) }
-    case ReceiveTimeout              ⇒ { onResolveFailure(); shutdown(DeliveredUnresolved) }
+    case DeliverResolved ⇒
+      context.actorSelection(path) ! Identify(1)
+    case ActorIdentity(1, Some(ref)) ⇒
+      onResolveSuccess(ref)
+      shutdown(DeliveredResolved)
+    case ActorIdentity(1, None) ⇒
+      onResolveFailure()
+      shutdown(DeliveredUnresolved)
+    case ReceiveTimeout ⇒
+      onResolveFailure()
+      shutdown(DeliveredUnresolved)
   }
 
   def shutdown(message: Any) {

@@ -18,15 +18,12 @@ trait PersistenceDocSpec {
 
     class MyProcessor extends Processor {
       def receive = {
-        case Persistent(payload, sequenceNr) ⇒ {
-          // message successfully written to journal
-        }
-        case PersistenceFailure(payload, sequenceNr, cause) ⇒ {
-          // message failed to be written to journal
-        }
-        case other ⇒ {
-          // message not written to journal
-        }
+        case Persistent(payload, sequenceNr) ⇒
+        // message successfully written to journal
+        case PersistenceFailure(payload, sequenceNr, cause) ⇒
+        // message failed to be written to journal
+        case other ⇒
+        // message not written to journal
       }
     }
     //#definition
@@ -109,18 +106,16 @@ trait PersistenceDocSpec {
       val channel = context.actorOf(Channel.props(), name = "myChannel")
 
       def receive = {
-        case p @ Persistent(payload, _) ⇒ {
+        case p @ Persistent(payload, _) ⇒
           channel ! Deliver(p.withPayload(s"processed ${payload}"), destination)
-        }
       }
     }
 
     class MyDestination extends Actor {
       def receive = {
-        case p @ ConfirmablePersistent(payload, _) ⇒ {
+        case p @ ConfirmablePersistent(payload, _) ⇒
           println(s"received ${payload}")
           p.confirm()
-        }
       }
     }
     //#channel-example
@@ -135,7 +130,7 @@ trait PersistenceDocSpec {
       //#channel-id-override
 
       def receive = {
-        case p @ Persistent(payload, _) ⇒ {
+        case p @ Persistent(payload, _) ⇒
           //#channel-example-reply
           channel ! Deliver(p.withPayload(s"processed ${payload}"), sender)
           //#channel-example-reply
@@ -144,8 +139,7 @@ trait PersistenceDocSpec {
           //#resolve-destination
           //#resolve-sender
           channel forward Deliver(p, destination, Resolve.Sender)
-          //#resolve-sender
-        }
+        //#resolve-sender
       }
     }
 
@@ -175,15 +169,13 @@ trait PersistenceDocSpec {
       startWith("closed", 0)
 
       when("closed") {
-        case Event(Persistent("open", _), counter) ⇒ {
+        case Event(Persistent("open", _), counter) ⇒
           goto("open") using (counter + 1) replying (counter)
-        }
       }
 
       when("open") {
-        case Event(Persistent("close", _), counter) ⇒ {
+        case Event(Persistent("close", _), counter) ⇒
           goto("closed") using (counter + 1) replying (counter)
-        }
       }
     }
     //#fsm-example
@@ -239,7 +231,7 @@ trait PersistenceDocSpec {
     val system = ActorSystem("example")
     val processor = system.actorOf(Props[MyProcessor])
 
-    processor ! PersistentBatch(Vector(Persistent("a"), Persistent("b")))
+    processor ! PersistentBatch(List(Persistent("a"), Persistent("b")))
     //#batch-write
     system.shutdown()
   }
