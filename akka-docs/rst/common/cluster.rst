@@ -64,7 +64,7 @@ The cluster membership used in Akka is based on Amazon's `Dynamo`_ system and
 particularly the approach taken in Basho's' `Riak`_ distributed database.
 Cluster membership is communicated using a `Gossip Protocol`_, where the current
 state of the cluster is gossiped randomly through the cluster, with preference to
-members that have not seen the latest version. Joining a cluster is initiated 
+members that have not seen the latest version. Joining a cluster is initiated
 by issuing a ``Join`` command to one of the nodes in the cluster to join.
 
 .. _Gossip Protocol: http://en.wikipedia.org/wiki/Gossip_protocol
@@ -94,7 +94,7 @@ by all other nodes in the cluster. Convergence is implemented by passing a map f
 node to current state version during gossip. This information is referred to as the
 gossip overview. When all versions in the overview are equal there is convergence.
 Gossip convergence cannot occur while any nodes are ``unreachable``. The nodes need
-to become ``reachable`` again, or moved to the ``down`` and ``removed`` states 
+to become ``reachable`` again, or moved to the ``down`` and ``removed`` states
 (see the `Membership Lifecycle`_ section below).
 
 
@@ -130,11 +130,11 @@ mark a node ``unreachable`` to have the rest of the cluster mark that node ``unr
 
 The failure detector will also detect if the node becomes ``reachable`` again. When
 all nodes that monitored the ``unreachable`` node detects it as ``reachable`` again
-the cluster, after gossip dissemination, will consider it as ``reachable``. 
+the cluster, after gossip dissemination, will consider it as ``reachable``.
 
 If system messages cannot be delivered to a node it will be quarantined and then it
 cannot come back from ``unreachable``. This can happen if the there are too many
-unacknowledged system messages (e.g. watch, Terminated, remote actor deployment, 
+unacknowledged system messages (e.g. watch, Terminated, remote actor deployment,
 failures of actors supervised by remote parent). Then the node needs to be moved
 to the ``down`` or ``removed`` states (see the `Membership Lifecycle`_ section below)
 and the actor system must be restarted before it can join the cluster again.
@@ -159,7 +159,7 @@ state with gossip convergence.
 
 The ``leader`` also has the power, if configured so, to "auto-down" a node that
 according to the `Failure Detector`_ is considered ``unreachable``. This means setting
-the ``unreachable`` node status to ``down`` automatically after a configured time 
+the ``unreachable`` node status to ``down`` automatically after a configured time
 of unreachability.
 
 
@@ -190,15 +190,15 @@ node to initiate a round of gossip with. The choice of node is random but can
 also include extra gossiping nodes with either newer or older state versions.
 
 The gossip overview contains the current state version for all nodes and also a
-list of unreachable nodes.  This allows any node to easily determine which other 
-nodes have newer or older information, not just the nodes involved in a gossip 
+list of unreachable nodes.  This allows any node to easily determine which other
+nodes have newer or older information, not just the nodes involved in a gossip
 exchange.
 
 The nodes defined as ``seed`` nodes are just regular member nodes whose only
 "special role" is to function as contact points in the cluster.
 
-During each round of gossip exchange it sends Gossip to random node with 
-newer or older state information, if any, based on the current gossip overview, 
+During each round of gossip exchange it sends Gossip to random node with
+newer or older state information, if any, based on the current gossip overview,
 with some probability. Otherwise Gossip to any random live node.
 
 The gossiper only sends the gossip version to the chosen node. The recipient of
@@ -598,56 +598,6 @@ Stateful Actor Replication :ref:`[*] <niy>`
 ===========================================
 
 .. note:: Stateful actor replication is not implemented yet.
-
-
-Implementing a Dynamo-style Distributed Database on top of Akka Cluster
------------------------------------------------------------------------
-
-Having a Dynamo base for the clustering already we could use the same infrastructure 
-to provide stateful actor clustering and datastore as well. The stateful actor 
-clustering could be layered on top of the distributed datastore.
-
-The missing pieces (rough outline) to implement a full Dynamo-style eventually consistent data
-storage on top of the Akka Cluster as described in this document are:
-
-- Configuration of ``READ`` and ``WRITE`` consistency levels according to the
-  ``N/R/W`` numbers defined in the Dynamo paper.
-
-    - R = read replica count
-
-    - W = write replica count
-
-    - N = replication factor
-
-    - Q = QUORUM = N / 2 + 1
-
-    - W + R > N = full consistency
-
-- Define a versioned data message wrapper::
-
-    Versioned[T](hash: Long, version: VectorClock, data: T)
-
-- Define a single system data broker actor on each node that uses a ``Consistent
-  Hashing Router`` and that have instances on all other nodes in the node ring.
-
-- For ``WRITE``:
-
-    1. Wrap data in a ``Versioned Message``
-
-    2. Send a ``Versioned Message`` with the data is sent to a number of nodes
-       matching the ``W-value``.
-
-- For ``READ``:
-
-    1. Read in the ``Versioned Message`` with the data from as many replicas as
-       you need for the consistency level required by the ``R-value``.
-
-    2. Do comparison on the versions (using `Vector Clocks`_)
-
-    3. If the versions differ then do `Read Repair`_ to update the inconsistent
-       nodes.
-
-    4. Return the latest versioned data.
 
 .. _Read Repair: http://wiki.apache.org/cassandra/ReadRepair
 
