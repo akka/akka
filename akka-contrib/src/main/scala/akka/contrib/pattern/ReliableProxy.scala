@@ -10,13 +10,32 @@ import scala.concurrent.duration._
 import scala.util.Try
 
 object ReliableProxy {
-  def props(target: ActorRef, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration,
-            maxReconnects: Int): Props = {
-    Props(classOf[ReliableProxy], target, retryAfter, reconnectAfter, maxReconnects)
+  def props(targetRef: ActorRef, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration,
+            maxReconnects: Option[Int]): Props = {
+    Props(classOf[ReliableProxy], Left(targetRef), retryAfter, reconnectAfter, maxReconnects)
   }
 
-  def props(target: ActorRef, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration): Props = {
-    props(target, retryAfter, reconnectAfter, 0)
+  def props(targetPath: ActorPath, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration,
+            maxReconnects: Option[Int]): Props = {
+    Props(classOf[ReliableProxy], Right(targetPath), retryAfter, reconnectAfter, maxReconnects)
+  }
+
+  def props(targetRef: ActorRef, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration,
+            maxReconnects: Int): Props = {
+    props(targetRef, retryAfter, reconnectAfter, if (maxReconnects > 0) Some(maxReconnects) else None)
+  }
+
+  def props(targetPath: ActorPath, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration,
+            maxReconnects: Int): Props = {
+    props(targetPath, retryAfter, reconnectAfter, if (maxReconnects > 0) Some(maxReconnects) else None)
+  }
+
+  def props(targetRef: ActorRef, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration): Props = {
+    props(targetRef, retryAfter, reconnectAfter, None)
+  }
+
+  def props(targetPath: ActorPath, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration): Props = {
+    props(targetPath, retryAfter, reconnectAfter, None)
   }
 
   class Receiver(target: ActorRef, initialSerial: Int) extends Actor with DebugLogging {
@@ -136,18 +155,18 @@ import ReliableProxy._
  * transition callbacks to those actors which subscribe using the
  * ``SubscribeTransitionCallBack`` and ``UnsubscribeTransitionCallBack``
  * messages; see [[akka.actor.FSM]] for more documentation. The proxy will
- * transition into [[ReliableProxy.Active]] state when ACKs are outstanding and
- * return to the [[ReliableProxy.Idle]] state when every message send so far
- * has been confirmed by the peer end-point.
+ * transition into [[akka.contrib.pattern.ReliableProxy.Active]] state when ACKs
+ * are outstanding and return to the [[akka.contrib.pattern.ReliableProxy.Idle]]
+ * state when every message send so far has been confirmed by the peer end-point.
  *
  * If a communication failure causes the tunnel to terminate via Remote Deathwatch
- * the proxy will transition into [[ReliableProxy.Reconnect]] state. In this state the
- * proxy will repeatedly send Identify messages to ActorSelection(target.path) in
- * order to obtain a new ActorRef for the target.  When an ActorIdentity for the
- * target is received a new tunnel will be created and the proxy will transition to
- * either Active or Idle, depending if there are any outstanding messages.  If the
- * target ActorRef has changed a TargetChanged message will be sent to the proxy's
- * transition subscribers.
+ * the proxy will transition into [[akka.contrib.pattern.ReliableProxy.Reconnect]]
+ * state. In this state the proxy will repeatedly send Identify messages to
+ * ActorSelection(target.path) in order to obtain a new ActorRef for the target.
+ * When an ActorIdentity for the target is received a new tunnel will be created and
+ * the proxy will transition to either Active or Idle, depending if there are any
+ * outstanding messages.  If the target ActorRef has changed a TargetChanged message
+ * will be sent to the proxy's transition subscribers.
  *
  * If the proxy is stopped and it still has outstanding messages a ProxyTerminated
  * message will be sent to the transition subscribers.  It contains an Unsent object
@@ -182,8 +201,8 @@ import ReliableProxy._
  * '''''maxReconnects''''' is an optional maximum number of reconnection attempts for each
  * tunnel. Use None for unlimited.
  */
-class ReliableProxy(target: ActorRef, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration,
-                    maxReconnects: Int)
+class ReliableProxy(target: Either[ActorRef, ActorPath], retryAfter: FiniteDuration, reconnectAfter: FiniteDuration,
+                    maxReconnects: Option[Int])
   extends Actor with LoggingFSM[State, Vector[Message]] with DebugLogging {
 
   var tunnel: ActorRef = _
@@ -203,11 +222,18 @@ class ReliableProxy(target: ActorRef, retryAfter: FiniteDuration, reconnectAfter
     resetBackoff()
   }
 
-  if (target.path.address.host.isEmpty && self.path.address == target.path.address) {
-    logDebug("Unnecessary to use ReliableProxy for local target: {}", target)
+  val (targetPath, initialState) = target match {
+    case Right(path) ⇒
+      self ! ReconnectTick
+      (path, Reconnect)
+    case Left(ref) ⇒
+      createTunnel(ref)
+      (ref.path, Idle)
   }
 
-  createTunnel(target)
+  if (targetPath.address.host.isEmpty && self.path.address == targetPath.address) {
+    logDebug("Unnecessary to use ReliableProxy for local target: {}", target)
+  }
 
   val resendTimer = "resend"
   val reconnectTimer = "reconnect"
@@ -222,7 +248,7 @@ class ReliableProxy(target: ActorRef, retryAfter: FiniteDuration, reconnectAfter
     super.postStop()
   }
 
-  startWith(Idle, Vector.empty)
+  startWith(initialState, Vector.empty)
 
   when(Idle) {
     case Event(Terminated(_), _) ⇒ terminated()
@@ -269,12 +295,12 @@ class ReliableProxy(target: ActorRef, retryAfter: FiniteDuration, reconnectAfter
     case Event(ActorIdentity(_, None), _) ⇒
       stay()
     case Event(ReconnectTick, _) ⇒
-      if (maxReconnects != 0 && attemptedReconnects == maxReconnects) {
+      if (maxReconnects exists (_ == attemptedReconnects)) {
         logDebug("Failed to reconnect after {}", attemptedReconnects)
         stop()
       } else {
-        logDebug("{} ! {}", context.actorSelection(target.path), Identify(target.path))
-        context.actorSelection(target.path) ! Identify(target.path)
+        logDebug("{} ! {}", context.actorSelection(targetPath), Identify(targetPath))
+        context.actorSelection(targetPath) ! Identify(targetPath)
         scheduleReconnectTick()
         attemptedReconnects += 1
         stay()
@@ -316,7 +342,7 @@ class ReliableProxy(target: ActorRef, retryAfter: FiniteDuration, reconnectAfter
 
   def scheduleReconnectTick(): Unit = {
     val delay = nextBackoff()
-    logDebug("Will attempt to reconnect to {} in {}", target.path, delay)
+    logDebug("Will attempt to reconnect to {} in {}", targetPath, delay)
     setTimer(reconnectTimer, ReconnectTick, delay, repeat = false)
   }
 
