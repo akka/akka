@@ -446,7 +446,10 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(camelSampleJava, camelSampleScala, fsmSample, mainSampleJava, mainSampleScala, helloKernelSample, remoteSampleJava, remoteSampleScala, persistenceSample, clusterSample, multiNodeSample, osgiDiningHakkersSample)
+    aggregate = Seq(camelSampleJava, camelSampleScala, mainSampleJava, mainSampleScala, 
+          remoteSampleJava, remoteSampleScala, clusterSampleJava, clusterSampleScala,
+          fsmSample, persistenceSample,
+          multiNodeSample, helloKernelSample, osgiDiningHakkersSample)
   )
 
   lazy val camelSampleJava = Project(
@@ -512,9 +515,27 @@ object AkkaBuild extends Build {
     settings = sampleSettings
   )
 
-  lazy val clusterSample = Project(
-    id = "akka-sample-cluster",
-    base = file("akka-samples/akka-sample-cluster"),
+  lazy val clusterSampleJava = Project(
+    id = "akka-sample-cluster-java",
+    base = file("akka-samples/akka-sample-cluster-java"),
+    dependencies = Seq(cluster, contrib, remoteTests % "test", testkit % "test"),
+    settings = sampleSettings ++ multiJvmSettings ++ Seq(
+      libraryDependencies ++= Dependencies.clusterSample,
+      javaOptions in run ++= Seq(
+        "-Djava.library.path=./sigar",
+        "-Xms128m", "-Xmx1024m"),
+      Keys.fork in run := true,
+      // disable parallel tests
+      parallelExecution in Test := false,
+      extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
+        (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
+      }
+    )
+  ) configs (MultiJvm)
+  
+  lazy val clusterSampleScala = Project(
+    id = "akka-sample-cluster-scala",
+    base = file("akka-samples/akka-sample-cluster-scala"),
     dependencies = Seq(cluster, contrib, remoteTests % "test", testkit % "test"),
     settings = sampleSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.clusterSample,
