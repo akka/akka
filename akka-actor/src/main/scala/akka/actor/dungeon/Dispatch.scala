@@ -108,16 +108,20 @@ private[akka] trait Dispatch { this: ActorCell ⇒
   def sendMessage(msg: Envelope): Unit =
     try {
       if (system.settings.SerializeAllMessages) {
-        val unwrapped = (msg.message match {
-          case DeadLetter(wrapped, _, _) ⇒ wrapped
-          case other                     ⇒ other
-        }).asInstanceOf[AnyRef]
-        if (!unwrapped.isInstanceOf[NoSerializationVerificationNeeded]) {
-          val s = SerializationExtension(system)
-          s.deserialize(s.serialize(unwrapped).get, unwrapped.getClass).get
-        }
-      }
-      dispatcher.dispatch(this, msg)
+        dispatcher.dispatch(this,
+          msg.message match {
+            case _@ (_: NoSerializationVerificationNeeded | DeadLetter(_: NoSerializationVerificationNeeded, _, _)) ⇒ msg
+            case d @ DeadLetter(other, _, _) ⇒
+              val ref = other.asInstanceOf[AnyRef]
+              val s = SerializationExtension(system)
+              msg.copy(message = d.copy(message = s.deserialize(s.serialize(ref).get, ref.getClass).get))
+            case other ⇒
+              val ref = other.asInstanceOf[AnyRef]
+              val s = SerializationExtension(system)
+              msg.copy(message = s.deserialize(s.serialize(ref).get, ref.getClass).get)
+          })
+      } else
+        dispatcher.dispatch(this, msg)
     } catch handleException
 
   override def sendSystemMessage(message: SystemMessage): Unit = try dispatcher.systemDispatch(this, message) catch handleException
