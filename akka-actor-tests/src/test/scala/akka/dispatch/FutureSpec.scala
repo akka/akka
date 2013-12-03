@@ -7,10 +7,9 @@ import org.scalatest.prop.Checkers
 import org.scalacheck._
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
-import org.scalacheck.Gen._
 import akka.actor._
-import akka.testkit.{ EventFilter, filterEvents, filterException, AkkaSpec, DefaultTimeout, TestLatch }
-import scala.concurrent.{ Await, Awaitable, Future, Promise, ExecutionContext }
+import akka.testkit.{ EventFilter, filterException, AkkaSpec, DefaultTimeout, TestLatch }
+import scala.concurrent.{ Await, Awaitable, Future, Promise }
 import scala.util.control.NonFatal
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
@@ -730,14 +729,14 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
     val genIntAction = for {
       n ← arbitrary[Int]
-      a ← oneOf(IntAdd(n), IntSub(n), IntMul(n), IntDiv(n))
+      a ← Gen.oneOf(IntAdd(n), IntSub(n), IntMul(n), IntDiv(n))
     } yield a
 
     val genMapAction = genIntAction map (MapAction(_))
 
     val genFlatMapAction = genIntAction map (FlatMapAction(_))
 
-    oneOf(genMapAction, genFlatMapAction)
+    Gen.oneOf(genMapAction, genFlatMapAction)
 
   }
 
