@@ -16,13 +16,13 @@ object ConversationRecoveryExample extends App {
     var counter = 0
 
     def receive = {
-      case m @ ConfirmablePersistent(Ping, _, _) ⇒
+      case m @ ConfirmablePersistent(Ping, _, _) =>
         counter += 1
         println(s"received ping ${counter} times ...")
         m.confirm()
         if (!recoveryRunning) Thread.sleep(1000)
         pongChannel ! Deliver(m.withPayload(Pong), sender, Resolve.Destination)
-      case "init" ⇒ if (counter == 0) pongChannel ! Deliver(Persistent(Pong), sender)
+      case "init" => if (counter == 0) pongChannel ! Deliver(Persistent(Pong), sender)
     }
 
     override def preStart() = ()
@@ -33,7 +33,7 @@ object ConversationRecoveryExample extends App {
     var counter = 0
 
     def receive = {
-      case m @ ConfirmablePersistent(Pong, _, _) ⇒
+      case m @ ConfirmablePersistent(Pong, _, _) =>
         counter += 1
         println(s"received pong ${counter} times ...")
         m.confirm()

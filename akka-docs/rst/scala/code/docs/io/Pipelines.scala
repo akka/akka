@@ -45,12 +45,12 @@ class PipelinesDocSpec extends AkkaSpec {
         builder ++= bs
       }
 
-      override val commandPipeline = { msg: Message ⇒
+      override val commandPipeline = { msg: Message =>
         val bs = ByteString.newBuilder
 
         // first store the persons
         bs putInt msg.persons.size
-        msg.persons foreach { p ⇒
+        msg.persons foreach { p =>
           putString(bs, p.first)
           putString(bs, p.last)
         }
@@ -72,12 +72,12 @@ class PipelinesDocSpec extends AkkaSpec {
         ByteString(bytes).utf8String
       }
 
-      override val eventPipeline = { bs: ByteString ⇒
+      override val eventPipeline = { bs: ByteString =>
         val iter = bs.iterator
 
         val personLength = iter.getInt
         val persons =
-          (1 to personLength) map (_ ⇒ Person(getString(iter), getString(iter)))
+          (1 to personLength) map (_ => Person(getString(iter), getString(iter)))
 
         val curveLength = iter.getInt
         val curve = new Array[Double](curveLength)
@@ -94,10 +94,10 @@ class PipelinesDocSpec extends AkkaSpec {
       var lastTick = Duration.Zero
 
       override val managementPort: Mgmt = {
-        case TickGenerator.Tick(timestamp) ⇒
+        case TickGenerator.Tick(timestamp) =>
           //#omitted
           testActor ! TickGenerator.Tick(timestamp)
-          import java.lang.String.{ valueOf ⇒ println }
+          import java.lang.String.{ valueOf => println }
           //#omitted
           println(s"time since last tick: ${timestamp - lastTick}")
           lastTick = timestamp
@@ -207,20 +207,20 @@ class PipelinesDocSpec extends AkkaSpec {
         new LengthFieldFrame(10000) //
         )(
         // failure in the pipeline will fail this actor
-        cmd ⇒ cmds ! cmd.get,
-        evt ⇒ evts ! evt.get)
+        cmd => cmds ! cmd.get,
+        evt => evts ! evt.get)
 
     def receive = {
-      case m: Message               ⇒ pipeline.injectCommand(m)
-      case b: ByteString            ⇒ pipeline.injectEvent(b)
-      case t: TickGenerator.Trigger ⇒ pipeline.managementCommand(t)
+      case m: Message               => pipeline.injectCommand(m)
+      case b: ByteString            => pipeline.injectEvent(b)
+      case t: TickGenerator.Trigger => pipeline.managementCommand(t)
     }
   }
   //#actor
 
   class P(cmds: ActorRef, evts: ActorRef) extends Processor(cmds, evts) {
     override def receive = ({
-      case "fail!" ⇒ throw new RuntimeException("FAIL!")
+      case "fail!" => throw new RuntimeException("FAIL!")
     }: Receive) orElse super.receive
   }
 

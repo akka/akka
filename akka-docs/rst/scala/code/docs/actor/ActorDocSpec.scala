@@ -26,8 +26,8 @@ import scala.concurrent.Await
 class MyActor extends Actor {
   val log = Logging(context.system, this)
   def receive = {
-    case "test" ⇒ log.info("received test")
-    case _      ⇒ log.info("received unknown message")
+    case "test" => log.info("received test")
+    case _      => log.info("received unknown message")
   }
 }
 //#my-actor
@@ -40,14 +40,14 @@ class FirstActor extends Actor {
   val child = context.actorOf(Props[MyActor], name = "myChild")
   //#plus-some-behavior
   def receive = {
-    case x ⇒ sender ! x
+    case x => sender ! x
   }
   //#plus-some-behavior
 }
 //#context-actorOf
 
 class ActorWithArgs(arg: String) extends Actor {
-  def receive = { case _ ⇒ () }
+  def receive = { case _ => () }
 }
 
 class DemoActorWrapper extends Actor {
@@ -64,7 +64,7 @@ class DemoActorWrapper extends Actor {
 
   class DemoActor(magicNumber: Int) extends Actor {
     def receive = {
-      case x: Int ⇒ sender ! (x + magicNumber)
+      case x: Int => sender ! (x + magicNumber)
     }
   }
 
@@ -79,10 +79,10 @@ class DemoActorWrapper extends Actor {
 class AnonymousActor extends Actor {
   //#anonymous-actor
   def receive = {
-    case m: DoIt ⇒
+    case m: DoIt =>
       context.actorOf(Props(new Actor {
         def receive = {
-          case DoIt(msg) ⇒
+          case DoIt(msg) =>
             val replyMsg = doSomeDangerousWork(msg)
             sender ! replyMsg
             context.stop(self)
@@ -112,13 +112,13 @@ class Hook extends Actor {
 
 class ReplyException extends Actor {
   def receive = {
-    case _ ⇒
+    case _ =>
       //#reply-exception
       try {
         val result = operation()
         sender ! result
       } catch {
-        case e: Exception ⇒
+        case e: Exception =>
           sender ! akka.actor.Status.Failure(e)
           throw e
       }
@@ -136,10 +136,10 @@ class Swapper extends Actor {
   val log = Logging(system, this)
 
   def receive = {
-    case Swap ⇒
+    case Swap =>
       log.info("Hi")
       become({
-        case Swap ⇒
+        case Swap =>
           log.info("Ho")
           unbecome() // resets the latest 'become' (just for fun)
       }, discardOld = false) // push on top instead of replace
@@ -166,7 +166,7 @@ abstract class GenericActor extends Actor {
 
   // generic message handler
   def genericMessageHandler: Receive = {
-    case event ⇒ printf("generic: %s\n", event)
+    case event => printf("generic: %s\n", event)
   }
 
   def receive = specificMessageHandler orElse genericMessageHandler
@@ -174,7 +174,7 @@ abstract class GenericActor extends Actor {
 
 class SpecificActor extends GenericActor {
   def specificMessageHandler = {
-    case event: MyMsg ⇒ printf("specific: %s\n", event.subject)
+    case event: MyMsg => printf("specific: %s\n", event.subject)
   }
 }
 
@@ -190,7 +190,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
         import context._
         val myActor = actorOf(Props[MyActor], name = "myactor")
         def receive = {
-          case x ⇒ myActor ! x
+          case x => myActor ! x
         }
       }
       //#import-context
@@ -207,17 +207,17 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
     // TODO: convert docs to AkkaSpec(Map(...))
     val filter = EventFilter.custom {
-      case e: Logging.Info ⇒ true
-      case _               ⇒ false
+      case e: Logging.Info => true
+      case _               => false
     }
     system.eventStream.publish(TestEvent.Mute(filter))
     system.eventStream.subscribe(testActor, classOf[Logging.Info])
 
     myActor ! "test"
-    expectMsgPF(1 second) { case Logging.Info(_, _, "received test") ⇒ true }
+    expectMsgPF(1 second) { case Logging.Info(_, _, "received test") => true }
 
     myActor ! "unknown"
-    expectMsgPF(1 second) { case Logging.Info(_, _, "received unknown message") ⇒ true }
+    expectMsgPF(1 second) { case Logging.Info(_, _, "received unknown message") => true }
 
     system.eventStream.unsubscribe(testActor)
     system.eventStream.publish(TestEvent.UnMute(filter))
@@ -245,7 +245,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#creating-props-deprecated
     // DEPRECATED: old case class signature
     val props4 = Props(
-      creator = { () ⇒ new MyActor },
+      creator = { () => new MyActor },
       dispatcher = "my-dispatcher")
 
     // DEPRECATED due to duplicate functionality with Props.apply()
@@ -273,8 +273,8 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   "creating actor with IndirectActorProducer" in {
     class Echo(name: String) extends Actor {
       def receive = {
-        case n: Int ⇒ sender ! name
-        case message ⇒
+        case n: Int => sender ! name
+        case message =>
           val target = testActor
           //#forward
           target forward message
@@ -348,10 +348,10 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       // To set an initial delay
       context.setReceiveTimeout(30 milliseconds)
       def receive = {
-        case "Hello" ⇒
+        case "Hello" =>
           // To set in a response to a message
           context.setReceiveTimeout(100 milliseconds)
-        case ReceiveTimeout ⇒
+        case ReceiveTimeout =>
           // To turn it off
           context.setReceiveTimeout(Duration.Undefined)
           throw new RuntimeException("Receive timed out")
@@ -364,18 +364,18 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   class HotSwapActor extends Actor {
     import context._
     def angry: Receive = {
-      case "foo" ⇒ sender ! "I am already angry?"
-      case "bar" ⇒ become(happy)
+      case "foo" => sender ! "I am already angry?"
+      case "bar" => become(happy)
     }
 
     def happy: Receive = {
-      case "bar" ⇒ sender ! "I am already happy :-)"
-      case "foo" ⇒ become(angry)
+      case "bar" => sender ! "I am already happy :-)"
+      case "foo" => become(angry)
     }
 
     def receive = {
-      case "foo" ⇒ become(angry)
-      case "bar" ⇒ become(happy)
+      case "foo" => become(angry)
+      case "bar" => become(happy)
     }
   }
   //#hot-swap-actor
@@ -389,16 +389,16 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     import akka.actor.Stash
     class ActorWithProtocol extends Actor with Stash {
       def receive = {
-        case "open" ⇒
+        case "open" =>
           unstashAll()
           context.become({
-            case "write" ⇒ // do writing...
-            case "close" ⇒
+            case "write" => // do writing...
+            case "close" =>
               unstashAll()
               context.unbecome()
-            case msg ⇒ stash()
+            case msg => stash()
           }, discardOld = false) // stack on top instead of replacing
-        case msg ⇒ stash()
+        case msg => stash()
       }
     }
     //#stash
@@ -415,9 +415,9 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
         var lastSender = system.deadLetters
 
         def receive = {
-          case "kill" ⇒
+          case "kill" =>
             context.stop(child); lastSender = sender
-          case Terminated(`child`) ⇒ lastSender ! "finished"
+          case Terminated(`child`) => lastSender ! "finished"
         }
       }
       //#watch
@@ -457,15 +457,15 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
         context.actorSelection("/user/another") ! Identify(identifyId)
 
         def receive = {
-          case ActorIdentity(`identifyId`, Some(ref)) ⇒
+          case ActorIdentity(`identifyId`, Some(ref)) =>
             context.watch(ref)
             context.become(active(ref))
-          case ActorIdentity(`identifyId`, None) ⇒ context.stop(self)
+          case ActorIdentity(`identifyId`, None) => context.stop(self)
 
         }
 
         def active(another: ActorRef): Actor.Receive = {
-          case Terminated(`another`) ⇒ context.stop(self)
+          case Terminated(`another`) => context.stop(self)
         }
       }
       //#identify
@@ -490,7 +490,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       // the actor has been stopped
     } catch {
       // the actor wasn't stopped within 5 seconds
-      case e: akka.pattern.AskTimeoutException ⇒
+      case e: akka.pattern.AskTimeoutException =>
     }
     //#gracefulStop
   }
@@ -507,9 +507,9 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
     val f: Future[Result] =
       for {
-        x ← ask(actorA, Request).mapTo[Int] // call pattern directly
-        s ← (actorB ask Request).mapTo[String] // call by implicit conversion
-        d ← (actorC ? Request).mapTo[Double] // call by symbolic name
+        x <- ask(actorA, Request).mapTo[Int] // call pattern directly
+        s <- (actorB ask Request).mapTo[String] // call by implicit conversion
+        d <- (actorC ? Request).mapTo[Double] // call by symbolic name
       } yield Result(x, s, d)
 
     f pipeTo actorD // .. or ..
@@ -519,12 +519,12 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
   class Replier extends Actor {
     def receive = {
-      case ref: ActorRef ⇒
+      case ref: ActorRef =>
         //#reply-with-sender
         sender.tell("reply", context.parent) // replies will go back to parent
         sender.!("reply")(context.parent) // alternative syntax (beware of the parens!)
       //#reply-with-sender
-      case x ⇒
+      case x =>
         //#reply-without-sender
         sender ! x // replies will go to this actor
       //#reply-without-sender
@@ -547,8 +547,8 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   "using ActorDSL outside of akka.actor package" in {
     import akka.actor.ActorDSL._
     actor(new Act {
-      superviseWith(OneForOneStrategy() { case _ ⇒ Stop; Restart; Resume; Escalate })
-      superviseWith(AllForOneStrategy() { case _ ⇒ Stop; Restart; Resume; Escalate })
+      superviseWith(OneForOneStrategy() { case _ => Stop; Restart; Resume; Escalate })
+      superviseWith(AllForOneStrategy() { case _ => Stop; Restart; Resume; Escalate })
     })
   }
 
@@ -561,9 +561,9 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
     private var pfsOption: Option[Vector[PF]] = Some(Vector.empty)
 
-    private def mapPfs[C](f: Vector[PF] ⇒ (Option[Vector[PF]], C)): C = {
+    private def mapPfs[C](f: Vector[PF] => (Option[Vector[PF]], C)): C = {
       pfsOption.fold(throw new IllegalStateException("Already built"))(f) match {
-        case (newPfsOption, result) ⇒ {
+        case (newPfsOption, result) => {
           pfsOption = newPfsOption
           result
         }
@@ -571,10 +571,10 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     }
 
     def +=(pf: PF): Unit =
-      mapPfs { case pfs ⇒ (Some(pfs :+ pf), ()) }
+      mapPfs { case pfs => (Some(pfs :+ pf), ()) }
 
     def result(): PF =
-      mapPfs { case pfs ⇒ (None, pfs.foldLeft[PF](Map.empty) { _ orElse _ }) }
+      mapPfs { case pfs => (None, pfs.foldLeft[PF](Map.empty) { _ orElse _ }) }
   }
 
   trait ComposableActor extends Actor {
@@ -584,13 +584,13 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
   trait TheirComposableActor extends ComposableActor {
     receiveBuilder += {
-      case "foo" ⇒ sender ! "foo received"
+      case "foo" => sender ! "foo received"
     }
   }
 
   class MyComposableActor extends TheirComposableActor {
     receiveBuilder += {
-      case "bar" ⇒ sender ! "bar received"
+      case "bar" => sender ! "bar received"
     }
   }
   //#receive-orElse2

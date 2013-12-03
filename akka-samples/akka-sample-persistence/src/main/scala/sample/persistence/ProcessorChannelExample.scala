@@ -16,7 +16,7 @@ object ProcessorChannelExample extends App {
     var received: List[Persistent] = Nil
 
     def receive = {
-      case p @ Persistent(payload, _) ⇒
+      case p @ Persistent(payload, _) =>
         println(s"processed ${payload}")
         channel forward Deliver(p.withPayload(s"processed ${payload}"), destination)
     }
@@ -24,7 +24,7 @@ object ProcessorChannelExample extends App {
 
   class ExampleDestination extends Actor {
     def receive = {
-      case p @ ConfirmablePersistent(payload, snr, _) ⇒
+      case p @ ConfirmablePersistent(payload, snr, _) =>
         println(s"received ${payload}")
         sender ! s"re: ${payload} (${snr})"
         p.confirm()
@@ -37,8 +37,8 @@ object ProcessorChannelExample extends App {
   implicit val timeout = Timeout(3000)
   import system.dispatcher
 
-  processor ? Persistent("a") onSuccess { case reply ⇒ println(s"reply = ${reply}") }
-  processor ? Persistent("b") onSuccess { case reply ⇒ println(s"reply = ${reply}") }
+  processor ? Persistent("a") onSuccess { case reply => println(s"reply = ${reply}") }
+  processor ? Persistent("b") onSuccess { case reply => println(s"reply = ${reply}") }
 
   Thread.sleep(1000)
   system.shutdown()

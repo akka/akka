@@ -53,15 +53,15 @@ class EchoManager(handlerClass: Class[_]) extends Actor with ActorLogging {
   override def postRestart(thr: Throwable): Unit = context stop self
 
   def receive = {
-    case Bound(localAddress) ⇒
+    case Bound(localAddress) =>
       log.info("listening on port {}", localAddress.getPort)
 
-    case CommandFailed(Bind(_, local, _, _)) ⇒
+    case CommandFailed(Bind(_, local, _, _)) =>
       log.warning(s"cannot bind to [$local]")
       context stop self
 
     //#echo-manager
-    case Connected(remote, local) ⇒
+    case Connected(remote, local) =>
       log.info("received connection from {}", remote)
       val handler = context.actorOf(Props(handlerClass, sender, remote))
       sender ! Register(handler, keepOpenOnPeerClosed = true)
@@ -91,18 +91,18 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
 
   //#writing
   def writing: Receive = {
-    case Received(data) ⇒
+    case Received(data) =>
       connection ! Write(data, Ack(currentOffset))
       buffer(data)
 
-    case Ack(ack) ⇒
+    case Ack(ack) =>
       acknowledge(ack)
 
-    case CommandFailed(Write(_, Ack(ack))) ⇒
+    case CommandFailed(Write(_, Ack(ack))) =>
       connection ! ResumeWriting
       context become buffering(ack)
 
-    case PeerClosed ⇒
+    case PeerClosed =>
       if (storage.isEmpty) context stop self
       else context become closing
   }
@@ -114,11 +114,11 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
     var peerClosed = false
 
     {
-      case Received(data)         ⇒ buffer(data)
-      case WritingResumed         ⇒ writeFirst()
-      case PeerClosed             ⇒ peerClosed = true
-      case Ack(ack) if ack < nack ⇒ acknowledge(ack)
-      case Ack(ack) ⇒
+      case Received(data)         => buffer(data)
+      case WritingResumed         => writeFirst()
+      case PeerClosed             => peerClosed = true
+      case Ack(ack) if ack < nack => acknowledge(ack)
+      case Ack(ack) =>
         acknowledge(ack)
         if (storage.nonEmpty) {
           if (toAck > 0) {
@@ -138,19 +138,19 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
 
   //#closing
   def closing: Receive = {
-    case CommandFailed(_: Write) ⇒
+    case CommandFailed(_: Write) =>
       connection ! ResumeWriting
       context.become({
 
-        case WritingResumed ⇒
+        case WritingResumed =>
           writeAll()
           context.unbecome()
 
-        case ack: Int ⇒ acknowledge(ack)
+        case ack: Int => acknowledge(ack)
 
       }, discardOld = false)
 
-    case Ack(ack) ⇒
+    case Ack(ack) =>
       acknowledge(ack)
       if (storage.isEmpty) context stop self
   }
@@ -213,7 +213,7 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
   }
 
   private def writeAll(): Unit = {
-    for ((data, i) ← storage.zipWithIndex) {
+    for ((data, i) <- storage.zipWithIndex) {
       connection ! Write(data, Ack(storageOffset + i))
     }
   }
@@ -234,17 +234,17 @@ class SimpleEchoHandler(connection: ActorRef, remote: InetSocketAddress)
   case object Ack extends Event
 
   def receive = {
-    case Received(data) ⇒
+    case Received(data) =>
       buffer(data)
       connection ! Write(data, Ack)
 
       context.become({
-        case Received(data) ⇒ buffer(data)
-        case Ack            ⇒ acknowledge()
-        case PeerClosed     ⇒ closing = true
+        case Received(data) => buffer(data)
+        case Ack            => acknowledge()
+        case PeerClosed     => closing = true
       }, discardOld = false)
 
-    case PeerClosed ⇒ context stop self
+    case PeerClosed => context stop self
   }
 
   //#storage-omitted

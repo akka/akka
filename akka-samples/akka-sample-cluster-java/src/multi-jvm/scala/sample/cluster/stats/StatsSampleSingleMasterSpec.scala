@@ -80,7 +80,7 @@ abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSing
 
       Cluster(system) join firstAddress
 
-      receiveN(3).collect { case MemberUp(m) ⇒ m.address }.toSet must be(
+      receiveN(3).collect { case MemberUp(m) => m.address }.toSet must be(
         Set(firstAddress, secondAddress, thirdAddress))
 
       Cluster(system).unsubscribe(testActor)

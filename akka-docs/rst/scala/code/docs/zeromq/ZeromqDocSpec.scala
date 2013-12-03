@@ -45,7 +45,7 @@ object ZeromqDocSpec {
     }
 
     def receive: Receive = {
-      case Tick ⇒
+      case Tick =>
         val currentHeap = memory.getHeapMemoryUsage
         val timestamp = System.currentTimeMillis
 
@@ -73,13 +73,13 @@ object ZeromqDocSpec {
 
     def receive = {
       // the first frame is the topic, second is the message
-      case m: ZMQMessage if m.frames(0).utf8String == "health.heap" ⇒
+      case m: ZMQMessage if m.frames(0).utf8String == "health.heap" =>
         val Heap(timestamp, used, max) = ser.deserialize(m.frames(1).toArray,
           classOf[Heap]).get
         log.info("Used heap {} bytes, at {}", used,
           timestampFormat.format(new Date(timestamp)))
 
-      case m: ZMQMessage if m.frames(0).utf8String == "health.load" ⇒
+      case m: ZMQMessage if m.frames(0).utf8String == "health.load" =>
         val Load(timestamp, loadAverage) = ser.deserialize(m.frames(1).toArray,
           classOf[Load]).get
         log.info("Load average {}, at {}", loadAverage,
@@ -98,7 +98,7 @@ object ZeromqDocSpec {
 
     def receive = {
       // the first frame is the topic, second is the message
-      case m: ZMQMessage if m.frames(0).utf8String == "health.heap" ⇒
+      case m: ZMQMessage if m.frames(0).utf8String == "health.heap" =>
         val Heap(timestamp, used, max) =
           ser.deserialize(m.frames(1).toArray, classOf[Heap]).get
         if ((used.toDouble / max) > 0.9) count += 1
@@ -130,9 +130,9 @@ class ZeromqDocSpec extends AkkaSpec("akka.loglevel=INFO") {
 
       class Listener extends Actor {
         def receive: Receive = {
-          case Connecting    ⇒ //...
-          case m: ZMQMessage ⇒ //...
-          case _             ⇒ //...
+          case Connecting    => //...
+          case m: ZMQMessage => //...
+          case _             => //...
         }
       }
 
@@ -195,11 +195,11 @@ class ZeromqDocSpec extends AkkaSpec("akka.loglevel=INFO") {
 
   def checkZeroMQInstallation() = try {
     ZeroMQExtension(system).version match {
-      case ZeroMQVersion(2, x, _) if x >= 1 ⇒ Unit
-      case ZeroMQVersion(y, _, _) if y >= 3 ⇒ Unit
-      case version                          ⇒ pending
+      case ZeroMQVersion(2, x, _) if x >= 1 => Unit
+      case ZeroMQVersion(y, _, _) if y >= 3 => Unit
+      case version                          => pending
     }
   } catch {
-    case e: LinkageError ⇒ pending
+    case e: LinkageError => pending
   }
 }

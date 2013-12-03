@@ -17,7 +17,7 @@ class HelloWorld extends Actor {
 
   def receive = {
     // when the greeter is done, stop this actor and with it the application
-    case Greeter.Done ⇒ context.stop(self)
+    case Greeter.Done => context.stop(self)
   }
 }
 

@@ -26,15 +26,15 @@ object FaultHandlingDocSpec {
 
     override val supervisorStrategy =
       OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-        case _: ArithmeticException      ⇒ Resume
-        case _: NullPointerException     ⇒ Restart
-        case _: IllegalArgumentException ⇒ Stop
-        case _: Exception                ⇒ Escalate
+        case _: ArithmeticException      => Resume
+        case _: NullPointerException     => Restart
+        case _: IllegalArgumentException => Stop
+        case _: Exception                => Escalate
       }
     //#strategy
 
     def receive = {
-      case p: Props ⇒ sender ! context.actorOf(p)
+      case p: Props => sender ! context.actorOf(p)
     }
   }
   //#supervisor
@@ -48,15 +48,15 @@ object FaultHandlingDocSpec {
 
     override val supervisorStrategy =
       OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-        case _: ArithmeticException      ⇒ Resume
-        case _: NullPointerException     ⇒ Restart
-        case _: IllegalArgumentException ⇒ Stop
-        case _: Exception                ⇒ Escalate
+        case _: ArithmeticException      => Resume
+        case _: NullPointerException     => Restart
+        case _: IllegalArgumentException => Stop
+        case _: Exception                => Escalate
       }
     //#strategy2
 
     def receive = {
-      case p: Props ⇒ sender ! context.actorOf(p)
+      case p: Props => sender ! context.actorOf(p)
     }
     // override default to kill all children during restart
     override def preRestart(cause: Throwable, msg: Option[Any]) {}
@@ -71,9 +71,9 @@ object FaultHandlingDocSpec {
 
     override val supervisorStrategy =
       OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-        case _: ArithmeticException ⇒ Resume
-        case t ⇒
-          super.supervisorStrategy.decider.applyOrElse(t, (_: Any) ⇒ Escalate)
+        case _: ArithmeticException => Resume
+        case t =>
+          super.supervisorStrategy.decider.applyOrElse(t, (_: Any) => Escalate)
       }
     //#default-strategy-fallback
 
@@ -85,9 +85,9 @@ object FaultHandlingDocSpec {
   class Child extends Actor {
     var state = 0
     def receive = {
-      case ex: Exception ⇒ throw ex
-      case x: Int        ⇒ state = x
-      case "get"         ⇒ sender ! state
+      case ex: Exception => throw ex
+      case x: Int        => state = x
+      case "get"         => sender ! state
     }
   }
   //#child
@@ -133,7 +133,7 @@ class FaultHandlingDocSpec extends AkkaSpec with ImplicitSender {
         //#stop
         watch(child) // have testActor watch “child”
         child ! new IllegalArgumentException // break it
-        expectMsgPF() { case Terminated(`child`) ⇒ () }
+        expectMsgPF() { case Terminated(`child`) => () }
         //#stop
       }
       EventFilter[Exception]("CRASH", occurrences = 2) intercept {
@@ -147,7 +147,7 @@ class FaultHandlingDocSpec extends AkkaSpec with ImplicitSender {
 
         child2 ! new Exception("CRASH") // escalate failure
         expectMsgPF() {
-          case t @ Terminated(`child2`) if t.existenceConfirmed ⇒ ()
+          case t @ Terminated(`child2`) if t.existenceConfirmed => ()
         }
         //#escalate-kill
         //#escalate-restart

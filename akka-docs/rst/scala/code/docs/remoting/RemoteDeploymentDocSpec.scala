@@ -13,7 +13,7 @@ import akka.remote.RemoteScope
 object RemoteDeploymentDocSpec {
 
   class SampleActor extends Actor {
-    def receive = { case _ ⇒ sender ! self }
+    def receive = { case _ => sender ! self }
   }
 
 }

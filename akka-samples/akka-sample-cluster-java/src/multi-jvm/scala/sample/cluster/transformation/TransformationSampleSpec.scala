@@ -68,7 +68,7 @@ abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSamp
         transformationFrontend ! new TransformationJob("hello")
         expectMsgPF() {
           // no backends yet, service unavailble
-          case f: JobFailed ⇒
+          case f: JobFailed =>
         }
       }
 

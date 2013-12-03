@@ -21,7 +21,7 @@ object Main2 {
   class Terminator(ref: ActorRef) extends Actor with ActorLogging {
     context watch ref
     def receive = {
-      case Terminated(_) ⇒
+      case Terminated(_) =>
         log.info("{} has terminated, shutting down system", ref.path)
         context.system.shutdown()
     }

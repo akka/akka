@@ -26,13 +26,13 @@ object CoordinatedExample {
     val count = Ref(0)
 
     def receive = {
-      case coordinated @ Coordinated(Increment(friend)) ⇒ {
+      case coordinated @ Coordinated(Increment(friend)) => {
         friend foreach (_ ! coordinated(Increment()))
-        coordinated atomic { implicit t ⇒
+        coordinated atomic { implicit t =>
           count transform (_ + 1)
         }
       }
-      case GetCount ⇒ sender ! count.single.get
+      case GetCount => sender ! count.single.get
     }
   }
   //#coordinated-example
@@ -44,9 +44,9 @@ object CoordinatedApi {
   class Coordinator extends Actor {
     //#receive-coordinated
     def receive = {
-      case coordinated @ Coordinated(Message) ⇒ {
+      case coordinated @ Coordinated(Message) => {
         //#coordinated-atomic
-        coordinated atomic { implicit t ⇒
+        coordinated atomic { implicit t =>
           // do something in the coordinated transaction ...
         }
         //#coordinated-atomic
@@ -66,8 +66,8 @@ object CounterExample {
   class Counter extends Transactor {
     val count = Ref(0)
 
-    def atomically = implicit txn ⇒ {
-      case Increment ⇒ count transform (_ + 1)
+    def atomically = implicit txn => {
+      case Increment => count transform (_ + 1)
     }
   }
   //#counter-example
@@ -85,11 +85,11 @@ object FriendlyCounterExample {
     val count = Ref(0)
 
     override def coordinate = {
-      case Increment ⇒ include(friend)
+      case Increment => include(friend)
     }
 
-    def atomically = implicit txn ⇒ {
-      case Increment ⇒ count transform (_ + 1)
+    def atomically = implicit txn => {
+      case Increment => count transform (_ + 1)
     }
   }
   //#friendly-counter-example
@@ -97,8 +97,8 @@ object FriendlyCounterExample {
   class Friend extends Transactor {
     val count = Ref(0)
 
-    def atomically = implicit txn ⇒ {
-      case Increment ⇒ count transform (_ + 1)
+    def atomically = implicit txn => {
+      case Increment => count transform (_ + 1)
     }
   }
 }
@@ -115,22 +115,22 @@ object TransactorCoordinate {
   class TestCoordinateInclude(actor1: ActorRef, actor2: ActorRef, actor3: ActorRef) extends Transactor {
     //#coordinate-include
     override def coordinate = {
-      case Message ⇒ include(actor1, actor2, actor3)
+      case Message => include(actor1, actor2, actor3)
     }
     //#coordinate-include
 
-    def atomically = txn ⇒ doNothing
+    def atomically = txn => doNothing
   }
 
   class TestCoordinateSendTo(someActor: ActorRef, actor1: ActorRef, actor2: ActorRef) extends Transactor {
     //#coordinate-sendto
     override def coordinate = {
-      case SomeMessage  ⇒ sendTo(someActor -> SomeOtherMessage)
-      case OtherMessage ⇒ sendTo(actor1 -> Message1, actor2 -> Message2)
+      case SomeMessage  => sendTo(someActor -> SomeOtherMessage)
+      case OtherMessage => sendTo(actor1 -> Message1, actor2 -> Message2)
     }
     //#coordinate-sendto
 
-    def atomically = txn ⇒ doNothing
+    def atomically = txn => doNothing
   }
 }
 

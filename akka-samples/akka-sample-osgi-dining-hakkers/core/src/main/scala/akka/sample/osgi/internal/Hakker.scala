@@ -27,15 +27,15 @@ class Chopstick extends Actor {
   //It will refuse to be taken by other hakkers
   //But the owning hakker can put it back
   def takenBy(hakker: ActorRef): Receive = {
-    case Take(otherHakker) ⇒
+    case Take(otherHakker) =>
       otherHakker ! Busy(self)
-    case Put(`hakker`) ⇒
+    case Put(`hakker`) =>
       become(available)
   }
 
   //When a Chopstick is available, it can be taken by a hakker
   def available: Receive = {
-    case Take(hakker) ⇒
+    case Take(hakker) =>
       log.info(self.path + " is taken by " + hakker)
       become(takenBy(hakker))
       hakker ! Taken(self)
@@ -71,11 +71,11 @@ class Hakker(name: String, chair: Int) extends Actor {
   //When a hakker is thinking it can become hungry
   //and try to pick up its chopsticks and eat
   def thinking(left: ActorRef, right: ActorRef): Receive = {
-    case Eat ⇒
+    case Eat =>
       become(hungry(left, right) orElse (clusterEvents))
       left ! Take(self)
       right ! Take(self)
-    case Identify ⇒ identify("Thinking")
+    case Identify => identify("Thinking")
   }
 
   //When a hakker is hungry it tries to pick up its chopsticks and eat
@@ -83,28 +83,28 @@ class Hakker(name: String, chair: Int) extends Actor {
   //If the hakkers first attempt at grabbing a chopstick fails,
   //it starts to wait for the response of the other grab
   def hungry(left: ActorRef, right: ActorRef): Receive = {
-    case Taken(`left`) ⇒
+    case Taken(`left`) =>
       become(waiting_for(left, right, false) orElse (clusterEvents))
-    case Taken(`right`) ⇒
+    case Taken(`right`) =>
       become(waiting_for(left, right, true) orElse (clusterEvents))
-    case Busy(chopstick) ⇒
+    case Busy(chopstick) =>
       become(denied_a_chopstick(left, right) orElse (clusterEvents))
-    case Identify ⇒ identify("Hungry")
+    case Identify => identify("Hungry")
   }
 
   //When a hakker is waiting for the last chopstick it can either obtain it
   //and start eating, or the other chopstick was busy, and the hakker goes
   //back to think about how he should obtain his chopsticks :-)
   def waiting_for(left: ActorRef, right: ActorRef, waitingForLeft: Boolean): Receive = {
-    case Taken(`left`) if waitingForLeft ⇒
+    case Taken(`left`) if waitingForLeft =>
       log.info("%s has picked up %s and %s and starts to eat".format(name, left.path.name, right.path.name))
       become(eating(left, right) orElse (clusterEvents))
       system.scheduler.scheduleOnce(5 seconds, self, Think)
-    case Taken(`right`) if !waitingForLeft ⇒
+    case Taken(`right`) if !waitingForLeft =>
       log.info("%s has picked up %s and %s and starts to eat".format(name, left.path.name, right.path.name))
       become(eating(left, right) orElse (clusterEvents))
       system.scheduler.scheduleOnce(5 seconds, self, Think)
-    case Busy(chopstick) ⇒
+    case Busy(chopstick) =>
       become(thinking(left, right) orElse (clusterEvents))
       if (waitingForLeft) {
         right ! Put(self)
@@ -112,44 +112,44 @@ class Hakker(name: String, chair: Int) extends Actor {
         left ! Put(self)
       }
       self ! Eat
-    case Identify ⇒ identify("Waiting for Chopstick")
+    case Identify => identify("Waiting for Chopstick")
   }
 
   //When the results of the other grab comes back,
   //he needs to put it back if he got the other one.
   //Then go back and think and try to grab the chopsticks again
   def denied_a_chopstick(left: ActorRef, right: ActorRef): Receive = {
-    case Taken(chopstick) ⇒
+    case Taken(chopstick) =>
       become(thinking(left, right) orElse (clusterEvents))
       chopstick ! Put(self)
       self ! Eat
-    case Busy(chopstick) ⇒
+    case Busy(chopstick) =>
       become(thinking(left, right) orElse (clusterEvents))
       self ! Eat
-    case Identify ⇒ identify("Denied a Chopstick")
+    case Identify => identify("Denied a Chopstick")
   }
 
   //When a hakker is eating, he can decide to start to think,
   //then he puts down his chopsticks and starts to think
   def eating(left: ActorRef, right: ActorRef): Receive = {
-    case Think ⇒
+    case Think =>
       become(thinking(left, right) orElse (clusterEvents))
       left ! Put(self)
       right ! Put(self)
       log.info("%s puts down his chopsticks and starts to think".format(name))
       system.scheduler.scheduleOnce(5 seconds, self, Eat)
-    case Identify ⇒ identify("Eating")
+    case Identify => identify("Eating")
   }
 
   def waitForChopsticks: Receive = {
-    case (left: ActorRef, right: ActorRef) ⇒
+    case (left: ActorRef, right: ActorRef) =>
       become(thinking(left, right) orElse (clusterEvents))
       system.scheduler.scheduleOnce(5 seconds, self, Eat)
   }
 
   def clusterEvents: Receive = {
-    case state: CurrentClusterState         ⇒ state.leader foreach updateTable
-    case LeaderChanged(Some(leaderAddress)) ⇒ updateTable(leaderAddress)
+    case state: CurrentClusterState         => state.leader foreach updateTable
+    case LeaderChanged(Some(leaderAddress)) => updateTable(leaderAddress)
   }
 
   def identify(busyWith: String) {

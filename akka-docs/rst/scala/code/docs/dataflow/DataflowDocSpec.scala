@@ -64,7 +64,7 @@ class DataflowDocSpec extends WordSpec with MustMatchers {
     //#for-vs-flow
     val f1, f2 = Future { 1 }
 
-    val usingFor = for { v1 ← f1; v2 ← f2 } yield v1 + v2
+    val usingFor = for { v1 <- f1; v2 <- f2 } yield v1 + v2
     val usingFlow = flow { f1() + f2() }
 
     usingFor onComplete println

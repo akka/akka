@@ -33,7 +33,7 @@ object Producers {
 
     class ResponseReceiver extends Actor {
       def receive = {
-        case msg: CamelMessage ⇒
+        case msg: CamelMessage =>
         // do something with the forwarded response
       }
     }
@@ -61,11 +61,11 @@ object Producers {
       def endpointUri = uri
 
       def upperCase(msg: CamelMessage) = msg.mapBody {
-        body: String ⇒ body.toUpperCase
+        body: String => body.toUpperCase
       }
 
       override def transformOutgoingMessage(msg: Any) = msg match {
-        case msg: CamelMessage ⇒ upperCase(msg)
+        case msg: CamelMessage => upperCase(msg)
       }
     }
     //#TransformOutgoingMessage
@@ -106,7 +106,7 @@ object Producers {
     import akka.actor.Actor
     class MyActor extends Actor {
       def receive = {
-        case msg ⇒
+        case msg =>
           val template = CamelExtension(context.system).template
           template.sendBody("direct:news", msg)
       }
@@ -118,7 +118,7 @@ object Producers {
     import akka.actor.Actor
     class MyActor extends Actor {
       def receive = {
-        case msg ⇒
+        case msg =>
           val template = CamelExtension(context.system).template
           sender ! template.requestBody("direct:news", msg)
       }

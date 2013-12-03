@@ -17,14 +17,14 @@ object SnapshotExample extends App {
     var state = ExampleState()
 
     def receive = {
-      case Persistent(s, snr)                    ⇒ state = state.update(s"${s}-${snr}")
-      case SaveSnapshotSuccess(metadata)         ⇒ // ...
-      case SaveSnapshotFailure(metadata, reason) ⇒ // ...
-      case SnapshotOffer(_, s: ExampleState) ⇒
+      case Persistent(s, snr)                    => state = state.update(s"${s}-${snr}")
+      case SaveSnapshotSuccess(metadata)         => // ...
+      case SaveSnapshotFailure(metadata, reason) => // ...
+      case SnapshotOffer(_, s: ExampleState) =>
         println("offered state = " + s)
         state = s
-      case "print" ⇒ println("current state = " + state)
-      case "snap"  ⇒ saveSnapshot(state)
+      case "print" => println("current state = " + state)
+      case "snap"  => saveSnapshot(state)
     }
   }
 

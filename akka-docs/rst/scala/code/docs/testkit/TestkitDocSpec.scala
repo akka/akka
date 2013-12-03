@@ -22,18 +22,18 @@ object TestkitDocSpec {
 
   class MyActor extends Actor {
     def receive = {
-      case Say42       ⇒ sender ! 42
-      case "some work" ⇒ sender ! "some result"
+      case Say42       => sender ! 42
+      case "some work" => sender ! "some result"
     }
   }
 
   class TestFsmActor extends Actor with FSM[Int, String] {
     startWith(1, "")
     when(1) {
-      case Event("go", _) ⇒ goto(2) using "go"
+      case Event("go", _) => goto(2) using "go"
     }
     when(2) {
-      case Event("back", _) ⇒ goto(1) using "back"
+      case Event("back", _) => goto(1) using "back"
     }
   }
 
@@ -42,10 +42,10 @@ object TestkitDocSpec {
     var dest1: ActorRef = _
     var dest2: ActorRef = _
     def receive = {
-      case (d1: ActorRef, d2: ActorRef) ⇒
+      case (d1: ActorRef, d2: ActorRef) =>
         dest1 = d1
         dest2 = d2
-      case x ⇒
+      case x =>
         dest1 ! x
         dest2 ! x
     }
@@ -58,13 +58,13 @@ object TestkitDocSpec {
   //#test-probe-forward-actors
   class Source(target: ActorRef) extends Actor {
     def receive = {
-      case "start" ⇒ target ! "work"
+      case "start" => target ! "work"
     }
   }
 
   class Destination extends Actor {
     def receive = {
-      case x ⇒ // Do something..
+      case x => // Do something..
     }
   }
 
@@ -74,7 +74,7 @@ object TestkitDocSpec {
     //#logging-receive
     import akka.event.LoggingReceive
     def receive = LoggingReceive {
-      case msg ⇒ // Do something...
+      case msg => // Do something...
     }
     //#logging-receive
   }
@@ -151,7 +151,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
     val actorRef = TestActorRef(new Actor {
       def receive = {
-        case "hello" ⇒ throw new IllegalArgumentException("boom")
+        case "hello" => throw new IllegalArgumentException("boom")
       }
     })
     intercept[IllegalArgumentException] { actorRef.receive("hello") }
@@ -199,7 +199,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     val probe = new TestProbe(system) {
       def expectUpdate(x: Int) = {
         expectMsgPF() {
-          case Update(id, _) if id == x ⇒ true
+          case Update(id, _) if id == x => true
         }
         sender ! "ACK"
       }
@@ -280,7 +280,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       //#put-your-test-code-here
       val probe = TestProbe()
       probe.send(testActor, "hello")
-      try expectMsg("hello") catch { case NonFatal(e) ⇒ system.shutdown(); throw e }
+      try expectMsg("hello") catch { case NonFatal(e) => system.shutdown(); throw e }
       //#put-your-test-code-here
 
       shutdown(system)

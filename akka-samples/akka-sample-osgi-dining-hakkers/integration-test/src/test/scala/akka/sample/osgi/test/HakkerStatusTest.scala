@@ -100,7 +100,7 @@ java.io.EOFException
 object HakkerStatusTest {
   class Interrogator(queue: SynchronousQueue[(String, String)]) extends Actor {
     def receive = {
-      case msg: Identification ⇒ {
+      case msg: Identification => {
         queue.put((msg.name, msg.busyWith))
       }
     }

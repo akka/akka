@@ -12,16 +12,16 @@ object ProcessorFailureExample extends App {
     var received: List[String] = Nil // state
 
     def receive = {
-      case "print"                        ⇒ println(s"received ${received.reverse}")
-      case "boom"                         ⇒ throw new Exception("boom")
-      case Persistent("boom", _)          ⇒ throw new Exception("boom")
-      case Persistent(payload: String, _) ⇒ received = payload :: received
+      case "print"                        => println(s"received ${received.reverse}")
+      case "boom"                         => throw new Exception("boom")
+      case Persistent("boom", _)          => throw new Exception("boom")
+      case Persistent(payload: String, _) => received = payload :: received
     }
 
     override def preRestart(reason: Throwable, message: Option[Any]) {
       message match {
-        case Some(p: Persistent) if !recoveryRunning ⇒ deleteMessage(p.sequenceNr) // mark failing message as deleted
-        case _                                       ⇒ // ignore
+        case Some(p: Persistent) if !recoveryRunning => deleteMessage(p.sequenceNr) // mark failing message as deleted
+        case _                                       => // ignore
       }
       super.preRestart(reason, message)
     }

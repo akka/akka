@@ -16,7 +16,7 @@ import akka.testkit.ImplicitSender
 object MySpec {
   class EchoActor extends Actor {
     def receive = {
-      case x ⇒ sender ! x
+      case x => sender ! x
     }
   }
 }
