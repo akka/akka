@@ -26,7 +26,7 @@ trait AsyncWriteJournal extends Actor with AsyncReplay {
   private val resequencer = context.actorOf(Props[Resequencer])
   private var resequencerCounter = 1L
 
-  final def receive = {
+  def receive = {
     case WriteBatch(persistentBatch, processor) ⇒
       val cctr = resequencerCounter
       def resequence(f: PersistentRepr ⇒ Any) = persistentBatch.zipWithIndex.foreach {
@@ -92,6 +92,9 @@ trait AsyncWriteJournal extends Actor with AsyncReplay {
   //#journal-plugin-api
 }
 
+/**
+ * INTERNAL API.
+ */
 private[persistence] object AsyncWriteJournal {
   case class Desequenced(msg: Any, snr: Long, target: ActorRef, sender: ActorRef)
 

@@ -108,6 +108,8 @@ object SelectedSnapshot {
 }
 
 /**
+ * INTERNAL API.
+ *
  * Defines messages exchanged between processors and a snapshot store.
  */
 private[persistence] object SnapshotProtocol {

@@ -13,7 +13,7 @@ import akka.actor.Actor
  *
  * LevelDB backed persistent mapping of `String`-based processor and channel ids to numeric ids.
  */
-private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbJournal ⇒
+private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore ⇒
   import Key._
 
   private val idOffset = 10

@@ -9,6 +9,8 @@ import scala.collection.immutable
 import akka.actor._
 
 /**
+ * INTERNAL API.
+ *
  * Defines messages exchanged between processors, channels and a journal.
  */
 private[persistence] object JournalProtocol {

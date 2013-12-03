@@ -5,39 +5,29 @@
 package akka.persistence.journal.inmem
 
 import scala.collection.immutable
-import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
 import akka.actor._
-import akka.pattern.ask
 import akka.persistence._
-import akka.persistence.journal.AsyncWriteJournal
-import akka.util._
+import akka.persistence.journal.AsyncWriteProxy
+import akka.persistence.journal.AsyncWriteTarget
+import akka.util.Timeout
 
 /**
  * INTERNAL API.
  *
  * In-memory journal for testing purposes only.
  */
-private[persistence] class InmemJournal extends AsyncWriteJournal {
-  val store = context.actorOf(Props[InmemStore])
+private[persistence] class InmemJournal extends AsyncWriteProxy {
+  import AsyncWriteProxy.SetStore
 
-  implicit val timeout = Timeout(5 seconds)
+  val timeout = Timeout(5 seconds)
 
-  import InmemStore._
-
-  def writeAsync(persistentBatch: immutable.Seq[PersistentRepr]): Future[Unit] =
-    (store ? WriteBatch(persistentBatch)).mapTo[Unit]
-
-  def deleteAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean): Future[Unit] =
-    (store ? Delete(processorId, fromSequenceNr, toSequenceNr, permanent)).mapTo[Unit]
-
-  def confirmAsync(processorId: String, sequenceNr: Long, channelId: String): Future[Unit] =
-    (store ? Confirm(processorId, sequenceNr, channelId)).mapTo[Unit]
-
-  def replayAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: (PersistentRepr) ⇒ Unit): Future[Long] =
-    (store ? Replay(processorId, fromSequenceNr, toSequenceNr, replayCallback)).mapTo[Long]
+  override def preStart(): Unit = {
+    super.preStart()
+    self ! SetStore(context.actorOf(Props[InmemStore]))
+  }
 }
 
 /**
@@ -80,33 +70,19 @@ private[persistence] trait InmemMessages {
  * INTERNAL API.
  */
 private[persistence] class InmemStore extends Actor with InmemMessages {
-  import InmemStore._
+  import AsyncWriteTarget._
 
   def receive = {
     case WriteBatch(pb) ⇒
-      pb.foreach(add)
-      success()
+      sender ! pb.foreach(add)
     case Delete(pid, fsnr, tsnr, false) ⇒
-      fsnr to tsnr foreach { snr ⇒ update(pid, snr)(_.update(deleted = true)) }
-      success()
+      sender ! (fsnr to tsnr foreach { snr ⇒ update(pid, snr)(_.update(deleted = true)) })
     case Delete(pid, fsnr, tsnr, true) ⇒
-      fsnr to tsnr foreach { snr ⇒ delete(pid, snr) }
-      success()
+      sender ! (fsnr to tsnr foreach { snr ⇒ delete(pid, snr) })
     case Confirm(pid, snr, cid) ⇒
-      update(pid, snr)(p ⇒ p.update(confirms = cid +: p.confirms))
-      success()
-    case Replay(pid, fromSnr, toSnr, callback) ⇒
-      read(pid, fromSnr, toSnr).foreach(callback)
-      success(maxSequenceNr(pid))
+      sender ! update(pid, snr)(p ⇒ p.update(confirms = cid +: p.confirms))
+    case Replay(pid, fromSnr, toSnr) ⇒
+      read(pid, fromSnr, toSnr).foreach(sender ! _)
+      sender ! ReplaySuccess(maxSequenceNr(pid))
   }
-
-  private def success(reply: Any = ()) =
-    sender ! reply
-}
-
-private[persistence] object InmemStore {
-  case class WriteBatch(pb: Seq[PersistentRepr])
-  case class Delete(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean)
-  case class Confirm(processorId: String, sequenceNr: Long, channelId: String)
-  case class Replay(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, replayCallback: (PersistentRepr) ⇒ Unit)
 }

@@ -302,6 +302,9 @@ private[persistence] case class ConfirmablePersistentImpl(
     copy(sequenceNr = sequenceNr, processorId = processorId, deleted = deleted, resolved = resolved, confirms = confirms, confirmMessage = confirmMessage, confirmTarget = confirmTarget, sender = sender)
 }
 
+/**
+ * INTERNAL API.
+ */
 private[persistence] object ConfirmablePersistentImpl {
   def apply(persistent: PersistentRepr, confirmMessage: Confirm, confirmTarget: ActorRef): ConfirmablePersistentImpl =
     ConfirmablePersistentImpl(persistent.payload, persistent.sequenceNr, persistent.processorId, persistent.deleted, persistent.resolved, persistent.confirms, confirmMessage, confirmTarget, persistent.sender)

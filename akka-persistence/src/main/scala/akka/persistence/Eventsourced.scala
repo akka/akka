@@ -75,10 +75,10 @@ private[persistence] trait Eventsourced extends Processor {
       case p: PersistentRepr ⇒
         deleteMessage(p.sequenceNr, true)
         throw new UnsupportedOperationException("Persistent commands not supported")
-      case WriteSuccess(p) if identical(p.payload, persistInvocations.head._1) ⇒
+      case WriteSuccess(p) ⇒
         withCurrentPersistent(p)(p ⇒ persistInvocations.head._2(p.payload))
         onWriteComplete()
-      case e @ WriteFailure(p, _) if identical(p.payload, persistInvocations.head._1) ⇒
+      case e @ WriteFailure(p, _) ⇒
         Eventsourced.super.aroundReceive(receive, message) // stops actor by default
         onWriteComplete()
       case s @ WriteBatchSuccess ⇒ Eventsourced.super.aroundReceive(receive, s)
@@ -93,9 +93,6 @@ private[persistence] trait Eventsourced extends Processor {
         processorStash.unstash()
       }
     }
-
-    def identical(a: Any, b: Any): Boolean =
-      a.asInstanceOf[AnyRef] eq b.asInstanceOf[AnyRef]
   }
 
   private var persistInvocations: List[(Any, Any ⇒ Unit)] = Nil

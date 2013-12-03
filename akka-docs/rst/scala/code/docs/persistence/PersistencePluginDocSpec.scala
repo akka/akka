@@ -71,6 +71,47 @@ class PersistencePluginDocSpec extends WordSpec {
   }
 }
 
+object SharedLeveldbPluginDocSpec {
+  import akka.actor._
+  import akka.persistence.journal.leveldb.SharedLeveldbJournal
+
+  val config =
+    """
+      //#shared-journal-config
+      akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
+      //#shared-journal-config
+      //#shared-store-config
+      akka.persistence.journal.leveldb-shared.store.dir = "target/shared"
+      //#shared-store-config
+    """
+
+  //#shared-store-usage
+  trait SharedStoreUsage extends Actor {
+    override def preStart(): Unit = {
+      context.actorSelection("akka.tcp://example@127.0.0.1:2552/user/store") ! Identify(1)
+    }
+
+    def receive = {
+      case ActorIdentity(1, Some(store)) ⇒
+        SharedLeveldbJournal.setStore(store, context.system)
+    }
+  }
+  //#shared-store-usage
+}
+
+trait SharedLeveldbPluginDocSpec {
+  val system: ActorSystem
+
+  new AnyRef {
+    import akka.actor._
+    //#shared-store-creation
+    import akka.persistence.journal.leveldb.SharedLeveldbStore
+
+    val store = system.actorOf(Props[SharedLeveldbStore], "store")
+    //#shared-store-creation
+  }
+}
+
 class MyJournal extends AsyncWriteJournal {
   def writeAsync(persistentBatch: Seq[PersistentRepr]): Future[Unit] = ???
   def deleteAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean): Future[Unit] = ???
