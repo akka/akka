@@ -113,8 +113,6 @@ private[cluster] object InternalClusterAction {
 
   case object GossipSpeedupTick extends Tick
 
-  case object HeartbeatTick extends Tick
-
   case object ReapUnreachableTick extends Tick
 
   case object MetricsTick extends Tick

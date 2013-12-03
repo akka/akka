@@ -1,4 +1,5 @@
 /**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  * Copyright (C) 2012-2013 Eligotech BV.
  */
 
@@ -10,22 +11,24 @@ import akka.persistence._
 import akka.persistence.journal.AsyncReplay
 
 /**
+ * INTERNAL API.
+ *
  * LevelDB backed message replay.
  */
-private[persistence] trait LeveldbReplay extends AsyncReplay { this: LeveldbJournal ⇒
+private[persistence] trait LeveldbReplay extends AsyncReplay { this: LeveldbStore ⇒
   import Key._
 
-  private val replayDispatcherId = context.system.settings.config.getString("akka.persistence.journal.leveldb.replay-dispatcher")
-  private val replayDispatcher = context.system.dispatchers.lookup(replayDispatcherId)
+  private lazy val replayDispatcherId = config.getString("replay-dispatcher")
+  private lazy val replayDispatcher = context.system.dispatchers.lookup(replayDispatcherId)
 
-  def replayAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: PersistentImpl ⇒ Unit): Future[Long] =
+  def replayAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: PersistentRepr ⇒ Unit): Future[Long] =
     Future(replay(numericId(processorId), fromSequenceNr: Long, toSequenceNr)(replayCallback))(replayDispatcher)
 
-  private def replay(processorId: Int, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: PersistentImpl ⇒ Unit): Long = {
+  def replay(processorId: Int, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: PersistentRepr ⇒ Unit): Long = {
     val iter = leveldbIterator
 
     @scala.annotation.tailrec
-    def go(key: Key, replayCallback: PersistentImpl ⇒ Unit) {
+    def go(key: Key, replayCallback: PersistentRepr ⇒ Unit) {
       if (iter.hasNext) {
         val nextEntry = iter.next()
         val nextKey = keyFromBytes(nextEntry.getKey)
@@ -38,7 +41,7 @@ private[persistence] trait LeveldbReplay extends AsyncReplay { this: LeveldbJour
           val msg = persistentFromBytes(nextEntry.getValue)
           val del = deletion(nextKey)
           val cnf = confirms(nextKey, Nil)
-          replayCallback(msg.copy(confirms = cnf, deleted = del))
+          replayCallback(msg.update(confirms = cnf, deleted = del))
           go(nextKey, replayCallback)
         }
       }

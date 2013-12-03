@@ -17,7 +17,7 @@ object MultiNodeSampleConfig extends MultiNodeConfig {
 //#spec
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
-import akka.actor.{Props, Actor}
+import akka.actor.{ Props, Actor }
 
 class MultiNodeSampleSpecMultiJvmNode1 extends MultiNodeSample
 class MultiNodeSampleSpecMultiJvmNode2 extends MultiNodeSample
@@ -46,7 +46,7 @@ class MultiNodeSample extends MultiNodeSpec(MultiNodeSampleConfig)
       runOn(node2) {
         system.actorOf(Props(new Actor {
           def receive = {
-            case "ping" => sender ! "pong"
+            case "ping" ⇒ sender ! "pong"
           }
         }), "ponger")
         enterBarrier("deployed")

@@ -9,16 +9,18 @@ import scala.collection.immutable
 import akka.actor._
 
 /**
+ * INTERNAL API.
+ *
  * Defines messages exchanged between processors, channels and a journal.
  */
 private[persistence] object JournalProtocol {
   /**
-   * Instructs a journal to mark the `persistent` message as deleted.
-   * A persistent message marked as deleted is not replayed during recovery.
-   *
-   * @param persistent persistent message.
+   * Instructs a journal to delete all persistent messages with sequence numbers in
+   * the range from `fromSequenceNr` to `toSequenceNr` (both inclusive). If `permanent`
+   * is set to `false`, the persistent messages are marked as deleted in the journal,
+   * otherwise they are permanently deleted from the journal.
    */
-  case class Delete(persistent: Persistent)
+  case class Delete(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean)
 
   /**
    * Instructs a journal to persist a sequence of messages.
@@ -26,22 +28,28 @@ private[persistence] object JournalProtocol {
    * @param persistentBatch batch of messages to be persisted.
    * @param processor requesting processor.
    */
-  case class WriteBatch(persistentBatch: immutable.Seq[PersistentImpl], processor: ActorRef)
+  case class WriteBatch(persistentBatch: immutable.Seq[PersistentRepr], processor: ActorRef)
 
   /**
-   * Instructs a journal to persist a message.
-   *
-   * @param persistent message to be persisted.
-   * @param processor requesting processor.
+   * Reply message to a processor if a batch write succeeded. This message is received before
+   * all subsequent [[WriteSuccess]] messages.
    */
-  case class Write(persistent: PersistentImpl, processor: ActorRef)
+  case object WriteBatchSuccess
+
+  /**
+   * Reply message to a processor if a batch write failed. This message is received before
+   * all subsequent [[WriteFailure]] messages.
+   *
+   * @param cause failure cause.
+   */
+  case class WriteBatchFailure(cause: Throwable)
 
   /**
    * Reply message to a processor that `persistent` message has been successfully journaled.
    *
    * @param persistent persistent message.
    */
-  case class WriteSuccess(persistent: PersistentImpl)
+  case class WriteSuccess(persistent: PersistentRepr)
 
   /**
    * Reply message to a processor that `persistent` message could not be journaled.
@@ -49,7 +57,7 @@ private[persistence] object JournalProtocol {
    * @param persistent persistent message.
    * @param cause failure cause.
    */
-  case class WriteFailure(persistent: PersistentImpl, cause: Throwable)
+  case class WriteFailure(persistent: PersistentRepr, cause: Throwable)
 
   /**
    * Instructs a journal to loop a `message` back to `processor`, without persisting the
@@ -83,7 +91,7 @@ private[persistence] object JournalProtocol {
    *
    * @param persistent persistent message.
    */
-  case class Replayed(persistent: PersistentImpl)
+  case class Replayed(persistent: PersistentRepr)
 
   /**
    * Reply message to a processor that all `persistent` messages have been replayed.

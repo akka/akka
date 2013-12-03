@@ -52,10 +52,8 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
       checkSerialization(InternalClusterAction.InitJoin)
       checkSerialization(InternalClusterAction.InitJoinAck(address))
       checkSerialization(InternalClusterAction.InitJoinNack(address))
-      checkSerialization(ClusterHeartbeatReceiver.Heartbeat(address))
-      checkSerialization(ClusterHeartbeatReceiver.EndHeartbeat(address))
-      checkSerialization(ClusterHeartbeatReceiver.EndHeartbeatAck(address))
-      checkSerialization(ClusterHeartbeatSender.HeartbeatRequest(address))
+      checkSerialization(ClusterHeartbeatSender.Heartbeat(address))
+      checkSerialization(ClusterHeartbeatSender.HeartbeatRsp(uniqueAddress))
 
       val node1 = VectorClock.Node("node1")
       val node2 = VectorClock.Node("node2")

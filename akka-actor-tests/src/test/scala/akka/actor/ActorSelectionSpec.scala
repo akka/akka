@@ -18,6 +18,7 @@ object ActorSelectionSpec {
   case class SelectString(path: String) extends Query
   case class SelectPath(path: ActorPath) extends Query
   case class GetSender(to: ActorRef) extends Query
+  case class Forward(path: String, msg: Any) extends Query
 
   val p = Props[Node]
 
@@ -27,6 +28,8 @@ object ActorSelectionSpec {
       case SelectString(path) ⇒ sender ! context.actorSelection(path)
       case SelectPath(path)   ⇒ sender ! context.actorSelection(path)
       case GetSender(ref)     ⇒ ref ! sender
+      case Forward(path, msg) ⇒ context.actorSelection(path).forward(msg)
+      case msg                ⇒ sender ! msg
     }
   }
 
@@ -325,7 +328,42 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
     }
 
     "print nicely" in {
-      ActorSelection(c21, "../*/hello").toString must be(s"ActorSelection[Actor[akka://ActorSelectionSpec/user/c2/c21#${c21.path.uid}]/../*/hello]")
+      ActorSelection(c21, "../*/hello").toString must be(
+        s"ActorSelection[Anchor(akka://ActorSelectionSpec/user/c2/c21#${c21.path.uid}), Path(/../*/hello)]")
+    }
+
+    "send ActorSelection targeted to missing actor to deadLetters" in {
+      val p = TestProbe()
+      system.eventStream.subscribe(p.ref, classOf[DeadLetter])
+      system.actorSelection("/user/missing").tell("boom", testActor)
+      val d = p.expectMsgType[DeadLetter]
+      d.message must be("boom")
+      d.sender must be(testActor)
+      d.recipient.path.elements.mkString("/", "/", "") must be("/user/missing")
+    }
+
+    "send ActorSelection wildcard targeted to missing actor to deadLetters" in {
+      val top = system.actorOf(p, "top")
+      top ! Create("child1")
+      top ! Create("child2")
+
+      val probe = TestProbe()
+      system.eventStream.subscribe(probe.ref, classOf[DeadLetter])
+      system.actorSelection("/user/top/*/a").tell("wild", testActor)
+      // wildcard matches both child1 and child2
+      val d1 = probe.expectMsgType[DeadLetter]
+      val d2 = probe.expectMsgType[DeadLetter]
+      List(d1, d2) foreach { d ⇒
+        d.message must be("wild")
+        d.sender must be(testActor)
+        d.recipient.path.elements.mkString("/", "/", "") must (equal("/user/top/child1/a") or equal("/user/top/child2/a"))
+      }
+    }
+
+    "forward to selection" in {
+      c2.tell(Forward("c21", "hello"), testActor)
+      expectMsg("hello")
+      lastSender must be(c21)
     }
 
   }

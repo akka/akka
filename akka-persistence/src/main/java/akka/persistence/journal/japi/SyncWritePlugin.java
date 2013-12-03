@@ -4,36 +4,29 @@
 
 package akka.persistence.journal.japi;
 
-import akka.persistence.PersistentImpl;
+import akka.persistence.PersistentRepr;
 
 interface SyncWritePlugin {
     //#sync-write-plugin-api
     /**
-     * Plugin Java API.
-     *
-     * Synchronously writes a `persistent` message to the journal.
+     * Java API, Plugin API: synchronously writes a batch of persistent messages to the
+     * journal. The batch write must be atomic i.e. either all persistent messages in the
+     * batch are written or none.
      */
-    void doWrite(PersistentImpl persistent) throws Exception;
+    void doWrite(Iterable<PersistentRepr> persistentBatch);
 
     /**
-     * Plugin Java API.
+     * Java API, Plugin API: synchronously deletes all persistent messages within the
+     * range  from `fromSequenceNr` to `toSequenceNr`. If `permanent` is set to `false`,
+     * the persistent messages are marked as deleted, otherwise they are permanently
+     * deleted.
      *
-     * Synchronously writes a batch of persistent messages to the journal. The batch write
-     * must be atomic i.e. either all persistent messages in the batch are written or none.
+     * @see AsyncReplayPlugin
      */
-    void doWriteBatch(Iterable<PersistentImpl> persistentBatch);
+    void doDelete(String processorId, long fromSequenceNr, long toSequenceNr, boolean permanent);
 
     /**
-     * Plugin Java API.
-     *
-     * Synchronously marks a `persistent` message as deleted.
-     */
-    void doDelete(PersistentImpl persistent) throws Exception;
-
-    /**
-     * Plugin Java API.
-     *
-     * Synchronously writes a delivery confirmation to the journal.
+     * Java API, Plugin API: synchronously writes a delivery confirmation to the journal.
      */
     void doConfirm(String processorId, long sequenceNr, String channelId) throws Exception;
     //#sync-write-plugin-api

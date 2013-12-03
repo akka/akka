@@ -1,4 +1,5 @@
 /**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
  * Copyright (C) 2012-2013 Eligotech BV.
  */
 
@@ -40,7 +41,7 @@ case class SaveSnapshotFailure(metadata: SnapshotMetadata, cause: Throwable)
 case class SnapshotOffer(metadata: SnapshotMetadata, snapshot: Any)
 
 /**
- * Selection criteria for loading snapshots.
+ * Selection criteria for loading and deleting snapshots.
  *
  * @param maxSequenceNr upper bound for a selected snapshot's sequence number. Default is no upper bound.
  * @param maxTimestamp upper bound for a selected snapshot's timestamp. Default is no upper bound.
@@ -49,8 +50,17 @@ case class SnapshotOffer(metadata: SnapshotMetadata, snapshot: Any)
  */
 @SerialVersionUID(1L)
 case class SnapshotSelectionCriteria(maxSequenceNr: Long = Long.MaxValue, maxTimestamp: Long = Long.MaxValue) {
+  /**
+   * INTERNAL API.
+   */
   private[persistence] def limit(toSequenceNr: Long): SnapshotSelectionCriteria =
     if (toSequenceNr < maxSequenceNr) copy(maxSequenceNr = toSequenceNr) else this
+
+  /**
+   * INTERNAL API.
+   */
+  private[persistence] def matches(metadata: SnapshotMetadata): Boolean =
+    metadata.sequenceNr <= maxSequenceNr && metadata.timestamp <= maxTimestamp
 }
 
 object SnapshotSelectionCriteria {
@@ -82,9 +92,7 @@ object SnapshotSelectionCriteria {
 }
 
 /**
- * Plugin API.
- *
- * A selected snapshot matching [[SnapshotSelectionCriteria]].
+ * Plugin API: a selected snapshot matching [[SnapshotSelectionCriteria]].
  *
  * @param metadata snapshot metadata.
  * @param snapshot snapshot.
@@ -100,6 +108,8 @@ object SelectedSnapshot {
 }
 
 /**
+ * INTERNAL API.
+ *
  * Defines messages exchanged between processors and a snapshot store.
  */
 private[persistence] object SnapshotProtocol {
@@ -126,4 +136,19 @@ private[persistence] object SnapshotProtocol {
    * @param snapshot snapshot.
    */
   case class SaveSnapshot(metadata: SnapshotMetadata, snapshot: Any)
+
+  /**
+   * Instructs snapshot store to delete a snapshot.
+   *
+   * @param metadata snapshot metadata.
+   */
+  case class DeleteSnapshot(metadata: SnapshotMetadata)
+
+  /**
+   * Instructs snapshot store to delete all snapshots that match `criteria`.
+   *
+   * @param processorId processor id.
+   * @param criteria criteria for selecting snapshots to be deleted.
+   */
+  case class DeleteSnapshots(processorId: String, criteria: SnapshotSelectionCriteria)
 }

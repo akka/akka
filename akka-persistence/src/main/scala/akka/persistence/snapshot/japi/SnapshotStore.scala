@@ -11,9 +11,7 @@ import akka.persistence._
 import akka.persistence.snapshot.{ SnapshotStore ⇒ SSnapshotStore }
 
 /**
- * Java API.
- *
- * Abstract snapshot store.
+ * Java API: abstract snapshot store.
  */
 abstract class SnapshotStore extends SSnapshotStore with SnapshotStorePlugin {
   import context.dispatcher
@@ -29,4 +27,8 @@ abstract class SnapshotStore extends SSnapshotStore with SnapshotStorePlugin {
 
   final def delete(metadata: SnapshotMetadata) =
     doDelete(metadata)
+
+  final def delete(processorId: String, criteria: SnapshotSelectionCriteria) =
+    doDelete(processorId: String, criteria: SnapshotSelectionCriteria)
+
 }

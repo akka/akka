@@ -71,8 +71,17 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
       case l @ (_: LocalRef | _: RepointableRef) if l.isLocal ⇒
         if (LogReceive) log.debug("received local message {}", msgLog)
         payload match {
+          case sel: ActorSelectionMessage ⇒
+            if (UntrustedMode && (!TrustedSelectionPaths.contains(sel.elements.mkString("/", "/", "")) ||
+              sel.msg.isInstanceOf[PossiblyHarmful] || l != provider.rootGuardian))
+              log.debug("operating in UntrustedMode, dropping inbound actor selection to [{}], " +
+                "allow it by adding the path to 'akka.remote.trusted-selection-paths' configuration",
+                sel.elements.mkString("/", "/", ""))
+            else
+              // run the receive logic for ActorSelectionMessage here to make sure it is not stuck on busy user actor
+              ActorSelection.deliverSelection(l, sender, sel)
           case msg: PossiblyHarmful if UntrustedMode ⇒
-            log.debug("operating in UntrustedMode, dropping inbound PossiblyHarmful message of type {}", msg.getClass)
+            log.debug("operating in UntrustedMode, dropping inbound PossiblyHarmful message of type [{}]", msg.getClass.getName)
           case msg: SystemMessage ⇒ l.sendSystemMessage(msg)
           case msg                ⇒ l.!(msg)(sender)
         }

@@ -9,7 +9,7 @@ import akka.actor._
 import akka.testkit._
 
 object PerformanceSpec {
-  // multiply cycles with 100 for more
+  // multiply cycles with 200 for more
   // accurate throughput measurements
   val config =
     """
@@ -33,15 +33,13 @@ object PerformanceSpec {
     var failAt: Long = -1
 
     val controlBehavior: Receive = {
-      case StartMeasure ⇒ {
+      case StartMeasure ⇒
         startSequenceNr = lastSequenceNr
         startTime = System.nanoTime
-      }
-      case StopMeasure ⇒ {
+      case StopMeasure ⇒
         stopSequenceNr = lastSequenceNr
         stopTime = System.nanoTime
         sender ! (NanoToSecond * (stopSequenceNr - startSequenceNr) / (stopTime - startTime))
-      }
       case FailAt(sequenceNr) ⇒ failAt = sequenceNr
     }
 
@@ -53,10 +51,9 @@ object PerformanceSpec {
 
   class CommandsourcedTestProcessor(name: String) extends PerformanceTestProcessor(name) {
     def receive = controlBehavior orElse {
-      case p: Persistent ⇒ {
+      case p: Persistent ⇒
         if (lastSequenceNr % 1000 == 0) if (recoveryRunning) print("r") else print(".")
         if (lastSequenceNr == failAt) throw new TestException("boom")
-      }
     }
   }
 
@@ -88,25 +85,24 @@ object PerformanceSpec {
     })
 
     val processC: Receive = printProgress andThen {
-      case "c" ⇒ {
+      case "c" ⇒
         persist("c")(_ ⇒ context.unbecome())
         unstashAll()
-      }
       case other ⇒ stash()
     }
   }
 }
 
-class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "performance").withFallback(ConfigFactory.parseString(PerformanceSpec.config))) with PersistenceSpec with ImplicitSender {
+class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "performance", serialization = "off").withFallback(ConfigFactory.parseString(PerformanceSpec.config))) with PersistenceSpec with ImplicitSender {
   import PerformanceSpec._
 
-  val warmupClycles = system.settings.config.getInt("akka.persistence.performance.cycles.warmup")
+  val warmupCycles = system.settings.config.getInt("akka.persistence.performance.cycles.warmup")
   val loadCycles = system.settings.config.getInt("akka.persistence.performance.cycles.load")
 
   def stressCommandsourcedProcessor(failAt: Option[Long]): Unit = {
     val processor = namedProcessor[CommandsourcedTestProcessor]
     failAt foreach { processor ! FailAt(_) }
-    1 to warmupClycles foreach { i ⇒ processor ! Persistent(s"msg${i}") }
+    1 to warmupCycles foreach { i ⇒ processor ! Persistent(s"msg${i}") }
     processor ! StartMeasure
     1 to loadCycles foreach { i ⇒ processor ! Persistent(s"msg${i}") }
     processor ! StopMeasure
@@ -118,7 +114,7 @@ class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "perfor
   def stressEventsourcedProcessor(failAt: Option[Long]): Unit = {
     val processor = namedProcessor[EventsourcedTestProcessor]
     failAt foreach { processor ! FailAt(_) }
-    1 to warmupClycles foreach { i ⇒ processor ! s"msg${i}" }
+    1 to warmupCycles foreach { i ⇒ processor ! s"msg${i}" }
     processor ! StartMeasure
     1 to loadCycles foreach { i ⇒ processor ! s"msg${i}" }
     processor ! StopMeasure
@@ -129,7 +125,7 @@ class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "perfor
 
   def stressStashingEventsourcedProcessor(): Unit = {
     val processor = namedProcessor[StashingEventsourcedTestProcessor]
-    1 to warmupClycles foreach { i ⇒ processor ! "b" }
+    1 to warmupCycles foreach { i ⇒ processor ! "b" }
     processor ! StartMeasure
     val cmds = 1 to (loadCycles / 3) flatMap (_ ⇒ List("a", "b", "c"))
     processor ! StartMeasure
@@ -145,7 +141,7 @@ class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "perfor
       stressCommandsourcedProcessor(None)
     }
     "have some reasonable throughput under failure conditions" in {
-      stressCommandsourcedProcessor(Some(warmupClycles + loadCycles / 10))
+      stressCommandsourcedProcessor(Some(warmupCycles + loadCycles / 10))
     }
   }
 
@@ -154,7 +150,7 @@ class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "perfor
       stressEventsourcedProcessor(None)
     }
     "have some reasonable throughput under failure conditions" in {
-      stressEventsourcedProcessor(Some(warmupClycles + loadCycles / 10))
+      stressEventsourcedProcessor(Some(warmupCycles + loadCycles / 10))
     }
     "have some reasonable throughput with stashing and unstashing every 3rd command" in {
       stressStashingEventsourcedProcessor()

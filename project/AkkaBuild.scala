@@ -10,7 +10,7 @@ import com.typesafe.sbt.SbtMultiJvm
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions, multiNodeExecuteTests, multiNodeJavaName, multiNodeHostsFileName, multiNodeTargetDirName, multiTestOptions }
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
-import com.typesafe.sbtosgi.OsgiPlugin.{ OsgiKeys, osgiSettings }
+import com.typesafe.sbt.osgi.SbtOsgi.{ OsgiKeys, osgiSettings }
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
@@ -20,7 +20,6 @@ import com.typesafe.sbt.site.SphinxSupport.{ enableOutput, generatePdf, generate
 import com.typesafe.sbt.preprocess.Preprocess.{ preprocess, preprocessExts, preprocessVars, simplePreprocess }
 import ls.Plugin.{ lsSettings, LsKeys }
 import java.lang.Boolean.getBoolean
-import sbt.Tests
 import LsKeys.{ lsync, docsUrl => lsDocsUrl, tags => lsTags }
 import java.io.{PrintWriter, InputStreamReader, FileInputStream, File}
 import java.nio.charset.Charset
@@ -277,6 +276,7 @@ object AkkaBuild extends Build {
     base = file("akka-persistence"),
     dependencies = Seq(actor, remote % "test->test", testkit % "test->test"),
     settings = defaultSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.persistence ++ Seq(
+      fork in Test := true,
       libraryDependencies ++= Dependencies.persistence,
       previousArtifact := akkaPreviousArtifact("akka-persistence")
     )
@@ -427,7 +427,7 @@ object AkkaBuild extends Build {
       publishMavenStyle := false, // SBT Plugins should be published as Ivy
       publishTo <<= Publish.akkaPluginPublishTo,
       scalacOptions in Compile := Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
-      scalaVersion := "2.9.2",
+      scalaVersion := "2.10.2",
       scalaBinaryVersion <<= scalaVersion,
       reportBinaryIssues := () // disable bin comp check
     )
@@ -792,6 +792,9 @@ object AkkaBuild extends Build {
     // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),
 
+    // don't save test output to a file
+    testListeners in (Test, test) := Seq(TestLogger(streams.value.log, {_ => streams.value.log }, logBuffered.value)),
+
     validatePullRequestTask,
     validatePullRequest <<= validatePullRequest.dependsOn(/* reportBinaryIssues */)
   )
@@ -849,9 +852,9 @@ object AkkaBuild extends Build {
     .setPreference(AlignSingleLineCaseStatements, true)
   }
 
-  lazy val multiJvmSettings = SbtMultiJvm.multiJvmSettings ++ inConfig(MultiJvm)(SbtScalariform.scalariformSettings) ++ Seq(
+  lazy val multiJvmSettings = SbtMultiJvm.multiJvmSettings ++ inConfig(MultiJvm)(SbtScalariform.configScalariformSettings) ++ Seq(
     jvmOptions in MultiJvm := defaultMultiJvmOptions,
-    compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
+    compileInputs in (MultiJvm, compile) <<= (compileInputs in (MultiJvm, compile)) dependsOn (ScalariformKeys.format in MultiJvm),
     compile in MultiJvm <<= (compile in MultiJvm) triggeredBy (compile in Test),
     ScalariformKeys.preferences in MultiJvm := formattingPreferences) ++
     Option(System.getProperty("akka.test.multi-node.hostsFileName")).map(x => Seq(multiNodeHostsFileName in MultiJvm := x)).getOrElse(Seq.empty) ++
@@ -859,16 +862,28 @@ object AkkaBuild extends Build {
     Option(System.getProperty("akka.test.multi-node.targetDirName")).map(x => Seq(multiNodeTargetDirName in MultiJvm := x)).getOrElse(Seq.empty) ++
     ((executeMultiJvmTests, multiNodeEnabled) match {
       case (true, true) =>
-        executeTests in Test <<= ((executeTests in Test), (multiNodeExecuteTests in MultiJvm)) map {
-          case ((_, testResults), (_, multiNodeResults))  =>
-            val results = testResults ++ multiNodeResults
-            (Tests.overall(results.values), results)
+        executeTests in Test <<= (executeTests in Test, multiNodeExecuteTests in MultiJvm) map {
+          case (testResults, multiNodeResults)  =>
+            val overall =
+              if (testResults.overall.id < multiNodeResults.overall.id)
+                multiNodeResults.overall
+              else
+                testResults.overall
+            Tests.Output(overall,
+              testResults.events ++ multiNodeResults.events,
+              testResults.summaries ++ multiNodeResults.summaries)
         }
       case (true, false) =>
-        executeTests in Test <<= ((executeTests in Test), (executeTests in MultiJvm)) map {
-          case ((_, testResults), (_, multiNodeResults)) =>
-            val results = testResults ++ multiNodeResults
-            (Tests.overall(results.values), results)
+        executeTests in Test <<= (executeTests in Test, executeTests in MultiJvm) map {
+          case (testResults, multiNodeResults)  =>
+            val overall =
+              if (testResults.overall.id < multiNodeResults.overall.id)
+                multiNodeResults.overall
+              else
+                testResults.overall
+            Tests.Output(overall,
+              testResults.events ++ multiNodeResults.events,
+              testResults.summaries ++ multiNodeResults.summaries)
         }
       case (false, _) => Seq.empty
     })
@@ -1026,7 +1041,7 @@ object AkkaBuild extends Build {
       OsgiKeys.exportPackage := packages
     )
     def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
-    def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.2,2.3)\"".format(packageName)
+    def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.3,2.4)\"".format(packageName)
     def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,1.1.0)\"".format(packageName)
     def protobufImport(packageName: String = "com.google.protobuf.*") = "%s;version=\"[2.5.0,2.6.0)\"".format(packageName)
     def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.10,2.11)\"".format(packageName)
@@ -1053,7 +1068,8 @@ object Dependencies {
     val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "1.1.0"       // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
     val osgiCompendium= "org.osgi"                    % "org.osgi.compendium"          % "4.2.0"       // ApacheV2
-    val levelDB      = "org.iq80.leveldb"            % "leveldb"                      % "0.5"         // ApacheV2
+    val levelDB       = "org.iq80.leveldb"            % "leveldb"                      % "0.5"         // ApacheV2
+    val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"               % "1.7"         // New BSD
 
     // Camel Sample
     val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
@@ -1104,7 +1120,7 @@ object Dependencies {
 
   val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val persistence = Seq(levelDB, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
+  val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 

@@ -14,18 +14,27 @@ object ProcessorStashSpec {
     var state: List[String] = Nil
 
     val behaviorA: Actor.Receive = {
-      case Persistent("a", snr)  ⇒ update("a", snr); context.become(behaviorB)
-      case Persistent("b", snr)  ⇒ update("b", snr)
-      case Persistent("c", snr)  ⇒ update("c", snr); unstashAll()
-      case "x"                   ⇒ update("x")
+      case Persistent("a", snr) ⇒
+        update("a", snr)
+        context.become(behaviorB)
+      case Persistent("b", snr) ⇒
+        update("b", snr)
+      case Persistent("c", snr) ⇒
+        update("c", snr)
+        unstashAll()
+      case "x" ⇒
+        update("x")
       case "boom"                ⇒ throw new TestException("boom")
       case Persistent("boom", _) ⇒ throw new TestException("boom")
       case GetState              ⇒ sender ! state.reverse
     }
 
     val behaviorB: Actor.Receive = {
-      case Persistent("b", _) ⇒ stash(); context.become(behaviorA)
-      case "x"                ⇒ stash()
+      case Persistent("b", _) ⇒
+        stash()
+        context.become(behaviorA)
+      case "x" ⇒
+        stash()
     }
 
     def receive = behaviorA
@@ -38,7 +47,7 @@ object ProcessorStashSpec {
   class RecoveryFailureStashingProcessor(name: String) extends StashingProcessor(name) {
     override def preRestart(reason: Throwable, message: Option[Any]) = {
       message match {
-        case Some(m: Persistent) ⇒ if (recoveryRunning) deleteMessage(m)
+        case Some(m: Persistent) ⇒ if (recoveryRunning) deleteMessage(m.sequenceNr)
         case _                   ⇒
       }
       super.preRestart(reason, message)

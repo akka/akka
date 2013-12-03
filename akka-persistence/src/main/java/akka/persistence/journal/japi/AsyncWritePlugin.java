@@ -6,36 +6,30 @@ package akka.persistence.journal.japi;
 
 import scala.concurrent.Future;
 
-import akka.persistence.PersistentImpl;
+import akka.persistence.PersistentRepr;
 
 interface AsyncWritePlugin {
     //#async-write-plugin-api
     /**
-     * Plugin Java API.
-     *
-     * Asynchronously writes a `persistent` message to the journal.
+     * Java API, Plugin API: asynchronously writes a batch of persistent messages to the
+     * journal. The batch write must be atomic i.e. either all persistent messages in the
+     * batch are written or none.
      */
-    Future<Void> doWriteAsync(PersistentImpl persistent);
+    Future<Void> doWriteAsync(Iterable<PersistentRepr> persistentBatch);
 
     /**
-     * Plugin Java API.
+     * Java API, Plugin API: asynchronously deletes all persistent messages within the
+     * range  from `fromSequenceNr` to `toSequenceNr`. If `permanent` is set to `false`,
+     * the persistent messages are marked as deleted, otherwise they are permanently
+     * deleted.
      *
-     * Asynchronously writes a batch of persistent messages to the journal. The batch write
-     * must be atomic i.e. either all persistent messages in the batch are written or none.
+     * @see AsyncReplayPlugin
      */
-    Future<Void> doWriteBatchAsync(Iterable<PersistentImpl> persistentBatch);
+    Future<Void> doDeleteAsync(String processorId, long fromSequenceNr, long toSequenceNr, boolean permanent);
 
     /**
-     * Plugin Java API.
-     *
-     * Asynchronously marks a `persistent` message as deleted.
-     */
-    Future<Void> doDeleteAsync(PersistentImpl persistent);
-
-    /**
-     * Plugin Java API.
-     *
-     * Asynchronously writes a delivery confirmation to the journal.
+     * Java API, Plugin API: asynchronously writes a delivery confirmation to the
+     * journal.
      */
     Future<Void> doConfirmAsync(String processorId, long sequenceNr, String channelId);
     //#async-write-plugin-api

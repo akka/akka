@@ -8,7 +8,7 @@ import language.existentials
 import akka.actor._
 import akka.{ ConfigurationException, AkkaException }
 import akka.actor.ActorSystem.Settings
-import akka.util.{ Timeout, ReentrantGuard }
+import akka.util.ReentrantGuard
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.TimeoutException
 import scala.annotation.implicitNotFound
@@ -518,6 +518,15 @@ object Logging {
   }
 
   /**
+   * Obtain LoggingAdapter with MDC support for the given actor.
+   * Don't use it outside its specific Actor as it isn't thread safe
+   */
+  def apply(logSource: Actor): DiagnosticLoggingAdapter = {
+    val (str, clazz) = LogSource(logSource)
+    new BusLogging(logSource.context.system.eventStream, str, clazz) with DiagnosticLoggingAdapter
+  }
+
+  /**
    * Obtain LoggingAdapter for the given actor system and source object. This
    * will use the system’s event stream and include the system’s address in the
    * log source string.
@@ -551,6 +560,15 @@ object Logging {
   def getLogger(bus: LoggingBus, logSource: AnyRef): LoggingAdapter = {
     val (str, clazz) = LogSource.fromAnyRef(logSource)
     new BusLogging(bus, str, clazz)
+  }
+
+  /**
+   * Obtain LoggingAdapter with MDC support for the given actor.
+   * Don't use it outside its specific Actor as it isn't thread safe
+   */
+  def getLogger(logSource: UntypedActor): DiagnosticLoggingAdapter = {
+    val (str, clazz) = LogSource.fromAnyRef(logSource)
+    new BusLogging(logSource.getContext().system.eventStream, str, clazz) with DiagnosticLoggingAdapter
   }
 
   /**
@@ -601,6 +619,11 @@ object Logging {
      * The message, may be any object or null.
      */
     def message: Any
+
+    /**
+     * Extra values for adding to MDC
+     */
+    def mdc: MDC = emptyMDC
   }
 
   /**
@@ -608,12 +631,16 @@ object Logging {
    */
   case class Error(cause: Throwable, logSource: String, logClass: Class[_], message: Any = "") extends LogEvent {
     def this(logSource: String, logClass: Class[_], message: Any) = this(Error.NoCause, logSource, logClass, message)
-
     override def level = ErrorLevel
+  }
+  class Error2(cause: Throwable, logSource: String, logClass: Class[_], message: Any = "", override val mdc: MDC) extends Error(cause, logSource, logClass, message) {
+    def this(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = this(Error.NoCause, logSource, logClass, message, mdc)
   }
 
   object Error {
     def apply(logSource: String, logClass: Class[_], message: Any) = new Error(NoCause, logSource, logClass, message)
+    def apply(cause: Throwable, logSource: String, logClass: Class[_], message: Any, mdc: MDC) = new Error2(cause, logSource, logClass, message, mdc)
+    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = new Error2(NoCause, logSource, logClass, message, mdc)
 
     /** Null Object used for errors without cause Throwable */
     object NoCause extends NoStackTrace
@@ -626,6 +653,10 @@ object Logging {
   case class Warning(logSource: String, logClass: Class[_], message: Any = "") extends LogEvent {
     override def level = WarningLevel
   }
+  class Warning2(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC) extends Warning(logSource, logClass, message)
+  object Warning {
+    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = new Warning2(logSource, logClass, message, mdc)
+  }
 
   /**
    * For INFO Logging
@@ -633,12 +664,20 @@ object Logging {
   case class Info(logSource: String, logClass: Class[_], message: Any = "") extends LogEvent {
     override def level = InfoLevel
   }
+  class Info2(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC) extends Info(logSource, logClass, message)
+  object Info {
+    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = new Info2(logSource, logClass, message, mdc)
+  }
 
   /**
    * For DEBUG Logging
    */
   case class Debug(logSource: String, logClass: Class[_], message: Any = "") extends LogEvent {
     override def level = DebugLevel
+  }
+  class Debug2(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC) extends Debug(logSource, logClass, message)
+  object Debug {
+    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = new Debug2(logSource, logClass, message, mdc)
   }
 
   /**
@@ -777,6 +816,10 @@ object Logging {
       sw.toString
   }
 
+  type MDC = Map[String, Any]
+
+  val emptyMDC: MDC = Map()
+
 }
 
 /**
@@ -799,6 +842,9 @@ object Logging {
  * </pre></code>
  */
 trait LoggingAdapter {
+
+  type MDC = Logging.MDC
+  def mdc = Logging.emptyMDC
 
   /*
    * implement these as precisely as needed/possible: always returning true
@@ -1018,7 +1064,70 @@ trait LoggingAdapter {
 }
 
 /**
- * [[LoggingAdapter]] that publishes [[akka.event.Logging.LogEvent]] to event stream.
+ * LoggingAdapter extension which adds MDC support.
+ * Only recommended to be used within Actors as it isn't thread safe.
+ */
+trait DiagnosticLoggingAdapter extends LoggingAdapter {
+
+  import Logging._
+  import scala.collection.JavaConverters._
+  import java.{ util ⇒ ju }
+
+  private var _mdc = emptyMDC
+
+  /**
+   * Scala API:
+   * Mapped Diagnostic Context for application defined values
+   * which can be used in PatternLayout when [[akka.event.slf4j.Slf4jLogger]] is configured.
+   * Visit <a href="http://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
+   *
+   * @return A Map containing the MDC values added by the application, or empty Map if no value was added.
+   */
+  override def mdc: MDC = _mdc
+
+  /**
+   * Scala API:
+   * Sets the values to be added to the MDC (Mapped Diagnostic Context) before the log is appended.
+   * These values can be used in PatternLayout when [[akka.event.slf4j.Slf4jLogger]] is configured.
+   * Visit <a href="http://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
+   */
+  def mdc(mdc: MDC): Unit = _mdc = if (mdc != null) mdc else emptyMDC
+
+  /**
+   * Java API:
+   * Mapped Diagnostic Context for application defined values
+   * which can be used in PatternLayout when [[akka.event.slf4j.Slf4jLogger]] is configured.
+   * Visit <a href="http://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
+   * Note tha it returns a <b>COPY</b> of the actual MDC values.
+   * You cannot modify any value by changing the returned Map.
+   * Code like the following won't have any effect unless you set back the modified Map.
+   * <code><pre>
+   *   Map mdc = log.getMDC();
+   *   mdc.put("key", value);
+   *   // NEEDED
+   *   log.setMDC(mdc);
+   * </pre></code>
+   *
+   * @return A copy of the actual MDC values
+   */
+  def getMDC: ju.Map[String, Any] = mdc.asJava
+
+  /**
+   * Java API:
+   * Sets the values to be added to the MDC (Mapped Diagnostic Context) before the log is appended.
+   * These values can be used in PatternLayout when [[akka.event.slf4j.Slf4jLogger]] is configured.
+   * Visit <a href="http://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
+   */
+  def setMDC(jMdc: java.util.Map[String, Any]): Unit = mdc(if (jMdc != null) jMdc.asScala.toMap else emptyMDC)
+
+  /**
+   * Clear all entries in the MDC
+   */
+  def clearMDC(): Unit = mdc(emptyMDC)
+}
+
+/**
+ * [[akka.event.LoggingAdapter]] that publishes [[akka.event.Logging.LogEvent]] to event stream.
  */
 class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class[_]) extends LoggingAdapter {
 
@@ -1029,11 +1138,11 @@ class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class
   def isInfoEnabled = bus.logLevel >= InfoLevel
   def isDebugEnabled = bus.logLevel >= DebugLevel
 
-  protected def notifyError(message: String): Unit = bus.publish(Error(logSource, logClass, message))
-  protected def notifyError(cause: Throwable, message: String): Unit = bus.publish(Error(cause, logSource, logClass, message))
-  protected def notifyWarning(message: String): Unit = bus.publish(Warning(logSource, logClass, message))
-  protected def notifyInfo(message: String): Unit = bus.publish(Info(logSource, logClass, message))
-  protected def notifyDebug(message: String): Unit = bus.publish(Debug(logSource, logClass, message))
+  protected def notifyError(message: String): Unit = bus.publish(Error(logSource, logClass, message, mdc))
+  protected def notifyError(cause: Throwable, message: String): Unit = bus.publish(Error(cause, logSource, logClass, message, mdc))
+  protected def notifyWarning(message: String): Unit = bus.publish(Warning(logSource, logClass, message, mdc))
+  protected def notifyInfo(message: String): Unit = bus.publish(Info(logSource, logClass, message, mdc))
+  protected def notifyDebug(message: String): Unit = bus.publish(Debug(logSource, logClass, message, mdc))
 }
 
 /**

@@ -18,10 +18,10 @@ import org.scalatest.BeforeAndAfterEach
 import akka.actor.Props
 import akka.testkit.AkkaSpec
 
-trait PersistenceSpec extends BeforeAndAfterEach { this: AkkaSpec ⇒
+trait PersistenceSpec extends BeforeAndAfterEach with Cleanup { this: AkkaSpec ⇒
   private var _name: String = _
 
-  val extension = Persistence(system)
+  lazy val extension = Persistence(system)
   val counter = new AtomicInteger(0)
 
   /**
@@ -43,23 +43,33 @@ trait PersistenceSpec extends BeforeAndAfterEach { this: AkkaSpec ⇒
   override protected def beforeEach() {
     _name = namePrefix + counter.incrementAndGet()
   }
-
-  override protected def afterTermination() {
-    List("akka.persistence.journal.leveldb.dir", "akka.persistence.snapshot-store.local.dir") foreach { s ⇒
-      FileUtils.deleteDirectory(new File(system.settings.config.getString(s)))
-    }
-  }
 }
 
 object PersistenceSpec {
-  def config(plugin: String, test: String) = ConfigFactory.parseString(
+  def config(plugin: String, test: String, serialization: String = "on") = ConfigFactory.parseString(
     s"""
-      serialize-creators = on
-      serialize-messages = on
+      akka.actor.serialize-creators = ${serialization}
+      akka.actor.serialize-messages = ${serialization}
+      akka.persistence.publish-plugin-commands = on
       akka.persistence.journal.plugin = "akka.persistence.journal.${plugin}"
       akka.persistence.journal.leveldb.dir = "target/journal-${test}-spec"
       akka.persistence.snapshot-store.local.dir = "target/snapshots-${test}-spec/"
     """)
+}
+
+trait Cleanup { this: AkkaSpec ⇒
+  val storageLocations = List(
+    "akka.persistence.journal.leveldb.dir",
+    "akka.persistence.journal.leveldb-shared.store.dir",
+    "akka.persistence.snapshot-store.local.dir").map(s ⇒ new File(system.settings.config.getString(s)))
+
+  override protected def atStartup() {
+    storageLocations.foreach(FileUtils.deleteDirectory)
+  }
+
+  override protected def afterTermination() {
+    storageLocations.foreach(FileUtils.deleteDirectory)
+  }
 }
 
 abstract class NamedProcessor(name: String) extends Processor {

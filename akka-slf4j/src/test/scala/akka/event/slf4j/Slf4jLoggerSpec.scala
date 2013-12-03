@@ -6,11 +6,9 @@ package akka.event.slf4j
 import language.postfixOps
 
 import akka.testkit.AkkaSpec
-import akka.actor.Actor
-import akka.actor.ActorLogging
+import akka.actor.{ DiagnosticActorLogging, Actor, ActorLogging, Props }
 import scala.concurrent.duration._
 import akka.event.Logging
-import akka.actor.Props
 import ch.qos.logback.core.OutputStreamAppender
 import java.io.StringWriter
 import java.io.ByteArrayOutputStream
@@ -28,12 +26,17 @@ object Slf4jLoggerSpec {
     }
     """
 
-  class LogProducer extends Actor with ActorLogging {
+  class LogProducer extends Actor with DiagnosticActorLogging {
+
     def receive = {
       case e: Exception ⇒
         log.error(e, e.getMessage)
       case (s: String, x: Int, y: Int) ⇒
         log.info(s, x, y)
+      case (s: String, mdc: Map[String, Any]) ⇒
+        log.mdc(mdc)
+        log.info(s)
+        log.clearMDC()
     }
   }
 
@@ -90,6 +93,32 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       s must include("logger=[akka.event.slf4j.Slf4jLoggerSpec$LogProducer]")
       s must include regex (sourceThreadRegex)
       s must include("msg=[test x=3 y=17]")
+    }
+
+    "put custom MDC values when specified" in {
+      producer ! ("Message with custom MDC values", Map("ticketNumber" -> 3671, "ticketDesc" -> "Custom MDC Values"))
+
+      awaitCond(outputString.contains("----"), 5 seconds)
+      val s = outputString
+      s must include("akkaSource=[akka://Slf4jLoggerSpec/user/logProducer]")
+      s must include("level=[INFO]")
+      s must include("logger=[akka.event.slf4j.Slf4jLoggerSpec$LogProducer]")
+      s must include regex (sourceThreadRegex)
+      s must include("mdc=[ticket-#3671: Custom MDC Values]")
+      s must include("msg=[Message with custom MDC values]")
+    }
+
+    "Support null values in custom MDC" in {
+      producer ! ("Message with null custom MDC values", Map("ticketNumber" -> 3671, "ticketDesc" -> null))
+
+      awaitCond(outputString.contains("----"), 5 seconds)
+      val s = outputString
+      s must include("akkaSource=[akka://Slf4jLoggerSpec/user/logProducer]")
+      s must include("level=[INFO]")
+      s must include("logger=[akka.event.slf4j.Slf4jLoggerSpec$LogProducer]")
+      s must include regex (sourceThreadRegex)
+      s must include("mdc=[ticket-#3671: null]")
+      s must include("msg=[Message with null custom MDC values]")
     }
 
     "include system info in akkaSource when creating Logging with system" in {

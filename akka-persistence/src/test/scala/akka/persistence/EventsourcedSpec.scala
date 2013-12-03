@@ -32,118 +32,105 @@ object EventsourcedSpec {
 
   class Behavior1Processor(name: String) extends ExampleProcessor(name) {
     val receiveCommand: Receive = commonBehavior orElse {
-      case Cmd(data) ⇒ {
+      case Cmd(data) ⇒
         persist(Seq(Evt(s"${data}-1"), Evt(s"${data}-2")))(updateState)
-      }
     }
   }
 
   class Behavior2Processor(name: String) extends ExampleProcessor(name) {
     val receiveCommand: Receive = commonBehavior orElse {
-      case Cmd(data) ⇒ {
+      case Cmd(data) ⇒
         persist(Seq(Evt(s"${data}-1"), Evt(s"${data}-2")))(updateState)
         persist(Seq(Evt(s"${data}-3"), Evt(s"${data}-4")))(updateState)
-      }
     }
   }
 
   class Behavior3Processor(name: String) extends ExampleProcessor(name) {
     val receiveCommand: Receive = commonBehavior orElse {
-      case Cmd(data) ⇒ {
+      case Cmd(data) ⇒
         persist(Seq(Evt(s"${data}-11"), Evt(s"${data}-12")))(updateState)
         updateState(Evt(s"${data}-10"))
-      }
     }
   }
 
   class ChangeBehaviorInLastEventHandlerProcessor(name: String) extends ExampleProcessor(name) {
     val newBehavior: Receive = {
-      case Cmd(data) ⇒ {
+      case Cmd(data) ⇒
         persist(Evt(s"${data}-21"))(updateState)
         persist(Evt(s"${data}-22")) { event ⇒
           updateState(event)
           context.unbecome()
         }
-      }
     }
 
     val receiveCommand: Receive = commonBehavior orElse {
-      case Cmd(data) ⇒ {
+      case Cmd(data) ⇒
         persist(Evt(s"${data}-0")) { event ⇒
           updateState(event)
           context.become(newBehavior)
         }
-      }
     }
   }
 
   class ChangeBehaviorInFirstEventHandlerProcessor(name: String) extends ExampleProcessor(name) {
     val newBehavior: Receive = {
-      case Cmd(data) ⇒ {
+      case Cmd(data) ⇒
         persist(Evt(s"${data}-21")) { event ⇒
           updateState(event)
           context.unbecome()
         }
         persist(Evt(s"${data}-22"))(updateState)
-      }
     }
 
     val receiveCommand: Receive = commonBehavior orElse {
-      case Cmd(data) ⇒ {
+      case Cmd(data) ⇒
         persist(Evt(s"${data}-0")) { event ⇒
           updateState(event)
           context.become(newBehavior)
         }
-      }
     }
   }
 
   class ChangeBehaviorInCommandHandlerFirstProcessor(name: String) extends ExampleProcessor(name) {
     val newBehavior: Receive = {
-      case Cmd(data) ⇒ {
+      case Cmd(data) ⇒
         context.unbecome()
         persist(Seq(Evt(s"${data}-31"), Evt(s"${data}-32")))(updateState)
         updateState(Evt(s"${data}-30"))
-      }
     }
 
     val receiveCommand: Receive = commonBehavior orElse {
-      case Cmd(data) ⇒ {
+      case Cmd(data) ⇒
         context.become(newBehavior)
         persist(Evt(s"${data}-0"))(updateState)
-      }
     }
   }
 
   class ChangeBehaviorInCommandHandlerLastProcessor(name: String) extends ExampleProcessor(name) {
     val newBehavior: Receive = {
-      case Cmd(data) ⇒ {
+      case Cmd(data) ⇒
         persist(Seq(Evt(s"${data}-31"), Evt(s"${data}-32")))(updateState)
         updateState(Evt(s"${data}-30"))
         context.unbecome()
-      }
     }
 
     val receiveCommand: Receive = commonBehavior orElse {
-      case Cmd(data) ⇒ {
+      case Cmd(data) ⇒
         persist(Evt(s"${data}-0"))(updateState)
         context.become(newBehavior)
-      }
     }
   }
 
   class SnapshottingEventsourcedProcessor(name: String, probe: ActorRef) extends ExampleProcessor(name) {
     override def receiveReplay = super.receiveReplay orElse {
-      case SnapshotOffer(_, events: List[_]) ⇒ {
+      case SnapshotOffer(_, events: List[_]) ⇒
         probe ! "offered"
         this.events = events
-      }
     }
 
     val receiveCommand: Receive = commonBehavior orElse {
-      case Cmd(data) ⇒ {
+      case Cmd(data) ⇒
         persist(Seq(Evt(s"${data}-41"), Evt(s"${data}-42")))(updateState)
-      }
       case SaveSnapshotSuccess(_) ⇒ probe ! "saved"
       case "snap"                 ⇒ saveSnapshot(events)
     }
@@ -175,36 +162,33 @@ object EventsourcedSpec {
     }
 
     val processC: Receive = {
-      case Cmd("c") ⇒ {
+      case Cmd("c") ⇒
         persist(Evt("c")) { evt ⇒
           updateState(evt)
           context.unbecome()
         }
         unstashAll()
-      }
       case other ⇒ stash()
     }
   }
 
   class UserStashFailureProcessor(name: String) extends ExampleProcessor(name) {
     val receiveCommand: Receive = commonBehavior orElse {
-      case Cmd(data) ⇒ {
+      case Cmd(data) ⇒
         if (data == "b-2") throw new TestException("boom")
         persist(Evt(data)) { event ⇒
           updateState(event)
           if (data == "a") context.become(otherCommandHandler)
         }
-      }
     }
 
     val otherCommandHandler: Receive = {
-      case Cmd("c") ⇒ {
+      case Cmd("c") ⇒
         persist(Evt("c")) { event ⇒
           updateState(event)
           context.unbecome()
         }
         unstashAll()
-      }
       case other ⇒ stash()
     }
   }

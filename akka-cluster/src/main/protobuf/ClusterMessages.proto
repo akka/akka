@@ -65,18 +65,8 @@ message Welcome {
  */
 
 /**
- * EndHeartbeat
- * Sends an Address
- */
-
- /**
- * EndHeartbeatAck
- * Sends an Address
- */
-
-/**
- * HeartbeatRequest
- * Sends an Address
+ * HeartbeatRsp
+ * Sends an UniqueAddress
  */
 
 /****************************************

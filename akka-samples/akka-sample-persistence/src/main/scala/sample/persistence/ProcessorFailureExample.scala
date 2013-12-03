@@ -20,7 +20,7 @@ object ProcessorFailureExample extends App {
 
     override def preRestart(reason: Throwable, message: Option[Any]) {
       message match {
-        case Some(p: Persistent) if !recoveryRunning ⇒ deleteMessage(p) // mark failing message as deleted
+        case Some(p: Persistent) if !recoveryRunning ⇒ deleteMessage(p.sequenceNr) // mark failing message as deleted
         case _                                       ⇒ // ignore
       }
       super.preRestart(reason, message)

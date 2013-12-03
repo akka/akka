@@ -3,9 +3,10 @@
  */
 package akka.actor
 
-import akka.dispatch.{ UnboundedDequeBasedMessageQueueSemantics, RequiresMessageQueue, Envelope, DequeBasedMessageQueueSemantics }
+import scala.collection.immutable
+
 import akka.AkkaException
-import akka.dispatch.Mailboxes
+import akka.dispatch.{ UnboundedDequeBasedMessageQueueSemantics, RequiresMessageQueue, Envelope, DequeBasedMessageQueueSemantics, Mailboxes }
 
 /**
  *  The `Stash` trait enables an actor to temporarily stash away messages that can not or
@@ -60,11 +61,65 @@ trait UnboundedStash extends UnrestrictedStash with RequiresMessageQueue[Unbound
  * A version of [[akka.actor.Stash]] that does not enforce any mailbox type. The proper mailbox has to be configured
  * manually, and the mailbox should extend the [[akka.dispatch.DequeBasedMessageQueueSemantics]] marker trait.
  */
-trait UnrestrictedStash extends Actor {
+trait UnrestrictedStash extends Actor with StashSupport {
+  /**
+   *  Overridden callback. Prepends all messages in the stash to the mailbox,
+   *  clears the stash, stops all children and invokes the postStop() callback.
+   */
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    try unstashAll() finally super.preRestart(reason, message)
+  }
+
+  /**
+   *  Overridden callback. Prepends all messages in the stash to the mailbox and clears the stash.
+   *  Must be called when overriding this method, otherwise stashed messages won't be propagated to DeadLetters
+   *  when actor stops.
+   */
+  override def postStop(): Unit = try unstashAll() finally super.postStop()
+}
+
+/**
+ * INTERNAL API.
+ *
+ * A factory for creating stashes for an actor instance.
+ *
+ * @see [[StashSupport]]
+ */
+private[akka] trait StashFactory { this: Actor ⇒
+  private[akka] def createStash()(implicit ctx: ActorContext, ref: ActorRef): StashSupport = new StashSupport {
+    def context: ActorContext = ctx
+    def self: ActorRef = ref
+  }
+}
+
+/**
+ * INTERNAL API.
+ *
+ * Support trait for implementing a stash for an actor instance. A default stash per actor (= user stash)
+ * is maintained by [[UnrestrictedStash]] by extending this trait. Actors that explicitly need other stashes
+ * (optionally in addition to and isolated from the user stash) can create new stashes via [[StashFactory]].
+ */
+private[akka] trait StashSupport {
+  /**
+   * INTERNAL API.
+   *
+   * Context of the actor that uses this stash.
+   */
+  private[akka] def context: ActorContext
+
+  /**
+   * INTERNAL API.
+   *
+   * Self reference of the actor that uses this stash.
+   */
+  private[akka] def self: ActorRef
+
   /* The private stash of the actor. It is only accessible using `stash()` and
    * `unstashAll()`.
    */
   private var theStash = Vector.empty[Envelope]
+
+  private def actorCell = context.asInstanceOf[ActorCell]
 
   /* The capacity of the stash. Configured in the actor's mailbox or dispatcher config.
    */
@@ -84,7 +139,7 @@ trait UnrestrictedStash extends Actor {
    * `mailbox.queue` is the underlying `Deque`.
    */
   private[akka] val mailbox: DequeBasedMessageQueueSemantics = {
-    context.asInstanceOf[ActorCell].mailbox.messageQueue match {
+    actorCell.mailbox.messageQueue match {
       case queue: DequeBasedMessageQueueSemantics ⇒ queue
       case other ⇒ throw ActorInitializationException(self, s"DequeBasedMailbox required, got: ${other.getClass.getName}\n" +
         """An (unbounded) deque-based mailbox can be configured as follows:
@@ -103,11 +158,35 @@ trait UnrestrictedStash extends Actor {
    *  @throws IllegalStateException  if the same message is stashed more than once
    */
   def stash(): Unit = {
-    val currMsg = context.asInstanceOf[ActorCell].currentMessage
+    val currMsg = actorCell.currentMessage
     if (theStash.nonEmpty && (currMsg eq theStash.last))
       throw new IllegalStateException("Can't stash the same message " + currMsg + " more than once")
     if (capacity <= 0 || theStash.size < capacity) theStash :+= currMsg
     else throw new StashOverflowException("Couldn't enqueue message " + currMsg + " to stash of " + self)
+  }
+
+  /**
+   * Prepends `others` to this stash. This method is optimized for a large stash and
+   * small `others`.
+   */
+  private[akka] def prepend(others: immutable.Seq[Envelope]): Unit =
+    theStash = others.foldRight(theStash)((e, s) ⇒ e +: s)
+
+  /**
+   *  Prepends the oldest message in the stash to the mailbox, and then removes that
+   *  message from the stash.
+   *
+   *  Messages from the stash are enqueued to the mailbox until the capacity of the
+   *  mailbox (if any) has been reached. In case a bounded mailbox overflows, a
+   *  `MessageQueueAppendFailedException` is thrown.
+   *
+   *  The unstashed message is guaranteed to be removed from the stash regardless
+   *  if the `unstash()` call successfully returns or throws an exception.
+   */
+  private[akka] def unstash(): Unit = if (theStash.nonEmpty) try {
+    enqueueFirst(theStash.head)
+  } finally {
+    theStash = theStash.tail
   }
 
   /**
@@ -139,7 +218,7 @@ trait UnrestrictedStash extends Actor {
   private[akka] def unstashAll(filterPredicate: Any ⇒ Boolean): Unit = {
     try {
       val i = theStash.reverseIterator.filter(envelope ⇒ filterPredicate(envelope.message))
-      while (i.hasNext) mailbox.enqueueFirst(self, i.next())
+      while (i.hasNext) enqueueFirst(i.next())
     } finally {
       theStash = Vector.empty[Envelope]
     }
@@ -157,20 +236,17 @@ trait UnrestrictedStash extends Actor {
   }
 
   /**
-   *  Overridden callback. Prepends all messages in the stash to the mailbox,
-   *  clears the stash, stops all children and invokes the postStop() callback.
+   * Enqueues `envelope` at the first position in the mailbox. If the message contained in
+   * the envelope is a `Terminated` message, it will be ensured that it can be re-received
+   * by the actor.
    */
-  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    try unstashAll() finally super.preRestart(reason, message)
+  private def enqueueFirst(envelope: Envelope): Unit = {
+    mailbox.enqueueFirst(self, envelope)
+    envelope.message match {
+      case Terminated(ref) ⇒ actorCell.terminatedQueuedFor(ref)
+      case _               ⇒
+    }
   }
-
-  /**
-   *  Overridden callback. Prepends all messages in the stash to the mailbox and clears the stash.
-   *  Must be called when overriding this method, otherwise stashed messages won't be propagated to DeadLetters
-   *  when actor stops.
-   */
-  override def postStop(): Unit = try unstashAll() finally super.postStop()
-
 }
 
 /**

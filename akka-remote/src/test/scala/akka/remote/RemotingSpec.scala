@@ -384,20 +384,52 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       expectMsgType[ActorSelection] ! Identify(None)
       expectMsgType[ActorIdentity].ref.get must be theSameInstanceAs l
 
-      child ! Identify("idReq1")
+      grandchild ! ((Props[Echo1], "grandgrandchild"))
+      val grandgrandchild = expectMsgType[ActorRef]
+
+      system.actorSelection("/user/looker2/child") ! Identify("idReq1")
       expectMsg(ActorIdentity("idReq1", Some(child)))
+      system.actorSelection(child.path) ! Identify("idReq2")
+      expectMsg(ActorIdentity("idReq2", Some(child)))
+      system.actorSelection("/user/looker2/*") ! Identify("idReq3")
+      expectMsg(ActorIdentity("idReq3", Some(child)))
+
+      system.actorSelection("/user/looker2/child/grandchild") ! Identify("idReq4")
+      expectMsg(ActorIdentity("idReq4", Some(grandchild)))
+      system.actorSelection(child.path / "grandchild") ! Identify("idReq5")
+      expectMsg(ActorIdentity("idReq5", Some(grandchild)))
+      system.actorSelection("/user/looker2/*/grandchild") ! Identify("idReq6")
+      expectMsg(ActorIdentity("idReq6", Some(grandchild)))
+      system.actorSelection("/user/looker2/child/*") ! Identify("idReq7")
+      expectMsg(ActorIdentity("idReq7", Some(grandchild)))
+      system.actorSelection(child.path / "*") ! Identify("idReq8")
+      expectMsg(ActorIdentity("idReq8", Some(grandchild)))
+
+      system.actorSelection("/user/looker2/child/grandchild/grandgrandchild") ! Identify("idReq9")
+      expectMsg(ActorIdentity("idReq9", Some(grandgrandchild)))
+      system.actorSelection(child.path / "grandchild" / "grandgrandchild") ! Identify("idReq10")
+      expectMsg(ActorIdentity("idReq10", Some(grandgrandchild)))
+      system.actorSelection("/user/looker2/child/*/grandgrandchild") ! Identify("idReq11")
+      expectMsg(ActorIdentity("idReq11", Some(grandgrandchild)))
+      system.actorSelection("/user/looker2/child/*/*") ! Identify("idReq12")
+      expectMsg(ActorIdentity("idReq12", Some(grandgrandchild)))
+      system.actorSelection(child.path / "*" / "grandgrandchild") ! Identify("idReq13")
+      expectMsg(ActorIdentity("idReq13", Some(grandgrandchild)))
+
+      child ! Identify("idReq14")
+      expectMsg(ActorIdentity("idReq14", Some(child)))
       watch(child)
       child ! PoisonPill
       expectMsg("postStop")
       expectMsgType[Terminated].actor must be === child
       l ! ((Props[Echo1], "child"))
       val child2 = expectMsgType[ActorRef]
-      child2 ! Identify("idReq2")
-      expectMsg(ActorIdentity("idReq2", Some(child2)))
-      system.actorSelection(child.path) ! Identify("idReq3")
-      expectMsg(ActorIdentity("idReq3", Some(child2)))
-      child ! Identify("idReq4")
-      expectMsg(ActorIdentity("idReq4", None))
+      child2 ! Identify("idReq15")
+      expectMsg(ActorIdentity("idReq15", Some(child2)))
+      system.actorSelection(child.path) ! Identify("idReq16")
+      expectMsg(ActorIdentity("idReq16", Some(child2)))
+      child ! Identify("idReq17")
+      expectMsg(ActorIdentity("idReq17", None))
 
       child2 ! 55
       expectMsg(55)

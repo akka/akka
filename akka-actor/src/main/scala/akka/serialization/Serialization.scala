@@ -163,7 +163,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   def serializerOf(serializerFQN: String): Try[Serializer] =
     system.dynamicAccess.createInstanceFor[Serializer](serializerFQN, List(classOf[ExtendedActorSystem] -> system)) recoverWith {
-      case _ ⇒ system.dynamicAccess.createInstanceFor[Serializer](serializerFQN, Nil)
+      case _: NoSuchMethodException ⇒ system.dynamicAccess.createInstanceFor[Serializer](serializerFQN, Nil)
     }
 
   /**

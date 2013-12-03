@@ -53,18 +53,8 @@ Architecture
 * *Snapshot store*: A snapshot store persists snapshots of a processor's internal state. Snapshots are used for
   optimizing recovery times. The storage backend of a snapshot store is pluggable.
 
-Configuration
-=============
-
-By default, journaled messages are written to a directory named ``journal`` in the current working directory. This
-can be changed by configuration where the specified path can be relative or absolute:
-
-.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#journal-config
-
-The default storage location of :ref:`snapshots` is a directory named ``snapshots`` in the current working directory.
-This can be changed by configuration where the specified path can be relative or absolute:
-
-.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#snapshot-config
+* *Event sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
+  development of event sourced applications (see section :ref:`event-sourcing`)
 
 .. _processors:
 
@@ -110,7 +100,8 @@ If not overridden, ``preStart`` sends a ``Recover()`` message to ``self``. Appli
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#recover-on-start-custom
 
-Automated recovery on restart can be disabled by overriding ``preRestart`` with an empty implementation.
+Upper sequence number bounds can be used to recover a processor to past state instead of current state. Automated
+recovery on restart can be disabled by overriding ``preRestart`` with an empty implementation.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#recover-on-restart-disabled
 
@@ -127,9 +118,19 @@ Failure handling
 ^^^^^^^^^^^^^^^^
 
 A persistent message that caused an exception will be received again by a processor after restart. To prevent
-a replay of that message during recovery it can be marked as deleted.
+a replay of that message during recovery it can be deleted.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#deletion
+
+Message deletion
+----------------
+
+A processor can delete a single message by calling the ``deleteMessage`` method with the sequence number of
+that message as argument. An optional ``permanent`` parameter specifies whether the message shall be permanently
+deleted from the journal or only marked as deleted. In both cases, the message won't be replayed. Later extensions
+to Akka persistence will allow to replay messages that have been marked as deleted which can be useful for debugging
+purposes, for example. To delete all messages (journaled by a single processor) up to a specified sequence number,
+processors can call the ``deleteMessages`` method.
 
 Identifiers
 -----------
@@ -147,7 +148,7 @@ should override ``processorId``.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#processor-id-override
 
-Later versions of the Akka persistence module will likely offer a possibility to migrate processor ids.
+Later versions of Akka persistence will likely offer a possibility to migrate processor ids.
 
 Channels
 ========
@@ -161,21 +162,57 @@ message is retained by a channel if its previous delivery has been confirmed by 
 A channel is ready to use once it has been created, no recovery or further activation is needed. A ``Deliver``
 request  instructs a channel to send a ``Persistent`` message to a destination where the sender of the ``Deliver``
 request is forwarded to the destination. A processor may also reply to a message sender directly by using ``sender``
-as channel destination.
+as channel destination (not shown).
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#channel-example-reply
 
-Channel destinations confirm the delivery of a ``Persistent`` message by calling its ``confirm()`` method. This
-(asynchronously) writes a confirmation entry to the journal. Replayed messages internally contain these confirmation
-entries which allows a channel to decide if a message should be retained or not.
+Persistent messages delivered by a channel are of type ``ConfirmablePersistent``. It extends ``Persistent`` and
+adds a ``confirm()`` method. Channel destinations confirm the delivery of a ``ConfirmablePersistent`` message by
+calling ``confirm()``. This (asynchronously) writes a confirmation entry to the journal. Replayed messages
+internally contain these confirmation entries which allows a channel to decide if a message should be retained or
+not. ``ConfirmablePersistent`` messages can be used whereever ``Persistent`` messages are expected, which allows
+processors to be used as channel destinations, for example.
+
+Message re-delivery
+-------------------
 
 If an application crashes after a destination called ``confirm()`` but before the confirmation entry could have
-been written to the journal then the unconfirmed message will be delivered again during next recovery and it is
-the destination's responsibility to detect the duplicate or simply process the message again if it's an idempotent
-receiver. Duplicates can be detected, for example, by tracking sequence numbers.
+been written to the journal then the unconfirmed message will be re-delivered during next recovery of the sending
+processor. It is the destination's responsibility to detect the duplicate or simply process the message again if
+it's an idempotent receiver. Duplicates can be detected, for example, by tracking sequence numbers.
 
-Currently, channels do not store ``Deliver`` requests or retry delivery on network or destination failures. This
-feature (*reliable channels*) will be available soon.
+Although a channel prevents message loss in case of sender (JVM) crashes it doesn't attempt re-deliveries if a
+destination is unavailable. To achieve reliable communication with a (remote) target, a channel destination may
+want to use the :ref:`reliable-proxy` or add the message to a queue that is managed by a third party message
+broker, for example. In latter case, the channel destination will first add the received message to the queue
+and then call ``confirm()`` on the received ``ConfirmablePersistent`` message.
+
+Persistent channels
+-------------------
+
+Channels created with ``Channel.props`` do not persist messages. This is not necessary because these (transient)
+channels shall only be used in combination with a sending processor that takes care of message persistence.
+
+However, if an application wants to use a channel standalone (without a sending processor), to prevent message
+loss in case of a sender (JVM) crash, it should use a persistent channel which can be created with ``PersistentChannel.props``.
+A persistent channel additionally persists messages before they are delivered. Persistence is achieved by an
+internal processor that delegates delivery to a transient channel. A persistent channel, when used standalone,
+can therefore provide the same message re-delivery semantics as a transient channel in combination with an
+application-defined processor.
+
+  .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#persistent-channel-example
+
+By default, a persistent channel doesn't reply whether a ``Persistent`` message, sent with ``Deliver``, has been
+successfully persisted or not. This can be enabled by creating the channel with
+``PersistentChannel.props(persistentReply = true)``. With this setting, either the successfully persisted message
+is replied to the sender or a ``PersistenceFailure``. In case of a persistence failure, the sender should re-send
+the message.
+
+Using a persistent channel in combination with an application-defined processor can make sense if destinations are
+unavailable for a long time and an application doesn't want to buffer all messages in memory (but write them to the
+journal instead). In this case, delivery can be disabled with ``DisableDelivery`` (to stop delivery and persist-only)
+and re-enabled with ``EnableDelivery``. A disabled channel that receives ``EnableDelivery`` will restart itself and
+re-deliver all persisted, unconfirmed messages before serving new ``Deliver`` requests.
 
 Sender resolution
 -----------------
@@ -203,7 +240,8 @@ Identifiers
 In the same way as :ref:`processors`, channels also have an identifier that defaults to a channel's path. A channel
 identifier can therefore be customized by using a custom actor name at channel creation. As already mentioned, this
 works well when using local actor references but may cause problems with remote actor references. In this case, an
-application-defined channel id should be provided as argument to ``Channel.props(String)``
+application-defined channel id should be provided as argument to ``Channel.props(String)`` or
+``PersistentChannel.props(String)``.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#channel-id-override
 
@@ -241,8 +279,8 @@ method or by pattern matching
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#sequence-nr-pattern-matching
 
-Persistent messages are assigned sequence numbers on a per-processor basis. A sequence starts at ``1L`` and
-doesn't contain gaps unless a processor marks a message as deleted.
+Persistent messages are assigned sequence numbers on a per-processor basis (or per persistent channel basis if used
+standalone). A sequence starts at ``1L`` and doesn't contain gaps unless a processor deletes a message.
 
 .. _snapshots:
 
@@ -275,6 +313,13 @@ and at least one of these snapshots matches the ``SnapshotSelectionCriteria`` th
 If not specified, they default to ``SnapshotSelectionCriteria.Latest`` which selects the latest (= youngest) snapshot.
 To disable snapshot-based recovery, applications should use ``SnapshotSelectionCriteria.None``. A recovery where no
 saved snapshot matches the specified ``SnapshotSelectionCriteria`` will replay all journaled messages.
+
+Snapshot deletion
+-----------------
+
+A processor can delete a single snapshot by calling the ``deleteSnapshot`` method with the sequence number and the
+timestamp of the snapshot as argument. To bulk-delete snapshots that match a specified ``SnapshotSelectionCriteria``
+argument, processors can call the ``deleteSnapshots`` method.
 
 .. _event-sourcing:
 
@@ -334,24 +379,37 @@ See also the API docs of ``persist`` for further details.
 Batch writes
 ============
 
-Applications may also send a batch of ``Persistent`` messages to a processor via a ``PersistentBatch`` message.
+To optimize throughput, a ``Processor`` internally batches received ``Persistent`` messages under high load before
+writing them to the journal (as a single batch). The batch size dynamically grows from 1 under low and moderate loads
+to a configurable maximum size (default is ``200``) under high load.
+
+.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#max-batch-size
+
+A new batch write is triggered by a processor as soon as a batch reaches the maximum size or if the journal completed
+writing the previous batch. Batch writes are never timer-based which keeps latencies as low as possible.
+
+Applications that want to have more explicit control over batch writes and batch sizes can send processors
+``PersistentBatch`` messages.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#batch-write
 
-``Persistent`` messages contained in a ``PersistentBatch`` message are written to the journal atomically but are
-received  by the processor separately (as ``Persistent`` messages). They are also replayed separately. Batch writes
-can not only increase the throughput of a processor but may also be necessary for consistency reasons. For example,
-in :ref:`event-sourcing`, all events that are generated and persisted by a single command are batch-written to the
-journal. The recovery of an ``EventsourcedProcessor`` will therefore never be done partially i.e. with only a subset
-of events persisted by a single command.
+``Persistent`` messages contained in a ``PersistentBatch`` message are always written atomically, even if the batch
+size is greater than ``max-batch-size``. Also, a ``PersistentBatch`` is written isolated from other batches.
+``Persistent`` messages contained in a ``PersistentBatch`` are received individually by a processor.
+
+``PersistentBatch`` messages, for example, are used internally by an ``EventsourcedProcessor`` to ensure atomic
+writes of events. All events that are persisted in context of a single command are written as single batch to the
+journal (even if ``persist`` is called multiple times per command). The recovery of an ``EventsourcedProcessor``
+will therefore never be done partially i.e. with only a subset of events persisted by a single command.
 
 Storage plugins
 ===============
 
-Storage backends for journals and snapshot stores are plugins in akka-persistence. The default journal plugin writes
-messages to LevelDB. The default snapshot store plugin writes snapshots as individual files to the local filesystem.
-Applications can provide their own plugins by implementing a plugin API and activate them by configuration. Plugin
-development requires the following imports:
+Storage backends for journals and snapshot stores are plugins in akka-persistence. The default journal plugin
+writes messages to LevelDB (see :ref:`local-leveldb-journal`). The default snapshot store plugin writes snapshots
+as individual files to the local filesystem (see :ref:`local-snapshot-store`). Applications can provide their own
+plugins by implementing a plugin API and activate them by configuration. Plugin development requires the following
+imports:
 
 .. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#plugin-imports
 
@@ -395,6 +453,74 @@ A snapshot store plugin can be activated with the following minimal configuratio
 The specified plugin ``class`` must have a no-arg constructor. The ``plugin-dispatcher`` is the dispatcher
 used for the plugin actor. If not specified, it defaults to ``akka.persistence.dispatchers.default-plugin-dispatcher``.
 
+Pre-packaged plugins
+====================
+
+.. _local-leveldb-journal:
+
+Local LevelDB journal
+---------------------
+
+The default journal plugin is ``akka.persistence.journal.leveldb`` which writes messages to a local LevelDB
+instance. The default location of the LevelDB files is a directory named ``journal`` in the current working
+directory. This location can be changed by configuration where the specified path can be relative or absolute:
+
+.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#journal-config
+
+With this plugin, each actor system runs its own private LevelDB instance.
+
+Shared LevelDB journal
+----------------------
+
+A LevelDB instance can also be shared by multiple actor systems (on the same or on different nodes). This, for
+example, allows processors to failover to a backup node, assuming that the node, where the shared instance is
+runnning, is accessible from the backup node.
+
+.. warning::
+
+  A shared LevelDB instance is a single point of failure and should therefore only be used for testing
+  purposes.
+
+A shared LevelDB instance can be created by instantiating the ``SharedLeveldbStore`` actor.
+
+.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#shared-store-creation
+
+By default, the shared instance writes journaled messages to a local directory named ``journal`` in the current
+working directory. The storage location can be changed by configuration:
+
+.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#shared-store-config
+
+Actor systems that use a shared LevelDB store must activate the ``akka.persistence.journal.leveldb-shared``
+plugin.
+
+.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#shared-journal-config
+
+This plugin must be initialized by injecting the (remote) ``SharedLeveldbStore`` actor reference. Injection is
+done by calling the ``SharedLeveldbJournal.setStore`` method with the actor reference as argument.
+
+.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#shared-store-usage
+
+Internal journal commands (sent by processors) are buffered until injection completes. Injection is idempotent
+i.e. only the first injection is used.
+
+.. _local-snapshot-store:
+
+Local snapshot store
+--------------------
+
+The default snapshot store plugin is ``akka.persistence.snapshot-store.local`` which writes snapshot files to
+the local filesystem. The default storage location is a directory named ``snapshots`` in the current working
+directory. This can be changed by configuration where the specified path can be relative or absolute:
+
+.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#snapshot-config
+
+Planned plugins
+---------------
+
+* Shared snapshot store (SPOF, for testing purposes)
+* HA snapshot store backed by a distributed file system
+* HA journal backed by a distributed (NoSQL) data store
+
 Custom serialization
 ====================
 
@@ -420,10 +546,3 @@ State machines
 State machines can be persisted by mixing in the ``FSM`` trait into processors.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#fsm-example
-
-Upcoming features
-=================
-
-* Reliable channels
-* Extended deletion of messages and snapshots
-* ...

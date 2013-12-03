@@ -335,3 +335,43 @@ If you want to more accurately output the timestamp, use the MDC attribute ``akk
       <pattern>%X{akkaTimestamp} %-5level %logger{36} %X{akkaSource} - %msg%n</pattern>
     </encoder>
   </appender>
+
+
+MDC values defined by the application
+-------------------------------------
+
+One useful feature available in Slf4j is `MDC <http://logback.qos.ch/manual/mdc.html>`_,
+Akka has a way for let the application specify custom values, you just need to get a
+specialized :class:`LoggingAdapter`, the :class:`DiagnosticLoggingAdapter`. In order to
+get it you will use the factory receiving an UntypedActor as logSource:
+
+.. code-block:: scala
+
+    // Within your UntypedActor
+    final DiagnosticLoggingAdapter log = Logging.getLogger(this);
+
+Once you have the logger, you just need to add the custom values before you log something.
+This way, the values will be put in the SLF4J MDC right before appending the log and removed after.
+
+.. note::
+
+  The cleanup (removal) should be done in the actor at the end,
+  otherwise, next message will log with same mdc values,
+  if it is not set to a new map. Use ``log.clearMDC()``.
+
+.. includecode:: code/docs/event/LoggingDocTest.java
+    :include: imports-mdc
+
+.. includecode:: code/docs/event/LoggingDocTest.java
+    :include: mdc-actor
+
+Now, the values will be available in the MDC, so you can use them in the layout pattern::
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>
+        %-5level %logger{36} [req: %X{requestId}, visitor: %X{visitorId}] - %msg%n
+      </pattern>
+    </encoder>
+  </appender>
+

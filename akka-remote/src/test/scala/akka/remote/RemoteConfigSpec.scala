@@ -27,6 +27,7 @@ class RemoteConfigSpec extends AkkaSpec(
       LogReceive must be(false)
       LogSend must be(false)
       UntrustedMode must be(false)
+      TrustedSelectionPaths must be(Set.empty[String])
       LogRemoteLifecycleEvents must be(true)
       ShutdownTimeout.duration must be(10 seconds)
       FlushWait must be(2 seconds)
