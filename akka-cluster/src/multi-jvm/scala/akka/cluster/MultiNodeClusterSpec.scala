@@ -4,8 +4,8 @@
 package akka.cluster
 
 import language.implicitConversions
-import org.scalatest.Suite
-import org.scalatest.exceptions.TestFailedException
+import org.scalatest.{ Suite, Outcome, Canceled }
+import org.scalatest.exceptions.TestCanceledException
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.remote.testconductor.RoleName
@@ -162,19 +162,15 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
   // it will most likely not be possible to run next step. This ensures
   // fail fast of steps after the first failure.
   private var failed = false
-  override protected def withFixture(test: NoArgTest): Unit = try {
+  override protected def withFixture(test: NoArgTest): Outcome =
     if (failed) {
-      val e = new TestFailedException("Previous step failed", 0)
-      // short stack trace
-      e.setStackTrace(e.getStackTrace.take(1))
-      throw e
+      Canceled(new TestCanceledException("Previous step failed", 0))
+    } else {
+      val out = super.withFixture(test)
+      if (!out.isSucceeded)
+        failed = true
+      out
     }
-    super.withFixture(test)
-  } catch {
-    case t: Throwable ⇒
-      failed = true
-      throw t
-  }
 
   def clusterView: ClusterReadView = cluster.readView
 

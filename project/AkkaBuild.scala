@@ -43,7 +43,7 @@ object AkkaBuild extends Build {
     version      := "2.3-SNAPSHOT",
     // Also change ScalaVersion in akka-sbt-plugin/sample/project/Build.scala
     scalaVersion := requestedScalaVersion,
-    scalaBinaryVersion <<= (scalaVersion, scalaBinaryVersion)((v, bv) => System.getProperty("akka.scalaBinaryVersion", if (v contains "-") v else bv))
+    scalaBinaryVersion := System.getProperty("akka.scalaBinaryVersion", if (scalaVersion.value contains "-") scalaVersion.value else scalaBinaryVersion.value)
   )
 
   lazy val akka = Project(
@@ -80,6 +80,15 @@ object AkkaBuild extends Build {
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
       persistence, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples, channels, channelsTests,
+      multiNodeTestkit)
+  )
+
+  lazy val akkaScalaNightly = Project(
+    id = "akka-scala-nightly",
+    base = file("akka-scala-nightly"),
+    // remove dependencies that we have to build ourselves (Scala STM, ZeroMQ Scala Bindings)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j,
+      persistence, mailboxes, kernel, akkaSbtPlugin, osgi, osgiAries, contrib, samples, channels, channelsTests,
       multiNodeTestkit)
   )
 
@@ -428,7 +437,7 @@ object AkkaBuild extends Build {
       publishTo <<= Publish.akkaPluginPublishTo,
       scalacOptions in Compile := Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
       scalaVersion := "2.10.2",
-      scalaBinaryVersion <<= scalaVersion,
+      scalaBinaryVersion := "2.10",
       reportBinaryIssues := () // disable bin comp check
     )
   )
@@ -624,10 +633,16 @@ object AkkaBuild extends Build {
     base = file("akka-channels"),
     dependencies = Seq(actor),
     settings = defaultSettings ++ scaladocSettings ++ experimentalSettings ++ Seq(
-      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _),
+      libraryDependencies +=("org.scala-lang" % "scala-reflect" %  scalaVersion.value),
       reportBinaryIssues := () // disable bin comp check
     )
   )
+
+  // // this issue will be fixed in M8, for now we need to exclude M6, M7 modules used to compile the compiler
+  def excludeOldModules(m: ModuleID) = List("M6", "M7").foldLeft(m) { (mID, mStone) =>
+    val version = s"2.11.0-$mStone"
+    mID.exclude("org.scala-lang.modules", s"scala-parser-combinators_$version").exclude("org.scala-lang.modules", s"scala-xml_$version")
+  }
 
   lazy val channelsTests = Project(
     id = "akka-channels-tests",
@@ -635,7 +650,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(channels, testkit % "compile;test->test"),
     settings = defaultSettings ++ experimentalSettings ++ Seq(
       publishArtifact in Compile := false,
-      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _),
+      libraryDependencies += excludeOldModules("org.scala-lang" % "scala-compiler" % scalaVersion.value),
       reportBinaryIssues := () // disable bin comp check
     )
   )
@@ -647,7 +662,8 @@ object AkkaBuild extends Build {
     buildSettings ++
     Seq(
       shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
-    )
+    ) ++
+    resolverSettings
 
   lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
 
@@ -730,7 +746,19 @@ object AkkaBuild extends Build {
     (if (useOnlyTestTags.isEmpty) Seq.empty else Seq("-n", if (multiNodeEnabled) useOnlyTestTags.mkString("\"", " ", "\"") else useOnlyTestTags.mkString(" ")))
   }
 
-  lazy val defaultSettings = baseSettings ++ formatSettings ++ mimaSettings ++ lsSettings ++
+  lazy val resolverSettings = {
+    // should we be allowed to use artifacts published to the local maven repository
+    if(System.getProperty("akka.build.useLocalMavenResolver", "false").toBoolean)
+      Seq(resolvers += Resolver.mavenLocal)
+    else Seq.empty
+  } ++ {
+    // should we be allowed to use artifacts from sonatype snapshots
+    if(System.getProperty("akka.build.useSnapshotSonatypeResolver", "false").toBoolean)
+      Seq(resolvers += Resolver.sonatypeRepo("snapshots"))
+    else Seq.empty
+  }
+
+  lazy val defaultSettings = baseSettings ++ formatSettings ++ mimaSettings ++ lsSettings ++ resolverSettings ++
     Protobuf.settings ++ Seq(
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
@@ -1060,17 +1088,27 @@ object AkkaBuild extends Build {
 
 object Dependencies {
 
+  object Versions {
+    val scalaStmVersion  = System.getProperty("akka.build.scalaStmVersion", "0.7")
+    val scalaZeroMQVersion = System.getProperty("akka.build.scalaZeroMQVersion", "0.0.7")
+    val genJavaDocVersion = System.getProperty("akka.build.genJavaDocVersion", "0.5")
+    val scalaTestVersion = System.getProperty("akka.build.scalaTestVersion", "2.0")
+    val scalaCheckVersion = System.getProperty("akka.build.scalaCheckVersion", "1.10.1")
+  }
+
   object Compile {
+    import Versions._
+
     // Compile
     val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.10.3" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
     val config        = "com.typesafe"                % "config"                       % "1.0.2"       // ApacheV2
     val netty         = "io.netty"                    % "netty"                        % "3.6.6.Final" // ApacheV2
     val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.5.0"       // New BSD
-    val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % "0.7"         // Modified BSD (Scala)
+    val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % scalaStmVersion // Modified BSD (Scala)
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.2"       // MIT
-    val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % "0.0.7"       // ApacheV2
+    val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % scalaZeroMQVersion // ApacheV2
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
     val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "1.1.0"       // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
@@ -1085,7 +1123,7 @@ object Dependencies {
     val sigar       = "org.fusesource"                   % "sigar"                        % "1.6.4"            // ApacheV2
 
     // Compiler plugins
-    val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.5" cross CrossVersion.full) // ApacheV2
+    val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % genJavaDocVersion cross CrossVersion.full) // ApacheV2
 
     // Test
 
@@ -1097,9 +1135,9 @@ object Dependencies {
       val logback      = "ch.qos.logback"              % "logback-classic"              % "1.0.7"            % "test" // EPL 1.0 / LGPL 2.1
       val mockito      = "org.mockito"                 % "mockito-all"                  % "1.8.1"            % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
-      val scalatest    = "org.scalatest"              %% "scalatest"                    % "1.9.2-SNAP2"      % "test" // ApacheV2
-      val scalacheck   = "org.scalacheck"             %% "scalacheck"                   % "1.10.0"           % "test" // New BSD
-      val ariesProxy   = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "1.0.1"              % "test" // ApacheV2
+      val scalatest    = "org.scalatest"              %% "scalatest"                    % scalaTestVersion   % "test" // ApacheV2
+      val scalacheck   = "org.scalacheck"             %% "scalacheck"                   % scalaCheckVersion  % "test" // New BSD
+      val ariesProxy   = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "1.0.1"            % "test" // ApacheV2
       val pojosr       = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"            % "test" // ApacheV2
       val tinybundles  = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
       val log4j        = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
