@@ -10,7 +10,7 @@ import com.typesafe.sbt.SbtMultiJvm
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions, multiNodeExecuteTests, multiNodeJavaName, multiNodeHostsFileName, multiNodeTargetDirName, multiTestOptions }
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
-import com.typesafe.sbt.osgi.SbtOsgi.{ OsgiKeys, osgiSettings }
+import com.typesafe.sbt.osgi.SbtOsgi.{ OsgiKeys, defaultOsgiSettings }
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
@@ -971,6 +971,13 @@ object AkkaBuild extends Build {
   // OSGi settings
 
   object OSGi {
+
+    // The included osgiSettings that creates bundles also publish the jar files
+    // in the .../bundles directory which makes testing locally published artifacts
+    // a pain. Create bundles but publish them to the normal .../jars directory.
+    def osgiSettings = defaultOsgiSettings ++ Seq(
+      packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap
+    )
 
     //akka-actor is wrapped into akka-osgi to simplify OSGi deployement.
 
