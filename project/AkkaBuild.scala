@@ -70,11 +70,9 @@ object AkkaBuild extends Build {
       S3.host in S3.upload := "downloads.typesafe.com.s3.amazonaws.com",
       S3.progress in S3.upload := true,
       mappings in S3.upload <<= (Release.releaseDirectory, version) map { (d, v) =>
-        def distMapping(extension: String): (File, String) = {
-          val file = d / "downloads" / ("akka-" + v + "." + extension)
-          file -> ("akka/" + file.getName)
-        }
-        Seq(distMapping("zip"), distMapping("tgz"))
+        val downloads = d / "downloads"
+        val archivesPathFinder = (downloads * ("*" + v + ".zip")) +++ (downloads * ("*" + v + ".tgz")) 
+        archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
       }
       
     ),
@@ -445,7 +443,7 @@ object AkkaBuild extends Build {
   lazy val samples = Project(
     id = "akka-samples",
     base = file("akka-samples"),
-    settings = parentSettings,
+    settings = parentSettings ++ ActivatorDist.settings,
     aggregate = Seq(camelSampleJava, camelSampleScala, mainSampleJava, mainSampleScala, 
           remoteSampleJava, remoteSampleScala, clusterSampleJava, clusterSampleScala,
           fsmSample, persistenceSample,

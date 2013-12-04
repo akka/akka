@@ -28,6 +28,8 @@ object Release {
     val (state2, (api, japi)) = extracted.runTask(Unidoc.unidoc, state1)
     val (state3, docs) = extracted.runTask(generate in Sphinx, state2)
     val (state4, dist) = extracted.runTask(Dist.dist, state3)
+    val (state5, activatorDist) = extracted.runTask(ActivatorDist.activatorDist in LocalProject(AkkaBuild.samples.id), state4)
+    
     IO.delete(release)
     IO.createDirectory(release)
     IO.copyDirectory(repo, release / "releases")
@@ -35,7 +37,9 @@ object Release {
     IO.copyDirectory(japi, release / "japi" / "akka" / releaseVersion)
     IO.copyDirectory(docs, release / "docs" / "akka" / releaseVersion)
     IO.copyFile(dist, release / "downloads" / dist.name)
-    state4
+    for (f <- (activatorDist * "*.zip").get)
+      IO.copyFile(f, release / "downloads" / f.name)
+    state5
   }
 
   def uploadReleaseCommand = Command.command("upload-release") { state =>
