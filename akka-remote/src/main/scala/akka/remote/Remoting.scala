@@ -528,6 +528,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
     case InboundAssociation(handle: AkkaProtocolHandle) ⇒ endpoints.readOnlyEndpointFor(handle.remoteAddress) match {
       case Some(endpoint) ⇒
+        pendingReadHandoffs.get(endpoint) foreach (_.disassociate())
+        pendingReadHandoffs += endpoint -> handle
         endpoint ! EndpointWriter.TakeOver(handle)
       case None ⇒
         if (endpoints.isQuarantined(handle.remoteAddress, handle.handshakeInfo.uid))
@@ -566,6 +568,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     case Terminated(endpoint) ⇒
       acceptPendingReader(takingOverFrom = endpoint)
       endpoints.unregisterEndpoint(endpoint)
+    case EndpointWriter.TookOver(endpoint, handle) ⇒
+      removePendingReader(takingOverFrom = endpoint, withHandle = handle)
     case Prune ⇒
       endpoints.prune()
     case ShutdownAndFlush ⇒
@@ -657,6 +661,11 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         writing = false)
       endpoints.registerReadOnlyEndpoint(handle.remoteAddress, endpoint)
     }
+  }
+
+  private def removePendingReader(takingOverFrom: ActorRef, withHandle: AkkaProtocolHandle): Unit = {
+    if (pendingReadHandoffs.get(takingOverFrom).exists(handle ⇒ handle == withHandle))
+      pendingReadHandoffs -= takingOverFrom
   }
 
   private def createEndpoint(remoteAddress: Address,

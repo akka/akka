@@ -132,5 +132,10 @@ class RemoteConfigSpec extends AkkaSpec(
       sslSettings.SSLEnabledAlgorithms must be(Set("TLS_RSA_WITH_AES_128_CBC_SHA"))
       sslSettings.SSLRandomNumberGenerator must be(None)
     }
+
+    "have debug logging of the failure injector turned off in reference.conf" in {
+      val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.gremlin")
+      c.getBoolean("debug") must be(false)
+    }
   }
 }
