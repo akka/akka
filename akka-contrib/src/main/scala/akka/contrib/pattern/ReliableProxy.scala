@@ -21,12 +21,12 @@ object ReliableProxy {
   }
 
   def props(targetRef: ActorRef, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration,
-            maxReconnects: Int): Props = {
+            maxReconnects: Int): Props = {     // Java compatibility
     props(targetRef, retryAfter, reconnectAfter, if (maxReconnects > 0) Some(maxReconnects) else None)
   }
 
   def props(targetPath: ActorPath, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration,
-            maxReconnects: Int): Props = {
+            maxReconnects: Int): Props = {     // Java compatibility
     props(targetPath, retryAfter, reconnectAfter, if (maxReconnects > 0) Some(maxReconnects) else None)
   }
 
@@ -127,8 +127,11 @@ import ReliableProxy._
  *    message ordering is preserved
  *
  * These guarantees are valid for the communication between the two end-points
- * of the reliable “tunnel”, which usually spans an unreliable network. Delivery
- * from the remote end-point to the target actor is still subject to in-JVM
+ * of the reliable “tunnel”, which usually spans an unreliable network.
+ *
+ * Note that the ReliableProxy guarantees at-least-once, not exactly-once, delivery.
+ *
+ * Delivery from the remote end-point to the target actor is still subject to in-JVM
  * delivery semantics (i.e. not strictly guaranteed due to possible OutOfMemory
  * situations or other VM errors).
  *
@@ -151,7 +154,7 @@ import ReliableProxy._
  *
  * ==Message Types==
  *
- * This actor is an [[akka.actor.FSM]], hence it offers the service o
+ * This actor is an [[akka.actor.FSM]], hence it offers the service of
  * transition callbacks to those actors which subscribe using the
  * ``SubscribeTransitionCallBack`` and ``UnsubscribeTransitionCallBack``
  * messages; see [[akka.actor.FSM]] for more documentation. The proxy will
