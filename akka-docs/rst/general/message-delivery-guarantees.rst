@@ -155,6 +155,17 @@ Causal transitive ordering would imply that ``M2`` is never received before
 violated due to different message delivery latencies when ``A``, ``B`` and
 ``C`` reside on different network hosts, see more below.
 
+.. note::
+
+  Actor creation is treated as a message sent from the parent to the child,
+  with the same semantics as discussed above. Sending a message to an actor in
+  a way which could be reordered with this initial creation message means that
+  the message might not arrive because the actor does not exist yet. An example
+  where the message might arrive too early would be to create a remote-deployed
+  actor R1, send its reference to another remote actor R2 and have R2 send a
+  message to R1. An example of well-defined ordering is a parent which creates
+  an actor and immediately sends a message to it.
+
 Communication of failure
 ........................
 
