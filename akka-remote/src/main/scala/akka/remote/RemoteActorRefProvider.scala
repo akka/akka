@@ -428,6 +428,8 @@ private[akka] class RemoteActorRefProvider(
     message match {
       // Sending to local remoteWatcher relies strong delivery guarantees of local send, i.e.
       // default dispatcher must not be changed to an implementation that defeats that
+      case rew: RemoteWatcher.Rewatch ⇒
+        remoteWatcher ! RemoteWatcher.RewatchRemote(rew.watchee, rew.watcher)
       case Watch(watchee, watcher)   ⇒ remoteWatcher ! RemoteWatcher.WatchRemote(watchee, watcher)
       case Unwatch(watchee, watcher) ⇒ remoteWatcher ! RemoteWatcher.UnwatchRemote(watchee, watcher)
       case _                         ⇒
