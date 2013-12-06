@@ -996,7 +996,11 @@ object AkkaBuild extends Build {
       // API additions for Tcp.CompoundWrite support ("method ... does not have a correspondent in *old* version")
       ProblemFilters.exclude[MissingMethodProblem]("akka.io.Tcp#WriteCommand.prepend"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.io.Tcp#WriteCommand.+:"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.io.Tcp#WriteCommand.++:")
+      ProblemFilters.exclude[MissingMethodProblem]("akka.io.Tcp#WriteCommand.++:"),
+
+      // internal classes marked with private[remote]
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.transport.FailureInjectorTransportAdapter.shouldDropOutbound"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.transport.FailureInjectorTransportAdapter.shouldDropInbound")
     )
   }
 

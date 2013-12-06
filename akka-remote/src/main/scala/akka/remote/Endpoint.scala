@@ -418,6 +418,7 @@ private[remote] object EndpointWriter {
    * @param handle Handle of the new inbound association.
    */
   case class TakeOver(handle: AkkaProtocolHandle) extends NoSerializationVerificationNeeded
+  case class TookOver(writer: ActorRef, handle: AkkaProtocolHandle) extends NoSerializationVerificationNeeded
   case object BackoffTimer
   case object FlushAndStop
   case object AckIdleCheckTimer
@@ -621,6 +622,7 @@ private[remote] class EndpointWriter(
       // Shutdown old reader
       handle foreach { _.disassociate() }
       handle = Some(newHandle)
+      sender ! TookOver(self, newHandle)
       goto(Handoff)
     case Event(FlushAndStop, _) ⇒
       stopReason = AssociationHandle.Shutdown
