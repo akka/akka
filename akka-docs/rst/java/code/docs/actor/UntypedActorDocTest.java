@@ -528,23 +528,24 @@ public class UntypedActorDocTest {
     };
   }
 
+  static
   //#props-factory
-  public static class DemoActor extends UntypedActor {
+  public class DemoActor extends UntypedActor {
     
     /**
      * Create Props for an actor of this type.
-     * @param name The name to be passed to this actor’s constructor.
+     * @param magicNumber The magic number to be passed to this actor’s constructor.
      * @return a Props for creating this actor, which can then be further configured
      *         (e.g. calling `.withDispatcher()` on it)
      */
-    public static Props mkProps(String name) {
-      return Props.create(DemoActor.class, name);
+    public static Props props(int magicNumber) {
+      return Props.create(DemoActor.class, magicNumber);
     }
     
-    final String name;
+    final int magicNumber;
 
-    public DemoActor(String name) {
-      this.name = name;
+    public DemoActor(int magicNumber) {
+      this.magicNumber = magicNumber;
     }
     
     @Override
@@ -555,10 +556,10 @@ public class UntypedActorDocTest {
   }
   
   //#props-factory
-  {
-    if (system != null)
-      //#props-factory
-      system.actorOf(DemoActor.mkProps("hello"));
+  @Test
+  public void demoActor() {
+    //#props-factory
+    system.actorOf(DemoActor.props(42), "demo");
     //#props-factory
   }
 
