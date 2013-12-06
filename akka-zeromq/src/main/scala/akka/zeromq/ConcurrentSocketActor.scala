@@ -63,7 +63,7 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
   }
 
   private def handleConnectOption(msg: SocketConnectOption): Unit = msg match {
-    case Connect(endpoint) ⇒ socket.connect(endpoint); notifyListener(Connecting)
+    case Connect(endpoint) ⇒ { socket.connect(endpoint); notifyListener(Connecting) }
     case Bind(endpoint)    ⇒ socket.bind(endpoint)
   }
 

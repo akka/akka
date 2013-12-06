@@ -10,7 +10,7 @@ import java.util.concurrent.{ TimeUnit, CountDownLatch, ConcurrentHashMap }
 import java.util.concurrent.atomic.{ AtomicLong, AtomicInteger }
 
 import org.junit.runner.RunWith
-import org.scalatest.Assertions.{ fail, assert }
+import org.scalatest.Assertions._
 import org.scalatest.junit.JUnitRunner
 
 import com.typesafe.config.Config

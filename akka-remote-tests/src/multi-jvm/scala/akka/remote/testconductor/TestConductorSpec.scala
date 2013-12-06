@@ -5,7 +5,7 @@ package akka.remote.testconductor
 
 import language.postfixOps
 import com.typesafe.config.ConfigFactory
-import akka.actor.{Props, Actor, ActorIdentity, Identify, Deploy}
+import akka.actor.{ Props, Actor, ActorIdentity, Identify, Deploy }
 import scala.concurrent.Await
 import scala.concurrent.Awaitable
 import scala.concurrent.duration._

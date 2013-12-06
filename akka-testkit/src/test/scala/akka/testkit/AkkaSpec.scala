@@ -5,16 +5,14 @@ package akka.testkit
 
 import language.{ postfixOps, reflectiveCalls }
 
-import org.scalatest.{ WordSpecLike, BeforeAndAfterAll, Tag }
+import org.scalatest.{ WordSpecLike, BeforeAndAfterAll }
 import org.scalatest.matchers.MustMatchers
-import akka.actor.{ Actor, Props, ActorSystem, PoisonPill, DeadLetter, ActorSystemImpl }
+import akka.actor.ActorSystem
 import akka.event.{ Logging, LoggingAdapter }
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Future
 import com.typesafe.config.{ Config, ConfigFactory }
-import java.util.concurrent.TimeoutException
 import akka.dispatch.Dispatchers
-import akka.pattern.ask
 import akka.testkit.TestEvent._
 
 object AkkaSpec {

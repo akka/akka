@@ -71,8 +71,17 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
       case l @ (_: LocalRef | _: RepointableRef) if l.isLocal ⇒
         if (LogReceive) log.debug("received local message {}", msgLog)
         payload match {
+          case sel: ActorSelectionMessage ⇒
+            if (UntrustedMode && (!TrustedSelectionPaths.contains(sel.elements.mkString("/", "/", "")) ||
+              sel.msg.isInstanceOf[PossiblyHarmful] || l != provider.rootGuardian))
+              log.debug("operating in UntrustedMode, dropping inbound actor selection to [{}], " +
+                "allow it by adding the path to 'akka.remote.trusted-selection-paths' configuration",
+                sel.elements.mkString("/", "/", ""))
+            else
+              // run the receive logic for ActorSelectionMessage here to make sure it is not stuck on busy user actor
+              ActorSelection.deliverSelection(l, sender, sel)
           case msg: PossiblyHarmful if UntrustedMode ⇒
-            log.debug("operating in UntrustedMode, dropping inbound PossiblyHarmful message of type {}", msg.getClass)
+            log.debug("operating in UntrustedMode, dropping inbound PossiblyHarmful message of type [{}]", msg.getClass.getName)
           case msg: SystemMessage ⇒ l.sendSystemMessage(msg)
           case msg                ⇒ l.!(msg)(sender)
         }
@@ -105,16 +114,28 @@ private[remote] class EndpointException(msg: String, cause: Throwable) extends A
 /**
  * INTERNAL API
  */
+private[remote] trait AssociationProblem
+
+/**
+ * INTERNAL API
+ */
+@SerialVersionUID(1L)
+private[remote] case class ShutDownAssociation(localAddress: Address, remoteAddress: Address, cause: Throwable)
+  extends EndpointException("Shut down address: " + remoteAddress, cause) with AssociationProblem
+
+/**
+ * INTERNAL API
+ */
 @SerialVersionUID(1L)
 private[remote] case class InvalidAssociation(localAddress: Address, remoteAddress: Address, cause: Throwable)
-  extends EndpointException("Invalid address: " + remoteAddress, cause)
+  extends EndpointException("Invalid address: " + remoteAddress, cause) with AssociationProblem
 
 /**
  * INTERNAL API
  */
 @SerialVersionUID(1L)
 private[remote] case class HopelessAssociation(localAddress: Address, remoteAddress: Address, uid: Option[Int], cause: Throwable)
-  extends EndpointException("Catastrophic association error.")
+  extends EndpointException("Catastrophic association error.") with AssociationProblem
 
 /**
  * INTERNAL API
@@ -127,13 +148,6 @@ private[remote] class EndpointDisassociatedException(msg: String) extends Endpoi
  */
 @SerialVersionUID(1L)
 private[remote] class EndpointAssociationException(msg: String, cause: Throwable) extends EndpointException(msg, cause)
-
-/**
- * INTERNAL API
- */
-@SerialVersionUID(1L)
-private[remote] class QuarantinedUidException(uid: Int, remoteAddress: Address)
-  extends EndpointException(s"Refused association to [$remoteAddress] because its UID [$uid] is quarantined.")
 
 /**
  * INTERNAL API
@@ -177,9 +191,23 @@ private[remote] class ReliableDeliverySupervisor(
 
   def retryGateEnabled = settings.RetryGateClosedFor > Duration.Zero
 
+  var autoResendTimer: Option[Cancellable] = None
+
+  def scheduleAutoResend(): Unit = if (resendBuffer.nacked.nonEmpty || resendBuffer.nonAcked.nonEmpty) {
+    if (autoResendTimer.isEmpty)
+      autoResendTimer = Some(context.system.scheduler.scheduleOnce(settings.SysResendTimeout, self, AttemptSysMsgRedelivery))
+  }
+
+  def rescheduleAutoResend(): Unit = {
+    autoResendTimer.foreach(_.cancel())
+    autoResendTimer = None
+    scheduleAutoResend()
+  }
+
   override val supervisorStrategy = OneForOneStrategy(settings.MaximumRetriesInWindow, settings.RetryWindow, loggingEnabled = false) {
-    case e @ (_: InvalidAssociation | _: HopelessAssociation | _: QuarantinedUidException) ⇒ Escalate
+    case e @ (_: AssociationProblem) ⇒ Escalate
     case NonFatal(e) ⇒
+      uidConfirmed = false // Need confirmation of UID again
       if (retryGateEnabled) {
         context.become(gated)
         context.system.scheduler.scheduleOnce(settings.RetryGateClosedFor, self, Ungate)
@@ -195,15 +223,16 @@ private[remote] class ReliableDeliverySupervisor(
   var currentHandle: Option[AkkaProtocolHandle] = handleOrActive
 
   var resendBuffer: AckedSendBuffer[Send] = _
-  var resendDeadline: Deadline = _
   var lastCumulativeAck: SeqNo = _
   var seqCounter: Long = _
+  var pendingAcks = Vector.empty[Ack]
 
   def reset() {
     resendBuffer = new AckedSendBuffer[Send](settings.SysMsgBufferSize)
-    resendDeadline = Deadline.now + settings.SysResendTimeout
+    scheduleAutoResend()
     lastCumulativeAck = SeqNo(-1)
     seqCounter = 0L
+    pendingAcks = Vector.empty
   }
 
   reset()
@@ -216,6 +245,18 @@ private[remote] class ReliableDeliverySupervisor(
 
   var writer: ActorRef = createWriter()
   var uid: Option[Int] = handleOrActive map { _.handshakeInfo.uid }
+  // Processing of Acks has to be delayed until the UID after a reconnect is discovered. Depending whether the
+  // UID matches the expected one, pending Acks can be processed, or must be dropped. It is guaranteed that for
+  // any inbound connections (calling createWriter()) the first message from that connection is GotUid() therefore
+  // it serves a separator.
+  // If we already have an inbound handle then UID is initially confirmed.
+  // (This actor is never restarted)
+  var uidConfirmed: Boolean = uid.isDefined
+
+  def unstashAcks(): Unit = {
+    pendingAcks foreach (self ! _)
+    pendingAcks = Vector.empty
+  }
 
   override def postStop(): Unit = {
     // All remaining messages in the buffer has to be delivered to dead letters. It is important to clear the sequence
@@ -242,30 +283,40 @@ private[remote] class ReliableDeliverySupervisor(
     case s: Send ⇒
       handleSend(s)
     case ack: Ack ⇒
-      try resendBuffer = resendBuffer.acknowledge(ack)
-      catch {
-        case NonFatal(e) ⇒
-          throw new InvalidAssociationException("Error encountered while processing system message acknowledgement", e)
-      }
+      if (!uidConfirmed) pendingAcks = pendingAcks :+ ack
+      else {
+        try resendBuffer = resendBuffer.acknowledge(ack)
+        catch {
+          case NonFatal(e) ⇒
+            throw new InvalidAssociationException(s"Error encountered while processing system message acknowledgement $resendBuffer $ack", e)
+        }
 
-      if (lastCumulativeAck < ack.cumulativeAck) {
-        resendDeadline = Deadline.now + settings.SysResendTimeout
-        lastCumulativeAck = ack.cumulativeAck
-      } else if (resendDeadline.isOverdue()) {
-        resendAll()
-        resendDeadline = Deadline.now + settings.SysResendTimeout
+        if (lastCumulativeAck < ack.cumulativeAck) {
+          lastCumulativeAck = ack.cumulativeAck
+          // Cumulative ack is progressing, we might not need to resend non-acked messages yet.
+          // If this progression stops, the timer will eventually kick in, since scheduleAutoResend
+          // does not cancel existing timers (see the "else" case).
+          rescheduleAutoResend()
+        } else scheduleAutoResend()
+
+        resendNacked()
       }
-      resendNacked()
+    case AttemptSysMsgRedelivery ⇒
+      if (uidConfirmed) resendAll()
     case Terminated(_) ⇒
       currentHandle = None
       context.parent ! StoppedReading(self)
       if (resendBuffer.nonAcked.nonEmpty || resendBuffer.nacked.nonEmpty)
         context.system.scheduler.scheduleOnce(settings.SysResendTimeout, self, AttemptSysMsgRedelivery)
       context.become(idle)
-    case GotUid(u) ⇒
+    case GotUid(receivedUid) ⇒
       // New system that has the same address as the old - need to start from fresh state
-      if (uid.isDefined && uid.get != u) reset()
-      uid = Some(u)
+      uidConfirmed = true
+      if (uid.exists(_ != receivedUid)) reset()
+      else unstashAcks()
+      uid = Some(receivedUid)
+      resendAll()
+
     case s: EndpointWriter.StopReading ⇒ writer forward s
   }
 
@@ -273,7 +324,7 @@ private[remote] class ReliableDeliverySupervisor(
     case Ungate ⇒
       if (resendBuffer.nonAcked.nonEmpty || resendBuffer.nacked.nonEmpty) {
         writer = createWriter()
-        resendAll()
+        // Resending will be triggered by the incoming GotUid message after the connection finished
         context.become(receive)
       } else context.become(idle)
     case s @ Send(msg: SystemMessage, _, _, _) ⇒ tryBuffer(s.copy(seqOpt = Some(nextSeq())))
@@ -286,12 +337,12 @@ private[remote] class ReliableDeliverySupervisor(
   def idle: Receive = {
     case s: Send ⇒
       writer = createWriter()
-      resendAll()
+      // Resending will be triggered by the incoming GotUid message after the connection finished
       handleSend(s)
       context.become(receive)
     case AttemptSysMsgRedelivery ⇒
       writer = createWriter()
-      resendAll()
+      // Resending will be triggered by the incoming GotUid message after the connection finished
       context.become(receive)
     case EndpointWriter.FlushAndStop   ⇒ context.stop(self)
     case EndpointWriter.StopReading(w) ⇒ sender ! EndpointWriter.StoppedReading(w)
@@ -310,7 +361,9 @@ private[remote] class ReliableDeliverySupervisor(
     if (send.message.isInstanceOf[SystemMessage]) {
       val sequencedSend = send.copy(seqOpt = Some(nextSeq()))
       tryBuffer(sequencedSend)
-      writer ! sequencedSend
+      // If we have not confirmed the remote UID we cannot transfer the system message at this point just buffer it.
+      // GotUid will kick resendAll() causing the messages to be properly written
+      if (uidConfirmed) writer ! sequencedSend
     } else writer ! send
 
   private def resendNacked(): Unit = resendBuffer.nacked foreach { writer ! _ }
@@ -318,6 +371,7 @@ private[remote] class ReliableDeliverySupervisor(
   private def resendAll(): Unit = {
     resendNacked()
     resendBuffer.nonAcked foreach { writer ! _ }
+    rescheduleAutoResend()
   }
 
   private def tryBuffer(s: Send): Unit =
@@ -389,6 +443,7 @@ private[remote] object EndpointWriter {
    * @param handle Handle of the new inbound association.
    */
   case class TakeOver(handle: AkkaProtocolHandle) extends NoSerializationVerificationNeeded
+  case class TookOver(writer: ActorRef, handle: AkkaProtocolHandle) extends NoSerializationVerificationNeeded
   case object BackoffTimer
   case object FlushAndStop
   case object AckIdleCheckTimer
@@ -522,8 +577,6 @@ private[remote] class EndpointWriter(
               log.debug("sending message {}", msgLog)
             }
 
-            ackDeadline = newAckDeadline
-
             val pdu = codec.constructMessage(
               recipient.localAddressToUse,
               recipient,
@@ -531,6 +584,9 @@ private[remote] class EndpointWriter(
               senderOption,
               seqOption = seqOption,
               ackOption = lastAck)
+
+            ackDeadline = newAckDeadline
+            lastAck = None
 
             val pduSize = pdu.size
             remoteMetrics.logPayloadBytes(msg, pduSize)
@@ -592,13 +648,13 @@ private[remote] class EndpointWriter(
       // Shutdown old reader
       handle foreach { _.disassociate() }
       handle = Some(newHandle)
+      sender ! TookOver(self, newHandle)
       goto(Handoff)
     case Event(FlushAndStop, _) ⇒
       stopReason = AssociationHandle.Shutdown
       stop()
     case Event(OutboundAck(ack), _) ⇒
       lastAck = Some(ack)
-      trySendPureAck()
       stay()
     case Event(AckIdleCheckTimer, _) ⇒ stay() // Ignore
   }
@@ -625,7 +681,10 @@ private[remote] class EndpointWriter(
   }
 
   private def trySendPureAck(): Unit = for (h ← handle; ack ← lastAck)
-    if (h.write(codec.constructPureAck(ack))) ackDeadline = newAckDeadline
+    if (h.write(codec.constructPureAck(ack))) {
+      ackDeadline = newAckDeadline
+      lastAck = None
+    }
 
   private def startReadEndpoint(handle: AkkaProtocolHandle): Some[ActorRef] = {
     val newReader =
@@ -766,7 +825,7 @@ private[remote] class EndpointReader(
     case AssociationHandle.Unknown ⇒
       context.stop(self)
     case AssociationHandle.Shutdown ⇒
-      throw InvalidAssociation(
+      throw ShutDownAssociation(
         localAddress,
         remoteAddress,
         InvalidAssociationException("The remote system terminated the association because it is shutting down."))
@@ -781,6 +840,7 @@ private[remote] class EndpointReader(
   private def deliverAndAck(): Unit = {
     val (updatedBuffer, deliver, ack) = ackedReceiveBuffer.extractDeliverable
     ackedReceiveBuffer = updatedBuffer
+
     // Notify writer that some messages can be acked
     context.parent ! OutboundAck(ack)
     deliver foreach { m ⇒

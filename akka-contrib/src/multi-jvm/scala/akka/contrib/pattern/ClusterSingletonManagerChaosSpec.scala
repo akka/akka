@@ -40,7 +40,7 @@ object ClusterSingletonManagerChaosSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-down = on
+    akka.cluster.auto-down-unreachable-after = 0s
     """))
 
   case object EchoStarted
@@ -78,7 +78,7 @@ class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonMan
 
   def createSingleton(): ActorRef = {
     system.actorOf(ClusterSingletonManager.props(
-      singletonProps = handOverData ⇒ Props(classOf[Echo], testActor),
+      singletonProps = Props(classOf[Echo], testActor),
       singletonName = "echo",
       terminationMessage = PoisonPill,
       role = None),

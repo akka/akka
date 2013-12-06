@@ -244,6 +244,12 @@ private[akka] trait Cell {
   def getChildByName(name: String): Option[ChildStats]
 
   /**
+   * Method for looking up a single child beneath this actor.
+   * It is racy if called from the outside.
+   */
+  def getSingleChild(name: String): InternalActorRef
+
+  /**
    * Enqueue a message to be sent to the actor; may or may not actually
    * schedule the actor to run, depending on which type of cell it is.
    * Is only allowed to throw Fatal Throwables.
@@ -471,31 +477,18 @@ private[akka] class ActorCell(
       case AddressTerminated(address) ⇒ addressTerminated(address)
       case Kill                       ⇒ throw new ActorKilledException("Kill")
       case PoisonPill                 ⇒ self.stop()
-      case SelectParent(m) ⇒
-        if (self == system.provider.rootGuardian) self.tell(m, msg.sender)
-        else parent.tell(m, msg.sender)
-      case s @ SelectChildName(name, m) ⇒
-        def selectChild(): Unit = {
-          getChildByName(name) match {
-            case Some(c: ChildRestartStats) ⇒ c.child.tell(m, msg.sender)
-            case _ ⇒
-              s.identifyRequest foreach { x ⇒ sender ! ActorIdentity(x.messageId, None) }
-          }
-        }
-        // need this special case because of extraNames handled by rootGuardian
-        if (self == system.provider.rootGuardian) {
-          self.asInstanceOf[LocalActorRef].getSingleChild(name) match {
-            case Nobody ⇒ selectChild()
-            case child  ⇒ child.tell(m, msg.sender)
-          }
-        } else
-          selectChild()
-      case SelectChildPattern(p, m) ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
-      case Identify(messageId)      ⇒ sender ! ActorIdentity(messageId, Some(self))
+      case sel: ActorSelectionMessage ⇒ receiveSelection(sel)
+      case Identify(messageId)        ⇒ sender ! ActorIdentity(messageId, Some(self))
     }
   }
 
-  final def receiveMessage(msg: Any): Unit = behaviorStack.head.applyOrElse(msg, actor.unhandled)
+  private def receiveSelection(sel: ActorSelectionMessage): Unit =
+    if (sel.elements.isEmpty)
+      invoke(Envelope(sel.msg, sender, system))
+    else
+      ActorSelection.deliverSelection(self, sender, sel)
+
+  final def receiveMessage(msg: Any): Unit = actor.aroundReceive(behaviorStack.head, msg)
 
   /*
    * ACTOR CONTEXT IMPLEMENTATION
@@ -559,7 +552,7 @@ private[akka] class ActorCell(
     try {
       val created = newActor()
       actor = created
-      created.preStart()
+      created.aroundPreStart()
       checkReceiveTimeout
       if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {

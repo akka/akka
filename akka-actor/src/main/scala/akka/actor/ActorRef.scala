@@ -4,6 +4,7 @@
 
 package akka.actor
 
+import scala.collection.immutable
 import akka.dispatch._
 import akka.dispatch.sysmsg._
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
@@ -114,20 +115,17 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   }
 
   /**
-   * Java API: Sends the specified message to the sender, i.e. fire-and-forget
-   * semantics, including the sender reference if possible (pass `null` if
-   * there is nobody to reply to).
+   * Sends the specified message to the sender, i.e. fire-and-forget
+   * semantics, including the sender reference if possible.
    *
-   * <pre>
-   * actor.tell(message, getSelf());
-   * </pre>
+   * Pass [[ActorRef#noSender]] or `null` as sender if there is nobody to reply to
    */
   final def tell(msg: Any, sender: ActorRef): Unit = this.!(msg)(sender)
 
   /**
    * Forwards the message and passes the original sender actor as the sender.
    *
-   * Works with '!' and '?'/'ask'.
+   * Works, no matter whether originally sent with tell/'!' or ask/'?'.
    */
   def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender)
 
@@ -266,6 +264,8 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
  */
 private[akka] abstract class ActorRefWithCell extends InternalActorRef { this: ActorRefScope ⇒
   def underlying: Cell
+  def children: immutable.Iterable[ActorRef]
+  def getSingleChild(name: String): InternalActorRef
 }
 
 /**
@@ -343,19 +343,14 @@ private[akka] class LocalActorRef private[akka] (
 
   override def provider: ActorRefProvider = actorCell.provider
 
+  def children: immutable.Iterable[ActorRef] = actorCell.children
+
   /**
    * Method for looking up a single child beneath this actor. Override in order
    * to inject “synthetic” actor paths like “/temp”.
    * It is racy if called from the outside.
    */
-  def getSingleChild(name: String): InternalActorRef = {
-    val (childName, uid) = ActorCell.splitNameAndUid(name)
-    actorCell.getChildByName(childName) match {
-      case Some(crs: ChildRestartStats) if uid == ActorCell.undefinedUid || uid == crs.uid ⇒
-        crs.child.asInstanceOf[InternalActorRef]
-      case _ ⇒ Nobody
-    }
-  }
+  def getSingleChild(name: String): InternalActorRef = actorCell.getSingleChild(name)
 
   override def getChild(names: Iterator[String]): InternalActorRef = {
     /*
@@ -507,11 +502,11 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
     case Identify(messageId) ⇒
       sender ! ActorIdentity(messageId, None)
       true
-    case s: SelectChildName ⇒
-      s.identifyRequest match {
+    case sel: ActorSelectionMessage ⇒
+      sel.identifyRequest match {
         case Some(identify) ⇒ sender ! ActorIdentity(identify.messageId, None)
         case None ⇒
-          eventStream.publish(DeadLetter(s.wrappedMessage, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
+          eventStream.publish(DeadLetter(sel.msg, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
       }
       true
     case _ ⇒ false

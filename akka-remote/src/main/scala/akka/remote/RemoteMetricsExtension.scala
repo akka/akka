@@ -5,12 +5,12 @@ package akka.remote
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.annotation.tailrec
+import akka.actor.ActorSelectionMessage
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
-import akka.actor.SelectChildName
 import akka.event.Logging
 import akka.routing.RouterEnvelope
 
@@ -63,9 +63,9 @@ private[akka] class RemoteMetricsOn(system: ExtendedActorSystem) extends RemoteM
   override def logPayloadBytes(msg: Any, payloadBytes: Int): Unit =
     if (payloadBytes >= logFrameSizeExceeding) {
       val clazz = msg match {
-        case x: SelectChildName ⇒ x.wrappedMessage.getClass
-        case x: RouterEnvelope  ⇒ x.message.getClass
-        case _                  ⇒ msg.getClass
+        case x: ActorSelectionMessage ⇒ x.msg.getClass
+        case x: RouterEnvelope        ⇒ x.message.getClass
+        case _                        ⇒ msg.getClass
       }
 
       // 10% threshold until next log

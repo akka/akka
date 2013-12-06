@@ -111,7 +111,7 @@ class VectorClockSpec extends AkkaSpec {
       val clock4_1 = clock3_1 :+ Node("2")
       val clock5_1 = clock4_1 :+ Node("3")
 
-      val clock1_2 = VectorClock()
+      val clock1_2 = clock4_1
       val clock2_2 = clock1_2 :+ Node("2")
       val clock3_2 = clock2_2 :+ Node("2")
 
@@ -143,7 +143,7 @@ class VectorClockSpec extends AkkaSpec {
       val clock4_1 = clock3_1 :+ node2
       val clock5_1 = clock4_1 :+ node3
 
-      val clock1_2 = VectorClock()
+      val clock1_2 = clock4_1
       val clock2_2 = clock1_2 :+ node2
       val clock3_2 = clock2_2 :+ node2
 

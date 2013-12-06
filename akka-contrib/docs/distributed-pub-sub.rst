@@ -28,13 +28,14 @@ any other node. There is three modes of message delivery.
 **1. DistributedPubSubMediator.Send**
 
 The message will be delivered to one recipient with a matching path, if any such
-exists in the registry. If several entries match the path the message will be delivered
-to one random destination. The sender of the message can specify that local
-affinity is preferred, i.e. the message is sent to an actor in the same local actor
-system as the used mediator actor, if any such exists, otherwise random to any other
-matching entry. A typical usage of this mode is private chat to one other user in
-an instant messaging application. It can also be used for distributing tasks to workers,
-like a random router.
+exists in the registry. If several entries match the path the message will be sent
+via the supplied ``RoutingLogic`` (default random) to one destination. The sender of the
+message can specify that local affinity is preferred, i.e. the message is sent to an actor
+in the same local actor system as the used mediator actor, if any such exists, otherwise
+route to any other matching entry. A typical usage of this mode is private chat to one
+other user in an instant messaging application. It can also be used for distributing
+tasks to registered workers, like a cluster aware router where the routees dynamically
+can register themselves.
 
 **2. DistributedPubSubMediator.SendToAll**
 

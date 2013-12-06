@@ -40,6 +40,18 @@ For a Pull Request to be considered at all it has to meet these requirements:
 2. Regardless if the code introduces new features or fixes bugs or regressions, it must have comprehensive tests.
 3. The code must be well documented in the Typesafe's standard documentation format (see the ‘Documentation’ section below).
 4. The commit messages must properly describe the changes, see further below.
+5. All Typesafe projects must include Typesafe copyright notices.  Each project can choose between one of two approaches:
+    
+    1. All source files in the project must have a Typesafe copyright notice in the file header.   
+    2. The Notices file for the project includes the Typesafe copyright notice and no other files contain copyright notices.  See http://www.apache.org/legal/src-headers.html for instructions for managing this approach for copyrights.
+    
+    Akka uses the first choice, having copyright notices in every file header.
+    
+    Other guidelines to follow for copyright notices:
+    
+    - Use a form of ``Copyright (C) 2011-2013 Typesafe Inc. <http://www.typesafe.com>``, where the start year is when the project or file was first created and the end year is the last time the project or file was modified.
+    - Never delete or change existing copyright notices, just add additional info.  
+    - Do not use ``@author`` tags since it does not encourage [Collective Code Ownership](http://www.extremeprogramming.org/rules/collective.html). However, each project should make sure that the contributors gets the credit they deserve—in a text file or page on the project website and in the release notes etc. 
 
 If these requirements are not met then the code should **not** be merged into master, or even reviewed - regardless of how good or important it is. No exceptions.
 
@@ -65,6 +77,21 @@ All documentation is preferred to be in Typesafe's standard documentation format
 For more info, or for a starting point for new projects, look at the [Typesafe Documentation Template project](https://github.com/typesafehub/doc-template).
 
 For larger projects that have invested a lot of time and resources into their current documentation and samples scheme (like for example Play), it is understandable that it will take some time to migrate to this new model. In these cases someone from the project needs to take the responsibility of manual QA and verifier for the documentation and samples.
+
+## External Dependencies
+
+All the external runtime dependencies for the project, including transitive dependencies, must have an open source license that is equal to, or compatible with, [Apache 2](http://www.apache.org/licenses/LICENSE-2.0). 
+
+This must be ensured by manually verifying the license for all the dependencies for the project: 
+
+1. Whenever a committer to the project changes a version of a dependency (including Scala) in the build file.
+2. Whenever a committer to the project adds a new dependency.
+3. Whenever a new release is cut (public or private for a customer). 
+
+Which licenses are compatible with Apache 2 are defined in [this doc](http://www.apache.org/legal/3party.html#category-a), where you can see that the licenses that are listed under ``Category A`` automatically compatible with Apache 2, while the ones listed under ``Category B`` needs additional action: 
+> Each license in this category requires some degree of [reciprocity](http://www.apache.org/legal/3party.html#define-reciprocal); therefore, additional action must be taken in order to minimize the chance that a user of an Apache product will create a derivative work of a reciprocally-licensed portion of an Apache product without being aware of the applicable requirements.
+
+Each project must also create and maintain a list of all dependencies and their licenses, including all their transitive dependencies. This can be done in either in the documentation or in the build file next to each dependency.
 
 ## Work In Progress
 
@@ -100,6 +127,11 @@ Example:
     * Details 1
     * Details 2
     * Details 3
+
+## How To Enforce These Guidelines?
+
+### Make Use Of Typesafe’s Pull Request Validator
+It is recommended to set up the project to use Typesafe’s [Pull Request Validator](https://github.com/typesafehub/ghpullrequest-validator) that automatically merges the code, builds it, runs the tests and comments on the Pull Request in GitHub. 
 
 ## Source style
 

@@ -32,10 +32,21 @@ abstract class NodeUpSpec
   import ClusterEvent._
 
   "A cluster node that is joining another cluster" must {
+    "not be able to join a node that is not a cluster member" taggedAs LongRunningTest in {
+
+      runOn(first) {
+        cluster.join(second)
+      }
+      enterBarrier("first-join-attempt")
+
+      Thread.sleep(2000)
+      clusterView.members must be(Set.empty)
+
+      enterBarrier("after-0")
+    }
+
     "be moved to UP by the leader after a convergence" taggedAs LongRunningTest in {
-
       awaitClusterUp(first, second)
-
       enterBarrier("after-1")
     }
 

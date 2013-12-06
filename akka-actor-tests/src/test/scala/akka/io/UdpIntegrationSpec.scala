@@ -94,7 +94,7 @@ class UdpIntegrationSpec extends AkkaSpec("""
 
       val commander = TestProbe()
       val assertOption = AssertCall()
-      commander.send(IO(Udp), Bind(testActor, addresses(3), options=List(assertOption)))
+      commander.send(IO(Udp), Bind(testActor, addresses(3), options = List(assertOption)))
       commander.expectMsg(Bound(addresses(3)))
       assert(assertOption.beforeCalled === 1)
       assert(assertOption.afterCalled === 1)

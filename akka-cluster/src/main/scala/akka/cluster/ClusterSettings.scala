@@ -25,18 +25,9 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val HeartbeatInterval: FiniteDuration = {
     Duration(FailureDetectorConfig.getMilliseconds("heartbeat-interval"), MILLISECONDS)
   } requiring (_ > Duration.Zero, "failure-detector.heartbeat-interval must be > 0")
-  val HeartbeatRequestDelay: FiniteDuration = {
-    Duration(FailureDetectorConfig.getMilliseconds("heartbeat-request.grace-period"), MILLISECONDS)
-  } requiring (_ > Duration.Zero, "failure-detector.heartbeat-request.grace-period must be > 0")
   val HeartbeatExpectedResponseAfter: FiniteDuration = {
-    Duration(FailureDetectorConfig.getMilliseconds("heartbeat-request.expected-response-after"), MILLISECONDS)
-  } requiring (_ > Duration.Zero, "failure-detector.heartbeat-request.expected-response-after > 0")
-  val HeartbeatRequestTimeToLive: FiniteDuration = {
-    Duration(FailureDetectorConfig.getMilliseconds("heartbeat-request.time-to-live"), MILLISECONDS)
-  } requiring (_ > Duration.Zero, "failure-detector.heartbeat-request.time-to-live > 0")
-  val NumberOfEndHeartbeats: Int = {
-    FailureDetectorConfig.getInt("nr-of-end-heartbeats")
-  } requiring (_ > 0, "failure-detector.nr-of-end-heartbeats must be > 0")
+    Duration(FailureDetectorConfig.getMilliseconds("expected-response-after"), MILLISECONDS)
+  } requiring (_ > Duration.Zero, "failure-detector.expected-response-after > 0")
   val MonitoredByNrOfMembers: Int = {
     FailureDetectorConfig.getInt("monitored-by-nr-of-members")
   } requiring (_ > 0, "failure-detector.monitored-by-nr-of-members must be > 0")
@@ -53,6 +44,9 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   }
   val PeriodicTasksInitialDelay: FiniteDuration = Duration(cc.getMilliseconds("periodic-tasks-initial-delay"), MILLISECONDS)
   val GossipInterval: FiniteDuration = Duration(cc.getMilliseconds("gossip-interval"), MILLISECONDS)
+  val GossipTimeToLive: FiniteDuration = {
+    Duration(cc.getMilliseconds("gossip-time-to-live"), MILLISECONDS)
+  } requiring (_ > Duration.Zero, "gossip-time-to-live must be > 0")
   val LeaderActionsInterval: FiniteDuration = Duration(cc.getMilliseconds("leader-actions-interval"), MILLISECONDS)
   val UnreachableNodesReaperInterval: FiniteDuration = Duration(cc.getMilliseconds("unreachable-nodes-reaper-interval"), MILLISECONDS)
   val PublishStatsInterval: Duration = {
@@ -62,7 +56,17 @@ final class ClusterSettings(val config: Config, val systemName: String) {
       case _     ⇒ Duration(cc.getMilliseconds(key), MILLISECONDS) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
   }
+
+  @deprecated("akka.cluster.auto-down setting is replaced by akka.cluster.auto-down-unreachable-after", "2.3")
   val AutoDown: Boolean = cc.getBoolean("auto-down")
+  val AutoDownUnreachableAfter: Duration = {
+    val key = "auto-down-unreachable-after"
+    cc.getString(key).toLowerCase match {
+      case "off" ⇒ if (AutoDown) Duration.Zero else Duration.Undefined
+      case _     ⇒ Duration(cc.getMilliseconds(key), MILLISECONDS) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
+    }
+  }
+
   val Roles: Set[String] = immutableSeq(cc.getStringList("roles")).toSet
   val MinNrOfMembers: Int = {
     cc.getInt("min-nr-of-members")
@@ -79,6 +83,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     case id ⇒ id
   }
   val GossipDifferentViewProbability: Double = cc.getDouble("gossip-different-view-probability")
+  val ReduceGossipDifferentViewProbability: Int = cc.getInt("reduce-gossip-different-view-probability")
   val SchedulerTickDuration: FiniteDuration = Duration(cc.getMilliseconds("scheduler.tick-duration"), MILLISECONDS)
   val SchedulerTicksPerWheel: Int = cc.getInt("scheduler.ticks-per-wheel")
   val MetricsEnabled: Boolean = cc.getBoolean("metrics.enabled")

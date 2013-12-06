@@ -22,7 +22,6 @@ class GossipSpec extends WordSpec with MustMatchers {
   val c2 = TestMember(c1.address, Up)
   val c3 = TestMember(c1.address, Exiting)
   val d1 = TestMember(Address("akka.tcp", "sys", "d", 2552), Leaving)
-  val d2 = TestMember(d1.address, Removed)
   val e1 = TestMember(Address("akka.tcp", "sys", "e", 2552), Joining)
   val e2 = TestMember(e1.address, Up)
   val e3 = TestMember(e1.address, Down)
@@ -47,49 +46,33 @@ class GossipSpec extends WordSpec with MustMatchers {
 
     }
 
-    "merge unreachable by status priority" in {
-      val g1 = Gossip(members = Gossip.emptyMembers, overview = GossipOverview(unreachable = Set(a1, b1, c1, d1)))
-      val g2 = Gossip(members = Gossip.emptyMembers, overview = GossipOverview(unreachable = Set(a2, b2, c2, d2)))
+    "merge unreachable" in {
+      val r1 = Reachability.empty.unreachable(b1.uniqueAddress, a1.uniqueAddress).unreachable(b1.uniqueAddress, c1.uniqueAddress)
+      val g1 = Gossip(members = SortedSet(a1, b1, c1), overview = GossipOverview(reachability = r1))
+      val r2 = Reachability.empty.unreachable(a1.uniqueAddress, d1.uniqueAddress)
+      val g2 = Gossip(members = SortedSet(a1, b1, c1, d1), overview = GossipOverview(reachability = r2))
 
       val merged1 = g1 merge g2
-      merged1.overview.unreachable must be(Set(a2, b2, c1, d2))
-      merged1.overview.unreachable.toSeq.sorted.map(_.status) must be(Seq(Up, Removed, Leaving, Removed))
+      merged1.overview.reachability.allUnreachable must be(Set(a1.uniqueAddress, c1.uniqueAddress, d1.uniqueAddress))
 
       val merged2 = g2 merge g1
-      merged2.overview.unreachable must be(Set(a2, b2, c1, d2))
-      merged2.overview.unreachable.toSeq.sorted.map(_.status) must be(Seq(Up, Removed, Leaving, Removed))
-
+      merged2.overview.reachability.allUnreachable must be(merged1.overview.reachability.allUnreachable)
     }
 
-    "merge by excluding unreachable from members" in {
-      val g1 = Gossip(members = SortedSet(a1, b1), overview = GossipOverview(unreachable = Set(c1, d1)))
-      val g2 = Gossip(members = SortedSet(a2, c2), overview = GossipOverview(unreachable = Set(b2, d2)))
+    "merge members by removing removed members" in {
+      // c3 removed
+      val r1 = Reachability.empty.unreachable(b1.uniqueAddress, a1.uniqueAddress)
+      val g1 = Gossip(members = SortedSet(a1, b1), overview = GossipOverview(reachability = r1))
+      val r2 = r1.unreachable(b1.uniqueAddress, c3.uniqueAddress)
+      val g2 = Gossip(members = SortedSet(a1, b1, c3), overview = GossipOverview(reachability = r2))
 
       val merged1 = g1 merge g2
-      merged1.members must be(SortedSet(a2))
-      merged1.members.toSeq.map(_.status) must be(Seq(Up))
-      merged1.overview.unreachable must be(Set(b2, c1, d2))
-      merged1.overview.unreachable.toSeq.sorted.map(_.status) must be(Seq(Removed, Leaving, Removed))
+      merged1.members must be(SortedSet(a1, b1))
+      merged1.overview.reachability.allUnreachable must be(Set(a1.uniqueAddress))
 
       val merged2 = g2 merge g1
-      merged2.members must be(SortedSet(a2))
-      merged2.members.toSeq.map(_.status) must be(Seq(Up))
-      merged2.overview.unreachable must be(Set(b2, c1, d2))
-      merged2.overview.unreachable.toSeq.sorted.map(_.status) must be(Seq(Removed, Leaving, Removed))
-
-    }
-
-    "not have node in both members and unreachable" in intercept[IllegalArgumentException] {
-      Gossip(members = SortedSet(a1, b1), overview = GossipOverview(unreachable = Set(b2)))
-    }
-
-    "not have live members with wrong status" in intercept[IllegalArgumentException] {
-      // b2 is Removed
-      Gossip(members = SortedSet(a2, b2))
-    }
-
-    "not have non cluster members in seen table" in intercept[IllegalArgumentException] {
-      Gossip(members = SortedSet(a1, e1)).seen(a1.uniqueAddress).seen(e1.uniqueAddress).seen(b1.uniqueAddress)
+      merged2.overview.reachability.allUnreachable must be(merged1.overview.reachability.allUnreachable)
+      merged2.members must be(merged1.members)
     }
 
     "have leader as first member based on ordering, except Exiting status" in {
@@ -121,9 +104,11 @@ class GossipSpec extends WordSpec with MustMatchers {
 
     "know who is youngest" in {
       // a2 and e1 is Joining
-      val g1 = Gossip(members = SortedSet(a2, b1.copyUp(3)), overview = GossipOverview(unreachable = Set(e1)))
+      val g1 = Gossip(members = SortedSet(a2, b1.copyUp(3), e1), overview = GossipOverview(reachability =
+        Reachability.empty.unreachable(a2.uniqueAddress, e1.uniqueAddress)))
       g1.youngestMember must be(b1)
-      val g2 = Gossip(members = SortedSet(a2), overview = GossipOverview(unreachable = Set(b1.copyUp(3), e1)))
+      val g2 = Gossip(members = SortedSet(a2, b1.copyUp(3), e1), overview = GossipOverview(reachability =
+        Reachability.empty.unreachable(a2.uniqueAddress, b1.uniqueAddress).unreachable(a2.uniqueAddress, e1.uniqueAddress)))
       g2.youngestMember must be(b1)
       val g3 = Gossip(members = SortedSet(a2, b1.copyUp(3), e2.copyUp(4)))
       g3.youngestMember must be(e2)

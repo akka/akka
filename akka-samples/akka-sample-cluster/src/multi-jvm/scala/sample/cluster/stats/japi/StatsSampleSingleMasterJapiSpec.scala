@@ -19,7 +19,6 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
 import sample.cluster.stats.japi.StatsMessages._
-import akka.contrib.pattern.ClusterSingletonPropsFactory
 
 object StatsSampleSingleMasterJapiSpecConfig extends MultiNodeConfig {
   // register the named roles (nodes) of the test
@@ -38,7 +37,7 @@ object StatsSampleSingleMasterJapiSpecConfig extends MultiNodeConfig {
     akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
     akka.actor.deployment {
       /singleton/statsService/workerRouter {
-          router = consistent-hashing
+          router = consistent-hashing-pool
           nr-of-instances = 100
           cluster {
             enabled = on
@@ -79,18 +78,16 @@ abstract class StatsSampleSingleMasterJapiSpec extends MultiNodeSpec(StatsSample
 
       Cluster(system) join firstAddress
 
-      receiveN(3).collect { case MemberUp(m) => m.address }.toSet must be (
-           Set(firstAddress, secondAddress, thirdAddress))
+      receiveN(3).collect { case MemberUp(m) ⇒ m.address }.toSet must be(
+        Set(firstAddress, secondAddress, thirdAddress))
 
       Cluster(system).unsubscribe(testActor)
 
       system.actorOf(ClusterSingletonManager.defaultProps(
+        Props[StatsService],
         singletonName = "statsService",
         terminationMessage = PoisonPill,
-        role = null,
-        singletonPropsFactory = new ClusterSingletonPropsFactory {
-          def create(handOverData: Any) = Props[StatsService]
-        }), name = "singleton")
+        role = null), name = "singleton")
 
       system.actorOf(Props[StatsFacade], "statsFacade")
 

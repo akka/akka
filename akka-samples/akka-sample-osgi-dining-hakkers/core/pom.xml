@@ -57,10 +57,6 @@
             <artifactId>protobuf-java</artifactId>
         </dependency>
         <dependency>
-            <groupId>net.sandrogrzicic</groupId>
-            <artifactId>scalabuff-runtime_${scala.dep.version}</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-cluster_${scala.dep.version}</artifactId>
         </dependency>

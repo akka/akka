@@ -94,6 +94,10 @@ class SslTlsSupport(engine: SSLEngine) extends PipelineStage[HasLogging, Command
           // to shutdown the connection when getting CLOSED in encrypt
           closeEngine()
 
+        case x: Tcp.WriteCommand ⇒
+          throw new IllegalArgumentException(
+            "SslTlsSupport doesn't support Tcp.WriteCommands of type " + x.getClass.getSimpleName)
+
         case cmd ⇒ ctx.singleCommand(cmd)
       }
 

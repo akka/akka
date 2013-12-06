@@ -39,6 +39,15 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
   override def lookup = Cluster
 
   override def createExtension(system: ExtendedActorSystem): Cluster = new Cluster(system)
+
+  /**
+   * INTERNAL API
+   */
+  private[cluster] final val isAssertInvariantsEnabled: Boolean =
+    System.getProperty("akka.cluster.assert", "off").toLowerCase match {
+      case "on" | "true" ⇒ true
+      case _             ⇒ false
+    }
 }
 
 /**
@@ -90,6 +99,9 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   private var clusterJmx: Option[ClusterJmx] = None
 
   logInfo("Starting up...")
+
+  if (settings.AutoDown)
+    log.warning("[akka.cluster.auto-down] setting is replaced by [akka.cluster.auto-down-unreachable-after]")
 
   val failureDetector: FailureDetectorRegistry[Address] = {
     def createFailureDetector(): FailureDetector =
@@ -157,9 +169,12 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
       Await.result((clusterDaemons ? InternalClusterAction.GetClusterCoreRef).mapTo[ActorRef], timeout.duration)
     } catch {
       case NonFatal(e) ⇒
-        log.error(e, "Failed to startup Cluster")
+        log.error(e, "Failed to startup Cluster. You can try to increase 'akka.actor.creation-timeout'.")
         shutdown()
-        throw e
+        // don't re-throw, that would cause the extension to be re-recreated
+        // from shutdown() or other places, which may result in 
+        // InvalidActorNameException: actor name [cluster] is not unique
+        system.deadLetters
     }
   }
 

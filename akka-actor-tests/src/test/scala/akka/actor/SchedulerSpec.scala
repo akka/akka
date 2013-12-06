@@ -316,7 +316,38 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
 
   def collectCancellable(c: Cancellable): Cancellable = c
 
+  def tickDuration = system.scheduler.asInstanceOf[LightArrayRevolverScheduler].TickDuration
+
   "A LightArrayRevolverScheduler" must {
+
+    "reject tasks scheduled too far into the future" in {
+      val maxDelay = tickDuration * Int.MaxValue
+      import system.dispatcher
+      system.scheduler.scheduleOnce(maxDelay - tickDuration, testActor, "OK")
+      intercept[IllegalArgumentException] {
+        system.scheduler.scheduleOnce(maxDelay, testActor, "Too far")
+      }
+    }
+
+    "reject periodic tasks scheduled too far into the future" in {
+      val maxDelay = tickDuration * Int.MaxValue
+      import system.dispatcher
+      system.scheduler.schedule(maxDelay - tickDuration, 1.second, testActor, "OK")
+      intercept[IllegalArgumentException] {
+        system.scheduler.schedule(maxDelay, 1.second, testActor, "Too far")
+      }
+    }
+
+    "reject periodic tasks scheduled with too long interval" in {
+      val maxDelay = tickDuration * Int.MaxValue
+      import system.dispatcher
+      system.scheduler.schedule(100.millis, maxDelay - tickDuration, testActor, "OK")
+      expectMsg("OK")
+      intercept[IllegalArgumentException] {
+        system.scheduler.schedule(100.millis, maxDelay, testActor, "Too long")
+      }
+      expectNoMsg(1.second)
+    }
 
     "survive being stressed with cancellation" taggedAs TimingTest in {
       import system.dispatcher

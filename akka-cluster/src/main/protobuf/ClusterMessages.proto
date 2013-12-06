@@ -65,13 +65,8 @@ message Welcome {
  */
 
 /**
- * EndHeartbeat
- * Sends an Address
- */
-
-/**
- * HeartbeatRequest
- * Sends an Address
+ * HeartbeatRsp
+ * Sends an UniqueAddress
  */
 
 /****************************************
@@ -84,7 +79,7 @@ message Welcome {
 message GossipEnvelope {
   required UniqueAddress from = 1;
   required UniqueAddress to = 2;
-  required Gossip gossip = 3;
+  required bytes serializedGossip = 3;
 }
 
 /**
@@ -114,8 +109,33 @@ message Gossip {
 message GossipOverview {
   /* This is the address indexes for the nodes that have seen this gossip */
   repeated int32 seen = 1;
-  repeated Member unreachable = 2;
+  repeated ObserverReachability observerReachability = 2;
 }
+
+/**
+ * Reachability
+ */
+message ObserverReachability {
+  required int32 addressIndex = 1;
+  required int64 version = 4;
+  repeated SubjectReachability subjectReachability = 2;
+}
+
+message SubjectReachability {
+  required int32 addressIndex = 1;
+  required ReachabilityStatus status = 3;
+  required int64 version = 4;
+}
+
+/**
+ * Reachability status
+ */
+enum ReachabilityStatus {
+  Reachable = 0;
+  Unreachable = 1;
+  Terminated = 2;
+}
+
 
 /**
  * Member

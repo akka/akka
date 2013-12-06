@@ -27,6 +27,7 @@ class RemoteConfigSpec extends AkkaSpec(
       LogReceive must be(false)
       LogSend must be(false)
       UntrustedMode must be(false)
+      TrustedSelectionPaths must be(Set.empty[String])
       LogRemoteLifecycleEvents must be(true)
       ShutdownTimeout.duration must be(10 seconds)
       FlushWait must be(2 seconds)
@@ -130,6 +131,11 @@ class RemoteConfigSpec extends AkkaSpec(
       sslSettings.SSLProtocol must be(Some("TLSv1"))
       sslSettings.SSLEnabledAlgorithms must be(Set("TLS_RSA_WITH_AES_128_CBC_SHA"))
       sslSettings.SSLRandomNumberGenerator must be(None)
+    }
+
+    "have debug logging of the failure injector turned off in reference.conf" in {
+      val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.gremlin")
+      c.getBoolean("debug") must be(false)
     }
   }
 }

@@ -102,7 +102,9 @@ This can also be defined as Java system properties when starting the JVM using t
 The seed nodes can be started in any order and it is not necessary to have all
 seed nodes running, but the node configured as the first element in the ``seed-nodes``
 configuration list must be started when initially starting a cluster, otherwise the 
-other seed-nodes will not become initialized and no other node can join the cluster. 
+other seed-nodes will not become initialized and no other node can join the cluster.
+The reason for the special first seed node is to avoid forming separated islands when
+starting from an empty cluster.
 It is quickest to start all configured seed nodes at the same time (order doesn't matter), 
 otherwise it can take up to the configured ``seed-node-timeout`` until the nodes
 can join.
@@ -115,7 +117,15 @@ If you don't configure the seed nodes you need to join manually, using :ref:`clu
 or :ref:`cluster_command_line_scala`. You can join to any node in the cluster. It doesn't 
 have to be configured as a seed node.
 
-Joining can also be performed programatically with ``Cluster(system).join(address)``.
+Joining can also be performed programatically with ``Cluster(system).join``. Note that
+you can only join to an existing cluster member, which means that for bootstrapping some
+node must join itself.
+
+You may also use ``Cluster(system).joinSeedNodes``, which is attractive when dynamically 
+discovering other nodes at startup by using some external tool or API. When using 
+``joinSeedNodes`` you should not include the node itself except for the node that is 
+supposed to be the first seed node, and that should be placed first in parameter to 
+``joinSeedNodes``.
 
 Unsuccessful join attempts are automatically retried after the time period defined in 
 configuration property ``retry-unsuccessful-join-after``. When using ``seed-nodes`` this
@@ -134,20 +144,29 @@ Automatic vs. Manual Downing
 
 When a member is considered by the failure detector to be unreachable the
 leader is not allowed to perform its duties, such as changing status of
-new joining members to 'Up'. The status of the unreachable member must be
-changed to 'Down'. This can be performed automatically or manually. By
-default it must be done manually, using using :ref:`cluster_jmx_scala` or
-:ref:`cluster_command_line_scala`.
+new joining members to 'Up'. The node must first become reachable again, or the
+status of the unreachable member must be changed to 'Down'. Changing status to 'Down'
+can be performed automatically or manually. By default it must be done manually, using
+:ref:`cluster_jmx_scala` or :ref:`cluster_command_line_scala`.
 
 It can also be performed programatically with ``Cluster(system).down(address)``.
 
 You can enable automatic downing with configuration::
 
-      akka.cluster.auto-down = on
+      akka.cluster.auto-down-unreachable-after = 120s
+
+This means that the cluster leader member will change the ``unreachable`` node 
+status to ``down`` automatically after the configured time of unreachability.
 
 Be aware of that using auto-down implies that two separate clusters will
 automatically be formed in case of network partition. That might be
 desired by some applications but not by others.
+
+.. note:: If you have *auto-down* enabled and the failure detector triggers, you
+   can over time end up with a lot of single node clusters if you don't put
+   measures in place to shut down nodes that have become ``unreachable``. This
+   follows from the fact that the ``unreachable`` node will likely see the rest of
+   the cluster as ``unreachable``, become its own leader and form its own cluster.
 
 Leaving
 ^^^^^^^
@@ -187,10 +206,13 @@ receive ``MemberUp`` for that node, and other nodes.
 The events to track the life-cycle of members are:
 
 * ``ClusterEvent.MemberUp`` - A new member has joined the cluster and its status has been changed to ``Up``.
-* ``ClusterEvent.MemberExited`` - A member is leaving the cluster and its status has been changed to ``Exiting``.
+* ``ClusterEvent.MemberExited`` - A member is leaving the cluster and its status has been changed to ``Exiting``
   Note that the node might already have been shutdown when this event is published on another node.
 * ``ClusterEvent.MemberRemoved`` - Member completely removed from the cluster.
-* ``ClusterEvent.UnreachableMember`` - A member is considered as unreachable by the failure detector.
+* ``ClusterEvent.UnreachableMember`` - A member is considered as unreachable, detected by the failure detector
+  of at least one other node.
+* ``ClusterEvent.ReachableMember`` - A member is considered as reachable again, after having been unreachable.
+  All nodes that previously detected it as unreachable has detected it as reachable again.
 
 There are more types of change events, consult the API documentation
 of classes that extends ``akka.cluster.ClusterEvent.ClusterDomainEvent``
@@ -312,6 +334,22 @@ See :ref:`cluster-client` in the contrib module.
 Failure Detector
 ^^^^^^^^^^^^^^^^
 
+In a cluster each node is monitored by a few (default maximum 5) other nodes, and when
+any of these detects the node as ``unreachable`` that information will spread to
+the rest of the cluster through the gossip. In other words, only one node needs to
+mark a node ``unreachable`` to have the rest of the cluster mark that node ``unreachable``.
+
+The failure detector will also detect if the node becomes ``reachable`` again. When
+all nodes that monitored the ``unreachable`` node detects it as ``reachable`` again
+the cluster, after gossip dissemination, will consider it as ``reachable``. 
+
+If system messages cannot be delivered to a node it will be quarantined and then it
+cannot come back from ``unreachable``. This can happen if the there are too many
+unacknowledged system messages (e.g. watch, Terminated, remote actor deployment, 
+failures of actors supervised by remote parent). Then the node needs to be moved
+to the ``down`` or ``removed`` states and the actor system must be restarted before
+it can join the cluster again.
+
 The nodes in the cluster monitor each other by sending heartbeats to detect if a node is
 unreachable from the rest of the cluster. The heartbeat arrival times is interpreted
 by an implementation of
@@ -375,18 +413,19 @@ Cluster Aware Routers
 
 All :ref:`routers <routing-scala>` can be made aware of member nodes in the cluster, i.e.
 deploying new routees or looking up routees on nodes in the cluster.
-When a node becomes unavailable or leaves the cluster the routees of that node are
+When a node becomes unreachable or leaves the cluster the routees of that node are
 automatically unregistered from the router. When new nodes join the cluster additional
-routees are added to the router, according to the configuration.
+routees are added to the router, according to the configuration. Routees are also added 
+when a node becomes reachable again, after having been unreachable.
 
 There are two distinct types of routers. 
 
-* **Router that lookup existing actors and use them as routees.** The routees can be shared between
-  routers running on different nodes in the cluster. One example of a use case for this
-  type of router is a service running on some backend nodes in the cluster and 
-  used by routers running on front-end nodes in the cluster.
+* **Group - router that sends messages to the specified path using actor selection** 
+  The routees can be shared between routers running on different nodes in the cluster. 
+  One example of a use case for this type of router is a service running on some backend 
+  nodes in the cluster and used by routers running on front-end nodes in the cluster.
 
-* **Router that creates new routees as child actors and deploy them on remote nodes.** 
+* **Pool - router that creates routees as child actors and deploys them on remote nodes.** 
   Each router will have its own routee instances. For example, if you start a router
   on 3 nodes in a 10 nodes cluster you will have 30 routee actors in total if the router is
   configured to use one inctance per node. The routees created by the the different routers
@@ -394,11 +433,11 @@ There are two distinct types of routers.
   is a single master that coordinate jobs and delegates the actual work to routees running 
   on other nodes in the cluster.
 
-Router with Lookup of Routees
------------------------------
+Router with Group of Routees
+----------------------------
 
-When using a router with routees looked up on the cluster member nodes, i.e. the routees
-are already running, the configuration for a router looks like this:
+When using a ``Group`` you must start the routee actors on the cluster member nodes.
+That is not done by the router. The configuration for a group looks like this:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#router-lookup-config
 
@@ -409,14 +448,12 @@ are already running, the configuration for a router looks like this:
   available at that point it will be removed from the router and it will only re-try when the 
   cluster members are changed.
 
-It is the relative actor path defined in ``routees-path`` that identify what actor to lookup. 
+It is the relative actor paths defined in ``routees.paths`` that identify what actor to lookup. 
 It is possible to limit the lookup of routees to member nodes tagged with a certain role by
 specifying ``use-role``.
 
-``nr-of-instances`` defines total number of routees in the cluster, but there will not be
-more than one per node. That routee actor could easily fan out to local children if more parallelism 
-is needed. Setting ``nr-of-instances`` to a high value will result in new routees
-added to the router when nodes join the cluster.
+``nr-of-instances`` defines total number of routees in the cluster. Setting ``nr-of-instances`` 
+to a high value will result in new routees added to the router when nodes join the cluster.
 
 The same type of router could also have been defined in code:
 
@@ -424,10 +461,11 @@ The same type of router could also have been defined in code:
 
 See :ref:`cluster_configuration_scala` section for further descriptions of the settings.
 
-Router Example with Lookup of Routees
--------------------------------------
+Router Example with Group of Routees
+------------------------------------
 
-Let's take a look at how to use a cluster aware router with lookup of routees.
+Let's take a look at how to use a cluster aware router with a group of routees, 
+i.e. router sending to the paths of the routees.
 
 The example application provides a service to calculate statistics for a text.
 When some text is sent to the service it splits it into words, and delegates the task
@@ -455,7 +493,7 @@ The service that receives text from users and splits it up into words, delegates
 Note, nothing cluster specific so far, just plain actors.
 
 All nodes start ``StatsService`` and ``StatsWorker`` actors. Remember, routees are the workers in this case.
-The router is configured with ``routees-path``:
+The router is configured with ``routees.paths``:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf#config-router-lookup
 
@@ -479,10 +517,10 @@ service nodes and 1 client::
 
   run-main sample.cluster.stats.StatsSample
 
-Router with Remote Deployed Routees
------------------------------------
+Router with Pool of Remote Deployed Routees
+-------------------------------------------
 
-When using a router with routees created and deployed on the cluster member nodes
+When using a ``Pool`` with routees created and deployed on the cluster member nodes
 the configuration for a router looks like this:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSingleMasterSpec.scala#router-deploy-config
@@ -501,8 +539,8 @@ The same type of router could also have been defined in code:
 
 See :ref:`cluster_configuration_scala` section for further descriptions of the settings.
 
-Router Example with Remote Deployed Routees
--------------------------------------------
+Router Example with Pool of Remote Deployed Routees
+---------------------------------------------------
 
 Let's take a look at how to use a cluster aware router on single master node that creates
 and deploys workers. To keep track of a single master we use the :ref:`cluster-singleton` 
@@ -559,7 +597,7 @@ Download the native Sigar libraries from `Maven Central <http://repo1.maven.org/
 Adaptive Load Balancing
 -----------------------
 
-The ``AdaptiveLoadBalancingRouter`` performs load balancing of messages to cluster nodes based on the cluster metrics data.
+The ``AdaptiveLoadBalancingPool`` / ``AdaptiveLoadBalancingGroup`` performs load balancing of messages to cluster nodes based on the cluster metrics data.
 It uses random selection of routees with probabilities derived from the remaining capacity of the corresponding node.
 It can be configured to use a specific MetricsSelector to produce the probabilities, a.k.a. weights:
 

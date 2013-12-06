@@ -5,13 +5,14 @@ package akka.actor.dispatch
 
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.reflect.ClassTag
-
 import com.typesafe.config.ConfigFactory
-
 import akka.ConfigurationException
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.dispatch.{ BalancingDispatcher, Dispatcher, Dispatchers, MessageDispatcher, PinnedDispatcher }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
+import akka.routing.FromConfig
+import akka.actor.Identify
+import akka.actor.ActorIdentity
 
 object DispatchersSpec {
   val config = """
@@ -37,7 +38,12 @@ object DispatchersSpec {
       /echo2 {
         dispatcher = myapp.mydispatcher
       }
-     }
+      /pool1 {
+        router = random-pool
+        nr-of-instances = 3
+        pool-dispatcher.type = BalancingDispatcher
+      }
+    }
     """
 
   class ThreadNameEcho extends Actor {
@@ -171,6 +177,17 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
     "use dispatcher in deployment config, trumps code" in {
       assertMyDispatcherIsUsed(
         system.actorOf(Props[ThreadNameEcho].withDispatcher("myapp.my-pinned-dispatcher"), name = "echo2"))
+    }
+
+    "use pool-dispatcher router of deployment config" in {
+      val pool = system.actorOf(FromConfig.props(Props[ThreadNameEcho]), name = "pool1")
+      pool ! Identify(None)
+      val routee = expectMsgType[ActorIdentity].ref.get
+      routee ! "what's the name?"
+      val Expected = """(DispatchersSpec-akka\.actor\.deployment\./pool1\.pool-dispatcher-[1-9][0-9]*)""".r
+      expectMsgPF(remaining) {
+        case Expected(x) ⇒
+      }
     }
 
   }

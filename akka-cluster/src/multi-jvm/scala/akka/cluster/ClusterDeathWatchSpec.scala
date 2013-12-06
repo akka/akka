@@ -71,7 +71,7 @@ abstract class ClusterDeathWatchSpec
   }
 
   "An actor watching a remote actor in the cluster" must {
-    "receive Terminated when watched node becomes Down" taggedAs LongRunningTest in within(20 seconds) {
+    "receive Terminated when watched node becomes Down/Removed" taggedAs LongRunningTest in within(20 seconds) {
       awaitClusterUp(first, second, third, fourth)
       enterBarrier("cluster-up")
 
@@ -103,10 +103,10 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("second-terminated")
 
         markNodeAsUnavailable(third)
-        awaitAssert(clusterView.members.map(_.address) must not contain (address(third)))
         awaitAssert(clusterView.unreachableMembers.map(_.address) must contain(address(third)))
         cluster.down(third)
         // removed
+        awaitAssert(clusterView.members.map(_.address) must not contain (address(third)))
         awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (address(third)))
         expectMsg(path3)
         enterBarrier("third-terminated")
@@ -119,10 +119,10 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("watch-established")
         runOn(third) {
           markNodeAsUnavailable(second)
-          awaitAssert(clusterView.members.map(_.address) must not contain (address(second)))
           awaitAssert(clusterView.unreachableMembers.map(_.address) must contain(address(second)))
           cluster.down(second)
           // removed
+          awaitAssert(clusterView.members.map(_.address) must not contain (address(second)))
           awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (address(second)))
         }
         enterBarrier("second-terminated")
@@ -194,11 +194,11 @@ abstract class ClusterDeathWatchSpec
 
       runOn(fourth) {
         markNodeAsUnavailable(fifth)
-        awaitAssert(clusterView.members.map(_.address) must not contain (address(fifth)))
         awaitAssert(clusterView.unreachableMembers.map(_.address) must contain(address(fifth)))
         cluster.down(fifth)
         // removed
         awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (address(fifth)))
+        awaitAssert(clusterView.members.map(_.address) must not contain (address(fifth)))
       }
 
       enterBarrier("fifth-terminated")
@@ -226,11 +226,11 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("hello-deployed")
 
         markNodeAsUnavailable(first)
-        awaitAssert(clusterView.members.map(_.address) must not contain (address(first)))
         awaitAssert(clusterView.unreachableMembers.map(_.address) must contain(address(first)))
         cluster.down(first)
         // removed
         awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (address(first)))
+        awaitAssert(clusterView.members.map(_.address) must not contain (address(first)))
 
         expectTerminated(hello)
 

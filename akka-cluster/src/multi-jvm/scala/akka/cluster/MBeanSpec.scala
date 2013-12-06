@@ -95,8 +95,9 @@ abstract class MBeanSpec
       enterBarrier("after-4")
     }
 
-    "support down" taggedAs LongRunningTest in within(20 seconds) {
-      val fourthAddress = address(fourth)
+    val fourthAddress = address(fourth)
+
+    "format cluster status as JSON with full reachability info" taggedAs LongRunningTest in within(30 seconds) {
       runOn(first) {
         testConductor.exit(fourth, 0).await
       }
@@ -104,10 +105,61 @@ abstract class MBeanSpec
 
       runOn(first, second, third) {
         awaitAssert(mbeanServer.getAttribute(mbeanName, "Unreachable") must be(fourthAddress.toString))
-        val expectedMembers = Seq(first, second, third).sorted.map(address(_)).mkString(",")
+        val expectedMembers = Seq(first, second, third, fourth).sorted.map(address(_)).mkString(",")
         awaitAssert(mbeanServer.getAttribute(mbeanName, "Members") must be(expectedMembers))
       }
       enterBarrier("fourth-unreachable")
+
+      runOn(first) {
+        val sortedNodes = Vector(first, second, third, fourth).sorted.map(address(_))
+        val unreachableObservedBy = Vector(first, second, third).sorted.map(address(_))
+        val expectedJson =
+          s"""{
+             |  "self-address": "${address(first)}",
+             |  "members": [
+             |    {
+             |      "address": "${sortedNodes(0)}",
+             |      "status": "Up"
+             |    },
+             |    {
+             |      "address": "${sortedNodes(1)}",
+             |      "status": "Up"
+             |    },
+             |    {
+             |      "address": "${sortedNodes(2)}",
+             |      "status": "Up"
+             |    },
+             |    {
+             |      "address": "${sortedNodes(3)}",
+             |      "status": "Up"
+             |    }
+             |  ],
+             |  "unreachable": [
+             |    {
+             |      "node": "${address(fourth)}",
+             |      "observed-by": [
+             |        "${unreachableObservedBy(0)}",
+             |        "${unreachableObservedBy(1)}",
+             |        "${unreachableObservedBy(2)}"
+             |      ]
+             |    }
+             |  ]
+             |}
+             |""".stripMargin
+
+        // awaitAssert to make sure that all nodes detects unreachable
+        within(15.seconds) {
+          awaitAssert(mbeanServer.getAttribute(mbeanName, "ClusterStatus") must be(expectedJson))
+        }
+      }
+
+      enterBarrier("after-5")
+
+    }
+
+    "support down" taggedAs LongRunningTest in within(20 seconds) {
+
+      // fourth unreachable in previous step
 
       runOn(second) {
         mbeanServer.invoke(mbeanName, "down", Array(fourthAddress.toString), Array("java.lang.String"))
@@ -120,7 +172,7 @@ abstract class MBeanSpec
         awaitAssert(mbeanServer.getAttribute(mbeanName, "Unreachable") must be(""))
       }
 
-      enterBarrier("after-5")
+      enterBarrier("after-6")
     }
 
     "support leave" taggedAs LongRunningTest in within(20 seconds) {
@@ -142,7 +194,7 @@ abstract class MBeanSpec
         })
       }
 
-      enterBarrier("after-6")
+      enterBarrier("after-7")
     }
 
   }

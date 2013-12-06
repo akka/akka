@@ -28,9 +28,8 @@ supplied ``Props``. ``ClusterSingletonManager`` makes sure that at most one sing
 is running at any point in time.
 
 The singleton actor is always running on the oldest member, which can be determined by
-``Member#isOlderThan``. This can change when removing members. A graceful hand over can normally
-be performed when current oldest node is leaving the cluster. Be aware that there is a short
-time period when there is no active singleton during the hand-over process.
+``Member#isOlderThan``. This can change when removing that member from the cluster. Be aware
+that there is a short time period when there is no active singleton during the hand-over process.
 
 The cluster failure detector will notice when oldest node becomes unreachable due to
 things like JVM crash, hard shut down, or network failure. Then a new oldest node will

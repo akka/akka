@@ -57,10 +57,13 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
       }
       if (!isTerminating) {
         self.tell(Terminated(actor)(existenceConfirmed, addressTerminated), actor)
-        terminatedQueued += actor
+        terminatedQueuedFor(actor)
       }
     }
   }
+
+  private[akka] def terminatedQueuedFor(subject: ActorRef): Unit =
+    terminatedQueued += subject
 
   // TODO this should be removed and be replaced with `watching.contains(subject)`
   //   when all actor references have uid, i.e. actorFor is removed

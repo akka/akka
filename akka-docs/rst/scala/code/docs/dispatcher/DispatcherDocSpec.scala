@@ -13,6 +13,7 @@ import akka.event.LoggingAdapter
 import scala.concurrent.duration._
 import akka.actor._
 import docs.dispatcher.DispatcherDocSpec.MyBoundedActor
+import akka.dispatch.RequiresMessageQueue
 
 object DispatcherDocSpec {
   val javaConfig = """
@@ -29,6 +30,22 @@ object DispatcherDocSpec {
       //Other mailbox configuration goes here
     }
     //#prio-mailbox-config-java
+
+    //#custom-mailbox-config-java
+    custom-dispatcher {
+      mailbox-requirement =
+      "docs.dispatcher.MyUnboundedJMessageQueueSemantics"
+    }
+
+    akka.actor.mailbox.requirements {
+      "docs.dispatcher.MyUnboundedJMessageQueueSemantics" =
+      custom-dispatcher-mailbox
+    }
+
+    custom-dispatcher-mailbox {
+      mailbox-type = "docs.dispatcher.MyUnboundedJMailbox"
+    }
+    //#custom-mailbox-config-java
   """
 
   val config = """
@@ -154,6 +171,21 @@ object DispatcherDocSpec {
     }
     //#required-mailbox-config
 
+    //#custom-mailbox-config
+    custom-dispatcher {
+      mailbox-requirement =
+      "docs.dispatcher.MyUnboundedMessageQueueSemantics"
+    }
+
+    akka.actor.mailbox.requirements {
+      "docs.dispatcher.MyUnboundedMessageQueueSemantics" =
+      custom-dispatcher-mailbox
+    }
+
+    custom-dispatcher-mailbox {
+      mailbox-type = "docs.dispatcher.MyUnboundedMailbox"
+    }
+    //#custom-mailbox-config
   """
 
   //#prio-mailbox
@@ -195,33 +227,22 @@ object DispatcherDocSpec {
     with RequiresMessageQueue[BoundedMessageQueueSemantics]
   //#required-mailbox-class
 
-  //#mailbox-implementation-example
-  class MyUnboundedMailbox extends akka.dispatch.MailboxType {
-    import akka.actor.{ ActorRef, ActorSystem }
-    import com.typesafe.config.Config
-    import java.util.concurrent.ConcurrentLinkedQueue
-    import akka.dispatch.{
-      Envelope,
-      MessageQueue,
-      UnboundedQueueBasedMessageQueue
+  //#require-mailbox-on-actor
+  class MySpecialActor extends Actor
+    with RequiresMessageQueue[MyUnboundedMessageQueueSemantics] {
+    //#require-mailbox-on-actor
+    def receive = {
+      case _ ⇒
     }
-
-    // This constructor signature must exist, it will be called by Akka
-    def this(settings: ActorSystem.Settings, config: Config) = this()
-
-    // The create method is called to create the MessageQueue
-    final override def create(owner: Option[ActorRef],
-                              system: Option[ActorSystem]): MessageQueue =
-      new UnboundedQueueBasedMessageQueue {
-        final val queue = new ConcurrentLinkedQueue[Envelope]()
-      }
+    //#require-mailbox-on-actor
+    // ...
   }
-  //#mailbox-implementation-example
+  //#require-mailbox-on-actor
 }
 
 class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
 
-  import DispatcherDocSpec.MyActor
+  import DispatcherDocSpec._
 
   "defining dispatcher in config" in {
     val context = system
@@ -323,6 +344,15 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
 
   "defining balancing dispatcher" in {
     val dispatcher = system.dispatchers.lookup("my-balancing-dispatcher")
+  }
+
+  "require custom mailbox on dispatcher" in {
+    val myActor = system.actorOf(Props[MyActor].withDispatcher(
+      "custom-dispatcher"))
+  }
+
+  "require custom mailbox on actor" in {
+    val myActor = system.actorOf(Props[MySpecialActor])
   }
 
 }

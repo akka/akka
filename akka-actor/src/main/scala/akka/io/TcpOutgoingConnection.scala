@@ -4,9 +4,8 @@
 
 package akka.io
 
-import java.io.IOException
 import java.nio.channels.{ SelectionKey, SocketChannel }
-import java.net.ConnectException
+import scala.util.control.NonFatal
 import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.actor.{ ReceiveTimeout, ActorRef }
@@ -33,7 +32,7 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
 
   options.foreach(_.beforeBind(channel))
   localAddress.foreach(channel.socket.bind)
-  channelRegistry.register(channel, SelectionKey.OP_CONNECT)
+  channelRegistry.register(channel, 0)
   timeout foreach context.setReceiveTimeout //Initiate connection timeout if supplied
 
   private def stop(): Unit = stopWith(CloseInformation(Set(commander), connect.failureMessage))
@@ -42,7 +41,7 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
     try {
       thunk
     } catch {
-      case e: IOException ⇒
+      case NonFatal(e) ⇒
         log.debug("Could not establish connection to [{}] due to {}", remoteAddress, e)
         stop()
     }
@@ -54,13 +53,14 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
       reportConnectFailure {
         if (channel.connect(remoteAddress))
           completeConnect(registration, commander, options)
-        else
-          context.become(connecting(registration, commander, options, tcp.Settings.FinishConnectRetries))
+        else {
+          registration.enableInterest(SelectionKey.OP_CONNECT)
+          context.become(connecting(registration, tcp.Settings.FinishConnectRetries))
+        }
       }
   }
 
-  def connecting(registration: ChannelRegistration, commander: ActorRef,
-                 options: immutable.Traversable[SocketOption], remainingFinishConnectRetries: Int): Receive = {
+  def connecting(registration: ChannelRegistration, remainingFinishConnectRetries: Int): Receive = {
     {
       case ChannelConnectable ⇒
         reportConnectFailure {
@@ -73,7 +73,7 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
               context.system.scheduler.scheduleOnce(1.millisecond) {
                 channelRegistry.register(channel, SelectionKey.OP_CONNECT)
               }(context.dispatcher)
-              context.become(connecting(registration, commander, options, remainingFinishConnectRetries - 1))
+              context.become(connecting(registration, remainingFinishConnectRetries - 1))
             } else {
               log.debug("Could not establish connection because finishConnect " +
                 "never returned true (consider increasing akka.io.tcp.finish-connect-retries)")

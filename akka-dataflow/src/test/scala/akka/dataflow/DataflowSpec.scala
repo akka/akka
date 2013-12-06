@@ -27,8 +27,11 @@ object DataflowSpec {
 
   class TestDelayActor(await: TestLatch) extends Actor {
     def receive = {
-      case "Hello"   ⇒ Await.ready(await, TestLatch.DefaultTimeout); sender ! "World"
-      case "NoReply" ⇒ Await.ready(await, TestLatch.DefaultTimeout)
+      case "Hello" ⇒
+        Await.ready(await, TestLatch.DefaultTimeout)
+        sender ! "World"
+      case "NoReply" ⇒
+        Await.ready(await, TestLatch.DefaultTimeout)
       case "Failure" ⇒
         Await.ready(await, TestLatch.DefaultTimeout)
         sender ! Status.Failure(new RuntimeException("Expected exception; to test fault-tolerance"))

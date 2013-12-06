@@ -63,7 +63,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
         val optionalMessage = if (currentMessage ne null) Some(currentMessage.message) else None
         try {
           // if the actor fails in preRestart, we can do nothing but log it: it’s best-effort
-          if (failedActor.context ne null) failedActor.preRestart(cause, optionalMessage)
+          if (failedActor.context ne null) failedActor.aroundPreRestart(cause, optionalMessage)
         } catch handleNonFatalOrInterruptedException { e ⇒
           val ex = new PreRestartException(self, e, cause, optionalMessage)
           publish(Error(ex, self.path.toString, clazz(failedActor), e.getMessage))
@@ -170,8 +170,8 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       suspendNonRecursive()
       // suspend children
       val skip: Set[ActorRef] = currentMessage match {
-        case Envelope(Failed(_, _, _), child) ⇒ setFailed(child); Set(child)
-        case _                                ⇒ setFailed(self); Set.empty
+        case Envelope(Failed(_, _, _), child) ⇒ { setFailed(child); Set(child) }
+        case _                                ⇒ { setFailed(self); Set.empty }
       }
       suspendChildren(exceptFor = skip ++ childrenNotToSuspend)
       t match {
@@ -198,7 +198,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
      * Please note that if a parent is also a watcher then ChildTerminated and Terminated must be processed in this
      * specific order.
      */
-    try if (a ne null) a.postStop()
+    try if (a ne null) a.aroundPostStop()
     catch handleNonFatalOrInterruptedException { e ⇒ publish(Error(e, self.path.toString, clazz(a), e.getMessage)) }
     finally try dispatcher.detach(this)
     finally try parent.sendSystemMessage(DeathWatchNotification(self, existenceConfirmed = true, addressTerminated = false))
@@ -226,7 +226,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       actor = freshActor // this must happen before postRestart has a chance to fail
       if (freshActor eq failedActor) setActorFields(freshActor, this, self) // If the creator returns the same instance, we need to restore our nulled out fields.
 
-      freshActor.postRestart(cause)
+      freshActor.aroundPostRestart(cause)
       if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(freshActor), "restarted"))
 
       // only after parent is up and running again do restart the children which were not stopped

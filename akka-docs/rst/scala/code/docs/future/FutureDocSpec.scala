@@ -418,9 +418,10 @@ class FutureDocSpec extends AkkaSpec {
 
   "demonstrate usage of pattern.after" in {
     //#after
-    import akka.pattern.after
+    // TODO after is unfortunately shadowed by ScalaTest, fix as part of #3759
+    // import akka.pattern.after
 
-    val delayed = after(200 millis, using = system.scheduler)(Future.failed(
+    val delayed = akka.pattern.after(200 millis, using = system.scheduler)(Future.failed(
       new IllegalStateException("OHNOES")))
     val future = Future { Thread.sleep(1000); "foo" }
     val result = Future firstCompletedOf Seq(future, delayed)

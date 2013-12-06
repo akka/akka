@@ -90,7 +90,8 @@ object Member {
    */
   implicit val addressOrdering: Ordering[Address] = Ordering.fromLessThan[Address] { (a, b) ⇒
     // cluster node identifier is the host and port of the address; protocol and system is assumed to be the same
-    if (a.host != b.host) a.host.getOrElse("").compareTo(b.host.getOrElse("")) < 0
+    if (a eq b) false
+    else if (a.host != b.host) a.host.getOrElse("").compareTo(b.host.getOrElse("")) < 0
     else if (a.port != b.port) a.port.getOrElse(0) < b.port.getOrElse(0)
     else false
   }
@@ -127,7 +128,13 @@ object Member {
     val groupedByAddress = (a.toSeq ++ b.toSeq).groupBy(_.uniqueAddress)
     // pick highest MemberStatus
     (Member.none /: groupedByAddress) {
-      case (acc, (_, members)) ⇒ acc + members.reduceLeft(highestPriorityOf)
+      case (acc, (_, members)) ⇒
+        if (members.size == 2) acc + members.reduceLeft(highestPriorityOf)
+        else {
+          val m = members.head
+          if (Gossip.removeUnreachableWithMemberStatus(m.status)) acc // removed
+          else acc + m
+        }
     }
   }
 
@@ -213,10 +220,9 @@ object MemberStatus {
  */
 @SerialVersionUID(1L)
 private[cluster] case class UniqueAddress(address: Address, uid: Int) extends Ordered[UniqueAddress] {
-  @transient
-  override lazy val hashCode = scala.util.hashing.MurmurHash3.productHash(this)
+  override def hashCode = uid
 
-  override def compare(that: UniqueAddress): Int = {
+  def compare(that: UniqueAddress): Int = {
     val result = Member.addressOrdering.compare(this.address, that.address)
     if (result == 0) if (this.uid < that.uid) -1 else if (this.uid == that.uid) 0 else 1
     else result

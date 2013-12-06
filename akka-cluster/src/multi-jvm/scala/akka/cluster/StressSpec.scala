@@ -109,7 +109,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       # by tree-width (number of children for each actor) and
       # tree-levels, total number of actors can be calculated by
       # (width * math.pow(width, levels) - 1) / (width - 1)
-      tree-width = 5
+      tree-width = 4
       tree-levels = 4
       report-metrics-interval = 10s
       # scale convergence within timeouts with this factor
@@ -122,7 +122,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     akka.actor.serialize-creators = off
     akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.cluster {
-      auto-down = on
+      auto-down-unreachable-after = 1s
       publish-stats-interval = 1s
     }
     akka.loggers = ["akka.testkit.TestEventListener"]
@@ -136,30 +136,30 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
 
     akka.actor.deployment {
       /master-node-1/workers {
-        router = round-robin
+        router = round-robin-pool
         nr-of-instances = 100
         cluster {
           enabled = on
           max-nr-of-instances-per-node = 1
-          allow-local-routees = off
+          allow-local-routees = on
         }
       }
       /master-node-2/workers {
-        router = round-robin
+        router = round-robin-group
         nr-of-instances = 100
+        routees.paths = ["/user/worker"]
         cluster {
           enabled = on
-          routees-path = "/user/worker"
-          allow-local-routees = off
+          allow-local-routees = on
         }
       }
       /master-node-3/workers = {
-        router = adaptive
+        router = adaptive-pool
         nr-of-instances = 100
         cluster {
           enabled = on
           max-nr-of-instances-per-node = 1
-          allow-local-routees = off
+          allow-local-routees = on
         }
       }
     }
@@ -486,7 +486,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
    * itself.
    */
   class Master(settings: StressMultiJvmSpec.Settings, batchInterval: FiniteDuration, tree: Boolean) extends Actor {
-    val workers = context.actorOf(Props[Worker].withRouter(FromConfig), "workers")
+    val workers = context.actorOf(FromConfig.props(Props[Worker]), "workers")
     val payload = Array.fill(settings.payloadSize)(ThreadLocalRandom.current.nextInt(127).toByte)
     val retryTimeout = 5.seconds.dilated(context.system)
     val idCounter = Iterator from 0
@@ -1314,6 +1314,6 @@ abstract class StressSpec
       }
       enterBarrier("after-" + step)
     }
-
   }
+
 }

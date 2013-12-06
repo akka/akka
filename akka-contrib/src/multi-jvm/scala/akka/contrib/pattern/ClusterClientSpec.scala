@@ -29,7 +29,7 @@ object ClusterClientSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-down = on
+    akka.cluster.auto-down-unreachable-after = 0s
     """))
 
   class TestService(testActor: ActorRef) extends Actor {
@@ -103,11 +103,8 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
     "communicate to actor on any node in cluster" in within(10 seconds) {
       runOn(client) {
         val c = system.actorOf(ClusterClient.props(initialContacts))
-
-        awaitAssert {
-          c ! ClusterClient.Send("/user/testService", "hello", localAffinity = true)
-          expectMsg(1 second, "ack")
-        }
+        c ! ClusterClient.Send("/user/testService", "hello", localAffinity = true)
+        expectMsg("ack")
       }
       runOn(fourth) {
         expectMsg("hello")
@@ -133,6 +130,11 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       }
       //#server
 
+      runOn(host1, host2, host3, fourth) {
+        awaitCount(4)
+      }
+      enterBarrier("services-replicated")
+
       //#client
       runOn(client) {
         val c = system.actorOf(ClusterClient.props(initialContacts))
@@ -140,6 +142,11 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         c ! ClusterClient.SendToAll("/user/serviceB", "hi")
       }
       //#client
+
+      runOn(client) {
+        // note that "hi" was sent to 2 "serviceB"
+        receiveN(3).toSet must be(Set("hello", "hi"))
+      }
 
       { //not used, only demo
         //#initialContacts
@@ -165,10 +172,8 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       runOn(client) {
         val c = system.actorOf(ClusterClient.props(initialContacts))
 
-        awaitAssert {
-          c ! ClusterClient.Send("/user/service2", "bonjour", localAffinity = true)
-          expectMsg(1 second, "ack")
-        }
+        c ! ClusterClient.Send("/user/service2", "bonjour", localAffinity = true)
+        expectMsg("ack")
         val lastSenderAddress = lastSender.path.address
         val receptionistRoleName = roleName(lastSenderAddress) match {
           case Some(r) ⇒ r

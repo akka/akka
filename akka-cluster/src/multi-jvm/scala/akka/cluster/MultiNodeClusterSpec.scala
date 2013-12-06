@@ -4,8 +4,8 @@
 package akka.cluster
 
 import language.implicitConversions
-import org.scalatest.Suite
-import org.scalatest.exceptions.TestFailedException
+import org.scalatest.{ Suite, Outcome, Canceled }
+import org.scalatest.exceptions.TestCanceledException
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.remote.testconductor.RoleName
@@ -34,16 +34,16 @@ object MultiNodeClusterSpec {
   def clusterConfig: Config = ConfigFactory.parseString("""
     akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.cluster {
-      auto-down                           = off
       jmx.enabled                         = off
       gossip-interval                     = 200 ms
       leader-actions-interval             = 200 ms
-      unreachable-nodes-reaper-interval   = 200 ms
+      unreachable-nodes-reaper-interval   = 500 ms
       periodic-tasks-initial-delay        = 300 ms
       publish-stats-interval              = 0 s # always, when it happens
-      failure-detector.heartbeat-interval = 400 ms
+      failure-detector.heartbeat-interval = 500 ms
     }
     akka.loglevel = INFO
+    akka.log-dead-letters = off
     akka.log-dead-letters-during-shutdown = off
     akka.remote.log-remote-lifecycle-events = off
     akka.loggers = ["akka.testkit.TestEventListener"]
@@ -105,8 +105,8 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
         }
 
       muteDeadLetters(
-        classOf[ClusterHeartbeatReceiver.Heartbeat],
-        classOf[ClusterHeartbeatReceiver.EndHeartbeat],
+        classOf[ClusterHeartbeatSender.Heartbeat],
+        classOf[ClusterHeartbeatSender.HeartbeatRsp],
         classOf[GossipEnvelope],
         classOf[GossipStatus],
         classOf[MetricsGossipEnvelope],
@@ -114,8 +114,10 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
         classOf[InternalClusterAction.Tick],
         classOf[akka.actor.PoisonPill],
         classOf[akka.dispatch.sysmsg.DeathWatchNotification],
-        akka.remote.transport.AssociationHandle.Disassociated.getClass,
-        akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass,
+        classOf[akka.remote.transport.AssociationHandle.Disassociated],
+        //        akka.remote.transport.AssociationHandle.Disassociated.getClass,
+        classOf[akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying],
+        //        akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass,
         classOf[akka.remote.transport.AssociationHandle.InboundPayload])(sys)
 
     }
@@ -124,6 +126,10 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
   def muteMarkingAsUnreachable(sys: ActorSystem = system): Unit =
     if (!sys.log.isDebugEnabled)
       sys.eventStream.publish(Mute(EventFilter.error(pattern = ".*Marking.* as UNREACHABLE.*")))
+
+  def muteMarkingAsReachable(sys: ActorSystem = system): Unit =
+    if (!sys.log.isDebugEnabled)
+      sys.eventStream.publish(Mute(EventFilter.info(pattern = ".*Marking.* as REACHABLE.*")))
 
   override def afterAll(): Unit = {
     if (!log.isDebugEnabled) {
@@ -156,19 +162,15 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
   // it will most likely not be possible to run next step. This ensures
   // fail fast of steps after the first failure.
   private var failed = false
-  override protected def withFixture(test: NoArgTest): Unit = try {
+  override protected def withFixture(test: NoArgTest): Outcome =
     if (failed) {
-      val e = new TestFailedException("Previous step failed", 0)
-      // short stack trace
-      e.setStackTrace(e.getStackTrace.take(1))
-      throw e
+      Canceled(new TestCanceledException("Previous step failed", 0))
+    } else {
+      val out = super.withFixture(test)
+      if (!out.isSucceeded)
+        failed = true
+      out
     }
-    super.withFixture(test)
-  } catch {
-    case t: Throwable ⇒
-      failed = true
-      throw t
-  }
 
   def clusterView: ClusterReadView = cluster.readView
 
@@ -280,7 +282,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
   def awaitMembersUp(
     numberOfMembers: Int,
     canNotBePartOfMemberRing: Set[Address] = Set.empty,
-    timeout: FiniteDuration = 20.seconds): Unit = {
+    timeout: FiniteDuration = 25.seconds): Unit = {
     within(timeout) {
       if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
         awaitAssert(canNotBePartOfMemberRing foreach (a ⇒ clusterView.members.map(_.address) must not contain (a)))
@@ -292,7 +294,8 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
     }
   }
 
-  def awaitAllReachable(): Unit = awaitAssert(clusterView.unreachableMembers.isEmpty)
+  def awaitAllReachable(): Unit =
+    awaitAssert(clusterView.unreachableMembers must be(Set.empty))
 
   /**
    * Wait until the specified nodes have seen the same gossip overview.

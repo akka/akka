@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 
 import scala.annotation.tailrec
+import scala.collection.immutable
 
 import akka.actor.dungeon.ChildrenContainer
 import akka.event.Logging.Warning
@@ -154,6 +155,14 @@ private[akka] class RepointableActorRef(
       }
     } else this
 
+  /**
+   * Method for looking up a single child beneath this actor.
+   * It is racy if called from the outside.
+   */
+  def getSingleChild(name: String): InternalActorRef = lookup.getSingleChild(name)
+
+  def children: immutable.Iterable[ActorRef] = lookup.childrenRefs.children
+
   def !(message: Any)(implicit sender: ActorRef = Actor.noSender) = underlying.sendMessage(message, sender)
 
   def sendSystemMessage(message: SystemMessage) = underlying.sendSystemMessage(message)
@@ -204,6 +213,7 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
   def parent: InternalActorRef = supervisor
   def childrenRefs: ChildrenContainer = ChildrenContainer.EmptyChildrenContainer
   def getChildByName(name: String): Option[ChildRestartStats] = None
+  override def getSingleChild(name: String): InternalActorRef = Nobody
 
   def sendMessage(msg: Envelope): Unit = {
     if (lock.tryLock(timeout.length, timeout.unit)) {

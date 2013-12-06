@@ -10,7 +10,7 @@ import com.typesafe.sbt.SbtMultiJvm
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions, multiNodeExecuteTests, multiNodeJavaName, multiNodeHostsFileName, multiNodeTargetDirName, multiTestOptions }
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
-import com.typesafe.sbtosgi.OsgiPlugin.{ OsgiKeys, osgiSettings }
+import com.typesafe.sbt.osgi.SbtOsgi.{ OsgiKeys, defaultOsgiSettings }
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
@@ -20,14 +20,12 @@ import com.typesafe.sbt.site.SphinxSupport.{ enableOutput, generatePdf, generate
 import com.typesafe.sbt.preprocess.Preprocess.{ preprocess, preprocessExts, preprocessVars, simplePreprocess }
 import ls.Plugin.{ lsSettings, LsKeys }
 import java.lang.Boolean.getBoolean
-import sbt.Tests
 import LsKeys.{ lsync, docsUrl => lsDocsUrl, tags => lsTags }
 import java.io.{PrintWriter, InputStreamReader, FileInputStream, File}
 import java.nio.charset.Charset
 import java.util.Properties
 import annotation.tailrec
 import Unidoc.{ JavaDoc, javadocSettings, junidocSources, sunidoc, unidocExclude }
-import scalabuff.ScalaBuffPlugin._
 import com.typesafe.sbt.S3Plugin.{ S3, s3Settings }
 
 object AkkaBuild extends Build {
@@ -45,15 +43,15 @@ object AkkaBuild extends Build {
     version      := "2.3-SNAPSHOT",
     // Also change ScalaVersion in akka-sbt-plugin/sample/project/Build.scala
     scalaVersion := requestedScalaVersion,
-    scalaBinaryVersion <<= (scalaVersion, scalaBinaryVersion)((v, bv) => System.getProperty("akka.scalaBinaryVersion", if (v contains "-") v else bv))
+    scalaBinaryVersion := System.getProperty("akka.scalaBinaryVersion", if (scalaVersion.value contains "-") scalaVersion.value else scalaBinaryVersion.value)
   )
 
   lazy val akka = Project(
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Publish.versionSettings ++
-      SphinxSupport.settings ++ Dist.settings ++ s3Settings ++ mimaSettings ++ unidocScaladocSettings ++ 
-      inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
+      SphinxSupport.settings ++ Dist.settings ++ s3Settings ++ mimaSettings ++ unidocScaladocSettings ++
+      Protobuf.settings ++ inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
@@ -81,7 +79,16 @@ object AkkaBuild extends Build {
       
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
-      mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples, channels, channelsTests,
+      persistence, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples, channels, channelsTests,
+      multiNodeTestkit)
+  )
+
+  lazy val akkaScalaNightly = Project(
+    id = "akka-scala-nightly",
+    base = file("akka-scala-nightly"),
+    // remove dependencies that we have to build ourselves (Scala STM, ZeroMQ Scala Bindings)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j,
+      persistence, mailboxes, kernel, akkaSbtPlugin, osgi, osgiAries, contrib, samples, channels, channelsTests,
       multiNodeTestkit)
   )
 
@@ -231,10 +238,7 @@ object AkkaBuild extends Build {
     id = "akka-cluster",
     base = file("akka-cluster"),
     dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test"),
-    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ multiJvmSettings ++ OSGi.cluster ++ experimentalSettings ++
-      scalabuffSettings ++ Seq(
-      // this version needs to be reflected in the OSGi.scalabuffImport and dining hackers pom.xml
-      scalabuffVersion in ScalaBuff := "1.2.0",
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ multiJvmSettings ++ OSGi.cluster ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -244,7 +248,7 @@ object AkkaBuild extends Build {
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
       previousArtifact := akkaPreviousArtifact("akka-cluster")
     )
-  ) configs (MultiJvm, ScalaBuff)
+  ) configs (MultiJvm)
 
   lazy val slf4j = Project(
     id = "akka-slf4j",
@@ -273,6 +277,17 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.transactor ++ Seq(
       libraryDependencies ++= Dependencies.transactor,
       previousArtifact := akkaPreviousArtifact("akka-transactor")
+    )
+  )
+
+  lazy val persistence = Project(
+    id = "akka-persistence-experimental",
+    base = file("akka-persistence"),
+    dependencies = Seq(actor, remote % "test->test", testkit % "test->test"),
+    settings = defaultSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.persistence ++ Seq(
+      fork in Test := true,
+      libraryDependencies ++= Dependencies.persistence,
+      previousArtifact := akkaPreviousArtifact("akka-persistence")
     )
   )
 
@@ -421,8 +436,8 @@ object AkkaBuild extends Build {
       publishMavenStyle := false, // SBT Plugins should be published as Ivy
       publishTo <<= Publish.akkaPluginPublishTo,
       scalacOptions in Compile := Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
-      scalaVersion := "2.9.2",
-      scalaBinaryVersion <<= scalaVersion,
+      scalaVersion := "2.10.2",
+      scalaBinaryVersion := "2.10",
       reportBinaryIssues := () // disable bin comp check
     )
   )
@@ -431,7 +446,7 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(camelSample, fsmSample, helloSample, helloKernelSample, remoteSample, clusterSample, multiNodeSample, osgiDiningHakkersSample)
+    aggregate = Seq(camelSample, fsmSample, helloSample, helloKernelSample, remoteSample, persistenceSample, clusterSample, multiNodeSample, osgiDiningHakkersSample)
   )
 
   lazy val camelSample = Project(
@@ -469,11 +484,18 @@ object AkkaBuild extends Build {
     settings = sampleSettings
   )
 
+  lazy val persistenceSample = Project(
+    id = "akka-sample-persistence",
+    base = file("akka-samples/akka-sample-persistence"),
+    dependencies = Seq(actor, persistence),
+    settings = sampleSettings
+  )
+
   lazy val clusterSample = Project(
     id = "akka-sample-cluster",
     base = file("akka-samples/akka-sample-cluster"),
     dependencies = Seq(cluster, contrib, remoteTests % "test", testkit % "test"),
-    settings = sampleSettings ++ multiJvmSettings ++ experimentalSettings ++ Seq(
+    settings = sampleSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.clusterSample,
       javaOptions in run ++= Seq(
         "-Djava.library.path=./sigar",
@@ -505,7 +527,7 @@ object AkkaBuild extends Build {
     base = file("akka-samples/akka-sample-osgi-dining-hakkers"),
     settings = parentSettings
   ) aggregate(osgiDiningHakkersSampleApi, osgiDiningHakkersSampleCommand, osgiDiningHakkersSampleCore,
-      osgiDiningHakkersSampleIntegrationTest, uncommons, scalaBuff)
+      osgiDiningHakkersSampleIntegrationTest, uncommons)
 
   lazy val osgiDiningHakkersSampleApi = Project(id = "akka-sample-osgi-dining-hakkers-api",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers/api"),
@@ -535,15 +557,6 @@ object AkkaBuild extends Build {
     )
   )
 
-  //TODO to remove it as soon as the scalabuff gets OSGified, see ticket #3416
-  lazy val scalaBuff = Project(id = "akka-sample-osgi-dining-hakkers-scalaBuff",
-    base = file("akka-samples/akka-sample-osgi-dining-hakkers/scalabuff"),
-    settings = sampleSettings ++ OSGi.osgiDiningHakkersSampleScalaBuff ++ Seq(
-      libraryDependencies ++= Dependencies.scalaBuff,
-      version := "1.2.0"
-    )
-  )
-
   def executeMvnCommands(failureMessage: String, commands: String*) = {
     if ({List("sh", "-c", commands.mkString("cd akka-samples/akka-sample-osgi-dining-hakkers; mvn -U ", " ", "")) !} != 0)
       throw new Exception(failureMessage)
@@ -558,7 +571,7 @@ object AkkaBuild extends Build {
         }})
       else Seq.empty
       )
-  ) dependsOn(osgiDiningHakkersSampleApi, osgiDiningHakkersSampleCommand, osgiDiningHakkersSampleCore, uncommons, scalaBuff)
+  ) dependsOn(osgiDiningHakkersSampleApi, osgiDiningHakkersSampleCommand, osgiDiningHakkersSampleCore, uncommons)
 
 
 
@@ -566,7 +579,8 @@ object AkkaBuild extends Build {
     id = "akka-docs",
     base = file("akka-docs"),
     dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test", channels,
-      remote % "compile;test->test", cluster, slf4j, agent, dataflow, transactor, fileMailbox, zeroMQ, camel, osgi, osgiAries),
+      remote % "compile;test->test", cluster, slf4j, agent, dataflow, transactor, fileMailbox, zeroMQ, camel, osgi, osgiAries,
+      persistence % "compile;test->test"),
     settings = defaultSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
       sphinxPackages in Sphinx <+= baseDirectory { _ / "_sphinx" / "pygments" },
@@ -619,10 +633,16 @@ object AkkaBuild extends Build {
     base = file("akka-channels"),
     dependencies = Seq(actor),
     settings = defaultSettings ++ scaladocSettings ++ experimentalSettings ++ Seq(
-      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _),
+      libraryDependencies +=("org.scala-lang" % "scala-reflect" %  scalaVersion.value),
       reportBinaryIssues := () // disable bin comp check
     )
   )
+
+  // // this issue will be fixed in M8, for now we need to exclude M6, M7 modules used to compile the compiler
+  def excludeOldModules(m: ModuleID) = List("M6", "M7").foldLeft(m) { (mID, mStone) =>
+    val version = s"2.11.0-$mStone"
+    mID.exclude("org.scala-lang.modules", s"scala-parser-combinators_$version").exclude("org.scala-lang.modules", s"scala-xml_$version")
+  }
 
   lazy val channelsTests = Project(
     id = "akka-channels-tests",
@@ -630,7 +650,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(channels, testkit % "compile;test->test"),
     settings = defaultSettings ++ experimentalSettings ++ Seq(
       publishArtifact in Compile := false,
-      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _),
+      libraryDependencies += excludeOldModules("org.scala-lang" % "scala-compiler" % scalaVersion.value),
       reportBinaryIssues := () // disable bin comp check
     )
   )
@@ -642,7 +662,8 @@ object AkkaBuild extends Build {
     buildSettings ++
     Seq(
       shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
-    )
+    ) ++
+    resolverSettings
 
   lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
 
@@ -725,7 +746,20 @@ object AkkaBuild extends Build {
     (if (useOnlyTestTags.isEmpty) Seq.empty else Seq("-n", if (multiNodeEnabled) useOnlyTestTags.mkString("\"", " ", "\"") else useOnlyTestTags.mkString(" ")))
   }
 
-  lazy val defaultSettings = baseSettings ++ formatSettings ++ mimaSettings ++ lsSettings ++ Seq(
+  lazy val resolverSettings = {
+    // should we be allowed to use artifacts published to the local maven repository
+    if(System.getProperty("akka.build.useLocalMavenResolver", "false").toBoolean)
+      Seq(resolvers += Resolver.mavenLocal)
+    else Seq.empty
+  } ++ {
+    // should we be allowed to use artifacts from sonatype snapshots
+    if(System.getProperty("akka.build.useSnapshotSonatypeResolver", "false").toBoolean)
+      Seq(resolvers += Resolver.sonatypeRepo("snapshots"))
+    else Seq.empty
+  }
+
+  lazy val defaultSettings = baseSettings ++ formatSettings ++ mimaSettings ++ lsSettings ++ resolverSettings ++
+    Protobuf.settings ++ Seq(
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
     javacOptions in Compile ++= Seq("-encoding", "UTF-8", "-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
@@ -786,6 +820,9 @@ object AkkaBuild extends Build {
     // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),
 
+    // don't save test output to a file
+    testListeners in (Test, test) := Seq(TestLogger(streams.value.log, {_ => streams.value.log }, logBuffered.value)),
+
     validatePullRequestTask,
     validatePullRequest <<= validatePullRequest.dependsOn(/* reportBinaryIssues */)
   )
@@ -843,9 +880,9 @@ object AkkaBuild extends Build {
     .setPreference(AlignSingleLineCaseStatements, true)
   }
 
-  lazy val multiJvmSettings = SbtMultiJvm.multiJvmSettings ++ inConfig(MultiJvm)(SbtScalariform.scalariformSettings) ++ Seq(
+  lazy val multiJvmSettings = SbtMultiJvm.multiJvmSettings ++ inConfig(MultiJvm)(SbtScalariform.configScalariformSettings) ++ Seq(
     jvmOptions in MultiJvm := defaultMultiJvmOptions,
-    compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
+    compileInputs in (MultiJvm, compile) <<= (compileInputs in (MultiJvm, compile)) dependsOn (ScalariformKeys.format in MultiJvm),
     compile in MultiJvm <<= (compile in MultiJvm) triggeredBy (compile in Test),
     ScalariformKeys.preferences in MultiJvm := formattingPreferences) ++
     Option(System.getProperty("akka.test.multi-node.hostsFileName")).map(x => Seq(multiNodeHostsFileName in MultiJvm := x)).getOrElse(Seq.empty) ++
@@ -853,16 +890,28 @@ object AkkaBuild extends Build {
     Option(System.getProperty("akka.test.multi-node.targetDirName")).map(x => Seq(multiNodeTargetDirName in MultiJvm := x)).getOrElse(Seq.empty) ++
     ((executeMultiJvmTests, multiNodeEnabled) match {
       case (true, true) =>
-        executeTests in Test <<= ((executeTests in Test), (multiNodeExecuteTests in MultiJvm)) map {
-          case ((_, testResults), (_, multiNodeResults))  =>
-            val results = testResults ++ multiNodeResults
-            (Tests.overall(results.values), results)
+        executeTests in Test <<= (executeTests in Test, multiNodeExecuteTests in MultiJvm) map {
+          case (testResults, multiNodeResults)  =>
+            val overall =
+              if (testResults.overall.id < multiNodeResults.overall.id)
+                multiNodeResults.overall
+              else
+                testResults.overall
+            Tests.Output(overall,
+              testResults.events ++ multiNodeResults.events,
+              testResults.summaries ++ multiNodeResults.summaries)
         }
       case (true, false) =>
-        executeTests in Test <<= ((executeTests in Test), (executeTests in MultiJvm)) map {
-          case ((_, testResults), (_, multiNodeResults)) =>
-            val results = testResults ++ multiNodeResults
-            (Tests.overall(results.values), results)
+        executeTests in Test <<= (executeTests in Test, executeTests in MultiJvm) map {
+          case (testResults, multiNodeResults)  =>
+            val overall =
+              if (testResults.overall.id < multiNodeResults.overall.id)
+                multiNodeResults.overall
+              else
+                testResults.overall
+            Tests.Output(overall,
+              testResults.events ++ multiNodeResults.events,
+              testResults.summaries ++ multiNodeResults.summaries)
         }
       case (false, _) => Seq.empty
     })
@@ -951,13 +1000,20 @@ object AkkaBuild extends Build {
 
   object OSGi {
 
+    // The included osgiSettings that creates bundles also publish the jar files
+    // in the .../bundles directory which makes testing locally published artifacts
+    // a pain. Create bundles but publish them to the normal .../jars directory.
+    def osgiSettings = defaultOsgiSettings ++ Seq(
+      packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap
+    )
+
     //akka-actor is wrapped into akka-osgi to simplify OSGi deployement.
 
     val agent = exports(Seq("akka.agent.*"))
 
     val camel = exports(Seq("akka.camel.*"))
 
-    val cluster = exports(Seq("akka.cluster.*"), imports = Seq(scalabuffImport(), protobufImport()))
+    val cluster = exports(Seq("akka.cluster.*"), imports = Seq(protobufImport()))
 
     val fileMailbox = exports(Seq("akka.actor.mailbox.filebased.*"))
 
@@ -978,8 +1034,6 @@ object AkkaBuild extends Build {
 
     val osgiDiningHakkersSampleUncommons = exports(Seq("org.uncommons.maths.random")) ++ Seq(OsgiKeys.privatePackage := Seq("org.uncommons.maths.binary", "org.uncommons.maths", "org.uncommons.maths.number"))
 
-    val osgiDiningHakkersSampleScalaBuff = exports(Seq("net.sandrogrzicic.scalabuff"))
-
     val osgiAries = exports() ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.aries.*"))
 
     val remote = exports(Seq("akka.remote.*"), imports = Seq(protobufImport()))
@@ -989,6 +1043,8 @@ object AkkaBuild extends Build {
     val dataflow = exports(Seq("akka.dataflow.*"))
 
     val transactor = exports(Seq("akka.transactor.*"))
+
+    val persistence = exports(Seq("akka.persistence.*"), imports = Seq(protobufImport()))
 
     val testkit = exports(Seq("akka.testkit.*"))
 
@@ -1013,18 +1069,16 @@ object AkkaBuild extends Build {
       "akka.camel",
       "akka.camel.internal.component",
       "akka.zeromq",
-      "com.google.protobuf",
-      "net.sandrogrzicic.scalabuff")
+      "com.google.protobuf")
 
     def exports(packages: Seq[String] = Seq(), imports: Seq[String] = Nil) = osgiSettings ++ Seq(
       OsgiKeys.importPackage := imports ++ defaultImports,
       OsgiKeys.exportPackage := packages
     )
     def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
-    def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.2,2.3)\"".format(packageName)
+    def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.3,2.4)\"".format(packageName)
     def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,1.1.0)\"".format(packageName)
-    def protobufImport(packageName: String = "com.google.protobuf.*") = "%s;version=\"[2.4.0,2.5.0)\"".format(packageName)
-    def scalabuffImport(packageName: String = "net.sandrogrzicic.scalabuff.*") = "%s;version=\"[1.2.0,1.3.0)\"".format(packageName)
+    def protobufImport(packageName: String = "com.google.protobuf.*") = "%s;version=\"[2.5.0,2.6.0)\"".format(packageName)
     def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.10,2.11)\"".format(packageName)
     def optionalResolution(packageName: String) = "%s;resolution:=optional".format(packageName)
   }
@@ -1034,22 +1088,33 @@ object AkkaBuild extends Build {
 
 object Dependencies {
 
+  object Versions {
+    val scalaStmVersion  = System.getProperty("akka.build.scalaStmVersion", "0.7")
+    val scalaZeroMQVersion = System.getProperty("akka.build.scalaZeroMQVersion", "0.0.7")
+    val genJavaDocVersion = System.getProperty("akka.build.genJavaDocVersion", "0.5")
+    val scalaTestVersion = System.getProperty("akka.build.scalaTestVersion", "2.0")
+    val scalaCheckVersion = System.getProperty("akka.build.scalaCheckVersion", "1.10.1")
+  }
+
   object Compile {
+    import Versions._
+
     // Compile
     val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.10.3" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
     val config        = "com.typesafe"                % "config"                       % "1.0.2"       // ApacheV2
     val netty         = "io.netty"                    % "netty"                        % "3.6.6.Final" // ApacheV2
-    val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
-    val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % "0.7"         // Modified BSD (Scala)
-    val scalaBuffRuntime = "net.sandrogrzicic"       %% "scalabuff-runtime"            % "1.2.0"       // ApacheV2
+    val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.5.0"       // New BSD
+    val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % scalaStmVersion // Modified BSD (Scala)
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.2"       // MIT
-    val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % "0.0.7"       // ApacheV2
+    val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % scalaZeroMQVersion // ApacheV2
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
-    val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "0.3.2"       // ApacheV2
+    val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "1.1.0"       // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
     val osgiCompendium= "org.osgi"                    % "org.osgi.compendium"          % "4.2.0"       // ApacheV2
+    val levelDB       = "org.iq80.leveldb"            % "leveldb"                      % "0.5"         // ApacheV2
+    val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"               % "1.7"         // New BSD
 
     // Camel Sample
     val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
@@ -1058,7 +1123,7 @@ object Dependencies {
     val sigar       = "org.fusesource"                   % "sigar"                        % "1.6.4"            // ApacheV2
 
     // Compiler plugins
-    val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.5" cross CrossVersion.full) // ApacheV2
+    val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % genJavaDocVersion cross CrossVersion.full) // ApacheV2
 
     // Test
 
@@ -1070,9 +1135,9 @@ object Dependencies {
       val logback      = "ch.qos.logback"              % "logback-classic"              % "1.0.7"            % "test" // EPL 1.0 / LGPL 2.1
       val mockito      = "org.mockito"                 % "mockito-all"                  % "1.8.1"            % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
-      val scalatest    = "org.scalatest"              %% "scalatest"                    % "1.9.2-SNAP2"      % "test" // ApacheV2
-      val scalacheck   = "org.scalacheck"             %% "scalacheck"                   % "1.10.0"           % "test" // New BSD
-      val ariesProxy   = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3"              % "test" // ApacheV2
+      val scalatest    = "org.scalatest"              %% "scalatest"                    % scalaTestVersion   % "test" // ApacheV2
+      val scalacheck   = "org.scalacheck"             %% "scalacheck"                   % scalaCheckVersion  % "test" // New BSD
+      val ariesProxy   = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "1.0.1"            % "test" // ApacheV2
       val pojosr       = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"            % "test" // ApacheV2
       val tinybundles  = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
       val log4j        = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
@@ -1100,6 +1165,8 @@ object Dependencies {
 
   val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
+  val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
+
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
   val fileMailbox = Seq(Test.commonsIo, Test.scalatest, Test.junit)
@@ -1117,8 +1184,6 @@ object Dependencies {
   val osgiDiningHakkerSampleCommand = Seq(osgiCore, osgiCompendium)
 
   val uncommons = Seq(uncommonsMath)
-
-  val scalaBuff = Seq(scalaBuffRuntime)
 
   val osgiAries = Seq(osgiCore, osgiCompendium, ariesBlueprint, Test.ariesProxy)
 

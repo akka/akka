@@ -870,7 +870,7 @@ stash the same message twice; to do so results in an
 in which case invoking ``stash()`` may lead to a capacity violation,
 which results in a ``StashOverflowException``. The capacity of the
 stash can be configured using the ``stash-capacity`` setting (an ``Int``) of the
-dispatcher's configuration.
+mailbox's configuration.
 
 Invoking ``unstashAll()`` enqueues messages from the stash to the
 actor's mailbox until the capacity of the mailbox (if any) has been

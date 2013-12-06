@@ -25,11 +25,25 @@ object TimerBasedThrottlerSpec {
       case x ⇒ sender ! x
     }
   }
+
+  def println(a: Any) = ()
+
+  //#demo-code
+  // A simple actor that prints whatever it receives
+  class PrintActor extends Actor {
+    def receive = {
+      case x ⇒ println(x)
+    }
+  }
+
+  //#demo-code
 }
 
 @RunWith(classOf[JUnitRunner])
 class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSpec")) with ImplicitSender
   with WordSpecLike with MustMatchers with BeforeAndAfterAll {
+
+  import TimerBasedThrottlerSpec._
 
   override def afterAll {
     shutdown(system)
@@ -39,12 +53,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
     def println(a: Any) = ()
     "pass the ScalaDoc class documentation example program" in {
       //#demo-code
-      // A simple actor that prints whatever it receives
-      val printer = system.actorOf(Props(new Actor {
-        def receive = {
-          case x ⇒ println(x)
-        }
-      }))
+      val printer = system.actorOf(Props[PrintActor])
       // The throttler for this example, setting the rate
       val throttler = system.actorOf(Props(classOf[TimerBasedThrottler],
         3 msgsPer 1.second))

@@ -67,18 +67,14 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
       enterBarrier("initialize")
 
       runOn(local) {
-        //#demo
         import akka.contrib.pattern.ReliableProxy
 
         system.actorSelection(node(remote) / "user" / "echo") ! Identify("echo")
         target = expectMsgType[ActorIdentity].ref.get
         proxy = system.actorOf(Props(classOf[ReliableProxy], target, 100.millis), "proxy")
-        //#demo
         proxy ! FSM.SubscribeTransitionCallBack(testActor)
         expectState(Idle)
-        //#demo
         proxy ! "hello"
-        //#demo
         expectTransition(Idle, Active)
         expectTransition(Active, Idle)
       }

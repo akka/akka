@@ -1,0 +1,12 @@
+/**
+ * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+option java_package = "akka.remote";
+
+message MyMessage {
+  required uint64 id = 1;
+  required string name = 2;
+  required bool status = 3;
+}
+

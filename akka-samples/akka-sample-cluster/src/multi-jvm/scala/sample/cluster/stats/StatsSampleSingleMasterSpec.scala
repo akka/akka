@@ -37,7 +37,7 @@ object StatsSampleSingleMasterSpecConfig extends MultiNodeConfig {
     #//#router-deploy-config
     akka.actor.deployment {
       /singleton/statsService/workerRouter {
-          router = consistent-hashing
+          router = consistent-hashing-pool
           nr-of-instances = 100
           cluster {
             enabled = on
@@ -79,13 +79,13 @@ abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSing
 
       Cluster(system) join firstAddress
 
-       receiveN(3).collect { case MemberUp(m) => m.address }.toSet must be (
-           Set(firstAddress, secondAddress, thirdAddress))
+      receiveN(3).collect { case MemberUp(m) ⇒ m.address }.toSet must be(
+        Set(firstAddress, secondAddress, thirdAddress))
 
       Cluster(system).unsubscribe(testActor)
 
       system.actorOf(ClusterSingletonManager.props(
-        singletonProps = _ ⇒ Props[StatsService], singletonName = "statsService",
+        singletonProps = Props[StatsService], singletonName = "statsService",
         terminationMessage = PoisonPill, role = Some("compute")), name = "singleton")
 
       system.actorOf(Props[StatsFacade], "statsFacade")

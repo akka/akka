@@ -10,14 +10,24 @@ import akka.testkit.AkkaSpec
 import java.math.BigInteger
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ClusterMessageSerializerSpec extends AkkaSpec {
+class ClusterMessageSerializerSpec extends AkkaSpec(
+  "akka.actor.provider = akka.cluster.ClusterActorRefProvider") {
 
   val serializer = new ClusterMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
 
   def checkSerialization(obj: AnyRef): Unit = {
     val blob = serializer.toBinary(obj)
     val ref = serializer.fromBinary(blob, obj.getClass)
-    ref must be(obj)
+    obj match {
+      case env: GossipEnvelope ⇒
+        val env2 = obj.asInstanceOf[GossipEnvelope]
+        env2.from must be(env.from)
+        env2.to must be(env.to)
+        env2.gossip must be(env.gossip)
+      case _ ⇒
+        ref must be(obj)
+    }
+
   }
 
   import MemberStatus._
@@ -42,9 +52,8 @@ class ClusterMessageSerializerSpec extends AkkaSpec {
       checkSerialization(InternalClusterAction.InitJoin)
       checkSerialization(InternalClusterAction.InitJoinAck(address))
       checkSerialization(InternalClusterAction.InitJoinNack(address))
-      checkSerialization(ClusterHeartbeatReceiver.Heartbeat(address))
-      checkSerialization(ClusterHeartbeatReceiver.EndHeartbeat(address))
-      checkSerialization(ClusterHeartbeatSender.HeartbeatRequest(address))
+      checkSerialization(ClusterHeartbeatSender.Heartbeat(address))
+      checkSerialization(ClusterHeartbeatSender.HeartbeatRsp(uniqueAddress))
 
       val node1 = VectorClock.Node("node1")
       val node2 = VectorClock.Node("node2")
@@ -52,7 +61,8 @@ class ClusterMessageSerializerSpec extends AkkaSpec {
       val node4 = VectorClock.Node("node4")
       val g1 = (Gossip(SortedSet(a1, b1, c1, d1)) :+ node1 :+ node2).seen(a1.uniqueAddress).seen(b1.uniqueAddress)
       val g2 = (g1 :+ node3 :+ node4).seen(a1.uniqueAddress).seen(c1.uniqueAddress)
-      val g3 = g2.copy(overview = g2.overview.copy(unreachable = Set(e1, f1)))
+      val reachability3 = Reachability.empty.unreachable(a1.uniqueAddress, e1.uniqueAddress).unreachable(b1.uniqueAddress, e1.uniqueAddress)
+      val g3 = g2.copy(members = SortedSet(a1, b1, c1, d1, e1), overview = g2.overview.copy(reachability = reachability3))
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g1))
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g2))
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g3))

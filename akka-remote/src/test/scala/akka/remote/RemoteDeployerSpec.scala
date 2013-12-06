@@ -14,7 +14,7 @@ object RemoteDeployerSpec {
       akka.actor.provider = "akka.remote.RemoteActorRefProvider"
       akka.actor.deployment {
         /service2 {
-          router = round-robin
+          router = round-robin-pool
           nr-of-instances = 3
           remote = "akka://sys@wallace:2552"
           dispatcher = mydispatcher
@@ -42,7 +42,7 @@ class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) {
         Deploy(
           service,
           deployment.get.config,
-          RoundRobinRouter(3),
+          RoundRobinPool(3),
           RemoteScope(Address("akka", "sys", "wallace", 2552)),
           "mydispatcher")))
     }

@@ -32,11 +32,11 @@ object StatsSampleSpecConfig extends MultiNodeConfig {
     #//#router-lookup-config
     akka.actor.deployment {
       /statsService/workerRouter {
-          router = consistent-hashing
+          router = consistent-hashing-group
           nr-of-instances = 100
+          routees.paths = ["/user/statsWorker"]
           cluster {
             enabled = on
-            routees-path = "/user/statsWorker"
             allow-local-routees = on
             use-role = compute
           }
@@ -96,8 +96,8 @@ abstract class StatsSampleSpec extends MultiNodeSpec(StatsSampleSpecConfig)
       system.actorOf(Props[StatsWorker], "statsWorker")
       system.actorOf(Props[StatsService], "statsService")
 
-      receiveN(3).collect { case MemberUp(m) => m.address }.toSet must be (
-           Set(firstAddress, secondAddress, thirdAddress))
+      receiveN(3).collect { case MemberUp(m) ⇒ m.address }.toSet must be(
+        Set(firstAddress, secondAddress, thirdAddress))
 
       Cluster(system).unsubscribe(testActor)
 

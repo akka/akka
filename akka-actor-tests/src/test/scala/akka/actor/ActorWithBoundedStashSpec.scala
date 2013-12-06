@@ -61,17 +61,27 @@ object ActorWithBoundedStashSpec {
 
   val dispatcherId1 = "my-dispatcher-1"
   val dispatcherId2 = "my-dispatcher-2"
+  val mailboxId1 = "my-mailbox-1"
+  val mailboxId2 = "my-mailbox-2"
 
-  val testConf: Config = ConfigFactory.parseString("""
-    %s {
-      mailbox-type = "%s"
+  val testConf: Config = ConfigFactory.parseString(s"""
+    $dispatcherId1 {
+      mailbox-type = "${classOf[Bounded10].getName}"
       stash-capacity = 20
     }
-    %s {
-      mailbox-type = "%s"
+    $dispatcherId2 {
+      mailbox-type = "${classOf[Bounded100].getName}"
       stash-capacity = 20
     }
-    """.format(dispatcherId1, classOf[Bounded10].getName, dispatcherId2, classOf[Bounded100].getName))
+    $mailboxId1 {
+      mailbox-type = "${classOf[Bounded10].getName}"
+      stash-capacity = 20
+    }
+    $mailboxId2 {
+      mailbox-type = "${classOf[Bounded100].getName}"
+      stash-capacity = 20
+    }
+    """)
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -88,38 +98,56 @@ class ActorWithBoundedStashSpec extends AkkaSpec(ActorWithBoundedStashSpec.testC
   override def afterEach(): Unit =
     system.eventStream.unsubscribe(testActor, classOf[DeadLetter])
 
-  "An Actor with Stash" must {
-
-    "end up in DeadLetters in case of a capacity violation" in {
-      val stasher = system.actorOf(Props[StashingActor].withDispatcher(dispatcherId1))
-      // fill up stash
-      for (n ← 1 to 11) {
-        stasher ! "hello" + n
-        expectMsg("ok")
-      }
-
-      // cause unstashAll with capacity violation
-      stasher ! "world"
-      expectMsg(DeadLetter("hello1", testActor, stasher))
-
-      stasher ! PoisonPill
-      // stashed messages are sent to deadletters when stasher is stopped
-      for (n ← 2 to 11) expectMsg(DeadLetter("hello" + n, testActor, stasher))
+  def testDeadLetters(stasher: ActorRef): Unit = {
+    // fill up stash
+    for (n ← 1 to 11) {
+      stasher ! "hello" + n
+      expectMsg("ok")
     }
 
-    "throw a StashOverflowException in case of a stash capacity violation" in {
+    // cause unstashAll with capacity violation
+    stasher ! "world"
+    expectMsg(DeadLetter("hello1", testActor, stasher))
+
+    stasher ! PoisonPill
+    // stashed messages are sent to deadletters when stasher is stopped
+    for (n ← 2 to 11) expectMsg(DeadLetter("hello" + n, testActor, stasher))
+  }
+
+  def testStashOverflowException(stasher: ActorRef): Unit = {
+    // fill up stash
+    for (n ← 1 to 20) {
+      stasher ! "hello" + n
+      expectMsg("ok")
+    }
+
+    stasher ! "hello21"
+    expectMsg("STASHOVERFLOW")
+
+    // stashed messages are sent to deadletters when stasher is stopped,
+    for (n ← 1 to 20) expectMsg(DeadLetter("hello" + n, testActor, stasher))
+  }
+
+  "An Actor with Stash" must {
+
+    "end up in DeadLetters in case of a capacity violation when configured via dispatcher" in {
+      val stasher = system.actorOf(Props[StashingActor].withDispatcher(dispatcherId1))
+      testDeadLetters(stasher)
+    }
+
+    "end up in DeadLetters in case of a capacity violation when configured via mailbox" in {
+      val stasher = system.actorOf(Props[StashingActor].withMailbox(mailboxId1))
+      testDeadLetters(stasher)
+    }
+
+    "throw a StashOverflowException in case of a stash capacity violation when configured via dispatcher" in {
       val stasher = system.actorOf(Props[StashingActorWithOverflow].withDispatcher(dispatcherId2))
-      // fill up stash
-      for (n ← 1 to 20) {
-        stasher ! "hello" + n
-        expectMsg("ok")
-      }
+      testStashOverflowException(stasher)
+    }
 
-      stasher ! "hello21"
-      expectMsg("STASHOVERFLOW")
-
-      // stashed messages are sent to deadletters when stasher is stopped,
-      for (n ← 1 to 20) expectMsg(DeadLetter("hello" + n, testActor, stasher))
+    "throw a StashOverflowException in case of a stash capacity violation when configured via mailbox" in {
+      val stasher = system.actorOf(Props[StashingActorWithOverflow].withMailbox(mailboxId2))
+      testStashOverflowException(stasher)
     }
   }
 }

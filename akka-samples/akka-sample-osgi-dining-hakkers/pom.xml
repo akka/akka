@@ -16,19 +16,17 @@
         <osgi.version>4.2.0</osgi.version>
         <paxexam.version>2.6.0</paxexam.version>
         <paxswissbox.version>1.6.0</paxswissbox.version>
-        <protobuf.version>2.4.1</protobuf.version>
-        <scala.version>2.10.1</scala.version>
+        <protobuf.version>2.5.0</protobuf.version>
+        <scala.version>2.10.2</scala.version>
         <scala.dep.version>2.10</scala.dep.version>
         <scalatest.version>1.9.1</scalatest.version>
-        <typesafe.config.version>1.0.0</typesafe.config.version>
-        <scalabuff.version>1.2.0</scalabuff.version>
+        <typesafe.config.version>1.0.2</typesafe.config.version>
     </properties>
 
     <modules>
         <module>api</module>
         <module>command</module>
         <module>uncommons</module>
-        <module>scalabuff</module>
         <module>core</module>
 
         <module>assembly-features</module>
@@ -97,11 +95,6 @@
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java</artifactId>
                 <version>${protobuf.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>net.sandrogrzicic</groupId>
-                <artifactId>scalabuff-runtime_${scala.dep.version}</artifactId>
-                <version>${scalabuff.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
