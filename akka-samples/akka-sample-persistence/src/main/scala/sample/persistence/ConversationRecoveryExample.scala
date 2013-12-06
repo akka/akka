@@ -16,7 +16,7 @@ object ConversationRecoveryExample extends App {
     var counter = 0
 
     def receive = {
-      case m @ ConfirmablePersistent(Ping, _) ⇒
+      case m @ ConfirmablePersistent(Ping, _, _) ⇒
         counter += 1
         println(s"received ping ${counter} times ...")
         m.confirm()
@@ -33,7 +33,7 @@ object ConversationRecoveryExample extends App {
     var counter = 0
 
     def receive = {
-      case m @ ConfirmablePersistent(Pong, _) ⇒
+      case m @ ConfirmablePersistent(Pong, _, _) ⇒
         counter += 1
         println(s"received pong ${counter} times ...")
         m.confirm()

@@ -24,7 +24,7 @@ object ProcessorChannelExample extends App {
 
   class ExampleDestination extends Actor {
     def receive = {
-      case p @ ConfirmablePersistent(payload, snr) ⇒
+      case p @ ConfirmablePersistent(payload, snr, _) ⇒
         println(s"received ${payload}")
         sender ! s"re: ${payload} (${snr})"
         p.confirm()

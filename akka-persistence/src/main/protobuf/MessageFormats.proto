@@ -13,13 +13,14 @@ message PersistentMessage {
   optional PersistentPayload payload = 1;
   optional int64 sequenceNr = 2;
   optional string processorId = 3;
-  optional bool deleted = 5;
-  optional bool resolved = 6;
-  repeated string confirms = 8;
-  optional bool confirmable = 11;
-  optional ConfirmMessage confirmMessage = 10;
-  optional string confirmTarget = 9;
-  optional string sender = 7;
+  optional bool deleted = 4;
+  optional bool resolved = 5;
+  optional int32 redeliveries = 6;
+  repeated string confirms = 7;
+  optional bool confirmable = 8;
+  optional ConfirmMessage confirmMessage = 9;
+  optional string confirmTarget = 10;
+  optional string sender = 11;
 }
 
 message PersistentPayload {
@@ -30,8 +31,10 @@ message PersistentPayload {
 
 message ConfirmMessage {
   optional string processorId = 1;
-  optional int64 sequenceNr = 2;
+  optional int64 messageSequenceNr = 2;
   optional string channelId = 3;
+  optional int64 wrapperSequenceNr = 4;
+  optional string channelEndpoint = 5;
 }
 
 message DeliverMessage {

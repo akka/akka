@@ -4,6 +4,9 @@
 
 package docs.persistence
 
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
 import akka.actor.ActorSystem
 import akka.persistence._
 
@@ -113,8 +116,8 @@ trait PersistenceDocSpec {
 
     class MyDestination extends Actor {
       def receive = {
-        case p @ ConfirmablePersistent(payload, _) ⇒
-          println(s"received ${payload}")
+        case p @ ConfirmablePersistent(payload, sequenceNr, redeliveries) ⇒
+          // ...
           p.confirm()
       }
     }
@@ -128,6 +131,12 @@ trait PersistenceDocSpec {
         //#channel-id-override
         context.actorOf(Channel.props("my-stable-channel-id"))
       //#channel-id-override
+
+      //#channel-custom-settings
+      context.actorOf(Channel.props(
+        ChannelSettings(redeliverInterval = 30 seconds, redeliverMax = 15)),
+        name = "myChannel")
+      //#channel-custom-settings
 
       def receive = {
         case p @ Persistent(payload, _) ⇒
@@ -241,11 +250,44 @@ trait PersistenceDocSpec {
     trait MyActor extends Actor {
       val destination: ActorRef = null
       //#persistent-channel-example
-      val channel = context.actorOf(PersistentChannel.props(),
+      val channel = context.actorOf(PersistentChannel.props(
+        PersistentChannelSettings(redeliverInterval = 30 seconds, redeliverMax = 15)),
         name = "myPersistentChannel")
 
       channel ! Deliver(Persistent("example"), destination)
       //#persistent-channel-example
+
+      //#persistent-channel-reply
+      PersistentChannelSettings(replyPersistent = true)
+      //#persistent-channel-reply
     }
+  }
+
+  new AnyRef {
+    import akka.actor.ActorRef
+
+    //#reliable-event-delivery
+    class MyEventsourcedProcessor(destination: ActorRef) extends EventsourcedProcessor {
+      val channel = context.actorOf(Channel.props("channel"))
+
+      def handleEvent(event: String) = {
+        // update state
+        // ...
+        // reliably deliver events
+        channel ! Deliver(Persistent(event), destination)
+      }
+
+      def receiveReplay: Receive = {
+        case event: String ⇒ handleEvent(event)
+      }
+
+      def receiveCommand: Receive = {
+        case "cmd" ⇒ {
+          // ...
+          persist("evt")(handleEvent)
+        }
+      }
+    }
+    //#reliable-event-delivery
   }
 }

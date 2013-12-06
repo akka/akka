@@ -62,6 +62,12 @@ It allows you to compose atomic message flows with automatic retry and rollback.
 
 See :ref:`Transactors (Scala) <transactors-scala>` and :ref:`Transactors (Java) <transactors-java>`
 
+Persistence
+-----------
+
+Messages received by an actor can optionally be persisted and replayed when the actor is started or
+restarted. This allows actors to recover their state, even after JVM crashes or when being migrated
+to another node.
 
 Scala and Java APIs
 ===================

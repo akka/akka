@@ -10,7 +10,7 @@ import scala.concurrent.Future
 import scala.util._
 
 import akka.actor._
-import akka.pattern.{ pipe, PromiseActorRef }
+import akka.pattern.pipe
 import akka.persistence._
 import akka.persistence.JournalProtocol._
 
@@ -51,11 +51,22 @@ trait AsyncWriteJournal extends Actor with AsyncReplay {
       } recover {
         case e ⇒ ReplayFailure(e)
       } pipeTo (processor)
-    case c @ Confirm(processorId, sequenceNr, channelId) ⇒
-      confirmAsync(processorId, sequenceNr, channelId) onComplete {
-        case Success(_) ⇒ if (extension.publishPluginCommands) context.system.eventStream.publish(c)
+    case c @ Confirm(processorId, messageSequenceNr, channelId, wrapperSequenceNr, channelEndpoint) ⇒
+      val op = if (wrapperSequenceNr == 0L) {
+        // A wrapperSequenceNr == 0L means that the corresponding message was delivered by a
+        // transient channel. We can now write a delivery confirmation for this message.
+        confirmAsync(processorId, messageSequenceNr, channelId)
+      } else {
+        // A wrapperSequenceNr != 0L means that the corresponding message was delivered by a
+        // persistent channel. We can now safely delete the wrapper message (that contains the
+        // delivered message).
+        deleteAsync(channelId, wrapperSequenceNr, wrapperSequenceNr, true)
+      }
+      op onComplete {
+        case Success(_) ⇒
+          if (extension.publishPluginCommands) context.system.eventStream.publish(c)
+          if (channelEndpoint != null) channelEndpoint ! c
         case Failure(e) ⇒ // TODO: publish failure to event stream
-          context.system.eventStream.publish(c)
       }
     case d @ Delete(processorId, fromSequenceNr, toSequenceNr, permanent) ⇒
       deleteAsync(processorId, fromSequenceNr, toSequenceNr, permanent) onComplete {

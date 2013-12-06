@@ -4,9 +4,13 @@
 
 package docs.persistence;
 
+import java.util.concurrent.TimeUnit;
+
 import scala.Option;
+import scala.concurrent.duration.Duration;
 
 import akka.actor.*;
+import akka.japi.Procedure;
 import akka.persistence.*;
 
 import static java.util.Arrays.asList;
@@ -144,7 +148,10 @@ public class PersistenceDocTest {
             public void onReceive(Object message) throws Exception {
                 if (message instanceof ConfirmablePersistent) {
                     ConfirmablePersistent p = (ConfirmablePersistent)message;
-                    System.out.println("received " + p.payload());
+                    Object payload = p.payload();
+                    Long sequenceNr = p.sequenceNr();
+                    int redeliveries = p.redeliveries();
+                    // ...
                     p.confirm();
                 }
             }
@@ -160,6 +167,13 @@ public class PersistenceDocTest {
                 //#channel-id-override
                 this.channel = getContext().actorOf(Channel.props("my-stable-channel-id"));
                 //#channel-id-override
+
+                //#channel-custom-settings
+                getContext().actorOf(Channel.props(
+                        ChannelSettings.create()
+                        .withRedeliverInterval(Duration.create(30, TimeUnit.SECONDS))
+                        .withRedeliverMax(15)));
+                //#channel-custom-settings
             }
 
             public void onReceive(Object message) throws Exception {
@@ -273,12 +287,56 @@ public class PersistenceDocTest {
 
             public void foo() {
                 //#persistent-channel-example
-                final ActorRef channel = getContext().actorOf(PersistentChannel.props(),
-                        "myPersistentChannel");
+                final ActorRef channel = getContext().actorOf(PersistentChannel.props(
+                        PersistentChannelSettings.create()
+                        .withRedeliverInterval(Duration.create(30, TimeUnit.SECONDS))
+                        .withRedeliverMax(15)), "myPersistentChannel");
 
                 channel.tell(Deliver.create(Persistent.create("example"), destination), getSelf());
                 //#persistent-channel-example
+
+                //#persistent-channel-reply
+                PersistentChannelSettings.create().withReplyPersistent(true);
+                //#persistent-channel-reply
             }
         }
+    };
+
+    static Object o8 = new Object() {
+        //#reliable-event-delivery
+        class MyEventsourcedProcessor extends UntypedEventsourcedProcessor {
+            private ActorRef destination;
+            private ActorRef channel;
+
+            public MyEventsourcedProcessor(ActorRef destination) {
+                this.destination = destination;
+                this.channel = getContext().actorOf(Channel.props(), "channel");
+            }
+
+            private void handleEvent(String event) {
+                // update state
+                // ...
+                // reliably deliver events
+                channel.tell(Deliver.create(Persistent.create(
+                        event, getCurrentPersistentMessage()), destination), getSelf());
+            }
+
+            public void onReceiveReplay(Object msg) {
+                if (msg instanceof String) {
+                    handleEvent((String)msg);
+                }
+            }
+
+            public void onReceiveCommand(Object msg) {
+                if (msg.equals("cmd")) {
+                    persist("evt", new Procedure<String>() {
+                        public void apply(String event) {
+                            handleEvent(event);
+                        }
+                    });
+                }
+            }
+        }
+        //#reliable-event-delivery
     };
 }

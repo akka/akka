@@ -4,17 +4,63 @@
 
 package akka.persistence
 
-import akka.AkkaException
-import akka.actor._
+import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
+import akka.actor._
+import akka.dispatch.Envelope
+
+import akka.persistence.JournalProtocol.Confirm
 import akka.persistence.serialization.Message
+
+/**
+ * A [[Channel]] configuration object.
+ *
+ * @param redeliverMax maximum number of redeliveries (default is 5).
+ * @param redeliverInterval interval between redeliveries (default is 5 seconds).
+ */
+@SerialVersionUID(1L)
+class ChannelSettings(
+  val redeliverMax: Int,
+  val redeliverInterval: FiniteDuration) extends Serializable {
+
+  /**
+   * Java API.
+   */
+  def withRedeliverMax(redeliverMax: Int): ChannelSettings =
+    update(redeliverMax = redeliverMax)
+
+  /**
+   * Java API.
+   */
+  def withRedeliverInterval(redeliverInterval: FiniteDuration): ChannelSettings =
+    update(redeliverInterval = redeliverInterval)
+
+  private def update(
+    redeliverMax: Int = redeliverMax,
+    redeliverInterval: FiniteDuration = redeliverInterval): ChannelSettings =
+    new ChannelSettings(redeliverMax, redeliverInterval)
+}
+
+object ChannelSettings {
+  def apply(
+    redeliverMax: Int = 5,
+    redeliverInterval: FiniteDuration = 5 seconds): ChannelSettings =
+    new ChannelSettings(redeliverMax, redeliverInterval)
+
+  /**
+   * Java API.
+   */
+  def create() = apply()
+}
 
 /**
  * A channel is used by [[Processor]]s for sending [[Persistent]] messages to destinations. The main
  * responsibility of a channel is to prevent redundant delivery of replayed messages to destinations
  * when a processor is recovered.
  *
- * A channel can be instructed to deliver a persistent message to a `destination` via the [[Deliver]]
+ * A channel is instructed to deliver a persistent message to a `destination` with the [[Deliver]]
  * command.
  *
  * {{{
@@ -53,223 +99,83 @@ import akka.persistence.serialization.Message
  * {{{
  * class MyDestination extends Actor {
  *   def receive = {
- *     case cp @ ConfirmablePersistent(payload, sequenceNr) => cp.confirm()
+ *     case cp @ ConfirmablePersistent(payload, sequenceNr, redeliveries) => cp.confirm()
  *   }
  * }
  * }}}
  *
- * A channel will only re-deliver messages if the sending processor is recovered and delivery of these
- * messages has not been confirmed yet. Hence, a channel can be used to avoid message loss in case of
- * sender JVM crashes, for example. A channel, however, does not attempt any re-deliveries should a
- * destination be unavailable. Re-delivery to destinations (in case of network failures or destination
- * JVM crashes) is an application-level concern and can be done by using a reliable proxy, for example.
+ * If a destination does not confirm the receipt of a `ConfirmablePersistent` message, it will be redelivered
+ * by the channel according to the parameters in [[ChannelSettings]]. Message redelivery is done out of order
+ * with regards to normal delivery i.e. redelivered messages may arrive later than newer normally delivered
+ * messages. Redelivered messages have a `redeliveries` value greater than zero.
+ *
+ * If the maximum number of redeliveries for a certain message is reached and there is still no confirmation
+ * from the destination, then this message is removed from the channel. In order to deliver that message to
+ * the destination again, the processor must replay its stored messages to the channel (during start or restart).
+ * Replayed, unconfirmed messages are then processed and delivered by the channel again. These messages are now
+ * duplicates (with a `redeliveries` counter starting from zero). Duplicates can be detected by destinations
+ * by tracking message sequence numbers.
  *
  * @see [[Deliver]]
  */
-sealed class Channel private[akka] (_channelId: Option[String]) extends Actor with Stash {
-  private val extension = Persistence(context.system)
+final class Channel private[akka] (_channelId: Option[String], channelSettings: ChannelSettings) extends Actor {
   private val id = _channelId match {
     case Some(cid) ⇒ cid
-    case None      ⇒ extension.channelId(self)
+    case None      ⇒ Persistence(context.system).channelId(self)
   }
 
-  import ResolvedDelivery._
+  private val journal = Persistence(context.system).journalFor(id)
 
-  private val delivering: Actor.Receive = {
-    case Deliver(persistent: PersistentRepr, destination, resolve) ⇒
-      if (!persistent.confirms.contains(id)) {
-        val prepared = prepareDelivery(persistent)
-        resolve match {
-          case Resolve.Sender if !prepared.resolved ⇒
-            context.actorOf(Props(classOf[ResolvedSenderDelivery], prepared, destination, sender)) ! DeliverResolved
-            context.become(buffering, false)
-          case Resolve.Destination if !prepared.resolved ⇒
-            context.actorOf(Props(classOf[ResolvedDestinationDelivery], prepared, destination, sender)) ! DeliverResolved
-            context.become(buffering, false)
-          case _ ⇒ destination tell (prepared, sender)
-        }
-      }
-      unstash()
+  private val reliableDelivery = context.actorOf(Props(classOf[ReliableDelivery], channelSettings))
+  private val resolvedDelivery = context.actorOf(Props(classOf[ResolvedDelivery], reliableDelivery))
+
+  def receive = {
+    case d @ Deliver(persistent: PersistentRepr, _, _) ⇒
+      if (!persistent.confirms.contains(id)) resolvedDelivery forward d.copy(prepareDelivery(persistent))
   }
 
-  private val buffering: Actor.Receive = {
-    case DeliveredResolved | DeliveredUnresolved ⇒
-      context.unbecome()
-      unstash()
-    case _: Deliver ⇒ stash()
-  }
-
-  def receive = delivering
-
-  private[akka] def prepareDelivery(persistent: PersistentRepr): PersistentRepr = {
-    ConfirmablePersistentImpl(
-      persistent = persistent,
-      confirmTarget = extension.journalFor(persistent.processorId),
+  private def prepareDelivery(persistent: PersistentRepr): PersistentRepr =
+    ConfirmablePersistentImpl(persistent,
+      confirmTarget = journal,
       confirmMessage = Confirm(persistent.processorId, persistent.sequenceNr, id))
-  }
 }
 
 object Channel {
   /**
-   * Returns a channel configuration object for creating a [[Channel]] with a
-   * generated id.
+   * Returns a channel actor configuration object for creating a [[Channel]] with a
+   * generated id and default [[ChannelSettings]].
    */
-  def props(): Props = Props(classOf[Channel], None)
+  def props(): Props =
+    props(ChannelSettings())
 
   /**
-   * Returns a channel configuration object for creating a [[Channel]] with the
-   * specified id.
+   * Returns a channel actor configuration object for creating a [[Channel]] with a
+   * generated id and specified `channelSettings`.
+   *
+   * @param channelSettings channel configuration object.
+   */
+  def props(channelSettings: ChannelSettings): Props =
+    Props(classOf[Channel], None, channelSettings)
+
+  /**
+   * Returns a channel actor configuration object for creating a [[Channel]] with the
+   * specified id and default [[ChannelSettings]].
    *
    * @param channelId channel id.
    */
-  def props(channelId: String): Props = Props(classOf[Channel], Some(channelId))
-}
-
-/**
- * A [[PersistentChannel]] implements the same functionality as a [[Channel]] but additionally
- * persists messages before they are delivered. Therefore, the main use case of a persistent
- * channel is standalone usage i.e. independent of a sending [[Processor]]. Messages that have
- * been persisted by a persistent channel are deleted again when destinations confirm the receipt
- * of these messages.
- *
- * Using a persistent channel in combination with a [[Processor]] can make sense if destinations
- * are unavailable for a long time and an application doesn't want to buffer all messages in
- * memory (but write them to a journal instead). In this case, delivery can be disabled with
- * [[DisableDelivery]] (to stop delivery and persist-only) and re-enabled with [[EnableDelivery]].
- *
- * A persistent channel can also be configured to reply whether persisting a message was successful
- * or not (see `PersistentChannel.props` methods). If enabled, the sender will receive the persisted
- * message as reply (i.e. a [[Persistent]] message), otherwise a [[PersistenceFailure]] message.
- *
- * A persistent channel will only re-deliver un-confirmed, stored messages if it is started or re-
- * enabled with [[EnableDelivery]]. Hence, a persistent channel can be used to avoid message loss
- * in case of sender JVM crashes, for example. A channel, however, does not attempt any re-deliveries
- * should a destination be unavailable. Re-delivery to destinations (in case of network failures or
- * destination JVM crashes) is an application-level concern and can be done by using a reliable proxy,
- * for example.
- */
-final class PersistentChannel private[akka] (_channelId: Option[String], persistentReply: Boolean) extends EventsourcedProcessor {
-  override val processorId = _channelId.getOrElse(super.processorId)
-
-  private val journal = Persistence(context.system).journalFor(processorId)
-  private val channel = context.actorOf(Props(classOf[NoPrepChannel], processorId))
-
-  private var deliveryEnabled = true
-
-  def receiveReplay: Receive = {
-    case Deliver(persistent: PersistentRepr, destination, resolve) ⇒ deliver(prepareDelivery(persistent), destination, resolve)
-  }
-
-  def receiveCommand: Receive = {
-    case d @ Deliver(persistent: PersistentRepr, destination, resolve) ⇒
-      if (!persistent.confirms.contains(processorId)) {
-        persist(d) { _ ⇒
-          val prepared = prepareDelivery(persistent)
-
-          if (persistent.processorId != PersistentRepr.Undefined)
-            journal ! Confirm(persistent.processorId, persistent.sequenceNr, processorId)
-
-          if (persistentReply)
-            sender ! prepared
-
-          if (deliveryEnabled)
-            deliver(prepared, destination, resolve)
-        }
-      }
-    case c: Confirm                                 ⇒ deleteMessage(c.sequenceNr, true)
-    case DisableDelivery                            ⇒ deliveryEnabled = false
-    case EnableDelivery if (!deliveryEnabled)       ⇒ throw new ChannelRestartRequiredException
-    case p: PersistenceFailure if (persistentReply) ⇒ sender ! p
-  }
-
-  private def prepareDelivery(persistent: PersistentRepr): PersistentRepr = currentPersistentMessage.map { current ⇒
-    val sequenceNr = if (persistent.sequenceNr == 0L) current.sequenceNr else persistent.sequenceNr
-    val resolved = persistent.resolved && current.asInstanceOf[PersistentRepr].resolved
-    persistent.update(sequenceNr = sequenceNr, resolved = resolved)
-  } getOrElse (persistent)
-
-  private def deliver(persistent: PersistentRepr, destination: ActorRef, resolve: Resolve.ResolveStrategy) = currentPersistentMessage.foreach { current ⇒
-    channel forward Deliver(persistent = ConfirmablePersistentImpl(persistent,
-      confirmTarget = self,
-      confirmMessage = Confirm(processorId, current.sequenceNr, PersistentRepr.Undefined)), destination, resolve)
-  }
-}
-
-object PersistentChannel {
-  /**
-   * Returns a channel configuration object for creating a [[PersistentChannel]] with a
-   * generated id. The sender will not receive persistence completion replies.
-   */
-  def props(): Props = props(persistentReply = false)
+  def props(channelId: String): Props =
+    props(channelId, ChannelSettings())
 
   /**
-   * Returns a channel configuration object for creating a [[PersistentChannel]] with a
-   * generated id.
-   *
-   * @param persistentReply if `true` the sender will receive the successfully stored
-   *                        [[Persistent]] message that has been submitted with a
-   *                        [[Deliver]] request, or a [[PersistenceFailure]] message
-   *                        in case of a persistence failure.
-   */
-  def props(persistentReply: Boolean): Props = Props(classOf[PersistentChannel], None, persistentReply)
-
-  /**
-   * Returns a channel configuration object for creating a [[PersistentChannel]] with the
-   * specified id. The sender will not receive persistence completion replies.
+   * Returns a channel actor configuration object for creating a [[Channel]] with the
+   * specified id  and specified `channelSettings`.
    *
    * @param channelId channel id.
+   * @param channelSettings channel configuration object.
    */
-  def props(channelId: String): Props = props(channelId, persistentReply = false)
-
-  /**
-   * Returns a channel configuration object for creating a [[PersistentChannel]] with the
-   * specified id.
-   *
-   * @param channelId channel id.
-   * @param persistentReply if `true` the sender will receive the successfully stored
-   *                        [[Persistent]] message that has been submitted with a
-   *                        [[Deliver]] request, or a [[PersistenceFailure]] message
-   *                        in case of a persistence failure.
-   */
-  def props(channelId: String, persistentReply: Boolean): Props = Props(classOf[PersistentChannel], Some(channelId), persistentReply)
+  def props(channelId: String, channelSettings: ChannelSettings): Props =
+    Props(classOf[Channel], Some(channelId), channelSettings)
 }
-
-/**
- * Instructs a [[PersistentChannel]] to disable the delivery of [[Persistent]] messages to their destination.
- * The persistent channel, however, continues to persist messages (for later delivery).
- *
- * @see [[EnableDelivery]]
- */
-@SerialVersionUID(1L)
-case object DisableDelivery {
-  /**
-   * Java API.
-   */
-  def getInstance = this
-}
-
-/**
- * Instructs a [[PersistentChannel]] to re-enable the delivery of [[Persistent]] messages to their destination.
- * This will first deliver all messages that have been stored by a persistent channel for which no confirmation
- * is available yet. New [[Deliver]] requests are processed after all stored messages have been delivered. This
- * request only has an effect if a persistent channel has previously been disabled with [[DisableDelivery]].
- *
- * @see [[DisableDelivery]]
- */
-@SerialVersionUID(1L)
-case object EnableDelivery {
-  /**
-   * Java API.
-   */
-  def getInstance = this
-}
-
-/**
- * Thrown by a persistent channel when [[EnableDelivery]] has been requested and delivery has been previously
- * disabled for that channel.
- */
-@SerialVersionUID(1L)
-class ChannelRestartRequiredException extends AkkaException("channel restart required for enabling delivery")
 
 /**
  * Instructs a [[Channel]] or [[PersistentChannel]] to deliver `persistent` message to
@@ -375,68 +281,130 @@ object Resolve {
 }
 
 /**
- * Resolved delivery support.
+ * Resolves actor references as specified by [[Deliver]] requests and then delegates delivery
+ * to `next`.
  */
-private trait ResolvedDelivery extends Actor {
-  import scala.concurrent.duration._
-  import scala.language.postfixOps
-  import ResolvedDelivery._
+private class ResolvedDelivery(next: ActorRef) extends Actor with Stash {
+  private var currentResolution: Envelope = _
 
-  context.setReceiveTimeout(5 seconds) // TODO: make configurable
+  private val delivering: Receive = {
+    case d @ Deliver(persistent: PersistentRepr, destination, resolve) ⇒
+      resolve match {
+        case Resolve.Sender if !persistent.resolved ⇒
+          context.actorSelection(sender.path) ! Identify(1)
+          context.become(resolving, discardOld = false)
+          currentResolution = Envelope(d, sender, context.system)
+        case Resolve.Destination if !persistent.resolved ⇒
+          context.actorSelection(destination.path) ! Identify(1)
+          context.become(resolving, discardOld = false)
+          currentResolution = Envelope(d, sender, context.system)
+        case _ ⇒ next forward d
+      }
+      unstash()
+  }
 
-  def path: ActorPath
-  def onResolveSuccess(ref: ActorRef): Unit
-  def onResolveFailure(): Unit
+  private val resolving: Receive = {
+    case ActorIdentity(1, resolvedOption) ⇒
+      val Envelope(d: Deliver, sender) = currentResolution
+      if (d.resolve == Resolve.Sender) {
+        next tell (d, resolvedOption.getOrElse(sender))
+      } else if (d.resolve == Resolve.Destination) {
+        next tell (d.copy(destination = resolvedOption.getOrElse(d.destination)), sender)
+      }
+      context.unbecome()
+      unstash()
+    case _: Deliver ⇒ stash()
+  }
+
+  def receive = delivering
+}
+
+/**
+ * Reliably deliver messages contained in [[Deliver]] requests to their destinations. Unconfirmed
+ * messages are redelivered according to the parameters in [[ChannelSettings]].
+ */
+private class ReliableDelivery(channelSettings: ChannelSettings) extends Actor {
+  import channelSettings._
+  import ReliableDelivery._
+
+  private val redelivery = context.actorOf(Props(classOf[Redelivery], channelSettings))
+  private var attempts: DeliveryAttempts = Map.empty
+  private var sequenceNr: Long = 0L
 
   def receive = {
-    case DeliverResolved ⇒
-      context.actorSelection(path) ! Identify(1)
-    case ActorIdentity(1, Some(ref)) ⇒
-      onResolveSuccess(ref)
-      shutdown(DeliveredResolved)
-    case ActorIdentity(1, None) ⇒
-      onResolveFailure()
-      shutdown(DeliveredUnresolved)
-    case ReceiveTimeout ⇒
-      onResolveFailure()
-      shutdown(DeliveredUnresolved)
+    case d @ Deliver(persistent: PersistentRepr, destination, _) ⇒
+      val dsnr = nextSequenceNr()
+      val psnr = persistent.sequenceNr
+      val confirm = persistent.confirmMessage.copy(channelEndpoint = self)
+      val updated = persistent.update(confirmMessage = confirm, sequenceNr = if (psnr == 0) dsnr else psnr)
+      destination forward updated
+      attempts += ((updated.processorId, updated.sequenceNr) -> DeliveryAttempt(updated, destination, sender, dsnr))
+    case c @ Confirm(processorId, messageSequenceNr, _, _, _) ⇒
+      attempts -= ((processorId, messageSequenceNr))
+    case Redeliver ⇒
+      val limit = System.nanoTime - redeliverInterval.toNanos
+      val (older, younger) = attempts.partition { case (_, a) ⇒ a.timestamp < limit }
+      redelivery ! Redeliver(older, redeliverMax)
+      attempts = younger
   }
 
-  def shutdown(message: Any) {
-    context.parent ! message
-    context.stop(self)
+  private def nextSequenceNr(): Long = {
+    sequenceNr += 1
+    sequenceNr
   }
 }
 
-private object ResolvedDelivery {
-  case object DeliverResolved
-  case object DeliveredResolved
-  case object DeliveredUnresolved
+private object ReliableDelivery {
+  type DeliveryAttempts = immutable.Map[(String, Long), DeliveryAttempt]
+
+  case class DeliveryAttempt(persistent: PersistentRepr, destination: ActorRef, sender: ActorRef, deliverySequenceNr: Long, timestamp: Long = System.nanoTime) {
+    def withChannelEndpoint(channelEndpoint: ActorRef) =
+      copy(persistent.update(confirmMessage = persistent.confirmMessage.copy(channelEndpoint = channelEndpoint)))
+
+    def incrementRedeliveryCount =
+      copy(persistent.update(redeliveries = persistent.redeliveries + 1))
+  }
+
+  case class Redeliver(attempts: DeliveryAttempts, redeliveryMax: Int)
 }
 
 /**
- * Resolves `destination` before sending `persistent` message to the resolved destination using
- * the specified sender (`sdr`) as message sender.
+ * Redelivery process used by [[ReliableDelivery]].
  */
-private class ResolvedDestinationDelivery(persistent: PersistentRepr, destination: ActorRef, sdr: ActorRef) extends ResolvedDelivery {
-  val path = destination.path
-  def onResolveSuccess(ref: ActorRef) = ref tell (persistent.update(resolved = true), sdr)
-  def onResolveFailure() = destination tell (persistent, sdr)
+private class Redelivery(channelSettings: ChannelSettings) extends Actor {
+  import context.dispatcher
+  import channelSettings._
+  import ReliableDelivery._
+
+  private var attempts: DeliveryAttempts = Map.empty
+  private var schedule: Cancellable = _
+
+  def receive = {
+    case Redeliver(as, max) ⇒
+      attempts ++= as.map { case (k, a) ⇒ (k, a.withChannelEndpoint(self)) }
+      attempts = attempts.foldLeft[DeliveryAttempts](Map.empty) {
+        case (acc, (k, attempt)) ⇒
+          // drop redelivery attempts that exceed redeliveryMax
+          if (attempt.persistent.redeliveries >= redeliverMax) acc
+          // increase redelivery count of attempt
+          else acc + (k -> attempt.incrementRedeliveryCount)
+      }
+      redeliver(attempts)
+      scheduleRedelivery()
+    case c @ Confirm(processorId, messageSequenceNr, _, _, _) ⇒
+      attempts -= ((processorId, messageSequenceNr))
+  }
+
+  override def preStart(): Unit =
+    scheduleRedelivery()
+
+  override def postStop(): Unit =
+    schedule.cancel()
+
+  private def scheduleRedelivery(): Unit =
+    schedule = context.system.scheduler.scheduleOnce(redeliverInterval, context.parent, Redeliver)
+
+  private def redeliver(attempts: DeliveryAttempts): Unit =
+    attempts.values.toSeq.sortBy(_.deliverySequenceNr).foreach(ad ⇒ ad.destination tell (ad.persistent, ad.sender))
 }
 
-/**
- * Resolves `sdr` before sending `persistent` message to specified `destination` using
- * the resolved sender as message sender.
- */
-private class ResolvedSenderDelivery(persistent: PersistentRepr, destination: ActorRef, sdr: ActorRef) extends ResolvedDelivery {
-  val path = sdr.path
-  def onResolveSuccess(ref: ActorRef) = destination tell (persistent.update(resolved = true), ref)
-  def onResolveFailure() = destination tell (persistent, sdr)
-}
-
-/**
- * [[Channel]] specialization used by [[PersistentChannel]] to deliver stored messages.
- */
-private class NoPrepChannel(channelId: String) extends Channel(Some(channelId)) {
-  override private[akka] def prepareDelivery(persistent: PersistentRepr) = persistent
-}

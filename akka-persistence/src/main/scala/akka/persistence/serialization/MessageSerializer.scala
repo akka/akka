@@ -11,6 +11,7 @@ import com.google.protobuf._
 import akka.actor.ExtendedActorSystem
 import akka.japi.Util.immutableSeq
 import akka.persistence._
+import akka.persistence.JournalProtocol.Confirm
 import akka.persistence.serialization.MessageFormats._
 import akka.persistence.serialization.MessageFormats.DeliverMessage.ResolveStrategy
 import akka.serialization._
@@ -100,6 +101,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends Serializer {
     builder.setSequenceNr(persistent.sequenceNr)
     builder.setDeleted(persistent.deleted)
     builder.setResolved(persistent.resolved)
+    builder.setRedeliveries(persistent.redeliveries)
     builder.setConfirmable(persistent.confirmable)
     builder
   }
@@ -116,10 +118,15 @@ class MessageSerializer(val system: ExtendedActorSystem) extends Serializer {
   }
 
   private def confirmMessageBuilder(confirm: Confirm) = {
-    ConfirmMessage.newBuilder
-      .setProcessorId(confirm.processorId)
-      .setSequenceNr(confirm.sequenceNr)
-      .setChannelId(confirm.channelId)
+    val builder = ConfirmMessage.newBuilder
+
+    if (confirm.channelEndpoint != null) builder.setChannelEndpoint(Serialization.serializedActorPath(confirm.channelEndpoint))
+
+    builder.setProcessorId(confirm.processorId)
+    builder.setMessageSequenceNr(confirm.messageSequenceNr)
+    builder.setChannelId(confirm.channelId)
+    builder.setWrapperSequenceNr(confirm.wrapperSequenceNr)
+    builder
   }
 
   //
@@ -147,6 +154,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends Serializer {
       if (persistentMessage.hasProcessorId) persistentMessage.getProcessorId else Undefined,
       persistentMessage.getDeleted,
       persistentMessage.getResolved,
+      persistentMessage.getRedeliveries,
       immutableSeq(persistentMessage.getConfirmsList),
       persistentMessage.getConfirmable,
       if (persistentMessage.hasConfirmMessage) confirm(persistentMessage.getConfirmMessage) else null,
@@ -167,7 +175,9 @@ class MessageSerializer(val system: ExtendedActorSystem) extends Serializer {
   private def confirm(confirmMessage: ConfirmMessage): Confirm = {
     Confirm(
       confirmMessage.getProcessorId,
-      confirmMessage.getSequenceNr,
-      confirmMessage.getChannelId)
+      confirmMessage.getMessageSequenceNr,
+      confirmMessage.getChannelId,
+      confirmMessage.getWrapperSequenceNr,
+      if (confirmMessage.hasChannelEndpoint) system.provider.resolveActorRef(confirmMessage.getChannelEndpoint) else null)
   }
 }

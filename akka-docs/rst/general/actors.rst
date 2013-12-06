@@ -52,6 +52,10 @@ inconsistent state is fatal. Thus, when the actor fails and is restarted by its
 supervisor, the state will be created from scratch, like upon first creating
 the actor. This is to enable the ability of self-healing of the system.
 
+Optionally, an actor's state can be automatically recovered to the state
+before a restart by persisting received messages and replaying them after
+restart (see :ref:`persistence`).
+
 Behavior
 --------
 

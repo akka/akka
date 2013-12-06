@@ -11,7 +11,8 @@ persisted but never its current state directly (except for optional snapshots). 
 to storage, nothing is ever mutated, which allows for very high transaction rates and efficient replication. Stateful
 actors are recovered by replaying stored changes to these actors from which they can rebuild internal state. This can
 be either the full history of changes or starting from a snapshot of internal actor state which can dramatically
-reduce recovery times.
+reduce recovery times. Akka persistence also provides point-to-point communication channels with at-least-once
+message delivery guarantees.
 
 Storage backends for state changes and snapshots are pluggable in Akka persistence. Currently, these are written to
 the local filesystem. Distributed and replicated storage, with the possibility of scaling writes, will be available
@@ -44,7 +45,8 @@ Architecture
   to that processor, so that it can recover internal state from these messages.
 
 * *Channel*: Channels are used by processors to communicate with other actors. They prevent that replayed messages
-  are redundantly delivered to these actors.
+  are redundantly delivered to these actors and provide at-least-once message delivery guarantees, also in case of
+  sender and receiver JVM crashes.
 
 * *Journal*: A journal stores the sequence of messages sent to a processor. An application can control which messages
   are stored and which are received by the processor without being journaled. The storage backend of a journal is
@@ -150,8 +152,16 @@ should override ``processorId``.
 
 Later versions of Akka persistence will likely offer a possibility to migrate processor ids.
 
+.. _channels:
+
 Channels
 ========
+
+.. warning::
+
+  There are further changes planned to the channel API that couldn't make it into the current milestone.
+  One example is to have only a single destination per channel to allow gap detection and more advanced
+  flow control.
 
 Channels are special actors that are used by processors to communicate with other actors (channel destinations).
 Channels prevent redundant delivery of replayed messages to destinations during processor recovery. A replayed
@@ -160,59 +170,106 @@ message is retained by a channel if its previous delivery has been confirmed by 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#channel-example
 
 A channel is ready to use once it has been created, no recovery or further activation is needed. A ``Deliver``
-request  instructs a channel to send a ``Persistent`` message to a destination where the sender of the ``Deliver``
-request is forwarded to the destination. A processor may also reply to a message sender directly by using ``sender``
-as channel destination (not shown).
+request  instructs a channel to send a ``Persistent`` message to a destination. Sender references are preserved
+by a channel, therefore, a destination can reply to the sender of a ``Deliver`` request.
+
+If a processor wants to reply to a ``Persistent`` message sender it should use the ``sender`` reference as channel
+destination.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#channel-example-reply
 
-Persistent messages delivered by a channel are of type ``ConfirmablePersistent``. It extends ``Persistent`` and
-adds a ``confirm()`` method. Channel destinations confirm the delivery of a ``ConfirmablePersistent`` message by
-calling ``confirm()``. This (asynchronously) writes a confirmation entry to the journal. Replayed messages
-internally contain these confirmation entries which allows a channel to decide if a message should be retained or
-not. ``ConfirmablePersistent`` messages can be used whereever ``Persistent`` messages are expected, which allows
-processors to be used as channel destinations, for example.
+Persistent messages delivered by a channel are of type ``ConfirmablePersistent``. ``ConfirmablePersistent`` extends
+``Persistent`` by adding the methods ``confirm`` method and ``redeliveries`` (see also :ref:`redelivery`). Channel
+destinations confirm the delivery of a ``ConfirmablePersistent`` message by calling ``confirm()`` an that message.
+This asynchronously writes a confirmation entry to the journal. Replayed messages internally contain these confirmation
+entries which allows a channel to decide if a message should be retained or not.
+
+A ``Processor`` can also be used as channel destination i.e. it can persist ``ConfirmablePersistent`` messages too.
+
+.. _redelivery:
 
 Message re-delivery
 -------------------
 
-If an application crashes after a destination called ``confirm()`` but before the confirmation entry could have
-been written to the journal then the unconfirmed message will be re-delivered during next recovery of the sending
-processor. It is the destination's responsibility to detect the duplicate or simply process the message again if
-it's an idempotent receiver. Duplicates can be detected, for example, by tracking sequence numbers.
+Channels re-deliver messages to destinations if they do not confirm their receipt within a configurable timeout.
+This timeout can be specified as ``redeliverInterval`` when creating a channel, optionally together with the
+maximum number of re-deliveries a channel should attempt for each unconfirmed message.
 
-Although a channel prevents message loss in case of sender (JVM) crashes it doesn't attempt re-deliveries if a
-destination is unavailable. To achieve reliable communication with a (remote) target, a channel destination may
-want to use the :ref:`reliable-proxy` or add the message to a queue that is managed by a third party message
-broker, for example. In latter case, the channel destination will first add the received message to the queue
-and then call ``confirm()`` on the received ``ConfirmablePersistent`` message.
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#channel-custom-settings
+
+Message re-delivery is done out of order with regards to normal delivery i.e. redelivered messages may arrive
+later than newer normally delivered messages. The number of re-delivery attempts can be obtained via the
+``redeliveries`` method on ``ConfirmablePersistent`` or by pattern matching.
+
+A channel keeps messages in memory until their successful delivery has been confirmed by their destination(s)
+or their maximum number of re-deliveries is reached. In the latter case, the application has to re-send the
+correspnding ``Deliver`` request to the channel so that the channel can start a new series of delivery attempts
+(starting again with a ``redeliveries`` count of ``0``).
+
+Re-sending ``Deliver`` requests is done automatically if the sending processor replays messages: only ``Deliver``
+requests of unconfirmed messages will be served again by the channel. A message replay can be enforced by an
+application by restarting the sending processor, for example. A replay will also take place if the whole
+application is restarted, either after normal termination or after a crash.
+
+This combination of
+
+* message persistence by sending processors
+* message replays by sending processors
+* message re-deliveries by channels and
+* application-level confirmations (acknowledgements) by destinations
+
+enables channels to provide at-least-once message delivery guarantees. Possible duplicates can be detected by
+destinations by tracking message sequence numbers. Message sequence numbers are generated per sending processor.
+Depending on how a processor routes outbound messages to destinations, they may either see a contiguous message
+sequence or a sequence with gaps.
+
+.. warning::
+
+  If a processor emits more than one outbound message per inbound ``Persistent`` message it **must** use a
+  separate channel for each outbound message to ensure that confirmations are uniquely identifiable, otherwise,
+  at-least-once message delivery is not guaranteed. This rule has been introduced to avoid writing additional
+  outbound message identifiers to the journal which would decrease the overall throughput. It is furthermore
+  recommended to collapse multiple outbound messages to the same destination into a single outbound message,
+  otherwise, if sent via multiple channels, their ordering is not defined. These restrictions are likely to be
+  removed in the final release.
+
+Whenever an application wants to have more control how sequence numbers are assigned to messages it should use
+an application-specific sequence number generator and include the generated sequence numbers into the ``payload``
+of ``Persistent`` messages.
 
 Persistent channels
 -------------------
 
-Channels created with ``Channel.props`` do not persist messages. This is not necessary because these (transient)
-channels shall only be used in combination with a sending processor that takes care of message persistence.
+Channels created with ``Channel.props`` do not persist messages. These channels are usually used in combination
+with a sending processor that takes care of persistence, hence, channel-specific persistence is not necessary in
+this case. They are referred to as transient channels in the following.
 
-However, if an application wants to use a channel standalone (without a sending processor), to prevent message
-loss in case of a sender (JVM) crash, it should use a persistent channel which can be created with ``PersistentChannel.props``.
-A persistent channel additionally persists messages before they are delivered. Persistence is achieved by an
-internal processor that delegates delivery to a transient channel. A persistent channel, when used standalone,
-can therefore provide the same message re-delivery semantics as a transient channel in combination with an
-application-defined processor.
+Applications may also use transient channels standalone (i.e. without a sending processor) if re-delivery attempts
+to destinations are required but message loss in case of a sender JVM crash is not an issue. If applications want to
+use standalone channels but message loss is not acceptable, they should use persistent channels. A persistent channel
+can be created with ``PersistentChannel.props`` and configured with a ``PersistentChannelSettings`` object.
 
-  .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#persistent-channel-example
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#persistent-channel-example
+
+A persistent channel is like a transient channel that additionally persists ``Deliver`` requests before serving it.
+Hence, it can recover from sender JVM crashes and provide the same message re-delivery semantics as a transient
+channel in combination with an application-defined processor.
 
 By default, a persistent channel doesn't reply whether a ``Persistent`` message, sent with ``Deliver``, has been
-successfully persisted or not. This can be enabled by creating the channel with
-``PersistentChannel.props(persistentReply = true)``. With this setting, either the successfully persisted message
-is replied to the sender or a ``PersistenceFailure``. In case of a persistence failure, the sender should re-send
-the message.
+successfully persisted or not. This can be enabled by creating the channel with the ``replyPersistent`` configuration
+parameter set to ``true``:
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#persistent-channel-reply
+
+With this setting, either the successfully persisted message is replied to the sender or a ``PersistenceFailure``.
+In case of a persistence failure, the sender should re-send the message.
 
 Using a persistent channel in combination with an application-defined processor can make sense if destinations are
 unavailable for a long time and an application doesn't want to buffer all messages in memory (but write them to the
-journal instead). In this case, delivery can be disabled with ``DisableDelivery`` (to stop delivery and persist-only)
-and re-enabled with ``EnableDelivery``. A disabled channel that receives ``EnableDelivery`` will restart itself and
-re-deliver all persisted, unconfirmed messages before serving new ``Deliver`` requests.
+journal only). In this case, delivery can be disabled by sending the channel a ``DisableDelivery`` message (to
+stop delivery and persist-only) and re-enabled again by sending it an ``EnableDelivery`` message. A disabled channel
+that receives an ``EnableDelivery`` message, processes all persisted, unconfirmed ``Deliver`` requests again before
+serving new ones.
 
 Sender resolution
 -----------------
@@ -279,7 +336,7 @@ method or by pattern matching
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#sequence-nr-pattern-matching
 
-Persistent messages are assigned sequence numbers on a per-processor basis (or per persistent channel basis if used
+Persistent messages are assigned sequence numbers on a per-processor basis (or per channel basis if used
 standalone). A sequence starts at ``1L`` and doesn't contain gaps unless a processor deletes a message.
 
 .. _snapshots:
@@ -376,6 +433,19 @@ The example also demonstrates how to change the processor's default behavior, de
 another behavior, defined by ``otherCommandHandler``, and back using ``context.become()`` and ``context.unbecome()``.
 See also the API docs of ``persist`` for further details.
 
+Reliable event delivery
+-----------------------
+
+Sending events from an event handler to another actor directly doesn't guarantee delivery of these events. To
+guarantee at-least-once delivery, :ref:`channels` must be used. In this case, also replayed events (received by
+``receiveReplay``) must be sent to a channel, as shown in the following example:
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#reliable-event-delivery
+
+In larger integration scenarios, channel destinations may be actors that submit received events to an external
+message broker, for example. After having successfully submitted an event, they should call ``confirm()`` on the
+received ``ConfirmablePersistent`` message.
+
 Batch writes
 ============
 
@@ -469,6 +539,9 @@ directory. This location can be changed by configuration where the specified pat
 
 With this plugin, each actor system runs its own private LevelDB instance.
 
+
+.. _shared-leveldb-journal:
+
 Shared LevelDB journal
 ----------------------
 
@@ -536,6 +609,21 @@ it must add
 
 to the application configuration. If not specified, a default serializer is used, which is the ``JavaSerializer``
 in this example.
+
+Testing
+=======
+
+When running tests with LevelDB default settings in ``sbt``, make sure to set ``fork := true`` in your sbt project
+otherwise, you'll see an ``UnsatisfiedLinkError``. Alternatively, you can switch to a LevelDB Java port by setting
+
+.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#native-config
+
+or
+
+.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#shared-store-native-config
+
+in your Akka configuration. The latter setting applies if you're using a :ref:`shared-leveldb-journal`. The LevelDB
+Java port is for testing purposes only.
 
 Miscellaneous
 =============
