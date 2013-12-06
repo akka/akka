@@ -39,7 +39,7 @@ private[io] class UdpListener(val udp: UdpExt,
       val socket = channel.socket
       bind.options.foreach(_.beforeBind(channel))
       socket.bind(bind.localAddress)
-      val ret = channel.getLocalAddress match {
+      val ret = socket.getLocalAddress match {
         case isa: InetSocketAddress ⇒ isa
         case x                      ⇒ throw new IllegalArgumentException(s"bound to unknown SocketAddress [$x]")
       }
