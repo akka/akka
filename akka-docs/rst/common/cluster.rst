@@ -1,4 +1,3 @@
-
 .. _cluster:
 
 ######################
@@ -598,8 +597,6 @@ Stateful Actor Replication :ref:`[*] <niy>`
 ===========================================
 
 .. note:: Stateful actor replication is not implemented yet.
-
-.. _Read Repair: http://wiki.apache.org/cassandra/ReadRepair
 
 .. _niy:
 
