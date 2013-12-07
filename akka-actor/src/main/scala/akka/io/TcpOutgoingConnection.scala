@@ -30,7 +30,7 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
 
   context.watch(commander) // sign death pact
 
-  options.foreach(_.beforeConnect(channel.socket))
+  options.foreach(_.beforeBind(channel))
   localAddress.foreach(channel.socket.bind)
   channelRegistry.register(channel, 0)
   timeout foreach context.setReceiveTimeout //Initiate connection timeout if supplied

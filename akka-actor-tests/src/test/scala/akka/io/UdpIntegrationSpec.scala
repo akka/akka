@@ -4,17 +4,19 @@
 package akka.io
 
 import java.net.InetSocketAddress
+import java.nio.channels.DatagramChannel
 import akka.testkit.{ TestProbe, ImplicitSender, AkkaSpec }
 import akka.util.ByteString
 import akka.actor.ActorRef
 import akka.io.Udp._
+import akka.io.Inet._
 import akka.TestUtils._
 
 class UdpIntegrationSpec extends AkkaSpec("""
     akka.loglevel = INFO
     akka.actor.serialize-creators = on""") with ImplicitSender {
 
-  val addresses = temporaryServerAddresses(3, udp = true)
+  val addresses = temporaryServerAddresses(4, udp = true)
 
   def bindUdp(address: InetSocketAddress, handler: ActorRef): ActorRef = {
     val commander = TestProbe()
@@ -72,6 +74,30 @@ class UdpIntegrationSpec extends AkkaSpec("""
         if (i % 2 == 0) checkSendingToServer()
         else checkSendingToClient()
       }
+    }
+
+    "call options" in {
+      case class AssertCall() extends SocketOption {
+        var beforeCalled = 0
+        var afterCalled = 0
+
+        override def beforeBind(c: DatagramChannel): Unit = {
+          assert(c.socket.isBound === false)
+          beforeCalled += 1
+        }
+
+        override def afterConnect(c: DatagramChannel): Unit = {
+          assert(c.socket.isBound === true)
+          afterCalled += 1
+        }
+      }
+
+      val commander = TestProbe()
+      val assertOption = AssertCall()
+      commander.send(IO(Udp), Bind(testActor, addresses(3), options = List(assertOption)))
+      commander.expectMsg(Bound(addresses(3)))
+      assert(assertOption.beforeCalled === 1)
+      assert(assertOption.afterCalled === 1)
     }
   }
 
