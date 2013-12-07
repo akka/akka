@@ -155,3 +155,87 @@ abstract class PriorityGenerator extends java.util.Comparator[Envelope] {
   final def compare(thisMessage: Envelope, thatMessage: Envelope): Int =
     gen(thisMessage.message) - gen(thatMessage.message)
 }
+
+/**
+ * A Dispatcher that uses the Global ExecutionContext
+ */
+class GlobalDispatcher(
+  _configurator: MessageDispatcherConfigurator,
+  val id: String,
+  val throughput: Int,
+  val throughputDeadlineTime: Duration,
+  val shutdownTimeout: FiniteDuration)
+  extends MessageDispatcher(_configurator) {
+  private[this] final val ec = ExecutionContexts.global()
+  /**
+   * INTERNAL API
+   */
+  protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope): Unit = {
+    val mbox = receiver.mailbox
+    mbox.enqueue(receiver.self, invocation)
+    registerForExecution(mbox, true, false)
+  }
+
+  /**
+   * INTERNAL API
+   */
+  protected[akka] def systemDispatch(receiver: ActorCell, invocation: SystemMessage): Unit = {
+    val mbox = receiver.mailbox
+    mbox.systemEnqueue(receiver.self, invocation)
+    registerForExecution(mbox, false, true)
+  }
+
+  /**
+   * INTERNAL API
+   */
+  protected[akka] def executeTask(invocation: TaskInvocation) {
+    try ec execute invocation catch {
+      case e: RejectedExecutionException ⇒
+        try ec execute invocation catch {
+          case e2: RejectedExecutionException ⇒
+            eventStream.publish(Error(e, getClass.getName, getClass, "executeTask was rejected twice!"))
+            throw e2
+        }
+    }
+  }
+
+  /**
+   * INTERNAL API
+   */
+  protected[akka] def createMailbox(actor: akka.actor.Cell, mailboxType: MailboxType): Mailbox =
+    new Mailbox(mailboxType.create(Some(actor.self), Some(actor.system))) with DefaultSystemMessageQueue
+
+  /**
+   * Returns if it was registered
+   *
+   * INTERNAL API
+   */
+  protected[akka] override def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = {
+    if (mbox.canBeScheduledForExecution(hasMessageHint, hasSystemMessageHint)) { //This needs to be here to ensure thread safety and no races
+      if (mbox.setAsScheduled()) {
+        try {
+          ec execute mbox
+          true
+        } catch {
+          case e: RejectedExecutionException ⇒
+            try {
+              ec execute mbox
+              true
+            } catch { //Retry once
+              case e: RejectedExecutionException ⇒
+                mbox.setAsIdle()
+                eventStream.publish(Error(e, getClass.getName, getClass, "registerForExecution was rejected twice!"))
+                throw e
+            }
+        }
+      } else false
+    } else false
+  }
+
+  /**
+   * INTERNAL API
+   */
+  protected[akka] def shutdown(): Unit = ()
+
+  override val toString: String = Logging.simpleName(this) + "[" + id + "]"
+}
