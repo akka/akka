@@ -466,7 +466,7 @@ above; just use the power!
 Watching Other Actors from Probes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A :class:`TestKit` can register itself for DeathWatch of any other actor:
+A :class:`TestProbe` can register itself for DeathWatch of any other actor:
 
 .. includecode:: code/docs/testkit/TestkitDocSpec.scala
    :include: test-probe-watch
