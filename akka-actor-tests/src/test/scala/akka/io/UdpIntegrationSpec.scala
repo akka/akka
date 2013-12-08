@@ -77,21 +77,6 @@ class UdpIntegrationSpec extends AkkaSpec("""
     }
 
     "call options" in {
-      case class AssertCall() extends SocketOption {
-        var beforeCalled = 0
-        var afterCalled = 0
-
-        override def beforeBind(c: DatagramChannel): Unit = {
-          assert(c.socket.isBound === false)
-          beforeCalled += 1
-        }
-
-        override def afterConnect(c: DatagramChannel): Unit = {
-          assert(c.socket.isBound === true)
-          afterCalled += 1
-        }
-      }
-
       val commander = TestProbe()
       val assertOption = AssertCall()
       commander.send(IO(Udp), Bind(testActor, addresses(3), options = List(assertOption)))
@@ -101,4 +86,19 @@ class UdpIntegrationSpec extends AkkaSpec("""
     }
   }
 
+}
+
+case class AssertCall() extends SocketOption {
+  var beforeCalled = 0
+  var afterCalled = 0
+
+  override def beforeBind(c: DatagramChannel): Unit = {
+    assert(!c.socket.isBound)
+    beforeCalled += 1
+  }
+
+  override def afterConnect(c: DatagramChannel): Unit = {
+    assert(c.socket.isBound)
+    afterCalled += 1
+  }
 }
