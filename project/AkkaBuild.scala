@@ -75,7 +75,7 @@ object AkkaBuild extends Build {
       // add reportBinaryIssues to validatePullRequest on minor version maintenance branch
       validatePullRequest <<= (Unidoc.unidoc, SphinxSupport.generate in Sphinx in docs) map { (_, _) => }
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent,
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, httpCore, slf4j, agent,
       persistence, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
   )
 
@@ -231,6 +231,18 @@ object AkkaBuild extends Build {
       previousArtifact := akkaPreviousArtifact("akka-cluster")
     )
   ) configs (MultiJvm)
+
+
+  lazy val httpCore = Project(
+    id = "akka-http-core",
+    base = file("akka-http-core"),
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.httpCore++ Seq(
+      fork in Test := true,
+      publishArtifact in Compile := false,
+      libraryDependencies ++= Dependencies.httpCore,
+      previousArtifact := akkaPreviousArtifact("akka-http-core")
+    )
+  )
 
   lazy val slf4j = Project(
     id = "akka-slf4j",
@@ -983,6 +995,8 @@ object AkkaBuild extends Build {
 
     val remote = exports(Seq("akka.remote.*"), imports = Seq(protobufImport()))
 
+    val httpCore = exports(Seq("akka.http.*"))
+
     val slf4j = exports(Seq("akka.event.slf4j.*"))
 
     val persistence = exports(Seq("akka.persistence.*"), imports = Seq(protobufImport()))
@@ -1099,6 +1113,8 @@ object Dependencies {
   val remote = Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest)
 
   val remoteTests = Seq(Test.junit, Test.scalatest)
+
+  val httpCore = Seq()
 
   val cluster = Seq(Test.junit, Test.scalatest)
 
