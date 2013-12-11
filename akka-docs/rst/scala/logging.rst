@@ -296,7 +296,7 @@ It has one single dependency; the slf4j-api jar. In runtime you also need a SLF4
 
   .. code-block:: scala
 
-     lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.7"
+     lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.13"
 
 
 You need to enable the Slf4jLogger in the 'loggers' element in
