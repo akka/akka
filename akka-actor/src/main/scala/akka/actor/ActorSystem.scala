@@ -146,10 +146,6 @@ object ActorSystem {
     final val StdoutLogLevel: String = getString("akka.stdout-loglevel")
     final val Loggers: immutable.Seq[String] = immutableSeq(getStringList("akka.loggers"))
     final val LoggerStartTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.logger-startup-timeout"), MILLISECONDS))
-    @deprecated("use Loggers)", "2.2")
-    final val EventHandlers: immutable.Seq[String] = immutableSeq(getStringList("akka.event-handlers"))
-    @deprecated("use LoggerStartTimeout)", "2.2")
-    final val EventHandlerStartTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.event-handler-startup-timeout"), MILLISECONDS))
     final val LogConfigOnStart: Boolean = config.getBoolean("akka.log-config-on-start")
     final val LogDeadLetters: Int = config.getString("akka.log-dead-letters").toLowerCase match {
       case "off" | "false" ⇒ 0
