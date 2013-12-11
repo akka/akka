@@ -26,10 +26,6 @@ asynchronous.  The API is meant to be a solid foundation for the implementation
 of network protocols and building higher abstractions; it is not meant to be a
 full-service high-level NIO wrapper for end users.
 
-.. note::
-
-  The old I/O implementation has been deprecated and its documentation has been moved: :ref:`io-scala-old`
-
 Terminology, Concepts
 ---------------------
 
