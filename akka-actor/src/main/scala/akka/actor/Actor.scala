@@ -10,6 +10,7 @@ import scala.annotation.tailrec
 import scala.reflect.BeanProperty
 import scala.util.control.NoStackTrace
 import java.util.regex.Pattern
+import akka.event.LoggingAdapter
 
 /**
  * INTERNAL API
@@ -279,7 +280,15 @@ object Status {
  * }}}
  */
 trait ActorLogging { this: Actor ⇒
-  val log = akka.event.Logging(context.system, this)
+  private var _log: LoggingAdapter = _
+
+  def log: LoggingAdapter = {
+    // only used in Actor, i.e. thread safe
+    if (_log eq null)
+      _log = akka.event.Logging(context.system, this)
+    _log
+  }
+
 }
 
 /**
