@@ -5,6 +5,4 @@ Futures and Agents
    :maxdepth: 2
 
    futures
-   stm
    agents
-   transactors

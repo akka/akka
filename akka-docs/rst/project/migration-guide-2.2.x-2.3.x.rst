@@ -118,6 +118,12 @@ Deprecated STM Support for Agents
 
 Agents participating in enclosing STM transaction is a deprecated feature.
 
+Transactor Module is Deprecated
+===============================
+
+The integration between actors and STM in the module ``akka-transactor`` is deprecated and will be
+removed in a future version.
+
 Removed Deprecated Features
 ===========================
 
@@ -127,3 +133,4 @@ The following, previously deprecated, features have been removed:
  * `API changes to FSM and TestFSMRef <http://doc.akka.io/docs/akka/2.2.3/project/migration-guide-2.1.x-2.2.x.html#API_changes_to_FSM_and_TestFSMRef>`_
  * DefaultScheduler superseded by LightArrayRevolverScheduler
  
+

@@ -48,9 +48,6 @@ Akka is very modular and consists of several JARs containing different features.
 
 - ``akka-testkit`` – Toolkit for testing Actor systems
 
-- ``akka-transactor`` – Transactors - transactional actors, integrated with
-  Scala STM
-
 - ``akka-zeromq`` – ZeroMQ integration
 
 In addition to these stable modules there are several which are on their way
