@@ -158,11 +158,12 @@ private[remote] object ReliableDeliverySupervisor {
     handleOrActive: Option[AkkaProtocolHandle],
     localAddress: Address,
     remoteAddress: Address,
-    transport: Transport,
+    refuseUid: Option[Int],
+    transport: AkkaProtocolTransport,
     settings: RemoteSettings,
     codec: AkkaPduCodec,
     receiveBuffers: ConcurrentHashMap[Link, ResendState]): Props =
-    Props(classOf[ReliableDeliverySupervisor], handleOrActive, localAddress, remoteAddress, transport, settings,
+    Props(classOf[ReliableDeliverySupervisor], handleOrActive, localAddress, remoteAddress, refuseUid, transport, settings,
       codec, receiveBuffers)
 }
 
@@ -173,7 +174,8 @@ private[remote] class ReliableDeliverySupervisor(
   handleOrActive: Option[AkkaProtocolHandle],
   val localAddress: Address,
   val remoteAddress: Address,
-  val transport: Transport,
+  val refuseUid: Option[Int],
+  val transport: AkkaProtocolTransport,
   val settings: RemoteSettings,
   val codec: AkkaPduCodec,
   val receiveBuffers: ConcurrentHashMap[Link, ResendState]) extends Actor {
@@ -361,6 +363,7 @@ private[remote] class ReliableDeliverySupervisor(
       handleOrActive = currentHandle,
       localAddress = localAddress,
       remoteAddress = remoteAddress,
+      refuseUid,
       transport = transport,
       settings = settings,
       AkkaPduProtobufCodec,
@@ -402,12 +405,13 @@ private[remote] object EndpointWriter {
     handleOrActive: Option[AkkaProtocolHandle],
     localAddress: Address,
     remoteAddress: Address,
-    transport: Transport,
+    refuseUid: Option[Int],
+    transport: AkkaProtocolTransport,
     settings: RemoteSettings,
     codec: AkkaPduCodec,
     receiveBuffers: ConcurrentHashMap[Link, ResendState],
     reliableDeliverySupervisor: Option[ActorRef]): Props =
-    Props(classOf[EndpointWriter], handleOrActive, localAddress, remoteAddress, transport, settings, codec,
+    Props(classOf[EndpointWriter], handleOrActive, localAddress, remoteAddress, refuseUid, transport, settings, codec,
       receiveBuffers, reliableDeliverySupervisor)
 
   /**
@@ -445,7 +449,8 @@ private[remote] class EndpointWriter(
   handleOrActive: Option[AkkaProtocolHandle],
   localAddress: Address,
   remoteAddress: Address,
-  transport: Transport,
+  refuseUid: Option[Int],
+  transport: AkkaProtocolTransport,
   settings: RemoteSettings,
   codec: AkkaPduCodec,
   val receiveBuffers: ConcurrentHashMap[Link, ResendState],
@@ -507,7 +512,7 @@ private[remote] class EndpointWriter(
           reader = startReadEndpoint(h)
           Writing
         case None ⇒
-          transport.associate(remoteAddress).mapTo[AkkaProtocolHandle].map(Handle(_)) pipeTo self
+          transport.associate(remoteAddress, refuseUid).map(Handle(_)) pipeTo self
           Initializing
       },
       stateData = ())
