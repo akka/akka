@@ -34,9 +34,6 @@ Akka is very modular and consists of several JARs containing different features.
 
 - ``akka-cluster`` – Cluster membership management, elastic routers.
 
-- ``akka-dataflow`` – add-on to SIP-14 futures supporting implicit
-  continuation-passing style
-
 - ``akka-file-mailbox`` – Akka durable mailbox (find more among community
   projects)
 

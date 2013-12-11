@@ -5,7 +5,6 @@ Futures and Agents
    :maxdepth: 2
 
    futures
-   dataflow
    stm
    agents
    transactors
