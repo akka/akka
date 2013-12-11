@@ -67,6 +67,15 @@ class AskSpec extends AkkaSpec {
       }.getMessage must be === expectedMsg
     }
 
+    "include target information in AskTimeout" in {
+      implicit val timeout = Timeout(0.5 seconds)
+      val silentOne = system.actorOf(Props.empty, "silent")
+      val f = silentOne ? "noreply"
+      intercept[AskTimeoutException] {
+        Await.result(f, remaining)
+      }.getMessage.contains("/user/silent") must be(true)
+    }
+
     "work for ActorSelection" in {
       implicit val timeout = Timeout(5 seconds)
       import system.dispatcher
