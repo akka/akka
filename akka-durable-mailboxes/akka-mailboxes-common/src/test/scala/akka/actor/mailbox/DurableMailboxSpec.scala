@@ -21,6 +21,7 @@ import akka.dispatch.Mailbox
 import akka.testkit.TestKit
 import scala.concurrent.duration._
 
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 object DurableMailboxSpecActorFactory {
 
   class MailboxTestActor extends Actor {
@@ -37,6 +38,7 @@ object DurableMailboxSpecActorFactory {
 
 }
 
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 object DurableMailboxSpec {
   def fallbackConfig: Config = ConfigFactory.parseString("""
       akka {
@@ -54,6 +56,7 @@ object DurableMailboxSpec {
  * Subclass must define dispatcher in the supplied config for the specific backend.
  * The id of the dispatcher must be the same as the `<backendName>-dispatcher`.
  */
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 abstract class DurableMailboxSpec(system: ActorSystem, val backendName: String)
   extends TestKit(system) with WordSpecLike with MustMatchers with BeforeAndAfterAll {
 

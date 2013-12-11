@@ -25,6 +25,7 @@ import scala.annotation.tailrec
 import akka.actor.mailbox.filebased.FileBasedMailboxSettings
 
 // a config value that's backed by a global setting but may be locally overridden
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 class OverlaySetting[T](base: ⇒ T) {
   @volatile
   private var local: Option[T] = None
@@ -38,6 +39,7 @@ trait Prependable[T] {
   def prepend(t: T): Unit
 }
 
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 class PersistentQueue(persistencePath: String, val name: String, val settings: FileBasedMailboxSettings, log: LoggingAdapter) {
 
   private case object ItemArrived
@@ -448,6 +450,7 @@ class PersistentQueue(persistencePath: String, val name: String, val settings: F
   }
 }
 
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 object PersistentQueue {
   @volatile
   var maxItems: Int = Int.MaxValue

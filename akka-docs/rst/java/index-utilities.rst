@@ -10,5 +10,4 @@ Utilities
    ../common/duration
    ../common/circuitbreaker
    extending-akka
-   durable-mailbox
    microkernel

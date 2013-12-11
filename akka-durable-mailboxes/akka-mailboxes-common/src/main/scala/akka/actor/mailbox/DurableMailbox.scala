@@ -13,6 +13,7 @@ private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r
 }
 
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 abstract class DurableMessageQueue(val owner: ActorRef, val system: ExtendedActorSystem) extends MessageQueue {
   import DurableExecutableMailboxConfig._
 
@@ -26,6 +27,7 @@ abstract class DurableMessageQueue(val owner: ActorRef, val system: ExtendedActo
  * Java API
  * DurableMessageQueue with functionality to serialize and deserialize Envelopes (messages)
  */
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 abstract class DurableMessageQueueWithSerialization(_owner: ActorRef, _system: ExtendedActorSystem)
   extends DurableMessageQueue(_owner, _system) with DurableMessageSerialization
 
@@ -33,6 +35,7 @@ abstract class DurableMessageQueueWithSerialization(_owner: ActorRef, _system: E
  * DurableMessageSerialization can be mixed into a DurableMessageQueue and adds functionality
  * to serialize and deserialize Envelopes (messages)
  */
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 trait DurableMessageSerialization { this: DurableMessageQueue ⇒
 
   /**
@@ -91,6 +94,7 @@ trait DurableMessageSerialization { this: DurableMessageQueue ⇒
  *
  * where name=“my-durable-mailbox” in this example.
  */
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 trait DurableMailboxSettings {
   /**
    * A reference to the enclosing actor system.

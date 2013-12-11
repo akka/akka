@@ -25,6 +25,7 @@ import akka.actor.mailbox.filebased.filequeue._
 import akka.event.LoggingAdapter
 import akka.actor.ActorSystem
 
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 class QueueDumper(filename: String, log: LoggingAdapter) {
   var offset = 0L
   var operations = 0L
@@ -110,6 +111,7 @@ class QueueDumper(filename: String, log: LoggingAdapter) {
   }
 }
 
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 object QDumper {
   val filenames = new mutable.ListBuffer[String]
   var quiet = false

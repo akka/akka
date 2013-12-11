@@ -403,8 +403,4 @@ akka-zeromq
 .. literalinclude:: ../../../akka-zeromq/src/main/resources/reference.conf
    :language: none
 
-akka-file-mailbox
-~~~~~~~~~~~~~~~~~
 
-.. literalinclude:: ../../../akka-durable-mailboxes/akka-file-mailbox/src/main/resources/reference.conf
-   :language: none

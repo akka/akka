@@ -579,7 +579,7 @@ The default approach is to take options 2a, 3a, and 4a - allowing ``A`` on
 messages during the update transition. This assumes stateless actors that do not
 have a dependency on message ordering from any given source.
 
-- If an actor has a distributed durable mailbox then nothing needs to be done,
+- If an actor has persistent (durable) state then nothing needs to be done,
   other than migrating the actor.
 
 - If message ordering needs to be maintained during the update transition then
