@@ -24,11 +24,6 @@ each Agent is being executed. Actions dispatched to an agent from another thread
 will occur in the order they were sent, potentially interleaved with actions
 dispatched to the same agent from other threads.
 
-If an Agent is used within an enclosing transaction, then it will participate in
-that transaction. Agents are integrated with Scala STM - any dispatches made in
-a transaction are held until that transaction commits, and are discarded if it
-is retried or aborted.
-
 .. note::
 
   Agents are local to the node on which they are created. This implies that you
@@ -99,17 +94,6 @@ currently queued updates have completed:
 
 See :ref:`futures-scala` for more information on ``Futures``.
 
-Transactional Agents
-====================
-
-If an Agent is used within an enclosing transaction, then it will participate in
-that transaction. If you send to an Agent within a transaction then the dispatch
-to the Agent will be held until that transaction commits, and discarded if the
-transaction is aborted. Here's an example:
-
-.. includecode:: code/docs/agent/AgentDocSpec.scala#transfer-example
-
-
 Monadic usage
 =============
 
@@ -121,3 +105,15 @@ as-is. They are so-called 'persistent'.
 Example of monadic usage:
 
 .. includecode:: code/docs/agent/AgentDocSpec.scala#monadic-example
+
+Deprecated Transactional Agents
+===============================
+
+Agents participating in enclosing STM transaction is a deprecated feature in 2.3.
+
+If an Agent is used within an enclosing transaction, then it will participate in
+that transaction. If you send to an Agent within a transaction then the dispatch
+to the Agent will be held until that transaction commits, and discarded if the
+transaction is aborted. Here's an example:
+
+.. includecode:: code/docs/agent/AgentDocSpec.scala#transfer-example
