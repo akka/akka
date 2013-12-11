@@ -30,9 +30,6 @@ abstract class ActorSelection extends Serializable {
 
   protected val path: immutable.IndexedSeq[SelectionPathElement]
 
-  @deprecated("use the two-arg variant (typically getSelf() as second arg)", "2.2")
-  def tell(msg: Any): Unit = tell(msg, Actor.noSender)
-
   /**
    * Sends the specified message to the sender, i.e. fire-and-forget
    * semantics, including the sender reference if possible.
