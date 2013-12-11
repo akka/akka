@@ -4,7 +4,6 @@
 package akka.actor
 
 import language.implicitConversions
-import akka.util._
 import scala.concurrent.duration.Duration
 import scala.collection.mutable
 import akka.routing.{ Deafen, Listen, Listeners }
@@ -162,6 +161,17 @@ object FSM {
       copy(stopReason = Some(reason))
     }
   }
+  /**
+   * All messages sent to the [[akka.actor.FSM]] will be wrapped inside an
+   * `Event`, which allows pattern matching to extract both state and data.
+   */
+  case class Event[D](event: Any, stateData: D) extends NoSerializationVerificationNeeded
+
+  /**
+   * Case class representing the state of the [[akka.actor.FSM]] whithin the
+   * `onTermination` block.
+   */
+  case class StopEvent[S, D](reason: Reason, currentState: S, stateData: D) extends NoSerializationVerificationNeeded
 
 }
 
@@ -250,9 +260,14 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
   import FSM._
 
   type State = FSM.State[S, D]
+  type Event = FSM.Event[D]
+  type StopEvent = FSM.StopEvent[S, D]
   type StateFunction = scala.PartialFunction[Event, State]
   type Timeout = Option[FiniteDuration]
   type TransitionHandler = PartialFunction[(S, S), Unit]
+
+  val Event: FSM.Event.type = FSM.Event
+  val StopEvent: FSM.StopEvent.type = FSM.StopEvent
 
   /*
    * “import” so that these are visible without an import
@@ -666,18 +681,6 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
     case Failure(msg: AnyRef)   ⇒ log.error(msg.toString)
     case _                      ⇒
   }
-
-  /**
-   * All messages sent to the [[akka.actor.FSM]] will be wrapped inside an
-   * `Event`, which allows pattern matching to extract both state and data.
-   */
-  case class Event(event: Any, stateData: D) extends NoSerializationVerificationNeeded
-
-  /**
-   * Case class representing the state of the [[akka.actor.FSM]] whithin the
-   * `onTermination` block.
-   */
-  case class StopEvent(reason: Reason, currentState: S, stateData: D) extends NoSerializationVerificationNeeded
 }
 
 /**
@@ -750,3 +753,251 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒
 
 }
 
+/**
+ * Java API
+ *
+ * Finite State Machine actor abstract base class.
+ */
+abstract class AbstractFSM[S, D] extends FSM[S, D] {
+  import akka.japi.pf._
+  import akka.japi.pf.FI._
+  import java.util.{ List ⇒ JList }
+  import FSM._
+
+  /**
+   * Insert a new StateFunction at the end of the processing chain for the
+   * given state.
+   *
+   * @param stateName designator for the state
+   * @param stateFunction partial function describing response to input
+   */
+  final def when(stateName: S)(stateFunction: StateFunction): Unit =
+    when(stateName, null: FiniteDuration)(stateFunction)
+
+  /**
+   * Insert a new StateFunction at the end of the processing chain for the
+   * given state.
+   *
+   * @param stateName designator for the state
+   * @param stateFunctionBuilder partial function builder describing response to input
+   */
+  final def when(stateName: S, stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit =
+    when(stateName, null, stateFunctionBuilder)
+
+  /**
+   * Insert a new StateFunction at the end of the processing chain for the
+   * given state. If the stateTimeout parameter is set, entering this state
+   * without a differing explicit timeout setting will trigger a StateTimeout
+   * event; the same is true when using #stay.
+   *
+   * @param stateName designator for the state
+   * @param stateTimeout default state timeout for this state
+   * @param stateFunctionBuilder partial function builder describing response to input
+   */
+  final def when(stateName: S,
+                 stateTimeout: FiniteDuration,
+                 stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit =
+    when(stateName, stateTimeout)(stateFunctionBuilder.build())
+
+  /**
+   * Set initial state. Call this method from the constructor before the [[#initialize]] method.
+   * If different state is needed after a restart this method, followed by [[#initialize]], can
+   * be used in the actor life cycle hooks [[akka.actor.Actor#preStart]] and [[akka.actor.Actor#postRestart]].
+   *
+   * @param stateName initial state designator
+   * @param stateData initial state data
+   */
+  final def startWith(stateName: S, stateData: D): Unit =
+    startWith(stateName, stateData, null: FiniteDuration)
+
+  /**
+   * Set initial state. Call this method from the constructor before the [[#initialize]] method.
+   * If different state is needed after a restart this method, followed by [[#initialize]], can
+   * be used in the actor life cycle hooks [[akka.actor.Actor#preStart]] and [[akka.actor.Actor#postRestart]].
+   *
+   * @param stateName initial state designator
+   * @param stateData initial state data
+   * @param timeout state timeout for the initial state, overriding the default timeout for that state
+   */
+  final def startWith(stateName: S, stateData: D, timeout: FiniteDuration): Unit =
+    startWith(stateName, stateData, Option(timeout))
+
+  /**
+   * Add a handler which is called upon each state transition, i.e. not when
+   * staying in the same state.
+   *
+   * <b>Multiple handlers may be installed, and every one of them will be
+   * called, not only the first one matching.</b>
+   */
+  final def onTransition(transitionHandlerBuilder: FSMTransitionHandlerBuilder[S]): Unit =
+    onTransition(transitionHandlerBuilder.build().asInstanceOf[TransitionHandler])
+
+  /**
+   * Set handler which is called upon reception of unhandled messages. Calling
+   * this method again will overwrite the previous contents.
+   *
+   * The current state may be queried using ``stateName``.
+   */
+  final def whenUnhandled(stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit =
+    whenUnhandled(stateFunctionBuilder.build())
+
+  /**
+   * Set handler which is called upon termination of this FSM actor. Calling
+   * this method again will overwrite the previous contents.
+   */
+  final def onTermination(stopBuilder: FSMStopBuilder[S, D]): Unit =
+    onTermination(stopBuilder.build().asInstanceOf[PartialFunction[StopEvent, Unit]])
+
+  /**
+   * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
+   *
+   * A case statement that matches on an event and data type.
+   *
+   * @param eventType  the event type to match on
+   * @param dataType  the data type to match on
+   * @param apply  an action to apply to the event and state data if there is a match
+   * @return the builder with the case statement added
+   */
+  final def matchEvent[ET, DT <: D](eventType: Class[ET], dataType: Class[DT], apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D] =
+    new FSMStateFunctionBuilder[S, D]().event(eventType, dataType, apply)
+
+  /**
+   * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
+   *
+   * A case statement that matches on the data type and if any of the event types
+   * in the list match or any of the event instances in the list compares equal.
+   *
+   * @param eventMatches  a list of types or instances to match against
+   * @param dataType  the data type to match on
+   * @param apply  an action to apply to the event and state data if there is a match
+   * @return the builder with the case statement added
+   */
+  final def matchEvent[DT <: D](eventMatches: JList[AnyRef], dataType: Class[DT], apply: Apply[DT, State]): FSMStateFunctionBuilder[S, D] =
+    new FSMStateFunctionBuilder[S, D]().event(eventMatches, dataType, apply);
+
+  /**
+   * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
+   *
+   * A case statement that matches on any type of event.
+   *
+   * @param apply  an action to apply to the event and state data if there is a match
+   * @return the builder with the case statement added
+   */
+  final def matchAnyEvent(apply: Apply2[AnyRef, D, State]): FSMStateFunctionBuilder[S, D] =
+    new FSMStateFunctionBuilder[S, D]().anyEvent(apply)
+
+  /**
+   * Create an [[akka.japi.pf.FSMTransitionHandlerBuilder]] with the first case statement set.
+   *
+   * A case statement that matches on a from state and a to state.
+   *
+   * @param fromState  the from state to match on
+   * @param toState  the to state to match on
+   * @param apply  an action to apply when the states match
+   * @return the builder with the case statement added
+   */
+  final def matchState(fromState: S, toState: S, apply: UnitApplyVoid): FSMTransitionHandlerBuilder[S] =
+    new FSMTransitionHandlerBuilder[S]().state(fromState, toState, apply)
+
+  /**
+   * Create an [[akka.japi.pf.FSMStopBuilder]] with the first case statement set.
+   *
+   * A case statement that matches on an [[FSM.Reason]].
+   *
+   * @param reason  the reason for the termination
+   * @param apply  an action to apply to the event and state data if there is a match
+   * @return the builder with the case statement added
+   */
+  final def matchStop(reason: Reason, apply: UnitApply2[S, D]): FSMStopBuilder[S, D] =
+    new FSMStopBuilder[S, D]().stop(reason, apply)
+
+  /**
+   * Create an [[akka.japi.pf.FSMStopBuilder]] with the first case statement set.
+   *
+   * A case statement that matches on a reason type.
+   *
+   * @param reasonType  the reason type to match on
+   * @param apply  an action to apply to the reason, event and state data if there is a match
+   * @return the builder with the case statement added
+   */
+  final def matchStop[RT <: Reason](reasonType: Class[RT], apply: UnitApply3[RT, S, D]): FSMStopBuilder[S, D] =
+    new FSMStopBuilder[S, D]().stop(reasonType, apply)
+
+  /**
+   * Create an [[akka.japi.pf.FSMStopBuilder]] with the first case statement set.
+   *
+   * A case statement that matches on a reason type and a predicate.
+   *
+   * @param reasonType  the reason type to match on
+   * @param apply  an action to apply to the reason, event and state data if there is a match
+   * @param predicate  a predicate that will be evaluated on the reason if the type matches
+   * @return the builder with the case statement added
+   */
+  final def matchStop[RT <: Reason](reasonType: Class[RT], predicate: TypedPredicate[RT], apply: UnitApply3[RT, S, D]): FSMStopBuilder[S, D] =
+    new FSMStopBuilder[S, D]().stop(reasonType, predicate, apply)
+
+  /**
+   * Create a [[akka.japi.pf.UnitPFBuilder]] with the first case statement set.
+   *
+   * @param dataType  a type to match the argument against
+   * @param apply  an action to apply to the argument if the type matches
+   * @return a builder with the case statement added
+   */
+  final def matchData[DT <: D](dataType: Class[DT], apply: UnitApply[DT]): UnitPFBuilder[D] =
+    UnitMatch.`match`(dataType, apply)
+
+  /**
+   * Create a [[akka.japi.pf.UnitPFBuilder]] with the first case statement set.
+   *
+   * @param dataType  a type to match the argument against
+   * @param predicate  a predicate that will be evaluated on the argument if the type matches
+   * @param apply  an action to apply to the argument if the type and predicate matches
+   * @return a builder with the case statement added
+   */
+  final def matchData[DT <: D](dataType: Class[DT], predicate: TypedPredicate[DT], apply: UnitApply[DT]): UnitPFBuilder[D] =
+    UnitMatch.`match`(dataType, predicate, apply)
+
+  /**
+   * Produce transition to other state. Return this from a state function in
+   * order to effect the transition.
+   *
+   * @param nextStateName state designator for the next state
+   * @return state transition descriptor
+   */
+  final def goTo(nextStateName: S): State = goto(nextStateName)
+
+  /**
+   * Default reason if calling `stop()`.
+   */
+  val Normal: FSM.Reason = FSM.Normal
+
+  /**
+   * Reason given when someone was calling `system.stop(fsm)` from outside;
+   * also applies to `Stop` supervision directive.
+   */
+  val Shutdown: FSM.Reason = FSM.Shutdown
+
+  /**
+   * Signifies that the [[akka.actor.FSM]] is shutting itself down because of
+   * an error, e.g. if the state to transition into does not exist. You can use
+   * this to match on a Failure in the [[akka.japi.pf.FSMStopBuilder]].
+   */
+  def Failure: Class[_ <: FSM.Reason] = classOf[FSM.Failure]
+
+  /**
+   * A partial function value which does not match anything and can be used to
+   * “reset” `whenUnhandled` and `onTermination` handlers.
+   *
+   * {{{
+   * onTermination(FSM.NullFunction)
+   * }}}
+   */
+  val NullFunction: PartialFunction[Any, Nothing] = FSM.NullFunction
+}
+
+/**
+ * Java API
+ *
+ * Finite State Machine actor abstract base class.
+ */
+abstract class AbstractLoggingFSM[S, D] extends AbstractFSM[S, D] with LoggingFSM[S, D]
