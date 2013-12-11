@@ -803,11 +803,11 @@ object TestProbe {
   def apply()(implicit system: ActorSystem) = new TestProbe(system)
 }
 
-trait ImplicitSender { this: TestKit ⇒
+trait ImplicitSender { this: TestKitBase ⇒
   implicit def self = testActor
 }
 
-trait DefaultTimeout { this: TestKit ⇒
+trait DefaultTimeout { this: TestKitBase ⇒
   implicit val timeout: Timeout = testKitSettings.DefaultTimeout
 }
 
