@@ -102,7 +102,9 @@ has been renamed to ``akka.cluster.failure-detector.expected-response-after``.
 Removed Deprecated Features
 ===========================
 
-The following, previously deprecated features have been removed:
+The following, previously deprecated, features have been removed:
 
  * `event-handlers renamed to loggers <http://doc.akka.io/docs/akka/2.2.3/project/migration-guide-2.1.x-2.2.x.html#event-handlers_renamed_to_loggers>`_ 
+ * `API changes to FSM and TestFSMRef <http://doc.akka.io/docs/akka/2.2.3/project/migration-guide-2.1.x-2.2.x.html#API_changes_to_FSM_and_TestFSMRef>`_
+ 
  
