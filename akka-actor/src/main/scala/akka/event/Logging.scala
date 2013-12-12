@@ -99,14 +99,9 @@ trait LoggingBus extends ActorEventBus {
       ErrorLevel
     }
     try {
-      val defaultLoggers = system.settings.EventHandlers match {
-        case Nil ⇒ system.settings.Loggers match {
-          case Nil     ⇒ classOf[DefaultLogger].getName :: Nil
-          case loggers ⇒ loggers
-        }
-        case loggers ⇒
-          publish(Warning(logName, this.getClass, "[akka.event-handlers] config is deprecated, use [akka.loggers]"))
-          loggers
+      val defaultLoggers = system.settings.Loggers match {
+        case Nil     ⇒ classOf[DefaultLogger].getName :: Nil
+        case loggers ⇒ loggers
       }
       val myloggers =
         for {
@@ -142,9 +137,9 @@ trait LoggingBus extends ActorEventBus {
       }
     } catch {
       case e: Exception ⇒
-        System.err.println("error while starting up EventHandler")
+        System.err.println("error while starting up loggers")
         e.printStackTrace()
-        throw new ConfigurationException("Could not start Event Handler due to [" + e.toString + "]")
+        throw new ConfigurationException("Could not start logger due to [" + e.toString + "]")
     }
   }
 
@@ -177,13 +172,7 @@ trait LoggingBus extends ActorEventBus {
   private def addLogger(system: ActorSystemImpl, clazz: Class[_ <: Actor], level: LogLevel, logName: String): ActorRef = {
     val name = "log" + Extension(system).id() + "-" + simpleName(clazz)
     val actor = system.systemActorOf(Props(clazz), name)
-    implicit def timeout =
-      if (system.settings.EventHandlerStartTimeout.duration >= Duration.Zero) {
-        publish(Warning(logName, this.getClass,
-          "[akka.event-handler-startup-timeout] config is deprecated, use [akka.logger-startup-timeout]"))
-        system.settings.EventHandlerStartTimeout
-      } else system.settings.LoggerStartTimeout
-
+    implicit def timeout = system.settings.LoggerStartTimeout
     import akka.pattern.ask
     val response = try Await.result(actor ? InitializeLogger(this), timeout.duration) catch {
       case _: TimeoutException ⇒
