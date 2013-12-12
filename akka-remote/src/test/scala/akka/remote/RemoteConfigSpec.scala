@@ -19,7 +19,7 @@ class RemoteConfigSpec extends AkkaSpec(
     akka.remote.netty.tcp.port = 0
   """) {
 
-  "Remoting" must {
+  "Remoting" should {
 
     "contain correct configuration values in reference.conf" in {
       val remoteSettings = RARP(system).provider.remoteSettings
@@ -33,17 +33,14 @@ class RemoteConfigSpec extends AkkaSpec(
       ShutdownTimeout.duration should be(10 seconds)
       FlushWait should be(2 seconds)
       StartupTimeout.duration should be(10 seconds)
-      RetryGateClosedFor should be(Duration.Zero)
-      UnknownAddressGateClosedFor should be(1 minute)
-      Dispatcher should equal("")
+      RetryGateClosedFor should be(5 seconds)
+      Dispatcher should equal("akka.remote.default-remote-dispatcher")
       UsePassiveConnections should be(true)
-      MaximumRetriesInWindow should be(3)
-      RetryWindow should be(60 seconds)
       BackoffPeriod should be(10 millis)
       SysMsgAckTimeout should be(0.3 seconds)
-      SysResendTimeout should be(1 seconds)
+      SysResendTimeout should be(2 seconds)
       SysMsgBufferSize should be(1000)
-      QuarantineDuration should be(60 seconds)
+      QuarantineDuration should be(5 days)
       CommandAckTimeout.duration should be(30 seconds)
       Transports.size should be(1)
       Transports.head._1 should be(classOf[akka.remote.transport.netty.NettyTransport].getName)
@@ -58,7 +55,7 @@ class RemoteConfigSpec extends AkkaSpec(
       WatchUnreachableReaperInterval should be(1 second)
       WatchFailureDetectorConfig.getDouble("threshold") should be(10.0 +- 0.0001)
       WatchFailureDetectorConfig.getInt("max-sample-size") should be(200)
-      WatchFailureDetectorConfig.getMillisDuration("acceptable-heartbeat-pause") should be(4 seconds)
+      WatchFailureDetectorConfig.getMillisDuration("acceptable-heartbeat-pause") should be(10 seconds)
       WatchFailureDetectorConfig.getMillisDuration("min-std-deviation") should be(100 millis)
 
       remoteSettings.config.getString("akka.remote.log-frame-size-exceeding") should be("off")
@@ -72,10 +69,10 @@ class RemoteConfigSpec extends AkkaSpec(
       SecureCookie should equal(None)
 
       TransportFailureDetectorImplementationClass should be(classOf[PhiAccrualFailureDetector].getName)
-      TransportHeartBeatInterval should equal(1.seconds)
+      TransportHeartBeatInterval should equal(4.seconds)
       TransportFailureDetectorConfig.getDouble("threshold") should be(7.0 +- 0.0001)
       TransportFailureDetectorConfig.getInt("max-sample-size") should be(100)
-      TransportFailureDetectorConfig.getMillisDuration("acceptable-heartbeat-pause") should be(3 seconds)
+      TransportFailureDetectorConfig.getMillisDuration("acceptable-heartbeat-pause") should be(10 seconds)
       TransportFailureDetectorConfig.getMillisDuration("min-std-deviation") should be(100 millis)
 
     }

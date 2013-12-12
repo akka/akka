@@ -156,6 +156,29 @@ you can advise the system to create a child on that remote node like so:
 
 .. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#deploy
 
+Lifecycle and Failure Recovery Model
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. image:: ../images/association_lifecycle.png
+:align: center
+   :width: 620
+
+    Each link with a remote system can be in one of the four states as illustrated above. Before any communication
+    happens with a remote system at a given ``Address`` the state of the association is ``Idle``. The first time a message
+is attempted to be sent to the remote system or an inbound connection is accepted the state of the link transitions to
+``Active`` denoting that the two systems has messages to send or receive and no failures were encountered so far.
+When a communication failure happens and the connection is lost between the two systems the link becomes ``Gated``.
+
+In this state the system will not attempt to connect to the remote host and all outbound messages will be dropped. The time
+while the link is in the ``Gated`` state is controlled by the setting ``akka.remote.retry-gate-closed-for``:
+after this time elapses the link state transitions to ``Idle`` again. ``Gate`` is one-sided in the
+sense that whenever a successful *inbound* connection is accepted from a remote system during ``Gate`` it automatically
+transitions to ``Active`` and communication resumes immediately.
+
+In the face of communication failures that are unrecoverable because the state of the participating systems are inconsistent,
+the remote system becomes ``Quarantined``. Unlike ``Gate``, quarantining is permanent and lasts until one of the systems
+is restarted. After a restart communication can be resumed again and the link can become ``Active`` again.
+
 Watching Remote Actors
 ^^^^^^^^^^^^^^^^^^^^^^
 
