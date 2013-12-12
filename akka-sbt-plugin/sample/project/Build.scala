@@ -7,7 +7,7 @@ import akka.sbt.AkkaKernelPlugin.{ Dist, outputDirectory, distJvmOptions}
 object HelloKernelBuild extends Build {
   val Organization = "akka.sample"
   val Version      = "2.3-SNAPSHOT"
-  val ScalaVersion = "2.10.2"
+  val ScalaVersion = "2.10.3"
 
   lazy val HelloKernel = Project(
     id = "hello-kernel",
@@ -52,5 +52,5 @@ object Dependency {
 
   val akkaKernel = "com.typesafe.akka" %% "akka-kernel" % V.Akka
   val akkaSlf4j  = "com.typesafe.akka" %% "akka-slf4j"  % V.Akka
-  val logback    = "ch.qos.logback"    % "logback-classic" % "1.0.0"
+  val logback    = "ch.qos.logback"    % "logback-classic" % "1.0.13"
 }
