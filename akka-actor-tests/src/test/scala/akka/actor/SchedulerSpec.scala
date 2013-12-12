@@ -19,15 +19,11 @@ import akka.pattern.ask
 import akka.testkit._
 
 object SchedulerSpec {
-  val testConf = ConfigFactory.parseString("""
-    akka.scheduler.implementation = akka.actor.DefaultScheduler
+  val testConfRevolver = ConfigFactory.parseString("""
+    akka.scheduler.implementation = akka.actor.LightArrayRevolverScheduler
     akka.scheduler.ticks-per-wheel = 32
     akka.actor.serialize-messages = off
   """).withFallback(AkkaSpec.testConf)
-
-  val testConfRevolver = ConfigFactory.parseString("""
-    akka.scheduler.implementation = akka.actor.LightArrayRevolverScheduler
-  """).withFallback(testConf)
 }
 
 trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with ImplicitSender { this: AkkaSpec ⇒
@@ -292,24 +288,6 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       }
     }
   }
-}
-
-class DefaultSchedulerSpec extends AkkaSpec(SchedulerSpec.testConf) with SchedulerSpec {
-  private val cancellables = new ConcurrentLinkedQueue[Cancellable]()
-
-  def collectCancellable(c: Cancellable): Cancellable = {
-    cancellables.add(c)
-    c
-  }
-
-  override def afterEach {
-    while (cancellables.peek() ne null) {
-      for (c ← Option(cancellables.poll())) {
-        c.cancel()
-      }
-    }
-  }
-
 }
 
 class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRevolver) with SchedulerSpec {
