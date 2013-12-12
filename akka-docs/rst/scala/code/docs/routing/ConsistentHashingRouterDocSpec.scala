@@ -18,9 +18,9 @@ object ConsistentHashingRouterDocSpec {
     var cache = Map.empty[String, String]
 
     def receive = {
-      case Entry(key, value) ⇒ cache += (key -> value)
-      case Get(key)          ⇒ sender ! cache.get(key)
-      case Evict(key)        ⇒ cache -= key
+      case Entry(key, value) => cache += (key -> value)
+      case Get(key)          => sender ! cache.get(key)
+      case Evict(key)        => cache -= key
     }
   }
 
@@ -50,7 +50,7 @@ class ConsistentHashingRouterDocSpec extends AkkaSpec with ImplicitSender {
     import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
 
     def hashMapping: ConsistentHashMapping = {
-      case Evict(key) ⇒ key
+      case Evict(key) => key
     }
 
     val cache: ActorRef =

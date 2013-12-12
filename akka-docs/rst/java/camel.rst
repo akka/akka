@@ -312,7 +312,7 @@ to do other work) and resume processing when the response is ready. This is
 currently the case for a `subset of components`_ such as the `Jetty component`_.
 All other Camel components can still be used, of course, but they will cause
 allocation of a thread for the duration of an in-out message exchange. There's
-also a :ref:`camel-async-example-java` that implements both, an asynchronous
+also :ref:`camel-examples-java` that implements both, an asynchronous
 consumer and an asynchronous producer, with the jetty component.
 
 If the used Camel component is blocking it might be necessary to use a separate
@@ -469,116 +469,18 @@ __ https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/j
 Examples
 ========
 
-.. _camel-async-example-java:
+The `Typesafe Activator <http://typesafe.com/platform/getstarted>`_
+tutorial named `Akka Camel Samples with Java <http://typesafe.com/activator/template/akka-sample-camel-java>`_
+contains 3 samples:
 
-Asynchronous routing and transformation example
------------------------------------------------
+ * Asynchronous routing and transformation - This example demonstrates how to implement consumer and 
+   producer actors that support :ref:`camel-asynchronous-routing-java` with their Camel endpoints.
+ 
+ * Custom Camel route - Demonstrates the combined usage of a ``Producer`` and a
+   ``Consumer`` actor as well as the inclusion of a custom Camel route.
 
-This example demonstrates how to implement consumer and producer actors that
-support :ref:`camel-asynchronous-routing-java` with their Camel endpoints. The sample
-application transforms the content of the Akka homepage, http://akka.io, by
-replacing every occurrence of *Akka* with *AKKA*. To run this example, add
-a Boot class that starts the actors. After starting
-the :ref:`microkernel-java`, direct the browser to http://localhost:8875 and the
-transformed Akka homepage should be displayed. Please note that this example
-will probably not work if you're behind an HTTP proxy.
-
-The following figure gives an overview how the example actors interact with
-external systems and with each other. A browser sends a GET request to
-http://localhost:8875 which is the published endpoint of the ``HttpConsumer``
-actor. The ``HttpConsumer`` actor forwards the requests to the ``HttpProducer``
-actor which retrieves the Akka homepage from http://akka.io. The retrieved HTML
-is then forwarded to the ``HttpTransformer`` actor which replaces all occurrences
-of *Akka* with *AKKA*. The transformation result is sent back the HttpConsumer
-which finally returns it to the browser.
-
-.. image:: ../images/camel-async-interact.png
-
-Implementing the example actor classes and wiring them together is rather easy
-as shown in the following snippet.
-
-.. includecode:: code/docs/camel/sample/http/HttpConsumer.java#HttpExample
-.. includecode:: code/docs/camel/sample/http/HttpProducer.java#HttpExample
-.. includecode:: code/docs/camel/sample/http/HttpTransformer.java#HttpExample
-.. includecode:: code/docs/camel/sample/http/HttpSample.java#HttpExample
-
-The `jetty endpoints`_ of HttpConsumer and HttpProducer support asynchronous
-in-out message exchanges and do not allocate threads for the full duration of
-the exchange. This is achieved by using `Jetty continuations`_ on the
-consumer-side and by using `Jetty's asynchronous HTTP client`_ on the producer
-side. The following high-level sequence diagram illustrates that.
-
-.. _jetty endpoints: http://camel.apache.org/jetty.html
-.. _Jetty continuations: http://wiki.eclipse.org/Jetty/Feature/Continuations
-.. _Jetty's asynchronous HTTP client: http://wiki.eclipse.org/Jetty/Tutorial/HttpClient
-
-.. image:: ../images/camel-async-sequence.png
-
-Custom Camel route example
---------------------------
-
-This section also demonstrates the combined usage of a ``Producer`` and a
-``Consumer`` actor as well as the inclusion of a custom Camel route. The
-following figure gives an overview.
-
-.. image:: ../images/camel-custom-route.png
-
-* A consumer actor receives a message from an HTTP client
-
-* It forwards the message to another actor that transforms the message (encloses
-  the original message into hyphens)
-
-* The transformer actor forwards the transformed message to a producer actor
-
-* The producer actor sends the message to a custom Camel route beginning at the
-  ``direct:welcome`` endpoint
-
-* A processor (transformer) in the custom Camel route prepends "Welcome" to the
-  original message and creates a result message
-
-* The producer actor sends the result back to the consumer actor which returns
-  it to the HTTP client
-
-
-The consumer, transformer and
-producer actor implementations are as follows.
-
-.. includecode:: code/docs/camel/sample/route/Consumer3.java#CustomRouteExample
-.. includecode:: code/docs/camel/sample/route/Transformer.java#CustomRouteExample
-.. includecode:: code/docs/camel/sample/route/Producer1.java#CustomRouteExample
-.. includecode:: code/docs/camel/sample/route/CustomRouteSample.java#CustomRouteExample
-
-The producer actor knows where to reply the message to because the consumer and
-transformer actors have forwarded the original sender reference as well. The
-application configuration and the route starting from direct:welcome are done in the code above.
-
-To run the example, add the lines shown in the example to a Boot class and the start the :ref:`microkernel-java` and POST a message to
-``http://localhost:8877/camel/welcome``.
-
-.. code-block:: none
-
-   curl -H "Content-Type: text/plain" -d "Anke" http://localhost:8877/camel/welcome
-
-The response should be:
-
-.. code-block:: none
-
-   Welcome - Anke -
-
-Quartz Scheduler Example
-------------------------
-
-Here is an example showing how simple is to implement a cron-style scheduler by
-using the Camel Quartz component in Akka.
-
-The following example creates a "timer" actor which fires a message every 2
-seconds:
-
-.. includecode:: code/docs/camel/sample/quartz/MyQuartzActor.java#QuartzExample
-.. includecode:: code/docs/camel/sample/quartz/QuartzSample.java#QuartzExample
-
-For more information about the Camel Quartz component, see here:
-http://camel.apache.org/quartz.html
+ * Quartz Scheduler Example - Showing how simple is to implement a cron-style scheduler by
+   using the Camel Quartz component
 
 Additional Resources
 ====================

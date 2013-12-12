@@ -21,11 +21,11 @@ trait PersistenceDocSpec {
 
     class MyProcessor extends Processor {
       def receive = {
-        case Persistent(payload, sequenceNr) ⇒
+        case Persistent(payload, sequenceNr) =>
         // message successfully written to journal
-        case PersistenceFailure(payload, sequenceNr, cause) ⇒
+        case PersistenceFailure(payload, sequenceNr, cause) =>
         // message failed to be written to journal
-        case other ⇒
+        case other =>
         // message not written to journal
       }
     }
@@ -67,8 +67,8 @@ trait PersistenceDocSpec {
       //#deletion
       override def preRestart(reason: Throwable, message: Option[Any]) {
         message match {
-          case Some(p: Persistent) ⇒ deleteMessage(p.sequenceNr)
-          case _                   ⇒
+          case Some(p: Persistent) => deleteMessage(p.sequenceNr)
+          case _                   =>
         }
         super.preRestart(reason, message)
       }
@@ -94,7 +94,7 @@ trait PersistenceDocSpec {
       override def processorId = "my-stable-processor-id"
       //#processor-id-override
       def receive = {
-        case _ ⇒
+        case _ =>
       }
     }
   }
@@ -109,14 +109,14 @@ trait PersistenceDocSpec {
       val channel = context.actorOf(Channel.props(), name = "myChannel")
 
       def receive = {
-        case p @ Persistent(payload, _) ⇒
+        case p @ Persistent(payload, _) =>
           channel ! Deliver(p.withPayload(s"processed ${payload}"), destination)
       }
     }
 
     class MyDestination extends Actor {
       def receive = {
-        case p @ ConfirmablePersistent(payload, sequenceNr, redeliveries) ⇒
+        case p @ ConfirmablePersistent(payload, sequenceNr, redeliveries) =>
           // ...
           p.confirm()
       }
@@ -139,7 +139,7 @@ trait PersistenceDocSpec {
       //#channel-custom-settings
 
       def receive = {
-        case p @ Persistent(payload, _) ⇒
+        case p @ Persistent(payload, _) =>
           //#channel-example-reply
           channel ! Deliver(p.withPayload(s"processed ${payload}"), sender)
           //#channel-example-reply
@@ -155,7 +155,7 @@ trait PersistenceDocSpec {
     class MyProcessor3 extends Processor {
       def receive = {
         //#payload-pattern-matching
-        case Persistent(payload, _) ⇒
+        case Persistent(payload, _) =>
         //#payload-pattern-matching
       }
     }
@@ -163,7 +163,7 @@ trait PersistenceDocSpec {
     class MyProcessor4 extends Processor {
       def receive = {
         //#sequence-nr-pattern-matching
-        case Persistent(_, sequenceNr) ⇒
+        case Persistent(_, sequenceNr) =>
         //#sequence-nr-pattern-matching
       }
     }
@@ -178,12 +178,12 @@ trait PersistenceDocSpec {
       startWith("closed", 0)
 
       when("closed") {
-        case Event(Persistent("open", _), counter) ⇒
+        case Event(Persistent("open", _), counter) =>
           goto("open") using (counter + 1) replying (counter)
       }
 
       when("open") {
-        case Event(Persistent("close", _), counter) ⇒
+        case Event(Persistent("close", _), counter) =>
           goto("closed") using (counter + 1) replying (counter)
       }
     }
@@ -196,9 +196,9 @@ trait PersistenceDocSpec {
       var state: Any = _
 
       def receive = {
-        case "snap"                                ⇒ saveSnapshot(state)
-        case SaveSnapshotSuccess(metadata)         ⇒ // ...
-        case SaveSnapshotFailure(metadata, reason) ⇒ // ...
+        case "snap"                                => saveSnapshot(state)
+        case SaveSnapshotSuccess(metadata)         => // ...
+        case SaveSnapshotFailure(metadata, reason) => // ...
       }
     }
     //#save-snapshot
@@ -210,8 +210,8 @@ trait PersistenceDocSpec {
       var state: Any = _
 
       def receive = {
-        case SnapshotOffer(metadata, offeredSnapshot) ⇒ state = offeredSnapshot
-        case Persistent(payload, sequenceNr)          ⇒ // ...
+        case SnapshotOffer(metadata, offeredSnapshot) => state = offeredSnapshot
+        case Persistent(payload, sequenceNr)          => // ...
       }
     }
     //#snapshot-offer
@@ -232,8 +232,8 @@ trait PersistenceDocSpec {
     //#batch-write
     class MyProcessor extends Processor {
       def receive = {
-        case Persistent("a", _) ⇒ // ...
-        case Persistent("b", _) ⇒ // ...
+        case Persistent("a", _) => // ...
+        case Persistent("b", _) => // ...
       }
     }
 
@@ -278,11 +278,11 @@ trait PersistenceDocSpec {
       }
 
       def receiveReplay: Receive = {
-        case event: String ⇒ handleEvent(event)
+        case event: String => handleEvent(event)
       }
 
       def receiveCommand: Receive = {
-        case "cmd" ⇒ {
+        case "cmd" => {
           // ...
           persist("evt")(handleEvent)
         }

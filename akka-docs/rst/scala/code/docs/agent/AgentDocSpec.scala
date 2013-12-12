@@ -58,7 +58,7 @@ class AgentDocSpec extends AkkaSpec {
     agent send (_ * 2)
     //#send
 
-    def longRunningOrBlockingFunction = (i: Int) ⇒ i * 1 // Just for the example code
+    def longRunningOrBlockingFunction = (i: Int) => i * 1 // Just for the example code
     def someExecutionContext() = scala.concurrent.ExecutionContext.Implicits.global // Just for the example code
     //#send-off
     // the ExecutionContext you want to run the function on
@@ -81,7 +81,7 @@ class AgentDocSpec extends AkkaSpec {
     val f3: Future[Int] = agent alter (_ * 2)
     //#alter
 
-    def longRunningOrBlockingFunction = (i: Int) ⇒ i * 1 // Just for the example code
+    def longRunningOrBlockingFunction = (i: Int) => i * 1 // Just for the example code
     def someExecutionContext() = ExecutionContext.global // Just for the example code
 
     //#alter-off
@@ -102,7 +102,7 @@ class AgentDocSpec extends AkkaSpec {
     import scala.concurrent.stm._
 
     def transfer(from: Agent[Int], to: Agent[Int], amount: Int): Boolean = {
-      atomic { txn ⇒
+      atomic { txn =>
         if (from.get < amount) false
         else {
           from send (_ - amount)
@@ -133,19 +133,19 @@ class AgentDocSpec extends AkkaSpec {
     val agent2 = Agent(5)
 
     // uses foreach
-    for (value ← agent1)
+    for (value <- agent1)
       println(value)
 
     // uses map
-    val agent3 = for (value ← agent1) yield value + 1
+    val agent3 = for (value <- agent1) yield value + 1
 
     // or using map directly
     val agent4 = agent1 map (_ + 1)
 
     // uses flatMap
     val agent5 = for {
-      value1 ← agent1
-      value2 ← agent2
+      value1 <- agent1
+      value2 <- agent2
     } yield value1 + value2
     //#monadic-example
 

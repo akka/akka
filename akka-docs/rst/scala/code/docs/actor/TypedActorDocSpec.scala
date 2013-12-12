@@ -12,7 +12,7 @@ import org.scalatest.matchers.MustMatchers
 import akka.testkit._
 
 //Mr funny man avoids printing to stdout AND keeping docs alright
-import java.lang.String.{ valueOf ⇒ println }
+import java.lang.String.{ valueOf => println }
 import akka.actor.ActorRef
 
 //#typed-actor-iface
@@ -91,7 +91,7 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
       //#typed-actor-extension-tools
     } catch {
-      case e: Exception ⇒ //dun care
+      case e: Exception => //dun care
     }
   }
 
@@ -160,7 +160,7 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       //Use "childSquarer" as a Squarer
       //#typed-actor-hierarchy
     } catch {
-      case e: Exception ⇒ //ignore
+      case e: Exception => //ignore
     }
   }
 

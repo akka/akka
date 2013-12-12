@@ -1,0 +1,482 @@
+<!-- <html> -->
+<head>
+<title>Akka Cluster Samples with Java</title>
+</head>
+
+<body>
+
+<div>
+<p>
+This tutorial contains 4 samples illustrating different 
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/java/cluster-usage.html" target="_blank">Akka cluster</a> features.
+</p>
+<ul>
+<li>Subscribe to cluster membership events</li>
+<li>Sending messages to actors running on nodes in the cluster</li>
+<li>Cluster aware routers</li>
+<li>Cluster metrics</li> 
+</ul>
+</div>
+
+<div>
+<h2>A Simple Cluster Example</h2>
+
+<p>
+Open <a href="#code/src/main/resources/application.conf" class="shortcut">application.conf</a>
+</p>
+
+<p>
+To enable cluster capabilities in your Akka project you should, at a minimum, add the remote settings, 
+and use <code>akka.cluster.ClusterActorRefProvider</code>. The <code>akka.cluster.seed-nodes</code> should
+normally also be added to your application.conf file.
+</p>
+
+<p>
+The seed nodes are configured contact points which newly started nodes will try to connect with in order to join the cluster.
+</p>
+
+<p>
+Note that if you are going to start the nodes on different machines you need to specify the
+ip-addresses or host names of the machines in <code>application.conf</code> instead of <code>127.0.0.1</code>.
+</p>
+
+<p>
+Open <a href="#code/src/main/java/sample/cluster/simple/SimpleClusterApp.java" class="shortcut">SimpleClusterApp.java</a>.
+</p>
+
+<p>
+The small program together with its configuration starts an ActorSystem with the Cluster enabled.
+It joins the cluster and starts an actor that logs some membership events.
+Take a look at the 
+<a href="#code/src/main/java/sample/cluster/simple/SimpleClusterListener.java" class="shortcut">SimpleClusterListener.java</a>
+actor. 
+</p>
+
+<p>
+You can read more about the cluster concepts in the 
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/java/cluster-usage.html" target="_blank">documentation</a>.
+</p>
+
+<p>
+To run this sample, go to the <a href="#run" class="shortcut">Run</a>
+tab, and start the application main class <b><code>sample.cluster.simple.SimpleClusterApp</code></b>
+if it is not already started.
+</p>
+
+<p>
+<code>SimpleClusterApp</code> starts three actor systems (cluster members) in the same JVM process. It can be more
+interesting to run them in separate processes. Stop the application in the
+<a href="#run" class="shortcut">Run</a> tab and then open three terminal windows.
+</p>
+
+<p>
+In the first terminal window, start the first seed node with the following command (on one line):
+</p>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.simple.SimpleClusterApp 2551"		
+</code></pre>
+
+<p>
+2551 corresponds to the port of the first seed-nodes element in the configuration. In the log
+output you see that the cluster node has been started and changed status to 'Up'.
+</p>
+
+<p>
+In the second terminal window, start the second seed node with the following command (on one line):
+</p>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.simple.SimpleClusterApp 2552"		
+</code></pre>
+
+<p>
+2552 corresponds to the port of the second seed-nodes element in the configuration. In the
+log output you see that the cluster node has been started and joins the other seed node and
+becomes a member of the cluster. Its status changed to 'Up'.
+</p>
+
+<p>
+Switch over to the first terminal window and see in the log output that the member joined.
+</p>
+
+<p>
+Start another node in the third terminal window with the following command (on one line):
+</p>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.simple.SimpleClusterApp 0"		
+</code></pre>
+
+<p>
+Now you don't need to specify the port number, 0 means that it will use a random available port.
+It joins one of the configured seed nodes. Look at the log output in the different terminal
+windows.
+</p>
+
+<p>
+Start even more nodes in the same way, if you like.
+</p>
+
+<p>
+Shut down one of the nodes by pressing 'ctrl-c' in one of the terminal windows.
+The other nodes will detect the failure after a while, which you can see in the log
+output in the other terminals.
+</p>
+
+<p>
+Look at the 
+<a href="#code/src/main/java/sample/cluster/simple/SimpleClusterListener.java" class="shortcut">source code</a>
+of the actor again. It registers itself as subscriber of certain cluster events. It gets notified with an snapshot event, 
+<code>CurrentClusterState</code> that holds full state information of the cluster. After that it receives events for changes 
+that happen in the cluster.
+</p>
+
+</div>
+
+<div>
+<h2>Worker Dial-in Example</h2>
+
+<p>
+In the previous sample we saw how to subscribe to cluster membership events.
+You can read more about it in the 
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/java/cluster-usage.html#Subscribe_to_Cluster_Events" target="_blank">documentation</a>.
+How can cluster membership events be used?
+</p>
+
+<p> 
+Let's take a look at an example that illustrates how workers, here named <b>backend</b>,
+can detect and register to new master nodes, here named <b>frontend</b>.
+</p>
+
+<p>
+The example application provides a service to transform text. When some text
+is sent to one of the frontend services, it will be delegated to one of the
+backend workers, which performs the transformation job, and sends the result back to
+the original client. New backend nodes, as well as new frontend nodes, can be
+added or removed to the cluster dynamically.
+</p>
+
+<p>
+Open <a href="#code/src/main/java/sample/cluster/transformation/TransformationMessages.java" class="shortcut">TransformationMessages.java</a>.
+It defines the messages that are sent between the actors.
+</p>
+
+<p>
+The backend worker that performs the transformation job is defined in 
+<a href="#code/src/main/java/sample/cluster/transformation/TransformationBackend.java" class="shortcut">TransformationBackend.java</a>
+</p>
+
+<p>
+Note that the <code>TransformationBackend</code> actor subscribes to cluster events to detect new,
+potential, frontend nodes, and send them a registration message so that they know
+that they can use the backend worker.
+</p>
+
+<p>
+The frontend that receives user jobs and delegates to one of the registered backend workers is defined in 
+<a href="#code/src/main/java/sample/cluster/transformation/TransformationFrontend.java" class="shortcut">TransformationFrontend.java</a>
+</p>
+
+<p>
+Note that the <code>TransformationFrontend</code> actor watch the registered backend
+to be able to remove it from its list of available backend workers.
+Death watch uses the cluster failure detector for nodes in the cluster, i.e. it detects
+network failures and JVM crashes, in addition to graceful termination of watched
+actor.
+</p>
+
+<p>
+To run this sample, go to the <a href="#run" class="shortcut">Run</a>
+tab, and start the application main class <b><code>sample.cluster.transformation.TransformationApp</code></b>
+if it is not already started.
+</p>
+
+<p>
+<a href="#code/src/main/java/sample/cluster/transformation/TransformationApp.java" class="shortcut">TransformationApp</a> starts
+5 actor systems (cluster members) in the same JVM process. It can be more
+interesting to run them in separate processes. Stop the application in the
+<a href="#run" class="shortcut">Run</a> tab and run the following commands in separate terminal windows.
+</p>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.transformation.TransformationFrontendMain 2551"		
+</code></pre>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.transformation.TransformationBackendMain 2552"		
+</code></pre>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.transformation.TransformationBackendMain 0"		
+</code></pre>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.transformation.TransformationBackendMain 0"		
+</code></pre>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.transformation.TransformationFrontendMain 0"		
+</code></pre>
+
+</div>
+
+<div>
+<h2>Cluster Aware Routers</h2>
+
+<p>
+All <a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/java/routing.html" target="_blank">routers</a>
+can be made aware of member nodes in the cluster, i.e. deploying new routees or looking up routees
+on nodes in the cluster.
+When a node becomes unreachable or leaves the cluster the routees of that node are
+automatically unregistered from the router. When new nodes join the cluster additional
+routees are added to the router, according to the configuration. Routees are also added 
+when a node becomes reachable again, after having been unreachable.
+</p>
+
+<p>
+You can read more about cluster aware routers in the 
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/java/cluster-usage.html#Cluster_Aware_Routers" target="_blank">documentation</a>.
+</p>
+
+<p>
+Let's take a look at a few samples that make use of cluster aware routers.
+</p>
+ 
+</div>
+
+<div>
+<h2>Router Example with Group of Routees</h2>
+
+<p>
+Let's take a look at how to use a cluster aware router with a group of routees, 
+i.e. a router which does not create its routees but instead forwards incoming messages to a given 
+set of actors created elsewhere.
+</p>
+
+<p>
+The example application provides a service to calculate statistics for a text.
+When some text is sent to the service it splits it into words, and delegates the task
+to count number of characters in each word to a separate worker, a routee of a router.
+The character count for each word is sent back to an aggregator that calculates
+the average number of characters per word when all results have been collected.
+</p>
+
+<p>
+Open <a href="#code/src/main/java/sample/cluster/stats/StatsMessages.java" class="shortcut">StatsMessages.java</a>.
+It defines the messages that are sent between the actors.
+</p>
+
+<p>
+The worker that counts number of characters in each word is defined in 
+<a href="#code/src/main/java/sample/cluster/stats/StatsWorker.java" class="shortcut">StatsWorker.java</a>.
+</p>
+
+<p>
+The service that receives text from users and splits it up into words, delegates to workers and aggregates
+is defined in <a href="#code/src/main/java/sample/cluster/stats/StatsService.java" class="shortcut">StatsService.java</a>
+and <a href="#code/src/main/java/sample/cluster/stats/StatsAggregator.java" class="shortcut">StatsAggregator.java</a>. 
+<p>
+
+<p>
+Note, nothing cluster specific so far, just plain actors.
+</p>
+
+<p>
+All nodes start <code>StatsService</code> and <code>StatsWorker</code> actors. Remember, routees are the workers in this case.
+</p> 
+
+<p>
+Open <a href="#code/src/main/resources/stats1.conf" class="shortcut">stats1.conf</a>
+The router is configured with <code>routees.paths</code>.
+This means that user requests can be sent to <code>StatsService</code> on any node and it will use
+<code>StatsWorker</code> on all nodes.
+</p>
+
+<p>
+To run this sample, go to the <a href="#run" class="shortcut">Run</a>
+tab, and start the application main class <b><code>sample.cluster.stats.StatsSampleMain</code></b>
+if it is not already started.
+</p>
+
+<p>
+<a href="#code/src/main/java/sample/cluster/stats/StatsSampleMain.java" class="shortcut">StatsSampleMain</a> starts
+4 actor systems (cluster members) in the same JVM process. It can be more
+interesting to run them in separate processes. Stop the application in the
+<a href="#run" class="shortcut">Run</a> tab and run the following commands in separate terminal windows.
+</p>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.stats.StatsSampleMain 2551"		
+</code></pre>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.stats.StatsSampleMain 2552"		
+</code></pre>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.stats.StatsSampleClientMain"		
+</code></pre>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.stats.StatsSampleMain 0"		
+</code></pre>
+
+</div>
+
+<div>
+<h2>Router Example with Pool of Remote Deployed Routees</h2>
+
+<p>
+Let's take a look at how to use a cluster aware router on single master node that creates
+and deploys workers instead of looking them up.
+</p>
+
+<p>
+Open <a href="#code/src/main/java/sample/cluster/stats/StatsSampleOneMasterMain.java" class="shortcut">StatsSampleOneMasterMain.java</a>.
+To keep track of a single master we use the <a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/contrib/cluster-singleton.html" target="_blank">Cluster Singleton</a>
+in the contrib module. The <code>ClusterSingletonManager</code> is started on each node.
+</p>
+
+<p>
+We also need an actor on each node that keeps track of where current single master exists and
+delegates jobs to the <code>StatsService</code>. That is handled by the 
+<a href="#code/src/main/java/sample/cluster/stats/StatsFacade.java" class="shortcut">StatsFacade.java</a>
+</p>
+
+<p>
+The <code>StatsFacade</code> receives text from users and delegates to the current <code>StatsService</code>, the single
+master. It listens to cluster events to lookup the <code>StatsService</code> on the oldest node.
+</p>
+
+<p>
+All nodes start <code>StatsFacade</code> and the <code>ClusterSingletonManager</code>. The router is now configured in
+<a href="#code/src/main/resources/stats2.conf" class="shortcut">stats2.conf</a>
+</p>
+
+<p>
+To run this sample, go to the <a href="#run" class="shortcut">Run</a>
+tab, and start the application main class <b><code>sample.cluster.stats.StatsSampleOneMasterMain</code></b>
+if it is not already started.
+</p>
+
+<p>
+<a href="#code/src/main/java/sample/cluster/stats/StatsSampleOneMasterMain.java" class="shortcut">StatsSampleOneMasterMain</a> starts
+4 actor systems (cluster members) in the same JVM process. It can be more
+interesting to run them in separate processes. Stop the application in the
+<a href="#run" class="shortcut">Run</a> tab and run the following commands in separate terminal windows.
+</p>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.stats.StatsSampleOneMasterMain 2551"		
+</code></pre>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.stats.StatsSampleOneMasterMain 2552"		
+</code></pre>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.stats.StatsSampleOneMasterClientMain"		
+</code></pre>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.stats.StatsSampleOneMasterMain 0"		
+</code></pre>
+
+</div>
+
+<div>
+<h2>Adaptive Load Balancing</h2>
+
+<p>
+The member nodes of the cluster collects system health metrics and publishes that to other nodes and to 
+registered subscribers. This information is primarily used for load-balancing routers, such as
+the <code>AdaptiveLoadBalancingPool</code> and <code>AdaptiveLoadBalancingGroup</code> routers.
+</p>
+
+<p>
+You can read more about cluster metrics in the 
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/java/cluster-usage.html#Cluster_Metrics" target="_blank">documentation</a>.
+</p>
+
+<p>
+Let's take a look at this router in action. What can be more demanding than calculating factorials?
+</p>
+
+<p>
+The backend worker that performs the factorial calculation:
+<a href="#code/src/main/java/sample/cluster/factorial/FactorialBackend.java" class="shortcut">FactorialBackend</a>
+</p>
+
+<p>
+The frontend that receives user jobs and delegates to the backends via the router:
+<a href="#code/src/main/java/sample/cluster/factorial/FactorialFrontend.java" class="shortcut">FactorialFrontend</a>
+</p>
+
+<p>
+As you can see, the router is defined in the same way as other routers, and in this case it is configured in:
+<a href="#code/src/main/resources/factorial.conf" class="shortcut">factorial.conf</a>
+</p>
+
+<p>
+It is only router type <code>adaptive</code> and the <code>metrics-selector</code> that is specific to this router,
+other things work in the same way as other routers.
+</p>
+
+<p>
+To run this sample, go to the <a href="#run" class="shortcut">Run</a>
+tab, and start the application main class <b><code>sample.cluster.factorial.FactorialApp</code></b>
+if it is not already started.
+</p>
+
+<p>
+<a href="#code/src/main/java/sample/cluster/factorial/FactorialApp.java" class="shortcut">FactorialApp</a> starts
+4 actor systems (cluster members) in the same JVM process. It can be more
+interesting to run them in separate processes. Stop the application in the
+<a href="#run" class="shortcut">Run</a> tab and run the following commands in separate terminal windows.
+</p>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.factorial.FactorialBackendMain 2551"		
+</code></pre>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.factorial.FactorialBackendMain 2552"		
+</code></pre>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.factorial.FactorialBackendMain 0"		
+</code></pre>
+
+<pre><code>
+&lt;path to activator dir&gt;/activator 
+  "runMain sample.cluster.factorial.FactorialFrontendMain 0"		
+</code></pre>
+
+<p>
+Press ctrl-c in the terminal window of the frontend to stop the factorial calculations.
+</p>
+
+</div>
+
+</body>
+</html>

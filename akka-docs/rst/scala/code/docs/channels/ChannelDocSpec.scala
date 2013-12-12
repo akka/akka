@@ -32,7 +32,7 @@ object ChannelDocSpec {
   class Child extends Actor
     with Channels[(Stats, Nothing) :+: TNil, (Request, Reply) :+: TNil] {
 
-    channel[Request] { (x, snd) ⇒
+    channel[Request] { (x, snd) =>
       parentChannel <-!- Stats(x)
       snd <-!- CommandSuccess
     }
@@ -43,9 +43,9 @@ object ChannelDocSpec {
 
     val child = createChild(new Child)
 
-    channel[GetChild.type] { (_, snd) ⇒ ChildRef(child) -!-> snd }
+    channel[GetChild.type] { (_, snd) => ChildRef(child) -!-> snd }
 
-    channel[Stats] { (x, _) ⇒
+    channel[Stats] { (x, _) =>
       // collect some stats
     }
   }
@@ -89,10 +89,10 @@ class ChannelDocSpec extends AkkaSpec {
   "demonstrate channels creation" ignore {
     //#declaring-channels
     class AC extends Actor with Channels[TNil, (Request, Reply) :+: TNil] {
-      channel[Request] { (req, snd) ⇒
+      channel[Request] { (req, snd) =>
         req match {
-          case Command("ping") ⇒ snd <-!- CommandSuccess
-          case _               ⇒
+          case Command("ping") => snd <-!- CommandSuccess
+          case _               =>
         }
       }
     }
@@ -100,8 +100,8 @@ class ChannelDocSpec extends AkkaSpec {
 
     //#declaring-subchannels
     class ACSub extends Actor with Channels[TNil, (Request, Reply) :+: TNil] {
-      channel[Command] { (cmd, snd) ⇒ snd <-!- CommandSuccess }
-      channel[Request] { (req, snd) ⇒
+      channel[Command] { (cmd, snd) => snd <-!- CommandSuccess }
+      channel[Request] { (req, snd) =>
         if (ThreadLocalRandom.current.nextBoolean) snd <-!- CommandSuccess
         else snd <-!- CommandFailure("no luck")
       }
@@ -159,17 +159,17 @@ class ChannelDocSpec extends AkkaSpec {
       //#become
       channel[Request] {
 
-        case (Command("close"), snd) ⇒
-          channel[T1] { (t, s) ⇒ t -?-> target -!-> s }
+        case (Command("close"), snd) =>
+          channel[T1] { (t, s) => t -?-> target -!-> s }
           snd <-!- CommandSuccess
 
-        case (Command("open"), snd) ⇒
-          channel[T1] { (_, _) ⇒ }
+        case (Command("open"), snd) =>
+          channel[T1] { (_, _) => }
           snd <-!- CommandSuccess
       }
 
       //#become
-      channel[T1] { (t, snd) ⇒ t -?-> target -!-> snd }
+      channel[T1] { (t, snd) => t -?-> target -!-> snd }
     }
     //#forwarding
 

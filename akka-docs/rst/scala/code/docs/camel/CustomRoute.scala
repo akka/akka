@@ -18,9 +18,9 @@ object CustomRoute {
     import akka.camel._
     class Responder extends Actor {
       def receive = {
-        case msg: CamelMessage ⇒
+        case msg: CamelMessage =>
           sender ! (msg.mapBody {
-            body: String ⇒ "received %s" format body
+            body: String => "received %s" format body
           })
       }
     }
@@ -47,9 +47,9 @@ object CustomRoute {
 
     class ErrorThrowingConsumer(override val endpointUri: String) extends Consumer {
       def receive = {
-        case msg: CamelMessage ⇒ throw new Exception("error: %s" format msg.body)
+        case msg: CamelMessage => throw new Exception("error: %s" format msg.body)
       }
-      override def onRouteDefinition = (rd) ⇒ rd.onException(classOf[Exception]).
+      override def onRouteDefinition = (rd) => rd.onException(classOf[Exception]).
         handled(true).transform(Builder.exceptionMessage).end
 
       final override def preRestart(reason: Throwable, message: Option[Any]) {

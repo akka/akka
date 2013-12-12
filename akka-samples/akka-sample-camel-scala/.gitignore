@@ -1,0 +1,17 @@
+*#
+*.iml
+*.ipr
+*.iws
+*.pyc
+*.tm.epoch
+*.vim
+*-shim.sbt
+.idea/
+/project/plugins/project
+project/boot
+target/
+/logs
+.cache
+.classpath
+.project
+.settings

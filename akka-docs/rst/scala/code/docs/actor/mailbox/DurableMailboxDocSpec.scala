@@ -17,7 +17,7 @@ import akka.actor.{ Actor, ExtendedActorSystem }
 
 class MyActor extends Actor {
   def receive = {
-    case x ⇒
+    case x =>
   }
 }
 
@@ -61,8 +61,8 @@ class MyMailboxType(systemSettings: ActorSystem.Settings, config: Config)
   override def create(owner: Option[ActorRef],
                       system: Option[ActorSystem]): MessageQueue =
     (owner zip system) headOption match {
-      case Some((o, s: ExtendedActorSystem)) ⇒ new MyMessageQueue(o, s)
-      case _ ⇒
+      case Some((o, s: ExtendedActorSystem)) => new MyMessageQueue(o, s)
+      case _ =>
         throw new IllegalArgumentException("requires an owner " +
           "(i.e. does not work with BalancingDispatcher)")
     }

@@ -65,7 +65,7 @@ epub_cover = ("../_sphinx/static/akka.png", "")
 
 def setup(app):
   from sphinx.util.texescape import tex_replacements
-  tex_replacements.append((u'⇒', ur'\(\Rightarrow\)'))
+  tex_replacements.append((u'=>', ur'\(\Rightarrow\)'))
 
 latex_paper_size = 'a4'
 latex_font_size = '10pt'

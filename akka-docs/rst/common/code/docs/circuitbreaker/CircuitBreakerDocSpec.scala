@@ -35,9 +35,9 @@ class DangerousActor extends Actor with ActorLogging {
   def dangerousCall: String = "This really isn't that dangerous of a call after all"
 
   def receive = {
-    case "is my middle name" ⇒
+    case "is my middle name" =>
       breaker.withCircuitBreaker(Future(dangerousCall)) pipeTo sender
-    case "block for me" ⇒
+    case "block for me" =>
       sender ! breaker.withSyncCircuitBreaker(dangerousCall)
   }
   //#circuit-breaker-usage
