@@ -18,6 +18,7 @@ object FailureSpec {
     s"""
       akka.persistence.processor.chaos.live-processing-failure-rate = 0.3
       akka.persistence.processor.chaos.replay-processing-failure-rate = 0.1
+      akka.persistence.destination.chaos.confirm-failure-rate = 0.3
       akka.persistence.journal.plugin = "akka.persistence.journal.chaos"
       akka.persistence.journal.chaos.write-failure-rate = 0.3
       akka.persistence.journal.chaos.delete-failure-rate = 0.3
@@ -34,28 +35,42 @@ object FailureSpec {
   case class ProcessingFailure(i: Int)
   case class JournalingFailure(i: Int)
 
-  class ChaosProcessor extends Processor with ActorLogging {
+  trait ChaosSupport { this: Actor ⇒
+    def random = ThreadLocalRandom.current
+
+    var state = Vector.empty[Int]
+
+    def contains(i: Int): Boolean =
+      state.contains(i)
+
+    def add(i: Int): Unit = {
+      state :+= i
+      if (state.length == numMessages) sender ! Done(state)
+    }
+
+    def shouldFail(rate: Double) =
+      random.nextDouble() < rate
+  }
+
+  class ChaosProcessor(destination: ActorRef) extends Processor with ChaosSupport with ActorLogging {
     val config = context.system.settings.config.getConfig("akka.persistence.processor.chaos")
     val liveProcessingFailureRate = config.getDouble("live-processing-failure-rate")
     val replayProcessingFailureRate = config.getDouble("replay-processing-failure-rate")
 
-    // processor state
-    var ints = Vector.empty[Int]
+    val channel = context.actorOf(Channel.props("channel", ChannelSettings(redeliverMax = 10, redeliverInterval = 500 milliseconds)), "channel")
 
     override def processorId = "chaos"
 
-    def random = ThreadLocalRandom.current
-
     def receive = {
-      case Persistent(i: Int, _) ⇒
+      case p @ Persistent(i: Int, _) ⇒
         val failureRate = if (recoveryRunning) replayProcessingFailureRate else liveProcessingFailureRate
-        if (ints.contains(i)) {
+        if (contains(i)) {
           log.debug(debugMessage(s"ignored duplicate ${i}"))
         } else if (shouldFail(failureRate)) {
           throw new TestException(debugMessage(s"rejected payload ${i}"))
         } else {
-          ints :+= i
-          if (ints.length == numMessages) sender ! Done(ints)
+          add(i)
+          channel forward Deliver(p, destination)
           log.debug(debugMessage(s"processed payload ${i}"))
         }
       case PersistenceFailure(i: Int, _, _) ⇒
@@ -78,15 +93,34 @@ object FailureSpec {
       super.preRestart(reason, message)
     }
 
-    private def shouldFail(rate: Double) =
-      random.nextDouble() < rate
-
     private def debugMessage(msg: String): String =
-      s"${msg} (mode = ${if (recoveryRunning) "replay" else "live"} snr = ${lastSequenceNr} state = ${ints.sorted})"
+      s"[processor] ${msg} (mode = ${if (recoveryRunning) "replay" else "live"} snr = ${lastSequenceNr} state = ${state.sorted})"
+  }
+
+  class ChaosDestination extends Actor with ChaosSupport with ActorLogging {
+    val config = context.system.settings.config.getConfig("akka.persistence.destination.chaos")
+    val confirmFailureRate = config.getDouble("confirm-failure-rate")
+
+    def receive = {
+      case cp @ ConfirmablePersistent(i: Int, _, _) ⇒
+        if (shouldFail(confirmFailureRate)) {
+          log.error(debugMessage("confirm message failed", cp))
+        } else if (contains(i)) {
+          log.debug(debugMessage("ignored duplicate", cp))
+        } else {
+          add(i)
+          cp.confirm()
+          log.debug(debugMessage("received and confirmed message", cp))
+        }
+    }
+
+    private def debugMessage(msg: String, cp: ConfirmablePersistent): String =
+      s"[destination] ${msg} (message = ConfirmablePersistent(${cp.payload}, ${cp.sequenceNr}, ${cp.redeliveries}), state = ${state.sorted})"
   }
 
   class ChaosProcessorApp(probe: ActorRef) extends Actor with ActorLogging {
-    val processor = context.actorOf(Props[ChaosProcessor])
+    val destination = context.actorOf(Props[ChaosDestination], "destination")
+    val processor = context.actorOf(Props(classOf[ChaosProcessor], destination), "processor")
 
     def receive = {
       case Start      ⇒ 1 to numMessages foreach (processor ! Persistent(_))
@@ -107,10 +141,15 @@ class FailureSpec extends AkkaSpec(FailureSpec.config) with Cleanup with Implici
   "The journaling protocol (= conversation between a processor and a journal)" must {
     "tolerate and recover from random failures" in {
       system.actorOf(Props(classOf[ChaosProcessorApp], testActor)) ! Start
-      expectMsgPF(numMessages seconds) { case Done(ints) ⇒ ints.sorted must be(1 to numMessages toVector) }
+      expectDone() // by processor
+      expectDone() // by destination
 
       system.actorOf(Props(classOf[ChaosProcessorApp], testActor)) // recovery of new instance must have same outcome
-      expectMsgPF(numMessages seconds) { case Done(ints) ⇒ ints.sorted must be(1 to numMessages toVector) }
+      expectDone() // by processor
+      // destination doesn't receive messages again because all have been confirmed already
     }
   }
+
+  def expectDone() =
+    expectMsgPF(numMessages seconds) { case Done(ints) ⇒ ints.sorted must be(1 to numMessages toVector) }
 }

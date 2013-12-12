@@ -32,7 +32,7 @@ trait PersistenceSpec extends BeforeAndAfterEach with Cleanup { this: AkkaSpec â
   /**
    * Prefix for generating a unique name per test.
    */
-  def namePrefix: String = "processor"
+  def namePrefix: String = "test"
 
   /**
    * Creates a processor with current name as constructor argument.
@@ -41,7 +41,7 @@ trait PersistenceSpec extends BeforeAndAfterEach with Cleanup { this: AkkaSpec â
     system.actorOf(Props(implicitly[ClassTag[T]].runtimeClass, name))
 
   override protected def beforeEach() {
-    _name = namePrefix + counter.incrementAndGet()
+    _name = s"${namePrefix}-${counter.incrementAndGet()}"
   }
 }
 

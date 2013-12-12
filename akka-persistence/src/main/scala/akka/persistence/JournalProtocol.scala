@@ -8,6 +8,8 @@ import scala.collection.immutable
 
 import akka.actor._
 
+import akka.persistence.serialization.Message
+
 /**
  * INTERNAL API.
  *
@@ -21,6 +23,24 @@ private[persistence] object JournalProtocol {
    * otherwise they are permanently deleted from the journal.
    */
   case class Delete(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean)
+
+  /**
+   * Message sent after confirming the receipt of a [[ConfirmablePersistent]] message.
+   *
+   * @param processorId id of the processor that sent the message corresponding to
+   *                    this confirmation to a channel.
+   * @param messageSequenceNr sequence number of the sent message.
+   * @param channelId id of the channel that delivered the message corresponding to
+   *                  this confirmation.
+   * @param wrapperSequenceNr sequence number of the message stored by a persistent
+   *                          channel. This message contains the [[Deliver]] request
+   *                          with the message identified by `processorId` and
+   *                          `messageSequenceNumber`.
+   * @param channelEndpoint actor reference that sent the the message corresponding to
+   *                        this confirmation. This is a child actor of the sending
+   *                        [[Channel]] or [[PersistentChannel]].
+   */
+  case class Confirm(processorId: String, messageSequenceNr: Long, channelId: String, wrapperSequenceNr: Long = 0L, channelEndpoint: ActorRef = null) extends Message
 
   /**
    * Instructs a journal to persist a sequence of messages.

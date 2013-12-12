@@ -32,6 +32,9 @@ object PersistencePluginDocSpec {
       //#snapshot-config
       akka.persistence.snapshot-store.local.dir = "target/snapshots"
       //#snapshot-config
+      //#native-config
+      akka.persistence.journal.leveldb.native = off
+      //#native-config
     """
 }
 
@@ -80,6 +83,9 @@ object SharedLeveldbPluginDocSpec {
       //#shared-journal-config
       akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
       //#shared-journal-config
+      //#shared-store-native-config
+      akka.persistence.journal.leveldb-shared.store.native = off
+      //#shared-store-native-config
       //#shared-store-config
       akka.persistence.journal.leveldb-shared.store.dir = "target/shared"
       //#shared-store-config
