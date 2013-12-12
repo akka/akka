@@ -56,6 +56,8 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
 
   import Dispatchers._
 
+  val cachingConfig = new CachingConfig(settings.config)
+
   val defaultDispatcherConfig: Config =
     idConfig(DefaultDispatcherId).withFallback(settings.config.getConfig(DefaultDispatcherId))
 
@@ -80,7 +82,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    * using this dispatcher, because the details can only be checked by trying
    * to instantiate it, which might be undesirable when just checking.
    */
-  def hasDispatcher(id: String): Boolean = settings.config.hasPath(id)
+  def hasDispatcher(id: String): Boolean = cachingConfig.hasPath(id)
 
   private def lookupConfigurator(id: String): MessageDispatcherConfigurator = {
     dispatcherConfigurators.get(id) match {
@@ -89,7 +91,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
         // That shouldn't happen often and in case it does the actual ExecutorService isn't
         // created until used, i.e. cheap.
         val newConfigurator =
-          if (settings.config.hasPath(id)) configuratorFrom(config(id))
+          if (cachingConfig.hasPath(id)) configuratorFrom(config(id))
           else throw new ConfigurationException(s"Dispatcher [$id] not configured")
 
         dispatcherConfigurators.putIfAbsent(id, newConfigurator) match {
