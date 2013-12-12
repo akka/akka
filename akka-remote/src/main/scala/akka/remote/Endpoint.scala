@@ -187,11 +187,9 @@ private[remote] class ReliableDeliverySupervisor(
   val transport: AkkaProtocolTransport,
   val settings: RemoteSettings,
   val codec: AkkaPduCodec,
-  val receiveBuffers: ConcurrentHashMap[Link, ResendState]) extends Actor {
+  val receiveBuffers: ConcurrentHashMap[Link, ResendState]) extends Actor with ActorLogging {
   import ReliableDeliverySupervisor._
   import context.dispatcher
-
-  def retryGateEnabled = settings.RetryGateClosedFor > Duration.Zero
 
   var autoResendTimer: Option[Cancellable] = None
 
@@ -206,20 +204,18 @@ private[remote] class ReliableDeliverySupervisor(
     scheduleAutoResend()
   }
 
-  override val supervisorStrategy = OneForOneStrategy(settings.MaximumRetriesInWindow, settings.RetryWindow, loggingEnabled = false) {
+  override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
     case e @ (_: AssociationProblem) ⇒ Escalate
     case NonFatal(e) ⇒
+      log.warning("Association with remote system [{}] has failed, address is now gated for [{}] ms. Reason is: [{}].",
+        remoteAddress, settings.RetryGateClosedFor.toMillis, e.getMessage)
       uidConfirmed = false // Need confirmation of UID again
-      if (retryGateEnabled) {
-        context.become(gated)
-        context.system.scheduler.scheduleOnce(settings.RetryGateClosedFor, self, Ungate)
-        context.unwatch(writer)
-        currentHandle = None
-        context.parent ! StoppedReading(self)
-        Stop
-      } else {
-        Restart
-      }
+      context.become(gated)
+      context.system.scheduler.scheduleOnce(settings.RetryGateClosedFor, self, Ungate)
+      context.unwatch(writer)
+      currentHandle = None
+      context.parent ! StoppedReading(self)
+      Stop
   }
 
   var currentHandle: Option[AkkaProtocolHandle] = handleOrActive

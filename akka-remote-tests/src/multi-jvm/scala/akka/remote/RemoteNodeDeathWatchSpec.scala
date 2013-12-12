@@ -28,7 +28,9 @@ object RemoteNodeDeathWatchMultiJvmSpec extends MultiNodeConfig {
     ConfigFactory.parseString("""
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = off
-      """)))
+      ## Use a tighter setting than the default, otherwise it takes 20s for DeathWatch to trigger
+      akka.remote.watch-failure-detector.acceptable-heartbeat-pause = 3 s
+                              """)))
 
   case class WatchIt(watchee: ActorRef)
   case class UnwatchIt(watchee: ActorRef)

@@ -49,10 +49,18 @@ object SurviveNetworkInstabilityMultiJvmSpec extends MultiNodeConfig {
 
   class RemoteChild extends Actor {
     import context.dispatcher
-    context.system.scheduler.scheduleOnce(500.millis, self, "boom")
+
     def receive = {
+      case "hello" ⇒
+        context.system.scheduler.scheduleOnce(2.seconds, self, "boom")
+        sender ! "hello"
       case "boom" ⇒ throw new SimulatedException
-      case x      ⇒ sender ! x
+    }
+  }
+
+  class Echo extends Actor {
+    def receive = {
+      case m ⇒ sender ! m
     }
   }
 
@@ -70,8 +78,8 @@ class SurviveNetworkInstabilityMultiJvmNode8 extends SurviveNetworkInstabilitySp
 
 abstract class SurviveNetworkInstabilitySpec
   extends MultiNodeSpec(SurviveNetworkInstabilityMultiJvmSpec)
-  with MultiNodeClusterSpec
-  with ImplicitSender {
+          with MultiNodeClusterSpec
+          with ImplicitSender {
 
   import SurviveNetworkInstabilityMultiJvmSpec._
 
@@ -85,15 +93,31 @@ abstract class SurviveNetworkInstabilitySpec
     awaitAssert(clusterView.unreachableMembers.map(_.address) should be(expected))
   }
 
+  system.actorOf(Props[Echo], "echo")
+
+  def assertCanTalk(alive: RoleName*): Unit = {
+    runOn(alive: _*) {
+      for (to ← alive) {
+        val sel = system.actorSelection(node(to) / "user" / "echo")
+        awaitAssert {
+          sel ! "ping"
+          expectMsg(1.second, "ping")
+        }
+      }
+    }
+    enterBarrier("ping-ok")
+  }
+
   "A network partition tolerant cluster" must {
 
     "reach initial convergence" taggedAs LongRunningTest in {
       awaitClusterUp(first, second, third, fourth, fifth)
 
       enterBarrier("after-1")
+      assertCanTalk(first, second, third, fourth, fifth)
     }
 
-    "heal after a broken pair" taggedAs LongRunningTest in within(30.seconds) {
+    "heal after a broken pair" taggedAs LongRunningTest in within(45.seconds) {
       runOn(first) {
         testConductor.blackhole(first, second, Direction.Both).await
       }
@@ -119,9 +143,10 @@ abstract class SurviveNetworkInstabilitySpec
 
       awaitAllReachable()
       enterBarrier("after-2")
+      assertCanTalk(first, second, third, fourth, fifth)
     }
 
-    "heal after one isolated node" taggedAs LongRunningTest in within(30.seconds) {
+    "heal after one isolated node" taggedAs LongRunningTest in within(45.seconds) {
       val others = Vector(second, third, fourth, fifth)
       runOn(first) {
         for (other ← others) {
@@ -145,9 +170,10 @@ abstract class SurviveNetworkInstabilitySpec
       enterBarrier("repair-3")
       awaitAllReachable()
       enterBarrier("after-3")
+      assertCanTalk((others :+ first): _*)
     }
 
-    "heal two isolated islands" taggedAs LongRunningTest in within(30.seconds) {
+    "heal two isolated islands" taggedAs LongRunningTest in within(45.seconds) {
       val island1 = Vector(first, second)
       val island2 = Vector(third, fourth, fifth)
       runOn(first) {
@@ -175,9 +201,10 @@ abstract class SurviveNetworkInstabilitySpec
       enterBarrier("repair-4")
       awaitAllReachable()
       enterBarrier("after-4")
+      assertCanTalk((island1 ++ island2): _*)
     }
 
-    "heal after unreachable when ring is changed" taggedAs LongRunningTest in within(45.seconds) {
+    "heal after unreachable when ring is changed" taggedAs LongRunningTest in within(60.seconds) {
       val joining = Vector(sixth, seventh)
       val others = Vector(second, third, fourth, fifth)
       runOn(first) {
@@ -220,9 +247,10 @@ abstract class SurviveNetworkInstabilitySpec
         awaitMembersUp(roles.size - 1)
       }
       enterBarrier("after-5")
+      assertCanTalk((joining ++ others): _*)
     }
 
-    "down and remove quarantined node" taggedAs LongRunningTest in within(45.seconds) {
+    "down and remove quarantined node" taggedAs LongRunningTest in within(60.seconds) {
       val others = Vector(first, third, fourth, fifth, sixth, seventh)
 
       runOn(second) {
@@ -269,9 +297,10 @@ abstract class SurviveNetworkInstabilitySpec
       }
 
       enterBarrier("after-6")
+      assertCanTalk(others: _*)
     }
 
-    "continue and move Joining to Up after downing of one half" taggedAs LongRunningTest in within(45.seconds) {
+    "continue and move Joining to Up after downing of one half" taggedAs LongRunningTest in within(60.seconds) {
       // note that second is already removed in previous step
       val side1 = Vector(first, third, fourth)
       val side1AfterJoin = side1 :+ eighth
@@ -331,6 +360,7 @@ abstract class SurviveNetworkInstabilitySpec
       }
 
       enterBarrier("after-7")
+      assertCanTalk((side1AfterJoin): _*)
     }
 
   }

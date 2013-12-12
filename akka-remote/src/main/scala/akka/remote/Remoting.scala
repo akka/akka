@@ -395,16 +395,16 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       case e @ InvalidAssociation(localAddress, remoteAddress, reason) ⇒
         log.warning("Tried to associate with unreachable remote address [{}]. " +
           "Address is now gated for {} ms, all messages to this address will be delivered to dead letters. Reason: {}",
-          remoteAddress, settings.UnknownAddressGateClosedFor.toMillis, reason.getMessage)
-        endpoints.markAsFailed(sender, Deadline.now + settings.UnknownAddressGateClosedFor)
+          remoteAddress, settings.RetryGateClosedFor.toMillis, reason.getMessage)
+        endpoints.markAsFailed(sender, Deadline.now + settings.RetryGateClosedFor)
         context.system.eventStream.publish(AddressTerminated(remoteAddress))
         Stop
 
       case ShutDownAssociation(localAddress, remoteAddress, _) ⇒
         log.debug("Remote system with address [{}] has shut down. " +
           "Address is now gated for {} ms, all messages to this address will be delivered to dead letters.",
-          remoteAddress, settings.UnknownAddressGateClosedFor.toMillis)
-        endpoints.markAsFailed(sender, Deadline.now + settings.UnknownAddressGateClosedFor)
+          remoteAddress, settings.RetryGateClosedFor.toMillis)
+        endpoints.markAsFailed(sender, Deadline.now + settings.RetryGateClosedFor)
         context.system.eventStream.publish(AddressTerminated(remoteAddress))
         Stop
 
@@ -419,13 +419,10 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         Stop
 
       case HopelessAssociation(localAddress, remoteAddress, None, _) ⇒
-        settings.QuarantineDuration match {
-          case d: FiniteDuration ⇒
-            log.warning("Association to [{}] with unknown UID is irrecoverably failed. " +
-              "Address is now quarantined, all messages to this address will be delivered to dead letters.", remoteAddress)
-            endpoints.markAsFailed(sender, Deadline.now + d)
-          case _ ⇒
-        }
+        log.warning("Association to [{}] with unknown UID is irrecoverably failed. " +
+          "Address cannot be quarantined without knowing the UID, gating instead for {} ms.",
+          remoteAddress, settings.RetryGateClosedFor.toMillis)
+        endpoints.markAsFailed(sender, Deadline.now + settings.RetryGateClosedFor)
         context.system.eventStream.publish(AddressTerminated(remoteAddress))
         Stop
 
@@ -482,22 +479,18 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       Future.fold(allStatuses)(true)(_ && _) map ManagementCommandAck pipeTo sender
 
     case Quarantine(address, uid) ⇒
-      settings.QuarantineDuration match {
-        case d: FiniteDuration ⇒
-          // Stop writers
-          endpoints.writableEndpointWithPolicyFor(address) match {
-            case Some(Pass(endpoint)) ⇒ context.stop(endpoint)
-            case _                    ⇒ // nothing to stop
-          }
-          // Stop inbound read-only associations
-          endpoints.readOnlyEndpointFor(address) match {
-            case Some(endpoint) ⇒ context.stop(endpoint)
-            case _              ⇒ // nothing to stop
-          }
-          endpoints.markAsQuarantined(address, uid, Deadline.now + d)
-          eventPublisher.notifyListeners(QuarantinedEvent(address, uid))
-        case _ ⇒ // Ignore
+      // Stop writers
+      endpoints.writableEndpointWithPolicyFor(address) match {
+        case Some(Pass(endpoint)) ⇒ context.stop(endpoint)
+        case _                    ⇒ // nothing to stop
       }
+      // Stop inbound read-only associations
+      endpoints.readOnlyEndpointFor(address) match {
+        case Some(endpoint) ⇒ context.stop(endpoint)
+        case _              ⇒ // nothing to stop
+      }
+      endpoints.markAsQuarantined(address, uid, Deadline.now + settings.QuarantineDuration)
+      eventPublisher.notifyListeners(QuarantinedEvent(address, uid))
 
     case s @ Send(message, senderOption, recipientRef, _) ⇒
       val recipientAddress = recipientRef.path.address

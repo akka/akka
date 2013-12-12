@@ -26,7 +26,9 @@ object RemoteNodeShutdownAndComesBackSpec extends MultiNodeConfig {
     ConfigFactory.parseString("""
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = INFO
-      #akka.remote.retry-gate-closed-for = 0.5 s
+      ## Keep it tight, otherwise reestablishing a connection takes too much time
+      akka.remote.transport-failure-detector.heartbeat-interval = 1 s
+      akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
       akka.remote.watch-failure-detector.acceptable-heartbeat-pause = 60 s
       akka.remote.gate-invalid-addresses-for = 0.5 s
                               """)))
@@ -87,13 +89,9 @@ abstract class RemoteNodeShutdownAndComesBackSpec
         // Trigger reconnect attempt and also queue up a system message to be in limbo state (UID of remote system
         // is unknown, and system message is pending)
         system.stop(subject)
-        subject ! "hello"
-        subject ! "hello"
-        subject ! "hello"
 
         // Get rid of old system -- now SHUTDOWN is lost
         testConductor.shutdown(second).await
-        expectTerminated(subject, 10.seconds)
 
         // At this point the second node is restarting, while the first node is trying to reconnect without resetting
         // the system message send state
@@ -102,8 +100,10 @@ abstract class RemoteNodeShutdownAndComesBackSpec
         within(30.seconds) {
           // retry because the Subject actor might not be started yet
           awaitAssert {
-            system.actorSelection(RootActorPath(secondAddress) / "user" / "subject") ! "echo"
-            expectMsg(1.second, "echo")
+            system.actorSelection(RootActorPath(secondAddress) / "user" / "subject") ! Identify("subject")
+            expectMsgPF(1 second) {
+              case ActorIdentity("subject", Some(ref)) ⇒ true
+            }
           }
         }
 
@@ -115,7 +115,10 @@ abstract class RemoteNodeShutdownAndComesBackSpec
         watch(subjectNew)
 
         subjectNew ! "shutdown"
-        expectTerminated(subjectNew)
+        fishForMessage(5.seconds) {
+          case _: ActorIdentity       ⇒ false
+          case Terminated(subjectNew) ⇒ true
+        }
       }
 
       runOn(second) {

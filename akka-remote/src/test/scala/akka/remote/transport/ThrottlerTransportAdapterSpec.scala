@@ -19,6 +19,9 @@ object ThrottlerTransportAdapterSpec {
 
       remote.netty.tcp.hostname = "localhost"
       remote.log-remote-lifecycle-events = off
+      remote.retry-gate-closed-for = 1 s
+      remote.transport-failure-detector.heartbeat-interval = 1 s
+      remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
 
       remote.netty.tcp.applied-adapters = ["trttl"]
       remote.netty.tcp.port = 0
@@ -115,7 +118,7 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
           here ! "Blackhole 3"
           false
         }
-      }, 5.seconds)
+      }, 15.seconds)
 
       here ! "Cleanup"
       fishForMessage(5.seconds) {
