@@ -66,7 +66,7 @@ object Props {
    * Scala API: Returns a Props that has default values except for "creator" which will be a function that creates an instance
    * of the supplied type using the default constructor.
    */
-  def apply[T <: Actor: ClassTag](): Props = apply(defaultDeploy, implicitly[ClassTag[T]].runtimeClass, Vector.empty)
+  def apply[T <: Actor: ClassTag](): Props = apply(defaultDeploy, implicitly[ClassTag[T]].runtimeClass, List.empty)
 
   /**
    * Scala API: Returns a Props that has default values except for "creator" which will be a function that creates an instance
@@ -127,13 +127,13 @@ object Props {
   /**
    * Scala API: create a Props given a class and its constructor arguments.
    */
-  def apply(clazz: Class[_], args: Any*): Props = apply(defaultDeploy, clazz, args.toVector)
+  def apply(clazz: Class[_], args: Any*): Props = apply(defaultDeploy, clazz, args.toList)
 
   /**
    * Java API: create a Props given a class and its constructor arguments.
    */
   @varargs
-  def create(clazz: Class[_], args: AnyRef*): Props = apply(defaultDeploy, clazz, args.toVector)
+  def create(clazz: Class[_], args: AnyRef*): Props = apply(defaultDeploy, clazz, args.toList)
 
   /**
    * Create new Props from the given [[akka.japi.Creator]].
@@ -183,34 +183,28 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
 
   // derived property, does not need to be serialized
   @transient
-  private[this] var _constructor: Constructor[_] = _
+  private[this] var _producer: IndirectActorProducer = _
 
   // derived property, does not need to be serialized
   @transient
   private[this] var _cachedActorClass: Class[_ <: Actor] = _
 
-  private[this] def constructor: Constructor[_] = {
-    if (_constructor eq null)
-      _constructor = Reflect.findConstructor(clazz, args)
+  private[this] def producer: IndirectActorProducer = {
+    if (_producer eq null)
+      _producer = IndirectActorProducer(clazz, args)
 
-    _constructor
+    _producer
   }
 
   private[this] def cachedActorClass: Class[_ <: Actor] = {
     if (_cachedActorClass eq null)
-      _cachedActorClass =
-        if (classOf[IndirectActorProducer].isAssignableFrom(clazz))
-          Reflect.instantiate(constructor, args).asInstanceOf[IndirectActorProducer].actorClass
-        else if (classOf[Actor].isAssignableFrom(clazz))
-          clazz.asInstanceOf[Class[_ <: Actor]]
-        else
-          throw new IllegalArgumentException(s"unknown actor creator [$clazz]")
+      _cachedActorClass = producer.actorClass
 
     _cachedActorClass
   }
 
-  // validate constructor signature; throws IllegalArgumentException if invalid
-  constructor
+  // validate producer constructor signature; throws IllegalArgumentException if invalid
+  producer
 
   /**
    * No-args constructor that sets all the default values.
@@ -218,7 +212,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    * @deprecated use `Props.create(clazz, args ...)` instead
    */
   @deprecated("use Props.create()", "2.2")
-  def this() = this(Props.defaultDeploy, classOf[CreatorFunctionConsumer], Vector(Props.defaultCreator))
+  def this() = this(Props.defaultDeploy, classOf[CreatorFunctionConsumer], List(Props.defaultCreator))
 
   /**
    * Java API: create Props from an [[UntypedActorFactory]]
@@ -229,7 +223,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    *             non-serializable
    */
   @deprecated("use Props.create()", "2.2")
-  def this(factory: UntypedActorFactory) = this(Props.defaultDeploy, classOf[UntypedActorFactoryConsumer], Vector(factory))
+  def this(factory: UntypedActorFactory) = this(Props.defaultDeploy, classOf[UntypedActorFactoryConsumer], List(factory))
 
   /**
    * Java API: create Props from a given [[java.lang.Class]]
@@ -238,7 +232,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    *             another API
    */
   @deprecated("use Props.create()", "2.2")
-  def this(actorClass: Class[_ <: Actor]) = this(Props.defaultDeploy, actorClass, Vector.empty)
+  def this(actorClass: Class[_ <: Actor]) = this(Props.defaultDeploy, actorClass, List.empty)
 
   @deprecated("There is no use-case for this method anymore", "2.2")
   def creator: () ⇒ Actor = newActor
@@ -334,11 +328,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    * used within the implementation of [[IndirectActorProducer#produce]].
    */
   private[akka] def newActor(): Actor = {
-    Reflect.instantiate(constructor, args) match {
-      case a: Actor                 ⇒ a
-      case i: IndirectActorProducer ⇒ i.produce()
-      case _                        ⇒ throw new IllegalArgumentException(s"unknown actor creator [$clazz]")
-    }
+    producer.produce()
   }
 }
 
@@ -367,6 +357,37 @@ trait IndirectActorProducer {
    * later to produce the actor.
    */
   def actorClass: Class[_ <: Actor]
+}
+
+private[akka] object IndirectActorProducer {
+  val UntypedActorFactoryConsumerClass = classOf[UntypedActorFactoryConsumer]
+  val CreatorFunctionConsumerClass = classOf[CreatorFunctionConsumer]
+  val CreatorConsumerClass = classOf[CreatorConsumer]
+  val TypedCreatorFunctionConsumerClass = classOf[TypedCreatorFunctionConsumer]
+
+  def apply(clazz: Class[_], args: immutable.Seq[Any]): IndirectActorProducer = {
+    if (classOf[IndirectActorProducer].isAssignableFrom(clazz)) {
+      def get1stArg[T]: T = args.head.asInstanceOf[T]
+      def get2ndArg[T]: T = args.tail.head.asInstanceOf[T]
+      // The cost of doing reflection to create these for every props
+      // is rather high, so we match on them and do new instead
+      clazz match {
+        case TypedCreatorFunctionConsumerClass ⇒
+          new TypedCreatorFunctionConsumer(get1stArg, get2ndArg)
+        case UntypedActorFactoryConsumerClass ⇒
+          new UntypedActorFactoryConsumer(get1stArg)
+        case CreatorFunctionConsumerClass ⇒
+          new CreatorFunctionConsumer(get1stArg)
+        case CreatorConsumerClass ⇒
+          new CreatorConsumer(get1stArg, get2ndArg)
+        case _ ⇒
+          Reflect.instantiate(clazz, args).asInstanceOf[IndirectActorProducer]
+      }
+    } else if (classOf[Actor].isAssignableFrom(clazz)) {
+      if (args.isEmpty) new NoArgsReflectConstructor(clazz.asInstanceOf[Class[_ <: Actor]])
+      else new ArgsReflectConstructor(clazz.asInstanceOf[Class[_ <: Actor]], args)
+    } else throw new IllegalArgumentException(s"unknown actor creator [$clazz]")
+  }
 }
 
 /**
@@ -399,4 +420,22 @@ private[akka] class CreatorConsumer(clazz: Class[_ <: Actor], creator: Creator[A
 private[akka] class TypedCreatorFunctionConsumer(clz: Class[_ <: Actor], creator: () ⇒ Actor) extends IndirectActorProducer {
   override def actorClass = clz
   override def produce() = creator()
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] class ArgsReflectConstructor(clz: Class[_ <: Actor], args: immutable.Seq[Any]) extends IndirectActorProducer {
+  private[this] val constructor: Constructor[_] = Reflect.findConstructor(clz, args)
+  override def actorClass = clz
+  override def produce() = Reflect.instantiate(constructor, args).asInstanceOf[Actor]
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] class NoArgsReflectConstructor(clz: Class[_ <: Actor]) extends IndirectActorProducer {
+  Reflect.findConstructor(clz, List.empty)
+  override def actorClass = clz
+  override def produce() = Reflect.instantiate(clz)
 }
