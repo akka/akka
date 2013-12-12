@@ -375,14 +375,6 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * timer does not exist, has previously been canceled or if it was a
    * single-shot timer whose message was already received.
    */
-  @deprecated("use isTimerActive instead", "2.2")
-  final def timerActive_?(name: String): Boolean = isTimerActive(name)
-
-  /**
-   * Inquire whether the named timer is still active. Returns true unless the
-   * timer does not exist, has previously been canceled or if it was a
-   * single-shot timer whose message was already received.
-   */
   final def isTimerActive(name: String): Boolean = timers contains name
 
   /**

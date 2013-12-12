@@ -135,10 +135,6 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
     def returnsJOption = classOf[akka.japi.Option[_]] isAssignableFrom method.getReturnType
     def returnsOption = classOf[scala.Option[_]] isAssignableFrom method.getReturnType
 
-    @deprecated("use returnsFuture instead", "2.2") def returnsFuture_? = returnsFuture
-    @deprecated("use returnsJOption instead", "2.2") def returnsJOption_? = returnsJOption
-    @deprecated("use returnsOption instead", "2.2") def returnsOption_? = returnsOption
-
     /**
      * Invokes the Method on the supplied instance
      *
@@ -685,7 +681,7 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
   /**
    * INTERNAL API
    */
-  private[akka] def invocationHandlerFor(@deprecatedName('typedActor_?) typedActor: AnyRef): TypedActorInvocationHandler =
+  private[akka] def invocationHandlerFor(typedActor: AnyRef): TypedActorInvocationHandler =
     if ((typedActor ne null) && classOf[Proxy].isAssignableFrom(typedActor.getClass) && Proxy.isProxyClass(typedActor.getClass)) typedActor match {
       case null ⇒ null
       case other ⇒ Proxy.getInvocationHandler(other) match {

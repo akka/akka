@@ -65,27 +65,24 @@ class TestFSMRef[S, D, T <: Actor](
   }
 
   /**
-   * Proxy for FSM.setTimer.
+   * Proxy for [[FSM#setTimer]].
    */
   def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean) {
     fsm.setTimer(name, msg, timeout, repeat)
   }
 
   /**
-   * Proxy for FSM.cancelTimer.
+   * Proxy for [[FSM#cancelTimer]].
    */
   def cancelTimer(name: String) { fsm.cancelTimer(name) }
 
-  @deprecated("Use isTimerActive", "2.2")
-  def timerActive_?(name: String): Boolean = isTimerActive(name)
-
   /**
-   * Proxy for FSM.isTimerActive.
+   * Proxy for [[FSM#isStateTimerActive]].
    */
   def isTimerActive(name: String) = fsm.isTimerActive(name)
 
   /**
-   * Proxy for FSM.timerActive_?.
+   * Proxy for [[FSM#isStateTimerActive]].
    */
   def isStateTimerActive = fsm.isStateTimerActive
 }
