@@ -66,12 +66,11 @@ trait AskSupport {
    *
    * {{{
    *   val f = ask(worker, request)(timeout)
-   *   flow {
-   *     EnrichedRequest(request, f())
+   *   f.map { response =>
+   *     EnrichedMessage(response)
    *   } pipeTo nextActor
    * }}}
    *
-   * See [[scala.concurrent.Future]] for a description of `flow`
    */
   def ask(actorRef: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] = actorRef ? message
 
@@ -112,13 +111,12 @@ trait AskSupport {
    * <b>Recommended usage:</b>
    *
    * {{{
-   *   val f = ask(selection, request)(timeout)
-   *   flow {
-   *     EnrichedRequest(request, f())
+   *   val f = ask(worker, request)(timeout)
+   *   f.map { response =>
+   *     EnrichedMessage(response)
    *   } pipeTo nextActor
    * }}}
    *
-   * See [[scala.concurrent.Future]] for a description of `flow`
    */
   def ask(actorSelection: ActorSelection, message: Any)(implicit timeout: Timeout): Future[Any] = actorSelection ? message
 }

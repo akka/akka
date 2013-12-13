@@ -28,6 +28,7 @@ package object dataflow {
    *
    * The Delimited Continuations compiler plugin must be enabled in order to use this method.
    */
+  @deprecated("dataflow is deprecated, superseded by Scala Async", "2.3")
   def flow[A](body: ⇒ A @cps[Future[Any]])(implicit executor: ExecutionContext): Future[A] = {
     val p = Promise[A]
     executor.execute(
@@ -43,6 +44,7 @@ package object dataflow {
     p.future
   }
 
+  @deprecated("dataflow is deprecated, superseded by Scala Async", "2.3")
   implicit class DataflowPromise[T](val promise: Promise[T]) extends AnyVal {
 
     /**
@@ -90,6 +92,7 @@ package object dataflow {
     final def apply()(implicit ec: ExecutionContext): T @cps[Future[Any]] = shift(promise.future flatMap (_: T ⇒ Future[Any]))
   }
 
+  @deprecated("dataflow is deprecated, superseded by Scala Async", "2.3")
   implicit class DataflowFuture[T](val future: Future[T]) extends AnyVal {
     /**
      * For use only within a Future.flow block or another compatible Delimited Continuations reset block.

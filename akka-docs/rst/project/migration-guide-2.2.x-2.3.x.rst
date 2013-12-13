@@ -99,6 +99,12 @@ Changed cluster expected-response-after configuration
 Configuration property ``akka.cluster.failure-detector.heartbeat-request.expected-response-after`` 
 has been renamed to ``akka.cluster.failure-detector.expected-response-after``.
 
+Dataflow is Deprecated
+======================
+
+Akka dataflow is superseded by `Scala Async <https://github.com/scala/async>`_.
+
+
 Removed Deprecated Features
 ===========================
 
