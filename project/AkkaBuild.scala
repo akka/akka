@@ -1000,7 +1000,18 @@ object AkkaBuild extends Build {
 
       // internal classes marked with private[remote]
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.transport.FailureInjectorTransportAdapter.shouldDropOutbound"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.transport.FailureInjectorTransportAdapter.shouldDropInbound")
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.transport.FailureInjectorTransportAdapter.shouldDropInbound"),
+
+      // Internal refactorings in Remoting (Quarantine piercing). None of these classes are exposed to users
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.props"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.EndpointManager.akka$remote$EndpointManager$$createEndpoint"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.this"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.ReliableDeliverySupervisor.transport"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.EndpointWriter.props"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.EndpointWriter.this"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.transport.AkkaProtocolManager.akka$remote$transport$AkkaProtocolManager$$wrappedTransport"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.transport.ProtocolStateActor.this"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.transport.ProtocolStateActor.this")
     )
   }
 
