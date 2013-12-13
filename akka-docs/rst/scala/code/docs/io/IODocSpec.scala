@@ -78,7 +78,7 @@ class Client(remote: InetSocketAddress, listener: ActorRef) extends Actor {
 
   def receive = {
     case CommandFailed(_: Connect) =>
-      listener ! "failed"
+      listener ! "connect failed"
       context stop self
 
     case c @ Connected(remote, local) =>
@@ -86,11 +86,18 @@ class Client(remote: InetSocketAddress, listener: ActorRef) extends Actor {
       val connection = sender
       connection ! Register(self)
       context become {
-        case data: ByteString        => connection ! Write(data)
-        case CommandFailed(w: Write) => // O/S buffer was full
-        case Received(data)          => listener ! data
-        case "close"                 => connection ! Close
-        case _: ConnectionClosed     => context stop self
+        case data: ByteString =>
+          connection ! Write(data)
+        case CommandFailed(w: Write) =>
+          // O/S buffer was full
+          listener ! "write failed"
+        case Received(data) =>
+          listener ! data
+        case "close" =>
+          connection ! Close
+        case _: ConnectionClosed =>
+          listener ! "connection closed"
+          context stop self
       }
   }
 }
@@ -110,6 +117,8 @@ class IODocSpec extends AkkaSpec {
     val listen = expectMsgType[Tcp.Bound].localAddress
     val client = system.actorOf(Client.props(listen, testActor), "client1")
 
+    watch(client)
+
     val c1, c2 = expectMsgType[Tcp.Connected]
     c1.localAddress must be(c2.remoteAddress)
     c2.localAddress must be(c1.remoteAddress)
@@ -117,8 +126,8 @@ class IODocSpec extends AkkaSpec {
     client ! ByteString("hello")
     expectMsgType[ByteString].utf8String must be("hello")
 
-    watch(client)
     client ! "close"
+    expectMsg("connection closed")
     expectTerminated(client, 1.second)
   }
 
