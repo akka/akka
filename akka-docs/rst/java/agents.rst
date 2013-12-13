@@ -23,10 +23,6 @@ each Agent is being executed. Actions dispatched to an agent from another thread
 will occur in the order they were sent, potentially interleaved with actions
 dispatched to the same agent from other threads.
 
-If an Agent is used within an enclosing transaction, then it will participate in
-that transaction. Agents are integrated with Scala STM - any dispatches made in
-a transaction are held until that transaction commits, and are discarded if it
-is retried or aborted.
 
 
 Creating Agents
@@ -97,8 +93,10 @@ See :ref:`futures-java` for more information on ``Futures``.
    :include: import-future,import-function,alter-off
    :language: java
 
-Transactional Agents
-====================
+Deprecated Transactional Agents
+===============================
+
+Agents participating in enclosing STM transaction is a deprecated feature in 2.3.
 
 If an Agent is used within an enclosing ``Scala STM transaction``, then it will participate in
 that transaction. If you send to an Agent within a transaction then the dispatch

@@ -107,12 +107,6 @@ object Agent {
  * potentially interleaved with actions dispatched to the same agent from
  * other sources.
  *
- * If an Agent is used within an enclosing transaction, then it will
- * participate in that transaction. Agents are integrated with the STM -
- * any dispatches made in a transaction are held until that transaction
- * commits, and are discarded if it is retried or aborted.
- * <br/><br/>
- *
  * Example of usage:
  * {{{
  * val agent = Agent(5)
@@ -150,6 +144,15 @@ object Agent {
  * } yield value1 + value2
  *
  * }}}
+ *
+ * ==DEPRECATED STM SUPPORT==
+ *
+ * Agents participating in enclosing STM transaction is a deprecated feature in 2.3.
+ *
+ * If an Agent is used within an enclosing transaction, then it will
+ * participate in that transaction. Agents are integrated with the STM -
+ * any dispatches made in a transaction are held until that transaction
+ * commits, and are discarded if it is retried or aborted.
  */
 abstract class Agent[T] {
 
