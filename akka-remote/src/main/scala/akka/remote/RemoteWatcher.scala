@@ -38,6 +38,9 @@ private[akka] object RemoteWatcher {
 
   case class WatchRemote(watchee: ActorRef, watcher: ActorRef)
   case class UnwatchRemote(watchee: ActorRef, watcher: ActorRef)
+  case class RewatchRemote(watchee: ActorRef, watcher: ActorRef)
+  @SerialVersionUID(1L)
+  class Rewatch(watchee: InternalActorRef, watcher: InternalActorRef) extends Watch(watchee, watcher)
 
   @SerialVersionUID(1L) case object Heartbeat
   @SerialVersionUID(1L) case class HeartbeatRsp(addressUid: Int)
@@ -129,6 +132,7 @@ private[akka] class RemoteWatcher(
     case WatchRemote(watchee, watcher)   ⇒ watchRemote(watchee, watcher)
     case UnwatchRemote(watchee, watcher) ⇒ unwatchRemote(watchee, watcher)
     case t @ Terminated(watchee)         ⇒ terminated(watchee, t.existenceConfirmed, t.addressTerminated)
+    case RewatchRemote(watchee, watcher) ⇒ rewatchRemote(watchee, watcher)
 
     // test purpose
     case Stats ⇒
@@ -171,6 +175,13 @@ private[akka] class RemoteWatcher(
 
   def quarantine(address: Address, uid: Int): Unit =
     remoteProvider.quarantine(address, uid)
+
+  def rewatchRemote(watchee: ActorRef, watcher: ActorRef): Unit =
+    if (watching.contains((watchee, watcher)))
+      watchRemote(watchee, watcher)
+    else
+      //has been unwatched inbetween, skip re-watch
+      log.debug("Ignoring re-watch after being unwatched in the meantime: [{} -> {}]", watcher.path, watchee.path)
 
   def watchRemote(watchee: ActorRef, watcher: ActorRef): Unit =
     if (watchee.path.uid == akka.actor.ActorCell.undefinedUid)
@@ -278,8 +289,11 @@ private[akka] class RemoteWatcher(
     watching.foreach {
       case (wee: InternalActorRef, wer: InternalActorRef) ⇒
         if (wee.path.address == address) {
+          // this re-watch will result in a RewatchRemote message to this actor
+          // must be a special message to be able to detect if an UnwatchRemote comes in
+          // before the extra RewatchRemote, then the re-watch should be ignored
           log.debug("Re-watch [{} -> {}]", wer, wee)
-          wee.sendSystemMessage(Watch(wee, wer)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+          wee.sendSystemMessage(new Rewatch(wee, wer)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
         }
     }
 
