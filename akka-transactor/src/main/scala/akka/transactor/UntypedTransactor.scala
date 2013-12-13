@@ -11,6 +11,7 @@ import java.util.Collections.{ emptySet, singleton ⇒ singletonSet }
 /**
  * An UntypedActor version of transactor for using from Java.
  */
+@deprecated("akka.transactor will be removed", "2.3")
 abstract class UntypedTransactor extends UntypedActor {
   import scala.collection.JavaConverters.asScalaSetConverter
 

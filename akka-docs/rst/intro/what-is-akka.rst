@@ -54,14 +54,6 @@ interactions of actors use pure message passing and everything is asynchronous.
 
 For an overview of the remoting see :ref:`remoting`
 
-Transactors
------------
-
-Transactors combine actors and Software Transactional Memory (STM) into transactional actors.
-It allows you to compose atomic message flows with automatic retry and rollback.
-
-See :ref:`Transactors (Scala) <transactors-scala>` and :ref:`Transactors (Java) <transactors-java>`
-
 Persistence
 -----------
 

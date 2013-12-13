@@ -12,6 +12,7 @@ import scala.concurrent.stm.InTxn
 /**
  * Used for specifying actor refs and messages to send to during coordination.
  */
+@deprecated("akka.transactor will be removed", "2.3")
 case class SendTo(actor: ActorRef, message: Option[Any] = None)
 
 /**
@@ -94,6 +95,7 @@ case class SendTo(actor: ActorRef, message: Option[Any] = None)
  *
  * @see [[akka.transactor.Coordinated]]
  */
+@deprecated("akka.transactor will be removed", "2.3")
 trait Transactor extends Actor {
   private val settings = TransactorExtension(context.system)
 
@@ -181,6 +183,9 @@ trait Transactor extends Actor {
   def doNothing: Receive = EmptyReceive
 }
 
+/**
+ * INTERNAL API
+ */
 private[akka] object EmptyReceive extends PartialFunction[Any, Unit] {
   def apply(any: Any): Unit = ()
   def isDefinedAt(any: Any): Boolean = false

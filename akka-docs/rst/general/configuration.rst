@@ -379,12 +379,6 @@ akka-cluster
 .. literalinclude:: ../../../akka-cluster/src/main/resources/reference.conf
    :language: none
 
-akka-transactor
-~~~~~~~~~~~~~~~
-
-.. literalinclude:: ../../../akka-transactor/src/main/resources/reference.conf
-   :language: none
-
 akka-agent
 ~~~~~~~~~~
 

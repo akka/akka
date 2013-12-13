@@ -13,12 +13,14 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 /**
  * TransactorExtension is an Akka Extension to hold settings for transactors.
  */
+@deprecated("akka.transactor will be removed", "2.3")
 object TransactorExtension extends ExtensionId[TransactorSettings] with ExtensionIdProvider {
   override def get(system: ActorSystem): TransactorSettings = super.get(system)
   override def lookup: TransactorExtension.type = TransactorExtension
   override def createExtension(system: ExtendedActorSystem): TransactorSettings = new TransactorSettings(system.settings.config)
 }
 
+@deprecated("akka.transactor will be removed", "2.3")
 class TransactorSettings(val config: Config) extends Extension {
   import config._
   val CoordinatedTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.transactor.coordinated-timeout"), MILLISECONDS))
