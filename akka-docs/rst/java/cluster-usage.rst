@@ -275,6 +275,15 @@ cases to consider. Therefore, this specific use case is made easily accessible b
 :ref:`cluster-singleton` in the contrib module. You can use it as is, or adjust to fit
 your specific needs. 
 
+Cluster Sharding
+^^^^^^^^^^^^^^^^
+
+When you have many stateful actors that together consume more resources (e.g. memory) than fit on one machine
+you need to distribute them across several nodes in the cluster. You want to be able to interact with them using their
+logical identifier, but without having to care about their physical location in the cluster.
+
+See :ref:`cluster-sharding` in the contrib module.
+
 Distributed Publish Subscribe Pattern
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

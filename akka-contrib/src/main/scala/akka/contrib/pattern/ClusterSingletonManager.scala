@@ -32,8 +32,8 @@ object ClusterSingletonManager {
     singletonName: String,
     terminationMessage: Any,
     role: Option[String],
-    maxHandOverRetries: Int = 20,
-    maxTakeOverRetries: Int = 15,
+    maxHandOverRetries: Int = 10,
+    maxTakeOverRetries: Int = 5,
     retryInterval: FiniteDuration = 1.second): Props =
     Props(classOf[ClusterSingletonManager], singletonProps, singletonName, terminationMessage, role,
       maxHandOverRetries, maxTakeOverRetries, retryInterval).withDeploy(Deploy.local)
@@ -190,9 +190,8 @@ object ClusterSingletonManager {
       }
 
       def handleInitial(state: CurrentClusterState): Unit = {
-        membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.collect {
-          case m if m.status == MemberStatus.Up && matchingRole(m) ⇒ m
-        }
+        membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.filter(m ⇒
+          m.status == MemberStatus.Up && matchingRole(m))
         val initial = InitialOldestState(membersByAge.headOption.map(_.address), membersByAge.size)
         changes :+= initial
       }
@@ -277,11 +276,11 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  *
  * The cluster failure detector will notice when oldest node
  * becomes unreachable due to things like JVM crash, hard shut down,
- * or network failure. Then a new oldest node will take over and a
- * new singleton actor is created. For these failure scenarios there
- * will not be a graceful hand-over, but more than one active singletons
- * is prevented by all reasonable means. Some corner cases are eventually
- * resolved by configurable timeouts.
+ * or network failure. When the crashed node has been removed (via down) from the
+ * cluster then a new oldest node will take over and a new singleton actor is
+ * created. For these failure scenarios there will not be a graceful hand-over,
+ * but more than one active singletons is prevented by all reasonable means. Some
+ * corner cases are eventually resolved by configurable timeouts.
  *
  * You access the singleton actor with `actorSelection` using the names you have
  * specified when creating the ClusterSingletonManager. You can subscribe to

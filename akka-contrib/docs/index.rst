@@ -35,6 +35,7 @@ The Current List of Modules
    jul
    peek-mailbox
    cluster-singleton
+   cluster-sharding
    distributed-pub-sub
    cluster-client
    aggregator
