@@ -138,19 +138,16 @@ Identifiers
 -----------
 
 A processor must have an identifier that doesn't change across different actor incarnations. It defaults to the
-``String`` representation of processor's path and can be obtained via the ``processorId`` method.
+``String`` representation of processor's path without the address part and can be obtained via the ``processorId``
+method.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#processor-id
 
 Applications can customize a processor's id by specifying an actor name during processor creation as shown in
-section :ref:`processors`. This works well when using local actor references but may cause problems with remote
-actor references because their paths also contain deployment information such as host and port (and actor deployments
-are likely to change during the lifetime of an application). In this case, ``Processor`` implementation classes
-should override ``processorId``.
+section :ref:`processors`. This changes that processor's name in its actor hierarchy and hence influences only
+part of the processor id. To fully customize a processor's id, the ``processorId`` method should be overridden.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#processor-id-override
-
-Later versions of Akka persistence will likely offer a possibility to migrate processor ids.
 
 .. _channels:
 
@@ -295,10 +292,9 @@ Identifiers
 -----------
 
 In the same way as :ref:`processors`, channels also have an identifier that defaults to a channel's path. A channel
-identifier can therefore be customized by using a custom actor name at channel creation. As already mentioned, this
-works well when using local actor references but may cause problems with remote actor references. In this case, an
-application-defined channel id should be provided as argument to ``Channel.props(String)`` or
-``PersistentChannel.props(String)``.
+identifier can therefore be customized by using a custom actor name at channel creation. This changes that channel's
+name in its actor hierarchy and hence influences only part of the channel identifier. To fully customize a channel
+identifier, it should be provided as argument ``Channel.props(String)`` or ``PersistentChannel.props(String)``.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#channel-id-override
 

@@ -86,5 +86,5 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
     system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(pluginClass).withDispatcher(pluginDispatcherId), pluginType)
   }
 
-  private def id(ref: ActorRef) = ref.path.toStringWithAddress(system.provider.getDefaultAddress)
+  private def id(ref: ActorRef) = ref.path.elements.mkString("/", "/", "")
 }
