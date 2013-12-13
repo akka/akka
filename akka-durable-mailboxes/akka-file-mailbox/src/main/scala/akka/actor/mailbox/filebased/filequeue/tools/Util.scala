@@ -17,6 +17,7 @@
 
 package akka.actor.mailbox.filebased.filequeue.tools
 
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 object Util {
   val KILOBYTE = 1024L
   val MEGABYTE = 1024 * KILOBYTE

@@ -9,6 +9,7 @@ import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor.ActorSystem
 
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 class FileBasedMailboxSettings(val systemSettings: ActorSystem.Settings, val userConfig: Config)
   extends DurableMailboxSettings {
 

@@ -19,6 +19,7 @@ package akka.actor.mailbox.filebased.filequeue
 
 import java.util.concurrent.atomic.AtomicLong
 
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 class Counter {
   private val value = new AtomicLong(0)
 

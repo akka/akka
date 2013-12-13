@@ -6,7 +6,6 @@ package docs.testkit;
 import static org.junit.Assert.*;
 
 import akka.testkit.*;
-import docs.actor.mailbox.DurableMailboxDocSpec;
 import org.junit.ClassRule;
 import org.junit.Test;
 

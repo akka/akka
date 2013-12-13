@@ -14,6 +14,7 @@ import scala.util.control.NonFatal
 import akka.pattern.{ CircuitBreakerOpenException, CircuitBreaker }
 import scala.concurrent.duration.Duration
 
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
   private val settings = new FileBasedMailboxSettings(systemSettings, config)
   override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue = (owner zip system).headOption match {
@@ -22,6 +23,7 @@ class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config)
   }
 }
 
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 class FileBasedMessageQueue(_owner: ActorRef, _system: ExtendedActorSystem, val settings: FileBasedMailboxSettings)
   extends DurableMessageQueue(_owner, _system) with DurableMessageSerialization {
   // TODO Is it reasonable for all FileBasedMailboxes to have their own logger?

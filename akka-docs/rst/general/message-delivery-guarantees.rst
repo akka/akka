@@ -230,7 +230,7 @@ possibly non-exhaustive list of counter-indications is:
   deployed with Routers.
 
 - As mentioned above, the problem occurs anywhere a lock is involved during
-  enqueueing, which may also apply to custom mailboxes (or durable mailboxes).
+  enqueueing, which may also apply to custom mailboxes.
 
 This list has been compiled carefully, but other problematic scenarios may have
 escaped our analysis.

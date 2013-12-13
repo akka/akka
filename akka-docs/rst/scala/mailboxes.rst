@@ -161,8 +161,6 @@ Akka comes shipped with a number of mailbox implementations:
 
   - Configuration name: "akka.dispatch.BoundedPriorityMailbox"
 
-* Durable mailboxes, see :ref:`durable-mailboxes-scala`.
-
 Mailbox configuration examples
 ==============================
 

@@ -104,6 +104,14 @@ Dataflow is Deprecated
 
 Akka dataflow is superseded by `Scala Async <https://github.com/scala/async>`_.
 
+Durable Mailboxes are Deprecated
+================================
+
+Durable mailboxes are superseded by ``akka-persistence``, which offers several
+tools to support reliable messaging.
+
+Read more about ``akka-persistence`` in the :ref:`documentation for Scala <persistence-scala>` and 
+:ref:`documentation for Java <persistence-java>`.
 
 Removed Deprecated Features
 ===========================
@@ -114,4 +122,4 @@ The following, previously deprecated, features have been removed:
  * `API changes to FSM and TestFSMRef <http://doc.akka.io/docs/akka/2.2.3/project/migration-guide-2.1.x-2.2.x.html#API_changes_to_FSM_and_TestFSMRef>`_
  * DefaultScheduler superseded by LightArrayRevolverScheduler
  
- 
+
