@@ -122,13 +122,3 @@ For further details on the design and internal architecture see :ref:`io-layer`.
 
 .. _spray.io: http://spray.io
 
-Link to the old IO documentation
---------------------------------
-
-.. This is only in here to avoid a warning about io-old not being part of any toctree.
-
-.. toctree::
-   :maxdepth: 1
-
-   io-old
-

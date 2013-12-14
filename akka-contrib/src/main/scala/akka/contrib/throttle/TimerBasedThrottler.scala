@@ -92,7 +92,7 @@ object Throttler {
    * @param target if `target` is `None`, the throttler will stop delivering messages and the messages already received
    *  but not yet delivered, as well as any messages received in the future will be queued
    *  and eventually be delivered when a new target is set. If `target` is not `None`, the currently queued messages
-   *  as well as any messages received in the the future will be delivered to the new target at a rate not exceeding the current throttler's rate.
+   *  as well as any messages received in the future will be delivered to the new target at a rate not exceeding the current throttler's rate.
    */
   case class SetTarget(target: Option[ActorRef]) {
     /**
@@ -100,7 +100,7 @@ object Throttler {
      * @param target if `target` is `null`, the throttler will stop delivering messages and the messages already received
      *  but not yet delivered, as well as any messages received in the future will be queued
      *  and eventually be delivered when a new target is set. If `target` is not `null`, the currently queued messages
-     *  as well as any messages received in the the future will be delivered to the new target at a rate not exceeding
+     *  as well as any messages received in the future will be delivered to the new target at a rate not exceeding
      *  the current throttler's rate.
      */
     def this(target: ActorRef) = this(Option(target))

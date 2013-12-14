@@ -147,7 +147,7 @@ import akka.persistence.SaveSnapshotFailure
  * messages the entry actor can send [[ShardRegion.Passivate]] to its parent `ShardRegion`.
  * The specified wrapped message in `Passivate` will be sent back to the entry, which is
  * then supposed to stop itself. Incoming messages will be buffered by the `ShardRegion`
- * between reception of `Passivate` and termination of the the entry. Such buffered messages
+ * between reception of `Passivate` and termination of the entry. Such buffered messages
  * are thereafter delivered to a new incarnation of the entry.
  *
  */
@@ -537,7 +537,7 @@ object ShardRegion {
    * messages the entry actor can send this `Passivate` message to its parent `ShardRegion`.
    * The specified wrapped `stopMessage` will be sent back to the entry, which is
    * then supposed to stop itself. Incoming messages will be buffered by the `ShardRegion`
-   * between reception of `Passivate` and termination of the the entry. Such buffered messages
+   * between reception of `Passivate` and termination of the entry. Such buffered messages
    * are thereafter delivered to a new incarnation of the entry.
    *
    * [[akka.actor.PoisonPill]] is a perfectly fine `stopMessage`.

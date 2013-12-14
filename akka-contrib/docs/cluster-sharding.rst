@@ -43,7 +43,7 @@ identifier and the shard identifier from incoming messages.
 
 This example illustrates two different ways to define the entry identifier in the messages: 
 
- * The ``Get`` message includes the the identifier itself.
+ * The ``Get`` message includes the identifier itself.
  * The ``EntryEnvelope`` holds the identifier, and the actual message that is
    sent to the entry actor is wrapped in the envelope. 
 
@@ -87,7 +87,7 @@ identifier and the shard identifier from incoming messages.
 
 This example illustrates two different ways to define the entry identifier in the messages: 
 
- * The ``Get`` message includes the the identifier itself.
+ * The ``Get`` message includes the identifier itself.
  * The ``EntryEnvelope`` holds the identifier, and the actual message that is
    sent to the entry actor is wrapped in the envelope. 
 
@@ -219,7 +219,7 @@ in the mailbox will be dropped. To support graceful passivation without loosing 
 messages the entry actor can send ``ShardRegion.Passivate`` to its parent ``ShardRegion``.
 The specified wrapped message in ``Passivate`` will be sent back to the entry, which is
 then supposed to stop itself. Incoming messages will be buffered by the ``ShardRegion``
-between reception of ``Passivate`` and termination of the the entry. Such buffered messages
+between reception of ``Passivate`` and termination of the entry. Such buffered messages
 are thereafter delivered to a new incarnation of the entry.
 
 Configuration

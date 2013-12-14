@@ -385,7 +385,7 @@ There are two distinct types of routers.
 * **Pool - router that creates routees as child actors and deploys them on remote nodes.** 
   Each router will have its own routee instances. For example, if you start a router
   on 3 nodes in a 10 nodes cluster you will have 30 routee actors in total if the router is
-  configured to use one inctance per node. The routees created by the the different routers
+  configured to use one inctance per node. The routees created by the different routers
   will not be shared between the routers. One example of a use case for this type of router
   is a single master that coordinate jobs and delegates the actual work to routees running 
   on other nodes in the cluster.
