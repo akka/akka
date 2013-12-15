@@ -16,17 +16,21 @@ object ActivatorDist {
     activatorDist <<= activatorDistTask
   )
 
-  def aggregatedProjects(projectRef: ProjectRef, structure: Load.BuildStructure): Seq[ProjectRef] = {
+  def aggregatedProjects(projectRef: ProjectRef, structure: Load.BuildStructure, exclude: Set[String]): Seq[ProjectRef] = {
     val aggregate = Project.getProject(projectRef, structure).toSeq.flatMap(_.aggregate)
     aggregate flatMap { ref =>
-      ref +: aggregatedProjects(ref, structure)
+      if (exclude contains ref.project) Seq.empty
+      else ref +: aggregatedProjects(ref, structure, exclude)
     }
   }
 
   def activatorDistTask: Initialize[Task[File]] = {
     (thisProjectRef, baseDirectory, activatorDistDirectory, version, buildStructure, streams) map {
       (project, projectBase, activatorDistDirectory, version, structure, s) => {
-        val allProjects = aggregatedProjects(project, structure).flatMap(p => Project.getProject(p, structure))
+        val exclude = Set("akka-sample-osgi-dining-hakkers", "akka-sample-osgi-dining-hakkers-api", 
+            "akka-sample-osgi-dining-hakkers-command", "akka-sample-osgi-dining-hakkers-core", 
+            "akka-sample-osgi-dining-hakkers-uncommons", "akka-sample-osgi-dining-hakkers-integration")
+        val allProjects = aggregatedProjects(project, structure, exclude).flatMap(p => Project.getProject(p, structure))
         val rootGitignoreLines = IO.readLines(AkkaBuild.akka.base / ".gitignore")
         for (p <- allProjects) {
          val localGitignoreLines = if ((p.base / ".gitignore").exists) IO.readLines(p.base / ".gitignore") else Nil
