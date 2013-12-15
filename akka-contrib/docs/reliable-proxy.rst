@@ -61,8 +61,20 @@ actor system) must be considered as one when evaluating the reliability of this
 communication channel. The benefit is that the network in-between is taken out
 of that equation.
 
-When the target actor terminates, the proxy will terminate as well (on the
-terms of :ref:`deathwatch-java` / :ref:`deathwatch-scala`).
+Reconnecting to the target
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If the ``target`` terminates the ``proxy`` will optionally try to reconnect to
+it using mechanism outlined in :ref:`actorSelection-scala`.  If the maximum
+number of reconnection attempts is reached the ``proxy`` will terminate.
+
+Note that during the reconnection process there is a possibility that a message
+could be delivered to the ``target`` more than once.  Consider the case where a message
+is delivered to the ``target`` and the target system crashes before the ACK
+is sent to the ``sender``.  After the ``proxy`` reconnects to the ``target`` it
+will start resending all of the messages that it has not received an ACK for and
+the message that it never got an ACK for will be redelivered.  Either this possibility
+should be considered in the design of the ``target`` or reconnection should be disabled.
 
 How to use it
 -------------
@@ -99,14 +111,17 @@ Message it Processes
 ^^^^^^^^^^^^^^^^^^^^
 
 * :class:`FSM.SubscribeTransitionCallBack` and :class:`FSM.UnsubscribeTransitionCallBack`, see :ref:`fsm-scala`
-* internal messages declared within :obj:`ReliableProxy`, *not for external use*
+* :class:`ReliableProxy.Unsent`, see the API documentation for details.
 * any other message is transferred through the reliable tunnel and forwarded to the designated target actor
 
 Messages it Sends
 ^^^^^^^^^^^^^^^^^
 
 * :class:`FSM.CurrentState` and :class:`FSM.Transition`, see :ref:`fsm-scala`
- 
+* :class:`ReliableProxy.TargetChanged` is sent to the FSM transition subscribers if the proxy reconnects to a
+  new target.
+* :class:`ReliableProxy.ProxyTerminated` is sent to the FSM transition subscribers if the proxy is stopped.
+
 Exceptions it Escalates
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -120,4 +135,6 @@ Arguments it Takes
   messages, ``B`` in the above illustration.
 * *retryAfter* is the timeout for receiving ACK messages from the remote
   end-point; once it fires, all outstanding message sends will be retried.
-
+* *reconnectAfter* is an optional interval between reconnection attempts after
+  the target is terminated.
+* *maxReconnects* is an optional maximum number of attempts to reconnect to the target.
