@@ -313,7 +313,7 @@ encrypt them and send them off to the connection actor while buffering writes.
 This pipeline is driven by a :class:`TcpPipelineHandler` actor which is also
 included in ``akka-actor``. In order to capture the generic command and event
 types consumed and emitted by that actor we need to create a wrapper—the nested
-:class:`Init` class—which also provides the the pipeline context needed by the
+:class:`Init` class—which also provides the pipeline context needed by the
 supplied pipeline; in this case we use the :meth:`withLogger` convenience
 method which supplies a context that implements :class:`HasLogger` and
 :class:`HasActorContext` and should be sufficient for typical pipelines. With

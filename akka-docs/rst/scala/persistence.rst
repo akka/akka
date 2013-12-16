@@ -1,4 +1,4 @@
-.. _persistence:
+.. _persistence-scala:
 
 ###########
 Persistence

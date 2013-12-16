@@ -54,7 +54,7 @@ the actor. This is to enable the ability of self-healing of the system.
 
 Optionally, an actor's state can be automatically recovered to the state
 before a restart by persisting received messages and replaying them after
-restart (see :ref:`persistence`).
+restart (see :ref:`persistence-scala`).
 
 Behavior
 --------

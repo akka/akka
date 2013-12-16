@@ -155,7 +155,7 @@ There is also a default remote address which is the one used by cluster support
 Deep serialization of Actors
 ----------------------------
 
-The recommended approach to do deep serialization of internal actor state is to use Akka :ref:`persistence`.
+The recommended approach to do deep serialization of internal actor state is to use Akka :ref:`persistence-scala`.
 
 A Word About Java Serialization
 ===============================
