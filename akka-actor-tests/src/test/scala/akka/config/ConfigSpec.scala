@@ -24,8 +24,8 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
       {
         import config._
 
-        getString("akka.version") must equal("2.3-SNAPSHOT")
-        settings.ConfigVersion must equal("2.3-SNAPSHOT")
+        getString("akka.version") must equal("2.3-M2")
+        settings.ConfigVersion must equal("2.3-M2")
 
         getBoolean("akka.daemonic") must equal(false)
 
