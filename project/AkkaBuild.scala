@@ -802,7 +802,8 @@ object AkkaBuild extends Build {
     Protobuf.settings ++ Seq(
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
-    javacOptions in Compile ++= Seq("-encoding", "UTF-8", "-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
+    javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
+    javacOptions in doc ++= Seq("-encoding", "UTF-8", "-source", "1.6"),
 
     // if changing this between binary and full, also change at the bottom of akka-sbt-plugin/sample/project/Build.scala
     crossVersion := CrossVersion.binary,
