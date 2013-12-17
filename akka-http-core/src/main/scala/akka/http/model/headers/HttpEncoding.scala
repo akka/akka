@@ -4,6 +4,7 @@ package headers
 import scala.language.implicitConversions
 
 import akka.http.rendering._
+import akka.http.util.ObjectRegistry
 
 sealed abstract class HttpEncodingRange extends ValueRenderable with WithQValue[HttpEncodingRange] {
   def qValue: Float

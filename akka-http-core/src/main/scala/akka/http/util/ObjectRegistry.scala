@@ -1,4 +1,4 @@
-package akka.http.model
+package akka.http.util
 
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
@@ -7,7 +7,7 @@ import scala.annotation.tailrec
  * A concurrent registry to keep track of singleton instances similar to what
  * java.lang.Enum provides.
  */
-private[model] trait ObjectRegistry[K, V <: AnyRef] {
+private[http] trait ObjectRegistry[K, V <: AnyRef] {
   private[this] val _registry = new AtomicReference(Map.empty[K, V])
 
   @tailrec

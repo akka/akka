@@ -1,6 +1,7 @@
 package akka.http.model
 
 import akka.http.rendering.SingletonValueRenderable
+import akka.http.util.ObjectRegistry
 
 /**
  * The method of an HTTP request.
