@@ -7,6 +7,8 @@ import scala.annotation.tailrec
 import scala.collection.immutable.NumericRange
 import Uri._
 import UriParser._
+import akka.http.model.headers
+import headers.HttpOrigin
 
 private[http] class UriParser(input: ParserInput, charset: Charset, mode: Uri.ParsingMode) {
   private[this] var cursor: Int = 0
@@ -51,10 +53,10 @@ private[http] class UriParser(input: ParserInput, charset: Charset, mode: Uri.Pa
     resolve(_scheme, _userinfo, _host, _port, _path, _query, _fragment, base)
   }
 
-  /*def parseOrigin(): HttpOrigin = {
+  def parseOrigin(): HttpOrigin = {
     complete("origin", origin)
-    HttpOrigin(_scheme, HttpHeaders.Host(_host.address, _port))
-  }*/
+    HttpOrigin(_scheme, headers.Host(_host.address, _port))
+  }
 
   def URI =
     scheme && ch(':') && `hier-part` && {

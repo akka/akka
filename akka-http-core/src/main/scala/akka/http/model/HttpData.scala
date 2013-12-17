@@ -1,6 +1,7 @@
 package akka.http.model
 
 import akka.util.ByteString
+import java.io.File
 
 /**
  * A data structure that either wraps ByteStrings, references data in files, or a compound of both
@@ -17,6 +18,7 @@ object HttpData {
   def apply(bytes: Array[Byte]): HttpData = ???
   def apply(bytes: ByteString): HttpData = ???
   def apply(body: String, charset: HttpCharset): HttpData = ???
+  def apply(file: File): HttpData = ???
 
   def Empty: HttpData = ???
 }
