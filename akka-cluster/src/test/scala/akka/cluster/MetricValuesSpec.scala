@@ -31,33 +31,33 @@ class MetricValuesSpec extends AkkaSpec(MetricsEnabledSpec.config) with MetricsC
     "extract expected metrics for load balancing" in {
       val stream1 = node2.metric(HeapMemoryCommitted).get.value.longValue
       val stream2 = node1.metric(HeapMemoryUsed).get.value.longValue
-      stream1 must be >= (stream2)
+      stream1 should be >= (stream2)
     }
 
     "extract expected MetricValue types for load balancing" in {
       nodes foreach { node ⇒
         node match {
           case HeapMemory(address, _, used, committed, _) ⇒
-            used must be > (0L)
-            committed must be >= (used)
+            used should be > (0L)
+            committed should be >= (used)
             // Documentation java.lang.management.MemoryUsage says that committed <= max,
             // but in practice that is not always true (we have seen it happen). Therefore
             // we don't check the heap max value in this test.
             // extract is the java api
-            StandardMetrics.extractHeapMemory(node) must not be (null)
+            StandardMetrics.extractHeapMemory(node) should not be (null)
         }
 
         node match {
           case Cpu(address, _, systemLoadAverageOption, cpuCombinedOption, processors) ⇒
-            processors must be > (0)
+            processors should be > (0)
             if (systemLoadAverageOption.isDefined)
-              systemLoadAverageOption.get must be >= (0.0)
+              systemLoadAverageOption.get should be >= (0.0)
             if (cpuCombinedOption.isDefined) {
-              cpuCombinedOption.get must be <= (1.0)
-              cpuCombinedOption.get must be >= (0.0)
+              cpuCombinedOption.get should be <= (1.0)
+              cpuCombinedOption.get should be >= (0.0)
             }
             // extract is the java api
-            StandardMetrics.extractCpu(node) must not be (null)
+            StandardMetrics.extractCpu(node) should not be (null)
         }
       }
     }

@@ -65,7 +65,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
           case "get" ⇒ sender ! context.props
         }
       }).withRouter(RoundRobinRouter(12)), "someOther")
-      routerConfig(actor) must be === RoundRobinRouter(12)
+      routerConfig(actor) should equal(RoundRobinRouter(12))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
@@ -75,7 +75,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
           case "get" ⇒ sender ! context.props
         }
       }).withRouter(RoundRobinRouter(12)), "config")
-      routerConfig(actor) must be === RandomPool(4)
+      routerConfig(actor) should equal(RandomPool(4))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
@@ -85,7 +85,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
           case "get" ⇒ sender ! context.props
         }
       }).withRouter(FromConfig).withDeploy(Deploy(routerConfig = RoundRobinRouter(12))), "someOther")
-      routerConfig(actor) must be === RoundRobinRouter(12)
+      routerConfig(actor) should equal(RoundRobinRouter(12))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
@@ -95,7 +95,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
           case "get" ⇒ sender ! context.props
         }
       }).withRouter(FromConfig).withDeploy(Deploy(routerConfig = RoundRobinRouter(12))), "config")
-      routerConfig(actor) must be === RandomPool(4)
+      routerConfig(actor) should equal(RandomPool(4))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
@@ -112,7 +112,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
       }).withRouter(FromConfig), "weird")
       val recv = Set() ++ (for (_ ← 1 to 3) yield expectMsgType[ActorRef])
       val expc = Set('a', 'b', 'c') map (i ⇒ system.actorFor("/user/weird/$" + i))
-      recv must be(expc)
+      recv should be(expc)
       expectNoMsg(1 second)
     }
 
@@ -171,12 +171,12 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
         }
       }
 
-      counter.get must be(connectionCount)
+      counter.get should be(connectionCount)
 
       actor ! Broadcast("end")
       Await.ready(doneLatch, 5 seconds)
 
-      replies.values foreach { _ must be(iterationCount) }
+      replies.values foreach { _ should be(iterationCount) }
     }
 
     "deliver a broadcast message using the !" in {
@@ -256,13 +256,13 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
         }
       }
 
-      counter.get must be(connectionCount)
+      counter.get should be(connectionCount)
 
       actor ! Broadcast("end")
       Await.ready(doneLatch, 5 seconds)
 
-      replies.values foreach { _ must be > (0) }
-      replies.values.sum must be === iterationCount * connectionCount
+      replies.values foreach { _ should be > (0) }
+      replies.values.sum should equal(iterationCount * connectionCount)
     }
 
     "deliver a broadcast message using the !" in {

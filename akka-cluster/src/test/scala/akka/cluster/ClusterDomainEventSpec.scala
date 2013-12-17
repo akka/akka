@@ -5,12 +5,12 @@
 package akka.cluster
 
 import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import akka.actor.Address
 import scala.collection.immutable.SortedSet
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ClusterDomainEventSpec extends WordSpec with MustMatchers {
+class ClusterDomainEventSpec extends WordSpec with Matchers {
 
   import MemberStatus._
   import ClusterEvent._
@@ -43,25 +43,25 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
     "be empty for the same gossip" in {
       val g1 = Gossip(members = SortedSet(aUp))
 
-      diffUnreachable(g1, g1) must be(Seq.empty)
+      diffUnreachable(g1, g1) should be(Seq.empty)
     }
 
     "be produced for new members" in {
       val (g1, _) = converge(Gossip(members = SortedSet(aUp)))
       val (g2, s2) = converge(Gossip(members = SortedSet(aUp, bUp, eJoining)))
 
-      diffMemberEvents(g1, g2) must be(Seq(MemberUp(bUp)))
-      diffUnreachable(g1, g2) must be(Seq.empty)
-      diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
+      diffMemberEvents(g1, g2) should be(Seq(MemberUp(bUp)))
+      diffUnreachable(g1, g2) should be(Seq.empty)
+      diffSeen(g1, g2) should be(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
     }
 
     "be produced for changed status of members" in {
       val (g1, _) = converge(Gossip(members = SortedSet(aJoining, bUp, cUp)))
       val (g2, s2) = converge(Gossip(members = SortedSet(aUp, bUp, cLeaving, eJoining)))
 
-      diffMemberEvents(g1, g2) must be(Seq(MemberUp(aUp)))
-      diffUnreachable(g1, g2) must be(Seq.empty)
-      diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
+      diffMemberEvents(g1, g2) should be(Seq(MemberUp(aUp)))
+      diffUnreachable(g1, g2) should be(Seq.empty)
+      diffSeen(g1, g2) should be(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
     }
 
     "be produced for members in unreachable" in {
@@ -73,8 +73,8 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
         unreachable(aUp.uniqueAddress, bDown.uniqueAddress)
       val g2 = Gossip(members = SortedSet(aUp, cUp, bDown, eDown), overview = GossipOverview(reachability = reachability2))
 
-      diffUnreachable(g1, g2) must be(Seq(UnreachableMember(bDown)))
-      diffSeen(g1, g2) must be(Seq.empty)
+      diffUnreachable(g1, g2) should be(Seq(UnreachableMember(bDown)))
+      diffSeen(g1, g2) should be(Seq.empty)
     }
 
     "be produced for members becoming reachable after unreachable" in {
@@ -88,53 +88,53 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
         reachable(aUp.uniqueAddress, bUp.uniqueAddress)
       val g2 = Gossip(members = SortedSet(aUp, cUp, bUp, eUp), overview = GossipOverview(reachability = reachability2))
 
-      diffUnreachable(g1, g2) must be(Seq(UnreachableMember(cUp)))
-      diffReachable(g1, g2) must be(Seq(ReachableMember(bUp)))
+      diffUnreachable(g1, g2) should be(Seq(UnreachableMember(cUp)))
+      diffReachable(g1, g2) should be(Seq(ReachableMember(bUp)))
     }
 
     "be produced for removed members" in {
       val (g1, _) = converge(Gossip(members = SortedSet(aUp, dExiting)))
       val (g2, s2) = converge(Gossip(members = SortedSet(aUp)))
 
-      diffMemberEvents(g1, g2) must be(Seq(MemberRemoved(dRemoved, Exiting)))
-      diffUnreachable(g1, g2) must be(Seq.empty)
-      diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
+      diffMemberEvents(g1, g2) should be(Seq(MemberRemoved(dRemoved, Exiting)))
+      diffUnreachable(g1, g2) should be(Seq.empty)
+      diffSeen(g1, g2) should be(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
     }
 
     "be produced for convergence changes" in {
       val g1 = Gossip(members = SortedSet(aUp, bUp, eJoining)).seen(aUp.uniqueAddress).seen(bUp.uniqueAddress).seen(eJoining.uniqueAddress)
       val g2 = Gossip(members = SortedSet(aUp, bUp, eJoining)).seen(aUp.uniqueAddress).seen(bUp.uniqueAddress)
 
-      diffMemberEvents(g1, g2) must be(Seq.empty)
-      diffUnreachable(g1, g2) must be(Seq.empty)
-      diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = true, seenBy = Set(aUp.address, bUp.address))))
-      diffMemberEvents(g2, g1) must be(Seq.empty)
-      diffUnreachable(g2, g1) must be(Seq.empty)
-      diffSeen(g2, g1) must be(Seq(SeenChanged(convergence = true, seenBy = Set(aUp.address, bUp.address, eJoining.address))))
+      diffMemberEvents(g1, g2) should be(Seq.empty)
+      diffUnreachable(g1, g2) should be(Seq.empty)
+      diffSeen(g1, g2) should be(Seq(SeenChanged(convergence = true, seenBy = Set(aUp.address, bUp.address))))
+      diffMemberEvents(g2, g1) should be(Seq.empty)
+      diffUnreachable(g2, g1) should be(Seq.empty)
+      diffSeen(g2, g1) should be(Seq(SeenChanged(convergence = true, seenBy = Set(aUp.address, bUp.address, eJoining.address))))
     }
 
     "be produced for leader changes" in {
       val (g1, _) = converge(Gossip(members = SortedSet(aUp, bUp, eJoining)))
       val (g2, s2) = converge(Gossip(members = SortedSet(bUp, eJoining)))
 
-      diffMemberEvents(g1, g2) must be(Seq(MemberRemoved(aRemoved, Up)))
-      diffUnreachable(g1, g2) must be(Seq.empty)
-      diffSeen(g1, g2) must be(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
-      diffLeader(g1, g2) must be(Seq(LeaderChanged(Some(bUp.address))))
+      diffMemberEvents(g1, g2) should be(Seq(MemberRemoved(aRemoved, Up)))
+      diffUnreachable(g1, g2) should be(Seq.empty)
+      diffSeen(g1, g2) should be(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
+      diffLeader(g1, g2) should be(Seq(LeaderChanged(Some(bUp.address))))
     }
 
     "be produced for role leader changes" in {
       val g0 = Gossip.empty
       val g1 = Gossip(members = SortedSet(aUp, bUp, cUp, dLeaving, eJoining))
       val g2 = Gossip(members = SortedSet(bUp, cUp, dExiting, eJoining))
-      diffRolesLeader(g0, g1) must be(
+      diffRolesLeader(g0, g1) should be(
         Set(RoleLeaderChanged("AA", Some(aUp.address)),
           RoleLeaderChanged("AB", Some(aUp.address)),
           RoleLeaderChanged("BB", Some(bUp.address)),
           RoleLeaderChanged("DD", Some(dLeaving.address)),
           RoleLeaderChanged("DE", Some(dLeaving.address)),
           RoleLeaderChanged("EE", Some(eUp.address))))
-      diffRolesLeader(g1, g2) must be(
+      diffRolesLeader(g1, g2) should be(
         Set(RoleLeaderChanged("AA", None),
           RoleLeaderChanged("AB", Some(bUp.address)),
           RoleLeaderChanged("DE", Some(eJoining.address))))

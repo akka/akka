@@ -15,7 +15,7 @@ import akka.event.Logging
 import scala.concurrent.Future
 import akka.actor.{ ActorRef, ActorSystem }
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import akka.testkit._
 import akka.util._
 import scala.concurrent.duration._
@@ -326,7 +326,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     implicit val timeout = Timeout(5 seconds)
     val future = myActor ? "hello"
     //#using-implicit-timeout
-    Await.result(future, timeout.duration) must be("hello")
+    Await.result(future, timeout.duration) should be("hello")
 
   }
 
@@ -337,7 +337,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     import akka.pattern.ask
     val future = myActor.ask("hello")(5 seconds)
     //#using-explicit-timeout
-    Await.result(future, 5 seconds) must be("hello")
+    Await.result(future, 5 seconds) should be("hello")
   }
 
   "using receiveTimeout" in {
@@ -474,7 +474,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       val b = system.actorOf(Props(classOf[Follower], this))
       watch(b)
       system.stop(a)
-      expectMsgType[akka.actor.Terminated].actor must be === b
+      expectMsgType[akka.actor.Terminated].actor should equal(b)
     }
   }
 
@@ -536,12 +536,12 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     implicit val me = testActor
     actor ! 42
     expectMsg(42)
-    lastSender must be === actor
+    lastSender should equal(actor)
     actor ! me
     expectMsg("reply")
-    lastSender.path.elements.mkString("/", "/", "") must be === "/user"
+    lastSender.path.elements.mkString("/", "/", "") should equal("/user")
     expectMsg("reply")
-    lastSender.path.elements.mkString("/", "/", "") must be === "/user"
+    lastSender.path.elements.mkString("/", "/", "") should equal("/user")
   }
 
   "using ActorDSL outside of akka.actor package" in {

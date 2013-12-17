@@ -5,7 +5,7 @@ package akka.contrib.pattern
 
 import akka.testkit.{ ImplicitSender, TestKit }
 import org.scalatest.FunSuiteLike
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 import scala.annotation.tailrec
 
 //#demo-code
@@ -187,7 +187,7 @@ class ChainingSample extends Actor with Aggregator {
 }
 //#chain-sample
 
-class AggregatorSpec extends TestKit(ActorSystem("test")) with ImplicitSender with FunSuiteLike with ShouldMatchers {
+class AggregatorSpec extends TestKit(ActorSystem("test")) with ImplicitSender with FunSuiteLike with Matchers {
 
   test("Test request 1 account type") {
     system.actorOf(Props[AccountBalanceRetriever]) ! GetCustomerAccountBalances(1, Set(Savings))

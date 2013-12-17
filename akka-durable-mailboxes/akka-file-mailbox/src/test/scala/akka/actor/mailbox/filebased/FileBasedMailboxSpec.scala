@@ -26,9 +26,9 @@ class FileBasedMailboxSpec extends DurableMailboxSpec("File", FileBasedMailboxSp
 
   "FileBasedMailboxSettings" must {
     "read the file-based section" in {
-      settings.QueuePath must be("file-based")
-      settings.CircuitBreakerMaxFailures must be(5)
-      settings.CircuitBreakerCallTimeout must be(5 seconds)
+      settings.QueuePath should be("file-based")
+      settings.CircuitBreakerMaxFailures should be(5)
+      settings.CircuitBreakerCallTimeout should be(5 seconds)
     }
   }
 

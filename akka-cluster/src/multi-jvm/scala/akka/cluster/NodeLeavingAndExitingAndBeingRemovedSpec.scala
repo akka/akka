@@ -47,10 +47,10 @@ abstract class NodeLeavingAndExitingAndBeingRemovedSpec
           markNodeAsUnavailable(second)
           // verify that the 'second' node is no longer part of the 'members'/'unreachable' set
           awaitAssert {
-            clusterView.members.map(_.address) must not contain (address(second))
+            clusterView.members.map(_.address) should not contain (address(second))
           }
           awaitAssert {
-            clusterView.unreachableMembers.map(_.address) must not contain (address(second))
+            clusterView.unreachableMembers.map(_.address) should not contain (address(second))
           }
         }
 

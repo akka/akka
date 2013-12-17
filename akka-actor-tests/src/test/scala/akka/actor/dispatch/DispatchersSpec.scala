@@ -96,12 +96,12 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
 
     "use defined properties" in {
       val dispatcher = lookup("myapp.mydispatcher")
-      dispatcher.throughput must be(17)
+      dispatcher.throughput should be(17)
     }
 
     "use specific id" in {
       val dispatcher = lookup("myapp.mydispatcher")
-      dispatcher.id must be("myapp.mydispatcher")
+      dispatcher.id should be("myapp.mydispatcher")
     }
 
     "complain about missing config" in {
@@ -112,8 +112,8 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
 
     "have only one default dispatcher" in {
       val dispatcher = lookup(Dispatchers.DefaultDispatcherId)
-      dispatcher must be === defaultGlobalDispatcher
-      dispatcher must be === system.dispatcher
+      dispatcher should equal(defaultGlobalDispatcher)
+      dispatcher should equal(system.dispatcher)
     }
 
     "throw ConfigurationException if type does not exist" in {
@@ -131,7 +131,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
     "provide lookup of dispatchers by id" in {
       val d1 = lookup("myapp.mydispatcher")
       val d2 = lookup("myapp.mydispatcher")
-      d1 must be === d2
+      d1 should equal(d2)
     }
 
     "include system name and dispatcher id in thread names for fork-join-executor" in {

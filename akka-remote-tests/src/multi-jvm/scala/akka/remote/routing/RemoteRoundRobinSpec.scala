@@ -88,7 +88,7 @@ class RemoteRoundRobinSpec extends MultiNodeSpec(RemoteRoundRobinMultiJvmSpec)
       runOn(fourth) {
         enterBarrier("start")
         val actor = system.actorOf(RoundRobinPool(nrOfInstances = 0).props(Props[SomeActor]), "service-hello")
-        actor.isInstanceOf[RoutedActorRef] must be(true)
+        actor.isInstanceOf[RoutedActorRef] should be(true)
 
         val connectionCount = 3
         val iterationCount = 10
@@ -107,8 +107,8 @@ class RemoteRoundRobinSpec extends MultiNodeSpec(RemoteRoundRobinMultiJvmSpec)
         actor ! Broadcast(PoisonPill)
 
         enterBarrier("end")
-        replies.values foreach { _ must be(iterationCount) }
-        replies.get(node(fourth).address) must be(None)
+        replies.values foreach { _ should be(iterationCount) }
+        replies.get(node(fourth).address) should be(None)
 
         // shut down the actor before we let the other node(s) shut down so we don't try to send
         // "Terminate" to a shut down node
@@ -131,17 +131,17 @@ class RemoteRoundRobinSpec extends MultiNodeSpec(RemoteRoundRobinMultiJvmSpec)
         val actor = system.actorOf(RoundRobinPool(
           nrOfInstances = 1,
           resizer = Some(new TestResizer)).props(Props[SomeActor]), "service-hello2")
-        actor.isInstanceOf[RoutedActorRef] must be(true)
+        actor.isInstanceOf[RoutedActorRef] should be(true)
 
         actor ! GetRoutees
         // initial nrOfInstances 1 + inital resize => 2
-        expectMsgType[Routees].routees.size must be(2)
+        expectMsgType[Routees].routees.size should be(2)
 
         val repliesFrom: Set[ActorRef] =
           (for (n ← 3 to 9) yield {
             // each message trigger a resize, incrementing number of routees with 1
             actor ! "hit"
-            Await.result(actor ? GetRoutees, remaining).asInstanceOf[Routees].routees.size must be(n)
+            Await.result(actor ? GetRoutees, remaining).asInstanceOf[Routees].routees.size should be(n)
             expectMsgType[ActorRef]
           }).toSet
 
@@ -149,9 +149,9 @@ class RemoteRoundRobinSpec extends MultiNodeSpec(RemoteRoundRobinMultiJvmSpec)
         actor ! Broadcast(PoisonPill)
 
         enterBarrier("end")
-        repliesFrom.size must be(7)
+        repliesFrom.size should be(7)
         val repliesFromAddresses = repliesFrom.map(_.path.address)
-        repliesFromAddresses must be === (Set(node(first), node(second), node(third)).map(_.address))
+        repliesFromAddresses should equal(Set(node(first), node(second), node(third)).map(_.address))
 
         // shut down the actor before we let the other node(s) shut down so we don't try to send
         // "Terminate" to a shut down node
@@ -173,7 +173,7 @@ class RemoteRoundRobinSpec extends MultiNodeSpec(RemoteRoundRobinMultiJvmSpec)
       runOn(fourth) {
         enterBarrier("start")
         val actor = system.actorOf(FromConfig.props(), "service-hello3")
-        actor.isInstanceOf[RoutedActorRef] must be(true)
+        actor.isInstanceOf[RoutedActorRef] should be(true)
 
         val connectionCount = 3
         val iterationCount = 10
@@ -189,8 +189,8 @@ class RemoteRoundRobinSpec extends MultiNodeSpec(RemoteRoundRobinMultiJvmSpec)
         }
 
         enterBarrier("end")
-        replies.values foreach { _ must be(iterationCount) }
-        replies.get(node(fourth).address) must be(None)
+        replies.values foreach { _ should be(iterationCount) }
+        replies.get(node(fourth).address) should be(None)
       }
 
       enterBarrier("done")

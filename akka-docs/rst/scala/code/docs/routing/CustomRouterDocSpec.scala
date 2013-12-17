@@ -102,15 +102,15 @@ class CustomRouterDocSpec extends AkkaSpec(CustomRouterDocSpec.config) with Impl
     val routees = for (n <- 1 to 7) yield TestRoutee(n)
 
     val r1 = logic.select("msg", routees)
-    r1.asInstanceOf[SeveralRoutees].routees must be(
+    r1.asInstanceOf[SeveralRoutees].routees should be(
       Vector(TestRoutee(1), TestRoutee(2), TestRoutee(3)))
 
     val r2 = logic.select("msg", routees)
-    r2.asInstanceOf[SeveralRoutees].routees must be(
+    r2.asInstanceOf[SeveralRoutees].routees should be(
       Vector(TestRoutee(4), TestRoutee(5), TestRoutee(6)))
 
     val r3 = logic.select("msg", routees)
-    r3.asInstanceOf[SeveralRoutees].routees must be(
+    r3.asInstanceOf[SeveralRoutees].routees should be(
       Vector(TestRoutee(7), TestRoutee(1), TestRoutee(2)))
     //#unit-test-logic
 

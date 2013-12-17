@@ -68,7 +68,7 @@ class TellLatencyPerformanceSpec extends PerformanceSpec {
         val durationNs = (System.nanoTime - start)
 
         if (!warmup) {
-          ok must be(true)
+          ok should be(true)
           logMeasurement(numberOfClients, durationNs, stat)
         }
         clients.foreach(system.stop(_))

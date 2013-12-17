@@ -5,7 +5,7 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.WordSpecLike
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.actor.RootActorPath
@@ -59,7 +59,7 @@ class StatsSampleSingleMasterSpecMultiJvmNode2 extends StatsSampleSingleMasterSp
 class StatsSampleSingleMasterSpecMultiJvmNode3 extends StatsSampleSingleMasterSpec
 
 abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSingleMasterSpecConfig)
-  with WordSpecLike with MustMatchers with BeforeAndAfterAll with ImplicitSender {
+  with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
   import StatsSampleSingleMasterSpecConfig._
 
@@ -80,7 +80,7 @@ abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSing
 
       Cluster(system) join firstAddress
 
-      receiveN(3).collect { case MemberUp(m) => m.address }.toSet must be(
+      receiveN(3).collect { case MemberUp(m) => m.address }.toSet should be(
         Set(firstAddress, secondAddress, thirdAddress))
 
       Cluster(system).unsubscribe(testActor)
@@ -103,7 +103,7 @@ abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSing
       // service and worker nodes might not be up yet
       awaitAssert {
         facade ! new StatsJob("this is the text that will be analyzed")
-        expectMsgType[StatsResult](1.second).getMeanWordLength must be(3.875 plusOrMinus 0.001)
+        expectMsgType[StatsResult](1.second).getMeanWordLength should be(3.875 +- 0.001)
       }
 
       testConductor.enter("done")

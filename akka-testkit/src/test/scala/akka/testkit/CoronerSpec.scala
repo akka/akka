@@ -8,12 +8,12 @@ import java.lang.management.ManagementFactory
 import java.util.concurrent.Semaphore
 import java.util.concurrent.locks.ReentrantLock
 import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class CoronerSpec extends WordSpec with MustMatchers {
+class CoronerSpec extends WordSpec with Matchers {
 
   private def captureOutput[A](f: PrintStream ⇒ A): (A, String) = {
     val bytes = new ByteArrayOutputStream()
@@ -30,8 +30,8 @@ class CoronerSpec extends WordSpec with MustMatchers {
         Await.ready(coroner, 5.seconds)
         coroner.cancel()
       })
-      report must include("Coroner's Report")
-      report must include("XXXX")
+      report should include("Coroner's Report")
+      report should include("XXXX")
     }
 
     "not generate a report if cancelled early" in {
@@ -40,7 +40,7 @@ class CoronerSpec extends WordSpec with MustMatchers {
         coroner.cancel()
         Await.ready(coroner, 1.seconds)
       })
-      report must be("")
+      report should be("")
     }
 
     "display thread counts if enabled" in {
@@ -49,10 +49,10 @@ class CoronerSpec extends WordSpec with MustMatchers {
         coroner.cancel()
         Await.ready(coroner, 1.second)
       })
-      report must include("Coroner Thread Count starts at ")
-      report must include("Coroner Thread Count started at ")
-      report must include("XXXX")
-      report must not include ("Coroner's Report")
+      report should include("Coroner Thread Count starts at ")
+      report should include("Coroner Thread Count started at ")
+      report should include("XXXX")
+      report should not include ("Coroner's Report")
     }
 
     "display deadlock information in its report" in {
@@ -111,7 +111,7 @@ class CoronerSpec extends WordSpec with MustMatchers {
       a.thread.interrupt()
       b.thread.interrupt()
 
-      report must include("Coroner's Report")
+      report should include("Coroner's Report")
 
       // Split test based on JVM capabilities. Not all JVMs can detect
       // deadlock between ReentrantLocks. However, we need to use
@@ -121,17 +121,17 @@ class CoronerSpec extends WordSpec with MustMatchers {
       val threadMx = ManagementFactory.getThreadMXBean()
       if (threadMx.isSynchronizerUsageSupported()) {
         val sectionHeading = "Deadlocks found for monitors and ownable synchronizers"
-        report must include(sectionHeading)
+        report should include(sectionHeading)
         val deadlockSection = report.split(sectionHeading)(1)
-        deadlockSection must include("deadlock-thread-a")
-        deadlockSection must include("deadlock-thread-b")
+        deadlockSection should include("deadlock-thread-a")
+        deadlockSection should include("deadlock-thread-b")
       } else {
         val sectionHeading = "Deadlocks found for monitors, but NOT ownable synchronizers"
-        report must include(sectionHeading)
+        report should include(sectionHeading)
         val deadlockSection = report.split(sectionHeading)(1)
-        deadlockSection must include("None")
-        deadlockSection must not include ("deadlock-thread-a")
-        deadlockSection must not include ("deadlock-thread-b")
+        deadlockSection should include("None")
+        deadlockSection should not include ("deadlock-thread-a")
+        deadlockSection should not include ("deadlock-thread-b")
       }
     }
 

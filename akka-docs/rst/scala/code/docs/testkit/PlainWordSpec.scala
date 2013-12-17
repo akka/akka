@@ -9,7 +9,7 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.testkit.TestKit
 import org.scalatest.WordSpecLike
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import org.scalatest.BeforeAndAfterAll
 import akka.testkit.ImplicitSender
 
@@ -23,7 +23,7 @@ object MySpec {
 
 //#implicit-sender
 class MySpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
-  with WordSpecLike with MustMatchers with BeforeAndAfterAll {
+  with WordSpecLike with Matchers with BeforeAndAfterAll {
   //#implicit-sender
 
   def this() = this(ActorSystem("MySpec"))

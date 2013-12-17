@@ -5,7 +5,7 @@ package akka.zeromq
 
 import language.postfixOps
 
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import akka.testkit.{ TestProbe, DefaultTimeout, AkkaSpec }
 import scala.concurrent.duration._
 import akka.actor.{ Cancellable, Actor, Props, ActorRef }
@@ -66,18 +66,18 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
         subscriberProbe.expectMsg(Connecting)
         val msgNumbers = subscriberProbe.receiveWhile(3 seconds) {
           case msg: ZMQMessage if msg.frames.size == 2 ⇒
-            msg.frames(1).length must be(0)
+            msg.frames(1).length should be(0)
             msg
         }.map(m ⇒ m.frames(0).utf8String.toInt)
-        msgNumbers.length must be > 0
-        msgNumbers must equal(for (i ← msgNumbers.head to msgNumbers.last) yield i)
+        msgNumbers.length should be > 0
+        msgNumbers should equal(for (i ← msgNumbers.head to msgNumbers.last) yield i)
       } finally {
         msgGenerator.cancel()
         watch(subscriber)
         system stop subscriber
         subscriberProbe.receiveWhile(3 seconds) {
           case msg ⇒ msg
-        }.last must equal(Closed)
+        }.last should equal(Closed)
         expectTerminated(subscriber, 5.seconds)
         watch(publisher)
         system stop publisher

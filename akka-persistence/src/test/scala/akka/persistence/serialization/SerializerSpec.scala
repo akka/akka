@@ -65,7 +65,7 @@ class SnapshotSerializerPersistenceSpec extends AkkaSpec(config(customSerializer
       val bytes = serializer.toBinary(wrapped)
       val deserialized = serializer.fromBinary(bytes, None)
 
-      deserialized must be(Snapshot(MySnapshot(".a.")))
+      deserialized should be(Snapshot(MySnapshot(".a.")))
     }
   }
 }
@@ -82,7 +82,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(config(customSerializers
         val bytes = serializer.toBinary(persistent)
         val deserialized = serializer.fromBinary(bytes, None)
 
-        deserialized must be(persistent.withPayload(MyPayload(".a.")))
+        deserialized should be(persistent.withPayload(MyPayload(".a.")))
       }
       "handle custom Persistent message serialization" in {
         val persistent = PersistentRepr(MyPayload("a"), 13, "p1", true, true, 0, List("c1", "c2"), confirmable = false, Confirm("p2", 14, "c2"), testActor, testActor)
@@ -91,7 +91,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(config(customSerializers
         val bytes = serializer.toBinary(persistent)
         val deserialized = serializer.fromBinary(bytes, None)
 
-        deserialized must be(persistent.withPayload(MyPayload(".a.")))
+        deserialized should be(persistent.withPayload(MyPayload(".a.")))
       }
     }
     "given a PersistentRepr manifest" must {
@@ -102,7 +102,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(config(customSerializers
         val bytes = serializer.toBinary(persistent)
         val deserialized = serializer.fromBinary(bytes, Some(classOf[PersistentRepr]))
 
-        deserialized must be(persistent.withPayload(MyPayload(".b.")))
+        deserialized should be(persistent.withPayload(MyPayload(".b.")))
       }
       "handle custom Persistent message serialization" in {
         val persistent = PersistentRepr(MyPayload("b"), 13, "p1", true, true, 3, List("c1", "c2"), confirmable = true, Confirm("p2", 14, "c2"), testActor, testActor)
@@ -111,7 +111,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(config(customSerializers
         val bytes = serializer.toBinary(persistent)
         val deserialized = serializer.fromBinary(bytes, Some(classOf[PersistentRepr]))
 
-        deserialized must be(persistent.withPayload(MyPayload(".b.")))
+        deserialized should be(persistent.withPayload(MyPayload(".b.")))
       }
     }
     "given a Confirm manifest" must {
@@ -122,7 +122,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(config(customSerializers
         val bytes = serializer.toBinary(confirmation)
         val deserialized = serializer.fromBinary(bytes, Some(classOf[Confirm]))
 
-        deserialized must be(confirmation)
+        deserialized should be(confirmation)
       }
     }
   }

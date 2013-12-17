@@ -254,7 +254,7 @@ class ActorMailboxSpec(conf: Config) extends AkkaSpec(conf) with DefaultTimeout 
 
     "get a bounded message queue with 0 push timeout when defined in dispatcher" in {
       val q = checkMailboxQueue(Props[QueueReportingActor], "default-bounded-mailbox-with-zero-pushtimeout", BoundedMailboxTypes)
-      q.asInstanceOf[BoundedMessageQueueSemantics].pushTimeOut must be === Duration.Zero
+      q.asInstanceOf[BoundedMessageQueueSemantics].pushTimeOut should equal(Duration.Zero)
     }
 
     "get an unbounded message queue when it's configured as mailbox overriding bounded in dispatcher" in {

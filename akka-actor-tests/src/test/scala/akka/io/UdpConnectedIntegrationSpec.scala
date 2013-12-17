@@ -41,13 +41,13 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
 
       val clientAddress = expectMsgPF() {
         case Udp.Received(d, a) ⇒
-          d must be === data1
+          d should equal(data1)
           a
       }
 
       server ! Udp.Send(data2, clientAddress)
 
-      expectMsgType[UdpConnected.Received].data must be === data2
+      expectMsgType[UdpConnected.Received].data should equal(data2)
     }
 
     "be able to send and receive with binding" in {
@@ -60,13 +60,13 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
 
       expectMsgPF() {
         case Udp.Received(d, a) ⇒
-          d must be === data1
-          a must be === clientAddress
+          d should equal(data1)
+          a should equal(clientAddress)
       }
 
       server ! Udp.Send(data2, clientAddress)
 
-      expectMsgType[UdpConnected.Received].data must be === data2
+      expectMsgType[UdpConnected.Received].data should equal(data2)
     }
 
   }

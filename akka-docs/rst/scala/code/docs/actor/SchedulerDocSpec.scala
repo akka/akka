@@ -13,7 +13,7 @@ import scala.concurrent.duration._
 //#imports1
 
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import akka.testkit._
 
 class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {

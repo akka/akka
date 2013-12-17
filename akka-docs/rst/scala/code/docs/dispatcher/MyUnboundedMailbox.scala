@@ -25,7 +25,7 @@ object MyUnboundedMailbox {
 
     private final val queue = new ConcurrentLinkedQueue[Envelope]()
 
-    // these must be implemented; queue used as example
+    // these should be implemented; queue used as example
     def enqueue(receiver: ActorRef, handle: Envelope): Unit =
       queue.offer(handle)
     def dequeue(): Envelope = queue.poll()

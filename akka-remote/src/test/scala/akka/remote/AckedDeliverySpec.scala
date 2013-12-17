@@ -29,16 +29,16 @@ class AckedDeliverySpec extends AkkaSpec {
       val s2 = SeqNo(2)
       val s0b = SeqNo(0)
 
-      sm1 < s0 must be(true)
-      sm1 > s0 must be(false)
+      sm1 < s0 should be(true)
+      sm1 > s0 should be(false)
 
-      s0 < s1 must be(true)
-      s0 > s1 must be(false)
+      s0 < s1 should be(true)
+      s0 > s1 should be(false)
 
-      s1 < s2 must be(true)
-      s1 > s2 must be(false)
+      s1 < s2 should be(true)
+      s1 > s2 should be(false)
 
-      s0b == s0 must be(true)
+      s0b == s0 should be(true)
     }
 
     "correctly handle wrapping over" in {
@@ -47,14 +47,14 @@ class AckedDeliverySpec extends AkkaSpec {
       val s3 = SeqNo(Long.MinValue)
       val s4 = SeqNo(Long.MinValue + 1)
 
-      s1 < s2 must be(true)
-      s1 > s2 must be(false)
+      s1 < s2 should be(true)
+      s1 > s2 should be(false)
 
-      s2 < s3 must be(true)
-      s2 > s3 must be(false)
+      s2 < s3 should be(true)
+      s2 > s3 should be(false)
 
-      s3 < s4 must be(true)
-      s3 > s4 must be(false)
+      s3 < s4 should be(true)
+      s3 > s4 should be(false)
     }
 
     "correctly handle large gaps" in {
@@ -62,11 +62,11 @@ class AckedDeliverySpec extends AkkaSpec {
       val smin2 = SeqNo(Long.MinValue + 1)
       val s0 = SeqNo(0)
 
-      s0 < smin must be(true)
-      s0 > smin must be(false)
+      s0 < smin should be(true)
+      s0 > smin should be(false)
 
-      smin2 < s0 must be(true)
-      smin2 > s0 must be(false)
+      smin2 < s0 should be(true)
+      smin2 > s0 should be(false)
     }
 
   }
@@ -80,13 +80,13 @@ class AckedDeliverySpec extends AkkaSpec {
       val msg2 = msg(2)
 
       val b1 = b0.buffer(msg0)
-      b1.nonAcked must be === Vector(msg0)
+      b1.nonAcked should equal(Vector(msg0))
 
       val b2 = b1.buffer(msg1)
-      b2.nonAcked must be === Vector(msg0, msg1)
+      b2.nonAcked should equal(Vector(msg0, msg1))
 
       val b3 = b2.buffer(msg2)
-      b3.nonAcked must be === Vector(msg0, msg1, msg2)
+      b3.nonAcked should equal(Vector(msg0, msg1, msg2))
 
     }
 
@@ -107,31 +107,31 @@ class AckedDeliverySpec extends AkkaSpec {
       val msg4 = msg(4)
 
       val b1 = b0.buffer(msg0)
-      b1.nonAcked must be === Vector(msg0)
+      b1.nonAcked should equal(Vector(msg0))
 
       val b2 = b1.buffer(msg1)
-      b2.nonAcked must be === Vector(msg0, msg1)
+      b2.nonAcked should equal(Vector(msg0, msg1))
 
       val b3 = b2.buffer(msg2)
-      b3.nonAcked must be === Vector(msg0, msg1, msg2)
+      b3.nonAcked should equal(Vector(msg0, msg1, msg2))
 
       val b4 = b3.acknowledge(Ack(SeqNo(1)))
-      b4.nonAcked must be === Vector(msg2)
+      b4.nonAcked should equal(Vector(msg2))
 
       val b5 = b4.buffer(msg3)
-      b5.nonAcked must be === Vector(msg2, msg3)
+      b5.nonAcked should equal(Vector(msg2, msg3))
 
       val b6 = b5.buffer(msg4)
-      b6.nonAcked must be === Vector(msg2, msg3, msg4)
+      b6.nonAcked should equal(Vector(msg2, msg3, msg4))
 
       val b7 = b6.acknowledge(Ack(SeqNo(1)))
-      b7.nonAcked must be === Vector(msg2, msg3, msg4)
+      b7.nonAcked should equal(Vector(msg2, msg3, msg4))
 
       val b8 = b7.acknowledge(Ack(SeqNo(2)))
-      b8.nonAcked must be === Vector(msg3, msg4)
+      b8.nonAcked should equal(Vector(msg3, msg4))
 
       val b9 = b8.acknowledge(Ack(SeqNo(5)))
-      b9.nonAcked must be === Vector.empty
+      b9.nonAcked should equal(Vector.empty)
 
     }
 
@@ -144,29 +144,29 @@ class AckedDeliverySpec extends AkkaSpec {
       val msg4 = msg(4)
 
       val b1 = b0.buffer(msg0)
-      b1.nonAcked must be === Vector(msg0)
+      b1.nonAcked should equal(Vector(msg0))
 
       val b2 = b1.buffer(msg1)
-      b2.nonAcked must be === Vector(msg0, msg1)
+      b2.nonAcked should equal(Vector(msg0, msg1))
 
       val b3 = b2.buffer(msg2)
-      b3.nonAcked must be === Vector(msg0, msg1, msg2)
+      b3.nonAcked should equal(Vector(msg0, msg1, msg2))
 
       val b4 = b3.acknowledge(Ack(SeqNo(1), nacks = Set(SeqNo(0))))
-      b4.nonAcked must be === Vector(msg2)
-      b4.nacked must be === Vector(msg0)
+      b4.nonAcked should equal(Vector(msg2))
+      b4.nacked should equal(Vector(msg0))
 
       val b5 = b4.buffer(msg3).buffer(msg4)
-      b5.nonAcked must be === Vector(msg2, msg3, msg4)
-      b5.nacked must be === Vector(msg0)
+      b5.nonAcked should equal(Vector(msg2, msg3, msg4))
+      b5.nacked should equal(Vector(msg0))
 
       val b6 = b5.acknowledge(Ack(SeqNo(4), nacks = Set(SeqNo(2), SeqNo(3))))
-      b6.nonAcked must be === Vector()
-      b6.nacked must be === Vector(msg2, msg3)
+      b6.nonAcked should equal(Vector())
+      b6.nacked should equal(Vector(msg2, msg3))
 
       val b7 = b6.acknowledge(Ack(SeqNo(5)))
-      b7.nonAcked must be === Vector.empty
-      b7.nacked must be === Vector.empty
+      b7.nonAcked should equal(Vector.empty)
+      b7.nacked should equal(Vector.empty)
     }
 
     "throw exception if non-buffered sequence number is NACKed" in {
@@ -194,28 +194,28 @@ class AckedDeliverySpec extends AkkaSpec {
       val msg5 = msg(5)
 
       val (b1, deliver1, ack1) = b0.receive(msg1).extractDeliverable
-      deliver1 must be === Vector.empty
-      ack1 must be === Ack(SeqNo(1), nacks = Set(SeqNo(0)))
+      deliver1 should equal(Vector.empty)
+      ack1 should equal(Ack(SeqNo(1), nacks = Set(SeqNo(0))))
 
       val (b2, deliver2, ack2) = b1.receive(msg0).extractDeliverable
-      deliver2 must be === Vector(msg0, msg1)
-      ack2 must be === Ack(SeqNo(1))
+      deliver2 should equal(Vector(msg0, msg1))
+      ack2 should equal(Ack(SeqNo(1)))
 
       val (b3, deliver3, ack3) = b2.receive(msg4).extractDeliverable
-      deliver3 must be === Vector.empty
-      ack3 must be === Ack(SeqNo(4), nacks = Set(SeqNo(2), SeqNo(3)))
+      deliver3 should equal(Vector.empty)
+      ack3 should equal(Ack(SeqNo(4), nacks = Set(SeqNo(2), SeqNo(3))))
 
       val (b4, deliver4, ack4) = b3.receive(msg2).extractDeliverable
-      deliver4 must be === Vector(msg2)
-      ack4 must be === Ack(SeqNo(4), nacks = Set(SeqNo(3)))
+      deliver4 should equal(Vector(msg2))
+      ack4 should equal(Ack(SeqNo(4), nacks = Set(SeqNo(3))))
 
       val (b5, deliver5, ack5) = b4.receive(msg5).extractDeliverable
-      deliver5 must be === Vector.empty
-      ack5 must be === Ack(SeqNo(5), nacks = Set(SeqNo(3)))
+      deliver5 should equal(Vector.empty)
+      ack5 should equal(Ack(SeqNo(5), nacks = Set(SeqNo(3))))
 
       val (_, deliver6, ack6) = b5.receive(msg3).extractDeliverable
-      deliver6 must be === Vector(msg3, msg4, msg5)
-      ack6 must be === Ack(SeqNo(5))
+      deliver6 should equal(Vector(msg3, msg4, msg5))
+      ack6 should equal(Ack(SeqNo(5)))
 
     }
 
@@ -237,8 +237,8 @@ class AckedDeliverySpec extends AkkaSpec {
 
       val (_, deliver, ack) = buf3.extractDeliverable
 
-      deliver must be === Vector.empty
-      ack must be === Ack(SeqNo(2))
+      deliver should equal(Vector.empty)
+      ack should equal(Ack(SeqNo(2)))
     }
 
     "be able to correctly merge with another receive buffer" in {
@@ -254,8 +254,8 @@ class AckedDeliverySpec extends AkkaSpec {
         buf2.receive(msg1b).receive(msg3))
 
       val (_, deliver, ack) = buf.receive(msg0).extractDeliverable
-      deliver must be === Vector(msg0, msg1a, msg2, msg3)
-      ack must be === Ack(SeqNo(3))
+      deliver should equal(Vector(msg0, msg1a, msg2, msg3))
+      ack should equal(Ack(SeqNo(3)))
     }
   }
 

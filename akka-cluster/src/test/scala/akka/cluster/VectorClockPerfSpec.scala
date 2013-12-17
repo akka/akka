@@ -7,7 +7,7 @@ package akka.cluster
 import akka.testkit.AkkaSpec
 import scala.collection.immutable.{ TreeMap, SortedSet }
 import org.scalatest.WordSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 
 object VectorClockPerfSpec {
   import VectorClock._
@@ -29,7 +29,7 @@ object VectorClockPerfSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class VectorClockPerfSpec extends WordSpec with ShouldMatchers {
+class VectorClockPerfSpec extends WordSpec with Matchers {
   import VectorClock._
   import VectorClockPerfSpec._
 

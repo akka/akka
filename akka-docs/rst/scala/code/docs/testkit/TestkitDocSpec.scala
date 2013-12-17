@@ -131,7 +131,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     // hypothetical message stimulating a '42' answer
     val future = actorRef ? Say42
     val Success(result: Int) = future.value.get
-    result must be(42)
+    result should be(42)
     //#test-behavior
   }
 

@@ -74,7 +74,7 @@ class PriorityDispatcherSpec extends AkkaSpec(PriorityDispatcherSpec.config) wit
 
     }))
 
-    expectMsgType[List[_]] must be === msgs
+    expectMsgType[List[_]] should equal(msgs)
   }
 
 }

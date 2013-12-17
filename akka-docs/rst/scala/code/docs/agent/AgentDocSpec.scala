@@ -28,20 +28,20 @@ class AgentDocSpec extends AkkaSpec {
       //#read-apply
       val result = agent()
       //#read-apply
-      result must be === 0
+      result should equal(0)
     }
     {
       //#read-get
       val result = agent.get
       //#read-get
-      result must be === 0
+      result should equal(0)
     }
 
     {
       //#read-future
       val future = agent.future
       //#read-future
-      Await.result(future, 5 seconds) must be === 0
+      Await.result(future, 5 seconds) should equal(0)
     }
   }
 
@@ -67,7 +67,7 @@ class AgentDocSpec extends AkkaSpec {
     agent sendOff longRunningOrBlockingFunction
     //#send-off
 
-    Await.result(agent.future, 5 seconds) must be === 16
+    Await.result(agent.future, 5 seconds) should equal(16)
   }
 
   "alter and alterOff" in {
@@ -91,7 +91,7 @@ class AgentDocSpec extends AkkaSpec {
     val f4: Future[Int] = agent alterOff longRunningOrBlockingFunction
     //#alter-off
 
-    Await.result(f4, 5 seconds) must be === 16
+    Await.result(f4, 5 seconds) should equal(16)
   }
 
   "transfer example" in {
@@ -120,9 +120,9 @@ class AgentDocSpec extends AkkaSpec {
     val toValue = to.future // -> 70
     //#transfer-example
 
-    Await.result(fromValue, 5 seconds) must be === 50
-    Await.result(toValue, 5 seconds) must be === 70
-    ok must be === true
+    Await.result(fromValue, 5 seconds) should equal(50)
+    Await.result(toValue, 5 seconds) should equal(70)
+    ok should equal(true)
   }
 
   "monadic example" in {
@@ -149,8 +149,8 @@ class AgentDocSpec extends AkkaSpec {
     } yield value1 + value2
     //#monadic-example
 
-    agent3() must be === 4
-    agent4() must be === 4
-    agent5() must be === 8
+    agent3() should equal(4)
+    agent4() should equal(4)
+    agent5() should equal(8)
   }
 }

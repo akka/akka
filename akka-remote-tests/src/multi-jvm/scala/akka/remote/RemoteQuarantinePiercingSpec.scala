@@ -82,8 +82,8 @@ abstract class RemoteQuarantinePiercingSpec extends MultiNodeSpec(RemoteQuaranti
           awaitAssert {
             system.actorSelection(RootActorPath(secondAddress) / "user" / "subject") ! "identify"
             val (uidSecond, subjectSecond) = expectMsgType[(Int, ActorRef)](1.second)
-            uidSecond must not be (uidFirst)
-            subjectSecond must not be (subjectFirst)
+            uidSecond should not be (uidFirst)
+            subjectSecond should not be (subjectFirst)
           }
         }
 

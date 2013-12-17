@@ -99,9 +99,9 @@ class TradingThroughputPerformanceSpec extends PerformanceSpec {
       val durationNs = (System.nanoTime - start)
 
       if (!warmup) {
-        ok must be(true)
+        ok should be(true)
         if (!Orderbook.useDummyOrderbook) {
-          totalTradeCounter.count must be(totalNumberOfOrders / 2)
+          totalTradeCounter.count should be(totalNumberOfOrders / 2)
         }
         logMeasurement(numberOfClients, durationNs, totalNumberOfOrders)
       }

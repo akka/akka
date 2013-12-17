@@ -6,7 +6,7 @@ package akka.actor
 import language.postfixOps
 
 import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.actor.Actor._

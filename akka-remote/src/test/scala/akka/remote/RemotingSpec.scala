@@ -244,7 +244,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       }
 
       within(5.seconds) {
-        receiveN(n * 2) foreach { reply ⇒ reply must be(("pong", testActor)) }
+        receiveN(n * 2) foreach { reply ⇒ reply should be(("pong", testActor)) }
       }
 
       // then we shutdown all but one system to simulate broken connections
@@ -259,13 +259,13 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
       // ping messages to aliveEcho should go through even though we use many different broken connections
       within(5.seconds) {
-        receiveN(n) foreach { reply ⇒ reply must be(("pong", testActor)) }
+        receiveN(n) foreach { reply ⇒ reply should be(("pong", testActor)) }
       }
     }
 
     "create and supervise children on remote node" in {
       val r = system.actorOf(Props[Echo1], "blub")
-      r.path.toString must be === "akka.test://remote-sys@localhost:12346/remote/akka.test/RemotingSpec@localhost:12345/user/blub"
+      r.path.toString should equal("akka.test://remote-sys@localhost:12346/remote/akka.test/RemotingSpec@localhost:12345/user/blub")
       r ! 42
       expectMsg(42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
@@ -291,7 +291,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       echo2 ! 73
       expectMsg(73)
       // msg to old ActorRef (different uid) should not get through
-      echo2.path.uid must not be (echo.path.uid)
+      echo2.path.uid should not be (echo.path.uid)
       echo ! 74
       expectNoMsg(1.second)
 
@@ -321,19 +321,19 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       // grandchild is configured to be deployed on RemotingSpec (system)
       child ! ((Props[Echo1], "grandchild"))
       val grandchild = expectMsgType[ActorRef]
-      grandchild.asInstanceOf[ActorRefScope].isLocal must be(true)
+      grandchild.asInstanceOf[ActorRefScope].isLocal should be(true)
       grandchild ! 43
       expectMsg(43)
       val myref = system.actorFor(system / "looker1" / "child" / "grandchild")
-      myref.isInstanceOf[RemoteActorRef] must be(true)
+      myref.isInstanceOf[RemoteActorRef] should be(true)
       myref ! 44
       expectMsg(44)
-      lastSender must be(grandchild)
-      lastSender must be theSameInstanceAs grandchild
-      child.asInstanceOf[RemoteActorRef].getParent must be(l)
-      system.actorFor("/user/looker1/child") must be theSameInstanceAs child
-      Await.result(l ? ActorForReq("child/.."), timeout.duration).asInstanceOf[AnyRef] must be theSameInstanceAs l
-      Await.result(system.actorFor(system / "looker1" / "child") ? ActorForReq(".."), timeout.duration).asInstanceOf[AnyRef] must be theSameInstanceAs l
+      lastSender should be(grandchild)
+      lastSender should be theSameInstanceAs grandchild
+      child.asInstanceOf[RemoteActorRef].getParent should be(l)
+      system.actorFor("/user/looker1/child") should be theSameInstanceAs child
+      Await.result(l ? ActorForReq("child/.."), timeout.duration).asInstanceOf[AnyRef] should be theSameInstanceAs l
+      Await.result(system.actorFor(system / "looker1" / "child") ? ActorForReq(".."), timeout.duration).asInstanceOf[AnyRef] should be theSameInstanceAs l
 
       watch(child)
       child ! PoisonPill
@@ -344,7 +344,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       child2 ! 45
       expectMsg(45)
       // msg to old ActorRef (different uid) should not get through
-      child2.path.uid must not be (child.path.uid)
+      child2.path.uid should not be (child.path.uid)
       child ! 46
       expectNoMsg(1.second)
       system.actorFor(system / "looker1" / "child") ! 47
@@ -364,25 +364,25 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       // grandchild is configured to be deployed on RemotingSpec (system)
       child ! ((Props[Echo1], "grandchild"))
       val grandchild = expectMsgType[ActorRef]
-      grandchild.asInstanceOf[ActorRefScope].isLocal must be(true)
+      grandchild.asInstanceOf[ActorRefScope].isLocal should be(true)
       grandchild ! 53
       expectMsg(53)
       val mysel = system.actorSelection(system / "looker2" / "child" / "grandchild")
       mysel ! 54
       expectMsg(54)
-      lastSender must be(grandchild)
-      lastSender must be theSameInstanceAs grandchild
+      lastSender should be(grandchild)
+      lastSender should be theSameInstanceAs grandchild
       mysel ! Identify(mysel)
       val grandchild2 = expectMsgType[ActorIdentity].ref
-      grandchild2 must be === Some(grandchild)
+      grandchild2 should equal(Some(grandchild))
       system.actorSelection("/user/looker2/child") ! Identify(None)
-      expectMsgType[ActorIdentity].ref must be === Some(child)
+      expectMsgType[ActorIdentity].ref should equal(Some(child))
       l ! ActorSelReq("child/..")
       expectMsgType[ActorSelection] ! Identify(None)
-      expectMsgType[ActorIdentity].ref.get must be theSameInstanceAs l
+      expectMsgType[ActorIdentity].ref.get should be theSameInstanceAs l
       system.actorSelection(system / "looker2" / "child") ! ActorSelReq("..")
       expectMsgType[ActorSelection] ! Identify(None)
-      expectMsgType[ActorIdentity].ref.get must be theSameInstanceAs l
+      expectMsgType[ActorIdentity].ref.get should be theSameInstanceAs l
 
       grandchild ! ((Props[Echo1], "grandgrandchild"))
       val grandgrandchild = expectMsgType[ActorRef]
@@ -421,7 +421,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       watch(child)
       child ! PoisonPill
       expectMsg("postStop")
-      expectMsgType[Terminated].actor must be === child
+      expectMsgType[Terminated].actor should equal(child)
       l ! ((Props[Echo1], "child"))
       val child2 = expectMsgType[ActorRef]
       child2 ! Identify("idReq15")
@@ -434,7 +434,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       child2 ! 55
       expectMsg(55)
       // msg to old ActorRef (different uid) should not get through
-      child2.path.uid must not be (child.path.uid)
+      child2.path.uid should not be (child.path.uid)
       child ! 56
       expectNoMsg(1.second)
       system.actorSelection(system / "looker2" / "child") ! 57
@@ -444,12 +444,12 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     "not fail ask across node boundaries" in within(5.seconds) {
       import system.dispatcher
       val f = for (_ ← 1 to 1000) yield here ? "ping" mapTo manifest[(String, ActorRef)]
-      Await.result(Future.sequence(f), remaining).map(_._1).toSet must be(Set("pong"))
+      Await.result(Future.sequence(f), remaining).map(_._1).toSet should be(Set("pong"))
     }
 
     "be able to use multiple transports and use the appropriate one (TCP)" in {
       val r = system.actorOf(Props[Echo1], "gonk")
-      r.path.toString must be ===
+      r.path.toString should be ===
         s"akka.tcp://remote-sys@localhost:${port(remoteSystem, "tcp")}/remote/akka.tcp/RemotingSpec@localhost:${port(system, "tcp")}/user/gonk"
       r ! 42
       expectMsg(42)
@@ -465,7 +465,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "be able to use multiple transports and use the appropriate one (UDP)" in {
       val r = system.actorOf(Props[Echo1], "zagzag")
-      r.path.toString must be ===
+      r.path.toString should be ===
         s"akka.udp://remote-sys@localhost:${port(remoteSystem, "udp")}/remote/akka.udp/RemotingSpec@localhost:${port(system, "udp")}/user/zagzag"
       r ! 42
       expectMsg(10.seconds, 42)
@@ -481,7 +481,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "be able to use multiple transports and use the appropriate one (SSL)" in {
       val r = system.actorOf(Props[Echo1], "roghtaar")
-      r.path.toString must be ===
+      r.path.toString should be ===
         s"akka.ssl.tcp://remote-sys@localhost:${port(remoteSystem, "ssl.tcp")}/remote/akka.ssl.tcp/RemotingSpec@localhost:${port(system, "ssl.tcp")}/user/roghtaar"
       r ! 42
       expectMsg(10.seconds, 42)

@@ -139,7 +139,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
         new Actor { def receive = { case _ ⇒ } }
       }
 
-      def contextStackMustBeEmpty(): Unit = ActorCell.contextStack.get.headOption must be === None
+      def contextStackMustBeEmpty(): Unit = ActorCell.contextStack.get.headOption should equal(None)
 
       EventFilter[ActorInitializationException](occurrences = 1) intercept {
         intercept[akka.actor.ActorInitializationException] {
@@ -249,7 +249,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
         (intercept[java.lang.IllegalStateException] {
           wrap(result ⇒
             actorOf(Props(new OuterActor(actorOf(Props(promiseIntercept({ throw new IllegalStateException("Ur state be b0rked"); new InnerActor })(result)))))))
-        }).getMessage must be === "Ur state be b0rked"
+        }).getMessage should equal("Ur state be b0rked")
 
         contextStackMustBeEmpty()
       }
@@ -275,15 +275,15 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
         val in = new ObjectInputStream(new ByteArrayInputStream(bytes))
         val readA = in.readObject
 
-        a.isInstanceOf[ActorRefWithCell] must be === true
-        readA.isInstanceOf[ActorRefWithCell] must be === true
-        (readA eq a) must be === true
+        a.isInstanceOf[ActorRefWithCell] should equal(true)
+        readA.isInstanceOf[ActorRefWithCell] should equal(true)
+        (readA eq a) should equal(true)
       }
 
       val ser = new JavaSerializer(esys)
       val readA = ser.fromBinary(bytes, None)
-      readA.isInstanceOf[ActorRefWithCell] must be === true
-      (readA eq a) must be === true
+      readA.isInstanceOf[ActorRefWithCell] should equal(true)
+      (readA eq a) should equal(true)
     }
 
     "throw an exception on deserialize if no system in scope" in {
@@ -303,8 +303,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
       (intercept[java.lang.IllegalStateException] {
         in.readObject
-      }).getMessage must be === "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
-        " Use 'akka.serialization.Serialization.currentSystem.withValue(system) { ... }'"
+      }).getMessage should equal("Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
+        " Use 'akka.serialization.Serialization.currentSystem.withValue(system) { ... }'")
     }
 
     "return EmptyLocalActorRef on deserialize if not present in actor hierarchy (and remoting is not enabled)" in {
@@ -328,7 +328,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
       JavaSerializer.currentSystem.withValue(sysImpl) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
-        in.readObject must be === new EmptyLocalActorRef(sysImpl.provider, ref.path, system.eventStream)
+        in.readObject should equal(new EmptyLocalActorRef(sysImpl.provider, ref.path, system.eventStream))
       }
     }
 
@@ -339,20 +339,20 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       }))
 
       val nested = Await.result((a ? "any").mapTo[ActorRef], timeout.duration)
-      a must not be null
-      nested must not be null
-      (a ne nested) must be === true
+      a should not be null
+      nested should not be null
+      (a ne nested) should equal(true)
     }
 
     "support advanced nested actorOfs" in {
       val a = system.actorOf(Props(new OuterActor(system.actorOf(Props(new InnerActor)))))
       val inner = Await.result(a ? "innerself", timeout.duration)
 
-      Await.result(a ? a, timeout.duration) must be(a)
-      Await.result(a ? "self", timeout.duration) must be(a)
-      inner must not be a
+      Await.result(a ? a, timeout.duration) should be(a)
+      Await.result(a ? "self", timeout.duration) should be(a)
+      inner should not be a
 
-      Await.result(a ? "msg", timeout.duration) must be === "msg"
+      Await.result(a ? "msg", timeout.duration) should equal("msg")
     }
 
     "support reply via sender" in {
@@ -400,8 +400,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       val fnull = (ref.ask(0)(timeout)).mapTo[String]
       ref ! PoisonPill
 
-      Await.result(ffive, timeout.duration) must be("five")
-      Await.result(fnull, timeout.duration) must be("null")
+      Await.result(ffive, timeout.duration) should be("five")
+      Await.result(fnull, timeout.duration) should be("null")
 
       verifyActorTermination(ref)
     }

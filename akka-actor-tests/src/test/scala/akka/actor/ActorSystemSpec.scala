@@ -125,7 +125,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
   "An ActorSystem" must {
 
     "use scala.concurrent.Future's InternalCallbackEC" in {
-      system.asInstanceOf[ActorSystemImpl].internalCallingThreadExecutionContext.getClass.getName must be === "scala.concurrent.Future$InternalCallbackExecutor$"
+      system.asInstanceOf[ActorSystemImpl].internalCallingThreadExecutionContext.getClass.getName should equal("scala.concurrent.Future$InternalCallbackExecutor$")
     }
 
     "reject invalid names" in {
@@ -150,9 +150,9 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
     "support extensions" in {
       // TestExtension is configured and should be loaded at startup
-      system.hasExtension(TestExtension) must be(true)
-      TestExtension(system).system must be === system
-      system.extension(TestExtension).system must be === system
+      system.hasExtension(TestExtension) should be(true)
+      TestExtension(system).system should equal(system)
+      system.extension(TestExtension).system should equal(system)
     }
 
     "log dead letters" in {
@@ -187,7 +187,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
       val expected = (for (i ← 1 to count) yield i).reverse
 
-      immutableSeq(result) must be(expected)
+      immutableSeq(result) should be(expected)
     }
 
     "awaitTermination after termination callbacks" in {
@@ -203,15 +203,15 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       system2.scheduler.scheduleOnce(200.millis.dilated) { system2.shutdown() }
 
       system2.awaitTermination(5 seconds)
-      callbackWasRun must be(true)
+      callbackWasRun should be(true)
     }
 
     "return isTerminated status correctly" in {
       val system = ActorSystem()
-      system.isTerminated must be(false)
+      system.isTerminated should be(false)
       system.shutdown()
       system.awaitTermination(10 seconds)
-      system.isTerminated must be(true)
+      system.isTerminated should be(true)
     }
 
     "throw RejectedExecutionException when shutdown" in {
@@ -221,19 +221,19 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
       intercept[RejectedExecutionException] {
         system2.registerOnTermination { println("IF YOU SEE THIS THEN THERE'S A BUG HERE") }
-      }.getMessage must be("Must be called prior to system shutdown.")
+      }.getMessage should be("Must be called prior to system shutdown.")
     }
 
     "reliably create waves of actors" in {
       import system.dispatcher
       implicit val timeout = Timeout((20 seconds).dilated)
       val waves = for (i ← 1 to 3) yield system.actorOf(Props[ActorSystemSpec.Waves]) ? 50000
-      Await.result(Future.sequence(waves), timeout.duration + 5.seconds) must be === Seq("done", "done", "done")
+      Await.result(Future.sequence(waves), timeout.duration + 5.seconds) should equal(Seq("done", "done", "done"))
     }
 
     "find actors that just have been created" in {
       system.actorOf(Props(new FastActor(TestLatch(), testActor)).withDispatcher("slow"))
-      expectMsgType[Class[_]] must be(classOf[LocalActorRef])
+      expectMsgType[Class[_]] should be(classOf[LocalActorRef])
     }
 
     "reliable deny creation of actors while shutting down" in {
@@ -245,7 +245,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       while (!system.isTerminated) {
         try {
           val t = system.actorOf(Props[ActorSystemSpec.Terminater])
-          failing must not be true // because once failing => always failing (it’s due to shutdown)
+          failing should not be true // because once failing => always failing (it’s due to shutdown)
           created :+= t
         } catch {
           case _: IllegalStateException ⇒ failing = true
@@ -258,7 +258,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
         }
       }
 
-      created filter (ref ⇒ !ref.isTerminated && !ref.asInstanceOf[ActorRefWithCell].underlying.isInstanceOf[UnstartedCell]) must be(Seq())
+      created filter (ref ⇒ !ref.isTerminated && !ref.asInstanceOf[ActorRefWithCell].underlying.isInstanceOf[UnstartedCell]) should be(Seq())
     }
 
     "shut down when /user fails" in {
@@ -284,8 +284,8 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
         a ! "die"
       }
       val t = probe.expectMsg(Terminated(a)(existenceConfirmed = true, addressTerminated = false))
-      t.existenceConfirmed must be(true)
-      t.addressTerminated must be(false)
+      t.existenceConfirmed should be(true)
+      t.addressTerminated should be(false)
       shutdown(system)
     }
 

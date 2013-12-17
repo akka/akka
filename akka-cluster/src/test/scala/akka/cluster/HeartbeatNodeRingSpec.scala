@@ -5,14 +5,14 @@
 package akka.cluster
 
 import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import akka.actor.Address
 import akka.routing.ConsistentHash
 import scala.concurrent.duration._
 import scala.collection.immutable
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class HeartbeatNodeRingSpec extends WordSpec with MustMatchers {
+class HeartbeatNodeRingSpec extends WordSpec with Matchers {
 
   val aa = UniqueAddress(Address("akka.tcp", "sys", "aa", 2552), 1)
   val bb = UniqueAddress(Address("akka.tcp", "sys", "bb", 2552), 2)
@@ -26,25 +26,25 @@ class HeartbeatNodeRingSpec extends WordSpec with MustMatchers {
 
     "pick specified number of nodes as receivers" in {
       val ring = HeartbeatNodeRing(cc, nodes, 3)
-      ring.myReceivers must be(ring.receivers(cc))
+      ring.myReceivers should be(ring.receivers(cc))
 
       nodes foreach { n ⇒
         val receivers = ring.receivers(n)
-        receivers.size must be(3)
-        receivers must not contain (n)
+        receivers.size should be(3)
+        receivers should not contain (n)
       }
     }
 
     "pick all except own as receivers when less than total number of nodes" in {
       val expected = Set(aa, bb, dd, ee)
-      HeartbeatNodeRing(cc, nodes, 4).myReceivers must be(expected)
-      HeartbeatNodeRing(cc, nodes, 5).myReceivers must be(expected)
-      HeartbeatNodeRing(cc, nodes, 6).myReceivers must be(expected)
+      HeartbeatNodeRing(cc, nodes, 4).myReceivers should be(expected)
+      HeartbeatNodeRing(cc, nodes, 5).myReceivers should be(expected)
+      HeartbeatNodeRing(cc, nodes, 6).myReceivers should be(expected)
     }
 
     "pick none when alone" in {
       val ring = HeartbeatNodeRing(cc, Set(cc), 3)
-      ring.myReceivers must be(Set())
+      ring.myReceivers should be(Set())
     }
 
   }

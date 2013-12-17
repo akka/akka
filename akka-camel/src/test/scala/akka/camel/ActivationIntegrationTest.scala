@@ -6,7 +6,7 @@ package akka.camel
 
 import language.postfixOps
 
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import scala.concurrent.duration._
 import org.apache.camel.ProducerTemplate
 import akka.actor._
@@ -17,21 +17,21 @@ import scala.concurrent.Await
 import java.util.concurrent.TimeoutException
 import akka.util.Timeout
 
-class ActivationIntegrationTest extends WordSpec with MustMatchers with SharedCamelSystem {
+class ActivationIntegrationTest extends WordSpec with Matchers with SharedCamelSystem {
   val timeoutDuration = 10 seconds
   implicit val timeout = Timeout(timeoutDuration)
   def template: ProducerTemplate = camel.template
   import system.dispatcher
 
-  "ActivationAware must be notified when endpoint is activated" in {
+  "ActivationAware should be notified when endpoint is activated" in {
     val latch = new TestLatch(0)
     val actor = system.actorOf(Props(new TestConsumer("direct:actor-1", latch)), "act-direct-actor-1")
-    Await.result(camel.activationFutureFor(actor), 10 seconds) must be === actor
+    Await.result(camel.activationFutureFor(actor), 10 seconds) should equal(actor)
 
-    template.requestBody("direct:actor-1", "test") must be("received test")
+    template.requestBody("direct:actor-1", "test") should be("received test")
   }
 
-  "ActivationAware must be notified when endpoint is de-activated" in {
+  "ActivationAware should be notified when endpoint is de-activated" in {
     val latch = TestLatch(1)
     val actor = start(new Consumer {
       def endpointUri = "direct:a3"

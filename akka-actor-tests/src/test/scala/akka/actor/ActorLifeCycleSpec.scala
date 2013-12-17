@@ -7,7 +7,7 @@ package akka.actor
 import language.postfixOps
 
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 
 import akka.actor.Actor._
 import akka.testkit._

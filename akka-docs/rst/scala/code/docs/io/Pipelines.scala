@@ -138,10 +138,10 @@ class PipelinesDocSpec extends AkkaSpec {
 
       val encoded: (Iterable[Message], Iterable[ByteString]) = cmd(msg)
       //#build-pipeline
-      encoded._1 must have size 0
-      encoded._2 must have size 1
+      encoded._1 should have size 0
+      encoded._2 should have size 1
 
-      evt(encoded._2.head)._1 must be === Seq(msg)
+      evt(encoded._2.head)._1 should equal(Seq(msg))
     }
 
     "demonstrate Injector/Sink" in {
@@ -163,7 +163,7 @@ class PipelinesDocSpec extends AkkaSpec {
       val encoded = expectMsgType[Success[ByteString]].get
 
       injector.injectEvent(encoded)
-      expectMsgType[Try[Message]].get must be === msg
+      expectMsgType[Try[Message]].get should equal(msg)
     }
 
     "demonstrate management port and context" in {
@@ -174,7 +174,7 @@ class PipelinesDocSpec extends AkkaSpec {
       val encoded = expectMsgType[ByteString]
       proc ! encoded
       val decoded = expectMsgType[Message]
-      decoded must be === msg
+      decoded should equal(msg)
 
       within(1.5.seconds, 3.seconds) {
         expectMsgType[Tick]

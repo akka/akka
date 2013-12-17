@@ -89,8 +89,8 @@ abstract class RestartFirstSeedNodeSpec
       // now we can join seed1System, seed2, seed3 together
       runOn(seed1) {
         Cluster(seed1System).joinSeedNodes(seedNodes)
-        awaitAssert(Cluster(seed1System).readView.members.size must be(3))
-        awaitAssert(Cluster(seed1System).readView.members.map(_.status) must be(Set(Up)))
+        awaitAssert(Cluster(seed1System).readView.members.size should be(3))
+        awaitAssert(Cluster(seed1System).readView.members.map(_.status) should be(Set(Up)))
       }
       runOn(seed2, seed3) {
         cluster.joinSeedNodes(seedNodes)
@@ -104,15 +104,15 @@ abstract class RestartFirstSeedNodeSpec
       }
       runOn(seed2, seed3) {
         awaitMembersUp(2, canNotBePartOfMemberRing = Set(seedNodes.head))
-        awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (seedNodes.head))
+        awaitAssert(clusterView.unreachableMembers.map(_.address) should not contain (seedNodes.head))
       }
       enterBarrier("seed1-shutdown")
 
       // then start restartedSeed1System, which has the same address as seed1System
       runOn(seed1) {
         Cluster(restartedSeed1System).joinSeedNodes(seedNodes)
-        awaitAssert(Cluster(restartedSeed1System).readView.members.size must be(3))
-        awaitAssert(Cluster(restartedSeed1System).readView.members.map(_.status) must be(Set(Up)))
+        awaitAssert(Cluster(restartedSeed1System).readView.members.size should be(3))
+        awaitAssert(Cluster(restartedSeed1System).readView.members.map(_.status) should be(Set(Up)))
       }
       runOn(seed2, seed3) {
         awaitMembersUp(3)

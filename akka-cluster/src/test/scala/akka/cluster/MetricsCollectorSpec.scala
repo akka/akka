@@ -16,7 +16,7 @@ import akka.actor._
 import akka.testkit._
 import akka.cluster.StandardMetrics._
 import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 
 object MetricsEnabledSpec {
   val config = """
@@ -42,8 +42,8 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
         val merged12 = sample2 flatMap (latest ⇒ sample1 collect {
           case peer if latest sameAs peer ⇒
             val m = peer :+ latest
-            m.value must be(latest.value)
-            m.isSmooth must be(peer.isSmooth || latest.isSmooth)
+            m.value should be(latest.value)
+            m.isSmooth should be(peer.isSmooth || latest.isSmooth)
             m
         })
 
@@ -52,8 +52,8 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
         val merged34 = sample4 flatMap (latest ⇒ sample3 collect {
           case peer if latest sameAs peer ⇒
             val m = peer :+ latest
-            m.value must be(latest.value)
-            m.isSmooth must be(peer.isSmooth || latest.isSmooth)
+            m.value should be(latest.value)
+            m.isSmooth should be(peer.isSmooth || latest.isSmooth)
             m
         })
       }
@@ -63,7 +63,7 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
   "MetricsCollector" must {
 
     "not raise errors when attempting reflective code in apply" in {
-      Try(createMetricsCollector).get must not be null
+      Try(createMetricsCollector).get should not be null
     }
 
     "collect accurate metrics for a node" in {
@@ -72,17 +72,17 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
       val used = metrics collectFirst { case (HeapMemoryUsed, b) ⇒ b }
       val committed = metrics collectFirst { case (HeapMemoryCommitted, b) ⇒ b }
       metrics foreach {
-        case (SystemLoadAverage, b)   ⇒ b.doubleValue must be >= (0.0)
-        case (Processors, b)          ⇒ b.intValue must be >= (0)
-        case (HeapMemoryUsed, b)      ⇒ b.longValue must be >= (0L)
-        case (HeapMemoryCommitted, b) ⇒ b.longValue must be > (0L)
+        case (SystemLoadAverage, b)   ⇒ b.doubleValue should be >= (0.0)
+        case (Processors, b)          ⇒ b.intValue should be >= (0)
+        case (HeapMemoryUsed, b)      ⇒ b.longValue should be >= (0L)
+        case (HeapMemoryCommitted, b) ⇒ b.longValue should be > (0L)
         case (HeapMemoryMax, b) ⇒
-          b.longValue must be > (0L)
-          used.get.longValue must be <= (b.longValue)
-          committed.get.longValue must be <= (b.longValue)
+          b.longValue should be > (0L)
+          used.get.longValue should be <= (b.longValue)
+          committed.get.longValue should be <= (b.longValue)
         case (CpuCombined, b) ⇒
-          b.doubleValue must be <= (1.0)
-          b.doubleValue must be >= (0.0)
+          b.doubleValue should be <= (1.0)
+          b.doubleValue should be >= (0.0)
 
       }
     }
@@ -93,15 +93,15 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
       // it's not present on all platforms
       val c = collector.asInstanceOf[JmxMetricsCollector]
       val heap = c.heapMemoryUsage
-      c.heapUsed(heap).isDefined must be(true)
-      c.heapCommitted(heap).isDefined must be(true)
-      c.processors.isDefined must be(true)
+      c.heapUsed(heap).isDefined should be(true)
+      c.heapCommitted(heap).isDefined should be(true)
+      c.processors.isDefined should be(true)
     }
 
     "collect 50 node metrics samples in an acceptable duration" taggedAs LongRunningTest in within(10 seconds) {
       (1 to 50) foreach { _ ⇒
         val sample = collector.sample
-        sample.metrics.size must be >= (3)
+        sample.metrics.size should be >= (3)
         Thread.sleep(100)
       }
     }

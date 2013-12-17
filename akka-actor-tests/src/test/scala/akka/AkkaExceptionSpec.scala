@@ -1,7 +1,7 @@
 package akka;
 
 import akka.actor._
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import org.scalatest.WordSpec;
 
 /**
@@ -9,7 +9,7 @@ import org.scalatest.WordSpec;
  *
  * This is required to make Akka Exceptions be friends with serialization/deserialization.
  */
-class AkkaExceptionSpec extends WordSpec with MustMatchers {
+class AkkaExceptionSpec extends WordSpec with Matchers {
 
   "AkkaException" must {
     "have a AkkaException(String msg) constructor to be serialization friendly" in {

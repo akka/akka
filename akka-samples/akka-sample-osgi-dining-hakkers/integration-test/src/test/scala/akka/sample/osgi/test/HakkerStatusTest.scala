@@ -20,7 +20,7 @@ import scala.Some
  * the OSGi environment and executing it, currently does not support ScalaTest directly. However, ScalaTest
  * provides a JUnit-compatible runner, so the test is defined to use that runner. Pax-Exam can then invoke
  * it as a normal JUnit test. Because Pax Exam is using the JUnitRunner and not one of the ScalaTest traits such
- * as FunSuite, the test must be defined using the JUnit @Test annotation.
+ * as FunSuite, the test should be defined using the JUnit @Test annotation.
  *
  * This is a simple test demonstrating in-container integration testing.
  *
@@ -30,7 +30,7 @@ import scala.Some
  * TODO attempt to use the Akka test probe
  */
 @RunWith(classOf[JUnit4TestRunner])
-class HakkerStatusTest extends JUnitSuite with ShouldMatchersForJUnit {
+class HakkerStatusTest extends JUnitSuite with MatchersForJUnit {
 
   @Inject @Filter(timeout = 30000)
   var actorSystem: ActorSystem = _

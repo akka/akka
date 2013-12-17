@@ -38,7 +38,7 @@ class UdpIntegrationSpec extends AkkaSpec("""
       val data = ByteString("To infinity and beyond!")
       simpleSender ! Send(data, serverAddress)
 
-      expectMsgType[Received].data must be === data
+      expectMsgType[Received].data should equal(data)
 
     }
 
@@ -53,16 +53,16 @@ class UdpIntegrationSpec extends AkkaSpec("""
         server ! Send(data, clientAddress)
         expectMsgPF() {
           case Received(d, a) ⇒
-            d must be === data
-            a must be === serverAddress
+            d should equal(data)
+            a should equal(serverAddress)
         }
       }
       def checkSendingToServer(): Unit = {
         client ! Send(data, serverAddress)
         expectMsgPF() {
           case Received(d, a) ⇒
-            d must be === data
-            a must be === clientAddress
+            d should equal(data)
+            a should equal(clientAddress)
         }
       }
 
