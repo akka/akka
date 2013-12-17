@@ -70,10 +70,12 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
     }
 
     "resubmit single-shot timer" taggedAs TimingTest in {
-      within(2 seconds) {
-        within(500 millis, 1.5 second) {
+      within(2.5 seconds) {
+        within(500 millis, 1 second) {
           fsm ! TestSingleTimerResubmit
           expectMsg(Tick)
+        }
+        within(1 second) {
           expectMsg(Tock)
           expectMsg(Transition(fsm, TestSingleTimerResubmit, Initial))
         }
