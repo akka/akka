@@ -138,7 +138,9 @@ case class HttpResponse(status: StatusCode = StatusCodes.OK,
 /**
  * Individual chunks of a chunked HTTP message (request or response).
  */
-case class MessageChunk(data: HttpData.NonEmpty, extension: String) extends HttpRequestPart with HttpResponsePart
+case class MessageChunk(data: HttpData, extension: String) extends HttpRequestPart with HttpResponsePart {
+  require(data.nonEmpty, "Cannot create MessageChunk with empty data")
+}
 
 object MessageChunk {
   import HttpCharsets._
@@ -156,11 +158,6 @@ object MessageChunk {
     apply(HttpData(bytes))
   def apply(data: HttpData): MessageChunk =
     apply(data, "")
-  def apply(data: HttpData, extension: String): MessageChunk =
-    data match {
-      case x: HttpData.NonEmpty ⇒ new MessageChunk(x, extension)
-      case _                    ⇒ throw new IllegalArgumentException("Cannot create MessageChunk with empty data")
-    }
 }
 
 /**
