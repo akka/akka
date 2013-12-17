@@ -97,7 +97,7 @@ case class ActorIdentity(correlationId: Any, ref: Option[ActorRef]) {
 @SerialVersionUID(1L)
 case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
   @BeanProperty val existenceConfirmed: Boolean,
-  @BeanProperty val addressTerminated: Boolean) extends AutoReceivedMessage with PossiblyHarmful
+  @BeanProperty val addressTerminated: Boolean) extends AutoReceivedMessage with PossiblyHarmful with NoSerializationVerificationNeeded
 
 /**
  * INTERNAL API

@@ -285,7 +285,11 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
 
   "verify messages" in {
     val a = system.actorOf(Props[FooActor])
-    Await.result(a ? "pigdog", timeout.duration) must be("pigdog")
+    val expected = new String("expected")
+    val result = Await.result(a ? expected, timeout.duration).asInstanceOf[AnyRef]
+
+    result must not be (theSameInstanceAs(expected))
+    result must be === expected
 
     EventFilter[NotSerializableException](occurrences = 1) intercept {
       a ! (new AnyRef)

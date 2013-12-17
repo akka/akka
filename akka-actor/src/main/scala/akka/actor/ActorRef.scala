@@ -212,7 +212,7 @@ private[akka] trait RepointableRef extends ActorRefScope {
  *
  * DO NOT USE THIS UNLESS INTERNALLY WITHIN AKKA!
  */
-private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRef { this: ActorRefScope ⇒
+private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRef with NoSerializationVerificationNeeded { this: ActorRefScope ⇒
   /*
    * Actor life-cycle management, invoked only internally (in response to user requests via ActorContext).
    */
