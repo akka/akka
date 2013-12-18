@@ -1210,8 +1210,8 @@ object Dependencies {
       val log4j        = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
       val junitIntf    = "com.novocode"                % "junit-interface"              % "0.8"              % "test" // MIT
       // dining hakkers integration test using pax-exam
-      val karafExam    = "org.apache.karaf.tooling.exam" % "org.apache.karaf.tooling.exam.container" % "2.3.3" % "test"
-      val paxExam      = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.6.0"            % "test"
+      val karafExam    = "org.apache.karaf.tooling.exam" % "org.apache.karaf.tooling.exam.container" % "2.3.3" % "test" // ApacheV2
+      val paxExam      = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.6.0"            % "test" // ApacheV2
     }
   }
 
