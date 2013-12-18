@@ -18,11 +18,6 @@
         <bundle start-level="20">mvn:com.google.protobuf/protobuf-java/${protobuf.version}</bundle>
     </feature>
 
-    <feature name='classic' description='logback classic' version='1.0.13' resolver='(obr)'>
-      <bundle start-level="20">wrap:mvn:ch.qos.logback/logback-classic/1.0.13</bundle>
-      <bundle start-level="20">wrap:mvn:ch.qos.logback/logback-core/1.0.13</bundle>
-    </feature>
-
     <feature name='netty' description='Netty feature' version='${netty.version}' resolver='(obr)'>
         <bundle start-level="20">mvn:io.netty/netty/${netty.version}</bundle>
     </feature>
@@ -38,10 +33,10 @@
         <feature version="[1.2.2,3.0.0)">uncommons-maths</feature>
         <feature version="[${protobuf.version},3.0.0)">protobuf</feature>
         <feature version="[${typesafe.config.version},2.0.0)">typesafe-config</feature>
-        <feature version="[1.0.0,2.0.0)">classic</feature>
         <bundle start-level="30">mvn:com.typesafe.akka/akka-osgi_${scala.dep.version}/${akka.version}</bundle>
         <bundle start-level="30">mvn:com.typesafe.akka/akka-remote_${scala.dep.version}/${akka.version}</bundle>
         <bundle start-level="30">mvn:com.typesafe.akka/akka-cluster_${scala.dep.version}/${akka.version}</bundle>
+        <bundle start-level="30">mvn:com.typesafe.akka/akka-slf4j_${scala.dep.version}/${akka.version}</bundle>
     </feature>
 
     <feature name='dining-hakker' description='Akka Dining Hakker Sample' version='${project.version}' resolver='(obr)'>

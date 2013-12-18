@@ -598,7 +598,7 @@ object AkkaBuild extends Build {
   )
 
   def executeMvnCommands(failureMessage: String, commands: String*) = {
-    if ({List("sh", "-c", commands.mkString("cd akka-samples/akka-sample-osgi-dining-hakkers; mvn -U ", " ", "")) !} != 0)
+    if ({List("sh", "-c", commands.mkString("cd akka-samples/akka-sample-osgi-dining-hakkers; mvn ", " ", "")) !} != 0)
       throw new Exception(failureMessage)
   }
 
@@ -611,8 +611,9 @@ object AkkaBuild extends Build {
         }},
         // force publication of artifacts to local maven repo
         compile in Compile <<=
-          (publishM2 in actor, publishM2 in testkit, publishM2 in remote, publishM2 in cluster, publishM2 in osgi, compile in Compile) map
-            ((pa, pt, pr, pc, po, c) => c))
+          (publishM2 in actor, publishM2 in testkit, publishM2 in remote, publishM2 in cluster, publishM2 in osgi, 
+              publishM2 in slf4j, compile in Compile) map
+            ((_, _, _, _, _, _, c) => c))
       else Seq.empty
       )
   ) dependsOn(osgiDiningHakkersSampleApi, osgiDiningHakkersSampleCommand, osgiDiningHakkersSampleCore, uncommons)
