@@ -9,10 +9,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <akka.version>2.3-SNAPSHOT</akka.version>
+        <akka.version>2.3.17</akka.version>
         <karaf.version>2.3.0</karaf.version>
         <karaf.tooling.exam.version>${karaf.version}</karaf.tooling.exam.version>
-        <netty.version>3.6.2.Final</netty.version>
+        <netty.version>3.8.0.Final</netty.version>
         <osgi.version>4.2.0</osgi.version>
         <paxexam.version>2.6.0</paxexam.version>
         <paxswissbox.version>1.6.0</paxswissbox.version>

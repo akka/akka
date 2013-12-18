@@ -12,5 +12,5 @@ if [[ -d "$outputdir" ]]; then
   rm -fr "$outputdir"
 fi
 echo Extracting configured container into $outputdir...
-tar -C $projdir -zxf assembly-dist/target/assembly-dist-$version.tar.gz
+tar -C $projdir -zxf assembly-dist/target/akka-sample-osgi-dining-hakkers-dist-$version.tar.gz
 echo Extract complete, please run $outputdir/bin/karaf
