@@ -608,7 +608,11 @@ object AkkaBuild extends Build {
       if (System.getProperty("akka.osgi.sample.test", "false").toBoolean) Seq(
         test in Test ~= { x => {
           executeMvnCommands("Osgi sample Dining hakkers test failed", "clean", "install")
-        }})
+        }},
+        // force publication of artifacts to local maven repo
+        compile in Compile <<=
+          (publishM2 in actor, publishM2 in testkit, publishM2 in remote, publishM2 in cluster, publishM2 in osgi, compile in Compile) map
+            ((pa, pt, pr, pc, po, c) => c))
       else Seq.empty
       )
   ) dependsOn(osgiDiningHakkersSampleApi, osgiDiningHakkersSampleCommand, osgiDiningHakkersSampleCore, uncommons)
