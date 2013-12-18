@@ -577,16 +577,23 @@ object AkkaBuild extends Build {
   lazy val osgiDiningHakkersSampleCommand = Project(id = "akka-sample-osgi-dining-hakkers-command",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers/command"),
     settings = sampleSettings ++ OSGi.osgiDiningHakkersSampleCommand ++ Seq(
-      libraryDependencies ++= Dependencies.osgiDiningHakkerSampleCommand
+      libraryDependencies ++= Dependencies.osgiDiningHakkersSampleCommand
     )
   ) dependsOn (osgiDiningHakkersSampleApi, actor)
 
   lazy val osgiDiningHakkersSampleCore = Project(id = "akka-sample-osgi-dining-hakkers-core",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers/core"),
     settings = sampleSettings ++ OSGi.osgiDiningHakkersSampleCore ++ Seq(
-      libraryDependencies ++= Dependencies.osgiDiningHakkerSampleCore
+      libraryDependencies ++= Dependencies.osgiDiningHakkersSampleCore
     )
   ) dependsOn (osgiDiningHakkersSampleApi, actor, remote, cluster, osgi)
+
+  lazy val osgiDiningHakkersSampleTest = Project(id = "akka-sample-osgi-dining-hakkers-test",
+    base = file("akka-samples/akka-sample-osgi-dining-hakkers/integration-test"),
+    settings = sampleSettings ++ OSGi.osgiDiningHakkersSampleCore ++ Seq(
+      libraryDependencies ++= Dependencies.osgiDiningHakkersSampleTest
+    )
+  ) dependsOn (osgiDiningHakkersSampleCommand, osgiDiningHakkersSampleCore, testkit )
 
   //TODO to remove it as soon as the uncommons gets OSGified, see ticket #2990
   lazy val uncommons = Project(id = "akka-sample-osgi-dining-hakkers-uncommons",
@@ -605,7 +612,7 @@ object AkkaBuild extends Build {
   lazy val osgiDiningHakkersSampleIntegrationTest = Project(id = "akka-sample-osgi-dining-hakkers-integration",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers-integration"),
     settings = sampleSettings ++ (
-      if (System.getProperty("akka.osgi.sample.test", "false").toBoolean) Seq(
+      if (System.getProperty("akka.osgi.sample.test", "true").toBoolean) Seq(
         test in Test ~= { x => {
           executeMvnCommands("Osgi sample Dining hakkers test failed", "clean", "install")
         }},
@@ -617,8 +624,6 @@ object AkkaBuild extends Build {
       else Seq.empty
       )
   ) dependsOn(osgiDiningHakkersSampleApi, osgiDiningHakkersSampleCommand, osgiDiningHakkersSampleCore, uncommons)
-
-
 
   lazy val docs = Project(
     id = "akka-docs",
@@ -1204,6 +1209,9 @@ object Dependencies {
       val tinybundles  = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
       val log4j        = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
       val junitIntf    = "com.novocode"                % "junit-interface"              % "0.8"              % "test" // MIT
+      // dining hakkers integration test using pax-exam
+      val karafExam    = "org.apache.karaf.tooling.exam" % "org.apache.karaf.tooling.exam.container" % "2.3.3" % "test"
+      val paxExam      = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.6.0"            % "test"
     }
   }
 
@@ -1241,9 +1249,11 @@ object Dependencies {
 
   val osgi = Seq(osgiCore, osgiCompendium, Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
 
-  val osgiDiningHakkerSampleCore = Seq(config, osgiCore, osgiCompendium)
+  val osgiDiningHakkersSampleCore = Seq(config, osgiCore, osgiCompendium)
 
-  val osgiDiningHakkerSampleCommand = Seq(osgiCore, osgiCompendium)
+  val osgiDiningHakkersSampleCommand = Seq(osgiCore, osgiCompendium)
+
+  val osgiDiningHakkersSampleTest = Seq(osgiCore, osgiCompendium, Test.karafExam, Test.paxExam, Test.junit, Test.scalatest)
 
   val uncommons = Seq(uncommonsMath)
 

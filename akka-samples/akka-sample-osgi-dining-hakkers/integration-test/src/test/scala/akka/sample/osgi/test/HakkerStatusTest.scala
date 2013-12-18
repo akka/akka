@@ -1,17 +1,17 @@
 package akka.sample.osgi.test
 
 import akka.actor._
-import akka.sample.osgi.api.{DiningHakkersService, Identify, Identification}
+import akka.sample.osgi.api.{ DiningHakkersService, Identify, Identification }
 import akka.sample.osgi.test.TestOptions._
 import org.junit.runner.RunWith
-import org.junit.{Before, Test}
-import org.ops4j.pax.exam.{Option => PaxOption}
-import org.ops4j.pax.exam.junit.{Configuration, JUnit4TestRunner}
+import org.junit.{ Before, Test }
+import org.ops4j.pax.exam.{ Option => PaxOption }
+import org.ops4j.pax.exam.junit.{ Configuration, JUnit4TestRunner }
 import org.ops4j.pax.exam.util.Filter
 import org.scalatest.junit.JUnitSuite
 import org.scalatest.junit.ShouldMatchersForJUnit
 import javax.inject.Inject
-import java.util.concurrent.{TimeUnit, SynchronousQueue}
+import java.util.concurrent.{ TimeUnit, SynchronousQueue }
 import akka.testkit.TestProbe
 import scala.Some
 
@@ -43,17 +43,15 @@ class HakkerStatusTest extends JUnitSuite with ShouldMatchersForJUnit {
   @Configuration
   def config: Array[PaxOption] = Array[PaxOption](
     karafOptionsWithTestBundles(),
-    featureDiningHakkers()
-    //,debugOptions()
-  )
+    featureDiningHakkers() //,debugOptions()
+    )
 
   // Junit @Before and @After can be used as well
 
-/*  @Before
+  /*  @Before
   def setupAkkaTestkit() {
     testProbe = new TestProbe(actorSystem)
   }*/
-
 
   @Test
   def verifyObtainingAHakkerViaTheTheDiningHakkersService() {
@@ -64,7 +62,7 @@ class HakkerStatusTest extends JUnitSuite with ShouldMatchersForJUnit {
 
     hakker should not be (null)
 
-/* TODO Getting some weird config error with TestProbe, is it a TestProbe inside OSGi issue?
+    /* TODO Getting some weird config error with TestProbe, is it a TestProbe inside OSGi issue?
  Exception in thread "RMI TCP Connection(idle)" java.lang.NullPointerException
 	at com.typesafe.config.impl.SerializedConfigValue.writeOrigin(SerializedConfigValue.java:202)
 	at com.typesafe.config.impl.ConfigImplUtil.writeOrigin(ConfigImplUtil.java:224)
@@ -90,7 +88,7 @@ java.io.EOFException
     val (fromHakker, busyWith) = response.poll(5, TimeUnit.SECONDS)
 
     println("---------------> %s is busy with %s.".format(fromHakker, busyWith))
-    fromHakker should be ("TestHakker")
+    fromHakker should be("TestHakker")
     busyWith should not be (null)
 
   }
