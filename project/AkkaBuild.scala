@@ -565,32 +565,32 @@ object AkkaBuild extends Build {
 
   lazy val osgiDiningHakkersSample = Project(id = "akka-sample-osgi-dining-hakkers",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers"),
-    settings = parentSettings
+    settings = parentSettings ++ osgiSampleSettings
   ) aggregate(osgiDiningHakkersSampleApi, osgiDiningHakkersSampleCommand, osgiDiningHakkersSampleCore,
       osgiDiningHakkersSampleIntegrationTest, uncommons)
 
   lazy val osgiDiningHakkersSampleApi = Project(id = "akka-sample-osgi-dining-hakkers-api",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers/api"),
-    settings = sampleSettings ++ OSGi.osgiDiningHakkersSampleApi
+    settings = sampleSettings ++ osgiSampleSettings ++ OSGi.osgiDiningHakkersSampleApi
   )dependsOn(actor)
 
   lazy val osgiDiningHakkersSampleCommand = Project(id = "akka-sample-osgi-dining-hakkers-command",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers/command"),
-    settings = sampleSettings ++ OSGi.osgiDiningHakkersSampleCommand ++ Seq(
+    settings = sampleSettings ++ osgiSampleSettings ++ OSGi.osgiDiningHakkersSampleCommand ++ Seq(
       libraryDependencies ++= Dependencies.osgiDiningHakkersSampleCommand
     )
   ) dependsOn (osgiDiningHakkersSampleApi, actor)
 
   lazy val osgiDiningHakkersSampleCore = Project(id = "akka-sample-osgi-dining-hakkers-core",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers/core"),
-    settings = sampleSettings ++ OSGi.osgiDiningHakkersSampleCore ++ Seq(
+    settings = sampleSettings ++ osgiSampleSettings ++ OSGi.osgiDiningHakkersSampleCore ++ Seq(
       libraryDependencies ++= Dependencies.osgiDiningHakkersSampleCore
     )
   ) dependsOn (osgiDiningHakkersSampleApi, actor, remote, cluster, osgi)
 
   lazy val osgiDiningHakkersSampleTest = Project(id = "akka-sample-osgi-dining-hakkers-test",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers/integration-test"),
-    settings = sampleSettings ++ OSGi.osgiDiningHakkersSampleCore ++ Seq(
+    settings = sampleSettings ++ osgiSampleSettings ++ OSGi.osgiDiningHakkersSampleCore ++ Seq(
       libraryDependencies ++= Dependencies.osgiDiningHakkersSampleTest
     )
   ) dependsOn (osgiDiningHakkersSampleCommand, osgiDiningHakkersSampleCore, testkit )
@@ -598,7 +598,7 @@ object AkkaBuild extends Build {
   //TODO to remove it as soon as the uncommons gets OSGified, see ticket #2990
   lazy val uncommons = Project(id = "akka-sample-osgi-dining-hakkers-uncommons",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers/uncommons"),
-    settings = sampleSettings ++ OSGi.osgiDiningHakkersSampleUncommons ++ Seq(
+    settings = sampleSettings ++ osgiSampleSettings ++ OSGi.osgiDiningHakkersSampleUncommons ++ Seq(
       libraryDependencies ++= Dependencies.uncommons,
       version := "1.2.0"
     )
@@ -611,7 +611,7 @@ object AkkaBuild extends Build {
 
   lazy val osgiDiningHakkersSampleIntegrationTest = Project(id = "akka-sample-osgi-dining-hakkers-integration",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers-integration"),
-    settings = sampleSettings ++ (
+    settings = sampleSettings ++ osgiSampleSettings ++ (
       if (System.getProperty("akka.osgi.sample.test", "true").toBoolean) Seq(
         test in Test ~= { x => {
           executeMvnCommands("Osgi sample Dining hakkers test failed", "clean", "install")
@@ -624,6 +624,8 @@ object AkkaBuild extends Build {
       else Seq.empty
       )
   ) dependsOn(osgiDiningHakkersSampleApi, osgiDiningHakkersSampleCommand, osgiDiningHakkersSampleCore, uncommons)
+
+  lazy val osgiSampleSettings: Seq[Setting[_]] = Seq(target :=  baseDirectory.value / "target-sbt")
 
   lazy val docs = Project(
     id = "akka-docs",
