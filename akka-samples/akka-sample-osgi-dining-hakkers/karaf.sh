@@ -5,7 +5,7 @@ version=2.2.0-SNAPSHOT
 
 # This directory is specified in the build as the root of the tar
 # Use tar --strip-components=1 to ignore the root
-outputdir="$projdir/akka-osgi-sample-$version"
+outputdir="$projdir/target/akka-sample-osgi-dining-hakkers-$version"
 
 if [[ -d "$outputdir" ]]; then
   echo Deleting existing $outputdir...
