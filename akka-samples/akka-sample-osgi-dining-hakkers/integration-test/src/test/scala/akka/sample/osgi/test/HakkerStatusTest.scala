@@ -1,11 +1,12 @@
 package akka.sample.osgi.test
 
+import scala.concurrent.duration._
 import akka.actor._
 import akka.sample.osgi.api.{ DiningHakkersService, Identify, Identification }
 import akka.sample.osgi.test.TestOptions._
 import org.junit.runner.RunWith
 import org.junit.{ Before, Test }
-import org.ops4j.pax.exam.{ Option => PaxOption }
+import org.ops4j.pax.exam.{ Option ⇒ PaxOption }
 import org.ops4j.pax.exam.junit.{ Configuration, JUnit4TestRunner }
 import org.ops4j.pax.exam.util.Filter
 import org.scalatest.junit.JUnitSuite
@@ -62,12 +63,15 @@ class HakkerStatusTest extends JUnitSuite with ShouldMatchersForJUnit {
 
     hakker should not be (null)
 
-    testProbe.send(hakker, Identify)
-    val Identification(fromHakker, busyWith) = testProbe.expectMsgType[Identification]
+    // takes some time for the first message to get through
+    testProbe.within(5.seconds) {
+      testProbe.send(hakker, Identify)
+      val Identification(fromHakker, busyWith) = testProbe.expectMsgType[Identification]
 
-    println("---------------> %s is busy with %s.".format(fromHakker, busyWith))
-    fromHakker should be("TestHakker")
-    busyWith should not be (null)
+      println("---------------> %s is busy with %s.".format(fromHakker, busyWith))
+      fromHakker should be("TestHakker")
+      busyWith should not be (null)
+    }
 
   }
 
@@ -76,7 +80,7 @@ class HakkerStatusTest extends JUnitSuite with ShouldMatchersForJUnit {
 object HakkerStatusTest {
   class Interrogator(queue: SynchronousQueue[(String, String)]) extends Actor {
     def receive = {
-      case msg: Identification => {
+      case msg: Identification ⇒ {
         queue.put((msg.name, msg.busyWith))
       }
     }
