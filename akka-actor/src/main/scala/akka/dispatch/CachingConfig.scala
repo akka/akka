@@ -7,6 +7,7 @@ package akka.dispatch
 import com.typesafe.config._
 import java.util.concurrent.ConcurrentHashMap
 import scala.util.{ Failure, Success, Try }
+import java.util.concurrent.TimeUnit
 
 /**
  * INTERNAL API
@@ -157,6 +158,10 @@ private[akka] class CachingConfig(_config: Config) extends Config {
   def getMillisecondsList(path: String) = config.getMillisecondsList(path)
 
   def getNanosecondsList(path: String) = config.getNanosecondsList(path)
+
+  def getDuration(path: String, unit: TimeUnit) = config.getDuration(path, unit)
+
+  def getDurationList(path: String, unit: TimeUnit) = config.getDurationList(path, unit)
 
   def withOnlyPath(path: String) = new CachingConfig(config.withOnlyPath(path))
 

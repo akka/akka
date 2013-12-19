@@ -20,7 +20,7 @@
         <scala.version>2.10.2</scala.version>
         <scala.dep.version>2.10</scala.dep.version>
         <scalatest.version>1.9.1</scalatest.version>
-        <typesafe.config.version>1.0.2</typesafe.config.version>
+        <typesafe.config.version>1.1.0-SNAPSHOT</typesafe.config.version>
     </properties>
 
     <modules>

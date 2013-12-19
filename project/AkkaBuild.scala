@@ -407,7 +407,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.osgi ++ Seq(
       libraryDependencies ++= Dependencies.osgi,
       cleanFiles <+= baseDirectory { base => base / "src/main/resources" } ,
-      ActorOsgiConfigurationReference <<= ActorOsgiConfigurationReferenceAction(projects.filter(p => !p.id.contains("test") && !p.id.contains("sample"))),
+      ActorOsgiConfigurationReference <<= ActorOsgiConfigurationReferenceAction(projects.filter(p => !p.id.contains("tests") && !p.id.contains("sample") && !p.id.contains("atmos"))),
       ActorMakeOsgiConfiguration <<= (ActorOsgiConfigurationReference, resourceManaged in Compile, streams) map makeOsgiConfigurationFiles,
       resourceGenerators in Compile <+= ActorMakeOsgiConfiguration,
       parallelExecution in Test := false,
@@ -1146,7 +1146,7 @@ object AkkaBuild extends Build {
     )
     def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
     def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.3,2.4)\"".format(packageName)
-    def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,1.1.0)\"".format(packageName)
+    def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[1.1.0,1.2.0)\"".format(packageName)
     def protobufImport(packageName: String = "com.google.protobuf.*") = "%s;version=\"[2.5.0,2.6.0)\"".format(packageName)
     def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.10,2.11)\"".format(packageName)
     def optionalResolution(packageName: String) = "%s;resolution:=optional".format(packageName)
@@ -1171,7 +1171,7 @@ object Dependencies {
     // Compile
     val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.10.3" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
-    val config        = "com.typesafe"                % "config"                       % "1.0.2"       // ApacheV2
+    val config        = "com.typesafe"                % "config"                       % "1.1.0-SNAPSHOT"       // ApacheV2
     val netty         = "io.netty"                    % "netty"                        % "3.8.0.Final" // ApacheV2
     val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.5.0"       // New BSD
     val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % scalaStmVersion // Modified BSD (Scala)

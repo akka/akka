@@ -48,10 +48,10 @@ class HakkerStatusTest extends JUnitSuite with ShouldMatchersForJUnit {
 
   // Junit @Before and @After can be used as well
 
-  /*  @Before
+  @Before
   def setupAkkaTestkit() {
     testProbe = new TestProbe(actorSystem)
-  }*/
+  }
 
   @Test
   def verifyObtainingAHakkerViaTheTheDiningHakkersService() {
@@ -62,30 +62,8 @@ class HakkerStatusTest extends JUnitSuite with ShouldMatchersForJUnit {
 
     hakker should not be (null)
 
-    /* TODO Getting some weird config error with TestProbe, is it a TestProbe inside OSGi issue?
- Exception in thread "RMI TCP Connection(idle)" java.lang.NullPointerException
-	at com.typesafe.config.impl.SerializedConfigValue.writeOrigin(SerializedConfigValue.java:202)
-	at com.typesafe.config.impl.ConfigImplUtil.writeOrigin(ConfigImplUtil.java:224)
-	at com.typesafe.config.ConfigException.writeObject(ConfigException.java:58)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-
-java.io.EOFException
-        at java.io.ObjectInputStream$BlockDataInputStream.readUnsignedByte(ObjectInputStream.java:2747)
-        at java.io.ObjectInputStream.readUnsignedByte(ObjectInputStream.java:924)
-        at com.typesafe.config.impl.SerializedConfigValue.readCode(SerializedConfigValue.java:412)
-        at com.typesafe.config.impl.SerializedConfigValue.readOrigin(SerializedConfigValue.java:218)
-        ...
     testProbe.send(hakker, Identify)
-    val identification = testProbe.expectMsgClass(classOf[Identification])
-    val (fromHakker, busyWith) = (identification.name, identification.busyWith)
-  */
-
-    // create an "Interrogator" actor that receives a Hakker's identification
-    // this is to work around the TestProbe Exception above
-    val response = new SynchronousQueue[(String, String)]()
-
-    hakker.tell(Identify, actorSystem.actorOf(Props(classOf[HakkerStatusTest.Interrogator], response), "Interrogator"))
-    val (fromHakker, busyWith) = response.poll(5, TimeUnit.SECONDS)
+    val Identification(fromHakker, busyWith) = testProbe.expectMsgType[Identification]
 
     println("---------------> %s is busy with %s.".format(fromHakker, busyWith))
     fromHakker should be("TestHakker")
