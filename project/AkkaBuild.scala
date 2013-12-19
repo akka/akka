@@ -1078,6 +1078,10 @@ object Dependencies {
     // Compiler plugins
     val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % genJavaDocVersion cross CrossVersion.full) // ApacheV2
 
+    // http-core (temporary, will be removed by internalizing)
+    val parboiled2    = "org.parboiled"               %% "parboiled"                    % "2.0-M1"    // ApacheV2
+    val shapeless     = "com.chuusai"                 %  "shapeless_2.10.3"             % "2.0.0-M1"  // ApacheV2
+
     // Test
 
     object Test {
@@ -1115,7 +1119,7 @@ object Dependencies {
 
   val remoteTests = Seq(Test.junit, Test.scalatest)
 
-  val httpCore = Seq(Test.junit, Test.scalatest)
+  val httpCore = Seq(parboiled2, shapeless, Test.junit, Test.scalatest)
 
   val cluster = Seq(Test.junit, Test.scalatest)
 
