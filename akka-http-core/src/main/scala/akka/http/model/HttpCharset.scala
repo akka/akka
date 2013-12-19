@@ -1,10 +1,8 @@
 package akka.http.model
 
-import scala.language.implicitConversions
-
+import language.implicitConversions
 import java.nio.charset.Charset
-import akka.http.rendering._
-import akka.http.util.ObjectRegistry
+import akka.http.util._
 
 /**
  * A charset range as encountered in `Accept-Charset`. Can either be a single charset, or `*`

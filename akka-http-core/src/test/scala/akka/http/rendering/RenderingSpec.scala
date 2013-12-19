@@ -1,6 +1,7 @@
 package akka.http.rendering
 
 import org.scalatest.WordSpec
+import akka.http.util.StringRendering
 
 class RenderingSpec extends WordSpec {
   "The StringRendering" should {

@@ -1,11 +1,9 @@
 package akka.http.model
 package headers
 
-import scala.language.implicitConversions
-
+import language.implicitConversions
+import akka.http.model.parser.UriParser
 import akka.http.util._
-import akka.http.rendering._
-import parser.UriParser
 
 case class HttpOrigin(scheme: String, host: Host) extends ToStringRenderable {
   def render[R <: Rendering](r: R): r.type = {

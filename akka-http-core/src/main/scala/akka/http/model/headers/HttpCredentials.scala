@@ -2,8 +2,7 @@ package akka.http.model
 package headers
 
 import akka.http.model.HttpCharsets._
-import akka.http.rendering._
-import akka.http.util.Base64
+import akka.http.util._
 
 sealed trait HttpCredentials extends ValueRenderable
 

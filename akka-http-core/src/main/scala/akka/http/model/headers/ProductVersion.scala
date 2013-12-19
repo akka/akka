@@ -1,6 +1,6 @@
 package akka.http.model.headers
 
-import akka.http.rendering._
+import akka.http.util._
 
 case class ProductVersion(product: String = "", version: String = "", comment: String = "") extends ValueRenderable {
   def render[R <: Rendering](r: R): r.type = {

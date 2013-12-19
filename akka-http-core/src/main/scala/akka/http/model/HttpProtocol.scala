@@ -1,7 +1,6 @@
 package akka.http.model
 
-import akka.http.rendering.SingletonValueRenderable
-import akka.http.util.ObjectRegistry
+import akka.http.util.{ SingletonValueRenderable, ObjectRegistry }
 
 /** The protocol of an HTTP message */
 case class HttpProtocol private[http] (override val value: String) extends SingletonValueRenderable

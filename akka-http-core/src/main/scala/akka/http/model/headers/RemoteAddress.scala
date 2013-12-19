@@ -1,7 +1,7 @@
 package akka.http.model.headers
 
 import java.net.{ UnknownHostException, InetAddress }
-import akka.http.rendering._
+import akka.http.util._
 
 sealed abstract class RemoteAddress extends ValueRenderable {
   def toOption: Option[InetAddress]

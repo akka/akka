@@ -1,6 +1,6 @@
 package akka.http.model
 
-import scala.language.implicitConversions
+import language.implicitConversions
 
 trait MessagePredicate extends (HttpMessage ⇒ Boolean) { self ⇒
   def &&(that: MessagePredicate): MessagePredicate = new MessagePredicate {

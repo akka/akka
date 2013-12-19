@@ -1,6 +1,6 @@
 package akka.http.model
 
-import scala.language.implicitConversions
+import language.implicitConversions
 import akka.util.ByteString
 
 /**

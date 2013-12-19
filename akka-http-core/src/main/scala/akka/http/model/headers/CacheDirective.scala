@@ -1,7 +1,7 @@
 package akka.http.model.headers
 
 import scala.annotation.tailrec
-import akka.http.rendering._
+import akka.http.util._
 
 sealed trait CacheDirective extends Renderable {
   def value: String

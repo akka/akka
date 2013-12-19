@@ -1,6 +1,6 @@
 package akka.http.model
 
-import headers.`Content-Disposition`
+import akka.http.model.headers.`Content-Disposition`
 
 sealed trait HttpForm {
   type FieldType

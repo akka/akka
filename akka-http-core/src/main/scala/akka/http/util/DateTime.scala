@@ -1,7 +1,5 @@
 package akka.http.util
 
-import akka.http.rendering._
-
 /**
  * Immutable, fast and efficient Date + Time implementation without any dependencies.
  * Does not support TimeZones, all DateTime values are always GMT based.

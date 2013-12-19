@@ -5,10 +5,10 @@ import java.nio.charset.Charset
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
 import scala.annotation.tailrec
 import scala.collection.immutable.NumericRange
+import akka.http.model.headers
+import akka.http.model.headers.HttpOrigin
 import Uri._
 import UriParser._
-import akka.http.model.headers
-import headers.HttpOrigin
 
 private[http] class UriParser(input: ParserInput, charset: Charset, mode: Uri.ParsingMode) {
   private[this] var cursor: Int = 0

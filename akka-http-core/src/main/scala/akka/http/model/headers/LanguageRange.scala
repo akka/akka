@@ -1,6 +1,6 @@
 package akka.http.model.headers
 
-import akka.http.rendering._
+import akka.http.util._
 
 sealed abstract class LanguageRange extends ValueRenderable {
   def primaryTag: String

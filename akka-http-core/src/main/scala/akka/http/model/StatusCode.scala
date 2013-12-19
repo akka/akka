@@ -1,8 +1,7 @@
 package akka.http.model
 
-import akka.http.rendering.LazyValueBytesRenderable
-import scala.language.implicitConversions
-import akka.http.util.ObjectRegistry
+import language.implicitConversions
+import akka.http.util._
 
 /** The result status code of an HTTP response. */
 sealed abstract class StatusCode extends LazyValueBytesRenderable {

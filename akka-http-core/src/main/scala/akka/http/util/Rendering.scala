@@ -1,4 +1,4 @@
-package akka.http.rendering
+package akka.http.util
 
 import scala.annotation.tailrec
 import scala.collection.LinearSeq

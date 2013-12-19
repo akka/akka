@@ -1,15 +1,13 @@
 package akka.http.model
 
-import scala.language.implicitConversions
-
+import language.implicitConversions
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
 import java.nio.charset.Charset
-import akka.http.util._
 import scala.annotation.tailrec
 import scala.collection.{ mutable, LinearSeqOptimized }
 import scala.collection.immutable.LinearSeq
-import akka.http.rendering._
-import parser.{ ParserInput, UriParser }
+import akka.http.model.parser.{ ParserInput, UriParser }
+import akka.http.util._
 import Uri._
 
 /**

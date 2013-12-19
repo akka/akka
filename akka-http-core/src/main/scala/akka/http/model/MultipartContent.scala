@@ -1,7 +1,7 @@
 package akka.http.model
 
 import java.io.File
-import headers.`Content-Disposition`
+import akka.http.model.headers.`Content-Disposition`
 
 /**
  * Basic model for multipart content as defined in RFC 2046.

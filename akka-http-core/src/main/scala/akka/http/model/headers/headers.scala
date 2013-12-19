@@ -1,12 +1,9 @@
 package akka.http.model
 package headers
 
-import scala.annotation.{ tailrec, implicitNotFound }
-
-import akka.http.util._
-
-import akka.http.rendering._
 import java.net.InetSocketAddress
+import scala.annotation.{ tailrec, implicitNotFound }
+import akka.http.util._
 
 object ProtectedHeaderCreation {
   @implicitNotFound("Headers of this type are managed automatically by spray. If you are sure that creating instances " +

@@ -1,8 +1,7 @@
 package akka.http.model
 
-import scala.language.implicitConversions
-
-import akka.http.rendering._
+import language.implicitConversions
+import akka.http.util._
 
 case class ContentTypeRange(mediaRange: MediaRange, charsetRange: HttpCharsetRange) extends ValueRenderable {
   def matches(contentType: ContentType) =

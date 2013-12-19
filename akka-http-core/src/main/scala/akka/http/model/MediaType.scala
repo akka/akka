@@ -1,11 +1,9 @@
 package akka.http.model
 
-import scala.language.implicitConversions
-
+import language.implicitConversions
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
-import akka.http.rendering._
-import akka.http.util.ObjectRegistry
+import akka.http.util._
 
 sealed abstract class MediaRange extends Renderable with WithQValue[MediaRange] {
   def value: String

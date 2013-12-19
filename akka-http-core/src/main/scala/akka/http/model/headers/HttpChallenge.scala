@@ -1,7 +1,7 @@
 package akka.http.model
 package headers
 
-import akka.http.rendering._
+import akka.http.util._
 
 case class HttpChallenge(scheme: String, realm: String,
                          params: Map[String, String] = Map.empty) extends ValueRenderable {

@@ -1,7 +1,7 @@
 package akka.http.util
 
 import scala.annotation.tailrec
-import scala.language.implicitConversions
+import language.implicitConversions
 
 // bimorphic implementation of character sets
 // FIXME: replace with implementation from parboiled2

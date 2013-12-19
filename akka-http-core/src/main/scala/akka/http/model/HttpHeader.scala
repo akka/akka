@@ -1,6 +1,6 @@
 package akka.http.model
 
-import akka.http.rendering.ToStringRenderable
+import akka.http.util.ToStringRenderable
 
 /**
  * The model of an HTTP header. In its most basic form headers are simple name-value pairs. Header names

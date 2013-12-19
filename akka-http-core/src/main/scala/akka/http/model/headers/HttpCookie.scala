@@ -1,7 +1,6 @@
 package akka.http.model
 package headers
 
-import akka.http.rendering._
 import akka.http.util._
 
 // see http://tools.ietf.org/html/rfc6265

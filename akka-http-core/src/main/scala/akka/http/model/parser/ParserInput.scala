@@ -1,6 +1,6 @@
 package akka.http.model.parser
 
-import scala.language.implicitConversions
+import language.implicitConversions
 import java.nio.charset.Charset
 import akka.http.util.UTF8
 
