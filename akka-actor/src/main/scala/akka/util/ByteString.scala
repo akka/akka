@@ -277,7 +277,11 @@ object ByteString {
  *
  * TODO: Add performance characteristics
  */
-sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimized[Byte, ByteString] {
+sealed abstract class ByteString extends Bytes.ByteStringBytes with IndexedSeq[Byte] with IndexedSeqOptimized[Byte, ByteString] {
+  def toByteString: ByteString = this
+  override def isEmpty: Boolean = super.isEmpty
+  override def nonEmpty: Boolean = super.nonEmpty
+
   def apply(idx: Int): Byte
 
   override protected[this] def newBuilder: ByteStringBuilder = ByteString.newBuilder
