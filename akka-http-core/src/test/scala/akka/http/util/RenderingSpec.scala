@@ -1,11 +1,6 @@
-/**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
- */
-
-package akka.http.rendering
+package akka.http.util
 
 import org.scalatest.WordSpec
-import akka.http.util.StringRendering
 
 class RenderingSpec extends WordSpec {
   "The StringRendering" should {
