@@ -136,6 +136,15 @@ case class `Access-Control-Max-Age`(deltaSeconds: Long) extends ModeledHeader {
   protected def companion = `Access-Control-Max-Age`
 }
 
+object Allow extends ModeledCompanion {
+  implicit val methodsRenderer = Renderer.defaultSeqRenderer[HttpMethod]
+}
+case class Allow(methods: HttpMethod*) extends ModeledHeader {
+  import Allow.methodsRenderer
+  def renderValue[R <: Rendering](r: R): r.type = r ~~ methods
+  protected def companion = Allow
+}
+
 object Authorization extends ModeledCompanion
 case class Authorization(credentials: HttpCredentials) extends ModeledHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ credentials
