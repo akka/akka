@@ -186,6 +186,6 @@ abstract class ChannelSpec(config: Config) extends AkkaSpec(config) with Persist
   }
 }
 
-class LeveldbChannelSpec extends ChannelSpec(PersistenceSpec.config("leveldb", "channel"))
-class InmemChannelSpec extends ChannelSpec(PersistenceSpec.config("inmem", "channel"))
+class LeveldbChannelSpec extends ChannelSpec(PersistenceSpec.config("leveldb", "LeveldbChannelSpec"))
+class InmemChannelSpec extends ChannelSpec(PersistenceSpec.config("inmem", "InmemChannelSpec"))
 

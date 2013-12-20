@@ -128,5 +128,5 @@ abstract class ProcessorStashSpec(config: Config) extends AkkaSpec(config) with 
   }
 }
 
-class LeveldbProcessorStashSpec extends ProcessorStashSpec(PersistenceSpec.config("leveldb", "processor-stash"))
-class InmemProcessorStashSpec extends ProcessorStashSpec(PersistenceSpec.config("inmem", "processor-stash"))
+class LeveldbProcessorStashSpec extends ProcessorStashSpec(PersistenceSpec.config("leveldb", "LeveldbProcessorStashSpec"))
+class InmemProcessorStashSpec extends ProcessorStashSpec(PersistenceSpec.config("inmem", "InmemProcessorStashSpec"))

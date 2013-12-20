@@ -41,7 +41,7 @@ object SnapshotSpec {
   }
 }
 
-class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot")) with PersistenceSpec with ImplicitSender {
+class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotSpec")) with PersistenceSpec with ImplicitSender {
   import SnapshotSpec._
   import SnapshotProtocol._
 

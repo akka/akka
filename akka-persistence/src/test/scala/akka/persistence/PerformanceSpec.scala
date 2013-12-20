@@ -120,7 +120,7 @@ object PerformanceSpec {
   }
 }
 
-class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "performance", serialization = "off").withFallback(ConfigFactory.parseString(PerformanceSpec.config))) with PersistenceSpec with ImplicitSender {
+class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "PerformanceSpec", serialization = "off").withFallback(ConfigFactory.parseString(PerformanceSpec.config))) with PersistenceSpec with ImplicitSender {
   import PerformanceSpec._
 
   val warmupCycles = system.settings.config.getInt("akka.persistence.performance.cycles.warmup")

@@ -32,7 +32,7 @@ trait PersistenceSpec extends BeforeAndAfterEach with Cleanup { this: AkkaSpec �
   /**
    * Prefix for generating a unique name per test.
    */
-  def namePrefix: String = "test"
+  def namePrefix: String = system.name
 
   /**
    * Creates a processor with current name as constructor argument.
@@ -52,8 +52,8 @@ object PersistenceSpec {
       akka.actor.serialize-messages = ${serialization}
       akka.persistence.publish-plugin-commands = on
       akka.persistence.journal.plugin = "akka.persistence.journal.${plugin}"
-      akka.persistence.journal.leveldb.dir = "target/journal-${test}-spec"
-      akka.persistence.snapshot-store.local.dir = "target/snapshots-${test}-spec/"
+      akka.persistence.journal.leveldb.dir = "target/journal-${test}"
+      akka.persistence.snapshot-store.local.dir = "target/snapshots-${test}/"
     """)
 }
 
@@ -68,7 +68,12 @@ trait Cleanup { this: AkkaSpec ⇒
   }
 
   override protected def afterTermination() {
-    storageLocations.foreach(FileUtils.deleteDirectory)
+    storageLocations.foreach { dir ⇒
+      if (dir.exists && !FileUtils.deleteQuietly(dir)) {
+        println(s"Failed to delete [$dir], will try again on exit")
+        FileUtils.forceDeleteOnExit(dir)
+      }
+    }
   }
 }
 

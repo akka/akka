@@ -337,5 +337,5 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
   }
 }
 
-class LeveldbEventsourcedSpec extends EventsourcedSpec(PersistenceSpec.config("leveldb", "eventsourced"))
-class InmemEventsourcedSpec extends EventsourcedSpec(PersistenceSpec.config("inmem", "eventsourced"))
+class LeveldbEventsourcedSpec extends EventsourcedSpec(PersistenceSpec.config("leveldb", "LeveldbEventsourcedSpec"))
+class InmemEventsourcedSpec extends EventsourcedSpec(PersistenceSpec.config("inmem", "InmemEventsourcedSpec"))

@@ -157,6 +157,6 @@ abstract class ProcessorChannelSpec(config: Config) extends AkkaSpec(config) wit
   }
 }
 
-class LeveldbProcessorChannelSpec extends ProcessorChannelSpec(PersistenceSpec.config("leveldb", "channel"))
-class InmemProcessorChannelSpec extends ProcessorChannelSpec(PersistenceSpec.config("inmem", "channel"))
+class LeveldbProcessorChannelSpec extends ProcessorChannelSpec(PersistenceSpec.config("leveldb", "LeveldbProcessorChannelSpec"))
+class InmemProcessorChannelSpec extends ProcessorChannelSpec(PersistenceSpec.config("inmem", "InmemProcessorChannelSpec"))
 

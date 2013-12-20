@@ -98,6 +98,6 @@ abstract class PersistentChannelSpec(config: Config) extends ChannelSpec(config)
   }
 }
 
-class LeveldbPersistentChannelSpec extends PersistentChannelSpec(PersistenceSpec.config("leveldb", "persistent-channel"))
-class InmemPersistentChannelSpec extends PersistentChannelSpec(PersistenceSpec.config("inmem", "persistent-channel"))
+class LeveldbPersistentChannelSpec extends PersistentChannelSpec(PersistenceSpec.config("leveldb", "LeveldbPersistentChannelSpec"))
+class InmemPersistentChannelSpec extends PersistentChannelSpec(PersistenceSpec.config("inmem", "InmemPersistentChannelSpec"))
 

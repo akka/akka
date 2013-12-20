@@ -1184,7 +1184,7 @@ object Dependencies {
 
     object Test {
       val commonsMath  = "org.apache.commons"          % "commons-math"                 % "2.1"              % "test" // ApacheV2
-      val commonsIo    = "commons-io"                  % "commons-io"                   % "2.0.1"            % "test" // ApacheV2
+      val commonsIo    = "commons-io"                  % "commons-io"                   % "2.4"              % "test" // ApacheV2
       val commonsCodec = "commons-codec"               % "commons-codec"                % "1.7"              % "test" // ApacheV2
       val junit        = "junit"                       % "junit"                        % "4.10"             % "test" // Common Public License 1.0
       val logback      = "ch.qos.logback"              % "logback-classic"              % "1.0.13"           % "test" // EPL 1.0 / LGPL 2.1
