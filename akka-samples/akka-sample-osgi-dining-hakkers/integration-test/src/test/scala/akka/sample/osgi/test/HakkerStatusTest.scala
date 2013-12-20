@@ -15,6 +15,9 @@ import javax.inject.Inject
 import java.util.concurrent.{ TimeUnit, SynchronousQueue }
 import akka.testkit.TestProbe
 import scala.Some
+import akka.sample.osgi.api.TrackHakker
+import akka.sample.osgi.api.GetEatingCount
+import akka.sample.osgi.api.EatingCount
 
 /**
  * This is a ScalaTest based integration test. Pax-Exam, which is responsible for loading the test class into
@@ -58,13 +61,11 @@ class HakkerStatusTest extends JUnitSuite with ShouldMatchersForJUnit {
   def verifyObtainingAHakkerViaTheTheDiningHakkersService() {
 
     val name = "TestHakker"
-    val hakker = Some(service.getHakker(name, (math.floor(math.random * 5)).toInt))
+    val hakker = Option(service.getHakker(name, (math.floor(math.random * 5)).toInt))
       .getOrElse(throw new IllegalStateException("No Hakker was created via DiningHakkerService"))
 
-    hakker should not be (null)
-
     // takes some time for the first message to get through
-    testProbe.within(5.seconds) {
+    testProbe.within(10.seconds) {
       testProbe.send(hakker, Identify)
       val Identification(fromHakker, busyWith) = testProbe.expectMsgType[Identification]
 
@@ -75,14 +76,24 @@ class HakkerStatusTest extends JUnitSuite with ShouldMatchersForJUnit {
 
   }
 
-}
+  @Test
+  def verifyHakkerTracker() {
 
-object HakkerStatusTest {
-  class Interrogator(queue: SynchronousQueue[(String, String)]) extends Actor {
-    def receive = {
-      case msg: Identification ⇒ {
-        queue.put((msg.name, msg.busyWith))
+    val name = "TestHakker"
+    val hakker = service.getHakker(name, 3)
+    val tracker = service.getTracker()
+    tracker ! TrackHakker(hakker)
+    testProbe.within(10.seconds) {
+      testProbe.awaitAssert {
+        testProbe.within(1.second) {
+          tracker.tell(GetEatingCount(name), testProbe.ref)
+          val reply = testProbe.expectMsgType[EatingCount]
+          reply.hakkerName should be(name)
+          reply.count should be > (0)
+        }
       }
     }
   }
+
 }
+

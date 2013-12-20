@@ -21,6 +21,9 @@
         <scala.dep.version>2.10</scala.dep.version>
         <scalatest.version>1.9.1</scalatest.version>
         <typesafe.config.version>1.1.0-SNAPSHOT</typesafe.config.version>
+        <leveldb.version>0.5</leveldb.version>
+        <leveldbjni.version>1.7</leveldbjni.version>
+        <uncommons-maths.version>1.2.2</uncommons-maths.version>
     </properties>
 
     <modules>
@@ -87,6 +90,16 @@
                 <version>${akka.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.typesafe.akka</groupId>
+                <artifactId>akka-slf4j_${scala.dep.version}</artifactId>
+                <version>${akka.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.typesafe.akka</groupId>
+                <artifactId>akka-persistence-experimental_${scala.dep.version}</artifactId>
+                <version>${akka.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.typesafe</groupId>
                 <artifactId>config</artifactId>
                 <version>${typesafe.config.version}</version>
@@ -100,6 +113,16 @@
                 <groupId>io.netty</groupId>
                 <artifactId>netty</artifactId>
                 <version>${netty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.iq80.leveldb</groupId>
+                <artifactId>leveldb</artifactId>
+                <version>${leveldb.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.fusesource.leveldbjni</groupId>
+                <artifactId>leveldbjni-all</artifactId>
+                <version>${leveldbjni.version}</version>
             </dependency>
 
             <dependency>
