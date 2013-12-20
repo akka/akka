@@ -900,7 +900,7 @@ class BackpressureBuffer(lowBytes: Long, highBytes: Long, maxBytes: Long)
 
     private def buffer(w: Write, doWrite: Boolean): Iterable[Result] = {
       storage :+= w
-      stored += w.data.size
+      stored += w.data.longLength
 
       if (stored > maxBytes) {
         log.warning("aborting connection (buffer overrun)")
@@ -923,7 +923,7 @@ class BackpressureBuffer(lowBytes: Long, highBytes: Long, maxBytes: Long)
       require(seq == storageOffset, s"received ack $seq at $storageOffset")
       require(storage.nonEmpty, s"storage was empty at ack $seq")
 
-      val size = storage(0).data.size
+      val size = storage(0).data.longLength
       stored -= size
 
       storageOffset += 1

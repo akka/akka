@@ -80,6 +80,10 @@ class SslTlsSupport(engine: SSLEngine) extends PipelineStage[HasLogging, Command
 
       override val commandPipeline = (cmd: Command) ⇒ cmd match {
         case x: Tcp.Write ⇒
+          // writing files now works, but it is still a horrible idea for big files, that will have to be loaded
+          // into memory completely
+          if (x.data.longLength > Int.MaxValue)
+            throw new IllegalArgumentException(s"SslTlsSupport doesn't support writes with more than ${Int.MaxValue} bytes.")
           if (pendingSends.isEmpty) encrypt(Send(x))
           else {
             pendingSends = pendingSends enqueue Send(x)
@@ -93,10 +97,6 @@ class SslTlsSupport(engine: SSLEngine) extends PipelineStage[HasLogging, Command
           // don't send close command to network here, it's the job of the SSL engine
           // to shutdown the connection when getting CLOSED in encrypt
           closeEngine()
-
-        case x: Tcp.WriteCommand ⇒
-          throw new IllegalArgumentException(
-            "SslTlsSupport doesn't support Tcp.WriteCommands of type " + x.getClass.getSimpleName)
 
         case cmd ⇒ ctx.singleCommand(cmd)
       }
@@ -258,9 +258,8 @@ class SslTlsSupport(engine: SSLEngine) extends PipelineStage[HasLogging, Command
   private object Send {
     val Empty = new Send(ByteBuffer wrap SslTlsSupport.EmptyByteArray, Tcp.NoAck)
     def apply(write: Tcp.Write) = {
-      val buffer = ByteBuffer allocate write.data.length
-      write.data copyToBuffer buffer
-      buffer.flip()
+      assert(write.data.longLength <= Int.MaxValue) // should be checked above
+      val buffer = ByteBuffer wrap write.data.toByteArray
       new Send(buffer, write.ack)
     }
   }
