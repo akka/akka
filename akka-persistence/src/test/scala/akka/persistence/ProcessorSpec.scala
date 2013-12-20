@@ -346,5 +346,5 @@ abstract class ProcessorSpec(config: Config) extends AkkaSpec(config) with Persi
   }
 }
 
-class LeveldbProcessorSpec extends ProcessorSpec(PersistenceSpec.config("leveldb", "processor"))
-class InmemProcessorSpec extends ProcessorSpec(PersistenceSpec.config("inmem", "processor"))
+class LeveldbProcessorSpec extends ProcessorSpec(PersistenceSpec.config("leveldb", "LeveldbProcessorSpec"))
+class InmemProcessorSpec extends ProcessorSpec(PersistenceSpec.config("inmem", "InmemProcessorSpec"))

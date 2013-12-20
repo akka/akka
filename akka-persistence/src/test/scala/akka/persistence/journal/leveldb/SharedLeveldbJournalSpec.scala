@@ -20,9 +20,9 @@ object SharedLeveldbJournalSpec {
         persistence {
           journal {
             plugin = "akka.persistence.journal.leveldb-shared"
-            leveldb-shared.store.dir = target/shared-journal
+            leveldb-shared.store.dir = target/journal-SharedLeveldbJournalSpec
           }
-          snapshot-store.local.dir = target/snapshot-store
+          snapshot-store.local.dir = target/snapshots-SharedLeveldbJournalSpec
         }
         remote {
           enabled-transports = ["akka.remote.netty.tcp"]
@@ -63,11 +63,19 @@ object SharedLeveldbJournalSpec {
 class SharedLeveldbJournalSpec extends AkkaSpec(SharedLeveldbJournalSpec.config) with Cleanup {
   import SharedLeveldbJournalSpec._
 
+  val storeSystem = ActorSystem("store", ConfigFactory.parseString(SharedLeveldbJournalSpec.config))
+  val processorASystem = ActorSystem("processorA", ConfigFactory.parseString(SharedLeveldbJournalSpec.config))
+  val processorBSystem = ActorSystem("processorB", ConfigFactory.parseString(SharedLeveldbJournalSpec.config))
+
+  override protected def afterTermination() {
+    shutdown(storeSystem)
+    shutdown(processorASystem)
+    shutdown(processorBSystem)
+    super.afterTermination()
+  }
+
   "A LevelDB store" can {
     "be shared by multiple actor systems" in {
-      val storeSystem = ActorSystem("store", ConfigFactory.parseString(SharedLeveldbJournalSpec.config))
-      val processorASystem = ActorSystem("processorA", ConfigFactory.parseString(SharedLeveldbJournalSpec.config))
-      val processorBSystem = ActorSystem("processorB", ConfigFactory.parseString(SharedLeveldbJournalSpec.config))
 
       val processorAProbe = new TestProbe(processorASystem)
       val processorBProbe = new TestProbe(processorBSystem)
