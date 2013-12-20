@@ -350,3 +350,7 @@ case class `X-Forwarded-For`(addresses: Seq[RemoteAddress]) extends ModeledHeade
 }
 
 // FIXME: resurrect SSL-Session-Info header once akka.io.SslTlsSupport supports it
+case class RawHeader(name: String, value: String) extends HttpHeader {
+  val lowercaseName = name.toLowerCase
+  def render[R <: Rendering](r: R): r.type = r ~~ name ~~ ':' ~~ ' ' ~~ value
+}
