@@ -157,7 +157,7 @@ object MessageChunk {
   def apply(body: String, extension: String): MessageChunk =
     apply(body, `UTF-8`, extension)
   def apply(body: String, charset: HttpCharset, extension: String): MessageChunk =
-    apply(HttpData(body, charset), extension)
+    apply(HttpData(body, charset.nioCharset), extension)
   def apply(bytes: Array[Byte]): MessageChunk =
     apply(HttpData(bytes))
   def apply(data: HttpData): MessageChunk =

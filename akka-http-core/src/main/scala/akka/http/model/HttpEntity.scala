@@ -26,7 +26,7 @@ object HttpEntity {
   implicit def apply(bytes: Array[Byte]): HttpEntity = apply(HttpData(bytes))
   implicit def apply(data: HttpData): HttpEntity = apply(ContentTypes.`application/octet-stream`, data)
   def apply(contentType: ContentType, string: String): HttpEntity =
-    if (string.isEmpty) Empty else apply(contentType, HttpData(string, contentType.charset))
+    if (string.isEmpty) Empty else apply(contentType, HttpData(string, contentType.charset.nioCharset))
   def apply(contentType: ContentType, bytes: Array[Byte]): HttpEntity = apply(contentType, HttpData(bytes))
   def apply(contentType: ContentType, bytes: ByteString): HttpEntity = apply(contentType, HttpData(bytes))
   def apply(contentType: ContentType, data: HttpData): HttpEntity =
