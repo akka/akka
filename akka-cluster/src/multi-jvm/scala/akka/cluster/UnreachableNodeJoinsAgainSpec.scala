@@ -90,9 +90,9 @@ abstract class UnreachableNodeJoinsAgainSpec
           // victim becomes all alone
           awaitAssert {
             val members = clusterView.members
-            clusterView.unreachableMembers.size must be(roles.size - 1)
+            clusterView.unreachableMembers.size should be(roles.size - 1)
           }
-          clusterView.unreachableMembers.map(_.address) must be((allButVictim map address).toSet)
+          clusterView.unreachableMembers.map(_.address) should be((allButVictim map address).toSet)
         }
       }
 
@@ -102,13 +102,13 @@ abstract class UnreachableNodeJoinsAgainSpec
           // victim becomes unreachable
           awaitAssert {
             val members = clusterView.members
-            clusterView.unreachableMembers.size must be(1)
+            clusterView.unreachableMembers.size should be(1)
           }
           awaitSeenSameState(allButVictim map address: _*)
           // still one unreachable
-          clusterView.unreachableMembers.size must be(1)
-          clusterView.unreachableMembers.head.address must be(node(victim).address)
-          clusterView.unreachableMembers.head.status must be(MemberStatus.Up)
+          clusterView.unreachableMembers.size should be(1)
+          clusterView.unreachableMembers.head.address should be(node(victim).address)
+          clusterView.unreachableMembers.head.status should be(MemberStatus.Up)
         }
       }
 
@@ -124,8 +124,8 @@ abstract class UnreachableNodeJoinsAgainSpec
       runOn(allButVictim: _*) {
         // eventually removed
         awaitMembersUp(roles.size - 1, Set(victim))
-        awaitAssert(clusterView.unreachableMembers must be(Set.empty), 15 seconds)
-        awaitAssert(clusterView.members.map(_.address) must be((allButVictim map address).toSet))
+        awaitAssert(clusterView.unreachableMembers should be(Set.empty), 15 seconds)
+        awaitAssert(clusterView.members.map(_.address) should be((allButVictim map address).toSet))
 
       }
 
@@ -171,9 +171,9 @@ abstract class UnreachableNodeJoinsAgainSpec
         try {
           Cluster(freshSystem).join(masterAddress)
           within(15 seconds) {
-            awaitAssert(Cluster(freshSystem).readView.members.map(_.address) must contain(victimAddress))
-            awaitAssert(Cluster(freshSystem).readView.members.size must be(expectedNumberOfMembers))
-            awaitAssert(Cluster(freshSystem).readView.members.map(_.status) must be(Set(MemberStatus.Up)))
+            awaitAssert(Cluster(freshSystem).readView.members.map(_.address) should contain(victimAddress))
+            awaitAssert(Cluster(freshSystem).readView.members.size should be(expectedNumberOfMembers))
+            awaitAssert(Cluster(freshSystem).readView.members.map(_.status) should be(Set(MemberStatus.Up)))
           }
 
           // signal to master node that victim is done

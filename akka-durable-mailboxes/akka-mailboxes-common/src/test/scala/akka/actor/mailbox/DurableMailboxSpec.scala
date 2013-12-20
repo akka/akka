@@ -11,7 +11,7 @@ import java.util.concurrent.TimeoutException
 import scala.annotation.tailrec
 
 import org.scalatest.{ WordSpecLike, BeforeAndAfterAll }
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 
 import com.typesafe.config.{ ConfigFactory, Config }
 
@@ -54,17 +54,17 @@ object DurableMailboxSpec {
  * tests can be added in concrete subclass.
  *
  * Subclass must define dispatcher in the supplied config for the specific backend.
- * The id of the dispatcher must be the same as the `<backendName>-dispatcher`.
+ * The id of the dispatcher should be the same as the `<backendName>-dispatcher`.
  */
 @deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 abstract class DurableMailboxSpec(system: ActorSystem, val backendName: String)
-  extends TestKit(system) with WordSpecLike with MustMatchers with BeforeAndAfterAll {
+  extends TestKit(system) with WordSpecLike with Matchers with BeforeAndAfterAll {
 
   import DurableMailboxSpecActorFactory._
 
   /**
    * Subclass must define dispatcher in the supplied config for the specific backend.
-   * The id of the dispatcher must be the same as the `<backendName>-dispatcher`.
+   * The id of the dispatcher should be the same as the `<backendName>-dispatcher`.
    */
   def this(backendName: String, config: String) = {
     this(ActorSystem(backendName + "BasedDurableMailboxSpec",
@@ -136,9 +136,9 @@ abstract class DurableMailboxSpec(system: ActorSystem, val backendName: String)
       val a1, a2 = createMailboxTestActor()
       val mb1 = a1.asInstanceOf[ActorRefWithCell].underlying.asInstanceOf[ActorCell].mailbox
       val mb2 = a2.asInstanceOf[ActorRefWithCell].underlying.asInstanceOf[ActorCell].mailbox
-      isDurableMailbox(mb1) must be(true)
-      isDurableMailbox(mb2) must be(true)
-      (mb1 ne mb2) must be(true)
+      isDurableMailbox(mb1) should be(true)
+      isDurableMailbox(mb2) should be(true)
+      (mb1 ne mb2) should be(true)
     }
 
     "deliver messages at most once" in {
@@ -157,7 +157,7 @@ abstract class DurableMailboxSpec(system: ActorSystem, val backendName: String)
     "support having multiple actors at the same time" in {
       val actors = Vector.fill(3)(createMailboxTestActor(Props[AccumulatorActor]))
 
-      actors foreach { a ⇒ isDurableMailbox(a.asInstanceOf[ActorRefWithCell].underlying.asInstanceOf[ActorCell].mailbox) must be(true) }
+      actors foreach { a ⇒ isDurableMailbox(a.asInstanceOf[ActorRefWithCell].underlying.asInstanceOf[ActorCell].mailbox) should be(true) }
 
       val msgs = 1 to 3
 

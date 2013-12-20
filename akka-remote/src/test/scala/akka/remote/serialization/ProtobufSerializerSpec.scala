@@ -17,8 +17,8 @@ class ProtobufSerializerSpec extends AkkaSpec {
   "Serialization" must {
 
     "resolve protobuf serializer" in {
-      ser.serializerFor(classOf[SerializedMessage]).getClass must be(classOf[ProtobufSerializer])
-      ser.serializerFor(classOf[MyMessage]).getClass must be(classOf[ProtobufSerializer])
+      ser.serializerFor(classOf[SerializedMessage]).getClass should be(classOf[ProtobufSerializer])
+      ser.serializerFor(classOf[MyMessage]).getClass should be(classOf[ProtobufSerializer])
     }
 
   }

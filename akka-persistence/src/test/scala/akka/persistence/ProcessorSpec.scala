@@ -225,7 +225,7 @@ abstract class ProcessorSpec(config: Config) extends AkkaSpec(config) with Persi
     "derive outbound messages from the current message" in {
       val processor = namedProcessor[OutboundMessageTestProcessor]
       processor ! Persistent("c")
-      1 to 3 foreach { _ ⇒ expectMsgPF() { case Persistent(payload, snr) ⇒ payload must be(snr) } }
+      1 to 3 foreach { _ ⇒ expectMsgPF() { case Persistent(payload, snr) ⇒ payload should be(snr) } }
     }
     "support recovery with upper sequence number bound" in {
       val processor = namedProcessor[RecoverOffTestProcessor]

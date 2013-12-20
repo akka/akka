@@ -7,7 +7,7 @@ import com.typesafe.config.ConfigFactory
 
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.WordSpecLike
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 
 import akka.actor.Props
 import akka.cluster.Cluster
@@ -47,7 +47,7 @@ class TransformationSampleSpecMultiJvmNode4 extends TransformationSampleSpec
 class TransformationSampleSpecMultiJvmNode5 extends TransformationSampleSpec
 
 abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSampleSpecConfig)
-  with WordSpecLike with MustMatchers with BeforeAndAfterAll with ImplicitSender {
+  with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
   import TransformationSampleSpecConfig._
 
@@ -119,7 +119,7 @@ abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSamp
     // backends might not have registered initially
     awaitAssert {
       transformationFrontend ! TransformationJob("hello")
-      expectMsgType[TransformationResult](1.second).text must be("HELLO")
+      expectMsgType[TransformationResult](1.second).text should be("HELLO")
     }
   }
 

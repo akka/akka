@@ -9,7 +9,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor._
 import java.util.{ Date, GregorianCalendar, TimeZone, Calendar }
 import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import akka.serialization.SerializationExtension
 import akka.event.Logging._
 import akka.util.Helpers
@@ -112,7 +112,7 @@ object LoggerSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class LoggerSpec extends WordSpec with MustMatchers {
+class LoggerSpec extends WordSpec with Matchers {
 
   import LoggerSpec._
 
@@ -145,7 +145,7 @@ class LoggerSpec extends WordSpec with MustMatchers {
 
     "log messages to standard output" in {
       val out = createSystemAndLogToBuffer("defaultLogger", defaultConfig, true)
-      out.size must be > (0)
+      out.size should be > (0)
     }
   }
 
@@ -153,7 +153,7 @@ class LoggerSpec extends WordSpec with MustMatchers {
 
     "not log messages to standard output" in {
       val out = createSystemAndLogToBuffer("noLogging", noLoggingConfig, false)
-      out.size must be(0)
+      out.size should be(0)
     }
   }
 
@@ -230,7 +230,7 @@ class LoggerSpec extends WordSpec with MustMatchers {
       val minutes = c.get(Calendar.MINUTE)
       val seconds = c.get(Calendar.SECOND)
       val ms = c.get(Calendar.MILLISECOND)
-      Helpers.currentTimeMillisToUTCString(timestamp) must be(f"$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC")
+      Helpers.currentTimeMillisToUTCString(timestamp) should be(f"$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC")
     }
   }
 

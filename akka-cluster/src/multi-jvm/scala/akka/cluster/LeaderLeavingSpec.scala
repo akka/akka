@@ -80,13 +80,13 @@ abstract class LeaderLeavingSpec
           markNodeAsUnavailable(oldLeaderAddress)
 
           // verify that the LEADER is no longer part of the 'members' set
-          awaitAssert(clusterView.members.map(_.address) must not contain (oldLeaderAddress))
+          awaitAssert(clusterView.members.map(_.address) should not contain (oldLeaderAddress))
 
           // verify that the LEADER is not part of the 'unreachable' set
-          awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (oldLeaderAddress))
+          awaitAssert(clusterView.unreachableMembers.map(_.address) should not contain (oldLeaderAddress))
 
           // verify that we have a new LEADER
-          awaitAssert(clusterView.leader must not be (oldLeaderAddress))
+          awaitAssert(clusterView.leader should not be (oldLeaderAddress))
         }
 
         enterBarrier("finished")

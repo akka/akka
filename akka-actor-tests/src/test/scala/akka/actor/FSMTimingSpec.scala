@@ -115,7 +115,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
       val seq = receiveWhile(2 seconds) {
         case Tick ⇒ Tick
       }
-      seq must have length 5
+      seq should have length 5
       within(500 millis) {
         expectMsg(Transition(fsm, TestRepeatedTimer, Initial))
       }

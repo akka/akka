@@ -62,7 +62,7 @@ class RandomRoutedRemoteActorSpec extends MultiNodeSpec(RandomRoutedRemoteActorM
       runOn(fourth) {
         enterBarrier("start")
         val actor = system.actorOf(Props[SomeActor].withRouter(RandomRouter()), "service-hello")
-        actor.isInstanceOf[RoutedActorRef] must be(true)
+        actor.isInstanceOf[RoutedActorRef] should be(true)
 
         val connectionCount = 3
         val iterationCount = 100
@@ -82,8 +82,8 @@ class RandomRoutedRemoteActorSpec extends MultiNodeSpec(RandomRoutedRemoteActorM
 
         enterBarrier("end")
         // since it's random we can't be too strict in the assert
-        replies.values count (_ > 0) must be > (connectionCount - 2)
-        replies.get(node(fourth).address) must be(None)
+        replies.values count (_ > 0) should be > (connectionCount - 2)
+        replies.get(node(fourth).address) should be(None)
 
         // shut down the actor before we let the other node(s) shut down so we don't try to send
         // "Terminate" to a shut down node

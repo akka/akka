@@ -185,7 +185,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
   def startClusterNode(): Unit = {
     if (clusterView.members.isEmpty) {
       cluster join myself
-      awaitAssert(clusterView.members.map(_.address) must contain(address(myself)))
+      awaitAssert(clusterView.members.map(_.address) should contain(address(myself)))
     } else
       clusterView.self
   }
@@ -239,8 +239,8 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
   def assertMembers(gotMembers: Iterable[Member], expectedAddresses: Address*): Unit = {
     import Member.addressOrdering
     val members = gotMembers.toIndexedSeq
-    members.size must be(expectedAddresses.length)
-    expectedAddresses.sorted.zipWithIndex.foreach { case (a, i) ⇒ members(i).address must be(a) }
+    members.size should be(expectedAddresses.length)
+    expectedAddresses.sorted.zipWithIndex.foreach { case (a, i) ⇒ members(i).address should be(a) }
   }
 
   /**
@@ -266,13 +266,13 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
    */
   def assertLeaderIn(nodesInCluster: immutable.Seq[RoleName]): Unit =
     if (nodesInCluster.contains(myself)) {
-      nodesInCluster.length must not be (0)
+      nodesInCluster.length should not be (0)
       val expectedLeader = roleOfLeader(nodesInCluster)
       val leader = clusterView.leader
       val isLeader = leader == Some(clusterView.selfAddress)
       assert(isLeader == isNode(expectedLeader),
         "expectedLeader [%s], got leader [%s], members [%s]".format(expectedLeader, leader, clusterView.members))
-      clusterView.status must (be(MemberStatus.Up) or be(MemberStatus.Leaving))
+      clusterView.status should (be(MemberStatus.Up) or be(MemberStatus.Leaving))
     }
 
   /**
@@ -285,23 +285,23 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
     timeout: FiniteDuration = 25.seconds): Unit = {
     within(timeout) {
       if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
-        awaitAssert(canNotBePartOfMemberRing foreach (a ⇒ clusterView.members.map(_.address) must not contain (a)))
-      awaitAssert(clusterView.members.size must be(numberOfMembers))
-      awaitAssert(clusterView.members.map(_.status) must be(Set(MemberStatus.Up)))
+        awaitAssert(canNotBePartOfMemberRing foreach (a ⇒ clusterView.members.map(_.address) should not contain (a)))
+      awaitAssert(clusterView.members.size should be(numberOfMembers))
+      awaitAssert(clusterView.members.map(_.status) should be(Set(MemberStatus.Up)))
       // clusterView.leader is updated by LeaderChanged, await that to be updated also
       val expectedLeader = clusterView.members.headOption.map(_.address)
-      awaitAssert(clusterView.leader must be(expectedLeader))
+      awaitAssert(clusterView.leader should be(expectedLeader))
     }
   }
 
   def awaitAllReachable(): Unit =
-    awaitAssert(clusterView.unreachableMembers must be(Set.empty))
+    awaitAssert(clusterView.unreachableMembers should be(Set.empty))
 
   /**
    * Wait until the specified nodes have seen the same gossip overview.
    */
   def awaitSeenSameState(addresses: Address*): Unit =
-    awaitAssert((addresses.toSet -- clusterView.seenBy) must be(Set.empty))
+    awaitAssert((addresses.toSet -- clusterView.seenBy) should be(Set.empty))
 
   /**
    * Leader according to the address ordering of the roles.
@@ -312,7 +312,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
    * be determined from the `RoleName`.
    */
   def roleOfLeader(nodesInCluster: immutable.Seq[RoleName] = roles): RoleName = {
-    nodesInCluster.length must not be (0)
+    nodesInCluster.length should not be (0)
     nodesInCluster.sorted.head
   }
 
@@ -341,7 +341,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
    */
   def markNodeAsUnavailable(address: Address): Unit = {
     if (isFailureDetectorPuppet) {
-      // before marking it as unavailble there must be at least one heartbeat
+      // before marking it as unavailble there should be at least one heartbeat
       // to create the FailureDetectorPuppet in the FailureDetectorRegistry
       cluster.failureDetector.heartbeat(address)
       failureDetectorPuppet(address) foreach (_.markNodeAsUnavailable())

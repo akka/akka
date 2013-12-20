@@ -17,14 +17,14 @@ import akka.actor._
 import akka.pattern._
 import scala.concurrent.duration._
 import akka.util.Timeout
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import akka.testkit._
 import akka.actor.Status.Failure
 
 /**
  * Tests the features of the Camel Producer.
  */
-class ProducerFeatureTest extends TestKit(ActorSystem("test", AkkaSpec.testConf)) with WordSpecLike with BeforeAndAfterAll with BeforeAndAfterEach with MustMatchers {
+class ProducerFeatureTest extends TestKit(ActorSystem("test", AkkaSpec.testConf)) with WordSpecLike with BeforeAndAfterAll with BeforeAndAfterEach with Matchers {
 
   import ProducerFeatureTest._
   implicit def camel = CamelExtension(system)
@@ -79,12 +79,12 @@ class ProducerFeatureTest extends TestKit(ActorSystem("test", AkkaSpec.testConf)
         producer.tell(message, testActor)
         expectMsgPF(timeoutDuration) {
           case Failure(e: AkkaCamelException) ⇒
-            e.getMessage must be("failure")
-            e.headers must be(Map(CamelMessage.MessageExchangeId -> "123"))
+            e.getMessage should be("failure")
+            e.headers should be(Map(CamelMessage.MessageExchangeId -> "123"))
         }
       }
       Await.ready(latch, timeoutDuration)
-      deadActor must be(Some(producer))
+      deadActor should be(Some(producer))
     }
 
     "03 produce a message oneway" in {
@@ -121,8 +121,8 @@ class ProducerFeatureTest extends TestKit(ActorSystem("test", AkkaSpec.testConf)
         producer.tell(message, testActor)
         expectMsgPF(timeoutDuration) {
           case Failure(e: AkkaCamelException) ⇒
-            e.getMessage must be("failure")
-            e.headers must be(Map(CamelMessage.MessageExchangeId -> "123"))
+            e.getMessage should be("failure")
+            e.headers should be(Map(CamelMessage.MessageExchangeId -> "123"))
         }
       }
     }
@@ -144,8 +144,8 @@ class ProducerFeatureTest extends TestKit(ActorSystem("test", AkkaSpec.testConf)
         producer.tell(message, testActor)
         expectMsgPF(timeoutDuration) {
           case Failure(e: AkkaCamelException) ⇒
-            e.getMessage must be("failure")
-            e.headers must be(Map(CamelMessage.MessageExchangeId -> "123", "test" -> "failure"))
+            e.getMessage should be("failure")
+            e.headers should be(Map(CamelMessage.MessageExchangeId -> "123", "test" -> "failure"))
         }
       }
     }
@@ -187,8 +187,8 @@ class ProducerFeatureTest extends TestKit(ActorSystem("test", AkkaSpec.testConf)
         producer.tell(message, testActor)
         expectMsgPF(timeoutDuration) {
           case Failure(e: AkkaCamelException) ⇒
-            e.getMessage must be("failure")
-            e.headers must be(Map(CamelMessage.MessageExchangeId -> "123", "test" -> "failure"))
+            e.getMessage should be("failure")
+            e.headers should be(Map(CamelMessage.MessageExchangeId -> "123", "test" -> "failure"))
         }
       }
     }
@@ -220,7 +220,7 @@ class ProducerFeatureTest extends TestKit(ActorSystem("test", AkkaSpec.testConf)
         val futureFailed = producer.tell("fail", testActor)
         expectMsgPF(timeoutDuration) {
           case Failure(e) ⇒
-            e.getMessage must be("fail")
+            e.getMessage should be("fail")
         }
         producer.tell("OK", testActor)
         expectMsg("OK")

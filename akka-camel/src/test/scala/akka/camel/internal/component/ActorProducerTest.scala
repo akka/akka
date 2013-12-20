@@ -17,8 +17,8 @@ import internal.{ DefaultCamel, CamelExchangeAdapter }
 import org.scalatest.{ Suite, WordSpecLike, BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.camel.TestSupport._
 import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
-import org.mockito.{ ArgumentMatcher, Matchers, Mockito }
-import org.scalatest.matchers.MustMatchers
+import org.mockito.{ ArgumentMatcher, Matchers ⇒ MMatchers, Mockito }
+import org.scalatest.Matchers
 import akka.actor.Status.{ Success, Failure }
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem.Settings
@@ -30,7 +30,7 @@ import akka.util.Timeout
 import akka.actor._
 import akka.testkit._
 
-class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike with MustMatchers with ActorProducerFixture {
+class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike with Matchers with ActorProducerFixture {
   implicit val timeout = Timeout(10 seconds)
 
   "ActorProducer" when {
@@ -55,7 +55,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike w
         }
 
         "not expect response and not block" taggedAs TimingTest in {
-          time(producer.processExchangeAdapter(exchange)) must be < (200 millis)
+          time(producer.processExchangeAdapter(exchange)) should be < (200 millis)
         }
       }
 
@@ -128,7 +128,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike w
 
           "timeout after replyTimeout" taggedAs TimingTest in {
             val duration = process()
-            duration must (be >= (100 millis) and be < (300 millis))
+            duration should (be >= (100 millis) and be < (300 millis))
           }
 
           "never set the response on exchange" in {
@@ -175,7 +175,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike w
               probe.expectMsgType[CamelMessage]
               probe.sender ! "some message"
             }
-            doneSync must be(false)
+            doneSync should be(false)
             info("done async")
 
             asyncCallback.expectDoneAsyncWithin(1 second)
@@ -209,9 +209,9 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike w
             producer = given(outCapable = true, replyTimeout = 10 millis)
             producer.processExchangeAdapter(exchange, asyncCallback)
             asyncCallback.awaitCalled(100 millis)
-            verify(exchange).setFailure(Matchers.argThat(new ArgumentMatcher[FailureResult] {
+            verify(exchange).setFailure(MMatchers.argThat(new ArgumentMatcher[FailureResult] {
               def matches(failure: AnyRef) = {
-                failure.asInstanceOf[FailureResult].cause must be(anInstanceOf[TimeoutException])
+                failure.asInstanceOf[FailureResult].cause should be(anInstanceOf[TimeoutException])
                 true
               }
 
@@ -237,7 +237,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike w
             producer = given(outCapable = false, autoAck = true)
             val doneSync = producer.processExchangeAdapter(exchange, asyncCallback)
 
-            doneSync must be(true)
+            doneSync should be(true)
             info("done sync")
             asyncCallback.expectDoneSyncWithin(1 second)
             info("async callback called")
@@ -255,7 +255,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike w
 
               val doneSync = producer.processExchangeAdapter(exchange, asyncCallback)
 
-              doneSync must be(false)
+              doneSync should be(false)
               within(1 second) {
                 probe.expectMsgType[CamelMessage]
                 info("message sent to consumer")
@@ -306,7 +306,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike w
 
               val doneSync = producer.processExchangeAdapter(exchange, asyncCallback)
 
-              doneSync must be(false)
+              doneSync should be(false)
               within(1 second) {
                 probe.expectMsgType[CamelMessage]
                 info("message sent to consumer")
@@ -325,7 +325,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike w
   }
 }
 
-private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach { self: TestKit with MustMatchers with Suite ⇒
+private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach { self: TestKit with Matchers with Suite ⇒
   var camel: Camel = _
   var exchange: CamelExchangeAdapter = _
   var callback: AsyncCallback = _

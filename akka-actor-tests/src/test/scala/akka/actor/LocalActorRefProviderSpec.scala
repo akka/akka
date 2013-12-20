@@ -36,7 +36,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
     "find actor refs using actorFor" in {
       val a = system.actorOf(Props(new Actor { def receive = { case _ ⇒ } }))
       val b = system.actorFor(a.path)
-      a must be === b
+      a should equal(b)
     }
 
     "find child actor with URL encoded name using actorFor" in {
@@ -51,8 +51,8 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
       }))
       a.tell("lookup", testActor)
       val b = expectMsgType[ActorRef]
-      b.isTerminated must be(false)
-      b.path.name must be(childName)
+      b.isTerminated should be(false)
+      b.path.name should be(childName)
     }
 
   }
@@ -67,15 +67,15 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
       a.tell(GetChild, testActor)
       val child = expectMsgType[ActorRef]
       val childProps1 = child.asInstanceOf[LocalActorRef].underlying.props
-      childProps1 must be(Props.empty)
+      childProps1 should be(Props.empty)
       system stop a
       expectTerminated(a)
       // the fields are cleared after the Terminated message has been sent,
       // so we need to check for a reasonable time after we receive it
       awaitAssert({
         val childProps2 = child.asInstanceOf[LocalActorRef].underlying.props
-        childProps2 must not be theSameInstanceAs(childProps1)
-        childProps2 must be theSameInstanceAs ActorCell.terminatedProps
+        childProps2 should not be theSameInstanceAs(childProps1)
+        childProps2 should be theSameInstanceAs ActorCell.terminatedProps
       }, 1 second)
     }
   }
@@ -86,7 +86,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
       val impl = system.asInstanceOf[ActorSystemImpl]
       val provider = impl.provider
 
-      provider.isInstanceOf[LocalActorRefProvider] must be(true)
+      provider.isInstanceOf[LocalActorRefProvider] should be(true)
 
       for (i ← 0 until 100) {
         val address = "new-actor" + i
@@ -97,7 +97,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
           case Some(Failure(ex: InvalidActorNameException)) ⇒ 2
           case x ⇒ x
         })
-        set must be === Set(1, 2)
+        set should equal(Set(1, 2))
       }
     }
 
@@ -114,14 +114,14 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
     }
 
     "throw suitable exceptions for malformed actor names" in {
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, null)).getMessage.contains("null") must be(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "")).getMessage.contains("empty") must be(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "$hallo")).getMessage.contains("conform") must be(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "a%")).getMessage.contains("conform") must be(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%3")).getMessage.contains("conform") must be(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%1t")).getMessage.contains("conform") must be(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "a?")).getMessage.contains("conform") must be(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "üß")).getMessage.contains("conform") must be(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, null)).getMessage.contains("null") should be(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "")).getMessage.contains("empty") should be(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "$hallo")).getMessage.contains("conform") should be(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "a%")).getMessage.contains("conform") should be(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%3")).getMessage.contains("conform") should be(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%1t")).getMessage.contains("conform") should be(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "a?")).getMessage.contains("conform") should be(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "üß")).getMessage.contains("conform") should be(true)
     }
 
   }

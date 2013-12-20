@@ -37,9 +37,9 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
     val ref = system.actorOf(Props[SampleActor].
       withDeploy(Deploy(scope = RemoteScope(address))))
     //#deploy
-    ref.path.address must be(address)
+    ref.path.address should be(address)
     ref ! "test"
-    expectMsgType[ActorRef].path.address must be(address)
+    expectMsgType[ActorRef].path.address should be(address)
   }
 
   "demonstrate address extractor" in {
@@ -47,7 +47,7 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
     val one = AddressFromURIString("akka.tcp://sys@host:1234")
     val two = Address("akka.tcp", "sys", "host", 1234) // this gives the same
     //#make-address
-    one must be === two
+    one should equal(two)
   }
 
   "demonstrate sampleActor" in {

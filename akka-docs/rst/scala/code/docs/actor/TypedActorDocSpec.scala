@@ -8,7 +8,7 @@ import scala.concurrent.{ Promise, Future, Await }
 import scala.concurrent.duration._
 import akka.actor.{ ActorContext, TypedActor, TypedProps }
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import akka.testkit._
 
 //Mr funny man avoids printing to stdout AND keeping docs alright
@@ -124,11 +124,11 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#typed-actor-call-strict
     //#typed-actor-calls
 
-    Await.result(fSquare, 3 seconds) must be === 100
+    Await.result(fSquare, 3 seconds) should equal(100)
 
-    oSquare must be === Some(100)
+    oSquare should equal(Some(100))
 
-    iSquare must be === 100
+    iSquare should equal(100)
 
     //#typed-actor-stop
     TypedActor(system).stop(mySquarer)
@@ -174,6 +174,6 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
     TypedActor(system).poisonPill(awesomeFooBar)
     //#typed-actor-supercharge-usage
-    Await.result(f, 3 seconds) must be === "YES"
+    Await.result(f, 3 seconds) should equal("YES")
   }
 }

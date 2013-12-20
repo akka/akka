@@ -24,44 +24,44 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
       {
         import config._
 
-        getString("akka.version") must equal("2.3-SNAPSHOT")
-        settings.ConfigVersion must equal("2.3-SNAPSHOT")
+        getString("akka.version") should equal("2.3-SNAPSHOT")
+        settings.ConfigVersion should equal("2.3-SNAPSHOT")
 
-        getBoolean("akka.daemonic") must equal(false)
+        getBoolean("akka.daemonic") should equal(false)
 
-        // WARNING: This setting must be off in the default reference.conf, but must be on when running
+        // WARNING: This setting should be off in the default reference.conf, but should be on when running
         // the test suite.
-        getBoolean("akka.actor.serialize-messages") must equal(true)
-        settings.SerializeAllMessages must equal(true)
+        getBoolean("akka.actor.serialize-messages") should equal(true)
+        settings.SerializeAllMessages should equal(true)
 
-        getInt("akka.scheduler.ticks-per-wheel") must equal(512)
-        getMilliseconds("akka.scheduler.tick-duration") must equal(10)
-        getString("akka.scheduler.implementation") must equal("akka.actor.LightArrayRevolverScheduler")
+        getInt("akka.scheduler.ticks-per-wheel") should equal(512)
+        getMilliseconds("akka.scheduler.tick-duration") should equal(10)
+        getString("akka.scheduler.implementation") should equal("akka.actor.LightArrayRevolverScheduler")
 
-        getBoolean("akka.daemonic") must be(false)
-        settings.Daemonicity must be(false)
+        getBoolean("akka.daemonic") should be(false)
+        settings.Daemonicity should be(false)
 
-        getBoolean("akka.jvm-exit-on-fatal-error") must be(true)
-        settings.JvmExitOnFatalError must be(true)
+        getBoolean("akka.jvm-exit-on-fatal-error") should be(true)
+        settings.JvmExitOnFatalError should be(true)
 
-        getInt("akka.actor.deployment.default.virtual-nodes-factor") must be(10)
-        settings.DefaultVirtualNodesFactor must be(10)
+        getInt("akka.actor.deployment.default.virtual-nodes-factor") should be(10)
+        settings.DefaultVirtualNodesFactor should be(10)
 
-        getMilliseconds("akka.actor.unstarted-push-timeout") must be(10.seconds.toMillis)
-        settings.UnstartedPushTimeout.duration must be(10.seconds)
+        getMilliseconds("akka.actor.unstarted-push-timeout") should be(10.seconds.toMillis)
+        settings.UnstartedPushTimeout.duration should be(10.seconds)
 
-        settings.Loggers.size must be(1)
-        settings.Loggers.head must be(classOf[DefaultLogger].getName)
-        getStringList("akka.loggers").get(0) must be(classOf[DefaultLogger].getName)
+        settings.Loggers.size should be(1)
+        settings.Loggers.head should be(classOf[DefaultLogger].getName)
+        getStringList("akka.loggers").get(0) should be(classOf[DefaultLogger].getName)
 
-        getMilliseconds("akka.logger-startup-timeout") must be(5.seconds.toMillis)
-        settings.LoggerStartTimeout.duration must be(5.seconds)
+        getMilliseconds("akka.logger-startup-timeout") should be(5.seconds.toMillis)
+        settings.LoggerStartTimeout.duration should be(5.seconds)
 
-        getInt("akka.log-dead-letters") must be(10)
-        settings.LogDeadLetters must be(10)
+        getInt("akka.log-dead-letters") should be(10)
+        settings.LogDeadLetters should be(10)
 
-        getBoolean("akka.log-dead-letters-during-shutdown") must be(true)
-        settings.LogDeadLettersDuringShutdown must be(true)
+        getBoolean("akka.log-dead-letters-during-shutdown") should be(true)
+        settings.LogDeadLettersDuringShutdown should be(true)
       }
 
       {
@@ -70,21 +70,21 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         //General dispatcher config
 
         {
-          c.getString("type") must equal("Dispatcher")
-          c.getString("executor") must equal("fork-join-executor")
-          c.getMilliseconds("shutdown-timeout") must equal(1 * 1000)
-          c.getInt("throughput") must equal(5)
-          c.getMilliseconds("throughput-deadline-time") must equal(0)
-          c.getBoolean("attempt-teamwork") must equal(true)
+          c.getString("type") should equal("Dispatcher")
+          c.getString("executor") should equal("fork-join-executor")
+          c.getMilliseconds("shutdown-timeout") should equal(1 * 1000)
+          c.getInt("throughput") should equal(5)
+          c.getMilliseconds("throughput-deadline-time") should equal(0)
+          c.getBoolean("attempt-teamwork") should equal(true)
         }
 
         //Fork join executor config
 
         {
           val pool = c.getConfig("fork-join-executor")
-          pool.getInt("parallelism-min") must equal(8)
-          pool.getDouble("parallelism-factor") must equal(3.0)
-          pool.getInt("parallelism-max") must equal(64)
+          pool.getInt("parallelism-min") should equal(8)
+          pool.getDouble("parallelism-factor") should equal(3.0)
+          pool.getInt("parallelism-max") should equal(64)
         }
 
         //Thread pool executor config
@@ -92,38 +92,38 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         {
           val pool = c.getConfig("thread-pool-executor")
           import pool._
-          getMilliseconds("keep-alive-time") must equal(60 * 1000)
-          getDouble("core-pool-size-factor") must equal(3.0)
-          getDouble("max-pool-size-factor") must equal(3.0)
-          getInt("task-queue-size") must equal(-1)
-          getString("task-queue-type") must equal("linked")
-          getBoolean("allow-core-timeout") must equal(true)
+          getMilliseconds("keep-alive-time") should equal(60 * 1000)
+          getDouble("core-pool-size-factor") should equal(3.0)
+          getDouble("max-pool-size-factor") should equal(3.0)
+          getInt("task-queue-size") should equal(-1)
+          getString("task-queue-type") should equal("linked")
+          getBoolean("allow-core-timeout") should equal(true)
         }
 
         // Debug config
         {
           val debug = config.getConfig("akka.actor.debug")
           import debug._
-          getBoolean("receive") must be(false)
-          settings.AddLoggingReceive must be(false)
+          getBoolean("receive") should be(false)
+          settings.AddLoggingReceive should be(false)
 
-          getBoolean("autoreceive") must be(false)
-          settings.DebugAutoReceive must be(false)
+          getBoolean("autoreceive") should be(false)
+          settings.DebugAutoReceive should be(false)
 
-          getBoolean("lifecycle") must be(false)
-          settings.DebugLifecycle must be(false)
+          getBoolean("lifecycle") should be(false)
+          settings.DebugLifecycle should be(false)
 
-          getBoolean("fsm") must be(false)
-          settings.FsmDebugEvent must be(false)
+          getBoolean("fsm") should be(false)
+          settings.FsmDebugEvent should be(false)
 
-          getBoolean("event-stream") must be(false)
-          settings.DebugEventStream must be(false)
+          getBoolean("event-stream") should be(false)
+          settings.DebugEventStream should be(false)
 
-          getBoolean("unhandled") must be(false)
-          settings.DebugUnhandledMessage must be(false)
+          getBoolean("unhandled") should be(false)
+          settings.DebugUnhandledMessage should be(false)
 
-          getBoolean("router-misconfiguration") must be(false)
-          settings.DebugRouterMisconfiguration must be(false)
+          getBoolean("router-misconfiguration") should be(false)
+          settings.DebugRouterMisconfiguration should be(false)
         }
 
       }
@@ -134,9 +134,9 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         // general mailbox config
 
         {
-          c.getInt("mailbox-capacity") must equal(1000)
-          c.getMilliseconds("mailbox-push-timeout-time") must equal(10 * 1000)
-          c.getString("mailbox-type") must be("akka.dispatch.UnboundedMailbox")
+          c.getInt("mailbox-capacity") should equal(1000)
+          c.getMilliseconds("mailbox-push-timeout-time") should equal(10 * 1000)
+          c.getString("mailbox-type") should be("akka.dispatch.UnboundedMailbox")
         }
       }
     }

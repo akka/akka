@@ -91,12 +91,12 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
 
       // should not be run immediately
       assert(countDownLatch.await(100, TimeUnit.MILLISECONDS) == false)
-      countDownLatch.getCount must be(3)
+      countDownLatch.getCount should be(3)
 
       // after 1 second the wait should fail
       assert(countDownLatch.await(2, TimeUnit.SECONDS) == false)
       // should still be 1 left
-      countDownLatch.getCount must be(1)
+      countDownLatch.getCount should be(1)
     }
 
     /**
@@ -120,7 +120,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       timeout.cancel()
       Thread.sleep((initialDelay + 100.milliseconds.dilated).toMillis)
 
-      ticks.get must be(0)
+      ticks.get should be(0)
     }
 
     "be cancellable after initial delay" taggedAs TimingTest in {
@@ -135,25 +135,25 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       timeout.cancel()
       Thread.sleep((delay + 100.milliseconds.dilated).toMillis)
 
-      ticks.get must be(1)
+      ticks.get should be(1)
     }
 
     "be canceled if cancel is performed before execution" in {
       val task = collectCancellable(system.scheduler.scheduleOnce(10 seconds)(()))
-      task.cancel() must be(true)
-      task.isCancelled must be(true)
-      task.cancel() must be(false)
-      task.isCancelled must be(true)
+      task.cancel() should be(true)
+      task.isCancelled should be(true)
+      task.cancel() should be(false)
+      task.isCancelled should be(true)
     }
 
     "not be canceled if cancel is performed after execution" in {
       val latch = TestLatch(1)
       val task = collectCancellable(system.scheduler.scheduleOnce(10 millis)(latch.countDown()))
       Await.ready(latch, remaining)
-      task.cancel() must be(false)
-      task.isCancelled must be(false)
-      task.cancel() must be(false)
-      task.isCancelled must be(false)
+      task.cancel() should be(false)
+      task.isCancelled should be(false)
+      task.cancel() should be(false)
+      task.isCancelled should be(false)
     }
 
     /**
@@ -228,7 +228,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       // LARS is a bit more aggressive in scheduling recurring tasks at the right
       // frequency and may execute them a little earlier; the actual expected timing
       // is 1599ms on a fast machine or 1699ms on a loaded one (plus some room for jenkins)
-      (System.nanoTime() - startTime).nanos.toMillis must be(1750L plusOrMinus 250)
+      (System.nanoTime() - startTime).nanos.toMillis should be(1750L +- 250)
     }
 
     "adjust for scheduler inaccuracy" taggedAs TimingTest in {
@@ -238,7 +238,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       system.scheduler.schedule(25.millis, 25.millis) { latch.countDown() }
       Await.ready(latch, 6.seconds)
       // Rate
-      n * 1000.0 / (System.nanoTime - startTime).nanos.toMillis must be(40.0 plusOrMinus 4)
+      n * 1000.0 / (System.nanoTime - startTime).nanos.toMillis should be(40.0 +- 4)
     }
 
     "not be affected by long running task" taggedAs TimingTest in {
@@ -251,7 +251,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       }
       Await.ready(latch, 6.seconds)
       // Rate
-      n * 1000.0 / (System.nanoTime - startTime).nanos.toMillis must be(4.4 plusOrMinus 0.3)
+      n * 1000.0 / (System.nanoTime - startTime).nanos.toMillis should be(4.4 +- 0.3)
     }
 
     "handle timeouts equal to multiple of wheel period" taggedAs TimingTest in {
@@ -377,7 +377,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
         val N = 1000000
         (1 to N) foreach (_ ⇒ sched.scheduleOnce(delay)(counter.incrementAndGet()))
         sched.close()
-        Await.result(terminated, 3.seconds.dilated) must be > 10
+        Await.result(terminated, 3.seconds.dilated) should be > 10
         awaitCond(counter.get == N)
       }
     }
@@ -480,9 +480,9 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
           .takeWhile(_.isSuccess || { overrun -= 1; overrun >= 0 })
           .partition(_.isSuccess)
         val s = success.size
-        s must be < cap
+        s should be < cap
         awaitCond(s == counter.get, message = s"$s was not ${counter.get}")
-        failure.size must be === headroom
+        failure.size should equal(headroom)
       }
     }
   }
@@ -490,7 +490,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
   trait Driver {
     def wakeUp(d: FiniteDuration): Unit
     def expectWait(): FiniteDuration
-    def expectWait(d: FiniteDuration) { expectWait() must be(d) }
+    def expectWait(d: FiniteDuration) { expectWait() should be(d) }
     def probe: TestProbe
     def step: FiniteDuration
     def close(): Unit

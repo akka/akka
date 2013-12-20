@@ -49,20 +49,20 @@ class PipelineSpec extends AkkaSpec("akka.actor.serialize-creators = on") {
     "be correctly evaluated if single stage" in {
       val PipelinePorts(cmd, evt, _) =
         PipelineFactory.buildFunctionTriple(ctx, stage[Level2, Level1](1, 0, false))
-      cmd(Level2.msgA) must be(Nil -> Seq(Level1.msgA))
-      evt(Level1.msgA) must be(Seq(Level2.msgA) -> Nil)
-      cmd(Level2.msgB) must be(Nil -> Seq(Level1.msgB))
-      evt(Level1.msgB) must be(Seq(Level2.msgB) -> Nil)
+      cmd(Level2.msgA) should be(Nil -> Seq(Level1.msgA))
+      evt(Level1.msgA) should be(Seq(Level2.msgA) -> Nil)
+      cmd(Level2.msgB) should be(Nil -> Seq(Level1.msgB))
+      evt(Level1.msgB) should be(Seq(Level2.msgB) -> Nil)
     }
 
     "be correctly evaluated when two combined" in {
       val stage1 = stage[Level3, Level2](1, 0, false)
       val stage2 = stage[Level2, Level1](1, 0, false)
       val PipelinePorts(cmd, evt, _) = PipelineFactory.buildFunctionTriple(ctx, stage1 >> stage2)
-      cmd(Level3.msgA) must be(Nil -> Seq(Level1.msgA))
-      evt(Level1.msgA) must be(Seq(Level3.msgA) -> Nil)
-      cmd(Level3.msgB) must be(Nil -> Seq(Level1.msgB))
-      evt(Level1.msgB) must be(Seq(Level3.msgB) -> Nil)
+      cmd(Level3.msgA) should be(Nil -> Seq(Level1.msgA))
+      evt(Level1.msgA) should be(Seq(Level3.msgA) -> Nil)
+      cmd(Level3.msgB) should be(Nil -> Seq(Level1.msgB))
+      evt(Level1.msgB) should be(Seq(Level3.msgB) -> Nil)
     }
 
     "be correctly evaluated when three combined" in {
@@ -70,10 +70,10 @@ class PipelineSpec extends AkkaSpec("akka.actor.serialize-creators = on") {
       val stage2 = stage[Level3, Level2](2, 0, false)
       val stage3 = stage[Level2, Level1](1, 0, false)
       val PipelinePorts(cmd, evt, _) = PipelineFactory.buildFunctionTriple(ctx, stage1 >> stage2 >> stage3)
-      cmd(Level4.msgA) must be(Nil -> Seq(Level1.msgA, Level1.msgA))
-      evt(Level1.msgA) must be(Seq(Level4.msgA, Level4.msgA) -> Nil)
-      cmd(Level4.msgB) must be(Nil -> Seq(Level1.msgB, Level1.msgB))
-      evt(Level1.msgB) must be(Seq(Level4.msgB, Level4.msgB) -> Nil)
+      cmd(Level4.msgA) should be(Nil -> Seq(Level1.msgA, Level1.msgA))
+      evt(Level1.msgA) should be(Seq(Level4.msgA, Level4.msgA) -> Nil)
+      cmd(Level4.msgB) should be(Nil -> Seq(Level1.msgB, Level1.msgB))
+      evt(Level1.msgB) should be(Seq(Level4.msgB, Level4.msgB) -> Nil)
     }
 
     "be correctly evaluated with back-scatter" in {
@@ -81,8 +81,8 @@ class PipelineSpec extends AkkaSpec("akka.actor.serialize-creators = on") {
       val stage2 = stage[Level3, Level2](1, 1, true)
       val stage3 = stage[Level2, Level1](1, 0, false)
       val PipelinePorts(cmd, evt, _) = PipelineFactory.buildFunctionTriple(ctx, stage1 >> stage2 >> stage3)
-      cmd(Level4.msgA) must be(Seq(Level4.msgB) -> Seq(Level1.msgA))
-      evt(Level1.msgA) must be(Seq(Level4.msgA) -> Seq(Level1.msgB))
+      cmd(Level4.msgA) should be(Seq(Level4.msgB) -> Seq(Level1.msgA))
+      evt(Level1.msgA) should be(Seq(Level4.msgA) -> Seq(Level1.msgB))
     }
 
     "handle management commands" in {
@@ -90,14 +90,14 @@ class PipelineSpec extends AkkaSpec("akka.actor.serialize-creators = on") {
       val stage2 = stage[Level3, Level2](2, 0, true, { case "doit" ⇒ Seq(Left(Level3.msgA), Right(Level2.msgA)) })
       val stage3 = stage[Level2, Level1](1, 0, true, { case "doit" ⇒ Seq(Left(Level2.msgA), Right(Level1.msgA)) })
       val PipelinePorts(cmd, evt, mgmt) = PipelineFactory.buildFunctionTriple(ctx, stage1 >> stage2 >> stage3)
-      mgmt(42: java.lang.Integer) must be(Seq() -> Seq())
+      mgmt(42: java.lang.Integer) should be(Seq() -> Seq())
       val (events, commands) = mgmt("doit")
-      events must have size 4
-      events count (_ == Level4.msgA) must be === 3
-      events count (_ == Level4.msgB) must be === 1
-      commands must have size 4
-      commands count (_ == Level1.msgA) must be === 3
-      commands count (_ == Level1.msgB) must be === 1
+      events should have size 4
+      events count (_ == Level4.msgA) should equal(3)
+      events count (_ == Level4.msgB) should equal(1)
+      commands should have size 4
+      commands count (_ == Level1.msgA) should equal(3)
+      commands count (_ == Level1.msgB) should equal(1)
     }
 
   }

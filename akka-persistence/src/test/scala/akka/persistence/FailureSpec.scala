@@ -144,12 +144,12 @@ class FailureSpec extends AkkaSpec(FailureSpec.config) with Cleanup with Implici
       expectDone() // by processor
       expectDone() // by destination
 
-      system.actorOf(Props(classOf[ChaosProcessorApp], testActor)) // recovery of new instance must have same outcome
+      system.actorOf(Props(classOf[ChaosProcessorApp], testActor)) // recovery of new instance should have same outcome
       expectDone() // by processor
       // destination doesn't receive messages again because all have been confirmed already
     }
   }
 
   def expectDone() =
-    expectMsgPF(numMessages seconds) { case Done(ints) ⇒ ints.sorted must be(1 to numMessages toVector) }
+    expectMsgPF(numMessages seconds) { case Done(ints) ⇒ ints.sorted should be(1 to numMessages toVector) }
 }

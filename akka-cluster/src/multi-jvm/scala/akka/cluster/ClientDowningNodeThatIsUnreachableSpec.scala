@@ -53,7 +53,7 @@ abstract class ClientDowningNodeThatIsUnreachableSpec(multiNodeConfig: ClientDow
         enterBarrier("down-third-node")
 
         awaitMembersUp(numberOfMembers = 3, canNotBePartOfMemberRing = Set(thirdAddress))
-        clusterView.members.exists(_.address == thirdAddress) must be(false)
+        clusterView.members.exists(_.address == thirdAddress) should be(false)
       }
 
       runOn(third) {

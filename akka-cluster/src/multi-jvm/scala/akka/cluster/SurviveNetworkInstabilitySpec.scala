@@ -82,7 +82,7 @@ abstract class SurviveNetworkInstabilitySpec
 
   def assertUnreachable(subjects: RoleName*): Unit = {
     val expected = subjects.toSet map address
-    awaitAssert(clusterView.unreachableMembers.map(_.address) must be(expected))
+    awaitAssert(clusterView.unreachableMembers.map(_.address) should be(expected))
   }
 
   "A network partition tolerant cluster" must {
@@ -236,7 +236,7 @@ abstract class SurviveNetworkInstabilitySpec
           val child = expectMsgType[ActorRef]
           child ! "hello"
           expectMsg("hello")
-          lastSender.path.address must be(address(third))
+          lastSender.path.address should be(address(third))
         }
       }
       runOn(third) {
@@ -257,7 +257,7 @@ abstract class SurviveNetworkInstabilitySpec
       runOn(third) {
         // undelivered system messages in RemoteChild on third should trigger QuarantinedEvent
         within(10.seconds) {
-          expectMsgType[QuarantinedEvent].address must be(address(second))
+          expectMsgType[QuarantinedEvent].address should be(address(second))
         }
         system.eventStream.unsubscribe(testActor, classOf[QuarantinedEvent])
       }
@@ -265,7 +265,7 @@ abstract class SurviveNetworkInstabilitySpec
 
       runOn(others: _*) {
         // second should be removed because of quarantine
-        awaitAssert(clusterView.members.map(_.address) must not contain (address(second)))
+        awaitAssert(clusterView.members.map(_.address) should not contain (address(second)))
       }
 
       enterBarrier("after-6")
@@ -302,8 +302,8 @@ abstract class SurviveNetworkInstabilitySpec
       runOn(side1AfterJoin: _*) {
         // side2 removed
         val expected = (side1AfterJoin map address).toSet
-        awaitAssert(clusterView.members.map(_.address) must be(expected))
-        awaitAssert(clusterView.members.collectFirst { case m if m.address == address(eighth) ⇒ m.status } must be(
+        awaitAssert(clusterView.members.map(_.address) should be(expected))
+        awaitAssert(clusterView.members.collectFirst { case m if m.address == address(eighth) ⇒ m.status } should be(
           Some(MemberStatus.Up)))
       }
 
@@ -321,12 +321,12 @@ abstract class SurviveNetworkInstabilitySpec
 
       runOn(side1AfterJoin: _*) {
         val expected = (side1AfterJoin map address).toSet
-        clusterView.members.map(_.address) must be(expected)
+        clusterView.members.map(_.address) should be(expected)
       }
 
       runOn(side2: _*) {
         val expected = ((side2 ++ side1) map address).toSet
-        clusterView.members.map(_.address) must be(expected)
+        clusterView.members.map(_.address) should be(expected)
         assertUnreachable(side1: _*)
       }
 

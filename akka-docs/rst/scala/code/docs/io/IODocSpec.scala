@@ -120,11 +120,11 @@ class IODocSpec extends AkkaSpec {
     watch(client)
 
     val c1, c2 = expectMsgType[Tcp.Connected]
-    c1.localAddress must be(c2.remoteAddress)
-    c2.localAddress must be(c1.remoteAddress)
+    c1.localAddress should be(c2.remoteAddress)
+    c2.localAddress should be(c1.remoteAddress)
 
     client ! ByteString("hello")
-    expectMsgType[ByteString].utf8String must be("hello")
+    expectMsgType[ByteString].utf8String should be("hello")
 
     client ! "close"
     expectMsg("connection closed")

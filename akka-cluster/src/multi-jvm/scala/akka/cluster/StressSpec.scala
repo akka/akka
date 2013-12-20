@@ -67,7 +67,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
   val totalNumberOfNodes =
     System.getProperty("MultiJvm.akka.cluster.Stress.nrOfNodes") match {
       case null  ⇒ 13
-      case value ⇒ value.toInt requiring (_ >= 10, "nrOfNodes must be >= 10")
+      case value ⇒ value.toInt requiring (_ >= 10, "nrOfNodes should be >= 10")
     }
 
   for (n ← 1 to totalNumberOfNodes) role("node-" + n)
@@ -182,7 +182,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     val numberOfNodesJoiningToSeedNodes = (totalNumberOfNodes - numberOfSeedNodes -
       numberOfNodesJoiningToSeedNodesInitially - numberOfNodesJoiningOneByOneSmall -
       numberOfNodesJoiningOneByOneLarge - numberOfNodesJoiningToOneNode) requiring (_ >= 0,
-        s"too many configured nr-of-nodes-joining-*, total must be <= ${totalNumberOfNodes}")
+        s"too many configured nr-of-nodes-joining-*, total should be <= ${totalNumberOfNodes}")
     val numberOfNodesLeavingOneByOneSmall = getInt("nr-of-nodes-leaving-one-by-one-small") * nFactor
     val numberOfNodesLeavingOneByOneLarge = getInt("nr-of-nodes-leaving-one-by-one-large") * nFactor
     val numberOfNodesLeaving = getInt("nr-of-nodes-leaving") * nFactor
@@ -217,7 +217,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       numberOfNodesShutdownOneByOneSmall + numberOfNodesShutdownOneByOneLarge + numberOfNodesShutdown <= totalNumberOfNodes - 3,
       s"specified number of leaving/shutdown nodes <= ${totalNumberOfNodes - 3}")
 
-    require(numberOfNodesJoinRemove <= totalNumberOfNodes, s"nr-of-nodes-join-remove must be <= ${totalNumberOfNodes}")
+    require(numberOfNodesJoinRemove <= totalNumberOfNodes, s"nr-of-nodes-join-remove should be <= ${totalNumberOfNodes}")
 
     override def toString: String = {
       testConfig.withFallback(ConfigFactory.parseString(s"nrOfNodes=${totalNumberOfNodes}")).root.render
@@ -984,7 +984,7 @@ abstract class StressSpec
             }
             val nextAddresses = clusterView.members.map(_.address) -- usedAddresses
             runOn(usedRoles: _*) {
-              nextAddresses.size must be(numberOfNodesJoinRemove)
+              nextAddresses.size should be(numberOfNodesJoinRemove)
             }
 
             enterBarrier("join-remove-" + step)
@@ -1021,7 +1021,7 @@ abstract class StressSpec
   def exerciseRouters(title: String, duration: FiniteDuration, batchInterval: FiniteDuration,
                       expectDroppedMessages: Boolean, tree: Boolean): Unit =
     within(duration + 10.seconds) {
-      nbrUsedRoles must be(totalNumberOfNodes)
+      nbrUsedRoles should be(totalNumberOfNodes)
       createResultAggregator(title, expectedResults = nbrUsedRoles, includeInHistory = false)
 
       val (masterRoles, otherRoles) = roles.take(nbrUsedRoles).splitAt(3)
@@ -1035,10 +1035,10 @@ abstract class StressSpec
             m.tell(End, testActor)
           }
           val workResult = awaitWorkResult
-          workResult.sendCount must be > (0L)
-          workResult.ackCount must be > (0L)
+          workResult.sendCount should be > (0L)
+          workResult.ackCount should be > (0L)
           if (!expectDroppedMessages)
-            workResult.retryCount must be(0)
+            workResult.retryCount should be(0)
 
           enterBarrier("routers-done-" + step)
         }
@@ -1081,13 +1081,13 @@ abstract class StressSpec
               supervisor ! Props[RemoteChild].withDeploy(Deploy(scope = RemoteScope(address(r))))
             }
             supervisor ! GetChildrenCount
-            expectMsgType[ChildrenCount] must be(ChildrenCount(nbrUsedRoles, 0))
+            expectMsgType[ChildrenCount] should be(ChildrenCount(nbrUsedRoles, 0))
 
             1 to 5 foreach { _ ⇒ supervisor ! new RuntimeException("Simulated exception") }
             awaitAssert {
               supervisor ! GetChildrenCount
               val c = expectMsgType[ChildrenCount]
-              c must be(ChildrenCount(nbrUsedRoles, 5 * nbrUsedRoles))
+              c should be(ChildrenCount(nbrUsedRoles, 5 * nbrUsedRoles))
             }
 
             // after 5 restart attempts the children should be stopped
@@ -1096,7 +1096,7 @@ abstract class StressSpec
               supervisor ! GetChildrenCount
               val c = expectMsgType[ChildrenCount]
               // zero children
-              c must be(ChildrenCount(0, 6 * nbrUsedRoles))
+              c should be(ChildrenCount(0, 6 * nbrUsedRoles))
             }
             supervisor ! Reset
 
@@ -1118,9 +1118,9 @@ abstract class StressSpec
   def idleGossip(title: String): Unit = {
     createResultAggregator(title, expectedResults = nbrUsedRoles, includeInHistory = true)
     reportResult {
-      clusterView.members.size must be(nbrUsedRoles)
+      clusterView.members.size should be(nbrUsedRoles)
       Thread.sleep(idleGossipDuration.toMillis)
-      clusterView.members.size must be(nbrUsedRoles)
+      clusterView.members.size should be(nbrUsedRoles)
     }
     awaitClusterResult()
   }
@@ -1192,12 +1192,12 @@ abstract class StressSpec
       if (exerciseActors) {
         runOn(roles.take(3): _*) {
           val m = master
-          m must not be (None)
+          m should not be (None)
           m.get.tell(End, testActor)
           val workResult = awaitWorkResult
-          workResult.retryCount must be(0)
-          workResult.sendCount must be > (0L)
-          workResult.ackCount must be > (0L)
+          workResult.retryCount should be(0)
+          workResult.sendCount should be > (0L)
+          workResult.ackCount should be > (0L)
         }
       }
       enterBarrier("after-" + step)
@@ -1298,11 +1298,11 @@ abstract class StressSpec
       if (exerciseActors) {
         runOn(roles.take(3): _*) {
           val m = master
-          m must not be (None)
+          m should not be (None)
           m.get.tell(End, testActor)
           val workResult = awaitWorkResult
-          workResult.sendCount must be > (0L)
-          workResult.ackCount must be > (0L)
+          workResult.sendCount should be > (0L)
+          workResult.ackCount should be > (0L)
         }
       }
       enterBarrier("after-" + step)

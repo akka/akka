@@ -375,7 +375,7 @@ class RouterDocSpec extends AkkaSpec(RouterDocSpec.config) with ImplicitSender {
     import akka.routing.Broadcast
     router ! Broadcast("Watch out for Davy Jones' locker")
     //#broadcastDavyJonesWarning
-    receiveN(5, 5.seconds.dilated) must have length (5)
+    receiveN(5, 5.seconds.dilated) should have length (5)
   }
 
   "demonstrate PoisonPill" in {

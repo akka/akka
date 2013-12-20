@@ -21,7 +21,7 @@ class MessageContainerSerializerSpec extends AkkaSpec {
   "DaemonMsgCreateSerializer" must {
 
     "resolve serializer for ActorSelectionMessage" in {
-      ser.serializerFor(classOf[ActorSelectionMessage]).getClass must be(classOf[MessageContainerSerializer])
+      ser.serializerFor(classOf[ActorSelectionMessage]).getClass should be(classOf[MessageContainerSerializer])
     }
 
     "serialize and de-serialize ActorSelectionMessage" in {
@@ -31,7 +31,7 @@ class MessageContainerSerializerSpec extends AkkaSpec {
     }
 
     def verifySerialization(msg: AnyRef): Unit = {
-      ser.deserialize(ser.serialize(msg).get, msg.getClass).get must be(msg)
+      ser.deserialize(ser.serialize(msg).get, msg.getClass).get should be(msg)
     }
 
   }

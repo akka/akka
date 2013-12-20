@@ -1,7 +1,7 @@
 package akka.util
 
 import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.prop.Checkers
 import org.scalacheck._
@@ -16,7 +16,7 @@ import java.nio.ByteOrder, ByteOrder.{ BIG_ENDIAN, LITTLE_ENDIAN }
 import java.lang.Float.floatToRawIntBits
 import java.lang.Double.doubleToRawLongBits
 
-class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
+class ByteStringSpec extends WordSpec with Matchers with Checkers {
 
   def genSimpleByteString(min: Int, max: Int) = for {
     n ← choose(min, max)

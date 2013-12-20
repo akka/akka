@@ -6,7 +6,7 @@ package akka.testkit
 import language.{ postfixOps, reflectiveCalls }
 
 import org.scalatest.{ WordSpecLike, BeforeAndAfterAll }
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import akka.actor.ActorSystem
 import akka.event.{ Logging, LoggingAdapter }
 import scala.concurrent.duration._
@@ -52,7 +52,7 @@ object AkkaSpec {
 }
 
 abstract class AkkaSpec(_system: ActorSystem)
-  extends TestKit(_system) with WordSpecLike with MustMatchers with BeforeAndAfterAll with WatchedByCoroner {
+  extends TestKit(_system) with WordSpecLike with Matchers with BeforeAndAfterAll with WatchedByCoroner {
 
   def this(config: Config) = this(ActorSystem(AkkaSpec.getCallerName(getClass),
     ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))

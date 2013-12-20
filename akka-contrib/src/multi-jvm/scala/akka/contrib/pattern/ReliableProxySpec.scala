@@ -51,7 +51,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
   def expectTransition(s1: State, s2: State) = expectMsg(FSM.Transition(proxy, s1, s2))
 
   def sendN(n: Int) = (1 to n) foreach (proxy ! _)
-  def expectN(n: Int) = (1 to n) foreach { n ⇒ expectMsg(n); lastSender must be === target }
+  def expectN(n: Int) = (1 to n) foreach { n ⇒ expectMsg(n); lastSender should equal(target) }
 
   "A ReliableProxy" must {
 
@@ -173,7 +173,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
     "resend across a slow outbound link" in {
       runOn(local) {
         // the rateMBit value is derived from empirical studies so that it will trigger resends,
-        // the exact value is not important, but it must not be too large
+        // the exact value is not important, but it should not be too large
         testConductor.throttle(local, remote, Direction.Send, rateMBit = 0.02).await
         sendN(50)
         within(5 seconds) {
@@ -199,7 +199,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
       runOn(local) {
         testConductor.passThrough(local, remote, Direction.Send).await
         // the rateMBit value is derived from empirical studies so that it will trigger resends,
-        // the exact value is not important, but it must not be too large
+        // the exact value is not important, but it should not be too large
         testConductor.throttle(local, remote, Direction.Receive, rateMBit = 0.02).await
         sendN(50)
         within(5 seconds) {

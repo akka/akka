@@ -146,9 +146,9 @@ abstract class ChannelSpec(config: Config) extends AkkaSpec(config) with Persist
 
       redeliverTestChannel ! Deliver(Persistent("b"), probe.ref)
 
-      probe.expectMsgPF() { case m @ ConfirmablePersistent("b", _, redeliveries) ⇒ redeliveries must be(0) }
-      probe.expectMsgPF() { case m @ ConfirmablePersistent("b", _, redeliveries) ⇒ redeliveries must be(1) }
-      probe.expectMsgPF() { case m @ ConfirmablePersistent("b", _, redeliveries) ⇒ redeliveries must be(2); m.confirm() }
+      probe.expectMsgPF() { case m @ ConfirmablePersistent("b", _, redeliveries) ⇒ redeliveries should be(0) }
+      probe.expectMsgPF() { case m @ ConfirmablePersistent("b", _, redeliveries) ⇒ redeliveries should be(1) }
+      probe.expectMsgPF() { case m @ ConfirmablePersistent("b", _, redeliveries) ⇒ redeliveries should be(2); m.confirm() }
     }
     "redeliver in correct relative order" in {
       val deliveries = redeliverChannelSettings.redeliverMax + 1
@@ -169,18 +169,18 @@ abstract class ChannelSpec(config: Config) extends AkkaSpec(config) with Persist
       val grouped = received.groupBy(_.redeliveries)
       val expected = 1 to 9 toVector
 
-      grouped(0).map(_.payload) must be(expected)
-      grouped(1).map(_.payload) must be(expected)
-      grouped(2).map(_.payload) must be(expected)
+      grouped(0).map(_.payload) should be(expected)
+      grouped(1).map(_.payload) should be(expected)
+      grouped(2).map(_.payload) should be(expected)
     }
     "redeliver not more than redeliverMax on missing confirmation" in {
       val probe = TestProbe()
 
       redeliverTestChannel ! Deliver(PersistentRepr("a"), probe.ref)
 
-      probe.expectMsgPF() { case m @ ConfirmablePersistent("a", _, redeliveries) ⇒ redeliveries must be(0) }
-      probe.expectMsgPF() { case m @ ConfirmablePersistent("a", _, redeliveries) ⇒ redeliveries must be(1) }
-      probe.expectMsgPF() { case m @ ConfirmablePersistent("a", _, redeliveries) ⇒ redeliveries must be(2) }
+      probe.expectMsgPF() { case m @ ConfirmablePersistent("a", _, redeliveries) ⇒ redeliveries should be(0) }
+      probe.expectMsgPF() { case m @ ConfirmablePersistent("a", _, redeliveries) ⇒ redeliveries should be(1) }
+      probe.expectMsgPF() { case m @ ConfirmablePersistent("a", _, redeliveries) ⇒ redeliveries should be(2) }
       probe.expectNoMsg(300 milliseconds)
     }
   }

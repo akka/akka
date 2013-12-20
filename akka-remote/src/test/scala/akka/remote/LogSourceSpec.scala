@@ -45,12 +45,12 @@ class LogSourceSpec extends AkkaSpec(
 
   "Log events" must {
 
-    "must include host and port for local LogSource" in {
+    "should include host and port for local LogSource" in {
       reporter ! "hello"
       val info = logProbe.expectMsgType[Info]
-      info.message must be("hello")
+      info.message should be("hello")
       val defaultAddress = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
-      info.logSource must include(defaultAddress.toString)
+      info.logSource should include(defaultAddress.toString)
     }
   }
 }

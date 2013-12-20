@@ -10,7 +10,7 @@ import scala.util.Random
 
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.WordSpecLike
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 
 import com.typesafe.config.ConfigFactory
 
@@ -31,7 +31,7 @@ class TestKitUsageSpec
   extends TestKit(ActorSystem("TestKitUsageSpec",
     ConfigFactory.parseString(TestKitUsageSpec.config)))
   with DefaultTimeout with ImplicitSender
-  with WordSpecLike with ShouldMatchers with BeforeAndAfterAll {
+  with WordSpecLike with Matchers with BeforeAndAfterAll {
   import TestKitUsageSpec._
 
   val echoRef = system.actorOf(Props[EchoActor])

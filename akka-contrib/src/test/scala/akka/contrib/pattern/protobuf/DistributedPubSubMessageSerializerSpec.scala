@@ -17,7 +17,7 @@ class DistributedPubSubMessageSerializerSpec extends AkkaSpec {
   def checkSerialization(obj: AnyRef): Unit = {
     val blob = serializer.toBinary(obj)
     val ref = serializer.fromBinary(blob, obj.getClass)
-    ref must be(obj)
+    ref should be(obj)
   }
 
   " DistributedPubSubMessages" must {

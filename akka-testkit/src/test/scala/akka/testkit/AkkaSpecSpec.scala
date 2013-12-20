@@ -7,7 +7,7 @@ import language.reflectiveCalls
 import language.postfixOps
 
 import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import akka.actor._
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
@@ -16,7 +16,7 @@ import akka.actor.DeadLetter
 import akka.pattern.ask
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class AkkaSpecSpec extends WordSpec with MustMatchers {
+class AkkaSpecSpec extends WordSpec with Matchers {
 
   "An AkkaSpec" must {
 
@@ -42,7 +42,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
       val spec = new AkkaSpec(system) {
         val ref = Seq(testActor, system.actorOf(Props.empty, "name"))
       }
-      spec.ref foreach (_.isTerminated must not be true)
+      spec.ref foreach (_.isTerminated should not be true)
       TestKit.shutdownActorSystem(system)
       spec.awaitCond(spec.ref forall (_.isTerminated), 2 seconds)
     }
@@ -88,10 +88,10 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
         system.registerOnTermination(latch.countDown())
         TestKit.shutdownActorSystem(system)
         Await.ready(latch, 2 seconds)
-        Await.result(davyJones ? "Die!", timeout.duration) must be === "finally gone"
+        Await.result(davyJones ? "Die!", timeout.duration) should equal("finally gone")
 
         // this will typically also contain log messages which were sent after the logger shutdown
-        locker must contain(DeadLetter(42, davyJones, probe.ref))
+        locker should contain(DeadLetter(42, davyJones, probe.ref))
       } finally {
         TestKit.shutdownActorSystem(system)
         TestKit.shutdownActorSystem(otherSystem)

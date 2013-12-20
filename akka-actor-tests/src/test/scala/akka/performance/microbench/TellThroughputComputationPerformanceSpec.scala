@@ -114,7 +114,7 @@ class TellThroughputComputationPerformanceSpec extends PerformanceSpec {
         val durationNs = (System.nanoTime - start)
 
         if (!warmup) {
-          ok must be(true)
+          ok should be(true)
           logMeasurement(numberOfClients, durationNs, repeat)
         }
         clients.foreach(system.stop(_))

@@ -63,7 +63,7 @@ package docs.serialization {
     """)
       //#serialize-messages-config
       val a = ActorSystem("system", config)
-      a.settings.SerializeAllMessages must be(true)
+      a.settings.SerializeAllMessages should be(true)
       shutdown(a)
     }
 
@@ -78,7 +78,7 @@ package docs.serialization {
     """)
       //#serialize-creators-config
       val a = ActorSystem("system", config)
-      a.settings.SerializeAllCreators must be(true)
+      a.settings.SerializeAllCreators should be(true)
       shutdown(a)
     }
 
@@ -123,9 +123,9 @@ package docs.serialization {
     """)
       //#serialization-bindings-config
       val a = ActorSystem("system", config)
-      SerializationExtension(a).serializerFor(classOf[String]).getClass must equal(classOf[JavaSerializer])
-      SerializationExtension(a).serializerFor(classOf[Customer]).getClass must equal(classOf[JavaSerializer])
-      SerializationExtension(a).serializerFor(classOf[java.lang.Boolean]).getClass must equal(classOf[MyOwnSerializer])
+      SerializationExtension(a).serializerFor(classOf[String]).getClass should equal(classOf[JavaSerializer])
+      SerializationExtension(a).serializerFor(classOf[Customer]).getClass should equal(classOf[JavaSerializer])
+      SerializationExtension(a).serializerFor(classOf[java.lang.Boolean]).getClass should equal(classOf[MyOwnSerializer])
       shutdown(a)
     }
 
@@ -149,7 +149,7 @@ package docs.serialization {
       val back = serializer.fromBinary(bytes, manifest = None)
 
       // Voilá!
-      back must equal(original)
+      back should equal(original)
 
       //#programmatic
       shutdown(system)

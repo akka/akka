@@ -859,9 +859,9 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
           failResumer ! "blahonga"
           expectMsg("blahonga")
         }
-      createAttempt.get must equal(6)
-      preStartCalled.get must equal(1)
-      postRestartCalled.get must equal(0)
+      createAttempt.get should equal(6)
+      preStartCalled.get should equal(1)
+      postRestartCalled.get should equal(0)
     }
 
     "survive being stressed" in {

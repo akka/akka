@@ -19,7 +19,7 @@ import org.scalatest._
 import akka.testkit._
 import matchers.MustMatchers
 
-class UntypedProducerTest extends WordSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach with SharedCamelSystem with GivenWhenThen {
+class UntypedProducerTest extends WordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach with SharedCamelSystem with GivenWhenThen {
   import UntypedProducerTest._
   val timeout = 1 second
   override protected def beforeAll = {
@@ -40,7 +40,7 @@ class UntypedProducerTest extends WordSpec with MustMatchers with BeforeAndAfter
 
       val expected = CamelMessage("received test", Map(CamelMessage.MessageExchangeId -> "123"))
       Await.result(future, timeout) match {
-        case result: CamelMessage ⇒ result must be(expected)
+        case result: CamelMessage ⇒ result should be(expected)
         case unexpected           ⇒ fail("Actor responded with unexpected message:" + unexpected)
       }
 
@@ -55,8 +55,8 @@ class UntypedProducerTest extends WordSpec with MustMatchers with BeforeAndAfter
 
         Await.result(future, timeout) match {
           case e: AkkaCamelException ⇒
-            e.getMessage must be("failure")
-            e.headers must be(Map(CamelMessage.MessageExchangeId -> "123"))
+            e.getMessage should be("failure")
+            e.headers should be(Map(CamelMessage.MessageExchangeId -> "123"))
           case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
         }
       }

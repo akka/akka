@@ -3,7 +3,7 @@ package akka.testkit
 import language.postfixOps
 
 import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
 import scala.concurrent.{ Future, Await }
@@ -20,7 +20,7 @@ class JavaTestKitSpec extends AkkaSpec with DefaultTimeout {
         val sent = List(1, 2, 3, 4, 5)
         for (m ← sent) { getRef() ! m }
         val received = receiveN(sent.size, 5 seconds)
-        sent.toSet must be(received.toSet)
+        sent.toSet should be(received.toSet)
       }
     }
 
@@ -29,7 +29,7 @@ class JavaTestKitSpec extends AkkaSpec with DefaultTimeout {
         val sent = List(1, 2, 3)
         for (m ← sent) { getRef() ! m }
         val received = receiveN(sent.size)
-        sent.toSet must be(received.toSet)
+        sent.toSet should be(received.toSet)
       }
     }
 
@@ -39,10 +39,10 @@ class JavaTestKitSpec extends AkkaSpec with DefaultTimeout {
 
         watch(actor)
         system stop actor
-        expectTerminated(actor).existenceConfirmed must be === true
+        expectTerminated(actor).existenceConfirmed should equal(true)
 
         watch(actor)
-        expectTerminated(5 seconds, actor).actor must be === actor
+        expectTerminated(5 seconds, actor).actor should equal(actor)
       }
     }
 

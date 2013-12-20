@@ -198,9 +198,9 @@ class BackpressureSpec extends AkkaSpec("akka.actor.serialize-creators=on") with
           send ! StartSending(N)
           val hash = expectMsgType[Done].hash
           implicit val t = Timeout(100.millis)
-          awaitAssert(Await.result(recv ? GetProgress, t.duration) must be === Progress(N))
+          awaitAssert(Await.result(recv ? GetProgress, t.duration) should equal(Progress(N)))
           recv ! GetHash
-          expectMsgType[Hash].hash must be === hash
+          expectMsgType[Hash].hash should equal(hash)
         }
       } catch {
         case NonFatal(e) ⇒
@@ -215,7 +215,7 @@ class BackpressureSpec extends AkkaSpec("akka.actor.serialize-creators=on") with
       val terminated = receiveWhile(1.second, messages = 2) {
         case Terminated(t) ⇒ t
       }
-      terminated.toSet must be === Set(send, recv)
+      terminated.toSet should equal(Set(send, recv))
     }
 
     "transmit the right bytes with hiccups" in {
@@ -229,9 +229,9 @@ class BackpressureSpec extends AkkaSpec("akka.actor.serialize-creators=on") with
           send ! StartSending(N)
           val hash = expectMsgType[Done].hash
           implicit val t = Timeout(100.millis)
-          awaitAssert(Await.result(recv ? GetProgress, t.duration) must be === Progress(N))
+          awaitAssert(Await.result(recv ? GetProgress, t.duration) should equal(Progress(N)))
           recv ! GetHash
-          expectMsgType[Hash].hash must be === hash
+          expectMsgType[Hash].hash should equal(hash)
         }
       } catch {
         case NonFatal(e) ⇒
@@ -246,7 +246,7 @@ class BackpressureSpec extends AkkaSpec("akka.actor.serialize-creators=on") with
       val terminated = receiveWhile(1.second, messages = 2) {
         case Terminated(t) ⇒ t
       }
-      terminated.toSet must be === Set(send, recv)
+      terminated.toSet should equal(Set(send, recv))
     }
 
   }

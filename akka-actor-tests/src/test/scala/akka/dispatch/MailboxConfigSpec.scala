@@ -34,11 +34,11 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
       ensureInitialMailboxState(config, q)
     }
 
-    "UnboundedMailbox.numberOfMessages must be consistent with queue size" in {
+    "UnboundedMailbox.numberOfMessages should be consistent with queue size" in {
       ensureSingleConsumerEnqueueDequeue(UnboundedMailbox())
     }
 
-    "BoundedMailbox.numberOfMessages must be consistent with queue size" in {
+    "BoundedMailbox.numberOfMessages should be consistent with queue size" in {
       ensureSingleConsumerEnqueueDequeue(BoundedMailbox(1000, 10 milliseconds))
     }
 
@@ -49,17 +49,17 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
       for (i ← 1 to config.capacity) q.enqueue(testActor, exampleMessage)
 
-      q.numberOfMessages must be === config.capacity
-      q.hasMessages must be === true
+      q.numberOfMessages should equal(config.capacity)
+      q.hasMessages should equal(true)
 
       system.eventStream.subscribe(testActor, classOf[DeadLetter])
       q.enqueue(testActor, exampleMessage)
       expectMsg(DeadLetter(exampleMessage.message, system.deadLetters, testActor))
       system.eventStream.unsubscribe(testActor, classOf[DeadLetter])
 
-      q.dequeue must be === exampleMessage
-      q.numberOfMessages must be(config.capacity - 1)
-      q.hasMessages must be === true
+      q.dequeue should equal(exampleMessage)
+      q.numberOfMessages should be(config.capacity - 1)
+      q.hasMessages should equal(true)
     }
 
     "dequeue what was enqueued properly for unbounded mailboxes" in {
@@ -86,16 +86,16 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
   def ensureMailboxSize(q: MessageQueue, expected: Int): Unit = q.numberOfMessages match {
     case -1 | `expected` ⇒
-      q.hasMessages must be === (expected != 0)
+      q.hasMessages should equal(expected != 0)
     case other ⇒
-      other must be === expected
-      q.hasMessages must be === (expected != 0)
+      other should equal(expected)
+      q.hasMessages should equal(expected != 0)
   }
 
   def ensureSingleConsumerEnqueueDequeue(config: MailboxType) {
     val q = factory(config)
     ensureMailboxSize(q, 0)
-    q.dequeue must be === null
+    q.dequeue should equal(null)
     for (i ← 1 to 100) {
       q.enqueue(testActor, exampleMessage)
       ensureMailboxSize(q, i)
@@ -104,26 +104,26 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
     ensureMailboxSize(q, 100)
 
     for (i ← 99 to 0 by -1) {
-      q.dequeue() must be === exampleMessage
+      q.dequeue() should equal(exampleMessage)
       ensureMailboxSize(q, i)
     }
 
-    q.dequeue must be === null
+    q.dequeue should equal(null)
     ensureMailboxSize(q, 0)
   }
 
   def ensureInitialMailboxState(config: MailboxType, q: MessageQueue) {
-    q must not be null
+    q should not be null
     q match {
       case aQueue: BlockingQueue[_] ⇒
         config match {
-          case BoundedMailbox(capacity, _) ⇒ aQueue.remainingCapacity must be === capacity
-          case UnboundedMailbox()          ⇒ aQueue.remainingCapacity must be === Int.MaxValue
+          case BoundedMailbox(capacity, _) ⇒ aQueue.remainingCapacity should equal(capacity)
+          case UnboundedMailbox()          ⇒ aQueue.remainingCapacity should equal(Int.MaxValue)
         }
       case _ ⇒
     }
-    q.numberOfMessages must be === 0
-    q.hasMessages must be === false
+    q.numberOfMessages should equal(0)
+    q.hasMessages should equal(false)
   }
 
   def testEnqueueDequeue(config: MailboxType,
@@ -166,14 +166,14 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
         val ps = producers.map(Await.result(_, remaining))
         val cs = consumers.map(Await.result(_, remaining))
 
-        ps.map(_.size).sum must be === enqueueN //Must have produced 1000 messages
-        cs.map(_.size).sum must be === dequeueN //Must have consumed all produced messages
+        ps.map(_.size).sum should equal(enqueueN) //Must have produced 1000 messages
+        cs.map(_.size).sum should equal(dequeueN) //Must have consumed all produced messages
         //No message is allowed to be consumed by more than one consumer
-        cs.flatten.distinct.size must be === dequeueN
-        //All consumed messages must have been produced
-        (cs.flatten diff ps.flatten).size must be === 0
+        cs.flatten.distinct.size should equal(dequeueN)
+        //All consumed messages should have been produced
+        (cs.flatten diff ps.flatten).size should equal(0)
         //The ones that were produced and not consumed
-        (ps.flatten diff cs.flatten).size must be === (enqueueN - dequeueN)
+        (ps.flatten diff cs.flatten).size should equal(enqueueN - dequeueN)
       }
   }
 }
@@ -224,7 +224,7 @@ class CustomMailboxSpec extends AkkaSpec(CustomMailboxSpec.config) {
         case _                 ⇒ true
       }, 1 second, 10 millis)
       val queue = actor.asInstanceOf[ActorRefWithCell].underlying.asInstanceOf[ActorCell].mailbox.messageQueue
-      queue.getClass must be(classOf[CustomMailboxSpec.MyMailbox])
+      queue.getClass should be(classOf[CustomMailboxSpec.MyMailbox])
     }
   }
 }

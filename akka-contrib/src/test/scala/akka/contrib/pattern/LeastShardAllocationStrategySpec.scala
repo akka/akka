@@ -18,7 +18,7 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
   "LeastShardAllocationStrategy" must {
     "allocate to region with least number of shards" in {
       val allocations = Map(regionA -> Vector("shard1"), regionB -> Vector("shard2"), regionC -> Vector.empty)
-      allocationStrategy.allocateShard(regionA, "shard3", allocations) must be(regionC)
+      allocationStrategy.allocateShard(regionA, "shard3", allocations) should be(regionC)
     }
 
     "rebalance from region with most number of shards" in {
@@ -26,22 +26,22 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
         regionC -> Vector.empty)
 
       // so far regionB has 2 shards and regionC has 0 shards, but the diff is less than rebalanceThreshold  
-      allocationStrategy.rebalance(allocations, Set.empty) must be(Set.empty)
+      allocationStrategy.rebalance(allocations, Set.empty) should be(Set.empty)
 
       val allocations2 = allocations.updated(regionB, Vector("shard2", "shard3", "shard4"))
-      allocationStrategy.rebalance(allocations2, Set.empty) must be(Set("shard2"))
-      allocationStrategy.rebalance(allocations2, Set("shard4")) must be(Set.empty)
+      allocationStrategy.rebalance(allocations2, Set.empty) should be(Set("shard2"))
+      allocationStrategy.rebalance(allocations2, Set("shard4")) should be(Set.empty)
 
       val allocations3 = allocations2.updated(regionA, Vector("shard1", "shard5", "shard6"))
-      allocationStrategy.rebalance(allocations3, Set("shard1")) must be(Set("shard2"))
+      allocationStrategy.rebalance(allocations3, Set("shard1")) should be(Set("shard2"))
     }
 
     "must limit number of simultanious rebalance" in {
       val allocations = Map(regionA -> Vector("shard1"),
         regionB -> Vector("shard2", "shard3", "shard4", "shard5", "shard6"), regionC -> Vector.empty)
 
-      allocationStrategy.rebalance(allocations, Set("shard2")) must be(Set("shard3"))
-      allocationStrategy.rebalance(allocations, Set("shard2", "shard3")) must be(Set.empty)
+      allocationStrategy.rebalance(allocations, Set("shard2")) should be(Set("shard3"))
+      allocationStrategy.rebalance(allocations, Set("shard2", "shard3")) should be(Set.empty)
     }
   }
 }

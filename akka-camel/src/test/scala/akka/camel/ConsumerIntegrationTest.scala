@@ -9,7 +9,7 @@ import language.postfixOps
 import language.existentials
 
 import akka.actor._
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import org.scalatest.WordSpec
 import akka.camel.TestSupport._
 import org.apache.camel.model.{ ProcessorDefinition, RouteDefinition }
@@ -22,7 +22,7 @@ import scala.concurrent.{ ExecutionContext, Await }
 import akka.testkit._
 import akka.util.Timeout
 
-class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedCamelSystem {
+class ConsumerIntegrationTest extends WordSpec with Matchers with NonSharedCamelSystem {
   "ConsumerIntegrationTest" must {
     val defaultTimeoutDuration = 10 seconds
     implicit val defaultTimeout = Timeout(defaultTimeoutDuration)
@@ -44,7 +44,7 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
           case m: CamelMessage ⇒ sender ! "received " + m.bodyAs[String]
         }
       }, name = "direct-a1")
-      camel.sendTo("direct:a1", msg = "some message") must be("received some message")
+      camel.sendTo("direct:a1", msg = "some message") should be("received some message")
     }
 
     "Consumer must time-out if consumer is slow" taggedAs TimingTest in {
@@ -59,7 +59,7 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
 
       intercept[CamelExecutionException] {
         camel.sendTo("direct:a3", msg = "some msg 3")
-      }.getCause.getClass must be(classOf[TimeoutException])
+      }.getCause.getClass should be(classOf[TimeoutException])
 
       stop(ref)
     }
@@ -82,7 +82,7 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
         consumer ! "throw"
         Await.ready(restarted, defaultTimeoutDuration)
 
-        camel.sendTo("direct:a2", msg = "xyz") must be("received xyz")
+        camel.sendTo("direct:a2", msg = "xyz") should be("received xyz")
       }
       stop(consumer)
     }
@@ -91,23 +91,23 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
       val consumer = start(new TestActor(), name = "test-actor-unregister")
       Await.result(camel.activationFutureFor(consumer), defaultTimeoutDuration)
 
-      camel.routeCount must be > (0)
+      camel.routeCount should be > (0)
 
       system.stop(consumer)
       Await.result(camel.deactivationFutureFor(consumer), defaultTimeoutDuration)
 
-      camel.routeCount must be(0)
+      camel.routeCount should be(0)
     }
 
     "Consumer must register on uri passed in through constructor" in {
       val consumer = start(new TestActor("direct://test"), name = "direct-test")
       Await.result(camel.activationFutureFor(consumer), defaultTimeoutDuration)
 
-      camel.routeCount must be > (0)
-      camel.routes.get(0).getEndpoint.getEndpointUri must be("direct://test")
+      camel.routeCount should be > (0)
+      camel.routes.get(0).getEndpoint.getEndpointUri should be("direct://test")
       system.stop(consumer)
       Await.result(camel.deactivationFutureFor(consumer), defaultTimeoutDuration)
-      camel.routeCount must be(0)
+      camel.routeCount should be(0)
       stop(consumer)
     }
 
@@ -118,7 +118,7 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
         }
       }, name = "direct-error-handler-test")
       filterEvents(EventFilter[TestException](occurrences = 1)) {
-        camel.sendTo("direct:error-handler-test", msg = "hello") must be("error: hello")
+        camel.sendTo("direct:error-handler-test", msg = "hello") should be("error: hello")
       }
       stop(ref)
     }
@@ -130,7 +130,7 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
         }
       }, name = "direct-failing-once-consumer")
       filterEvents(EventFilter[TestException](occurrences = 1)) {
-        camel.sendTo("direct:failing-once-concumer", msg = "hello") must be("accepted: hello")
+        camel.sendTo("direct:failing-once-concumer", msg = "hello") should be("accepted: hello")
       }
       stop(ref)
     }
@@ -140,7 +140,7 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
         def endpointUri = "direct:manual-ack"
         def receive = { case _ ⇒ sender ! Ack }
       }, name = "direct-manual-ack-1")
-      camel.template.asyncSendBody("direct:manual-ack", "some message").get(defaultTimeoutDuration.toSeconds, TimeUnit.SECONDS) must be(null) //should not timeout
+      camel.template.asyncSendBody("direct:manual-ack", "some message").get(defaultTimeoutDuration.toSeconds, TimeUnit.SECONDS) should be(null) //should not timeout
       stop(ref)
     }
 
@@ -153,7 +153,7 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
 
       intercept[ExecutionException] {
         camel.template.asyncSendBody("direct:manual-ack", "some message").get(defaultTimeoutDuration.toSeconds, TimeUnit.SECONDS)
-      }.getCause.getCause must be(someException)
+      }.getCause.getCause should be(someException)
       stop(ref)
     }
 
@@ -166,14 +166,14 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
 
       intercept[ExecutionException] {
         camel.template.asyncSendBody("direct:manual-ack", "some message").get(defaultTimeoutDuration.toSeconds, TimeUnit.SECONDS)
-      }.getCause.getCause.getMessage must include("Failed to get Ack")
+      }.getCause.getCause.getMessage should include("Failed to get Ack")
       stop(ref)
     }
     "respond to onRouteDefinition" in {
       val ref = start(new ErrorRespondingConsumer("direct:error-responding-consumer-1"), "error-responding-consumer")
       filterEvents(EventFilter[TestException](occurrences = 1)) {
         val response = camel.sendTo("direct:error-responding-consumer-1", "some body")
-        response must be("some body has an error")
+        response should be("some body has an error")
       }
       stop(ref)
     }

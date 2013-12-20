@@ -5,7 +5,7 @@ package akka.camel
 
 import language.postfixOps
 import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import scala.concurrent.{ Promise, Await, Future }
 import scala.collection.immutable
 import akka.camel.TestSupport.NonSharedCamelSystem
@@ -21,7 +21,7 @@ import akka.actor.ActorLogging
 /**
  * A test to concurrently register and de-register consumer and producer endpoints
  */
-class ConcurrentActivationTest extends WordSpec with MustMatchers with NonSharedCamelSystem {
+class ConcurrentActivationTest extends WordSpec with Matchers with NonSharedCamelSystem {
 
   "Activation" must {
     "support concurrent registrations and de-registrations" in {
@@ -57,14 +57,14 @@ class ConcurrentActivationTest extends WordSpec with MustMatchers with NonShared
             }
         }
         val (activations, deactivations) = Await.result(allRefsFuture, 10.seconds.dilated)
-        // must be the size of the activated activated producers and consumers
-        activations.size must be(2 * number * number)
-        // must be the size of the activated activated producers and consumers
-        deactivations.size must be(2 * number * number)
+        // should be the size of the activated activated producers and consumers
+        activations.size should be(2 * number * number)
+        // should be the size of the activated activated producers and consumers
+        deactivations.size should be(2 * number * number)
         def partitionNames(refs: immutable.Seq[ActorRef]) = refs.map(_.path.name).partition(_.startsWith("concurrent-test-echo-consumer"))
         def assertContainsSameElements(lists: (Seq[_], Seq[_])) {
           val (a, b) = lists
-          a.intersect(b).size must be(a.size)
+          a.intersect(b).size should be(a.size)
         }
         val (activatedConsumerNames, activatedProducerNames) = partitionNames(activations)
         val (deactivatedConsumerNames, deactivatedProducerNames) = partitionNames(deactivations)
