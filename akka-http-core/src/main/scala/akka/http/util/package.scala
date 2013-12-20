@@ -26,5 +26,8 @@ package object util {
      * Returns Some(String) if the underlying string is non-emtpy, None otherwise
      */
     def toOption: Option[String] = if ((underlying eq null) || underlying.isEmpty) None else Some(underlying)
+
+    /** Strips margin and fixes the newline sequence to the given one preventing dependencies on the build platform */
+    def stripMarginWithNewline(newline: String) = underlying.stripMargin.replace("\r\n", "\n").replace("\n", newline)
   }
 }
