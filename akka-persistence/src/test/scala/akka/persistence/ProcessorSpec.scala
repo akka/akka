@@ -4,6 +4,7 @@
 
 package akka.persistence
 
+import scala.concurrent.duration._
 import scala.collection.immutable.Seq
 
 import com.typesafe.config._
@@ -146,7 +147,7 @@ abstract class ProcessorSpec(config: Config) extends AkkaSpec(config) with Persi
     processor ! Persistent("a")
     processor ! Persistent("b")
     processor ! GetState
-    expectMsg(List("a-1", "b-2"))
+    expectMsg(5.seconds, List("a-1", "b-2"))
   }
 
   "A processor" must {
