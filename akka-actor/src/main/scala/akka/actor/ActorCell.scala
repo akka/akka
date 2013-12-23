@@ -113,13 +113,13 @@ trait ActorContext extends ActorRefFactory {
 
   /**
    * Returns the dispatcher (MessageDispatcher) that is used for this Actor.
-   * Importing this member will place a implicit ExecutionContext in scope.
+   * Importing this member will place an implicit ExecutionContext in scope.
    */
   implicit def dispatcher: ExecutionContext
 
   /**
    * The system that the actor belongs to.
-   * Importing this member will place a implicit ExecutionContext in scope.
+   * Importing this member will place an implicit ActorSystem in scope.
    */
   implicit def system: ActorSystem
 
