@@ -72,7 +72,7 @@ abstract class ChannelSpec(config: Config) extends AkkaSpec(config) with Persist
     probe.expectMsgType[Confirm]
 
   def actorRefFor(topLevelName: String) =
-    extension.system.provider.resolveActorRef(RootActorPath(Address("akka", system.name)) / "user" / topLevelName)
+    Persistence(system).system.provider.resolveActorRef(RootActorPath(Address("akka", system.name)) / "user" / topLevelName)
 
   "A channel" must {
     "must resolve sender references and preserve message order" in {

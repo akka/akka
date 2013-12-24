@@ -21,7 +21,6 @@ import akka.testkit.AkkaSpec
 trait PersistenceSpec extends BeforeAndAfterEach with Cleanup { this: AkkaSpec ⇒
   private var _name: String = _
 
-  lazy val extension = Persistence(system)
   val counter = new AtomicInteger(0)
 
   /**
@@ -68,12 +67,7 @@ trait Cleanup { this: AkkaSpec ⇒
   }
 
   override protected def afterTermination() {
-    storageLocations.foreach { dir ⇒
-      if (dir.exists && !FileUtils.deleteQuietly(dir)) {
-        println(s"Failed to delete [$dir], will try again on exit")
-        FileUtils.forceDeleteOnExit(dir)
-      }
-    }
+    storageLocations.foreach(FileUtils.deleteDirectory)
   }
 }
 
