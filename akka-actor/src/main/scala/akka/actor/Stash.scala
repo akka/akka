@@ -7,6 +7,7 @@ import scala.collection.immutable
 
 import akka.AkkaException
 import akka.dispatch.{ UnboundedDequeBasedMessageQueueSemantics, RequiresMessageQueue, Envelope, DequeBasedMessageQueueSemantics, Mailboxes }
+import akka.trace.TracedMessage
 
 /**
  *  The `Stash` trait enables an actor to temporarily stash away messages that can not or
@@ -217,7 +218,7 @@ private[akka] trait StashSupport {
    */
   private[akka] def unstashAll(filterPredicate: Any ⇒ Boolean): Unit = {
     try {
-      val i = theStash.reverseIterator.filter(envelope ⇒ filterPredicate(envelope.message))
+      val i = theStash.reverseIterator.filter(envelope ⇒ filterPredicate(TracedMessage.unwrap(actorCell.system, envelope.message)))
       while (i.hasNext) enqueueFirst(i.next())
     } finally {
       theStash = Vector.empty[Envelope]
@@ -242,7 +243,7 @@ private[akka] trait StashSupport {
    */
   private def enqueueFirst(envelope: Envelope): Unit = {
     mailbox.enqueueFirst(self, envelope)
-    envelope.message match {
+    TracedMessage.unwrap(actorCell.system, envelope.message) match {
       case Terminated(ref) ⇒ actorCell.terminatedQueuedFor(ref)
       case _               ⇒
     }

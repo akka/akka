@@ -15,6 +15,8 @@ import scala.util.control.NonFatal
 import scala.util.control.Exception.Catcher
 import akka.dispatch.MailboxType
 import akka.dispatch.ProducesMessageQueue
+import akka.trace.TracedMessage
+import scala.annotation.tailrec
 
 private[akka] trait Dispatch { this: ActorCell ⇒
 
@@ -108,10 +110,7 @@ private[akka] trait Dispatch { this: ActorCell ⇒
   def sendMessage(msg: Envelope): Unit =
     try {
       if (system.settings.SerializeAllMessages) {
-        val unwrapped = (msg.message match {
-          case DeadLetter(wrapped, _, _) ⇒ wrapped
-          case other                     ⇒ other
-        }).asInstanceOf[AnyRef]
+        val unwrapped = unwrap(msg.message).asInstanceOf[AnyRef]
         if (!unwrapped.isInstanceOf[NoSerializationVerificationNeeded]) {
           val s = SerializationExtension(system)
           s.deserialize(s.serialize(unwrapped).get, unwrapped.getClass).get
@@ -122,4 +121,10 @@ private[akka] trait Dispatch { this: ActorCell ⇒
 
   override def sendSystemMessage(message: SystemMessage): Unit = try dispatcher.systemDispatch(this, message) catch handleException
 
+  // unwrap all DeadLetter and TracedMessage wrappers
+  @tailrec private[this] def unwrap(message: Any): Any = message match {
+    case DeadLetter(m, _, _) ⇒ unwrap(m)
+    case TracedMessage(m, _) ⇒ unwrap(m)
+    case m                   ⇒ m
+  }
 }

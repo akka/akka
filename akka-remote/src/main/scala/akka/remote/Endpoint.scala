@@ -18,6 +18,7 @@ import akka.remote.transport.AssociationHandle.{ DisassociateInfo, ActorHandleEv
 import akka.remote.transport.Transport.InvalidAssociationException
 import akka.remote.transport._
 import akka.serialization.Serialization
+import akka.trace.TracedMessage
 import akka.util.ByteString
 import akka.{ OnlyCauseStackTrace, AkkaException }
 import java.io.NotSerializableException
@@ -52,9 +53,22 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
 
     import provider.remoteSettings._
 
-    lazy val payload: AnyRef = MessageSerializer.deserialize(system, serializedMessage)
-    def payloadClass: Class[_] = if (payload eq null) null else payload.getClass
     val sender: ActorRef = senderOption.getOrElse(system.deadLetters)
+
+    lazy val payload: AnyRef = {
+      val message = MessageSerializer.deserialize(system, serializedMessage)
+      if (system.hasTracer) {
+        val unwrapped = TracedMessage.unwrap(message)
+        TracedMessage.setTracerContext(system, message)
+        system.tracer.remoteMessageReceived(recipient, unwrapped, serializedMessage.getSerializedSize, sender)
+        unwrapped.asInstanceOf[AnyRef]
+      } else {
+        message
+      }
+    }
+
+    def payloadClass: Class[_] = if (payload eq null) null else payload.getClass
+
     val originalReceiver = recipient.path
 
     def msgLog = s"RemoteMessage: [$payload] to [$recipient]<+[$originalReceiver] from [$sender]"
@@ -99,6 +113,8 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
         payloadClass, r, recipientAddress, provider.transport.addresses.mkString(", "))
 
     }
+
+    if (system.hasTracer) system.tracer.clearContext()
   }
 
 }
@@ -582,10 +598,15 @@ private[remote] class EndpointWriter(
               log.debug("sending message {}", msgLog)
             }
 
+            val serializedMessage = serializeMessage(msg)
+
+            if (extendedSystem.hasTracer)
+              extendedSystem.tracer.remoteMessageSent(recipient, msg, serializedMessage.getSerializedSize, senderOption.getOrElse(extendedSystem.deadLetters))
+
             val pdu = codec.constructMessage(
               recipient.localAddressToUse,
               recipient,
-              serializeMessage(msg),
+              serializedMessage,
               senderOption,
               seqOption = seqOption,
               ackOption = lastAck)

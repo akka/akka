@@ -10,6 +10,7 @@ import akka.dispatch._
 import scala.concurrent.Await
 import scala.reflect.ClassTag
 import akka.pattern.ask
+import akka.trace.TracedMessage
 
 /**
  * This special ActorRef is exclusively for use during unit testing in a single-threaded environment. Therefore, it
@@ -55,7 +56,7 @@ class TestActorRef[T <: Actor](
                                       dispatcher: MessageDispatcher, supervisor: InternalActorRef): ActorCell =
     new ActorCell(system, ref, props, dispatcher, supervisor) {
       override def autoReceiveMessage(msg: Envelope) {
-        msg.message match {
+        TracedMessage.unwrap(system, msg.message) match {
           case InternalGetActor ⇒ sender ! actor
           case _                ⇒ super.autoReceiveMessage(msg)
         }

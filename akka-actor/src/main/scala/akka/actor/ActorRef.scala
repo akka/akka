@@ -13,6 +13,7 @@ import akka.event.EventStream
 import scala.annotation.tailrec
 import java.util.concurrent.ConcurrentHashMap
 import akka.event.LoggingAdapter
+import akka.trace.TracedMessage
 
 object ActorRef {
 
@@ -483,16 +484,16 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
     specialHandle(message, provider.deadLetters)
   }
 
-  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = message match {
+  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = TracedMessage.unwrap(message) match {
     case null ⇒ throw new InvalidMessageException("Message is null")
     case d: DeadLetter ⇒
       specialHandle(d.message, d.sender) // do NOT form endless loops, since deadLetters will resend!
-    case _ if !specialHandle(message, sender) ⇒
-      eventStream.publish(DeadLetter(message, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
+    case msg if !specialHandle(message, sender) ⇒
+      eventStream.publish(DeadLetter(msg, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
     case _ ⇒
   }
 
-  protected def specialHandle(msg: Any, sender: ActorRef): Boolean = msg match {
+  protected def specialHandle(msg: Any, sender: ActorRef): Boolean = TracedMessage.unwrap(msg) match {
     case w: Watch ⇒
       if (w.watchee == this && w.watcher != this)
         w.watcher.sendSystemMessage(
@@ -523,15 +524,16 @@ private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
                                        _path: ActorPath,
                                        _eventStream: EventStream) extends EmptyLocalActorRef(_provider, _path, _eventStream) {
 
-  override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
+  override def !(message: Any)(implicit sender: ActorRef = this): Unit = TracedMessage.unwrap(message) match {
     case null                ⇒ throw new InvalidMessageException("Message is null")
     case Identify(messageId) ⇒ sender ! ActorIdentity(messageId, Some(this))
-    case d: DeadLetter       ⇒ if (!specialHandle(d.message, d.sender)) eventStream.publish(d)
-    case _ ⇒ if (!specialHandle(message, sender))
-      eventStream.publish(DeadLetter(message, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
+    case d: DeadLetter ⇒ if (!specialHandle(d.message, d.sender))
+      eventStream.publish(DeadLetter(TracedMessage.unwrap(d.message), d.sender, d.recipient))
+    case msg ⇒ if (!specialHandle(message, sender))
+      eventStream.publish(DeadLetter(msg, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
   }
 
-  override protected def specialHandle(msg: Any, sender: ActorRef): Boolean = msg match {
+  override protected def specialHandle(msg: Any, sender: ActorRef): Boolean = TracedMessage.unwrap(msg) match {
     case w: Watch ⇒
       if (w.watchee != this && w.watcher != this)
         w.watcher.sendSystemMessage(

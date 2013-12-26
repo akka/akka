@@ -17,6 +17,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.control.NonFatal
 import akka.dispatch.MessageDispatcher
+import akka.trace.TracedMessage
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -261,8 +262,14 @@ private[akka] trait Cell {
    * schedule the actor to run, depending on which type of cell it is.
    * Is only allowed to throw Fatal Throwables.
    */
-  final def sendMessage(message: Any, sender: ActorRef): Unit =
-    sendMessage(Envelope(message, sender, system))
+  final def sendMessage(message: Any, sender: ActorRef): Unit = {
+    if (systemImpl.hasTracer) {
+      systemImpl.tracer.actorTold(self, message, if (sender ne Actor.noSender) sender else system.deadLetters)
+      sendMessage(Envelope(TracedMessage(systemImpl, message), sender, system))
+    } else {
+      sendMessage(Envelope(message, sender, system))
+    }
+  }
 
   /**
    * Enqueue a message to be sent to the actor; may or may not actually
@@ -457,9 +464,21 @@ private[akka] class ActorCell(
   final def invoke(messageHandle: Envelope): Unit = try {
     currentMessage = messageHandle
     cancelReceiveTimeout() // FIXME: leave this here???
-    messageHandle.message match {
-      case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
-      case msg                      ⇒ receiveMessage(msg)
+    if (system.hasTracer) {
+      TracedMessage.setTracerContext(system, messageHandle.message)
+      val unwrapped = TracedMessage.unwrap(messageHandle.message)
+      system.tracer.actorReceived(self, unwrapped, messageHandle.sender)
+      unwrapped match {
+        case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
+        case msg                      ⇒ receiveMessage(msg)
+      }
+      system.tracer.actorCompleted(self, unwrapped, messageHandle.sender)
+      system.tracer.clearContext()
+    } else {
+      messageHandle.message match {
+        case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
+        case msg                      ⇒ receiveMessage(msg)
+      }
     }
     currentMessage = null // reset current message after successful invocation
   } catch handleNonFatalOrInterruptedException { e ⇒
@@ -472,7 +491,7 @@ private[akka] class ActorCell(
     if (system.settings.DebugAutoReceive)
       publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
-    msg.message match {
+    TracedMessage.unwrap(system, msg.message) match {
       case t: Terminated              ⇒ receivedTerminated(t)
       case AddressTerminated(address) ⇒ addressTerminated(address)
       case Kill                       ⇒ throw new ActorKilledException("Kill")
