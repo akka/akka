@@ -17,10 +17,6 @@ import akka.persistence.JournalProtocol._
  * Event sourcing mixin for a [[Processor]].
  */
 private[persistence] trait Eventsourced extends Processor {
-  private trait State {
-    def aroundReceive(receive: Receive, message: Any): Unit
-  }
-
   /**
    * Processor recovery state. Waits for recovery completion and then changes to
    * `processingCommands`

@@ -60,10 +60,10 @@ abstract class ChannelSpec(config: Config) extends AkkaSpec(config) with Persist
     ChannelSettings(redeliverMax = 2, redeliverInterval = 100 milliseconds)
 
   def createDefaultTestChannel(): ActorRef =
-    system.actorOf(Channel.props(name, ChannelSettings()))
+    system.actorOf(Channel.props(s"${name}-default", ChannelSettings()))
 
   def createRedeliverTestChannel(): ActorRef =
-    system.actorOf(Channel.props(name, redeliverChannelSettings))
+    system.actorOf(Channel.props(s"${name}-redeliver", redeliverChannelSettings))
 
   def subscribeToConfirmation(probe: TestProbe): Unit =
     system.eventStream.subscribe(probe.ref, classOf[Confirm])

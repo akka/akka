@@ -186,7 +186,6 @@ private class ReliableStorage(channelId: String, channelSettings: PersistentChan
 
   override val processorId = channelId
 
-  private val journal = Persistence(context.system).journalFor(channelId)
   private var deliveryEnabled = true
 
   def receive = {

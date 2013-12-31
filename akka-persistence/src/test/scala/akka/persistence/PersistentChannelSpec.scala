@@ -17,10 +17,10 @@ abstract class PersistentChannelSpec(config: Config) extends ChannelSpec(config)
     PersistentChannelSettings(redeliverMax = 2, redeliverInterval = 100 milliseconds)
 
   override def createDefaultTestChannel(): ActorRef =
-    system.actorOf(PersistentChannel.props(name, PersistentChannelSettings()))
+    system.actorOf(PersistentChannel.props(s"${name}-default", PersistentChannelSettings()))
 
   override def createRedeliverTestChannel(): ActorRef =
-    system.actorOf(PersistentChannel.props(name, redeliverChannelSettings))
+    system.actorOf(PersistentChannel.props(s"${name}-redeliver", redeliverChannelSettings))
 
   "A persistent channel" must {
     "support disabling and re-enabling delivery" in {
@@ -52,7 +52,7 @@ abstract class PersistentChannelSpec(config: Config) extends ChannelSpec(config)
 
       system.stop(channel1)
     }
-    "must not modify certain persistent message field" in {
+    "not modify certain persistent message fields" in {
       val persistent1 = PersistentRepr(payload = "a", processorId = "p1", confirms = List("c1", "c2"), sender = defaultTestChannel, sequenceNr = 13)
       val persistent2 = PersistentRepr(payload = "b", processorId = "p1", confirms = List("c1", "c2"), sender = defaultTestChannel)
 
