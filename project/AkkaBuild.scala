@@ -284,6 +284,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, remote % "test->test", testkit % "test->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.persistence ++ Seq(
       fork in Test := true,
+      javaOptions in Test := defaultMultiJvmOptions,
       libraryDependencies ++= Dependencies.persistence,
       previousArtifact := akkaPreviousArtifact("akka-persistence")
     )
