@@ -24,6 +24,7 @@ import akka.actor.Props
 import akka.actor.SupervisorStrategy
 import akka.dispatch.Envelope
 import akka.dispatch.MessageDispatcher
+import akka.trace.TracedMessage
 
 /**
  * [[Pool]] routers with dynamically resizable number of routees are implemented by providing a Resizer
@@ -269,7 +270,7 @@ private[akka] final class ResizablePoolCell(
   }
 
   override def sendMessage(envelope: Envelope): Unit = {
-    if (!routerConfig.isManagementMessage(envelope.message) &&
+    if (!routerConfig.isManagementMessage(TracedMessage.unwrap(_system, envelope.message)) &&
       resizer.isTimeForResize(resizeCounter.getAndIncrement()) && resizeInProgress.compareAndSet(false, true)) {
       super.sendMessage(Envelope(ResizablePoolActor.Resize, self, system))
     }

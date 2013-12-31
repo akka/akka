@@ -12,6 +12,7 @@ import akka.dispatch.sysmsg._
 import akka.event.Logging
 import akka.event.Logging.Debug
 import akka.event.Logging.Error
+import akka.trace.TracedMessage
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.util.control.Exception._
@@ -60,7 +61,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       val failedActor = actor
       if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(failedActor), "restarting"))
       if (failedActor ne null) {
-        val optionalMessage = if (currentMessage ne null) Some(currentMessage.message) else None
+        val optionalMessage = if (currentMessage ne null) Some(TracedMessage.unwrap(system, currentMessage.message)) else None
         try {
           // if the actor fails in preRestart, we can do nothing but log it: it’s best-effort
           if (failedActor.context ne null) failedActor.aroundPreRestart(cause, optionalMessage)

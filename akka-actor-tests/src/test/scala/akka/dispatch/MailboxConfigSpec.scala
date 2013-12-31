@@ -14,8 +14,16 @@ import scala.concurrent.{ Future, Await, ExecutionContext }
 import scala.concurrent.duration._
 import akka.dispatch.{ UnboundedMailbox, BoundedMailbox, SingleConsumerOnlyUnboundedMailbox }
 
+object MailboxSpec {
+  val config = """
+    # There are 11 deadletters produced in this test. If the dead letter listener stops after 10 then
+    # there can be an unexpected extra dead letter warning due to the listener having stopped.
+    akka.log-dead-letters = 11
+  """
+}
+
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
+abstract class MailboxSpec extends AkkaSpec(MailboxSpec.config) with BeforeAndAfterAll with BeforeAndAfterEach {
   def name: String
 
   def factory: MailboxType ⇒ MessageQueue

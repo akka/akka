@@ -8,6 +8,7 @@ import akka.event.Logging.Error
 import akka.actor.ActorCell
 import akka.event.Logging
 import akka.dispatch.sysmsg.SystemMessage
+import akka.trace.TracedMessage
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ ExecutorService, RejectedExecutionException }
 import scala.concurrent.forkjoin.ForkJoinPool
@@ -153,5 +154,5 @@ abstract class PriorityGenerator extends java.util.Comparator[Envelope] {
   def gen(message: Any): Int
 
   final def compare(thisMessage: Envelope, thatMessage: Envelope): Int =
-    gen(thisMessage.message) - gen(thatMessage.message)
+    gen(TracedMessage.unwrap(thisMessage.message)) - gen(TracedMessage.unwrap(thatMessage.message))
 }

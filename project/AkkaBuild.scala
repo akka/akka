@@ -36,7 +36,7 @@ object AkkaBuild extends Build {
 
   val enableMiMa = false
 
-  val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.2")
+  val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.3")
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
@@ -435,7 +435,7 @@ object AkkaBuild extends Build {
       publishMavenStyle := false, // SBT Plugins should be published as Ivy
       publishTo <<= Publish.akkaPluginPublishTo,
       scalacOptions in Compile := Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
-      scalaVersion := "2.10.2",
+      scalaVersion := "2.10.3",
       scalaBinaryVersion := "2.10",
       reportBinaryIssues := () // disable bin comp check
     )

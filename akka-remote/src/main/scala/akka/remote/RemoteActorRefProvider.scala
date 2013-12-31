@@ -18,6 +18,7 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 import com.typesafe.config.Config
 import akka.ConfigurationException
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.trace.TracedMessage
 
 /**
  * INTERNAL API
@@ -80,12 +81,16 @@ private[akka] object RemoteActorRefProvider {
                                          _eventStream: EventStream) extends DeadLetterActorRef(_provider, _path, _eventStream) {
     import EndpointManager.Send
 
-    override def !(message: Any)(implicit sender: ActorRef): Unit = message match {
+    override def !(message: Any)(implicit sender: ActorRef): Unit = TracedMessage.unwrap(message) match {
       case Send(m, senderOption, _, seqOpt) ⇒
         // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved
         // the dead letter status
         if (seqOpt.isEmpty) super.!(m)(senderOption.orNull)
       case DeadLetter(Send(m, senderOption, recipient, seqOpt), _, _) ⇒
+        // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved
+        // the dead letter status
+        if (seqOpt.isEmpty) super.!(m)(senderOption.orNull)
+      case DeadLetter(TracedMessage(Send(m, senderOption, recipient, seqOpt), _), _, _) ⇒
         // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved
         // the dead letter status
         if (seqOpt.isEmpty) super.!(m)(senderOption.orNull)
@@ -482,7 +487,14 @@ private[akka] class RemoteActorRef private[akka] (
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
     if (message == null) throw new InvalidMessageException("Message is null")
-    try remote.send(message, Option(sender), this) catch handleException
+    try {
+      if (remote.system.hasTracer) {
+        remote.system.tracer.actorTold(this, message, sender)
+        remote.send(TracedMessage(remote.system, message), Option(sender), this)
+      } else {
+        remote.send(message, Option(sender), this)
+      }
+    } catch handleException
   }
 
   override def provider: RemoteActorRefProvider = remote.provider

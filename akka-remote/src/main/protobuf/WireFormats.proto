@@ -48,6 +48,22 @@ message SerializedMessage {
 }
 
 /**
+ * Trace envelope for adding trace context.
+ */
+message TraceEnvelope {
+  required SerializedMessage message = 1;
+  repeated TraceContext contexts = 2;
+}
+
+/**
+ * Trace context, with tracer identifier.
+ */
+message TraceContext {
+  required int32 tracerId = 1;
+  required bytes context = 2;
+}
+
+/**
  * Defines akka.remote.DaemonMsgCreate
  */
 message DaemonMsgCreateData {

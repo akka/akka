@@ -65,6 +65,10 @@ object ActorWithBoundedStashSpec {
   val mailboxId2 = "my-mailbox-2"
 
   val testConf: Config = ConfigFactory.parseString(s"""
+    # make sure the dead letter listener can accept all the dead letters to avoid
+    # an unexpected dead letter of a dead letter if the listener is stopped
+    akka.log-dead-letters = 100
+
     $dispatcherId1 {
       mailbox-type = "${classOf[Bounded10].getName}"
       stash-capacity = 20
