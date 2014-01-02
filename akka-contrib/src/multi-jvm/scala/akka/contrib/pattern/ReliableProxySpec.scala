@@ -376,7 +376,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
           val proxyTerm = expectMsgType[ProxyTerminated]
           // Validate that the unsent messages are 50 ints
           val unsentInts = proxyTerm.outstanding.queue collect { case Message(i: Int, _, _) if i > 0 && i <= 50 ⇒ i }
-          unsentInts must have size 50
+          unsentInts should have size 50
           expectMsgType[Terminated]
         }
       }
