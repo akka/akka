@@ -80,13 +80,13 @@ How to use it
 -------------
 
 Since this implementation does not offer much in the way of configuration,
-simply instantiate a proxy wrapping some target reference. From Java it looks
-like this:
+simply instantiate a proxy wrapping a target ``ActorRef`` or ``ActorPath``. From Java it looks
+like this (using an ``ActorPath``):
 
 .. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ReliableProxyTest.java
    :include: import,demo-proxy
 
-And from Scala like this:
+And from Scala like this (using an ``ActorRef``):
 
 .. includecode:: @contribSrc@/src/test/scala/akka/contrib/pattern/ReliableProxyDocSpec.scala#demo
 
@@ -103,6 +103,16 @@ From Scala it would look like so:
 
 .. includecode:: @contribSrc@/src/test/scala/akka/contrib/pattern/ReliableProxyDocSpec.scala#demo-transition
 
+Configuration
+^^^^^^^^^^^^^
+
+* Set ``akka.reliable-proxy.debug`` to ``on`` to turn on extra debug logging for your
+  :class:`ReliableProxy` actors.
+* ``akka.reliable-proxy.default-connect-interval`` is used only if you create a :class:`ReliableProxy`
+  using the *Props taking ActorPath with no reconnections* (that is, ``reconnectAfter == None``).
+  The default value is ``500 ms``.  In this case the :class:`ReliableProxy` will send an ``Identify`` message
+  to the *target* every 500 milliseconds to try to resolve the :class:`ActorPath` to an :class:`ActorRef` so
+  that messages can be sent to the *target*.
 
 The Actor Contract
 ------------------

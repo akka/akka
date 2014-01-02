@@ -10,15 +10,16 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import org.scalatest.BeforeAndAfterEach
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
-import akka.actor.Props
-import akka.actor.Actor
-import akka.actor.Deploy
+import akka.actor._
 import akka.testkit.ImplicitSender
 import scala.concurrent.duration._
+<<<<<<< HEAD
 import akka.actor.FSM
 import akka.actor.ActorRef
 import akka.testkit.TestKitExtension
 import akka.testkit.TestProbe
+=======
+>>>>>>> 0f7c5e9... Add tests covering Reconnection, ActorPath, maxReconnects, no reconnects, ProxyTerminated/Unsent, TargetChanged.   Use Option(reconnectAfter) instead of Some(reconnectAfter) in Java props.   Add a new config property to handle Props variation with ActorPath but reconnectAfter = None (defaultConnectInterval).  Ref doc updates show ActorPath usage and discuss config properties.
 import akka.actor.ActorIdentity
 import akka.actor.Identify
 
@@ -38,7 +39,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
 
   override def initialParticipants = roles.size
 
-  override def afterEach {
+  override def afterEach() {
     runOn(local) {
       testConductor.passThrough(local, remote, Direction.Both).await
     }
@@ -47,6 +48,25 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
 
   @volatile var target: ActorRef = system.deadLetters
   @volatile var proxy: ActorRef = system.deadLetters
+
+  def idTarget(): Unit = {
+    system.actorSelection(node(remote) / "user" / "echo") ! Identify("echo")
+    target = expectMsgType[ActorIdentity].ref.get
+  }
+
+  def startTarget(): Unit = {
+    target = system.actorOf(Props(new Actor {
+      def receive = {
+        case x ⇒ testActor ! x
+      }
+    }).withDeploy(Deploy.local), "echo")
+  }
+
+  def stopProxy(): Unit = {
+    proxy ! FSM.UnsubscribeTransitionCallBack(testActor)
+    system stop proxy
+    expectMsgType[Terminated]
+  }
 
   def expectState(s: State) = expectMsg(FSM.CurrentState(proxy, s))
   def expectTransition(s1: State, s2: State) = expectMsg(FSM.Transition(proxy, s1, s2))
@@ -66,11 +86,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
 
     "initialize properly" in {
       runOn(remote) {
-        target = system.actorOf(Props(new Actor {
-          def receive = {
-            case x ⇒ testActor ! x
-          }
-        }).withDeploy(Deploy.local), "echo")
+        startTarget()
       }
 
       enterBarrier("initialize")
@@ -78,9 +94,9 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
       runOn(local) {
         import akka.contrib.pattern.ReliableProxy
 
-        system.actorSelection(node(remote) / "user" / "echo") ! Identify("echo")
-        target = expectMsgType[ActorIdentity].ref.get
-        proxy = system.actorOf(ReliableProxy.props(target, 100.millis, 120.seconds), "proxy")
+        idTarget()
+        proxy = system.actorOf(ReliableProxy.props(target, 100.millis, 5.seconds), "proxy")
+        watch(proxy)
         proxy ! FSM.SubscribeTransitionCallBack(testActor)
         expectState(Idle)
         proxy ! "hello"
@@ -127,8 +143,15 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
       runOn(local) {
         testConductor.blackhole(local, remote, Direction.Send).await
         sendN(100)
+<<<<<<< HEAD
         expectTransition(1 second, Idle, Active)
         expectNoMsg(expectNoMsgTimeout)
+=======
+        within(1 second) {
+          expectTransition(Idle, Active)
+          expectNoMsg()
+        }
+>>>>>>> 0f7c5e9... Add tests covering Reconnection, ActorPath, maxReconnects, no reconnects, ProxyTerminated/Unsent, TargetChanged.   Use Option(reconnectAfter) instead of Some(reconnectAfter) in Java props.   Add a new config property to handle Props variation with ActorPath but reconnectAfter = None (defaultConnectInterval).  Ref doc updates show ActorPath usage and discuss config properties.
       }
 
       enterBarrier("test2a")
@@ -156,8 +179,15 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
       runOn(local) {
         testConductor.blackhole(local, remote, Direction.Receive).await
         sendN(100)
+<<<<<<< HEAD
         expectTransition(1 second, Idle, Active)
         expectNoMsg(expectNoMsgTimeout)
+=======
+        within(1 second) {
+          expectTransition(Idle, Active)
+          expectNoMsg()
+        }
+>>>>>>> 0f7c5e9... Add tests covering Reconnection, ActorPath, maxReconnects, no reconnects, ProxyTerminated/Unsent, TargetChanged.   Use Option(reconnectAfter) instead of Some(reconnectAfter) in Java props.   Add a new config property to handle Props variation with ActorPath but reconnectAfter = None (defaultConnectInterval).  Ref doc updates show ActorPath usage and discuss config properties.
       }
       runOn(remote) {
         within(1 second) {
@@ -226,5 +256,132 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
       enterBarrier("test5")
     }
 
+    "reconnect to target" in {
+      runOn(remote) {
+        // Stop the target
+        system stop target
+      }
+
+      runOn(local) {
+        // After the target stops the proxy will change to Reconnecting
+        within(5 seconds) {
+          expectTransition(Idle, Reconnecting)
+        }
+        // Send some messages while it's reconnecting
+        sendN(50)
+      }
+
+      enterBarrier("test6a")
+
+      runOn(remote) {
+        // Restart the target to have something to reconnect to
+        startTarget()
+      }
+
+      runOn(local) {
+        // After reconnecting a we'll get a TargetChanged message
+        // and the proxy will transition to Active to send the outstanding messages
+        within(10 seconds) {
+          expectMsgType[TargetChanged]
+          expectTransition(Reconnecting, Active)
+        }
+      }
+
+      enterBarrier("test6b")
+
+      runOn(local) {
+        // After the messages have been delivered, proxy is back to idle
+        expectTransition(Active, Idle)
+      }
+
+      runOn(remote) {
+        expectN(50)
+      }
+
+      enterBarrier("test6c")
+    }
+
+    "stop proxy if target stops and no reconnection" in {
+      runOn(local) {
+        stopProxy() // Stop previous proxy
+
+        // Start new proxy with no reconnections
+        proxy = system.actorOf(ReliableProxy.props(target, 100.millis), "proxy")
+        proxy ! FSM.SubscribeTransitionCallBack(testActor)
+        watch(proxy)
+
+        expectState(Idle)
+      }
+
+      enterBarrier("test7a")
+
+      runOn(remote) {
+        // Stop the target, this will cause the proxy to stop
+        system stop target
+      }
+
+      runOn(local) {
+        within(5 seconds) {
+          expectMsgType[ProxyTerminated]
+          expectMsgType[Terminated]
+        }
+      }
+
+      enterBarrier("test7b")
+
+    }
+
+    "stop proxy after max reconnections" in {
+      runOn(remote) {
+        // Target is not running after previous test, start it
+        startTarget()
+      }
+
+      runOn(local) {
+        // Get new target's ref
+        idTarget()
+      }
+
+      enterBarrier("test8a")
+
+      runOn(local) {
+        // Proxy is not running after previous test
+        // Start new proxy with 3 reconnections every 2 sec
+        proxy = system.actorOf(ReliableProxy.props(target, 100.millis, 2.seconds, 3), "proxy")
+        proxy ! FSM.SubscribeTransitionCallBack(testActor)
+        watch(proxy)
+        expectState(Idle)
+      }
+
+      enterBarrier("test8b")
+
+      runOn(remote) {
+        // Stop target
+        system stop target
+      }
+
+      runOn(local) {
+        // Wait for transition to Reconnecting, then send messages
+        within(5 seconds) {
+          expectTransition(Idle, Reconnecting)
+        }
+        sendN(50)
+      }
+
+      enterBarrier("test8c")
+
+      runOn(local) {
+        // After max reconnections, proxy stops itself.  Expect ProxyTerminated(Unsent(msgs, sender, serial)).
+        within(5 * 2.seconds) {
+          val proxyTerm = expectMsgType[ProxyTerminated]
+          // Validate that the unsent messages are 50 ints
+          val unsentInts = proxyTerm.outstanding.queue collect { case Message(i: Int, _, _) if i > 0 && i <= 50 ⇒ i }
+          unsentInts must have size 50
+          expectMsgType[Terminated]
+        }
+      }
+
+      enterBarrier("test8d")
+    }
   }
 }

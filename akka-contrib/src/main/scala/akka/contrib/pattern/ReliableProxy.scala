@@ -11,7 +11,7 @@ import scala.util.Try
 
 object ReliableProxy {
   /**
-   * Scala API Props taking ActorRef.  Arguments are detailed in the [[akka.contrib.pattern.ReliableProxy!]]
+   * Scala API Props taking ActorRef.  Arguments are detailed in the [[akka.contrib.pattern.ReliableProxy]]
    * constructor.
    */
   def props(targetRef: ActorRef, retryAfter: FiniteDuration, reconnectAfter: Option[FiniteDuration],
@@ -34,7 +34,7 @@ object ReliableProxy {
    */
   def props(targetRef: ActorRef, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration,
             maxReconnects: Int): Props = {
-    props(targetRef, retryAfter, Some(reconnectAfter), if (maxReconnects > 0) Some(maxReconnects) else None)
+    props(targetRef, retryAfter, Option(reconnectAfter), if (maxReconnects > 0) Some(maxReconnects) else None)
   }
 
   /**
@@ -43,7 +43,7 @@ object ReliableProxy {
    */
   def props(targetPath: ActorPath, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration,
             maxReconnects: Int): Props = {
-    props(targetPath, retryAfter, Some(reconnectAfter), if (maxReconnects > 0) Some(maxReconnects) else None)
+    props(targetPath, retryAfter, Option(reconnectAfter), if (maxReconnects > 0) Some(maxReconnects) else None)
   }
 
   /**
@@ -51,7 +51,15 @@ object ReliableProxy {
    * the [[akka.contrib.pattern.ReliableProxy]] constructor.
    */
   def props(targetRef: ActorRef, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration): Props = {
-    props(targetRef, retryAfter, Some(reconnectAfter), None)
+    props(targetRef, retryAfter, Option(reconnectAfter), None)
+  }
+
+  /**
+   * Props taking ActorPath with no limit on reconnections.  Arguments are detailed in
+   * the [[akka.contrib.pattern.ReliableProxy]] constructor.
+   */
+  def props(targetPath: ActorPath, retryAfter: FiniteDuration, reconnectAfter: FiniteDuration): Props = {
+    props(targetPath, retryAfter, Option(reconnectAfter), None)
   }
 
   /**
@@ -127,16 +135,16 @@ object ReliableProxy {
   sealed trait State
   case object Idle extends State
   case object Active extends State
-  case object Reconnect extends State
+  case object Reconnecting extends State
 
   // Java API
   val idle = Idle
   val active = Active
-  val reconnect = Reconnect
+  val reconnecting = Reconnecting
 
   trait DebugLogging extends ActorLogging { this: Actor ⇒
     val debug =
-      Try(context.system.settings.config.getBoolean("akka.actor.debug.reliable-proxy")) getOrElse false
+      Try(context.system.settings.config.getBoolean("akka.reliable-proxy.debug")) getOrElse false
 
     def enabled = debug && log.isDebugEnabled
 
@@ -268,7 +276,7 @@ class ReliableProxy(target: Either[ActorRef, ActorPath], retryAfter: FiniteDurat
   val (targetPath, initialState) = target match {
     case Right(path) ⇒
       self ! ReconnectTick
-      (path, Reconnect)
+      (path, Reconnecting)
     case Left(ref) ⇒
       createTunnel(ref)
       (ref.path, Idle)
@@ -281,12 +289,16 @@ class ReliableProxy(target: Either[ActorRef, ActorPath], retryAfter: FiniteDurat
   val resendTimer = "resend"
   val reconnectTimer = "reconnect"
 
+  val defaultConnectInterval =
+    Try(context.system.settings.config.getMilliseconds("akka.reliable-proxy.default-connect-interval")).
+      map(_.longValue).getOrElse(500L).millis
+
   override def supervisorStrategy = OneForOneStrategy() {
     case _ ⇒ SupervisorStrategy.Escalate
   }
 
   override def postStop() {
-    logDebug("Stopping proxy and sending {} messages to parent in Unsent", stateData.size)
+    logDebug("Stopping proxy and sending {} messages to subscribers in Unsent", stateData.size)
     gossip(ProxyTerminated(self, Unsent(stateData)))
     super.postStop()
   }
@@ -301,9 +313,9 @@ class ReliableProxy(target: Either[ActorRef, ActorPath], retryAfter: FiniteDurat
   }
 
   onTransition {
-    case _ -> Active    ⇒ scheduleTick()
-    case Active -> Idle ⇒ cancelTimer(resendTimer)
-    case _ -> Reconnect ⇒ scheduleReconnectTick()
+    case _ -> Active       ⇒ scheduleTick()
+    case Active -> Idle    ⇒ cancelTimer(resendTimer)
+    case _ -> Reconnecting ⇒ scheduleReconnectTick()
   }
 
   when(Active) {
@@ -326,7 +338,7 @@ class ReliableProxy(target: Either[ActorRef, ActorPath], retryAfter: FiniteDurat
       stay using (queue :+ send(msg, sender))
   }
 
-  when(Reconnect) {
+  when(Reconnecting) {
     case Event(Terminated(_), _) ⇒
       stay()
     case Event(ActorIdentity(_, Some(actor)), queue) ⇒
@@ -380,7 +392,7 @@ class ReliableProxy(target: Either[ActorRef, ActorPath], retryAfter: FiniteDurat
 
   def terminated(): State = {
     logDebug("Terminated: {}", target)
-    if (reconnectAfter.isDefined) goto(Reconnect)
+    if (reconnectAfter.isDefined) goto(Reconnecting)
     else stop()
   }
 
@@ -400,6 +412,5 @@ class ReliableProxy(target: Either[ActorRef, ActorPath], retryAfter: FiniteDurat
   /**
    * Returns the next retry interval duration.  By default each interval is the same, reconnectAfter.
    */
-  def nextBackoff(): FiniteDuration = reconnectAfter getOrElse
-    (throw new IllegalStateException("nextBackoff called and reconnectAfter is undefined"))
+  def nextBackoff(): FiniteDuration = reconnectAfter getOrElse defaultConnectInterval
 }
