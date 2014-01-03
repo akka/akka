@@ -123,7 +123,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
     if (watcheeSelf && !watcherSelf) {
       if (!watchedBy.contains(watcher)) maintainAddressTerminatedSubscription(watcher) {
         watchedBy += watcher
-        if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "now monitoring " + watcher))
+        if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), s"now watched by $watcher"))
       }
     } else if (!watcheeSelf && watcherSelf) {
       watch(watchee)
@@ -139,7 +139,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
     if (watcheeSelf && !watcherSelf) {
       if (watchedBy.contains(watcher)) maintainAddressTerminatedSubscription(watcher) {
         watchedBy -= watcher
-        if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "stopped monitoring " + watcher))
+        if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), s"no longer watched by $watcher"))
       }
     } else if (!watcheeSelf && watcherSelf) {
       unwatch(watchee)
