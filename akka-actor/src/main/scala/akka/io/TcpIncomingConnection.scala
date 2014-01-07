@@ -19,8 +19,9 @@ private[io] class TcpIncomingConnection(_tcp: TcpExt,
                                         _channel: SocketChannel,
                                         registry: ChannelRegistry,
                                         bindHandler: ActorRef,
-                                        options: immutable.Traversable[SocketOption])
-  extends TcpConnection(_tcp, _channel) {
+                                        options: immutable.Traversable[SocketOption],
+                                        readThrottling: Boolean)
+  extends TcpConnection(_tcp, _channel, readThrottling) {
 
   context.watch(bindHandler) // sign death pact
 

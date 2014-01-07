@@ -134,7 +134,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         }
       }
 
-    "receive data directly when the connection is established" in new UnacceptedConnectionTest {
+    "receive data directly when the connection is established" in new UnacceptedConnectionTest() {
       run {
         val serverSideChannel = acceptServerSideConnection(localServerChannel)
 
@@ -352,6 +352,29 @@ class TcpConnectionSpec extends AkkaSpec("""
 
         // data should be received only after ResumeReading
         expectReceivedString("testdata")
+      }
+    }
+
+    "respect pull mode" in new EstablishedConnectionTest(pullMode = true) {
+      run {
+        serverSideChannel.write(ByteBuffer.wrap("testdata".getBytes("ASCII")))
+        connectionHandler.expectNoMsg(100.millis)
+
+        connectionActor ! ResumeReading
+        interestCallReceiver.expectMsg(OP_READ)
+        selector.send(connectionActor, ChannelReadable)
+        connectionHandler.expectMsgType[Received].data.decodeString("ASCII") should be("testdata")
+
+        // have two packets in flight before the selector notices
+        serverSideChannel.write(ByteBuffer.wrap("testdata2".getBytes("ASCII")))
+        serverSideChannel.write(ByteBuffer.wrap("testdata3".getBytes("ASCII")))
+
+        connectionHandler.expectNoMsg(100.millis)
+
+        connectionActor ! ResumeReading
+        interestCallReceiver.expectMsg(OP_READ)
+        selector.send(connectionActor, ChannelReadable)
+        connectionHandler.expectMsgType[Received].data.decodeString("ASCII") should be("testdata2testdata3")
       }
     }
 
@@ -804,8 +827,9 @@ class TcpConnectionSpec extends AkkaSpec("""
 
     def createConnectionActor(serverAddress: InetSocketAddress = serverAddress,
                               options: immutable.Seq[SocketOption] = Nil,
-                              timeout: Option[FiniteDuration] = None): TestActorRef[TcpOutgoingConnection] = {
-      val ref = createConnectionActorWithoutRegistration(serverAddress, options, timeout)
+                              timeout: Option[FiniteDuration] = None,
+                              pullMode: Boolean = false): TestActorRef[TcpOutgoingConnection] = {
+      val ref = createConnectionActorWithoutRegistration(serverAddress, options, timeout, pullMode)
       ref ! newChannelRegistration
       ref
     }
@@ -818,9 +842,11 @@ class TcpConnectionSpec extends AkkaSpec("""
 
     def createConnectionActorWithoutRegistration(serverAddress: InetSocketAddress = serverAddress,
                                                  options: immutable.Seq[SocketOption] = Nil,
-                                                 timeout: Option[FiniteDuration] = None): TestActorRef[TcpOutgoingConnection] =
+                                                 timeout: Option[FiniteDuration] = None,
+                                                 pullMode: Boolean = false): TestActorRef[TcpOutgoingConnection] =
       TestActorRef(
-        new TcpOutgoingConnection(Tcp(system), this, userHandler.ref, Connect(serverAddress, options = options, timeout = timeout)) {
+        new TcpOutgoingConnection(Tcp(system), this, userHandler.ref,
+          Connect(serverAddress, options = options, timeout = timeout, pullMode = pullMode)) {
           override def postRestart(reason: Throwable): Unit = context.stop(self) // ensure we never restart
         })
   }
@@ -829,9 +855,9 @@ class TcpConnectionSpec extends AkkaSpec("""
     override def setServerSocketOptions(): Unit = localServerChannel.socket.setReceiveBufferSize(1024)
   }
 
-  abstract class UnacceptedConnectionTest extends LocalServerTest {
+  abstract class UnacceptedConnectionTest(pullMode: Boolean = false) extends LocalServerTest {
     // lazy init since potential exceptions should not be triggered in the constructor but during execution of `run`
-    private[io] lazy val connectionActor = createConnectionActor(serverAddress)
+    private[io] lazy val connectionActor = createConnectionActor(serverAddress, pullMode = pullMode)
     // calling .underlyingActor ensures that the actor is actually created at this point
     lazy val clientSideChannel = connectionActor.underlyingActor.channel
 
@@ -842,8 +868,11 @@ class TcpConnectionSpec extends AkkaSpec("""
     }
   }
 
-  abstract class EstablishedConnectionTest(keepOpenOnPeerClosed: Boolean = false, useResumeWriting: Boolean = true)
-    extends UnacceptedConnectionTest {
+  abstract class EstablishedConnectionTest(
+    keepOpenOnPeerClosed: Boolean = false,
+    useResumeWriting: Boolean = true,
+    pullMode: Boolean = false)
+    extends UnacceptedConnectionTest(pullMode) {
 
     // lazy init since potential exceptions should not be triggered in the constructor but during execution of `run`
     lazy val serverSideChannel = acceptServerSideConnection(localServerChannel)
@@ -863,7 +892,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
 
         userHandler.send(connectionActor, Register(connectionHandler.ref, keepOpenOnPeerClosed, useResumeWriting))
-        interestCallReceiver.expectMsg(OP_READ)
+        if (!pullMode) interestCallReceiver.expectMsg(OP_READ)
 
         clientSelectionKey // trigger initialization
         serverSelectionKey // trigger initialization
