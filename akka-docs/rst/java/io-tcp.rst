@@ -160,8 +160,9 @@ Throttling Reads and Writes
 The basic model of the TCP connection actor is that it has no internal
 buffering (i.e. it can only process one write at a time, meaning it can buffer
 one write until it has been passed on to the O/S kernel in full). Congestion
-needs to be handled at the user level, for which there are three modes of
-operation:
+needs to be handled at the user level, for both writes and reads.
+
+For back-pressuring writes there are three modes of operation
 
 * *ACK-based:* every :class:`Write` command carries an arbitrary object, and if
   this object is not ``Tcp.NoAck`` then it will be returned to the sender of
@@ -186,18 +187,32 @@ operation:
   :class:`WritingResumed` signal then every message is delivered exactly once
   to the network socket.
 
-These models (with the exception of the second which is rather specialised) are
+These write models (with the exception of the second which is rather specialised) are
 demonstrated in complete examples below. The full and contiguous source is
 available `on github <@github@/akka-docs/rst/java/code/docs/io/japi>`_.
+
+For back-pressuring reads there are two modes of operation
+
+* *Push-reading:* in this mode the connection actor sends the registered reader actor
+  incoming data as soon as available as :class:`Received` events. Whenever the reader actor
+  wants to signal back-pressure to the remote TCP endpoint it can send a :class:`SuspendReading`
+  message to the connection actor to indicate that it wants to suspend the
+  reception of new data. No :class:`Received` events will arrive until a corresponding
+  :class:`ResumeReading` is sent indicating that the receiver actor is ready again.
+
+* *Pull-reading:* after sending a :class:`Received` event the connection
+  actor automatically suspends accepting data from the socket until the reader actor signals
+  with a :class:`ResumeReading` message that it is ready to process more input data. Hence
+  new data is "pulled" from the connection by sending :class:`ResumeReading` messages.
 
 .. note::
 
    It should be obvious that all these flow control schemes only work between
-   one writer and one connection actor; as soon as multiple actors send write
+   one writer/reader and one connection actor; as soon as multiple actors send write
    commands to a single connection no consistent result can be achieved.
 
-ACK-Based Back-Pressure
------------------------
+ACK-Based Write Back-Pressure
+-----------------------------
 
 For proper function of the following example it is important to configure the
 connection to remain half-open when the remote side closed its writing end:
@@ -236,7 +251,7 @@ the remote side from writing, filling up its write buffer, until finally the
 writer on the other side cannot push any data into the socket anymore. This is
 how end-to-end back-pressure is realized across a TCP connection.
 
-NACK-Based Back-Pressure with Write Suspending
+NACK-Based Write Back-Pressure with Suspending
 ----------------------------------------------
 
 .. includecode:: code/docs/io/japi/EchoHandler.java#echo-handler
@@ -270,3 +285,56 @@ behavior to await the :class:`WritingResumed` event and start over.
 The helper functions are very similar to the ACK-based case:
 
 .. includecode:: code/docs/io/japi/EchoHandler.java#helpers
+
+Read Back-Pressure with Pull Mode
+---------------------------------
+
+When using push based reading, data coming from the socket is sent to the actor as soon
+as it is available. In the case of the previous Echo server example
+this meant that we needed to maintain a buffer of incoming data to keep it around
+since the rate of writing might be slower than the rate of the arrival of new data.
+
+With the Pull mode this buffer can be completely eliminated as the following snippet
+demonstrates:
+
+.. includecode:: code/docs/io/JavaReadBackPressure.java#pull-reading-echo
+
+The idea here is that reading is not resumed until the previous write has been
+completely acknowledged by the connection actor. Every pull mode connection
+actor starts from suspended state. To start the flow of data we send a
+``ResumeReading`` in the ``preStart`` method to tell the connection actor that
+we are ready to receive the first chunk of data. Since we only resume reading when
+the previous data chunk has been completely written there is no need for maintaining
+a buffer.
+
+To enable pull reading on an outbound connection the ``pullMode`` parameter of
+the :class:`Connect` should be set to ``true``:
+
+.. includecode:: code/docs/io/JavaReadBackPressure.java#pull-mode-connect
+
+Pull Mode Reading for Inbound Connections
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The previous section demonstrated how to enable pull reading mode for outbound
+connections but it is possible to create a listener actor with this mode of reading
+by setting the ``pullMode`` parameter of the :class:`Bind` command to ``true``:
+
+.. includecode:: code/docs/io/JavaReadBackPressure.java#pull-mode-bind
+
+One of the effects of this setting is that all connections accepted by this listener
+actor will use pull mode reading.
+
+Another effect of this setting is that in addition of setting all inbound connections to
+pull mode, accepting connections becomes pull based, too. This means that after handling
+one (or more) :class:`Connected` events the listener actor has to be resumed by sending
+it a :class:`ResumeAccepting` message.
+
+Listener actors with pull mode start suspended so to start accepting connections
+a :class:`ResumeAccepting`  command has to be sent to the listener actor after binding was successful:
+
+.. includecode:: code/docs/io/JavaReadBackPressure.java#pull-accepting
+
+As shown in the example after handling an incoming connection we need to resume accepting again.
+The :class:`ResumeAccepting` message accepts a ``batchSize`` parameter that specifies how
+many new connections are accepted before a next :class:`ResumeAccepting` message
+is needed to resume handling of new connections.

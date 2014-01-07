@@ -44,7 +44,7 @@ public class IODocTest {
             1234);
         final List<Inet.SocketOption> options = new ArrayList<Inet.SocketOption>();
         options.add(TcpSO.keepAlive(true));
-        tcp.tell(TcpMessage.connect(remoteAddr, localAddr, options), getSelf());
+        tcp.tell(TcpMessage.connect(remoteAddr, localAddr, options, null, false), getSelf());
         //#connect-with-options
       } else
       //#connected
@@ -80,7 +80,7 @@ public class IODocTest {
             1234);
         final List<Inet.SocketOption> options = new ArrayList<Inet.SocketOption>();
         options.add(TcpSO.reuseAddress(true));
-        tcp.tell(TcpMessage.bind(handler, localAddr, 10, options), getSelf());
+        tcp.tell(TcpMessage.bind(handler, localAddr, 10, options, false), getSelf());
         //#bind
       }
     }
