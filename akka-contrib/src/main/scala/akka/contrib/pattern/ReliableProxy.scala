@@ -206,7 +206,7 @@ import ReliableProxy._
  * state when every message send so far has been confirmed by the peer end-point.
  *
  * If a communication failure causes the tunnel to terminate via Remote Deathwatch
- * the proxy will transition into [[ReliableProxy.Reconnect]]
+ * the proxy will transition into [[ReliableProxy.Reconnecting]]
  * state. In this state the proxy will repeatedly send [[akka.actor.Identify]] messages
  * to ActorSelection(target.path) in order to obtain a new ActorRef for the target.
  * When an [[akka.actor.ActorIdentity]] for the target is received a new tunnel will
@@ -240,7 +240,7 @@ import ReliableProxy._
  *
  * @param target is the actor to which all messages will be forwarded which are sent to
  *   this actor. It is either an `ActorRef` or an `ActorPath`.  In the case of an
- *   `ActorPath` this actor will start in the `Reconnect` state and will attempt to
+ *   `ActorPath` this actor will start in the `Reconnecting` state and will attempt to
  *   connect to the remote actor as described above. ``target`` can be a local or remote
  *   actor, but the “remote” tunnel endpoint will be deployed on the node where the
  *   target actor lives.
