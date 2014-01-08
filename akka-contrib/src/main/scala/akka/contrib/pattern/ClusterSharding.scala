@@ -359,7 +359,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
     case Start(typeName, entryProps, idExtractor, shardResolver, allocationStrategy) ⇒
       val encName = URLEncoder.encode(typeName, "utf-8")
       val coordinatorSingletonManagerName = encName + "Coordinator"
-      val coordinatorPath = (self.path / coordinatorSingletonManagerName / "singleton").elements.mkString("/", "/", "")
+      val coordinatorPath = (self.path / coordinatorSingletonManagerName / "singleton").toStringWithoutAddress
       val shardRegion = context.child(encName).getOrElse {
         if (HasNecessaryClusterRole && context.child(coordinatorSingletonManagerName).isEmpty) {
           val singletonProps = ShardCoordinator.props(handOffTimeout = HandOffTimeout, rebalanceInterval = RebalanceInterval,

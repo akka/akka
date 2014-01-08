@@ -238,7 +238,7 @@ class ClusterReceptionistExtension(system: ExtendedActorSystem) extends Extensio
    * but it can also be explicitly unregistered before termination.
    */
   def unregisterService(actor: ActorRef): Unit =
-    pubSubMediator ! DistributedPubSubMediator.Remove(actor.path.elements.mkString("/", "/", ""))
+    pubSubMediator ! DistributedPubSubMediator.Remove(actor.path.toStringWithoutAddress)
 
   /**
    * Register an actor that should be reachable for the clients to a named topic.

@@ -101,9 +101,9 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "find actors by looking up their root-anchored relative path" in {
-      system.actorFor(c1.path.elements.mkString("/", "/", "")) should equal(c1)
-      system.actorFor(c2.path.elements.mkString("/", "/", "")) should equal(c2)
-      system.actorFor(c21.path.elements.mkString("/", "/", "")) should equal(c21)
+      system.actorFor(c1.path.toStringWithoutAddress) should equal(c1)
+      system.actorFor(c2.path.toStringWithoutAddress) should equal(c2)
+      system.actorFor(c21.path.toStringWithoutAddress) should equal(c21)
     }
 
     "find actors by looking up their relative path" in {
@@ -200,7 +200,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
 
     "find actors by looking up their root-anchored relative path" in {
       def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef) {
-        Await.result(looker ? LookupString(pathOf.path.elements.mkString("/", "/", "")), timeout.duration) should equal(result)
+        Await.result(looker ? LookupString(pathOf.path.toStringWithoutAddress), timeout.duration) should equal(result)
         Await.result(looker ? LookupString(pathOf.path.elements.mkString("/", "/", "/")), timeout.duration) should equal(result)
       }
       for {
@@ -231,7 +231,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
           Await.result(looker ? LookupPath(target.path), timeout.duration) should equal(target)
           Await.result(looker ? LookupString(target.path.toString), timeout.duration) should equal(target)
           Await.result(looker ? LookupString(target.path.toString + "/"), timeout.duration) should equal(target)
-          Await.result(looker ? LookupString(target.path.elements.mkString("/", "/", "")), timeout.duration) should equal(target)
+          Await.result(looker ? LookupString(target.path.toStringWithoutAddress), timeout.duration) should equal(target)
           if (target != root) Await.result(looker ? LookupString(target.path.elements.mkString("/", "/", "/")), timeout.duration) should equal(target)
         }
       }
@@ -269,10 +269,10 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       a.path.elements.head should equal("temp")
       Await.result(c2 ? LookupPath(a.path), timeout.duration) should equal(a)
       Await.result(c2 ? LookupString(a.path.toString), timeout.duration) should equal(a)
-      Await.result(c2 ? LookupString(a.path.elements.mkString("/", "/", "")), timeout.duration) should equal(a)
+      Await.result(c2 ? LookupString(a.path.toStringWithoutAddress), timeout.duration) should equal(a)
       Await.result(c2 ? LookupString("../../" + a.path.elements.mkString("/")), timeout.duration) should equal(a)
       Await.result(c2 ? LookupString(a.path.toString + "/"), timeout.duration) should equal(a)
-      Await.result(c2 ? LookupString(a.path.elements.mkString("/", "/", "") + "/"), timeout.duration) should equal(a)
+      Await.result(c2 ? LookupString(a.path.toStringWithoutAddress + "/"), timeout.duration) should equal(a)
       Await.result(c2 ? LookupString("../../" + a.path.elements.mkString("/") + "/"), timeout.duration) should equal(a)
       Await.result(c2 ? LookupElems(Seq("..", "..") ++ a.path.elements), timeout.duration) should equal(a)
       Await.result(c2 ? LookupElems(Seq("..", "..") ++ a.path.elements :+ ""), timeout.duration) should equal(a)
