@@ -134,7 +134,7 @@ private[cluster] object InternalClusterAction {
   case class AddOnMemberUpListener(callback: Runnable) extends NoSerializationVerificationNeeded
 
   sealed trait SubscriptionMessage
-  case class Subscribe(subscriber: ActorRef, to: Class[_]) extends SubscriptionMessage
+  case class Subscribe(subscriber: ActorRef, initialStateMode: SubscriptionInitialStateMode, to: Set[Class[_]]) extends SubscriptionMessage
   case class Unsubscribe(subscriber: ActorRef, to: Option[Class[_]]) extends SubscriptionMessage
   /**
    * @param receiver if `receiver` is defined the event will only be sent to that

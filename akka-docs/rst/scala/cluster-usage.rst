@@ -38,12 +38,12 @@ An actor that uses the cluster extension may look like this:
 .. literalinclude:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/simple/SimpleClusterListener.scala
    :language: scala
 
-The actor registers itself as subscriber of certain cluster events. It gets notified with a snapshot event, ``CurrentClusterState`` 
-that holds full state information of the cluster. After that it receives events for changes that happen in the cluster.
+The actor registers itself as subscriber of certain cluster events. It receives events corresponding to the current state
+of the cluster when the subscription starts and then it receives events for changes that happen in the cluster.
 
 The easiest way to run this example yourself is to download `Typesafe Activator <http://typesafe.com/platform/getstarted>`_
 and open the tutorial named `Akka Cluster Samples with Scala <http://typesafe.com/activator/template/akka-sample-cluster-scala>`_.
-It contains instructions of how to run the <code>SimpleClusterApp</code>.
+It contains instructions of how to run the ``SimpleClusterApp``.
 
 Joining to Seed Nodes
 ^^^^^^^^^^^^^^^^^^^^^
@@ -160,14 +160,26 @@ Subscribe to Cluster Events
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can subscribe to change notifications of the cluster membership by using
-``Cluster(system).subscribe(subscriber, to)``. A snapshot of the full state,
-``akka.cluster.ClusterEvent.CurrentClusterState``, is sent to the subscriber
-as the first event, followed by events for incremental updates.
+``Cluster(system).subscribe``.
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/simple/SimpleClusterListener2.scala#subscribe
+
+A snapshot of the full state, ``akka.cluster.ClusterEvent.CurrentClusterState``, is sent to the subscriber
+as the first message, followed by events for incremental updates.
 
 Note that you may receive an empty ``CurrentClusterState``, containing no members,
 if you start the subscription before the initial join procedure has completed. 
 This is expected behavior. When the node has been accepted in the cluster you will 
 receive ``MemberUp`` for that node, and other nodes.
+
+If you find it inconvenient to handle the ``CurrentClusterState`` you can use
+``ClusterEvent.InitialStateAsEvents`` as parameter to ``subscribe``.
+That means that instead of receiving ``CurrentClusterState`` as the first message you will receive
+the events corresponding to the current state to mimic what you would have seen if you were
+listening to the events when they occurred in the past. Note that those initial events only correspond
+to the current state and it is not the full history of all changes that actually has occurred in the cluster.  
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/simple/SimpleClusterListener.scala#subscribe
 
 The events to track the life-cycle of members are:
 
@@ -183,6 +195,10 @@ The events to track the life-cycle of members are:
 There are more types of change events, consult the API documentation
 of classes that extends ``akka.cluster.ClusterEvent.ClusterDomainEvent``
 for details about the events.
+
+Instead of subscribing to cluster events it can sometimes be convenient to only get the full membership state with
+``Cluster(system).state``. Note that this state is not necessarily in sync with the events published to a
+cluster subscription. 
 
 Worker Dial-in Example
 ----------------------

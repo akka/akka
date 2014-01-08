@@ -61,8 +61,7 @@ class StatsSampleClient(servicePath: String) extends Actor {
   var nodes = Set.empty[Address]
 
   override def preStart(): Unit = {
-    cluster.subscribe(self, classOf[MemberEvent])
-    cluster.subscribe(self, classOf[UnreachableMember])
+    cluster.subscribe(self, classOf[MemberEvent], classOf[ReachabilityEvent])
   }
   override def postStop(): Unit = {
     cluster.unsubscribe(self)
@@ -83,9 +82,10 @@ class StatsSampleClient(servicePath: String) extends Actor {
       nodes = state.members.collect {
         case m if m.hasRole("compute") && m.status == MemberStatus.Up => m.address
       }
-    case MemberUp(m) if m.hasRole("compute") => nodes += m.address
-    case other: MemberEvent                  => nodes -= other.member.address
-    case UnreachableMember(m)                => nodes -= m.address
+    case MemberUp(m) if m.hasRole("compute")        => nodes += m.address
+    case other: MemberEvent                         => nodes -= other.member.address
+    case UnreachableMember(m)                       => nodes -= m.address
+    case ReachableMember(m) if m.hasRole("compute") => nodes += m.address
   }
 
 }

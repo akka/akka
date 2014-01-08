@@ -2,7 +2,7 @@ package sample.cluster.simple;
 
 import akka.actor.UntypedActor;
 import akka.cluster.Cluster;
-import akka.cluster.ClusterEvent;
+import akka.cluster.ClusterEvent.CurrentClusterState;
 import akka.cluster.ClusterEvent.MemberEvent;
 import akka.cluster.ClusterEvent.MemberUp;
 import akka.cluster.ClusterEvent.MemberRemoved;
@@ -10,7 +10,7 @@ import akka.cluster.ClusterEvent.UnreachableMember;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
-public class SimpleClusterListener extends UntypedActor {
+public class SimpleClusterListener2 extends UntypedActor {
   LoggingAdapter log = Logging.getLogger(getContext().system(), this);
   Cluster cluster = Cluster.get(getContext().system());
 
@@ -18,8 +18,7 @@ public class SimpleClusterListener extends UntypedActor {
   @Override
   public void preStart() {
     //#subscribe
-    cluster.subscribe(getSelf(), ClusterEvent.initialStateAsEvents(), 
-        MemberEvent.class, UnreachableMember.class);
+    cluster.subscribe(getSelf(), MemberEvent.class, UnreachableMember.class);
     //#subscribe
   }
 
@@ -31,7 +30,11 @@ public class SimpleClusterListener extends UntypedActor {
 
   @Override
   public void onReceive(Object message) {
-    if (message instanceof MemberUp) {
+    if (message instanceof CurrentClusterState) {
+      CurrentClusterState state = (CurrentClusterState) message;
+      log.info("Current members: {}", state.members());
+
+    } else if (message instanceof MemberUp) {
       MemberUp mUp = (MemberUp) message;
       log.info("Member is Up: {}", mUp.member());
 
