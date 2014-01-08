@@ -389,8 +389,7 @@ class ClusterSingletonManager(
     require(!cluster.isTerminated, "Cluster node must not be terminated")
 
     // subscribe to cluster changes, re-subscribe when restart
-    cluster.subscribe(self, classOf[MemberExited])
-    cluster.subscribe(self, classOf[MemberRemoved])
+    cluster.subscribe(self, classOf[MemberExited], classOf[MemberRemoved])
 
     setTimer(CleanupTimer, Cleanup, 1.minute, repeat = true)
 

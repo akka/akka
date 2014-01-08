@@ -77,8 +77,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
     MetricsInterval, self, MetricsTick)
 
   override def preStart(): Unit = {
-    cluster.subscribe(self, classOf[MemberEvent])
-    cluster.subscribe(self, classOf[ReachabilityEvent])
+    cluster.subscribe(self, classOf[MemberEvent], classOf[ReachabilityEvent])
     logInfo("Metrics collection has started successfully")
   }
 

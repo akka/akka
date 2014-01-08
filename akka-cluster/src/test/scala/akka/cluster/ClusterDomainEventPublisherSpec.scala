@@ -44,6 +44,8 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
   val g5 = Gossip(members = SortedSet(a51Up, aUp, bExiting, cUp)).seen(aUp.uniqueAddress).seen(bExiting.uniqueAddress).seen(cUp.uniqueAddress).seen(a51Up.uniqueAddress)
   val g6 = Gossip(members = SortedSet(aLeaving, bExiting, cUp)).seen(aUp.uniqueAddress)
   val g7 = Gossip(members = SortedSet(aExiting, bExiting, cUp)).seen(aUp.uniqueAddress)
+  val g8 = Gossip(members = SortedSet(aUp, bExiting, cUp, dUp), overview = GossipOverview(reachability =
+    Reachability.empty.unreachable(aUp.uniqueAddress, dUp.uniqueAddress))).seen(aUp.uniqueAddress)
 
   // created in beforeEach
   var memberSubscriber: TestProbe = _
@@ -74,7 +76,7 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
       memberSubscriber.expectMsg(MemberExited(bExiting))
       memberSubscriber.expectMsg(MemberUp(cUp))
       memberSubscriber.expectMsg(LeaderChanged(Some(a51Up.address)))
-      memberSubscriber.expectNoMsg(1 second)
+      memberSubscriber.expectNoMsg(500 millis)
     }
 
     "publish leader changed when old leader leaves and is removed" in {
@@ -82,11 +84,11 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
       memberSubscriber.expectMsg(MemberExited(bExiting))
       memberSubscriber.expectMsg(MemberUp(cUp))
       publisher ! PublishChanges(g6)
-      memberSubscriber.expectNoMsg(1 second)
+      memberSubscriber.expectNoMsg(500 millis)
       publisher ! PublishChanges(g7)
       memberSubscriber.expectMsg(MemberExited(aExiting))
       memberSubscriber.expectMsg(LeaderChanged(Some(cUp.address)))
-      memberSubscriber.expectNoMsg(1 second)
+      memberSubscriber.expectNoMsg(500 millis)
       // at the removed member a an empty gossip is the last thing
       publisher ! PublishChanges(Gossip.empty)
       memberSubscriber.expectMsg(MemberRemoved(aRemoved, Exiting))
@@ -103,12 +105,12 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
       memberSubscriber.expectMsg(LeaderChanged(Some(a51Up.address)))
 
       publisher ! PublishChanges(g5)
-      memberSubscriber.expectNoMsg(1 second)
+      memberSubscriber.expectNoMsg(500 millis)
     }
 
     "publish role leader changed" in {
       val subscriber = TestProbe()
-      publisher ! Subscribe(subscriber.ref, classOf[RoleLeaderChanged])
+      publisher ! Subscribe(subscriber.ref, InitialStateAsSnapshot, Set(classOf[RoleLeaderChanged]))
       subscriber.expectMsgType[CurrentClusterState]
       publisher ! PublishChanges(Gossip(members = SortedSet(cJoining, dUp)))
       subscriber.expectMsg(RoleLeaderChanged("GRP", Some(dUp.address)))
@@ -118,19 +120,29 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
 
     "send CurrentClusterState when subscribe" in {
       val subscriber = TestProbe()
-      publisher ! Subscribe(subscriber.ref, classOf[ClusterDomainEvent])
+      publisher ! Subscribe(subscriber.ref, InitialStateAsSnapshot, Set(classOf[ClusterDomainEvent]))
       subscriber.expectMsgType[CurrentClusterState]
       // but only to the new subscriber
-      memberSubscriber.expectNoMsg(1 second)
+      memberSubscriber.expectNoMsg(500 millis)
+
+    }
+
+    "send events corresponding to current state when subscribe" in {
+      val subscriber = TestProbe()
+      publisher ! PublishChanges(g8)
+      publisher ! Subscribe(subscriber.ref, InitialStateAsEvents, Set(classOf[MemberEvent], classOf[ReachabilityEvent]))
+      subscriber.receiveN(4).toSet should be(Set(MemberUp(aUp), MemberUp(cUp), MemberUp(dUp), MemberExited(bExiting)))
+      subscriber.expectMsg(UnreachableMember(dUp))
+      subscriber.expectNoMsg(500 millis)
     }
 
     "support unsubscribe" in {
       val subscriber = TestProbe()
-      publisher ! Subscribe(subscriber.ref, classOf[MemberEvent])
+      publisher ! Subscribe(subscriber.ref, InitialStateAsSnapshot, Set(classOf[MemberEvent]))
       subscriber.expectMsgType[CurrentClusterState]
       publisher ! Unsubscribe(subscriber.ref, Some(classOf[MemberEvent]))
       publisher ! PublishChanges(g3)
-      subscriber.expectNoMsg(1 second)
+      subscriber.expectNoMsg(500 millis)
       // but memberSubscriber is still subscriber
       memberSubscriber.expectMsg(MemberExited(bExiting))
       memberSubscriber.expectMsg(MemberUp(cUp))
@@ -138,14 +150,14 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec
 
     "publish SeenChanged" in {
       val subscriber = TestProbe()
-      publisher ! Subscribe(subscriber.ref, classOf[SeenChanged])
+      publisher ! Subscribe(subscriber.ref, InitialStateAsSnapshot, Set(classOf[SeenChanged]))
       subscriber.expectMsgType[CurrentClusterState]
       publisher ! PublishChanges(g2)
       subscriber.expectMsgType[SeenChanged]
-      subscriber.expectNoMsg(1 second)
+      subscriber.expectNoMsg(500 millis)
       publisher ! PublishChanges(g3)
       subscriber.expectMsgType[SeenChanged]
-      subscriber.expectNoMsg(1 second)
+      subscriber.expectNoMsg(500 millis)
     }
 
     "publish Removed when stopped" in {

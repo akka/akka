@@ -133,4 +133,21 @@ The following, previously deprecated, features have been removed:
  * `API changes to FSM and TestFSMRef <http://doc.akka.io/docs/akka/2.2.3/project/migration-guide-2.1.x-2.2.x.html#API_changes_to_FSM_and_TestFSMRef>`_
  * DefaultScheduler superseded by LightArrayRevolverScheduler
  
+publishCurrentClusterState is Deprecated
+========================================
+
+Use ``sendCurrentClusterState`` instead. Note that you can also retrieve the current cluster state
+with the new ``Cluster(system).state``.
+
+
+CurrentClusterState is not a ClusterDomainEvent
+===============================================
+
+``CurrentClusterState`` does not implement the ``ClusterDomainEvent`` marker interface any more.
+
+Note the new ``initialStateMode`` parameter of ``Cluster.subscribe``, which makes it possible
+to handle the initial state as events instead of ``CurrentClusterState``. See 
+:ref:`documentation for Scala <cluster_subscriber_scala>` and 
+:ref:`documentation for Java <cluster_subscriber_java>`.
+
 
