@@ -405,7 +405,7 @@ class DistributedPubSubMediator(
 
   def mkKey(ref: ActorRef): String = mkKey(ref.path)
 
-  def mkKey(path: ActorPath): String = path.elements.mkString("/", "/", "")
+  def mkKey(path: ActorPath): String = path.toStringWithoutAddress
 
   def myVersions: Map[Address, Long] = registry.map { case (owner, bucket) ⇒ (owner -> bucket.version) }
 

@@ -99,6 +99,13 @@ sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
   def root: RootActorPath
 
   /**
+   * String representation of the path elements, excluding the address
+   * information. The elements are separated with "/" and starts with "/",
+   * e.g. "/user/a/b".
+   */
+  def toStringWithoutAddress: String = elements.mkString("/", "/", "")
+
+  /**
    * Generate String representation, replacing the Address in the RootActor
    * Path with the given one unless this path’s address includes host and port
    * information.

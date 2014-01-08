@@ -41,6 +41,14 @@ class ActorPathSpec extends WordSpec with Matchers {
       (RootActorPath(Address("akka.tcp", "mysys")) / "user" / "foo" / "bar").elements.toSeq should be(Seq("user", "foo", "bar"))
     }
 
+    "create correct toStringWithoutAddress" in {
+      val a = Address("akka.tcp", "mysys")
+      RootActorPath(a).toStringWithoutAddress should be("/")
+      (RootActorPath(a) / "user").toStringWithoutAddress should be("/user")
+      (RootActorPath(a) / "user" / "foo").toStringWithoutAddress should be("/user/foo")
+      (RootActorPath(a) / "user" / "foo" / "bar").toStringWithoutAddress should be("/user/foo/bar")
+    }
+
     "create correct toStringWithAddress" in {
       val local = Address("akka.tcp", "mysys")
       val a = local.copy(host = Some("aaa"), port = Some(2552))
