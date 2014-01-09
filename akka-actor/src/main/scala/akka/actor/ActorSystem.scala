@@ -61,14 +61,14 @@ object ActorSystem {
    * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
    * associated with the ActorSystem class.
    *
-   * @see <a href="http://typesafehub.github.com/config/v0.4.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def create(name: String, config: Config): ActorSystem = apply(name, config)
 
   /**
    * Creates a new ActorSystem with the name "default", the specified Config, and specified ClassLoader
    *
-   * @see <a href="http://typesafehub.github.com/config/v0.4.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def create(name: String, config: Config, classLoader: ClassLoader): ActorSystem = apply(name, config, classLoader)
 
@@ -99,14 +99,14 @@ object ActorSystem {
    * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
    * associated with the ActorSystem class.
    *
-   * @see <a href="http://typesafehub.github.com/config/v0.4.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def apply(name: String, config: Config): ActorSystem = apply(name, config, findClassLoader())
 
   /**
    * Creates a new ActorSystem with the name "default", the specified Config, and specified ClassLoader
    *
-   * @see <a href="http://typesafehub.github.com/config/v0.4.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def apply(name: String, config: Config, classLoader: ClassLoader): ActorSystem = new ActorSystemImpl(name, config, classLoader).start()
 
@@ -115,14 +115,14 @@ object ActorSystem {
    *
    * For more detailed information about the different possible configuration options, look in the Akka Documentation under "Configuration"
    *
-   * @see <a href="http://typesafehub.github.com/config/v0.4.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   class Settings(classLoader: ClassLoader, cfg: Config, final val name: String) {
 
     /**
      * The backing Config of this ActorSystem's Settings
      *
-     * @see <a href="http://typesafehub.github.com/config/v0.4.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+     * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
      */
     final val config: Config = {
       val config = cfg.withFallback(ConfigFactory.defaultReference(classLoader))
@@ -131,13 +131,14 @@ object ActorSystem {
     }
 
     import scala.collection.JavaConverters._
+    import akka.util.Helpers.ConfigOps
     import config._
 
     final val ConfigVersion: String = getString("akka.version")
     final val ProviderClass: String = getString("akka.actor.provider")
     final val SupervisorStrategyClass: String = getString("akka.actor.guardian-supervisor-strategy")
-    final val CreationTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.actor.creation-timeout"), MILLISECONDS))
-    final val UnstartedPushTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.actor.unstarted-push-timeout"), MILLISECONDS))
+    final val CreationTimeout: Timeout = Timeout(config.getMillisDuration("akka.actor.creation-timeout"))
+    final val UnstartedPushTimeout: Timeout = Timeout(config.getMillisDuration("akka.actor.unstarted-push-timeout"))
 
     final val SerializeAllMessages: Boolean = getBoolean("akka.actor.serialize-messages")
     final val SerializeAllCreators: Boolean = getBoolean("akka.actor.serialize-creators")
@@ -145,7 +146,7 @@ object ActorSystem {
     final val LogLevel: String = getString("akka.loglevel")
     final val StdoutLogLevel: String = getString("akka.stdout-loglevel")
     final val Loggers: immutable.Seq[String] = immutableSeq(getStringList("akka.loggers"))
-    final val LoggerStartTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.logger-startup-timeout"), MILLISECONDS))
+    final val LoggerStartTimeout: Timeout = Timeout(config.getMillisDuration("akka.logger-startup-timeout"))
     final val LogConfigOnStart: Boolean = config.getBoolean("akka.log-config-on-start")
     final val LogDeadLetters: Int = config.getString("akka.log-dead-letters").toLowerCase match {
       case "off" | "false" ⇒ 0

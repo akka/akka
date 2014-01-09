@@ -12,6 +12,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 import akka.ConfigurationException
 import com.typesafe.config.Config
 import java.util.concurrent.TimeUnit
+import akka.util.Helpers.ConfigOps
 
 object ActorMailboxSpec {
   val mailboxConf = ConfigFactory.parseString("""
@@ -174,7 +175,7 @@ object ActorMailboxSpec {
     extends MailboxType with ProducesMessageQueue[MCBoundedMessageQueueSemantics] {
 
     def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"),
-      Duration(config.getNanoseconds("mailbox-push-timeout-time"), TimeUnit.NANOSECONDS))
+      config.getNanosDuration("mailbox-push-timeout-time"))
 
     final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
       new BoundedMailbox.MessageQueue(capacity, pushTimeOut)

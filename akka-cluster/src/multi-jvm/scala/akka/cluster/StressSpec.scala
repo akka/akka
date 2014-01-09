@@ -39,6 +39,7 @@ import akka.testkit._
 import akka.testkit.TestEvent._
 import akka.actor.Identify
 import akka.actor.ActorIdentity
+import akka.util.Helpers.ConfigOps
 import akka.util.Helpers.Requiring
 import java.lang.management.ManagementFactory
 
@@ -169,8 +170,6 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     private val testConfig = conf.getConfig("akka.test.cluster-stress-spec")
     import testConfig._
 
-    private def getDuration(name: String): FiniteDuration = Duration(getMilliseconds(name), MILLISECONDS)
-
     val infolog = getBoolean("infolog")
     val nFactor = getInt("nr-of-nodes-factor")
     val numberOfSeedNodes = getInt("nr-of-seed-nodes") // not scaled by nodes factor
@@ -192,19 +191,19 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     val numberOfNodesJoinRemove = getInt("nr-of-nodes-join-remove") // not scaled by nodes factor
 
     val workBatchSize = getInt("work-batch-size")
-    val workBatchInterval = Duration(getMilliseconds("work-batch-interval"), MILLISECONDS)
+    val workBatchInterval = testConfig.getMillisDuration("work-batch-interval")
     val payloadSize = getInt("payload-size")
     val dFactor = getInt("duration-factor")
-    val joinRemoveDuration = getDuration("join-remove-duration") * dFactor
-    val normalThroughputDuration = getDuration("normal-throughput-duration") * dFactor
-    val highThroughputDuration = getDuration("high-throughput-duration") * dFactor
-    val supervisionDuration = getDuration("supervision-duration") * dFactor
-    val supervisionOneIteration = getDuration("supervision-one-iteration") * dFactor
-    val idleGossipDuration = getDuration("idle-gossip-duration") * dFactor
-    val expectedTestDuration = getDuration("expected-test-duration") * dFactor
+    val joinRemoveDuration = testConfig.getMillisDuration("join-remove-duration") * dFactor
+    val normalThroughputDuration = testConfig.getMillisDuration("normal-throughput-duration") * dFactor
+    val highThroughputDuration = testConfig.getMillisDuration("high-throughput-duration") * dFactor
+    val supervisionDuration = testConfig.getMillisDuration("supervision-duration") * dFactor
+    val supervisionOneIteration = testConfig.getMillisDuration("supervision-one-iteration") * dFactor
+    val idleGossipDuration = testConfig.getMillisDuration("idle-gossip-duration") * dFactor
+    val expectedTestDuration = testConfig.getMillisDuration("expected-test-duration") * dFactor
     val treeWidth = getInt("tree-width")
     val treeLevels = getInt("tree-levels")
-    val reportMetricsInterval = getDuration("report-metrics-interval")
+    val reportMetricsInterval = testConfig.getMillisDuration("report-metrics-interval")
     val convergenceWithinFactor = getDouble("convergence-within-factor")
     val exerciseActors = getBoolean("exercise-actors")
 

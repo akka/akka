@@ -12,6 +12,7 @@ import akka.event.EventStream
 import scala.concurrent.duration.Duration
 import akka.ConfigurationException
 import akka.actor.Deploy
+import akka.util.Helpers.ConfigOps
 
 /**
  * DispatcherPrerequisites represents useful contextual pieces when constructing a MessageDispatcher
@@ -178,9 +179,9 @@ class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisi
     this,
     config.getString("id"),
     config.getInt("throughput"),
-    Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+    config.getNanosDuration("throughput-deadline-time"),
     configureExecutor(),
-    Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))
+    config.getMillisDuration("shutdown-timeout"))
 
   /**
    * Returns the same dispatcher instance for each invocation
@@ -231,10 +232,10 @@ class BalancingDispatcherConfigurator(_config: Config, _prerequisites: Dispatche
       this,
       config.getString("id"),
       config.getInt("throughput"),
-      Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+      config.getNanosDuration("throughput-deadline-time"),
       mailboxType,
       configureExecutor(),
-      Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS),
+      config.getMillisDuration("shutdown-timeout"),
       config.getBoolean("attempt-teamwork"))
 
   /**
@@ -267,6 +268,6 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
   override def dispatcher(): MessageDispatcher =
     new PinnedDispatcher(
       this, null, config.getString("id"),
-      Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS), threadPoolConfig)
+      config.getMillisDuration("shutdown-timeout"), threadPoolConfig)
 
 }

@@ -12,6 +12,7 @@ import akka.actor.Address
 import akka.actor.AddressFromURIString
 import akka.dispatch.Dispatchers
 import akka.util.Helpers.Requiring
+import akka.util.Helpers.ConfigOps
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util.immutableSeq
 
@@ -23,10 +24,10 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val FailureDetectorConfig: Config = cc.getConfig("failure-detector")
   val FailureDetectorImplementationClass: String = FailureDetectorConfig.getString("implementation-class")
   val HeartbeatInterval: FiniteDuration = {
-    Duration(FailureDetectorConfig.getMilliseconds("heartbeat-interval"), MILLISECONDS)
+    FailureDetectorConfig.getMillisDuration("heartbeat-interval")
   } requiring (_ > Duration.Zero, "failure-detector.heartbeat-interval must be > 0")
   val HeartbeatExpectedResponseAfter: FiniteDuration = {
-    Duration(FailureDetectorConfig.getMilliseconds("expected-response-after"), MILLISECONDS)
+    FailureDetectorConfig.getMillisDuration("expected-response-after")
   } requiring (_ > Duration.Zero, "failure-detector.expected-response-after > 0")
   val MonitoredByNrOfMembers: Int = {
     FailureDetectorConfig.getInt("monitored-by-nr-of-members")
@@ -34,26 +35,26 @@ final class ClusterSettings(val config: Config, val systemName: String) {
 
   val SeedNodes: immutable.IndexedSeq[Address] =
     immutableSeq(cc.getStringList("seed-nodes")).map { case AddressFromURIString(addr) ⇒ addr }.toVector
-  val SeedNodeTimeout: FiniteDuration = Duration(cc.getMilliseconds("seed-node-timeout"), MILLISECONDS)
+  val SeedNodeTimeout: FiniteDuration = cc.getMillisDuration("seed-node-timeout")
   val RetryUnsuccessfulJoinAfter: Duration = {
     val key = "retry-unsuccessful-join-after"
     cc.getString(key).toLowerCase match {
       case "off" ⇒ Duration.Undefined
-      case _     ⇒ Duration(cc.getMilliseconds(key), MILLISECONDS) requiring (_ > Duration.Zero, key + " > 0s, or off")
+      case _     ⇒ cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s, or off")
     }
   }
-  val PeriodicTasksInitialDelay: FiniteDuration = Duration(cc.getMilliseconds("periodic-tasks-initial-delay"), MILLISECONDS)
-  val GossipInterval: FiniteDuration = Duration(cc.getMilliseconds("gossip-interval"), MILLISECONDS)
+  val PeriodicTasksInitialDelay: FiniteDuration = cc.getMillisDuration("periodic-tasks-initial-delay")
+  val GossipInterval: FiniteDuration = cc.getMillisDuration("gossip-interval")
   val GossipTimeToLive: FiniteDuration = {
-    Duration(cc.getMilliseconds("gossip-time-to-live"), MILLISECONDS)
+    cc.getMillisDuration("gossip-time-to-live")
   } requiring (_ > Duration.Zero, "gossip-time-to-live must be > 0")
-  val LeaderActionsInterval: FiniteDuration = Duration(cc.getMilliseconds("leader-actions-interval"), MILLISECONDS)
-  val UnreachableNodesReaperInterval: FiniteDuration = Duration(cc.getMilliseconds("unreachable-nodes-reaper-interval"), MILLISECONDS)
+  val LeaderActionsInterval: FiniteDuration = cc.getMillisDuration("leader-actions-interval")
+  val UnreachableNodesReaperInterval: FiniteDuration = cc.getMillisDuration("unreachable-nodes-reaper-interval")
   val PublishStatsInterval: Duration = {
     val key = "publish-stats-interval"
     cc.getString(key).toLowerCase match {
       case "off" ⇒ Duration.Undefined
-      case _     ⇒ Duration(cc.getMilliseconds(key), MILLISECONDS) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
+      case _     ⇒ cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
   }
 
@@ -63,7 +64,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     val key = "auto-down-unreachable-after"
     cc.getString(key).toLowerCase match {
       case "off" ⇒ if (AutoDown) Duration.Zero else Duration.Undefined
-      case _     ⇒ Duration(cc.getMilliseconds(key), MILLISECONDS) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
+      case _     ⇒ cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
   }
 
@@ -84,16 +85,16 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   }
   val GossipDifferentViewProbability: Double = cc.getDouble("gossip-different-view-probability")
   val ReduceGossipDifferentViewProbability: Int = cc.getInt("reduce-gossip-different-view-probability")
-  val SchedulerTickDuration: FiniteDuration = Duration(cc.getMilliseconds("scheduler.tick-duration"), MILLISECONDS)
+  val SchedulerTickDuration: FiniteDuration = cc.getMillisDuration("scheduler.tick-duration")
   val SchedulerTicksPerWheel: Int = cc.getInt("scheduler.ticks-per-wheel")
   val MetricsEnabled: Boolean = cc.getBoolean("metrics.enabled")
   val MetricsCollectorClass: String = cc.getString("metrics.collector-class")
   val MetricsInterval: FiniteDuration = {
-    Duration(cc.getMilliseconds("metrics.collect-interval"), MILLISECONDS)
+    cc.getMillisDuration("metrics.collect-interval")
   } requiring (_ > Duration.Zero, "metrics.collect-interval must be > 0")
-  val MetricsGossipInterval: FiniteDuration = Duration(cc.getMilliseconds("metrics.gossip-interval"), MILLISECONDS)
+  val MetricsGossipInterval: FiniteDuration = cc.getMillisDuration("metrics.gossip-interval")
   val MetricsMovingAverageHalfLife: FiniteDuration = {
-    Duration(cc.getMilliseconds("metrics.moving-average-half-life"), MILLISECONDS)
+    cc.getMillisDuration("metrics.moving-average-half-life")
   } requiring (_ > Duration.Zero, "metrics.moving-average-half-life must be > 0")
 
 }

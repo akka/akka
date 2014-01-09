@@ -9,6 +9,7 @@ import akka.actor.ActorSystem
 import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit._
 import akka.testkit.TestKit
+import akka.util.Helpers.ConfigOps
 
 class CamelConfigSpec extends WordSpec with Matchers {
 
@@ -20,7 +21,7 @@ class CamelConfigSpec extends WordSpec with Matchers {
   }
   "CamelConfigSpec" must {
     "have correct activationTimeout config" in {
-      settings.ActivationTimeout should equal(Duration(config.getMilliseconds("akka.camel.consumer.activation-timeout"), MILLISECONDS))
+      settings.ActivationTimeout should equal(config.getMillisDuration("akka.camel.consumer.activation-timeout"))
     }
 
     "have correct autoAck config" in {
@@ -28,7 +29,7 @@ class CamelConfigSpec extends WordSpec with Matchers {
     }
 
     "have correct replyTimeout config" in {
-      settings.ReplyTimeout should equal(Duration(config.getMilliseconds("akka.camel.consumer.reply-timeout"), MILLISECONDS))
+      settings.ReplyTimeout should equal(config.getMillisDuration("akka.camel.consumer.reply-timeout"))
     }
 
     "have correct streamingCache config" in {
