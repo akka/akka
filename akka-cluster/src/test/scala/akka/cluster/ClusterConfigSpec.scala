@@ -9,6 +9,7 @@ import akka.testkit.AkkaSpec
 import akka.dispatch.Dispatchers
 import scala.concurrent.duration._
 import akka.remote.PhiAccrualFailureDetector
+import akka.util.Helpers.ConfigOps
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterConfigSpec extends AkkaSpec {
@@ -21,8 +22,8 @@ class ClusterConfigSpec extends AkkaSpec {
       LogInfo should be(true)
       FailureDetectorConfig.getDouble("threshold") should be(8.0 +- 0.0001)
       FailureDetectorConfig.getInt("max-sample-size") should be(1000)
-      Duration(FailureDetectorConfig.getMilliseconds("min-std-deviation"), MILLISECONDS) should be(100 millis)
-      Duration(FailureDetectorConfig.getMilliseconds("acceptable-heartbeat-pause"), MILLISECONDS) should be(3 seconds)
+      FailureDetectorConfig.getMillisDuration("min-std-deviation") should be(100 millis)
+      FailureDetectorConfig.getMillisDuration("acceptable-heartbeat-pause") should be(3 seconds)
       FailureDetectorImplementationClass should be(classOf[PhiAccrualFailureDetector].getName)
       SeedNodes should be(Seq.empty[String])
       SeedNodeTimeout should be(5 seconds)

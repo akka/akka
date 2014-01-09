@@ -56,14 +56,15 @@ class TestConductorExt(val system: ExtendedActorSystem) extends Extension with C
 
   object Settings {
     val config = system.settings.config.getConfig("akka.testconductor")
+    import akka.util.Helpers.ConfigOps
 
-    val ConnectTimeout = Duration(config.getMilliseconds("connect-timeout"), MILLISECONDS)
+    val ConnectTimeout = config.getMillisDuration("connect-timeout")
     val ClientReconnects = config.getInt("client-reconnects")
-    val ReconnectBackoff = Duration(config.getMilliseconds("reconnect-backoff"), MILLISECONDS)
+    val ReconnectBackoff = config.getMillisDuration("reconnect-backoff")
 
-    implicit val BarrierTimeout = Timeout(Duration(config.getMilliseconds("barrier-timeout"), MILLISECONDS))
-    implicit val QueryTimeout = Timeout(Duration(config.getMilliseconds("query-timeout"), MILLISECONDS))
-    val PacketSplitThreshold = Duration(config.getMilliseconds("packet-split-threshold"), MILLISECONDS)
+    implicit val BarrierTimeout = Timeout(config.getMillisDuration("barrier-timeout"))
+    implicit val QueryTimeout = Timeout(config.getMillisDuration("query-timeout"))
+    val PacketSplitThreshold = config.getMillisDuration("packet-split-threshold")
 
     private def computeWPS(config: Config): Int =
       ThreadPoolConfig.scaledPoolSize(

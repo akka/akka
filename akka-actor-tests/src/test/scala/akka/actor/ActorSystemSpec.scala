@@ -18,6 +18,7 @@ import akka.dispatch._
 import com.typesafe.config.Config
 import java.util.concurrent.{ LinkedBlockingQueue, BlockingQueue, TimeUnit }
 import akka.util.Switch
+import akka.util.Helpers.ConfigOps
 
 class JavaExtensionSpec extends JavaExtension with JUnitSuiteLike
 
@@ -87,9 +88,9 @@ object ActorSystemSpec {
       this,
       config.getString("id"),
       config.getInt("throughput"),
-      Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+      config.getNanosDuration("throughput-deadline-time"),
       configureExecutor(),
-      Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) {
+      config.getMillisDuration("shutdown-timeout")) {
       val doneIt = new Switch
       override protected[akka] def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = {
         val ret = super.registerForExecution(mbox, hasMessageHint, hasSystemMessageHint)

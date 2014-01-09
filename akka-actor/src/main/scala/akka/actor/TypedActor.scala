@@ -637,11 +637,12 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
   protected def typedActor = this
 
   import system.settings
+  import akka.util.Helpers.ConfigOps
 
   /**
    * Default timeout for typed actor methods with non-void return type
    */
-  final val DefaultReturnTimeout = Timeout(Duration(settings.config.getMilliseconds("akka.actor.typed.timeout"), MILLISECONDS))
+  final val DefaultReturnTimeout = Timeout(settings.config.getMillisDuration("akka.actor.typed.timeout"))
 
   /**
    * Retrieves the underlying ActorRef for the supplied TypedActor proxy, or null if none found

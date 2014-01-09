@@ -19,7 +19,7 @@ Akka uses the `Typesafe Config Library
 for the configuration of your own application or library built with or without
 Akka. This library is implemented in Java with no external dependencies; you
 should have a look at its documentation (in particular about `ConfigFactory
-<http://typesafehub.github.com/config/latest/api/com/typesafe/config/ConfigFactory.html>`_),
+<http://typesafehub.github.io/config/v1.2.0/com/typesafe/config/ConfigFactory.html>`_),
 which is only summarized in the following.
 
 .. warning::

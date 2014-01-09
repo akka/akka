@@ -9,6 +9,7 @@ import akka.AkkaException
 import akka.dispatch.sysmsg._
 import akka.actor.{ ActorCell, ActorRef, Cell, ActorSystem, InternalActorRef, DeadLetter }
 import akka.util.{ Unsafe, BoundedBlockingQueue }
+import akka.util.Helpers.ConfigOps
 import akka.event.Logging.Error
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
@@ -579,7 +580,7 @@ case class BoundedMailbox(val capacity: Int, val pushTimeOut: FiniteDuration)
   extends MailboxType with ProducesMessageQueue[BoundedMailbox.MessageQueue] {
 
   def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"),
-    Duration(config.getNanoseconds("mailbox-push-timeout-time"), TimeUnit.NANOSECONDS))
+    config.getNanosDuration("mailbox-push-timeout-time"))
 
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
@@ -659,7 +660,7 @@ case class BoundedDequeBasedMailbox( final val capacity: Int, final val pushTime
   extends MailboxType with ProducesMessageQueue[BoundedDequeBasedMailbox.MessageQueue] {
 
   def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"),
-    Duration(config.getNanoseconds("mailbox-push-timeout-time"), TimeUnit.NANOSECONDS))
+    config.getNanosDuration("mailbox-push-timeout-time"))
 
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedDequeBasedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedDequeBasedMailbox can not be null")

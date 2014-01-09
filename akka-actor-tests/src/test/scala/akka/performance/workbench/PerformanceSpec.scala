@@ -10,15 +10,15 @@ import java.util.concurrent.TimeUnit
 import akka.event.Logging
 
 abstract class PerformanceSpec(cfg: Config = BenchmarkConfig.config) extends AkkaSpec(cfg) with BeforeAndAfterEach {
-
+  import akka.util.Helpers.ConfigOps
   def config = system.settings.config
   def isLongRunningBenchmark() = config.getBoolean("benchmark.longRunning")
   def minClients() = config.getInt("benchmark.minClients")
   def maxClients() = config.getInt("benchmark.maxClients")
   def repeatFactor() = config.getInt("benchmark.repeatFactor")
   def timeDilation() = config.getLong("benchmark.timeDilation")
-  def maxRunDuration() = Duration(config.getMilliseconds("benchmark.maxRunDuration"), TimeUnit.MILLISECONDS)
-  def clientDelay = Duration(config.getNanoseconds("benchmark.clientDelay"), TimeUnit.NANOSECONDS)
+  def maxRunDuration() = config.getMillisDuration("benchmark.maxRunDuration")
+  def clientDelay = config.getNanosDuration("benchmark.clientDelay")
 
   val resultRepository = BenchResultRepository()
   lazy val report = new Report(system, resultRepository, compareResultWith)

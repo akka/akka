@@ -6,6 +6,10 @@ package akka.util
 import java.util.Comparator
 import scala.annotation.tailrec
 import java.util.regex.Pattern
+import com.typesafe.config.Config
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.Duration
+import java.util.concurrent.TimeUnit
 
 object Helpers {
 
@@ -105,4 +109,17 @@ object Helpers {
       value
     }
   }
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] final implicit class ConfigOps(val config: Config) extends AnyVal {
+    def getMillisDuration(path: String): FiniteDuration = getDuration(path, TimeUnit.MILLISECONDS)
+
+    def getNanosDuration(path: String): FiniteDuration = getDuration(path, TimeUnit.NANOSECONDS)
+
+    private def getDuration(path: String, unit: TimeUnit): FiniteDuration =
+      Duration(config.getDuration(path, unit), unit)
+  }
+
 }
