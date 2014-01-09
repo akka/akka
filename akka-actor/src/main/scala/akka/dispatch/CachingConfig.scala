@@ -159,10 +159,6 @@ private[akka] class CachingConfig(_config: Config) extends Config {
 
   def getNanosecondsList(path: String) = config.getNanosecondsList(path)
 
-  def getDuration(path: String, unit: TimeUnit) = config.getDuration(path, unit)
-
-  def getDurationList(path: String, unit: TimeUnit) = config.getDurationList(path, unit)
-
   def withOnlyPath(path: String) = new CachingConfig(config.withOnlyPath(path))
 
   def withoutPath(path: String) = new CachingConfig(config.withoutPath(path))
@@ -172,5 +168,15 @@ private[akka] class CachingConfig(_config: Config) extends Config {
   def atKey(key: String) = new CachingConfig(config.atKey(key))
 
   def withValue(path: String, value: ConfigValue) = new CachingConfig(config.withValue(path, value))
+
+  def getDuration(path: String, unit: TimeUnit) = config.getDuration(path, unit)
+
+  def getDurationList(path: String, unit: TimeUnit) = config.getDurationList(path, unit)
+
+  def isResolved() = config.isResolved()
+
+  def resolveWith(source: Config, options: ConfigResolveOptions) = config.resolveWith(source, options)
+
+  def resolveWith(source: Config) = config.resolveWith(source)
 }
 

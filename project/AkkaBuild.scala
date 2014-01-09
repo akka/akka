@@ -983,7 +983,7 @@ object AkkaBuild extends Build {
       case (false, _) => Seq.empty
     })
 
-  lazy val scaladocDiagramsEnabled = System.getProperty("akka.scaladoc.diagrams", "true").toBoolean
+  lazy val scaladocDiagramsEnabled = System.getProperty("akka.scaladoc.diagrams", "false").toBoolean
   lazy val scaladocOptions = List("-implicits") ::: (if (scaladocDiagramsEnabled) List("-diagrams") else Nil)
 
   lazy val scaladocSettings: Seq[sbt.Setting[_]]= {
@@ -1171,7 +1171,7 @@ object Dependencies {
     // Compile
     val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.10.3" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
-    val config        = "com.typesafe"                % "config"                       % "1.1.0-SNAPSHOT"       // ApacheV2
+    val config        = "com.typesafe"                % "config"                       % "1.1.0-4dd6c85cab1ef1a4415abb74704d60e57497b7b8"       // ApacheV2
     val netty         = "io.netty"                    % "netty"                        % "3.8.0.Final" // ApacheV2
     val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.5.0"       // New BSD
     val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % scalaStmVersion // Modified BSD (Scala)
