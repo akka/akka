@@ -20,6 +20,7 @@ import akka.routing.DefaultResizer
 import akka.routing.ScatterGatherFirstCompletedGroup
 import akka.routing.RandomGroup
 import akka.routing.ScatterGatherFirstCompletedPool
+import akka.routing.BalancingPool
 
 object RouterDocSpec {
 
@@ -59,10 +60,31 @@ akka.actor.deployment {
   }
 }
 #//#config-random-group
+
+#//#config-balancing-pool
+akka.actor.deployment {
+  /parent/router9 {
+    router = balancing-pool
+    nr-of-instances = 5
+  }
+}
+#//#config-balancing-pool
+    
+#//#config-balancing-pool2
+akka.actor.deployment {
+  /parent/router9b {
+    router = balancing-pool
+    nr-of-instances = 5
+    pool-dispatcher {
+      attempt-teamwork = off
+    }
+  }
+}
+#//#config-balancing-pool2
     
 #//#config-smallest-mailbox-pool
 akka.actor.deployment {
-  /parent/router9 {
+  /parent/router11 {
     router = smallest-mailbox-pool
     nr-of-instances = 5
   }
@@ -71,7 +93,7 @@ akka.actor.deployment {
     
 #//#config-broadcast-pool
 akka.actor.deployment {
-  /parent/router11 {
+  /parent/router13 {
     router = broadcast-pool
     nr-of-instances = 5
   }
@@ -80,7 +102,7 @@ akka.actor.deployment {
     
 #//#config-broadcast-group
 akka.actor.deployment {
-  /parent/router13 {
+  /parent/router15 {
     router = broadcast-group
     routees.paths = ["/user/workers/w1", "/user/workers/w2", "/user/workers/w3"]
   }
@@ -89,7 +111,7 @@ akka.actor.deployment {
 
 #//#config-scatter-gather-pool
 akka.actor.deployment {
-  /parent/router15 {
+  /parent/router17 {
     router = scatter-gather-pool
     nr-of-instances = 5
     within = 10 seconds
@@ -99,7 +121,7 @@ akka.actor.deployment {
     
 #//#config-scatter-gather-group
 akka.actor.deployment {
-  /parent/router17 {
+  /parent/router19 {
     router = scatter-gather-group
     routees.paths = ["/user/workers/w1", "/user/workers/w2", "/user/workers/w3"]
     within = 10 seconds
@@ -109,7 +131,7 @@ akka.actor.deployment {
     
 #//#config-consistent-hashing-pool
 akka.actor.deployment {
-  /parent/router19 {
+  /parent/router21 {
     router = consistent-hashing-pool
     nr-of-instances = 5
     virtual-nodes-factor = 10
@@ -119,7 +141,7 @@ akka.actor.deployment {
     
 #//#config-consistent-hashing-group
 akka.actor.deployment {
-  /parent/router21 {
+  /parent/router23 {
     router = consistent-hashing-group
     routees.paths = ["/user/workers/w1", "/user/workers/w2", "/user/workers/w3"]
     virtual-nodes-factor = 10
@@ -129,7 +151,7 @@ akka.actor.deployment {
 
 #//#config-resize-pool
 akka.actor.deployment {
-  /parent/router23 {
+  /parent/router25 {
     router = round-robin-pool
     resizer {
       lower-bound = 2
@@ -146,7 +168,8 @@ akka.actor.deployment {
     router = random-pool
     nr-of-instances = 5
     pool-dispatcher {
-      type = BalancingDispatcher
+      fork-join-executor.parallelism-min = 5
+      fork-join-executor.parallelism-max = 5
     }
   }
 }
@@ -249,89 +272,99 @@ router-dispatcher {}
       context.actorOf(RandomGroup(paths).props(), "router8")
     //#random-group-2
 
-    //#smallest-mailbox-pool-1
+    //#balancing-pool-1
     val router9: ActorRef =
       context.actorOf(FromConfig.props(Props[Worker]), "router9")
+    //#balancing-pool-1
+
+    //#balancing-pool-2
+    val router10: ActorRef =
+      context.actorOf(BalancingPool(5).props(Props[Worker]), "router10")
+    //#balancing-pool-2  
+
+    //#smallest-mailbox-pool-1
+    val router11: ActorRef =
+      context.actorOf(FromConfig.props(Props[Worker]), "router11")
     //#smallest-mailbox-pool-1
 
     //#smallest-mailbox-pool-2
-    val router10: ActorRef =
-      context.actorOf(SmallestMailboxPool(5).props(Props[Worker]), "router10")
+    val router12: ActorRef =
+      context.actorOf(SmallestMailboxPool(5).props(Props[Worker]), "router12")
     //#smallest-mailbox-pool-2
 
     //#broadcast-pool-1
-    val router11: ActorRef =
-      context.actorOf(FromConfig.props(Props[Worker]), "router11")
+    val router13: ActorRef =
+      context.actorOf(FromConfig.props(Props[Worker]), "router13")
     //#broadcast-pool-1
 
     //#broadcast-pool-2
-    val router12: ActorRef =
-      context.actorOf(BroadcastPool(5).props(Props[Worker]), "router12")
+    val router14: ActorRef =
+      context.actorOf(BroadcastPool(5).props(Props[Worker]), "router14")
     //#broadcast-pool-2
 
     //#broadcast-group-1
-    val router13: ActorRef =
-      context.actorOf(FromConfig.props(), "router13")
+    val router15: ActorRef =
+      context.actorOf(FromConfig.props(), "router15")
     //#broadcast-group-1
 
     //#broadcast-group-2
-    val router14: ActorRef =
-      context.actorOf(BroadcastGroup(paths).props(), "router14")
+    val router16: ActorRef =
+      context.actorOf(BroadcastGroup(paths).props(), "router16")
     //#broadcast-group-2
 
     //#scatter-gather-pool-1
-    val router15: ActorRef =
-      context.actorOf(FromConfig.props(Props[Worker]), "router15")
+    val router17: ActorRef =
+      context.actorOf(FromConfig.props(Props[Worker]), "router17")
     //#scatter-gather-pool-1
 
     //#scatter-gather-pool-2
-    val router16: ActorRef =
+    val router18: ActorRef =
       context.actorOf(ScatterGatherFirstCompletedPool(5, within = 10.seconds).
-        props(Props[Worker]), "router16")
+        props(Props[Worker]), "router18")
     //#scatter-gather-pool-2
 
     //#scatter-gather-group-1
-    val router17: ActorRef =
-      context.actorOf(FromConfig.props(), "router17")
+    val router19: ActorRef =
+      context.actorOf(FromConfig.props(), "router19")
     //#scatter-gather-group-1
 
     //#scatter-gather-group-2
-    val router18: ActorRef =
+    val router20: ActorRef =
       context.actorOf(ScatterGatherFirstCompletedGroup(paths,
-        within = 10.seconds).props(), "router18")
+        within = 10.seconds).props(), "router20")
     //#scatter-gather-group-2  
 
     //#consistent-hashing-pool-1
-    val router19: ActorRef =
-      context.actorOf(FromConfig.props(Props[Worker]), "router19")
+    val router21: ActorRef =
+      context.actorOf(FromConfig.props(Props[Worker]), "router21")
     //#consistent-hashing-pool-1
 
     //#consistent-hashing-pool-2
-    val router20: ActorRef =
+    val router22: ActorRef =
       context.actorOf(ConsistentHashingPool(5).props(Props[Worker]),
-        "router20")
+        "router22")
     //#consistent-hashing-pool-2
 
     //#consistent-hashing-group-1
-    val router21: ActorRef =
-      context.actorOf(FromConfig.props(), "router21")
+    val router23: ActorRef =
+      context.actorOf(FromConfig.props(), "router23")
     //#consistent-hashing-group-1
 
     //#consistent-hashing-group-2
-    val router22: ActorRef =
-      context.actorOf(ConsistentHashingGroup(paths).props(), "router22")
+    val router24: ActorRef =
+      context.actorOf(ConsistentHashingGroup(paths).props(), "router24")
     //#consistent-hashing-group-2  
 
     //#resize-pool-1
-    val router23: ActorRef =
-      context.actorOf(FromConfig.props(Props[Worker]), "router23")
+    val router25: ActorRef =
+      context.actorOf(FromConfig.props(Props[Worker]), "router25")
     //#resize-pool-1
 
     //#resize-pool-2
     val resizer = DefaultResizer(lowerBound = 2, upperBound = 15)
-    val router24: ActorRef =
+    val router26: ActorRef =
       context.actorOf(RoundRobinPool(5, Some(resizer)).props(Props[Worker]),
-        "router24")
+        "router26")
     //#resize-pool-2  
 
     def receive = {

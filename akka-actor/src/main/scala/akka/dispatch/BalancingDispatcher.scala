@@ -28,6 +28,7 @@ import scala.concurrent.duration.FiniteDuration
  * @see akka.dispatch.BalancingDispatcher
  * @see akka.dispatch.Dispatchers
  */
+@deprecated("Use BalancingPool instead of BalancingDispatcher", "2.3")
 class BalancingDispatcher(
   _configurator: MessageDispatcherConfigurator,
   _id: String,

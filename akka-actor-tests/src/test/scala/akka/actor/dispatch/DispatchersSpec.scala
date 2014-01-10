@@ -28,7 +28,7 @@ object DispatchersSpec {
         type = PinnedDispatcher
       }
       balancing-dispatcher {
-        type = BalancingDispatcher
+        type = "akka.dispatch.BalancingDispatcherConfigurator"
       }
     }
     akka.actor.deployment {
@@ -41,7 +41,10 @@ object DispatchersSpec {
       /pool1 {
         router = random-pool
         nr-of-instances = 3
-        pool-dispatcher.type = BalancingDispatcher
+        pool-dispatcher {
+          fork-join-executor.parallelism-min = 3
+          fork-join-executor.parallelism-max = 3
+        }
       }
     }
     """
@@ -71,7 +74,6 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
   def ofType[T <: MessageDispatcher: ClassTag]: (MessageDispatcher) ⇒ Boolean = _.getClass == implicitly[ClassTag[T]].runtimeClass
 
   def typesAndValidators: Map[String, (MessageDispatcher) ⇒ Boolean] = Map(
-    "BalancingDispatcher" -> ofType[BalancingDispatcher],
     "PinnedDispatcher" -> ofType[PinnedDispatcher],
     "Dispatcher" -> ofType[Dispatcher])
 

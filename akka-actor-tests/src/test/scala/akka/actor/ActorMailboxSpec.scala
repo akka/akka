@@ -34,18 +34,18 @@ object ActorMailboxSpec {
     }
 
     balancing-dispatcher {
-      type = BalancingDispatcher
+      type = "akka.dispatch.BalancingDispatcherConfigurator"
     }
 
     balancing-bounded-dispatcher {
-      type = BalancingDispatcher
+      type = "akka.dispatch.BalancingDispatcherConfigurator"
       mailbox-push-timeout-time = 10s
       mailbox-capacity = 1000
       mailbox-type = "akka.dispatch.BoundedMailbox"
     }
 
     requiring-balancing-bounded-dispatcher {
-      type = BalancingDispatcher
+      type = "akka.dispatch.BalancingDispatcherConfigurator"
       mailbox-requirement = "akka.actor.ActorMailboxSpec$MCBoundedMessageQueueSemantics"
     }
 

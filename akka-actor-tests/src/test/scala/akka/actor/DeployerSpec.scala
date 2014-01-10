@@ -194,6 +194,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       mapping("round-robin-group") should be(classOf[akka.routing.RoundRobinGroup].getName)
       mapping("random-pool") should be(classOf[akka.routing.RandomPool].getName)
       mapping("random-group") should be(classOf[akka.routing.RandomGroup].getName)
+      mapping("balancing-pool") should be(classOf[akka.routing.BalancingPool].getName)
       mapping("smallest-mailbox-pool") should be(classOf[akka.routing.SmallestMailboxPool].getName)
       mapping("broadcast-pool") should be(classOf[akka.routing.BroadcastPool].getName)
       mapping("broadcast-group") should be(classOf[akka.routing.BroadcastGroup].getName)

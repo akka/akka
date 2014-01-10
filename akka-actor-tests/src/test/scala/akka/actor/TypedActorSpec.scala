@@ -26,7 +26,7 @@ object TypedActorSpec {
 
   val config = """
     pooled-dispatcher {
-      type = BalancingDispatcher
+      type = "akka.dispatch.BalancingDispatcherConfigurator"
       executor = "thread-pool-executor"
       thread-pool-executor {
         core-pool-size-min = 60
