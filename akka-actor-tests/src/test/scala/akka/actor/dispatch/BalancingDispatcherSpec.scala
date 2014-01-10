@@ -12,7 +12,7 @@ import akka.testkit.AkkaSpec
 object BalancingDispatcherSpec {
   val config = """
     pooled-dispatcher {
-      type = BalancingDispatcher
+      type = "akka.dispatch.BalancingDispatcherConfigurator"
       throughput = 1
     }
     """

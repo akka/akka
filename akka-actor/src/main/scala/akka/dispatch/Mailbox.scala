@@ -564,7 +564,7 @@ object UnboundedMailbox {
 /**
  * SingleConsumerOnlyUnboundedMailbox is a high-performance, multiple producer—single consumer, unbounded MailboxType,
  * the only drawback is that you can't have multiple consumers,
- * which rules out using it with BalancingDispatcher for instance.
+ * which rules out using it with BalancingPool (BalancingDispatcher) for instance.
  */
 case class SingleConsumerOnlyUnboundedMailbox() extends MailboxType with ProducesMessageQueue[NodeMessageQueue] {
 

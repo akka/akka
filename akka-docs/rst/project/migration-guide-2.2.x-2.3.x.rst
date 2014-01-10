@@ -134,3 +134,13 @@ The following, previously deprecated, features have been removed:
  * DefaultScheduler superseded by LightArrayRevolverScheduler
  
 
+BalancingDispatcher is Deprecated
+=================================
+
+Use ``BalancingPool`` instead of ``BalancingDispatcher``. See :ref:`documentation for Scala <balancing-pool-scala>` and 
+:ref:`documentation for Java <balancing-pool-java>`.
+
+During a migration period you can still use BalancingDispatcher by specifying the full class name in the dispatcher configuration::
+
+    type = "akka.dispatch.BalancingDispatcherConfigurator"
+

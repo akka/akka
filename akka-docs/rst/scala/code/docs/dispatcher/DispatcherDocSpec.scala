@@ -114,17 +114,6 @@ object DispatcherDocSpec {
     }
     //#my-bounded-config
 
-    //#my-balancing-config
-    my-balancing-dispatcher {
-      type = BalancingDispatcher
-      executor = "thread-pool-executor"
-      thread-pool-executor {
-        core-pool-size-factor = 8.0
-        max-pool-size-factor  = 16.0
-      }
-    }
-    //#my-balancing-config
-
     //#prio-dispatcher-config
     prio-dispatcher {
       mailbox-type = "docs.dispatcher.DispatcherDocSpec$MyPrioMailbox"
@@ -340,10 +329,6 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
       watch(a)
       expectMsgPF() { case Terminated(`a`) => () }
     }
-  }
-
-  "defining balancing dispatcher" in {
-    val dispatcher = system.dispatchers.lookup("my-balancing-dispatcher")
   }
 
   "require custom mailbox on dispatcher" in {

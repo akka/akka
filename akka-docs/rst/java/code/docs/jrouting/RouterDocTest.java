@@ -202,99 +202,111 @@ public class RouterDocTest {
     ActorRef router8 =
       getContext().actorOf(new RandomGroup(paths).props(), "router8");
     //#random-group-2
-
-    //#smallest-mailbox-pool-1
+    
+    //#balancing-pool-1
     ActorRef router9 =
       getContext().actorOf(FromConfig.getInstance().props(
         Props.create(Worker.class)), "router9");
-    //#smallest-mailbox-pool-1
+    //#balancing-pool-1
 
-    //#smallest-mailbox-pool-2
+    //#balancing-pool-2
     ActorRef router10 =
       getContext().actorOf(new SmallestMailboxPool(5).props(
         Props.create(Worker.class)), "router10");
-    //#smallest-mailbox-pool-2
+    //#balancing-pool-2
 
-    //#broadcast-pool-1
+    //#smallest-mailbox-pool-1
     ActorRef router11 =
       getContext().actorOf(FromConfig.getInstance().props(
         Props.create(Worker.class)), "router11");
+    //#smallest-mailbox-pool-1
+
+    //#smallest-mailbox-pool-2
+    ActorRef router12 =
+      getContext().actorOf(new SmallestMailboxPool(5).props(
+        Props.create(Worker.class)), "router12");
+    //#smallest-mailbox-pool-2
+
+    //#broadcast-pool-1
+    ActorRef router13 =
+      getContext().actorOf(FromConfig.getInstance().props(
+        Props.create(Worker.class)), "router13");
     //#broadcast-pool-1
 
     //#broadcast-pool-2
-    ActorRef router12 =
+    ActorRef router14 =
       getContext().actorOf(new BroadcastPool(5).props(Props.create(Worker.class)),
-        "router12");
+        "router14");
     //#broadcast-pool-2
 
     //#broadcast-group-1
-    ActorRef router13 =
-      getContext().actorOf(FromConfig.getInstance().props(), "router13");
+    ActorRef router15 =
+      getContext().actorOf(FromConfig.getInstance().props(), "router15");
     //#broadcast-group-1
 
     //#broadcast-group-2
-    ActorRef router14 =
-      getContext().actorOf(new BroadcastGroup(paths).props(), "router14");
+    ActorRef router16 =
+      getContext().actorOf(new BroadcastGroup(paths).props(), "router16");
     //#broadcast-group-2
 
     //#scatter-gather-pool-1
-    ActorRef router15 =
+    ActorRef router17 =
       getContext().actorOf(FromConfig.getInstance().props(
-        Props.create(Worker.class)), "router15");
+        Props.create(Worker.class)), "router17");
     //#scatter-gather-pool-1
 
     //#scatter-gather-pool-2
     FiniteDuration within = FiniteDuration.create(10, TimeUnit.SECONDS); 
-    ActorRef router16 =
+    ActorRef router18 =
       getContext().actorOf(new ScatterGatherFirstCompletedPool(5, within).props(
-        Props.create(Worker.class)), "router16");
+        Props.create(Worker.class)), "router18");
     //#scatter-gather-pool-2
 
     //#scatter-gather-group-1
-    ActorRef router17 =
-      getContext().actorOf(FromConfig.getInstance().props(), "router17");
+    ActorRef router19 =
+      getContext().actorOf(FromConfig.getInstance().props(), "router19");
     //#scatter-gather-group-1
 
     //#scatter-gather-group-2
     FiniteDuration within2 = FiniteDuration.create(10, TimeUnit.SECONDS);
-    ActorRef router18 =
+    ActorRef router20 =
       getContext().actorOf(new ScatterGatherFirstCompletedGroup(paths, within2).props(), 
-        "router18");
+        "router20");
     //#scatter-gather-group-2  
 
     //#consistent-hashing-pool-1
-    ActorRef router19 =
+    ActorRef router21 =
       getContext().actorOf(FromConfig.getInstance().props(Props.create(Worker.class)),
-        "router19");
+        "router21");
     //#consistent-hashing-pool-1
 
     //#consistent-hashing-pool-2
-    ActorRef router20 =
+    ActorRef router22 =
       getContext().actorOf(new ConsistentHashingPool(5).props(
-        Props.create(Worker.class)), "router20");
+        Props.create(Worker.class)), "router22");
     //#consistent-hashing-pool-2
 
     //#consistent-hashing-group-1
-    ActorRef router21 =
-      getContext().actorOf(FromConfig.getInstance().props(), "router21");
+    ActorRef router23 =
+      getContext().actorOf(FromConfig.getInstance().props(), "router23");
     //#consistent-hashing-group-1
 
     //#consistent-hashing-group-2
-    ActorRef router22 =
-      getContext().actorOf(new ConsistentHashingGroup(paths).props(), "router22");
+    ActorRef router24 =
+      getContext().actorOf(new ConsistentHashingGroup(paths).props(), "router24");
     //#consistent-hashing-group-2  
 
     //#resize-pool-1
-    ActorRef router23 =
+    ActorRef router25 =
       getContext().actorOf(FromConfig.getInstance().props(
-        Props.create(Worker.class)), "router23");
+        Props.create(Worker.class)), "router25");
     //#resize-pool-1
 
     //#resize-pool-2
     DefaultResizer resizer = new DefaultResizer(2, 15);
-    ActorRef router24 =
+    ActorRef router26 =
       getContext().actorOf(new RoundRobinPool(5).withResizer(resizer).props(
-        Props.create(Worker.class)), "router24");
+        Props.create(Worker.class)), "router26");
     //#resize-pool-2  
       
     public void onReceive(Object msg) {}

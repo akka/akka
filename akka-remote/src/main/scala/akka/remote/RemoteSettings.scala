@@ -37,7 +37,7 @@ final class RemoteSettings(val config: Config) {
     }
   }
 
-  @deprecated("Use the RemoteLifecycleEventsLogLevel field instead.")
+  @deprecated("Use the RemoteLifecycleEventsLogLevel field instead.", "2.3")
   def LogRemoteLifecycleEvents: Boolean = RemoteLifecycleEventsLogLevel >= Logging.ErrorLevel
 
   val Dispatcher: String = getString("akka.remote.use-dispatcher")
