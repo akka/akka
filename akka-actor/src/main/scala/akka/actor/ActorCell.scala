@@ -12,7 +12,7 @@ import akka.japi.Procedure
 import java.io.{ ObjectOutputStream, NotSerializableException }
 import scala.annotation.{ switch, tailrec }
 import scala.collection.immutable
-import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.control.NonFatal
@@ -115,7 +115,7 @@ trait ActorContext extends ActorRefFactory {
    * Returns the dispatcher (MessageDispatcher) that is used for this Actor.
    * Importing this member will place an implicit ExecutionContext in scope.
    */
-  implicit def dispatcher: ExecutionContext
+  implicit def dispatcher: ExecutionContextExecutor
 
   /**
    * The system that the actor belongs to.
