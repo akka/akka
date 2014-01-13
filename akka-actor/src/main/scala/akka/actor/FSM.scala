@@ -346,7 +346,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * @param repeat send once if false, scheduleAtFixedRate if true
    * @return current state descriptor
    */
-  final def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean): Unit = {
+  final def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean = false): Unit = {
     if (debugEvent)
       log.debug("setting " + (if (repeat) "repeating " else "") + "timer '" + name + "'/" + timeout + ": " + msg)
     if (timers contains name) {

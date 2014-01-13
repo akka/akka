@@ -67,7 +67,7 @@ class TestFSMRef[S, D, T <: Actor](
   /**
    * Proxy for [[FSM#setTimer]].
    */
-  def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean) {
+  def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean = false) {
     fsm.setTimer(name, msg, timeout, repeat)
   }
 
