@@ -61,7 +61,7 @@ object ExecutionContexts {
   /**
    * @return a reference to the global ExecutionContext
    */
-  def global(): ExecutionContext = ExecutionContext.global
+  def global(): ExecutionContextExecutor = ExecutionContext.global
 
   /**
    * WARNING: Not A General Purpose ExecutionContext!
