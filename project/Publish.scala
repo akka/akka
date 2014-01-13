@@ -29,14 +29,6 @@ object Publish {
 
   def akkaPomExtra = {
     (<inceptionYear>2009</inceptionYear>
-    <url>http://akka.io</url>
-    <licenses>
-      <license>
-        <name>Apache 2</name>
-        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        <distribution>repo</distribution>
-      </license>
-    </licenses>
     <scm>
       <url>git://github.com/akka/akka.git</url>
       <connection>scm:git:git@github.com:akka/akka.git</connection>
