@@ -257,7 +257,7 @@ object Status {
    * This class/message type is preferably used to indicate success of some operation performed.
    */
   @SerialVersionUID(1L)
-  case class Success(status: AnyRef) extends Status
+  case class Success(status: Any) extends Status
 
   /**
    * This class/message type is preferably used to indicate failure of some operation performed.
