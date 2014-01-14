@@ -33,8 +33,9 @@ object CircuitBreakerSpec {
   def longCallTimeoutCb()(implicit system: ActorSystem, ec: ExecutionContext): Breaker =
     new Breaker(new CircuitBreaker(system.scheduler, 1, 5 seconds, 500.millis.dilated))
 
+  val longResetTimeout = 5.seconds
   def longResetTimeoutCb()(implicit system: ActorSystem, ec: ExecutionContext): Breaker =
-    new Breaker(new CircuitBreaker(system.scheduler, 1, 100.millis.dilated, 5 seconds))
+    new Breaker(new CircuitBreaker(system.scheduler, 1, 100.millis.dilated, longResetTimeout))
 
   def multiFailureCb()(implicit system: ActorSystem, ec: ExecutionContext): Breaker =
     new Breaker(new CircuitBreaker(system.scheduler, 5, 200.millis.dilated, 500.millis.dilated))
@@ -62,7 +63,9 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
 
       checkLatch(breaker.openLatch)
 
-      intercept[CircuitBreakerOpenException] { breaker().withSyncCircuitBreaker(sayHi) }
+      val e = intercept[CircuitBreakerOpenException] { breaker().withSyncCircuitBreaker(sayHi) }
+      e.remainingDuration should be > (Duration.Zero)
+      e.remainingDuration should be <= (CircuitBreakerSpec.longResetTimeout)
     }
 
     "transition to half-open on reset timeout" in {
