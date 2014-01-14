@@ -213,7 +213,9 @@ Setup SBT project and then use `sbt-idea <https://github.com/mpeltonen/sbt-idea>
 Using Akka with NetBeans
 ------------------------
 
-Setup SBT project and then use `sbt-netbeans-plugin <https://github.com/remeniuk/sbt-netbeans-plugin>`_ to generate a NetBeans project.
+Setup SBT project and then use `nbsbt <https://github.com/dcaoyuan/nbsbt>`_ to generate a NetBeans project.
+
+You should also use `nbscala <https://github.com/dcaoyuan/nbscala>`_ for general scala support in the IDE.
 
 Do not use -optimize Scala compiler flag
 ----------------------------------------
