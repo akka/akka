@@ -351,13 +351,12 @@ object AkkaBuild extends Build {
   )
 
 
+  // All of this should be removed and akka-actor made into abundle instead
+  // right now it only copies the reference.conf from akka-actor
   val ActorMakeOsgiConfiguration = TaskKey[Seq[File]]("actor-make-osgi-configuration", "Copy reference.conf from akka modules for akka-osgi")
   val ActorOsgiConfigurationReference = TaskKey[Seq[(File, String)]]("actor-osgi-configuration-reference", "The list of all configuration files to be bundled in an osgi bundle, as well as project name.")
 
   import Project.Initialize
-  /** This method uses a bit of advanced sbt initailizers to grab the normalized names and resource directories
-   * from a set of projects, and then use this to create a mapping of (reference.conf to project name).
-   */
   def ActorOsgiConfigurationReferenceAction(projects: Seq[Project]): Initialize[Task[Seq[(File, String)]]] = {
     val directories: Initialize[Seq[File]] = projects.map(resourceDirectory in Compile in _).join
     val names: Initialize[Seq[String]] = projects.map(normalizedName in _).join
@@ -369,35 +368,16 @@ object AkkaBuild extends Build {
         } yield conf -> project
       }
   }
-  
-  /** This method is repsonsible for generating a new typeasafe config reference.conf file for OSGi.
-   * it copies all the files in the `includes` parameter, using the associated project name.  Then
-   * it generates a new reference.conf file which includes these files.
-   *
-   * @param target  The location where we write the new files
-   * @param includes A sequnece of (<reference.conf>, <project name>) pairs.
-   */
+
   def makeOsgiConfigurationFiles(includes: Seq[(File, String)], target: File, streams: TaskStreams): Seq[File] = {
-    // First we copy all the files to their destination
     val toCopy =
       for {
         (file, project) <- includes
-        val toFile = target / (project + ".conf")
+        val toFile = target / ("reference.conf")
       } yield file -> toFile
     IO.copy(toCopy)
     val copiedResourceFileLocations = toCopy.map(_._2)
-    streams.log.debug("Copied OSGi resources: " + copiedResourceFileLocations.mkString("\n\t", "\n\t", "\n"))
-    // Now we generate the new including conf file
-    val newConf = target / "reference.conf"
-    val confIncludes =
-      for {
-        (file, project) <- includes
-      } yield "include \""+ project +".conf\""
-    val writer = new PrintWriter(newConf)
-    try writer.write(confIncludes mkString ("", "\n", "\n"))
-    finally writer.close()
-    streams.log.info("Copied OSGi resources.")
-    newConf +: copiedResourceFileLocations
+    copiedResourceFileLocations
   }
 
   lazy val osgi = Project(
@@ -407,7 +387,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.osgi ++ Seq(
       libraryDependencies ++= Dependencies.osgi,
       cleanFiles <+= baseDirectory { base => base / "src/main/resources" } ,
-      ActorOsgiConfigurationReference <<= ActorOsgiConfigurationReferenceAction(projects.filter(p => !p.id.contains("tests") && !p.id.contains("sample") && !p.id.contains("atmos"))),
+      ActorOsgiConfigurationReference <<= ActorOsgiConfigurationReferenceAction(Seq(actor)),
       ActorMakeOsgiConfiguration <<= (ActorOsgiConfigurationReference, resourceManaged in Compile, streams) map makeOsgiConfigurationFiles,
       resourceGenerators in Compile <+= ActorMakeOsgiConfiguration,
       parallelExecution in Test := false,
@@ -1056,13 +1036,6 @@ object AkkaBuild extends Build {
     }
   }
 
-  def copyFile(source: String, sink: String){
-    val src = new java.io.File(source)
-    val dest = new java.io.File(sink)
-    new java.io.FileOutputStream(dest) getChannel() transferFrom(
-      new java.io.FileInputStream(src) getChannel, 0, Long.MaxValue )
-  }
-
   // OSGi settings
 
   object OSGi {
@@ -1091,6 +1064,7 @@ object AkkaBuild extends Build {
       OsgiKeys.privatePackage := Seq("akka.osgi.impl"),
       //akka-actor packages are not imported, as contained in the CP
       OsgiKeys.importPackage := (osgiOptionalImports map optionalResolution) ++ Seq("!sun.misc", scalaImport(),configImport(), "*"),
+      // could this be removed? does it slow down the OSGi deployment?
       OsgiKeys.dynamicImportPackage := Seq("*")
      )
 
@@ -1180,8 +1154,8 @@ object Dependencies {
     val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % scalaZeroMQVersion // ApacheV2
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
     val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "1.1.0"       // ApacheV2
-    val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
-    val osgiCompendium= "org.osgi"                    % "org.osgi.compendium"          % "4.2.0"       // ApacheV2
+    val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.3.1"       // ApacheV2
+    val osgiCompendium= "org.osgi"                    % "org.osgi.compendium"          % "4.3.1"       // ApacheV2
     val levelDB       = "org.iq80.leveldb"            % "leveldb"                      % "0.5"         // ApacheV2
     val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"               % "1.7"         // New BSD
 

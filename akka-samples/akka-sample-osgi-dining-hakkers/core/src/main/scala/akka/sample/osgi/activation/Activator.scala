@@ -22,13 +22,12 @@ import akka.sample.osgi.service.DiningHakkersServiceImpl
 import akka.sample.osgi.api.DiningHakkersService
 import akka.event.{ LogSource, Logging }
 import org.osgi.framework.{ ServiceRegistration, BundleContext }
-import scala.collection.mutable.ListBuffer
 
 class Activator extends ActorSystemActivator {
 
   import Activator._
 
-  var diningHakkerService: Option[ServiceRegistration] = None
+  var diningHakkerService: Option[ServiceRegistration[_]] = None
 
   def configure(context: BundleContext, system: ActorSystem) {
     val log = Logging(system, this)

@@ -13,7 +13,7 @@
         <karaf.version>2.3.1</karaf.version>
         <karaf.tooling.exam.version>${karaf.version}</karaf.tooling.exam.version>
         <netty.version>3.8.0.Final</netty.version>
-        <osgi.version>4.2.0</osgi.version>
+        <osgi.version>4.3.1</osgi.version>
         <paxexam.version>2.6.0</paxexam.version>
         <paxswissbox.version>1.6.0</paxswissbox.version>
         <protobuf.version>2.5.0</protobuf.version>
@@ -141,7 +141,6 @@
                 <groupId>com.typesafe.akka</groupId>
                 <artifactId>akka-testkit_${scala.dep.version}</artifactId>
                 <version>${akka.version}</version>
-                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.scalatest</groupId>
