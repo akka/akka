@@ -3,7 +3,6 @@
  */
 package akka.osgi
 
-import impl.BundleDelegatingClassLoader
 import akka.actor.ActorSystem
 import com.typesafe.config.{ ConfigFactory, Config }
 import org.osgi.framework.BundleContext
@@ -18,7 +17,7 @@ class OsgiActorSystemFactory(val context: BundleContext, val fallbackClassLoader
   /*
    * Classloader that delegates to the bundle for which the factory is creating an ActorSystem
    */
-  private val classloader = new BundleDelegatingClassLoader(context.getBundle, fallbackClassLoader)
+  private val classloader = BundleDelegatingClassLoader(context, fallbackClassLoader)
 
   /**
    * Creates the [[akka.actor.ActorSystem]], using the name specified

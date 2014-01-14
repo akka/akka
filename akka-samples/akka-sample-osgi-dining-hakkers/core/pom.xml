@@ -47,14 +47,6 @@
             <artifactId>api</artifactId>
         </dependency>
 
-        <!--Test dependencies-->
-       <!-- <dependency>
-            <groupId>org.specs2</groupId>
-            <artifactId>specs2_${scala.version}</artifactId>
-            <version>1.12.3</version>
-            <scope>test</scope>
-        </dependency>-->
-
         <!--remoting dependencies-->
         <dependency>
             <groupId>io.netty</groupId>
@@ -75,6 +67,12 @@
         <dependency>
             <groupId>org.fusesource.leveldbjni</groupId>
             <artifactId>leveldbjni-all</artifactId>
+        </dependency>
+
+        <!-- test dependencies -->
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-testkit_${scala.dep.version}</artifactId>
         </dependency>
     </dependencies>
     <build>

@@ -44,6 +44,8 @@
         <bundle start-level="30">mvn:com.typesafe.akka/akka-cluster_${scala.dep.version}/${akka.version}</bundle>
         <bundle start-level="30">mvn:com.typesafe.akka/akka-persistence-experimental_${scala.dep.version}/${akka.version}</bundle>
         <bundle start-level="30">mvn:com.typesafe.akka/akka-slf4j_${scala.dep.version}/${akka.version}</bundle>
+        <!-- It seems wrong to specify the test dependency here. How do you usually do it? -->
+        <bundle start-level="30">mvn:com.typesafe.akka/akka-testkit_${scala.dep.version}/${akka.version}</bundle>
     </feature>
 
     <feature name='dining-hakker' description='Akka Dining Hakker Sample' version='${project.version}' resolver='(obr)'>
