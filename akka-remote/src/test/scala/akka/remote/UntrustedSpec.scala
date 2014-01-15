@@ -155,7 +155,7 @@ akka.loglevel = DEBUG
         Identify(None), p.ref)
       val clientReceptionistRef = p.expectMsgType[ActorIdentity].ref.get
 
-      val sel = ActorSelection(clientReceptionistRef, receptionist.path.elements.mkString("/", "/", ""))
+      val sel = ActorSelection(clientReceptionistRef, receptionist.path.toStringWithoutAddress)
       sel ! "hello"
       expectNoMsg(1.second)
     }

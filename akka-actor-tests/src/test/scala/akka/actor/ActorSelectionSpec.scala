@@ -104,9 +104,9 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
       identify(c2.path.toString) should equal(Some(c2))
       identify(c21.path.toString) should equal(Some(c21))
 
-      identify(c1.path.elements.mkString("/", "/", "")) should equal(Some(c1))
-      identify(c2.path.elements.mkString("/", "/", "")) should equal(Some(c2))
-      identify(c21.path.elements.mkString("/", "/", "")) should equal(Some(c21))
+      identify(c1.path.toStringWithoutAddress) should equal(Some(c1))
+      identify(c2.path.toStringWithoutAddress) should equal(Some(c2))
+      identify(c21.path.toStringWithoutAddress) should equal(Some(c21))
     }
 
     "take actor incarnation into account when comparing actor references" in {
@@ -131,9 +131,9 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
     }
 
     "select actors by their root-anchored relative path" in {
-      identify(c1.path.elements.mkString("/", "/", "")) should equal(Some(c1))
-      identify(c2.path.elements.mkString("/", "/", "")) should equal(Some(c2))
-      identify(c21.path.elements.mkString("/", "/", "")) should equal(Some(c21))
+      identify(c1.path.toStringWithoutAddress) should equal(Some(c1))
+      identify(c2.path.toStringWithoutAddress) should equal(Some(c2))
+      identify(c21.path.toStringWithoutAddress) should equal(Some(c21))
     }
 
     "select actors by their relative path" in {
@@ -147,13 +147,13 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
       identify("/deadLetters") should equal(Some(system.deadLetters))
       identify("/system") should equal(Some(syst))
       identify(syst.path) should equal(Some(syst))
-      identify(syst.path.elements.mkString("/", "/", "")) should equal(Some(syst))
+      identify(syst.path.toStringWithoutAddress) should equal(Some(syst))
       identify("/") should equal(Some(root))
       identify("") should equal(Some(root))
       identify(RootActorPath(root.path.address)) should equal(Some(root))
       identify("..") should equal(Some(root))
       identify(root.path) should equal(Some(root))
-      identify(root.path.elements.mkString("/", "/", "")) should equal(Some(root))
+      identify(root.path.toStringWithoutAddress) should equal(Some(root))
       identify("user") should equal(Some(user))
       identify("deadLetters") should equal(Some(system.deadLetters))
       identify("system") should equal(Some(syst))
@@ -188,9 +188,9 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
 
     "select actors by their string path representation" in {
       def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef) {
-        askNode(looker, SelectString(pathOf.path.elements.mkString("/", "/", ""))) should equal(Some(result))
+        askNode(looker, SelectString(pathOf.path.toStringWithoutAddress)) should equal(Some(result))
         // with trailing /
-        askNode(looker, SelectString(pathOf.path.elements.mkString("/", "/", "") + "/")) should equal(Some(result))
+        askNode(looker, SelectString(pathOf.path.toStringWithoutAddress + "/")) should equal(Some(result))
       }
       for {
         looker ← all
@@ -200,7 +200,7 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
 
     "select actors by their root-anchored relative path" in {
       def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef) {
-        askNode(looker, SelectString(pathOf.path.elements.mkString("/", "/", ""))) should equal(Some(result))
+        askNode(looker, SelectString(pathOf.path.toStringWithoutAddress)) should equal(Some(result))
         askNode(looker, SelectString(pathOf.path.elements.mkString("/", "/", "/"))) should equal(Some(result))
       }
       for {
@@ -339,7 +339,7 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
       val d = p.expectMsgType[DeadLetter]
       d.message should be("boom")
       d.sender should be(testActor)
-      d.recipient.path.elements.mkString("/", "/", "") should be("/user/missing")
+      d.recipient.path.toStringWithoutAddress should be("/user/missing")
     }
 
     "send ActorSelection wildcard targeted to missing actor to deadLetters" in {
@@ -356,7 +356,7 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
       List(d1, d2) foreach { d ⇒
         d.message should be("wild")
         d.sender should be(testActor)
-        d.recipient.path.elements.mkString("/", "/", "") should (equal("/user/top/child1/a") or equal("/user/top/child2/a"))
+        d.recipient.path.toStringWithoutAddress should (equal("/user/top/child1/a") or equal("/user/top/child2/a"))
       }
     }
 

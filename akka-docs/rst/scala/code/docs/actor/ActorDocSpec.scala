@@ -539,9 +539,9 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     lastSender should equal(actor)
     actor ! me
     expectMsg("reply")
-    lastSender.path.elements.mkString("/", "/", "") should equal("/user")
+    lastSender.path.toStringWithoutAddress should equal("/user")
     expectMsg("reply")
-    lastSender.path.elements.mkString("/", "/", "") should equal("/user")
+    lastSender.path.toStringWithoutAddress should equal("/user")
   }
 
   "using ActorDSL outside of akka.actor package" in {
