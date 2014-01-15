@@ -17,7 +17,7 @@ import akka.util._
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.{ FiniteDuration, Duration }
-import scala.concurrent.{ Await, Awaitable, CanAwait, Future, ExecutionContext }
+import scala.concurrent.{ Await, Awaitable, CanAwait, Future, ExecutionContext, ExecutionContextExecutor }
 import scala.util.{ Failure, Success }
 import scala.util.control.{ NonFatal, ControlThrowable }
 
@@ -320,7 +320,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * explicitly.
    * Importing this member will place the default MessageDispatcher in scope.
    */
-  implicit def dispatcher: ExecutionContext
+  implicit def dispatcher: ExecutionContextExecutor
 
   /**
    * Helper object for looking up configured mailbox types.
@@ -553,7 +553,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(
     threadFactory, eventStream, scheduler, dynamicAccess, settings, mailboxes))
 
-  val dispatcher: ExecutionContext = dispatchers.defaultGlobalDispatcher
+  val dispatcher: ExecutionContextExecutor = dispatchers.defaultGlobalDispatcher
 
   val internalCallingThreadExecutionContext: ExecutionContext =
     dynamicAccess.getObjectFor[ExecutionContext]("scala.concurrent.Future$InternalCallbackExecutor$").getOrElse(

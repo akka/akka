@@ -15,6 +15,7 @@ import scala.annotation.tailrec
 import scala.concurrent.forkjoin.{ ForkJoinTask, ForkJoinPool }
 import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import scala.util.Try
@@ -80,7 +81,7 @@ private[akka] object MessageDispatcher {
     }
 }
 
-abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator) extends AbstractMessageDispatcher with BatchingExecutor with ExecutionContext {
+abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator) extends AbstractMessageDispatcher with BatchingExecutor with ExecutionContextExecutor {
 
   import MessageDispatcher._
   import AbstractMessageDispatcher.{ inhabitantsOffset, shutdownScheduleOffset }
