@@ -20,14 +20,14 @@ class UdpIntegrationSpec extends AkkaSpec("""
     val commander = TestProbe()
     commander.send(IO(Udp), Bind(handler, address))
     commander.expectMsg(Bound(address))
-    commander.sender
+    commander.sender()
   }
 
   val simpleSender: ActorRef = {
     val commander = TestProbe()
     commander.send(IO(Udp), SimpleSender)
     commander.expectMsg(SimpleSenderReady)
-    commander.sender
+    commander.sender()
   }
 
   "The UDP Fire-and-Forget implementation" must {

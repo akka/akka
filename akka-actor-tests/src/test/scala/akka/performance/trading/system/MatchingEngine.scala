@@ -43,7 +43,7 @@ class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook])
 
   def done(status: Boolean, order: Order) {
     if (standby.isEmpty) {
-      sender ! Rsp(order, status)
+      sender() ! Rsp(order, status)
     }
   }
 

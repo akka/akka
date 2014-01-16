@@ -37,7 +37,7 @@ object DispatcherActorSpec {
     """
   class TestActor extends Actor {
     def receive = {
-      case "Hello"   ⇒ sender ! "World"
+      case "Hello"   ⇒ sender() ! "World"
       case "Failure" ⇒ throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
   }
@@ -86,7 +86,7 @@ class DispatcherActorSpec extends AkkaSpec(DispatcherActorSpec.config) with Defa
       val slowOne = system.actorOf(
         Props(new Actor {
           def receive = {
-            case "hogexecutor" ⇒ { sender ! "OK"; start.await }
+            case "hogexecutor" ⇒ { sender() ! "OK"; start.await }
             case "ping"        ⇒ if (works.get) latch.countDown()
           }
         }).withDispatcher(throughputDispatcher))

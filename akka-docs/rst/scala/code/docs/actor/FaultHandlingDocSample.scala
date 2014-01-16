@@ -204,7 +204,7 @@ class CounterService extends Actor {
         if (backlog.size >= MaxBacklog)
           throw new ServiceUnavailable(
             "CounterService not available, lack of initial value")
-        backlog :+= (sender -> msg)
+        backlog :+= (sender() -> msg)
     }
   }
 
@@ -239,7 +239,7 @@ class Counter(key: String, initialValue: Long) extends Actor {
       storeCount()
 
     case GetCurrentCount =>
-      sender ! CurrentCount(key, count)
+      sender() ! CurrentCount(key, count)
 
   }
 
@@ -272,7 +272,7 @@ class Storage extends Actor {
 
   def receive = LoggingReceive {
     case Store(Entry(key, count)) => db.save(key, count)
-    case Get(key)                 => sender ! Entry(key, db.load(key).getOrElse(0L))
+    case Get(key)                 => sender() ! Entry(key, db.load(key).getOrElse(0L))
   }
 }
 

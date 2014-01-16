@@ -26,7 +26,7 @@ object ScatterGatherFirstCompletedSpec {
         case _id: Int if (_id == id)        ⇒
         case x ⇒ {
           Thread sleep 100 * id
-          sender ! id
+          sender() ! id
         }
       }
 

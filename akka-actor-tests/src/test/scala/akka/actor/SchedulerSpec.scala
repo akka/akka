@@ -42,7 +42,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
         def receive = {
           case Tick ⇒
             if (ticks < 3) {
-              sender ! Tock
+              sender() ! Tock
               ticks += 1
             }
         }
@@ -66,7 +66,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
     }
 
     "stop continuous scheduling if the receiving actor has been terminated" taggedAs TimingTest in {
-      val actor = system.actorOf(Props(new Actor { def receive = { case x ⇒ sender ! x } }))
+      val actor = system.actorOf(Props(new Actor { def receive = { case x ⇒ sender() ! x } }))
 
       // run immediately and then every 100 milliseconds
       collectCancellable(system.scheduler.schedule(0 milliseconds, 100 milliseconds, actor, "msg"))

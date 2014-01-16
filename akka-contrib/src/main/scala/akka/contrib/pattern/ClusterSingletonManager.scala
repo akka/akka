@@ -466,16 +466,16 @@ class ClusterSingletonManager(
 
     case Event(HandOverInProgress, _) ⇒
       // confirmation that the hand-over process has started
-      logInfo("Hand-over in progress at [{}]", sender.path.address)
+      logInfo("Hand-over in progress at [{}]", sender().path.address)
       cancelTimer(HandOverRetryTimer)
       stay
 
     case Event(HandOverDone, BecomingOldestData(Some(previousOldest))) ⇒
-      if (sender.path.address == previousOldest)
+      if (sender().path.address == previousOldest)
         gotoOldest()
       else {
         logInfo("Ignoring HandOverDone in BecomingOldest from [{}]. Expected previous oldest [{}]",
-          sender.path.address, previousOldest)
+          sender().path.address, previousOldest)
         stay
       }
 
@@ -485,13 +485,13 @@ class ClusterSingletonManager(
       stay
 
     case Event(TakeOverFromMe, BecomingOldestData(None)) ⇒
-      sender ! HandOverToMe
-      stay using BecomingOldestData(Some(sender.path.address))
+      sender() ! HandOverToMe
+      stay using BecomingOldestData(Some(sender().path.address))
 
     case Event(TakeOverFromMe, BecomingOldestData(Some(previousOldest))) ⇒
-      if (previousOldest == sender.path.address) sender ! HandOverToMe
+      if (previousOldest == sender().path.address) sender() ! HandOverToMe
       else logInfo("Ignoring TakeOver request in BecomingOldest from [{}]. Expected previous oldest [{}]",
-        sender.path.address, previousOldest)
+        sender().path.address, previousOldest)
       stay
 
     case Event(HandOverRetry(count), BecomingOldestData(previousOldestOption)) ⇒
@@ -539,7 +539,7 @@ class ClusterSingletonManager(
       }
 
     case Event(HandOverToMe, OldestData(singleton, singletonTerminated)) ⇒
-      gotoHandingOver(singleton, singletonTerminated, Some(sender))
+      gotoHandingOver(singleton, singletonTerminated, Some(sender()))
 
     case Event(Terminated(ref), d @ OldestData(singleton, _)) if ref == singleton ⇒
       stay using d.copy(singletonTerminated = true)
@@ -556,7 +556,7 @@ class ClusterSingletonManager(
         throw new ClusterSingletonManagerIsStuck(s"Expected hand-over to [${newOldestOption}] never occured")
 
     case Event(HandOverToMe, WasOldestData(singleton, singletonTerminated, _)) ⇒
-      gotoHandingOver(singleton, singletonTerminated, Some(sender))
+      gotoHandingOver(singleton, singletonTerminated, Some(sender()))
 
     case Event(MemberRemoved(m, _), WasOldestData(singleton, singletonTerminated, Some(newOldest))) if !selfExited && m.address == newOldest ⇒
       addRemoved(m.address)
@@ -581,9 +581,9 @@ class ClusterSingletonManager(
     case (Event(Terminated(ref), HandingOverData(singleton, handOverTo))) if ref == singleton ⇒
       handOverDone(handOverTo)
 
-    case Event(HandOverToMe, d @ HandingOverData(singleton, handOverTo)) if handOverTo == Some(sender) ⇒
+    case Event(HandOverToMe, d @ HandingOverData(singleton, handOverTo)) if handOverTo == Some(sender()) ⇒
       // retry
-      sender ! HandOverInProgress
+      sender() ! HandOverInProgress
       stay
 
   }
@@ -617,7 +617,7 @@ class ClusterSingletonManager(
       addRemoved(m.address)
       stay
     case Event(TakeOverFromMe, _) ⇒
-      logInfo("Ignoring TakeOver request in [{}] from [{}].", stateName, sender.path.address)
+      logInfo("Ignoring TakeOver request in [{}] from [{}].", stateName, sender().path.address)
       stay
     case Event(Cleanup, _) ⇒
       cleanupOverdueNotMemberAnyMore()

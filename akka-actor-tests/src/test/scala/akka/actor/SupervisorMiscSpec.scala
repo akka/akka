@@ -42,7 +42,7 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
         val workerProps = Props(new Actor {
           override def postRestart(cause: Throwable) { countDownLatch.countDown() }
           def receive = {
-            case "status" ⇒ this.sender ! "OK"
+            case "status" ⇒ this.sender() ! "OK"
             case _        ⇒ this.context.stop(self)
           }
         })
@@ -146,7 +146,7 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
     "have access to the failing child’s reference in supervisorStrategy" in {
       val parent = system.actorOf(Props(new Actor {
         override val supervisorStrategy = OneForOneStrategy() {
-          case _: Exception ⇒ testActor ! sender; SupervisorStrategy.Stop
+          case _: Exception ⇒ testActor ! sender(); SupervisorStrategy.Stop
         }
         def receive = {
           case "doit" ⇒ context.actorOf(Props.empty, "child") ! Kill

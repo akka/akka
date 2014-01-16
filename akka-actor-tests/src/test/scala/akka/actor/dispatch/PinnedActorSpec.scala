@@ -20,7 +20,7 @@ object PinnedActorSpec {
 
   class TestActor extends Actor {
     def receive = {
-      case "Hello"   ⇒ sender ! "World"
+      case "Hello"   ⇒ sender() ! "World"
       case "Failure" ⇒ throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
   }

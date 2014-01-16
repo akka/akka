@@ -45,7 +45,7 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with ST
       runOn(master) {
         system.actorOf(Props(new Actor {
           def receive = {
-            case x ⇒ testActor ! x; sender ! x
+            case x ⇒ testActor ! x; sender() ! x
           }
         }).withDeploy(Deploy.local), "echo")
       }

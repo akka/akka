@@ -88,7 +88,7 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
   val systemB = ActorSystem("systemB", system.settings.config)
   val remote = systemB.actorOf(Props(new Actor {
     def receive = {
-      case seq: Int ⇒ sender ! seq
+      case seq: Int ⇒ sender() ! seq
     }
   }), "echo")
 

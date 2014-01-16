@@ -90,7 +90,7 @@ private[remote] object Remoting {
 
     def receive = {
       case RegisterTransportActor(props, name) ⇒
-        sender ! context.actorOf(
+        sender() ! context.actorOf(
           RARP(context.system).configureDispatcher(props.withDeploy(Deploy.local)),
           name)
     }
@@ -396,7 +396,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         log.warning("Tried to associate with unreachable remote address [{}]. " +
           "Address is now gated for {} ms, all messages to this address will be delivered to dead letters. Reason: {}",
           remoteAddress, settings.RetryGateClosedFor.toMillis, reason.getMessage)
-        endpoints.markAsFailed(sender, Deadline.now + settings.RetryGateClosedFor)
+        endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
         context.system.eventStream.publish(AddressTerminated(remoteAddress))
         Stop
 
@@ -404,7 +404,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         log.debug("Remote system with address [{}] has shut down. " +
           "Address is now gated for {} ms, all messages to this address will be delivered to dead letters.",
           remoteAddress, settings.RetryGateClosedFor.toMillis)
-        endpoints.markAsFailed(sender, Deadline.now + settings.RetryGateClosedFor)
+        endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
         context.system.eventStream.publish(AddressTerminated(remoteAddress))
         Stop
 
@@ -422,7 +422,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         log.warning("Association to [{}] with unknown UID is irrecoverably failed. " +
           "Address cannot be quarantined without knowing the UID, gating instead for {} ms.",
           remoteAddress, settings.RetryGateClosedFor.toMillis)
-        endpoints.markAsFailed(sender, Deadline.now + settings.RetryGateClosedFor)
+        endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
         context.system.eventStream.publish(AddressTerminated(remoteAddress))
         Stop
 
@@ -463,11 +463,11 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     case ia: InboundAssociation ⇒
       context.system.scheduler.scheduleOnce(10.milliseconds, self, ia)
     case ManagementCommand(_) ⇒
-      sender ! ManagementCommandAck(status = false)
+      sender() ! ManagementCommandAck(status = false)
     case StartupFinished ⇒
       context.become(accepting)
     case ShutdownAndFlush ⇒
-      sender ! true
+      sender() ! true
       context.stop(self) // Nothing to flush at this point
   }
 
@@ -476,7 +476,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       val allStatuses = transportMapping.values map { transport ⇒
         transport.managementCommand(cmd)
       }
-      Future.fold(allStatuses)(true)(_ && _) map ManagementCommandAck pipeTo sender
+      Future.fold(allStatuses)(true)(_ && _) map ManagementCommandAck pipeTo sender()
 
     case Quarantine(address, uid) ⇒
       // Stop writers
@@ -570,7 +570,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     case Prune ⇒
       endpoints.prune()
     case ShutdownAndFlush ⇒
-      // Shutdown all endpoints and signal to sender when ready (and whether all endpoints were shut down gracefully)
+      // Shutdown all endpoints and signal to sender() when ready (and whether all endpoints were shut down gracefully)
 
       def shutdownAll[T](resources: TraversableOnce[T])(shutdown: T ⇒ Future[Boolean]): Future[Boolean] = {
         (Future sequence resources.map(shutdown)) map { _.forall(identity) } recover {
@@ -583,7 +583,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         // so that endpoints are shut down before transports.
         flushStatus ← shutdownAll(endpoints.allEndpoints)(gracefulStop(_, settings.FlushWait, EndpointWriter.FlushAndStop))
         shutdownStatus ← shutdownAll(transportMapping.values)(_.shutdown())
-      } yield flushStatus && shutdownStatus) pipeTo sender
+      } yield flushStatus && shutdownStatus) pipeTo sender()
 
       pendingReadHandoffs.valuesIterator foreach (_.disassociate(AssociationHandle.Shutdown))
 

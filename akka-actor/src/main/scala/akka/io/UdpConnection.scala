@@ -65,20 +65,20 @@ private[io] class UdpConnection(udpConn: UdpConnectedExt,
     case Disconnect ⇒
       log.debug("Closing UDP connection to [{}]", remoteAddress)
       channel.close()
-      sender ! Disconnected
+      sender() ! Disconnected
       log.debug("Connection closed to [{}], stopping listener", remoteAddress)
       context.stop(self)
 
     case send: Send if writePending ⇒
       if (TraceLogging) log.debug("Dropping write because queue is full")
-      sender ! CommandFailed(send)
+      sender() ! CommandFailed(send)
 
     case send: Send if send.payload.isEmpty ⇒
       if (send.wantsAck)
-        sender ! send.ack
+        sender() ! send.ack
 
     case send: Send ⇒
-      pendingSend = (send, sender)
+      pendingSend = (send, sender())
       registration.enableInterest(OP_WRITE)
 
     case ChannelWritable ⇒ doWrite()

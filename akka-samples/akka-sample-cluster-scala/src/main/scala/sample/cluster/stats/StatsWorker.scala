@@ -15,7 +15,7 @@ class StatsWorker extends Actor {
           x
       }
 
-      sender ! length
+      sender() ! length
   }
 }
 //#worker

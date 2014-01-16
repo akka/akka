@@ -418,7 +418,7 @@ class ClusterReceptionist(
 
   def receive = {
     case msg @ (_: Send | _: SendToAll | _: Publish) ⇒
-      val tunnel = responseTunnel(sender)
+      val tunnel = responseTunnel(sender())
       tunnel ! Ping // keep alive
       pubSubMediator.tell(msg, tunnel)
 
@@ -427,17 +427,17 @@ class ClusterReceptionist(
       // is the same from all nodes (most of the time) and it also
       // load balances the client connections among the nodes in the cluster.
       if (numberOfContacts >= nodes.size) {
-        sender ! Contacts(nodes.map(a ⇒ context.actorSelection(self.path.toStringWithAddress(a)))(collection.breakOut))
+        sender() ! Contacts(nodes.map(a ⇒ context.actorSelection(self.path.toStringWithAddress(a)))(collection.breakOut))
       } else {
         // using toStringWithAddress in case the client is local, normally it is not, and
         // toStringWithAddress will use the remote address of the client
-        val a = consistentHash.nodeFor(sender.path.toStringWithAddress(cluster.selfAddress))
+        val a = consistentHash.nodeFor(sender().path.toStringWithAddress(cluster.selfAddress))
         val slice = {
           val first = nodes.from(a).tail.take(numberOfContacts)
           if (first.size == numberOfContacts) first
           else first ++ nodes.take(numberOfContacts - first.size)
         }
-        sender ! Contacts(slice.map(a ⇒ context.actorSelection(self.path.toStringWithAddress(a)))(collection.breakOut))
+        sender() ! Contacts(slice.map(a ⇒ context.actorSelection(self.path.toStringWithAddress(a)))(collection.breakOut))
       }
 
     case state: CurrentClusterState ⇒

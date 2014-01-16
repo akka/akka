@@ -54,7 +54,7 @@ trait Player { this: TestConductorExt ⇒
       var waiting: ActorRef = _
       def receive = {
         case fsm: ActorRef ⇒
-          waiting = sender; fsm ! SubscribeTransitionCallBack(self)
+          waiting = sender(); fsm ! SubscribeTransitionCallBack(self)
         case Transition(_, Connecting, AwaitDone) ⇒ // step 1, not there yet
         case Transition(_, AwaitDone, Connected) ⇒
           waiting ! Done; context stop self
@@ -193,7 +193,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
         case EnterBarrier(barrier, timeout) ⇒ barrier
         case GetAddress(node)               ⇒ node.name
       }
-      stay using d.copy(runningOp = Some(token -> sender))
+      stay using d.copy(runningOp = Some(token -> sender()))
     case Event(ToServer(op), Data(channel, Some((token, _)))) ⇒
       log.error("cannot write {} while waiting for {}", op, token)
       stay

@@ -24,12 +24,12 @@ object ActorSelectionSpec {
 
   class Node extends Actor {
     def receive = {
-      case Create(name)       ⇒ sender ! context.actorOf(p, name)
-      case SelectString(path) ⇒ sender ! context.actorSelection(path)
-      case SelectPath(path)   ⇒ sender ! context.actorSelection(path)
-      case GetSender(ref)     ⇒ ref ! sender
+      case Create(name)       ⇒ sender() ! context.actorOf(p, name)
+      case SelectString(path) ⇒ sender() ! context.actorSelection(path)
+      case SelectPath(path)   ⇒ sender() ! context.actorSelection(path)
+      case GetSender(ref)     ⇒ ref ! sender()
       case Forward(path, msg) ⇒ context.actorSelection(path).forward(msg)
-      case msg                ⇒ sender ! msg
+      case msg                ⇒ sender() ! msg
     }
   }
 

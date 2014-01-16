@@ -20,7 +20,7 @@ object RemoteScatterGatherMultiJvmSpec extends MultiNodeConfig {
 
   class SomeActor extends Actor {
     def receive = {
-      case "hit" ⇒ sender ! self
+      case "hit" ⇒ sender() ! self
     }
   }
 

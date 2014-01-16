@@ -46,10 +46,10 @@ object RemoteNodeDeathWatchMultiJvmSpec extends MultiNodeConfig {
     def receive = {
       case WatchIt(watchee) ⇒
         context watch watchee
-        sender ! Ack
+        sender() ! Ack
       case UnwatchIt(watchee) ⇒
         context unwatch watchee
-        sender ! Ack
+        sender() ! Ack
       case t: Terminated ⇒
         testActor forward WrappedTerminated(t)
       case msg ⇒ testActor forward msg

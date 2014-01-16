@@ -75,7 +75,7 @@ class ActivationIntegrationTest extends WordSpec with Matchers with SharedCamelS
     }
 
     override def receive = {
-      case msg: CamelMessage ⇒ sender ! "received " + msg.body
+      case msg: CamelMessage ⇒ sender() ! "received " + msg.body
     }
   }
 

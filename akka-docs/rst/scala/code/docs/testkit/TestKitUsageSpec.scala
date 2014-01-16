@@ -117,7 +117,7 @@ object TestKitUsageSpec {
    */
   class EchoActor extends Actor {
     def receive = {
-      case msg => sender ! msg
+      case msg => sender() ! msg
     }
   }
 

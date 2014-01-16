@@ -66,7 +66,7 @@ class PriorityDispatcherSpec extends AkkaSpec(PriorityDispatcherSpec.config) wit
 
         def receive = {
           case i: Int  ⇒ acc += i
-          case 'Result ⇒ sender ! acc.toList
+          case 'Result ⇒ sender() ! acc.toList
         }
       }).withDispatcher(dispatcherKey))
 

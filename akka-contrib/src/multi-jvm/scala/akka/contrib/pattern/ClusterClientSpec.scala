@@ -36,13 +36,13 @@ object ClusterClientSpec extends MultiNodeConfig {
     def receive = {
       case msg ⇒
         testActor forward msg
-        sender ! "ack"
+        sender() ! "ack"
     }
   }
 
   class Service extends Actor {
     def receive = {
-      case msg ⇒ sender ! msg
+      case msg ⇒ sender() ! msg
     }
   }
 

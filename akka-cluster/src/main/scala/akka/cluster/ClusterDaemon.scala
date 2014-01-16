@@ -206,7 +206,7 @@ private[cluster] final class ClusterCoreSupervisor extends Actor with ActorLoggi
   override def postStop(): Unit = Cluster(context.system).shutdown()
 
   def receive = {
-    case InternalClusterAction.GetClusterCoreRef ⇒ sender ! coreDaemon
+    case InternalClusterAction.GetClusterCoreRef ⇒ sender() ! coreDaemon
   }
 }
 
@@ -289,7 +289,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   }
 
   def uninitialized: Actor.Receive = {
-    case InitJoin                          ⇒ sender ! InitJoinNack(selfAddress)
+    case InitJoin                          ⇒ sender() ! InitJoinNack(selfAddress)
     case ClusterUserAction.JoinTo(address) ⇒ join(address)
     case JoinSeedNodes(seedNodes)          ⇒ joinSeedNodes(seedNodes)
     case msg: SubscriptionMessage          ⇒ publisher forward msg
@@ -297,7 +297,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
   def tryingToJoin(joinWith: Address, deadline: Option[Deadline]): Actor.Receive = {
     case Welcome(from, gossip) ⇒ welcome(joinWith, from, gossip)
-    case InitJoin              ⇒ sender ! InitJoinNack(selfAddress)
+    case InitJoin              ⇒ sender() ! InitJoinNack(selfAddress)
     case ClusterUserAction.JoinTo(address) ⇒
       becomeUninitialized()
       join(address)
@@ -364,7 +364,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     case other             ⇒ super.unhandled(other)
   }
 
-  def initJoin(): Unit = sender ! InitJoinAck(selfAddress)
+  def initJoin(): Unit = sender() ! InitJoinAck(selfAddress)
 
   def joinSeedNodes(seedNodes: immutable.IndexedSeq[Address]): Unit = {
     if (seedNodes.nonEmpty) {
@@ -464,7 +464,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
         logInfo("Node [{}] is JOINING, roles [{}]", node.address, roles.mkString(", "))
         if (node != selfUniqueAddress) {
-          sender ! Welcome(selfUniqueAddress, latestGossip)
+          sender() ! Welcome(selfUniqueAddress, latestGossip)
         }
 
         publish(latestGossip)
@@ -484,7 +484,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       latestGossip = gossip seen selfUniqueAddress
       publish(latestGossip)
       if (from != selfUniqueAddress)
-        gossipTo(from, sender)
+        gossipTo(from, sender())
       becomeInitialized()
     }
   }
@@ -574,8 +574,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     else {
       (status.version compareTo latestGossip.version) match {
         case VectorClock.Same  ⇒ // same version
-        case VectorClock.After ⇒ gossipStatusTo(from, sender) // remote is newer
-        case _                 ⇒ gossipTo(from, sender) // conflicting or local is newer
+        case VectorClock.After ⇒ gossipStatusTo(from, sender()) // remote is newer
+        case _                 ⇒ gossipTo(from, sender()) // conflicting or local is newer
       }
     }
   }
@@ -664,9 +664,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       if (selfStatus == Exiting || selfStatus == Down)
         shutdown()
       else if (talkback) {
-        // send back gossip to sender when sender had different view, i.e. merge, or sender had
-        // older or sender had newer
-        gossipTo(from, sender)
+        // send back gossip to sender() when sender() had different view, i.e. merge, or sender() had
+        // older or sender() had newer
+        gossipTo(from, sender())
       }
       gossipType
     }

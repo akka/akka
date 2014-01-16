@@ -382,7 +382,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
           shardResolver = shardResolver),
           name = encName)
       }
-      sender ! Started(shardRegion)
+      sender() ! Started(shardRegion)
 
   }
 
@@ -655,7 +655,7 @@ class ShardRegion(
     case state: CurrentClusterState          ⇒ receiveClusterState(state)
     case msg: CoordinatorMessage             ⇒ receiveCoordinatorMessage(msg)
     case cmd: ShardRegionCommand             ⇒ receiveCommand(cmd)
-    case msg if idExtractor.isDefinedAt(msg) ⇒ deliverMessage(msg, sender)
+    case msg if idExtractor.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
   }
 
   def receiveClusterState(state: CurrentClusterState): Unit = {
@@ -708,7 +708,7 @@ class ShardRegion(
         regions -= regionByShard(shard)
         regionByShard -= shard
       }
-      sender ! BeginHandOffAck(shard)
+      sender() ! BeginHandOffAck(shard)
 
     case HandOff(shard) ⇒
       log.debug("HandOff shard [{}]", shard)
@@ -720,9 +720,9 @@ class ShardRegion(
         shardBuffers -= shard
 
       if (entriesByShard.contains(shard))
-        context.actorOf(Props(classOf[HandOffStopper], shard, sender, entriesByShard(shard)))
+        context.actorOf(Props(classOf[HandOffStopper], shard, sender(), entriesByShard(shard)))
       else
-        sender ! ShardStopped(shard)
+        sender() ! ShardStopped(shard)
 
     case _ ⇒ unhandled(msg)
 
@@ -730,7 +730,7 @@ class ShardRegion(
 
   def receiveCommand(cmd: ShardRegionCommand): Unit = cmd match {
     case Passivate(stopMessage) ⇒
-      passivate(sender, stopMessage)
+      passivate(sender(), stopMessage)
 
     case Retry ⇒
       if (coordinator.isEmpty)
@@ -831,7 +831,7 @@ class ShardRegion(
   }
 
   def passivate(entry: ActorRef, stopMessage: Any): Unit = {
-    val entry = sender
+    val entry = sender()
     if (entries.contains(entry) && !passivatingBuffers.contains(entry)) {
       log.debug("Passivating started {}", entry)
       passivatingBuffers = passivatingBuffers.updated(entry, Vector.empty)
@@ -1096,7 +1096,7 @@ object ShardCoordinator {
 
     def receive = {
       case BeginHandOffAck(`shard`) ⇒
-        remaining -= sender
+        remaining -= sender()
         if (remaining.isEmpty) {
           from ! HandOff(shard)
           context.become(stoppingShard, discardOld = true)
@@ -1171,23 +1171,23 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, rebalanceInterval: Finite
     case Register(region) ⇒
       log.debug("ShardRegion registered: [{}]", region)
       if (persistentState.regions.contains(region))
-        sender ! RegisterAck(self)
+        sender() ! RegisterAck(self)
       else
         persist(ShardRegionRegistered(region)) { evt ⇒
           persistentState = persistentState.updated(evt)
           context.watch(region)
-          sender ! RegisterAck(self)
+          sender() ! RegisterAck(self)
         }
 
     case RegisterProxy(proxy) ⇒
       log.debug("ShardRegion proxy registered: [{}]", proxy)
       if (persistentState.regionProxies.contains(proxy))
-        sender ! RegisterAck(self)
+        sender() ! RegisterAck(self)
       else
         persist(ShardRegionProxyRegistered(proxy)) { evt ⇒
           persistentState = persistentState.updated(evt)
           context.watch(proxy)
-          sender ! RegisterAck(self)
+          sender() ! RegisterAck(self)
         }
 
     case Terminated(ref) ⇒
@@ -1206,14 +1206,14 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, rebalanceInterval: Finite
     case GetShardHome(shard) ⇒
       if (!rebalanceInProgress.contains(shard)) {
         persistentState.shards.get(shard) match {
-          case Some(ref) ⇒ sender ! ShardHome(shard, ref)
+          case Some(ref) ⇒ sender() ! ShardHome(shard, ref)
           case None ⇒
             if (persistentState.regions.nonEmpty) {
-              val region = allocationStrategy.allocateShard(sender, shard, persistentState.regions)
+              val region = allocationStrategy.allocateShard(sender(), shard, persistentState.regions)
               persist(ShardHomeAllocated(shard, region)) { evt ⇒
                 persistentState = persistentState.updated(evt)
                 log.debug("Shard [{}] allocated at [{}]", evt.shard, evt.region)
-                sender ! ShardHome(evt.shard, evt.region)
+                sender() ! ShardHome(evt.shard, evt.region)
               }
             }
         }

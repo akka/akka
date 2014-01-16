@@ -234,14 +234,14 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
       Future.sequence(handleTable map {
         case (`naked`, handle) ⇒ setMode(handle, mode, direction)
         case _                 ⇒ ok
-      }).map(_ ⇒ SetThrottleAck) pipeTo sender
+      }).map(_ ⇒ SetThrottleAck) pipeTo sender()
     case ForceDisassociate(address) ⇒
       val naked = nakedAddress(address)
       handleTable foreach {
         case (`naked`, handle) ⇒ handle.disassociate()
         case _                 ⇒
       }
-      sender ! ForceDisassociateAck
+      sender() ! ForceDisassociateAck
 
     case Checkin(origin, handle) ⇒
       val naked: Address = nakedAddress(origin)
@@ -396,7 +396,7 @@ private[transport] class ThrottledAssociation(
         associationHandler notify InboundAssociation(exposedHandle)
         exposedHandle.readHandlerPromise.future.map(Listener(_)) pipeTo self
         goto(WaitUpstreamListener)
-      } finally sender ! SetThrottleAck
+      } finally sender() ! SetThrottleAck
   }
 
   when(WaitUpstreamListener) {
@@ -427,7 +427,7 @@ private[transport] class ThrottledAssociation(
       cancelTimer(DequeueTimerName)
       if (throttledMessages.nonEmpty)
         scheduleDequeue(inboundThrottleMode.timeToAvailable(System.nanoTime(), throttledMessages.head.length))
-      sender ! SetThrottleAck
+      sender() ! SetThrottleAck
       stay()
     case Event(InboundPayload(p), _) ⇒
       forwardOrDelay(p)
@@ -450,7 +450,7 @@ private[transport] class ThrottledAssociation(
     // we should always set the throttling mode
     case Event(mode: ThrottleMode, _) ⇒
       inboundThrottleMode = mode
-      sender ! SetThrottleAck
+      sender() ! SetThrottleAck
       stay()
     case Event(Disassociated(info), _) ⇒
       stop()

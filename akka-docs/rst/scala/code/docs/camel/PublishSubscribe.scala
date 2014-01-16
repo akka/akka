@@ -27,7 +27,7 @@ object PublishSubscribe {
     def receive = {
       case msg: CamelMessage => {
         publisher ! msg.bodyAs[String]
-        sender ! ("message published")
+        sender() ! ("message published")
       }
     }
   }

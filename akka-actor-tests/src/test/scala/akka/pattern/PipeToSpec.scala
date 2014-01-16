@@ -27,7 +27,7 @@ class PipeToSpec extends AkkaSpec {
       p.expectMsgType[Status.Failure].cause.getMessage should be("failed")
     }
 
-    "pick up an implicit sender" in {
+    "pick up an implicit sender()" in {
       val p = TestProbe()
       implicit val s = testActor
       Future(42) pipeTo p.ref
@@ -41,7 +41,7 @@ class PipeToSpec extends AkkaSpec {
       p.expectMsg(42)
     }
 
-    "work in Java form with sender" in {
+    "work in Java form with sender()" in {
       val p = TestProbe()
       pipe(Future(42)) to (p.ref, testActor)
       p.expectMsg(42)
@@ -66,7 +66,7 @@ class PipeToSpec extends AkkaSpec {
       p.expectMsgType[Status.Failure].cause.getMessage should be("failed")
     }
 
-    "pick up an implicit sender" in {
+    "pick up an implicit sender()" in {
       val p = TestProbe()
       val sel = system.actorSelection(p.ref.path)
       implicit val s = testActor
@@ -82,7 +82,7 @@ class PipeToSpec extends AkkaSpec {
       p.expectMsg(42)
     }
 
-    "work in Java form with sender" in {
+    "work in Java form with sender()" in {
       val p = TestProbe()
       val sel = system.actorSelection(p.ref.path)
       pipe(Future(42)) to (sel, testActor)

@@ -307,7 +307,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
         if (m.isOneWay) m(me)
         else {
           try {
-            val s = sender
+            val s = sender()
             m(me) match {
               case f: Future[_] if m.returnsFuture ⇒
                 implicit val dispatcher = context.dispatcher
@@ -321,14 +321,14 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
             }
           } catch {
             case NonFatal(e) ⇒
-              sender ! Status.Failure(e)
+              sender() ! Status.Failure(e)
               throw e
           }
         }
       }
 
       case msg if me.isInstanceOf[Receiver] ⇒ withContext {
-        me.asInstanceOf[Receiver].onReceive(msg, sender)
+        me.asInstanceOf[Receiver].onReceive(msg, sender())
       }
     }
   }

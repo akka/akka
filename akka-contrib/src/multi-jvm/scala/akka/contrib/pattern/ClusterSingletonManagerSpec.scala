@@ -73,33 +73,33 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
 
     def idle: Receive = {
       case RegisterConsumer ⇒
-        log.info("RegisterConsumer: [{}]", sender.path)
-        sender ! RegistrationOk
-        context.become(active(sender))
+        log.info("RegisterConsumer: [{}]", sender().path)
+        sender() ! RegistrationOk
+        context.become(active(sender()))
       case UnregisterConsumer ⇒
-        log.info("UnexpectedUnregistration: [{}]", sender.path)
-        sender ! UnexpectedUnregistration
+        log.info("UnexpectedUnregistration: [{}]", sender().path)
+        sender() ! UnexpectedUnregistration
         context stop self
-      case Reset ⇒ sender ! ResetOk
+      case Reset ⇒ sender() ! ResetOk
       case msg   ⇒ // no consumer, drop
     }
 
     def active(consumer: ActorRef): Receive = {
-      case UnregisterConsumer if sender == consumer ⇒
-        log.info("UnregistrationOk: [{}]", sender.path)
-        sender ! UnregistrationOk
+      case UnregisterConsumer if sender() == consumer ⇒
+        log.info("UnregistrationOk: [{}]", sender().path)
+        sender() ! UnregistrationOk
         context.become(idle)
       case UnregisterConsumer ⇒
-        log.info("UnexpectedUnregistration: [{}], expected [{}]", sender.path, consumer.path)
-        sender ! UnexpectedUnregistration
+        log.info("UnexpectedUnregistration: [{}], expected [{}]", sender().path, consumer.path)
+        sender() ! UnexpectedUnregistration
         context stop self
       case RegisterConsumer ⇒
-        log.info("Unexpected RegisterConsumer [{}], active consumer [{}]", sender.path, consumer.path)
-        sender ! UnexpectedRegistration
+        log.info("Unexpected RegisterConsumer [{}], active consumer [{}]", sender().path, consumer.path)
+        sender() ! UnexpectedRegistration
         context stop self
       case Reset ⇒
         context.become(idle)
-        sender ! ResetOk
+        sender() ! ResetOk
       case msg ⇒ consumer ! msg
     }
   }
@@ -129,7 +129,7 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
       case x @ (RegistrationOk | UnexpectedRegistration) ⇒
         delegateTo ! x
       case GetCurrent ⇒
-        sender ! current
+        sender() ! current
       //#consumer-end
       case End ⇒
         queue ! UnregisterConsumer
@@ -161,7 +161,7 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
           m.status == MemberStatus.Up && m.hasRole(role))
       case MemberUp(m)         ⇒ if (m.hasRole(role)) membersByAge += m
       case MemberRemoved(m, _) ⇒ if (m.hasRole(role)) membersByAge -= m
-      case other               ⇒ consumer foreach { _.tell(other, sender) }
+      case other               ⇒ consumer foreach { _.tell(other, sender()) }
     }
 
     def consumer: Option[ActorSelection] =

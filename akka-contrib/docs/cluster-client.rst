@@ -29,7 +29,7 @@ should be reachable from the client. Messages are wrapped in ``ClusterClient.Sen
 
 The message will be delivered to one recipient with a matching path, if any such
 exists. If several entries match the path the message will be delivered
-to one random destination. The sender of the message can specify that local
+to one random destination. The sender() of the message can specify that local
 affinity is preferred, i.e. the message is sent to an actor in the same local actor
 system as the used receptionist actor, if any such exists, otherwise random to any other
 matching entry.
@@ -45,9 +45,9 @@ to the named topic.
 
 Response messages from the destination actor are tunneled via the receptionist
 to avoid inbound connections from other cluster nodes to the client, i.e.
-the ``sender``, as seen by the destination actor, is not the client itself.
-The ``sender`` of the response messages, as seen by the client, is preserved
-as the original sender, so the client can choose to send subsequent messages
+the ``sender()``, as seen by the destination actor, is not the client itself.
+The ``sender()`` of the response messages, as seen by the client, is preserved
+as the original sender(), so the client can choose to send subsequent messages
 directly to the actor in the cluster.
 
 While establishing a connection to a receptionist the ``ClusterClient`` will buffer

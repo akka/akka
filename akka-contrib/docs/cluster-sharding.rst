@@ -15,7 +15,7 @@ actors with persistent state.
 In this context sharding means that actors with an identifier, so called entries,
 can be automatically distributed across multiple nodes in the cluster. Each entry
 actor runs only at one place, and messages can be sent to the entry without requiring
-the sender to know the location of the destination actor. This is achieved by sending
+the sender() to know the location of the destination actor. This is achieved by sending
 the messages via a ``ShardRegion`` actor provided by this extension, which knows how
 to route the message with the entry id to the final destination.
 
@@ -188,7 +188,7 @@ actor will take over and the state is recovered. During such a failure period sh
 with known location are still available, while messages for new (unknown) shards
 are buffered until the new ``ShardCoordinator`` becomes available.
 
-As long as a sender uses the same ``ShardRegion`` actor to deliver messages to an entry
+As long as a sender() uses the same ``ShardRegion`` actor to deliver messages to an entry
 actor the order of the messages is preserved. As long as the buffer limit is not reached
 messages are delivered on a best effort basis, with at-most once delivery semantics,
 in the same way as ordinary message sending. Reliable end-to-end messaging, with

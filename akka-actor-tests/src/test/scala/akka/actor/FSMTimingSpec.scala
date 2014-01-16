@@ -216,7 +216,7 @@ object FSMTimingSpec {
         setTimer("hallo", Tock, 1.milli.dilated)
         TestKit.awaitCond(context.asInstanceOf[ActorCell].mailbox.hasMessages, 1.second.dilated)
         cancelTimer("hallo")
-        sender ! Tick
+        sender() ! Tick
         setTimer("hallo", Tock, 500.millis.dilated)
         stay
       case Event(Tock, _) ⇒

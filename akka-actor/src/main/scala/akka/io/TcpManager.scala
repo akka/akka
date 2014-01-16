@@ -18,7 +18,7 @@ import akka.actor.{ ActorLogging, Props }
  *
  * To bind and listen to a local address, a [[akka.io.Tcp.Bind]] command must be sent to this actor. If the binding
  * was successful, the sender of the [[akka.io.Tcp.Bind]] will be notified with a [[akka.io.Tcp.Bound]]
- * message. The sender of the [[akka.io.Tcp.Bound]] message is the Listener actor (an internal actor responsible for
+ * message. The sender() of the [[akka.io.Tcp.Bound]] message is the Listener actor (an internal actor responsible for
  * listening to server events). To unbind the port an [[akka.io.Tcp.Unbind]] message must be sent to the Listener actor.
  *
  * If the bind request is rejected because the Tcp system is not able to register more channels (see the nr-of-selectors
@@ -32,7 +32,7 @@ import akka.actor.{ ActorLogging, Props }
  * == Connect ==
  *
  * To initiate a connection to a remote server, a [[akka.io.Tcp.Connect]] message must be sent to this actor. If the
- * connection succeeds, the sender will be notified with a [[akka.io.Tcp.Connected]] message. The sender of the
+ * connection succeeds, the sender() will be notified with a [[akka.io.Tcp.Connected]] message. The sender of the
  * [[akka.io.Tcp.Connected]] message is the Connection actor (an internal actor representing the TCP connection). Before
  * starting to use the connection, a handler must be registered to the Connection actor by sending a [[akka.io.Tcp.Register]]
  * command message. After a handler has been registered, all incoming data will be sent to the handler in the form of
@@ -49,11 +49,11 @@ private[io] class TcpManager(tcp: TcpExt)
 
   def receive = workerForCommandHandler {
     case c: Connect ⇒
-      val commander = sender // cache because we create a function that will run asyncly
+      val commander = sender() // cache because we create a function that will run asyncly
       (registry ⇒ Props(classOf[TcpOutgoingConnection], tcp, registry, commander, c))
 
     case b: Bind ⇒
-      val commander = sender // cache because we create a function that will run asyncly
+      val commander = sender() // cache because we create a function that will run asyncly
       (registry ⇒ Props(classOf[TcpListener], selectorPool, tcp, registry, commander, b))
   }
 

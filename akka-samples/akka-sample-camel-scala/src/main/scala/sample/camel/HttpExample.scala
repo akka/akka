@@ -40,7 +40,7 @@ object HttpExample {
         camelMsg.headers(Set(Exchange.HTTP_PATH)))
     }
 
-    // instead of replying to the initial sender, producer actors can implement custom
+    // instead of replying to the initial sender(), producer actors can implement custom
     // response processing by overriding the routeResponse method
     override def routeResponse(msg: Any) { transformer forward msg }
   }
@@ -48,10 +48,10 @@ object HttpExample {
   class HttpTransformer extends Actor {
     def receive = {
       case msg: CamelMessage =>
-        sender ! (msg.mapBody { body: Array[Byte] =>
+        sender() ! (msg.mapBody { body: Array[Byte] =>
           new String(body).replaceAll("Akka ", "AKKA ")
         })
-      case msg: Failure => sender ! msg
+      case msg: Failure => sender() ! msg
     }
   }
 

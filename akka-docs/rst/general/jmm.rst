@@ -105,7 +105,7 @@ Since Akka runs on the JVM there are still some rules to be followed.
 
         // Very bad, "sender" changes for every message,
         // shared mutable state bug
-          Future { expensiveCalculation(sender) }
+          Future { expensiveCalculation(sender()) }
 
           //Rights
 
@@ -115,7 +115,7 @@ Since Akka runs on the JVM there are still some rules to be followed.
 
         // Completely safe, we close over a fixed value
         // and it's an ActorRef, which is thread-safe
-          val currentSender = sender
+          val currentSender = sender()
           Future { expensiveCalculation(currentSender) }
      }
     }

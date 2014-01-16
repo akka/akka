@@ -71,12 +71,12 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
     case UnWatch(ref)        ⇒ context.unwatch(ref)
     case SetAutoPilot(pilot) ⇒ autopilot = pilot
     case x: AnyRef ⇒
-      autopilot = autopilot.run(sender, x) match {
+      autopilot = autopilot.run(sender(), x) match {
         case KeepRunning ⇒ autopilot
         case other       ⇒ other
       }
       val observe = ignore map (ignoreFunc ⇒ !ignoreFunc.applyOrElse(x, FALSE)) getOrElse true
-      if (observe) queue.offerLast(RealMessage(x, sender))
+      if (observe) queue.offerLast(RealMessage(x, sender()))
   }
 
   override def postStop() = {
@@ -790,12 +790,12 @@ class TestProbe(_application: ActorSystem) extends TestKit(_application) {
   /**
    * Get sender of last received message.
    */
-  def sender = lastMessage.sender
+  def sender() = lastMessage.sender
 
   /**
    * Send message to the sender of the last dequeued message.
    */
-  def reply(msg: Any): Unit = sender.!(msg)(ref)
+  def reply(msg: Any): Unit = sender().!(msg)(ref)
 
 }
 

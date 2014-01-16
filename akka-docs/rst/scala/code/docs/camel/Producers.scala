@@ -120,7 +120,7 @@ object Producers {
       def receive = {
         case msg =>
           val template = CamelExtension(context.system).template
-          sender ! template.requestBody("direct:news", msg)
+          sender() ! template.requestBody("direct:news", msg)
       }
     }
     //#RequestProducerTemplate

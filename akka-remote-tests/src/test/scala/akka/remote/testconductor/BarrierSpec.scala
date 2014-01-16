@@ -548,7 +548,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
         case x ⇒ testActor ! Failed(barrier, x); SupervisorStrategy.Restart
       }
       def receive = {
-        case _ ⇒ sender ! barrier
+        case _ ⇒ sender() ! barrier
       }
     }).withDeploy(Deploy.local)) ! ""
     expectMsgType[ActorRef]

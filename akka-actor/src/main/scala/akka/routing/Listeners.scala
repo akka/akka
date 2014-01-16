@@ -40,7 +40,7 @@ trait Listeners { self: Actor ⇒
   }
 
   /**
-   * Sends the supplied message to all current listeners using the provided sender as sender.
+   * Sends the supplied message to all current listeners using the provided sender() as sender.
    *
    * @param msg
    * @param sender

@@ -69,7 +69,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike w
             within(1 second) {
               probe.expectMsgType[CamelMessage]
               info("message sent to consumer")
-              probe.sender ! Ack
+              probe.sender() ! Ack
             }
             verify(exchange, never()).setResponse(any[CamelMessage])
             info("no response forwarded to exchange")
@@ -173,7 +173,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike w
 
             within(1 second) {
               probe.expectMsgType[CamelMessage]
-              probe.sender ! "some message"
+              probe.sender() ! "some message"
             }
             doneSync should be(false)
             info("done async")
@@ -196,7 +196,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike w
 
             within(1 second) {
               probe.expectMsgType[CamelMessage]
-              probe.sender ! failure
+              probe.sender() ! failure
               asyncCallback.awaitCalled(remaining)
             }
 
@@ -259,7 +259,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike w
               within(1 second) {
                 probe.expectMsgType[CamelMessage]
                 info("message sent to consumer")
-                probe.sender ! Ack
+                probe.sender() ! Ack
                 asyncCallback.expectDoneAsyncWithin(remaining)
                 info("async callback called")
               }
@@ -277,7 +277,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike w
               within(1 second) {
                 probe.expectMsgType[CamelMessage]
                 info("message sent to consumer")
-                probe.sender ! "some neither Ack nor Failure response"
+                probe.sender() ! "some neither Ack nor Failure response"
                 asyncCallback.expectDoneAsyncWithin(remaining)
                 info("async callback called")
               }
@@ -310,7 +310,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike w
               within(1 second) {
                 probe.expectMsgType[CamelMessage]
                 info("message sent to consumer")
-                probe.sender ! Failure(new Exception)
+                probe.sender() ! Failure(new Exception)
                 asyncCallback.awaitCalled(remaining)
               }
               verify(exchange, never()).setResponse(any[CamelMessage])
@@ -427,7 +427,7 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
   }
 
   def echoActor = system.actorOf(Props(new Actor {
-    def receive = { case msg ⇒ sender ! "received " + msg }
+    def receive = { case msg ⇒ sender() ! "received " + msg }
   }), name = "echoActor")
 
 }

@@ -37,7 +37,7 @@ class JavaLogger extends Actor {
     case event: Warning                ⇒ log(logging.Level.WARNING, null, event)
     case event: Info                   ⇒ log(logging.Level.INFO, null, event)
     case event: Debug                  ⇒ log(logging.Level.CONFIG, null, event)
-    case InitializeLogger(_)           ⇒ sender ! LoggerInitialized
+    case InitializeLogger(_)           ⇒ sender() ! LoggerInitialized
   }
 
   @inline

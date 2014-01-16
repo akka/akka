@@ -22,8 +22,8 @@ object TestkitDocSpec {
 
   class MyActor extends Actor {
     def receive = {
-      case Say42       => sender ! 42
-      case "some work" => sender ! "some result"
+      case Say42       => sender() ! 42
+      case "some work" => sender() ! "some result"
     }
   }
 
@@ -201,7 +201,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
         expectMsgPF() {
           case Update(id, _) if id == x => true
         }
-        sender ! "ACK"
+        sender() ! "ACK"
       }
     }
     //#test-special-probe

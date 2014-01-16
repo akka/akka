@@ -70,7 +70,7 @@ abstract class RestartFirstSeedNodeSpec
           def receive = {
             case a: Address ⇒
               seedNode1Address = a
-              sender ! "ok"
+              sender() ! "ok"
           }
         }).withDeploy(Deploy.local), name = "address-receiver")
         enterBarrier("seed1-address-receiver-ready")
