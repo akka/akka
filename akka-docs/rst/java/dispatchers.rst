@@ -11,7 +11,11 @@ Default dispatcher
 ------------------
 
 Every ``ActorSystem`` will have a default dispatcher that will be used in case nothing else is configured for an ``Actor``.
-The default dispatcher can be configured, and is by default a ``Dispatcher`` with a "fork-join-executor", which gives excellent performance in most cases.
+The default dispatcher can be configured, and is by default a ``Dispatcher`` with the specified ``default-executor``.
+If an ActorSystem is created with an ExecutionContext passed in, this ExecutionContext will be used as the default executor for all
+dispatchers in this ActorSystem. If no ExecutionContext is given, it will fallback to the executor specified in
+``akka.actor.default-dispatcher.default-executor.fallback``. By default this is a "fork-join-executor", which
+gives excellent performance in most cases.
 
 .. _dispatcher-lookup-java:
 

@@ -13,6 +13,7 @@ import scala.concurrent.duration.Duration
 import akka.ConfigurationException
 import akka.actor.Deploy
 import akka.util.Helpers.ConfigOps
+import scala.concurrent.ExecutionContext
 
 /**
  * DispatcherPrerequisites represents useful contextual pieces when constructing a MessageDispatcher
@@ -24,6 +25,7 @@ trait DispatcherPrerequisites {
   def dynamicAccess: DynamicAccess
   def settings: ActorSystem.Settings
   def mailboxes: Mailboxes
+  def defaultExecutionContext: Option[ExecutionContext]
 }
 
 /**
@@ -35,7 +37,8 @@ private[akka] case class DefaultDispatcherPrerequisites(
   val scheduler: Scheduler,
   val dynamicAccess: DynamicAccess,
   val settings: ActorSystem.Settings,
-  val mailboxes: Mailboxes) extends DispatcherPrerequisites
+  val mailboxes: Mailboxes,
+  val defaultExecutionContext: Option[ExecutionContext]) extends DispatcherPrerequisites
 
 object Dispatchers {
   /**

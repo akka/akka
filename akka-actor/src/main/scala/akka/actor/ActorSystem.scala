@@ -56,7 +56,7 @@ object ActorSystem {
   def create(name: String): ActorSystem = apply(name)
 
   /**
-   * Creates a new ActorSystem with the name "default", and the specified Config, then
+   * Creates a new ActorSystem with the specified name, and the specified Config, then
    * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
    * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
    * associated with the ActorSystem class.
@@ -66,11 +66,28 @@ object ActorSystem {
   def create(name: String, config: Config): ActorSystem = apply(name, config)
 
   /**
-   * Creates a new ActorSystem with the name "default", the specified Config, and specified ClassLoader
+   * Creates a new ActorSystem with the specified name, the specified Config, and specified ClassLoader
    *
    * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def create(name: String, config: Config, classLoader: ClassLoader): ActorSystem = apply(name, config, classLoader)
+
+  /**
+   * Creates a new ActorSystem with the specified name, the specified Config, the specified ClassLoader,
+   * and the specified ExecutionContext. The ExecutionContext will be used as the default executor inside this ActorSystem.
+   * If [[null]] is passed in for the Config, ClassLoader and/or ExecutionContext parameters, the respective default value
+   * will be used. If no Config is given, the default reference config will be obtained from the ClassLoader.
+   * If no ClassLoader is given, it obtains the current ClassLoader by first inspecting the current
+   * threads' getContextClassLoader, then tries to walk the stack to find the callers class loader, then
+   * falls back to the ClassLoader associated with the ActorSystem class. If no ExecutionContext is given, the
+   * system will fallback to the executor configured under "akka.actor.default-dispatcher.default-executor.fallback".
+   * Note that the given ExecutionContext will be used by all dispatchers that have been configured with
+   * executor = "default-executor", including those that have not defined the executor setting and thereby fallback
+   * to the default of "default-dispatcher.executor".
+   *
+   * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
+   */
+  def create(name: String, config: Config, classLoader: ClassLoader, defaultExecutionContext: ExecutionContext): ActorSystem = apply(name, Option(config), Option(classLoader), Option(defaultExecutionContext))
 
   /**
    * Creates a new ActorSystem with the name "default",
@@ -88,27 +105,41 @@ object ActorSystem {
    * associated with the ActorSystem class.
    * Then it loads the default reference configuration using the ClassLoader.
    */
-  def apply(name: String): ActorSystem = {
-    val classLoader = findClassLoader()
-    apply(name, ConfigFactory.load(classLoader), classLoader)
-  }
+  def apply(name: String): ActorSystem = apply(name, None, None, None)
 
   /**
-   * Creates a new ActorSystem with the name "default", and the specified Config, then
+   * Creates a new ActorSystem with the specified name, and the specified Config, then
    * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
    * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
    * associated with the ActorSystem class.
    *
    * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
-  def apply(name: String, config: Config): ActorSystem = apply(name, config, findClassLoader())
+  def apply(name: String, config: Config): ActorSystem = apply(name, Option(config), None, None)
 
   /**
-   * Creates a new ActorSystem with the name "default", the specified Config, and specified ClassLoader
+   * Creates a new ActorSystem with the specified name, the specified Config, and specified ClassLoader
    *
    * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
-  def apply(name: String, config: Config, classLoader: ClassLoader): ActorSystem = new ActorSystemImpl(name, config, classLoader).start()
+  def apply(name: String, config: Config, classLoader: ClassLoader): ActorSystem = apply(name, Option(config), Option(classLoader), None)
+
+  /**
+   * Creates a new ActorSystem with the specified name,
+   * the specified ClassLoader if given, otherwise obtains the current ClassLoader by first inspecting the current
+   * threads' getContextClassLoader, then tries to walk the stack to find the callers class loader, then
+   * falls back to the ClassLoader associated with the ActorSystem class.
+   * If an ExecutionContext is given, it will be used as the default executor inside this ActorSystem.
+   * If no ExecutionContext is given, the system will fallback to the executor configured under "akka.actor.default-dispatcher.default-executor.fallback".
+   * The system will use the passed in config, or falls back to the deafult reference configuration using the ClassLoader.
+   *
+   * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
+   */
+  def apply(name: String, config: Option[Config] = None, classLoader: Option[ClassLoader] = None, defaultExecutionContext: Option[ExecutionContext] = None): ActorSystem = {
+    val cl = classLoader.getOrElse(findClassLoader())
+    val appConfig = config.getOrElse(ConfigFactory.load(cl))
+    new ActorSystemImpl(name, appConfig, cl, defaultExecutionContext).start()
+  }
 
   /**
    * Settings are the overall ActorSystem Settings which also provides a convenient access to the Config object.
@@ -454,7 +485,7 @@ abstract class ExtendedActorSystem extends ActorSystem {
   private[akka] def printTree: String
 }
 
-private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config, classLoader: ClassLoader) extends ExtendedActorSystem {
+private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config, classLoader: ClassLoader, defaultExecutionContext: Option[ExecutionContext]) extends ExtendedActorSystem {
 
   if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-]*$"""))
     throw new IllegalArgumentException(
@@ -552,7 +583,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   val mailboxes: Mailboxes = new Mailboxes(settings, eventStream, dynamicAccess, deadLetters)
 
   val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(
-    threadFactory, eventStream, scheduler, dynamicAccess, settings, mailboxes))
+    threadFactory, eventStream, scheduler, dynamicAccess, settings, mailboxes, defaultExecutionContext))
 
   val dispatcher: ExecutionContextExecutor = dispatchers.defaultGlobalDispatcher
 

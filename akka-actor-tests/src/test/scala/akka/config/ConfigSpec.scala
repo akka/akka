@@ -72,11 +72,17 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
 
         {
           c.getString("type") should equal("Dispatcher")
-          c.getString("executor") should equal("fork-join-executor")
+          c.getString("executor") should equal("default-executor")
           c.getDuration("shutdown-timeout", TimeUnit.MILLISECONDS) should equal(1 * 1000)
           c.getInt("throughput") should equal(5)
           c.getDuration("throughput-deadline-time", TimeUnit.MILLISECONDS) should equal(0)
           c.getBoolean("attempt-teamwork") should equal(true)
+        }
+
+        //Default executor config
+        {
+          val pool = c.getConfig("default-executor")
+          pool.getString("fallback") should equal("fork-join-executor")
         }
 
         //Fork join executor config

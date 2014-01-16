@@ -7,12 +7,11 @@ import language.postfixOps
 import akka.testkit._
 import org.scalatest.junit.JUnitSuiteLike
 import com.typesafe.config.ConfigFactory
-import scala.concurrent.Await
+import scala.concurrent.{ ExecutionContext, Await, Future }
 import scala.concurrent.duration._
 import java.util.concurrent.{ RejectedExecutionException, ConcurrentLinkedQueue }
 import akka.util.Timeout
 import akka.japi.Util.immutableSeq
-import scala.concurrent.Future
 import akka.pattern.ask
 import akka.dispatch._
 import com.typesafe.config.Config
@@ -108,6 +107,19 @@ object ActorSystemSpec {
      * Returns the same dispatcher instance for each invocation
      */
     override def dispatcher(): MessageDispatcher = instance
+  }
+
+  class TestExecutionContext(testActor: ActorRef, underlying: ExecutionContext) extends ExecutionContext {
+
+    def execute(runnable: Runnable): Unit = {
+      testActor ! "called"
+      underlying.execute(runnable)
+    }
+
+    def reportFailure(t: Throwable): Unit = {
+      testActor ! "failed"
+      underlying.reportFailure(t)
+    }
   }
 
   val config = s"""
@@ -305,6 +317,54 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       }
     }
 
+    "work with a passed in ExecutionContext" in {
+      val ecProbe = TestProbe()
+      val ec = new ActorSystemSpec.TestExecutionContext(ecProbe.ref, ExecutionContexts.global())
+
+      val system2 = ActorSystem(name = "default", defaultExecutionContext = Some(ec))
+
+      try {
+        val ref = system2.actorOf(Props(new Actor {
+          def receive = {
+            case "ping" ⇒ sender ! "pong"
+          }
+        }))
+
+        val probe = TestProbe()
+
+        ref.tell("ping", probe.ref)
+
+        ecProbe.expectMsg(1.second, "called")
+        probe.expectMsg(1.second, "pong")
+      } finally {
+        shutdown(system2)
+      }
+    }
+
+    "not use passed in ExecutionContext if executor is configured" in {
+      val ecProbe = TestProbe()
+      val ec = new ActorSystemSpec.TestExecutionContext(ecProbe.ref, ExecutionContexts.global())
+
+      val config = ConfigFactory.parseString("akka.actor.default-dispatcher.executor = \"fork-join-executor\"")
+      val system2 = ActorSystem(name = "default", config = Some(config), defaultExecutionContext = Some(ec))
+
+      try {
+        val ref = system2.actorOf(Props(new Actor {
+          def receive = {
+            case "ping" ⇒ sender ! "pong"
+          }
+        }))
+
+        val probe = TestProbe()
+
+        ref.tell("ping", probe.ref)
+
+        ecProbe.expectNoMsg()
+        probe.expectMsg(1.second, "pong")
+      } finally {
+        shutdown(system2)
+      }
+    }
   }
 
 }
