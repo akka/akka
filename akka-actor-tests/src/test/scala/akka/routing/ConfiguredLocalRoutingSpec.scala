@@ -30,7 +30,8 @@ object ConfiguredLocalRoutingSpec {
             router = random-pool
             nr-of-instances = 4
             pool-dispatcher {
-              type = BalancingDispatcher
+              fork-join-executor.parallelism-min = 4
+              fork-join-executor.parallelism-max = 4
             }
           }
           /paths {

@@ -4,8 +4,8 @@ Mailboxes
 #########
 
 An Akka ``Mailbox`` holds the messages that are destined for an ``Actor``.
-Normally each ``Actor`` has its own mailbox, but with for example a ``BalancingDispatcher``
-all actors with the same ``BalancingDispatcher`` will share a single instance.
+Normally each ``Actor`` has its own mailbox, but with for example a ``BalancingPool``
+all routees will share a single mailbox instance.
 
 Mailbox Selection
 =================

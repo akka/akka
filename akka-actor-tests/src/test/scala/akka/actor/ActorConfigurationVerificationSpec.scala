@@ -23,7 +23,7 @@ object ActorConfigurationVerificationSpec {
 
   val config = """
     balancing-dispatcher {
-      type = BalancingDispatcher
+      type = "akka.dispatch.BalancingDispatcherConfigurator"
       throughput = 1
     }
     pinned-dispatcher {

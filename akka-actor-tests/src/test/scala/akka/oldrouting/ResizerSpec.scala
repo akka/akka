@@ -29,9 +29,6 @@ object ResizerSpec {
         }
       }
     }
-    bal-disp {
-      type = BalancingDispatcher
-    }
     """
 
   class TestActor extends Actor {

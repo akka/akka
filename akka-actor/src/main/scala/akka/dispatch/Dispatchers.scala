@@ -83,7 +83,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    * using this dispatcher, because the details can only be checked by trying
    * to instantiate it, which might be undesirable when just checking.
    */
-  def hasDispatcher(id: String): Boolean = cachingConfig.hasPath(id)
+  def hasDispatcher(id: String): Boolean = dispatcherConfigurators.containsKey(id) || cachingConfig.hasPath(id)
 
   private def lookupConfigurator(id: String): MessageDispatcherConfigurator = {
     dispatcherConfigurators.get(id) match {
@@ -104,17 +104,40 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
     }
   }
 
-  //INTERNAL API
+  /**
+   * Register a [[MessageDispatcherConfigurator]] that will be
+   * used by [[#lookup]] and [[#hasDispatcher]] instead of looking
+   * up the configurator from the system configuration.
+   * This enables dynamic addition of dispatchers, as used by the
+   * [[akka.routing.BalancingPool]].
+   *
+   * A configurator for a certain id can only be registered once, i.e.
+   * it can not be replaced. It is safe to call this method multiple times,
+   * but only the first registration will be used. This method returns `true` if
+   * the specified configurator was successfully registered.
+   */
+  def registerConfigurator(id: String, configurator: MessageDispatcherConfigurator): Boolean =
+    dispatcherConfigurators.putIfAbsent(id, configurator) == null
+
+  /**
+   * INTERNAL API
+   */
   private[akka] def config(id: String): Config = {
+    config(id, settings.config.getConfig(id))
+  }
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def config(id: String, appConfig: Config): Config = {
     import scala.collection.JavaConverters._
     def simpleName = id.substring(id.lastIndexOf('.') + 1)
     idConfig(id)
-      .withFallback(settings.config.getConfig(id))
+      .withFallback(appConfig)
       .withFallback(ConfigFactory.parseMap(Map("name" -> simpleName).asJava))
       .withFallback(defaultDispatcherConfig)
   }
 
-  //INTERNAL API
   private def idConfig(id: String): Config = {
     import scala.collection.JavaConverters._
     ConfigFactory.parseMap(Map("id" -> id).asJava)
@@ -134,8 +157,6 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    */
   private[akka] def from(cfg: Config): MessageDispatcher = configuratorFrom(cfg).dispatcher()
 
-  private[akka] def isBalancingDispatcher(id: String): Boolean = settings.config.hasPath(id) && config(id).getString("type") == "BalancingDispatcher"
-
   /**
    * INTERNAL API
    *
@@ -150,9 +171,13 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
     if (!cfg.hasPath("id")) throw new ConfigurationException("Missing dispatcher 'id' property in config: " + cfg.root.render)
 
     cfg.getString("type") match {
-      case "Dispatcher"          ⇒ new DispatcherConfigurator(cfg, prerequisites)
-      case "BalancingDispatcher" ⇒ new BalancingDispatcherConfigurator(cfg, prerequisites)
-      case "PinnedDispatcher"    ⇒ new PinnedDispatcherConfigurator(cfg, prerequisites)
+      case "Dispatcher" ⇒ new DispatcherConfigurator(cfg, prerequisites)
+      case "BalancingDispatcher" ⇒
+        // FIXME remove this case in 2.4
+        throw new IllegalArgumentException("BalancingDispatcher is deprecated, use a BalancingPool instead. " +
+          "During a migration period you can still use BalancingDispatcher by specifying the full class name: " +
+          classOf[BalancingDispatcherConfigurator].getName)
+      case "PinnedDispatcher" ⇒ new PinnedDispatcherConfigurator(cfg, prerequisites)
       case fqn ⇒
         val args = List(classOf[Config] -> cfg, classOf[DispatcherPrerequisites] -> prerequisites)
         prerequisites.dynamicAccess.createInstanceFor[MessageDispatcherConfigurator](fqn, args).recover({

@@ -151,3 +151,13 @@ to handle the initial state as events instead of ``CurrentClusterState``. See
 :ref:`documentation for Java <cluster_subscriber_java>`.
 
 
+BalancingDispatcher is Deprecated
+=================================
+
+Use ``BalancingPool`` instead of ``BalancingDispatcher``. See :ref:`documentation for Scala <balancing-pool-scala>` and 
+:ref:`documentation for Java <balancing-pool-java>`.
+
+During a migration period you can still use BalancingDispatcher by specifying the full class name in the dispatcher configuration::
+
+    type = "akka.dispatch.BalancingDispatcherConfigurator"
+
