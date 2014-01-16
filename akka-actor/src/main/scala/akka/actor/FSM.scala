@@ -223,9 +223,10 @@ object FSM {
  * the first matching one.
  *
  * Another feature is that other actors may subscribe for transition events by
- * sending a <code>SubscribeTransitionCallback</code> message to this actor;
- * use <code>UnsubscribeTransitionCallback</code> before stopping the other
- * actor.
+ * sending a <code>SubscribeTransitionCallback</code> message to this actor.
+ * Stopping a listener without unregistering will not remove the listener from the
+ * subscription list; use <code>UnsubscribeTransitionCallback</code> before stopping
+ * the listener.
  *
  * State timeouts set an upper bound to the time which may pass before another
  * message is received in the current state. If no external message is
