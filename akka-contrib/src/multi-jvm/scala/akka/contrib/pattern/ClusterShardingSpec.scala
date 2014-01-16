@@ -98,7 +98,7 @@ object ClusterShardingSpec extends MultiNodeConfig {
     override def receiveCommand: Receive = {
       case Increment      ⇒ persist(CounterChanged(+1))(updateState)
       case Decrement      ⇒ persist(CounterChanged(-1))(updateState)
-      case Get(_)         ⇒ sender ! count
+      case Get(_)         ⇒ sender() ! count
       case ReceiveTimeout ⇒ context.parent ! Passivate(stopMessage = Stop)
       case Stop           ⇒ context.stop(self)
     }

@@ -93,7 +93,7 @@ object TellLatencyPerformanceSpec {
 
   class Destination extends Actor {
     def receive = {
-      case msg: Msg ⇒ sender ! msg
+      case msg: Msg ⇒ sender() ! msg
     }
   }
 

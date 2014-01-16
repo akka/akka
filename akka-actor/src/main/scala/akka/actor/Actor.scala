@@ -356,7 +356,7 @@ object Actor {
  *  - ''SHUTDOWN'' (when 'stop' is invoked) - can't do anything
  *
  * The Actor's own [[akka.actor.ActorRef]] is available as `self`, the current
- * message’s sender as `sender` and the [[akka.actor.ActorContext]] as
+ * message’s sender as `sender()` and the [[akka.actor.ActorContext]] as
  * `context`. The only abstract method is `receive` which shall return the
  * initial behavior of the actor as a partial function (behavior can be changed
  * using `context.become` and `context.unbecome`).
@@ -375,23 +375,23 @@ object Actor {
  *
  *   def receive = {
  *                                      // directly calculated reply
- *     case Request(r)               => sender ! calculate(r)
+ *     case Request(r)               => sender() ! calculate(r)
  *
  *                                      // just to demonstrate how to stop yourself
  *     case Shutdown                 => context.stop(self)
  *
- *                                      // error kernel with child replying directly to 'sender'
- *     case Dangerous(r)             => context.actorOf(Props[ReplyToOriginWorker]).tell(PerformWork(r), sender)
+ *                                      // error kernel with child replying directly to 'sender()'
+ *     case Dangerous(r)             => context.actorOf(Props[ReplyToOriginWorker]).tell(PerformWork(r), sender())
  *
  *                                      // error kernel with reply going through us
- *     case OtherJob(r)              => context.actorOf(Props[ReplyToMeWorker]) ! JobRequest(r, sender)
+ *     case OtherJob(r)              => context.actorOf(Props[ReplyToMeWorker]) ! JobRequest(r, sender())
  *     case JobReply(result, orig_s) => orig_s ! result
  *   }
  * }
  * }}}
  *
  * The last line demonstrates the essence of the error kernel design: spawn
- * one-off actors which terminate after doing their job, pass on `sender` to
+ * one-off actors which terminate after doing their job, pass on `sender()` to
  * allow direct reply if that is what makes sense, or round-trip the sender
  * as shown with the fictitious JobRequest/JobReply message pair.
  *
@@ -446,7 +446,7 @@ trait Actor {
    * WARNING: Only valid within the Actor itself, so do not close over it and
    * publish it to other threads!
    */
-  final def sender: ActorRef = context.sender
+  final def sender(): ActorRef = context.sender()
 
   /**
    * This defines the initial actor behavior, it must return a partial function
@@ -561,7 +561,7 @@ trait Actor {
   def unhandled(message: Any): Unit = {
     message match {
       case Terminated(dead) ⇒ throw new DeathPactException(dead)
-      case _                ⇒ context.system.eventStream.publish(UnhandledMessage(message, sender, self))
+      case _                ⇒ context.system.eventStream.publish(UnhandledMessage(message, sender(), self))
     }
   }
 }

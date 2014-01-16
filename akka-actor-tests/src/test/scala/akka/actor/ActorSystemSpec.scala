@@ -37,7 +37,7 @@ object ActorSystemSpec {
 
     def receive = {
       case n: Int ⇒
-        master = sender
+        master = sender()
         terminaters = Set() ++ (for (i ← 1 to n) yield {
           val man = context.watch(context.system.actorOf(Props[Terminater]))
           man ! "run"

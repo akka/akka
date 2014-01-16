@@ -154,7 +154,7 @@ object TellThroughputComputationPerformanceSpec {
     def receive = {
       case Msg ⇒
         calculatePi()
-        sender ! Msg
+        sender() ! Msg
     }
   }
 

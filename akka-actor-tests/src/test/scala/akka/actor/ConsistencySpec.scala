@@ -32,18 +32,18 @@ object ConsistencySpec {
       case step: Long ⇒
 
         if (lastStep != (step - 1))
-          sender ! "Test failed: Last step %s, this step %s".format(lastStep, step)
+          sender() ! "Test failed: Last step %s, this step %s".format(lastStep, step)
 
         var shouldBeFortyTwo = left.value + right.value
         if (shouldBeFortyTwo != 42)
-          sender ! "Test failed: 42 failed"
+          sender() ! "Test failed: 42 failed"
         else {
           left.value += 1
           right.value -= 1
         }
 
         lastStep = step
-      case "done" ⇒ sender ! "done"; context.stop(self)
+      case "done" ⇒ sender() ! "done"; context.stop(self)
     }
   }
 }

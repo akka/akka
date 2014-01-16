@@ -254,7 +254,7 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
         case _                                         ⇒ false
       }
 
-      def receive = { case p: Props ⇒ sender ! context.actorOf(p) }
+      def receive = { case p: Props ⇒ sender() ! context.actorOf(p) }
     }), "zeromq")
   }
 

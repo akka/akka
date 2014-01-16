@@ -13,7 +13,7 @@ import akka.remote.RemoteScope
 object RemoteRouterSpec {
   class Echo extends Actor {
     def receive = {
-      case _ ⇒ sender ! self
+      case _ ⇒ sender() ! self
     }
   }
 }

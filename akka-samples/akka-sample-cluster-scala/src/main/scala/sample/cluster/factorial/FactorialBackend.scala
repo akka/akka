@@ -16,7 +16,7 @@ class FactorialBackend extends Actor with ActorLogging {
 
   def receive = {
     case (n: Int) =>
-      Future(factorial(n)) map { result => (n, result) } pipeTo sender
+      Future(factorial(n)) map { result => (n, result) } pipeTo sender()
   }
 
   def factorial(n: Int): BigInt = {

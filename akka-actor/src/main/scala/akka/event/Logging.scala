@@ -793,7 +793,7 @@ object Logging {
    */
   class DefaultLogger extends Actor with StdOutLogger {
     override def receive: Receive = {
-      case InitializeLogger(_) ⇒ sender ! LoggerInitialized
+      case InitializeLogger(_) ⇒ sender() ! LoggerInitialized
       case event: LogEvent     ⇒ print(event)
     }
   }

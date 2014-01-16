@@ -19,10 +19,10 @@ object ReliableProxy {
       case Message(msg, snd, serial) ⇒
         if (serial == lastSerial + 1) {
           target.tell(msg, snd)
-          sender ! Ack(serial)
+          sender() ! Ack(serial)
           lastSerial = serial
         } else if (compare(serial, lastSerial) <= 0) {
-          sender ! Ack(serial)
+          sender() ! Ack(serial)
         } else {
           log.debug("received msg of {} from {} with wrong serial", msg.asInstanceOf[AnyRef].getClass, snd)
         }
@@ -160,7 +160,7 @@ class ReliableProxy(target: ActorRef, retryAfter: FiniteDuration) extends Actor 
 
   var nextSerial = 1
   def send(msg: Any): Message = {
-    val m = Message(msg, sender, nextSerial)
+    val m = Message(msg, sender(), nextSerial)
     nextSerial += 1
     tunnel ! m
     m

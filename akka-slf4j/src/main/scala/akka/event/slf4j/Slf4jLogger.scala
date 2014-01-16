@@ -78,7 +78,7 @@ class Slf4jLogger extends Actor with SLF4JLogging {
 
     case InitializeLogger(_) ⇒
       log.info("Slf4jLogger started")
-      sender ! LoggerInitialized
+      sender() ! LoggerInitialized
   }
 
   @inline

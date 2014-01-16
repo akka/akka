@@ -24,11 +24,11 @@ object ActorLookupSpec {
 
   class Node extends Actor {
     def receive = {
-      case Create(name)       ⇒ sender ! context.actorOf(p, name)
-      case LookupElems(path)  ⇒ sender ! context.actorFor(path)
-      case LookupString(path) ⇒ sender ! context.actorFor(path)
-      case LookupPath(path)   ⇒ sender ! context.actorFor(path)
-      case GetSender(ref)     ⇒ ref ! sender
+      case Create(name)       ⇒ sender() ! context.actorOf(p, name)
+      case LookupElems(path)  ⇒ sender() ! context.actorFor(path)
+      case LookupString(path) ⇒ sender() ! context.actorFor(path)
+      case LookupPath(path)   ⇒ sender() ! context.actorFor(path)
+      case GetSender(ref)     ⇒ ref ! sender()
     }
   }
 

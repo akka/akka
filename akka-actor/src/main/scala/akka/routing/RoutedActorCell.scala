@@ -166,9 +166,9 @@ private[akka] class RouterActor extends Actor {
 
   def receive = {
     case GetRoutees ⇒
-      sender ! Routees(cell.router.routees)
+      sender() ! Routees(cell.router.routees)
     case CurrentRoutees ⇒
-      context.actorOf(Props(classOf[CollectRouteeRefs], cell.router.routees, sender))
+      context.actorOf(Props(classOf[CollectRouteeRefs], cell.router.routees, sender()))
     case AddRoutee(routee) ⇒
       cell.addRoutee(routee)
     case RemoveRoutee(routee) ⇒

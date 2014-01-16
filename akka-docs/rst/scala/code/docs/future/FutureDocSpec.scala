@@ -18,9 +18,9 @@ object FutureDocSpec {
 
   class MyActor extends Actor {
     def receive = {
-      case x: String       => sender ! x.toUpperCase
-      case x: Int if x < 0 => sender ! Status.Failure(new ArithmeticException("Negative values not supported"))
-      case x: Int          => sender ! x
+      case x: String       => sender() ! x.toUpperCase
+      case x: Int if x < 0 => sender() ! Status.Failure(new ArithmeticException("Negative values not supported"))
+      case x: Int          => sender() ! x
     }
   }
 
@@ -30,7 +30,7 @@ object FutureDocSpec {
     var n = 1
     def receive = {
       case GetNext =>
-        sender ! n
+        sender() ! n
         n += 2
     }
   }

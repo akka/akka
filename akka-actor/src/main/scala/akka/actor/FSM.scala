@@ -573,7 +573,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
         timeoutFuture = None
       }
       generation += 1
-      processMsg(value, sender)
+      processMsg(value, sender())
     }
   }
 
@@ -597,7 +597,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
     nextState.stopReason match {
       case None ⇒ makeTransition(nextState)
       case _ ⇒
-        nextState.replies.reverse foreach { r ⇒ sender ! r }
+        nextState.replies.reverse foreach { r ⇒ sender() ! r }
         terminate(nextState)
         context.stop(self)
     }
@@ -607,7 +607,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
     if (!stateFunctions.contains(nextState.stateName)) {
       terminate(stay withStopReason Failure("Next state %s does not exist".format(nextState.stateName)))
     } else {
-      nextState.replies.reverse foreach { r ⇒ sender ! r }
+      nextState.replies.reverse foreach { r ⇒ sender() ! r }
       if (currentState.stateName != nextState.stateName) {
         this.nextState = nextState
         handleTransition(currentState.stateName, nextState.stateName)

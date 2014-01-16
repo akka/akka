@@ -43,7 +43,7 @@ object SurviveNetworkInstabilityMultiJvmSpec extends MultiNodeConfig {
 
   class Parent extends Actor {
     def receive = {
-      case p: Props ⇒ sender ! context.actorOf(p)
+      case p: Props ⇒ sender() ! context.actorOf(p)
     }
   }
 
@@ -53,7 +53,7 @@ object SurviveNetworkInstabilityMultiJvmSpec extends MultiNodeConfig {
     def receive = {
       case "hello" ⇒
         context.system.scheduler.scheduleOnce(2.seconds, self, "boom")
-        sender ! "hello"
+        sender() ! "hello"
       case "boom" ⇒ throw new SimulatedException
     }
   }
@@ -78,8 +78,8 @@ class SurviveNetworkInstabilityMultiJvmNode8 extends SurviveNetworkInstabilitySp
 
 abstract class SurviveNetworkInstabilitySpec
   extends MultiNodeSpec(SurviveNetworkInstabilityMultiJvmSpec)
-          with MultiNodeClusterSpec
-          with ImplicitSender {
+  with MultiNodeClusterSpec
+  with ImplicitSender {
 
   import SurviveNetworkInstabilityMultiJvmSpec._
 

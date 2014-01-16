@@ -40,7 +40,7 @@ class FirstActor extends Actor {
   val child = context.actorOf(Props[MyActor], name = "myChild")
   //#plus-some-behavior
   def receive = {
-    case x => sender ! x
+    case x => sender() ! x
   }
   //#plus-some-behavior
 }
@@ -64,7 +64,7 @@ class DemoActorWrapper extends Actor {
 
   class DemoActor(magicNumber: Int) extends Actor {
     def receive = {
-      case x: Int => sender ! (x + magicNumber)
+      case x: Int => sender() ! (x + magicNumber)
     }
   }
 
@@ -91,7 +91,7 @@ class AnonymousActor extends Actor {
         def receive = {
           case DoIt(msg) =>
             val replyMsg = doSomeDangerousWork(msg)
-            sender ! replyMsg
+            sender() ! replyMsg
             context.stop(self)
         }
         def doSomeDangerousWork(msg: ImmutableMessage): String = { "done" }
@@ -123,10 +123,10 @@ class ReplyException extends Actor {
       //#reply-exception
       try {
         val result = operation()
-        sender ! result
+        sender() ! result
       } catch {
         case e: Exception =>
-          sender ! akka.actor.Status.Failure(e)
+          sender() ! akka.actor.Status.Failure(e)
           throw e
       }
     //#reply-exception
@@ -271,7 +271,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   "creating actor with IndirectActorProducer" in {
     class Echo(name: String) extends Actor {
       def receive = {
-        case n: Int => sender ! name
+        case n: Int => sender() ! name
         case message =>
           val target = testActor
           //#forward
@@ -365,12 +365,12 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   class HotSwapActor extends Actor {
     import context._
     def angry: Receive = {
-      case "foo" => sender ! "I am already angry?"
+      case "foo" => sender() ! "I am already angry?"
       case "bar" => become(happy)
     }
 
     def happy: Receive = {
-      case "bar" => sender ! "I am already happy :-)"
+      case "bar" => sender() ! "I am already happy :-)"
       case "foo" => become(angry)
     }
 
@@ -417,7 +417,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
         def receive = {
           case "kill" =>
-            context.stop(child); lastSender = sender
+            context.stop(child); lastSender = sender()
           case Terminated(`child`) => lastSender ! "finished"
         }
       }
@@ -522,12 +522,12 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     def receive = {
       case ref: ActorRef =>
         //#reply-with-sender
-        sender.tell("reply", context.parent) // replies will go back to parent
-        sender.!("reply")(context.parent) // alternative syntax (beware of the parens!)
+        sender().tell("reply", context.parent) // replies will go back to parent
+        sender().!("reply")(context.parent) // alternative syntax (beware of the parens!)
       //#reply-with-sender
       case x =>
         //#reply-without-sender
-        sender ! x // replies will go to this actor
+        sender() ! x // replies will go to this actor
       //#reply-without-sender
     }
   }
@@ -585,13 +585,13 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
   trait TheirComposableActor extends ComposableActor {
     receiveBuilder += {
-      case "foo" => sender ! "foo received"
+      case "foo" => sender() ! "foo received"
     }
   }
 
   class MyComposableActor extends TheirComposableActor {
     receiveBuilder += {
-      case "bar" => sender ! "bar received"
+      case "bar" => sender() ! "bar received"
     }
   }
   //#receive-orElse2

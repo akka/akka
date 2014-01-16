@@ -26,7 +26,7 @@ class ActorDSLSpec extends AkkaSpec {
 
   val echo = system.actorOf(Props(new Actor {
     def receive = {
-      case x ⇒ sender ! x
+      case x ⇒ sender() ! x
     }
   }))
 
@@ -119,7 +119,7 @@ class ActorDSLSpec extends AkkaSpec {
       //#simple-actor
       val a = actor(new Act {
         become {
-          case "hello" ⇒ sender ! "hi"
+          case "hello" ⇒ sender() ! "hi"
         }
       })
       //#simple-actor
@@ -133,10 +133,10 @@ class ActorDSLSpec extends AkkaSpec {
       //#becomeStacked
       val a = actor(new Act {
         become { // this will replace the initial (empty) behavior
-          case "info" ⇒ sender ! "A"
+          case "info" ⇒ sender() ! "A"
           case "switch" ⇒
             becomeStacked { // this will stack upon the "A" behavior
-              case "info"   ⇒ sender ! "B"
+              case "info"   ⇒ sender() ! "B"
               case "switch" ⇒ unbecome() // return to the "A" behavior
             }
           case "lobotomize" ⇒ unbecome() // OH NOES: Actor.emptyBehavior
@@ -144,7 +144,7 @@ class ActorDSLSpec extends AkkaSpec {
       })
       //#becomeStacked
 
-      implicit def sender = testActor
+      implicit val sender = testActor
       a ! "info"
       expectMsg("A")
       a ! "switch"

@@ -45,10 +45,10 @@ object ActorRef {
  *
  *   def receive {
  *     case Request1(msg) => other ! refine(msg)     // uses this actor as sender reference, reply goes to us
- *     case Request2(msg) => other.tell(msg, sender) // forward sender reference, enabling direct reply
+ *     case Request2(msg) => other.tell(msg, sender()) // forward sender reference, enabling direct reply
  *     case Request3(msg) =>
  *       implicit val timeout = Timeout(5.seconds)
- *       sender ! (other ? msg)  // will reply with a Future for holding other's reply
+ *       sender() ! (other ? msg)  // will reply with a Future for holding other's reply
  *   }
  * }
  * }}}
@@ -127,7 +127,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    *
    * Works, no matter whether originally sent with tell/'!' or ask/'?'.
    */
-  def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender)
+  def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender())
 
   /**
    * Is the actor shut down?
@@ -168,7 +168,7 @@ trait ScalaActorRef { ref: ActorRef ⇒
    * If invoked from within an actor then the actor reference is implicitly passed on as the implicit 'sender' argument.
    * <p/>
    *
-   * This actor 'sender' reference is then available in the receiving actor in the 'sender' member variable,
+   * This actor 'sender' reference is then available in the receiving actor in the 'sender()' member variable,
    * if invoked from within an Actor. If not then no sender is available.
    * <pre>
    *   actor ! message

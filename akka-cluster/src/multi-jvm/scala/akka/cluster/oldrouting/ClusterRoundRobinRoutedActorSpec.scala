@@ -30,7 +30,7 @@ object ClusterRoundRobinRoutedActorMultiJvmSpec extends MultiNodeConfig {
     def this() = this(DeployRoutee)
 
     def receive = {
-      case "hit" ⇒ sender ! Reply(routeeType, self)
+      case "hit" ⇒ sender() ! Reply(routeeType, self)
     }
   }
 

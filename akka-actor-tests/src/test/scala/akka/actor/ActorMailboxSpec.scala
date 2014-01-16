@@ -149,7 +149,7 @@ object ActorMailboxSpec {
 
   class QueueReportingActor extends Actor {
     def receive = {
-      case _ ⇒ sender ! context.asInstanceOf[ActorCell].mailbox.messageQueue
+      case _ ⇒ sender() ! context.asInstanceOf[ActorCell].mailbox.messageQueue
     }
   }
 

@@ -197,7 +197,7 @@ router-dispatcher {}
 
     def receive = {
       case w: Work =>
-        router.route(w, sender)
+        router.route(w, sender())
       case Terminated(a) =>
         router = router.removeRoutee(a)
         val r = context.actorOf(Props[Worker])
@@ -375,7 +375,7 @@ router-dispatcher {}
 
   class Echo extends Actor {
     def receive = {
-      case m => sender ! m
+      case m => sender() ! m
     }
   }
 }

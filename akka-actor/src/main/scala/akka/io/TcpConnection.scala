@@ -61,7 +61,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
     case cmd: CloseCommand ⇒
       val info = ConnectionInfo(registration, commander, keepOpenOnPeerClosed = false, useResumeWriting = false)
-      handleClose(info, Some(sender), cmd.event)
+      handleClose(info, Some(sender()), cmd.event)
 
     case ReceiveTimeout ⇒
       // after sending `Register` user should watch this actor to make sure
@@ -76,13 +76,13 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       case SuspendReading    ⇒ suspendReading(info)
       case ResumeReading     ⇒ resumeReading(info)
       case ChannelReadable   ⇒ doRead(info, None)
-      case cmd: CloseCommand ⇒ handleClose(info, Some(sender), cmd.event)
+      case cmd: CloseCommand ⇒ handleClose(info, Some(sender()), cmd.event)
     }
 
   /** the peer sent EOF first, but we may still want to send */
   def peerSentEOF(info: ConnectionInfo): Receive =
     handleWriteMessages(info) orElse {
-      case cmd: CloseCommand ⇒ handleClose(info, Some(sender), cmd.event)
+      case cmd: CloseCommand ⇒ handleClose(info, Some(sender()), cmd.event)
     }
 
   /** connection is closing but a write has to be finished first */
@@ -104,7 +104,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
     case WriteFileFailed(e) ⇒ handleError(info.handler, e) // rethrow exception from dispatcher task
 
-    case Abort              ⇒ handleClose(info, Some(sender), Aborted)
+    case Abort              ⇒ handleClose(info, Some(sender()), Aborted)
   }
 
   /** connection is closed on our side and we're waiting from confirmation from the other side */
@@ -112,7 +112,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     case SuspendReading  ⇒ suspendReading(info)
     case ResumeReading   ⇒ resumeReading(info)
     case ChannelReadable ⇒ doRead(info, closeCommander)
-    case Abort           ⇒ handleClose(info, Some(sender), Aborted)
+    case Abort           ⇒ handleClose(info, Some(sender()), Aborted)
   }
 
   def handleWriteMessages(info: ConnectionInfo): Receive = {
@@ -128,15 +128,15 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     case write: WriteCommand ⇒
       if (writingSuspended) {
         if (TraceLogging) log.debug("Dropping write because writing is suspended")
-        sender ! write.failureMessage
+        sender() ! write.failureMessage
 
       } else if (writePending) {
         if (TraceLogging) log.debug("Dropping write because queue is full")
-        sender ! write.failureMessage
+        sender() ! write.failureMessage
         if (info.useResumeWriting) writingSuspended = true
 
       } else {
-        pendingWrite = PendingWrite(sender, write)
+        pendingWrite = PendingWrite(sender(), write)
         if (writePending) doWrite(info)
       }
 
@@ -153,9 +153,9 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
        */
       writingSuspended = false
       if (writePending) {
-        if (interestedInResume.isEmpty) interestedInResume = Some(sender)
-        else sender ! CommandFailed(ResumeWriting)
-      } else sender ! WritingResumed
+        if (interestedInResume.isEmpty) interestedInResume = Some(sender())
+        else sender() ! CommandFailed(ResumeWriting)
+      } else sender() ! WritingResumed
 
     case UpdatePendingWrite(remaining) ⇒
       pendingWrite = remaining

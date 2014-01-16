@@ -25,15 +25,15 @@ object ActorRefSpec {
 
     def receive = {
       case "complexRequest" ⇒ {
-        replyTo = sender
+        replyTo = sender()
         val worker = context.actorOf(Props[WorkerActor])
         worker ! "work"
       }
       case "complexRequest2" ⇒
         val worker = context.actorOf(Props[WorkerActor])
-        worker ! ReplyTo(sender)
+        worker ! ReplyTo(sender())
       case "workDone"      ⇒ replyTo ! "complexReply"
-      case "simpleRequest" ⇒ sender ! "simpleReply"
+      case "simpleRequest" ⇒ sender() ! "simpleReply"
     }
   }
 
@@ -42,7 +42,7 @@ object ActorRefSpec {
     def receive = {
       case "work" ⇒ {
         work()
-        sender ! "workDone"
+        sender() ! "workDone"
         context.stop(self)
       }
       case ReplyTo(replyTo) ⇒ {
@@ -71,7 +71,7 @@ object ActorRefSpec {
 
   class OuterActor(val inner: ActorRef) extends Actor {
     def receive = {
-      case "self" ⇒ sender ! self
+      case "self" ⇒ sender() ! self
       case x      ⇒ inner forward x
     }
   }
@@ -80,7 +80,7 @@ object ActorRefSpec {
     val fail = new InnerActor
 
     def receive = {
-      case "self" ⇒ sender ! self
+      case "self" ⇒ sender() ! self
       case x      ⇒ inner forward x
     }
   }
@@ -91,8 +91,8 @@ object ActorRefSpec {
 
   class InnerActor extends Actor {
     def receive = {
-      case "innerself" ⇒ sender ! self
-      case other       ⇒ sender ! other
+      case "innerself" ⇒ sender() ! self
+      case other       ⇒ sender() ! other
     }
   }
 
@@ -100,8 +100,8 @@ object ActorRefSpec {
     val fail = new InnerActor
 
     def receive = {
-      case "innerself" ⇒ sender ! self
-      case other       ⇒ sender ! other
+      case "innerself" ⇒ sender() ! self
+      case other       ⇒ sender() ! other
     }
   }
 
@@ -335,7 +335,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
     "support nested actorOfs" in {
       val a = system.actorOf(Props(new Actor {
         val nested = system.actorOf(Props(new Actor { def receive = { case _ ⇒ } }))
-        def receive = { case _ ⇒ sender ! nested }
+        def receive = { case _ ⇒ sender() ! nested }
       }))
 
       val nested = Await.result((a ? "any").mapTo[ActorRef], timeout.duration)
@@ -391,8 +391,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       val timeout = Timeout(20000)
       val ref = system.actorOf(Props(new Actor {
         def receive = {
-          case 5 ⇒ sender ! "five"
-          case 0 ⇒ sender ! "null"
+          case 5 ⇒ sender() ! "five"
+          case 0 ⇒ sender() ! "null"
         }
       }))
 
@@ -438,7 +438,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
             def receive = { case _ ⇒ }
           }), "child")
 
-        def receive = { case name: String ⇒ sender ! context.child(name).isDefined }
+        def receive = { case name: String ⇒ sender() ! context.child(name).isDefined }
       }), "parent")
 
       assert(Await.result((parent ? "child"), remaining) === true)

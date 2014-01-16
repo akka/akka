@@ -432,7 +432,7 @@ Messages can be sent via the :class:`ActorSelection` and the path of the
 does not match any actors the message will be dropped.
 
 To acquire an :class:`ActorRef` for an :class:`ActorSelection` you need to send
-a message to the selection and use the ``sender`` reference of the reply from
+a message to the selection and use the ``sender()`` reference of the reply from
 the actor. There is a built-in ``Identify`` message that all Actors will
 understand and automatically reply to with a ``ActorIdentity`` message
 containing the :class:`ActorRef`. This message is handled specially by the
@@ -517,8 +517,8 @@ message. This gives the best concurrency and scalability characteristics.
 
 If invoked from within an Actor, then the sending actor reference will be
 implicitly passed along with the message and available to the receiving Actor
-in its ``sender: ActorRef`` member field. The target actor can use this
-to reply to the original sender, by using ``sender ! replyMsg``.
+in its ``sender(): ActorRef`` member method. The target actor can use this
+to reply to the original sender, by using ``sender() ! replyMsg``.
 
 If invoked from an instance that is **not** an Actor the sender will be
 :obj:`deadLetters` actor reference by default.
@@ -540,7 +540,7 @@ future to affect the submission of the aggregated :class:`Result` to another
 actor.
 
 Using ``ask`` will send a message to the receiving Actor as with ``tell``, and
-the receiving actor must reply with ``sender ! reply`` in order to complete the
+the receiving actor must reply with ``sender() ! reply`` in order to complete the
 returned :class:`Future` with a value. The ``ask`` operation involves creating
 an internal actor for handling this reply, which needs to have a timeout after
 which it is destroyed in order not to leak resources; see more below.
@@ -613,8 +613,8 @@ Reply to messages
 =================
 
 If you want to have a handle for replying to a message, you can use
-``sender``, which gives you an ActorRef. You can reply by sending to
-that ActorRef with ``sender ! replyMsg``. You can also store the ActorRef
+``sender()``, which gives you an ActorRef. You can reply by sending to
+that ActorRef with ``sender() ! replyMsg``. You can also store the ActorRef
 for replying later, or passing on to other actors. If there is no sender (a
 message was sent without an actor or future context) then the sender
 defaults to a 'dead-letter' actor ref.
@@ -623,7 +623,7 @@ defaults to a 'dead-letter' actor ref.
 
   case request =>
     val result = process(request)
-    sender ! result       // will have dead-letter actor as default
+    sender() ! result       // will have dead-letter actor as default
 
 Receive timeout
 ===============

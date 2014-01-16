@@ -34,7 +34,7 @@ object FaultHandlingDocSpec {
     //#strategy
 
     def receive = {
-      case p: Props => sender ! context.actorOf(p)
+      case p: Props => sender() ! context.actorOf(p)
     }
   }
   //#supervisor
@@ -56,7 +56,7 @@ object FaultHandlingDocSpec {
     //#strategy2
 
     def receive = {
-      case p: Props => sender ! context.actorOf(p)
+      case p: Props => sender() ! context.actorOf(p)
     }
     // override default to kill all children during restart
     override def preRestart(cause: Throwable, msg: Option[Any]) {}
@@ -87,7 +87,7 @@ object FaultHandlingDocSpec {
     def receive = {
       case ex: Exception => throw ex
       case x: Int        => state = x
-      case "get"         => sender ! state
+      case "get"         => sender() ! state
     }
   }
   //#child

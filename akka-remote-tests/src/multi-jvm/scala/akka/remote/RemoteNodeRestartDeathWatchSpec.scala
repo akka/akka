@@ -39,9 +39,9 @@ object RemoteNodeRestartDeathWatchMultiJvmSpec extends MultiNodeConfig {
   class Subject extends Actor {
     def receive = {
       case "shutdown" ⇒
-        sender ! "shutdown-ack"
+        sender() ! "shutdown-ack"
         context.system.shutdown()
-      case msg ⇒ sender ! msg
+      case msg ⇒ sender() ! msg
     }
   }
 

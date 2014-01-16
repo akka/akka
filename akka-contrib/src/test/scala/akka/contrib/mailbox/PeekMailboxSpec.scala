@@ -15,13 +15,13 @@ object PeekMailboxSpec {
     var togo = tries
     def receive = {
       case Check ⇒
-        sender ! Check
+        sender() ! Check
         PeekMailboxExtension.ack()
       case DoubleAck ⇒
         PeekMailboxExtension.ack()
         PeekMailboxExtension.ack()
       case msg ⇒
-        sender ! msg
+        sender() ! msg
         if (togo == 0) throw new RuntimeException("DONTWANNA")
         togo -= 1
         PeekMailboxExtension.ack()

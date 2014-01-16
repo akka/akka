@@ -97,7 +97,7 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
   }
 
   private def handleSocketOptionQuery(msg: SocketOptionQuery): Unit =
-    sender ! (msg match {
+    sender() ! (msg match {
       case Linger               ⇒ socket.getLinger
       case ReconnectIVL         ⇒ socket.getReconnectIVL
       case Backlog              ⇒ socket.getBacklog

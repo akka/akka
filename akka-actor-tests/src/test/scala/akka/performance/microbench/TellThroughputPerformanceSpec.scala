@@ -141,13 +141,13 @@ object TellThroughputPerformanceSpec {
 
   class Destination1 extends Actor {
     def receive = {
-      case Msg ⇒ sender ! Msg
+      case Msg ⇒ sender() ! Msg
     }
   }
 
   class Destination2 extends Actor {
     def receive = {
-      case Msg ⇒ sender ! Msg
+      case Msg ⇒ sender() ! Msg
     }
   }
 

@@ -22,7 +22,7 @@ import akka.testkit._
 object TimerBasedThrottlerSpec {
   class EchoActor extends Actor {
     def receive = {
-      case x ⇒ sender ! x
+      case x ⇒ sender() ! x
     }
   }
 

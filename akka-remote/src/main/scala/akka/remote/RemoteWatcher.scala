@@ -136,16 +136,16 @@ private[akka] class RemoteWatcher(
 
     // test purpose
     case Stats ⇒
-      sender ! Stats(
+      sender() ! Stats(
         watching = watching.size,
         watchingNodes = watchingNodes.size)(watching)
   }
 
   def receiveHeartbeat(): Unit =
-    sender ! selfHeartbeatRspMsg
+    sender() ! selfHeartbeatRspMsg
 
   def receiveHeartbeatRsp(uid: Int): Unit = {
-    val from = sender.path.address
+    val from = sender().path.address
 
     if (failureDetector.isMonitoring(from))
       log.debug("Received heartbeat rsp from [{}]", from)

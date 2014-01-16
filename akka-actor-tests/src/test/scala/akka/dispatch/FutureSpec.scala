@@ -31,9 +31,9 @@ object FutureSpec {
 
   class TestActor extends Actor {
     def receive = {
-      case "Hello" ⇒ sender ! "World"
+      case "Hello" ⇒ sender() ! "World"
       case "Failure" ⇒
-        sender ! Status.Failure(new RuntimeException("Expected exception; to test fault-tolerance"))
+        sender() ! Status.Failure(new RuntimeException("Expected exception; to test fault-tolerance"))
       case "NoReply" ⇒
     }
   }
@@ -41,11 +41,11 @@ object FutureSpec {
   class TestDelayActor(await: TestLatch) extends Actor {
     def receive = {
       case "Hello" ⇒
-        FutureSpec.ready(await, TestLatch.DefaultTimeout); sender ! "World"
+        FutureSpec.ready(await, TestLatch.DefaultTimeout); sender() ! "World"
       case "NoReply" ⇒ FutureSpec.ready(await, TestLatch.DefaultTimeout)
       case "Failure" ⇒
         FutureSpec.ready(await, TestLatch.DefaultTimeout)
-        sender ! Status.Failure(new RuntimeException("Expected exception; to test fault-tolerance"))
+        sender() ! Status.Failure(new RuntimeException("Expected exception; to test fault-tolerance"))
     }
   }
 
@@ -200,7 +200,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       "will return a result" must {
         behave like futureWithResult { test ⇒
           val actor1 = system.actorOf(Props[TestActor])
-          val actor2 = system.actorOf(Props(new Actor { def receive = { case s: String ⇒ sender ! s.toUpperCase } }))
+          val actor2 = system.actorOf(Props(new Actor { def receive = { case s: String ⇒ sender() ! s.toUpperCase } }))
           val future = actor1 ? "Hello" flatMap { case s: String ⇒ actor2 ? s }
           FutureSpec.ready(future, timeout.duration)
           test(future, "WORLD")
@@ -212,7 +212,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         behave like futureWithException[ArithmeticException] { test ⇒
           filterException[ArithmeticException] {
             val actor1 = system.actorOf(Props[TestActor])
-            val actor2 = system.actorOf(Props(new Actor { def receive = { case s: String ⇒ sender ! Status.Failure(new ArithmeticException("/ by zero")) } }))
+            val actor2 = system.actorOf(Props(new Actor { def receive = { case s: String ⇒ sender() ! Status.Failure(new ArithmeticException("/ by zero")) } }))
             val future = actor1 ? "Hello" flatMap { case s: String ⇒ actor2 ? s }
             FutureSpec.ready(future, timeout.duration)
             test(future, "/ by zero")
@@ -225,7 +225,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         behave like futureWithException[NoSuchElementException] { test ⇒
           filterException[NoSuchElementException] {
             val actor1 = system.actorOf(Props[TestActor])
-            val actor2 = system.actorOf(Props(new Actor { def receive = { case s: String ⇒ sender ! s.toUpperCase } }))
+            val actor2 = system.actorOf(Props(new Actor { def receive = { case s: String ⇒ sender() ! s.toUpperCase } }))
             val future = actor1 ? "Hello" flatMap { case i: Int ⇒ actor2 ? i }
             FutureSpec.ready(future, timeout.duration)
             test(future, "World (of class java.lang.String)")
@@ -242,8 +242,8 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         filterException[ClassCastException] {
           val actor = system.actorOf(Props(new Actor {
             def receive = {
-              case s: String ⇒ sender ! s.length
-              case i: Int    ⇒ sender ! (i * 2).toString
+              case s: String ⇒ sender() ! s.length
+              case i: Int    ⇒ sender() ! (i * 2).toString
             }
           }))
 
@@ -272,8 +272,8 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         filterException[NoSuchElementException] {
           val actor = system.actorOf(Props(new Actor {
             def receive = {
-              case Req(s: String) ⇒ sender ! Res(s.length)
-              case Req(i: Int)    ⇒ sender ! Res((i * 2).toString)
+              case Req(s: String) ⇒ sender() ! Res(s.length)
+              case Req(i: Int)    ⇒ sender() ! Res((i * 2).toString)
             }
           }))
 
@@ -474,7 +474,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           var counter = 1
           def receive = {
             case 'GetNext ⇒
-              sender ! counter
+              sender() ! counter
               counter += 2
           }
         }))

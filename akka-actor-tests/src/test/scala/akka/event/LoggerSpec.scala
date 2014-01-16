@@ -78,7 +78,7 @@ object LoggerSpec {
     override def receive: Receive = {
       case InitializeLogger(bus) ⇒
         bus.subscribe(context.self, classOf[SetTarget])
-        sender ! LoggerInitialized
+        sender() ! LoggerInitialized
       case SetTarget(ref, `qualifier`) ⇒
         target = Some(ref)
         ref ! ("OK")

@@ -520,8 +520,8 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       case SendBatch ⇒ sendJobs()
       case RetryTick ⇒ resend()
       case End ⇒
-        done(sender)
-        context.become(ending(sender))
+        done(sender())
+        context.become(ending(sender()))
     }
 
     def ending(replyTo: ActorRef): Receive = {
@@ -571,7 +571,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
    */
   class Worker extends Actor with ActorLogging {
     def receive = {
-      case SimpleJob(id, payload) ⇒ sender ! Ack(id)
+      case SimpleJob(id, payload) ⇒ sender() ! Ack(id)
       case TreeJob(id, payload, idx, levels, width) ⇒
         // create the actors when first TreeJob message is received
         val totalActors = ((width * math.pow(width, levels) - 1) / (width - 1)).toInt
@@ -583,7 +583,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     }
 
     def treeWorker(tree: ActorRef): Receive = {
-      case SimpleJob(id, payload) ⇒ sender ! Ack(id)
+      case SimpleJob(id, payload) ⇒ sender() ! Ack(id)
       case TreeJob(id, payload, idx, _, _) ⇒
         tree forward ((idx, SimpleJob(id, payload)))
     }
@@ -602,7 +602,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
 
   class Leaf extends Actor {
     def receive = {
-      case (_: Int, job: SimpleJob) ⇒ sender ! Ack(job.id)
+      case (_: Int, job: SimpleJob) ⇒ sender() ! Ack(job.id)
     }
   }
 
@@ -630,7 +630,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     def receive = {
       case props: Props     ⇒ context.actorOf(props)
       case e: Exception     ⇒ context.children foreach { _ ! e }
-      case GetChildrenCount ⇒ sender ! ChildrenCount(context.children.size, restartCount)
+      case GetChildrenCount ⇒ sender() ! ChildrenCount(context.children.size, restartCount)
       case Reset ⇒
         require(context.children.isEmpty,
           s"ResetChildrenCount not allowed when children exists, [${context.children.size}]")

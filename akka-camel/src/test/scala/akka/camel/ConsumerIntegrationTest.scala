@@ -41,7 +41,7 @@ class ConsumerIntegrationTest extends WordSpec with Matchers with NonSharedCamel
       start(new Consumer {
         def endpointUri = "direct:a1"
         def receive = {
-          case m: CamelMessage ⇒ sender ! "received " + m.bodyAs[String]
+          case m: CamelMessage ⇒ sender() ! "received " + m.bodyAs[String]
         }
       }, name = "direct-a1")
       camel.sendTo("direct:a1", msg = "some message") should be("received some message")
@@ -54,7 +54,7 @@ class ConsumerIntegrationTest extends WordSpec with Matchers with NonSharedCamel
       val ref = start(new Consumer {
         override def replyTimeout = SHORT_TIMEOUT
         def endpointUri = "direct:a3"
-        def receive = { case _ ⇒ { Thread.sleep(LONG_WAIT.toMillis); sender ! "done" } }
+        def receive = { case _ ⇒ { Thread.sleep(LONG_WAIT.toMillis); sender() ! "done" } }
       }, name = "ignore-this-deadletter-timeout-consumer-reply")
 
       intercept[CamelExecutionException] {
@@ -71,7 +71,7 @@ class ConsumerIntegrationTest extends WordSpec with Matchers with NonSharedCamel
 
         def receive = {
           case "throw"         ⇒ throw new TestException("")
-          case m: CamelMessage ⇒ sender ! "received " + m.bodyAs[String]
+          case m: CamelMessage ⇒ sender() ! "received " + m.bodyAs[String]
         }
 
         override def postRestart(reason: Throwable) {
@@ -138,7 +138,7 @@ class ConsumerIntegrationTest extends WordSpec with Matchers with NonSharedCamel
     "Consumer supports manual Ack" in {
       val ref = start(new ManualAckConsumer() {
         def endpointUri = "direct:manual-ack"
-        def receive = { case _ ⇒ sender ! Ack }
+        def receive = { case _ ⇒ sender() ! Ack }
       }, name = "direct-manual-ack-1")
       camel.template.asyncSendBody("direct:manual-ack", "some message").get(defaultTimeoutDuration.toSeconds, TimeUnit.SECONDS) should be(null) //should not timeout
       stop(ref)
@@ -148,7 +148,7 @@ class ConsumerIntegrationTest extends WordSpec with Matchers with NonSharedCamel
       val someException = new Exception("e1")
       val ref = start(new ManualAckConsumer() {
         def endpointUri = "direct:manual-ack"
-        def receive = { case _ ⇒ sender ! Failure(someException) }
+        def receive = { case _ ⇒ sender() ! Failure(someException) }
       }, name = "direct-manual-ack-2")
 
       intercept[ExecutionException] {
@@ -186,7 +186,7 @@ class ErrorThrowingConsumer(override val endpointUri: String) extends Consumer {
   }
   override def preRestart(reason: Throwable, message: Option[Any]) {
     super.preRestart(reason, message)
-    sender ! Failure(reason)
+    sender() ! Failure(reason)
   }
 }
 
@@ -201,7 +201,7 @@ class ErrorRespondingConsumer(override val endpointUri: String) extends Consumer
 
   final override def preRestart(reason: Throwable, message: Option[Any]) {
     super.preRestart(reason, message)
-    sender ! Failure(reason)
+    sender() ! Failure(reason)
   }
 }
 
@@ -210,14 +210,14 @@ class FailingOnceConsumer(override val endpointUri: String) extends Consumer {
   def receive = {
     case msg: CamelMessage ⇒
       if (msg.headerAs[Boolean]("CamelRedelivered").getOrElse(false))
-        sender ! ("accepted: %s" format msg.body)
+        sender() ! ("accepted: %s" format msg.body)
       else
         throw new TestException("rejected: %s" format msg.body)
   }
 
   final override def preRestart(reason: Throwable, message: Option[Any]) {
     super.preRestart(reason, message)
-    sender ! Failure(reason)
+    sender() ! Failure(reason)
   }
 }
 

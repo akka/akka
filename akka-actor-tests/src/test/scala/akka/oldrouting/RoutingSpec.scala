@@ -47,7 +47,7 @@ object RoutingSpec {
 
   class Echo extends Actor {
     def receive = {
-      case _ ⇒ sender ! self
+      case _ ⇒ sender() ! self
     }
   }
 
@@ -224,8 +224,8 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         def receive = {
           case "start" ⇒
             context.actorOf(Props(new Actor {
-              def receive = { case x ⇒ sender ! x }
-            }).withRouter(RoundRobinRouter(2))) ? "hello" pipeTo sender
+              def receive = { case x ⇒ sender() ! x }
+            }).withRouter(RoundRobinRouter(2))) ? "hello" pipeTo sender()
         }
       })) ! "start"
       expectMsg("hello")
@@ -470,7 +470,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
           case "end" ⇒ doneLatch.countDown()
           case msg: Int ⇒
             counter1.addAndGet(msg)
-            sender ! "ack"
+            sender() ! "ack"
         }
       }))
 
@@ -552,7 +552,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         case _id: Int if (_id == id)        ⇒
         case x ⇒ {
           Thread sleep 100 * id
-          sender ! id
+          sender() ! id
         }
       }
 

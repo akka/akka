@@ -56,7 +56,7 @@ class TestActorRef[T <: Actor](
     new ActorCell(system, ref, props, dispatcher, supervisor) {
       override def autoReceiveMessage(msg: Envelope) {
         msg.message match {
-          case InternalGetActor ⇒ sender ! actor
+          case InternalGetActor ⇒ sender() ! actor
           case _                ⇒ super.autoReceiveMessage(msg)
         }
       }

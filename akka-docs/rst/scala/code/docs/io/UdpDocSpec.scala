@@ -22,9 +22,9 @@ object ScalaUdpDocSpec {
 
     def receive = {
       case Udp.SimpleSenderReady =>
-        context.become(ready(sender))
+        context.become(ready(sender()))
         //#sender
-        sender ! Udp.Send(ByteString("hello"), remote)
+        sender() ! Udp.Send(ByteString("hello"), remote)
       //#sender
     }
 
@@ -48,7 +48,7 @@ object ScalaUdpDocSpec {
         //#listener
         nextActor forward local
         //#listener
-        context.become(ready(sender))
+        context.become(ready(sender()))
     }
 
     def ready(socket: ActorRef): Receive = {
@@ -72,9 +72,9 @@ object ScalaUdpDocSpec {
 
     def receive = {
       case UdpConnected.Connected =>
-        context.become(ready(sender))
+        context.become(ready(sender()))
         //#connected
-        sender ! UdpConnected.Send(ByteString("hello"))
+        sender() ! UdpConnected.Send(ByteString("hello"))
       //#connected
     }
 
