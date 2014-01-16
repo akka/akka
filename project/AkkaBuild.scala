@@ -52,12 +52,12 @@ object AkkaBuild extends Build {
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
-      unidocExclude := Seq(samples.id, channelsTests.id, remoteTests.id),
+      unidocExclude := Seq(samples.id, remoteTests.id),
       sources in JavaDoc <<= junidocSources,
       javacOptions in JavaDoc := Seq(),
       artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar"),
       packageDoc in Compile <<= packageDoc in JavaDoc,
-      Dist.distExclude := Seq(actorTests.id, docs.id, samples.id, osgi.id, osgiAries.id, channelsTests.id),
+      Dist.distExclude := Seq(actorTests.id, docs.id, samples.id, osgi.id, osgiAries.id),
       // generate online version of docs
       sphinxInputs in Sphinx <<= sphinxInputs in Sphinx in LocalProject(docs.id) map { inputs => inputs.copy(tags = inputs.tags :+ "online") },
       // don't regenerate the pdf, just reuse the akka-docs version
@@ -74,8 +74,7 @@ object AkkaBuild extends Build {
       
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
-      persistence, mailboxes, zeroMQ, kernel, osgi, osgiAries, docs, contrib, samples, channels, channelsTests,
-      multiNodeTestkit)
+      persistence, mailboxes, zeroMQ, kernel, osgi, osgiAries, docs, contrib, samples, multiNodeTestkit)
   )
 
   lazy val akkaScalaNightly = Project(
@@ -83,8 +82,7 @@ object AkkaBuild extends Build {
     base = file("akka-scala-nightly"),
     // remove dependencies that we have to build ourselves (Scala STM, ZeroMQ Scala Bindings)
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j,
-      persistence, mailboxes, kernel, osgi, osgiAries, contrib, samples, channels, channelsTests,
-      multiNodeTestkit)
+      persistence, mailboxes, kernel, osgi, osgiAries, contrib, samples, multiNodeTestkit)
   )
 
   // this detached pseudo-project is used for running the tests against a different Scala version than the one used for compilation
@@ -602,7 +600,7 @@ object AkkaBuild extends Build {
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
-    dependencies = Seq(actor, testkit % "test->test", channels,
+    dependencies = Seq(actor, testkit % "test->test",
       remote % "compile;test->test", cluster, slf4j, agent, zeroMQ, camel, osgi, osgiAries,
       persistence % "compile;test->test"),
     settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
@@ -652,32 +650,12 @@ object AkkaBuild extends Build {
     )
   ) configs (MultiJvm)
 
-  lazy val channels = Project(
-    id = "akka-channels-experimental",
-    base = file("akka-channels"),
-    dependencies = Seq(actor),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ Seq(
-      libraryDependencies +=("org.scala-lang" % "scala-reflect" %  scalaVersion.value),
-      reportBinaryIssues := () // disable bin comp check
-    )
-  )
-
   // // this issue will be fixed in M8, for now we need to exclude M6, M7 modules used to compile the compiler
   def excludeOldModules(m: ModuleID) = List("M6", "M7").foldLeft(m) { (mID, mStone) =>
     val version = s"2.11.0-$mStone"
     mID.exclude("org.scala-lang.modules", s"scala-parser-combinators_$version").exclude("org.scala-lang.modules", s"scala-xml_$version")
   }
 
-  lazy val channelsTests = Project(
-    id = "akka-channels-tests",
-    base = file("akka-channels-tests"),
-    dependencies = Seq(channels, testkit % "compile;test->test"),
-    settings = defaultSettings ++ formatSettings ++ experimentalSettings ++ Seq(
-      publishArtifact in Compile := false,
-      libraryDependencies += excludeOldModules("org.scala-lang" % "scala-compiler" % scalaVersion.value),
-      reportBinaryIssues := () // disable bin comp check
-    )
-  )
 
   // Settings
 
