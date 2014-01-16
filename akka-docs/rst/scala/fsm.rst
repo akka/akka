@@ -330,9 +330,9 @@ and will receive :class:`Transition(actorRef, oldState, newState)` messages
 whenever a new state is reached. External monitors may be unregistered by
 sending :class:`UnsubscribeTransitionCallBack(actorRef)` to the FSM actor.
 
-Registering a not-running listener generates a warning and fails gracefully.
-Stopping a listener without unregistering will remove the listener from the
-subscription list upon the next transition.
+Stopping a listener without unregistering will not remove the listener from the
+subscription list; use :class:`UnsubscribeTransitionCallback` before stopping
+the listener.
 
 Transforming State
 ------------------
