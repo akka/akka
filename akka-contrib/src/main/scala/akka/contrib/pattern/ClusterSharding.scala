@@ -652,16 +652,18 @@ class ShardRegion(
   def receive = {
     case Terminated(ref)                     ⇒ receiveTerminated(ref)
     case evt: ClusterDomainEvent             ⇒ receiveClusterEvent(evt)
+    case state: CurrentClusterState          ⇒ receiveClusterState(state)
     case msg: CoordinatorMessage             ⇒ receiveCoordinatorMessage(msg)
     case cmd: ShardRegionCommand             ⇒ receiveCommand(cmd)
     case msg if idExtractor.isDefinedAt(msg) ⇒ deliverMessage(msg, sender)
   }
 
-  def receiveClusterEvent(evt: ClusterDomainEvent): Unit = evt match {
-    case state: CurrentClusterState ⇒
-      changeMembers(immutable.SortedSet.empty(ageOrdering) ++ state.members.filter(m ⇒
-        m.status == MemberStatus.Up && matchingRole(m)))
+  def receiveClusterState(state: CurrentClusterState): Unit = {
+    changeMembers(immutable.SortedSet.empty(ageOrdering) ++ state.members.filter(m ⇒
+      m.status == MemberStatus.Up && matchingRole(m)))
+  }
 
+  def receiveClusterEvent(evt: ClusterDomainEvent): Unit = evt match {
     case MemberUp(m) ⇒
       if (matchingRole(m))
         changeMembers(membersByAge + m)

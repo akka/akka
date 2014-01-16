@@ -17,9 +17,12 @@ import akka.actor.Address;
 import akka.actor.Cancellable;
 import akka.actor.UntypedActor;
 import akka.cluster.Cluster;
+import akka.cluster.ClusterEvent.UnreachableMember;
+import akka.cluster.ClusterEvent.ReachableMember;
 import akka.cluster.ClusterEvent.CurrentClusterState;
 import akka.cluster.ClusterEvent.MemberEvent;
 import akka.cluster.ClusterEvent.MemberUp;
+import akka.cluster.ClusterEvent.ReachabilityEvent;
 import akka.cluster.Member;
 import akka.cluster.MemberStatus;
 
@@ -44,7 +47,7 @@ public class StatsSampleClient extends UntypedActor {
   //subscribe to cluster changes, MemberEvent
   @Override
   public void preStart() {
-    cluster.subscribe(getSelf(), MemberEvent.class);
+    cluster.subscribe(getSelf(), MemberEvent.class, ReachabilityEvent.class);
   }
 
   //re-subscribe when restart
@@ -90,6 +93,15 @@ public class StatsSampleClient extends UntypedActor {
     } else if (message instanceof MemberEvent) {
       MemberEvent other = (MemberEvent) message;
       nodes.remove(other.member().address());
+
+    } else if (message instanceof UnreachableMember) {
+      UnreachableMember unreachable = (UnreachableMember) message;
+      nodes.remove(unreachable.member().address());
+
+    } else if (message instanceof ReachableMember) {
+      ReachableMember reachable = (ReachableMember) message;
+      if (reachable.member().hasRole("compute"))
+        nodes.add(reachable.member().address());
 
     } else {
       unhandled(message);
