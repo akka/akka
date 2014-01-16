@@ -24,6 +24,7 @@ import java.lang.ref.WeakReference
 import akka.event.Logging
 import java.util.concurrent.atomic.AtomicInteger
 import java.lang.System.identityHashCode
+import akka.util.Helpers.ConfigOps
 
 object SupervisorHierarchySpec {
   class FireWorkerException(msg: String) extends Exception(msg)
@@ -82,9 +83,9 @@ object SupervisorHierarchySpec {
       new Dispatcher(this,
         config.getString("id"),
         config.getInt("throughput"),
-        Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+        config.getNanosDuration("throughput-deadline-time"),
         configureExecutor(),
-        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) {
+        config.getMillisDuration("shutdown-timeout")) {
 
         override def suspend(cell: ActorCell): Unit = {
           cell.actor match {

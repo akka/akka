@@ -31,12 +31,13 @@ class AkkaProtocolException(msg: String, cause: Throwable) extends AkkaException
 
 private[remote] class AkkaProtocolSettings(config: Config) {
 
+  import akka.util.Helpers.ConfigOps
   import config._
 
   val TransportFailureDetectorConfig: Config = getConfig("akka.remote.transport-failure-detector")
   val TransportFailureDetectorImplementationClass: String = TransportFailureDetectorConfig.getString("implementation-class")
   val TransportHeartBeatInterval: FiniteDuration = {
-    Duration(TransportFailureDetectorConfig.getMilliseconds("heartbeat-interval"), MILLISECONDS)
+    TransportFailureDetectorConfig.getMillisDuration("heartbeat-interval")
   } requiring (_ > Duration.Zero, "transport-failure-detector.heartbeat-interval must be > 0")
 
   val RequireCookie: Boolean = getBoolean("akka.remote.require-cookie")

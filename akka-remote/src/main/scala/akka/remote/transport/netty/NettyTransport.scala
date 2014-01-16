@@ -71,6 +71,7 @@ class NettyTransportException(msg: String, cause: Throwable) extends RuntimeExce
 
 class NettyTransportSettings(config: Config) {
 
+  import akka.util.Helpers.ConfigOps
   import config._
 
   val TransportMode: Mode = getString("transport-protocol") match {
@@ -92,7 +93,7 @@ class NettyTransportSettings(config: Config) {
     case other      ⇒ Some(other)
   }
 
-  val ConnectionTimeout: FiniteDuration = Duration(getMilliseconds("connection-timeout"), MILLISECONDS)
+  val ConnectionTimeout: FiniteDuration = config.getMillisDuration("connection-timeout")
 
   val WriteBufferHighWaterMark: Option[Int] = optionSize("write-buffer-high-water-mark")
 

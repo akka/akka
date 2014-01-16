@@ -21,6 +21,7 @@ import akka.dispatch._
 import akka.event.Logging.Error
 import akka.pattern.ask
 import akka.testkit._
+import akka.util.Helpers.ConfigOps
 import akka.util.Switch
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
@@ -528,13 +529,15 @@ object DispatcherModelSpec {
   class MessageDispatcherInterceptorConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
     extends MessageDispatcherConfigurator(config, prerequisites) {
 
+    import akka.util.Helpers.ConfigOps
+
     private val instance: MessageDispatcher =
       new Dispatcher(this,
         config.getString("id"),
         config.getInt("throughput"),
-        Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+        config.getNanosDuration("throughput-deadline-time"),
         configureExecutor(),
-        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor
+        config.getMillisDuration("shutdown-timeout")) with MessageDispatcherInterceptor
 
     override def dispatcher(): MessageDispatcher = instance
   }
@@ -600,14 +603,16 @@ object BalancingDispatcherModelSpec {
   class BalancingMessageDispatcherInterceptorConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
     extends BalancingDispatcherConfigurator(config, prerequisites) {
 
+    import akka.util.Helpers.ConfigOps
+
     override protected def create(mailboxType: MailboxType): BalancingDispatcher =
       new BalancingDispatcher(this,
         config.getString("id"),
         config.getInt("throughput"),
-        Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+        config.getNanosDuration("throughput-deadline-time"),
         mailboxType,
         configureExecutor(),
-        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS),
+        config.getMillisDuration("shutdown-timeout"),
         config.getBoolean("attempt-teamwork")) with MessageDispatcherInterceptor
   }
 }

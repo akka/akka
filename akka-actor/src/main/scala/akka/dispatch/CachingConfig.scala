@@ -7,6 +7,7 @@ package akka.dispatch
 import com.typesafe.config._
 import java.util.concurrent.ConcurrentHashMap
 import scala.util.{ Failure, Success, Try }
+import java.util.concurrent.TimeUnit
 
 /**
  * INTERNAL API
@@ -167,5 +168,15 @@ private[akka] class CachingConfig(_config: Config) extends Config {
   def atKey(key: String) = new CachingConfig(config.atKey(key))
 
   def withValue(path: String, value: ConfigValue) = new CachingConfig(config.withValue(path, value))
+
+  def getDuration(path: String, unit: TimeUnit) = config.getDuration(path, unit)
+
+  def getDurationList(path: String, unit: TimeUnit) = config.getDurationList(path, unit)
+
+  def isResolved() = config.isResolved()
+
+  def resolveWith(source: Config, options: ConfigResolveOptions) = config.resolveWith(source, options)
+
+  def resolveWith(source: Config) = config.resolveWith(source)
 }
 

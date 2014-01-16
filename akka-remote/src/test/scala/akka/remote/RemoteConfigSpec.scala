@@ -9,6 +9,7 @@ import akka.actor.ExtendedActorSystem
 import scala.concurrent.duration._
 import akka.remote.transport.AkkaProtocolSettings
 import akka.util.{ Timeout, Helpers }
+import akka.util.Helpers.ConfigOps
 import akka.remote.transport.netty.{ NettyTransportSettings, SSLSettings }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -57,8 +58,8 @@ class RemoteConfigSpec extends AkkaSpec(
       WatchUnreachableReaperInterval should be(1 second)
       WatchFailureDetectorConfig.getDouble("threshold") should be(10.0 +- 0.0001)
       WatchFailureDetectorConfig.getInt("max-sample-size") should be(200)
-      Duration(WatchFailureDetectorConfig.getMilliseconds("acceptable-heartbeat-pause"), MILLISECONDS) should be(4 seconds)
-      Duration(WatchFailureDetectorConfig.getMilliseconds("min-std-deviation"), MILLISECONDS) should be(100 millis)
+      WatchFailureDetectorConfig.getMillisDuration("acceptable-heartbeat-pause") should be(4 seconds)
+      WatchFailureDetectorConfig.getMillisDuration("min-std-deviation") should be(100 millis)
 
       remoteSettings.config.getString("akka.remote.log-frame-size-exceeding") should be("off")
     }
@@ -74,8 +75,8 @@ class RemoteConfigSpec extends AkkaSpec(
       TransportHeartBeatInterval should equal(1.seconds)
       TransportFailureDetectorConfig.getDouble("threshold") should be(7.0 +- 0.0001)
       TransportFailureDetectorConfig.getInt("max-sample-size") should be(100)
-      Duration(TransportFailureDetectorConfig.getMilliseconds("acceptable-heartbeat-pause"), MILLISECONDS) should be(3 seconds)
-      Duration(TransportFailureDetectorConfig.getMilliseconds("min-std-deviation"), MILLISECONDS) should be(100 millis)
+      TransportFailureDetectorConfig.getMillisDuration("acceptable-heartbeat-pause") should be(3 seconds)
+      TransportFailureDetectorConfig.getMillisDuration("min-std-deviation") should be(100 millis)
 
     }
 
