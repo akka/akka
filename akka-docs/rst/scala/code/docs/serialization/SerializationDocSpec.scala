@@ -53,38 +53,38 @@ package docs.serialization {
 
   class SerializationDocSpec extends AkkaSpec {
     "demonstrate configuration of serialize messages" in {
-      //#serialize-messages-config
       val config = ConfigFactory.parseString("""
+      #//#serialize-messages-config
       akka {
         actor {
           serialize-messages = on
         }
       }
-    """)
-      //#serialize-messages-config
+      #//#serialize-messages-config
+      """)
       val a = ActorSystem("system", config)
       a.settings.SerializeAllMessages should be(true)
       shutdown(a)
     }
 
     "demonstrate configuration of serialize creators" in {
-      //#serialize-creators-config
       val config = ConfigFactory.parseString("""
+      #//#serialize-creators-config
       akka {
         actor {
           serialize-creators = on
         }
       }
-    """)
-      //#serialize-creators-config
+      #//#serialize-creators-config
+      """)
       val a = ActorSystem("system", config)
       a.settings.SerializeAllCreators should be(true)
       shutdown(a)
     }
 
     "demonstrate configuration of serializers" in {
-      //#serialize-serializers-config
       val config = ConfigFactory.parseString("""
+      #//#serialize-serializers-config
       akka {
         actor {
           serializers {
@@ -94,15 +94,15 @@ package docs.serialization {
           }
         }
       }
-    """)
-      //#serialize-serializers-config
+      #//#serialize-serializers-config
+      """)
       val a = ActorSystem("system", config)
       shutdown(a)
     }
 
     "demonstrate configuration of serialization-bindings" in {
-      //#serialization-bindings-config
       val config = ConfigFactory.parseString("""
+      #//#serialization-bindings-config
       akka {
         actor {
           serializers {
@@ -120,8 +120,8 @@ package docs.serialization {
           }
         }
       }
-    """)
-      //#serialization-bindings-config
+      #//#serialization-bindings-config
+      """)
       val a = ActorSystem("system", config)
       SerializationExtension(a).serializerFor(classOf[String]).getClass should equal(classOf[JavaSerializer])
       SerializationExtension(a).serializerFor(classOf[Customer]).getClass should equal(classOf[JavaSerializer])
