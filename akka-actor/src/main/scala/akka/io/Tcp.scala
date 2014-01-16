@@ -19,12 +19,6 @@ import java.lang.{ Iterable ⇒ JIterable }
 /**
  * TCP Extension for Akka’s IO layer.
  *
- * <b>All contents of the `akka.io` package is marked “experimental”.</b>
- *
- * This marker signifies that APIs may still change in response to user feedback
- * through-out the 2.2 release cycle. The implementation itself is considered
- * stable and ready for production use.
- *
  * For a full description of the design and philosophy behind this IO
  * implementation please refer to <a href="http://doc.akka.io/">the Akka online documentation</a>.
  *

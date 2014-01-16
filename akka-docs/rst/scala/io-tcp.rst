@@ -3,14 +3,6 @@
 Using TCP
 =========
 
-.. warning::
-
-  The IO implementation is marked as **“experimental”** as of its introduction
-  in Akka 2.2.0. We will continue to improve this API based on our users’
-  feedback, which implies that while we try to keep incompatible changes to a
-  minimum the binary compatibility guarantee for maintenance releases does not
-  apply to the contents of the `akka.io` package.
-
 The code snippets through-out this section assume the following imports:
 
 .. includecode:: code/docs/io/IODocSpec.scala#imports
@@ -279,60 +271,3 @@ behavior to await the :class:`WritingResumed` event and start over.
 The helper functions are very similar to the ACK-based case:
 
 .. includecode:: code/docs/io/EchoServer.scala#helpers
-
-Usage Example: TcpPipelineHandler and SSL
------------------------------------------
-
-This example shows the different parts described above working together:
-
-.. includecode:: ../../../akka-remote/src/test/scala/akka/io/ssl/SslTlsSupportSpec.scala#server
-
-The actor above binds to a local port and registers itself as the handler for
-new connections.  When a new connection comes in it will create a
-:class:`javax.net.ssl.SSLEngine` (details not shown here since they vary widely
-for different setups, please refer to the JDK documentation) and wrap that in
-an :class:`SslTlsSupport` pipeline stage (which is included in ``akka-actor``).
-
-This sample demonstrates a few more things: below the SSL pipeline stage we
-have inserted a backpressure buffer which will generate a
-:class:`HighWatermarkReached` event to tell the upper stages to suspend writing
-and a :class:`LowWatermarkReached` when they can resume writing. The
-implementation is very similar to the NACK-based backpressure approach
-presented above, please refer to the API docs for details on its usage. Above
-the SSL stage comes an adapter which extracts only the payload data from the
-TCP commands and events, i.e. it speaks :class:`ByteString` above. The
-resulting byte streams are broken into frames by a :class:`DelimiterFraming`
-stage which chops them up on newline characters.  The top-most stage then
-converts between :class:`String` and UTF-8 encoded :class:`ByteString`.
-
-As a result the pipeline will accept simple :class:`String` commands, encode
-them using UTF-8, delimit them with newlines (which are expected to be already
-present in the sending direction), transform them into TCP commands and events,
-encrypt them and send them off to the connection actor while buffering writes.
-
-This pipeline is driven by a :class:`TcpPipelineHandler` actor which is also
-included in ``akka-actor``. In order to capture the generic command and event
-types consumed and emitted by that actor we need to create a wrapper—the nested
-:class:`Init` class—which also provides the pipeline context needed by the
-supplied pipeline; in this case we use the :meth:`withLogger` convenience
-method which supplies a context that implements :class:`HasLogger` and
-:class:`HasActorContext` and should be sufficient for typical pipelines. With
-those things bundled up all that remains is creating a
-:class:`TcpPipelineHandler` and registering that one as the recipient of
-inbound traffic from the TCP connection. The pipeline handler is instructed to 
-send the decrypted payload data to the following actor:
-
-.. includecode:: ../../../akka-remote/src/test/scala/akka/io/ssl/SslTlsSupportSpec.scala#handler
-
-This actor computes a response and replies by sending back a :class:`String`.
-It should be noted that communication with the :class:`TcpPipelineHandler`
-wraps commands and events in the inner types of the ``init`` object in order to
-keep things well separated.
-
-.. warning::
-
-  The SslTlsSupport currently does not support using a ``Tcp.WriteCommand``
-  other than ``Tcp.Write``, like for example ``Tcp.WriteFile``. It also doesn't
-  support messages that are larger than the size of the send buffer on the socket.
-  Trying to send such a message will result in a ``CommandFailed``. If you need
-  to send large messages over SSL, then they have to be sent in chunks.

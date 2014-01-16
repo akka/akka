@@ -3,14 +3,6 @@
 Using TCP
 =========
 
-.. warning::
-
-  The IO implementation is marked as **“experimental”** as of its introduction
-  in Akka 2.2.0. We will continue to improve this API based on our users’
-  feedback, which implies that while we try to keep incompatible changes to a
-  minimum the binary compatibility guarantee for maintenance releases does not
-  apply to the contents of the `akka.io` package.
-
 The code snippets through-out this section assume the following imports:
 
 .. includecode:: code/docs/io/japi/IODocTest.java#imports
@@ -278,79 +270,3 @@ behavior to await the :class:`WritingResumed` event and start over.
 The helper functions are very similar to the ACK-based case:
 
 .. includecode:: code/docs/io/japi/EchoHandler.java#helpers
-
-Usage Example: TcpPipelineHandler and SSL
------------------------------------------
-
-This example shows the different parts described above working together. Let us
-first look at the SSL server:
-
-.. includecode:: code/docs/io/japi/SslDocTest.java#server
-
-Please refer to `the source code`_ to see all imports.
-
-.. _the source code: @github@/akka-docs/rst/java/code/docs/io/japi/SslDocTest.java
-
-The actor above binds to a local port and registers itself as the handler for
-new connections.  When a new connection comes in it will create a
-:class:`javax.net.ssl.SSLEngine` (details not shown here since they vary widely
-for different setups, please refer to the JDK documentation) and wrap that in
-an :class:`SslTlsSupport` pipeline stage (which is included in ``akka-actor``).
-
-This sample demonstrates a few more things: below the SSL pipeline stage we
-have inserted a backpressure buffer which will generate a
-:class:`HighWatermarkReached` event to tell the upper stages to suspend writing
-(generated at 10000 buffered bytes) and a :class:`LowWatermarkReached` when
-they can resume writing (when buffer empties below 1000 bytes); the buffer has
-a maximum capacity of 1MB. The implementation is very similar to the NACK-based
-backpressure approach presented above, please refer to the API documentation
-for details about its usage. Above the SSL stage comes an adapter which
-extracts only the payload data from the TCP commands and events, i.e. it speaks
-:class:`ByteString` above. The resulting byte streams are broken into frames by
-a :class:`DelimiterFraming` stage which chops them up on newline characters.
-The top-most stage then converts between :class:`String` and UTF-8 encoded
-:class:`ByteString`.
-
-As a result the pipeline will accept simple :class:`String` commands, encode
-them using UTF-8, delimit them with newlines (which are expected to be already
-present in the sending direction), transform them into TCP commands and events,
-encrypt them and send them off to the connection actor while buffering writes.
-
-This pipeline is driven by a :class:`TcpPipelineHandler` actor which is also
-included in ``akka-actor``. In order to capture the generic command and event
-types consumed and emitted by that actor we need to create a wrapper—the nested
-:class:`Init` class—which also provides the pipeline context needed by the
-supplied pipeline; in this case we use the :meth:`withLogger` convenience
-method which supplies a context that implements :class:`HasLogger` and
-:class:`HasActorContext` and should be sufficient for typical pipelines. With
-those things bundled up all that remains is creating a
-:class:`TcpPipelineHandler` and registering that one as the recipient of
-inbound traffic from the TCP connection.
-
-Since we instructed that handler actor to send any events which are emitted by
-the SSL pipeline to ourselves, we can then just wait for the reception of the
-decrypted payload messages, compute a response—just ``"world\n"`` in this
-case—and reply by sending back an ``Init.Command``. It should be noted that
-communication with the handler wraps commands and events in the inner types of
-the ``init`` object in order to keep things well separated. To ease handling of
-such path-dependent types there exist two helper methods, namely
-:class:`Init.command` for creating a command and :class:`Init.event` for
-unwrapping an event.
-
-Looking at the client side we see that not much needs to be changed:
-
-.. includecode:: code/docs/io/japi/SslDocTest.java#client
-
-Once the connection is established we again create a
-:class:`TcpPipelineHandler` wrapping an :class:`SslTlsSupport` (in client mode)
-and register that as the recipient of inbound traffic and ourselves as
-recipient for the decrypted payload data. The we send a greeting to the server
-and forward any replies to some ``listener`` actor.
-
-.. warning::
-
-  The SslTlsSupport currently does not support using a ``Tcp.WriteCommand``
-  other than ``Tcp.Write``, like for example ``Tcp.WriteFile``. It also doesn't
-  support messages that are larger than the size of the send buffer on the socket.
-  Trying to send such a message will result in a ``CommandFailed``. If you need
-  to send large messages over SSL, then they have to be sent in chunks.
