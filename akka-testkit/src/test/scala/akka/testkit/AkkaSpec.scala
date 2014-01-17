@@ -65,6 +65,8 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   val log: LoggingAdapter = Logging(system, this.getClass)
 
+  override val invokeBeforeAllAndAfterAllEvenIfNoTestsAreExpected = true
+
   final override def beforeAll {
     startCoroner
     atStartup()
