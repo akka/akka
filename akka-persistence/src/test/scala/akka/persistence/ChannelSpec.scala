@@ -12,8 +12,6 @@ import com.typesafe.config._
 import akka.actor._
 import akka.testkit._
 
-import akka.persistence.JournalProtocol.Confirm
-
 object ChannelSpec {
   class TestDestination extends Actor {
     def receive = {
@@ -36,6 +34,12 @@ object ChannelSpec {
         cp.confirm()
     }
   }
+
+  class TestListener(probe: ActorRef) extends Actor {
+    def receive = {
+      case RedeliverFailure(messages) ⇒ messages.foreach(probe ! _.payload)
+    }
+  }
 }
 
 abstract class ChannelSpec(config: Config) extends AkkaSpec(config) with PersistenceSpec with ImplicitSender {
@@ -56,52 +60,35 @@ abstract class ChannelSpec(config: Config) extends AkkaSpec(config) with Persist
     super.afterEach()
   }
 
-  def redeliverChannelSettings: ChannelSettings =
-    ChannelSettings(redeliverMax = 2, redeliverInterval = 100 milliseconds)
+  private def redeliverChannelSettings(listener: Option[ActorRef]): ChannelSettings =
+    ChannelSettings(redeliverMax = 2, redeliverInterval = 100 milliseconds, redeliverFailureListener = listener)
 
   def createDefaultTestChannel(): ActorRef =
-    system.actorOf(Channel.props(name, ChannelSettings()))
+    system.actorOf(Channel.props(s"${name}-default", ChannelSettings()))
 
   def createRedeliverTestChannel(): ActorRef =
-    system.actorOf(Channel.props(name, redeliverChannelSettings))
+    system.actorOf(Channel.props(s"${name}-redeliver", redeliverChannelSettings(None)))
+
+  def createRedeliverTestChannel(listener: Option[ActorRef]): ActorRef =
+    system.actorOf(Channel.props(s"${name}-redeliver-listener", redeliverChannelSettings(listener)))
 
   def subscribeToConfirmation(probe: TestProbe): Unit =
-    system.eventStream.subscribe(probe.ref, classOf[Confirm])
+    system.eventStream.subscribe(probe.ref, classOf[Delivered])
 
   def awaitConfirmation(probe: TestProbe): Unit =
-    probe.expectMsgType[Confirm]
+    probe.expectMsgType[Delivered]
 
   def actorRefFor(topLevelName: String) =
     extension.system.provider.resolveActorRef(RootActorPath(Address("akka", system.name)) / "user" / topLevelName)
 
   "A channel" must {
-    "must resolve sender references and preserve message order" in {
-      val destination = system.actorOf(Props[TestDestination])
-
-      val empty = actorRefFor("testSender") // will be an EmptyLocalActorRef
-      val sender = system.actorOf(Props(classOf[TestReceiver], testActor), "testSender")
-
-      // replayed message (resolved = false) and invalid sender reference
-      defaultTestChannel tell (Deliver(PersistentRepr("a", resolved = false), destination, Resolve.Sender), empty)
-
-      // new messages (resolved = true) and valid sender references
-      defaultTestChannel tell (Deliver(Persistent("b"), destination), sender)
-      defaultTestChannel tell (Deliver(Persistent("c"), destination), sender)
-
-      expectMsg("a")
-      expectMsg("b")
-      expectMsg("c")
-    }
     "must resolve destination references and preserve message order" in {
       val empty = actorRefFor("testDestination") // will be an EmptyLocalActorRef
       val destination = system.actorOf(Props(classOf[TestReceiver], testActor), "testDestination")
 
-      // replayed message (resolved = false) and invalid destination reference
-      defaultTestChannel ! Deliver(PersistentRepr("a", resolved = false), empty, Resolve.Destination)
-
-      // new messages (resolved = true) and valid destination references
-      defaultTestChannel ! Deliver(Persistent("b"), destination)
-      defaultTestChannel ! Deliver(Persistent("c"), destination)
+      defaultTestChannel ! Deliver(PersistentRepr("a"), empty.path)
+      defaultTestChannel ! Deliver(Persistent("b"), destination.path)
+      defaultTestChannel ! Deliver(Persistent("c"), destination.path)
 
       expectMsg("a")
       expectMsg("b")
@@ -113,7 +100,7 @@ abstract class ChannelSpec(config: Config) extends AkkaSpec(config) with Persist
 
       subscribeToConfirmation(confirmProbe)
 
-      defaultTestChannel ! Deliver(Persistent("a"), destination)
+      defaultTestChannel ! Deliver(Persistent("a"), destination.path)
 
       awaitConfirmation(confirmProbe)
     }
@@ -123,9 +110,9 @@ abstract class ChannelSpec(config: Config) extends AkkaSpec(config) with Persist
 
       subscribeToConfirmation(confirmProbe)
 
-      defaultTestChannel ! Deliver(Persistent("a"), destination)
-      defaultTestChannel ! Deliver(Persistent("boom"), destination)
-      defaultTestChannel ! Deliver(Persistent("b"), destination)
+      defaultTestChannel ! Deliver(Persistent("a"), destination.path)
+      defaultTestChannel ! Deliver(Persistent("boom"), destination.path)
+      defaultTestChannel ! Deliver(Persistent("b"), destination.path)
 
       awaitConfirmation(confirmProbe)
       awaitConfirmation(confirmProbe)
@@ -136,7 +123,7 @@ abstract class ChannelSpec(config: Config) extends AkkaSpec(config) with Persist
 
       subscribeToConfirmation(confirmProbe)
 
-      defaultTestChannel ! Deliver(PersistentRepr("a", confirmable = true), destination)
+      defaultTestChannel ! Deliver(PersistentRepr("a", confirmable = true), destination.path)
 
       expectMsgPF() { case m @ ConfirmablePersistent("a", _, _) ⇒ m.confirm() }
       awaitConfirmation(confirmProbe)
@@ -144,21 +131,21 @@ abstract class ChannelSpec(config: Config) extends AkkaSpec(config) with Persist
     "redeliver on missing confirmation" in {
       val probe = TestProbe()
 
-      redeliverTestChannel ! Deliver(Persistent("b"), probe.ref)
+      redeliverTestChannel ! Deliver(Persistent("b"), probe.ref.path)
 
       probe.expectMsgPF() { case m @ ConfirmablePersistent("b", _, redeliveries) ⇒ redeliveries should be(0) }
       probe.expectMsgPF() { case m @ ConfirmablePersistent("b", _, redeliveries) ⇒ redeliveries should be(1) }
       probe.expectMsgPF() { case m @ ConfirmablePersistent("b", _, redeliveries) ⇒ redeliveries should be(2); m.confirm() }
     }
     "redeliver in correct relative order" in {
-      val deliveries = redeliverChannelSettings.redeliverMax + 1
-      val interval = redeliverChannelSettings.redeliverInterval.toMillis / 5 * 4
+      val deliveries = redeliverChannelSettings(None).redeliverMax + 1
+      val interval = redeliverChannelSettings(None).redeliverInterval.toMillis / 5 * 4
 
       val probe = TestProbe()
       val cycles = 9
 
       1 to cycles foreach { i ⇒
-        redeliverTestChannel ! Deliver(Persistent(i), probe.ref)
+        redeliverTestChannel ! Deliver(Persistent(i), probe.ref.path)
         Thread.sleep(interval)
       }
 
@@ -176,12 +163,34 @@ abstract class ChannelSpec(config: Config) extends AkkaSpec(config) with Persist
     "redeliver not more than redeliverMax on missing confirmation" in {
       val probe = TestProbe()
 
-      redeliverTestChannel ! Deliver(PersistentRepr("a"), probe.ref)
+      redeliverTestChannel ! Deliver(PersistentRepr("a"), probe.ref.path)
 
       probe.expectMsgPF() { case m @ ConfirmablePersistent("a", _, redeliveries) ⇒ redeliveries should be(0) }
       probe.expectMsgPF() { case m @ ConfirmablePersistent("a", _, redeliveries) ⇒ redeliveries should be(1) }
       probe.expectMsgPF() { case m @ ConfirmablePersistent("a", _, redeliveries) ⇒ redeliveries should be(2) }
       probe.expectNoMsg(300 milliseconds)
+    }
+    "preserve message order to the same destination" in {
+      val probe = TestProbe()
+      val destination = system.actorOf(Props(classOf[TestReceiver], probe.ref))
+
+      1 to 10 foreach { i ⇒
+        defaultTestChannel ! Deliver(PersistentRepr(s"test-${i}"), destination.path)
+      }
+
+      1 to 10 foreach { i ⇒
+        probe.expectMsg(s"test-${i}")
+      }
+    }
+    "notify redelivery failure listener" in {
+      val probe = TestProbe()
+      val listener = system.actorOf(Props(classOf[TestListener], probe.ref))
+      val channel = createRedeliverTestChannel(Some(listener))
+
+      1 to 3 foreach { i ⇒ channel ! Deliver(Persistent(i), system.deadLetters.path) }
+
+      probe.expectMsgAllOf(1, 2, 3)
+      system.stop(channel)
     }
   }
 }

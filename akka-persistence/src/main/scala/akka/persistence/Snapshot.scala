@@ -101,7 +101,7 @@ case class SelectedSnapshot(metadata: SnapshotMetadata, snapshot: Any)
 
 object SelectedSnapshot {
   /**
-   * Plugin Java API.
+   * Java API, Plugin API.
    */
   def create(metadata: SnapshotMetadata, snapshot: Any): SelectedSnapshot =
     SelectedSnapshot(metadata, snapshot)

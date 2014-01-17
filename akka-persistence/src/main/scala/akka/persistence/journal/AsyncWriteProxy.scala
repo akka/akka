@@ -37,21 +37,27 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
 
   implicit def timeout: Timeout
 
-  def writeAsync(persistentBatch: immutable.Seq[PersistentRepr]): Future[Unit] =
-    (store ? WriteBatch(persistentBatch)).mapTo[Unit]
+  def asyncWriteMessages(messages: immutable.Seq[PersistentRepr]): Future[Unit] =
+    (store ? WriteMessages(messages)).mapTo[Unit]
 
-  def deleteAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean): Future[Unit] =
-    (store ? Delete(processorId, fromSequenceNr, toSequenceNr, permanent)).mapTo[Unit]
+  def asyncWriteConfirmations(confirmations: immutable.Seq[PersistentConfirmation]): Future[Unit] =
+    (store ? WriteConfirmations(confirmations)).mapTo[Unit]
 
-  def confirmAsync(processorId: String, sequenceNr: Long, channelId: String): Future[Unit] =
-    (store ? Confirm(processorId, sequenceNr, channelId)).mapTo[Unit]
+  def asyncDeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean): Future[Unit] =
+    (store ? DeleteMessages(messageIds, permanent)).mapTo[Unit]
 
-  def replayAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: (PersistentRepr) ⇒ Unit): Future[Long] = {
-    val replayCompletionPromise = Promise[Long]
+  def asyncDeleteMessagesTo(processorId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit] =
+    (store ? DeleteMessagesTo(processorId, toSequenceNr, permanent)).mapTo[Unit]
+
+  def asyncReplayMessages(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: (PersistentRepr) ⇒ Unit): Future[Unit] = {
+    val replayCompletionPromise = Promise[Unit]
     val mediator = context.actorOf(Props(classOf[ReplayMediator], replayCallback, replayCompletionPromise, timeout.duration).withDeploy(Deploy.local))
-    store.tell(Replay(processorId, fromSequenceNr, toSequenceNr), mediator)
+    store.tell(ReplayMessages(processorId, fromSequenceNr, toSequenceNr, max), mediator)
     replayCompletionPromise.future
   }
+
+  def asyncReadHighestSequenceNr(processorId: String, fromSequenceNr: Long): Future[Long] =
+    (store ? ReadHighestSequenceNr(processorId, fromSequenceNr)).mapTo[Long]
 }
 
 /**
@@ -66,22 +72,28 @@ private[persistence] object AsyncWriteProxy {
  */
 private[persistence] object AsyncWriteTarget {
   @SerialVersionUID(1L)
-  case class WriteBatch(pb: immutable.Seq[PersistentRepr])
+  case class WriteMessages(messages: immutable.Seq[PersistentRepr])
 
   @SerialVersionUID(1L)
-  case class Delete(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean)
+  case class WriteConfirmations(confirmations: immutable.Seq[PersistentConfirmation])
 
   @SerialVersionUID(1L)
-  case class Confirm(processorId: String, sequenceNr: Long, channelId: String)
+  case class DeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean)
 
   @SerialVersionUID(1L)
-  case class Replay(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)
+  case class DeleteMessagesTo(processorId: String, toSequenceNr: Long, permanent: Boolean)
 
   @SerialVersionUID(1L)
-  case class ReplaySuccess(maxSequenceNr: Long)
+  case class ReplayMessages(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)
+
+  @SerialVersionUID(1L)
+  case object ReplaySuccess
 
   @SerialVersionUID(1L)
   case class ReplayFailure(cause: Throwable)
+
+  @SerialVersionUID(1L)
+  case class ReadHighestSequenceNr(processorId: String, fromSequenceNr: Long)
 }
 
 /**
@@ -90,15 +102,15 @@ private[persistence] object AsyncWriteTarget {
 @SerialVersionUID(1L)
 class AsyncReplayTimeoutException(msg: String) extends AkkaException(msg)
 
-private class ReplayMediator(replayCallback: PersistentRepr ⇒ Unit, replayCompletionPromise: Promise[Long], replayTimeout: Duration) extends Actor {
+private class ReplayMediator(replayCallback: PersistentRepr ⇒ Unit, replayCompletionPromise: Promise[Unit], replayTimeout: Duration) extends Actor {
   import AsyncWriteTarget._
 
   context.setReceiveTimeout(replayTimeout)
 
   def receive = {
     case p: PersistentRepr ⇒ replayCallback(p)
-    case ReplaySuccess(maxSnr) ⇒
-      replayCompletionPromise.success(maxSnr)
+    case ReplaySuccess ⇒
+      replayCompletionPromise.success(())
       context.stop(self)
     case ReplayFailure(cause) ⇒
       replayCompletionPromise.failure(cause)
