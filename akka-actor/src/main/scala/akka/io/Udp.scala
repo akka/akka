@@ -15,12 +15,6 @@ import akka.actor._
 /**
  * UDP Extension for Akka’s IO layer.
  *
- * <b>All contents of the `akka.io` package is marked “experimental”.</b>
- *
- * This marker signifies that APIs may still change in response to user feedback
- * through-out the 2.2 release cycle. The implementation itself is considered
- * stable and ready for production use.
- *
  * This extension implements the connectionless UDP protocol without
  * calling `connect` on the underlying sockets, i.e. without restricting
  * from whom data can be received. For “connected” UDP mode see [[UdpConnected]].

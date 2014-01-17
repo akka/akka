@@ -95,6 +95,18 @@ without much trouble.
 Read more about the new routers in the :ref:`documentation for Scala <routing-scala>` and 
 :ref:`documentation for Java <routing-java>`.
 
+Akka IO is no longer experimental
+=================================
+
+The core IO layer introduced in Akka 2.2 is now a fully supported module of Akka.
+
+Experimental Pipelines IO abstraction has been removed
+======================================================
+
+Pipelines in the form introduced by 2.2 has been found unintuitive and are therefore discontinued.
+A new more flexible and easier-to-use abstraction will replace their role in the future. Pipelines
+will be still available in the 2.2 series.
+
 Changed cluster expected-response-after configuration
 =====================================================
 

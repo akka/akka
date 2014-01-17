@@ -3,14 +3,6 @@
 Using UDP
 =========
 
-.. warning::
-
-  The IO implementation is marked as **“experimental”** as of its introduction
-  in Akka 2.2.0. We will continue to improve this API based on our users’
-  feedback, which implies that while we try to keep incompatible changes to a
-  minimum the binary compatibility guarantee for maintenance releases does not
-  apply to the contents of the `akka.io` package.
-
 UDP is a connectionless datagram protocol which offers two different ways of
 communication on the JDK level:
 
