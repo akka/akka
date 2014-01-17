@@ -189,7 +189,7 @@ abstract class ChannelSpec(config: Config) extends AkkaSpec(config) with Persist
 
       1 to 3 foreach { i ⇒ channel ! Deliver(Persistent(i), system.deadLetters.path) }
 
-      probe.expectMsgAllOf(1, 2, 3)
+      probe.expectMsgAllOf(10.seconds, 1, 2, 3)
       system.stop(channel)
     }
   }
