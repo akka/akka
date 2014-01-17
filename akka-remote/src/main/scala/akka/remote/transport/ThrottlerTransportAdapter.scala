@@ -453,8 +453,6 @@ private[transport] class ThrottledAssociation(
       sender ! SetThrottleAck
       stay()
     case Event(Disassociated(info), _) ⇒
-      if (upstreamListener ne null) upstreamListener notify Disassociated(info)
-      originalHandle.disassociate()
       stop()
   }
 

@@ -29,6 +29,8 @@ configured time of unreachability. This feature is disabled by default, as it al
 
 During the deprecation phase ``akka.cluster.auto-down=on`` is interpreted at as instant auto-down.
 
+
+
 =======
 Routers
 =======
@@ -98,6 +100,43 @@ Changed cluster expected-response-after configuration
 
 Configuration property ``akka.cluster.failure-detector.heartbeat-request.expected-response-after`` 
 has been renamed to ``akka.cluster.failure-detector.expected-response-after``.
+
+Removed automatic retry feature from Remoting in favor of retry-gate
+====================================================================
+
+The retry-gate feature is now the only failure handling strategy in Remoting. This change means that when remoting detects faulty
+connections it goes into a gated state where all buffered and subsequent remote messages are dropped until the configurable
+time defined by the configuration key ``akka.remote.retry-gate-closed-for`` elapses after the failure event. This
+behavior prevents reconnect storms and unbounded buffer growth during network instabilities. After the configured
+time elapses the gate is lifted and a new connection will be attempted when there are new remote messages to be
+delivered.
+
+In concert with this change all settings related to the old reconnect behavior (``akka.remote.retry-window`` and
+``akka.remote.maximum-retries-in-window``) were removed.
+
+The timeout setting ``akka.remote.gate-invalid-addresses-for`` that controlled the gate interval for certain failure
+events is also removed and all gating intervals are now controlled by the ``akka.remote.retry-gate-closed-for`` setting
+instead.
+
+Reduced default sensitivity settings for transport failure detector in Remoting
+===============================================================================
+
+Since the most commonly used transport with Remoting is TCP, which provides proper connection termination events the failure detector sensitivity
+setting ``akka.remote.transport-failure-detector.acceptable-heartbeat-pause`` now defaults to 20 seconds to reduce load induced
+false-positive failure detection events in remoting. In case a non-connection-oriented protocol is used it is recommended
+to change this and the ``akka.remote.transport-failure-detector.heartbeat-interval`` setting to a more sensitive value.
+
+Quarantine is now permanent
+===========================
+
+The setting that controlled the length of quarantine ``akka.remote.quarantine-systems-for`` has been removed. The only
+setting available now is ``akka.remote.prune-quarantine-marker-after`` which influences how long quarantine tombstones
+are kept around to avoid long-term memory leaks. This new setting defaults to 5 days.
+
+Remoting uses a dedicated dispatcher by default
+===============================================
+
+The default value of ``akka.remote.use-dispatcher`` has been changed to a dedicated dispatcher.
 
 Dataflow is Deprecated
 ======================

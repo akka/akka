@@ -359,7 +359,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
       enterBarrier("after-7")
     }
 
-    "rebalance to nodes with less shards" in within(30 seconds) {
+    "rebalance to nodes with less shards" in within(60 seconds) {
 
       runOn(fourth) {
         // third, fourth and fifth are still alive
