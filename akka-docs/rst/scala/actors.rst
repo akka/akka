@@ -81,31 +81,19 @@ verified during construction of the :class:`Props` object, resulting in an
 :class:`IllegalArgumentEception` if no or multiple matching constructors are
 found.
 
-Deprecated Variants
-^^^^^^^^^^^^^^^^^^^
-
-Up to Akka 2.1 there were also the following possibilities (which are retained
-for a migration period):
+Dangerous Variants
+^^^^^^^^^^^^^^^^^^
 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#creating-props-deprecated
 
-The first one is deprecated because the case class structure changed between
-Akka 2.1 and 2.2.
-
-The two variants in the middle are deprecated because :class:`Props` are
-primarily concerned with actor creation and thus the “creator” part should be
-explicitly set when creating an instance. In case you want to deploy one actor
-in the same was as another, simply use
-``Props(...).withDeploy(otherProps.deploy)``.
-
-The last one is not technically deprecated, but it is not recommended to be
-used within another actor because it encourages to close over the enclosing
-scope, resulting in non-serializable :class:`Props` and possibly race
-conditions (breaking the actor encapsulation).  We will provide a macro-based
-solution in a future release which allows similar syntax without the headaches,
-at which point this variant will be properly deprecated. On the other hand
-using this variant in a :class:`Props` factory in the actor’s companion object as
-documented under “Recommended Practices” below is completely fine.
+This method is not recommended to be used within another actor because it
+encourages to close over the enclosing scope, resulting in non-serializable
+:class:`Props` and possibly race conditions (breaking the actor encapsulation).
+We will provide a macro-based solution in a future release which allows similar
+syntax without the headaches, at which point this variant will be properly
+deprecated. On the other hand using this variant in a :class:`Props` factory in
+the actor’s companion object as documented under “Recommended Practices” below
+is completely fine.
 
 There were two use-cases for these methods: passing constructor arguments to
 the actor—which is solved by the newly introduced

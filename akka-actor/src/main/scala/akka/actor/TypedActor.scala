@@ -75,7 +75,7 @@ trait TypedActorFactory {
     val proxyVar = new AtomVar[R] //Chicken'n'egg-resolver
     val c = props.creator //Cache this to avoid closing over the Props
     val i = props.interfaces //Cache this to avoid closing over the Props
-    val ap = props.actorProps.withCreator(new TypedActor.TypedActor[R, T](proxyVar, c(), i))
+    val ap = Props(new TypedActor.TypedActor[R, T](proxyVar, c(), i)).withDeploy(props.actorProps.deploy)
     typedActor.createActorRefProxy(props, proxyVar, actorFactory.actorOf(ap))
   }
 
@@ -86,7 +86,7 @@ trait TypedActorFactory {
     val proxyVar = new AtomVar[R] //Chicken'n'egg-resolver
     val c = props.creator //Cache this to avoid closing over the Props
     val i = props.interfaces //Cache this to avoid closing over the Props
-    val ap = props.actorProps.withCreator(new akka.actor.TypedActor.TypedActor[R, T](proxyVar, c(), i))
+    val ap = Props(new akka.actor.TypedActor.TypedActor[R, T](proxyVar, c(), i)).withDeploy(props.actorProps.deploy)
     typedActor.createActorRefProxy(props, proxyVar, actorFactory.actorOf(ap, name))
   }
 
@@ -619,7 +619,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def actorProps(): Props =
     if (dispatcher == Props.default.dispatcher)
       Props.default.withDeploy(deploy)
-    else Props(dispatcher = dispatcher).withDeploy(deploy)
+    else Props.default.withDispatcher(dispatcher).withDeploy(deploy)
 }
 
 /**

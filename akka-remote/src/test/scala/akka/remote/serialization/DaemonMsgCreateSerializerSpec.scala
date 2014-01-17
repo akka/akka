@@ -48,7 +48,7 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec {
     "serialize and de-serialize DaemonMsgCreate with function creator" in {
       verifySerialization {
         DaemonMsgCreate(
-          props = Props.empty.withCreator(new MyActor),
+          props = Props(new MyActor),
           deploy = Deploy(),
           path = "foo",
           supervisor = supervisor)

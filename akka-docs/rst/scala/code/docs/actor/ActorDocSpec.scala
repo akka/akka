@@ -251,17 +251,6 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#creating-props
 
     //#creating-props-deprecated
-    // DEPRECATED: old case class signature
-    val props4 = Props(
-      creator = { () => new MyActor },
-      dispatcher = "my-dispatcher")
-
-    // DEPRECATED due to duplicate functionality with Props.apply()
-    val props5 = props1.withCreator(new MyActor)
-
-    // DEPRECATED due to duplicate functionality with Props.apply()
-    val props6 = props1.withCreator(classOf[MyActor])
-
     // NOT RECOMMENDED within another actor:
     // encourages to close over enclosing class
     val props7 = Props(new MyActor)
