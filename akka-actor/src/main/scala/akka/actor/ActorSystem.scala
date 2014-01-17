@@ -18,7 +18,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.{ FiniteDuration, Duration }
 import scala.concurrent.{ Await, Awaitable, CanAwait, Future, ExecutionContext, ExecutionContextExecutor }
-import scala.util.{ Failure, Success }
+import scala.util.{ Failure, Success, Try }
 import scala.util.control.{ NonFatal, ControlThrowable }
 
 object ActorSystem {
@@ -568,7 +568,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   val scheduler: Scheduler = createScheduler()
 
-  val provider: ActorRefProvider = {
+  val provider: ActorRefProvider = try {
     val arguments = Vector(
       classOf[String] -> name,
       classOf[Settings] -> settings,
@@ -576,6 +576,10 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
       classOf[DynamicAccess] -> dynamicAccess)
 
     dynamicAccess.createInstanceFor[ActorRefProvider](ProviderClass, arguments).get
+  } catch {
+    case NonFatal(e) ⇒
+      Try(stopScheduler())
+      throw e
   }
 
   def deadLetters: ActorRef = provider.deadLetters
@@ -602,7 +606,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   def /(actorName: String): ActorPath = guardian.path / actorName
   def /(path: Iterable[String]): ActorPath = guardian.path / path
 
-  private lazy val _start: this.type = {
+  private lazy val _start: this.type = try {
     // the provider is expected to start default loggers, LocalActorRefProvider does this
     provider.init(this)
     if (settings.LogDeadLetters > 0)
@@ -611,6 +615,12 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
     this
+  } catch {
+    case NonFatal(e) ⇒
+      try {
+        shutdown()
+      } catch { case NonFatal(_) ⇒ Try(stopScheduler()) }
+      throw e
   }
 
   def start(): this.type = _start

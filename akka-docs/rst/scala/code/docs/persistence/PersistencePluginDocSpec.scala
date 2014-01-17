@@ -10,8 +10,9 @@ import scala.collection.immutable.Seq
 //#plugin-imports
 
 import com.typesafe.config._
-
 import org.scalatest.WordSpec
+import scala.concurrent.duration._
+import akka.testkit.TestKit
 
 import akka.actor.ActorSystem
 //#plugin-imports
@@ -69,8 +70,12 @@ class PersistencePluginDocSpec extends WordSpec {
         //#snapshot-store-plugin-config
       """
 
-    val system = ActorSystem("doc", ConfigFactory.parseString(providerConfig).withFallback(ConfigFactory.parseString(PersistencePluginDocSpec.config)))
-    val extension = Persistence(system)
+    val system = ActorSystem("PersistencePluginDocSpec", ConfigFactory.parseString(providerConfig).withFallback(ConfigFactory.parseString(PersistencePluginDocSpec.config)))
+    try {
+      Persistence(system)
+    } finally {
+      TestKit.shutdownActorSystem(system, 10.seconds, false)
+    }
   }
 }
 
