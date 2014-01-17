@@ -72,7 +72,7 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   final override def afterAll {
     beforeTermination()
-    shutdown(system)
+    shutdown()
     afterTermination()
     stopCoroner()
   }

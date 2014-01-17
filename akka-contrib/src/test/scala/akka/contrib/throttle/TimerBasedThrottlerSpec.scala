@@ -46,7 +46,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
   import TimerBasedThrottlerSpec._
 
   override def afterAll {
-    shutdown(system)
+    shutdown()
   }
 
   "A throttler" must {

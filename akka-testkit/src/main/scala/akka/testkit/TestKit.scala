@@ -656,7 +656,7 @@ trait TestKitBase {
    *
    * If verifySystemShutdown is true, then an exception will be thrown on failure.
    */
-  def shutdown(actorSystem: ActorSystem,
+  def shutdown(actorSystem: ActorSystem = system,
                duration: Duration = 5.seconds.dilated.min(10.seconds),
                verifySystemShutdown: Boolean = false) {
     TestKit.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
