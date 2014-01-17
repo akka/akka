@@ -45,8 +45,8 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
         val child = context.actorOf(Props.empty, name = childName)
         def receive = {
           case "lookup" ⇒
-            if (childName == child.path.name) sender ! context.actorFor(childName)
-            else sender ! s"$childName is not ${child.path.name}!"
+            if (childName == child.path.name) sender() ! context.actorFor(childName)
+            else sender() ! s"$childName is not ${child.path.name}!"
         }
       }))
       a.tell("lookup", testActor)
@@ -62,7 +62,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
       val GetChild = "GetChild"
       val a = watch(system.actorOf(Props(new Actor {
         val child = context.actorOf(Props.empty)
-        def receive = { case `GetChild` ⇒ sender ! child }
+        def receive = { case `GetChild` ⇒ sender() ! child }
       })))
       a.tell(GetChild, testActor)
       val child = expectMsgType[ActorRef]

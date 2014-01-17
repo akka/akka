@@ -46,7 +46,7 @@ the same network node where B lives. Messages sent to P will be wrapped in an
 envelope, tagged with a sequence number and sent to E, who verifies that the
 received envelope has the right sequence number (the next expected one) and
 forwards the contained message to B. When B receives this message, the
-``sender`` will be a reference to the sender of the original message to P.
+``sender()`` will be a reference to the sender() of the original message to P.
 Reliability is added by E replying to orderly received messages with an ACK, so
 that P can tick those messages off its resend list. If ACKs do not come in a
 timely fashion, P will try to resend until successful.

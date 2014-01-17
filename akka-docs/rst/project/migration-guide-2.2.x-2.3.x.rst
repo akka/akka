@@ -228,3 +228,14 @@ independent of Akka version of the application. Version 2.2.3 can be used with b
 
 `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_ is the recommended tool for creating
 distributions of Akka applications when using sbt.
+
+Parens Added to sender
+======================
+
+Parens were added to the ``sender()`` method of the Actor Scala API to highlight that the ``sender()`` reference is not referentially transparent and must not be exposed to other threads, for example by closing over it when using future callbacks.
+
+It is recommended to use this new convention::
+
+    sender() ! "reply"
+
+However, it is not mandatory to use parens and you do not have to change anything.

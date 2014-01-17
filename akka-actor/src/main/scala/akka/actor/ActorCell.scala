@@ -91,7 +91,7 @@ trait ActorContext extends ActorRefFactory {
   /**
    * Returns the sender 'ActorRef' of the current message.
    */
-  def sender: ActorRef
+  def sender(): ActorRef
 
   /**
    * Returns all supervised children; this method returns a view (i.e. a lazy
@@ -478,15 +478,15 @@ private[akka] class ActorCell(
       case Kill                       ⇒ throw new ActorKilledException("Kill")
       case PoisonPill                 ⇒ self.stop()
       case sel: ActorSelectionMessage ⇒ receiveSelection(sel)
-      case Identify(messageId)        ⇒ sender ! ActorIdentity(messageId, Some(self))
+      case Identify(messageId)        ⇒ sender() ! ActorIdentity(messageId, Some(self))
     }
   }
 
   private def receiveSelection(sel: ActorSelectionMessage): Unit =
     if (sel.elements.isEmpty)
-      invoke(Envelope(sel.msg, sender, system))
+      invoke(Envelope(sel.msg, sender(), system))
     else
-      ActorSelection.deliverSelection(self, sender, sel)
+      ActorSelection.deliverSelection(self, sender(), sel)
 
   final def receiveMessage(msg: Any): Unit = actor.aroundReceive(behaviorStack.head, msg)
 
@@ -494,7 +494,7 @@ private[akka] class ActorCell(
    * ACTOR CONTEXT IMPLEMENTATION
    */
 
-  final def sender: ActorRef = currentMessage match {
+  final def sender(): ActorRef = currentMessage match {
     case null                      ⇒ system.deadLetters
     case msg if msg.sender ne null ⇒ msg.sender
     case _                         ⇒ system.deadLetters

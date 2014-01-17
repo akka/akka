@@ -45,7 +45,7 @@ abstract class ActorSelection extends Serializable {
    *
    * Works, no matter whether originally sent with tell/'!' or ask/'?'.
    */
-  def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender)
+  def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender())
 
   /**
    * Resolve the [[ActorRef]] matching this selection.

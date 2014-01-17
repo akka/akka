@@ -20,7 +20,7 @@ class HelloActor extends Actor {
 
 class WorldActor extends Actor {
   def receive = {
-    case message: String => sender ! (message.toUpperCase + " world!")
+    case message: String => sender() ! (message.toUpperCase + " world!")
   }
 }
 

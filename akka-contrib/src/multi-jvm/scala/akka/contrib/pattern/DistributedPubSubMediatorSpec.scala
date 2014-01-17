@@ -340,7 +340,7 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
         lastSender.path.name should be("u11")
       }
       runOn(third) {
-        expectNoMsg(2.seconds) // sender node should not receive a message
+        expectNoMsg(2.seconds) // sender() node should not receive a message
       }
 
       enterBarrier("after-11")

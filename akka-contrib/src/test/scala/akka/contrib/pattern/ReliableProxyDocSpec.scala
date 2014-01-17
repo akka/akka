@@ -37,7 +37,7 @@ object ReliableProxyDocSpec {
     def receive = {
       case "go" ⇒
         proxy ! 42
-        client = sender
+        client = sender()
       case FSM.CurrentState(`proxy`, initial) ⇒
       case FSM.Transition(`proxy`, from, to) ⇒
         if (to == ReliableProxy.Idle)

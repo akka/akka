@@ -27,7 +27,7 @@ object AdaptiveLoadBalancingRouterMultiJvmSpec extends MultiNodeConfig {
 
   class Routee extends Actor {
     def receive = {
-      case _ ⇒ sender ! Reply(Cluster(context.system).selfAddress)
+      case _ ⇒ sender() ! Reply(Cluster(context.system).selfAddress)
     }
   }
 
@@ -45,7 +45,7 @@ object AdaptiveLoadBalancingRouterMultiJvmSpec extends MultiNodeConfig {
         val numberOfArrays = allocateBytes / 1024
         usedMemory = Array.ofDim(numberOfArrays, 248) // each 248 element Int array will use ~ 1 kB
         log.debug("used heap after: [{}] bytes", ManagementFactory.getMemoryMXBean.getHeapMemoryUsage.getUsed)
-        sender ! "done"
+        sender() ! "done"
     }
   }
 

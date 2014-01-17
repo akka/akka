@@ -85,7 +85,7 @@ private[io] class TcpListener(selectorRouter: ActorRef,
     case Unbind ⇒
       log.debug("Unbinding endpoint {}", localAddress)
       channel.close()
-      sender ! Unbound
+      sender() ! Unbound
       log.debug("Unbound endpoint {}, stopping listener", localAddress)
       context.stop(self)
   }

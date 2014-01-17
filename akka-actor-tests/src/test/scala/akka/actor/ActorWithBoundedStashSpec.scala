@@ -23,7 +23,7 @@ object ActorWithBoundedStashSpec {
     def receive = {
       case msg: String if msg.startsWith("hello") ⇒
         stash()
-        sender ! "ok"
+        sender() ! "ok"
 
       case "world" ⇒
         context.become(afterWorldBehaviour)
@@ -42,13 +42,13 @@ object ActorWithBoundedStashSpec {
     def receive = {
       case msg: String if msg.startsWith("hello") ⇒
         numStashed += 1
-        try { stash(); sender ! "ok" } catch {
+        try { stash(); sender() ! "ok" } catch {
           case _: StashOverflowException ⇒
             if (numStashed == 21) {
-              sender ! "STASHOVERFLOW"
+              sender() ! "STASHOVERFLOW"
               context stop self
             } else {
-              sender ! "Unexpected StashOverflowException: " + numStashed
+              sender() ! "Unexpected StashOverflowException: " + numStashed
             }
         }
     }

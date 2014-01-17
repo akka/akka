@@ -51,7 +51,7 @@ object DispatchersSpec {
 
   class ThreadNameEcho extends Actor {
     def receive = {
-      case _ ⇒ sender ! Thread.currentThread.getName
+      case _ ⇒ sender() ! Thread.currentThread.getName
     }
   }
 }

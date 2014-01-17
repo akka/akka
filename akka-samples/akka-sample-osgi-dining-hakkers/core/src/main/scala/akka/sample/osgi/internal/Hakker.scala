@@ -153,7 +153,7 @@ class Hakker(name: String, chair: Int) extends Actor {
   }
 
   def identify(busyWith: String) {
-    sender ! Identification(name, busyWith)
+    sender() ! Identification(name, busyWith)
   }
 
   def updateTable(leaderAdress: Address) {

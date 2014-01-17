@@ -38,7 +38,7 @@ object RemoteNodeShutdownAndComesBackSpec extends MultiNodeConfig {
   class Subject extends Actor {
     def receive = {
       case "shutdown" ⇒ context.system.shutdown()
-      case msg        ⇒ sender ! msg
+      case msg        ⇒ sender() ! msg
     }
   }
 

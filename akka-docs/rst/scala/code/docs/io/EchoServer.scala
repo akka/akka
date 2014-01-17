@@ -63,8 +63,8 @@ class EchoManager(handlerClass: Class[_]) extends Actor with ActorLogging {
     //#echo-manager
     case Connected(remote, local) =>
       log.info("received connection from {}", remote)
-      val handler = context.actorOf(Props(handlerClass, sender, remote))
-      sender ! Register(handler, keepOpenOnPeerClosed = true)
+      val handler = context.actorOf(Props(handlerClass, sender(), remote))
+      sender() ! Register(handler, keepOpenOnPeerClosed = true)
     //#echo-manager
   }
 

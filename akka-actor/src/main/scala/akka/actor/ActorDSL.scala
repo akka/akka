@@ -90,7 +90,7 @@ object ActorDSL extends dsl.Inbox with dsl.Creators {
 
     val boss = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(
       new Actor {
-        def receive = { case any ⇒ sender ! any }
+        def receive = { case any ⇒ sender() ! any }
       }), "dsl").asInstanceOf[RepointableActorRef]
 
     {

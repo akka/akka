@@ -30,8 +30,8 @@ object ThrottlerTransportAdapterSpec {
 
   class Echo extends Actor {
     override def receive = {
-      case "ping" ⇒ sender ! "pong"
-      case x      ⇒ sender ! x
+      case "ping" ⇒ sender() ! "pong"
+      case x      ⇒ sender() ! x
     }
   }
 

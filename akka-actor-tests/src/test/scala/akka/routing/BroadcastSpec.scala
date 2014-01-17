@@ -61,7 +61,7 @@ class BroadcastSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
           case "end" ⇒ doneLatch.countDown()
           case msg: Int ⇒
             counter1.addAndGet(msg)
-            sender ! "ack"
+            sender() ! "ack"
         }
       }))
 

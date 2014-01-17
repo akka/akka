@@ -19,7 +19,7 @@ class StatsService extends Actor {
   def receive = {
     case StatsJob(text) if text != "" =>
       val words = text.split(" ")
-      val replyTo = sender // important to not close over sender
+      val replyTo = sender() // important to not close over sender()
       // create actor that collects replies from workers
       val aggregator = context.actorOf(Props(
         classOf[StatsAggregator], words.size, replyTo))

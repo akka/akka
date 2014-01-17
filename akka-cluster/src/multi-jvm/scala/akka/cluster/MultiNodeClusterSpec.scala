@@ -68,7 +68,7 @@ object MultiNodeClusterSpec {
         }
       case End ⇒
         testActor forward End
-        sender ! EndAck
+        sender() ! EndAck
       case EndAck ⇒
         testActor forward EndAck
     }

@@ -41,19 +41,19 @@ case object CantUnderstand
 class SavingsAccountProxy extends Actor {
   def receive = {
     case GetAccountBalances(id: Long) ⇒
-      sender ! SavingsAccountBalances(Some(List((1, 150000), (2, 29000))))
+      sender() ! SavingsAccountBalances(Some(List((1, 150000), (2, 29000))))
   }
 }
 class CheckingAccountProxy extends Actor {
   def receive = {
     case GetAccountBalances(id: Long) ⇒
-      sender ! CheckingAccountBalances(Some(List((3, 15000))))
+      sender() ! CheckingAccountBalances(Some(List((3, 15000))))
   }
 }
 class MoneyMarketAccountProxy extends Actor {
   def receive = {
     case GetAccountBalances(id: Long) ⇒
-      sender ! MoneyMarketAccountBalances(None)
+      sender() ! MoneyMarketAccountBalances(None)
   }
 }
 
@@ -64,9 +64,9 @@ class AccountBalanceRetriever extends Actor with Aggregator {
   //#initial-expect
   expectOnce {
     case GetCustomerAccountBalances(id, types) ⇒
-      new AccountAggregator(sender, id, types)
+      new AccountAggregator(sender(), id, types)
     case _ ⇒
-      sender ! CantUnderstand
+      sender() ! CantUnderstand
       context.stop(self)
   }
   //#initial-expect
@@ -145,7 +145,7 @@ case class FinalResponse(qualifiedValues: List[String])
 class ChainingSample extends Actor with Aggregator {
 
   expectOnce {
-    case InitialRequest(name) ⇒ new MultipleResponseHandler(sender, name)
+    case InitialRequest(name) ⇒ new MultipleResponseHandler(sender(), name)
   }
 
   class MultipleResponseHandler(originalSender: ActorRef, propName: String) {

@@ -22,7 +22,7 @@ private[cluster] final class ClusterHeartbeatReceiver extends Actor with ActorLo
   val selfHeartbeatRsp = HeartbeatRsp(Cluster(context.system).selfUniqueAddress)
 
   def receive = {
-    case Heartbeat(from) ⇒ sender ! selfHeartbeatRsp
+    case Heartbeat(from) ⇒ sender() ! selfHeartbeatRsp
   }
 
 }

@@ -28,9 +28,9 @@ class StatsFacade extends Actor with ActorLogging {
 
   def receive = {
     case job: StatsJob if membersByAge.isEmpty =>
-      sender ! JobFailed("Service unavailable, try again later")
+      sender() ! JobFailed("Service unavailable, try again later")
     case job: StatsJob =>
-      currentMaster.tell(job, sender)
+      currentMaster.tell(job, sender())
     case state: CurrentClusterState =>
       membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.collect {
         case m if m.hasRole("compute") => m

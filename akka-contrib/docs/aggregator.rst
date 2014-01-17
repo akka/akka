@@ -76,7 +76,7 @@ Pitfalls
 --------
 * The current implementation does not match the sender of the message. This is
   designed to work with :class:`ActorSelection` as well as :class:`ActorRef`.
-  Without the sender, there is a chance a received message can be matched by
+  Without the sender(), there is a chance a received message can be matched by
   more than one partial function. The partial function that was registered via
   :class:`expect` or :class:`expectOnce` first (chronologically) and is not yet
   de-registered by :class:`unexpect` takes precedence in this case. Developers
@@ -84,8 +84,8 @@ Pitfalls
   be executed for a certain message.
 
 * The :class:`sender` referenced in any :class:`expect` or :class:`expectOnce`
-  logic refers to the sender of that particular message and not the sender of
-  the original message. The original sender still needs to be saved so a final
+  logic refers to the sender() of that particular message and not the sender() of
+  the original message. The original sender() still needs to be saved so a final
   response can be sent back.
 
 * :class:`context.become` is not supported when extending the :class:`Aggregator`

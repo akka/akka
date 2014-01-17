@@ -62,7 +62,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
     "be picked up from Props" in {
       val actor = system.actorOf(Props(new Actor {
         def receive = {
-          case "get" ⇒ sender ! context.props
+          case "get" ⇒ sender() ! context.props
         }
       }).withRouter(RoundRobinRouter(12)), "someOther")
       routerConfig(actor) should equal(RoundRobinRouter(12))
@@ -72,7 +72,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
     "be overridable in config" in {
       val actor = system.actorOf(Props(new Actor {
         def receive = {
-          case "get" ⇒ sender ! context.props
+          case "get" ⇒ sender() ! context.props
         }
       }).withRouter(RoundRobinRouter(12)), "config")
       routerConfig(actor) should equal(RandomPool(4))
@@ -82,7 +82,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
     "be overridable in explicit deployment" in {
       val actor = system.actorOf(Props(new Actor {
         def receive = {
-          case "get" ⇒ sender ! context.props
+          case "get" ⇒ sender() ! context.props
         }
       }).withRouter(FromConfig).withDeploy(Deploy(routerConfig = RoundRobinRouter(12))), "someOther")
       routerConfig(actor) should equal(RoundRobinRouter(12))
@@ -92,7 +92,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
     "be overridable in config even with explicit deployment" in {
       val actor = system.actorOf(Props(new Actor {
         def receive = {
-          case "get" ⇒ sender ! context.props
+          case "get" ⇒ sender() ! context.props
         }
       }).withRouter(FromConfig).withDeploy(Deploy(routerConfig = RoundRobinRouter(12))), "config")
       routerConfig(actor) should equal(RandomPool(4))
@@ -159,7 +159,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
       val actor = system.actorOf(Props(new Actor {
         lazy val id = counter.getAndIncrement()
         def receive = {
-          case "hit" ⇒ sender ! id
+          case "hit" ⇒ sender() ! id
           case "end" ⇒ doneLatch.countDown()
         }
       }).withRouter(RoundRobinRouter(connectionCount)), "round-robin")
@@ -208,7 +208,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
 
       val actor = system.actorOf(Props(new Actor {
         def receive = {
-          case "hello" ⇒ sender ! "world"
+          case "hello" ⇒ sender() ! "world"
         }
 
         override def postStop() {
@@ -244,7 +244,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
       val actor = system.actorOf(Props(new Actor {
         lazy val id = counter.getAndIncrement()
         def receive = {
-          case "hit" ⇒ sender ! id
+          case "hit" ⇒ sender() ! id
           case "end" ⇒ doneLatch.countDown()
         }
       }).withRouter(RandomRouter(connectionCount)), "random")

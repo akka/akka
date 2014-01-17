@@ -47,7 +47,7 @@ object RoutingSpec {
 
   class Echo extends Actor {
     def receive = {
-      case _ ⇒ sender ! self
+      case _ ⇒ sender() ! self
     }
   }
 
@@ -202,8 +202,8 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         def receive = {
           case "start" ⇒
             context.actorOf(RoundRobinPool(2).props(routeeProps = Props(new Actor {
-              def receive = { case x ⇒ sender ! x }
-            }))) ? "hello" pipeTo sender
+              def receive = { case x ⇒ sender() ! x }
+            }))) ? "hello" pipeTo sender()
         }
       })) ! "start"
       expectMsg("hello")

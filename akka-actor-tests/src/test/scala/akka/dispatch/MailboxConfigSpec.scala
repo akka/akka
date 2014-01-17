@@ -260,7 +260,7 @@ class SingleConsumerOnlyMailboxVerificationSpec extends AkkaSpec(SingleConsumerO
             def receive = {
               case Ping ⇒
                 n -= 1
-                sender ! Ping
+                sender() ! Ping
                 if (n == 0)
                   context stop self
             }

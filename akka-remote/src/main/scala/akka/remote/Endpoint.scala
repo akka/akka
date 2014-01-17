@@ -57,7 +57,7 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
     val sender: ActorRef = senderOption.getOrElse(system.deadLetters)
     val originalReceiver = recipient.path
 
-    def msgLog = s"RemoteMessage: [$payload] to [$recipient]<+[$originalReceiver] from [$sender]"
+    def msgLog = s"RemoteMessage: [$payload] to [$recipient]<+[$originalReceiver] from [$sender()]"
 
     recipient match {
 
@@ -328,7 +328,7 @@ private[remote] class ReliableDeliverySupervisor(
     case s @ Send(msg: SystemMessage, _, _, _) ⇒ tryBuffer(s.copy(seqOpt = Some(nextSeq())))
     case s: Send                               ⇒ context.system.deadLetters ! s
     case EndpointWriter.FlushAndStop           ⇒ context.stop(self)
-    case EndpointWriter.StopReading(w)         ⇒ sender ! EndpointWriter.StoppedReading(w)
+    case EndpointWriter.StopReading(w)         ⇒ sender() ! EndpointWriter.StoppedReading(w)
     case _                                     ⇒ // Ignore
   }
 
@@ -343,7 +343,7 @@ private[remote] class ReliableDeliverySupervisor(
       // Resending will be triggered by the incoming GotUid message after the connection finished
       context.become(receive)
     case EndpointWriter.FlushAndStop   ⇒ context.stop(self)
-    case EndpointWriter.StopReading(w) ⇒ sender ! EndpointWriter.StoppedReading(w)
+    case EndpointWriter.StopReading(w) ⇒ sender() ! EndpointWriter.StoppedReading(w)
   }
 
   def flushWait: Receive = {
@@ -649,7 +649,7 @@ private[remote] class EndpointWriter(
       // Shutdown old reader
       handle foreach { _.disassociate() }
       handle = Some(newHandle)
-      sender ! TookOver(self, newHandle)
+      sender() ! TookOver(self, newHandle)
       goto(Handoff)
     case Event(FlushAndStop, _) ⇒
       stopReason = AssociationHandle.Shutdown
@@ -805,7 +805,7 @@ private[remote] class EndpointReader(
     case StopReading(writer) ⇒
       saveState()
       context.become(notReading)
-      sender ! StoppedReading(writer)
+      sender() ! StoppedReading(writer)
 
   }
 
@@ -813,7 +813,7 @@ private[remote] class EndpointReader(
     case Disassociated(info) ⇒ handleDisassociated(info)
 
     case StopReading(writer) ⇒
-      sender ! StoppedReading(writer)
+      sender() ! StoppedReading(writer)
 
     case InboundPayload(p) ⇒
       val (ackOption, _) = tryDecodeMessageAndAck(p)

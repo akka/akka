@@ -46,7 +46,7 @@ class MultiNodeSample extends MultiNodeSpec(MultiNodeSampleConfig)
       runOn(node2) {
         system.actorOf(Props(new Actor {
           def receive = {
-            case "ping" => sender ! "pong"
+            case "ping" => sender() ! "pong"
           }
         }), "ponger")
         enterBarrier("deployed")

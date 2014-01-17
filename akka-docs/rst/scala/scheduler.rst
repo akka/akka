@@ -39,7 +39,7 @@ Some examples
 
     If you schedule functions or Runnable instances you should be extra careful
     to not close over unstable references. In practice this means not using ``this``
-    inside the closure in the scope of an Actor instance, not accessing ``sender`` directly
+    inside the closure in the scope of an Actor instance, not accessing ``sender()`` directly
     and not calling the methods of the Actor instance directly. If you need to
     schedule an invocation schedule a message to ``self`` instead (containing the
     necessary parameters) and then call the method when the message is received.
