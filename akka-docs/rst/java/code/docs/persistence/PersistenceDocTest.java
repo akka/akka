@@ -139,7 +139,7 @@ public class PersistenceDocTest {
                 if (message instanceof Persistent) {
                     Persistent p = (Persistent)message;
                     Persistent out = p.withPayload("done " + p.payload());
-                    channel.tell(Deliver.create(out, destination), getSelf());
+                    channel.tell(Deliver.create(out, destination.path()), getSelf());
                 }
             }
         }
@@ -174,24 +174,35 @@ public class PersistenceDocTest {
                         .withRedeliverInterval(Duration.create(30, TimeUnit.SECONDS))
                         .withRedeliverMax(15)));
                 //#channel-custom-settings
+
+                //#channel-custom-listener
+                class MyListener extends UntypedActor {
+                    @Override
+                    public void onReceive(Object message) throws Exception {
+                        if (message instanceof RedeliverFailure) {
+                            Iterable<ConfirmablePersistent> messages =
+                                    ((RedeliverFailure)message).getMessages();
+                            // ...
+                        }
+                    }
+                }
+
+                final ActorRef myListener = getContext().actorOf(Props.create(MyListener.class));
+                getContext().actorOf(Channel.props(
+                        ChannelSettings.create().withRedeliverFailureListener(null)));
+                //#channel-custom-listener
+
             }
 
             public void onReceive(Object message) throws Exception {
                 if (message instanceof Persistent) {
                     Persistent p = (Persistent)message;
                     Persistent out = p.withPayload("done " + p.payload());
-                    channel.tell(Deliver.create(out, destination), getSelf());
+                    channel.tell(Deliver.create(out, destination.path()), getSelf());
 
                     //#channel-example-reply
-                    channel.tell(Deliver.create(out, getSender()), getSelf());
+                    channel.tell(Deliver.create(out, getSender().path()), getSelf());
                     //#channel-example-reply
-                    //#resolve-destination
-                    channel.tell(Deliver.create(out, getSender(), Resolve.destination()), getSelf());
-                    //#resolve-destination
-                    //#resolve-sender
-                    channel.tell(Deliver.create(out, destination, Resolve.sender()), getSender());
-                    //#resolve-sender
-
                 }
             }
         }
@@ -292,9 +303,13 @@ public class PersistenceDocTest {
                         .withRedeliverInterval(Duration.create(30, TimeUnit.SECONDS))
                         .withRedeliverMax(15)), "myPersistentChannel");
 
-                channel.tell(Deliver.create(Persistent.create("example"), destination), getSelf());
+                channel.tell(Deliver.create(Persistent.create("example"), destination.path()), getSelf());
                 //#persistent-channel-example
-
+                //#persistent-channel-watermarks
+                PersistentChannelSettings.create()
+                        .withPendingConfirmationsMax(10000)
+                        .withPendingConfirmationsMin(2000);
+                //#persistent-channel-watermarks
                 //#persistent-channel-reply
                 PersistentChannelSettings.create().withReplyPersistent(true);
                 //#persistent-channel-reply
@@ -318,7 +333,7 @@ public class PersistenceDocTest {
                 // ...
                 // reliably deliver events
                 channel.tell(Deliver.create(Persistent.create(
-                        event, getCurrentPersistentMessage()), destination), getSelf());
+                        event, getCurrentPersistentMessage()), destination.path()), getSelf());
             }
 
             public void onReceiveReplay(Object msg) {
@@ -338,5 +353,31 @@ public class PersistenceDocTest {
             }
         }
         //#reliable-event-delivery
+    };
+
+    static Object o9 = new Object() {
+        //#view
+        class MyView extends UntypedView {
+            @Override
+            public String processorId() {
+                return "some-processor-id";
+            }
+
+            @Override
+            public void onReceive(Object message) throws Exception {
+                if (message instanceof Persistent) {
+                    // ...
+                }
+            }
+        }
+        //#view
+
+        public void usage() {
+            final ActorSystem system = ActorSystem.create("example");
+            //#view-update
+            final ActorRef view = system.actorOf(Props.create(MyView.class));
+            view.tell(Update.create(true), null);
+            //#view-update
+        }
     };
 }

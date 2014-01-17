@@ -22,7 +22,9 @@ public class ProcessorChannelExample {
             if (message instanceof Persistent) {
                 Persistent msg = (Persistent)message;
                 System.out.println("processed " + msg.payload());
-                channel.tell(Deliver.create(msg.withPayload("processed " + msg.payload()), destination), getSelf());
+                channel.tell(Deliver.create(msg.withPayload("processed " + msg.payload()), destination.path()), getSelf());
+            } else if (message instanceof String) {
+                System.out.println("reply = " + message);
             }
         }
     }
@@ -32,8 +34,9 @@ public class ProcessorChannelExample {
         public void onReceive(Object message) throws Exception {
             if (message instanceof ConfirmablePersistent) {
                 ConfirmablePersistent msg = (ConfirmablePersistent)message;
-                msg.confirm();
                 System.out.println("received " + msg.payload());
+                getSender().tell(String.format("re: %s (%d)", msg.payload(), msg.sequenceNr()), null);
+                msg.confirm();
             }
         }
     }

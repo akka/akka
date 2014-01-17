@@ -20,7 +20,7 @@ import akka.serialization.SerializationExtension
 /**
  * INTERNAL API.
  */
-private[persistence] trait LeveldbStore extends Actor with LeveldbIdMapping with LeveldbReplay {
+private[persistence] trait LeveldbStore extends Actor with LeveldbIdMapping with LeveldbRecovery {
   val configPath: String
 
   val config = context.system.settings.config.getConfig(configPath)
@@ -44,36 +44,47 @@ private[persistence] trait LeveldbStore extends Actor with LeveldbIdMapping with
 
   import Key._
 
-  def write(persistentBatch: immutable.Seq[PersistentRepr]) =
-    withBatch(batch ⇒ persistentBatch.foreach(persistent ⇒ addToBatch(persistent, batch)))
+  def writeMessages(messages: immutable.Seq[PersistentRepr]) =
+    withBatch(batch ⇒ messages.foreach(message ⇒ addToMessageBatch(message, batch)))
 
-  def delete(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean) = withBatch { batch ⇒
-    val nid = numericId(processorId)
-    if (permanent) fromSequenceNr to toSequenceNr foreach { sequenceNr ⇒
-      batch.delete(keyToBytes(Key(nid, sequenceNr, 0))) // TODO: delete confirmations and deletion markers, if any.
-    }
-    else fromSequenceNr to toSequenceNr foreach { sequenceNr ⇒
-      batch.put(keyToBytes(deletionKey(nid, sequenceNr)), Array.empty[Byte])
+  def writeConfirmations(confirmations: immutable.Seq[PersistentConfirmation]) =
+    withBatch(batch ⇒ confirmations.foreach(confirmation ⇒ addToConfirmationBatch(confirmation, batch)))
+
+  def deleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean) = withBatch { batch ⇒
+    messageIds foreach { messageId ⇒
+      if (permanent) batch.delete(keyToBytes(Key(numericId(messageId.processorId), messageId.sequenceNr, 0)))
+      else batch.put(keyToBytes(deletionKey(numericId(messageId.processorId), messageId.sequenceNr)), Array.emptyByteArray)
     }
   }
 
-  def confirm(processorId: String, sequenceNr: Long, channelId: String) {
-    leveldb.put(keyToBytes(Key(numericId(processorId), sequenceNr, numericId(channelId))), channelId.getBytes("UTF-8"))
+  def deleteMessagesTo(processorId: String, toSequenceNr: Long, permanent: Boolean) = withBatch { batch ⇒
+    val nid = numericId(processorId)
+
+    // seek to first existing message
+    val fromSequenceNr = withIterator { iter ⇒
+      val startKey = Key(nid, 1L, 0)
+      iter.seek(keyToBytes(startKey))
+      if (iter.hasNext) keyFromBytes(iter.peekNext().getKey).sequenceNr else Long.MaxValue
+    }
+
+    fromSequenceNr to toSequenceNr foreach { sequenceNr ⇒
+      if (permanent) batch.delete(keyToBytes(Key(nid, sequenceNr, 0))) // TODO: delete confirmations and deletion markers, if any.
+      else batch.put(keyToBytes(deletionKey(nid, sequenceNr)), Array.emptyByteArray)
+    }
   }
 
   def leveldbSnapshot = leveldbReadOptions.snapshot(leveldb.getSnapshot)
-  def leveldbIterator = leveldb.iterator(leveldbSnapshot)
 
-  def persistentToBytes(p: PersistentRepr): Array[Byte] = serialization.serialize(p).get
-  def persistentFromBytes(a: Array[Byte]): PersistentRepr = serialization.deserialize(a, classOf[PersistentRepr]).get
-
-  private def addToBatch(persistent: PersistentRepr, batch: WriteBatch): Unit = {
-    val nid = numericId(persistent.processorId)
-    batch.put(keyToBytes(counterKey(nid)), counterToBytes(persistent.sequenceNr))
-    batch.put(keyToBytes(Key(nid, persistent.sequenceNr, 0)), persistentToBytes(persistent))
+  def withIterator[R](body: DBIterator ⇒ R): R = {
+    val iterator = leveldb.iterator(leveldbSnapshot)
+    try {
+      body(iterator)
+    } finally {
+      iterator.close()
+    }
   }
 
-  private def withBatch[R](body: WriteBatch ⇒ R): R = {
+  def withBatch[R](body: WriteBatch ⇒ R): R = {
     val batch = leveldb.createWriteBatch()
     try {
       val r = body(batch)
@@ -82,6 +93,21 @@ private[persistence] trait LeveldbStore extends Actor with LeveldbIdMapping with
     } finally {
       batch.close()
     }
+  }
+
+  def persistentToBytes(p: PersistentRepr): Array[Byte] = serialization.serialize(p).get
+  def persistentFromBytes(a: Array[Byte]): PersistentRepr = serialization.deserialize(a, classOf[PersistentRepr]).get
+
+  private def addToMessageBatch(persistent: PersistentRepr, batch: WriteBatch): Unit = {
+    val nid = numericId(persistent.processorId)
+    batch.put(keyToBytes(counterKey(nid)), counterToBytes(persistent.sequenceNr))
+    batch.put(keyToBytes(Key(nid, persistent.sequenceNr, 0)), persistentToBytes(persistent))
+  }
+
+  private def addToConfirmationBatch(confirmation: PersistentConfirmation, batch: WriteBatch): Unit = {
+    val npid = numericId(confirmation.processorId)
+    val ncid = numericId(confirmation.channelId)
+    batch.put(keyToBytes(Key(npid, confirmation.sequenceNr, ncid)), confirmation.channelId.getBytes("UTF-8"))
   }
 
   override def preStart() {
@@ -104,17 +130,14 @@ class SharedLeveldbStore extends { val configPath = "akka.persistence.journal.le
   import AsyncWriteTarget._
 
   def receive = {
-    case WriteBatch(pb)                     ⇒ sender ! write(pb)
-    case Delete(pid, fsnr, tsnr, permanent) ⇒ sender ! delete(pid, fsnr, tsnr, permanent)
-    case Confirm(pid, snr, cid)             ⇒ sender ! confirm(pid, snr, cid)
-    case Replay(pid, fromSnr, toSnr) ⇒
-      val npid = numericId(pid)
-      val res = for {
-        _ ← Try(replay(npid, fromSnr, toSnr)(sender ! _))
-        max ← Try(maxSequenceNr(npid))
-      } yield max
-      res match {
-        case Success(max)   ⇒ sender ! ReplaySuccess(max)
+    case WriteMessages(msgs)                        ⇒ sender ! writeMessages(msgs)
+    case WriteConfirmations(cnfs)                   ⇒ sender ! writeConfirmations(cnfs)
+    case DeleteMessages(messageIds, permanent)      ⇒ sender ! deleteMessages(messageIds, permanent)
+    case DeleteMessagesTo(pid, tsnr, permanent)     ⇒ sender ! deleteMessagesTo(pid, tsnr, permanent)
+    case ReadHighestSequenceNr(pid, fromSequenceNr) ⇒ sender ! readHighestSequenceNr(numericId(pid))
+    case ReplayMessages(pid, fromSnr, toSnr, max) ⇒
+      Try(replayMessages(numericId(pid), fromSnr, toSnr, max)(sender ! _)) match {
+        case Success(max)   ⇒ sender ! ReplaySuccess
         case Failure(cause) ⇒ sender ! ReplayFailure(cause)
       }
   }

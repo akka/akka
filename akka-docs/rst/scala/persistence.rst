@@ -5,21 +5,13 @@ Persistence
 ###########
 
 Akka persistence enables stateful actors to persist their internal state so that it can be recovered when an actor
-is started, restarted by a supervisor or migrated in a cluster. It also allows stateful actors to recover from JVM
-crashes, for example. The key concept behind Akka persistence is that only changes to an actor's internal state are
-persisted but never its current state directly (except for optional snapshots). These changes are only ever appended
-to storage, nothing is ever mutated, which allows for very high transaction rates and efficient replication. Stateful
-actors are recovered by replaying stored changes to these actors from which they can rebuild internal state. This can
-be either the full history of changes or starting from a snapshot of internal actor state which can dramatically
-reduce recovery times. Akka persistence also provides point-to-point communication channels with at-least-once
-message delivery guarantees.
-
-Storage backends for state changes and snapshots are pluggable in Akka persistence. Currently, these are written to
-the local filesystem. Distributed and replicated storage, with the possibility of scaling writes, will be available
-soon.
-
-Akka persistence is inspired by the `eventsourced`_ library. It follows the same concepts and architecture of
-`eventsourced`_ but significantly differs on API and implementation level.
+is started, restarted after a JVM crash or by a supervisor, or migrated in a cluster. The key concept behind Akka
+persistence is that only changes to an actor's internal state are persisted but never its current state directly
+(except for optional snapshots). These changes are only ever appended to storage, nothing is ever mutated, which
+allows for very high transaction rates and efficient replication. Stateful actors are recovered by replaying stored
+changes to these actors from which they can rebuild internal state. This can be either the full history of changes
+or starting from a snapshot which can dramatically reduce recovery times. Akka persistence also provides point-to-point
+communication channels with at-least-once message delivery semantics.
 
 .. warning::
 
@@ -27,6 +19,9 @@ Akka persistence is inspired by the `eventsourced`_ library. It follows the same
   improve this API based on our users’ feedback, which implies that while we try to keep incompatible
   changes to a minimum the binary compatibility guarantee for maintenance releases does not apply to the
   contents of the ``akka.persistence`` package.
+
+Akka persistence is inspired by and the official replacement of the `eventsourced`_ library. It follows the same
+concepts and architecture of `eventsourced`_ but significantly differs on API and implementation level.
 
 .. _eventsourced: https://github.com/eligosource/eventsourced
 
@@ -44,16 +39,22 @@ Architecture
   before its ``receive`` method is called. When a processor is started or restarted, journaled messages are replayed
   to that processor, so that it can recover internal state from these messages.
 
-* *Channel*: Channels are used by processors to communicate with other actors. They prevent that replayed messages
-  are redundantly delivered to these actors and provide at-least-once message delivery guarantees, also in case of
-  sender and receiver JVM crashes.
+* *View*: A view is a persistent, stateful actor that receives journaled messages that have been written by another
+  processor. A view itself does not journal new messages, instead, it updates internal state only from a processor's
+  replicated message stream.
+
+* *Channel*: Channels are used by processors and views to communicate with other actors. They prevent that replayed
+  messages are redundantly delivered to these actors and provide at-least-once message delivery semantics, also in
+  case of sender and receiver JVM crashes.
 
 * *Journal*: A journal stores the sequence of messages sent to a processor. An application can control which messages
-  are stored and which are received by the processor without being journaled. The storage backend of a journal is
-  pluggable.
+  are journaled and which are received by the processor without being journaled. The storage backend of a journal is
+  pluggable. The default journal storage plugin writes to the local filesystem, replicated journals are available as
+  :ref:`community-projects`.
 
-* *Snapshot store*: A snapshot store persists snapshots of a processor's internal state. Snapshots are used for
-  optimizing recovery times. The storage backend of a snapshot store is pluggable.
+* *Snapshot store*: A snapshot store persists snapshots of a processor's or a view's internal state. Snapshots are
+  used for optimizing recovery times. The storage backend of a snapshot store is pluggable. The default snapshot
+  storage plugin writes to the local filesystem.
 
 * *Event sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
   development of event sourced applications (see section :ref:`event-sourcing`)
@@ -70,10 +71,9 @@ A processor can be implemented by extending the ``Processor`` trait and implemen
 Processors only write messages of type ``Persistent`` to the journal, others are received without being persisted.
 When a processor's ``receive`` method is called with a ``Persistent`` message it can safely assume that this message
 has been successfully written to the journal. If a journal fails to write a ``Persistent`` message then the processor
-is stopped, by default. If an application wants that a processors continues to run on persistence failures it must
-handle ``PersistenceFailure`` messages. In this case, a processor may want to inform the sender about the failure,
-so that the sender can re-send the message, if needed, under the assumption that the journal recovered from a
-temporary failure.
+is stopped, by default. If a processor should continue running on persistence failures it must handle
+``PersistenceFailure`` messages. In this case, a processor may want to inform the sender about the failure,
+so that the sender can re-send the message, if needed.
 
 A ``Processor`` itself is an ``Actor`` and can therefore be instantiated with ``actorOf``.
 
@@ -84,7 +84,7 @@ Recovery
 
 By default, a processor is automatically recovered on start and on restart by replaying journaled messages.
 New messages sent to a processor during recovery do not interfere with replayed messages. New messages will
-only be received by that processor after recovery completes.
+only be received by a processor after recovery completes.
 
 Recovery customization
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -132,7 +132,7 @@ that message as argument. An optional ``permanent`` parameter specifies whether 
 deleted from the journal or only marked as deleted. In both cases, the message won't be replayed. Later extensions
 to Akka persistence will allow to replay messages that have been marked as deleted which can be useful for debugging
 purposes, for example. To delete all messages (journaled by a single processor) up to a specified sequence number,
-processors can call the ``deleteMessages`` method.
+processors should call the ``deleteMessages`` method.
 
 Identifiers
 -----------
@@ -145,41 +145,103 @@ method.
 
 Applications can customize a processor's id by specifying an actor name during processor creation as shown in
 section :ref:`processors`. This changes that processor's name in its actor hierarchy and hence influences only
-part of the processor id. To fully customize a processor's id, the ``processorId`` method should be overridden.
+part of the processor id. To fully customize a processor's id, the ``processorId`` method must be overridden.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#processor-id-override
+
+Overriding ``processorId`` is the recommended way to generate stable identifiers.
+
+.. _views:
+
+Views
+=====
+
+Views can be implemented by extending the ``View`` trait  and implementing the ``receive`` and the ``processorId``
+methods.
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#view
+
+The ``processorId`` identifies the processor from which the view receives journaled messages. It is not necessary
+the referenced processor is actually running. Views read messages from a processor's journal directly. When a
+processor is started later and begins to write new messages, the corresponding view is updated automatically, by
+default.
+
+Updates
+-------
+
+The default update interval of all views of an actor system is configurable:
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#auto-update-interval
+
+``View`` implementation classes may also override the ``autoUpdateInterval`` method to return a custom update
+interval for a specific view class or view instance. Applications may also trigger additional updates at
+any time by sending a view an ``Update`` message.
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#view-update
+
+If the ``await`` parameter is set to ``true``, messages that follow the ``Update`` request are processed when the
+incremental message replay, triggered by that update request, completed. If set to ``false`` (default), messages
+following the update request may interleave with the replayed message stream. Automated updates always run with
+``await = false``.
+
+Automated updates of all views of an actor system can be turned off by configuration:
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#auto-update
+
+Implementation classes may override the configured default value by overriding the ``autoUpdate`` method. To
+limit the number of replayed messages per update request, applications can configure a custom
+``akka.persistence.view.auto-update-replay-max`` value or override the ``autoUpdateReplayMax`` method. The number
+of replayed messages for manual updates can be limited with the ``replayMax`` parameter of the ``Update`` message.
+
+Recovery
+--------
+
+Initial recovery of views works in the very same way as for :ref:`processors` (i.e. by sending a ``Recover`` message
+to self). The maximum number of replayed messages during initial recovery is determined by ``autoUpdateReplayMax``.
+Further possibilities to customize initial recovery are explained in section :ref:`processors`.
+
+Identifiers
+-----------
+
+A view must have an identifier that doesn't change across different actor incarnations. It defaults to the
+``String`` representation of the actor path without the address part and can be obtained via the ``viewId``
+method.
+
+Applications can customize a view's id by specifying an actor name during view creation. This changes that view's
+name in its actor hierarchy and hence influences only part of the view id. To fully customize a view's id, the
+``viewId`` method must be overridden. Overriding ``viewId`` is the recommended way to generate stable identifiers.
+
+The ``viewId`` must differ from the referenced ``processorId``, unless :ref:`snapshots` of a view and its
+processor shall be shared (which is what applications usually do not want).
 
 .. _channels:
 
 Channels
 ========
 
-.. warning::
+Channels are special actors that are used by processors or views to communicate with other actors (channel
+destinations). The following discusses channels in context of processors but this is also applicable to views.
 
-  There are further changes planned to the channel API that couldn't make it into the current milestone.
-  One example is to have only a single destination per channel to allow gap detection and more advanced
-  flow control.
-
-Channels are special actors that are used by processors to communicate with other actors (channel destinations).
 Channels prevent redundant delivery of replayed messages to destinations during processor recovery. A replayed
-message is retained by a channel if its previous delivery has been confirmed by a destination.
+message is retained by a channel if its delivery has been confirmed by a destination.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#channel-example
 
 A channel is ready to use once it has been created, no recovery or further activation is needed. A ``Deliver``
-request  instructs a channel to send a ``Persistent`` message to a destination. Sender references are preserved
-by a channel, therefore, a destination can reply to the sender of a ``Deliver`` request.
+request  instructs a channel to send a ``Persistent`` message to a destination. A destination is provided as
+``ActorPath`` and messages are sent by the channel via that path's ``ActorSelection``. Sender references are
+preserved by a channel, therefore, a destination can reply to the sender of a ``Deliver`` request.
 
-If a processor wants to reply to a ``Persistent`` message sender it should use the ``sender`` reference as channel
+If a processor wants to reply to a ``Persistent`` message sender it should use the ``sender`` path as channel
 destination.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#channel-example-reply
 
 Persistent messages delivered by a channel are of type ``ConfirmablePersistent``. ``ConfirmablePersistent`` extends
-``Persistent`` by adding the methods ``confirm`` method and ``redeliveries`` (see also :ref:`redelivery`). Channel
-destinations confirm the delivery of a ``ConfirmablePersistent`` message by calling ``confirm()`` an that message.
-This asynchronously writes a confirmation entry to the journal. Replayed messages internally contain these confirmation
-entries which allows a channel to decide if a message should be retained or not.
+``Persistent`` by adding the methods ``confirm`` and ``redeliveries`` (see also :ref:`redelivery`). A channel
+destination confirms the delivery of a ``ConfirmablePersistent`` message by calling ``confirm()`` on that message.
+This asynchronously writes a confirmation entry to the journal. Replayed messages internally contain confirmation
+entries which allows a channel to decide if it should retain these messages or not.
 
 A ``Processor`` can also be used as channel destination i.e. it can persist ``ConfirmablePersistent`` messages too.
 
@@ -188,25 +250,23 @@ A ``Processor`` can also be used as channel destination i.e. it can persist ``Co
 Message re-delivery
 -------------------
 
-Channels re-deliver messages to destinations if they do not confirm their receipt within a configurable timeout.
+Channels re-deliver messages to destinations if they do not confirm delivery within a configurable timeout.
 This timeout can be specified as ``redeliverInterval`` when creating a channel, optionally together with the
-maximum number of re-deliveries a channel should attempt for each unconfirmed message.
+maximum number of re-deliveries a channel should attempt for each unconfirmed message. The number of re-delivery
+attempts can be obtained via the ``redeliveries`` method on ``ConfirmablePersistent`` or by pattern matching.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#channel-custom-settings
 
-Message re-delivery is done out of order with regards to normal delivery i.e. redelivered messages may arrive
-later than newer normally delivered messages. The number of re-delivery attempts can be obtained via the
-``redeliveries`` method on ``ConfirmablePersistent`` or by pattern matching.
+A channel keeps messages in memory until their successful delivery has been confirmed or the maximum number of
+re-deliveries is reached. To be notified about messages that have reached the maximum number of re-deliveries,
+applications can register a listener at channel creation.
 
-A channel keeps messages in memory until their successful delivery has been confirmed by their destination(s)
-or their maximum number of re-deliveries is reached. In the latter case, the application has to re-send the
-correspnding ``Deliver`` request to the channel so that the channel can start a new series of delivery attempts
-(starting again with a ``redeliveries`` count of ``0``).
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#channel-custom-listener
 
-Re-sending ``Deliver`` requests is done automatically if the sending processor replays messages: only ``Deliver``
-requests of unconfirmed messages will be served again by the channel. A message replay can be enforced by an
-application by restarting the sending processor, for example. A replay will also take place if the whole
-application is restarted, either after normal termination or after a crash.
+A listener receives ``RedeliverFailure`` notifications containing all messages that could not be delivered. On
+receiving a ``RedeliverFailure`` message, an application may decide to restart the sending processor to enforce
+a re-send of these messages to the channel or confirm these messages to prevent further re-sends. The sending
+processor can also be restarted any time later to re-send unconfirmed messages.
 
 This combination of
 
@@ -215,7 +275,7 @@ This combination of
 * message re-deliveries by channels and
 * application-level confirmations (acknowledgements) by destinations
 
-enables channels to provide at-least-once message delivery guarantees. Possible duplicates can be detected by
+enables channels to provide at-least-once message delivery semantics. Possible duplicates can be detected by
 destinations by tracking message sequence numbers. Message sequence numbers are generated per sending processor.
 Depending on how a processor routes outbound messages to destinations, they may either see a contiguous message
 sequence or a sequence with gaps.
@@ -224,14 +284,13 @@ sequence or a sequence with gaps.
 
   If a processor emits more than one outbound message per inbound ``Persistent`` message it **must** use a
   separate channel for each outbound message to ensure that confirmations are uniquely identifiable, otherwise,
-  at-least-once message delivery is not guaranteed. This rule has been introduced to avoid writing additional
+  at-least-once message delivery semantics do not apply. This rule has been introduced to avoid writing additional
   outbound message identifiers to the journal which would decrease the overall throughput. It is furthermore
   recommended to collapse multiple outbound messages to the same destination into a single outbound message,
-  otherwise, if sent via multiple channels, their ordering is not defined. These restrictions are likely to be
-  removed in the final release.
+  otherwise, if sent via multiple channels, their ordering is not defined.
 
-Whenever an application wants to have more control how sequence numbers are assigned to messages it should use
-an application-specific sequence number generator and include the generated sequence numbers into the ``payload``
+If an application wants to have more control how sequence numbers are assigned to messages it should use an
+application-specific sequence number generator and include the generated sequence numbers into the ``payload``
 of ``Persistent`` messages.
 
 Persistent channels
@@ -241,60 +300,45 @@ Channels created with ``Channel.props`` do not persist messages. These channels 
 with a sending processor that takes care of persistence, hence, channel-specific persistence is not necessary in
 this case. They are referred to as transient channels in the following.
 
-Applications may also use transient channels standalone (i.e. without a sending processor) if re-delivery attempts
-to destinations are required but message loss in case of a sender JVM crash is not an issue. If applications want to
-use standalone channels but message loss is not acceptable, they should use persistent channels. A persistent channel
-can be created with ``PersistentChannel.props`` and configured with a ``PersistentChannelSettings`` object.
+Persistent channels are like transient channels but additionally persist messages before delivering them. Messages
+that have been persisted by a persistent channel are deleted when destinations confirm their delivery. A persistent
+channel can be created with ``PersistentChannel.props`` and configured with a ``PersistentChannelSettings`` object.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#persistent-channel-example
 
-A persistent channel is like a transient channel that additionally persists ``Deliver`` requests before serving it.
-Hence, it can recover from sender JVM crashes and provide the same message re-delivery semantics as a transient
-channel in combination with an application-defined processor.
+A persistent channel is useful for delivery of messages to slow destinations or destinations that are unavailable
+for a long time. It can constrain the number of pending confirmations based on the ``pendingConfirmationsMax``
+and ``pendingConfirmationsMin`` parameters of ``PersistentChannelSettings``.
 
-By default, a persistent channel doesn't reply whether a ``Persistent`` message, sent with ``Deliver``, has been
-successfully persisted or not. This can be enabled by creating the channel with the ``replyPersistent`` configuration
-parameter set to ``true``:
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#persistent-channel-watermarks
+
+It suspends delivery when the number of pending confirmations reaches ``pendingConfirmationsMax`` and resumes
+delivery again when this number falls below ``pendingConfirmationsMin``. This prevents both, flooding destinations
+with more messages than they can process and unlimited memory consumption by the channel. A persistent channel
+continues to persist new messages even when message delivery is temporarily suspended.
+
+Standalone usage
+----------------
+
+Applications may also use channels standalone. Transient channels can be used standalone if re-delivery attempts
+to destinations are required but message loss in case of a sender JVM crash is not an issue. If message loss in
+case of a sender JVM crash is an issue, persistent channels should be used. In this case, applications may want to
+receive replies from the channel whether messages have been successfully persisted or not. This can be enabled by
+creating the channel with the ``replyPersistent`` configuration parameter set to ``true``:
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#persistent-channel-reply
 
-With this setting, either the successfully persisted message is replied to the sender or a ``PersistenceFailure``.
-In case of a persistence failure, the sender should re-send the message.
-
-Using a persistent channel in combination with an application-defined processor can make sense if destinations are
-unavailable for a long time and an application doesn't want to buffer all messages in memory (but write them to the
-journal only). In this case, delivery can be disabled by sending the channel a ``DisableDelivery`` message (to
-stop delivery and persist-only) and re-enabled again by sending it an ``EnableDelivery`` message. A disabled channel
-that receives an ``EnableDelivery`` message, processes all persisted, unconfirmed ``Deliver`` requests again before
-serving new ones.
-
-Sender resolution
------------------
-
-``ActorRef`` s of ``Persistent`` message senders are also stored in the journal. Consequently, they may become invalid if
-an application is restarted and messages are replayed. For example, the stored ``ActorRef`` may then reference
-a previous incarnation of a sender and a new incarnation of that sender cannot receive a reply from a processor.
-This may be acceptable for many applications but others may require that a new sender incarnation receives the
-reply (to reliably resume a conversation between actors after a JVM crash, for example). Here, a channel may
-assist in resolving new sender incarnations by specifying a third ``Deliver`` argument:
-
-* ``Resolve.Destination`` if the sender of a persistent message is used as channel destination
-
-  .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#resolve-destination
-
-* ``Resolve.Sender`` if the sender of a persistent message is forwarded to a destination.
-
-  .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#resolve-sender
-
-Default is ``Resolve.Off`` which means no resolution. Find out more in the ``Deliver`` API docs.
+With this setting, either the successfully persisted message is replied to the sender or a ``PersistenceFailure``
+message. In case the latter case, the sender should re-send the message.
 
 Identifiers
 -----------
 
-In the same way as :ref:`processors`, channels also have an identifier that defaults to a channel's path. A channel
-identifier can therefore be customized by using a custom actor name at channel creation. This changes that channel's
-name in its actor hierarchy and hence influences only part of the channel identifier. To fully customize a channel
-identifier, it should be provided as argument ``Channel.props(String)`` or ``PersistentChannel.props(String)``.
+In the same way as :ref:`processors` and :ref:`views`, channels also have an identifier that defaults to a channel's
+path. A channel identifier can therefore be customized by using a custom actor name at channel creation. This changes
+that channel's name in its actor hierarchy and hence influences only part of the channel identifier. To fully customize
+a channel identifier, it should be provided as argument ``Channel.props(String)`` or ``PersistentChannel.props(String)``
+(recommended to generate stable identifiers).
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#channel-id-override
 
@@ -313,7 +357,7 @@ method or by pattern matching
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#payload-pattern-matching
 
 Inside processors, new persistent messages are derived from the current persistent message before sending them via a
-channel, either by calling ``p.withPayload(...)`` or ``Persistent.create(...)`` where the latter uses the
+channel, either by calling ``p.withPayload(...)`` or ``Persistent(...)`` where the latter uses the
 implicit ``currentPersistentMessage`` made available by ``Processor``.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#current-message
@@ -333,16 +377,18 @@ method or by pattern matching
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#sequence-nr-pattern-matching
 
 Persistent messages are assigned sequence numbers on a per-processor basis (or per channel basis if used
-standalone). A sequence starts at ``1L`` and doesn't contain gaps unless a processor deletes a message.
+standalone). A sequence starts at ``1L`` and doesn't contain gaps unless a processor deletes messages.
 
 .. _snapshots:
 
 Snapshots
 =========
 
-Snapshots can dramatically reduce recovery times. Processors can save snapshots of internal state by calling the
-``saveSnapshot`` method on ``Processor``. If saving of a snapshot succeeds, the processor will receive a
-``SaveSnapshotSuccess`` message, otherwise a ``SaveSnapshotFailure`` message
+Snapshots can dramatically reduce recovery times of processors and views. The following discusses snapshots
+in context of processors but this is also applicable to views.
+
+Processors can save snapshots of internal state by calling the  ``saveSnapshot`` method. If saving of a snapshot
+succeeds, the processor receives a ``SaveSnapshotSuccess`` message, otherwise a ``SaveSnapshotFailure`` message
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#save-snapshot
 
@@ -370,9 +416,9 @@ saved snapshot matches the specified ``SnapshotSelectionCriteria`` will replay a
 Snapshot deletion
 -----------------
 
-A processor can delete a single snapshot by calling the ``deleteSnapshot`` method with the sequence number and the
-timestamp of the snapshot as argument. To bulk-delete snapshots that match a specified ``SnapshotSelectionCriteria``
-argument, processors can call the ``deleteSnapshots`` method.
+A processor can delete individual snapshots by calling the ``deleteSnapshot`` method with the sequence number and the
+timestamp of a snapshot as argument. To bulk-delete snapshots matching ``SnapshotSelectionCriteria``, processors should
+use the ``deleteSnapshots`` method.
 
 .. _event-sourcing:
 
@@ -399,8 +445,7 @@ also process commands that do not change application state, such as query comman
 Akka persistence supports event sourcing with the ``EventsourcedProcessor`` trait (which implements event sourcing
 as a pattern on top of command sourcing). A processor that extends this trait does not handle ``Persistent`` messages
 directly but uses the ``persist`` method to persist and handle events. The behavior of an ``EventsourcedProcessor``
-is defined by implementing ``receiveReplay`` and ``receiveCommand``. This is best explained with an example (which
-is also part of ``akka-sample-persistence``).
+is defined by implementing ``receiveReplay`` and ``receiveCommand``. This is demonstrated in the following example.
 
 .. includecode:: ../../../akka-samples/akka-sample-persistence/src/main/scala/sample/persistence/EventsourcedExample.scala#eventsourced-example
 
@@ -413,28 +458,25 @@ a command is handled by generating two events which are then persisted and handl
 ``persist`` with an event (or a sequence of events) as first argument and an event handler as second argument.
 
 The ``persist`` method persists events asynchronously and the event handler is executed for successfully persisted
-events. Successfully persisted events are internally sent back to the processor as separate messages which trigger
-the event handler execution. An event handler may therefore close over processor state and mutate it. The sender
-of a persisted event is the sender of the corresponding command. This allows event handlers to reply to the sender
-of a command (not shown).
+events. Successfully persisted events are internally sent back to the processor as individual messages that trigger
+event handler executions. An event handler may close over processor state and mutate it. The sender of a persisted
+event is the sender of the corresponding command. This allows event handlers to reply to the sender of a command
+(not shown).
 
 The main responsibility of an event handler is changing processor state using event data and notifying others
 about successful state changes by publishing events.
 
-When persisting events with ``persist`` it is guaranteed that the processor will not receive new commands between
+When persisting events with ``persist`` it is guaranteed that the processor will not receive further commands between
 the ``persist`` call and the execution(s) of the associated event handler. This also holds for multiple ``persist``
-calls in context of a single command.
-
-The example also demonstrates how to change the processor's default behavior, defined by ``receiveCommand``, to
-another behavior, defined by ``otherCommandHandler``, and back using ``context.become()`` and ``context.unbecome()``.
-See also the API docs of ``persist`` for further details.
+calls in context of a single command. The example also shows how to switch between command different command handlers
+with ``context.become()`` and ``context.unbecome()``.
 
 Reliable event delivery
 -----------------------
 
-Sending events from an event handler to another actor directly doesn't guarantee delivery of these events. To
-guarantee at-least-once delivery, :ref:`channels` must be used. In this case, also replayed events (received by
-``receiveReplay``) must be sent to a channel, as shown in the following example:
+Sending events from an event handler to another actor has at-most-once delivery semantics. For at-least-once delivery,
+:ref:`channels` must be used. In this case, also replayed events (received by ``receiveReplay``) must be sent to a
+channel, as shown in the following example:
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#reliable-event-delivery
 
@@ -449,29 +491,33 @@ To optimize throughput, a ``Processor`` internally batches received ``Persistent
 writing them to the journal (as a single batch). The batch size dynamically grows from 1 under low and moderate loads
 to a configurable maximum size (default is ``200``) under high load.
 
-.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#max-batch-size
+.. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#max-message-batch-size
 
 A new batch write is triggered by a processor as soon as a batch reaches the maximum size or if the journal completed
-writing the previous batch. Batch writes are never timer-based which keeps latencies as low as possible.
+writing the previous batch. Batch writes are never timer-based which keeps latencies at a minimum.
 
 Applications that want to have more explicit control over batch writes and batch sizes can send processors
 ``PersistentBatch`` messages.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#batch-write
 
-``Persistent`` messages contained in a ``PersistentBatch`` message are always written atomically, even if the batch
-size is greater than ``max-batch-size``. Also, a ``PersistentBatch`` is written isolated from other batches.
+``Persistent`` messages contained in a ``PersistentBatch`` are always written atomically, even if the batch
+size is greater than ``max-message-batch-size``. Also, a ``PersistentBatch`` is written isolated from other batches.
 ``Persistent`` messages contained in a ``PersistentBatch`` are received individually by a processor.
 
 ``PersistentBatch`` messages, for example, are used internally by an ``EventsourcedProcessor`` to ensure atomic
-writes of events. All events that are persisted in context of a single command are written as single batch to the
+writes of events. All events that are persisted in context of a single command are written as a single batch to the
 journal (even if ``persist`` is called multiple times per command). The recovery of an ``EventsourcedProcessor``
-will therefore never be done partially i.e. with only a subset of events persisted by a single command.
+will therefore never be done partially (with only a subset of events persisted by a single command).
+
+Confirmation and deletion operations performed by :ref:`channels` are also batched. The maximum confirmation
+and deletion batch sizes are configurable with ``akka.persistence.journal.max-confirmation-batch-size`` and
+``akka.persistence.journal.max-deletion-batch-size``, respectively.
 
 Storage plugins
 ===============
 
-Storage backends for journals and snapshot stores are plugins in akka-persistence. The default journal plugin
+Storage backends for journals and snapshot stores are pluggable in Akka persistence. The default journal plugin
 writes messages to LevelDB (see :ref:`local-leveldb-journal`). The default snapshot store plugin writes snapshots
 as individual files to the local filesystem (see :ref:`local-snapshot-store`). Applications can provide their own
 plugins by implementing a plugin API and activate them by configuration. Plugin development requires the following
@@ -483,19 +529,19 @@ Journal plugin API
 ------------------
 
 A journal plugin either extends ``SyncWriteJournal`` or ``AsyncWriteJournal``.  ``SyncWriteJournal`` is an
-actor that should be extended when the storage backend API only supports synchronous, blocking writes. The
-methods to be implemented in this case are:
+actor that should be extended when the storage backend API only supports synchronous, blocking writes. In this
+case, the methods to be implemented are:
 
 .. includecode:: ../../../akka-persistence/src/main/scala/akka/persistence/journal/SyncWriteJournal.scala#journal-plugin-api
 
 ``AsyncWriteJournal`` is an actor that should be extended if the storage backend API supports asynchronous,
-non-blocking writes. The methods to be implemented in that case are:
+non-blocking writes. In this case, the methods to be implemented are:
 
 .. includecode:: ../../../akka-persistence/src/main/scala/akka/persistence/journal/AsyncWriteJournal.scala#journal-plugin-api
 
-Message replays are always asynchronous, therefore, any journal plugin must implement:
+Message replays and sequence number recovery are always asynchronous, therefore, any journal plugin must implement:
 
-.. includecode:: ../../../akka-persistence/src/main/scala/akka/persistence/journal/AsyncReplay.scala#journal-plugin-api
+.. includecode:: ../../../akka-persistence/src/main/scala/akka/persistence/journal/AsyncRecovery.scala#journal-plugin-api
 
 A journal plugin can be activated with the following minimal configuration:
 
@@ -542,15 +588,15 @@ Shared LevelDB journal
 ----------------------
 
 A LevelDB instance can also be shared by multiple actor systems (on the same or on different nodes). This, for
-example, allows processors to failover to a backup node, assuming that the node, where the shared instance is
-runnning, is accessible from the backup node.
+example, allows processors to failover to a backup node and continue using the shared journal instance from the
+backup node.
 
 .. warning::
 
   A shared LevelDB instance is a single point of failure and should therefore only be used for testing
-  purposes.
+  purposes. Highly-available, replicated journal are available as :ref:`community-projects`.
 
-A shared LevelDB instance can be created by instantiating the ``SharedLeveldbStore`` actor.
+A shared LevelDB instance is started by instantiating the ``SharedLeveldbStore`` actor.
 
 .. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#shared-store-creation
 
@@ -577,18 +623,20 @@ i.e. only the first injection is used.
 Local snapshot store
 --------------------
 
-The default snapshot store plugin is ``akka.persistence.snapshot-store.local`` which writes snapshot files to
+The default snapshot store plugin is ``akka.persistence.snapshot-store.local``. It writes snapshot files to
 the local filesystem. The default storage location is a directory named ``snapshots`` in the current working
 directory. This can be changed by configuration where the specified path can be relative or absolute:
 
 .. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#snapshot-config
 
-Planned plugins
----------------
+.. _community-projects:
 
-* Shared snapshot store (SPOF, for testing purposes)
-* HA snapshot store backed by a distributed file system
-* HA journal backed by a distributed (NoSQL) data store
+Community plugins
+-----------------
+
+* `Replicated journal backed by Apache Cassandra <https://github.com/krasserm/akka-persistence-cassandra/>`_.
+* `Replicated journal backed by Apache HBase <https://github.com/ktoso/akka-persistence-hbase/>`_.
+* `Replicated journal backed by MongoDB <https://github.com/ddevore/akka-persistence-mongo/>`_.
 
 Custom serialization
 ====================
@@ -603,8 +651,7 @@ it must add
 
 .. includecode:: code/docs/persistence/PersistenceSerializerDocSpec.scala#custom-serializer-config
 
-to the application configuration. If not specified, a default serializer is used, which is the ``JavaSerializer``
-in this example.
+to the application configuration. If not specified, a default serializer is used.
 
 Testing
 =======
@@ -618,8 +665,7 @@ or
 
 .. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#shared-store-native-config
 
-in your Akka configuration. The latter setting applies if you're using a :ref:`shared-leveldb-journal`. The LevelDB
-Java port is for testing purposes only.
+in your Akka configuration. The LevelDB Java port is for testing purposes only.
 
 Miscellaneous
 =============

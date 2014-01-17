@@ -28,14 +28,9 @@ private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore �
     case Some(v) ⇒ v
   }
 
-  private def readIdMap(): Map[String, Int] = {
-    val iter = leveldbIterator
-    try {
-      iter.seek(keyToBytes(idKey(idOffset)))
-      readIdMap(Map.empty, iter)
-    } finally {
-      iter.close()
-    }
+  private def readIdMap(): Map[String, Int] = withIterator { iter ⇒
+    iter.seek(keyToBytes(idKey(idOffset)))
+    readIdMap(Map.empty, iter)
   }
 
   private def readIdMap(pathMap: Map[String, Int], iter: DBIterator): Map[String, Int] = {

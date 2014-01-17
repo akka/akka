@@ -15,49 +15,58 @@ import akka.persistence._
 /**
  * Abstract journal, optimized for synchronous writes.
  */
-trait SyncWriteJournal extends Actor with AsyncReplay {
+trait SyncWriteJournal extends Actor with AsyncRecovery {
   import JournalProtocol._
   import context.dispatcher
 
   private val extension = Persistence(context.system)
+  private val publish = extension.settings.internal.publishPluginCommands
 
   final def receive = {
-    case WriteBatch(persistentBatch, processor) ⇒
-      Try(write(persistentBatch.map(_.prepareWrite()))) match {
+    case WriteMessages(persistentBatch, processor) ⇒
+      Try(writeMessages(persistentBatch.map(_.prepareWrite()))) match {
         case Success(_) ⇒
-          processor ! WriteBatchSuccess
-          persistentBatch.foreach(p ⇒ processor.tell(WriteSuccess(p), p.sender))
+          processor ! WriteMessagesSuccess
+          persistentBatch.foreach(p ⇒ processor.tell(WriteMessageSuccess(p), p.sender))
         case Failure(e) ⇒
-          processor ! WriteBatchFailure(e)
-          persistentBatch.foreach(p ⇒ processor tell (WriteFailure(p, e), p.sender))
+          processor ! WriteMessagesFailure(e)
+          persistentBatch.foreach(p ⇒ processor tell (WriteMessageFailure(p, e), p.sender))
           throw e
       }
-    case Replay(fromSequenceNr, toSequenceNr, processorId, processor) ⇒
-      replayAsync(processorId, fromSequenceNr, toSequenceNr) { p ⇒
-        if (!p.deleted) processor.tell(Replayed(p), p.sender)
+    case ReplayMessages(fromSequenceNr, toSequenceNr, max, processorId, processor, replayDeleted) ⇒
+      asyncReplayMessages(processorId, fromSequenceNr, toSequenceNr, max) { p ⇒
+        if (!p.deleted || replayDeleted) processor.tell(ReplayedMessage(p), p.sender)
       } map {
-        maxSnr ⇒ ReplaySuccess(maxSnr)
+        case _ ⇒ ReplayMessagesSuccess
       } recover {
-        case e ⇒ ReplayFailure(e)
+        case e ⇒ ReplayMessagesFailure(e)
       } pipeTo (processor)
-    case c @ Confirm(processorId, messageSequenceNr, channelId, wrapperSequenceNr, channelEndpoint) ⇒
-      if (wrapperSequenceNr == 0L) {
-        // A wrapperSequenceNr == 0L means that the corresponding message was delivered by a
-        // transient channel. We can now write a delivery confirmation for this message.
-        confirm(processorId, messageSequenceNr, channelId)
-      } else {
-        // A wrapperSequenceNr != 0L means that the corresponding message was delivered by a
-        // persistent channel. We can now safely delete the wrapper message (that contains the
-        // delivered message).
-        delete(channelId, wrapperSequenceNr, wrapperSequenceNr, true)
+    case ReadHighestSequenceNr(fromSequenceNr, processorId, processor) ⇒
+      asyncReadHighestSequenceNr(processorId, fromSequenceNr).map {
+        highest ⇒ ReadHighestSequenceNrSuccess(highest)
+      } recover {
+        case e ⇒ ReadHighestSequenceNrFailure(e)
+      } pipeTo (processor)
+    case WriteConfirmations(confirmationsBatch, requestor) ⇒
+      Try(writeConfirmations(confirmationsBatch)) match {
+        case Success(_) ⇒ requestor ! WriteConfirmationsSuccess(confirmationsBatch)
+        case Failure(e) ⇒ requestor ! WriteConfirmationsFailure(e)
       }
-      if (channelEndpoint != null) channelEndpoint ! c
-      if (extension.publishPluginCommands) context.system.eventStream.publish(c)
-    case d @ Delete(processorId, fromSequenceNr, toSequenceNr, permanent) ⇒
-      delete(processorId, fromSequenceNr, toSequenceNr, permanent)
-      if (extension.publishPluginCommands) context.system.eventStream.publish(d)
-    case Loop(message, processor) ⇒
-      processor forward LoopSuccess(message)
+    case d @ DeleteMessages(messageIds, permanent, requestorOption) ⇒
+      Try(deleteMessages(messageIds, permanent)) match {
+        case Success(_) ⇒
+          requestorOption.foreach(_ ! DeleteMessagesSuccess(messageIds))
+          if (publish) context.system.eventStream.publish(d)
+        case Failure(e) ⇒
+          requestorOption.foreach(_ ! DeleteMessagesFailure(e))
+      }
+    case d @ DeleteMessagesTo(processorId, toSequenceNr, permanent) ⇒
+      Try(deleteMessagesTo(processorId, toSequenceNr, permanent)) match {
+        case Success(_) ⇒ if (publish) context.system.eventStream.publish(d)
+        case Failure(e) ⇒
+      }
+    case LoopMessage(message, processor) ⇒
+      processor forward LoopMessageSuccess(message)
   }
 
   //#journal-plugin-api
@@ -66,21 +75,25 @@ trait SyncWriteJournal extends Actor with AsyncReplay {
    * The batch write must be atomic i.e. either all persistent messages in the batch
    * are written or none.
    */
-  def write(persistentBatch: immutable.Seq[PersistentRepr]): Unit
+  def writeMessages(messages: immutable.Seq[PersistentRepr]): Unit
 
   /**
-   * Plugin API: synchronously deletes all persistent messages within the range from
-   * `fromSequenceNr` to `toSequenceNr` (both inclusive). If `permanent` is set to
-   * `false`, the persistent messages are marked as deleted, otherwise they are
-   * permanently deleted.
-   *
-   * @see [[AsyncReplay]]
+   * Plugin API: synchronously writes a batch of delivery confirmations to the journal.
    */
-  def delete(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean): Unit
+  def writeConfirmations(confirmations: immutable.Seq[PersistentConfirmation]): Unit
 
   /**
-   * Plugin API: synchronously writes a delivery confirmation to the journal.
+   * Plugin API: synchronously deletes messages identified by `messageIds` from the
+   * journal. If `permanent` is set to `false`, the persistent messages are marked as
+   * deleted, otherwise they are permanently deleted.
    */
-  def confirm(processorId: String, sequenceNr: Long, channelId: String): Unit
+  def deleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean): Unit
+
+  /**
+   * Plugin API: synchronously deletes all persistent messages up to `toSequenceNr`
+   * (inclusive). If `permanent` is set to `false`, the persistent messages are marked
+   * as deleted, otherwise they are permanently deleted.
+   */
+  def deleteMessagesTo(processorId: String, toSequenceNr: Long, permanent: Boolean): Unit
   //#journal-plugin-api
 }

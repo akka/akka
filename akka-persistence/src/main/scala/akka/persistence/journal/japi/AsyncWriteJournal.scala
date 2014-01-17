@@ -7,21 +7,24 @@ package akka.persistence.journal.japi
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 
+import akka.persistence._
 import akka.persistence.journal.{ AsyncWriteJournal ⇒ SAsyncWriteJournal }
-import akka.persistence.PersistentRepr
 
 /**
  * Java API: abstract journal, optimized for asynchronous, non-blocking writes.
  */
-abstract class AsyncWriteJournal extends AsyncReplay with SAsyncWriteJournal with AsyncWritePlugin {
+abstract class AsyncWriteJournal extends AsyncRecovery with SAsyncWriteJournal with AsyncWritePlugin {
   import context.dispatcher
 
-  final def writeAsync(persistentBatch: immutable.Seq[PersistentRepr]) =
-    doWriteAsync(persistentBatch.asJava).map(Unit.unbox)
+  final def asyncWriteMessages(messages: immutable.Seq[PersistentRepr]) =
+    doAsyncWriteMessages(messages.asJava).map(Unit.unbox)
 
-  final def deleteAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean) =
-    doDeleteAsync(processorId, fromSequenceNr, toSequenceNr, permanent).map(Unit.unbox)
+  final def asyncWriteConfirmations(confirmations: immutable.Seq[PersistentConfirmation]) =
+    doAsyncWriteConfirmations(confirmations.asJava).map(Unit.unbox)
 
-  final def confirmAsync(processorId: String, sequenceNr: Long, channelId: String) =
-    doConfirmAsync(processorId, sequenceNr, channelId).map(Unit.unbox)
+  final def asyncDeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean) =
+    doAsyncDeleteMessages(messageIds.asJava, permanent).map(Unit.unbox)
+
+  final def asyncDeleteMessagesTo(processorId: String, toSequenceNr: Long, permanent: Boolean) =
+    doAsyncDeleteMessagesTo(processorId, toSequenceNr, permanent).map(Unit.unbox)
 }

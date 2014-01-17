@@ -77,22 +77,32 @@ public class PersistencePluginDocTest {
 
     class MyAsyncJournal extends AsyncWriteJournal {
         @Override
-        public Future<Long> doReplayAsync(String processorId, long fromSequenceNr, long toSequenceNr, Procedure<PersistentRepr> replayCallback) {
+        public Future<Void> doAsyncWriteMessages(Iterable<PersistentRepr> messages) {
             return null;
         }
 
         @Override
-        public Future<Void> doWriteAsync(Iterable<PersistentRepr> persistentBatch) {
+        public Future<Void> doAsyncWriteConfirmations(Iterable<PersistentConfirmation> confirmations) {
             return null;
         }
 
         @Override
-        public Future<Void> doDeleteAsync(String processorId, long fromSequenceNr, long toSequenceNr, boolean permanent) {
+        public Future<Void> doAsyncDeleteMessages(Iterable<PersistentId> messageIds, boolean permanent) {
             return null;
         }
 
         @Override
-        public Future<Void> doConfirmAsync(String processorId, long sequenceNr, String channelId) {
+        public Future<Void> doAsyncDeleteMessagesTo(String processorId, long toSequenceNr, boolean permanent) {
+            return null;
+        }
+
+        @Override
+        public Future<Void> doAsyncReplayMessages(String processorId, long fromSequenceNr, long toSequenceNr, long max, Procedure<PersistentRepr> replayCallback) {
+            return null;
+        }
+
+        @Override
+        public Future<Long> doAsyncReadHighestSequenceNr(String processorId, long fromSequenceNr) {
             return null;
         }
     }

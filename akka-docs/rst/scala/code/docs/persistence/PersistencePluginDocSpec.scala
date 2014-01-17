@@ -23,9 +23,9 @@ import akka.persistence.snapshot._
 object PersistencePluginDocSpec {
   val config =
     """
-      //#max-batch-size
-      akka.persistence.journal.max-batch-size = 200
-      //#max-batch-size
+      //#max-message-batch-size
+      akka.persistence.journal.max-message-batch-size = 200
+      //#max-message-batch-size
       //#journal-config
       akka.persistence.journal.leveldb.dir = "target/journal"
       //#journal-config
@@ -119,10 +119,12 @@ trait SharedLeveldbPluginDocSpec {
 }
 
 class MyJournal extends AsyncWriteJournal {
-  def writeAsync(persistentBatch: Seq[PersistentRepr]): Future[Unit] = ???
-  def deleteAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean): Future[Unit] = ???
-  def confirmAsync(processorId: String, sequenceNr: Long, channelId: String): Future[Unit] = ???
-  def replayAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: (PersistentRepr) => Unit): Future[Long] = ???
+  def asyncWriteMessages(messages: Seq[PersistentRepr]): Future[Unit] = ???
+  def asyncWriteConfirmations(confirmations: Seq[PersistentConfirmation]): Future[Unit] = ???
+  def asyncDeleteMessages(messageIds: Seq[PersistentId], permanent: Boolean): Future[Unit] = ???
+  def asyncDeleteMessagesTo(processorId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit] = ???
+  def asyncReplayMessages(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: (PersistentRepr) => Unit): Future[Unit] = ???
+  def asyncReadHighestSequenceNr(processorId: String, fromSequenceNr: Long): Future[Long] = ???
 }
 
 class MySnapshotStore extends SnapshotStore {
