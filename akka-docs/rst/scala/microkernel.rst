@@ -15,11 +15,17 @@ The Akka Microkernel is included in the Akka download found at `downloads`_.
 To run an application with the microkernel you need to create a Bootable class
 that handles the startup and shutdown the application. An example is included below.
 
-Put your application jar in the ``deploy`` directory to have it automatically
-loaded.
+Put your application jar in the ``deploy`` directory and additional dependencies in the ``lib`` directory
+to have them automatically loaded and placed on the classpath.
 
 To start the kernel use the scripts in the ``bin`` directory, passing the boot
-classes for your application. Example command (on a unix-based system):
+classes for your application. 
+
+The start script adds ``config`` directory first in the classpath, followed by ``lib/*``.
+It runs java with main class ``akka.kernel.Main`` and the supplied Bootable class as
+argument.
+
+Example command (on a unix-based system):
 
 .. code-block:: none
 
@@ -34,37 +40,3 @@ of creating a Bootable):
 
 .. includecode:: ../../../akka-samples/akka-sample-hello-kernel/src/main/scala/sample/kernel/hello/HelloKernel.scala
 
-
-Distribution of microkernel application
----------------------------------------
-
-To make a distribution package of the microkernel and your application the ``akka-sbt-plugin`` provides
-``AkkaKernelPlugin``. It creates the directory structure, with jar files, configuration files and
-start scripts.
-
-To use the sbt plugin you define it in your ``project/plugins.sbt``:
-
-.. includecode:: ../../../akka-sbt-plugin/sample/project/plugins.sbt
-
-Make sure that you have a ``project/build.properties`` file:
-
-.. includecode:: ../../../akka-sbt-plugin/sample/project/build.properties
-
-Then you add it to the settings of your ``project/Build.scala``. It is also important that you add the ``akka-kernel`` dependency.
-This is an example of a complete sbt build file:
-
-.. includecode:: ../../../akka-sbt-plugin/sample/project/Build.scala
-
-Run the plugin with sbt::
-
-  > dist
-  > dist:clean
-
-There are several settings that can be defined:
-
-* ``outputDirectory`` - destination directory of the package, default ``target/dist``
-* ``distJvmOptions`` - JVM parameters to be used in the start script
-* ``configSourceDirs`` - Configuration files are copied from these directories, default ``src/config``, ``src/main/config``, ``src/main/resources``
-* ``distMainClass`` - Kernel main class to use in start script
-* ``libFilter`` - Filter of dependency jar files
-* ``additionalLibs`` - Additional dependency jar files

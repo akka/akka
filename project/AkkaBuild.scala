@@ -39,7 +39,6 @@ object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.3-SNAPSHOT",
-    // Also change ScalaVersion in akka-sbt-plugin/sample/project/Build.scala
     scalaVersion := requestedScalaVersion,
     scalaBinaryVersion := System.getProperty("akka.scalaBinaryVersion", if (scalaVersion.value contains "-") scalaVersion.value else scalaBinaryVersion.value)
   )
@@ -53,12 +52,12 @@ object AkkaBuild extends Build {
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
-      unidocExclude := Seq(samples.id, channelsTests.id, remoteTests.id, akkaSbtPlugin.id),
+      unidocExclude := Seq(samples.id, channelsTests.id, remoteTests.id),
       sources in JavaDoc <<= junidocSources,
       javacOptions in JavaDoc := Seq(),
       artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar"),
       packageDoc in Compile <<= packageDoc in JavaDoc,
-      Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id, samples.id, osgi.id, osgiAries.id, channelsTests.id),
+      Dist.distExclude := Seq(actorTests.id, docs.id, samples.id, osgi.id, osgiAries.id, channelsTests.id),
       // generate online version of docs
       sphinxInputs in Sphinx <<= sphinxInputs in Sphinx in LocalProject(docs.id) map { inputs => inputs.copy(tags = inputs.tags :+ "online") },
       // don't regenerate the pdf, just reuse the akka-docs version
@@ -75,7 +74,7 @@ object AkkaBuild extends Build {
       
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
-      persistence, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples, channels, channelsTests,
+      persistence, mailboxes, zeroMQ, kernel, osgi, osgiAries, docs, contrib, samples, channels, channelsTests,
       multiNodeTestkit)
   )
 
@@ -84,7 +83,7 @@ object AkkaBuild extends Build {
     base = file("akka-scala-nightly"),
     // remove dependencies that we have to build ourselves (Scala STM, ZeroMQ Scala Bindings)
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j,
-      persistence, mailboxes, kernel, akkaSbtPlugin, osgi, osgiAries, contrib, samples, channels, channelsTests,
+      persistence, mailboxes, kernel, osgi, osgiAries, contrib, samples, channels, channelsTests,
       multiNodeTestkit)
   )
 
@@ -421,20 +420,6 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.osgiAries ++ Seq(
       libraryDependencies ++= Dependencies.osgiAries,
       parallelExecution in Test := false,
-      reportBinaryIssues := () // disable bin comp check
-    )
-  )
-
-  lazy val akkaSbtPlugin = Project(
-    id = "akka-sbt-plugin",
-    base = file("akka-sbt-plugin"),
-    settings = defaultSettings ++ formatSettings ++ Seq(
-      sbtPlugin := true,
-      publishMavenStyle := false, // SBT Plugins should be published as Ivy
-      publishTo <<= Publish.akkaPluginPublishTo,
-      scalacOptions in Compile := Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
-      scalaVersion := "2.10.2",
-      scalaBinaryVersion := "2.10",
       reportBinaryIssues := () // disable bin comp check
     )
   )
@@ -804,7 +789,6 @@ object AkkaBuild extends Build {
     javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
     javacOptions in doc ++= Seq("-encoding", "UTF-8", "-source", "1.6"),
 
-    // if changing this between binary and full, also change at the bottom of akka-sbt-plugin/sample/project/Build.scala
     crossVersion := CrossVersion.binary,
 
     ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,

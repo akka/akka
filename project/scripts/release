@@ -51,41 +51,25 @@
 #                          "<your username>",
 #                          "<your password>")
 #
-# 3) You must have publishing rights to scalasbt.artifactoryonline.com
+# 3) You must have access to repo.akka.io
 #
-# 3.1) Politely ask the maintainers of the community plugins repository
-#      for credentials here:
-#        http://groups.google.com/group/sbt-repo-admins?hl=en
-#      More information about this repository is available here:
-#        http://www.scala-sbt.org/release/docs/Community/Community-Plugins.html
+# 3.1) Ask someone in the team for login information for the akkarepo user.
 #
-# 3.2) Add your credentials to sbt by adding this to your global.sbt file
-#        credentials += Credentials("Artifactory Realm",
-#                          "scalasbt.artifactoryonline.com",
-#                          "<your username>",
-#                          "<your encrypted password>")
-#      The encrypted password is available in your profile here
-#      http://scalasbt.artifactoryonline.com/scalasbt/webapp/profile.html
-#
-# 4) You must have access to repo.akka.io
-#
-# 4.1) Ask someone in the team for login information for the akkarepo user.
-#
-# 4.2) Install your public ssh key to avoid typing in your password.
+# 3.2) Install your public ssh key to avoid typing in your password.
 #      From the command line:
 #        shell> cat ~/.ssh/id_rsa.pub | ssh akkarepo@repo.akka.io "cat >> ~/.ssh/authorized_keys"
 #
-# 5) You must have upload access to S3 bucket "downloads.typesafe.com"
+# 4) You must have upload access to S3 bucket "downloads.typesafe.com"
 #
-# 5.1) Ask Akka team member for the AWS access key for 'akka.team' user.
+# 4.1) Ask Akka team member for the AWS access key for 'akka.team' user.
 #
-# 5.2) Add your credentials to sbt by adding this to your global.sbt file
+# 4.2) Add your credentials to sbt by adding this to your global.sbt file
 #        credentials += Credentials("Amazon S3",
 #          "downloads.typesafe.com.s3.amazonaws.com",
 #          "<Access Key Id>",
 #          "<Secret Access Key>")
 #
-# 6) Have access to github.com/akka/akka. This should be a given.
+# 5) Have access to github.com/akka/akka. This should be a given.
 #
 # Now you should be all set to run the script
 #
@@ -95,8 +79,7 @@
 #  And if all goes well a real run:
 #    shell> project/scripts/release <version>
 #
-# The sbt plugin is published directly to scalasbt.artifactoryonline.com, but the
-# artifacts published to oss.sonatype.org needs to be released by following the
+# The artifacts published to oss.sonatype.org needs to be released by following the
 # instructions under release here
 # https://docs.sonatype.org/display/Repository/Sonatype+OSS+Maven+Repository+Usage+Guide
 
@@ -111,7 +94,7 @@ declare release_path=${default_path}
 declare -r unzipped_dir="target/dist/unzipped"
 
 # flags
-unset run_tests dry_run no_mima no_revert no_akka_plugin
+unset run_tests dry_run no_mima no_revert
 
 # get the source location for this script; handles symlinks
 function get_script_path {
@@ -138,7 +121,6 @@ Usage: ${script_name} [options] VERSION
   -n | --dry-run         Build everything but do not push the release
   -m | --no-mima         Skip binary compatibility check in dry-run
   -r | --no-revert       On dry-run don't revert git commits and tags
-       --no-akka-plugin  Publish the akka sbt plugin locally and not to the repositry
 EOM
 }
 
@@ -173,7 +155,6 @@ while true; do
     -n | --dry-run) dry_run=true; shift ;;
     -m | --no-mima) no_mima=true; shift ;;
     -r | --no-revert) no_revert=true; shift ;;
-    --no-akka-plugin) no_akka_plugin=true; shift ;;
     * ) break ;;
   esac
 done
@@ -315,9 +296,6 @@ if [ ! $dry_run ]; then
   RELEASE_OPT="-Dakka.genjavadoc.enabled=true -Dpublish.maven.central=true"
 else
   RELEASE_OPT="-Dakka.genjavadoc.enabled=true"
-fi
-if [ $no_akka_plugin ]; then
-  RELEASE_OPT="${RELEASE_OPT} -Dpublish.plugin.locally=true"
 fi
 try sbt $RELEASE_OPT build-release
 echolog "Creating gzipped tar download..."
