@@ -5,11 +5,11 @@
 package akka.dispatch
 
 import java.util.concurrent._
-import akka.event.Logging.{ Error, LogEventException }
+import akka.event.Logging.{ Debug, Error, LogEventException }
 import akka.actor._
 import akka.dispatch.sysmsg._
-import akka.event.EventStream
-import com.typesafe.config.Config
+import akka.event.{ BusLogging, EventStream }
+import com.typesafe.config.{ ConfigFactory, Config }
 import akka.util.{ Unsafe, Index }
 import scala.annotation.tailrec
 import scala.concurrent.forkjoin.{ ForkJoinTask, ForkJoinPool }
@@ -19,6 +19,7 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import scala.util.Try
+import java.{ util ⇒ ju }
 
 final case class Envelope private (val message: Any, val sender: ActorRef)
 
@@ -318,7 +319,7 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
   def dispatcher(): MessageDispatcher
 
   def configureExecutor(): ExecutorServiceConfigurator = {
-    config.getString("executor") match {
+    def configurator(executor: String): ExecutorServiceConfigurator = executor match {
       case null | "" | "fork-join-executor" ⇒ new ForkJoinExecutorConfigurator(config.getConfig("fork-join-executor"), prerequisites)
       case "thread-pool-executor"           ⇒ new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
       case fqcn ⇒
@@ -331,6 +332,11 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
                 make sure it has an accessible constructor with a [%s,%s] signature""")
               .format(fqcn, config.getString("id"), classOf[Config], classOf[DispatcherPrerequisites]), exception)
         }).get
+    }
+
+    config.getString("executor") match {
+      case "default-executor" ⇒ new DefaultExecutorServiceConfigurator(config.getConfig("default-executor"), prerequisites, configurator(config.getString("default-executor.fallback")))
+      case other              ⇒ configurator(other)
     }
   }
 }
@@ -422,4 +428,27 @@ class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrer
         config.getDouble("parallelism-factor"),
         config.getInt("parallelism-max")))
   }
+}
+
+class DefaultExecutorServiceConfigurator(config: Config, prerequisites: DispatcherPrerequisites, fallback: ExecutorServiceConfigurator) extends ExecutorServiceConfigurator(config, prerequisites) {
+  val provider: ExecutorServiceFactoryProvider =
+    prerequisites.defaultExecutionContext match {
+      case Some(ec) ⇒
+        prerequisites.eventStream.publish(Debug("DefaultExecutorServiceConfigurator", this.getClass, s"Using passed in ExecutionContext as default executor for this ActorSystem. If you want to use a different executor, please specify one in akka.actor.default-dispatcher.default-executor."))
+
+        new AbstractExecutorService with ExecutorServiceFactory with ExecutorServiceFactoryProvider {
+          def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = this
+          def createExecutorService: ExecutorService = this
+          def shutdown(): Unit = ()
+          def isTerminated: Boolean = false
+          def awaitTermination(timeout: Long, unit: TimeUnit): Boolean = false
+          def shutdownNow(): ju.List[Runnable] = ju.Collections.emptyList()
+          def execute(command: Runnable): Unit = ec.execute(command)
+          def isShutdown: Boolean = false
+        }
+      case None ⇒ fallback
+    }
+
+  def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
+    provider.createExecutorServiceFactory(id, threadFactory)
 }
