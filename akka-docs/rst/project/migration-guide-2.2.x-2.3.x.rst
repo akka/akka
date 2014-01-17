@@ -175,6 +175,13 @@ Transactor Module is Deprecated
 The integration between actors and STM in the module ``akka-transactor`` is deprecated and will be
 removed in a future version.
 
+Typed Channels has been removed
+===============================
+
+Typed channels were an experimental feature which we decided to remove: its implementation relied
+on an experimental feature of Scala for which there is no correspondence in Java and other languages and
+its usage was not intuitive.
+
 Removed Deprecated Features
 ===========================
 

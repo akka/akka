@@ -57,9 +57,6 @@ their API has not yet solidified enough in order to be considered frozen. You
 can help accelerating this process by giving feedback on these modules on our
 mailing list.
 
-- ``akka-channels-experimental`` – Typed Channels on top of untyped Actors,
-  using Scala 2.10 macros
-
 - ``akka-contrib`` – an assortment of contributions which may or may not be
   moved into core modules, see :ref:`akka-contrib` for more details.
 
