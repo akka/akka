@@ -65,52 +65,22 @@ example of a parametric factory could be:
 
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#parametric-creator
 
-Deprecated Variants
-^^^^^^^^^^^^^^^^^^^
+.. note::
 
-Up to Akka 2.1 there were also the following possibilities (which are retained
-for a migration period):
-
-.. includecode:: code/docs/actor/UntypedActorDocTest.java#import-untypedActor
-.. includecode:: code/docs/actor/UntypedActorDocTest.java#creating-props-deprecated
-
-The last two are deprecated because their functionality is available in full
-through :meth:`Props.create()`.
-
-The first two are deprecated because the resulting :class:`UntypedActorFactory`
-is typically a local class which means that it implicitly carries a reference
-to the enclosing class. This can easily make the resulting :class:`Props`
-non-serializable, e.g. when the enclosing class is an :class:`Actor`. Akka
-advocates location transparency, meaning that an application written with
-actors should just work when it is deployed over multiple network nodes, and
-non-serializable actor factories would break this principle. In case indirect
-actor creation is needed—for example when using dependency injection—there is
-the possibility to use an :class:`IndirectActorProducer` as described below.
-
-There were two use-cases for these methods: passing constructor arguments to
-the actor—which is solved by the newly introduced :meth:`Props.create()` method
-above—and creating actors “on the spot” as anonymous classes. The latter should
-be solved by making these actors named inner classes instead (if they are not
-``static`` then the enclosing instance’s ``this`` reference needs to be passed
-as the first argument).
-
-.. warning::
-
-  Declaring one actor within another is very dangerous and breaks actor
-  encapsulation unless the nested actor is a static inner class. Never pass an
-  actor’s ``this`` reference into :class:`Props`!
+  In order for mailbox requirements—like using a deque-based mailbox for actors
+  using the stash—to be picked up, the actor type needs to be known before
+  creating it, which is what the :class:`Creator` type argument allows.
+  Therefore make sure to use the specific type for your actors wherever
+  possible.
 
 Recommended Practices
 ^^^^^^^^^^^^^^^^^^^^^
 
 It is a good idea to provide static factory methods on the
 :class:`UntypedActor` which help keeping the creation of suitable
-:class:`Props` as close to the actor definition as possible, thus containing
-the gap in type-safety introduced by reflective instantiation within a single
-class instead of spreading it out across a whole code-base. This helps
-especially when refactoring the actor’s constructor signature at a later point,
-where compiler checks will allow this modification to be done with greater
-confidence than without.
+:class:`Props` as close to the actor definition as possible. This also allows
+usage of the :class:`Creator`-based methods which statically verify that the
+used constructor actually exists instead relying only on a runtime check.
 
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#props-factory
 

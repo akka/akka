@@ -10,6 +10,7 @@ import akka.dispatch.DispatcherPrerequisites
 import scala.concurrent.duration.FiniteDuration
 import akka.dispatch.MessageDispatcher
 import akka.dispatch.MailboxType
+import scala.reflect.ClassTag
 
 /**
  * This is a specialised form of the TestActorRef with support for querying and
@@ -89,13 +90,13 @@ class TestFSMRef[S, D, T <: Actor](
 
 object TestFSMRef {
 
-  def apply[S, D, T <: Actor](factory: ⇒ T)(implicit ev: T <:< FSM[S, D], system: ActorSystem): TestFSMRef[S, D, T] = {
+  def apply[S, D, T <: Actor: ClassTag](factory: ⇒ T)(implicit ev: T <:< FSM[S, D], system: ActorSystem): TestFSMRef[S, D, T] = {
     val impl = system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
-    new TestFSMRef(impl, Props(creator = () ⇒ factory), impl.guardian.asInstanceOf[InternalActorRef], TestActorRef.randomName)
+    new TestFSMRef(impl, Props(factory), impl.guardian.asInstanceOf[InternalActorRef], TestActorRef.randomName)
   }
 
-  def apply[S, D, T <: Actor](factory: ⇒ T, name: String)(implicit ev: T <:< FSM[S, D], system: ActorSystem): TestFSMRef[S, D, T] = {
+  def apply[S, D, T <: Actor: ClassTag](factory: ⇒ T, name: String)(implicit ev: T <:< FSM[S, D], system: ActorSystem): TestFSMRef[S, D, T] = {
     val impl = system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
-    new TestFSMRef(impl, Props(creator = () ⇒ factory), impl.guardian.asInstanceOf[InternalActorRef], name)
+    new TestFSMRef(impl, Props(factory), impl.guardian.asInstanceOf[InternalActorRef], name)
   }
 }

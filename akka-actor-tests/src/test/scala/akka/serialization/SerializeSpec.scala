@@ -272,11 +272,6 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
     val b = system.actorOf(Props(new FooActor))
     system stop b
 
-    val c = system.actorOf(Props.empty.withCreator(new UntypedActorFactory {
-      def create() = new FooUntypedActor
-    }))
-    system stop c
-
     intercept[IllegalArgumentException] {
       val d = system.actorOf(Props(new NonSerializableActor(system)))
     }

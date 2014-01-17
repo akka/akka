@@ -51,7 +51,7 @@ object Props {
   /**
    * The default Props instance, uses the settings from the Props object starting with default*.
    */
-  final val default = new Props()
+  final val default = Props(defaultDeploy, classOf[CreatorFunctionConsumer], List(defaultCreator))
 
   /**
    * INTERNAL API
@@ -88,36 +88,6 @@ object Props {
     Props(classOf[TypedCreatorFunctionConsumer], classOfActor, ctor)
 
   /**
-   * Returns a Props that has default values except for "creator" which will be a function that creates an instance
-   * using the supplied thunk.
-   */
-  @deprecated("give class and arguments instead", "2.2")
-  def apply(creator: Creator[_ <: Actor]): Props = default.withCreator(creator.create)
-
-  /**
-   * The deprecated legacy constructor.
-   */
-  @deprecated("use Props.withDispatcher and friends", "2.2")
-  def apply(
-    creator: () ⇒ Actor = Props.defaultCreator,
-    dispatcher: String = Deploy.NoDispatcherGiven,
-    routerConfig: RouterConfig = Props.defaultRoutedProps,
-    deploy: Deploy = Props.defaultDeploy): Props = {
-
-    val d1 = if (dispatcher != Deploy.NoDispatcherGiven) deploy.copy(dispatcher = dispatcher) else deploy
-    val d2 = if (routerConfig != Props.defaultRoutedProps) d1.copy(routerConfig = routerConfig) else d1
-    val p = Props(classOf[CreatorFunctionConsumer], creator)
-    if (d2 != Props.defaultDeploy) p.withDeploy(d2) else p
-  }
-
-  /**
-   * The deprecated legacy extractor.
-   */
-  @deprecated("use three-argument version", "2.2")
-  def unapply(p: Props)(dummy: Int = 0): Option[(() ⇒ Actor, String, RouterConfig, Deploy)] =
-    Some((p.creator, p.dispatcher, p.routerConfig, p.deploy))
-
-  /**
    * Scala API: create a Props given a class and its constructor arguments.
    */
   def apply(clazz: Class[_], args: Any*): Props = apply(defaultDeploy, clazz, args.toList)
@@ -133,7 +103,7 @@ object Props {
    */
   def create[T <: Actor](creator: Creator[T]): Props = {
     if ((creator.getClass.getEnclosingClass ne null) && (creator.getClass.getModifiers & Modifier.STATIC) == 0)
-      throw new IllegalArgumentException("cannot use non-static local Creator to create actors; make it static or top-level")
+      throw new IllegalArgumentException("cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level")
     val ac = classOf[Actor]
     val actorClass = Reflect.findMarker(creator.getClass, classOf[Creator[_]]) match {
       case t: ParameterizedType ⇒
@@ -200,37 +170,6 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
   producer
 
   /**
-   * No-args constructor that sets all the default values.
-   *
-   * @deprecated use `Props.create(clazz, args ...)` instead
-   */
-  @deprecated("use Props.create()", "2.2")
-  def this() = this(Props.defaultDeploy, classOf[CreatorFunctionConsumer], List(Props.defaultCreator))
-
-  /**
-   * Java API: create Props from an [[UntypedActorFactory]]
-   *
-   * @deprecated use `Props.create(clazz, args ...)` instead; this method has been
-   *             deprecated because it encourages creating Props which contain
-   *             non-serializable inner classes, making them also
-   *             non-serializable
-   */
-  @deprecated("use Props.create()", "2.2")
-  def this(factory: UntypedActorFactory) = this(Props.defaultDeploy, classOf[UntypedActorFactoryConsumer], List(factory))
-
-  /**
-   * Java API: create Props from a given [[java.lang.Class]]
-   *
-   * @deprecated use Props.create(clazz) instead; deprecated since it duplicates
-   *             another API
-   */
-  @deprecated("use Props.create()", "2.2")
-  def this(actorClass: Class[_ <: Actor]) = this(Props.defaultDeploy, actorClass, List.empty)
-
-  @deprecated("There is no use-case for this method anymore", "2.2")
-  def creator: () ⇒ Actor = newActor
-
-  /**
    * Convenience method for extracting the dispatcher information from the
    * contained [[Deploy]] instance.
    */
@@ -253,36 +192,6 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    * contained [[Deploy]] instance.
    */
   def routerConfig: RouterConfig = deploy.routerConfig
-
-  /**
-   * Scala API: Returns a new Props with the specified creator set.
-   *
-   * The creator must not return the same instance multiple times.
-   */
-  @deprecated("use Props(...).withDeploy(other.deploy)", "2.2")
-  def withCreator(c: ⇒ Actor): Props = copy(clazz = classOf[CreatorFunctionConsumer], args = (() ⇒ c) :: Nil)
-
-  /**
-   * Java API: Returns a new Props with the specified creator set.
-   *
-   * The creator must not return the same instance multiple times.
-   *
-   * @deprecated use `Props.create(clazz, args ...)` instead; this method has been
-   *             deprecated because it encourages creating Props which contain
-   *             non-serializable inner classes, making them also
-   *             non-serializable
-   */
-  @deprecated("use Props.create(clazz, args ...).withDeploy(other.deploy) instead", "2.2")
-  def withCreator(c: Creator[Actor]): Props = copy(clazz = classOf[CreatorConsumer], args = classOf[Actor] :: c :: Nil)
-
-  /**
-   * Returns a new Props with the specified creator set.
-   *
-   * @deprecated use Props.create(clazz) instead; deprecated since it duplicates
-   *             another API
-   */
-  @deprecated("use Props.create(clazz, args).withDeploy(other.deploy)", "2.2")
-  def withCreator(c: Class[_ <: Actor]): Props = copy(clazz = c, args = Nil)
 
   /**
    * Returns a new Props with the specified dispatcher set.

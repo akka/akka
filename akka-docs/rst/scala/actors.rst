@@ -71,43 +71,37 @@ dispatcher to use, see more below). Here are some examples of how to create a
 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#creating-props
 
-The last line shows how to pass constructor arguments to the :class:`Actor`
-being created. The presence of a matching constructor is verified during
-construction of the :class:`Props` object, resulting in an
+The second variant shows how to pass constructor arguments to the
+:class:`Actor` being created, but it should only be used outside of actors as
+explained below.
+
+The last line shows a possibility to pass constructor arguments regardless of
+the context it is being used in. The presence of a matching constructor is
+verified during construction of the :class:`Props` object, resulting in an
 :class:`IllegalArgumentEception` if no or multiple matching constructors are
 found.
 
-Deprecated Variants
-^^^^^^^^^^^^^^^^^^^
-
-Up to Akka 2.1 there were also the following possibilities (which are retained
-for a migration period):
+Dangerous Variants
+^^^^^^^^^^^^^^^^^^
 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#creating-props-deprecated
 
-The first one is deprecated because the case class structure changed between
-Akka 2.1 and 2.2.
-
-The two variants in the middle are deprecated because :class:`Props` are
-primarily concerned with actor creation and thus the “creator” part should be
-explicitly set when creating an instance. In case you want to deploy one actor
-in the same was as another, simply use
-``Props(...).withDeploy(otherProps.deploy)``.
-
-The last one is not technically deprecated, but it is not recommended because
-it encourages to close over the enclosing scope, resulting in non-serializable
+This method is not recommended to be used within another actor because it
+encourages to close over the enclosing scope, resulting in non-serializable
 :class:`Props` and possibly race conditions (breaking the actor encapsulation).
 We will provide a macro-based solution in a future release which allows similar
 syntax without the headaches, at which point this variant will be properly
-deprecated.
+deprecated. On the other hand using this variant in a :class:`Props` factory in
+the actor’s companion object as documented under “Recommended Practices” below
+is completely fine.
 
 There were two use-cases for these methods: passing constructor arguments to
 the actor—which is solved by the newly introduced
-:meth:`Props.apply(clazz, args)` method above—and creating actors “on the spot”
-as anonymous classes. The latter should be solved by making these actors named
-inner classes instead (if they are not declared within a top-level ``object``
-then the enclosing instance’s ``this`` reference needs to be passed as the
-first argument).
+:meth:`Props.apply(clazz, args)` method above or the recommended practice
+below—and creating actors “on the spot” as anonymous classes. The latter should
+be solved by making these actors named classes instead (if they are not
+declared within a top-level ``object`` then the enclosing instance’s ``this``
+reference needs to be passed as the first argument).
 
 .. warning::
 
@@ -119,12 +113,10 @@ Recommended Practices
 
 It is a good idea to provide factory methods on the companion object of each
 :class:`Actor` which help keeping the creation of suitable :class:`Props` as
-close to the actor definition as possible, thus containing the gap in
-type-safety introduced by reflective instantiation within a single class
-instead of spreading it out across a whole code-base. This helps especially
-when refactoring the actor’s constructor signature at a later point, where
-compiler checks will allow this modification to be done with greater confidence
-than without.
+close to the actor definition as possible. This also avoids the pitfalls
+associated with using the ``Props.apply(...)`` method which takes a by-name
+argument, since within a companion object the given code block will not retain
+a reference to its enclosing scope:
 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#props-factory
 
