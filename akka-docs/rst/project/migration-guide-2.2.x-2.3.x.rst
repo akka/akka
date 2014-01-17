@@ -161,3 +161,11 @@ During a migration period you can still use BalancingDispatcher by specifying th
 
     type = "akka.dispatch.BalancingDispatcherConfigurator"
 
+akka-sbt-plugin is Removed
+==========================
+
+``akka-sbt-plugin`` for packaging of application binaries has been removed. Version 2.2.3 can still be used
+independent of Akka version of the application. Version 2.2.3 can be used with both sbt 0.12 and 0.13.
+
+`sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_ is the recommended tool for creating
+distributions of Akka applications when using sbt.
