@@ -127,9 +127,9 @@ object TestActorRef {
     "$" + akka.util.Helpers.base64(l)
   }
 
-  def apply[T <: Actor](factory: ⇒ T)(implicit system: ActorSystem): TestActorRef[T] = apply[T](Props.empty.withCreator(factory), randomName)
+  def apply[T <: Actor: ClassTag](factory: ⇒ T)(implicit system: ActorSystem): TestActorRef[T] = apply[T](Props(factory), randomName)
 
-  def apply[T <: Actor](factory: ⇒ T, name: String)(implicit system: ActorSystem): TestActorRef[T] = apply[T](Props.empty.withCreator(factory), name)
+  def apply[T <: Actor: ClassTag](factory: ⇒ T, name: String)(implicit system: ActorSystem): TestActorRef[T] = apply[T](Props(factory), name)
 
   def apply[T <: Actor](props: Props)(implicit system: ActorSystem): TestActorRef[T] = apply[T](props, randomName)
 

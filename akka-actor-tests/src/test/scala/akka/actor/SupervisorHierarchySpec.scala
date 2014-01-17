@@ -159,7 +159,7 @@ object SupervisorHierarchySpec {
           val propsTemplate = Props.empty.withDispatcher("hierarchy")
           (1 to kids).map { (id) ⇒
             val kidSize = if (rest > 0) { rest -= 1; sizes + 1 } else sizes
-            val props = propsTemplate.withCreator(new Hierarchy(kidSize, breadth, listener, myLevel + 1, random))
+            val props = Props(new Hierarchy(kidSize, breadth, listener, myLevel + 1, random)).withDeploy(propsTemplate.deploy)
             (context.watch(context.actorOf(props, id.toString)).path, kidSize)
           }(collection.breakOut)
         } else Map()
