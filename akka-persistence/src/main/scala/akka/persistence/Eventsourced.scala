@@ -17,10 +17,6 @@ import akka.persistence.JournalProtocol._
  * Event sourcing mixin for a [[Processor]].
  */
 private[persistence] trait Eventsourced extends Processor {
-  private trait State {
-    def aroundReceive(receive: Receive, message: Any): Unit
-  }
-
   /**
    * Processor recovery state. Waits for recovery completion and then changes to
    * `processingCommands`
@@ -31,8 +27,9 @@ private[persistence] trait Eventsourced extends Processor {
     def aroundReceive(receive: Receive, message: Any) {
       Eventsourced.super.aroundReceive(receive, message)
       message match {
-        case _: ReplaySuccess | _: ReplayFailure ⇒ currentState = processingCommands
-        case _                                   ⇒
+        case _: ReadHighestSequenceNrSuccess | _: ReadHighestSequenceNrFailure ⇒
+          currentState = processingCommands
+        case _ ⇒
       }
     }
   }
@@ -48,7 +45,7 @@ private[persistence] trait Eventsourced extends Processor {
     override def toString: String = "processing commands"
 
     def aroundReceive(receive: Receive, message: Any) {
-      Eventsourced.super.aroundReceive(receive, LoopSuccess(message))
+      Eventsourced.super.aroundReceive(receive, LoopMessageSuccess(message))
       if (!persistInvocations.isEmpty) {
         currentState = persistingEvents
         Eventsourced.super.aroundReceive(receive, PersistentBatch(persistentEventBatch.reverse))
@@ -75,15 +72,15 @@ private[persistence] trait Eventsourced extends Processor {
       case p: PersistentRepr ⇒
         deleteMessage(p.sequenceNr, true)
         throw new UnsupportedOperationException("Persistent commands not supported")
-      case WriteSuccess(p) ⇒
+      case WriteMessageSuccess(p) ⇒
         withCurrentPersistent(p)(p ⇒ persistInvocations.head._2(p.payload))
         onWriteComplete()
-      case e @ WriteFailure(p, _) ⇒
+      case e @ WriteMessageFailure(p, _) ⇒
         Eventsourced.super.aroundReceive(receive, message) // stops actor by default
         onWriteComplete()
-      case s @ WriteBatchSuccess ⇒ Eventsourced.super.aroundReceive(receive, s)
-      case f: WriteBatchFailure  ⇒ Eventsourced.super.aroundReceive(receive, f)
-      case other                 ⇒ processorStash.stash()
+      case s @ WriteMessagesSuccess ⇒ Eventsourced.super.aroundReceive(receive, s)
+      case f: WriteMessagesFailure  ⇒ Eventsourced.super.aroundReceive(receive, f)
+      case other                    ⇒ processorStash.stash()
     }
 
     def onWriteComplete(): Unit = {

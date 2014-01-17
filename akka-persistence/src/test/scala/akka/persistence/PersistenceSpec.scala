@@ -50,6 +50,7 @@ object PersistenceSpec {
     s"""
       akka.actor.serialize-creators = ${serialization}
       akka.actor.serialize-messages = ${serialization}
+      akka.persistence.publish-confirmations = on
       akka.persistence.publish-plugin-commands = on
       akka.persistence.journal.plugin = "akka.persistence.journal.${plugin}"
       akka.persistence.journal.leveldb.dir = "target/journal-${test}"

@@ -7,10 +7,20 @@ package docs.persistence
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import akka.actor.ActorSystem
+import akka.actor.{ Actor, ActorSystem }
 import akka.persistence._
 
 trait PersistenceDocSpec {
+  val config =
+    """
+      //#auto-update-interval
+      akka.persistence.view.auto-update-interval = 5s
+      //#auto-update-interval
+      //#auto-update
+      akka.persistence.view.auto-update = off
+      //#auto-update
+    """
+
   val system: ActorSystem
 
   import system._
@@ -110,7 +120,7 @@ trait PersistenceDocSpec {
 
       def receive = {
         case p @ Persistent(payload, _) =>
-          channel ! Deliver(p.withPayload(s"processed ${payload}"), destination)
+          channel ! Deliver(p.withPayload(s"processed ${payload}"), destination.path)
       }
     }
 
@@ -124,8 +134,6 @@ trait PersistenceDocSpec {
     //#channel-example
 
     class MyProcessor2 extends Processor {
-      import akka.persistence.Resolve
-
       val destination = context.actorOf(Props[MyDestination])
       val channel =
         //#channel-id-override
@@ -141,15 +149,21 @@ trait PersistenceDocSpec {
       def receive = {
         case p @ Persistent(payload, _) =>
           //#channel-example-reply
-          channel ! Deliver(p.withPayload(s"processed ${payload}"), sender)
-          //#channel-example-reply
-          //#resolve-destination
-          channel ! Deliver(p, sender, Resolve.Destination)
-          //#resolve-destination
-          //#resolve-sender
-          channel forward Deliver(p, destination, Resolve.Sender)
-        //#resolve-sender
+          channel ! Deliver(p.withPayload(s"processed ${payload}"), sender.path)
+        //#channel-example-reply
       }
+
+      //#channel-custom-listener
+      class MyListener extends Actor {
+        def receive = {
+          case RedeliverFailure(messages) => // ...
+        }
+      }
+
+      val myListener = context.actorOf(Props[MyListener])
+      val myChannel = context.actorOf(Channel.props(
+        ChannelSettings(redeliverFailureListener = Some(myListener))))
+      //#channel-custom-listener
     }
 
     class MyProcessor3 extends Processor {
@@ -254,9 +268,13 @@ trait PersistenceDocSpec {
         PersistentChannelSettings(redeliverInterval = 30 seconds, redeliverMax = 15)),
         name = "myPersistentChannel")
 
-      channel ! Deliver(Persistent("example"), destination)
+      channel ! Deliver(Persistent("example"), destination.path)
       //#persistent-channel-example
-
+      //#persistent-channel-watermarks
+      PersistentChannelSettings(
+        pendingConfirmationsMax = 10000,
+        pendingConfirmationsMin = 2000)
+      //#persistent-channel-watermarks
       //#persistent-channel-reply
       PersistentChannelSettings(replyPersistent = true)
       //#persistent-channel-reply
@@ -274,7 +292,7 @@ trait PersistenceDocSpec {
         // update state
         // ...
         // reliably deliver events
-        channel ! Deliver(Persistent(event), destination)
+        channel ! Deliver(Persistent(event), destination.path)
       }
 
       def receiveReplay: Receive = {
@@ -289,5 +307,23 @@ trait PersistenceDocSpec {
       }
     }
     //#reliable-event-delivery
+  }
+  new AnyRef {
+    import akka.actor.Props
+
+    //#view
+    class MyView extends View {
+      def processorId: String = "some-processor-id"
+
+      def receive: Actor.Receive = {
+        case Persistent(payload, sequenceNr) => // ...
+      }
+    }
+    //#view
+
+    //#view-update
+    val view = system.actorOf(Props[MyView])
+    view ! Update(await = true)
+    //#view-update
   }
 }

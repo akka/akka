@@ -9,17 +9,16 @@ import scala.concurrent.Future
 import akka.persistence.PersistentRepr
 
 /**
- * Asynchronous message replay interface.
+ * Asynchronous message replay and sequence number recovery interface.
  */
-trait AsyncReplay {
+trait AsyncRecovery {
   //#journal-plugin-api
   /**
    * Plugin API: asynchronously replays persistent messages. Implementations replay
    * a message by calling `replayCallback`. The returned future must be completed
-   * when all messages (matching the sequence number bounds) have been replayed. The
-   * future `Long` value must be the highest stored sequence number in the journal
-   * for the specified processor. The future must be completed with a failure if any
-   * of the persistent messages could not be replayed.
+   * when all messages (matching the sequence number bounds) have been replayed.
+   * The future must be completed with a failure if any of the persistent messages
+   * could not be replayed.
    *
    * The `replayCallback` must also be called with messages that have been marked
    * as deleted. In this case a replayed message's `deleted` method must return
@@ -31,12 +30,23 @@ trait AsyncReplay {
    * @param processorId processor id.
    * @param fromSequenceNr sequence number where replay should start (inclusive).
    * @param toSequenceNr sequence number where replay should end (inclusive).
+   * @param max maximum number of messages to be replayed.
    * @param replayCallback called to replay a single message. Can be called from any
    *                       thread.
    *
    * @see [[AsyncWriteJournal]]
    * @see [[SyncWriteJournal]]
    */
-  def replayAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: PersistentRepr ⇒ Unit): Future[Long]
+  def asyncReplayMessages(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: PersistentRepr ⇒ Unit): Future[Unit]
+
+  /**
+   * Plugin API: asynchronously reads the highest stored sequence number for the
+   * given `processorId`.
+   *
+   * @param processorId processor id.
+   * @param fromSequenceNr hint where to start searching for the highest sequence
+   *                       number.
+   */
+  def asyncReadHighestSequenceNr(processorId: String, fromSequenceNr: Long): Future[Long]
   //#journal-plugin-api
 }

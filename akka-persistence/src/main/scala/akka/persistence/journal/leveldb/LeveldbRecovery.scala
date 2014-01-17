@@ -8,27 +8,29 @@ package akka.persistence.journal.leveldb
 import scala.concurrent.Future
 
 import akka.persistence._
-import akka.persistence.journal.AsyncReplay
+import akka.persistence.journal.AsyncRecovery
+import org.iq80.leveldb.DBIterator
 
 /**
  * INTERNAL API.
  *
- * LevelDB backed message replay.
+ * LevelDB backed message replay and sequence number recovery.
  */
-private[persistence] trait LeveldbReplay extends AsyncReplay { this: LeveldbStore ⇒
+private[persistence] trait LeveldbRecovery extends AsyncRecovery { this: LeveldbStore ⇒
   import Key._
 
   private lazy val replayDispatcherId = config.getString("replay-dispatcher")
   private lazy val replayDispatcher = context.system.dispatchers.lookup(replayDispatcherId)
 
-  def replayAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: PersistentRepr ⇒ Unit): Future[Long] =
-    Future(replay(numericId(processorId), fromSequenceNr: Long, toSequenceNr)(replayCallback))(replayDispatcher)
+  def asyncReadHighestSequenceNr(processorId: String, fromSequenceNr: Long): Future[Long] =
+    Future(readHighestSequenceNr(numericId(processorId)))(replayDispatcher)
 
-  def replay(processorId: Int, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: PersistentRepr ⇒ Unit): Long = {
-    val iter = leveldbIterator
+  def asyncReplayMessages(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: PersistentRepr ⇒ Unit): Future[Unit] =
+    Future(replayMessages(numericId(processorId), fromSequenceNr: Long, toSequenceNr, max: Long)(replayCallback))(replayDispatcher)
 
+  def replayMessages(processorId: Int, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: PersistentRepr ⇒ Unit): Unit = {
     @scala.annotation.tailrec
-    def go(key: Key, replayCallback: PersistentRepr ⇒ Unit) {
+    def go(iter: DBIterator, key: Key, ctr: Long, replayCallback: PersistentRepr ⇒ Unit) {
       if (iter.hasNext) {
         val nextEntry = iter.next()
         val nextKey = keyFromBytes(nextEntry.getKey)
@@ -36,31 +38,33 @@ private[persistence] trait LeveldbReplay extends AsyncReplay { this: LeveldbStor
           // end iteration here
         } else if (nextKey.channelId != 0) {
           // phantom confirmation (just advance iterator)
-          go(nextKey, replayCallback)
+          go(iter, nextKey, ctr, replayCallback)
         } else if (key.processorId == nextKey.processorId) {
           val msg = persistentFromBytes(nextEntry.getValue)
-          val del = deletion(nextKey)
-          val cnf = confirms(nextKey, Nil)
-          replayCallback(msg.update(confirms = cnf, deleted = del))
-          go(nextKey, replayCallback)
+          val del = deletion(iter, nextKey)
+          val cnf = confirms(iter, nextKey, Nil)
+          if (ctr < max) {
+            replayCallback(msg.update(confirms = cnf, deleted = del))
+            go(iter, nextKey, ctr + 1L, replayCallback)
+          }
         }
       }
     }
 
     @scala.annotation.tailrec
-    def confirms(key: Key, channelIds: List[String]): List[String] = {
+    def confirms(iter: DBIterator, key: Key, channelIds: List[String]): List[String] = {
       if (iter.hasNext) {
         val nextEntry = iter.peekNext()
         val nextKey = keyFromBytes(nextEntry.getKey)
         if (key.processorId == nextKey.processorId && key.sequenceNr == nextKey.sequenceNr) {
           val nextValue = new String(nextEntry.getValue, "UTF-8")
           iter.next()
-          confirms(nextKey, nextValue :: channelIds)
+          confirms(iter, nextKey, nextValue :: channelIds)
         } else channelIds
       } else channelIds
     }
 
-    def deletion(key: Key): Boolean = {
+    def deletion(iter: DBIterator, key: Key): Boolean = {
       if (iter.hasNext) {
         val nextEntry = iter.peekNext()
         val nextKey = keyFromBytes(nextEntry.getKey)
@@ -71,17 +75,14 @@ private[persistence] trait LeveldbReplay extends AsyncReplay { this: LeveldbStor
       } else false
     }
 
-    try {
+    withIterator { iter ⇒
       val startKey = Key(processorId, if (fromSequenceNr < 1L) 1L else fromSequenceNr, 0)
       iter.seek(keyToBytes(startKey))
-      go(startKey, replayCallback)
-      maxSequenceNr(processorId)
-    } finally {
-      iter.close()
+      go(iter, startKey, 0L, replayCallback)
     }
   }
 
-  def maxSequenceNr(processorId: Int) = {
+  def readHighestSequenceNr(processorId: Int) = {
     leveldb.get(keyToBytes(counterKey(processorId)), leveldbSnapshot) match {
       case null  ⇒ 0L
       case bytes ⇒ counterFromBytes(bytes)

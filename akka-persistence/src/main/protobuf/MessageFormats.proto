@@ -14,11 +14,10 @@ message PersistentMessage {
   optional int64 sequenceNr = 2;
   optional string processorId = 3;
   optional bool deleted = 4;
-  optional bool resolved = 5;
   optional int32 redeliveries = 6;
   repeated string confirms = 7;
   optional bool confirmable = 8;
-  optional ConfirmMessage confirmMessage = 9;
+  optional DeliveredMessage confirmMessage = 9;
   optional string confirmTarget = 10;
   optional string sender = 11;
 }
@@ -29,22 +28,15 @@ message PersistentPayload {
   optional bytes payloadManifest = 3;
 }
 
-message ConfirmMessage {
+message DeliveredMessage {
   optional string processorId = 1;
-  optional int64 messageSequenceNr = 2;
-  optional string channelId = 3;
-  optional int64 wrapperSequenceNr = 4;
-  optional string channelEndpoint = 5;
+  optional string channelId = 2;
+  optional int64 persistentSequenceNr = 3;
+  optional int64 deliverySequenceNr = 4;
+  optional string channel = 5;
 }
 
 message DeliverMessage {
-  enum ResolveStrategy {
-    Off = 1;
-    Sender = 2;
-    Destination = 3;
-  }
-
   optional PersistentMessage persistent = 1;
   optional string destination = 2;
-  optional ResolveStrategy resolve = 3;
 }
