@@ -434,7 +434,7 @@ also process commands that do not change application state, such as query comman
 Akka persistence supports event sourcing with the abstract ``UntypedEventsourcedProcessor`` class (which implements
 event sourcing as a pattern on top of command sourcing). A processor that extends this abstract class does not handle
 ``Persistent`` messages directly but uses the ``persist`` method to persist and handle events. The behavior of an
-``UntypedEventsourcedProcessor`` is defined by implementing ``onReceiveReplay`` and ``onReceiveCommand``. This is
+``UntypedEventsourcedProcessor`` is defined by implementing ``onReceiveRecover`` and ``onReceiveCommand``. This is
 demonstrated in the following example.
 
 .. includecode:: ../../../akka-samples/akka-sample-persistence/src/main/java/sample/persistence/japi/EventsourcedExample.java#eventsourced-example
@@ -442,7 +442,7 @@ demonstrated in the following example.
 The example defines two data types, ``Cmd`` and ``Evt`` to represent commands and events, respectively. The
 ``state`` of the ``ExampleProcessor`` is a list of persisted event data contained in ``ExampleState``.
 
-The processor's ``onReceiveReplay`` method defines how ``state`` is updated during recovery by handling ``Evt``
+The processor's ``onReceiveRecover`` method defines how ``state`` is updated during recovery by handling ``Evt``
 and ``SnapshotOffer`` messages. The processor's ``onReceiveCommand`` method is a command handler. In this example,
 a command is handled by generating two events which are then persisted and handled. Events are persisted by calling
 ``persist`` with an event (or a sequence of events) as first argument and an event handler as second argument.
@@ -465,7 +465,7 @@ Reliable event delivery
 -----------------------
 
 Sending events from an event handler to another actor has at-most-once delivery semantics. For at-least-once delivery,
-:ref:`channels-java` must be used. In this case, also replayed events (received by ``receiveReplay``) must be sent to a
+:ref:`channels-java` must be used. In this case, also replayed events (received by ``receiveRecover``) must be sent to a
 channel, as shown in the following example:
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#reliable-event-delivery

@@ -86,7 +86,7 @@ object PerformanceSpec {
   }
 
   class EventsourcedTestProcessor(name: String) extends PerformanceTestProcessor(name) with EventsourcedProcessor {
-    val receiveReplay: Receive = {
+    val receiveRecover: Receive = {
       case _ ⇒ if (lastSequenceNr % 1000 == 0) print("r")
     }
 
@@ -99,7 +99,7 @@ object PerformanceSpec {
   }
 
   class StashingEventsourcedTestProcessor(name: String) extends PerformanceTestProcessor(name) with EventsourcedProcessor {
-    val receiveReplay: Receive = {
+    val receiveRecover: Receive = {
       case _ ⇒ if (lastSequenceNr % 1000 == 0) print("r")
     }
 
