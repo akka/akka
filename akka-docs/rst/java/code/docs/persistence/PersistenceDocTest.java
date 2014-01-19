@@ -336,7 +336,7 @@ public class PersistenceDocTest {
                         event, getCurrentPersistentMessage()), destination.path()), getSelf());
             }
 
-            public void onReceiveReplay(Object msg) {
+            public void onReceiveRecover(Object msg) {
                 if (msg instanceof String) {
                     handleEvent((String)msg);
                 }

@@ -445,14 +445,14 @@ also process commands that do not change application state, such as query comman
 Akka persistence supports event sourcing with the ``EventsourcedProcessor`` trait (which implements event sourcing
 as a pattern on top of command sourcing). A processor that extends this trait does not handle ``Persistent`` messages
 directly but uses the ``persist`` method to persist and handle events. The behavior of an ``EventsourcedProcessor``
-is defined by implementing ``receiveReplay`` and ``receiveCommand``. This is demonstrated in the following example.
+is defined by implementing ``receiveRecover`` and ``receiveCommand``. This is demonstrated in the following example.
 
 .. includecode:: ../../../akka-samples/akka-sample-persistence/src/main/scala/sample/persistence/EventsourcedExample.scala#eventsourced-example
 
 The example defines two data types, ``Cmd`` and ``Evt`` to represent commands and events, respectively. The
 ``state`` of the ``ExampleProcessor`` is a list of persisted event data contained in ``ExampleState``.
 
-The processor's ``receiveReplay`` method defines how ``state`` is updated during recovery by handling ``Evt``
+The processor's ``receiveRecover`` method defines how ``state`` is updated during recovery by handling ``Evt``
 and ``SnapshotOffer`` messages. The processor's ``receiveCommand`` method is a command handler. In this example,
 a command is handled by generating two events which are then persisted and handled. Events are persisted by calling
 ``persist`` with an event (or a sequence of events) as first argument and an event handler as second argument.
@@ -475,7 +475,7 @@ Reliable event delivery
 -----------------------
 
 Sending events from an event handler to another actor has at-most-once delivery semantics. For at-least-once delivery,
-:ref:`channels` must be used. In this case, also replayed events (received by ``receiveReplay``) must be sent to a
+:ref:`channels` must be used. In this case, also replayed events (received by ``receiveRecover``) must be sent to a
 channel, as shown in the following example:
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#reliable-event-delivery

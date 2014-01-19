@@ -53,7 +53,7 @@ object ProcessorChannelSpec {
       channel ! Deliver(Persistent(event), destination.path)
     }
 
-    def receiveReplay: Receive = {
+    def receiveRecover: Receive = {
       case event: String ⇒ handleEvent(event)
     }
 
