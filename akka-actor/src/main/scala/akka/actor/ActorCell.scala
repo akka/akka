@@ -344,7 +344,7 @@ private[akka] object ActorCell {
 private[akka] class ActorCell(
   val system: ActorSystemImpl,
   val self: InternalActorRef,
-  val props: Props,
+  final val props: Props, // Must be final so that it can be properly cleared in clearActorCellFields
   val dispatcher: MessageDispatcher,
   val parent: InternalActorRef)
   extends UntypedActorContext with Cell
@@ -591,21 +591,27 @@ private[akka] class ActorCell(
   }
 
   @tailrec private final def lookupAndSetField(clazz: Class[_], instance: AnyRef, name: String, value: Any): Boolean = {
-    if (try {
-      val field = clazz.getDeclaredField(name)
-      field.setAccessible(true)
-      field.set(instance, value)
-      true
-    } catch {
-      case e: NoSuchFieldException ⇒ false
-    }) true
-    else if (clazz.getSuperclass eq null) false
-    else lookupAndSetField(clazz.getSuperclass, instance, name, value)
+    @tailrec def clearFirst(fields: Array[java.lang.reflect.Field], idx: Int): Boolean =
+      if (idx < fields.length) {
+        val field = fields(idx)
+        if (field.getName == name) {
+          field.setAccessible(true)
+          field.set(instance, value)
+          true
+        } else clearFirst(fields, idx + 1)
+      } else false
+
+    clearFirst(clazz.getDeclaredFields, 0) || {
+      clazz.getSuperclass match {
+        case null ⇒ false // clazz == classOf[AnyRef]
+        case sc   ⇒ lookupAndSetField(sc, instance, name, value)
+      }
+    }
   }
 
   final protected def clearActorCellFields(cell: ActorCell): Unit = {
     cell.unstashAll()
-    if (!lookupAndSetField(cell.getClass, cell, "props", ActorCell.terminatedProps))
+    if (!lookupAndSetField(classOf[ActorCell], cell, "props", ActorCell.terminatedProps))
       throw new IllegalArgumentException("ActorCell has no props field")
   }
 
