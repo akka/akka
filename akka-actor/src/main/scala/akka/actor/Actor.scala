@@ -7,7 +7,7 @@ package akka.actor
 import akka.AkkaException
 import scala.collection.immutable
 import scala.annotation.tailrec
-import scala.reflect.BeanProperty
+import scala.beans.BeanProperty
 import scala.util.control.NoStackTrace
 import java.util.regex.Pattern
 

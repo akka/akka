@@ -13,7 +13,7 @@ import java.io._
 import scala.concurrent.Await
 import akka.util.Timeout
 import scala.concurrent.duration._
-import scala.reflect.BeanInfo
+import scala.beans.BeanInfo
 import com.google.protobuf.Message
 import com.typesafe.config._
 import akka.pattern.ask

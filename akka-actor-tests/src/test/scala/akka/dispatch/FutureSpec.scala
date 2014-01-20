@@ -76,7 +76,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         Await.result(failure fallbackTo failure fallbackTo timedOut, timeout.duration) must be("Timedout")
         intercept[RuntimeException] {
           Await.result(failure fallbackTo otherFailure, timeout.duration)
-        }.getMessage must be("last")
+        }.getMessage must be("br0ken")
       }
     }
     "completed with a result" must {

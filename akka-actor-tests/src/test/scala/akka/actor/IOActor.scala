@@ -8,7 +8,6 @@ import language.postfixOps
 import akka.util.ByteString
 import scala.concurrent.{ ExecutionContext, Await, Future, Promise }
 import scala.concurrent.duration._
-import scala.util.continuations._
 import akka.testkit._
 import akka.dispatch.MessageDispatcher
 import akka.pattern.ask
