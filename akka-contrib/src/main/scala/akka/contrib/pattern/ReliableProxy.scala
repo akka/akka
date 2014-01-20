@@ -44,7 +44,7 @@ object ReliableProxy {
     props(targetPath, retryAfter, None, None)
   }
 
-  class Receiver(target: ActorRef, initialSerial: Int) extends Actor with DebugLogging {
+  class Receiver(target: ActorRef, initialSerial: Int) extends Actor with ReliableProxyDebugLogging {
     var lastSerial = initialSerial
 
     context.watch(target)
@@ -108,20 +108,24 @@ object ReliableProxy {
   val active = Active
   val reconnecting = Connecting
 
-  trait DebugLogging extends ActorLogging { this: Actor ⇒
-    val debug =
-      Try(context.system.settings.config.getBoolean("akka.reliable-proxy.debug")) getOrElse false
+}
 
-    def enabled = debug && log.isDebugEnabled
+/**
+ * INTERNAL API
+ */
+private[akka] trait ReliableProxyDebugLogging extends ActorLogging { this: Actor ⇒
+  val debug: Boolean =
+    Try(context.system.settings.config.getBoolean("akka.reliable-proxy.debug")) getOrElse false
 
-    def addSelf(template: String) = s"$template [$self]"
+  def enabled: Boolean = debug && log.isDebugEnabled
 
-    def logDebug(template: String, arg1: Any, arg2: Any): Unit =
-      if (enabled) log.debug(addSelf(template), arg1, arg2)
+  def addSelf(template: String): String = s"$template [$self]"
 
-    def logDebug(template: String, arg1: Any): Unit =
-      if (enabled) log.debug(addSelf(template), arg1)
-  }
+  def logDebug(template: String, arg1: Any, arg2: Any): Unit =
+    if (enabled) log.debug(addSelf(template), arg1, arg2)
+
+  def logDebug(template: String, arg1: Any): Unit =
+    if (enabled) log.debug(addSelf(template), arg1)
 }
 
 import ReliableProxy._
@@ -220,7 +224,7 @@ import ReliableProxy._
  */
 class ReliableProxy(targetPath: ActorPath, retryAfter: FiniteDuration,
                     reconnectAfter: Option[FiniteDuration], maxConnectAttempts: Option[Int])
-  extends Actor with LoggingFSM[State, Vector[Message]] with DebugLogging {
+  extends Actor with LoggingFSM[State, Vector[Message]] with ReliableProxyDebugLogging {
 
   var tunnel: ActorRef = _
   var currentSerial: Int = 0
