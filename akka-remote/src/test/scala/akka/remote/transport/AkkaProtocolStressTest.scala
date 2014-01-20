@@ -27,8 +27,8 @@ object AkkaProtocolStressTest {
         heartbeat-interval = 1 s
         acceptable-heartbeat-pause = 1 s
       }
-      ## Keep gate duration in this test for a reasonably low value otherwise too much messages are dropped
-      remote.retry-gate-closed-for = 1 s
+      ## Keep gate duration in this test for a low value otherwise too much messages are dropped
+      remote.retry-gate-closed-for = 100 ms
 
       remote.netty.tcp {
         applied-adapters = ["gremlin"]
