@@ -1141,7 +1141,7 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, rebalanceInterval: Finite
     rebalanceTask.cancel()
   }
 
-  override def receiveReplay: Receive = {
+  override def receiveRecover: Receive = {
     case evt: DomainEvent ⇒ evt match {
       case ShardRegionRegistered(region) ⇒
         context.watch(region)

@@ -28,7 +28,7 @@ object EventsourcedSpec {
       case GetState ⇒ sender ! events.reverse
     }
 
-    def receiveReplay = updateState
+    def receiveRecover = updateState
   }
 
   class Behavior1Processor(name: String) extends ExampleProcessor(name) {
@@ -123,7 +123,7 @@ object EventsourcedSpec {
   }
 
   class SnapshottingEventsourcedProcessor(name: String, probe: ActorRef) extends ExampleProcessor(name) {
-    override def receiveReplay = super.receiveReplay orElse {
+    override def receiveRecover = super.receiveRecover orElse {
       case SnapshotOffer(_, events: List[_]) ⇒
         probe ! "offered"
         this.events = events

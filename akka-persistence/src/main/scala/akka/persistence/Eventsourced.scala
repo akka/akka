@@ -137,7 +137,7 @@ private[persistence] trait Eventsourced extends Processor {
     events.foreach(persist(_)(handler))
 
   /**
-   * Replay handler that receives persisted events during recovery. If a state snapshot
+   * Recovery handler that receives persisted events during recovery. If a state snapshot
    * has been captured and saved, this handler will receive a [[SnapshotOffer]] message
    * followed by events that are younger than the offered snapshot.
    *
@@ -147,7 +147,7 @@ private[persistence] trait Eventsourced extends Processor {
    *
    * @see [[Recover]]
    */
-  def receiveReplay: Receive
+  def receiveRecover: Receive
 
   /**
    * Command handler. Typically validates commands against current state (and/or by
@@ -191,12 +191,12 @@ private[persistence] trait Eventsourced extends Processor {
    * INTERNAL API.
    */
   protected[persistence] val initialBehavior: Receive = {
-    case Persistent(payload, _) if receiveReplay.isDefinedAt(payload) && recoveryRunning ⇒
-      receiveReplay(payload)
-    case s: SnapshotOffer if receiveReplay.isDefinedAt(s) ⇒
-      receiveReplay(s)
-    case f: RecoveryFailure if receiveReplay.isDefinedAt(f) ⇒
-      receiveReplay(f)
+    case Persistent(payload, _) if receiveRecover.isDefinedAt(payload) && recoveryRunning ⇒
+      receiveRecover(payload)
+    case s: SnapshotOffer if receiveRecover.isDefinedAt(s) ⇒
+      receiveRecover(s)
+    case f: RecoveryFailure if receiveRecover.isDefinedAt(f) ⇒
+      receiveRecover(f)
     case msg if receiveCommand.isDefinedAt(msg) ⇒
       receiveCommand(msg)
   }
@@ -215,8 +215,8 @@ trait EventsourcedProcessor extends Processor with Eventsourced {
 abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Eventsourced {
   final def onReceive(message: Any) = initialBehavior(message)
 
-  final def receiveReplay: Receive = {
-    case msg ⇒ onReceiveReplay(msg)
+  final def receiveRecover: Receive = {
+    case msg ⇒ onReceiveRecover(msg)
   }
 
   final def receiveCommand: Receive = {
@@ -260,7 +260,7 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
     persist(Util.immutableSeq(events))(event ⇒ handler(event))
 
   /**
-   * Java API: replay handler that receives persisted events during recovery. If a state snapshot
+   * Java API: recovery handler that receives persisted events during recovery. If a state snapshot
    * has been captured and saved, this handler will receive a [[SnapshotOffer]] message
    * followed by events that are younger than the offered snapshot.
    *
@@ -270,7 +270,7 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
    *
    * @see [[Recover]]
    */
-  def onReceiveReplay(msg: Any): Unit
+  def onReceiveRecover(msg: Any): Unit
 
   /**
    * Java API: command handler. Typically validates commands against current state (and/or by

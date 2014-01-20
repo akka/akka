@@ -124,7 +124,7 @@ public class ClusterShardingTest {
     }
 
     @Override
-    public void onReceiveReplay(Object msg) {
+    public void onReceiveRecover(Object msg) {
       if (msg instanceof CounterChanged)
         updateState((CounterChanged) msg);
       else

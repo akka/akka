@@ -26,7 +26,7 @@ class ExampleProcessor extends EventsourcedProcessor {
   def numEvents =
     state.size
 
-  val receiveReplay: Receive = {
+  val receiveRecover: Receive = {
     case evt: Evt                                 => updateState(evt)
     case SnapshotOffer(_, snapshot: ExampleState) => state = snapshot
   }
