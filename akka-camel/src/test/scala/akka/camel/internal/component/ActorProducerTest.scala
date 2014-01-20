@@ -379,7 +379,7 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
   }
 
   override protected def afterAll() {
-    shutdown(system)
+    shutdown()
   }
 
   def msg(s: String) = CamelMessage(s, Map.empty)

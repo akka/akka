@@ -31,7 +31,7 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
 
   override protected def afterAll() {
     super.afterAll()
-    shutdown(system)
+    shutdown()
   }
 
   val camelContext = camel.context
