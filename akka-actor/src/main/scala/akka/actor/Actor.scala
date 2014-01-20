@@ -5,11 +5,9 @@
 package akka.actor
 
 import akka.AkkaException
-import scala.collection.immutable
 import scala.annotation.tailrec
 import scala.reflect.BeanProperty
 import scala.util.control.NoStackTrace
-import java.util.regex.Pattern
 import akka.event.LoggingAdapter
 
 /**
@@ -566,3 +564,10 @@ trait Actor {
   }
 }
 
+/**
+ * Java API
+ *
+ * Abstract base class for Java Actors.
+ *
+ */
+abstract class AbstractActor extends akka.actor.Actor
