@@ -160,11 +160,11 @@ Lifecycle and Failure Recovery Model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. image:: ../images/association_lifecycle.png
-:align: center
+   :align: center
    :width: 620
 
-    Each link with a remote system can be in one of the four states as illustrated above. Before any communication
-    happens with a remote system at a given ``Address`` the state of the association is ``Idle``. The first time a message
+Each link with  link with a remote system can be in one of the four states as illustrated above. Before any communication
+happens with a remote system at a given ``Address`` the state of the association is ``Idle``. The first time a message
 is attempted to be sent to the remote system or an inbound connection is accepted the state of the link transitions to
 ``Active`` denoting that the two systems has messages to send or receive and no failures were encountered so far.
 When a communication failure happens and the connection is lost between the two systems the link becomes ``Gated``.
