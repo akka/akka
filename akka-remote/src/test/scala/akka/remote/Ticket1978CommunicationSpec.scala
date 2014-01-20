@@ -160,8 +160,8 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
       }
 
     } else {
-      "not be run when the cipher is not supported by the platform this test is currently being executed on" ignore {
-
+      "not be run when the cipher is not supported by the platform this test is currently being executed on" in {
+        pending
       }
     }
 
