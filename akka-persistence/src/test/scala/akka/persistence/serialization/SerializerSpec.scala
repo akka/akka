@@ -5,18 +5,13 @@
 package akka.persistence.serialization
 
 import scala.collection.immutable
-import scala.concurrent._
-import scala.concurrent.duration._
-import scala.util._
 
 import com.typesafe.config._
 
 import akka.actor._
-import akka.pattern.ask
 import akka.persistence._
 import akka.serialization._
 import akka.testkit._
-import akka.util.Timeout
 
 object SerializerSpecConfigs {
   val customSerializers = ConfigFactory.parseString(
@@ -166,11 +161,8 @@ object MessageSerializerRemotingSpec {
     system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
 }
 
-class MessageSerializerRemotingSpec extends AkkaSpec(remote.withFallback(customSerializers)) with ImplicitSender {
-  implicit val timeout = Timeout(5.seconds)
-
+class MessageSerializerRemotingSpec extends AkkaSpec(remote.withFallback(customSerializers)) with ImplicitSender with DefaultTimeout {
   import MessageSerializerRemotingSpec._
-  import system.dispatcher
 
   val remoteSystem = ActorSystem("remote", remote.withFallback(customSerializers))
   val localActor = system.actorOf(Props(classOf[LocalActor], port(remoteSystem)), "local")

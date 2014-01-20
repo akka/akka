@@ -86,7 +86,7 @@ class SharedLeveldbJournalSpec extends AkkaSpec(SharedLeveldbJournalSpec.config)
       appA ! Persistent("a1")
       appB ! Persistent("b1")
 
-      processorAProbe.expectMsg(5.seconds, "a1")
+      processorAProbe.expectMsg("a1")
       processorBProbe.expectMsg("b1")
 
       val recoveredAppA = processorASystem.actorOf(Props(classOf[ExampleApp], processorAProbe.ref, storePath))

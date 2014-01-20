@@ -147,7 +147,7 @@ abstract class ProcessorSpec(config: Config) extends AkkaSpec(config) with Persi
     processor ! Persistent("a")
     processor ! Persistent("b")
     processor ! GetState
-    expectMsg(5.seconds, List("a-1", "b-2"))
+    expectMsg(List("a-1", "b-2"))
   }
 
   "A processor" must {
