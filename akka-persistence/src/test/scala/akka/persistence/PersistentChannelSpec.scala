@@ -53,25 +53,32 @@ abstract class PersistentChannelSpec(config: Config) extends ChannelSpec(config)
 
   "A persistent channel" must {
     "support Persistent replies to Deliver senders" in {
+      val destProbe = TestProbe()
+      val replyProbe = TestProbe()
+
       val channel1 = system.actorOf(PersistentChannel.props(s"${name}-with-reply", PersistentChannelSettings(replyPersistent = true)))
 
-      channel1 ! Deliver(Persistent("a"), system.deadLetters.path)
-      expectMsgPF() { case Persistent("a", _) ⇒ }
+      channel1 tell (Deliver(Persistent("a"), destProbe.ref.path), replyProbe.ref)
+      destProbe.expectMsgPF() { case cp @ ConfirmablePersistent("a", _, _) ⇒ cp.confirm() }
+      replyProbe.expectMsgPF() { case Persistent("a", _) ⇒ }
 
-      channel1 ! Deliver(PersistentRepr("b", sequenceNr = 13), system.deadLetters.path)
-      expectMsgPF() { case Persistent("b", 13) ⇒ }
+      channel1 tell (Deliver(PersistentRepr("b", sequenceNr = 13), destProbe.ref.path), replyProbe.ref)
+      destProbe.expectMsgPF() { case cp @ ConfirmablePersistent("b", 13, _) ⇒ cp.confirm() }
+      replyProbe.expectMsgPF() { case Persistent("b", 13) ⇒ }
 
       system.stop(channel1)
     }
     "not modify certain persistent message fields" in {
+      val destProbe = TestProbe()
+
       val persistent1 = PersistentRepr(payload = "a", processorId = "p1", confirms = List("c1", "c2"), sender = defaultTestChannel, sequenceNr = 13)
       val persistent2 = PersistentRepr(payload = "b", processorId = "p1", confirms = List("c1", "c2"), sender = defaultTestChannel)
 
-      defaultTestChannel ! Deliver(persistent1, testActor.path)
-      defaultTestChannel ! Deliver(persistent2, testActor.path)
+      defaultTestChannel ! Deliver(persistent1, destProbe.ref.path)
+      defaultTestChannel ! Deliver(persistent2, destProbe.ref.path)
 
-      expectMsgPF() { case cp @ ConfirmablePersistentImpl("a", 13, "p1", _, _, Seq("c1", "c2"), _, _, channel) ⇒ cp.confirm() }
-      expectMsgPF() { case cp @ ConfirmablePersistentImpl("b", 2, "p1", _, _, Seq("c1", "c2"), _, _, channel) ⇒ cp.confirm() }
+      destProbe.expectMsgPF() { case cp @ ConfirmablePersistentImpl("a", 13, "p1", _, _, Seq("c1", "c2"), _, _, channel) ⇒ cp.confirm() }
+      destProbe.expectMsgPF() { case cp @ ConfirmablePersistentImpl("b", 2, "p1", _, _, Seq("c1", "c2"), _, _, channel) ⇒ cp.confirm() }
     }
     "redeliver un-confirmed stored messages during recovery" in {
       val confirmProbe = TestProbe()
