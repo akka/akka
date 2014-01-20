@@ -72,7 +72,7 @@ Note that during the reconnection process there is a possibility that a message
 could be delivered to the ``target`` more than once.  Consider the case where a message
 is delivered to the ``target`` and the target system crashes before the ACK
 is sent to the ``sender``.  After the ``proxy`` reconnects to the ``target`` it
-will start resending all of the messages that it has not received an ACK for and
+will start resending all of the messages that it has not received an ACK for, and
 the message that it never got an ACK for will be redelivered.  Either this possibility
 should be considered in the design of the ``target`` or reconnection should be disabled.
 
@@ -80,13 +80,13 @@ How to use it
 -------------
 
 Since this implementation does not offer much in the way of configuration,
-simply instantiate a proxy wrapping a target ``ActorRef`` or ``ActorPath``. From Java it looks
-like this (using an ``ActorPath``):
+simply instantiate a proxy wrapping a target ``ActorPath``. From Java it looks
+like this:
 
 .. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ReliableProxyTest.java
    :include: import,demo-proxy
 
-And from Scala like this (using an ``ActorRef``):
+And from Scala like this:
 
 .. includecode:: @contribSrc@/src/test/scala/akka/contrib/pattern/ReliableProxyDocSpec.scala#demo
 
@@ -109,8 +109,9 @@ Configuration
 * Set ``akka.reliable-proxy.debug`` to ``on`` to turn on extra debug logging for your
   :class:`ReliableProxy` actors.
 * ``akka.reliable-proxy.default-connect-interval`` is used only if you create a :class:`ReliableProxy`
-  with no reconnections (that is, ``reconnectAfter == None``). The default value is ``500 ms``.  In this
-  case the :class:`ReliableProxy` will send an ``Identify`` message to the *target* every 500 milliseconds
+  with no reconnections (that is, ``reconnectAfter == None``). The default value is the value of the configuration
+  property ``akka.remote.retry-gate-closed-for``.  For example, if ``akka.remote.retry-gate-closed-for`` is ``5 s``
+  case the :class:`ReliableProxy` will send an ``Identify`` message to the *target* every 5 seconds
   to try to resolve the :class:`ActorPath` to an :class:`ActorRef` so that messages can be sent to the *target*.
 
 The Actor Contract
@@ -140,7 +141,7 @@ Exceptions it Escalates
 Arguments it Takes
 ^^^^^^^^^^^^^^^^^^
 
-* *target* is the :class:`ActorRef` to which the tunnel shall reliably deliver
+* *target* is the :class:`ActorPath` to the actor to which the tunnel shall reliably deliver
   messages, ``B`` in the above illustration.
 * *retryAfter* is the timeout for receiving ACK messages from the remote
   end-point; once it fires, all outstanding message sends will be retried.

@@ -8,6 +8,7 @@ import akka.actor._
 import akka.remote.RemoteScope
 import scala.concurrent.duration._
 import scala.util.Try
+import java.util.concurrent.TimeUnit
 
 object ReliableProxy {
   /**
@@ -86,8 +87,9 @@ object ReliableProxy {
   private case object ReconnectTick
 
   /**
-   * `TargetChanged` is sent to transition subscribers when the target `ActorRef` has
-   * changed (for example, the target system crashed and has been restarted).
+   * `TargetChanged` is sent to transition subscribers when the initial connection is made
+   * the target and when the target `ActorRef` has changed (for example, the target system
+   * crashed and has been restarted).
    */
   case class TargetChanged(ref: ActorRef)
 
@@ -176,8 +178,8 @@ import ReliableProxy._
  * state when every message send so far has been confirmed by the peer end-point.
  *
  * The initial state of the proxy is [[ReliableProxy.Connecting]]. In this state the
- * proxy will repeatedly send [[akka.actor.Identify]] messages to ActorSelection(targetPath)
- * in order to obtain a new ActorRef for the target. When an [[akka.actor.ActorIdentity]]
+ * proxy will repeatedly send [[akka.actor.Identify]] messages to `ActorSelection(targetPath)`
+ * in order to obtain a new `ActorRef` for the target. When an [[akka.actor.ActorIdentity]]
  * for the target is received a new tunnel will be created, a [[ReliableProxy.TargetChanged]]
  * message containing the target `ActorRef` will be sent to the proxy's transition subscribers
  * and the proxy will transition into either the [[ReliableProxy.Idle]] or [[ReliableProxy.Active]]
@@ -207,8 +209,7 @@ import ReliableProxy._
  *
  * ==Arguments==
  * See the constructor below for the arguments for this actor.  However, prefer using
- * [[akka.contrib.pattern.ReliableProxy#props]] to this actor's constructor as the `props`
- * methods are simpler.
+ * [[akka.contrib.pattern.ReliableProxy#props]] to this actor's constructor.
  *
  * @param targetPath is the ``ActorPath`` to the actor to which all messages will be forwarded.
  *   ``targetPath`` can point to a local or remote actor, but the tunnel endpoint will be
@@ -217,8 +218,9 @@ import ReliableProxy._
  *   will be resent. There is no limit on the queue size or the number of retries.
  * @param reconnectAfter &nbsp;is an optional interval between connection attempts.
  *   It is also used as the interval between receiving a `Terminated` for the tunnel and
- *   attempting to reconnect to the target actor. The minimum recommended value for this is **TODO**.
- *   Use `None` to never reconnect after a disconnection.
+ *   attempting to reconnect to the target actor. The minimum recommended value for this is
+ *   the value of the configuration setting `akka.remote.retry-gate-closed-for`. Use `None`
+ *   to never reconnect after a disconnection.
  * @param maxConnectAttempts &nbsp;is an optional maximum number of attempts to connect to the
  *   target actor. Use `None` for no limit. If `reconnectAfter` is `None` this value is ignored.
  */
@@ -235,9 +237,13 @@ class ReliableProxy(targetPath: ActorPath, retryAfter: FiniteDuration,
   val resendTimer = "resend"
   val reconnectTimer = "reconnect"
 
+  val retryGateClosedFor =
+    Try(context.system.settings.config.getDuration("akka.remote.retry-gate-closed-for", TimeUnit.MILLISECONDS)).
+      map(_.longValue).getOrElse(5000L)
+
   val defaultConnectInterval =
-    Try(context.system.settings.config.getMilliseconds("akka.reliable-proxy.default-connect-interval")).
-      map(_.longValue).getOrElse(500L).millis
+    Try(context.system.settings.config.getDuration("akka.reliable-proxy.default-connect-interval", TimeUnit.MILLISECONDS)).
+      map(_.longValue).getOrElse(retryGateClosedFor).millis
 
   val initialState = Connecting
 
