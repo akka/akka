@@ -270,7 +270,7 @@ class ReliableProxy(targetPath: ActorPath, retryAfter: FiniteDuration,
     case Event(Terminated(_), _) ⇒ terminated()
     case Event(Ack(_), _)        ⇒ stay()
     case Event(Unsent(msgs), _)  ⇒ goto(Active) using resend(updateSerial(msgs))
-    case Event(msg, _)           ⇒ goto(Active) using Vector(send(msg, sender))
+    case Event(msg, _)           ⇒ goto(Active) using Vector(send(msg, sender()))
   }
 
   onTransition {
@@ -296,7 +296,7 @@ class ReliableProxy(targetPath: ActorPath, retryAfter: FiniteDuration,
     case Event(Unsent(msgs), queue) ⇒
       stay using queue ++ resend(updateSerial(msgs))
     case Event(msg, queue) ⇒
-      stay using (queue :+ send(msg, sender))
+      stay using (queue :+ send(msg, sender()))
   }
 
   when(Connecting) {
@@ -324,7 +324,7 @@ class ReliableProxy(targetPath: ActorPath, retryAfter: FiniteDuration,
     case Event(Unsent(msgs), queue) ⇒
       stay using queue ++ updateSerial(msgs)
     case Event(msg, queue) ⇒
-      stay using (queue :+ Message(msg, sender, nextSerial()))
+      stay using (queue :+ Message(msg, sender(), nextSerial()))
   }
 
   def scheduleTick(): Unit = setTimer(resendTimer, Tick, retryAfter, repeat = false)
