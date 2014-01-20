@@ -55,6 +55,7 @@ object PersistenceSpec {
       akka.persistence.journal.plugin = "akka.persistence.journal.${plugin}"
       akka.persistence.journal.leveldb.dir = "target/journal-${test}"
       akka.persistence.snapshot-store.local.dir = "target/snapshots-${test}/"
+      akka.test.single-expect-default = 10s
     """)
 }
 
