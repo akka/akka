@@ -61,12 +61,12 @@ actor system) must be considered as one when evaluating the reliability of this
 communication channel. The benefit is that the network in-between is taken out
 of that equation.
 
-Reconnecting to the target
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+Connecting to the target
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-If the ``target`` terminates the ``proxy`` will optionally try to reconnect to
-it using mechanism outlined in :ref:`actorSelection-scala`.  If the maximum
-number of reconnection attempts is reached the ``proxy`` will terminate.
+The ``proxy`` tries to connect to the ``target`` using the mechanism outlined in
+:ref:`actorSelection-scala`.  Once connected, if the ``tunnel`` terminates the ``proxy``
+will optionally try to reconnect to the target using using the same process.
 
 Note that during the reconnection process there is a possibility that a message
 could be delivered to the ``target`` more than once.  Consider the case where a message
@@ -109,10 +109,9 @@ Configuration
 * Set ``akka.reliable-proxy.debug`` to ``on`` to turn on extra debug logging for your
   :class:`ReliableProxy` actors.
 * ``akka.reliable-proxy.default-connect-interval`` is used only if you create a :class:`ReliableProxy`
-  using the *Props taking ActorPath with no reconnections* (that is, ``reconnectAfter == None``).
-  The default value is ``500 ms``.  In this case the :class:`ReliableProxy` will send an ``Identify`` message
-  to the *target* every 500 milliseconds to try to resolve the :class:`ActorPath` to an :class:`ActorRef` so
-  that messages can be sent to the *target*.
+  with no reconnections (that is, ``reconnectAfter == None``). The default value is ``500 ms``.  In this
+  case the :class:`ReliableProxy` will send an ``Identify`` message to the *target* every 500 milliseconds
+  to try to resolve the :class:`ActorPath` to an :class:`ActorRef` so that messages can be sent to the *target*.
 
 The Actor Contract
 ------------------
@@ -145,6 +144,7 @@ Arguments it Takes
   messages, ``B`` in the above illustration.
 * *retryAfter* is the timeout for receiving ACK messages from the remote
   end-point; once it fires, all outstanding message sends will be retried.
-* *reconnectAfter* is an optional interval between reconnection attempts after
-  the target is terminated.
-* *maxReconnects* is an optional maximum number of attempts to reconnect to the target.
+* *reconnectAfter* is an optional interval between connection attempts. It is also used as the interval
+  between receiving a ``Terminated`` for the tunnel and attempting to reconnect to the target actor.
+* *maxConnectAttempts* is an optional maximum number of attempts to connect to the target while in
+  the ``Connecting`` state.

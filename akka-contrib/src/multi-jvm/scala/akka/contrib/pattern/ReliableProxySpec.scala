@@ -95,12 +95,13 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
         import akka.contrib.pattern.ReliableProxy
 
         idTarget()
-        proxy = system.actorOf(ReliableProxy.props(target, 100.millis, 5.seconds), "proxy")
+        proxy = system.actorOf(ReliableProxy.props(target.path, 100.millis, 5.seconds), "proxy")
         watch(proxy)
         proxy ! FSM.SubscribeTransitionCallBack(testActor)
-        expectState(Idle)
+        expectState(Connecting)
         proxy ! "hello"
-        expectTransition(Idle, Active)
+        expectMsgType[TargetChanged]
+        expectTransition(Connecting, Active)
         expectTransition(Active, Idle)
       }
 
@@ -265,7 +266,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
       runOn(local) {
         // After the target stops the proxy will change to Reconnecting
         within(5 seconds) {
-          expectTransition(Idle, Reconnecting)
+          expectTransition(Idle, Connecting)
         }
         // Send some messages while it's reconnecting
         sendN(50)
@@ -283,7 +284,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
         // and the proxy will transition to Active to send the outstanding messages
         within(10 seconds) {
           expectMsgType[TargetChanged]
-          expectTransition(Reconnecting, Active)
+          expectTransition(Connecting, Active)
         }
       }
 
@@ -306,11 +307,13 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
         stopProxy() // Stop previous proxy
 
         // Start new proxy with no reconnections
-        proxy = system.actorOf(ReliableProxy.props(target, 100.millis), "proxy")
+        proxy = system.actorOf(ReliableProxy.props(target.path, 100.millis), "proxy")
         proxy ! FSM.SubscribeTransitionCallBack(testActor)
         watch(proxy)
 
-        expectState(Idle)
+        expectState(Connecting)
+        expectMsgType[TargetChanged]
+        expectTransition(Connecting, Idle)
       }
 
       enterBarrier("test7a")
@@ -347,10 +350,12 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
       runOn(local) {
         // Proxy is not running after previous test
         // Start new proxy with 3 reconnections every 2 sec
-        proxy = system.actorOf(ReliableProxy.props(target, 100.millis, 2.seconds, 3), "proxy")
+        proxy = system.actorOf(ReliableProxy.props(target.path, 100.millis, 2.seconds, 3), "proxy")
         proxy ! FSM.SubscribeTransitionCallBack(testActor)
         watch(proxy)
-        expectState(Idle)
+        expectState(Connecting)
+        expectMsgType[TargetChanged]
+        expectTransition(Connecting, Idle)
       }
 
       enterBarrier("test8b")
@@ -361,9 +366,9 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
       }
 
       runOn(local) {
-        // Wait for transition to Reconnecting, then send messages
+        // Wait for transition to Connecting, then send messages
         within(5 seconds) {
-          expectTransition(Idle, Reconnecting)
+          expectTransition(Idle, Connecting)
         }
         sendN(50)
       }

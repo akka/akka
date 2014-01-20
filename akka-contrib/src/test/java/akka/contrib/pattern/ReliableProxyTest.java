@@ -6,17 +6,13 @@ package akka.contrib.pattern;
 
 import java.util.concurrent.TimeUnit;
 
+import akka.actor.*;
 import akka.testkit.AkkaJUnitActorSystemResource;
 
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import scala.concurrent.duration.Duration;
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.FSM;
-import akka.actor.Props;
-import akka.actor.UntypedActor;
 import akka.testkit.TestProbe;
 
 //#import
@@ -28,7 +24,8 @@ import akka.contrib.pattern.ReliableProxy;
 public class ReliableProxyTest {
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("ReliableProxyTest");
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+          new AkkaJUnitActorSystemResource("ReliableProxyTest");
 
   private final ActorSystem system = actorSystemResource.getSystem();
 
@@ -36,9 +33,9 @@ public class ReliableProxyTest {
   public class ProxyParent extends UntypedActor {
     private final ActorRef proxy;
 
-    public ProxyParent(ActorRef target) {
+    public ProxyParent(ActorPath targetPath) {
       proxy = getContext().actorOf(
-          ReliableProxy.props(target,
+          ReliableProxy.props(targetPath,
               Duration.create(100, TimeUnit.MILLISECONDS)));
     }
 
@@ -56,9 +53,9 @@ public class ReliableProxyTest {
     private final ActorRef proxy;
     private ActorRef client = null;
 
-    public ProxyTransitionParent(ActorRef target) {
+    public ProxyTransitionParent(ActorPath targetPath) {
       proxy = getContext().actorOf(
-          ReliableProxy.props(target,
+          ReliableProxy.props(targetPath,
               Duration.create(100, TimeUnit.MILLISECONDS)));
       proxy.tell(new FSM.SubscribeTransitionCallBack(getSelf()), getSelf());
     }
@@ -74,7 +71,8 @@ public class ReliableProxyTest {
         final FSM.Transition<ReliableProxy.State> transition =
           (FSM.Transition<ReliableProxy.State>) msg;
         assert transition.fsmRef().equals(proxy);
-        if (transition.to().equals(ReliableProxy.idle())) {
+        if (transition.from().equals(ReliableProxy.active()) &&
+                transition.to().equals(ReliableProxy.idle())) {
           client.tell("done", getSelf());
         }
       }
@@ -87,7 +85,7 @@ public class ReliableProxyTest {
   public void demonstrateUsage() {
     final TestProbe probe = TestProbe.apply(system);
     final ActorRef target = probe.ref();
-    final ActorRef parent = system.actorOf(Props.create(ProxyParent.class, target));
+    final ActorRef parent = system.actorOf(Props.create(ProxyParent.class, target.path()));
     parent.tell("hello", null);
     probe.expectMsg("world!");
   }
@@ -95,7 +93,7 @@ public class ReliableProxyTest {
   @Test
   public void demonstrateTransitions() {
     final ActorRef target = system.deadLetters();
-    final ActorRef parent = system.actorOf(Props.create(ProxyTransitionParent.class, target));
+    final ActorRef parent = system.actorOf(Props.create(ProxyTransitionParent.class, target.path()));
     final TestProbe probe = TestProbe.apply(system);
     parent.tell("hello", probe.ref());
     probe.expectMsg("done");

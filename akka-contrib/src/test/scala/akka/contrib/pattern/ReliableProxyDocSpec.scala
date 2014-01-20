@@ -24,8 +24,8 @@ object ReliableProxyDocSpec {
   //#demo
 
   //#demo-transition
-  class ProxyTransitionParent(targetRef: ActorRef) extends Actor {
-    val proxy = context.actorOf(ReliableProxy.props(targetRef, 100.millis))
+  class ProxyTransitionParent(targetPath: ActorPath) extends Actor {
+    val proxy = context.actorOf(ReliableProxy.props(targetPath, 100.millis))
     proxy ! FSM.SubscribeTransitionCallBack(self)
 
     var client: ActorRef = _
@@ -58,7 +58,7 @@ class ReliableProxyDocSpec extends AkkaSpec with ImplicitSender {
 
     "show state transitions" in {
       val target = system.deadLetters
-      val a = system.actorOf(Props(classOf[ProxyTransitionParent], target))
+      val a = system.actorOf(Props(classOf[ProxyTransitionParent], target.path))
       a ! "go"
       expectMsg("done")
     }
