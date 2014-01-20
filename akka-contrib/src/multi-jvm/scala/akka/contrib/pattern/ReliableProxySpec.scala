@@ -13,13 +13,9 @@ import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.actor._
 import akka.testkit.ImplicitSender
 import scala.concurrent.duration._
-<<<<<<< HEAD
 import akka.actor.FSM
 import akka.actor.ActorRef
 import akka.testkit.TestKitExtension
-import akka.testkit.TestProbe
-=======
->>>>>>> 0f7c5e9... Add tests covering Reconnection, ActorPath, maxReconnects, no reconnects, ProxyTerminated/Unsent, TargetChanged.   Use Option(reconnectAfter) instead of Some(reconnectAfter) in Java props.   Add a new config property to handle Props variation with ActorPath but reconnectAfter = None (defaultConnectInterval).  Ref doc updates show ActorPath usage and discuss config properties.
 import akka.actor.ActorIdentity
 import akka.actor.Identify
 
@@ -144,15 +140,8 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
       runOn(local) {
         testConductor.blackhole(local, remote, Direction.Send).await
         sendN(100)
-<<<<<<< HEAD
         expectTransition(1 second, Idle, Active)
         expectNoMsg(expectNoMsgTimeout)
-=======
-        within(1 second) {
-          expectTransition(Idle, Active)
-          expectNoMsg()
-        }
->>>>>>> 0f7c5e9... Add tests covering Reconnection, ActorPath, maxReconnects, no reconnects, ProxyTerminated/Unsent, TargetChanged.   Use Option(reconnectAfter) instead of Some(reconnectAfter) in Java props.   Add a new config property to handle Props variation with ActorPath but reconnectAfter = None (defaultConnectInterval).  Ref doc updates show ActorPath usage and discuss config properties.
       }
 
       enterBarrier("test2a")
@@ -180,15 +169,8 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
       runOn(local) {
         testConductor.blackhole(local, remote, Direction.Receive).await
         sendN(100)
-<<<<<<< HEAD
         expectTransition(1 second, Idle, Active)
         expectNoMsg(expectNoMsgTimeout)
-=======
-        within(1 second) {
-          expectTransition(Idle, Active)
-          expectNoMsg()
-        }
->>>>>>> 0f7c5e9... Add tests covering Reconnection, ActorPath, maxReconnects, no reconnects, ProxyTerminated/Unsent, TargetChanged.   Use Option(reconnectAfter) instead of Some(reconnectAfter) in Java props.   Add a new config property to handle Props variation with ActorPath but reconnectAfter = None (defaultConnectInterval).  Ref doc updates show ActorPath usage and discuss config properties.
       }
       runOn(remote) {
         within(1 second) {
