@@ -32,7 +32,7 @@ class BalancingSpec extends AkkaSpec(
     akka.actor.deployment {
       /balancingPool-2 {
         router = balancing-pool
-        nr-of-instances = 10
+        nr-of-instances = 5
         pool-dispatcher {
           attempt-teamwork = on
         }
@@ -41,7 +41,7 @@ class BalancingSpec extends AkkaSpec(
     """) with ImplicitSender with BeforeAndAfterEach {
   import BalancingSpec._
 
-  val poolSize = 10
+  val poolSize = 5 // must be less than fork-join parallelism-min, which is 8 in AkkaSpec
 
   override def beforeEach(): Unit = {
     counter.set(1)
