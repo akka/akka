@@ -311,7 +311,7 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
       expectMsg("c")
       expectMsg("a")
     }
-    "support user stash operations with several stashed messages" in within(10.seconds) {
+    "support user stash operations with several stashed messages" in {
       val processor = namedProcessor[UserStashManyProcessor]
       val n = 10
       val cmds = 1 to n flatMap (_ ⇒ List(Cmd("a"), Cmd("b-1"), Cmd("b-2"), Cmd("c")))
@@ -321,7 +321,7 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
       processor ! GetState
       expectMsg((List("a-1", "a-2") ++ evts))
     }
-    "support user stash operations under failures" in within(5.seconds) {
+    "support user stash operations under failures" in {
       val processor = namedProcessor[UserStashFailureProcessor]
       val bs = 1 to 10 map ("b-" + _)
       processor ! Cmd("a")
