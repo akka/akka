@@ -11,7 +11,7 @@ import static akka.pattern.Patterns.pipe;
 import static akka.pattern.Patterns.gracefulStop;
 //#import-gracefulStop
 
-
+import akka.actor.PoisonPill;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
@@ -403,11 +403,11 @@ public class UntypedActorDocTest {
 
   @Test
   public void usePatternsGracefulStop() throws Exception {
-    ActorRef actorRef = system.actorOf(Props.create(MyUntypedActor.class));
+    ActorRef actorRef = system.actorOf(Props.create(Manager.class));
     //#gracefulStop
     try {
       Future<Boolean> stopped =
-        gracefulStop(actorRef, Duration.create(5, TimeUnit.SECONDS));
+        gracefulStop(actorRef, Duration.create(5, TimeUnit.SECONDS), Manager.SHUTDOWN);
       Await.result(stopped, Duration.create(6, TimeUnit.SECONDS));
       // the actor has been stopped
     } catch (AskTimeoutException e) {
@@ -590,6 +590,43 @@ public class UntypedActorDocTest {
 
     private String operation() {
       return "Hi";
+    }
+  }
+  
+  static
+  //#gracefulStop-actor
+  public class Manager extends UntypedActor {
+    
+    public static final String SHUTDOWN = "shutdown";
+    
+    ActorRef worker = getContext().watch(getContext().actorOf(
+        Props.create(Cruncher.class), "worker"));
+    
+    public void onReceive(Object message) {
+      if (message.equals("job")) {
+        worker.tell("crunch", getSelf());
+      } else if (message.equals(SHUTDOWN)) {
+        worker.tell(PoisonPill.getInstance(), getSelf());
+        getContext().become(shuttingDown);
+      }
+    }
+    
+    Procedure<Object> shuttingDown = new Procedure<Object>() {
+      @Override
+      public void apply(Object message) {
+        if (message.equals("job")) {
+          getSender().tell("service unavailable, shutting down", getSelf());
+        } else if (message instanceof Terminated) {
+          getContext().stop(getSelf());
+        }
+      }
+    };
+  }
+  //#gracefulStop-actor
+  
+  static class Cruncher extends UntypedActor {
+    public void onReceive(Object message) {
+     // crunch...
     }
   }
 
