@@ -74,7 +74,7 @@ object AkkaBuild extends Build {
       
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
-      persistence, mailboxes, zeroMQ, kernel, osgi, osgiAries, docs, contrib, samples, multiNodeTestkit)
+      persistence, akkaStreams, mailboxes, zeroMQ, kernel, osgi, osgiAries, docs, contrib, samples, multiNodeTestkit)
   )
 
   lazy val akkaScalaNightly = Project(
@@ -82,7 +82,7 @@ object AkkaBuild extends Build {
     base = file("akka-scala-nightly"),
     // remove dependencies that we have to build ourselves (Scala STM, ZeroMQ Scala Bindings)
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j,
-      persistence, mailboxes, kernel, osgi, osgiAries, contrib, samples, multiNodeTestkit)
+      persistence, akkaStreams, mailboxes, kernel, osgi, osgiAries, contrib, samples, multiNodeTestkit)
   )
 
   // this detached pseudo-project is used for running the tests against a different Scala version than the one used for compilation
@@ -282,6 +282,16 @@ object AkkaBuild extends Build {
       javaOptions in Test := defaultMultiJvmOptions,
       libraryDependencies ++= Dependencies.persistence,
       previousArtifact := akkaPreviousArtifact("akka-persistence")
+    )
+  )
+
+  lazy val akkaStreams /* Can't use `streams` which has another meaning */ = Project(
+    id = "akka-streams",
+    base = file("akka-streams"),
+    dependencies = Seq(actor, testkit % "test->test"),
+    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.akkaStreams ++ Seq(
+      libraryDependencies ++= Dependencies.akkaStreams,
+      previousArtifact := akkaPreviousArtifact("akka-streams")
     )
   )
 
@@ -1058,6 +1068,8 @@ object AkkaBuild extends Build {
 
     val persistence = exports(Seq("akka.persistence.*"), imports = Seq(protobufImport()))
 
+    val akkaStreams = exports(Seq("akka.streams.*"))
+
     val testkit = exports(Seq("akka.testkit.*"))
 
     val zeroMQ = exports(Seq("akka.zeromq.*"), imports = Seq(protobufImport()) )
@@ -1178,6 +1190,8 @@ object Dependencies {
   val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
   val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
+
+  val akkaStreams = Seq(Test.scalatest, Test.junit)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
