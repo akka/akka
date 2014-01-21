@@ -161,7 +161,7 @@ object AkkaBuild extends Build {
     id = "akka-dataflow",
     base = file("akka-dataflow"),
     dependencies = Seq(testkit % "test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings  ++ OSGi.dataflow ++ cpsPlugin ++ Seq(
+    settings = defaultSettings ++ formatSettings ++ scaladocSettingsNoVerificationOfDiagrams  ++ OSGi.dataflow ++ cpsPlugin ++ Seq(
       previousArtifact := akkaPreviousArtifact("akka-dataflow")
     )
   )
@@ -329,7 +329,7 @@ object AkkaBuild extends Build {
     id = "akka-kernel",
     base = file("akka-kernel"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ Seq(
+    settings = defaultSettings ++ formatSettings ++ scaladocSettingsNoVerificationOfDiagrams ++ javadocSettings ++ Seq(
       libraryDependencies ++= Dependencies.kernel,
       previousArtifact := akkaPreviousArtifact("akka-kernel")
     )
@@ -937,7 +937,12 @@ object AkkaBuild extends Build {
         Seq(doc in Compile ~= scaladocVerifier)
        else Seq.empty)
   }
-
+  
+  // for projects with few (one) classes there might not be any diagrams
+  lazy val scaladocSettingsNoVerificationOfDiagrams: Seq[sbt.Setting[_]]= {
+    Seq(scalacOptions in (Compile, doc) ++= scaladocOptions)
+  }
+  
   lazy val unidocScaladocSettings: Seq[sbt.Setting[_]]= {
     Seq(scalacOptions in doc ++= scaladocOptions) ++
       (if (scaladocDiagramsEnabled)
