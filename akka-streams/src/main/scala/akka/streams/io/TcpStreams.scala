@@ -8,58 +8,60 @@ import akka.io.{ IO, Tcp }
 import akka.io.Tcp._
 
 import rx.async.spi._
+import rx.async.api.{ Consumer, Producer }
 
 import akka.streams.io.TcpStream.IOStream
 
 object TcpStream {
-  type IOStream = (Publisher[ByteString], Subscriber[ByteString])
+  type IOStream = (Producer[ByteString], Consumer[ByteString])
 
   def connect(address: InetSocketAddress)(implicit system: ActorSystem): IOStream = {
     val connection = system.actorOf(Props(classOf[OutboundTcpStreamActor], address)) // TODO: where should these actors go?
     (new TcpPublisher(connection), new TcpSubscriber(connection))
   }
 
-  def listen(address: InetSocketAddress)(implicit system: ActorSystem): Publisher[(InetSocketAddress, IOStream)] =
+  def listen(address: InetSocketAddress)(implicit system: ActorSystem): Producer[(InetSocketAddress, IOStream)] =
     new TcpListenStreamPublisher(system.actorOf(Props(classOf[TcpListenStreamActor], address)))
-
 }
 
-class TcpPublisher(actor: ActorRef) extends Publisher[ByteString] {
+class TcpPublisher(actor: ActorRef) extends Publisher[ByteString] with Producer[ByteString] {
   def subscribe(consumer: Subscriber[ByteString]): Subscription = {
     actor ! TcpStreamActor.NewSubscriber(consumer)
-    null
+    val subs = new TcpSubscription(actor)
+    actor ! NewSubscription(subs)
+    subs
   }
+  def getPublisher: Publisher[ByteString] = this
 }
 
 class TcpSubscription(actor: ActorRef) extends Subscription {
-  def requestMore(elements: Int): Unit = actor ! TcpStreamActor.RequestNext
+  def requestMore(elements: Int): Unit = actor ! RequestNext
   def cancel(): Unit = actor ! PoisonPill // TODO: Currently there is one subscriber
 }
 
-class TcpSubscriber(actor: ActorRef) extends Subscriber[ByteString] {
-  //def onInit(subscription: Subscription): Unit = actor ! TcpStreamActor.NewPublisher(subscription)
+class TcpSubscriber(actor: ActorRef) extends Subscriber[ByteString] with Consumer[ByteString] {
   def onNext(element: ByteString): Unit = actor ! element
   def onComplete(): Unit = actor ! PoisonPill
   def onError(cause: Throwable): Unit = actor ! PoisonPill
+
+  def getSubscriber: Subscriber[ByteString] = this
 }
 
 object TcpStreamActor {
   case class NewSubscriber(consumer: Subscriber[ByteString])
-  case class NewPublisher(sub: Subscription)
   case object UnSubscribe // TODO: No multiple subscribers yet
-  case object RequestNext
   case object WriteAck extends Tcp.Event
 }
 
 abstract class TcpStreamActor(address: InetSocketAddress) extends Actor {
   import TcpStreamActor._
   var subscriber: Subscriber[ByteString] = _
-  var publisher: Subscription = _
+  var subscription: Subscription = _
   def connection: ActorRef
 
   val ready: Receive = {
     case data: ByteString    ⇒ connection ! Write(data, WriteAck)
-    case WriteAck            ⇒ publisher.requestMore(1)
+    case WriteAck            ⇒ subscription.requestMore(1)
     case RequestNext         ⇒ connection ! ResumeReading
     case Received(data)      ⇒ subscriber.onNext(data)
     case f: CommandFailed    ⇒ context.stop(self)
@@ -69,7 +71,7 @@ abstract class TcpStreamActor(address: InetSocketAddress) extends Actor {
   override def postStop(): Unit = {
     if (connection ne null) connection ! Close // TODO: implement half-close
     if (subscriber ne null) subscriber.onComplete()
-    if (publisher ne null) publisher.cancel()
+    if (subscription ne null) subscription.cancel()
   }
 }
 
@@ -91,33 +93,41 @@ class OutboundTcpStreamActor(address: InetSocketAddress) extends TcpStreamActor(
     // TODO: tie-break just as in the inbound case to avoid deadlock
     case NewSubscriber(c) ⇒
       subscriber = c; startIfInitialized()
-    case NewPublisher(p) ⇒
-      publisher = p; startIfInitialized()
+    case NewSubscription(p) ⇒
+      subscription = p; startIfInitialized()
     case _: Connected ⇒ connection = sender; startIfInitialized()
   }
 
   def startIfInitialized(): Unit =
-    if ((subscriber ne null) && (publisher ne null) && (connection ne null)) {
+    if ((subscriber ne null) && (subscription ne null) && (connection ne null)) {
       connection ! Register(self)
-      publisher requestMore 1
+      // Akka IO side is instantly implicitly pulling the next write
+      subscription requestMore 1
       context.become(ready)
     }
 }
 
+case object RequestNext
+case class NewSubscription(sub: Subscription)
+
 object TcpListenStreamActor {
   case class NewSubscriber(subscriber: Subscriber[(InetSocketAddress, IOStream)])
-  case object RequestNext
 }
 
-class TcpListenStreamPublisher(val actor: ActorRef) extends Publisher[(InetSocketAddress, IOStream)] {
+class TcpListenStreamPublisher(val actor: ActorRef)
+  extends Publisher[(InetSocketAddress, IOStream)]
+  with Producer[(InetSocketAddress, IOStream)] {
+
   def subscribe(subscriber: Subscriber[(InetSocketAddress, IOStream)]): Subscription = {
     actor ! TcpListenStreamActor.NewSubscriber(subscriber)
-    null
+    new TcpListenStreamSubscription(actor)
   }
+
+  def getPublisher: Publisher[(InetSocketAddress, IOStream)] = this
 }
 
 class TcpListenStreamSubscription(val actor: ActorRef) extends Subscription {
-  def requestMore(elements: Int): Unit = actor ! TcpListenStreamActor.RequestNext
+  def requestMore(elements: Int): Unit = actor ! RequestNext
   def cancel(): Unit = actor ! PoisonPill // TODO: since there is only one subscriber yet
 }
 
@@ -133,10 +143,8 @@ class TcpListenStreamActor(address: InetSocketAddress) extends Actor {
   def receive = {
     case NewSubscriber(c) ⇒
       subscriber = c
-      // TODO: do we still need this?
-      // subscriber.onInit(new TcpListenStreamSubscription(self))
       IO(Tcp) ! Bind(self, address, pullMode = true)
-      context.become(ready)
+      context.become(binding())
   }
 
   private def tryServe(): Unit =
@@ -148,9 +156,18 @@ class TcpListenStreamActor(address: InetSocketAddress) extends Actor {
       pendingConnect = null
     }
 
-  val ready: Receive = {
+  def binding(requested: Int = 0): Receive = {
+    case Tcp.Bound(x) ⇒
+      context.become(ready(sender()))
+      (0 until requested).foreach(_ ⇒ self ! RequestNext)
+    case RequestNext ⇒ context.become(binding(requested + 1))
+  }
+
+  def ready(listener: ActorRef): Receive = {
     case RequestNext ⇒
+      listener ! Tcp.ResumeAccepting(1)
       pendingRequest = true
+
       tryServe()
     case Connected(clientAddress, _) ⇒
       if (pendingConnect ne null) context.stop(pendingConnect._2) // Pending queue is full, Need to kill previous unaccepted connection
@@ -170,18 +187,16 @@ class InboundTcpStreamActor(address: InetSocketAddress, val connection: ActorRef
   val preInit: Receive = {
     case NewSubscriber(c) ⇒
       subscriber = c
-      // TODO: do we still need this?
-      // subscriber onInit new TcpSubscription(self)
       startIfInitialized()
-    case NewPublisher(p) ⇒
-      publisher = p; startIfInitialized()
+    case NewSubscription(p) ⇒
+      subscription = p; startIfInitialized()
     case RequestNext ⇒ pendingRead = true
   }
 
   def startIfInitialized(): Unit =
-    if ((subscriber ne null) && (publisher ne null)) {
+    if ((subscriber ne null) && (subscription ne null)) {
       connection ! Register(self)
-      publisher requestMore 1
+      subscription requestMore 1
       if (pendingRead) connection ! ResumeReading
       context.become(ready)
     }
