@@ -664,9 +664,17 @@ termination of several actors:
 .. includecode:: code/docs/actor/UntypedActorDocTest.java
    :include: gracefulStop
 
+.. includecode:: code/docs/actor/UntypedActorDocTest.java
+   :include: gracefulStop-actor
+
 When ``gracefulStop()`` returns successfully, the actor’s ``postStop()`` hook
 will have been executed: there exists a happens-before edge between the end of
 ``postStop()`` and the return of ``gracefulStop()``.
+
+In the above example a custom ``Manager.SHUTDOWN`` message is sent to the target
+actor to initiate the process of stopping the actor. You can use ``PoisonPill`` for
+this, but then you have limited possibilities to perform interactions with other actors
+before stopping the target actor. Simple cleanup tasks can be handled in ``postStop``.
 
 .. warning::
 

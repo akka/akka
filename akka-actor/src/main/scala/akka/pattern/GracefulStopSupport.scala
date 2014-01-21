@@ -37,7 +37,7 @@ trait GracefulStopSupport {
    * If the target actor isn't terminated within the timeout the [[scala.concurrent.Future]]
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    *
-   * If you want to invoke specalized stopping logic on your target actor instead of PoisonPill, you can pass your
+   * If you want to invoke specialized stopping logic on your target actor instead of PoisonPill, you can pass your
    * stop command as a parameter:
    * {{{
    *   gracefulStop(someChild, timeout, MyStopGracefullyMessage).onComplete {
