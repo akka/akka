@@ -178,10 +178,10 @@ case "$1" in
         printf "%26s - %s\n" leader              "Asks the cluster who the current leader is"
         printf "%26s - %s\n" is-singleton        "Checks if the cluster is a singleton cluster (single node cluster)"
         printf "%26s - %s\n" is-available        "Checks if the member node is available"
-        printf "Where the <node-url> should be on the format of 'akka://actor-system-name@hostname:port'\n"
+        printf "Where the <node-url> should be on the format of 'akka.tcp://actor-system-name@hostname:port'\n"
         printf "\n"
         printf "Examples: bin/$SELF localhost 9999 is-available\n"
-        printf "          bin/$SELF localhost 9999 join akka://MySystem@darkstar:2552\n"
+        printf "          bin/$SELF localhost 9999 join akka.tcp://MySystem@darkstar:2552\n"
         printf "          bin/$SELF localhost 9999 cluster-status\n"
         exit 1
         ;;
