@@ -117,8 +117,8 @@ Using Akka with Maven
 ---------------------
 
 The simplest way to get started with Akka and Maven is to check out the
-`Akka/Maven template <http://typesafe.com/resources/getting-started/typesafe-stack/downloading-installing.html#template-projects-for-scala-akka-and-play>`_
-project.
+`Typesafe Activator <http://typesafe.com/platform/getstarted>`_
+tutorial named `Akka Main in Java <http://typesafe.com/activator/template/akka-sample-main-java>`_.
 
 Since Akka is published to Maven Central (for versions since 2.1-M2), is it
 enough to add the Akka dependencies to the POM. For example, here is the
