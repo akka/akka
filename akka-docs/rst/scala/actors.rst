@@ -889,10 +889,6 @@ extend that, either through inheritance or delegation, is to use
 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#receive-orElse
 
-Or:
-
-.. includecode:: code/docs/actor/ActorDocSpec.scala#receive-orElse2
-
 Initialization patterns
 =======================
 
