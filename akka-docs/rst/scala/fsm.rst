@@ -362,8 +362,11 @@ You may set a timer using
 
 where :obj:`msg` is the message object which will be sent after the duration
 :obj:`interval` has elapsed. If :obj:`repeat` is :obj:`true`, then the timer is
-scheduled at fixed rate given by the :obj:`interval` parameter. Timers may be
-canceled using
+scheduled at fixed rate given by the :obj:`interval` parameter.
+Any existing timer with the same name will automatically be canceled before
+adding the new timer.
+
+Timers may be canceled using
 
   :func:`cancelTimer(name)`
 
