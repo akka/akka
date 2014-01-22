@@ -67,6 +67,7 @@ src_managed
 storage
 tags
 target
+target-sbt
 tm*.lck
 tm*.log
 tm.out

@@ -21,7 +21,7 @@ import com.typesafe.config.{ ConfigFactory, Config }
 abstract class ActorSystemActivator extends BundleActivator {
 
   private var system: Option[ActorSystem] = None
-  private var registration: Option[ServiceRegistration] = None
+  private var registration: Option[ServiceRegistration[_]] = None
 
   /**
    * Implement this method to add your own actors to the ActorSystem.  If you want to share the actor
@@ -72,7 +72,7 @@ abstract class ActorSystemActivator extends BundleActivator {
   /**
    * Convenience method to find a service by its reference.
    */
-  def serviceForReference[T](context: BundleContext, reference: ServiceReference): T =
+  def serviceForReference[T](context: BundleContext, reference: ServiceReference[_]): T =
     context.getService(reference).asInstanceOf[T]
 
   /**

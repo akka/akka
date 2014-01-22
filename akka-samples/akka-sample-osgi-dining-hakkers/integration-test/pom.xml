@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.typesafe.akka.akka-sample-osgi-dining-hakkers</groupId>
         <artifactId>project</artifactId>
-        <version>2.2.0-SNAPSHOT</version>
+        <version>2.3-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -34,92 +34,10 @@
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scala.dep.version}</artifactId>
         </dependency>
-        <!--
-        This is needed only for the scalatest osgi bundle, it has a non-optional import on scala-actors stuff.
-        This can be removed once we are using ScalaTest 2.0.x: https://groups.google.com/d/topic/scalatest-users/XAVWBJ-v6vA/discussion
-        See also TestOptions.testBundles
-        -->
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-actors</artifactId>
-            <version>${scala.version}</version>
-        </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
-
-        <!--
-        Explicitly import Pax Exam 2.6.0, should be able to remove this once Karaf 2.3.1 is released
-        (http://www.mail-archive.com/user@karaf.apache.org/msg04061.html)
-        -->
-        <dependency>
-            <groupId>org.ops4j.pax.exam</groupId>
-            <artifactId>pax-exam</artifactId>
-            <version>${paxexam.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.ops4j.pax.exam</groupId>
-            <artifactId>pax-exam-container-remote</artifactId>
-            <version>${paxexam.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.ops4j.pax.exam</groupId>
-            <artifactId>pax-exam-invoker-junit</artifactId>
-            <version>${paxexam.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.ops4j.pax.exam</groupId>
-            <artifactId>pax-exam-container-rbc</artifactId>
-            <version>${paxexam.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.ops4j.pax.exam</groupId>
-            <artifactId>pax-exam-container-rbc-client</artifactId>
-            <version>${paxexam.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.ops4j.pax.exam</groupId>
-            <artifactId>pax-exam-extender-service</artifactId>
-            <version>${paxexam.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.ops4j.pax.exam</groupId>
-            <artifactId>pax-exam-inject</artifactId>
-            <version>${paxexam.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.ops4j.pax.swissbox</groupId>
-            <artifactId>pax-swissbox-core</artifactId>
-            <version>${paxswissbox.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.ops4j.pax.swissbox</groupId>
-            <artifactId>pax-swissbox-extender</artifactId>
-            <version>${paxswissbox.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.ops4j.pax.swissbox</groupId>
-            <artifactId>pax-swissbox-lifecycle</artifactId>
-            <version>${paxswissbox.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.ops4j.pax.swissbox</groupId>
-            <artifactId>pax-swissbox-framework</artifactId>
-            <version>${paxswissbox.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- End of temporary Pax Exam dependency imports -->
     </dependencies>
 
     <build>
@@ -147,7 +65,6 @@
                         <pax.exam.service.timeout>30000</pax.exam.service.timeout>
                         <karaf.version>${karaf.version}</karaf.version>
                         <project.version>${project.version}</project.version>
-                        <!--<scalatest.artifact>scalatest_${scala.dep.version}</scalatest.artifact>-->
                         <scala.dep.version>${scala.dep.version}</scala.dep.version>
                     </systemPropertyVariables>
                 </configuration>
