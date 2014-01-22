@@ -356,6 +356,8 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
 
   /**
    * Schedule named timer to deliver message after given delay, possibly repeating.
+   * Any existing timer with the same name will automatically be canceled before
+   * adding the new timer.
    * @param name identifier to be used with cancelTimer()
    * @param msg message to be delivered
    * @param timeout delay of first message delivery and between subsequent messages
