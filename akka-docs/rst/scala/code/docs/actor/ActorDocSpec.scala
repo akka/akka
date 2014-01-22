@@ -13,7 +13,7 @@ import akka.event.Logging
 //#imports1
 
 import scala.concurrent.Future
-import akka.actor.{ ActorRef, ActorSystem }
+import akka.actor.{ ActorRef, ActorSystem, PoisonPill, Terminated }
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.Matchers
 import akka.testkit._
@@ -134,6 +134,36 @@ class ReplyException extends Actor {
 
   def operation(): String = { "Hi" }
 
+}
+
+//#gracefulStop-actor
+object Manager {
+  case object Shutdown
+}
+
+class Manager extends Actor {
+  import Manager._
+  val worker = context.watch(context.actorOf(Props[Cruncher], "worker"))
+
+  def receive = {
+    case "job" => worker ! "crunch"
+    case Shutdown =>
+      worker ! PoisonPill
+      context become shuttingDown
+  }
+
+  def shuttingDown: Receive = {
+    case "job" => sender() ! "service unavailable, shutting down"
+    case Terminated(`worker`) =>
+      context stop self
+  }
+}
+//#gracefulStop-actor
+
+class Cruncher extends Actor {
+  def receive = {
+    case "crunch" => // crunch...
+  }
 }
 
 //#swapper
@@ -480,13 +510,13 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   }
 
   "using pattern gracefulStop" in {
-    val actorRef = system.actorOf(Props[MyActor])
+    val actorRef = system.actorOf(Props[Manager])
     //#gracefulStop
     import akka.pattern.gracefulStop
     import scala.concurrent.Await
 
     try {
-      val stopped: Future[Boolean] = gracefulStop(actorRef, 5 seconds)
+      val stopped: Future[Boolean] = gracefulStop(actorRef, 5 seconds, Manager.Shutdown)
       Await.result(stopped, 6 seconds)
       // the actor has been stopped
     } catch {
