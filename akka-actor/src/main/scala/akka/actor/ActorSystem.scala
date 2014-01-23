@@ -75,7 +75,7 @@ object ActorSystem {
   /**
    * Creates a new ActorSystem with the specified name, the specified Config, the specified ClassLoader,
    * and the specified ExecutionContext. The ExecutionContext will be used as the default executor inside this ActorSystem.
-   * If [[null]] is passed in for the Config, ClassLoader and/or ExecutionContext parameters, the respective default value
+   * If `null` is passed in for the Config, ClassLoader and/or ExecutionContext parameters, the respective default value
    * will be used. If no Config is given, the default reference config will be obtained from the ClassLoader.
    * If no ClassLoader is given, it obtains the current ClassLoader by first inspecting the current
    * threads' getContextClassLoader, then tries to walk the stack to find the callers class loader, then

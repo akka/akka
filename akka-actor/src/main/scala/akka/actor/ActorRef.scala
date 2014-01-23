@@ -118,7 +118,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * Sends the specified message to the sender, i.e. fire-and-forget
    * semantics, including the sender reference if possible.
    *
-   * Pass [[ActorRef#noSender]] or `null` as sender if there is nobody to reply to
+   * Pass [[akka.actor.ActorRef$.noSender]] or `null` as sender if there is nobody to reply to
    */
   final def tell(msg: Any, sender: ActorRef): Unit = this.!(msg)(sender)
 
@@ -476,7 +476,7 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
                                        override val path: ActorPath,
                                        val eventStream: EventStream) extends MinimalActorRef {
 
-  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") override def isTerminated(): Boolean = true
+  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") override def isTerminated = true
 
   override def sendSystemMessage(message: SystemMessage): Unit = {
     if (Mailbox.debug) println(s"ELAR $path having enqueued $message")

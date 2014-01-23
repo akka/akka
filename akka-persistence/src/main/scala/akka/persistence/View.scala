@@ -52,7 +52,7 @@ case object Update {
  * view can also run on a different node, provided that a replicated journal is used. Implementation
  * classes reference a processor by implementing `processorId`.
  *
- * Views can also store snapshots of internal state by calling [[saveSnapshot]]. The snapshots of a view
+ * Views can also store snapshots of internal state by calling [[#saveSnapshot]]. The snapshots of a view
  * are independent of those of the referenced processor. During recovery, a saved snapshot is offered
  * to the view with a [[SnapshotOffer]] message, followed by replayed messages, if any, that are younger
  * than the snapshot. Default is to offer the latest saved snapshot.
@@ -63,9 +63,8 @@ case object Update {
  * `akka.persistence.view.auto-update-interval` configuration key. Applications may trigger additional
  * view updates by sending the view [[Update]] requests. See also methods
  *
- *  - [[autoUpdate]] for turning automated updates on or off
- *  - [[autoUpdateReplayMax]] for limiting the number of replayed messages per view update cycle and
- *  - [[autoRecoveryReplayMax]] for limiting the number of replayed messages on initial view recovery
+ *  - [[#autoUpdate]] for turning automated updates on or off
+ *  - [[#autoUpdateReplayMax]] for limiting the number of replayed messages per view update cycle
  *
  * Views can also use channels to communicate with destinations in the same way as processors can do.
  */
@@ -174,7 +173,7 @@ trait View extends Actor with Recovery {
     viewSettings.autoUpdateReplayMax
 
   /**
-   * Triggers an initial recovery, starting form a snapshot, if any, and replaying at most `autoRecoveryReplayMax`
+   * Triggers an initial recovery, starting form a snapshot, if any, and replaying at most `autoUpdateReplayMax`
    * messages (following that snapshot).
    */
   override def preStart(): Unit = {

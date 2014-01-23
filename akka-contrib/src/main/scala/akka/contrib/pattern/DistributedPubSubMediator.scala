@@ -501,8 +501,8 @@ class DistributedPubSubExtension(system: ExtendedActorSystem) extends Extension 
         case "broadcast"          ⇒ BroadcastRoutingLogic()
         case other                ⇒ throw new IllegalArgumentException(s"Unknown 'routing-logic': [$other]")
       }
-      val gossipInterval = Duration(config.getMilliseconds("gossip-interval"), MILLISECONDS)
-      val removedTimeToLive = Duration(config.getMilliseconds("removed-time-to-live"), MILLISECONDS)
+      val gossipInterval = config.getDuration("gossip-interval", MILLISECONDS).millis
+      val removedTimeToLive = config.getDuration("removed-time-to-live", MILLISECONDS).millis
       val maxDeltaElements = config.getInt("max-delta-elements")
       val name = config.getString("name")
       system.actorOf(DistributedPubSubMediator.props(role, routingLogic, gossipInterval, removedTimeToLive, maxDeltaElements),

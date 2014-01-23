@@ -6,6 +6,7 @@ package akka.japi.pf;
 
 import akka.actor.FSM;
 import scala.PartialFunction;
+
 import java.util.List;
 
 /**
@@ -14,6 +15,7 @@ import java.util.List;
  * @param <S> the state type
  * @param <D> the data type
  */
+@SuppressWarnings("rawtypes")
 public class FSMStateFunctionBuilder<S, D> {
 
   private PFBuilder<FSM.Event<D>, FSM.State<S, D>> builder =

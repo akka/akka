@@ -74,6 +74,7 @@ object RemoteWatcherSpec {
 class RemoteWatcherSpec extends AkkaSpec(
   """akka {
        loglevel = INFO
+       log-dead-letters-during-shutdown = false
        actor.provider = "akka.remote.RemoteActorRefProvider"
        remote.netty.tcp {
          hostname = localhost

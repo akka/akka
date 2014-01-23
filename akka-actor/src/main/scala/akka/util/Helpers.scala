@@ -43,9 +43,12 @@ object Helpers {
 
   /**
    * Converts a "currentTimeMillis"-obtained timestamp accordingly:
+   * {{{
    *   "$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC"
+   * }}}
+   *
    * @param timestamp a "currentTimeMillis"-obtained timestamp
-   * @return A String formatted like: $hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC
+   * @return the formatted timestamp
    */
   def currentTimeMillisToUTCString(timestamp: Long): String = {
     val timeOfDay = timestamp % 86400000L

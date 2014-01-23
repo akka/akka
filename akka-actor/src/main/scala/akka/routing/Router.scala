@@ -38,7 +38,7 @@ trait Routee {
 }
 
 /**
- * [[Routee]] that sends the messages to an [[akka.actor.ActorRefRoutee]].
+ * [[Routee]] that sends the messages to an [[akka.actor.ActorRef]].
  */
 case class ActorRefRoutee(ref: ActorRef) extends Routee {
   override def send(message: Any, sender: ActorRef): Unit =

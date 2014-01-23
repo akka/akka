@@ -1,5 +1,6 @@
 package akka.performance.microbench
 
+import language.postfixOps
 import akka.performance.workbench.PerformanceSpec
 import akka.actor._
 import java.util.concurrent.{ ThreadPoolExecutor, CountDownLatch, TimeUnit }

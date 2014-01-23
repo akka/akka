@@ -12,7 +12,6 @@ import akka.actor._
 import akka.testkit.{ EventFilter, AkkaSpec }
 import scala.concurrent.{ Future, Await, ExecutionContext }
 import scala.concurrent.duration._
-import akka.dispatch.{ UnboundedMailbox, BoundedMailbox, SingleConsumerOnlyUnboundedMailbox }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {

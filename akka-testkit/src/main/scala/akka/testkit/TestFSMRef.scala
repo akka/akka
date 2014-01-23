@@ -66,24 +66,24 @@ class TestFSMRef[S, D, T <: Actor](
   }
 
   /**
-   * Proxy for [[FSM#setTimer]].
+   * Proxy for [[akka.actor.FSM#setTimer]].
    */
   def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean = false) {
     fsm.setTimer(name, msg, timeout, repeat)
   }
 
   /**
-   * Proxy for [[FSM#cancelTimer]].
+   * Proxy for [[akka.actor.FSM#cancelTimer]].
    */
   def cancelTimer(name: String) { fsm.cancelTimer(name) }
 
   /**
-   * Proxy for [[FSM#isStateTimerActive]].
+   * Proxy for [[akka.actor.FSM#isStateTimerActive]].
    */
   def isTimerActive(name: String) = fsm.isTimerActive(name)
 
   /**
-   * Proxy for [[FSM#isStateTimerActive]].
+   * Proxy for [[akka.actor.FSM#isStateTimerActive]].
    */
   def isStateTimerActive = fsm.isStateTimerActive
 }
