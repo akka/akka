@@ -929,18 +929,21 @@ object AkkaBuild extends Build {
     })
 
   lazy val scaladocDiagramsEnabled = System.getProperty("akka.scaladoc.diagrams", "true").toBoolean
+  lazy val scaladocAutoAPI = System.getProperty("akka.scaladoc.autoapi", "true").toBoolean
+
   lazy val scaladocOptions = List("-implicits") ::: (if (scaladocDiagramsEnabled) List("-diagrams") else Nil)
 
-  lazy val scaladocSettings: Seq[sbt.Setting[_]]= {
-    Seq(scalacOptions in (Compile, doc) ++= scaladocOptions) ++
-      (if (scaladocDiagramsEnabled)
-        Seq(doc in Compile ~= scaladocVerifier)
-       else Seq.empty)
+  lazy val scaladocSettings: Seq[sbt.Setting[_]] = {
+    scaladocSettingsNoVerificationOfDiagrams ++
+    (if (scaladocDiagramsEnabled) Seq(doc in Compile ~= scaladocVerifier) else Seq.empty)
   }
   
   // for projects with few (one) classes there might not be any diagrams
   lazy val scaladocSettingsNoVerificationOfDiagrams: Seq[sbt.Setting[_]]= {
-    Seq(scalacOptions in (Compile, doc) ++= scaladocOptions)
+    Seq(
+      scalacOptions in (Compile, doc) ++= scaladocOptions,
+      autoAPIMappings := scaladocAutoAPI
+    )
   }
   
   lazy val unidocScaladocSettings: Seq[sbt.Setting[_]]= {
