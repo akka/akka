@@ -15,7 +15,6 @@ object PerformanceSpec {
     """
       akka.persistence.performance.cycles.warmup = 300
       akka.persistence.performance.cycles.load = 1000
-      akka.persistence.publish-confirmations = on
     """
 
   case object StartMeasure

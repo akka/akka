@@ -9,6 +9,7 @@ import com.typesafe.config.Config
 
 import akka.actor._
 import akka.testkit._
+import akka.persistence.JournalProtocol.ReplayMessages
 
 object ViewSpec {
   class TestProcessor(name: String, probe: ActorRef) extends NamedProcessor(name) {
@@ -68,6 +69,17 @@ object ViewSpec {
     override def postRestart(reason: Throwable): Unit = {
       super.postRestart(reason)
       failAt = None
+    }
+  }
+
+  class ActiveTestView(name: String, probe: ActorRef) extends View {
+    override val processorId: String = name
+    override def autoUpdateInterval: FiniteDuration = 50.millis
+    override def autoUpdateReplayMax: Long = 2
+
+    def receive = {
+      case Persistent(payload, sequenceNr) ⇒
+        probe ! s"replicated-${payload}-${sequenceNr}"
     }
   }
 
@@ -154,6 +166,9 @@ abstract class ViewSpec(config: Config) extends AkkaSpec(config) with Persistenc
   def awaitConfirmation(probe: TestProbe): Unit =
     probe.expectMsgType[Delivered]
 
+  def subscribeToReplay(probe: TestProbe): Unit =
+    system.eventStream.subscribe(probe.ref, classOf[ReplayMessages])
+
   "A view" must {
     "receive past updates from a processor" in {
       view = system.actorOf(Props(classOf[TestView], name, viewProbe.ref))
@@ -237,6 +252,28 @@ abstract class ViewSpec(config: Config) extends AkkaSpec(config) with Persistenc
       view ! Update(await = true, replayMax = 4)
       view ! "get"
       viewProbe.expectMsg("replicated-f-6")
+    }
+    "run size-limited updates automatically" in {
+      val replayProbe = TestProbe()
+
+      processor ! Persistent("c")
+      processor ! Persistent("d")
+
+      processorProbe.expectMsg("c-3")
+      processorProbe.expectMsg("d-4")
+
+      subscribeToReplay(replayProbe)
+
+      view = system.actorOf(Props(classOf[ActiveTestView], name, viewProbe.ref))
+
+      viewProbe.expectMsg("replicated-a-1")
+      viewProbe.expectMsg("replicated-b-2")
+      viewProbe.expectMsg("replicated-c-3")
+      viewProbe.expectMsg("replicated-d-4")
+
+      replayProbe.expectMsgPF() { case ReplayMessages(1L, _, 2L, _, _, _) ⇒ }
+      replayProbe.expectMsgPF() { case ReplayMessages(3L, _, 2L, _, _, _) ⇒ }
+      replayProbe.expectMsgPF() { case ReplayMessages(5L, _, 2L, _, _, _) ⇒ }
     }
   }
 

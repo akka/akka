@@ -33,14 +33,16 @@ trait SyncWriteJournal extends Actor with AsyncRecovery {
           persistentBatch.foreach(p ⇒ processor tell (WriteMessageFailure(p, e), p.sender))
           throw e
       }
-    case ReplayMessages(fromSequenceNr, toSequenceNr, max, processorId, processor, replayDeleted) ⇒
+    case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, processorId, processor, replayDeleted) ⇒
       asyncReplayMessages(processorId, fromSequenceNr, toSequenceNr, max) { p ⇒
         if (!p.deleted || replayDeleted) processor.tell(ReplayedMessage(p), p.sender)
       } map {
         case _ ⇒ ReplayMessagesSuccess
       } recover {
         case e ⇒ ReplayMessagesFailure(e)
-      } pipeTo (processor)
+      } pipeTo (processor) onSuccess {
+        case _ if publish ⇒ context.system.eventStream.publish(r)
+      }
     case ReadHighestSequenceNr(fromSequenceNr, processorId, processor) ⇒
       asyncReadHighestSequenceNr(processorId, fromSequenceNr).map {
         highest ⇒ ReadHighestSequenceNrSuccess(highest)
