@@ -9,8 +9,7 @@ object Combinators {
   implicit class CombinatorsImplicits[T](val producer: Producer[T]) extends AnyVal {
     def foreach(op: T ⇒ Unit)(implicit ec: ExecutionContext): Unit = {
       val subscriber = new ForeachSubscriber(op, ec)
-      val subs = producer.getPublisher.subscribe(subscriber)
-      subscriber.setSubscription(subs)
+      producer.getPublisher.subscribe(subscriber)
     }
 
     def map[U](op: T ⇒ U): Producer[U] = ???
@@ -24,7 +23,7 @@ object Combinators {
 
   private class ForeachSubscriber[T]( final val op: T ⇒ Unit, implicit val ec: ExecutionContext) extends Subscriber[T] {
     @volatile private var subscription: Subscription = _
-    def setSubscription(subscription: Subscription): Unit = Task {
+    def onSubscribe(subscription: Subscription): Unit = Task {
       this.subscription = subscription
       this.subscription.requestMore(1)
     }

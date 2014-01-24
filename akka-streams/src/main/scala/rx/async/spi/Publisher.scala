@@ -6,10 +6,11 @@ trait Subscription {
 }
 
 trait Publisher[T] {
-  def subscribe(subscriber: Subscriber[T]): Subscription
+  def subscribe(subscriber: Subscriber[T]): Unit
 }
 
 trait Subscriber[T] {
+  def onSubscribe(subscription: Subscription): Unit
   def onNext(element: T): Unit
   def onComplete(): Unit
   def onError(cause: Throwable): Unit
