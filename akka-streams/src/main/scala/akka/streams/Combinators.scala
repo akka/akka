@@ -36,4 +36,8 @@ object Combinators {
       subscription.requestMore(1)
     }
   }
+
+  implicit class FutureAsProducer[T](val future: Future[T]) extends AnyVal {
+    def asProducer: Producer[T] = ???
+  }
 }
