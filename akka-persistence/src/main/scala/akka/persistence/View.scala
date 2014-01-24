@@ -129,7 +129,7 @@ trait View extends Actor with Recovery {
    */
   private def onReplayComplete(await: Boolean): Unit = {
     _currentState = idle
-    if (autoUpdate) schedule = Some(context.system.scheduler.scheduleOnce(autoUpdateInterval, self, Update(await = false)))
+    if (autoUpdate) schedule = Some(context.system.scheduler.scheduleOnce(autoUpdateInterval, self, Update(await = false, autoUpdateReplayMax)))
     if (await) receiverStash.unstashAll()
   }
 

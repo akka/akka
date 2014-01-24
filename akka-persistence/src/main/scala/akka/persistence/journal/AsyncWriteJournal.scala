@@ -42,7 +42,7 @@ trait AsyncWriteJournal extends Actor with AsyncRecovery {
           resequence(WriteMessageFailure(_, e))
       }
       resequencerCounter += persistentBatch.length + 1
-    case ReplayMessages(fromSequenceNr, toSequenceNr, max, processorId, processor, replayDeleted) ⇒
+    case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, processorId, processor, replayDeleted) ⇒
       // Send replayed messages and replay result to processor directly. No need
       // to resequence replayed messages relative to written and looped messages.
       asyncReplayMessages(processorId, fromSequenceNr, toSequenceNr, max) { p ⇒
@@ -51,7 +51,9 @@ trait AsyncWriteJournal extends Actor with AsyncRecovery {
         case _ ⇒ ReplayMessagesSuccess
       } recover {
         case e ⇒ ReplayMessagesFailure(e)
-      } pipeTo (processor)
+      } pipeTo (processor) onSuccess {
+        case _ if publish ⇒ context.system.eventStream.publish(r)
+      }
     case ReadHighestSequenceNr(fromSequenceNr, processorId, processor) ⇒
       // Send read highest sequence number to processor directly. No need
       // to resequence the result relative to written and looped messages.
