@@ -37,10 +37,10 @@ abstract class PersistentChannelSpec(config: Config) extends ChannelSpec(config)
   import PersistentChannelSpec._
 
   private def redeliverChannelSettings(listener: Option[ActorRef]): PersistentChannelSettings =
-    PersistentChannelSettings(redeliverMax = 2, redeliverInterval = 100 milliseconds, redeliverFailureListener = listener)
+    PersistentChannelSettings(redeliverMax = 2, redeliverInterval = 100 milliseconds, redeliverFailureListener = listener, idleTimeout = 5.seconds)
 
   private def createDefaultTestChannel(name: String): ActorRef =
-    system.actorOf(PersistentChannel.props(s"${name}-default", PersistentChannelSettings()))
+    system.actorOf(PersistentChannel.props(s"${name}-default", PersistentChannelSettings(idleTimeout = 5.seconds)))
 
   override def createDefaultTestChannel(): ActorRef =
     createDefaultTestChannel(name)

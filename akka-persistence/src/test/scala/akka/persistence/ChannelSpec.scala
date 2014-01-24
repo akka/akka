@@ -13,12 +13,6 @@ import akka.actor._
 import akka.testkit._
 
 object ChannelSpec {
-  class TestDestination extends Actor {
-    def receive = {
-      case m: ConfirmablePersistent ⇒ sender ! m
-    }
-  }
-
   class TestDestinationProcessor(name: String) extends NamedProcessor(name) {
     def receive = {
       case cp @ ConfirmablePersistent("a", _, _)                          ⇒ cp.confirm()
@@ -84,15 +78,16 @@ abstract class ChannelSpec(config: Config) extends AkkaSpec(config) with Persist
   "A channel" must {
     "must resolve destination references and preserve message order" in {
       val empty = actorRefFor("testDestination") // will be an EmptyLocalActorRef
-      val destination = system.actorOf(Props(classOf[TestReceiver], testActor), "testDestination")
+      val probe = TestProbe()
+      val destination = system.actorOf(Props(classOf[TestReceiver], probe.ref), "testDestination")
 
       defaultTestChannel ! Deliver(PersistentRepr("a"), empty.path)
       defaultTestChannel ! Deliver(Persistent("b"), destination.path)
       defaultTestChannel ! Deliver(Persistent("c"), destination.path)
 
-      expectMsg("a")
-      expectMsg("b")
-      expectMsg("c")
+      probe.expectMsg("a")
+      probe.expectMsg("b")
+      probe.expectMsg("c")
     }
     "support processors as destination" in {
       val destination = system.actorOf(Props(classOf[TestDestinationProcessor], name))
@@ -118,14 +113,14 @@ abstract class ChannelSpec(config: Config) extends AkkaSpec(config) with Persist
       awaitConfirmation(confirmProbe)
     }
     "accept confirmable persistent messages for delivery" in {
-      val destination = system.actorOf(Props[TestDestination])
       val confirmProbe = TestProbe()
+      val destinationProbe = TestProbe()
 
       subscribeToConfirmation(confirmProbe)
 
-      defaultTestChannel ! Deliver(PersistentRepr("a", confirmable = true), destination.path)
+      defaultTestChannel ! Deliver(PersistentRepr("a", confirmable = true), destinationProbe.ref.path)
 
-      expectMsgPF() { case m @ ConfirmablePersistent("a", _, _) ⇒ m.confirm() }
+      destinationProbe.expectMsgPF() { case m @ ConfirmablePersistent("a", _, _) ⇒ m.confirm() }
       awaitConfirmation(confirmProbe)
     }
     "redeliver on missing confirmation" in {
