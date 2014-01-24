@@ -7,7 +7,6 @@ import spray.http._
 import scala.concurrent.Future
 import akka.streams.Combinators._
 import spray.http.ChunkedResponseStart
-import akka.streams.Subject
 
 
 object HttpImplementation {
@@ -56,7 +55,7 @@ object HttpImplementation {
   def parse: Stage[ByteString, ParsedOrShortcutResponse] = ??? // should also be implementable as a state machine
   def render: Stage[HttpResponsePart, ByteString] = ??? // can be probably be implemented by map alone
 
-  object CollectingStateMachine extends StateMachine[HttpRequestPart, HttpRequestStream] {
+/*  object CollectingStateMachine extends StateMachine[HttpRequestPart, HttpRequestStream] {
     // semantics:
     // state: no-request
     //  case HttpRequest => emit(HttpResponseStream with static body data producer)
@@ -78,8 +77,28 @@ object HttpImplementation {
       case MessageChunk(data, "") => Do(bodySubject.onNext(data.toByteString), inRequest(bodySubject))
       case ChunkedMessageEnd => Do(bodySubject.onComplete(), noRequest)
     }
-  }
-  def collect: Stage[HttpRequestPart, HttpRequestStream] = CollectingStateMachine
+  }*/
+
+  def collect: Stage[HttpRequestPart, HttpRequestStream] =
+    _.span(_.isInstanceOf[HttpMessageEnd]).flatMap { elements =>
+      elements.headTail.map {
+        case (ChunkedRequestStart(req), rest) =>
+          val bodyParts = rest.takeWhile(_.isInstanceOf[MessageChunk]).map {
+            case MessageChunk(data, "") => data.toByteString
+          }
+          (req, bodyParts)
+      }
+      // alternative using `first` and `rest`
+      /*elements.first.map {
+        case ChunkedRequestStart(req) =>
+          val rest = elements.rest
+          val bodyParts = rest.takeWhile(_.isInstanceOf[MessageChunk]).map {
+            case MessageChunk(data, "") => data.toByteString
+          }
+          (req, bodyParts)
+      }*/
+    }
+
   def toParts: Stage[HttpResponseStream, HttpResponsePart] =
     _.flatMap {
       case (headers, body) =>

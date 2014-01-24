@@ -15,6 +15,12 @@ object Combinators {
     def map[U](op: T ⇒ U): Producer[U] = ???
     def flatMap[U](op: T ⇒ Producer[U]): Producer[U] = ???
     def andThen[U >: T](next: Producer[U]): Producer[U] = ???
+    def span(pred: T ⇒ Boolean): Producer[Producer[T]] = ???
+    def first: Producer[T] = ???
+    def rest: Producer[T] = ???
+    def headTail: Producer[(T, Producer[T])] = ???
+    def takeWhile(pred: T ⇒ Boolean): Producer[T] = ???
+
     def connect(consumer: Consumer[T]): Unit = producer.getPublisher.subscribe(consumer.getSubscriber)
   }
 
