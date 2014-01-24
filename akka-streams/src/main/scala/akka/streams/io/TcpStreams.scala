@@ -25,12 +25,7 @@ object TcpStream {
 }
 
 class TcpPublisher(actor: ActorRef) extends Publisher[ByteString] with Producer[ByteString] {
-  def subscribe(consumer: Subscriber[ByteString]): Subscription = {
-    actor ! TcpStreamActor.NewSubscriber(consumer)
-    val subs = new TcpSubscription(actor)
-    actor ! NewSubscription(subs)
-    subs
-  }
+  def subscribe(consumer: Subscriber[ByteString]): Unit = actor ! TcpStreamActor.NewSubscriber(consumer)
   def getPublisher: Publisher[ByteString] = this
 }
 
@@ -43,6 +38,7 @@ class TcpSubscriber(actor: ActorRef) extends Subscriber[ByteString] with Consume
   def onNext(element: ByteString): Unit = actor ! element
   def onComplete(): Unit = actor ! PoisonPill
   def onError(cause: Throwable): Unit = actor ! PoisonPill
+  def onSubscribe(subscription: Subscription): Unit = actor ! NewSubscription(subscription)
 
   def getSubscriber: Subscriber[ByteString] = this
 }
@@ -92,7 +88,9 @@ class OutboundTcpStreamActor(address: InetSocketAddress) extends TcpStreamActor(
 
     // TODO: tie-break just as in the inbound case to avoid deadlock
     case NewSubscriber(c) ⇒
-      subscriber = c; startIfInitialized()
+      subscriber = c
+      subscriber.onSubscribe(new TcpSubscription(self))
+      startIfInitialized()
     case NewSubscription(p) ⇒
       subscription = p; startIfInitialized()
     case _: Connected ⇒ connection = sender; startIfInitialized()
@@ -118,10 +116,8 @@ class TcpListenStreamPublisher(val actor: ActorRef)
   extends Publisher[(InetSocketAddress, IOStream)]
   with Producer[(InetSocketAddress, IOStream)] {
 
-  def subscribe(subscriber: Subscriber[(InetSocketAddress, IOStream)]): Subscription = {
+  def subscribe(subscriber: Subscriber[(InetSocketAddress, IOStream)]): Unit =
     actor ! TcpListenStreamActor.NewSubscriber(subscriber)
-    new TcpListenStreamSubscription(actor)
-  }
 
   def getPublisher: Publisher[(InetSocketAddress, IOStream)] = this
 }
@@ -143,6 +139,7 @@ class TcpListenStreamActor(address: InetSocketAddress) extends Actor {
   def receive = {
     case NewSubscriber(c) ⇒
       subscriber = c
+      subscriber.onSubscribe(new TcpListenStreamSubscription(self))
       IO(Tcp) ! Bind(self, address, pullMode = true)
       context.become(binding())
   }
@@ -187,6 +184,7 @@ class InboundTcpStreamActor(address: InetSocketAddress, val connection: ActorRef
   val preInit: Receive = {
     case NewSubscriber(c) ⇒
       subscriber = c
+      subscriber.onSubscribe(new TcpSubscription(self))
       startIfInitialized()
     case NewSubscription(p) ⇒
       subscription = p; startIfInitialized()
