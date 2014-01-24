@@ -100,12 +100,15 @@ abstract class RemoteNodeShutdownAndComesBackSpec
         within(30.seconds) {
           // retry because the Subject actor might not be started yet
           awaitAssert {
-            system.actorSelection(RootActorPath(secondAddress) / "user" / "subject") ! Identify("subject")
-            expectMsgPF(1 second) {
+            val p = TestProbe()
+            system.actorSelection(RootActorPath(secondAddress) / "user" / "subject").tell(Identify("subject"), p.ref)
+            p.expectMsgPF(1 second) {
               case ActorIdentity("subject", Some(ref)) ⇒ true
             }
           }
         }
+
+        expectTerminated(subject)
 
         // Establish watch with the new system. This triggers additional system message traffic. If buffers are out
         // of synch the remote system will be quarantined and the rest of the test will fail (or even in earlier
