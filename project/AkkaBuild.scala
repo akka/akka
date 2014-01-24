@@ -70,8 +70,9 @@ object AkkaBuild extends Build {
         val downloads = d / "downloads"
         val archivesPathFinder = (downloads * ("*" + v + ".zip")) +++ (downloads * ("*" + v + ".tgz")) 
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
-      }
-      
+      },
+      // add reportBinaryIssues to validatePullRequest on minor version maintenance branch
+      validatePullRequest <<= (Unidoc.unidoc, SphinxSupport.generate in Sphinx in docs) map { (_, _) => }
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
       persistence, mailboxes, zeroMQ, kernel, osgi, osgiAries, docs, contrib, samples, multiNodeTestkit)
@@ -819,15 +820,10 @@ object AkkaBuild extends Build {
     testOptions in Test += Tests.Argument("-oDF"),
 
     // don't save test output to a file
-    testListeners in (Test, test) := Seq(TestLogger(streams.value.log, {_ => streams.value.log }, logBuffered.value)),
-
-    validatePullRequestTask,
-    validatePullRequest <<= validatePullRequest.dependsOn(/* reportBinaryIssues */)
+    testListeners in (Test, test) := Seq(TestLogger(streams.value.log, {_ => streams.value.log }, logBuffered.value))
   )
 
   val validatePullRequest = TaskKey[Unit]("validate-pull-request", "Additional tasks for pull request validation")
-  // the tasks that to run for validation is defined in defaultSettings
-  val validatePullRequestTask = validatePullRequest := ()
 
   // preprocessing settings for sphinx
   lazy val sphinxPreprocessing = inConfig(Sphinx)(Seq(
