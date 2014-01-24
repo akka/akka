@@ -243,6 +243,6 @@ However, it is not mandatory to use parens and you do not have to change anythin
 ReliableProxy Constructor Changed
 =================================
 
-The constructor of ``ReliableProxy`` in ``akka-contrib`` has been changed to support reconnection.
-Use the new props factory methods, ``ReliableProxy.props``.
+The constructor of ``ReliableProxy`` in ``akka-contrib`` has been changed to take an ``ActorPath`` instead of
+an ``ActorRef``.  Also it takes new parameters to support reconnection.  Use the new props factory methods, ``ReliableProxy.props``.
  
