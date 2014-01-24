@@ -14,14 +14,31 @@ import akka.streams.io.TcpStream.IOStream
 
 object TcpStream {
   type IOStream = (Producer[ByteString], Consumer[ByteString])
+  type IOHandler = Producer[ByteString] ⇒ Producer[ByteString]
 
   def connect(address: InetSocketAddress)(implicit system: ActorSystem): IOStream = {
     val connection = system.actorOf(Props(classOf[OutboundTcpStreamActor], address)) // TODO: where should these actors go?
     (new TcpPublisher(connection), new TcpSubscriber(connection))
   }
 
+  // alternative connect signature, that makes sure that there's always at least one handler defined
+  def connectAndHandle(address: InetSocketAddress)(handler: IOHandler)(implicit system: ActorSystem): Unit = {
+    import akka.streams.Combinators._
+    val (in, out) = connect(address)
+    handler(in).connect(out)
+  }
+
   def listen(address: InetSocketAddress)(implicit system: ActorSystem): Producer[(InetSocketAddress, IOStream)] =
     new TcpListenStreamPublisher(system.actorOf(Props(classOf[TcpListenStreamActor], address)))
+
+  // alternate listen signature
+  def listenAndHandle(address: InetSocketAddress)(handler: InetSocketAddress ⇒ IOHandler)(implicit system: ActorSystem): Unit = {
+    import system.dispatcher
+    import akka.streams.Combinators._
+    listen(address).foreach {
+      case (peer, (in, out)) ⇒ handler(peer)(in).connect(out)
+    }
+  }
 }
 
 class TcpPublisher(actor: ActorRef) extends Publisher[ByteString] with Producer[ByteString] {

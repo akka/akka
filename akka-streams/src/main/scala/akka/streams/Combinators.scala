@@ -1,7 +1,7 @@
 package akka.streams
 
 import scala.concurrent.{ Future, ExecutionContext }
-import rx.async.api.Producer
+import rx.async.api.{ Consumer, Producer }
 import rx.async.spi.{ Subscription, Subscriber }
 import scala.util.control.NonFatal
 
@@ -12,6 +12,11 @@ object Combinators {
       val subs = producer.getPublisher.subscribe(subscriber)
       subscriber.setSubscription(subs)
     }
+
+    def map[U](op: T ⇒ U): Producer[U] = ???
+    def flatMap[U](op: T ⇒ Producer[U]): Producer[U] = ???
+    def andThen[U >: T](next: Producer[U]): Producer[U] = ???
+    def connect(consumer: Consumer[T]): Unit = producer.getPublisher.subscribe(consumer.getSubscriber)
   }
 
   def Task(op: ⇒ Unit)(implicit ec: ExecutionContext): Future[Unit] =

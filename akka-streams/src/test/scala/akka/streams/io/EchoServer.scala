@@ -9,10 +9,14 @@ object TcpEchoServer {
 
   def main(args: Array[String]) {
     implicit val system = ActorSystem("tcpdemo")
-    TcpStream.listen(new InetSocketAddress("localhost", 1111)) foreach {
+    /*TcpStream.listen(new InetSocketAddress("localhost", 1111)) foreach {
       case (address, (in, out)) ⇒
         println(s"Client connected: $address")
         in /*.onComplete { println(s"Client disconnected $address") }*/ .getPublisher.subscribe(out.getSubscriber)
+    }*/
+    // alternative
+    TcpStream.listenAndHandle(new InetSocketAddress("localhost", 1111)) { peer ⇒
+      identity
     }
 
     println("Echo server started, type RETURN to exit.")
