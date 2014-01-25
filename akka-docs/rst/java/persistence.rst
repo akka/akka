@@ -54,7 +54,7 @@ Architecture
 * *Journal*: A journal stores the sequence of messages sent to a processor. An application can control which messages
   are journaled and which are received by the processor without being journaled. The storage backend of a journal is
   pluggable. The default journal storage plugin writes to the local filesystem, replicated journals are available as
-  :ref:`community-projects-java`.
+  `Community plugins`_.
 
 * *Snapshot store*: A snapshot store persists snapshots of a processor's or a view's internal state. Snapshots are
   used for optimizing recovery times. The storage backend of a snapshot store is pluggable. The default snapshot
@@ -62,6 +62,8 @@ Architecture
 
 * *Event sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
   development of event sourced applications (see section :ref:`event-sourcing-java`)
+
+.. _Community plugins: https://gist.github.com/krasserm/8612920#file-akka-persistence-plugins-md
 
 .. _processors-java:
 
@@ -583,7 +585,7 @@ backup node.
 .. warning::
 
   A shared LevelDB instance is a single point of failure and should therefore only be used for testing
-  purposes. Highly-available, replicated journal are available as :ref:`community-projects-java`.
+  purposes. Highly-available, replicated journal are available as `Community plugins`_.
 
 A shared LevelDB instance is started by instantiating the ``SharedLeveldbStore`` actor.
 
@@ -617,15 +619,6 @@ the local filesystem. The default storage location is a directory named ``snapsh
 directory. This can be changed by configuration where the specified path can be relative or absolute:
 
 .. includecode:: ../scala/code/docs/persistence/PersistencePluginDocSpec.scala#snapshot-config
-
-.. _community-projects-java:
-
-Community plugins
------------------
-
-* `Replicated journal backed by Apache Cassandra <https://github.com/krasserm/akka-persistence-cassandra/>`_.
-* `Replicated journal backed by Apache HBase <https://github.com/ktoso/akka-persistence-hbase/>`_.
-* `Replicated journal backed by MongoDB <https://github.com/ddevore/akka-persistence-mongo/>`_.
 
 Custom serialization
 ====================
