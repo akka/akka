@@ -259,5 +259,18 @@ object ProcessorActor {
           Error(cause) // ~ curPublisher.error(cause)
         }
       }
+    case Produce(iterable) ⇒
+      new OpInstance[I, O] {
+        val it = iterable.iterator
+        override def requestMoreResult(n: Int): Result[O] =
+          if (n > 0) {
+            if (it.hasNext) Emit(it.next()) ~ requestMoreResult(n - 1)
+            else Complete
+          } else Continue
+
+        def onNext(i: I): Result[O] = ???
+        def onComplete(): Result[O] = ???
+        def onError(cause: Throwable): Result[O] = ???
+      }
   }
 }

@@ -41,6 +41,8 @@ case class FoldUntil[I, O, Z](seed: Z, acc: (Z, I) ⇒ FoldResult[Z, O]) extends
   def initState: Z = seed
 }
 
+case class Produce[O](iterator: Iterable[O]) extends Operation[O, O]
+
 object Operations {
   def Op[I] = Identity[I]()
 
