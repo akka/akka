@@ -6,9 +6,16 @@ object ProcessorActor {
   // TODO: needs settings
   //def processor[I, O](operations: Operation[I, O]): Processor[I, O] = ???
 
-  sealed trait Result[+O]
+  sealed trait Result[+O] {
+    def ~[O2 >: O](other: Result[O2]): Result[O2] =
+      if (other == Continue) this
+      else Combine(this, other)
+  }
   case class Emit[O](t: O) extends Result[O]
-  case object Continue extends Result[Nothing]
+  // optimization: case class EmitMany[O](t: Seq[O]) extends Result[O]
+  case object Continue extends Result[Nothing] {
+    override def ~[O2 >: Nothing](other: Result[O2]): Result[O2] = other
+  }
   case class EmitLast[O](i: O) extends Result[O]
   case object Complete extends Result[Nothing]
   case class Error(cause: Throwable) extends Result[Nothing]
@@ -17,6 +24,8 @@ object ProcessorActor {
 
   case class Subscribe[T, U](producer: Producer[T])(handler: SubscriptionResults ⇒ SubscriptionHandler[T, U]) extends Result[U]
   case class EmitProducer[O](f: PublisherResults[O] ⇒ PublisherHandler[O]) extends Result[O]
+
+  case class Combine[O](first: Result[O], second: Result[O]) extends Result[O]
 
   trait SubscriptionHandler[-I, +O] {
     def onNext(i: I): Result[O]
@@ -28,8 +37,7 @@ object ProcessorActor {
   }
 
   trait PublisherHandler[+O] {
-    def requestMoreResult(n: Int): Result[O] = RequestMoreFromNext(requestMore(n))
-    def requestMore(n: Int): Int
+    def requestMoreResult(n: Int): Result[O]
   }
   trait PublisherResults[O] {
     def emit(o: O): Result[O]
@@ -38,13 +46,17 @@ object ProcessorActor {
   }
 
   trait OpInstance[-I, +O] extends SubscriptionHandler[I, O] with PublisherHandler[O]
+  trait SimpleOpInstance[-I, +O] extends OpInstance[I, O] {
+    def requestMoreResult(n: Int): Result[O] = RequestMoreFromNext(requestMore(n))
+    def requestMore(n: Int): Int
+  }
 
   trait OpInstanceStateMachine[I, O] extends OpInstance[I, O] {
-    type State = OpInstance[I, O]
+    type State = SimpleOpInstance[I, O]
     def initialState: State
     var state: State = initialState
 
-    def requestMore(n: Int): Int = state.requestMore(n)
+    def requestMoreResult(n: Int): Result[O] = state.requestMoreResult(n)
     def onNext(i: I): Result[O] = state.onNext(i)
     def onComplete(): Result[O] = state.onComplete()
     def onError(cause: Throwable): Result[O] = state.onError(cause)
@@ -53,41 +65,44 @@ object ProcessorActor {
   }
 
   def andThenInstance[I1, I2, O](andThen: AndThen[I1, I2, O]): OpInstance[I1, O] =
-    new OpInstance[I1, O] {
+    new SimpleOpInstance[I1, O] {
       val firstI = instantiate(andThen.first)
       val secondI = instantiate(andThen.second)
       def requestMore(n: Int): Int = ???
 
       override def requestMoreResult(n: Int): Result[O] =
-        secondI.requestMoreResult(n) match {
-          case RequestMoreFromNext(n) ⇒ handleFirstResult(firstI.requestMoreResult(n))
-          case x                      ⇒ x
-        }
+        handleSecondResult(secondI.requestMoreResult(n))
 
       def onNext(i: I1): Result[O] = handleFirstResult(firstI.onNext(i))
       def onComplete(): Result[O] = handleFirstResult(firstI.onComplete())
       def onError(cause: Throwable): Result[O] = handleFirstResult(firstI.onError(cause))
 
+      def handleSecondResult(res: Result[O]): Result[O] = res match {
+        case Combine(a, b)          ⇒ handleSecondResult(a) ~ handleSecondResult(b)
+        case RequestMoreFromNext(n) ⇒ handleFirstResult(firstI.requestMoreResult(n))
+        case x                      ⇒ x
+      }
       def handleFirstResult(res: Result[I2]): Result[O] = res match {
-        case Emit(i)      ⇒ secondI.onNext(i)
-        case EmitLast(i)  ⇒ secondI.onNext(i) // ~ secondI.onComplete
-        case Complete     ⇒ secondI.onComplete()
-        case Error(cause) ⇒ secondI.onError(cause)
-        case x            ⇒ x.asInstanceOf[Result[O]]
+        case Combine(a, b) ⇒ handleFirstResult(a) ~ handleFirstResult(b)
+        case Emit(i)       ⇒ handleSecondResult(secondI.onNext(i))
+        case EmitLast(i)   ⇒ handleSecondResult(secondI.onNext(i) ~ secondI.onComplete())
+        case Complete      ⇒ handleSecondResult(secondI.onComplete())
+        case Error(cause)  ⇒ handleSecondResult(secondI.onError(cause))
+        case x             ⇒ x.asInstanceOf[Result[O]]
       }
     }
 
   def instantiate[I, O](operation: Operation[I, O]): OpInstance[I, O] = operation match {
     case andThen: AndThen[_, _, _] ⇒ andThenInstance(andThen)
     case Map(f) ⇒
-      new OpInstance[I, O] {
+      new SimpleOpInstance[I, O] {
         def requestMore(n: Int): Int = n
         def onNext(i: I): Result[O] = Emit(f(i)) // FIXME: error handling
         def onComplete(): Result[O] = Complete
         def onError(cause: Throwable): Result[O] = Error(cause)
       }
     case Fold(seed, acc) ⇒
-      new OpInstance[I, O] {
+      new SimpleOpInstance[I, O] {
         val batchSize = 5
         var missing = 0
         var z = seed
@@ -109,26 +124,22 @@ object ProcessorActor {
         def onError(cause: Throwable): Result[O] = Error(cause)
       }
     case Filter(pred) ⇒
-      new OpInstance[I, O] {
+      new SimpleOpInstance[I, O] {
         def requestMore(n: Int): Int = n /* + heuristic of previously filtered? */
         def onNext(i: I): Result[O] = if (pred(i)) Emit(i.asInstanceOf[O]) else Continue /* and request one more */ // FIXME: error handling
         def onComplete(): Result[O] = Complete
         def onError(cause: Throwable): Result[O] = Error(cause)
       }
+    /*case Flatten() =>
+      val shouldMerge = false*/
     case FlatMap(f) ⇒
       // two different kinds of flatMap: merge and concat, in RxJava: `flatMap` which merges and `concatMap` which concats
-      val shouldMerge = true
+      val shouldMerge = false
       if (shouldMerge) /* merge */
-        new OpInstance[I, O] {
-          def requestMore(n: Int): Int =
-            ???
-          // we need to subscribe and read the complete stream of inner Producer[O]
-          // and then always subscribe and keep one element buffered / requested
-          // and then on request deliver those in the sequence they were received
-          def onNext(i: I): Result[O] = ???
-          def onComplete(): Result[O] = ???
-          def onError(cause: Throwable): Result[O] = ???
-        }
+        // we need to subscribe and read the complete stream of inner Producer[O]
+        // and then always subscribe and keep one element buffered / requested
+        // and then on request deliver those in the sequence they were received
+        ???
       else /* concat */
         new OpInstanceStateMachine[I, O] {
           def initialState = Waiting
@@ -175,7 +186,7 @@ object ProcessorActor {
               // see RxJava `mapManyDelayError`
               ???
 
-            def subHandler = new OpInstance[O, O] {
+            def subHandler = new SimpleOpInstance[O, O] {
               def requestMore(n: Int): Int = ??? // who would ever call this? FIXME: better model that doesn't rely on this
               def onNext(i: O): Result[O] = {
                 curRemaining -= 1
@@ -196,7 +207,7 @@ object ProcessorActor {
           }
         }
     case FoldUntil(seed, acc) ⇒
-      new OpInstance[I, O] {
+      new SimpleOpInstance[I, O] {
         var z = seed
         def requestMore(n: Int): Int = ???
         def onNext(i: I): Result[O] =
@@ -213,7 +224,7 @@ object ProcessorActor {
       }
 
     case Span(pred) ⇒
-      new OpInstance[I, O] {
+      new SimpleOpInstance[I, O] {
         var curPublisher: PublisherResults[O] = _
 
         def requestMore(n: Int): Int = n
