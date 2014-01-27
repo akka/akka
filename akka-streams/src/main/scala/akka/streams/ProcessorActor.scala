@@ -88,15 +88,22 @@ object ProcessorActor {
       }
     case Fold(seed, acc) ⇒
       new OpInstance[I, O] {
+        val batchSize = 5
+        var missing = 0
         var z = seed
-        def requestMore(n: Int): Int =
+        def requestMore(n: Int): Int = {
           // we can instantly consume all values, even if there's just one requested,
           // though we probably need to be careful with MaxValue which may lead to
           // overflows easily
-          Int.MaxValue
+
+          missing = batchSize
+          batchSize
+        }
         def onNext(i: I): Result[O] = {
           z = acc(z, i) // FIXME: error handling
-          Continue
+          missing -= 1
+          if (missing == 0) { missing = batchSize; RequestMoreFromNext(batchSize) }
+          else Continue
         }
         def onComplete(): Result[O] = EmitLast(z)
         def onError(cause: Throwable): Result[O] = Error(cause)
