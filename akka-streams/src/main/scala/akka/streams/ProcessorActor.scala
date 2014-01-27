@@ -1,7 +1,6 @@
 package akka.streams
 
 import rx.async.api.{ Producer, Processor }
-import rx.async.spi.Subscription
 
 object ProcessorActor {
   // TODO: needs settings
@@ -25,16 +24,36 @@ object ProcessorActor {
   case class Error(cause: Throwable) extends Result[Nothing] {
     def andThen[O2](next: OpInstance[Nothing, O2]): Result[O2] = next.onError(cause)
   }
-  case class Subscribe[T, U](producer: Producer[T])(handler: OpInstance[T, T] ⇒ OpInstance[T, U]) extends Result[U] {
+  case class Subscribe[T, U](producer: Producer[T])(handler: SubscriptionResults ⇒ SubscriptionHandler[T, U]) extends Result[U] {
     def andThen[O2](next: OpInstance[U, O2]): Result[O2] = ???
   }
+  case class RequestMoreFromNext(n: Int) extends Result[Nothing] {
+    def andThen[O2](next: OpInstance[Nothing, O2]): Result[O2] = ???
+  }
 
-  trait OpInstance[-I, +O] {
-    def requestMore(n: Int): Int
+  trait SubscriptionHandler[-I, +O] {
     def onNext(i: I): Result[O]
     def onComplete(): Result[O]
     def onError(cause: Throwable): Result[O]
   }
+  trait SubscriptionResults {
+    def requestMore(n: Int): Result[Nothing]
+  }
+
+  trait PublisherHandler[+O] {
+    def requestMoreResult(n: Int): Result[O] = RequestMoreFromNext(requestMore(n))
+    def requestMore(n: Int): Int
+  }
+  trait PublisherResults[O] {
+    def emit(o: O): Result[O]
+    def complete: Result[O]
+    def error(cause: Throwable): Result[O]
+  }
+
+  case class EmitProducer[O](f: PublisherResults[O] ⇒ PublisherHandler[O]) extends Result[O] {
+    def andThen[O2](next: OpInstance[O, O2]): Result[O2] = ???
+  }
+  trait OpInstance[-I, +O] extends SubscriptionHandler[I, O] with PublisherHandler[O]
 
   trait OpInstanceStateMachine[I, O] extends OpInstance[I, O] {
     type State = OpInstance[I, O]
@@ -129,16 +148,17 @@ object ProcessorActor {
             def onComplete(): Result[O] = Complete
             def onError(cause: Throwable): Result[O] = Error(cause)
           }
-          case class ReadSubstream(subscription: OpInstance[O, O], remaining: Int) extends State {
+          case class ReadSubstream(subscription: SubscriptionResults, remaining: Int) extends State {
             // invariant: subscription.requestMore has been called for every
             // of the requested elements
             // each emitted element decrements that counter by one
             var curRemaining = remaining
             var closeAtEnd = false
-            def requestMore(n: Int): Int = {
+
+            def requestMore(n: Int): Int = ???
+            override def requestMoreResult(n: Int): Result[O] = {
               curRemaining += n
               subscription.requestMore(n)
-              0 // from the parent stream
             }
             def onNext(i: I): Result[O] = throw new IllegalStateException("No element requested")
             def onComplete(): Result[O] = { closeAtEnd = true; Continue }
@@ -155,10 +175,10 @@ object ProcessorActor {
               }
               def onComplete(): Result[O] =
                 if (curRemaining > 0) {
-                  // FIXME: request one more from parent stream
+                  // FIXME: request one more element from parent stream
                   // but how?
                   become(WaitingForElement(curRemaining))
-                  Continue
+                  RequestMoreFromNext(1)
                 } else {
                   become(Waiting)
                   Continue
@@ -186,15 +206,39 @@ object ProcessorActor {
 
     case Span(pred) ⇒
       new OpInstance[I, O] {
+        var curPublisher: PublisherResults[O] = _
+
         def requestMore(n: Int): Int = n
         def onNext(i: I): Result[O] = {
           // question is here where to dispatch to and how to access those:
           //  - parent stream
           //  - substream
-          ???
+          val res =
+            if (curPublisher eq null)
+              EmitProducer[O] { publisher ⇒
+                curPublisher = publisher
+
+                new PublisherHandler[O] {
+                  var cachedFirst = i
+                  def requestMore(n: Int): Int = ???
+
+                  override def requestMoreResult(n: Int): Result[O] =
+                    RequestMoreFromNext(n)
+                  // if (cachedFirst ne null) ~ Emit(cachedFirst)
+                }
+              }
+            else
+              curPublisher.emit(i.asInstanceOf[O])
+          if (pred(i)) curPublisher = null
+          res
         }
-        def onComplete(): Result[O] = ???
-        def onError(cause: Throwable): Result[O] = Error(cause)
+        def onComplete(): Result[O] = {
+          Complete
+          // ~ curPublisher.complete
+        }
+        def onError(cause: Throwable): Result[O] = {
+          Error(cause) // ~ curPublisher.error(cause)
+        }
       }
   }
 }
