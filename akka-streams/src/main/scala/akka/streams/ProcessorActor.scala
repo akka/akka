@@ -1,6 +1,7 @@
 package akka.streams
 
 import rx.async.api.{ Producer, Processor }
+import scala.annotation.tailrec
 
 object ProcessorActor {
   // TODO: needs settings
@@ -71,25 +72,52 @@ object ProcessorActor {
       def requestMore(n: Int): Int = ???
 
       override def requestMoreResult(n: Int): Result[O] =
-        handleSecondResult(secondI.requestMoreResult(n))
+        run(SecondResult(secondI.requestMoreResult(n)))
 
-      def onNext(i: I1): Result[O] = handleFirstResult(firstI.onNext(i))
-      def onComplete(): Result[O] = handleFirstResult(firstI.onComplete())
-      def onError(cause: Throwable): Result[O] = handleFirstResult(firstI.onError(cause))
+      def onNext(i: I1): Result[O] = run(FirstResult(firstI.onNext(i)))
+      def onComplete(): Result[O] = run(FirstResult(firstI.onComplete()))
+      def onError(cause: Throwable): Result[O] = run(FirstResult(firstI.onError(cause)))
 
-      def handleSecondResult(res: Result[O]): Result[O] = res match {
-        case Combine(a, b)          ⇒ handleSecondResult(a) ~ handleSecondResult(b)
-        case RequestMoreFromNext(n) ⇒ handleFirstResult(firstI.requestMoreResult(n))
-        case x                      ⇒ x
-      }
-      def handleFirstResult(res: Result[I2]): Result[O] = res match {
-        case Combine(a, b) ⇒ handleFirstResult(a) ~ handleFirstResult(b)
-        case Emit(i)       ⇒ handleSecondResult(secondI.onNext(i))
-        case EmitLast(i)   ⇒ handleSecondResult(secondI.onNext(i) ~ secondI.onComplete())
-        case Complete      ⇒ handleSecondResult(secondI.onComplete())
-        case Error(cause)  ⇒ handleSecondResult(secondI.onError(cause))
-        case x             ⇒ x.asInstanceOf[Result[O]]
-      }
+      sealed trait Calc
+      case class FirstResult(result: Result[I2]) extends Calc
+      case class SecondResult(result: Result[O]) extends Calc
+      case class CombinedResult(first: Calc, second: Calc) extends Calc
+      case class HalfFinished(first: Result[O], second: Calc) extends Calc
+      case class Finished(result: Result[O]) extends Calc
+
+      def runOne(calc: Calc): Calc =
+        calc match {
+          case SecondResult(Combine(a, b)) ⇒ CombinedResult(SecondResult(a), SecondResult(b))
+          case FirstResult(Combine(a, b))  ⇒ CombinedResult(FirstResult(a), FirstResult(b))
+          case CombinedResult(a, b) ⇒
+            runOne(a) match {
+              case Finished(aRes) ⇒ HalfFinished(aRes, b)
+              case x              ⇒ CombinedResult(x, b)
+            }
+
+          case HalfFinished(aRes, b) ⇒
+            runOne(b) match {
+              case Finished(bRes) ⇒ Finished(aRes ~ bRes)
+              case x              ⇒ HalfFinished(aRes, x)
+            }
+
+          case SecondResult(RequestMoreFromNext(n)) ⇒ FirstResult(firstI.requestMoreResult(n))
+          case SecondResult(x)                      ⇒ Finished(x)
+          case FirstResult(Emit(i))                 ⇒ SecondResult(secondI.onNext(i))
+          case FirstResult(EmitLast(i))             ⇒ CombinedResult(SecondResult(secondI.onNext(i)), SecondResult(secondI.onComplete()))
+          case FirstResult(Complete)                ⇒ SecondResult(secondI.onComplete())
+          case FirstResult(Error(cause))            ⇒ SecondResult(secondI.onError(cause))
+          case FirstResult(r: RequestMoreFromNext)  ⇒ Finished(r)
+          case FirstResult(Continue)                ⇒ Finished(Continue)
+          // what does this line mean exactly? why is it valid?
+          case FirstResult(x)                       ⇒ Finished(x.asInstanceOf[Result[O]])
+        }
+
+      @tailrec def run(calc: Calc): Result[O] =
+        runOne(calc) match {
+          case Finished(res) ⇒ res
+          case x             ⇒ run(x)
+        }
     }
 
   def instantiate[I, O](operation: Operation[I, O]): OpInstance[I, O] = operation match {
