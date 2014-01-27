@@ -7,6 +7,7 @@ sealed trait Operation[I, O] {
   def andThen[O2](next: Operation[O, O2]): Operation[I, O2] = AndThen(this, next)
 }
 
+// TODO: still needed?
 sealed trait StatefulOperation[I, O, Z] extends Operation[I, O] {
   def initState: Z
 }
