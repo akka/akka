@@ -95,7 +95,7 @@ object ProcessorActor {
           // overflows easily
           Int.MaxValue
         def onNext(i: I): Result[O] = {
-          z = acc(seed, i) // FIXME: error handling
+          z = acc(z, i) // FIXME: error handling
           Continue
         }
         def onComplete(): Result[O] = EmitLast(z)
