@@ -4,32 +4,19 @@ import rx.async.api.{ Producer, Processor }
 
 object ProcessorActor {
   // TODO: needs settings
-  def processor[I, O](operations: Operation[I, O]): Processor[I, O] = ???
+  //def processor[I, O](operations: Operation[I, O]): Processor[I, O] = ???
 
-  sealed trait Result[+O] {
-    def andThen[O2](next: OpInstance[O, O2]): Result[O2]
-  }
-  case class Emit[O](t: O) extends Result[O] {
-    def andThen[O2](next: OpInstance[O, O2]): Result[O2] = next.onNext(t)
-  }
-  case object Continue extends Result[Nothing] {
-    def andThen[O2](next: OpInstance[Nothing, O2]): Result[O2] = this
-  }
-  case class EmitLast[O](i: O) extends Result[O] {
-    def andThen[O2](next: OpInstance[O, O2]): Result[O2] = ???
-  }
-  case object Complete extends Result[Nothing] {
-    def andThen[O2](next: OpInstance[Nothing, O2]): Result[O2] = next.onComplete()
-  }
-  case class Error(cause: Throwable) extends Result[Nothing] {
-    def andThen[O2](next: OpInstance[Nothing, O2]): Result[O2] = next.onError(cause)
-  }
-  case class Subscribe[T, U](producer: Producer[T])(handler: SubscriptionResults ⇒ SubscriptionHandler[T, U]) extends Result[U] {
-    def andThen[O2](next: OpInstance[U, O2]): Result[O2] = ???
-  }
-  case class RequestMoreFromNext(n: Int) extends Result[Nothing] {
-    def andThen[O2](next: OpInstance[Nothing, O2]): Result[O2] = ???
-  }
+  sealed trait Result[+O]
+  case class Emit[O](t: O) extends Result[O]
+  case object Continue extends Result[Nothing]
+  case class EmitLast[O](i: O) extends Result[O]
+  case object Complete extends Result[Nothing]
+  case class Error(cause: Throwable) extends Result[Nothing]
+
+  case class RequestMoreFromNext(n: Int) extends Result[Nothing]
+
+  case class Subscribe[T, U](producer: Producer[T])(handler: SubscriptionResults ⇒ SubscriptionHandler[T, U]) extends Result[U]
+  case class EmitProducer[O](f: PublisherResults[O] ⇒ PublisherHandler[O]) extends Result[O]
 
   trait SubscriptionHandler[-I, +O] {
     def onNext(i: I): Result[O]
@@ -50,9 +37,6 @@ object ProcessorActor {
     def error(cause: Throwable): Result[O]
   }
 
-  case class EmitProducer[O](f: PublisherResults[O] ⇒ PublisherHandler[O]) extends Result[O] {
-    def andThen[O2](next: OpInstance[O, O2]): Result[O2] = ???
-  }
   trait OpInstance[-I, +O] extends SubscriptionHandler[I, O] with PublisherHandler[O]
 
   trait OpInstanceStateMachine[I, O] extends OpInstance[I, O] {
@@ -68,16 +52,33 @@ object ProcessorActor {
     def become(newState: State): Unit = state = newState
   }
 
-  def instantiate[I, O](operation: Operation[I, O]): OpInstance[I, O] = operation match {
-    case AndThen(first, second) ⇒
-      new OpInstance[I, O] {
-        val firstI = instantiate(first)
-        val secondI = instantiate(second)
-        def requestMore(n: Int): Int = firstI.requestMore(secondI.requestMore(n))
-        def onNext(i: I): Result[O] = firstI.onNext(i).andThen(secondI)
-        def onComplete(): Result[O] = firstI.onComplete().andThen(secondI)
-        def onError(cause: Throwable): Result[O] = firstI.onError(cause).andThen(secondI)
+  def andThenInstance[I1, I2, O](andThen: AndThen[I1, I2, O]): OpInstance[I1, O] =
+    new OpInstance[I1, O] {
+      val firstI = instantiate(andThen.first)
+      val secondI = instantiate(andThen.second)
+      def requestMore(n: Int): Int = ???
+
+      override def requestMoreResult(n: Int): Result[O] =
+        secondI.requestMoreResult(n) match {
+          case RequestMoreFromNext(n) ⇒ handleFirstResult(firstI.requestMoreResult(n))
+          case x                      ⇒ x
+        }
+
+      def onNext(i: I1): Result[O] = handleFirstResult(firstI.onNext(i))
+      def onComplete(): Result[O] = handleFirstResult(firstI.onComplete())
+      def onError(cause: Throwable): Result[O] = handleFirstResult(firstI.onError(cause))
+
+      def handleFirstResult(res: Result[I2]): Result[O] = res match {
+        case Emit(i)      ⇒ secondI.onNext(i)
+        case EmitLast(i)  ⇒ secondI.onNext(i) // ~ secondI.onComplete
+        case Complete     ⇒ secondI.onComplete()
+        case Error(cause) ⇒ secondI.onError(cause)
+        case x            ⇒ x.asInstanceOf[Result[O]]
       }
+    }
+
+  def instantiate[I, O](operation: Operation[I, O]): OpInstance[I, O] = operation match {
+    case andThen: AndThen[_, _, _] ⇒ andThenInstance(andThen)
     case Map(f) ⇒
       new OpInstance[I, O] {
         def requestMore(n: Int): Int = n
