@@ -5,10 +5,8 @@
 package akka.http
 
 import scala.annotation.tailrec
-import java.nio.charset.Charset
 
 package object util {
-  val UTF8 = Charset.forName("UTF8")
 
   implicit class RichString(val underlying: String) extends AnyVal {
     /** Returns the ASCII encoded bytes of this string. Truncates characters to 8-bit byte value */

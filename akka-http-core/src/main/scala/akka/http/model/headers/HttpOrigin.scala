@@ -6,6 +6,7 @@ package akka.http.model
 package headers
 
 import language.implicitConversions
+import org.parboiled2.UTF8
 import akka.http.model.parser.UriParser
 import akka.http.util._
 

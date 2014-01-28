@@ -6,8 +6,9 @@ package akka.http.util
 
 import scala.annotation.tailrec
 import scala.collection.LinearSeq
+import org.parboiled2.{ CharPredicate, CharUtils }
+import akka.http.model.parser.CharacterClasses
 import akka.http.model.HttpData
-import akka.http.util._
 
 /** An entity that can render itself */
 trait Renderable {
@@ -173,7 +174,7 @@ trait Rendering {
    * or in double quotes (if it contains at least one non-token char).
    */
   def ~~#(s: String): this.type =
-    if (CharPredicate.HttpToken.matchAll(s)) this ~~ s else ~~('"').putEscaped(s) ~~ '"'
+    if (CharacterClasses.tchar.matchesAll(s)) this ~~ s else ~~('"').putEscaped(s) ~~ '"'
 
   def putEscaped(s: String, escape: CharPredicate = Rendering.`\"`, escChar: Char = '\\'): this.type = {
     @tailrec def rec(ix: Int = 0): this.type =

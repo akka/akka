@@ -1,6 +1,8 @@
 package akka.http.model
 package parser
 
+import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.{ Matcher, MatchResult }
 import akka.http.util._
 import headers._
 import CacheDirectives._
@@ -9,9 +11,6 @@ import MediaRanges._
 import HttpCharsets._
 import HttpEncodings._
 import HttpMethods._
-import org.scalatest.{ Matchers, WordSpec }
-import org.scalatest.matchers.{ BeMatcher, Matcher, MatchResult }
-import akka.http.util.DateTime
 
 class HttpHeaderSpec extends WordSpec with Matchers {
   val `application/vnd.spray` = MediaTypes.register(MediaType.custom("application/vnd.spray"))
@@ -321,7 +320,7 @@ class HttpHeaderSpec extends WordSpec with Matchers {
     def =!=(testHeader: TestExample) = testHeader(line)
     def =!=>(expectedRendering: String) = {
       val Array(name, value) = line.split(": ", 2)
-      val Right(header) = HttpParser.parseHeader(RawHeader(name, value))
+      val Right(header) = akka.http.model.parser.HttpParser.parseHeader(RawHeader(name, value))
       header.toString shouldBe header.renderedTo(expectedRendering).rendering("")
     }
   }

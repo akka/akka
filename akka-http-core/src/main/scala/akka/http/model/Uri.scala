@@ -10,7 +10,9 @@ import java.nio.charset.Charset
 import scala.annotation.tailrec
 import scala.collection.{ mutable, LinearSeqOptimized }
 import scala.collection.immutable.LinearSeq
-import akka.http.model.parser.{ ParserInput, UriParser }
+import org.parboiled2.{ CharUtils, CharPredicate, ParserInput, UTF8 }
+import akka.http.model.parser.UriParser
+import akka.http.model.parser.CharacterClasses._
 import akka.http.util._
 import Uri._
 
@@ -143,6 +145,8 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
    */
   def withoutFragment =
     copy(fragment = None)
+
+  override def toString = UriRendering.UriRenderer.render(new StringRendering, this).get
 }
 
 object Uri {
@@ -187,7 +191,7 @@ object Uri {
    * If the given string is not a valid URI the method throws an `IllegalUriException`.
    */
   def apply(input: ParserInput, charset: Charset, mode: Uri.ParsingMode): Uri =
-    new UriParser(input, charset, mode).parseReference()
+    new UriParser(input, charset, mode).parseUriReference()
 
   /**
    * Creates a new Uri instance from the given components.
@@ -224,7 +228,7 @@ object Uri {
    * If the given string is not a valid URI the method throws an `IllegalUriException`.
    */
   def parseAbsolute(input: ParserInput, charset: Charset = UTF8, mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Uri =
-    new UriParser(input, charset, mode).parseAbsolute()
+    new UriParser(input, charset, mode).parseAbsoluteUri()
 
   /**
    * Parses a string into a normalized URI reference that is immediately resolved against the given base URI as
@@ -236,7 +240,7 @@ object Uri {
    */
   def parseAndResolve(string: ParserInput, base: Uri, charset: Charset = UTF8,
                       mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Uri =
-    new UriParser(string, charset, mode).parseAndResolveReference(base)
+    new UriParser(string, charset, mode).parseAndResolveUriReference(base)
 
   /**
    * Parses the given string into an HTTP request target URI as defined by
@@ -296,6 +300,7 @@ object Uri {
       val normalizedPort = normalizePort(port, scheme)
       if (normalizedPort == port) this else copy(port = normalizedPort)
     }
+    override def toString = UriRendering.AuthorityRenderer.render(new StringRendering, this).get
   }
   object Authority {
     val Empty = Authority(Host.Empty)
@@ -305,6 +310,7 @@ object Uri {
     def address: String
     def isEmpty: Boolean
     def toOption: Option[NonEmptyHost]
+    override def toString() = UriRendering.HostRenderer.render(new StringRendering, this).get
   }
   object Host {
     case object Empty extends Host {
@@ -313,22 +319,35 @@ object Uri {
       def toOption = None
     }
     def apply(string: String, charset: Charset = UTF8, mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Host =
-      if (!string.isEmpty) {
-        val parser = new UriParser(string, UTF8, mode)
-        import parser._
-        complete("URI host", host)
-        _host
-      } else Empty
+      if (!string.isEmpty) new UriParser(string, UTF8, mode).parseHost() else Empty
   }
   sealed abstract class NonEmptyHost extends Host {
     def isEmpty = false
     def toOption = Some(this)
   }
-  case class IPv4Host(address: String) extends NonEmptyHost {
+  case class IPv4Host(bytes: Seq[Byte], address: String) extends NonEmptyHost {
+    require(bytes.length == 4, "bytes array must have length 4")
     require(!address.isEmpty, "address must not be empty")
   }
-  case class IPv6Host(address: String) extends NonEmptyHost {
+  object IPv4Host {
+    def apply(address: String): IPv4Host = apply(address.split('.').map(_.toInt.toByte))
+    def apply(byte1: Byte, byte2: Byte, byte3: Byte, byte4: Byte): IPv4Host = apply(Array(byte1, byte2, byte3, byte4))
+    def apply(bytes: Array[Byte]): IPv4Host = apply(bytes, bytes.map(_ & 0xFF).mkString("."))
+  }
+  case class IPv6Host(bytes: Seq[Byte], address: String) extends NonEmptyHost {
+    require(bytes.length == 16, "bytes array must have length 16")
     require(!address.isEmpty, "address must not be empty")
+    def inspect: String = bytes.grouped(2).map { byte ⇒
+      import CharUtils.{ upperHexDigit ⇒ hexDigit }
+      new String(Array(hexDigit(byte(0) >> 4), hexDigit(byte(0)), hexDigit(byte(1) >> 4), hexDigit(byte(1))))
+    }.mkString("IPv6Host(", ":", s", $address)")
+  }
+  object IPv6Host {
+    def apply(bytes: String, address: String): IPv6Host = {
+      import CharUtils.{ hexValue ⇒ hex }
+      require(bytes.length == 32, "`bytes` must be a 32 character hex string")
+      apply(bytes.toCharArray.grouped(2).map(s ⇒ (hex(s(0)) * 16 + hex(s(1))).toByte).toArray, address)
+    }
   }
   case class NamedHost(address: String) extends NonEmptyHost
 
@@ -350,6 +369,7 @@ object Uri {
     def /(segment: String): Path = this ++ Path.Slash(segment :: Path.Empty)
     def startsWith(that: Path): Boolean
     def dropChars(count: Int): Path
+    override def toString = UriRendering.PathRenderer.render(new StringRendering, this).get
   }
   object Path {
     val SingleSlash = Slash(Empty)
@@ -455,6 +475,7 @@ object Uri {
       append(Map.empty, this)
     }
     override def newBuilder: mutable.Builder[(String, String), Query] = Query.newBuilder
+    override def toString = UriRendering.QueryRenderer.render(new StringRendering, this).get
   }
   object Query {
     /** A special empty String value which will be rendered without a '=' after the key. */
@@ -466,12 +487,8 @@ object Uri {
      * Empty strings will be parsed to `("", "") +: Query.Empty`
      * If you want to allow for Query.Empty creation use the apply overload taking an `Option[String`.
      */
-    def apply(string: String, charset: Charset = UTF8, mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Query = {
-      val parser = new UriParser(string, charset, mode)
-      import parser._
-      complete("Query", query)
-      _query
-    }
+    def apply(string: String, charset: Charset = UTF8, mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Query =
+      new UriParser(string, charset, mode).parseQuery()
     def apply(input: Option[String]): Query = apply(input, Uri.ParsingMode.Relaxed)
     def apply(input: Option[String], mode: Uri.ParsingMode): Query = input match {
       case None         ⇒ Query.Empty
@@ -567,7 +584,6 @@ object Uri {
     if (ix >= 0) decode(string, charset, ix)() else string
   }
 
-  import UriParser._
   @tailrec
   private[http] def decode(string: String, charset: Charset, ix: Int)(sb: JStringBuilder = new JStringBuilder(string.length).append(string, 0, ix)): String =
     if (ix < string.length) string.charAt(ix) match {
@@ -575,7 +591,7 @@ object Uri {
         def intValueOfHexWord(i: Int) = {
           def intValueOfHexChar(j: Int) = {
             val c = string.charAt(j)
-            if (is(c, HEX_DIGIT)) hexValue(c)
+            if (HEXDIG(c)) CharUtils.hexValue(c)
             else throw new IllegalArgumentException("Illegal percent-encoding at pos " + j)
           }
           intValueOfHexChar(i) * 16 + intValueOfHexChar(i + 1)
@@ -608,15 +624,15 @@ object Uri {
     else sb.toString
 
   private[http] def normalizeScheme(scheme: String): String = {
-    @tailrec def verify(ix: Int = scheme.length - 1, allowed: Int = ALPHA, allLower: Boolean = true): Int =
+    @tailrec def verify(ix: Int = scheme.length - 1, allowed: CharPredicate = ALPHA, allLower: Boolean = true): Int =
       if (ix >= 0) {
         val c = scheme.charAt(ix)
-        if (is(c, allowed)) verify(ix - 1, ALPHA | DIGIT | PLUS | DASH | DOT, allLower && !is(c, UPPER_ALPHA)) else ix
+        if (allowed(c)) verify(ix - 1, `scheme-char`, allLower && !UPPER_ALPHA(c)) else ix
       } else if (allLower) -1 else -2
     verify() match {
       case -2 ⇒ scheme.toLowerCase
       case -1 ⇒ scheme
-      case ix ⇒ fail(s"Invalid URI scheme, unexpected character at pos $ix ('${scheme.charAt(ix)}')")
+      case ix ⇒ fail(s"Invalid URI scheme, unexpected character at pos $ix ('${scheme charAt ix}')")
     }
   }
 
@@ -662,7 +678,7 @@ object Uri {
   }
 
   private[http] def fail(summary: String, detail: String = "") =
-    throw new IllegalUriException(ErrorInfo(summary, detail))
+    throw new IllegalUriException(summary, detail)
 
   private[http] def create(scheme: String, userinfo: String, host: Host, port: Int, path: Path, query: Query,
                            fragment: Option[String]): Uri =
@@ -675,14 +691,12 @@ object Uri {
 }
 
 object UriRendering {
-  import UriParser._
-
   implicit object HostRenderer extends Renderer[Host] {
     def render[R <: Rendering](r: R, value: Host): r.type = value match {
-      case Host.Empty         ⇒ r
-      case IPv4Host(address)  ⇒ r ~~ address
-      case IPv6Host(address)  ⇒ r ~~ '[' ~~ address ~~ ']'
-      case NamedHost(address) ⇒ encode(r, address, UTF8, UNRESERVED | SUB_DELIM)
+      case Host.Empty           ⇒ r
+      case IPv4Host(_, address) ⇒ r ~~ address
+      case IPv6Host(_, address) ⇒ r ~~ '[' ~~ address ~~ ']'
+      case NamedHost(address)   ⇒ encode(r, address, UTF8, `reg-name-char`)
     }
   }
   implicit object AuthorityRenderer extends Renderer[Authority] {
@@ -706,7 +720,7 @@ object UriRendering {
    */
   def renderUri[R <: Rendering](r: R, value: Uri, charset: Charset): r.type = {
     renderUriWithoutFragment(r, value, charset)
-    if (value.fragment.isDefined) encode(r ~~ '#', value.fragment.get, charset, QUERY_FRAGMENT_CHAR)
+    if (value.fragment.isDefined) encode(r ~~ '#', value.fragment.get, charset, `query-fragment-char`)
     r
   }
 
@@ -731,7 +745,7 @@ object UriRendering {
       import authority._
 
       r ~~ '/' ~~ '/'
-      if (!userinfo.isEmpty) encode(r, userinfo, charset, UNRESERVED | SUB_DELIM | COLON) ~~ '@'
+      if (!userinfo.isEmpty) encode(r, userinfo, charset, `userinfo-char`) ~~ '@'
       r ~~ host
       if (port != 0) normalizePort(port, scheme) match {
         case 0 ⇒ r
@@ -744,17 +758,17 @@ object UriRendering {
     case Path.Empty       ⇒ r
     case Path.Slash(tail) ⇒ renderPath(r ~~ '/', tail, charset, encodeFirstSegmentColons = false)
     case Path.Segment(head, tail) ⇒
-      val keep = if (encodeFirstSegmentColons) PATH_SEGMENT_CHAR & ~COLON else PATH_SEGMENT_CHAR
+      val keep = if (encodeFirstSegmentColons) `pchar-base-nc` else `pchar-base`
       renderPath(encode(r, head, charset, keep), tail, charset, encodeFirstSegmentColons = false)
   }
 
   def renderQuery[R <: Rendering](r: R, query: Query, charset: Charset): r.type = {
-    def enc(s: String): Unit = encode(r, s, charset, QUERY_FRAGMENT_CHAR & ~(AMP | EQUAL | PLUS), replaceSpaces = true)
+    def enc(s: String): Unit = encode(r, s, charset, `strict-query-char-np`, replaceSpaces = true)
     @tailrec def append(q: Query): r.type =
       q match {
         case Query.Empty ⇒ r
         case Query.Cons(key, value, tail) ⇒
-          if (q ne this) r ~~ '&'
+          if (q ne query) r ~~ '&'
           enc(key)
           if (value ne Query.EmptyValue) r ~~ '='
           enc(value)
@@ -764,13 +778,13 @@ object UriRendering {
     append(query)
   }
 
-  private[http] def encode(r: Rendering, string: String, charset: Charset, keep: Int,
+  private[http] def encode(r: Rendering, string: String, charset: Charset, keep: CharPredicate,
                            replaceSpaces: Boolean = false): r.type = {
     @tailrec def rec(ix: Int = 0): r.type = {
-      def appendEncoded(byte: Byte): Unit = r ~~ '%' ~~ hexDigit(byte >>> 4) ~~ hexDigit(byte)
+      def appendEncoded(byte: Byte): Unit = r ~~ '%' ~~ CharUtils.upperHexDigit(byte >>> 4) ~~ CharUtils.upperHexDigit(byte)
       if (ix < string.length) {
         string.charAt(ix) match {
-          case c if is(c, keep)     ⇒ r ~~ c
+          case c if keep(c)         ⇒ r ~~ c
           case ' ' if replaceSpaces ⇒ r ~~ '+'
           case c if c <= 127        ⇒ appendEncoded(c.toByte)
           case c                    ⇒ c.toString.getBytes(charset).foreach(appendEncoded)

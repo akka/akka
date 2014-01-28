@@ -5,6 +5,7 @@
 package akka.http.model
 package headers
 
+import org.parboiled2.CharPredicate
 import akka.http.util._
 
 // see http://tools.ietf.org/html/rfc6265
@@ -22,11 +23,11 @@ case class HttpCookie(
   import HttpCookie._
 
   // TODO: suppress running these requires for cookies created from our header parser
-  require(nameChars.matchAll(name), s"'${nameChars.firstMismatch(name).get}' not allowed in cookie name ('$name')")
-  require(contentChars.matchAll(content), s"'${contentChars.firstMismatch(content).get}' not allowed in cookie content ('$content')")
-  require(domain.isEmpty || domainChars.matchAll(domain.get), s"'${domainChars.firstMismatch(domain.get).get}' not allowed in cookie domain ('${domain.get}')")
-  require(path.isEmpty || pathOrExtChars.matchAll(path.get), s"'${pathOrExtChars.firstMismatch(path.get).get}' not allowed in cookie path ('${path.get}')")
-  require(extension.isEmpty || pathOrExtChars.matchAll(extension.get), s"'${pathOrExtChars.firstMismatch(extension.get).get}' not allowed in cookie extension ('${extension.get}')")
+  require(nameChars.matchesAll(name), s"'${nameChars.firstMismatch(name).get}' not allowed in cookie name ('$name')")
+  require(contentChars.matchesAll(content), s"'${contentChars.firstMismatch(content).get}' not allowed in cookie content ('$content')")
+  require(domain.isEmpty || domainChars.matchesAll(domain.get), s"'${domainChars.firstMismatch(domain.get).get}' not allowed in cookie domain ('${domain.get}')")
+  require(path.isEmpty || pathOrExtChars.matchesAll(path.get), s"'${pathOrExtChars.firstMismatch(path.get).get}' not allowed in cookie path ('${path.get}')")
+  require(extension.isEmpty || pathOrExtChars.matchesAll(extension.get), s"'${pathOrExtChars.firstMismatch(extension.get).get}' not allowed in cookie extension ('${extension.get}')")
 
   def render[R <: Rendering](r: R): r.type = {
     r ~~ name ~~ '=' ~~ content
@@ -42,12 +43,12 @@ case class HttpCookie(
 }
 
 object HttpCookie {
-  import CharPredicate._
+  import akka.http.model.parser.CharacterClasses._
 
-  def nameChars = HttpToken
+  def nameChars = tchar
   // http://tools.ietf.org/html/rfc6265#section-4.1.1
   // ; US-ASCII characters excluding CTLs, whitespace DQUOTE, comma, semicolon, and backslash
   val contentChars = CharPredicate('\u0021', '\u0023' to '\u002B', '\u002D' to '\u003A', '\u003C' to '\u005B', '\u005D' to '\u007E')
-  val domainChars = AlphaNum ++ ".-"
-  val pathOrExtChars = Printable -- ';'
+  val domainChars = ALPHANUM ++ ".-"
+  val pathOrExtChars = VCHAR ++ ' ' -- ';'
 }
