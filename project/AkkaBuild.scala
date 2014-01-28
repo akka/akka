@@ -825,6 +825,11 @@ object AkkaBuild extends Build {
 
   val validatePullRequest = TaskKey[Unit]("validate-pull-request", "Additional tasks for pull request validation")
 
+  def githubUrl(v: String): String = {
+    val branch = if (v.endsWith("SNAPSHOT")) "master" else "v" + v
+    "http://github.com/akka/akka/tree/" + branch
+  }
+
   // preprocessing settings for sphinx
   lazy val sphinxPreprocessing = inConfig(Sphinx)(Seq(
     target in preprocess <<= baseDirectory / "rst_preprocessed",
@@ -832,7 +837,6 @@ object AkkaBuild extends Build {
     // customization of sphinx @<key>@ replacements, add to all sphinx-using projects
     // add additional replacements here
     preprocessVars <<= (scalaVersion, version) { (s, v) =>
-      val isSnapshot = v.endsWith("SNAPSHOT")
       val BinVer = """(\d+\.\d+)\.\d+""".r
       Map(
         "version" -> v,
@@ -850,7 +854,7 @@ object AkkaBuild extends Build {
             case _          => s
           }),
         "sigarVersion" -> Dependencies.Compile.sigar.revision,
-        "github" -> "http://github.com/akka/akka/tree/%s".format((if (isSnapshot) "master" else "v" + v))
+        "github" -> githubUrl(v)
       )
     },
     preprocess <<= (sourceDirectory, target in preprocess, cacheDirectory, preprocessExts, preprocessVars, streams) map {
@@ -927,7 +931,11 @@ object AkkaBuild extends Build {
   lazy val scaladocDiagramsEnabled = System.getProperty("akka.scaladoc.diagrams", "true").toBoolean
   lazy val scaladocAutoAPI = System.getProperty("akka.scaladoc.autoapi", "true").toBoolean
 
-  lazy val scaladocOptions = List("-implicits") ::: (if (scaladocDiagramsEnabled) List("-diagrams") else Nil)
+  def scaladocOptions(ver: String, base: File): List[String] = {
+    val urlString = githubUrl(ver) + "/€{FILE_PATH}.scala"
+    val opts = List("-implicits", "-doc-source-url", urlString, "-sourcepath", base.getAbsolutePath)
+    if (scaladocDiagramsEnabled) "-diagrams"::opts else opts
+  }
 
   lazy val scaladocSettings: Seq[sbt.Setting[_]] = {
     scaladocSettingsNoVerificationOfDiagrams ++
@@ -935,18 +943,16 @@ object AkkaBuild extends Build {
   }
   
   // for projects with few (one) classes there might not be any diagrams
-  lazy val scaladocSettingsNoVerificationOfDiagrams: Seq[sbt.Setting[_]]= {
-    Seq(
-      scalacOptions in (Compile, doc) ++= scaladocOptions,
+  lazy val scaladocSettingsNoVerificationOfDiagrams: Seq[sbt.Setting[_]] = {
+    inTask(doc)(Seq(
+      scalacOptions in Compile <++= (version, baseDirectory in akka) map scaladocOptions,
       autoAPIMappings := scaladocAutoAPI
-    )
+    ))
   }
   
   lazy val unidocScaladocSettings: Seq[sbt.Setting[_]]= {
-    Seq(scalacOptions in doc ++= scaladocOptions) ++
-      (if (scaladocDiagramsEnabled)
-        Seq(sunidoc ~= scaladocVerifier)
-      else Seq.empty)
+    Seq(scalacOptions in doc <++= (version, baseDirectory in akka) map scaladocOptions) ++
+    (if (scaladocDiagramsEnabled) Seq(sunidoc ~= scaladocVerifier) else Seq.empty)
   }
 
   def scaladocVerifier(file: File): File= {
