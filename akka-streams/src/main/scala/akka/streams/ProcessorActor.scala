@@ -30,8 +30,10 @@ object ProcessorActor {
   }
 
   // FORWARD
-  case class Emit[O](t: O) extends ForwardResult[O]
-  case class EmitMany[O](t: Vector[O]) extends ForwardResult[O]
+  case class Emit[+O](t: O) extends ForwardResult[O]
+  case class EmitMany[+O](elements: Vector[O]) extends ForwardResult[O] {
+    require(elements.size > 1, "don't use EmitMany to emit only one element")
+  }
   case object Complete extends ForwardResult[Nothing]
   case class Error(cause: Throwable) extends ForwardResult[Nothing]
 
@@ -402,12 +404,14 @@ object ProcessorActor {
 
         def requestMore(n: Int): Result[O] =
           if (n > 0)
-            if (it.hasNext) {
-              val res = rec(new VectorBuilder[O], n)
-              if (it.hasNext) EmitMany(res)
-              else EmitMany(res) ~ Complete
-            } else Complete
+            if (it.hasNext)
+              if (n == 1) Emit(it.next()) ~ maybeComplete
+              else EmitMany(rec(new VectorBuilder[O], n)) ~ maybeComplete
+            else Complete
           else throw new IllegalStateException(s"n = $n is not > 0")
+
+        def maybeComplete =
+          if (it.hasNext) Continue else Complete
 
         @tailrec def rec(result: VectorBuilder[O], remaining: Int): Vector[O] =
           if (remaining > 0 && it.hasNext) rec(result += it.next(), remaining - 1)
