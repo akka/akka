@@ -28,6 +28,10 @@ object ProcessorActor {
   case object Continue extends Result[Nothing] {
     override def ~[O2 >: Nothing](other: Result[O2]): Result[O2] = other
   }
+  // BI-DIRECTIONAL: needs to be wired in both directions
+  type PublisherDefinition[O] = SubscriptionResults ⇒ PublisherResults[O] ⇒ PublisherHandler[O]
+  case class EmitProducer[O](f: PublisherDefinition[O]) extends SimpleResult[Producer[O]]
+  case class EmitProducerFinished[O](f: PublisherResults[O] ⇒ PublisherHandler[O]) extends ForwardResult[Producer[O]]
 
   // FORWARD
   case class Emit[+O](t: O) extends ForwardResult[O]
@@ -38,10 +42,14 @@ object ProcessorActor {
   case class Error(cause: Throwable) extends ForwardResult[Nothing]
 
   case class Subscribe[T, U](producer: Producer[T])(handler: SubscriptionResults ⇒ SubscriptionHandler[T, U]) extends ForwardResult[U]
-  case class EmitProducer[O](f: PublisherResults[O] ⇒ PublisherHandler[O]) extends ForwardResult[O]
 
   // BACKCHANNEL
   case class RequestMore(n: Int) extends BackchannelResult
+
+  // CUSTOM
+  private[streams] trait SideEffect[+O] extends Result[O] {
+    def run(): Result[O]
+  }
 
   trait SubscriptionHandler[-I, +O] {
     def handle(result: ForwardResult[I]): Result[O]
@@ -62,36 +70,44 @@ object ProcessorActor {
     def requestMore(n: Int): Result[Nothing]
   }
 
-  trait PublisherHandler[+O] {
-    def handle(result: BackchannelResult): Result[O]
+  trait PublisherHandler[O] {
+    def handle(result: BackchannelResult): Result[Producer[O]]
   }
-  trait SimplePublisherHandler[+O] extends PublisherHandler[O] {
+  /*trait SimplePublisherHandler[+O] extends PublisherHandler[O] {
+
+  }*/
+  trait PublisherResults[O] {
+    def emit(o: O): Result[Producer[O]]
+    def complete: Result[Producer[O]]
+    def error(cause: Throwable): Result[Producer[O]]
+  }
+
+  trait OpInstance[-I, +O] {
+    def handle(result: SimpleResult[I]): Result[O]
+
+    // FIXME: remove later and implement properly everywhere
+    // convenience method which calls handle for all elements and combines the results
+    // (which obviously isn't as performant than a direct handling
+    def handleMany(e: EmitMany[I]): Result[O] =
+      e.elements.map(e ⇒ handle(Emit(e))).reduceLeftOption(_ ~ _).getOrElse(Continue)
+  }
+  @deprecated("Deprecated and broken")
+  trait SimpleOpInstance[-I, +O] extends OpInstance[I, O] with SimpleSubscriptionHandler[I, O] {
+    def handle(result: SimpleResult[I]): Result[O] = ???
+    def requestMoreResult(n: Int): Result[O] = ???
+
     def handle(result: BackchannelResult): Result[O] = result match {
       case RequestMore(n) ⇒ RequestMore(requestMore(n))
     }
     def requestMore(n: Int): Int
   }
-  trait PublisherResults[O] {
-    def emit(o: O): Result[O]
-    def complete: Result[O]
-    def error(cause: Throwable): Result[O]
-  }
-
-  trait OpInstance[-I, +O] {
-    def handle(result: SimpleResult[I]): Result[O]
-  }
-  @deprecated("Deprecated and broken")
-  trait SimpleOpInstance[-I, +O] extends OpInstance[I, O] with SimpleSubscriptionHandler[I, O] with SimplePublisherHandler[O] {
-    def handle(result: SimpleResult[I]): Result[O] = ???
-    def requestMoreResult(n: Int): Result[O] = ???
-  }
 
   trait OpInstanceStateMachine[I, O] extends OpInstance[I, O] {
-    type State = SimpleOpInstance[I, O]
+    type State = SimpleResult[I] ⇒ Result[O]
     def initialState: State
     var state: State = initialState
 
-    def handle(result: SimpleResult[I]): Result[O] = state.handle(result)
+    def handle(result: SimpleResult[I]): Result[O] = state(result)
 
     def become(newState: State): Unit = state = newState
   }
@@ -176,12 +192,18 @@ object ProcessorActor {
 
       def runSimpleStep(calc: SimpleCalc): SimpleCalc = calc match {
         case SecondResult(b: BackchannelResult) ⇒ firstResult(firstI.handle(b))
-        case SecondResult(x: ForwardResult[_])  ⇒ Finished(x)
-        case SecondResult(Continue)             ⇒ Finished(Continue)
-        case FirstResult(f: ForwardResult[_])   ⇒ secondResult(secondI.handle(f))
-        case FirstResult(r: RequestMore)        ⇒ Finished(r)
-        case FirstResult(Continue)              ⇒ Finished(Continue)
-        case FirstResult(x: BackchannelResult)  ⇒ Finished(x)
+        case SecondResult(EmitProducer(f)) ⇒
+          val rest = f(new SubscriptionResults {
+            def requestMore(n: Int): Result[Nothing] = handleSecondResult(RequestMore(n)).asInstanceOf[Result[Nothing]]
+          })
+          Finished(EmitProducerFinished(rest).asInstanceOf[Result[O]])
+        case SecondResult(x: ForwardResult[_]) ⇒ Finished(x)
+        case SecondResult(Continue)            ⇒ Finished(Continue)
+        case SecondResult(s: SideEffect[_])    ⇒ Finished(s)
+        case FirstResult(f: ForwardResult[_])  ⇒ secondResult(secondI.handle(f))
+        case FirstResult(r: RequestMore)       ⇒ Finished(r)
+        case FirstResult(Continue)             ⇒ Finished(Continue)
+        case FirstResult(x: BackchannelResult) ⇒ Finished(x)
       }
 
       // these are shortcuts like handleFirstResult and handleSecondResult above, but from within the
@@ -211,7 +233,7 @@ object ProcessorActor {
         }
       }
     case Fold(seed, acc) ⇒
-      new OpInstance[I, O] with SimplePublisherHandler[O] {
+      new OpInstance[I, O] {
         val batchSize = 10000
         var missing = 0
         var z = seed
@@ -255,7 +277,7 @@ object ProcessorActor {
         def handle(result: SimpleResult[I]): Result[O] = result match {
           case r: RequestMore ⇒ r /* + heuristic of previously filtered? */
           case Emit(i)        ⇒ if (pred(i)) Emit(i.asInstanceOf[O]) else Continue ~ RequestMore(1) // FIXME: error handling
-          // case EmitMany
+          case e: EmitMany[I] ⇒ handleMany(e)
           case Complete       ⇒ Complete
           case e: Error       ⇒ e
         }
@@ -357,43 +379,7 @@ object ProcessorActor {
         }
       }
 
-    case Span(pred) ⇒
-      new SimpleOpInstance[I, O] {
-        var curPublisher: PublisherResults[O] = _
-
-        def requestMore(n: Int): Int = n
-        def onNext(i: I): Result[O] = {
-          // question is here where to dispatch to and how to access those:
-          //  - parent stream
-          //  - substream
-          val res =
-            if (curPublisher eq null)
-              EmitProducer[O] { publisher ⇒
-                curPublisher = publisher
-
-                new PublisherHandler[O] {
-                  var cachedFirst = i
-                  def requestMore(n: Int): Int = ???
-
-                  def handle(result: BackchannelResult): Result[O] = result match {
-                    case r: RequestMore ⇒ r
-                  }
-                  // if (cachedFirst ne null) ~ Emit(cachedFirst)
-                }
-              }
-            else
-              curPublisher.emit(i.asInstanceOf[O])
-          if (pred(i)) curPublisher = null
-          res
-        }
-        def onComplete(): Result[O] = {
-          Complete
-          // ~ curPublisher.complete
-        }
-        def onError(cause: Throwable): Result[O] = {
-          Error(cause) // ~ curPublisher.error(cause)
-        }
-      }
+    case span: Span[_] ⇒ spanInstance(span)
     case Produce(iterable) ⇒
       new OpInstance[I, O] {
         val it = iterable.iterator
@@ -418,4 +404,60 @@ object ProcessorActor {
           else result.result()
       }
   }
+
+  def spanInstance[I](span: Span[I]): OpInstance[I, Producer[I]] =
+    new OpInstance[I, Producer[I]] {
+      var curPublisher: PublisherResults[I] = _
+      var requested = 0
+
+      def handle(result: SimpleResult[I]): Result[Producer[I]] = result match {
+        case RequestMore(n) ⇒
+          requested += n
+          // FIXME: this condition relies on the fact that the EmitProducer definition is executed before anything
+          // else happens. It would be better to introduce a proper state machine here that properly
+          // deals with waiting for the callback being called.
+          if ((curPublisher eq null) && requested == n) RequestMore(1) else Continue
+        case Emit(i) ⇒
+          // question is here where to dispatch to and how to access those:
+          //  - parent stream
+          //  - substream
+          val res1 =
+            if (curPublisher ne null) curPublisher.emit(i)
+            else Continue
+
+          val res2 =
+            if (span.pred(i)) {
+              val pub = curPublisher
+              curPublisher = null
+              if (requested > 0) pub.complete ~ RequestMore(1)
+              else pub.complete
+            } else Continue
+
+          val res3 =
+            if ((curPublisher eq null) && requested > 0) {
+              requested -= 1
+              EmitProducer[I] { requestor ⇒
+                publisher ⇒
+                  curPublisher = publisher
+
+                  new PublisherHandler[I] {
+                    var cachedFirst: AnyRef = i.asInstanceOf[AnyRef]
+
+                    def handle(result: BackchannelResult): Result[Producer[I]] = result match {
+                      case RequestMore(n) ⇒
+                        if (cachedFirst != null) {
+                          val res = curPublisher.emit(cachedFirst.asInstanceOf[I])
+                          cachedFirst = null
+                          res ~ (if (n > 1) requestor.requestMore(n - 1) else Continue)
+                        } else requestor.requestMore(n)
+                    }
+                  }
+              }
+            } else Continue
+
+          res1 ~ res2 ~ res3
+        case Complete         ⇒ Complete ~ curPublisher.complete
+        case e @ Error(cause) ⇒ e ~ curPublisher.error(cause)
+      }
+    }
 }

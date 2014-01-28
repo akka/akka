@@ -2,6 +2,7 @@ package akka.streams
 
 import org.scalatest.{ ShouldMatchers, WordSpec }
 import ProcessorActor._
+import rx.async.api.Producer
 
 class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
   val oneToTen = Produce(1 to 10)
@@ -17,9 +18,29 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
       p.handle(RequestMore(1)) should be(Emit(500000500000L) ~ Complete)
     }
     "create element spans" in {
-      val p = instance(oneToTen.span(_ % 2 == 0).flatMap(identity))
-      val EmitProducer(f) = p.requestMoreResult(1)
+      case class SubEmit(i: Int) extends SideEffect[Producer[Int]] {
+        def run(): Result[Producer[Int]] = ???
+      }
+      case object SubComplete extends SideEffect[Nothing] {
+        def run(): Result[Nothing] = ???
+      }
+      case class SubError(cause: Throwable) extends SideEffect[Nothing] {
+        def run(): Result[Nothing] = ???
+      }
+      object MyPublisherResults extends PublisherResults[Int] {
+        def emit(o: Int): Result[Producer[Int]] = SubEmit(o)
+        def complete: Result[Producer[Int]] = SubComplete
+        def error(cause: Throwable): Result[Producer[Int]] = SubError(cause)
+      }
 
+      val p = instance[Nothing, Producer[Int]](oneToTen.span(_ % 3 == 0))
+      val EmitProducerFinished(f) = p.handle(RequestMore(1))
+      val handler = f(MyPublisherResults)
+      p.handle(RequestMore(1)) should be(Continue)
+
+      handler.handle(RequestMore(1)) should be(SubEmit(1))
+      handler.handle(RequestMore(1)) should be(SubEmit(2))
+      val Combine(Combine(SubEmit(3), SubComplete), EmitProducerFinished(next)) = handler.handle(RequestMore(1))
     }
   }
 
