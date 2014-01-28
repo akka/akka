@@ -294,28 +294,27 @@ object ProcessorActor {
         new OpInstanceStateMachine[I, O] {
           def initialState = Waiting
 
-          def Waiting = new State {
-            def requestMore(n: Int): Int = {
+          def Waiting: State = {
+            case RequestMore(n) ⇒
               become(WaitingForElement(n))
-              1
-            }
-            def onNext(i: I): Result[O] = throw new IllegalStateException("No element requested")
-            def onComplete(): Result[O] = Complete
-            def onError(cause: Throwable): Result[O] = Error(cause)
+              RequestMore(1)
+            case Emit(i)  ⇒ throw new IllegalStateException("No element requested")
+            case Complete ⇒ Complete
+            case e: Error ⇒ e
           }
-          def WaitingForElement(remaining: Int): State = new State {
-            def requestMore(n: Int): Int = {
+
+          def WaitingForElement(remaining: Int): State = {
+            case RequestMore(n) ⇒
               become(WaitingForElement(remaining + n))
-              0 // we already requested one parent element
-            }
-            def onNext(i: I): Result[O] =
+              RequestMore(0)
+            case Emit(i) ⇒
               Subscribe(f(i)) { subscription ⇒ // TODO: handleErrors
                 val handler = ReadSubstream(subscription, remaining)
                 become(handler)
                 handler.subHandler
               }
-            def onComplete(): Result[O] = Complete
-            def onError(cause: Throwable): Result[O] = Error(cause)
+            case Complete ⇒ Complete
+            case e: Error ⇒ e
           }
           case class ReadSubstream(subscription: SubscriptionResults, remaining: Int) extends State {
             // invariant: subscription.requestMore has been called for every
@@ -324,35 +323,36 @@ object ProcessorActor {
             var curRemaining = remaining
             var closeAtEnd = false
 
-            def requestMore(n: Int): Int = ???
-            override def requestMoreResult(n: Int): Result[O] = {
-              curRemaining += n
-              subscription.requestMore(n)
+            override def apply(v1: SimpleResult[I]): Result[O] = v1 match {
+              case RequestMore(n) ⇒
+                curRemaining += n
+                subscription.requestMore(n)
+              case Emit(i) ⇒ throw new IllegalStateException("No element requested")
+              case Complete ⇒
+                closeAtEnd = true; Continue
+              case e: Error ⇒
+                // shortcut close result stream?
+                // also see RxJava `mapManyDelayError`
+                ???
             }
-            def onNext(i: I): Result[O] = throw new IllegalStateException("No element requested")
-            def onComplete(): Result[O] = { closeAtEnd = true; Continue }
-            def onError(cause: Throwable): Result[O] =
-              // shortcut close result stream?
-              // see RxJava `mapManyDelayError`
-              ???
 
-            def subHandler = new SimpleOpInstance[O, O] {
-              def requestMore(n: Int): Int = ??? // who would ever call this? FIXME: better model that doesn't rely on this
-              def onNext(i: O): Result[O] = {
-                curRemaining -= 1
-                Emit(i)
+            def subHandler = new SubscriptionHandler[O, O] {
+              def handle(result: ForwardResult[O]): Result[O] = result match {
+                case Emit(i) ⇒
+                  curRemaining -= 1
+                  Emit(i)
+                case Complete ⇒
+                  if (curRemaining > 0) {
+                    // FIXME: request one more element from parent stream
+                    // but how?
+                    become(WaitingForElement(curRemaining))
+                    RequestMore(1)
+                  } else {
+                    become(Waiting)
+                    Continue
+                  }
+                case e: Error ⇒ e
               }
-              def onComplete(): Result[O] =
-                if (curRemaining > 0) {
-                  // FIXME: request one more element from parent stream
-                  // but how?
-                  become(WaitingForElement(curRemaining))
-                  RequestMore(1)
-                } else {
-                  become(Waiting)
-                  Continue
-                }
-              def onError(cause: Throwable): Result[O] = Error(cause)
             }
           }
         }
