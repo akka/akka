@@ -3,6 +3,7 @@ package akka.streams
 import rx.async.api.Producer
 import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
+import rx.async.spi.Publisher
 
 object ProcessorActor {
   // TODO: needs settings
@@ -30,8 +31,12 @@ object ProcessorActor {
   }
   // BI-DIRECTIONAL: needs to be wired in both directions
   type PublisherDefinition[O] = SubscriptionResults ⇒ PublisherResults[O] ⇒ PublisherHandler[O]
-  case class EmitProducer[O](f: PublisherDefinition[O]) extends SimpleResult[Producer[O]]
-  case class EmitProducerFinished[O](f: PublisherResults[O] ⇒ PublisherHandler[O]) extends ForwardResult[Producer[O]]
+  case class InternalPublisherTemplate[O](f: PublisherDefinition[O]) extends Producer[O] {
+    def getPublisher: Publisher[O] = ???
+  }
+  case class InternalPublisherFinished[O](f: PublisherResults[O] ⇒ PublisherHandler[O]) extends Producer[O] {
+    def getPublisher: Publisher[O] = ???
+  }
 
   // FORWARD
   case class Emit[+O](t: O) extends ForwardResult[O]
@@ -47,7 +52,7 @@ object ProcessorActor {
   case class RequestMore(n: Int) extends BackchannelResult
 
   // CUSTOM
-  private[streams] trait SideEffect[+O] extends Result[O] {
+  private[streams] trait SideEffect[+O] extends ForwardResult[O] {
     def run(): Result[O]
   }
 
@@ -142,7 +147,14 @@ object ProcessorActor {
         case x                    ⇒ run(FirstResult(x))
       }
       def handleSecondResult(res: Result[O]): Result[O] = res match {
-        case Continue            ⇒ Continue
+        case Continue ⇒ Continue
+        case Emit(InternalPublisherTemplate(f)) ⇒
+          println("found template")
+          // TODO: can we fix the types here?
+          val rest = f(new SubscriptionResults {
+            def requestMore(n: Int): Result[Nothing] = handleSecondResult(RequestMore(n)).asInstanceOf[Result[Nothing]]
+          })
+          Emit(InternalPublisherFinished(rest).asInstanceOf[O])
         case f: ForwardResult[O] ⇒ f
         case Combine(a, b)       ⇒ run(CombinedResult(SecondResult(a), SecondResult(b)))
         case x                   ⇒ run(SecondResult(x))
@@ -192,18 +204,9 @@ object ProcessorActor {
 
       def runSimpleStep(calc: SimpleCalc): SimpleCalc = calc match {
         case SecondResult(b: BackchannelResult) ⇒ firstResult(firstI.handle(b))
-        case SecondResult(EmitProducer(f)) ⇒
-          val rest = f(new SubscriptionResults {
-            def requestMore(n: Int): Result[Nothing] = handleSecondResult(RequestMore(n)).asInstanceOf[Result[Nothing]]
-          })
-          Finished(EmitProducerFinished(rest).asInstanceOf[Result[O]])
-        case SecondResult(x: ForwardResult[_]) ⇒ Finished(x)
-        case SecondResult(Continue)            ⇒ Finished(Continue)
-        case SecondResult(s: SideEffect[_])    ⇒ Finished(s)
-        case FirstResult(f: ForwardResult[_])  ⇒ secondResult(secondI.handle(f))
-        case FirstResult(r: RequestMore)       ⇒ Finished(r)
-        case FirstResult(Continue)             ⇒ Finished(Continue)
-        case FirstResult(x: BackchannelResult) ⇒ Finished(x)
+        case SecondResult(x)                    ⇒ secondResult(x)
+        case FirstResult(f: ForwardResult[_])   ⇒ secondResult(secondI.handle(f))
+        case FirstResult(x)                     ⇒ firstResult(x)
       }
 
       // these are shortcuts like handleFirstResult and handleSecondResult above, but from within the
@@ -214,7 +217,16 @@ object ProcessorActor {
         case x                    ⇒ FirstResult(x)
       }
       def secondResult(res: Result[O]): SimpleCalc = res match {
-        case Continue            ⇒ Finished(Continue)
+        case Continue ⇒ Finished(Continue)
+        case Emit(InternalPublisherTemplate(f)) ⇒
+          // TODO: can we fix the types here?
+          val rest = f(new SubscriptionResults {
+            def requestMore(n: Int): Result[Nothing] = handleSecondResult(RequestMore(n)).asInstanceOf[Result[Nothing]]
+          })
+          Finished(Emit(InternalPublisherFinished(rest).asInstanceOf[O]))
+        /*case s @ Subscribe(InternalPublisherFinished(rest)) ⇒
+          val handler = s.handler
+          rest*/
         case f: ForwardResult[O] ⇒ Finished(f)
         case x                   ⇒ SecondResult(x)
       }
@@ -426,7 +438,7 @@ object ProcessorActor {
           // FIXME: case when first element matches predicate, in which case we could emit a singleton Producer
           subStreamsRequested -= 1
           become(WaitingForPublisher)
-          EmitProducer[I] { requestor ⇒
+          Emit(InternalPublisherTemplate[I] { requestor ⇒
             publisher ⇒
               become(Running(publisher))
 
@@ -442,7 +454,7 @@ object ProcessorActor {
                     } else requestor.requestMore(n)
                 }
               }
-          }
+          })
 
         case Complete ⇒ Complete
         case e: Error ⇒ e
