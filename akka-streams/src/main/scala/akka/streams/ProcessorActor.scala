@@ -225,9 +225,20 @@ object ProcessorActor {
             def requestMore(n: Int): Result[Nothing] = handleSecondResult(RequestMore(n)).asInstanceOf[Result[Nothing]]
           })
           Finished(Emit(InternalPublisherFinished(rest).asInstanceOf[O]))
-        /*case s @ Subscribe(InternalPublisherFinished(rest)) ⇒
-          val handler = s.handler
-          rest*/
+        case s @ Subscribe(InternalPublisherFinished(rest)) ⇒
+          object Connector extends PublisherResults[Any] with SubscriptionResults {
+            def emit(o: Any): Result[Producer[Any]] = handle(Emit(o.asInstanceOf[O]))
+            def complete: Result[Producer[Any]] = handle(Complete)
+            def error(cause: Throwable): Result[Producer[Any]] = handle(Error(cause))
+
+            def handle(res: ForwardResult[O]): Result[Producer[Any]] = oHandler.handle(res).asInstanceOf[Result[Producer[Any]]]
+            def requestMore(n: Int): Result[Nothing] =
+              iHandler.handle(RequestMore(n)).asInstanceOf[Result[Nothing]]
+          }
+          lazy val oHandler = s.handler(Connector)
+          lazy val iHandler = rest(Connector)
+
+          SecondResult(oHandler.initial)
         case f: ForwardResult[O] ⇒ Finished(f)
         case x                   ⇒ SecondResult(x)
       }

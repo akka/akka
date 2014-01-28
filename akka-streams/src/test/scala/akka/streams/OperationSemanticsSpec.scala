@@ -69,6 +69,15 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
 
       p.handle(Complete) should be(Complete)
     }
+    "flatten with internal producer" in {
+      val p = instance[Nothing, Int](AddProducerOps[Nothing, Int](Produce(1 to 6).span(_ % 3 == 0)).flatten)
+      p.handle(RequestMore(1)) should be(Emit(1))
+      p.handle(RequestMore(1)) should be(Emit(2))
+      p.handle(RequestMore(1)) should be(Emit(3))
+      p.handle(RequestMore(1)) should be(Emit(4))
+      p.handle(RequestMore(1)) should be(Emit(5))
+      p.handle(RequestMore(1)) should be(Emit(6) ~ Complete)
+    }
   }
 
   def instance[I, O](op: Operation[I, O]): OpInstance[I, O] = ProcessorActor.instantiate(op)
