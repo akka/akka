@@ -47,7 +47,7 @@ class SerializabilitySpec extends WordSpec with Matchers {
       "Cache" in { CacheDirectives.`no-store` should beSerializable }
       "DateTime" in { DateTime.now should beSerializable }
       "Charsets" in {
-        tryToSerialize(HttpCharsets.`UTF-16`).nioCharset === HttpCharsets.`UTF-16`.nioCharset
+        tryToSerialize(HttpCharsets.`UTF-16`).nioCharset shouldEqual HttpCharsets.`UTF-16`.nioCharset
       }
       "LanguageRange" in {
         Language("a", "b") should beSerializable

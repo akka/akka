@@ -22,8 +22,8 @@ class DateTimeSpec extends WordSpec with Matchers {
 
   "DateTime.toRfc1123DateTimeString" should {
     "properly print a known date" in {
-      DateTime(specificClicks).toRfc1123DateTimeString === "Tue, 12 Jul 2011 14:08:12 GMT"
-      DateTime(2011, 7, 12, 14, 8, 12).toRfc1123DateTimeString === "Tue, 12 Jul 2011 14:08:12 GMT"
+      DateTime(specificClicks).toRfc1123DateTimeString shouldEqual "Tue, 12 Jul 2011 14:08:12 GMT"
+      DateTime(2011, 7, 12, 14, 8, 12).toRfc1123DateTimeString shouldEqual "Tue, 12 Jul 2011 14:08:12 GMT"
     }
     "behave exactly as a corresponding formatting via SimpleDateFormat" in {
       val Rfc1123Format = {
@@ -44,7 +44,7 @@ class DateTimeSpec extends WordSpec with Matchers {
 
   "DateTime.toIsoDateTimeString" should {
     "properly print a known date" in {
-      DateTime(specificClicks).toIsoDateTimeString === "2011-07-12T14:08:12"
+      DateTime(specificClicks).toIsoDateTimeString shouldEqual "2011-07-12T14:08:12"
     }
   }
 
@@ -72,12 +72,12 @@ class DateTimeSpec extends WordSpec with Matchers {
       all(httpDateTimes.take(10000)) should roundTripOk
     }
     "properly represent DateTime.MinValue" in {
-      DateTime.MinValue.toString === "1800-01-01T00:00:00"
-      DateTime(DateTime.MinValue.clicks).toString === "1800-01-01T00:00:00"
+      DateTime.MinValue.toString shouldEqual "1800-01-01T00:00:00"
+      DateTime(DateTime.MinValue.clicks).toString shouldEqual "1800-01-01T00:00:00"
     }
     "properly represent DateTime.MaxValue" in {
-      DateTime.MaxValue.toString === "2199-12-31T23:59:59"
-      DateTime(DateTime.MaxValue.clicks).toString === "2199-12-31T23:59:59"
+      DateTime.MaxValue.toString shouldEqual "2199-12-31T23:59:59"
+      DateTime(DateTime.MaxValue.clicks).toString shouldEqual "2199-12-31T23:59:59"
     }
   }
 }
