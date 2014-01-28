@@ -20,6 +20,10 @@ case class Map[I, O](f: I ⇒ O) extends Operation[I, O]
 case class FlatMap[I, O](f: I ⇒ Producer[O]) extends Operation[I, O]
 case class FlatMapNested[I, O](operation: Operation[I, O]) extends Operation[Producer[I], O]
 
+sealed trait FlattenMode
+case object Concat extends FlattenMode
+case class Flatten[I](mode: FlattenMode = Concat) extends Operation[Producer[I], I]
+
 case class Foreach[I](f: I ⇒ Unit) extends Operation[I, Unit]
 
 case class Filter[I](pred: I ⇒ Boolean) extends Operation[I, I]
@@ -68,5 +72,6 @@ object Operations {
   }
   implicit class AddProducerOps[I, O](val op: Operation[I, Producer[O]]) extends AnyVal {
     def flatMapNested[O2](operation: Operation[O, O2]): Operation[I, O2] = op.andThen(FlatMapNested(operation))
+    def flatten: Operation[I, O] = op.andThen(Flatten())
   }
 }

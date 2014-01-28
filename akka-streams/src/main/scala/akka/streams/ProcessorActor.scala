@@ -46,7 +46,7 @@ object ProcessorActor {
   case object Complete extends ForwardResult[Nothing]
   case class Error(cause: Throwable) extends ForwardResult[Nothing]
 
-  case class Subscribe[T, U](producer: Producer[T])(handler: SubscriptionResults ⇒ SubscriptionHandler[T, U]) extends ForwardResult[U]
+  case class Subscribe[T, U](producer: Producer[T])(val handler: SubscriptionResults ⇒ SubscriptionHandler[T, U]) extends ForwardResult[U]
 
   // BACKCHANNEL
   case class RequestMore(n: Int) extends BackchannelResult
@@ -58,6 +58,7 @@ object ProcessorActor {
 
   trait SubscriptionHandler[-I, +O] {
     def handle(result: ForwardResult[I]): Result[O]
+    def initial: Result[O]
   }
   trait SimpleSubscriptionHandler[-I, +O] extends SubscriptionHandler[I, O] {
     def handle(result: ForwardResult[I]): Result[O] = result match {
@@ -295,80 +296,74 @@ object ProcessorActor {
           case e: Error       ⇒ e
         }
       }
-    case FlatMap(f) ⇒
-      // two different kinds of flatMap: merge and concat, in RxJava: `flatMap` which merges and `concatMap` which concats
-      val shouldMerge = false
-      if (shouldMerge) /* merge */
-        // we need to subscribe and read the complete stream of inner Producer[O]
-        // and then always subscribe and keep one element buffered / requested
-        // and then on request deliver those in the sequence they were received
-        ???
-      else /* concat */
-        new OpInstanceStateMachine[I, O] {
-          def initialState = Waiting
+    case Flatten(Concat) ⇒
+      new OpInstanceStateMachine[I, O] {
+        def initialState = Waiting
 
-          def Waiting: State = {
-            case RequestMore(n) ⇒
-              become(WaitingForElement(n))
-              RequestMore(1)
-            case Emit(i)  ⇒ throw new IllegalStateException("No element requested")
-            case Complete ⇒ Complete
-            case e: Error ⇒ e
-          }
+        def Waiting: State = {
+          case RequestMore(n) ⇒
+            become(WaitingForElement(n))
+            RequestMore(1)
+          case Emit(i)  ⇒ throw new IllegalStateException("No element requested")
+          case Complete ⇒ Complete
+          case e: Error ⇒ e
+        }
 
-          def WaitingForElement(remaining: Int): State = {
-            case RequestMore(n) ⇒
-              become(WaitingForElement(remaining + n))
-              RequestMore(0)
-            case Emit(i) ⇒
-              Subscribe(f(i)) { subscription ⇒ // TODO: handleErrors
-                val handler = ReadSubstream(subscription, remaining)
-                become(handler)
-                handler.subHandler
-              }
-            case Complete ⇒ Complete
-            case e: Error ⇒ e
-          }
-          case class ReadSubstream(subscription: SubscriptionResults, remaining: Int) extends State {
-            // invariant: subscription.requestMore has been called for every
-            // of the requested elements
-            // each emitted element decrements that counter by one
-            var curRemaining = remaining
-            var closeAtEnd = false
-
-            override def apply(v1: SimpleResult[I]): Result[O] = v1 match {
-              case RequestMore(n) ⇒
-                curRemaining += n
-                subscription.requestMore(n)
-              case Emit(i) ⇒ throw new IllegalStateException("No element requested")
-              case Complete ⇒
-                closeAtEnd = true; Continue
-              case e: Error ⇒
-                // shortcut close result stream?
-                // also see RxJava `mapManyDelayError`
-                ???
+        def WaitingForElement(remaining: Int): State = {
+          case RequestMore(n) ⇒
+            become(WaitingForElement(remaining + n))
+            RequestMore(0)
+          case Emit(i) ⇒
+            Subscribe(i) { subscription ⇒ // TODO: handleErrors
+              val handler = ReadSubstream(subscription, remaining)
+              become(handler)
+              handler.subHandler
             }
+          case Complete ⇒ Complete
+          case e: Error ⇒ e
+        }
+        case class ReadSubstream(subscription: SubscriptionResults, remaining: Int) extends State {
+          // invariant: subscription.requestMore has been called for every
+          // of the requested elements
+          // each emitted element decrements that counter by one
+          var curRemaining = remaining
+          var closeAtEnd = false
 
-            def subHandler = new SubscriptionHandler[O, O] {
-              def handle(result: ForwardResult[O]): Result[O] = result match {
-                case Emit(i) ⇒
-                  curRemaining -= 1
-                  Emit(i)
-                case Complete ⇒
-                  if (curRemaining > 0) {
-                    // FIXME: request one more element from parent stream
-                    // but how?
-                    become(WaitingForElement(curRemaining))
-                    RequestMore(1)
-                  } else {
-                    become(Waiting)
-                    Continue
-                  }
-                case e: Error ⇒ e
-              }
+          override def apply(v1: SimpleResult[I]): Result[O] = v1 match {
+            case RequestMore(n) ⇒
+              curRemaining += n
+              subscription.requestMore(n)
+            case Emit(i) ⇒ throw new IllegalStateException("No element requested")
+            case Complete ⇒
+              closeAtEnd = true; Continue
+            case e: Error ⇒
+              // shortcut close result stream?
+              // also see RxJava `mapManyDelayError`
+              ???
+          }
+
+          def subHandler = new SubscriptionHandler[O, O] {
+            def initial: Result[O] = subscription.requestMore(remaining)
+            def handle(result: ForwardResult[O]): Result[O] = result match {
+              case Emit(i) ⇒
+                curRemaining -= 1
+                Emit(i)
+              case Complete ⇒
+                if (curRemaining > 0) {
+                  // FIXME: request one more element from parent stream
+                  // but how?
+                  become(WaitingForElement(curRemaining))
+                  RequestMore(1)
+                } else {
+                  become(Waiting)
+                  Continue
+                }
+              case e: Error ⇒ e
             }
           }
         }
+      }
+
     case FoldUntil(seed, acc) ⇒
       new OpInstance[I, O] {
         var z = seed
