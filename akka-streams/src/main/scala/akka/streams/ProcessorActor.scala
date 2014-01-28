@@ -32,6 +32,15 @@ object ProcessorActor {
   case class RequestMoreFromNext(n: Int) extends BackchannelResult[Nothing]
 
   trait SubscriptionHandler[-I, +O] {
+    def handle(result: ForwardResult[I]): Result[O]
+  }
+  trait SimpleSubscriptionHandler[-I, +O] extends SubscriptionHandler[I, O] {
+    def handle(result: ForwardResult[I]): Result[O] = result match {
+      case Emit(i)      ⇒ onNext(i)
+      case Complete     ⇒ onComplete()
+      case Error(cause) ⇒ onError(cause)
+    }
+
     def onNext(i: I): Result[O]
     def onComplete(): Result[O]
     def onError(cause: Throwable): Result[O]
@@ -50,7 +59,7 @@ object ProcessorActor {
   }
 
   trait OpInstance[-I, +O] extends SubscriptionHandler[I, O] with PublisherHandler[O]
-  trait SimpleOpInstance[-I, +O] extends OpInstance[I, O] {
+  trait SimpleOpInstance[-I, +O] extends OpInstance[I, O] with SimpleSubscriptionHandler[I, O] {
     def requestMoreResult(n: Int): Result[O] = RequestMoreFromNext(requestMore(n))
     def requestMore(n: Int): Int
   }
@@ -61,9 +70,7 @@ object ProcessorActor {
     var state: State = initialState
 
     def requestMoreResult(n: Int): Result[O] = state.requestMoreResult(n)
-    def onNext(i: I): Result[O] = state.onNext(i)
-    def onComplete(): Result[O] = state.onComplete()
-    def onError(cause: Throwable): Result[O] = state.onError(cause)
+    def handle(result: ForwardResult[I]): Result[O] = state.handle(result)
 
     def become(newState: State): Unit = state = newState
   }
@@ -76,9 +83,7 @@ object ProcessorActor {
       def requestMoreResult(n: Int): Result[O] =
         handleSecondResult(secondI.requestMoreResult(n))
 
-      def onNext(i: I1): Result[O] = handleFirstResult(firstI.onNext(i))
-      def onComplete(): Result[O] = handleFirstResult(firstI.onComplete())
-      def onError(cause: Throwable): Result[O] = handleFirstResult(firstI.onError(cause))
+      def handle(result: ForwardResult[I1]): Result[O] = handleFirstResult(firstI.handle(result))
 
       sealed trait Calc
       sealed trait SimpleCalc extends Calc
@@ -116,9 +121,7 @@ object ProcessorActor {
         case SecondResult(RequestMoreFromNext(n)) ⇒ firstResult(firstI.requestMoreResult(n))
         case SecondResult(x: ForwardResult[_])    ⇒ Finished(x)
         case SecondResult(Continue)               ⇒ Finished(Continue)
-        case FirstResult(Emit(i))                 ⇒ secondResult(secondI.onNext(i))
-        case FirstResult(Complete)                ⇒ secondResult(secondI.onComplete())
-        case FirstResult(Error(cause))            ⇒ secondResult(secondI.onError(cause))
+        case FirstResult(f: ForwardResult[_])     ⇒ secondResult(secondI.handle(f))
         case FirstResult(r: RequestMoreFromNext)  ⇒ Finished(r)
         case FirstResult(Continue)                ⇒ Finished(Continue)
         // what does this line mean exactly? why is it valid?
@@ -335,7 +338,7 @@ object ProcessorActor {
         }
       }
     case Produce(iterable) ⇒
-      new OpInstance[I, O] {
+      new OpInstance[I, O] with SimpleSubscriptionHandler[I, O] {
         val it = iterable.iterator
         override def requestMoreResult(n: Int): Result[O] =
           if (n > 0) {
