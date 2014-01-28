@@ -2,13 +2,13 @@ package akka.streams
 
 import rx.async.api.Producer
 import scala.annotation.tailrec
-import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 
 object ProcessorActor {
   // TODO: needs settings
   //def processor[I, O](operations: Operation[I, O]): Processor[I, O] = ???
 
+  /* The result of a calculation step */
   sealed trait Result[+O] {
     def ~[O2 >: O](other: Result[O2]): Result[O2] =
       if (other == Continue) this
@@ -16,10 +16,14 @@ object ProcessorActor {
   }
   sealed trait ForwardResult[+O] extends Result[O]
   sealed trait BackchannelResult extends Result[Nothing]
+
+  // SEVERAL RESULTS
   case class Combine[O](first: Result[O], second: Result[O]) extends Result[O]
   // TODO: consider introducing a `ForwardCombine` type tagging purely
   //       forward going combinations to avoid the stepper for simple
   //       operation combinations
+
+  // NOOP
   case object Continue extends Result[Nothing] {
     override def ~[O2 >: Nothing](other: Result[O2]): Result[O2] = other
   }
