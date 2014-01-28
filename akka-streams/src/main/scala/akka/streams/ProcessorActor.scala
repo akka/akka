@@ -1,7 +1,9 @@
 package akka.streams
 
-import rx.async.api.{ Producer, Processor }
+import rx.async.api.Producer
 import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.collection.immutable.VectorBuilder
 
 object ProcessorActor {
   // TODO: needs settings
@@ -21,7 +23,7 @@ object ProcessorActor {
 
   // FORWARD
   case class Emit[O](t: O) extends ForwardResult[O]
-  // optimization: case class EmitMany[O](t: Seq[O]) extends Result[O]
+  case class EmitMany[O](t: Vector[O]) extends ForwardResult[O]
   case object Complete extends ForwardResult[Nothing]
   case class Error(cause: Throwable) extends ForwardResult[Nothing]
 
@@ -37,6 +39,7 @@ object ProcessorActor {
   trait SimpleSubscriptionHandler[-I, +O] extends SubscriptionHandler[I, O] {
     def handle(result: ForwardResult[I]): Result[O] = result match {
       case Emit(i)      ⇒ onNext(i)
+      case EmitMany(it) ⇒ it.map(onNext).reduceLeftOption(_ ~ _).getOrElse(Continue)
       case Complete     ⇒ onComplete()
       case Error(cause) ⇒ onError(cause)
     }
@@ -52,6 +55,10 @@ object ProcessorActor {
   trait PublisherHandler[+O] {
     def requestMoreResult(n: Int): Result[O]
   }
+  trait SimplePublisherHandler[+O] extends PublisherHandler[O] {
+    def requestMoreResult(n: Int): Result[O] = RequestMoreFromNext(requestMore(n))
+    def requestMore(n: Int): Int
+  }
   trait PublisherResults[O] {
     def emit(o: O): Result[O]
     def complete: Result[O]
@@ -59,10 +66,7 @@ object ProcessorActor {
   }
 
   trait OpInstance[-I, +O] extends SubscriptionHandler[I, O] with PublisherHandler[O]
-  trait SimpleOpInstance[-I, +O] extends OpInstance[I, O] with SimpleSubscriptionHandler[I, O] {
-    def requestMoreResult(n: Int): Result[O] = RequestMoreFromNext(requestMore(n))
-    def requestMore(n: Int): Int
-  }
+  trait SimpleOpInstance[-I, +O] extends OpInstance[I, O] with SimpleSubscriptionHandler[I, O] with SimplePublisherHandler[O]
 
   trait OpInstanceStateMachine[I, O] extends OpInstance[I, O] {
     type State = SimpleOpInstance[I, O]
@@ -180,10 +184,11 @@ object ProcessorActor {
         def onError(cause: Throwable): Result[O] = Error(cause)
       }
     case Fold(seed, acc) ⇒
-      new SimpleOpInstance[I, O] {
-        val batchSize = 100
+      new OpInstance[I, O] with SimplePublisherHandler[O] {
+        val batchSize = 10000
         var missing = 0
         var z = seed
+        var completed = false
         def requestMore(n: Int): Int = {
           // we can instantly consume all values, even if there's just one requested,
           // though we probably need to be careful with MaxValue which may lead to
@@ -192,14 +197,28 @@ object ProcessorActor {
           missing = batchSize
           batchSize
         }
-        def onNext(i: I): Result[O] = {
-          z = acc(z, i) // FIXME: error handling
-          missing -= 1
-          if (missing == 0) { missing = batchSize; RequestMoreFromNext(batchSize) }
-          else Continue
+
+        def handle(result: ForwardResult[I]): Result[O] = result match {
+          case Emit(i) ⇒
+            z = acc(z, i) // FIXME: error handling
+            missing -= 1
+            maybeRequestMore
+          case EmitMany(is) ⇒
+            z = is.foldLeft(z)(acc)
+            missing -= is.size
+            maybeRequestMore
+          case Complete ⇒
+            if (!completed) {
+              completed = true
+              Emit(z) ~ Complete
+            } else Continue
+          case e: Error ⇒ e
         }
-        def onComplete(): Result[O] = Emit(z) ~ Complete
-        def onError(cause: Throwable): Result[O] = Error(cause)
+        def maybeRequestMore: Result[O] =
+          if (missing == 0) {
+            missing = batchSize
+            RequestMoreFromNext(batchSize)
+          } else Continue
       }
     case Filter(pred) ⇒
       new SimpleOpInstance[I, O] {
@@ -341,10 +360,17 @@ object ProcessorActor {
       new OpInstance[I, O] with SimpleSubscriptionHandler[I, O] {
         val it = iterable.iterator
         override def requestMoreResult(n: Int): Result[O] =
-          if (n > 0) {
-            if (it.hasNext) Emit(it.next()) ~ requestMoreResult(n - 1)
-            else Complete
-          } else Continue
+          if (n > 0)
+            if (it.hasNext) {
+              val res = rec(new VectorBuilder[O], n)
+              if (it.hasNext) EmitMany(res)
+              else EmitMany(res) ~ Complete
+            } else Complete
+          else throw new IllegalStateException(s"n = $n is not > 0")
+
+        @tailrec def rec(result: VectorBuilder[O], remaining: Int): Vector[O] =
+          if (remaining > 0 && it.hasNext) rec(result += it.next(), remaining - 1)
+          else result.result()
 
         def onNext(i: I): Result[O] = ???
         def onComplete(): Result[O] = ???
