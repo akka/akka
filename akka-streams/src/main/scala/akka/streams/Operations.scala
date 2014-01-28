@@ -41,7 +41,7 @@ case class FoldUntil[I, O, Z](seed: Z, acc: (Z, I) ⇒ FoldResult[Z, O]) extends
   def initState: Z = seed
 }
 
-case class Produce[O](iterator: Iterable[O]) extends Operation[O, O]
+case class Produce[O](iterator: Iterable[O]) extends Operation[Nothing, O]
 
 object Operations {
   def Op[I] = Identity[I]()
@@ -49,6 +49,7 @@ object Operations {
   implicit def consumeProducer[I](producer: Producer[I]) =
     new AddOps[Nothing, I](Consume(producer))
 
+  implicit def produceOps[O](p: Produce[O]): AddOps[Nothing, O] = new AddOps[Nothing, O](p)
   implicit class AddOps[I, O](val op: Operation[I, O]) extends AnyVal {
     def next[O2](next: Operation[O, O2]): Operation[I, O2] = op.andThen(next)
 
