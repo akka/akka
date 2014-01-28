@@ -258,8 +258,6 @@ object ProcessorActor {
           case e: Error       ⇒ e
         }
       }
-    /*case Flatten() =>
-      val shouldMerge = false*/
     case FlatMap(f) ⇒
       // two different kinds of flatMap: merge and concat, in RxJava: `flatMap` which merges and `concatMap` which concats
       val shouldMerge = false
@@ -335,20 +333,26 @@ object ProcessorActor {
           }
         }
     case FoldUntil(seed, acc) ⇒
-      new SimpleOpInstance[I, O] {
+      new OpInstance[I, O] {
         var z = seed
-        def requestMore(n: Int): Int = ???
-        def onNext(i: I): Result[O] =
-          acc(z, i) match {
-            case FoldResult.Emit(value, nextSeed) ⇒
-              z = nextSeed; Emit(value)
-            case FoldResult.Continue(newZ) ⇒ z = newZ; Continue
-          }
-        def onComplete(): Result[O] =
-          // TODO: could also define that the latest seed should be returned, or flag an error
-          //       if the last element doesn't match the predicate
-          Complete
-        def onError(cause: Throwable): Result[O] = Error(cause)
+
+        def handle(result: SimpleResult[I]): Result[O] = result match {
+          case RequestMore(n) ⇒ ??? // TODO: how much to request?
+          case Emit(i) ⇒
+            acc(z, i) match {
+              case FoldResult.Emit(value, nextSeed) ⇒
+                z = nextSeed
+                Emit(value)
+              case FoldResult.Continue(newZ) ⇒
+                z = newZ
+                Continue
+            }
+          case Complete ⇒
+            // TODO: could also define that the latest seed should be returned, or flag an error
+            //       if the last element doesn't match the predicate
+            Complete
+          case e: Error ⇒ e
+        }
       }
 
     case Span(pred) ⇒
