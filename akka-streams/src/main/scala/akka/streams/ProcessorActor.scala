@@ -15,8 +15,11 @@ object ProcessorActor {
       else Combine(this, other)
   }
   sealed trait ForwardResult[+O] extends Result[O]
-  sealed trait BackchannelResult[+O] extends Result[O]
+  sealed trait BackchannelResult extends Result[Nothing]
   case class Combine[O](first: Result[O], second: Result[O]) extends Result[O]
+  // TODO: consider introducing a `ForwardCombine` type tagging purely
+  //       forward going combinations to avoid the stepper for simple
+  //       operation combinations
   case object Continue extends Result[Nothing] {
     override def ~[O2 >: Nothing](other: Result[O2]): Result[O2] = other
   }
@@ -31,7 +34,7 @@ object ProcessorActor {
   case class EmitProducer[O](f: PublisherResults[O] ⇒ PublisherHandler[O]) extends ForwardResult[O]
 
   // BACKCHANNEL
-  case class RequestMoreFromNext(n: Int) extends BackchannelResult[Nothing]
+  case class RequestMore(n: Int) extends BackchannelResult
 
   trait SubscriptionHandler[-I, +O] {
     def handle(result: ForwardResult[I]): Result[O]
@@ -56,7 +59,7 @@ object ProcessorActor {
     def requestMoreResult(n: Int): Result[O]
   }
   trait SimplePublisherHandler[+O] extends PublisherHandler[O] {
-    def requestMoreResult(n: Int): Result[O] = RequestMoreFromNext(requestMore(n))
+    def requestMoreResult(n: Int): Result[O] = RequestMore(requestMore(n))
     def requestMore(n: Int): Int
   }
   trait PublisherResults[O] {
@@ -97,14 +100,16 @@ object ProcessorActor {
       case class FirstResult(result: Result[I2]) extends SimpleCalc
       case class SecondResult(result: Result[O]) extends SimpleCalc
       case class Finished(result: Result[O]) extends SimpleCalc
+      // TODO: add constant for Finished(Continue)
 
       // these two are short-cutting entry-points that handle common non-trampolining cases
       // before calling the stepper (which must contains the same logic once again)
+      // This way we can avoid the wrapping cost of trampolining in many cases.
       def handleFirstResult(res: Result[I2]): Result[O] = res match {
-        case Continue                 ⇒ Continue
-        case b: BackchannelResult[I2] ⇒ b.asInstanceOf[Result[O]]
-        case Combine(a, b)            ⇒ run(CombinedResult(FirstResult(a), FirstResult(b)))
-        case x                        ⇒ run(FirstResult(x))
+        case Continue             ⇒ Continue
+        case b: BackchannelResult ⇒ b
+        case Combine(a, b)        ⇒ run(CombinedResult(FirstResult(a), FirstResult(b)))
+        case x                    ⇒ run(FirstResult(x))
       }
       def handleSecondResult(res: Result[O]): Result[O] = res match {
         case Continue            ⇒ Continue
@@ -113,24 +118,15 @@ object ProcessorActor {
         case x                   ⇒ run(SecondResult(x))
       }
 
-      def firstResult(res: Result[I2]): SimpleCalc = res match {
-        case Continue ⇒ Finished(Continue)
-        case x        ⇒ FirstResult(x)
+      @tailrec def run(calc: Calc): Result[O] = {
+        val res = runOneStep(calc)
+        //println(s"$calc => $res")
+        res match {
+          case Finished(res) ⇒ res
+          case x             ⇒ run(x)
+        }
       }
-      def secondResult(res: Result[O]): SimpleCalc = res match {
-        case Continue ⇒ Finished(Continue)
-        case x        ⇒ SecondResult(x)
-      }
-      def runSimpleStep(calc: SimpleCalc): SimpleCalc = calc match {
-        case SecondResult(RequestMoreFromNext(n)) ⇒ firstResult(firstI.requestMoreResult(n))
-        case SecondResult(x: ForwardResult[_])    ⇒ Finished(x)
-        case SecondResult(Continue)               ⇒ Finished(Continue)
-        case FirstResult(f: ForwardResult[_])     ⇒ secondResult(secondI.handle(f))
-        case FirstResult(r: RequestMoreFromNext)  ⇒ Finished(r)
-        case FirstResult(Continue)                ⇒ Finished(Continue)
-        // what does this line mean exactly? why is it valid?
-        case FirstResult(x: BackchannelResult[_]) ⇒ Finished(x.asInstanceOf[Result[O]])
-      }
+
       def runOneStep(calc: Calc): Calc =
         calc match {
           case SecondResult(Combine(a, b)) ⇒
@@ -164,13 +160,27 @@ object ProcessorActor {
             }
         }
 
-      @tailrec def run(calc: Calc): Result[O] = {
-        val res = runOneStep(calc)
-        //println(s"$calc => $res")
-        res match {
-          case Finished(res) ⇒ res
-          case x             ⇒ run(x)
-        }
+      def runSimpleStep(calc: SimpleCalc): SimpleCalc = calc match {
+        case SecondResult(RequestMore(n)) ⇒ firstResult(firstI.requestMoreResult(n))
+        case SecondResult(x: ForwardResult[_])    ⇒ Finished(x)
+        case SecondResult(Continue)               ⇒ Finished(Continue)
+        case FirstResult(f: ForwardResult[_])     ⇒ secondResult(secondI.handle(f))
+        case FirstResult(r: RequestMore)  ⇒ Finished(r)
+        case FirstResult(Continue)                ⇒ Finished(Continue)
+        case FirstResult(x: BackchannelResult)    ⇒ Finished(x)
+      }
+
+      // these are shortcuts like handleFirstResult and handleSecondResult above, but from within the
+      // stepper
+      def firstResult(res: Result[I2]): SimpleCalc = res match {
+        case Continue             ⇒ Finished(Continue)
+        case b: BackchannelResult ⇒ Finished(b)
+        case x                    ⇒ FirstResult(x)
+      }
+      def secondResult(res: Result[O]): SimpleCalc = res match {
+        case Continue            ⇒ Finished(Continue)
+        case f: ForwardResult[O] ⇒ Finished(f)
+        case x                   ⇒ SecondResult(x)
       }
     }
 
@@ -204,7 +214,7 @@ object ProcessorActor {
             missing -= 1
             maybeRequestMore
           case EmitMany(is) ⇒
-            z = is.foldLeft(z)(acc)
+            z = is.foldLeft(z)(acc) // FIXME: error handling
             missing -= is.size
             maybeRequestMore
           case Complete ⇒
@@ -217,7 +227,7 @@ object ProcessorActor {
         def maybeRequestMore: Result[O] =
           if (missing == 0) {
             missing = batchSize
-            RequestMoreFromNext(batchSize)
+            RequestMore(batchSize)
           } else Continue
       }
     case Filter(pred) ⇒
@@ -294,7 +304,7 @@ object ProcessorActor {
                   // FIXME: request one more element from parent stream
                   // but how?
                   become(WaitingForElement(curRemaining))
-                  RequestMoreFromNext(1)
+                  RequestMore(1)
                 } else {
                   become(Waiting)
                   Continue
@@ -339,7 +349,7 @@ object ProcessorActor {
                   def requestMore(n: Int): Int = ???
 
                   override def requestMoreResult(n: Int): Result[O] =
-                    RequestMoreFromNext(n)
+                    RequestMore(n)
                   // if (cachedFirst ne null) ~ Emit(cachedFirst)
                 }
               }
