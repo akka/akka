@@ -406,58 +406,65 @@ object ProcessorActor {
   }
 
   def spanInstance[I](span: Span[I]): OpInstance[I, Producer[I]] =
-    new OpInstance[I, Producer[I]] {
-      var curPublisher: PublisherResults[I] = _
-      var requested = 0
+    new OpInstanceStateMachine[I, Producer[I]] {
+      def initialState = WaitingForRequest
 
-      def handle(result: SimpleResult[I]): Result[Producer[I]] = result match {
+      var subStreamsRequested = 0
+
+      lazy val WaitingForRequest: State = {
         case RequestMore(n) ⇒
-          requested += n
-          // FIXME: this condition relies on the fact that the EmitProducer definition is executed before anything
-          // else happens. It would be better to introduce a proper state machine here that properly
-          // deals with waiting for the callback being called.
-          if ((curPublisher eq null) && requested == n) RequestMore(1) else Continue
+          subStreamsRequested += n
+          become(WaitingForFirstElement)
+          RequestMore(1)
+        case Complete ⇒ Complete
+        case e: Error ⇒ e
+      }
+      lazy val WaitingForFirstElement: State = {
+        case RequestMore(n) ⇒
+          subStreamsRequested += n; Continue
         case Emit(i) ⇒
-          // question is here where to dispatch to and how to access those:
-          //  - parent stream
-          //  - substream
-          val res1 =
-            if (curPublisher ne null) curPublisher.emit(i)
-            else Continue
+          // FIXME: case when first element matches predicate, in which case we could emit a singleton Producer
+          subStreamsRequested -= 1
+          become(WaitingForPublisher)
+          EmitProducer[I] { requestor ⇒
+            publisher ⇒
+              become(Running(publisher))
 
-          val res2 =
-            if (span.pred(i)) {
-              val pub = curPublisher
-              curPublisher = null
-              if (requested > 0) pub.complete ~ RequestMore(1)
-              else pub.complete
-            } else Continue
+              new PublisherHandler[I] {
+                var cachedFirst: AnyRef = i.asInstanceOf[AnyRef]
 
-          val res3 =
-            if ((curPublisher eq null) && requested > 0) {
-              requested -= 1
-              EmitProducer[I] { requestor ⇒
-                publisher ⇒
-                  curPublisher = publisher
-
-                  new PublisherHandler[I] {
-                    var cachedFirst: AnyRef = i.asInstanceOf[AnyRef]
-
-                    def handle(result: BackchannelResult): Result[Producer[I]] = result match {
-                      case RequestMore(n) ⇒
-                        if (cachedFirst != null) {
-                          val res = curPublisher.emit(cachedFirst.asInstanceOf[I])
-                          cachedFirst = null
-                          res ~ (if (n > 1) requestor.requestMore(n - 1) else Continue)
-                        } else requestor.requestMore(n)
-                    }
-                  }
+                def handle(result: BackchannelResult): Result[Producer[I]] = result match {
+                  case RequestMore(n) ⇒
+                    if (cachedFirst != null) {
+                      val res = publisher.emit(cachedFirst.asInstanceOf[I])
+                      cachedFirst = null
+                      res ~ (if (n > 1) requestor.requestMore(n - 1) else Continue)
+                    } else requestor.requestMore(n)
+                }
               }
-            } else Continue
+          }
 
-          res1 ~ res2 ~ res3
-        case Complete         ⇒ Complete ~ curPublisher.complete
-        case e @ Error(cause) ⇒ e ~ curPublisher.error(cause)
+        case Complete ⇒ Complete
+        case e: Error ⇒ e
+      }
+      lazy val WaitingForPublisher: State = {
+        case RequestMore(n) ⇒ subStreamsRequested += n; Continue
+      }
+      // FIXME: properly deal with error / completion of source
+      def Running(publisher: PublisherResults[I]): State = {
+        case RequestMore(n) ⇒
+          subStreamsRequested += n; Continue
+        case Emit(i) ⇒
+          val emit = publisher.emit(i)
+          if (span.pred(i))
+            if (subStreamsRequested > 0) {
+              become(WaitingForFirstElement)
+              emit ~ publisher.complete ~ RequestMore(1)
+            } else {
+              become(WaitingForRequest)
+              emit ~ publisher.complete
+            }
+          else emit
       }
     }
 }

@@ -33,7 +33,7 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
         def error(cause: Throwable): Result[Producer[Int]] = SubError(cause)
       }
 
-      val p = instance[Nothing, Producer[Int]](oneToTen.span(_ % 3 == 0))
+      val p = instance[Nothing, Producer[Int]](Produce(1 to 6).span(_ % 3 == 0))
       val EmitProducerFinished(f) = p.handle(RequestMore(1))
       val handler = f(MyPublisherResults)
       p.handle(RequestMore(1)) should be(Continue)
@@ -41,6 +41,11 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
       handler.handle(RequestMore(1)) should be(SubEmit(1))
       handler.handle(RequestMore(1)) should be(SubEmit(2))
       val Combine(Combine(SubEmit(3), SubComplete), EmitProducerFinished(next)) = handler.handle(RequestMore(1))
+
+      val nextHandler = next(MyPublisherResults)
+      nextHandler.handle(RequestMore(1)) should be(SubEmit(4))
+      nextHandler.handle(RequestMore(1)) should be(SubEmit(5))
+      nextHandler.handle(RequestMore(1)) should be(SubEmit(6) ~ SubComplete ~ Complete)
     }
   }
 
