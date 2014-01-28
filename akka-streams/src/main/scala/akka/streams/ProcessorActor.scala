@@ -428,6 +428,7 @@ object ProcessorActor {
       def initialState = WaitingForRequest
 
       var subStreamsRequested = 0
+      var undeliveredElements = 0
 
       lazy val WaitingForRequest: State = {
         case RequestMore(n) ⇒
@@ -446,18 +447,24 @@ object ProcessorActor {
           become(WaitingForPublisher)
           Emit(InternalPublisherTemplate[I] { requestor ⇒
             publisher ⇒
-              become(Running(publisher))
+              become(Running(requestor, publisher))
 
               new PublisherHandler[I] {
                 var cachedFirst: AnyRef = i.asInstanceOf[AnyRef]
 
                 def handle(result: BackchannelResult): Result[Producer[I]] = result match {
                   case RequestMore(n) ⇒
-                    if (cachedFirst != null) {
-                      val res = publisher.emit(cachedFirst.asInstanceOf[I])
-                      cachedFirst = null
-                      res ~ (if (n > 1) requestor.requestMore(n - 1) else Continue)
-                    } else requestor.requestMore(n)
+                    undeliveredElements += n
+
+                    val emit =
+                      if (cachedFirst != null) {
+                        val res = publisher.emit(cachedFirst.asInstanceOf[I])
+                        undeliveredElements -= 1
+                        cachedFirst = null
+                        res
+                      } else Continue
+
+                    emit ~ (if (undeliveredElements > 0) requestor.requestMore(1) else Continue)
                 }
               }
           })
@@ -469,11 +476,12 @@ object ProcessorActor {
         case RequestMore(n) ⇒ subStreamsRequested += n; Continue
       }
       // FIXME: properly deal with error / completion of source
-      def Running(publisher: PublisherResults[I]): State = {
+      def Running(requestor: SubscriptionResults, publisher: PublisherResults[I]): State = {
         case RequestMore(n) ⇒
           subStreamsRequested += n; Continue
         case Emit(i) ⇒
           val emit = publisher.emit(i)
+          undeliveredElements -= 1
           if (span.pred(i))
             if (subStreamsRequested > 0) {
               become(WaitingForFirstElement)
@@ -482,7 +490,8 @@ object ProcessorActor {
               become(WaitingForRequest)
               emit ~ publisher.complete
             }
-          else emit
+          else emit ~ (if (undeliveredElements > 0) requestor.requestMore(1) else Continue)
+        case e: EmitMany[_] ⇒ handleMany(e)
       }
     }
 
