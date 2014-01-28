@@ -20,6 +20,8 @@ object ProcessorActor {
   sealed trait BackchannelResult extends SimpleResult[Nothing]
 
   // SEVERAL RESULTS
+  // TODO: Make sure we have no combinations of the form Combine(x, Combine())
+  //       (or at least no deep ones) as they may potentially lead to StackOverflows in the stepper
   case class Combine[O](first: Result[O], second: Result[O]) extends Result[O]
   // TODO: consider introducing a `ForwardCombine` type tagging purely
   //       forward going combinations to avoid the stepper for simple
@@ -34,6 +36,8 @@ object ProcessorActor {
   case class InternalPublisherTemplate[O](f: PublisherDefinition[O]) extends Producer[O] {
     def getPublisher: Publisher[O] = ???
   }
+  // FIXME: What happens if this one escapes scope? Do we provide proper hooks to get it properly connected?
+  //        Is this expected?
   case class InternalPublisherFinished[O](f: PublisherResults[O] ⇒ PublisherHandler[O]) extends Producer[O] {
     def getPublisher: Publisher[O] = ???
   }
@@ -79,9 +83,6 @@ object ProcessorActor {
   trait PublisherHandler[O] {
     def handle(result: BackchannelResult): Result[Producer[O]]
   }
-  /*trait SimplePublisherHandler[+O] extends PublisherHandler[O] {
-
-  }*/
   trait PublisherResults[O] {
     def emit(o: O): Result[Producer[O]]
     def complete: Result[Producer[O]]
@@ -361,8 +362,6 @@ object ProcessorActor {
                 Emit(i)
               case Complete ⇒
                 if (curRemaining > 0) {
-                  // FIXME: request one more element from parent stream
-                  // but how?
                   become(WaitingForElement(curRemaining))
                   RequestMore(1)
                 } else {
