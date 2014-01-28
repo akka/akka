@@ -14,8 +14,9 @@ object ProcessorActor {
       if (other == Continue) this
       else Combine(this, other)
   }
-  sealed trait ForwardResult[+O] extends Result[O]
-  sealed trait BackchannelResult extends Result[Nothing]
+  sealed trait SimpleResult[+O] extends Result[O]
+  sealed trait ForwardResult[+O] extends SimpleResult[O]
+  sealed trait BackchannelResult extends SimpleResult[Nothing]
 
   // SEVERAL RESULTS
   case class Combine[O](first: Result[O], second: Result[O]) extends Result[O]
@@ -60,10 +61,12 @@ object ProcessorActor {
   }
 
   trait PublisherHandler[+O] {
-    def requestMoreResult(n: Int): Result[O]
+    def handle(result: BackchannelResult): Result[O]
   }
   trait SimplePublisherHandler[+O] extends PublisherHandler[O] {
-    def requestMoreResult(n: Int): Result[O] = RequestMore(requestMore(n))
+    def handle(result: BackchannelResult): Result[O] = result match {
+      case RequestMore(n) ⇒ RequestMore(requestMore(n))
+    }
     def requestMore(n: Int): Int
   }
   trait PublisherResults[O] {
@@ -72,16 +75,21 @@ object ProcessorActor {
     def error(cause: Throwable): Result[O]
   }
 
-  trait OpInstance[-I, +O] extends SubscriptionHandler[I, O] with PublisherHandler[O]
-  trait SimpleOpInstance[-I, +O] extends OpInstance[I, O] with SimpleSubscriptionHandler[I, O] with SimplePublisherHandler[O]
+  trait OpInstance[-I, +O] {
+    def handle(result: SimpleResult[I]): Result[O]
+  }
+  @deprecated("Deprecated and broken")
+  trait SimpleOpInstance[-I, +O] extends OpInstance[I, O] with SimpleSubscriptionHandler[I, O] with SimplePublisherHandler[O] {
+    def handle(result: SimpleResult[I]): Result[O] = ???
+    def requestMoreResult(n: Int): Result[O] = ???
+  }
 
   trait OpInstanceStateMachine[I, O] extends OpInstance[I, O] {
     type State = SimpleOpInstance[I, O]
     def initialState: State
     var state: State = initialState
 
-    def requestMoreResult(n: Int): Result[O] = state.requestMoreResult(n)
-    def handle(result: ForwardResult[I]): Result[O] = state.handle(result)
+    def handle(result: SimpleResult[I]): Result[O] = state.handle(result)
 
     def become(newState: State): Unit = state = newState
   }
@@ -91,10 +99,10 @@ object ProcessorActor {
       val firstI = instantiate(andThen.first)
       val secondI = instantiate(andThen.second)
 
-      def requestMoreResult(n: Int): Result[O] =
-        handleSecondResult(secondI.requestMoreResult(n))
-
-      def handle(result: ForwardResult[I1]): Result[O] = handleFirstResult(firstI.handle(result))
+      def handle(result: SimpleResult[I1]): Result[O] = result match {
+        case f: ForwardResult[I1] ⇒ handleFirstResult(firstI.handle(f))
+        case b: BackchannelResult ⇒ handleSecondResult(secondI.handle(b))
+      }
 
       sealed trait Calc
       sealed trait SimpleCalc extends Calc
@@ -165,13 +173,13 @@ object ProcessorActor {
         }
 
       def runSimpleStep(calc: SimpleCalc): SimpleCalc = calc match {
-        case SecondResult(RequestMore(n)) ⇒ firstResult(firstI.requestMoreResult(n))
-        case SecondResult(x: ForwardResult[_])    ⇒ Finished(x)
-        case SecondResult(Continue)               ⇒ Finished(Continue)
-        case FirstResult(f: ForwardResult[_])     ⇒ secondResult(secondI.handle(f))
-        case FirstResult(r: RequestMore)  ⇒ Finished(r)
-        case FirstResult(Continue)                ⇒ Finished(Continue)
-        case FirstResult(x: BackchannelResult)    ⇒ Finished(x)
+        case SecondResult(b: BackchannelResult) ⇒ firstResult(firstI.handle(b))
+        case SecondResult(x: ForwardResult[_])  ⇒ Finished(x)
+        case SecondResult(Continue)             ⇒ Finished(Continue)
+        case FirstResult(f: ForwardResult[_])   ⇒ secondResult(secondI.handle(f))
+        case FirstResult(r: RequestMore)        ⇒ Finished(r)
+        case FirstResult(Continue)              ⇒ Finished(Continue)
+        case FirstResult(x: BackchannelResult)  ⇒ Finished(x)
       }
 
       // these are shortcuts like handleFirstResult and handleSecondResult above, but from within the
@@ -191,11 +199,14 @@ object ProcessorActor {
   def instantiate[I, O](operation: Operation[I, O]): OpInstance[I, O] = operation match {
     case andThen: AndThen[_, _, _] ⇒ andThenInstance(andThen)
     case Map(f) ⇒
-      new SimpleOpInstance[I, O] {
-        def requestMore(n: Int): Int = n
-        def onNext(i: I): Result[O] = Emit(f(i)) // FIXME: error handling
-        def onComplete(): Result[O] = Complete
-        def onError(cause: Throwable): Result[O] = Error(cause)
+      new OpInstance[I, O] {
+        def handle(result: SimpleResult[I]): Result[O] = result match {
+          case r: RequestMore ⇒ r
+          case Emit(i)        ⇒ Emit(f(i)) // FIXME: error handling
+          case EmitMany(is)   ⇒ EmitMany(is.map(f)) // FIXME: error handling
+          case Complete       ⇒ Complete
+          case e: Error       ⇒ e
+        }
       }
     case Fold(seed, acc) ⇒
       new OpInstance[I, O] with SimplePublisherHandler[O] {
@@ -212,7 +223,10 @@ object ProcessorActor {
           batchSize
         }
 
-        def handle(result: ForwardResult[I]): Result[O] = result match {
+        def handle(result: SimpleResult[I]): Result[O] = result match {
+          case RequestMore(_) ⇒
+            missing = batchSize
+            RequestMore(batchSize)
           case Emit(i) ⇒
             z = acc(z, i) // FIXME: error handling
             missing -= 1
@@ -235,11 +249,14 @@ object ProcessorActor {
           } else Continue
       }
     case Filter(pred) ⇒
-      new SimpleOpInstance[I, O] {
-        def requestMore(n: Int): Int = n /* + heuristic of previously filtered? */
-        def onNext(i: I): Result[O] = if (pred(i)) Emit(i.asInstanceOf[O]) else Continue /* and request one more */ // FIXME: error handling
-        def onComplete(): Result[O] = Complete
-        def onError(cause: Throwable): Result[O] = Error(cause)
+      new OpInstance[I, O] {
+        def handle(result: SimpleResult[I]): Result[O] = result match {
+          case r: RequestMore ⇒ r /* + heuristic of previously filtered? */
+          case Emit(i)        ⇒ if (pred(i)) Emit(i.asInstanceOf[O]) else Continue ~ RequestMore(1) // FIXME: error handling
+          // case EmitMany
+          case Complete       ⇒ Complete
+          case e: Error       ⇒ e
+        }
       }
     /*case Flatten() =>
       val shouldMerge = false*/
@@ -352,8 +369,9 @@ object ProcessorActor {
                   var cachedFirst = i
                   def requestMore(n: Int): Int = ???
 
-                  override def requestMoreResult(n: Int): Result[O] =
-                    RequestMore(n)
+                  def handle(result: BackchannelResult): Result[O] = result match {
+                    case r: RequestMore ⇒ r
+                  }
                   // if (cachedFirst ne null) ~ Emit(cachedFirst)
                 }
               }
@@ -371,9 +389,14 @@ object ProcessorActor {
         }
       }
     case Produce(iterable) ⇒
-      new OpInstance[I, O] with SimpleSubscriptionHandler[I, O] {
+      new OpInstance[I, O] {
         val it = iterable.iterator
-        override def requestMoreResult(n: Int): Result[O] =
+
+        def handle(result: SimpleResult[I]): Result[O] = result match {
+          case RequestMore(n) ⇒ requestMore(n)
+        }
+
+        def requestMore(n: Int): Result[O] =
           if (n > 0)
             if (it.hasNext) {
               val res = rec(new VectorBuilder[O], n)
@@ -385,10 +408,6 @@ object ProcessorActor {
         @tailrec def rec(result: VectorBuilder[O], remaining: Int): Vector[O] =
           if (remaining > 0 && it.hasNext) rec(result += it.next(), remaining - 1)
           else result.result()
-
-        def onNext(i: I): Result[O] = ???
-        def onComplete(): Result[O] = ???
-        def onError(cause: Throwable): Result[O] = ???
       }
   }
 }
