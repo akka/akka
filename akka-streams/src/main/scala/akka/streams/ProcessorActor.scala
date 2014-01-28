@@ -234,6 +234,7 @@ object ProcessorActor {
 
   def instantiate[I, O](operation: Operation[I, O]): OpInstance[I, O] = operation match {
     case andThen: AndThen[_, _, _] ⇒ andThenInstance(andThen)
+    case id: Identity[_]           ⇒ identityInstance(id)
     case Map(f) ⇒
       new OpInstance[I, O] {
         def handle(result: SimpleResult[I]): Result[O] = result match {
@@ -478,5 +479,10 @@ object ProcessorActor {
             }
           else emit
       }
+    }
+
+  def identityInstance[I](id: Identity[I]): OpInstance[I, I] =
+    new OpInstance[I, I] {
+      def handle(result: SimpleResult[I]): Result[I] = result
     }
 }
