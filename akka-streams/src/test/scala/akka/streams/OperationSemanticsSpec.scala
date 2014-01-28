@@ -13,8 +13,8 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
       p.requestMoreResult(1) should be(EmitLast(55))
     }
     "fold elements synchronously with big input" in {
-      val p = instance(Produce(1 to 10000).fold(0)(_ + _))
-      p.requestMoreResult(1) should be(EmitLast(50005000))
+      val p = instance(Produce(1L to 1000000L).fold(0L)(_ + _))
+      p.requestMoreResult(1) should be(EmitLast(500000500000L))
     }
     "create element spans" in {
       val p = instance(oneToTen.span(_ % 2 == 0).flatMap(identity))

@@ -12,21 +12,25 @@ object ProcessorActor {
       if (other == Continue) this
       else Combine(this, other)
   }
-  case class Emit[O](t: O) extends Result[O]
-  // optimization: case class EmitMany[O](t: Seq[O]) extends Result[O]
+  sealed trait ForwardResult[+O] extends Result[O]
+  sealed trait BackchannelResult[+O] extends Result[O]
+  case class Combine[O](first: Result[O], second: Result[O]) extends Result[O]
   case object Continue extends Result[Nothing] {
     override def ~[O2 >: Nothing](other: Result[O2]): Result[O2] = other
   }
-  case class EmitLast[O](i: O) extends Result[O]
-  case object Complete extends Result[Nothing]
-  case class Error(cause: Throwable) extends Result[Nothing]
 
-  case class RequestMoreFromNext(n: Int) extends Result[Nothing]
+  // FORWARD
+  case class Emit[O](t: O) extends ForwardResult[O]
+  // optimization: case class EmitMany[O](t: Seq[O]) extends Result[O]
+  case class EmitLast[O](i: O) extends ForwardResult[O]
+  case object Complete extends ForwardResult[Nothing]
+  case class Error(cause: Throwable) extends ForwardResult[Nothing]
 
-  case class Subscribe[T, U](producer: Producer[T])(handler: SubscriptionResults ⇒ SubscriptionHandler[T, U]) extends Result[U]
-  case class EmitProducer[O](f: PublisherResults[O] ⇒ PublisherHandler[O]) extends Result[O]
+  case class Subscribe[T, U](producer: Producer[T])(handler: SubscriptionResults ⇒ SubscriptionHandler[T, U]) extends ForwardResult[U]
+  case class EmitProducer[O](f: PublisherResults[O] ⇒ PublisherHandler[O]) extends ForwardResult[O]
 
-  case class Combine[O](first: Result[O], second: Result[O]) extends Result[O]
+  // BACKCHANNEL
+  case class RequestMoreFromNext(n: Int) extends BackchannelResult[Nothing]
 
   trait SubscriptionHandler[-I, +O] {
     def onNext(i: I): Result[O]
@@ -66,58 +70,103 @@ object ProcessorActor {
   }
 
   def andThenInstance[I1, I2, O](andThen: AndThen[I1, I2, O]): OpInstance[I1, O] =
-    new SimpleOpInstance[I1, O] {
+    new OpInstance[I1, O] {
       val firstI = instantiate(andThen.first)
       val secondI = instantiate(andThen.second)
-      def requestMore(n: Int): Int = ???
 
-      override def requestMoreResult(n: Int): Result[O] =
-        run(SecondResult(secondI.requestMoreResult(n)))
+      def requestMoreResult(n: Int): Result[O] =
+        handleSecondResult(secondI.requestMoreResult(n))
 
-      def onNext(i: I1): Result[O] = run(FirstResult(firstI.onNext(i)))
-      def onComplete(): Result[O] = run(FirstResult(firstI.onComplete()))
-      def onError(cause: Throwable): Result[O] = run(FirstResult(firstI.onError(cause)))
+      def onNext(i: I1): Result[O] = handleFirstResult(firstI.onNext(i))
+      def onComplete(): Result[O] = handleFirstResult(firstI.onComplete())
+      def onError(cause: Throwable): Result[O] = handleFirstResult(firstI.onError(cause))
 
       sealed trait Calc
-      case class FirstResult(result: Result[I2]) extends Calc
-      case class SecondResult(result: Result[O]) extends Calc
+      sealed trait SimpleCalc extends Calc
       case class CombinedResult(first: Calc, second: Calc) extends Calc
       case class HalfFinished(first: Result[O], second: Calc) extends Calc
-      case class Finished(result: Result[O]) extends Calc
 
-      def runOne(calc: Calc): Calc =
+      case class FirstResult(result: Result[I2]) extends SimpleCalc
+      case class SecondResult(result: Result[O]) extends SimpleCalc
+      case class Finished(result: Result[O]) extends SimpleCalc
+
+      // these two are short-cutting entry-points that handle common non-trampolining cases
+      // before calling the stepper (which must contains the same logic once again)
+      def handleFirstResult(res: Result[I2]): Result[O] = res match {
+        case Continue                 ⇒ Continue
+        case b: BackchannelResult[I2] ⇒ b.asInstanceOf[Result[O]]
+        case Combine(a, b)            ⇒ run(CombinedResult(FirstResult(a), FirstResult(b)))
+        case x                        ⇒ run(FirstResult(x))
+      }
+      def handleSecondResult(res: Result[O]): Result[O] = res match {
+        case Continue            ⇒ Continue
+        case f: ForwardResult[O] ⇒ f
+        case Combine(a, b)       ⇒ run(CombinedResult(SecondResult(a), SecondResult(b)))
+        case x                   ⇒ run(SecondResult(x))
+      }
+
+      def firstResult(res: Result[I2]): SimpleCalc = res match {
+        case Continue ⇒ Finished(Continue)
+        case x        ⇒ FirstResult(x)
+      }
+      def secondResult(res: Result[O]): SimpleCalc = res match {
+        case Continue ⇒ Finished(Continue)
+        case x        ⇒ SecondResult(x)
+      }
+      def runSimpleStep(calc: SimpleCalc): SimpleCalc = calc match {
+        case SecondResult(RequestMoreFromNext(n)) ⇒ firstResult(firstI.requestMoreResult(n))
+        case SecondResult(x: ForwardResult[_])    ⇒ Finished(x)
+        case SecondResult(Continue)               ⇒ Finished(Continue)
+        case FirstResult(Emit(i))                 ⇒ secondResult(secondI.onNext(i))
+        case FirstResult(EmitLast(i))             ⇒ secondResult(secondI.onNext(i) ~ secondI.onComplete())
+        case FirstResult(Complete)                ⇒ secondResult(secondI.onComplete())
+        case FirstResult(Error(cause))            ⇒ secondResult(secondI.onError(cause))
+        case FirstResult(r: RequestMoreFromNext)  ⇒ Finished(r)
+        case FirstResult(Continue)                ⇒ Finished(Continue)
+        // what does this line mean exactly? why is it valid?
+        case FirstResult(x: BackchannelResult[_]) ⇒ Finished(x.asInstanceOf[Result[O]])
+      }
+      def runOneStep(calc: Calc): Calc =
         calc match {
-          case SecondResult(Combine(a, b)) ⇒ CombinedResult(SecondResult(a), SecondResult(b))
-          case FirstResult(Combine(a, b))  ⇒ CombinedResult(FirstResult(a), FirstResult(b))
+          case SecondResult(Combine(a, b)) ⇒
+            //CombinedResult(SecondResult(a), SecondResult(b))
+            // inline "case CombinedResult" for one less round-trip
+            runOneStep(SecondResult(a)) match {
+              case Finished(Continue) ⇒ SecondResult(b)
+              case Finished(aRes)     ⇒ HalfFinished(aRes, SecondResult(b))
+              case x                  ⇒ CombinedResult(x, SecondResult(b))
+            }
+          case FirstResult(Combine(a, b)) ⇒
+            //CombinedResult(FirstResult(a), FirstResult(b))
+            // inline "case CombinedResult" for one less round-trip
+            runOneStep(FirstResult(a)) match {
+              case Finished(Continue) ⇒ FirstResult(b)
+              case Finished(aRes)     ⇒ HalfFinished(aRes, FirstResult(b))
+              case x                  ⇒ CombinedResult(x, FirstResult(b))
+            }
+          case s: SimpleCalc ⇒ runSimpleStep(s)
           case CombinedResult(a, b) ⇒
-            runOne(a) match {
-              case Finished(aRes) ⇒ HalfFinished(aRes, b)
-              case x              ⇒ CombinedResult(x, b)
+            runOneStep(a) match {
+              case Finished(Continue) ⇒ b
+              case Finished(aRes)     ⇒ HalfFinished(aRes, b)
+              case x                  ⇒ CombinedResult(x, b)
             }
-
           case HalfFinished(aRes, b) ⇒
-            runOne(b) match {
-              case Finished(bRes) ⇒ Finished(aRes ~ bRes)
-              case x              ⇒ HalfFinished(aRes, x)
+            runOneStep(b) match {
+              case Finished(Continue) ⇒ Finished(aRes)
+              case Finished(bRes)     ⇒ Finished(aRes ~ bRes)
+              case x                  ⇒ HalfFinished(aRes, x)
             }
-
-          case SecondResult(RequestMoreFromNext(n)) ⇒ FirstResult(firstI.requestMoreResult(n))
-          case SecondResult(x)                      ⇒ Finished(x)
-          case FirstResult(Emit(i))                 ⇒ SecondResult(secondI.onNext(i))
-          case FirstResult(EmitLast(i))             ⇒ CombinedResult(SecondResult(secondI.onNext(i)), SecondResult(secondI.onComplete()))
-          case FirstResult(Complete)                ⇒ SecondResult(secondI.onComplete())
-          case FirstResult(Error(cause))            ⇒ SecondResult(secondI.onError(cause))
-          case FirstResult(r: RequestMoreFromNext)  ⇒ Finished(r)
-          case FirstResult(Continue)                ⇒ Finished(Continue)
-          // what does this line mean exactly? why is it valid?
-          case FirstResult(x)                       ⇒ Finished(x.asInstanceOf[Result[O]])
         }
 
-      @tailrec def run(calc: Calc): Result[O] =
-        runOne(calc) match {
+      @tailrec def run(calc: Calc): Result[O] = {
+        val res = runOneStep(calc)
+        //println(s"$calc => $res")
+        res match {
           case Finished(res) ⇒ res
           case x             ⇒ run(x)
         }
+      }
     }
 
   def instantiate[I, O](operation: Operation[I, O]): OpInstance[I, O] = operation match {
@@ -131,7 +180,7 @@ object ProcessorActor {
       }
     case Fold(seed, acc) ⇒
       new SimpleOpInstance[I, O] {
-        val batchSize = 5
+        val batchSize = 100
         var missing = 0
         var z = seed
         def requestMore(n: Int): Int = {
