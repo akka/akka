@@ -22,7 +22,6 @@ object ProcessorActor {
   // FORWARD
   case class Emit[O](t: O) extends ForwardResult[O]
   // optimization: case class EmitMany[O](t: Seq[O]) extends Result[O]
-  case class EmitLast[O](i: O) extends ForwardResult[O]
   case object Complete extends ForwardResult[Nothing]
   case class Error(cause: Throwable) extends ForwardResult[Nothing]
 
@@ -118,7 +117,6 @@ object ProcessorActor {
         case SecondResult(x: ForwardResult[_])    ⇒ Finished(x)
         case SecondResult(Continue)               ⇒ Finished(Continue)
         case FirstResult(Emit(i))                 ⇒ secondResult(secondI.onNext(i))
-        case FirstResult(EmitLast(i))             ⇒ secondResult(secondI.onNext(i) ~ secondI.onComplete())
         case FirstResult(Complete)                ⇒ secondResult(secondI.onComplete())
         case FirstResult(Error(cause))            ⇒ secondResult(secondI.onError(cause))
         case FirstResult(r: RequestMoreFromNext)  ⇒ Finished(r)
@@ -197,7 +195,7 @@ object ProcessorActor {
           if (missing == 0) { missing = batchSize; RequestMoreFromNext(batchSize) }
           else Continue
         }
-        def onComplete(): Result[O] = EmitLast(z)
+        def onComplete(): Result[O] = Emit(z) ~ Complete
         def onError(cause: Throwable): Result[O] = Error(cause)
       }
     case Filter(pred) ⇒
