@@ -1,7 +1,7 @@
 package akka.http.model
 package parser
 
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.{ Matchers, FreeSpec }
 import org.scalatest.matchers.{ Matcher, MatchResult }
 import akka.http.util._
 import headers._
@@ -12,12 +12,13 @@ import HttpCharsets._
 import HttpEncodings._
 import HttpMethods._
 
-class HttpHeaderSpec extends WordSpec with Matchers {
+class HttpHeaderSpec extends FreeSpec with Matchers {
   val `application/vnd.spray` = MediaTypes.register(MediaType.custom("application/vnd.spray"))
 
-  "The HTTP header model must correctly parse and render the following headers" should {
-    pending
+  "The HTTP header model must correctly parse and render the headers" - {
+
     "Accept" in {
+      pending
       "Accept: audio/midi;q=0.2, audio/basic" =!=
         Accept(`audio/midi` withQValue 0.2, `audio/basic`)
       "Accept: text/plain;q=0.5, text/html,\r\n text/css;q=0.8" =!=
@@ -47,40 +48,49 @@ class HttpHeaderSpec extends WordSpec with Matchers {
     }
 
     "Access-Control-Allow-Credentials" in {
+      pending
       "Access-Control-Allow-Credentials: true" =!= `Access-Control-Allow-Credentials`(allow = true)
     }
 
     "Access-Control-Allow-Headers" in {
+      pending
       "Access-Control-Allow-Headers: Accept, X-My-Header" =!= `Access-Control-Allow-Headers`("Accept", "X-My-Header")
     }
 
     "Access-Control-Allow-Methods" in {
+      pending
       "Access-Control-Allow-Methods: GET, POST" =!= `Access-Control-Allow-Methods`(GET, POST)
     }
 
     "Access-Control-Allow-Origin" in {
+      pending
       "Access-Control-Allow-Origin: *" =!= `Access-Control-Allow-Origin`(AllOrigins)
       "Access-Control-Allow-Origin: null" =!= `Access-Control-Allow-Origin`(SomeOrigins(Nil))
       "Access-Control-Allow-Origin: http://spray.io" =!= `Access-Control-Allow-Origin`(SomeOrigins(Seq("http://spray.io")))
     }
 
     "Access-Control-Expose-Headers" in {
+      pending
       "Access-Control-Expose-Headers: Accept, X-My-Header" =!= `Access-Control-Expose-Headers`("Accept", "X-My-Header")
     }
 
     "Access-Control-Max-Age" in {
+      pending
       "Access-Control-Max-Age: 3600" =!= `Access-Control-Max-Age`(3600)
     }
 
     "Access-Control-Request-Headers" in {
+      pending
       "Access-Control-Request-Headers: Accept, X-My-Header" =!= `Access-Control-Request-Headers`("Accept", "X-My-Header")
     }
 
     "Access-Control-Request-Method" in {
+      pending
       "Access-Control-Request-Method: POST" =!= `Access-Control-Request-Method`(POST)
     }
 
     "Accept-Encoding" in {
+      pending
       "Accept-Encoding: compress, gzip, fancy" =!=
         `Accept-Encoding`(compress, gzip, HttpEncoding.custom("fancy"))
       `Accept-Encoding`(gzip, identity withQValue 0.5, HttpEncodingRange.`*` withQValue 0)
@@ -89,6 +99,7 @@ class HttpHeaderSpec extends WordSpec with Matchers {
     }
 
     "Accept-Language" in {
+      pending
       "Accept-Language: da, en-gb ;q=0.8, en;q=0.7" =!=
         `Accept-Language`(Language("da"), Language("en", "gb"), Language("en")).renderedTo("da, en-gb, en")
       "Accept-Language: de-CH-1901, *;q=0" =!=
@@ -97,11 +108,13 @@ class HttpHeaderSpec extends WordSpec with Matchers {
     }
 
     "Allow" in {
+      pending
       "Allow: " =!= Allow()
       "Allow: GET, PUT" =!= Allow(GET, PUT)
     }
 
     "Authorization" in {
+      pending
       "Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==" =!=
         Authorization(BasicHttpCredentials("Aladdin", "open sesame"))
       "Authorization: bAsIc QWxhZGRpbjpvcGVuIHNlc2FtZQ==" =!=
@@ -125,6 +138,7 @@ class HttpHeaderSpec extends WordSpec with Matchers {
     }
 
     "Cache-Control" in {
+      pending
       "Cache-Control: no-cache, max-age=0" =!=
         `Cache-Control`(`no-cache`, `max-age`(0))
       "Cache-Control: private=\"Some-Field\"" =!=
@@ -134,26 +148,31 @@ class HttpHeaderSpec extends WordSpec with Matchers {
     }
 
     "Connection" in {
+      pending
       "Connection: close" =!= Connection("close")
       "Connection: pipapo, close" =!= Connection("pipapo", "close")
     }
 
     "Content-Disposition" in {
+      pending
       "Content-Disposition: form-data" =!= `Content-Disposition`("form-data")
       "Content-Disposition: attachment; name=field1; filename=\"file/txt\"" =!=
         `Content-Disposition`("attachment", Map("name" -> "field1", "filename" -> "file/txt"))
     }
 
     "Content-Encoding" in {
+      pending
       "Content-Encoding: gzip" =!= `Content-Encoding`(gzip)
       "Content-Encoding: pipapo" =!= `Content-Encoding`(HttpEncoding.custom("pipapo"))
     }
 
     "Content-Length" in {
+      pending
       "Content-Length: 42" =!= `Content-Length`(42)
     }
 
     "Content-Type" in {
+      pending
       "Content-Type: application/pdf" =!=
         `Content-Type`(`application/pdf`)
       "Content-Type: text/plain; charset=utf8" =!=
@@ -171,6 +190,7 @@ class HttpHeaderSpec extends WordSpec with Matchers {
     }
 
     "Cookie" in {
+      pending
       "Cookie: SID=31d4d96e407aad42" =!= `Cookie`(HttpCookie("SID", "31d4d96e407aad42"))
       "Cookie: SID=31d4d96e407aad42; lang=en>US" =!= `Cookie`(HttpCookie("SID", "31d4d96e407aad42"), HttpCookie("lang", "en>US"))
       "Cookie: a=1;b=2" =!= `Cookie`(HttpCookie("a", "1"), HttpCookie("b", "2")).renderedTo("a=1; b=2")
@@ -179,16 +199,19 @@ class HttpHeaderSpec extends WordSpec with Matchers {
     }
 
     "Date" in {
+      pending
       "Date: Wed, 13 Jul 2011 08:12:31 GMT" =!= Date(DateTime(2011, 7, 13, 8, 12, 31))
       "Date: Fri, 23 Mar 1804 12:11:10 UTC" =!= Date(DateTime(1804, 3, 23, 12, 11, 10)).renderedTo(
         "Fri, 23 Mar 1804 12:11:10 GMT")
     }
 
     "Expect" in {
+      pending
       "Expect: 100-continue" =!= Expect("100-continue")
     }
 
     "Host" in {
+      pending
       "Host: www.spray.io:8080" =!= Host("www.spray.io", 8080)
       "Host: spray.io" =!= Host("spray.io")
       "Host: [2001:db8::1]:8080" =!= Host("[2001:db8::1]", 8080)
@@ -197,10 +220,12 @@ class HttpHeaderSpec extends WordSpec with Matchers {
     }
 
     "Last-Modified" in {
+      pending
       "Last-Modified: Wed, 13 Jul 2011 08:12:31 GMT" =!= `Last-Modified`(DateTime(2011, 7, 13, 8, 12, 31))
     }
 
     "Location" in {
+      pending
       "Location: https://spray.io/secure" =!= Location(Uri("https://spray.io/secure"))
       "Location: /en-us/default.aspx" =!= Location(Uri("/en-us/default.aspx"))
       "Location: https://spray.io/{sec}" =!= Location(Uri("https://spray.io/{sec}")).renderedTo(
@@ -210,32 +235,39 @@ class HttpHeaderSpec extends WordSpec with Matchers {
     }
 
     "Origin" in {
+      pending
       "Origin: http://spray.io" =!= Origin(Seq("http://spray.io"))
     }
 
     "Proxy-Authenticate" in {
+      pending
       "Proxy-Authenticate: Basic realm=WallyWorld,attr=\"val>ue\", Fancy realm=yeah" =!=
         `Proxy-Authenticate`(HttpChallenge("Basic", "WallyWorld", Map("attr" -> "val>ue")), HttpChallenge("Fancy", "yeah"))
     }
 
     "Proxy-Authorization" in {
+      pending
       """Proxy-Authorization: Fancy yes=no,nonce="4\\2"""" =!=
         `Proxy-Authorization`(GenericHttpCredentials("Fancy", Map("yes" -> "no", "nonce" -> """4\2""")))
     }
 
     "Remote-Address" in {
+      pending
       "Remote-Address: 111.22.3.4" =!= `Remote-Address`("111.22.3.4")
     }
 
     "Server" in {
+      pending
       "Server: as fghf.fdf/xx" =!= `Server`(Seq(ProductVersion("as"), ProductVersion("fghf.fdf", "xx")))
     }
 
     "Transfer-Encoding" in {
+      pending
       "Transfer-Encoding: chunked" =!= `Transfer-Encoding`("chunked")
     }
 
     "Set-Cookie" in {
+      pending
       "Set-Cookie: SID=\"31d4d96e407aad42\"" =!=
         `Set-Cookie`(HttpCookie("SID", "31d4d96e407aad42")).renderedTo("SID=31d4d96e407aad42")
       "Set-Cookie: SID=31d4d96e407aad42; Domain=example.com; Path=/" =!=
@@ -253,6 +285,7 @@ class HttpHeaderSpec extends WordSpec with Matchers {
     }
 
     "User-Agent" in {
+      pending
       "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/537.31" =!=
         `User-Agent`(ProductVersion("Mozilla", "5.0", "Macintosh; Intel Mac OS X 10_8_3"), ProductVersion("AppleWebKit", "537.31"))
       "User-Agent: foo(bar)(baz)" =!=
@@ -260,6 +293,7 @@ class HttpHeaderSpec extends WordSpec with Matchers {
     }
 
     "WWW-Authenticate" in {
+      pending
       "WWW-Authenticate: Basic realm=WallyWorld" =!=
         `WWW-Authenticate`(HttpChallenge("Basic", "WallyWorld"))
       "WWW-Authenticate: BaSiC rEaLm=WallyWorld" =!=
@@ -280,6 +314,7 @@ class HttpHeaderSpec extends WordSpec with Matchers {
     }
 
     "X-Forwarded-For" in {
+      pending
       "X-Forwarded-For: 1.2.3.4" =!= `X-Forwarded-For`("1.2.3.4")
       "X-Forwarded-For: 234.123.5.6, 8.8.8.8" =!= `X-Forwarded-For`("234.123.5.6", "8.8.8.8")
       "X-Forwarded-For: 1.2.3.4, unknown" =!= `X-Forwarded-For`(RemoteAddress("1.2.3.4"), RemoteAddress.Unknown)
@@ -320,7 +355,7 @@ class HttpHeaderSpec extends WordSpec with Matchers {
     def =!=(testHeader: TestExample) = testHeader(line)
     def =!=>(expectedRendering: String) = {
       val Array(name, value) = line.split(": ", 2)
-      val Right(header) = akka.http.model.parser.HttpParser.parseHeader(RawHeader(name, value))
+      val Right(header) = HeaderParser.parseHeader(RawHeader(name, value))
       header.toString shouldBe header.renderedTo(expectedRendering).rendering("")
     }
   }
@@ -328,7 +363,7 @@ class HttpHeaderSpec extends WordSpec with Matchers {
   implicit class TestHeader(header: HttpHeader) extends TestExample {
     def apply(line: String) = {
       val Array(name, value) = line.split(": ", 2)
-      HttpParser.parseHeader(RawHeader(name, value)) should (be(Right(header)) and renderFromHeaderTo(this, line))
+      HeaderParser.parseHeader(RawHeader(name, value)) should (be(Right(header)) and renderFromHeaderTo(this, line))
     }
     def rendering(line: String): String = line
     def renderedTo(expectedRendering: String): TestHeader =
@@ -343,17 +378,16 @@ class HttpHeaderSpec extends WordSpec with Matchers {
   implicit class TestError(expectedError: ErrorInfo) extends TestExample {
     def apply(line: String) = {
       val Array(name, value) = line.split(": ", 2)
-      HttpParser.parseHeader(RawHeader(name, value)) shouldBe Left(expectedError)
+      HeaderParser.parseHeader(RawHeader(name, value)) shouldBe Left(expectedError)
     }
   }
 
   def renderFromHeaderTo(header: TestHeader, line: String): Matcher[Either[ErrorInfo, HttpHeader]] =
-    Matcher { result ⇒
-      val success = result.right.exists(h ⇒ h.toString === header.rendering(line))
-
-      MatchResult(
-        success,
-        s"Doesn't render to '${header.rendering(line)}'",
-        s"Renders unexpectedly to '$line'")
+    Matcher {
+      case Right(h) ⇒
+        MatchResult(
+          h.toString === header.rendering(line),
+          s"doesn't render to '${header.rendering(line)}' but '${h.toString}'", "XXX")
+      case Left(_) ⇒ ???
     }
 }

@@ -106,7 +106,7 @@ class UriSpec extends WordSpec with Matchers {
     "not accept illegal IPv6 literals" in {
       // 5 char quad
       the[IllegalUriException] thrownBy Host("[::12345]") shouldBe {
-        new IllegalUriException("Illegal URI host: Invalid input '5', expected ':', ':', ':', ':', ':', ':' or ']' (line 1, column 8)",
+        new IllegalUriException("Illegal URI host: Invalid input '5', expected !HEXDIG, ':' or ']' (line 1, column 8)",
           "[::12345]\n" +
             "       ^")
       }
@@ -395,7 +395,7 @@ class UriSpec extends WordSpec with Matchers {
 
       // illegal percent-encoding
       the[IllegalUriException] thrownBy Uri("http://use%2G@host") shouldBe {
-        new IllegalUriException("Illegal URI reference: Invalid input 'G', expected HEXDIG or HEXDIG (line 1, column 13)",
+        new IllegalUriException("Illegal URI reference: Invalid input 'G', expected HEXDIG (line 1, column 13)",
           "http://use%2G@host\n" +
             "            ^")
       }

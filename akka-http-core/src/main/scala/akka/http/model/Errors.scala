@@ -52,3 +52,5 @@ class RequestProcessingException private (info: ErrorInfo, val status: ServerErr
   def this(status: ServerError, info: ErrorInfo) = this(info.withFallbackSummary(status.defaultMessage), status)
   def this(status: ServerError, detail: String) = this(ErrorInfo(status.defaultMessage, detail), status)
 }
+
+class ParsingException(msg: String) extends RuntimeException(msg)
