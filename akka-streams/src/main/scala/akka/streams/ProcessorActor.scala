@@ -31,7 +31,8 @@ object ProcessorActor {
   case object Continue extends Result[Nothing] {
     override def ~[O2 >: Nothing](other: Result[O2]): Result[O2] = other
   }
-  // BI-DIRECTIONAL: needs to be wired in both directions
+  // Definitions for internal publishers that don't have to be wired completely if they
+  // don't leave the scope of this execution
   type PublisherDefinition[O] = SubscriptionResults ⇒ PublisherResults[O] ⇒ PublisherHandler[O]
   case class InternalPublisherTemplate[O](f: PublisherDefinition[O]) extends Producer[O] {
     def getPublisher: Publisher[O] = ???
@@ -92,9 +93,9 @@ object ProcessorActor {
   trait OpInstance[-I, +O] {
     def handle(result: SimpleResult[I]): Result[O]
 
-    // FIXME: remove later and implement properly everywhere
     // convenience method which calls handle for all elements and combines the results
     // (which obviously isn't as performant than a direct handling
+    // FIXME: remove later and implement properly everywhere
     def handleMany(e: EmitMany[I]): Result[O] =
       e.elements.map(e ⇒ handle(Emit(e))).reduceLeftOption(_ ~ _).getOrElse(Continue)
   }
@@ -205,6 +206,7 @@ object ProcessorActor {
         }
 
       def runSimpleStep(calc: SimpleCalc): SimpleCalc = calc match {
+        // feed backwards
         case SecondResult(b: BackchannelResult) ⇒ firstResult(firstI.handle(b))
         case SecondResult(x)                    ⇒ secondResult(x)
         case FirstResult(f: ForwardResult[_])   ⇒ secondResult(secondI.handle(f))
@@ -326,7 +328,7 @@ object ProcessorActor {
             become(WaitingForElement(remaining + n))
             RequestMore(0)
           case Emit(i) ⇒
-            Subscribe(i) { subscription ⇒ // TODO: handleErrors
+            Subscribe(i) { subscription ⇒
               val handler = ReadSubstream(subscription, remaining)
               become(handler)
               handler.subHandler
@@ -414,8 +416,7 @@ object ProcessorActor {
             else Complete
           else throw new IllegalStateException(s"n = $n is not > 0")
 
-        def maybeComplete =
-          if (it.hasNext) Continue else Complete
+        def maybeComplete = if (it.hasNext) Continue else Complete
 
         @tailrec def rec(result: VectorBuilder[O], remaining: Int): Vector[O] =
           if (remaining > 0 && it.hasNext) rec(result += it.next(), remaining - 1)
