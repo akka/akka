@@ -1,9 +1,10 @@
 package akka.streams
+package ops
 
 import org.scalatest.{ ShouldMatchers, WordSpec }
-import ProcessorActor._
 import rx.async.api.Producer
 import rx.async.spi.Publisher
+import akka.streams.{ Operation, Operations, Produce, Identity }
 
 class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
   val oneToTen = Produce(1 to 10)
@@ -80,7 +81,7 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
     }
   }
 
-  def instance[I, O](op: Operation[I, O]): OpInstance[I, O] = ProcessorActor.instantiate(op)
+  def instance[I, O](op: Operation[I, O]): OpInstance[I, O] = Implementation(op)
 
   trait MockEffect[I] extends SideEffect[I] {
     def run(): Result[I] = ???

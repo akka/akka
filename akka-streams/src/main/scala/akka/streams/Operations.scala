@@ -7,11 +7,6 @@ sealed trait Operation[I, O] {
   def andThen[O2](next: Operation[O, O2]): Operation[I, O2] = AndThen(this, next)
 }
 
-// TODO: still needed?
-sealed trait StatefulOperation[I, O, Z] extends Operation[I, O] {
-  def initState: Z
-}
-
 case class Consume[I](producer: Producer[I]) extends Operation[Nothing, I]
 
 /** A noop operation */
@@ -31,7 +26,7 @@ case class Filter[I](pred: I ⇒ Boolean) extends Operation[I, I]
 case class Span[I](pred: I ⇒ Boolean) extends Operation[I, Producer[I]]
 /** Extracts head element and tail stream from a stream */
 case class HeadTail[I]() extends Operation[I, (I, Producer[I])]
-case class Fold[I, Z](z: Z, acc: (Z, I) ⇒ Z) extends StatefulOperation[I, Z, Z] {
+case class Fold[I, Z](z: Z, acc: (Z, I) ⇒ Z) extends Operation[I, Z] {
   def initState: Z = z
 }
 case class AndThen[I1, I2, O](first: Operation[I1, I2], second: Operation[I2, O]) extends Operation[I1, O]
@@ -41,11 +36,11 @@ object FoldResult {
   case class Continue[Z, O](state: Z) extends FoldResult[Z, O]
   case class Emit[Z, O](value: O, nextSeed: Z) extends FoldResult[Z, O]
 }
-case class FoldUntil[I, O, Z](seed: Z, acc: (Z, I) ⇒ FoldResult[Z, O]) extends StatefulOperation[I, O, Z] {
+case class FoldUntil[I, O, Z](seed: Z, acc: (Z, I) ⇒ FoldResult[Z, O]) extends Operation[I, O] {
   def initState: Z = seed
 }
 
-case class Produce[O](iterator: Iterable[O]) extends Operation[Nothing, O]
+case class Produce[O](elements: Iterable[O]) extends Operation[Nothing, O]
 
 object Operations {
   def Op[I] = Identity[I]()
