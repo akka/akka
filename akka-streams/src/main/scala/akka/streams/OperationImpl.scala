@@ -5,7 +5,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
 import rx.async.spi.Publisher
 
-object ProcessorActor {
+object OperationImpl {
   // TODO: needs settings
   //def processor[I, O](operations: Operation[I, O]): Processor[I, O] = ???
 
