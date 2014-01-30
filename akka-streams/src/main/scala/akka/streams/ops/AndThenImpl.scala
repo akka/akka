@@ -123,7 +123,7 @@ object AndThenImpl {
             def requestMore(n: Int): Result[Nothing] =
               iHandler.handle(RequestMore(n)).asInstanceOf[Result[Nothing]]
           }
-          lazy val oHandler = s.handler(Connector)
+          lazy val oHandler = s.handlerFactory(Connector)
           lazy val iHandler = rest(Connector)
 
           SecondResult(oHandler.initial)

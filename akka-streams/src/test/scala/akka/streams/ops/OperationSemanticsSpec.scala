@@ -55,13 +55,13 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
       case class MySubscriptionResults(subId: Symbol) extends SubscriptionResults {
         def requestMore(n: Int): Result[Nothing] = SubRequestMore(subId, n)
       }
-      val handler = s.handler(MySubscriptionResults('sub1))
+      val handler = s.handlerFactory(MySubscriptionResults('sub1))
       handler.initial should be(SubRequestMore('sub1, 4))
       handler.handle(Emit(1)) should be(Emit(1))
       handler.handle(Complete) should be(RequestMore(1))
 
       val s2 @ Subscribe(_) = p.handle(Emit(MyProducer))
-      val handler2 = s2.handler(MySubscriptionResults('sub2))
+      val handler2 = s2.handlerFactory(MySubscriptionResults('sub2))
       handler2.initial should be(SubRequestMore('sub2, 3))
       handler2.handle(Emit(12)) should be(Emit(12))
 
