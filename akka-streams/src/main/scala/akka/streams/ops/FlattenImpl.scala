@@ -6,8 +6,6 @@ import rx.async.api.Producer
 object FlattenImpl {
   def apply[I](flatten: Flatten[I]): OpInstance[Producer[I], I] =
     new OpInstanceStateMachine[Producer[I], I] {
-      import flatten._
-
       def initialState = Waiting
 
       def Waiting: State = {
@@ -24,15 +22,19 @@ object FlattenImpl {
           become(WaitingForElement(remaining + n))
           RequestMore(0)
         case Emit(i) ⇒
-          Subscribe(i) { subscription ⇒
-            val handler = ReadSubstream(subscription, remaining)
-            become(handler)
-            handler.subHandler
-          }
+          val handler = ReadSubstream(remaining)
+          become(handler)
+          Subscribe(i)(handler.onSubscribed)
         case Complete ⇒ Complete
         case e: Error ⇒ e
       }
-      case class ReadSubstream(subscription: SubscriptionResults, remaining: Int) extends State {
+      case class ReadSubstream(remaining: Int) extends State {
+        var subscription: SubscriptionResults = _
+        def onSubscribed(sub: SubscriptionResults): SubscriptionHandler[I, I] = {
+          this.subscription = sub
+          subHandler
+        }
+
         // invariant: subscription.requestMore has been called for every
         // of the requested elements
         // each emitted element decrements that counter by one
@@ -52,14 +54,15 @@ object FlattenImpl {
             ???
         }
 
-        def subHandler = new SubscriptionHandler[I, I] {
+        val subHandler = new SubscriptionHandler[I, I] {
           def initial: Result[I] = subscription.requestMore(remaining)
           def handle(result: ForwardResult[I]): Result[I] = result match {
             case Emit(i) ⇒
               curRemaining -= 1
               Emit(i)
             case Complete ⇒
-              if (curRemaining > 0) {
+              if (closeAtEnd) Complete
+              else if (curRemaining > 0) {
                 become(WaitingForElement(curRemaining))
                 RequestMore(1)
               } else {

@@ -64,10 +64,12 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
       val handler2 = s2.handler(MySubscriptionResults('sub2))
       handler2.initial should be(SubRequestMore('sub2, 3))
       handler2.handle(Emit(12)) should be(Emit(12))
-      handler2.handle(Emit(38)) should be(Emit(38))
-      handler2.handle(Complete) should be(RequestMore(1))
 
-      p.handle(Complete) should be(Complete)
+      // meanwhile complete main stream
+      p.handle(Complete) should be(Continue)
+
+      handler2.handle(Emit(38)) should be(Emit(38))
+      handler2.handle(Complete) should be(Complete)
     }
     "flatten with internal producer" in {
       // TODO: maybe use another example as `span().flatten` could also be statically optimized into `identity`
