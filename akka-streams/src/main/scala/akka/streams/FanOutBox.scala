@@ -17,10 +17,10 @@ trait FanOutBox {
   import FanOutBox._
 
   def state: State
-  def onNext(elem: Any): Unit
+  def onNext(element: Any): Unit
   def onError(cause: Throwable): Unit
   def onComplete(): Unit
-  def addReceiver(obs: Subscriber[_]): Unit
-  def removeReceiver(obs: Subscriber[_]): Unit
-  def requestMore(obs: Subscriber[_], elems: Int): Unit
+  def addReceiver(sub: Subscriber[_]): Unit
+  def removeReceiver(sub: Subscriber[_]): Unit
+  def requestMore(sub: Subscriber[_], elements: Int): Unit
 }
