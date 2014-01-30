@@ -5,11 +5,8 @@ import scala.annotation.tailrec
 import rx.async.api.Producer
 
 object AndThenImpl {
-  def apply[I1, I2, O](andThen: AndThen[I1, I2, O]): OpInstance[I1, O] =
+  def apply[I1, I2, O](firstI: OpInstance[I1, I2], secondI: OpInstance[I2, O]): OpInstance[I1, O] =
     new OpInstance[I1, O] {
-      val firstI = Implementation(andThen.first)
-      val secondI = Implementation(andThen.second)
-
       def handle(result: SimpleResult[I1]): Result[O] = result match {
         case f: ForwardResult[I1] ⇒ handleFirstResult(firstI.handle(f))
         case b: BackchannelResult ⇒ handleSecondResult(secondI.handle(b))
@@ -37,7 +34,6 @@ object AndThenImpl {
       def handleSecondResult(res: Result[O]): Result[O] = res match {
         case Continue ⇒ Continue
         case Emit(InternalPublisherTemplate(f)) ⇒
-          println("found template")
           // TODO: can we fix the types here?
           val rest = f(new SubscriptionResults {
             def requestMore(n: Int): Result[Nothing] = handleSecondResult(RequestMore(n)).asInstanceOf[Result[Nothing]]
