@@ -17,4 +17,5 @@ abstract case class ActiveSubscription[I](subscriber: Subscriber[I]) extends Sub
 
 trait ProducerProbe[I] extends Producer[I] {
   def expectSubscription(): ActiveSubscription[I]
+  def expectRequestMore(subscription: Subscription, n: Int): Unit
 }

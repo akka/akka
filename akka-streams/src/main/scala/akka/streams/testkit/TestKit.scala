@@ -12,6 +12,10 @@ object TestKit {
 
       def expectSubscription(): Subscription = probe.expectMsgType[OnSubscribe].subscription
       def expectEvent(event: ConsumerEvent): Unit = probe.expectMsg(event)
+      def expectNext(element: I): Unit = probe.expectMsg(OnNext(element))
+      def expectNext(): I = probe.expectMsgType[OnNext[I]].element
+      def expectComplete(): Unit = probe.expectMsg(OnComplete)
+      def expectNoMsg(): Unit = probe.expectNoMsg()
 
       def onSubscribe(subscription: Subscription): Unit = probe.ref ! OnSubscribe(subscription)
       def onNext(element: I): Unit = probe.ref ! OnNext(element)
@@ -40,6 +44,8 @@ object TestKit {
 
       def expectSubscription(): ActiveSubscription[I] =
         probe.expectMsgType[Subscribe].subscription.asInstanceOf[ActiveSubscription[I]]
+
+      def expectRequestMore(subscription: Subscription, n: Int): Unit = probe.expectMsg(RequestMore(subscription, n))
 
       def getPublisher: Publisher[I] = this
     }

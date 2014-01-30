@@ -23,51 +23,51 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
     "work initialized" when {
       "subscriber requests elements" in new InitializedChainSetup(Identity[String]()) {
         downstreamSubscription.requestMore(1)
-        upstream.probe.expectMsg(RequestMore(upstreamSubscription, 1))
+        upstream.expectRequestMore(upstreamSubscription, 1)
       }
       "publisher sends element" in new InitializedChainSetup(Identity[String]()) {
         downstreamSubscription.requestMore(1)
-        upstream.probe.expectMsg(RequestMore(upstreamSubscription, 1))
+        upstream.expectRequestMore(upstreamSubscription, 1)
         upstreamSubscription.sendNext("test")
-        downstream.probe.expectMsg(OnNext("test"))
+        downstream.expectNext("test")
       }
       "publisher sends elements and then completes" in new InitializedChainSetup(Identity[String]()) {
         downstreamSubscription.requestMore(1)
-        upstream.probe.expectMsg(RequestMore(upstreamSubscription, 1))
+        upstream.expectRequestMore(upstreamSubscription, 1)
         upstreamSubscription.sendNext("test")
         upstreamSubscription.sendComplete()
-        downstream.probe.expectMsg(OnNext("test"))
-        downstream.probe.expectMsg(OnComplete)
+        downstream.expectNext("test")
+        downstream.expectComplete()
       }
       "publisher immediately completes" in pending
       "publisher immediately fails" in pending
       "operation publishes Producer" in pending
       "operation consumes Producer" in new InitializedChainSetup[Producer[String], String](Flatten()) {
         downstreamSubscription.requestMore(4)
-        upstream.probe.expectMsg(RequestMore(upstreamSubscription, 1))
+        upstream.expectRequestMore(upstreamSubscription, 1)
 
         val subStream = TestKit.producerProbe[String]()
         upstreamSubscription.sendNext(subStream)
         val subStreamSubscription = subStream.expectSubscription()
-        subStream.probe.expectMsg(RequestMore(subStreamSubscription, 4))
+        subStream.expectRequestMore(subStreamSubscription, 4)
         subStreamSubscription.sendNext("test")
-        downstream.expectEvent(OnNext("test"))
+        downstream.expectNext("test")
         subStreamSubscription.sendNext("abc")
-        downstream.expectEvent(OnNext("abc"))
+        downstream.expectNext("abc")
         subStreamSubscription.sendComplete()
 
-        upstream.probe.expectMsg(RequestMore(upstreamSubscription, 1))
+        upstream.expectRequestMore(upstreamSubscription, 1)
 
         val subStream2 = TestKit.producerProbe[String]()
         upstreamSubscription.sendNext(subStream2)
         upstreamSubscription.sendComplete()
         val subStreamSubscription2 = subStream2.expectSubscription()
-        subStream2.probe.expectMsg(RequestMore(subStreamSubscription2, 2))
+        subStream2.expectRequestMore(subStreamSubscription2, 2)
         subStreamSubscription2.sendNext("123")
-        downstream.expectEvent(OnNext("123"))
+        downstream.expectNext("123")
 
         subStreamSubscription2.sendComplete()
-        downstream.expectEvent(OnComplete)
+        downstream.expectComplete()
       }
       "complex operation" in pending
     }

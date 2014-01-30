@@ -13,4 +13,8 @@ case class OnError(cause: Throwable) extends ConsumerEvent
 trait ConsumerProbe[I] extends Consumer[I] {
   def expectSubscription(): Subscription
   def expectEvent(event: ConsumerEvent): Unit
+  def expectNext(element: I): Unit
+  def expectNext(): I
+  def expectComplete(): Unit
+  def expectNoMsg(): Unit
 }
