@@ -57,7 +57,9 @@ case class Error(cause: Throwable) extends ForwardResult[Nothing]
 case class Subscribe[T, U](producer: Producer[T])(val handler: SubscriptionResults ⇒ SubscriptionHandler[T, U]) extends ForwardResult[U]
 
 // BACKCHANNEL
-case class RequestMore(n: Int) extends BackchannelResult
+case class RequestMore(n: Int) extends BackchannelResult {
+  require(n > 0)
+}
 
 // CUSTOM
 private[streams] trait SideEffect[+O] extends ForwardResult[O] {
