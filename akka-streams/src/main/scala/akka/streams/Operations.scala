@@ -10,7 +10,9 @@ sealed trait Operation[I, O] {
 case class Consume[I](producer: Producer[I]) extends Operation[Nothing, I]
 
 /** A noop operation */
-case class Identity[I]() extends Operation[I, I]
+case class Identity[I]() extends Operation[I, I] {
+  override def andThen[O2](next: Operation[I, O2]): Operation[I, O2] = next
+}
 case class Map[I, O](f: I ⇒ O) extends Operation[I, O]
 case class FlatMap[I, O](f: I ⇒ Producer[O]) extends Operation[I, O]
 case class FlatMapNested[I, O](operation: Operation[I, O]) extends Operation[Producer[I], O]
