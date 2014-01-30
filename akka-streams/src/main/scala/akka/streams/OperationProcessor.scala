@@ -1,6 +1,8 @@
 package akka.streams
 
-import rx.async.api.Processor
+import scala.language.existentials
+
+import rx.async.api.{ Producer, Processor }
 import akka.actor.{ Props, ActorRefFactory, Actor }
 import akka.streams.ops._
 import rx.async.spi.{ Subscription, Subscriber, Publisher }
@@ -71,15 +73,20 @@ private class OperationProcessor[I, O](operation: Operation[I, O], settings: Pro
       case ops.Continue ⇒
       case ops.Combine(r1, r2) ⇒
         handleResult(r1); handleResult(r2)
-      case s: ops.Subscribe[_, O]        ⇒ handleSubSubscription(s)
-      case ops.RequestMore(n)            ⇒ upstream.requestMore(n)
-      case ops.Emit(i)                   ⇒ downstream.onNext(i)
-      case ops.EmitMany(is)              ⇒ is.foreach(downstream.onNext)
-      case ops.Complete                  ⇒ downstream.onComplete() // and shutdown
-      case ops.Error(cause)              ⇒ downstream.onError(cause) // and shutdown
-      case SubRequestMore(sub, elements) ⇒ sub.requestMore(elements)
+      case s: ops.Subscribe[_, O]                            ⇒ handleSubSubscription(s)
+      case ops.RequestMore(n)                                ⇒ upstream.requestMore(n)
+      case ops.Emit(publisher: InternalPublisherTemplate[O]) ⇒ handleSubPublisher(publisher)
+      case ops.Emit(i)                                       ⇒ downstream.onNext(i)
+      case ops.EmitMany(is)                                  ⇒ is.foreach(downstream.onNext)
+      case ops.Complete                                      ⇒ downstream.onComplete() // and shutdown
+      case ops.Error(cause)                                  ⇒ downstream.onError(cause) // and shutdown
+      case SubRequestMore(sub, elements)                     ⇒ sub.requestMore(elements)
+      case SubEmit(sub, element)                             ⇒ sub.onNext(element)
+      case SubComplete(sub)                                  ⇒ sub.onComplete()
+      case SubError(sub, cause)                              ⇒ sub.onError(cause)
     }
 
+    // internal sub-subscriptions
     def handleSubSubscription[I](subscribe: ops.Subscribe[I, O]): Unit =
       subscribe.producer.getPublisher.subscribe(new InternalSubscriber(subscribe.handlerFactory))
     case class SubRequestMore(subscription: Subscription, elements: Int) extends CustomBackchannelResult
@@ -98,6 +105,40 @@ private class OperationProcessor[I, O](operation: Operation[I, O], settings: Pro
       def onNext(element: I2): Unit = runAndHandleResult(handler.handle(ops.Emit(element)))
       def onComplete(): Unit = runAndHandleResult(handler.handle(ops.Complete))
       def onError(cause: Throwable): Unit = runAndHandleResult(handler.handle(ops.Error(cause)))
+    }
+
+    // internal sub-producers
+    case class SubEmit[T](subscriber: Subscriber[T], element: T) extends CustomForwardResult[Nothing]
+    case class SubComplete(subscriber: Subscriber[_]) extends CustomForwardResult[Nothing]
+    case class SubError(subscriber: Subscriber[_], cause: Throwable) extends CustomForwardResult[Nothing]
+    def handleSubPublisher[O2](publisherTemplate: InternalPublisherTemplate[O2]): Unit = {
+      val subResults = new SubscriptionResults {
+        def requestMore(n: Int): Result[Nothing] = ops.RequestMore(n)
+      }
+
+      object SubProducer extends Producer[O2] with Publisher[O2] {
+        def getPublisher: Publisher[O2] = this
+
+        var singleSubscriber: Subscriber[O2] = _
+
+        def subscribe(subscriber: Subscriber[O2]): Unit = {
+          require(singleSubscriber == null) // FIXME: later add FanOutBox
+          singleSubscriber = subscriber
+
+          val pubResults = new PublisherResults[O2] {
+            def emit(o: O2): Result[Producer[O2]] = SubEmit(subscriber, o)
+            def complete: Result[Producer[O2]] = SubComplete(subscriber)
+            def error(cause: Throwable): Result[Producer[O2]] = SubError(subscriber, cause)
+          }
+          val handler = publisherTemplate.f(subResults)(pubResults)
+          subscriber.onSubscribe(new Subscription {
+            def requestMore(elements: Int): Unit = runAndHandleResult(handler.handle(ops.RequestMore(elements)).asInstanceOf[Result[O]])
+            def cancel(): Unit = ??? // FIXME: what shall we do with cancelled subscriber?
+          })
+        }
+      }
+
+      downstream.onNext(SubProducer.asInstanceOf[O])
     }
 
     case class RunDeferred(body: () ⇒ Unit)
