@@ -307,7 +307,7 @@ object AkkaBuild extends Build {
   lazy val akkaStreams /* Can't use `streams` which has another meaning */ = Project(
     id = "akka-streams",
     base = file("akka-streams"),
-    dependencies = Seq(actor, testkit % "test->test"),
+    dependencies = Seq(actor, testkit % "test->test; compile->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.akkaStreams ++ Seq(
       libraryDependencies ++= Dependencies.akkaStreams,
       previousArtifact := akkaPreviousArtifact("akka-streams")
