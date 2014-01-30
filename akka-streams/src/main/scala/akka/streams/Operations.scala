@@ -26,9 +26,7 @@ case class Filter[I](pred: I ⇒ Boolean) extends Operation[I, I]
 case class Span[I](pred: I ⇒ Boolean) extends Operation[I, Producer[I]]
 /** Extracts head element and tail stream from a stream */
 case class HeadTail[I]() extends Operation[I, (I, Producer[I])]
-case class Fold[I, Z](z: Z, acc: (Z, I) ⇒ Z) extends Operation[I, Z] {
-  def initState: Z = z
-}
+case class Fold[I, Z](z: Z, acc: (Z, I) ⇒ Z) extends Operation[I, Z]
 case class AndThen[I1, I2, O](first: Operation[I1, I2], second: Operation[I2, O]) extends Operation[I1, O]
 
 sealed trait FoldResult[Z, O]
@@ -36,9 +34,7 @@ object FoldResult {
   case class Continue[Z, O](state: Z) extends FoldResult[Z, O]
   case class Emit[Z, O](value: O, nextSeed: Z) extends FoldResult[Z, O]
 }
-case class FoldUntil[I, O, Z](seed: Z, acc: (Z, I) ⇒ FoldResult[Z, O]) extends Operation[I, O] {
-  def initState: Z = seed
-}
+case class FoldUntil[I, O, Z](seed: Z, acc: (Z, I) ⇒ FoldResult[Z, O]) extends Operation[I, O]
 
 case class Produce[O](elements: Iterable[O]) extends Operation[Nothing, O]
 
