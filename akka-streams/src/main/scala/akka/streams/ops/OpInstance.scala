@@ -62,9 +62,8 @@ case class RequestMore(n: Int) extends BackchannelResult {
 }
 
 // CUSTOM
-private[streams] trait SideEffect[+O] extends ForwardResult[O] {
-  def run(): Result[O]
-}
+private[streams] trait CustomForwardResult[+O] extends ForwardResult[O]
+private[streams] trait CustomBackchannelResult extends BackchannelResult
 
 trait SubscriptionHandler[-I, +O] {
   def handle(result: ForwardResult[I]): Result[O]

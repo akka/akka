@@ -20,9 +20,9 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
       p.handle(RequestMore(1)) should be(Emit(500000500000L) ~ Complete)
     }
     "create element spans" in {
-      case class SubEmit(i: Int) extends MockEffect[Producer[Int]]
-      case object SubComplete extends MockEffect[Nothing]
-      case class SubError(cause: Throwable) extends MockEffect[Nothing]
+      case class SubEmit(i: Int) extends CustomForwardResult[Producer[Int]]
+      case object SubComplete extends CustomForwardResult[Nothing]
+      case class SubError(cause: Throwable) extends CustomForwardResult[Nothing]
       object MyPublisherResults extends PublisherResults[Int] {
         def emit(o: Int): Result[Producer[Int]] = SubEmit(o)
         def complete: Result[Producer[Int]] = SubComplete
@@ -51,7 +51,7 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
       p.handle(RequestMore(4)) should be(RequestMore(1))
       val s @ Subscribe(_) = p.handle(Emit(MyProducer))
 
-      case class SubRequestMore(subId: Symbol, n: Int) extends MockEffect[Nothing]
+      case class SubRequestMore(subId: Symbol, n: Int) extends CustomBackchannelResult
       case class MySubscriptionResults(subId: Symbol) extends SubscriptionResults {
         def requestMore(n: Int): Result[Nothing] = SubRequestMore(subId, n)
       }
@@ -84,8 +84,4 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
   }
 
   def instance[I, O](op: Operation[I, O]): OpInstance[I, O] = Implementation(op)
-
-  trait MockEffect[I] extends SideEffect[I] {
-    def run(): Result[I] = ???
-  }
 }
