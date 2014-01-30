@@ -69,10 +69,11 @@ object Unidoc {
   }
 
   def sunidocTask: Initialize[Task[File]] = {
-    (compilers, cacheDirectory, unidocSources, unidocClasspath, unidocDirectory, scalacOptions in doc, streams) map {
-      (compilers, cache, sources, classpath, target, options, s) => {
+    (compilers, cacheDirectory, unidocSources, unidocClasspath, unidocDirectory, scalacOptions in doc, apiMappings in (Compile, doc), streams) map {
+      (compilers, cache, sources, classpath, target, options, api, s) => {
         val scaladoc = new Scaladoc(100, compilers.scalac)
-        scaladoc.cached(cache / "unidoc", "main", sources, classpath, target, options, s.log)
+        val opts1 = options ++ Opts.doc.externalAPI(api)
+        scaladoc.cached(cache / "unidoc", "main", sources, classpath, target, opts1, s.log)
         target
       }
     }

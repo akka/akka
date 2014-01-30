@@ -951,7 +951,10 @@ object AkkaBuild extends Build {
   }
   
   lazy val unidocScaladocSettings: Seq[sbt.Setting[_]]= {
-    Seq(scalacOptions in doc <++= (version, baseDirectory in akka) map scaladocOptions) ++
+    inTask(doc)(Seq(
+      scalacOptions <++= (version, baseDirectory in akka) map scaladocOptions,
+      autoAPIMappings := scaladocAutoAPI
+    )) ++
     (if (scaladocDiagramsEnabled) Seq(sunidoc ~= scaladocVerifier) else Seq.empty)
   }
 
