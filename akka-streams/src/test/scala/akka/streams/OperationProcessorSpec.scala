@@ -21,45 +21,17 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
       "publisher errs out" in pending
     }
     "work initialized" when {
-      "subscriber requests elements" in {
-        val upstream = TestKit.producerProbe[String]()
-        val downstream = TestKit.consumerProbe[String]()
-
-        import DSL._
-
-        val processed = upstream.andThen(Identity()).consume()
-        val upstreamSubscription = upstream.expectSubscription()
-        processed.link(downstream)
-        val downstreamSubscription = downstream.expectSubscription()
-
+      "subscriber requests elements" in new InitializedChainSetup(Identity[String]()) {
         downstreamSubscription.requestMore(1)
         upstream.probe.expectMsg(RequestMore(upstreamSubscription, 1))
       }
-      "publisher sends element" in {
-        val upstream = TestKit.producerProbe[String]()
-        val downstream = TestKit.consumerProbe[String]()
-
-        val proc = processor(Identity[String]())
-        upstream.link(proc)
-        val upstreamSubscription = upstream.expectSubscription()
-        proc.link(downstream)
-        val downstreamSubscription = downstream.expectSubscription()
-
+      "publisher sends element" in new InitializedChainSetup(Identity[String]()) {
         downstreamSubscription.requestMore(1)
         upstream.probe.expectMsg(RequestMore(upstreamSubscription, 1))
         upstreamSubscription.sendNext("test")
         downstream.probe.expectMsg(OnNext("test"))
       }
-      "publisher sends elements and then completes" in {
-        val upstream = TestKit.producerProbe[String]()
-        val downstream = TestKit.consumerProbe[String]()
-
-        val proc = processor(Identity[String]())
-        upstream.link(proc)
-        val upstreamSubscription = upstream.expectSubscription()
-        proc.link(downstream)
-        val downstreamSubscription = downstream.expectSubscription()
-
+      "publisher sends elements and then completes" in new InitializedChainSetup(Identity[String]()) {
         downstreamSubscription.requestMore(1)
         upstream.probe.expectMsg(RequestMore(upstreamSubscription, 1))
         upstreamSubscription.sendNext("test")
@@ -69,6 +41,12 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
       }
       "publisher immediately completes" in pending
       "publisher immediately fails" in pending
+      "operation publishes Producer" in pending
+      "operation consumes Producer" in pending
+      "complex operation" in pending
+    }
+    "work with multiple subscribers" when {
+      "one subscribes while elements were requested before" in pending
     }
     "work in special situations" when {
       "single subscriber cancels subscription while receiving data" in pending
@@ -84,5 +62,16 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
   def processor[I, O](operation: Operation[I, O]): Processor[I, O] =
     OperationProcessor(operation, ProcessorSettings(system))
 
+  class InitializedChainSetup[I, O](operation: Operation[I, O]) {
+    val upstream = TestKit.producerProbe[I]()
+    val downstream = TestKit.consumerProbe[O]()
+
+    import DSL._
+
+    val processed = upstream.andThen(operation).consume()
+    val upstreamSubscription = upstream.expectSubscription()
+    processed.link(downstream)
+    val downstreamSubscription = downstream.expectSubscription()
+  }
 }
 

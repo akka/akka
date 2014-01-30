@@ -47,10 +47,9 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
       object MyProducer extends Producer[Int] {
         def getPublisher: Publisher[Int] = ???
       }
-      val X: Producer[Any] = MyProducer.asInstanceOf[Producer[Any]]
       val p = instance[Producer[Int], Int](Identity[Producer[Int]]().flatten)
       p.handle(RequestMore(4)) should be(RequestMore(1))
-      val s @ Subscribe(X) = p.handle(Emit(MyProducer))
+      val s @ Subscribe(_) = p.handle(Emit(MyProducer))
 
       case class SubRequestMore(subId: Symbol, n: Int) extends MockEffect[Nothing]
       case class MySubscriptionResults(subId: Symbol) extends SubscriptionResults {
@@ -61,7 +60,7 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
       handler.handle(Emit(1)) should be(Emit(1))
       handler.handle(Complete) should be(RequestMore(1))
 
-      val s2 @ Subscribe(X) = p.handle(Emit(MyProducer))
+      val s2 @ Subscribe(_) = p.handle(Emit(MyProducer))
       val handler2 = s2.handler(MySubscriptionResults('sub2))
       handler2.initial should be(SubRequestMore('sub2, 3))
       handler2.handle(Emit(12)) should be(Emit(12))
@@ -71,6 +70,7 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
       p.handle(Complete) should be(Complete)
     }
     "flatten with internal producer" in {
+      // TODO: maybe use another example as `span().flatten` could also be statically optimized into `identity`
       val p = instance[Nothing, Int](AddProducerOps[Nothing, Int](Produce(1 to 6).span(_ % 3 == 0)).flatten)
       p.handle(RequestMore(1)) should be(Emit(1))
       p.handle(RequestMore(1)) should be(Emit(2))
