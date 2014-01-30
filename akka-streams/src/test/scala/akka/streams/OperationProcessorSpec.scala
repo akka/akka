@@ -5,7 +5,7 @@ import rx.async.tck._
 import akka.streams.testkit.TestKit
 import akka.testkit.TestKitBase
 import akka.actor.ActorSystem
-import rx.async.api.Processor
+import rx.async.api.{ Producer, Processor }
 
 class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatchers with BeforeAndAfterAll {
   implicit lazy val system = ActorSystem()
@@ -42,7 +42,33 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
       "publisher immediately completes" in pending
       "publisher immediately fails" in pending
       "operation publishes Producer" in pending
-      "operation consumes Producer" in pending
+      "operation consumes Producer" in new InitializedChainSetup[Producer[String], String](Flatten()) {
+        downstreamSubscription.requestMore(4)
+        upstream.probe.expectMsg(RequestMore(upstreamSubscription, 1))
+
+        val subStream = TestKit.producerProbe[String]()
+        upstreamSubscription.sendNext(subStream)
+        val subStreamSubscription = subStream.expectSubscription()
+        subStream.probe.expectMsg(RequestMore(subStreamSubscription, 4))
+        subStreamSubscription.sendNext("test")
+        downstream.expectEvent(OnNext("test"))
+        subStreamSubscription.sendNext("abc")
+        downstream.expectEvent(OnNext("abc"))
+        subStreamSubscription.sendComplete()
+
+        upstream.probe.expectMsg(RequestMore(upstreamSubscription, 1))
+
+        val subStream2 = TestKit.producerProbe[String]()
+        upstreamSubscription.sendNext(subStream2)
+        upstreamSubscription.sendComplete()
+        val subStreamSubscription2 = subStream2.expectSubscription()
+        subStream2.probe.expectMsg(RequestMore(subStreamSubscription2, 2))
+        subStreamSubscription2.sendNext("123")
+        downstream.expectEvent(OnNext("123"))
+
+        subStreamSubscription2.sendComplete()
+        downstream.expectEvent(OnComplete)
+      }
       "complex operation" in pending
     }
     "work with multiple subscribers" when {

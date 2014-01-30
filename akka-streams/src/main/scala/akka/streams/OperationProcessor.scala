@@ -2,7 +2,7 @@ package akka.streams
 
 import rx.async.api.Processor
 import akka.actor.{ Props, ActorRefFactory, Actor }
-import akka.streams.ops.{ Result, SimpleResult, Implementation }
+import akka.streams.ops._
 import rx.async.spi.{ Subscription, Subscriber, Publisher }
 
 object OperationProcessor {
@@ -62,6 +62,8 @@ private class OperationProcessor[I, O](operation: Operation[I, O], settings: Pro
       case OnError(cause)                    ⇒ run(ops.Error(cause))
 
       case CancelSubscription(subscriber)    ⇒ context.become(WaitingForSubscription)
+
+      case RunDeferred(body)                 ⇒ body()
     }
 
     def run(input: SimpleResult[I]): Unit = handleResult(impl.handle(input))
@@ -69,12 +71,38 @@ private class OperationProcessor[I, O](operation: Operation[I, O], settings: Pro
       case ops.Continue ⇒
       case ops.Combine(r1, r2) ⇒
         handleResult(r1); handleResult(r2)
-      case ops.RequestMore(n) ⇒ upstream.requestMore(n)
-      case ops.Emit(i)        ⇒ downstream.onNext(i)
-      case ops.EmitMany(is)   ⇒ is.foreach(downstream.onNext)
-      case ops.Complete       ⇒ downstream.onComplete() // and shutdown
-      case ops.Error(cause)   ⇒ downstream.onError(cause) // and shutdown
+      case s: ops.Subscribe[_, O]        ⇒ handleSubSubscription(s)
+      case ops.RequestMore(n)            ⇒ upstream.requestMore(n)
+      case ops.Emit(i)                   ⇒ downstream.onNext(i)
+      case ops.EmitMany(is)              ⇒ is.foreach(downstream.onNext)
+      case ops.Complete                  ⇒ downstream.onComplete() // and shutdown
+      case ops.Error(cause)              ⇒ downstream.onError(cause) // and shutdown
+      case SubRequestMore(sub, elements) ⇒ sub.requestMore(elements)
     }
+
+    def handleSubSubscription[I](subscribe: ops.Subscribe[I, O]): Unit =
+      subscribe.producer.getPublisher.subscribe(new InternalSubscriber(subscribe.handlerFactory))
+    case class SubRequestMore(subscription: Subscription, elements: Int) extends CustomBackchannelResult
+    class InternalSubscriber[I2](handlerFactory: SubscriptionResults ⇒ SubscriptionHandler[I2, O]) extends Subscriber[I2] {
+      var handler: SubscriptionHandler[I2, O] = _
+      def onSubscribe(subscription: Subscription): Unit =
+        runAndHandleResult {
+          val results = new SubscriptionResults {
+            def requestMore(n: Int): Result[Nothing] = SubRequestMore(subscription, n)
+          }
+          handler = handlerFactory(results)
+          // FIXME: is this really meant with handler.initial? To run it as if it were the result of the
+          //        complete chain
+          handler.initial
+        }
+      def onNext(element: I2): Unit = runAndHandleResult(handler.handle(ops.Emit(element)))
+      def onComplete(): Unit = runAndHandleResult(handler.handle(ops.Complete))
+      def onError(cause: Throwable): Unit = runAndHandleResult(handler.handle(ops.Error(cause)))
+    }
+
+    case class RunDeferred(body: () ⇒ Unit)
+    def runInThisActor(body: ⇒ Unit): Unit = self ! RunDeferred(body _)
+    def runAndHandleResult(body: ⇒ Result[O]): Unit = runInThisActor(handleResult(body))
 
     def newSubscription(subscriber: Subscriber[O]): Subscription =
       new Subscription {
