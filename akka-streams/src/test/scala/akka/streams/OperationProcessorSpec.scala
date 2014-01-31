@@ -5,11 +5,11 @@ import rx.async.tck._
 import akka.streams.testkit.TestKit
 import akka.testkit.TestKitBase
 import akka.actor.ActorSystem
-import rx.async.api.{ Producer, Processor }
+import rx.async.api.Producer
 
 class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatchers with BeforeAndAfterAll {
   implicit lazy val system = ActorSystem()
-  implicit lazy val settings: ProcessorSettings = ProcessorSettings(system)
+  implicit lazy val settings: ProcessorSettings = ProcessorSettings(system, () ⇒ new RaceTrack(bufferSize = 1))
 
   "An OperationProcessor" should {
     "work uninitialized without publisher" when {
@@ -82,17 +82,19 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
         subStreamConsumer2.expectNext("end")
         subStreamConsumer2.expectComplete()
       }
-      "operation consumes Producer" in new InitializedChainSetup[Producer[String], String](Flatten()) {
+      "operation consumes Producer" in new InitializedChainSetup[Producer[String], String](Flatten())(settings.copy(constructFanOutBox = () ⇒ new RaceTrack(5))) {
         downstreamSubscription.requestMore(4)
         upstream.expectRequestMore(upstreamSubscription, 1)
 
         val subStream = TestKit.producerProbe[String]()
         upstreamSubscription.sendNext(subStream)
         val subStreamSubscription = subStream.expectSubscription()
-        subStream.expectRequestMore(subStreamSubscription, 4)
+        subStream.expectRequestMore(subStreamSubscription, 1)
         subStreamSubscription.sendNext("test")
+        subStream.expectRequestMore(subStreamSubscription, 1)
         downstream.expectNext("test")
         subStreamSubscription.sendNext("abc")
+        subStream.expectRequestMore(subStreamSubscription, 1)
         downstream.expectNext("abc")
         subStreamSubscription.sendComplete()
 
@@ -102,8 +104,9 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
         upstreamSubscription.sendNext(subStream2)
         upstreamSubscription.sendComplete()
         val subStreamSubscription2 = subStream2.expectSubscription()
-        subStream2.expectRequestMore(subStreamSubscription2, 2)
+        subStream2.expectRequestMore(subStreamSubscription2, 1)
         subStreamSubscription2.sendNext("123")
+        subStream2.expectRequestMore(subStreamSubscription2, 1)
         downstream.expectNext("123")
 
         subStreamSubscription2.sendComplete()
@@ -111,8 +114,92 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
       }
       "complex operation" in pending
     }
-    "work with multiple subscribers" when {
-      "one subscribes while elements were requested before" in pending
+    "work with multiple subscribers (FanOutBox)" when {
+      "adapt speed to the currently slowest consumer" in new InitializedChainSetup(Identity[Symbol]()) {
+        val downstream2 = TestKit.consumerProbe[Symbol]()
+        processed.link(downstream2)
+        val downstream2Subscription = downstream2.expectSubscription()
+
+        downstreamSubscription.requestMore(5)
+        upstream.expectRequestMore(upstreamSubscription, 1) // because fanOutBox has buffer of size 1
+
+        upstreamSubscription.sendNext('firstElement)
+        downstream.expectNext('firstElement)
+
+        downstream2Subscription.requestMore(1)
+        downstream2.expectNext('firstElement)
+        upstream.expectRequestMore(upstreamSubscription, 1)
+        upstreamSubscription.sendNext('element2)
+
+        downstream.expectNext('element2)
+
+        downstream2Subscription.requestMore(1)
+        downstream2.expectNext('element2)
+      }
+      "incoming subscriber while elements were requested before" in new InitializedChainSetup(Identity[Symbol]()) {
+        val downstream2 = TestKit.consumerProbe[Symbol]()
+        // don't link it just yet
+
+        downstreamSubscription.requestMore(5)
+        upstream.expectRequestMore(upstreamSubscription, 1)
+        upstreamSubscription.sendNext('a1)
+        downstream.expectNext('a1)
+
+        upstream.expectRequestMore(upstreamSubscription, 1)
+        upstreamSubscription.sendNext('a2)
+        downstream.expectNext('a2)
+
+        upstream.expectRequestMore(upstreamSubscription, 1)
+
+        // link now while an upstream element is already requested
+        processed.link(downstream2)
+        val downstream2Subscription = downstream2.expectSubscription()
+
+        upstreamSubscription.sendNext('a3)
+        downstream.expectNext('a3)
+        downstream2.expectNoMsg() // as nothing was requested yet, fanOutBox needs to cache element in this case
+
+        downstream2Subscription.requestMore(1)
+        downstream2.expectNext('a3)
+
+        upstream.expectRequestMore(upstreamSubscription, 1) // because of buffer size 1
+      }
+      "finish gracefully onComplete" in new InitializedChainSetup(Identity[Symbol]()) {
+        val downstream2 = TestKit.consumerProbe[Symbol]()
+        // don't link it just yet
+
+        downstreamSubscription.requestMore(5)
+        upstream.expectRequestMore(upstreamSubscription, 1 /* or batch/window size? */ )
+        upstreamSubscription.sendNext('a1)
+        downstream.expectNext('a1)
+
+        upstream.expectRequestMore(upstreamSubscription, 1 /* or batch/window size? */ )
+        upstreamSubscription.sendNext('a2)
+        downstream.expectNext('a2)
+
+        upstream.expectRequestMore(upstreamSubscription, 1 /* or batch/window size? */ )
+
+        // link now while an upstream element is already requested
+        processed.link(downstream2)
+        val downstream2Subscription = downstream2.expectSubscription()
+
+        upstreamSubscription.sendNext('a3)
+        upstreamSubscription.sendComplete()
+        downstream.expectNext('a3)
+        downstream.expectComplete()
+
+        downstream2.expectNoMsg() // as nothing was requested yet, fanOutBox needs to cache element in this case
+
+        downstream2Subscription.requestMore(1)
+        downstream2.expectNext('a3)
+        downstream2.expectComplete()
+
+        upstream.expectNoMsg()
+      }
+      "finish gracefully if last subscriber needing data cancels subscription" in pending
+      "finish gracefully onError" in new InitializedChainSetup(Identity[Symbol]()) {
+        pending
+      }
     }
     "work in special situations" when {
       "single subscriber cancels subscription while receiving data" in pending
@@ -125,10 +212,7 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
 
   override protected def afterAll(): Unit = system.shutdown()
 
-  def processor[I, O](operation: Operation[I, O]): Processor[I, O] =
-    OperationProcessor(operation, ProcessorSettings(system))
-
-  class InitializedChainSetup[I, O](operation: Operation[I, O]) {
+  class InitializedChainSetup[I, O](operation: Operation[I, O])(implicit settings: ProcessorSettings) {
     val upstream = TestKit.producerProbe[I]()
     val downstream = TestKit.consumerProbe[O]()
 

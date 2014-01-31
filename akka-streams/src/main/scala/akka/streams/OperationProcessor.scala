@@ -12,7 +12,7 @@ object OperationProcessor {
     new OperationProcessor(operation, settings)
 }
 
-case class ProcessorSettings(ctx: ActorRefFactory)
+case class ProcessorSettings(ctx: ActorRefFactory, constructFanOutBox: () ⇒ FanOutBox)
 
 private class OperationProcessor[I, O](operation: Operation[I, O], settings: ProcessorSettings) extends Processor[I, O] {
   def isRunning = running
@@ -41,10 +41,14 @@ private class OperationProcessor[I, O](operation: Operation[I, O], settings: Pro
   @volatile private var running = true
   val actor = settings.ctx.actorOf(Props(new OperationProcessorActor))
 
-  class OperationProcessorActor extends Actor {
+  class OperationProcessorActor extends Actor with WithFanOutBox {
     val impl = Implementation(operation)
     var upstream: Subscription = _
-    var downstream: Subscriber[O] = _
+
+    val fanOutBox: FanOutBox = settings.constructFanOutBox()
+    def requestNextBatch(): Unit = run(ops.RequestMore(1))
+    def allSubscriptionsCancelled(): Unit = {} // ignore for now
+    def fanOutBoxFinished(): Unit = {} // ignore for now
 
     def receive = {
       case OnSubscribed(subscription) ⇒
@@ -54,16 +58,19 @@ private class OperationProcessor[I, O](operation: Operation[I, O], settings: Pro
     def WaitingForSubscription: Receive = {
       case Subscribe(sub) ⇒
         sub.onSubscribe(newSubscription(sub))
-        downstream = sub
+        handleNewSubscription(sub)
         context.become(Running)
     }
     def Running: Receive = {
-      case RequestMore(subscriber, elements) ⇒ run(ops.RequestMore(elements)) // TODO: add FanOutBox into the loop
+      case Subscribe(sub) ⇒
+        sub.onSubscribe(newSubscription(sub))
+        handleNewSubscription(sub)
+      case RequestMore(subscriber, elements) ⇒ handleRequestMore(subscriber, elements)
       case OnNext(element)                   ⇒ run(ops.Emit(element))
       case OnComplete                        ⇒ run(ops.Complete)
       case OnError(cause)                    ⇒ run(ops.Error(cause))
 
-      case CancelSubscription(subscriber)    ⇒ context.become(WaitingForSubscription)
+      case CancelSubscription(subscriber)    ⇒ context.become(WaitingForSubscription) // FIXME: take FanOutBox into account
 
       case RunDeferred(body)                 ⇒ body()
     }
@@ -76,10 +83,10 @@ private class OperationProcessor[I, O](operation: Operation[I, O], settings: Pro
       case s: ops.Subscribe[_, O]                            ⇒ handleSubSubscription(s)
       case ops.RequestMore(n)                                ⇒ upstream.requestMore(n)
       case ops.Emit(publisher: InternalPublisherTemplate[O]) ⇒ handleSubPublisher(publisher)
-      case ops.Emit(i)                                       ⇒ downstream.onNext(i)
-      case ops.EmitMany(is)                                  ⇒ is.foreach(downstream.onNext)
-      case ops.Complete                                      ⇒ downstream.onComplete() // and shutdown
-      case ops.Error(cause)                                  ⇒ downstream.onError(cause) // and shutdown
+      case ops.Emit(i)                                       ⇒ handleOnNext(i)
+      case ops.EmitMany(is)                                  ⇒ is.foreach(handleOnNext)
+      case ops.Complete                                      ⇒ handleOnComplete() // and shutdown
+      case ops.Error(cause)                                  ⇒ handleOnError(cause) // and shutdown
       case SubRequestMore(sub, elements)                     ⇒ sub.requestMore(elements)
       case SubEmit(sub, element)                             ⇒ sub.onNext(element)
       case SubComplete(sub)                                  ⇒ sub.onComplete()
@@ -138,7 +145,7 @@ private class OperationProcessor[I, O](operation: Operation[I, O], settings: Pro
         }
       }
 
-      downstream.onNext(SubProducer.asInstanceOf[O])
+      handleOnNext(SubProducer.asInstanceOf[O])
     }
 
     case class RunDeferred(body: () ⇒ Unit)

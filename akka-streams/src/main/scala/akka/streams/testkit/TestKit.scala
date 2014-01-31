@@ -47,6 +47,8 @@ object TestKit {
 
       def expectRequestMore(subscription: Subscription, n: Int): Unit = probe.expectMsg(RequestMore(subscription, n))
 
+      def expectNoMsg(): Unit = probe.expectNoMsg()
+
       def getPublisher: Publisher[I] = this
     }
 }
