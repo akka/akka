@@ -9,6 +9,7 @@ trait WithFanOutBox {
   def allSubscriptionsCancelled(): Unit
   def fanOutBoxFinished(): Unit
 
+  def hasSubscribers: Boolean = fanOutBox.state != FanOutBox.Empty
   def handleOnNext(next: Any): Unit = {
     fanOutBox.onNext(next)
     if (fanOutBox.state == FanOutBox.Ready) requestNextBatch()

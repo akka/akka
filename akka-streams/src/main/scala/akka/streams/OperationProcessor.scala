@@ -46,16 +46,26 @@ private class OperationProcessor[I, O](operation: Operation[I, O], settings: Pro
     var upstream: Subscription = _
 
     val fanOutBox: FanOutBox = settings.constructFanOutBox()
-    def requestNextBatch(): Unit = run(ops.RequestMore(1))
-    def allSubscriptionsCancelled(): Unit = context.become(WaitingForSubscription) // or autoUnsubscribe
+    def requestNextBatch(): Unit = if (upstream ne null) run(ops.RequestMore(1))
+    def allSubscriptionsCancelled(): Unit = context.become(WaitingForDownstream) // or autoUnsubscribe
     def fanOutBoxFinished(): Unit = {} // ignore for now
 
-    def receive = {
+    def receive = WaitingForUpstream
+
+    def WaitingForUpstream: Receive = {
       case OnSubscribed(subscription) ⇒
         upstream = subscription
-        context.become(WaitingForSubscription)
+        if (hasSubscribers) {
+          if (fanOutBox.state == FanOutBox.Ready) requestNextBatch()
+          context.become(Running)
+        } else context.become(WaitingForDownstream)
+      case Subscribe(sub) ⇒
+        sub.onSubscribe(newSubscription(sub))
+        handleNewSubscription(sub)
+      case RequestMore(subscriber, elements) ⇒ handleRequestMore(subscriber, elements)
+      case CancelSubscription(subscriber)    ⇒ handleSubscriptionCancelled(subscriber)
     }
-    def WaitingForSubscription: Receive = {
+    def WaitingForDownstream: Receive = {
       case Subscribe(sub) ⇒
         sub.onSubscribe(newSubscription(sub))
         handleNewSubscription(sub)
@@ -65,11 +75,11 @@ private class OperationProcessor[I, O](operation: Operation[I, O], settings: Pro
       case Subscribe(sub) ⇒
         sub.onSubscribe(newSubscription(sub))
         handleNewSubscription(sub)
-      case RequestMore(subscriber, elements) ⇒ handleRequestMore(subscriber, elements)
       case OnNext(element)                   ⇒ run(ops.Emit(element))
       case OnComplete                        ⇒ run(ops.Complete)
       case OnError(cause)                    ⇒ run(ops.Error(cause))
 
+      case RequestMore(subscriber, elements) ⇒ handleRequestMore(subscriber, elements)
       case CancelSubscription(subscriber)    ⇒ handleSubscriptionCancelled(subscriber)
 
       case RunDeferred(body)                 ⇒ body()

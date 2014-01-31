@@ -15,7 +15,23 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
 
   "An OperationProcessor" should {
     "work uninitialized without publisher" when {
-      "subscriber requests elements" in pending
+      "subscriber requests elements" in {
+        val upstream = TestKit.producerProbe[Int]()
+        val downstream = TestKit.consumerProbe[Int]()
+
+        import DSL._
+
+        val processed = OperationProcessor(Identity[Int](), settings)
+        processed.link(downstream)
+        val downstreamSubscription = downstream.expectSubscription()
+
+        downstreamSubscription.requestMore(1)
+        upstream.link(processed)
+        val upstreamSubscription = upstream.expectSubscription()
+        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.sendNext(42)
+        downstream.expectNext(42)
+      }
       "subscriber cancels subscription and resubscribes" in pending
     }
     "work uninitialized without subscriber" when {
