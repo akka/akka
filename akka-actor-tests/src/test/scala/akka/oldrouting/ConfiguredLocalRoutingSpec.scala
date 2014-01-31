@@ -65,7 +65,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
           case "get" ⇒ sender() ! context.props
         }
       }).withRouter(RoundRobinRouter(12)), "someOther")
-      routerConfig(actor) should equal(RoundRobinRouter(12))
+      routerConfig(actor) should be(RoundRobinRouter(12))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
@@ -75,7 +75,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
           case "get" ⇒ sender() ! context.props
         }
       }).withRouter(RoundRobinRouter(12)), "config")
-      routerConfig(actor) should equal(RandomPool(4))
+      routerConfig(actor) should be(RandomPool(4))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
@@ -85,7 +85,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
           case "get" ⇒ sender() ! context.props
         }
       }).withRouter(FromConfig).withDeploy(Deploy(routerConfig = RoundRobinRouter(12))), "someOther")
-      routerConfig(actor) should equal(RoundRobinRouter(12))
+      routerConfig(actor) should be(RoundRobinRouter(12))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
@@ -95,7 +95,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
           case "get" ⇒ sender() ! context.props
         }
       }).withRouter(FromConfig).withDeploy(Deploy(routerConfig = RoundRobinRouter(12))), "config")
-      routerConfig(actor) should equal(RandomPool(4))
+      routerConfig(actor) should be(RandomPool(4))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
@@ -262,7 +262,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
       Await.ready(doneLatch, 5 seconds)
 
       replies.values foreach { _ should be > (0) }
-      replies.values.sum should equal(iterationCount * connectionCount)
+      replies.values.sum should be(iterationCount * connectionCount)
     }
 
     "deliver a broadcast message using the !" in {

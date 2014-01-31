@@ -28,10 +28,10 @@ class MemberOrderingSpec extends WordSpec with Matchers {
         m(AddressFromURIString("akka://sys@darkstar:1111"), Up)
 
       val seq = members.toSeq
-      seq.size should equal(3)
-      seq(0) should equal(m(AddressFromURIString("akka://sys@darkstar:1111"), Up))
-      seq(1) should equal(m(AddressFromURIString("akka://sys@darkstar:1112"), Up))
-      seq(2) should equal(m(AddressFromURIString("akka://sys@darkstar:1113"), Joining))
+      seq.size should be(3)
+      seq(0) should be(m(AddressFromURIString("akka://sys@darkstar:1111"), Up))
+      seq(1) should be(m(AddressFromURIString("akka://sys@darkstar:1112"), Up))
+      seq(2) should be(m(AddressFromURIString("akka://sys@darkstar:1113"), Joining))
     }
 
     "be sorted by address correctly" in {
@@ -113,11 +113,11 @@ class MemberOrderingSpec extends WordSpec with Matchers {
         AddressFromURIString("akka://sys@darkstar:1111")
 
       val seq = addresses.toSeq
-      seq.size should equal(4)
-      seq(0) should equal(AddressFromURIString("akka://sys@darkstar:1110"))
-      seq(1) should equal(AddressFromURIString("akka://sys@darkstar:1111"))
-      seq(2) should equal(AddressFromURIString("akka://sys@darkstar:1112"))
-      seq(3) should equal(AddressFromURIString("akka://sys@darkstar:1113"))
+      seq.size should be(4)
+      seq(0) should be(AddressFromURIString("akka://sys@darkstar:1110"))
+      seq(1) should be(AddressFromURIString("akka://sys@darkstar:1111"))
+      seq(2) should be(AddressFromURIString("akka://sys@darkstar:1112"))
+      seq(3) should be(AddressFromURIString("akka://sys@darkstar:1113"))
     }
 
     "order addresses by hostname" in {
@@ -128,11 +128,11 @@ class MemberOrderingSpec extends WordSpec with Matchers {
         AddressFromURIString("akka://sys@darkstar0:1110")
 
       val seq = addresses.toSeq
-      seq.size should equal(4)
-      seq(0) should equal(AddressFromURIString("akka://sys@darkstar0:1110"))
-      seq(1) should equal(AddressFromURIString("akka://sys@darkstar1:1110"))
-      seq(2) should equal(AddressFromURIString("akka://sys@darkstar2:1110"))
-      seq(3) should equal(AddressFromURIString("akka://sys@darkstar3:1110"))
+      seq.size should be(4)
+      seq(0) should be(AddressFromURIString("akka://sys@darkstar0:1110"))
+      seq(1) should be(AddressFromURIString("akka://sys@darkstar1:1110"))
+      seq(2) should be(AddressFromURIString("akka://sys@darkstar2:1110"))
+      seq(3) should be(AddressFromURIString("akka://sys@darkstar3:1110"))
     }
 
     "order addresses by hostname and port" in {
@@ -143,11 +143,11 @@ class MemberOrderingSpec extends WordSpec with Matchers {
         AddressFromURIString("akka://sys@darkstar0:1110")
 
       val seq = addresses.toSeq
-      seq.size should equal(4)
-      seq(0) should equal(AddressFromURIString("akka://sys@darkstar0:1110"))
-      seq(1) should equal(AddressFromURIString("akka://sys@darkstar0:1111"))
-      seq(2) should equal(AddressFromURIString("akka://sys@darkstar2:1110"))
-      seq(3) should equal(AddressFromURIString("akka://sys@darkstar2:1111"))
+      seq.size should be(4)
+      seq(0) should be(AddressFromURIString("akka://sys@darkstar0:1110"))
+      seq(1) should be(AddressFromURIString("akka://sys@darkstar0:1111"))
+      seq(2) should be(AddressFromURIString("akka://sys@darkstar2:1110"))
+      seq(3) should be(AddressFromURIString("akka://sys@darkstar2:1111"))
     }
   }
 

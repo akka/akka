@@ -265,7 +265,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "create and supervise children on remote node" in {
       val r = system.actorOf(Props[Echo1], "blub")
-      r.path.toString should equal("akka.test://remote-sys@localhost:12346/remote/akka.test/RemotingSpec@localhost:12345/user/blub")
+      r.path.toString should be("akka.test://remote-sys@localhost:12346/remote/akka.test/RemotingSpec@localhost:12345/user/blub")
       r ! 42
       expectMsg(42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
@@ -374,9 +374,9 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       lastSender should be theSameInstanceAs grandchild
       mysel ! Identify(mysel)
       val grandchild2 = expectMsgType[ActorIdentity].ref
-      grandchild2 should equal(Some(grandchild))
+      grandchild2 should be(Some(grandchild))
       system.actorSelection("/user/looker2/child") ! Identify(None)
-      expectMsgType[ActorIdentity].ref should equal(Some(child))
+      expectMsgType[ActorIdentity].ref should be(Some(child))
       l ! ActorSelReq("child/..")
       expectMsgType[ActorSelection] ! Identify(None)
       expectMsgType[ActorIdentity].ref.get should be theSameInstanceAs l
@@ -421,7 +421,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       watch(child)
       child ! PoisonPill
       expectMsg("postStop")
-      expectMsgType[Terminated].actor should equal(child)
+      expectMsgType[Terminated].actor should be(child)
       l ! ((Props[Echo1], "child"))
       val child2 = expectMsgType[ActorRef]
       child2 ! Identify("idReq15")

@@ -55,7 +55,7 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
         }
         callingThreadLock.compareAndSet(1, 0) // Disable the lock
       }
-      Await.result(p.future, timeout.duration) should equal(())
+      Await.result(p.future, timeout.duration) should be(())
     }
 
     "be able to avoid starvation when Batching is used and Await/blocking is called" in {
@@ -93,15 +93,15 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
       awaitCond(counter.get == 2)
       perform(_ + 4)
       perform(_ * 2)
-      sec.size should equal(2)
+      sec.size should be(2)
       Thread.sleep(500)
-      sec.size should equal(2)
-      counter.get should equal(2)
+      sec.size should be(2)
+      counter.get should be(2)
       sec.resume()
       awaitCond(counter.get == 12)
       perform(_ * 2)
       awaitCond(counter.get == 24)
-      sec.isEmpty should equal(true)
+      sec.isEmpty should be(true)
     }
 
     "execute 'throughput' number of tasks per sweep" in {
@@ -118,11 +118,11 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
 
       val total = 1000
       1 to total foreach { _ ⇒ perform(_ + 1) }
-      sec.size() should equal(total)
+      sec.size() should be(total)
       sec.resume()
       awaitCond(counter.get == total)
-      submissions.get should equal(total / throughput)
-      sec.isEmpty should equal(true)
+      submissions.get should be(total / throughput)
+      sec.isEmpty should be(true)
     }
 
     "execute tasks in serial" in {
@@ -133,7 +133,7 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
 
       1 to total foreach { i ⇒ perform(c ⇒ if (c == (i - 1)) c + 1 else c) }
       awaitCond(counter.get == total)
-      sec.isEmpty should equal(true)
+      sec.isEmpty should be(true)
     }
 
     "relinquish thread when suspended" in {
@@ -151,13 +151,13 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
       1 to 10 foreach { _ ⇒ perform(identity) }
       perform(x ⇒ { sec.suspend(); x * 2 })
       perform(_ + 8)
-      sec.size should equal(13)
+      sec.size should be(13)
       sec.resume()
       awaitCond(counter.get == 2)
       sec.resume()
       awaitCond(counter.get == 10)
-      sec.isEmpty should equal(true)
-      submissions.get should equal(2)
+      sec.isEmpty should be(true)
+      submissions.get should be(2)
     }
   }
 }

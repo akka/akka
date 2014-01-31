@@ -49,17 +49,17 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
       for (i ← 1 to config.capacity) q.enqueue(testActor, exampleMessage)
 
-      q.numberOfMessages should equal(config.capacity)
-      q.hasMessages should equal(true)
+      q.numberOfMessages should be(config.capacity)
+      q.hasMessages should be(true)
 
       system.eventStream.subscribe(testActor, classOf[DeadLetter])
       q.enqueue(testActor, exampleMessage)
       expectMsg(DeadLetter(exampleMessage.message, system.deadLetters, testActor))
       system.eventStream.unsubscribe(testActor, classOf[DeadLetter])
 
-      q.dequeue should equal(exampleMessage)
+      q.dequeue should be(exampleMessage)
       q.numberOfMessages should be(config.capacity - 1)
-      q.hasMessages should equal(true)
+      q.hasMessages should be(true)
     }
 
     "dequeue what was enqueued properly for unbounded mailboxes" in {
@@ -86,16 +86,16 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
   def ensureMailboxSize(q: MessageQueue, expected: Int): Unit = q.numberOfMessages match {
     case -1 | `expected` ⇒
-      q.hasMessages should equal(expected != 0)
+      q.hasMessages should be(expected != 0)
     case other ⇒
-      other should equal(expected)
-      q.hasMessages should equal(expected != 0)
+      other should be(expected)
+      q.hasMessages should be(expected != 0)
   }
 
   def ensureSingleConsumerEnqueueDequeue(config: MailboxType) {
     val q = factory(config)
     ensureMailboxSize(q, 0)
-    q.dequeue should equal(null)
+    q.dequeue should be(null)
     for (i ← 1 to 100) {
       q.enqueue(testActor, exampleMessage)
       ensureMailboxSize(q, i)
@@ -104,11 +104,11 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
     ensureMailboxSize(q, 100)
 
     for (i ← 99 to 0 by -1) {
-      q.dequeue() should equal(exampleMessage)
+      q.dequeue() should be(exampleMessage)
       ensureMailboxSize(q, i)
     }
 
-    q.dequeue should equal(null)
+    q.dequeue should be(null)
     ensureMailboxSize(q, 0)
   }
 
@@ -117,13 +117,13 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
     q match {
       case aQueue: BlockingQueue[_] ⇒
         config match {
-          case BoundedMailbox(capacity, _) ⇒ aQueue.remainingCapacity should equal(capacity)
-          case UnboundedMailbox()          ⇒ aQueue.remainingCapacity should equal(Int.MaxValue)
+          case BoundedMailbox(capacity, _) ⇒ aQueue.remainingCapacity should be(capacity)
+          case UnboundedMailbox()          ⇒ aQueue.remainingCapacity should be(Int.MaxValue)
         }
       case _ ⇒
     }
-    q.numberOfMessages should equal(0)
-    q.hasMessages should equal(false)
+    q.numberOfMessages should be(0)
+    q.hasMessages should be(false)
   }
 
   def testEnqueueDequeue(config: MailboxType,
@@ -166,14 +166,14 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
         val ps = producers.map(Await.result(_, remaining))
         val cs = consumers.map(Await.result(_, remaining))
 
-        ps.map(_.size).sum should equal(enqueueN) //Must have produced 1000 messages
-        cs.map(_.size).sum should equal(dequeueN) //Must have consumed all produced messages
+        ps.map(_.size).sum should be(enqueueN) //Must have produced 1000 messages
+        cs.map(_.size).sum should be(dequeueN) //Must have consumed all produced messages
         //No message is allowed to be consumed by more than one consumer
-        cs.flatten.distinct.size should equal(dequeueN)
+        cs.flatten.distinct.size should be(dequeueN)
         //All consumed messages should have been produced
-        (cs.flatten diff ps.flatten).size should equal(0)
+        (cs.flatten diff ps.flatten).size should be(0)
         //The ones that were produced and not consumed
-        (ps.flatten diff cs.flatten).size should equal(enqueueN - dequeueN)
+        (ps.flatten diff cs.flatten).size should be(enqueueN - dequeueN)
       }
   }
 }

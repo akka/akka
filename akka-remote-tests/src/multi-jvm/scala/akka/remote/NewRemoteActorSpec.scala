@@ -59,7 +59,7 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
 
         val slaveAddress = testConductor.getAddressFor(slave).await
         actor ! "identify"
-        expectMsgType[ActorRef].path.address should equal(slaveAddress)
+        expectMsgType[ActorRef].path.address should be(slaveAddress)
       }
 
       enterBarrier("done")
@@ -74,7 +74,7 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
 
         val slaveAddress = testConductor.getAddressFor(slave).await
         actor ! "identify"
-        expectMsgType[ActorRef].path.address should equal(slaveAddress)
+        expectMsgType[ActorRef].path.address should be(slaveAddress)
       }
 
       enterBarrier("done")

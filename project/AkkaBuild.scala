@@ -154,7 +154,12 @@ object AkkaBuild extends Build {
   )
 
   val cpsPlugin = Seq(
-    libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
+    libraryDependencies <++= scalaVersion { v =>
+      if (v.startsWith("2.10.")) Seq(compilerPlugin("org.scala-lang.plugins" % "continuations" % v))
+      else Seq(
+        compilerPlugin("org.scala-lang.plugins" %% "scala-continuations-plugin" % Dependencies.Versions.scalaContinuationsVersion),
+        "org.scala-lang.plugins" %% "scala-continuations-library" % Dependencies.Versions.scalaContinuationsVersion)
+    },
     scalacOptions += "-P:continuations:enable"
   )
 
@@ -1110,6 +1115,7 @@ object Dependencies {
     val genJavaDocVersion = System.getProperty("akka.build.genJavaDocVersion", "0.5")
     val scalaTestVersion = System.getProperty("akka.build.scalaTestVersion", "2.0")
     val scalaCheckVersion = System.getProperty("akka.build.scalaCheckVersion", "1.10.1")
+    val scalaContinuationsVersion = System.getProperty("akka.build.scalaContinuationsVersion", "1.0.0-RC3")
   }
 
   object Compile {

@@ -120,11 +120,11 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡
 
         terminal ! Kill
         terminal ! Kill
-        Await.result(terminal ? "foo", timeout.duration) should equal("foo")
+        Await.result(terminal ? "foo", timeout.duration) should be("foo")
         terminal ! Kill
 
         expectTerminationOf(terminal)
-        terminal.isTerminated should equal(true)
+        terminal.isTerminated should be(true)
 
         system.stop(supervisor)
       }

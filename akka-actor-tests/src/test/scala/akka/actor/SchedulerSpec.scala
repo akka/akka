@@ -482,7 +482,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
         val s = success.size
         s should be < cap
         awaitCond(s == counter.get, message = s"$s was not ${counter.get}")
-        failure.size should equal(headroom)
+        failure.size should be(headroom)
       }
     }
   }

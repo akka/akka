@@ -76,7 +76,7 @@ class RandomSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       Await.ready(doneLatch, 5 seconds)
 
       replies.values foreach { _ should be > (0) }
-      replies.values.sum should equal(iterationCount * connectionCount)
+      replies.values.sum should be(iterationCount * connectionCount)
     }
 
     "deliver a broadcast message using the !" in {

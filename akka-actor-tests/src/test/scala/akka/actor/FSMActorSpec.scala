@@ -122,8 +122,8 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
 
       val transitionTester = system.actorOf(Props(new Actor {
         def receive = {
-          case Transition(_, _, _)     ⇒ transitionCallBackLatch.open
-          case CurrentState(_, Locked) ⇒ initialStateLatch.open
+          case Transition(_, _, _)                          ⇒ transitionCallBackLatch.open
+          case CurrentState(_, s: LockState) if s eq Locked ⇒ initialStateLatch.open // SI-5900 workaround
         }
       }))
 

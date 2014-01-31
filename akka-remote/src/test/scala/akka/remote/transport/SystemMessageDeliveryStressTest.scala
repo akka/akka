@@ -126,7 +126,7 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
       val toSend = (0 until MsgCount).toList
       val received = expectMsgAllOf(45.seconds, toSend: _*)
 
-      received should equal(toSend)
+      received should be(toSend)
     }
   }
 

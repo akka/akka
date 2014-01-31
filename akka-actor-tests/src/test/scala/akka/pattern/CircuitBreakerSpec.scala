@@ -64,8 +64,8 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       checkLatch(breaker.openLatch)
 
       val e = intercept[CircuitBreakerOpenException] { breaker().withSyncCircuitBreaker(sayHi) }
-      e.remainingDuration should be > (Duration.Zero)
-      e.remainingDuration should be <= (CircuitBreakerSpec.longResetTimeout)
+      (e.remainingDuration > Duration.Zero) should be(true)
+      (e.remainingDuration <= CircuitBreakerSpec.longResetTimeout) should be(true)
     }
 
     "transition to half-open on reset timeout" in {
@@ -114,9 +114,9 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
         val ct = Thread.currentThread() // Ensure that the thunk is executed in the tests thread
         breaker().withSyncCircuitBreaker({ if (Thread.currentThread() eq ct) throwException else "fail" })
       }
-      breaker().currentFailureCount should equal(1)
+      breaker().currentFailureCount should be(1)
       breaker().withSyncCircuitBreaker(sayHi)
-      breaker().currentFailureCount should equal(0)
+      breaker().currentFailureCount should be(0)
     }
 
     "increment failure count on callTimeout" in {

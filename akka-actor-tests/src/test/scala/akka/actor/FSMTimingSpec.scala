@@ -20,7 +20,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
   expectMsg(1 second, CurrentState(fsm, Initial))
 
   ignoreMsg {
-    case Transition(_, Initial, _) ⇒ true
+    case Transition(_, bs: FSMTimingSpec.State, _) if bs eq Initial ⇒ true // SI-5900 workaround
   }
 
   "A Finite State Machine" must {

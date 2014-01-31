@@ -88,7 +88,7 @@ class RemoteRouterSpec extends AkkaSpec("""
       val children = replies.toSet
       children should have size 2
       children.map(_.parent) should have size 1
-      children foreach (_.address.toString should equal(s"akka.tcp://${sysName}@localhost:${port}"))
+      children foreach (_.address.toString should be(s"akka.tcp://${sysName}@localhost:${port}"))
       masterSystem.stop(router)
     }
 
@@ -103,7 +103,7 @@ class RemoteRouterSpec extends AkkaSpec("""
       val children = replies.toSet
       children should have size 2
       children.map(_.parent) should have size 1
-      children foreach (_.address.toString should equal(s"akka.tcp://${sysName}@localhost:${port}"))
+      children foreach (_.address.toString should be(s"akka.tcp://${sysName}@localhost:${port}"))
       masterSystem.stop(router)
     }
 
@@ -117,7 +117,7 @@ class RemoteRouterSpec extends AkkaSpec("""
       val children = replies.toSet
       children.size should be >= 2
       children.map(_.parent) should have size 1
-      children foreach (_.address.toString should equal(s"akka.tcp://${sysName}@localhost:${port}"))
+      children foreach (_.address.toString should be(s"akka.tcp://${sysName}@localhost:${port}"))
       masterSystem.stop(router)
     }
 
@@ -134,7 +134,7 @@ class RemoteRouterSpec extends AkkaSpec("""
       val parents = children.map(_.parent)
       parents should have size 1
       parents.head should be(router.path)
-      children foreach (_.address.toString should equal(s"akka.tcp://${sysName}@localhost:${port}"))
+      children foreach (_.address.toString should be(s"akka.tcp://${sysName}@localhost:${port}"))
       masterSystem.stop(router)
     }
 
@@ -152,7 +152,7 @@ class RemoteRouterSpec extends AkkaSpec("""
       val parents = children.map(_.parent)
       parents should have size 1
       parents.head should be(router.path)
-      children foreach (_.address.toString should equal(s"akka.tcp://${sysName}@localhost:${port}"))
+      children foreach (_.address.toString should be(s"akka.tcp://${sysName}@localhost:${port}"))
       masterSystem.stop(router)
     }
 
@@ -170,7 +170,7 @@ class RemoteRouterSpec extends AkkaSpec("""
       val parents = children.map(_.parent)
       parents should have size 1
       parents.head.address should be(Address("akka.tcp", sysName, "localhost", port))
-      children foreach (_.address.toString should equal(s"akka.tcp://${sysName}@localhost:${port}"))
+      children foreach (_.address.toString should be(s"akka.tcp://${sysName}@localhost:${port}"))
       masterSystem.stop(router)
     }
 
@@ -188,7 +188,7 @@ class RemoteRouterSpec extends AkkaSpec("""
       val parents = children.map(_.parent)
       parents should have size 1
       parents.head should be(router.path)
-      children foreach (_.address.toString should equal(s"akka.tcp://${sysName}@localhost:${port}"))
+      children foreach (_.address.toString should be(s"akka.tcp://${sysName}@localhost:${port}"))
       masterSystem.stop(router)
     }
 
@@ -206,7 +206,7 @@ class RemoteRouterSpec extends AkkaSpec("""
       val parents = children.map(_.parent)
       parents should have size 1
       parents.head should be(router.path)
-      children foreach (_.address.toString should equal(s"akka.tcp://${sysName}@localhost:${port}"))
+      children foreach (_.address.toString should be(s"akka.tcp://${sysName}@localhost:${port}"))
       masterSystem.stop(router)
     }
 

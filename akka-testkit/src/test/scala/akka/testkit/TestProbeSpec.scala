@@ -21,7 +21,7 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout {
       tk.expectMsg(0 millis, "hello") // TestActor runs on CallingThreadDispatcher
       tk.lastMessage.sender ! "world"
       future should be('completed)
-      Await.result(future, timeout.duration) should equal("world")
+      Await.result(future, timeout.duration) should be("world")
     }
 
     "reply to messages" in {

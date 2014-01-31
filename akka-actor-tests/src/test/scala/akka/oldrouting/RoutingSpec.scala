@@ -70,7 +70,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       watch(router)
       watch(c2)
       system.stop(c2)
-      expectTerminated(c2).existenceConfirmed should equal(true)
+      expectTerminated(c2).existenceConfirmed should be(true)
       // it might take a while until the Router has actually processed the Terminated message
       awaitCond {
         router ! ""
@@ -81,7 +81,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         res == Seq(c1, c1)
       }
       system.stop(c1)
-      expectTerminated(router).existenceConfirmed should equal(true)
+      expectTerminated(router).existenceConfirmed should be(true)
     }
 
     "not terminate when resizer is used" in {
@@ -125,7 +125,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
       1 to actors foreach { _ ⇒
         val routees = expectMsgType[RouterRoutees].routees
-        routees.map(_.path.name).toSet should equal(names)
+        routees.map(_.path.name).toSet should be(names)
       }
       expectNoMsg(500.millis)
     }

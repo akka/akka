@@ -25,19 +25,19 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
       {
         import config._
 
-        getString("akka.version") should equal("2.3-SNAPSHOT")
-        settings.ConfigVersion should equal("2.3-SNAPSHOT")
+        getString("akka.version") should be("2.3-SNAPSHOT")
+        settings.ConfigVersion should be("2.3-SNAPSHOT")
 
-        getBoolean("akka.daemonic") should equal(false)
+        getBoolean("akka.daemonic") should be(false)
 
         // WARNING: This setting should be off in the default reference.conf, but should be on when running
         // the test suite.
-        getBoolean("akka.actor.serialize-messages") should equal(true)
-        settings.SerializeAllMessages should equal(true)
+        getBoolean("akka.actor.serialize-messages") should be(true)
+        settings.SerializeAllMessages should be(true)
 
-        getInt("akka.scheduler.ticks-per-wheel") should equal(512)
-        getDuration("akka.scheduler.tick-duration", TimeUnit.MILLISECONDS) should equal(10)
-        getString("akka.scheduler.implementation") should equal("akka.actor.LightArrayRevolverScheduler")
+        getInt("akka.scheduler.ticks-per-wheel") should be(512)
+        getDuration("akka.scheduler.tick-duration", TimeUnit.MILLISECONDS) should be(10)
+        getString("akka.scheduler.implementation") should be("akka.actor.LightArrayRevolverScheduler")
 
         getBoolean("akka.daemonic") should be(false)
         settings.Daemonicity should be(false)
@@ -71,27 +71,27 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         //General dispatcher config
 
         {
-          c.getString("type") should equal("Dispatcher")
-          c.getString("executor") should equal("default-executor")
-          c.getDuration("shutdown-timeout", TimeUnit.MILLISECONDS) should equal(1 * 1000)
-          c.getInt("throughput") should equal(5)
-          c.getDuration("throughput-deadline-time", TimeUnit.MILLISECONDS) should equal(0)
-          c.getBoolean("attempt-teamwork") should equal(true)
+          c.getString("type") should be("Dispatcher")
+          c.getString("executor") should be("default-executor")
+          c.getDuration("shutdown-timeout", TimeUnit.MILLISECONDS) should be(1 * 1000)
+          c.getInt("throughput") should be(5)
+          c.getDuration("throughput-deadline-time", TimeUnit.MILLISECONDS) should be(0)
+          c.getBoolean("attempt-teamwork") should be(true)
         }
 
         //Default executor config
         {
           val pool = c.getConfig("default-executor")
-          pool.getString("fallback") should equal("fork-join-executor")
+          pool.getString("fallback") should be("fork-join-executor")
         }
 
         //Fork join executor config
 
         {
           val pool = c.getConfig("fork-join-executor")
-          pool.getInt("parallelism-min") should equal(8)
-          pool.getDouble("parallelism-factor") should equal(3.0)
-          pool.getInt("parallelism-max") should equal(64)
+          pool.getInt("parallelism-min") should be(8)
+          pool.getDouble("parallelism-factor") should be(3.0)
+          pool.getInt("parallelism-max") should be(64)
         }
 
         //Thread pool executor config
@@ -99,12 +99,12 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         {
           val pool = c.getConfig("thread-pool-executor")
           import pool._
-          getDuration("keep-alive-time", TimeUnit.MILLISECONDS) should equal(60 * 1000)
-          getDouble("core-pool-size-factor") should equal(3.0)
-          getDouble("max-pool-size-factor") should equal(3.0)
-          getInt("task-queue-size") should equal(-1)
-          getString("task-queue-type") should equal("linked")
-          getBoolean("allow-core-timeout") should equal(true)
+          getDuration("keep-alive-time", TimeUnit.MILLISECONDS) should be(60 * 1000)
+          getDouble("core-pool-size-factor") should be(3.0)
+          getDouble("max-pool-size-factor") should be(3.0)
+          getInt("task-queue-size") should be(-1)
+          getString("task-queue-type") should be("linked")
+          getBoolean("allow-core-timeout") should be(true)
         }
 
         // Debug config
@@ -141,8 +141,8 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         // general mailbox config
 
         {
-          c.getInt("mailbox-capacity") should equal(1000)
-          c.getDuration("mailbox-push-timeout-time", TimeUnit.MILLISECONDS) should equal(10 * 1000)
+          c.getInt("mailbox-capacity") should be(1000)
+          c.getDuration("mailbox-push-timeout-time", TimeUnit.MILLISECONDS) should be(10 * 1000)
           c.getString("mailbox-type") should be("akka.dispatch.UnboundedMailbox")
         }
       }

@@ -34,7 +34,7 @@ class RemoteConfigSpec extends AkkaSpec(
       FlushWait should be(2 seconds)
       StartupTimeout.duration should be(10 seconds)
       RetryGateClosedFor should be(5 seconds)
-      Dispatcher should equal("akka.remote.default-remote-dispatcher")
+      Dispatcher should be("akka.remote.default-remote-dispatcher")
       UsePassiveConnections should be(true)
       BackoffPeriod should be(10 millis)
       SysMsgAckTimeout should be(0.3 seconds)
@@ -66,10 +66,10 @@ class RemoteConfigSpec extends AkkaSpec(
       import settings._
 
       RequireCookie should be(false)
-      SecureCookie should equal(None)
+      SecureCookie should be(None)
 
       TransportFailureDetectorImplementationClass should be(classOf[PhiAccrualFailureDetector].getName)
-      TransportHeartBeatInterval should equal(4.seconds)
+      TransportHeartBeatInterval should be(4.seconds)
       TransportFailureDetectorConfig.getDouble("threshold") should be(7.0 +- 0.0001)
       TransportFailureDetectorConfig.getInt("max-sample-size") should be(100)
       TransportFailureDetectorConfig.getMillisDuration("acceptable-heartbeat-pause") should be(10 seconds)
@@ -82,19 +82,19 @@ class RemoteConfigSpec extends AkkaSpec(
       val s = new NettyTransportSettings(c)
       import s._
 
-      ConnectionTimeout should equal(15.seconds)
-      WriteBufferHighWaterMark should equal(None)
-      WriteBufferLowWaterMark should equal(None)
-      SendBufferSize should equal(Some(256000))
-      ReceiveBufferSize should equal(Some(256000))
-      MaxFrameSize should equal(128000)
-      Backlog should equal(4096)
+      ConnectionTimeout should be(15.seconds)
+      WriteBufferHighWaterMark should be(None)
+      WriteBufferLowWaterMark should be(None)
+      SendBufferSize should be(Some(256000))
+      ReceiveBufferSize should be(Some(256000))
+      MaxFrameSize should be(128000)
+      Backlog should be(4096)
       TcpNodelay should be(true)
       TcpKeepalive should be(true)
       TcpReuseAddr should be(!Helpers.isWindows)
-      c.getString("hostname") should equal("")
-      ServerSocketWorkerPoolSize should equal(2)
-      ClientSocketWorkerPoolSize should equal(2)
+      c.getString("hostname") should be("")
+      ServerSocketWorkerPoolSize should be(2)
+      ClientSocketWorkerPoolSize should be(2)
     }
 
     "contain correct socket worker pool configuration values in reference.conf" in {
@@ -103,18 +103,18 @@ class RemoteConfigSpec extends AkkaSpec(
       // server-socket-worker-pool
       {
         val pool = c.getConfig("server-socket-worker-pool")
-        pool.getInt("pool-size-min") should equal(2)
+        pool.getInt("pool-size-min") should be(2)
 
-        pool.getDouble("pool-size-factor") should equal(1.0)
-        pool.getInt("pool-size-max") should equal(2)
+        pool.getDouble("pool-size-factor") should be(1.0)
+        pool.getInt("pool-size-max") should be(2)
       }
 
       // client-socket-worker-pool
       {
         val pool = c.getConfig("client-socket-worker-pool")
-        pool.getInt("pool-size-min") should equal(2)
-        pool.getDouble("pool-size-factor") should equal(1.0)
-        pool.getInt("pool-size-max") should equal(2)
+        pool.getInt("pool-size-min") should be(2)
+        pool.getDouble("pool-size-factor") should be(1.0)
+        pool.getInt("pool-size-max") should be(2)
       }
 
     }

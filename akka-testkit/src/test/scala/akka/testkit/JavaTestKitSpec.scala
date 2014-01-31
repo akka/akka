@@ -39,10 +39,10 @@ class JavaTestKitSpec extends AkkaSpec with DefaultTimeout {
 
         watch(actor)
         system stop actor
-        expectTerminated(actor).existenceConfirmed should equal(true)
+        expectTerminated(actor).existenceConfirmed should be(true)
 
         watch(actor)
-        expectTerminated(5 seconds, actor).actor should equal(actor)
+        expectTerminated(5 seconds, actor).actor should be(actor)
       }
     }
 

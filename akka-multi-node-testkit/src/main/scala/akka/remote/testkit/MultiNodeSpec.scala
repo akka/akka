@@ -254,6 +254,15 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
 
   val log: LoggingAdapter = Logging(system, this.getClass)
 
+  /**
+   * Enrich `.await()` onto all Awaitables, using remaining duration from the innermost
+   * enclosing `within` block or QueryTimeout.
+   */
+  implicit def awaitHelper[T](w: Awaitable[T]) = new AwaitHelper(w)
+  class AwaitHelper[T](w: Awaitable[T]) {
+    def await: T = Await.result(w, remainingOr(testConductor.Settings.QueryTimeout.duration))
+  }
+
   final override def multiNodeSpecBeforeAll {
     atStartup()
   }
@@ -264,6 +273,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
       testConductor.removeNode(myself)
       within(testConductor.Settings.BarrierTimeout.duration) {
         awaitCond {
+          // Await.result(testConductor.getNodes, remaining).filterNot(_ == myself).isEmpty
           testConductor.getNodes.await.filterNot(_ == myself).isEmpty
         }
       }
@@ -360,15 +370,6 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
       if (messageClasses.isEmpty) mute(classOf[AnyRef])
       else messageClasses foreach mute
     }
-
-  /**
-   * Enrich `.await()` onto all Awaitables, using remaining duration from the innermost
-   * enclosing `within` block or QueryTimeout.
-   */
-  implicit def awaitHelper[T](w: Awaitable[T]) = new AwaitHelper(w)
-  class AwaitHelper[T](w: Awaitable[T]) {
-    def await: T = Await.result(w, remainingOr(testConductor.Settings.QueryTimeout.duration))
-  }
 
   /*
    * Implementation (i.e. wait for start etc.)

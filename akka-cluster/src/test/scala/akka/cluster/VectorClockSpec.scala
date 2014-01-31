@@ -217,14 +217,14 @@ class VectorClockSpec extends AkkaSpec {
       val vv1 = v1 :+ node1
       val vv2 = v2 :+ node2
 
-      (vv1 > v1) should equal(true)
-      (vv2 > v2) should equal(true)
+      (vv1 > v1) should be(true)
+      (vv2 > v2) should be(true)
 
-      (vv1 > v2) should equal(true)
-      (vv2 > v1) should equal(true)
+      (vv1 > v2) should be(true)
+      (vv2 > v1) should be(true)
 
-      (vv2 > vv1) should equal(false)
-      (vv1 > vv2) should equal(false)
+      (vv2 > vv1) should be(false)
+      (vv1 > vv2) should be(false)
     }
 
     "pass merging behavior" in {
@@ -242,8 +242,8 @@ class VectorClockSpec extends AkkaSpec {
       var c = a2.merge(b1)
       var c1 = c :+ node3
 
-      (c1 > a2) should equal(true)
-      (c1 > b1) should equal(true)
+      (c1 > a2) should be(true)
+      (c1 > b1) should be(true)
     }
   }
 }

@@ -13,12 +13,10 @@ import java.io._
 import scala.concurrent.Await
 import akka.util.Timeout
 import scala.concurrent.duration._
-import scala.reflect.BeanInfo
-import com.google.protobuf.Message
+import scala.beans.BeanInfo
 import com.typesafe.config._
 import akka.pattern.ask
-import org.apache.commons.codec.binary.Hex.{ encodeHex, decodeHex }
-import akka.OnlyCauseStackTrace
+import org.apache.commons.codec.binary.Hex.encodeHex
 
 object SerializationTests {
 
@@ -250,7 +248,7 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
 
       intercept[IllegalArgumentException] {
         byteSerializer.toBinary("pigdog")
-      }.getMessage should equal("ByteArraySerializer only serializes byte arrays, not [pigdog]")
+      }.getMessage should be("ByteArraySerializer only serializes byte arrays, not [pigdog]")
     }
   }
 }
@@ -326,7 +324,7 @@ class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyR
 
   "Cross-version serialization compatibility" must {
     def verify(obj: SystemMessage, asExpected: String): Unit =
-      String.valueOf(ser.serialize(obj).map(encodeHex).get) should equal(asExpected)
+      String.valueOf(ser.serialize(obj).map(encodeHex).get) should be(asExpected)
 
     "be preserved for the Create SystemMessage" in {
       // Using null as the cause to avoid a large serialized message and JDK differences

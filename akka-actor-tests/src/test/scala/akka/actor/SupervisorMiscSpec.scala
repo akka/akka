@@ -63,7 +63,7 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
         Seq("actor1" -> actor1, "actor2" -> actor2, "actor3" -> actor3, "actor4" -> actor4) map {
           case (id, ref) ⇒ (id, ref ? "status")
         } foreach {
-          case (id, f) ⇒ (id, Await.result(f, timeout.duration)) should equal((id, "OK"))
+          case (id, f) ⇒ (id, Await.result(f, timeout.duration)) should be((id, "OK"))
         }
       }
     }
@@ -156,8 +156,8 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
         parent ! "doit"
       }
       val p = expectMsgType[ActorRef].path
-      p.parent should equal(parent.path)
-      p.name should equal("child")
+      p.parent should be(parent.path)
+      p.name should be("child")
     }
   }
 }

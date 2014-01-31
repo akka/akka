@@ -44,7 +44,7 @@ class AskSpec extends AkkaSpec {
       f.isCompleted should be(true)
       intercept[IllegalArgumentException] {
         Await.result(f, remaining)
-      }.getMessage should equal("Unsupported recipient ActorRef type, question not sent to [null]")
+      }.getMessage should be("Unsupported recipient ActorRef type, question not sent to [null]")
     }
 
     "return broken promises on 0 timeout" in {
@@ -54,7 +54,7 @@ class AskSpec extends AkkaSpec {
       val expectedMsg = "Timeout length must not be negative, question not sent to [%s]" format echo
       intercept[IllegalArgumentException] {
         Await.result(f, remaining)
-      }.getMessage should equal(expectedMsg)
+      }.getMessage should be(expectedMsg)
     }
 
     "return broken promises on < 0 timeout" in {
@@ -64,7 +64,7 @@ class AskSpec extends AkkaSpec {
       val expectedMsg = "Timeout length must not be negative, question not sent to [%s]" format echo
       intercept[IllegalArgumentException] {
         Await.result(f, remaining)
-      }.getMessage should equal(expectedMsg)
+      }.getMessage should be(expectedMsg)
     }
 
     "include target information in AskTimeout" in {
@@ -91,7 +91,7 @@ class AskSpec extends AkkaSpec {
       val identityFuture = (system.actorSelection("/user/select-echo") ? Identify(None))
         .mapTo[ActorIdentity].map(_.ref.get)
 
-      Await.result(identityFuture, 5 seconds) should equal(echo)
+      Await.result(identityFuture, 5 seconds) should be(echo)
     }
 
   }

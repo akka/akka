@@ -31,17 +31,17 @@ class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
     "take and return a value" in {
       val index = emptyIndex
       index.put("s1", 1)
-      index.valueIterator("s1").toSet should equal(Set(1))
+      index.valueIterator("s1").toSet should be(Set(1))
     }
     "take and return several values" in {
       val index = emptyIndex
-      index.put("s1", 1) should equal(true)
-      index.put("s1", 1) should equal(false)
+      index.put("s1", 1) should be(true)
+      index.put("s1", 1) should be(false)
       index.put("s1", 2)
       index.put("s1", 3)
       index.put("s2", 4)
-      index.valueIterator("s1").toSet should equal(Set(1, 2, 3))
-      index.valueIterator("s2").toSet should equal(Set(4))
+      index.valueIterator("s1").toSet should be(Set(1, 2, 3))
+      index.valueIterator("s2").toSet should be(Set(4))
     }
     "remove values" in {
       val index = emptyIndex
@@ -50,16 +50,16 @@ class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
       index.put("s2", 1)
       index.put("s2", 2)
       //Remove value
-      index.remove("s1", 1) should equal(true)
-      index.remove("s1", 1) should equal(false)
-      index.valueIterator("s1").toSet should equal(Set(2))
+      index.remove("s1", 1) should be(true)
+      index.remove("s1", 1) should be(false)
+      index.valueIterator("s1").toSet should be(Set(2))
       //Remove key
       index.remove("s2") match {
-        case Some(iter) ⇒ iter.toSet should equal(Set(1, 2))
+        case Some(iter) ⇒ iter.toSet should be(Set(1, 2))
         case None       ⇒ fail()
       }
-      index.remove("s2") should equal(None)
-      index.valueIterator("s2").toSet should equal(Set())
+      index.remove("s2") should be(None)
+      index.valueIterator("s2").toSet should be(Set())
     }
     "remove the specified value" in {
       val index = emptyIndex
@@ -71,9 +71,9 @@ class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
       index.put("s3", 2)
 
       index.removeValue(1)
-      index.valueIterator("s1").toSet should equal(Set(2, 3))
-      index.valueIterator("s2").toSet should equal(Set(2))
-      index.valueIterator("s3").toSet should equal(Set(2))
+      index.valueIterator("s1").toSet should be(Set(2, 3))
+      index.valueIterator("s2").toSet should be(Set(2))
+      index.valueIterator("s3").toSet should be(Set(2))
     }
     "apply a function for all key-value pairs and find every value" in {
       val index = indexWithValues
@@ -81,15 +81,15 @@ class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
       var valueCount = 0
       index.foreach((key, value) ⇒ {
         valueCount = valueCount + 1
-        index.findValue(key)(_ == value) should equal(Some(value))
+        index.findValue(key)(_ == value) should be(Some(value))
       })
-      valueCount should equal(6)
+      valueCount should be(6)
     }
     "be cleared" in {
       val index = indexWithValues
-      index.isEmpty should equal(false)
+      index.isEmpty should be(false)
       index.clear()
-      index.isEmpty should equal(true)
+      index.isEmpty should be(true)
     }
     "be able to be accessed in parallel" in {
       val index = new Index[Int, Int](100, _ compareTo _)
@@ -113,7 +113,7 @@ class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
         val key = Random.nextInt(nrOfKeys)
         val values = index.valueIterator(key)
         if (key >= nrOfKeys / 2) {
-          values.isEmpty should equal(false)
+          values.isEmpty should be(false)
         }
       }
 
