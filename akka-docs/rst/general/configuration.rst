@@ -105,11 +105,6 @@ The plugin configuration might look like this::
         <filters>
          <filter>
           <artifact>*:*</artifact>
-          <excludes>
-           <exclude>META-INF/*.SF</exclude>
-           <exclude>META-INF/*.DSA</exclude>
-           <exclude>META-INF/*.RSA</exclude>
-          </excludes>
          </filter>
         </filters>
         <transformers>
@@ -120,7 +115,7 @@ The plugin configuration might look like this::
           <transformer
            implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
            <manifestEntries>
-            <Main-Class>com.foo.MyApplication</Main-Class>
+            <Main-Class>com.foo.BarMain</Main-Class>
            </manifestEntries>
           </transformer>
         </transformers>
