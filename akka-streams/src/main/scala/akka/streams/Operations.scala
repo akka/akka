@@ -1,70 +1,213 @@
 package akka.streams
 
 import scala.language.implicitConversions
-import rx.async.api.Producer
+import rx.async.api.{ Consumer, Producer }
 
-sealed trait Operation[I, O] {
-  def andThen[O2](next: Operation[O, O2]): Operation[I, O2] = AndThen(this, next)
-}
+sealed trait Operation[-I, +O]
 
-case class Consume[I](producer: Producer[I]) extends Operation[Nothing, I]
+object Operation {
+  type ==>[-I, +O] = Operation[I, O] // brevity alias (should we mark it `private`?)
 
-/** A noop operation */
-case class Identity[I]() extends Operation[I, I] {
-  override def andThen[O2](next: Operation[I, O2]): Operation[I, O2] = next
-}
-case class Map[I, O](f: I ⇒ O) extends Operation[I, O]
-case class FlatMap[I, O](f: I ⇒ Producer[O]) extends Operation[I, O]
-case class FlatMapNested[I, O](operation: Operation[I, O]) extends Operation[Producer[I], O]
+  type Source[T] = Nothing ==> T
+  type Sink[T] = T ==> Nothing
 
-sealed trait FlattenMode
-case object Concat extends FlattenMode
-case class Flatten[I](mode: FlattenMode = Concat) extends Operation[Producer[I], I]
+  implicit def fromIterable[T](iterable: Iterable[T]) = FromIterableSource(iterable)
+  case class FromIterableSource[T](iterable: Iterable[T]) extends Source[T]
 
-case class Foreach[I](f: I ⇒ Unit) extends Operation[I, Unit]
+  implicit def fromProducer[T](producer: Producer[T]) = FromProducerSource(producer)
+  case class FromProducerSource[T](producer: Producer[T]) extends Source[T]
 
-case class Filter[I](pred: I ⇒ Boolean) extends Operation[I, I]
+  implicit def fromConsumer[T](consumer: Consumer[T]) = FromConsumerSink(consumer)
+  case class FromConsumerSink[T](consumer: Consumer[T]) extends Sink[T]
 
-case class Span[I](pred: I ⇒ Boolean) extends Operation[I, Producer[I]]
-/** Extracts head element and tail stream from a stream */
-case class HeadTail[I]() extends Operation[I, (I, Producer[I])]
-case class Fold[I, Z](z: Z, acc: (Z, I) ⇒ Z) extends Operation[I, Z]
-case class AndThen[I1, I2, O](first: Operation[I1, I2], second: Operation[I2, O]) extends Operation[I1, O]
+  // implicit def sink2Producer[T](sink: Sink[T]): Producer[T] = ???
+  // implicit def source2Consumer[T](source: Source[T]): Consumer[T] = ???
 
-sealed trait FoldResult[Z, O]
-object FoldResult {
-  case class Continue[Z, O](state: Z) extends FoldResult[Z, O]
-  case class Emit[Z, O](value: O, nextSeed: Z) extends FoldResult[Z, O]
-}
-case class FoldUntil[I, O, Z](seed: Z, acc: (Z, I) ⇒ FoldResult[Z, O]) extends Operation[I, O]
+  def apply[A, B, C](f: A ==> B, g: B ==> C): A ==> C =
+    (f, g) match {
+      case (Identity(), _) ⇒ g.asInstanceOf[A ==> C]
+      case (_, Identity()) ⇒ f.asInstanceOf[A ==> C]
+      case _               ⇒ AndThen(f, g)
+    }
 
-case class Produce[O](elements: Iterable[O]) extends Operation[Nothing, O]
+  // basic operation composition
+  // consumes and produces no faster than the respective minimum rates of f and g
+  case class AndThen[A, B, C](f: A ==> B, g: B ==> C) extends (A ==> C)
 
-object Operations {
-  def Op[I] = Identity[I]()
+  // adds (bounded or unbounded) pressure elasticity
+  // consumes at max rate as long as `canConsume` is true,
+  // produces no faster than the rate with which `expand` produces B values
+  case class Buffer[A, B, S](seed: S,
+                             compress: (S, A) ⇒ S,
+                             expand: S ⇒ (S, Option[B]),
+                             canConsume: S ⇒ Boolean) extends (A ==> B)
 
-  implicit def consumeProducer[I](producer: Producer[I]) =
-    new AddOps[Nothing, I](Consume(producer))
+  // "compresses" a fast upstream by keeping one element buffered and reducing surplus values using the given function
+  // consumes at max rate, produces no faster than the upstream
+  def Compress[T](f: (T, T) ⇒ T): T ==> T =
+    Buffer[T, T, Option[T]](
+      seed = None,
+      compress = (s, x) ⇒ s.map(f(_, x)) orElse Some(x),
+      expand = None -> _,
+      canConsume = _ ⇒ true)
 
-  implicit def produceOps[O](p: Produce[O]): AddOps[Nothing, O] = new AddOps[Nothing, O](p)
-  implicit class AddOps[I, O](val op: Operation[I, O]) extends AnyVal {
-    def next[O2](next: Operation[O, O2]): Operation[I, O2] = op.andThen(next)
+  // drops the first n upstream values
+  // consumes the first n upstream values at max rate, afterwards directly copies upstream
+  def Drop[T](n: Int): T ==> T =
+    FoldUntil[T, T, Int](
+      seed = n,
+      onNext = (n, x) ⇒ if (n <= 0) FoldUntil.Emit(x, 0) else FoldUntil.Continue(n - 1),
+      onComplete = _ ⇒ None)
 
-    def map[O2](f: O ⇒ O2): Operation[I, O2] = next(Map(f))
-    def flatMap[O2](f: O ⇒ Producer[O2]): Operation[I, O2] = next(FlatMap(f))
+  // produces one boolean for the first T that satisfies p
+  // consumes at max rate until p(t) becomes true, unsubscribes afterwards
+  def Exists[T](p: T ⇒ Boolean): T ==> Boolean =
+    MapFind[T, Boolean](x ⇒ if (p(x)) Some(true) else None, Some(false))
 
-    def foreach(f: O ⇒ Unit): Operation[I, Unit] = next(Foreach(f))
+  // "expands" a slow upstream by buffering the last upstream element and producing it whenever requested
+  // consumes at max rate, produces at max rate once the first upstream value has been buffered
+  def Expand[T, S](seed: S, produce: S ⇒ (S, T)): T ==> T =
+    Buffer[T, T, Option[T]](
+      seed = None,
+      compress = (_, x) ⇒ Some(x),
+      expand = s ⇒ s -> s,
+      canConsume = _ ⇒ true)
 
-    def filter(pred: O ⇒ Boolean): Operation[I, O] = next(Filter(pred))
+  // filters a streams according to the given predicate
+  // immediately consumes more whenever p(t) is false
+  def Filter[T](p: T ⇒ Boolean): T ==> T =
+    FoldUntil[T, T, Unit](
+      seed = (),
+      onNext = (_, x) ⇒ if (p(x)) FoldUntil.Emit(x, ()) else FoldUntil.Continue(()),
+      onComplete = _ ⇒ None)
 
-    def fold[Z](z: Z)(acc: (Z, O) ⇒ Z): Operation[I, Z] = next(Fold(z, acc))
-    def foldUntil[Z, O2](seed: Z)(acc: (Z, O) ⇒ FoldResult[Z, O2]): Operation[I, O2] = next(FoldUntil(seed, acc))
+  // produces the first T that satisfies p
+  // consumes at max rate until p(t) becomes true, unsubscribes afterwards
+  def Find[T](p: T ⇒ Boolean): T ==> T =
+    MapFind[T, T](x ⇒ if (p(x)) Some(x) else None, None)
 
-    def span(pred: O ⇒ Boolean): Operation[I, Producer[O]] = next(Span(pred))
-    def headTail: Operation[I, (O, Producer[O])] = next(HeadTail[O]())
+  // general flatmap operation
+  // consumes no faster than the downstream, produces no faster than upstream or generated sources
+  def FlatMap[A, B](f: A ⇒ Source[B]): A ==> B =
+    Map(f).flatten
+
+  // flattens the upstream by concatenation
+  // consumes no faster than the downstream, produces no faster than the sources in the upstream
+  case class Flatten[T]() extends (Source[T] ==> T)
+
+  // classic fold
+  // consumes at max rate, produces only one value
+  def Fold[A, B](seed: B, f: (B, A) ⇒ B): A ==> B =
+    FoldUntil[A, B, B](
+      seed,
+      onNext = (b, a) ⇒ FoldUntil.Continue(f(b, a)),
+      onComplete = Some(_))
+
+  // generalized fold potentially producing several output values
+  // consumes at max rate as long as `onNext` returns `Continue`
+  // produces no faster than the upstream
+  case class FoldUntil[A, B, S](seed: S,
+                                onNext: (S, A) ⇒ FoldUntil.Command[B, S],
+                                onComplete: S ⇒ Option[B]) extends (A ==> B)
+  object FoldUntil {
+    sealed trait Command[+T, +S]
+    case class Emit[T, S](value: T, nextState: S) extends Command[T, S]
+    case class EmitAndStop[T, S](value: T) extends Command[T, S]
+    case class Continue[T, S](nextState: S) extends Command[T, S]
+    case object Stop extends Command[Nothing, Nothing]
   }
-  implicit class AddProducerOps[I, O](val op: Operation[I, Producer[O]]) extends AnyVal {
-    def flatMapNested[O2](operation: Operation[O, O2]): Operation[I, O2] = op.andThen(FlatMapNested(operation))
-    def flatten: Operation[I, O] = op.andThen(Flatten())
+
+  // produces one boolean (if all upstream values satisfy p emits true otherwise false)
+  // consumes at max rate until p(t) becomes false, unsubscribes afterwards
+  def ForAll[T](p: T ⇒ Boolean): T ==> Boolean =
+    MapFind[T, Boolean](x ⇒ if (!p(x)) Some(false) else None, Some(true))
+
+  // sinks all upstream value into the given function
+  // consumes at max rate
+  case class Foreach[T](f: T ⇒ Unit) extends Sink[T]
+
+  // produces the first upstream element, unsubscribes afterwards
+  def Head[T](): T ==> T = Take(1)
+
+  // maps the upstream onto itself
+  case class Identity[A]() extends (A ==> A)
+
+  // maps the given function over the upstream
+  // does not affect consumption or production rates
+  case class Map[A, B](f: A ⇒ B) extends (A ==> B)
+
+  // produces the first B returned by f or optionally the given default value
+  // consumes at max rate until f returns a Some, unsubscribes afterwards
+  def MapFind[A, B](f: A ⇒ Option[B], default: ⇒ Option[B]): A ==> B =
+    FoldUntil[A, B, Unit](
+      seed = (),
+      onNext = (_, x) ⇒ f(x).fold[FoldUntil.Command[B, Unit]](FoldUntil.Continue(()))(FoldUntil.EmitAndStop(_)),
+      onComplete = _ ⇒ default)
+
+  // merges the values produced by the given source into the consumed stream
+  // consumes from the upstream and the given source no faster than the downstream
+  // produces no faster than the combined rate from upstream and the given source
+  case class Merge[A, B](source: Source[B]) extends (A ==> B)
+
+  // splits the upstream into sub-streams based on the given predicate
+  // if p evaluates to true the current value is appended to the previous sub-stream,
+  // otherwise the previous sub-stream is closed and a new one started
+  // consumes and produces no faster than the produced sources are consumed
+  case class Span[T](p: T ⇒ Boolean) extends (T ==> Source[T])
+
+  // taps into the upstream and forwards all incoming values also into the given sink
+  // consumes no faster than the minimum rate of the downstream and the given sink
+  case class Tee[T](sink: Sink[T]) extends (T ==> T)
+
+  // drops the first upstream value and forwards the remaining upstream
+  // consumes the first upstream value immediately, afterwards directly copies upstream
+  def Tail[T](): T ==> T = Drop(1)
+
+  // forwards the first n upstream values, unsubscribes afterwards
+  // consumes no faster than the downstream, produces no faster than the upstream
+  def Take[T](n: Int): T ==> T =
+    FoldUntil[T, T, Int](
+      seed = n,
+      onNext = (n, x) ⇒ n match {
+        case _ if n <= 0 ⇒ FoldUntil.Stop
+        case 1           ⇒ FoldUntil.EmitAndStop(x)
+        case _           ⇒ FoldUntil.Emit(x, n - 1)
+      },
+      onComplete = _ ⇒ None)
+
+  // combines the upstream and the given source into tuples
+  // produces at the rate of the slower upstream (i.e. no values are dropped)
+  // consumes from the upstream no faster than the downstream consumption rate or the production rate of the given source
+  // consumes from the given source no faster than the downstream consumption rate or the upstream production rate
+  case class Zip[A, B, C](source: Source[C]) extends (A ==> (B, C))
+
+  implicit def producer2Ops1[T](producer: Producer[T]) = Ops1[Nothing, T](producer)
+  implicit class Ops1[A, B](val op: A ==> B) extends AnyVal {
+    def andThen[C](op: B ==> C): A ==> C = Operation(this.op, op)
+    def buffer[C, S](seed: S)(compress: (S, B) ⇒ S)(expand: S ⇒ (S, Option[C]))(canConsume: S ⇒ Boolean): A ==> C = andThen(Buffer(seed, compress, expand, canConsume))
+    def compress(f: (B, B) ⇒ B): A ==> B = andThen(Compress(f))
+    def drop(n: Int): A ==> B = andThen(Drop(n))
+    def exists(p: B ⇒ Boolean): A ==> Boolean = andThen(Exists(p))
+    def expand[S](seed: S)(produce: S ⇒ (S, B)): A ==> B = andThen(Expand(seed, produce))
+    def filter(p: B ⇒ Boolean): A ==> B = andThen(Filter(p))
+    def find(p: B ⇒ Boolean): A ==> B = andThen(Find(p))
+    def flatMap[C](f: B ⇒ Source[C]): A ==> C = andThen(FlatMap(f))
+    def fold[C](seed: C, f: (C, B) ⇒ C): A ==> C = andThen(Fold(seed, f))
+    def foldUntil[S, C](seed: S)(f: (S, B) ⇒ FoldUntil.Command[C, S])(onComplete: S ⇒ Option[C]): A ==> C = andThen(FoldUntil(seed, f, onComplete))
+    def forAll(p: B ⇒ Boolean): A ==> Boolean = andThen(ForAll(p))
+    def foreach(f: B ⇒ Unit): Sink[A] = andThen(Foreach(f))
+    def head: A ==> B = andThen(Head())
+    def map[C](f: B ⇒ C): A ==> C = andThen(Map(f))
+    def mapFind[C](f: B ⇒ Option[C], default: ⇒ Option[C]): A ==> C = andThen(MapFind(f, default))
+    def merge(source: Source[B]): A ==> B = andThen(Merge(source))
+    def span(p: B ⇒ Boolean): A ==> Source[B] = andThen(Span(p))
+    def tee(sink: Sink[B]): A ==> B = andThen(Tee(sink))
+    def tail: A ==> B = andThen(Tail())
+    def take(n: Int): A ==> B = andThen(Take[B](n))
+    def zip[C](source: Source[C]): A ==> (B, C) = andThen(Zip(source))
+  }
+
+  implicit class Ops2[A, B](val op: A ==> Source[B]) extends AnyVal {
+    def flatten: A ==> B = Operation(op, Flatten[B]())
   }
 }
