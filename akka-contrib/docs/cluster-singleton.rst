@@ -19,8 +19,8 @@ such as single-point of bottleneck. Single-point of failure is also a relevant c
 but for some cases this feature takes care of that by making sure that another singleton
 instance will eventually be started.
 
-The cluster singleton is implemented by ``akka.contrib.pattern.ClusterSingletonManager``.
-It manages singleton actor instance among all cluster nodes or a group of nodes tagged with
+The cluster singleton pattern is implemented by ``akka.contrib.pattern.ClusterSingletonManager``.
+It manages one singleton actor instance among all cluster nodes or a group of nodes tagged with
 a specific role. ``ClusterSingletonManager`` is an actor that is supposed to be started on
 all nodes, or all nodes with specified role, in the cluster. The actual singleton actor is
 started by the ``ClusterSingletonManager`` on the oldest node by creating a child actor from
@@ -37,11 +37,16 @@ take over and a new singleton actor is created. For these failure scenarios ther
 not be a graceful hand-over, but more than one active singletons is prevented by all
 reasonable means. Some corner cases are eventually resolved by configurable timeouts.
 
-You access the singleton actor with ``actorSelection`` using the names you have
-specified when creating the ClusterSingletonManager. You can subscribe to
-``akka.cluster.ClusterEvent.MemberEvent`` and sort the members by age
-(``Member#isOlderThan``) to keep track of oldest member.
-Alternatively the singleton actor may broadcast its existence when it is started.
+You can access the singleton actor by using the provided ``akka.contrib.pattern.ClusterSingletonProxy``,
+which will route all messages to the current instance of the singleton. The proxy will keep track of
+the oldest node in the cluster and resolve the singleton's ``ActorRef`` by explicitly sending the
+singleton's ``actorSelection`` the ``akka.actor.Identify`` message and waiting for it to reply.
+This is performed periodically if the singleton doesn't reply within a certain (configurable) time.
+Given the implementation, there might be periods of time during which the ``ActorRef`` is unavailable,
+e.g., when a node leaves the cluster. In these cases, the proxy will stash away all messages until it
+is able to identify the singleton. It's worth noting that messages can always be lost because of the
+distributed nature of these actors. As always, additional logic should be implemented in the singleton
+(acknowledgement) and in the client (retry) actors to ensure at-least-once message delivery.
 
 An Example
 ----------
@@ -84,26 +89,20 @@ Here is how the singleton actor handles the ``terminationMessage`` in this examp
 
 .. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterSingletonManagerSpec.scala#consumer-end
 
-With the names given above the path of singleton actor can be constructed by subscribing to
-``MemberEvent`` cluster event and sort the members by age to keep track of oldest member.
+Note that you can send back current state to the ``ClusterSingletonManager`` before terminating.
+This message will be sent over to the ``ClusterSingletonManager`` at the new oldest node and it
+will be passed to the ``singletonProps`` factory when creating the new singleton instance.
+
+With the names given above, access to the singleton can be obtained from any cluster node using a properly
+configured proxy.
 
 In Scala:
 
-.. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterSingletonManagerSpec.scala#singleton-proxy
+.. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterSingletonManagerSpec.scala#create-singleton-proxy
 
 In Java:
 
-.. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ClusterSingletonManagerTest.java#singleton-proxy
-
-The checks of ``role`` can be omitted if you don't limit the singleton to the group of members
-tagged with a specific role.
-
-Note that the hand-over might still be in progress and the singleton actor might not be started yet
-when you receive the member event.
-
-A nice alternative to the above proxy is to use :ref:`distributed-pub-sub`. Let the singleton
-actor register itself to the mediator with ``DistributedPubSubMediator.Put`` message when it is
-started. Send messages to the singleton actor via the mediator with ``DistributedPubSubMediator.SendToAll``.
+.. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ClusterSingletonManagerTest.java#create-singleton-proxy
 
 A more comprehensive sample is available in the `Typesafe Activator <http://typesafe.com/platform/getstarted>`_
 tutorial named `Distributed workers with Akka and Scala! <http://typesafe.com/activator/template/akka-distributed-workers>`_
