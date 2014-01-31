@@ -1,11 +1,13 @@
 package akka.streams
 
-import org.scalatest.{ BeforeAndAfterAll, WordSpec, ShouldMatchers }
+import org.scalatest.{ Tag, BeforeAndAfterAll, WordSpec, ShouldMatchers }
 import rx.async.tck._
 import akka.streams.testkit.TestKit
 import akka.testkit.TestKitBase
 import akka.actor.ActorSystem
 import rx.async.api.Producer
+import scala.concurrent.duration._
+import akka.testkit.duration2TestDuration
 
 class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatchers with BeforeAndAfterAll {
   implicit lazy val system = ActorSystem()
@@ -157,7 +159,7 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
 
         upstreamSubscription.sendNext('a3)
         downstream.expectNext('a3)
-        downstream2.expectNoMsg() // as nothing was requested yet, fanOutBox needs to cache element in this case
+        downstream2.expectNoMsg(100.millis.dilated) // as nothing was requested yet, fanOutBox needs to cache element in this case
 
         downstream2Subscription.requestMore(1)
         downstream2.expectNext('a3)
@@ -188,6 +190,7 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
         pending // TODO: fix RaceTrack
         upstreamSubscription.expectRequestMore(1)
       }
+      "children Producers must support multiple subscribers" in pending
       "finish gracefully onComplete" in new InitializedChainSetup(Identity[Symbol]()) {
         val downstream2 = TestKit.consumerProbe[Symbol]()
         // don't link it just yet
@@ -212,13 +215,13 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
         downstream.expectNext('a3)
         downstream.expectComplete()
 
-        downstream2.expectNoMsg() // as nothing was requested yet, fanOutBox needs to cache element in this case
+        downstream2.expectNoMsg(100.millis.dilated) // as nothing was requested yet, fanOutBox needs to cache element in this case
 
         downstream2Subscription.requestMore(1)
         downstream2.expectNext('a3)
         downstream2.expectComplete()
 
-        upstream.expectNoMsg()
+        upstream.expectNoMsg(100.millis.dilated)
       }
       "finish gracefully if last subscriber needing data cancels subscription" in pending
       "finish gracefully onError" in new InitializedChainSetup(Identity[Symbol]()) {
@@ -226,7 +229,20 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
       }
     }
     "work in special situations" when {
-      "single subscriber cancels subscription while receiving data" in pending
+      "single subscriber cancels subscription while receiving data" in new InitializedChainSetup(Identity[String]()) {
+        downstreamSubscription.requestMore(5)
+        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.sendNext("test")
+        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.sendNext("test2")
+        upstreamSubscription.expectRequestMore(1)
+        downstream.expectNext("test")
+        downstream.expectNext("test2")
+        downstreamSubscription.cancel()
+        // autoUnsubscribe?
+        //upstreamSubscription.expectCancellation()
+        pending
+      }
     }
     "work after initial upstream was completed" when {}
     "work when subscribed to multiple publishers" when {
