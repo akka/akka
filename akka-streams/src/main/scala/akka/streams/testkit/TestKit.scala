@@ -16,6 +16,8 @@ object TestKit {
       def expectNext(element: I): Unit = probe.expectMsg(OnNext(element))
       def expectNext(): I = probe.expectMsgType[OnNext[I]].element
       def expectComplete(): Unit = probe.expectMsg(OnComplete)
+      def expectError(cause: Throwable): Unit = probe.expectMsg(OnError(cause))
+      def expectError(): Throwable = probe.expectMsgType[OnError].cause
 
       def expectNoMsg(): Unit = probe.expectNoMsg()
       def expectNoMsg(max: FiniteDuration): Unit = probe.expectNoMsg(max)

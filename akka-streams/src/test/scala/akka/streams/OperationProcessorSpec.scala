@@ -41,8 +41,15 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
         downstream.expectNext("test")
         downstream.expectComplete()
       }
-      "publisher immediately completes" in pending
-      "publisher immediately fails" in pending
+      "publisher immediately completes" in new InitializedChainSetup(Identity[String]()) {
+        upstreamSubscription.sendComplete()
+        downstream.expectComplete()
+      }
+      "publisher immediately fails" in new InitializedChainSetup(Identity[String]()) {
+        object WeirdError extends RuntimeException("weird test exception")
+        upstreamSubscription.sendError(WeirdError)
+        downstream.expectError(WeirdError)
+      }
       "operation publishes Producer" in new InitializedChainSetup[String, Producer[String]](Span(_ == "end")) {
         downstreamSubscription.requestMore(5)
         upstream.expectRequestMore(upstreamSubscription, 1)
