@@ -4,6 +4,7 @@ import akka.testkit.TestProbe
 import rx.async.spi.{ Publisher, Subscriber, Subscription }
 import rx.async.tck._
 import akka.actor.ActorSystem
+import scala.concurrent.duration.FiniteDuration
 
 object TestKit {
   def consumerProbe[I]()(implicit system: ActorSystem): AkkaConsumerProbe[I] =
@@ -15,7 +16,9 @@ object TestKit {
       def expectNext(element: I): Unit = probe.expectMsg(OnNext(element))
       def expectNext(): I = probe.expectMsgType[OnNext[I]].element
       def expectComplete(): Unit = probe.expectMsg(OnComplete)
+
       def expectNoMsg(): Unit = probe.expectNoMsg()
+      def expectNoMsg(max: FiniteDuration): Unit = probe.expectNoMsg(max)
 
       def onSubscribe(subscription: Subscription): Unit = probe.ref ! OnSubscribe(subscription)
       def onNext(element: I): Unit = probe.ref ! OnNext(element)
@@ -34,6 +37,9 @@ object TestKit {
           def requestMore(elements: Int): Unit = probe.ref ! RequestMore(subscription, elements)
           def cancel(): Unit = probe.ref ! CancelSubscription(subscription)
 
+          def expectRequestMore(n: Int): Unit = probe.expectMsg(RequestMore(subscription, n))
+          def expectCancellation(): Unit = probe.expectMsg(CancelSubscription(this))
+
           def sendNext(element: I): Unit = subscriber.onNext(element)
           def sendComplete(): Unit = subscriber.onComplete()
           def sendError(cause: Exception): Unit = subscriber.onError(cause)
@@ -48,6 +54,7 @@ object TestKit {
       def expectRequestMore(subscription: Subscription, n: Int): Unit = probe.expectMsg(RequestMore(subscription, n))
 
       def expectNoMsg(): Unit = probe.expectNoMsg()
+      def expectNoMsg(max: FiniteDuration): Unit = probe.expectNoMsg(max)
 
       def getPublisher: Publisher[I] = this
     }

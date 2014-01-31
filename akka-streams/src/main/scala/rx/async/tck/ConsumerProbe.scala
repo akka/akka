@@ -3,6 +3,7 @@ package tck
 
 import spi.Subscription
 import api.Consumer
+import scala.concurrent.duration.FiniteDuration
 
 sealed trait ConsumerEvent
 case class OnSubscribe(subscription: Subscription) extends ConsumerEvent
@@ -16,5 +17,7 @@ trait ConsumerProbe[I] extends Consumer[I] {
   def expectNext(element: I): Unit
   def expectNext(): I
   def expectComplete(): Unit
+
   def expectNoMsg(): Unit
+  def expectNoMsg(max: FiniteDuration): Unit
 }

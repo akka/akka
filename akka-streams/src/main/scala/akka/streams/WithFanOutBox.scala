@@ -26,11 +26,13 @@ trait WithFanOutBox {
   }
   def handleNewSubscription(sub: Subscriber[_]): Unit = fanOutBox.addReceiver(sub)
   def handleSubscriptionCancelled(sub: Subscriber[_]): Unit = {
+    val previousState = fanOutBox.state
     fanOutBox.removeReceiver(sub)
     fanOutBox.state match {
-      case FanOutBox.Empty    ⇒ allSubscriptionsCancelled()
+      case FanOutBox.Empty ⇒ allSubscriptionsCancelled()
       case FanOutBox.Finished ⇒ fanOutBoxFinished()
-      case _                  ⇒
+      case FanOutBox.Ready if previousState == FanOutBox.Blocked ⇒ requestNextBatch()
+      case _ ⇒
     }
   }
 }

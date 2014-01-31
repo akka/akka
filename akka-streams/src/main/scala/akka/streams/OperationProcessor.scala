@@ -47,7 +47,7 @@ private class OperationProcessor[I, O](operation: Operation[I, O], settings: Pro
 
     val fanOutBox: FanOutBox = settings.constructFanOutBox()
     def requestNextBatch(): Unit = run(ops.RequestMore(1))
-    def allSubscriptionsCancelled(): Unit = {} // ignore for now
+    def allSubscriptionsCancelled(): Unit = context.become(WaitingForSubscription) // or autoUnsubscribe
     def fanOutBoxFinished(): Unit = {} // ignore for now
 
     def receive = {
@@ -70,7 +70,7 @@ private class OperationProcessor[I, O](operation: Operation[I, O], settings: Pro
       case OnComplete                        ⇒ run(ops.Complete)
       case OnError(cause)                    ⇒ run(ops.Error(cause))
 
-      case CancelSubscription(subscriber)    ⇒ context.become(WaitingForSubscription) // FIXME: take FanOutBox into account
+      case CancelSubscription(subscriber)    ⇒ handleSubscriptionCancelled(subscriber)
 
       case RunDeferred(body)                 ⇒ body()
     }

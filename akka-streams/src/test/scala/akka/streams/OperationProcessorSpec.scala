@@ -164,6 +164,30 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
 
         upstream.expectRequestMore(upstreamSubscription, 1) // because of buffer size 1
       }
+      "blocking subscriber cancels subscription" in new InitializedChainSetup(Identity[Symbol]()) {
+        val downstream2 = TestKit.consumerProbe[Symbol]()
+        processed.link(downstream2)
+        val downstream2Subscription = downstream2.expectSubscription()
+
+        downstreamSubscription.requestMore(5)
+        upstreamSubscription.expectRequestMore(1) // because fanOutBox has buffer of size 1
+
+        upstreamSubscription.sendNext('firstElement)
+        downstream.expectNext('firstElement)
+
+        downstream2Subscription.requestMore(1)
+        downstream2.expectNext('firstElement)
+        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.sendNext('element2)
+
+        downstream.expectNext('element2)
+        upstream.expectNoMsg(100.millis.dilated)
+        // should unblock fanoutbox
+        downstream2Subscription.cancel()
+        // ... but doesn't currently
+        pending // TODO: fix RaceTrack
+        upstreamSubscription.expectRequestMore(1)
+      }
       "finish gracefully onComplete" in new InitializedChainSetup(Identity[Symbol]()) {
         val downstream2 = TestKit.consumerProbe[Symbol]()
         // don't link it just yet
