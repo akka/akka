@@ -265,7 +265,7 @@ class ClusterReceptionistExtension(system: ExtendedActorSystem) extends Extensio
     else {
       val numberOfContacts: Int = config.getInt("number-of-contacts")
       val responseTunnelReceiveTimeout =
-        Duration(config.getMilliseconds("response-tunnel-receive-timeout"), MILLISECONDS)
+        config.getDuration("response-tunnel-receive-timeout", MILLISECONDS).millis
       val name = config.getString("name")
       // important to use val mediator here to activate it outside of ClusterReceptionist constructor
       val mediator = pubSubMediator

@@ -59,6 +59,8 @@ object ThrottlerTransportAdapterSpec {
         if (received >= MessageCount) controller ! (System.nanoTime() - startTime)
     }
   }
+
+  case class Lost(msg: String)
 }
 
 class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSender with DefaultTimeout {
@@ -96,12 +98,15 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
     }
 
     "survive blackholing" taggedAs TimingTest in {
-      here ! "Blackhole 1"
-      expectMsg("Blackhole 1")
+      here ! Lost("Blackhole 1")
+      expectMsg(Lost("Blackhole 1"))
+
+      muteDeadLetters(classOf[Lost])(system)
+      muteDeadLetters(classOf[Lost])(systemB)
 
       throttle(Direction.Both, Blackhole) should be(true)
 
-      here ! "Blackhole 2"
+      here ! Lost("Blackhole 2")
       expectNoMsg(1.seconds)
       disassociate() should be(true)
       expectNoMsg(1.seconds)
@@ -110,20 +115,20 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
 
       // after we remove the Blackhole we can't be certain of the state
       // of the connection, repeat until success
-      here ! "Blackhole 3"
+      here ! Lost("Blackhole 3")
       awaitCond({
-        if (receiveOne(Duration.Zero) == "Blackhole 3")
+        if (receiveOne(Duration.Zero) == Lost("Blackhole 3"))
           true
         else {
-          here ! "Blackhole 3"
+          here ! Lost("Blackhole 3")
           false
         }
       }, 15.seconds)
 
       here ! "Cleanup"
       fishForMessage(5.seconds) {
-        case "Cleanup"     ⇒ true
-        case "Blackhole 3" ⇒ false
+        case "Cleanup"           ⇒ true
+        case Lost("Blackhole 3") ⇒ false
       }
     }
 

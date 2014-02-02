@@ -180,11 +180,11 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     }
     val HasNecessaryClusterRole: Boolean = Role.forall(cluster.selfRoles.contains)
     val GuardianName: String = config.getString("guardian-name")
-    val RetryInterval: FiniteDuration = Duration(config.getMilliseconds("retry-interval"), MILLISECONDS)
+    val RetryInterval: FiniteDuration = config.getDuration("retry-interval", MILLISECONDS).millis
     val BufferSize: Int = config.getInt("buffer-size")
-    val HandOffTimeout: FiniteDuration = Duration(config.getMilliseconds("handoff-timeout"), MILLISECONDS)
-    val RebalanceInterval: FiniteDuration = Duration(config.getMilliseconds("rebalance-interval"), MILLISECONDS)
-    val SnapshotInterval: FiniteDuration = Duration(config.getMilliseconds("snapshot-interval"), MILLISECONDS)
+    val HandOffTimeout: FiniteDuration = config.getDuration("handoff-timeout", MILLISECONDS).millis
+    val RebalanceInterval: FiniteDuration = config.getDuration("rebalance-interval", MILLISECONDS).millis
+    val SnapshotInterval: FiniteDuration = config.getDuration("snapshot-interval", MILLISECONDS).millis
     val LeastShardAllocationRebalanceThreshold: Int =
       config.getInt("least-shard-allocation-strategy.rebalance-threshold")
     val LeastShardAllocationMaxSimultaneousRebalance: Int =
@@ -868,7 +868,7 @@ object ShardCoordinator {
      * @param shardId the id of the shard to allocate
      * @param currentShardAllocations all actor refs to `ShardRegion` and their current allocated shards,
      *   in the order they were allocated
-     * @retur the actor ref of the [[ShardRegion]] that is to be responsible for the shard, must be one of
+     * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard, must be one of
      *   the references included in the `currentShardAllocations` parameter
      */
     def allocateShard(requester: ActorRef, shardId: ShardId,
@@ -910,7 +910,7 @@ object ShardCoordinator {
      * @param shardId the id of the shard to allocate
      * @param currentShardAllocations all actor refs to `ShardRegion` and their current allocated shards,
      *   in the order they were allocated
-     * @retur the actor ref of the [[ShardRegion]] that is to be responsible for the shard, must be one of
+     * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard, must be one of
      *   the references included in the `currentShardAllocations` parameter
      */
     def allocateShard(requester: ActorRef, shardId: String,

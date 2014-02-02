@@ -21,7 +21,7 @@ import scala.util.control.NonFatal
 object Main {
 
   /**
-   * @params args one argument: the class of the application supervisor actor
+   * @param args one argument: the class of the application supervisor actor
    */
   def main(args: Array[String]): Unit = {
     if (args.length != 1) {

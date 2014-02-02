@@ -79,7 +79,7 @@ final class RemoteSettings(val config: Config) {
   } requiring (_ > 0, "system-message-buffer-size must be > 0")
 
   val QuarantineDuration: FiniteDuration = {
-    Duration(getMilliseconds("akka.remote.prune-quarantine-marker-after"), MILLISECONDS).requiring(_ > Duration.Zero,
+    config.getMillisDuration("akka.remote.prune-quarantine-marker-after").requiring(_ > Duration.Zero,
       "prune-quarantine-marker-after must be > 0 ms")
   }
 

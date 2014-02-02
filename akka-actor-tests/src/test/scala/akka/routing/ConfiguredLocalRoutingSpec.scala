@@ -3,6 +3,7 @@
  */
 package akka.routing
 
+import language.postfixOps
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.collection.immutable
