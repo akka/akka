@@ -1,19 +1,19 @@
 package akka.sample.osgi.test
 
-import akka.actor._
-import akka.sample.osgi.api.{DiningHakkersService, Identify, Identification}
+import akka.actor.{ Identify => _, _ }
+import akka.sample.osgi.api._
 import akka.sample.osgi.test.TestOptions._
-import org.junit.runner.RunWith
-import org.junit.{Before, Test}
-import org.ops4j.pax.exam.{Option => PaxOption}
-import org.ops4j.pax.exam.junit.{Configuration, JUnit4TestRunner}
-import org.ops4j.pax.exam.util.Filter
-import org.scalatest.junit.JUnitSuite
-import org.scalatest.junit.ShouldMatchersForJUnit
-import javax.inject.Inject
-import java.util.concurrent.{TimeUnit, SynchronousQueue}
 import akka.testkit.TestProbe
-import scala.Some
+import javax.inject.Inject
+import org.junit.runner.RunWith
+import org.junit.{ Before, Test }
+import org.ops4j.pax.exam.junit.{ Configuration, JUnit4TestRunner }
+import org.ops4j.pax.exam.util.Filter
+import org.ops4j.pax.exam.{ Option => PaxOption }
+import org.scalatest.junit.{AssertionsForJUnit, JUnitSuite}
+import org.scalatest.Matchers
+import scala.concurrent.duration._
+import org.apache.karaf.tooling.exam.options.LogLevelOption
 
 /**
  * This is a ScalaTest based integration test. Pax-Exam, which is responsible for loading the test class into
@@ -30,7 +30,7 @@ import scala.Some
  * TODO attempt to use the Akka test probe
  */
 @RunWith(classOf[JUnit4TestRunner])
-class HakkerStatusTest extends JUnitSuite with MatchersForJUnit {
+class HakkerStatusTest extends JUnitSuite with Matchers with AssertionsForJUnit {
 
   @Inject @Filter(timeout = 30000)
   var actorSystem: ActorSystem = _
@@ -43,66 +43,52 @@ class HakkerStatusTest extends JUnitSuite with MatchersForJUnit {
   @Configuration
   def config: Array[PaxOption] = Array[PaxOption](
     karafOptionsWithTestBundles(),
-    featureDiningHakkers()
-    //,debugOptions()
-  )
+    featureDiningHakkers() //, debugOptions(level = LogLevelOption.LogLevel.DEBUG)
+    )
 
   // Junit @Before and @After can be used as well
 
-/*  @Before
+  @Before
   def setupAkkaTestkit() {
     testProbe = new TestProbe(actorSystem)
-  }*/
-
+  }
 
   @Test
   def verifyObtainingAHakkerViaTheTheDiningHakkersService() {
 
     val name = "TestHakker"
-    val hakker = Some(service.getHakker(name, (math.floor(math.random * 5)).toInt))
+    val hakker = Option(service.getHakker(name, 2))
       .getOrElse(throw new IllegalStateException("No Hakker was created via DiningHakkerService"))
 
-    hakker should not be (null)
+    // takes some time for the first message to get through
+    testProbe.within(10.seconds) {
+      testProbe.send(hakker, Identify)
+      val Identification(fromHakker, busyWith) = testProbe.expectMsgType[Identification]
 
-/* TODO Getting some weird config error with TestProbe, is it a TestProbe inside OSGi issue?
- Exception in thread "RMI TCP Connection(idle)" java.lang.NullPointerException
-	at com.typesafe.config.impl.SerializedConfigValue.writeOrigin(SerializedConfigValue.java:202)
-	at com.typesafe.config.impl.ConfigImplUtil.writeOrigin(ConfigImplUtil.java:224)
-	at com.typesafe.config.ConfigException.writeObject(ConfigException.java:58)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-
-java.io.EOFException
-        at java.io.ObjectInputStream$BlockDataInputStream.readUnsignedByte(ObjectInputStream.java:2747)
-        at java.io.ObjectInputStream.readUnsignedByte(ObjectInputStream.java:924)
-        at com.typesafe.config.impl.SerializedConfigValue.readCode(SerializedConfigValue.java:412)
-        at com.typesafe.config.impl.SerializedConfigValue.readOrigin(SerializedConfigValue.java:218)
-        ...
-    testProbe.send(hakker, Identify)
-    val identification = testProbe.expectMsgClass(classOf[Identification])
-    val (fromHakker, busyWith) = (identification.name, identification.busyWith)
-  */
-
-    // create an "Interrogator" actor that receives a Hakker's identification
-    // this is to work around the TestProbe Exception above
-    val response = new SynchronousQueue[(String, String)]()
-
-    hakker.tell(Identify, actorSystem.actorOf(Props(classOf[HakkerStatusTest.Interrogator], response), "Interrogator"))
-    val (fromHakker, busyWith) = response.poll(5, TimeUnit.SECONDS)
-
-    println("---------------> %s is busy with %s.".format(fromHakker, busyWith))
-    fromHakker should be ("TestHakker")
-    busyWith should not be (null)
+      println("---------------> %s is busy with %s.".format(fromHakker, busyWith))
+      fromHakker should be("TestHakker")
+      busyWith should not be (null)
+    }
 
   }
 
-}
+  @Test
+  def verifyHakkerTracker() {
 
-object HakkerStatusTest {
-  class Interrogator(queue: SynchronousQueue[(String, String)]) extends Actor {
-    def receive = {
-      case msg: Identification => {
-        queue.put((msg.name, msg.busyWith))
+    val name = "TestHakker"
+    val hakker = service.getHakker(name, 3)
+    val tracker = service.getTracker()
+    tracker ! TrackHakker(hakker)
+    testProbe.within(10.seconds) {
+      testProbe.awaitAssert {
+        testProbe.within(1.second) {
+          tracker.tell(GetEatingCount(name), testProbe.ref)
+          val reply = testProbe.expectMsgType[EatingCount]
+          reply.hakkerName should be(name)
+          reply.count should be > (0)
+        }
       }
     }
   }
+
 }

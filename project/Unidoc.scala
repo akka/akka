@@ -11,15 +11,14 @@ object Unidoc {
   lazy val GenJavaDocEnabled = Option(sys.props("akka.genjavadoc.enabled")) filter (_.toLowerCase == "true") map (_ => true) getOrElse false
 
   lazy val javadocSettings =
-    inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
-      packageDoc in Compile <<= packageDoc in JavaDoc,
-      sources in JavaDoc <<= (target, compile in Compile, sources in Compile) map ((t, c, s) =>
-        if (GenJavaDocEnabled) (t / "java" ** "*.java").get ++ s.filter(_.getName.endsWith(".java"))
-        else throw new RuntimeException("cannot build java docs without -Dakka.genjavadoc.enabled=true")
-      ),
-      javacOptions in JavaDoc := Seq(),
-      artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar")
-    ) ++ (if (GenJavaDocEnabled) Seq(
+    inConfig(JavaDoc)(Defaults.configSettings) ++
+      (if (GenJavaDocEnabled) Seq(
+        packageDoc in Compile <<= packageDoc in JavaDoc,
+        sources in JavaDoc <<= (target, compile in Compile, sources in Compile) map ((t, c, s) =>
+          (t / "java" ** "*.java").get ++ s.filter(_.getName.endsWith(".java"))
+        ),
+        javacOptions in JavaDoc := Seq(),
+        artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar"),
         libraryDependencies += Dependencies.Compile.genjavadoc,
         scalacOptions <+= target map (t => "-P:genjavadoc:out=" + (t / "java"))
       ) else Nil)

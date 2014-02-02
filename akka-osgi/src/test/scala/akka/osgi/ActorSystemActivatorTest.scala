@@ -41,7 +41,7 @@ class PingPongActorSystemActivatorTest extends WordSpec with Matchers with PojoS
     "start and register the ActorSystem when bundle starts" in {
       filterErrors() {
         val system = serviceForType[ActorSystem]
-        val actor = system.actorFor("/user/pong")
+        val actor = system.actorSelection("/user/pong")
 
         implicit val timeout = Timeout(5 seconds)
         Await.result(actor ? Ping, timeout.duration) should be(Pong)

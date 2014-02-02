@@ -70,18 +70,18 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
   def serviceForType[T](implicit t: ClassTag[T]): T =
     context.getService(awaitReference(t.runtimeClass)).asInstanceOf[T]
 
-  def awaitReference(serviceType: Class[_]): ServiceReference = awaitReference(serviceType, SleepyTime)
+  def awaitReference[T](serviceType: Class[T]): ServiceReference[T] = awaitReference(serviceType, SleepyTime)
 
-  def awaitReference(serviceType: Class[_], wait: FiniteDuration): ServiceReference = {
+  def awaitReference[T](serviceType: Class[T], wait: FiniteDuration): ServiceReference[T] = {
 
-    @tailrec def poll(step: Duration, deadline: Deadline): ServiceReference = context.getServiceReference(serviceType.getName) match {
+    @tailrec def poll(step: Duration, deadline: Deadline): ServiceReference[T] = context.getServiceReference(serviceType.getName) match {
       case null ⇒
         if (deadline.isOverdue()) fail("Gave up waiting for service of type %s".format(serviceType))
         else {
           Thread.sleep((step min deadline.timeLeft max Duration.Zero).toMillis)
           poll(step, deadline)
         }
-      case some ⇒ some
+      case some ⇒ some.asInstanceOf[ServiceReference[T]]
     }
 
     poll(wait, Deadline.now + MaxWaitDuration)

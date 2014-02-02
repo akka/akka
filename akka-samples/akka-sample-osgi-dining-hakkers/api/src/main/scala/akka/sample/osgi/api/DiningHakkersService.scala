@@ -19,4 +19,5 @@ import akka.actor.ActorRef
 
 trait DiningHakkersService {
   def getHakker(name: String, chairNumber: Int): ActorRef
+  def getTracker(): ActorRef
 }

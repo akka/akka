@@ -17,10 +17,14 @@ package akka.sample.osgi.service
 
 import akka.sample.osgi.api.DiningHakkersService
 import akka.actor.{ Props, ActorSystem }
+import akka.actor.ActorRef
 import akka.sample.osgi.internal.Hakker
+import akka.sample.osgi.internal.HakkerTracker
 
 class DiningHakkersServiceImpl(system: ActorSystem) extends DiningHakkersService {
-  def getHakker(name: String, chairNumber: Int) = {
+  def getHakker(name: String, chairNumber: Int): ActorRef =
     system.actorOf(Props(classOf[Hakker], name, chairNumber))
-  }
+
+  def getTracker(): ActorRef =
+    system.actorOf(Props[HakkerTracker], "tracker")
 }

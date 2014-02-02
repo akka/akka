@@ -1,14 +1,6 @@
 Akka in OSGi
 ============
 
-In an OSGi environment the ``akka-osgi`` bundle replaces ``akka-actor`` artifact. It includes all classes from ``akka-actor`` and merged ``reference.conf`` files from all akka modules. The dependency is::
-
-  <dependency>
-    <groupId>com.typesafe.akka</groupId>
-    <artifactId>akka-osgi_@binVersion@</artifactId>
-    <version>@version@</version>
-  </dependency>
-
 Configuring the OSGi Framework
 ------------------------------
 
@@ -19,26 +11,20 @@ instead of resolving it through the normal OSGi class space.
 Activator
 ---------
 
-To bootstrap Akka inside an OSGi environment, you can use the ``akka.osgi.AkkaSystemActivator`` class
+To bootstrap Akka inside an OSGi environment, you can use the ``akka.osgi.ActorSystemActivator`` class
 to conveniently set up the ActorSystem.
 
 .. includecode:: code/osgi/Activator.scala#Activator
 
-The ``AkkaSystemActivator`` class is included in the ``akka-osgi`` artifact.
 
-Blueprint
----------
+The ``ActorSystemActivator`` creates the actor system with a class loader that finds resources
+(``reference.conf`` files) and classes from the application bundle and all transitive dependencies.
 
-For the Apache Aries Blueprint implementation, there's also a namespace handler available.  The namespace URI
-is http://akka.io/xmlns/blueprint/v1.0.0 and it can be used to set up an ActorSystem.
-
-.. includecode:: code/osgi/blueprint.xml
-
-The blueprint is included in the ``akka-osgi-aries`` artifact::
+The ``ActorSystemActivator`` class is included in the ``akka-osgi`` artifact.
 
   <dependency>
     <groupId>com.typesafe.akka</groupId>
-    <artifactId>akka-osgi-aries_@binVersion@</artifactId>
+    <artifactId>akka-osgi_@binVersion@</artifactId>
     <version>@version@</version>
   </dependency>
 
