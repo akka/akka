@@ -34,7 +34,7 @@ object AkkaBuild extends Build {
 
   val enableMiMa = false
 
-  val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.2")
+  val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.3")
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
