@@ -18,6 +18,7 @@ import akka.actor.ActorRef
 import akka.serialization.SerializationExtension
 import scala.util.control.NonFatal
 import akka.event.Logging
+import akka.actor.ActorPath
 
 object ConsistentHashingRouter {
 
@@ -416,15 +417,15 @@ final case class ConsistentHashingGroup(
 private[akka] case class ConsistentRoutee(routee: Routee, selfAddress: Address) {
 
   override def toString: String = routee match {
-    case ActorRefRoutee(ref)       ⇒ toStringWithfullAddress(ref)
-    case ActorSelectionRoutee(sel) ⇒ toStringWithfullAddress(sel.anchor)
+    case ActorRefRoutee(ref)       ⇒ toStringWithfullAddress(ref.path)
+    case ActorSelectionRoutee(sel) ⇒ toStringWithfullAddress(sel.anchorPath) + sel.pathString
     case other                     ⇒ other.toString
   }
 
-  private def toStringWithfullAddress(ref: ActorRef): String = {
-    ref.path.address match {
-      case Address(_, _, None, None) ⇒ ref.path.toStringWithAddress(selfAddress)
-      case a                         ⇒ ref.path.toString
+  private def toStringWithfullAddress(path: ActorPath): String = {
+    path.address match {
+      case Address(_, _, None, None) ⇒ path.toStringWithAddress(selfAddress)
+      case a                         ⇒ path.toString
     }
   }
 }

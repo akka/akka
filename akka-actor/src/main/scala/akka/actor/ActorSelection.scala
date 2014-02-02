@@ -89,6 +89,16 @@ abstract class ActorSelection extends Serializable {
     builder.toString
   }
 
+  /**
+   * The [[akka.actor.ActorPath]] of the anchor actor.
+   */
+  def anchorPath: ActorPath = anchor.path
+
+  /**
+   * String representation of the path elements, starting with "/" and separated with "/".
+   */
+  def pathString: String = path.mkString("/", "/", "")
+
   override def equals(obj: Any): Boolean = obj match {
     case s: ActorSelection ⇒ this.anchor == s.anchor && this.path == s.path
     case _                 ⇒ false
