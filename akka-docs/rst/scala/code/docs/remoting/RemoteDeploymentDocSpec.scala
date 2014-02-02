@@ -47,7 +47,7 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
     val one = AddressFromURIString("akka.tcp://sys@host:1234")
     val two = Address("akka.tcp", "sys", "host", 1234) // this gives the same
     //#make-address
-    one should equal(two)
+    one should be(two)
   }
 
   "demonstrate sampleActor" in {

@@ -160,7 +160,7 @@ class TcpListenerSpec extends AkkaSpec("""
       selectorRouter.expectMsgPF() {
         case WorkerForCommand(RegisterIncoming(chan), commander, _) ⇒
           chan.isOpen should be(true)
-          commander should equal(listener)
+          commander should be(listener)
           chan
       }
 

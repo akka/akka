@@ -36,7 +36,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
     "find actor refs using actorFor" in {
       val a = system.actorOf(Props(new Actor { def receive = { case _ ⇒ } }))
       val b = system.actorFor(a.path)
-      a should equal(b)
+      a should be(b)
     }
 
     "find child actor with URL encoded name using actorFor" in {
@@ -97,7 +97,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
           case Some(Failure(ex: InvalidActorNameException)) ⇒ 2
           case x ⇒ x
         })
-        set should equal(Set(1, 2))
+        set should be(Set(1, 2))
       }
     }
 

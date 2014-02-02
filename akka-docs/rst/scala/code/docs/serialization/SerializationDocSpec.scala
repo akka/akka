@@ -123,9 +123,9 @@ package docs.serialization {
       #//#serialization-bindings-config
       """)
       val a = ActorSystem("system", config)
-      SerializationExtension(a).serializerFor(classOf[String]).getClass should equal(classOf[JavaSerializer])
-      SerializationExtension(a).serializerFor(classOf[Customer]).getClass should equal(classOf[JavaSerializer])
-      SerializationExtension(a).serializerFor(classOf[java.lang.Boolean]).getClass should equal(classOf[MyOwnSerializer])
+      SerializationExtension(a).serializerFor(classOf[String]).getClass should be(classOf[JavaSerializer])
+      SerializationExtension(a).serializerFor(classOf[Customer]).getClass should be(classOf[JavaSerializer])
+      SerializationExtension(a).serializerFor(classOf[java.lang.Boolean]).getClass should be(classOf[MyOwnSerializer])
       shutdown(a)
     }
 
@@ -149,7 +149,7 @@ package docs.serialization {
       val back = serializer.fromBinary(bytes, manifest = None)
 
       // Voilá!
-      back should equal(original)
+      back should be(original)
 
       //#programmatic
       shutdown(system)

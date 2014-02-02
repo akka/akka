@@ -12,7 +12,7 @@ class SystemMessageListSpec extends AkkaSpec {
   "The SystemMessageList value class" must {
 
     "handle empty lists correctly" in {
-      LNil.head should equal(null)
+      LNil.head should be(null)
       LNil.isEmpty should be(true)
       (LNil.reverse == ENil) should be(true)
     }
@@ -48,16 +48,16 @@ class SystemMessageListSpec extends AkkaSpec {
       val create2 = Failed(null, null, 2)
       val list = create2 :: create1 :: create0 :: LNil
 
-      list.size should equal(3)
+      list.size should be(3)
       list.isEmpty should be(false)
 
-      list.tail.size should equal(2)
+      list.tail.size should be(2)
       list.tail.isEmpty should be(false)
 
-      list.tail.tail.size should equal(1)
+      list.tail.tail.size should be(1)
       list.tail.tail.isEmpty should be(false)
 
-      list.tail.tail.tail.size should equal(0)
+      list.tail.tail.tail.size should be(0)
       list.tail.tail.tail.isEmpty should be(true)
 
     }
@@ -70,7 +70,7 @@ class SystemMessageListSpec extends AkkaSpec {
       val listRev: EarliestFirstSystemMessageList = list.reverse
 
       listRev.isEmpty should be(false)
-      listRev.size should equal(3)
+      listRev.size should be(3)
 
       (listRev.head eq create0) should be(true)
       (listRev.tail.head eq create1) should be(true)

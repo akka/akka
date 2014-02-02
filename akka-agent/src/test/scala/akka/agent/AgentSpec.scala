@@ -59,7 +59,7 @@ class AgentSpec extends AkkaSpec {
       val result = Future.sequence(Seq(r1, r2, r3)).map(_.mkString(":"))
       l2.countDown
 
-      Await.result(result, 5 seconds) should equal("ab:abc:abcd")
+      Await.result(result, 5 seconds) should be("ab:abc:abcd")
 
       agent() should be("abcd")
     }

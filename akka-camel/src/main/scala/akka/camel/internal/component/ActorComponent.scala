@@ -10,7 +10,7 @@ import org.apache.camel._
 import org.apache.camel.impl.{ DefaultProducer, DefaultEndpoint, DefaultComponent }
 import akka.actor._
 import akka.pattern._
-import scala.reflect.BeanProperty
+import scala.beans.BeanProperty
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.control.NonFatal

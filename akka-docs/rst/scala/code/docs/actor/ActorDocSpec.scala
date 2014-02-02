@@ -505,7 +505,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       val b = system.actorOf(Props(classOf[Follower], this))
       watch(b)
       system.stop(a)
-      expectMsgType[akka.actor.Terminated].actor should equal(b)
+      expectMsgType[akka.actor.Terminated].actor should be(b)
     }
   }
 
@@ -567,12 +567,12 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     implicit val me = testActor
     actor ! 42
     expectMsg(42)
-    lastSender should equal(actor)
+    lastSender should be(actor)
     actor ! me
     expectMsg("reply")
-    lastSender.path.toStringWithoutAddress should equal("/user")
+    lastSender.path.toStringWithoutAddress should be("/user")
     expectMsg("reply")
-    lastSender.path.toStringWithoutAddress should equal("/user")
+    lastSender.path.toStringWithoutAddress should be("/user")
   }
 
   "using ActorDSL outside of akka.actor package" in {

@@ -21,7 +21,7 @@ class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
     "execute default behavior" in {
       val behavior = defaultBehavior
 
-      Await.result(behavior(()), timeout.duration) should equal(3)
+      Await.result(behavior(()), timeout.duration) should be(3)
     }
 
     "be able to push generic behavior" in {

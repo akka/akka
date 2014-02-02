@@ -247,7 +247,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       filterEvents(EventFilter[IllegalStateException]("Calling")) {
         (intercept[IllegalStateException] {
           TypedActor.self[Foo]
-        }).getMessage should equal("Calling TypedActor.self outside of a TypedActor implementation method!")
+        }).getMessage should be("Calling TypedActor.self outside of a TypedActor implementation method!")
       }
     }
 
@@ -265,7 +265,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
 
     "be able to call equals" in {
       val t = newFooBar
-      t should equal(t)
+      t should be(t)
       t should not equal (null)
       mustStop(t)
     }
@@ -294,8 +294,8 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
 
     "be able to call null returning methods" in {
       val t = newFooBar
-      t.nullJOption() should equal(JOption.none)
-      t.nullOption() should equal(None)
+      t.nullJOption() should be(JOption.none)
+      t.nullOption() should be(None)
       t.nullReturn() should ===(null)
       Await.result(t.nullFuture(), timeout.duration) should ===(null)
     }
@@ -341,7 +341,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       val t, t2 = newFooBar(remaining)
       val f = t.futureComposePigdogFrom(t2)
       f.isCompleted should be(false)
-      Await.result(f, remaining) should equal("PIGDOG")
+      Await.result(f, remaining) should be("PIGDOG")
       mustStop(t)
       mustStop(t2)
     }
@@ -379,13 +379,13 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
     "be restarted on failure" in {
       filterEvents(EventFilter[IllegalStateException]("expected")) {
         val t = newFooBar(Duration(2, "s"))
-        intercept[IllegalStateException] { t.failingOptionPigdog() }.getMessage should equal("expected")
-        t.optionPigdog() should equal(Some("Pigdog"))
+        intercept[IllegalStateException] { t.failingOptionPigdog() }.getMessage should be("expected")
+        t.optionPigdog() should be(Some("Pigdog"))
         mustStop(t)
 
         val ta: F = TypedActor(system).typedActorOf(TypedProps[FI]())
-        intercept[IllegalStateException] { ta.f(true) }.getMessage should equal("expected")
-        ta.f(false) should equal(1)
+        intercept[IllegalStateException] { ta.f(true) }.getMessage should be("expected")
+        ta.f(false) should be(1)
 
         mustStop(ta)
       }
@@ -404,7 +404,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       val f2 = t.futurePigdog(Duration.Zero)
       f2.isCompleted should be(false)
       f.isCompleted should be(false)
-      Await.result(f, remaining) should equal(Await.result(f2, remaining))
+      Await.result(f, remaining) should be(Await.result(f2, remaining))
       mustStop(t)
     }
 
@@ -462,10 +462,10 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
         mNew.method should be(m.method)
         mNew.parameters should have size 3
         mNew.parameters(0) should not be null
-        mNew.parameters(0).getClass should equal(classOf[Bar])
+        mNew.parameters(0).getClass should be(classOf[Bar])
         mNew.parameters(1) should be(null)
         mNew.parameters(2) should not be null
-        mNew.parameters(2).asInstanceOf[Int] should equal(1)
+        mNew.parameters(2).asInstanceOf[Int] should be(1)
       }
     }
 
@@ -474,7 +474,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       JavaSerializer.currentSystem.withValue(system.asInstanceOf[ExtendedActorSystem]) {
         val t = newFooBar(Duration(2, "s"))
 
-        t.optionPigdog() should equal(Some("Pigdog"))
+        t.optionPigdog() should be(Some("Pigdog"))
 
         val baos = new ByteArrayOutputStream(8192 * 4)
         val out = new ObjectOutputStream(baos)
@@ -486,9 +486,9 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
 
         val tNew = in.readObject().asInstanceOf[Foo]
 
-        tNew should equal(t)
+        tNew should be(t)
 
-        tNew.optionPigdog() should equal(Some("Pigdog"))
+        tNew.optionPigdog() should be(Some("Pigdog"))
 
         mustStop(t)
       }
@@ -512,7 +512,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       //Done with that now
 
       ta.poisonPill(t)
-      latch.await(10, TimeUnit.SECONDS) should equal(true)
+      latch.await(10, TimeUnit.SECONDS) should be(true)
     }
   }
 }

@@ -71,9 +71,10 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         Await.result(failure fallbackTo timedOut, timeout.duration) should be("Timedout")
         Await.result(timedOut fallbackTo empty, timeout.duration) should be("Timedout")
         Await.result(failure fallbackTo failure fallbackTo timedOut, timeout.duration) should be("Timedout")
+        val expected = if (scala.util.Properties.versionNumberString.startsWith("2.10.")) "last" else "br0ken"
         intercept[RuntimeException] {
           Await.result(failure fallbackTo otherFailure, timeout.duration)
-        }.getMessage should be("last")
+        }.getMessage should be(expected)
       }
     }
     "completed with a result" must {
@@ -117,7 +118,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
       p.completeWith(Future { "Hi " }(B))
       try {
-        Await.result(result, timeout.duration) should equal("Hi A")
+        Await.result(result, timeout.duration) should be("Hi A")
       } finally {
         A.shutdown()
         B.shutdown()
@@ -351,7 +352,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           Await.result(Promise.failed[String](o).future recoverWith { case _ if false == true ⇒ yay }, timeout.duration)
         } should be(o)
 
-        Await.result(Promise.failed[String](o).future recoverWith { case _ ⇒ yay }, timeout.duration) should equal("yay!")
+        Await.result(Promise.failed[String](o).future recoverWith { case _ ⇒ yay }, timeout.duration) should be("yay!")
 
         intercept[IllegalStateException] {
           Await.result(Promise.failed[String](o).future recoverWith { case _ ⇒ Promise.failed[String](r).future }, timeout.duration)
@@ -451,7 +452,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
             case 6 ⇒ Future(throw new IllegalArgumentException("shouldReduceResultsWithException: expected"))
             case i ⇒ Future(i)
           }
-          intercept[Throwable] { Await.result(Future.reduce(futures)(_ + _), remaining) }.getMessage should equal("shouldReduceResultsWithException: expected")
+          intercept[Throwable] { Await.result(Future.reduce(futures)(_ + _), remaining) }.getMessage should be("shouldReduceResultsWithException: expected")
         }
       }
 

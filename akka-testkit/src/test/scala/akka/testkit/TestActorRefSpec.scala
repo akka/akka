@@ -214,7 +214,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
       val f = a ? "work"
       // CallingThreadDispatcher means that there is no delay
       f should be('completed)
-      Await.result(f, timeout.duration) should equal("workDone")
+      Await.result(f, timeout.duration) should be("workDone")
     }
 
     "support receive timeout" in {
@@ -235,7 +235,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
       })
       ref ! "hallo"
       val actor = ref.underlyingActor
-      actor.s should equal("hallo")
+      actor.s should be("hallo")
     }
 
     "set receiveTimeout to None" in {

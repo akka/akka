@@ -23,19 +23,19 @@ class DurationConverterSpec extends WordSpec with Matchers {
   }
 
   "DurationTypeConverter must throw if invalid format" in {
-    tryConvertTo(classOf[Duration], "abc nanos") should equal(null)
+    tryConvertTo(classOf[Duration], "abc nanos") should be(null)
 
     intercept[TypeConversionException] {
       mandatoryConvertTo(classOf[Duration], "abc nanos") should be(10 nanos)
-    }.getValue should equal("abc nanos")
+    }.getValue should be("abc nanos")
   }
 
   "DurationTypeConverter must throw if doesn't end with time unit" in {
-    tryConvertTo(classOf[Duration], "10233") should equal(null)
+    tryConvertTo(classOf[Duration], "10233") should be(null)
 
     intercept[TypeConversionException] {
       mandatoryConvertTo(classOf[Duration], "10233") should be(10 nanos)
-    }.getValue should equal("10233")
+    }.getValue should be("10233")
   }
 
 }

@@ -50,7 +50,7 @@ class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) {
     "reject remote deployment when the source requires LocalScope" in {
       intercept[ConfigurationException] {
         system.actorOf(Props.empty.withDeploy(Deploy.local), "service2")
-      }.getMessage should equal("configuration requested remote deployment for local-only Props at [akka://RemoteDeployerSpec/user/service2]")
+      }.getMessage should be("configuration requested remote deployment for local-only Props at [akka://RemoteDeployerSpec/user/service2]")
     }
 
   }

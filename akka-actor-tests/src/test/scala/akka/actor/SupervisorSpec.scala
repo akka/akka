@@ -139,7 +139,7 @@ class SupervisorSpec extends AkkaSpec("akka.actor.serialize-messages = off") wit
   }
 
   def ping(pingPongActor: ActorRef) = {
-    Await.result(pingPongActor.?(Ping)(DilatedTimeout), DilatedTimeout) should equal(PongMessage)
+    Await.result(pingPongActor.?(Ping)(DilatedTimeout), DilatedTimeout) should be(PongMessage)
     expectMsg(Timeout, PingMessage)
   }
 

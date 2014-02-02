@@ -151,7 +151,7 @@ class RemoteRoundRobinSpec extends MultiNodeSpec(RemoteRoundRobinMultiJvmSpec)
         enterBarrier("end")
         repliesFrom.size should be(7)
         val repliesFromAddresses = repliesFrom.map(_.path.address)
-        repliesFromAddresses should equal(Set(node(first), node(second), node(third)).map(_.address))
+        repliesFromAddresses should be(Set(node(first), node(second), node(third)).map(_.address))
 
         // shut down the actor before we let the other node(s) shut down so we don't try to send
         // "Terminate" to a shut down node

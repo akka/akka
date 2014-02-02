@@ -70,14 +70,14 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
             msg
         }.map(m ⇒ m.frames(0).utf8String.toInt)
         msgNumbers.length should be > 0
-        msgNumbers should equal(for (i ← msgNumbers.head to msgNumbers.last) yield i)
+        msgNumbers should be(for (i ← msgNumbers.head to msgNumbers.last) yield i)
       } finally {
         msgGenerator.cancel()
         watch(subscriber)
         system stop subscriber
         subscriberProbe.receiveWhile(3 seconds) {
           case msg ⇒ msg
-        }.last should equal(Closed)
+        }.last should be(Closed)
         expectTerminated(subscriber, 5.seconds)
         watch(publisher)
         system stop publisher

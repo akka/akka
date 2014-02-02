@@ -152,7 +152,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       val wrappedHandle = expectMsgPF() {
         case InboundAssociation(h: AkkaProtocolHandle) ⇒
-          h.handshakeInfo.uid should equal(33)
+          h.handshakeInfo.uid should be(33)
           h
       }
 
@@ -166,7 +166,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       reader ! testPayload
 
       expectMsgPF() {
-        case InboundPayload(p) ⇒ p should equal(testEnvelope)
+        case InboundPayload(p) ⇒ p should be(testEnvelope)
       }
     }
 
@@ -222,9 +222,9 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       Await.result(statusPromise.future, 3.seconds) match {
         case h: AkkaProtocolHandle ⇒
-          h.remoteAddress should equal(remoteAkkaAddress)
-          h.localAddress should equal(localAkkaAddress)
-          h.handshakeInfo.uid should equal(33)
+          h.remoteAddress should be(remoteAkkaAddress)
+          h.localAddress should be(localAkkaAddress)
+          h.handshakeInfo.uid should be(33)
 
         case _ ⇒ fail()
       }
@@ -266,8 +266,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       val wrappedHandle = expectMsgPF() {
         case InboundAssociation(h: AkkaProtocolHandle) ⇒
-          h.handshakeInfo.uid should equal(33)
-          h.handshakeInfo.cookie should equal(Some("abcde"))
+          h.handshakeInfo.uid should be(33)
+          h.handshakeInfo.cookie should be(Some("abcde"))
           h
       }
 
@@ -320,8 +320,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
         case h: AssociationHandle ⇒
-          h.remoteAddress should equal(remoteAkkaAddress)
-          h.localAddress should equal(localAkkaAddress)
+          h.remoteAddress should be(remoteAkkaAddress)
+          h.localAddress should be(localAkkaAddress)
           h
 
         case _ ⇒ fail()
@@ -356,8 +356,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
         case h: AssociationHandle ⇒
-          h.remoteAddress should equal(remoteAkkaAddress)
-          h.localAddress should equal(localAkkaAddress)
+          h.remoteAddress should be(remoteAkkaAddress)
+          h.localAddress should be(localAkkaAddress)
           h
 
         case _ ⇒ fail()
@@ -392,8 +392,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
         case h: AssociationHandle ⇒
-          h.remoteAddress should equal(remoteAkkaAddress)
-          h.localAddress should equal(localAkkaAddress)
+          h.remoteAddress should be(remoteAkkaAddress)
+          h.localAddress should be(localAkkaAddress)
           h
 
         case _ ⇒ fail()
@@ -431,8 +431,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
         case h: AssociationHandle ⇒
-          h.remoteAddress should equal(remoteAkkaAddress)
-          h.localAddress should equal(localAkkaAddress)
+          h.remoteAddress should be(remoteAkkaAddress)
+          h.localAddress should be(localAkkaAddress)
           h
 
         case _ ⇒ fail()

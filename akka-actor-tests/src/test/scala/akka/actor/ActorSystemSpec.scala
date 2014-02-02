@@ -138,7 +138,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
   "An ActorSystem" must {
 
     "use scala.concurrent.Future's InternalCallbackEC" in {
-      system.asInstanceOf[ActorSystemImpl].internalCallingThreadExecutionContext.getClass.getName should equal("scala.concurrent.Future$InternalCallbackExecutor$")
+      system.asInstanceOf[ActorSystemImpl].internalCallingThreadExecutionContext.getClass.getName should be("scala.concurrent.Future$InternalCallbackExecutor$")
     }
 
     "reject invalid names" in {
@@ -164,8 +164,8 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     "support extensions" in {
       // TestExtension is configured and should be loaded at startup
       system.hasExtension(TestExtension) should be(true)
-      TestExtension(system).system should equal(system)
-      system.extension(TestExtension).system should equal(system)
+      TestExtension(system).system should be(system)
+      system.extension(TestExtension).system should be(system)
     }
 
     "log dead letters" in {
@@ -241,7 +241,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       import system.dispatcher
       implicit val timeout = Timeout((20 seconds).dilated)
       val waves = for (i ← 1 to 3) yield system.actorOf(Props[ActorSystemSpec.Waves]) ? 50000
-      Await.result(Future.sequence(waves), timeout.duration + 5.seconds) should equal(Seq("done", "done", "done"))
+      Await.result(Future.sequence(waves), timeout.duration + 5.seconds) should be(Seq("done", "done", "done"))
     }
 
     "find actors that just have been created" in {

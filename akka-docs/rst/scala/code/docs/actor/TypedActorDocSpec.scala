@@ -124,11 +124,11 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#typed-actor-call-strict
     //#typed-actor-calls
 
-    Await.result(fSquare, 3 seconds) should equal(100)
+    Await.result(fSquare, 3 seconds) should be(100)
 
-    oSquare should equal(Some(100))
+    oSquare should be(Some(100))
 
-    iSquare should equal(100)
+    iSquare should be(100)
 
     //#typed-actor-stop
     TypedActor(system).stop(mySquarer)
@@ -174,6 +174,6 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
     TypedActor(system).poisonPill(awesomeFooBar)
     //#typed-actor-supercharge-usage
-    Await.result(f, 3 seconds) should equal("YES")
+    Await.result(f, 3 seconds) should be("YES")
   }
 }
