@@ -12,12 +12,26 @@ trait OpInstance[-I, +O] {
   def handleMany(e: EmitMany[I]): Result[O] =
     e.elements.map(e ⇒ handle(Emit(e))).reduceLeftOption(_ ~ _).getOrElse(Continue)
 }
+object OpInstance {
+  def apply[I, O](f: SimpleResult[I] ⇒ Result[O]): OpInstance[I, O] =
+    new OpInstance[I, O] {
+      def handle(result: SimpleResult[I]): Result[O] = f(result)
+    }
+}
 
 /* The result of a single calculation step */
 sealed trait Result[+O] {
   def ~[O2 >: O](other: Result[O2]): Result[O2] =
     if (other == Continue) this
     else Combine(this, other)
+}
+object Result {
+  def emitMany[O](els: Vector[O]): Result[O] =
+    if (els.isEmpty) Continue
+    else if (els.size == 1) Emit(els.head)
+    else EmitMany(els)
+  def completeIf(condition: Boolean): Result[Nothing] =
+    if (condition) Complete else Continue
 }
 sealed trait SimpleResult[+O] extends Result[O]
 sealed trait ForwardResult[+O] extends SimpleResult[O]
