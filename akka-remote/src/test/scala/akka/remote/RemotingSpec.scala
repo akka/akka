@@ -416,6 +416,10 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       system.actorSelection(child.path / "*" / "grandgrandchild") ! Identify("idReq13")
       expectMsg(ActorIdentity("idReq13", Some(grandgrandchild)))
 
+      val sel1 = system.actorSelection("/user/looker2/child/grandchild/grandgrandchild")
+      system.actorSelection(sel1.toSerializationFormat) ! Identify("idReq18")
+      expectMsg(ActorIdentity("idReq18", Some(grandgrandchild)))
+
       child ! Identify("idReq14")
       expectMsg(ActorIdentity("idReq14", Some(child)))
       watch(child)

@@ -99,6 +99,27 @@ abstract class ActorSelection extends Serializable {
    */
   def pathString: String = path.mkString("/", "/", "")
 
+  /**
+   * String representation of the actor selection suitable for storage and recreation.
+   * The output is similar to the URI fragment returned by [[akka.actor.ActorPath.toSerializationFormat]].
+   * @return URI fragment
+   */
+  def toSerializationFormat: String = {
+    val anchorPath = anchor match {
+      case a: ActorRefWithCell ⇒ anchor.path.toStringWithAddress(a.provider.getDefaultAddress)
+      case _                   ⇒ anchor.path.toString
+    }
+
+    val builder = new java.lang.StringBuilder()
+    builder.append(anchorPath)
+    val lastChar = builder.charAt(builder.length - 1)
+    if (path.nonEmpty && lastChar != '/')
+      builder.append(path.mkString("/", "/", ""))
+    else if (path.nonEmpty)
+      builder.append(path.mkString("/"))
+    builder.toString
+  }
+
   override def equals(obj: Any): Boolean = obj match {
     case s: ActorSelection ⇒ this.anchor == s.anchor && this.path == s.path
     case _                 ⇒ false

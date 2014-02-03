@@ -332,6 +332,14 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
         s"ActorSelection[Anchor(akka://ActorSelectionSpec/user/c2/c21#${c21.path.uid}), Path(/../*/hello)]")
     }
 
+    "have a stringly serializable path" in {
+      system.actorSelection(system / "c2").toSerializationFormat should be("akka://ActorSelectionSpec/user/c2")
+      system.actorSelection(system / "c2" / "c21").toSerializationFormat should be("akka://ActorSelectionSpec/user/c2/c21")
+      ActorSelection(c2, "/").toSerializationFormat should be("akka://ActorSelectionSpec/user/c2")
+      ActorSelection(c2, "../*/hello").toSerializationFormat should be("akka://ActorSelectionSpec/user/c2/../*/hello")
+      ActorSelection(c2, "/../*/hello").toSerializationFormat should be("akka://ActorSelectionSpec/user/c2/../*/hello")
+    }
+
     "send ActorSelection targeted to missing actor to deadLetters" in {
       val p = TestProbe()
       system.eventStream.subscribe(p.ref, classOf[DeadLetter])
