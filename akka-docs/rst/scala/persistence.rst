@@ -449,7 +449,7 @@ as a pattern on top of command sourcing). A processor that extends this trait do
 directly but uses the ``persist`` method to persist and handle events. The behavior of an ``EventsourcedProcessor``
 is defined by implementing ``receiveRecover`` and ``receiveCommand``. This is demonstrated in the following example.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence/src/main/scala/sample/persistence/EventsourcedExample.scala#eventsourced-example
+.. includecode:: ../../../akka-samples/akka-sample-persistence-scala/src/main/scala/sample/persistence/EventsourcedExample.scala#eventsourced-example
 
 The example defines two data types, ``Cmd`` and ``Evt`` to represent commands and events, respectively. The
 ``state`` of the ``ExampleProcessor`` is a list of persisted event data contained in ``ExampleState``.

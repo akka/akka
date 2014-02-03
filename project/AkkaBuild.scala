@@ -369,7 +369,7 @@ object AkkaBuild extends Build {
     settings = parentSettings ++ ActivatorDist.settings,
     aggregate = Seq(camelSampleJava, camelSampleScala, mainSampleJava, mainSampleScala, 
           remoteSampleJava, remoteSampleScala, clusterSampleJava, clusterSampleScala,
-          fsmSample, persistenceSample,
+          fsmSample, persistenceSampleJava, persistenceSampleScala,
           multiNodeSample, helloKernelSample, osgiDiningHakkersSample)
   )
 
@@ -429,9 +429,16 @@ object AkkaBuild extends Build {
     settings = sampleSettings
   )
 
-  lazy val persistenceSample = Project(
-    id = "akka-sample-persistence",
-    base = file("akka-samples/akka-sample-persistence"),
+  lazy val persistenceSampleJava = Project(
+    id = "akka-sample-persistence-java",
+    base = file("akka-samples/akka-sample-persistence-java"),
+    dependencies = Seq(actor, persistence),
+    settings = sampleSettings
+  )
+
+  lazy val persistenceSampleScala = Project(
+    id = "akka-sample-persistence-scala",
+    base = file("akka-samples/akka-sample-persistence-scala"),
     dependencies = Seq(actor, persistence),
     settings = sampleSettings
   )
