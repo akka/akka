@@ -102,11 +102,6 @@ The plugin configuration might look like this::
           <include>*:*</include>
          </includes>
         </artifactSet>
-        <filters>
-         <filter>
-          <artifact>*:*</artifact>
-         </filter>
-        </filters>
         <transformers>
           <transformer
            implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
@@ -115,7 +110,7 @@ The plugin configuration might look like this::
           <transformer
            implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
            <manifestEntries>
-            <Main-Class>com.foo.BarMain</Main-Class>
+            <Main-Class>foo.Main</Main-Class>
            </manifestEntries>
           </transformer>
         </transformers>
