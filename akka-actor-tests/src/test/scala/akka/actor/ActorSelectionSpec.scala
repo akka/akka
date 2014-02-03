@@ -343,6 +343,8 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
     }
 
     "send ActorSelection wildcard targeted to missing actor to deadLetters" in {
+      val creator = TestProbe()
+      implicit def self = creator.ref
       val top = system.actorOf(p, "top")
       top ! Create("child1")
       top ! Create("child2")
