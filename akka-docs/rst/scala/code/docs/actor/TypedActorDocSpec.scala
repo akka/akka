@@ -25,6 +25,9 @@ trait Squarer {
   def squareNowPlease(i: Int): Option[Int] //blocking send-request-reply
 
   def squareNow(i: Int): Int //blocking send-request-reply
+
+  @throws(classOf[Exception]) //declare it or you will get an UndeclaredThrowableException
+  def squareTry(i: Int): Int //blocking send-request-reply with possible exception
   //#typed-actor-iface-methods
 }
 //#typed-actor-iface
@@ -41,6 +44,8 @@ class SquarerImpl(val name: String) extends Squarer {
   def squareNowPlease(i: Int): Option[Int] = Some(i * i)
 
   def squareNow(i: Int): Int = i * i
+
+  def squareTry(i: Int): Int = throw new Exception("Catch me!")
   //#typed-actor-impl-methods
 }
 //#typed-actor-impl
