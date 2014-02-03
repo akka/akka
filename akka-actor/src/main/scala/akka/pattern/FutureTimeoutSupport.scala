@@ -1,7 +1,7 @@
 package akka.pattern
 
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 import scala.concurrent.duration.Duration
