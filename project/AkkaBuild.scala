@@ -889,7 +889,7 @@ object AkkaBuild extends Build {
       case (false, _) => Seq.empty
     })
 
-  lazy val scaladocDiagramsEnabled = System.getProperty("akka.scaladoc.diagrams", "false").toBoolean
+  lazy val scaladocDiagramsEnabled = System.getProperty("akka.scaladoc.diagrams", "true").toBoolean
   lazy val scaladocAutoAPI = System.getProperty("akka.scaladoc.autoapi", "true").toBoolean
 
   def scaladocOptions(ver: String, base: File): List[String] = {
