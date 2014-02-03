@@ -439,7 +439,7 @@ event sourcing as a pattern on top of command sourcing). A processor that extend
 ``UntypedEventsourcedProcessor`` is defined by implementing ``onReceiveRecover`` and ``onReceiveCommand``. This is
 demonstrated in the following example.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence/src/main/java/sample/persistence/japi/EventsourcedExample.java#eventsourced-example
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java/src/main/java/sample/persistence/EventsourcedExample.java#eventsourced-example
 
 The example defines two data types, ``Cmd`` and ``Evt`` to represent commands and events, respectively. The
 ``state`` of the ``ExampleProcessor`` is a list of persisted event data contained in ``ExampleState``.
@@ -462,6 +462,10 @@ When persisting events with ``persist`` it is guaranteed that the processor will
 the ``persist`` call and the execution(s) of the associated event handler. This also holds for multiple ``persist``
 calls in context of a single command. The example also shows how to switch between command different command handlers
 with ``getContext().become()`` and ``getContext().unbecome()``.
+
+The easiest way to run this example yourself is to download `Typesafe Activator <http://typesafe.com/platform/getstarted>`_
+and open the tutorial named `Akka Persistence Samples with Java <http://typesafe.com/activator/template/akka-sample-persistence-java>`_.
+It contains instructions on how to run the ``EventsourcedExample``.
 
 Reliable event delivery
 -----------------------
