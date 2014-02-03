@@ -1,6 +1,12 @@
-package sample.persistence.japi;
+/**
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ */
 
-import java.util.Scanner;
+package sample.persistence;
+
+import java.util.concurrent.TimeUnit;
+
+import scala.concurrent.duration.Duration;
 
 import akka.actor.*;
 import akka.persistence.*;
@@ -70,21 +76,7 @@ public class ViewExample {
         final ActorRef processor = system.actorOf(Props.create(ExampleProcessor.class));
         final ActorRef view = system.actorOf(Props.create(ExampleView.class));
 
-        Scanner scanner = new Scanner(System.in);
-
-        while (scanner.hasNextLine()) {
-            String line = scanner.nextLine();
-            if (line.equals("exit")) {
-                break;
-            } else if (line.equals("sync")) {
-                view.tell(Update.create(false), null);
-            } else if (line.equals("snap")) {
-                view.tell("snap", null);
-            } else {
-                processor.tell(Persistent.create(line), null);
-            }
-        }
-
-        system.shutdown();
+        system.scheduler().schedule(Duration.Zero(), Duration.create(2, TimeUnit.SECONDS), processor, Persistent.create("scheduled"), system.dispatcher(), null);
+        system.scheduler().schedule(Duration.Zero(), Duration.create(5, TimeUnit.SECONDS), view, "snap", system.dispatcher(), null);
     }
 }

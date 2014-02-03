@@ -22,10 +22,9 @@ object ConversationRecoveryExample extends App {
         m.confirm()
         if (!recoveryRunning) Thread.sleep(1000)
         pongChannel ! Deliver(m.withPayload(Pong), sender.path)
-      case "init" => if (counter == 0) pongChannel ! Deliver(Persistent(Pong), sender.path)
+      case "init" if (counter == 0) =>
+        pongChannel ! Deliver(Persistent(Pong), sender.path)
     }
-
-    override def preStart() = ()
   }
 
   class Pong extends Processor {
@@ -40,17 +39,12 @@ object ConversationRecoveryExample extends App {
         if (!recoveryRunning) Thread.sleep(1000)
         pingChannel ! Deliver(m.withPayload(Ping), sender.path)
     }
-
-    override def preStart() = ()
   }
 
   val system = ActorSystem("example")
 
   val ping = system.actorOf(Props(classOf[Ping]), "ping")
   val pong = system.actorOf(Props(classOf[Pong]), "pong")
-
-  ping ! Recover()
-  pong ! Recover()
 
   ping tell ("init", pong)
 }
