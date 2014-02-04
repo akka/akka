@@ -19,7 +19,7 @@ declare -r script_dir="$(cd -P "$(dirname "${script_path}")" && pwd)"
 
 # print usage info
 function usage {
-  echo "Usage: ${script_name} v2.1.0..v2.2.0 path_to_assembla_export.csv"
+  echo "Usage: ${script_name} v2.1.0 v2.2.0 path_to_assembla_export.csv"
 }
 
 declare -r tag1=$1
