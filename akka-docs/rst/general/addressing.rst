@@ -68,11 +68,6 @@ depending on the configuration of the actor system:
     facilities is a fake actor reference which accepts log events and prints
     them directly to standard output; it is :class:`Logging.StandardOutLogger`.
 
-- **(Future Extension)** Cluster actor references represent clustered actor
-  services which may be replicated, migrated or load-balanced across multiple
-  cluster nodes. As such they are virtual names which the cluster service
-  translates into local or remote actor references as appropriate.
-
 What is an Actor Path?
 ----------------------
 
@@ -120,7 +115,6 @@ actors in the hierarchy from the root up. Examples are::
 
   "akka://my-sys/user/service-a/worker1"                   // purely local
   "akka.tcp://my-sys@host.example.com:5678/user/service-b" // remote
-  "cluster://my-cluster/service-c"                         // clustered (Future Extension)
 
 Here, ``akka.tcp`` is the default remote transport for the 2.2 release; other transports
 are pluggable. A remote host using UDP would be accessible by using ``akka.udp``.
@@ -154,17 +148,6 @@ systems or JVMs. This means that the logical path (supervision hierarchy) and
 the physical path (actor deployment) of an actor may diverge if one of its
 ancestors is remotely supervised.
 
-Virtual Actor Paths **(Future Extension)**
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-In order to be able to replicate and migrate actors across a cluster of Akka
-nodes, another level of indirection has to be introduced. The cluster component
-therefore provides a translation from virtual paths to physical paths which may
-change in reaction to node failures, cluster rebalancing, etc.
-
-*This area is still under active development, expect updates in this section
-for the Akka release code named Rollins .*
-
 How are Actor References obtained?
 ----------------------------------
 
@@ -172,12 +155,6 @@ There are two general categories to how actor references may be obtained: by
 creating actors or by looking them up, where the latter functionality comes in
 the two flavours of creating actor references from concrete actor paths and
 querying the logical actor hierarchy.
-
-*While local and remote actor references and their paths work in the same way
-concerning the facilities mentioned below, the exact semantics of clustered
-actor references and their paths—while certainly as similar as possible—may
-differ in certain aspects, owing to the virtual nature of those paths. Expect
-updates for the Akka release code named Rollins.*
 
 Creating Actors
 ^^^^^^^^^^^^^^^
@@ -341,21 +318,6 @@ supervisor will find it on the remote node, preserving logical structure e.g.
 when sending to an unresolved actor reference.
 
 .. image:: RemoteDeployment.png
-
-The Interplay with Clustering **(Future Extension)**
-----------------------------------------------------
-
-*This section is subject to change!*
-
-When creating a scaled-out actor subtree, a cluster name is created for a
-routed actor reference, where sending to this reference will send to one (or
-more) of the actual actors created in the cluster. In order for those actors to
-be able to query other actors while processing their messages, their sender
-reference must be unique for each of the replicas, which means that physical
-paths will be used as ``self`` references for these instances. In the case
-of replication for achieving fault-tolerance the opposite is required: the
-``self`` reference will be a virtual (cluster) path so that in case of
-migration or fail-over communication is resumed with the fresh instance.
 
 What is the Address part used for?
 ----------------------------------

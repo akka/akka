@@ -238,7 +238,8 @@ Note that the ``TransformationFrontend`` actor watch the registered backend
 to be able to remove it from its list of available backend workers.
 Death watch uses the cluster failure detector for nodes in the cluster, i.e. it detects
 network failures and JVM crashes, in addition to graceful termination of watched
-actor.
+actor. Death watch generates the ``Terminated`` message to the watching actor when the 
+unreachable cluster node has been downed and removed.
 
 The `Typesafe Activator <http://typesafe.com/platform/getstarted>`_ tutorial named 
 `Akka Cluster Samples with Java <http://typesafe.com/activator/template/akka-sample-cluster-java>`_.
@@ -377,9 +378,10 @@ This is how the curve looks like for ``acceptable-heartbeat-pause`` configured t
 
 .. image:: ../images/phi3.png
 
-Death watch uses the cluster failure detector for nodes in the cluster, i.e. it 
-generates ``Terminated`` message from network failures and JVM crashes, in addition 
-to graceful termination of watched actor. 
+Death watch uses the cluster failure detector for nodes in the cluster, i.e. it detects
+network failures and JVM crashes, in addition to graceful termination of watched
+actor. Death watch generates the ``Terminated`` message to the watching actor when the 
+unreachable cluster node has been downed and removed.
 
 If you encounter suspicious false positives when the system is under load you should 
 define a separate dispatcher for the cluster actors as described in :ref:`cluster_dispatcher_java`.
