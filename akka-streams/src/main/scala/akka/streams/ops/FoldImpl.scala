@@ -7,11 +7,8 @@ object FoldImpl {
       val batchSize = 100
       var missing = 0
       var z = fold.z
-      var completed = false
       def requestMore(n: Int): Int = {
-        // we can instantly consume all values, even if there's just one requested,
-        // though we probably need to be careful with MaxValue which may lead to
-        // overflows easily
+        // we request values in batches of batchSize. This could be made configurable later on.
 
         missing = batchSize
         batchSize
@@ -29,11 +26,7 @@ object FoldImpl {
           z = is.foldLeft(z)(fold.acc) // FIXME: error handling
           missing -= is.size
           maybeRequestMore
-        case Complete ⇒
-          if (!completed) {
-            completed = true
-            Emit(z) ~ Complete
-          } else Continue
+        case Complete ⇒ Emit(z) ~ Complete
         case e: Error ⇒ e
       }
       def maybeRequestMore: Result[O] =
