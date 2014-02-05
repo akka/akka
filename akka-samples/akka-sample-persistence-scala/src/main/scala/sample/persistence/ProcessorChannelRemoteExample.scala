@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package sample.persistence
@@ -64,11 +64,7 @@ object SenderApp extends App {
   }
 
   val receiverPath = ActorPath.fromString("akka.tcp://receiver@127.0.0.1:44317/user/receiver")
-  val senderConfig = ConfigFactory.parseString("""
-      akka.persistence.journal.leveldb.dir = "target/example/journal"
-      akka.persistence.snapshot-store.local.dir = "target/example/snapshots"
-      akka.remote.netty.tcp.port = 44316
-    """)
+  val senderConfig = ConfigFactory.parseString("akka.remote.netty.tcp.port = 44316")
 
   val system = ActorSystem("sender", config.withFallback(senderConfig))
   val sender = system.actorOf(Props(classOf[ExampleProcessor], receiverPath))

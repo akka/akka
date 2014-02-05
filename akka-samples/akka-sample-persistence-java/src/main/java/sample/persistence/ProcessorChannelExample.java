@@ -1,8 +1,8 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package sample.persistence.japi;
+package sample.persistence;
 
 import akka.actor.*;
 import akka.persistence.*;
