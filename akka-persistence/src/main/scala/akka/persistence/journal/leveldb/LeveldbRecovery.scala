@@ -22,11 +22,15 @@ private[persistence] trait LeveldbRecovery extends AsyncRecovery { this: Leveldb
   private lazy val replayDispatcherId = config.getString("replay-dispatcher")
   private lazy val replayDispatcher = context.system.dispatchers.lookup(replayDispatcherId)
 
-  def asyncReadHighestSequenceNr(processorId: String, fromSequenceNr: Long): Future[Long] =
-    Future(readHighestSequenceNr(numericId(processorId)))(replayDispatcher)
+  def asyncReadHighestSequenceNr(processorId: String, fromSequenceNr: Long): Future[Long] = {
+    val nid = numericId(processorId)
+    Future(readHighestSequenceNr(nid))(replayDispatcher)
+  }
 
-  def asyncReplayMessages(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: PersistentRepr ⇒ Unit): Future[Unit] =
-    Future(replayMessages(numericId(processorId), fromSequenceNr: Long, toSequenceNr, max: Long)(replayCallback))(replayDispatcher)
+  def asyncReplayMessages(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: PersistentRepr ⇒ Unit): Future[Unit] = {
+    val nid = numericId(processorId)
+    Future(replayMessages(nid, fromSequenceNr: Long, toSequenceNr, max: Long)(replayCallback))(replayDispatcher)
+  }
 
   def replayMessages(processorId: Int, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: PersistentRepr ⇒ Unit): Unit = {
     @scala.annotation.tailrec
