@@ -19,7 +19,7 @@ class ConfigDocSpec extends WordSpec with Matchers {
     val customConf = ConfigFactory.parseString("""
       akka.actor.deployment {
         /my-service {
-          router = round-robin
+          router = round-robin-pool
           nr-of-instances = 3
         }
       }
@@ -29,6 +29,46 @@ class ConfigDocSpec extends WordSpec with Matchers {
     val system = ActorSystem("MySystem", ConfigFactory.load(customConf))
     //#custom-config
 
+    TestKit.shutdownActorSystem(system)
+  }
+
+  "deployment section" in {
+    val conf = ConfigFactory.parseString("""
+  #//#deployment-section
+  akka.actor.deployment {
+  
+    # '/user/actorA/actorB' is a remote deployed actor
+    /actorA/actorB {
+      remote = "akka.tcp://sampleActorSystem@127.0.0.1:2553"
+    }
+    
+    # all direct children of '/user/actorC' have a dedicated dispatcher 
+    "/actorC/*" {
+      dispatcher = my-dispatcher
+    }
+    
+    # '/user/actorD/actorE' has a special priority mailbox
+    /actorD/actorE {
+      mailbox = prio-mailbox
+    }
+    
+    # '/user/actorF/actorG/actorH' is a random pool
+    /actorF/actorG/actorH {
+      router = random-pool
+      nr-of-instances = 5
+    }
+  }
+  
+  my-dispatcher {
+    fork-join-executor.parallelism-min = 10
+    fork-join-executor.parallelism-max = 10
+  }
+  prio-mailbox {
+    mailbox-type = "a.b.MyPrioMailbox"
+  }
+  #//#deployment-section
+  """)
+    val system = ActorSystem("MySystem", conf)
     TestKit.shutdownActorSystem(system)
   }
 }

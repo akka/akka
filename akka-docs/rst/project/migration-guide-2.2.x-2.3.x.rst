@@ -82,7 +82,7 @@ The old ``cluster.routees-path`` is deprecated, but still working during the dep
 Example::
 
     /router4 {
-      router = round-robin
+      router = round-robin-group
       nr-of-instances = 10
       routees.paths = ["/user/myserviceA", "/user/myserviceB"]
       cluster.enabled = on
