@@ -1,6 +1,8 @@
 package akka.streams
 package ops
 
+import akka.streams.Operation.Map
+
 object MapImpl {
   def apply[I, O](map: Map[I, O]): OpInstance[I, O] =
     new OpInstance[I, O] {

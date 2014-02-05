@@ -2,6 +2,7 @@ package akka.streams
 package ops
 
 import rx.async.api.Producer
+import akka.streams.Operation.Span
 
 object SpanImpl {
   def apply[I](span: Span[I]): OpInstance[I, Producer[I]] =
@@ -63,7 +64,7 @@ object SpanImpl {
         case Emit(i) ⇒
           val emit = publisher.emit(i)
           undeliveredElements -= 1
-          if (span.pred(i))
+          if (span.p(i))
             if (subStreamsRequested > 0) {
               become(WaitingForFirstElement)
               emit ~ publisher.complete ~ RequestMore(1)

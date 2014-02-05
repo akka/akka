@@ -2,10 +2,11 @@ package akka.streams
 package ops
 
 import rx.async.api.Producer
+import akka.streams.Operation.{ Source, Flatten }
 
 object FlattenImpl {
-  def apply[I](flatten: Flatten[I]): OpInstance[Producer[I], I] =
-    new OpInstanceStateMachine[Producer[I], I] {
+  def apply[I](flatten: Flatten[I]): OpInstance[Source[I], I] =
+    new OpInstanceStateMachine[Source[I], I] {
       def initialState = Waiting
 
       def Waiting: State = {
@@ -41,7 +42,7 @@ object FlattenImpl {
         var curRemaining = remaining
         var closeAtEnd = false
 
-        override def apply(v1: SimpleResult[Producer[I]]): Result[I] = v1 match {
+        override def apply(v1: SimpleResult[Source[I]]): Result[I] = v1 match {
           case RequestMore(n) ⇒
             curRemaining += n
             subscription.requestMore(n)

@@ -2,6 +2,7 @@ package akka.streams.ops
 
 import rx.async.api.Producer
 import rx.async.spi.Publisher
+import akka.streams.Operation.Source
 
 trait OpInstance[-I, +O] {
   def handle(result: SimpleResult[I]): Result[O]
@@ -32,6 +33,9 @@ object Result {
     else EmitMany(els)
   def completeIf(condition: Boolean): Result[Nothing] =
     if (condition) Complete else Continue
+
+  def requestMore(n: Int): Result[Nothing] =
+    if (n > 0) RequestMore(n) else Continue
 }
 sealed trait SimpleResult[+O] extends Result[O]
 sealed trait ForwardResult[+O] extends SimpleResult[O]
@@ -68,7 +72,7 @@ case class EmitMany[+O](elements: Vector[O]) extends ForwardResult[O] {
 case object Complete extends ForwardResult[Nothing]
 case class Error(cause: Throwable) extends ForwardResult[Nothing]
 
-case class Subscribe[T, U](producer: Producer[T])(val handlerFactory: SubscriptionResults ⇒ SubscriptionHandler[T, U]) extends ForwardResult[U]
+case class Subscribe[T, U](producer: Source[T])(val handlerFactory: SubscriptionResults ⇒ SubscriptionHandler[T, U]) extends ForwardResult[U]
 
 // BACKCHANNEL
 case class RequestMore(n: Int) extends BackchannelResult {

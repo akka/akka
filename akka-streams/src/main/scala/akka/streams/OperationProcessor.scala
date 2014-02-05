@@ -6,6 +6,7 @@ import rx.async.api.{ Producer, Processor }
 import akka.actor.{ Props, ActorRefFactory, Actor }
 import akka.streams.ops._
 import rx.async.spi.{ Subscription, Subscriber, Publisher }
+import akka.streams.Operation.FromProducerSource
 
 object OperationProcessor {
   def apply[I, O](operation: Operation[I, O], settings: ProcessorSettings): Processor[I, O] =
@@ -105,7 +106,9 @@ private class OperationProcessor[I, O](operation: Operation[I, O], settings: Pro
 
     // internal sub-subscriptions
     def handleSubSubscription[I](subscribe: ops.Subscribe[I, O]): Unit =
-      subscribe.producer.getPublisher.subscribe(new InternalSubscriber(subscribe.handlerFactory))
+      subscribe.producer match {
+        case FromProducerSource(producer) ⇒ producer.getPublisher.subscribe(new InternalSubscriber(subscribe.handlerFactory))
+      }
     case class SubRequestMore(subscription: Subscription, elements: Int) extends CustomBackchannelResult
     class InternalSubscriber[I2](handlerFactory: SubscriptionResults ⇒ SubscriptionHandler[I2, O]) extends Subscriber[I2] {
       var handler: SubscriptionHandler[I2, O] = _

@@ -102,8 +102,8 @@ object AndThenImpl {
         case x                    ⇒ FirstResult(x)
       }
       def secondResult(res: Result[O]): SimpleCalc = res match {
-        case Continue ⇒ Finished(Continue)
-        case Emit(InternalPublisherTemplate(f)) ⇒
+        case Continue            ⇒ Finished(Continue)
+        /*case Emit(InternalPublisherTemplate(f)) ⇒
           // TODO: can we fix the types here?
           val rest = f(new SubscriptionResults {
             def requestMore(n: Int): Result[Nothing] = handleSecondResult(RequestMore(n)).asInstanceOf[Result[Nothing]]
@@ -122,7 +122,7 @@ object AndThenImpl {
           lazy val oHandler = s.handlerFactory(Connector)
           lazy val iHandler = rest(Connector)
 
-          SecondResult(oHandler.initial)
+          SecondResult(oHandler.initial)*/
         case f: ForwardResult[O] ⇒ Finished(f)
         case x                   ⇒ SecondResult(x)
       }

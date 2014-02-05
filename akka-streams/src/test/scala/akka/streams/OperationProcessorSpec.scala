@@ -8,6 +8,7 @@ import akka.actor.ActorSystem
 import rx.async.api.Producer
 import scala.concurrent.duration._
 import akka.testkit.duration2TestDuration
+import akka.streams.Operation._
 
 class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatchers with BeforeAndAfterAll {
   implicit lazy val system = ActorSystem()
@@ -66,7 +67,7 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
         upstreamSubscription.sendError(WeirdError)
         downstream.expectError(WeirdError)
       }
-      "operation publishes Producer" in new InitializedChainSetup[String, Producer[String]](Span(_ == "end")) {
+      "operation publishes Producer" in new InitializedChainSetup[String, Producer[String]](Span[String](_ == "end").expose) {
         downstreamSubscription.requestMore(5)
         upstream.expectRequestMore(upstreamSubscription, 1)
 
@@ -107,7 +108,7 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
         subStreamConsumer2.expectNext("end")
         subStreamConsumer2.expectComplete()
       }
-      "operation consumes Producer" in new InitializedChainSetup[Producer[String], String](Flatten())(settings.copy(constructFanOutBox = () ⇒ new RaceTrack(5))) {
+      "operation consumes Producer" in new InitializedChainSetup[Source[String], String](Flatten())(settings.copy(constructFanOutBox = () ⇒ new RaceTrack(5))) {
         downstreamSubscription.requestMore(4)
         upstream.expectRequestMore(upstreamSubscription, 1)
 
@@ -281,7 +282,7 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
 
     import DSL._
 
-    val processed = upstream.andThen(operation).consume()
+    val processed = AddProducerOps(upstream).andThen(operation).consume()
     val upstreamSubscription = upstream.expectSubscription()
     processed.link(downstream)
     val downstreamSubscription = downstream.expectSubscription()

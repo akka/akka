@@ -8,8 +8,8 @@ sealed trait Operation[-I, +O]
 object Operation {
   type ==>[-I, +O] = Operation[I, O] // brevity alias (should we mark it `private`?)
 
-  type Source[T] = Nothing ==> T
-  type Sink[T] = T ==> Nothing
+  type Source[+O] = Unit ==> O
+  type Sink[-I] = I ==> Unit
 
   implicit def fromIterable[T](iterable: Iterable[T]) = FromIterableSource(iterable)
   case class FromIterableSource[T](iterable: Iterable[T]) extends Source[T]
@@ -20,6 +20,7 @@ object Operation {
   implicit def fromConsumer[T](consumer: Consumer[T]) = FromConsumerSink(consumer)
   case class FromConsumerSink[T](consumer: Consumer[T]) extends Sink[T]
 
+  case class ExposeProducer[T]() extends (Source[T] ==> Producer[T])
   // implicit def sink2Producer[T](sink: Sink[T]): Producer[T] = ???
   // implicit def source2Consumer[T](source: Source[T]): Consumer[T] = ???
 
@@ -98,7 +99,7 @@ object Operation {
   // classic fold
   // consumes at max rate, produces only one value
   def Fold[A, B](seed: B, f: (B, A) ⇒ B): A ==> B =
-    FoldUntil[A, B, B](
+    FoldUntil[A, B, B]( // TODO: while this representation is correct it's also slower than a direct implementation
       seed,
       onNext = (b, a) ⇒ FoldUntil.Continue(f(b, a)),
       onComplete = Some(_))
@@ -181,7 +182,11 @@ object Operation {
   // consumes from the given source no faster than the downstream consumption rate or the upstream production rate
   case class Zip[A, B, C](source: Source[C]) extends (A ==> (B, C))
 
-  implicit def producer2Ops1[T](producer: Producer[T]) = Ops1[Nothing, T](producer)
+  implicit def producer2Ops1[T](producer: Producer[T]) = Ops1[Unit, T](producer)
+  implicit def sourceOps1[T](source: Source[T]) = Ops1[Unit, T](source)
+  implicit def producerOps2[I, O](op: I ==> Producer[O]): Ops2[I, O] = Ops2(Ops1(op).map(FromProducerSource(_)))
+  implicit def sourceOps2[T](source: Source[Source[T]]) = Ops2[Unit, T](source)
+
   implicit class Ops1[A, B](val op: A ==> B) extends AnyVal {
     def andThen[C](op: B ==> C): A ==> C = Operation(this.op, op)
     def buffer[C, S](seed: S)(compress: (S, B) ⇒ S)(expand: S ⇒ (S, Option[C]))(canConsume: S ⇒ Boolean): A ==> C = andThen(Buffer(seed, compress, expand, canConsume))
@@ -192,7 +197,7 @@ object Operation {
     def filter(p: B ⇒ Boolean): A ==> B = andThen(Filter(p))
     def find(p: B ⇒ Boolean): A ==> B = andThen(Find(p))
     def flatMap[C](f: B ⇒ Source[C]): A ==> C = andThen(FlatMap(f))
-    def fold[C](seed: C, f: (C, B) ⇒ C): A ==> C = andThen(Fold(seed, f))
+    def fold[C](seed: C)(f: (C, B) ⇒ C): A ==> C = andThen(Fold(seed, f))
     def foldUntil[S, C](seed: S)(f: (S, B) ⇒ FoldUntil.Command[C, S])(onComplete: S ⇒ Option[C]): A ==> C = andThen(FoldUntil(seed, f, onComplete))
     def forAll(p: B ⇒ Boolean): A ==> Boolean = andThen(ForAll(p))
     def foreach(f: B ⇒ Unit): Sink[A] = andThen(Foreach(f))
@@ -209,5 +214,6 @@ object Operation {
 
   implicit class Ops2[A, B](val op: A ==> Source[B]) extends AnyVal {
     def flatten: A ==> B = Operation(op, Flatten[B]())
+    def expose: A ==> Producer[B] = Operation(op, ExposeProducer())
   }
 }
