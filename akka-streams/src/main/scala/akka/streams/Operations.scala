@@ -1,6 +1,6 @@
 package akka.streams
 
-import scala.language.implicitConversions
+import scala.language.{ implicitConversions, higherKinds }
 import rx.async.api.{ Consumer, Producer }
 
 sealed trait Operation[-I, +O]
@@ -8,12 +8,21 @@ sealed trait Operation[-I, +O]
 object Operation {
   type ==>[-I, +O] = Operation[I, O] // brevity alias (should we mark it `private`?)
 
-  type Source[+O] = Unit ==> O
-  type Sink[-I] = I ==> Unit
+  //type Source[+O] = Unit ==> O
+  //type Sink[-I] = I ==> Unit
+
+  sealed trait Source[+O] {
+    def andThen[O2](op: O ==> O2): Source[O2] = MappedSource(this, op)
+  }
+  trait CustomSource[O] extends Source[O]
+  sealed trait Sink[-I]
 
   implicit def fromIterable[T](iterable: Iterable[T]) = FromIterableSource(iterable)
   case class FromIterableSource[T](iterable: Iterable[T]) extends Source[T]
-
+  case class MappedSource[I, O](source: Source[I], operation: Operation[I, O]) extends Source[O] {
+    type Input = I
+    override def andThen[O2](op: Operation.==>[O, O2]): Source[O2] = MappedSource(source, Operation(operation, op))
+  }
   implicit def fromProducer[T](producer: Producer[T]) = FromProducerSource(producer)
   case class FromProducerSource[T](producer: Producer[T]) extends Source[T]
 
@@ -182,38 +191,64 @@ object Operation {
   // consumes from the given source no faster than the downstream consumption rate or the upstream production rate
   case class Zip[A, B, C](source: Source[C]) extends (A ==> (B, C))
 
-  implicit def producer2Ops1[T](producer: Producer[T]) = Ops1[Unit, T](producer)
-  implicit def sourceOps1[T](source: Source[T]) = Ops1[Unit, T](source)
-  implicit def producerOps2[I, O](op: I ==> Producer[O]): Ops2[I, O] = Ops2(Ops1(op).map(FromProducerSource(_)))
-  implicit def sourceOps2[T](source: Source[Source[T]]) = Ops2[Unit, T](source)
+  implicit def producer2Ops1[T](producer: Producer[T]) = SourceOps1[T](fromProducer(producer))
+  implicit def producerOps2[I, O](op: I ==> Producer[O]) = OperationOps2(OperationOps1(op).map(FromProducerSource(_)))
 
-  implicit class Ops1[A, B](val op: A ==> B) extends AnyVal {
-    def andThen[C](op: B ==> C): A ==> C = Operation(this.op, op)
-    def buffer[C, S](seed: S)(compress: (S, B) ⇒ S)(expand: S ⇒ (S, Option[C]))(canConsume: S ⇒ Boolean): A ==> C = andThen(Buffer(seed, compress, expand, canConsume))
-    def compress(f: (B, B) ⇒ B): A ==> B = andThen(Compress(f))
-    def drop(n: Int): A ==> B = andThen(Drop(n))
-    def exists(p: B ⇒ Boolean): A ==> Boolean = andThen(Exists(p))
-    def expand[S](seed: S)(produce: S ⇒ (S, B)): A ==> B = andThen(Expand(seed, produce))
-    def filter(p: B ⇒ Boolean): A ==> B = andThen(Filter(p))
-    def find(p: B ⇒ Boolean): A ==> B = andThen(Find(p))
-    def flatMap[C](f: B ⇒ Source[C]): A ==> C = andThen(FlatMap(f))
-    def fold[C](seed: C)(f: (C, B) ⇒ C): A ==> C = andThen(Fold(seed, f))
-    def foldUntil[S, C](seed: S)(f: (S, B) ⇒ FoldUntil.Command[C, S])(onComplete: S ⇒ Option[C]): A ==> C = andThen(FoldUntil(seed, f, onComplete))
-    def forAll(p: B ⇒ Boolean): A ==> Boolean = andThen(ForAll(p))
-    def foreach(f: B ⇒ Unit): Sink[A] = andThen(Foreach(f))
-    def head: A ==> B = andThen(Head())
-    def map[C](f: B ⇒ C): A ==> C = andThen(Map(f))
-    def mapFind[C](f: B ⇒ Option[C], default: ⇒ Option[C]): A ==> C = andThen(MapFind(f, default))
-    def merge(source: Source[B]): A ==> B = andThen(Merge(source))
-    def span(p: B ⇒ Boolean): A ==> Source[B] = andThen(Span(p))
-    def tee(sink: Sink[B]): A ==> B = andThen(Tee(sink))
-    def tail: A ==> B = andThen(Tail())
-    def take(n: Int): A ==> B = andThen(Take[B](n))
-    def zip[C](source: Source[C]): A ==> (B, C) = andThen(Zip(source))
+  trait Ops1[A, B] extends Any {
+    type Res[_]
+    def andThen[C](next: B ==> C): Res[C]
+
+    def buffer[C, S](seed: S)(compress: (S, B) ⇒ S)(expand: S ⇒ (S, Option[C]))(canConsume: S ⇒ Boolean): Res[C] = andThen(Buffer(seed, compress, expand, canConsume))
+    def compress(f: (B, B) ⇒ B): Res[B] = andThen(Compress(f))
+    def drop(n: Int): Res[B] = andThen(Drop(n))
+    def exists(p: B ⇒ Boolean): Res[Boolean] = andThen(Exists(p))
+    def expand[S](seed: S)(produce: S ⇒ (S, B)): Res[B] = andThen(Expand(seed, produce))
+    def filter(p: B ⇒ Boolean): Res[B] = andThen(Filter(p))
+    def find(p: B ⇒ Boolean): Res[B] = andThen(Find(p))
+    def flatMap[C](f: B ⇒ Source[C]): Res[C] = andThen(FlatMap(f))
+    def fold[C](seed: C)(f: (C, B) ⇒ C): Res[C] = andThen(Fold(seed, f))
+    def foldUntil[S, C](seed: S)(f: (S, B) ⇒ FoldUntil.Command[C, S])(onComplete: S ⇒ Option[C]): Res[C] = andThen(FoldUntil(seed, f, onComplete))
+    def forAll(p: B ⇒ Boolean): Res[Boolean] = andThen(ForAll(p))
+    //def foreach(f: B ⇒ Unit): Sink[A] = andThen(Foreach(f))
+    def head: Res[B] = andThen(Head())
+    def map[C](f: B ⇒ C): Res[C] = andThen(Map(f))
+    def mapFind[C](f: B ⇒ Option[C], default: ⇒ Option[C]): Res[C] = andThen(MapFind(f, default))
+    def merge(source: Source[B]): Res[B] = andThen(Merge(source))
+    def span(p: B ⇒ Boolean): Res[Source[B]] = andThen(Span(p))
+    def tee(sink: Sink[B]): Res[B] = andThen(Tee(sink))
+    def tail: Res[B] = andThen(Tail())
+    def take(n: Int): Res[B] = andThen(Take[B](n))
+    def zip[C](source: Source[C]): Res[(B, C)] = andThen(Zip(source))
   }
 
-  implicit class Ops2[A, B](val op: A ==> Source[B]) extends AnyVal {
-    def flatten: A ==> B = Operation(op, Flatten[B]())
-    def expose: A ==> Producer[B] = Operation(op, ExposeProducer())
+  implicit class OperationOps1[A, B](val op: A ==> B) extends Ops1[A, B] {
+    type Res[U] = A ==> U
+
+    def andThen[C](op: B ==> C): A ==> C = Operation(this.op, op)
+  }
+  implicit class SourceOps1[B](val source: Source[B]) extends Ops1[Nothing, B] {
+    type Res[U] = Source[U]
+
+    def andThen[C](op: B ==> C): Source[C] = source.andThen(op)
+  }
+
+  trait Ops2[A, B] extends Any {
+    type Res[_]
+
+    def andThen[C](next: Source[B] ==> C): Res[C]
+
+    def flatten: Res[B] = andThen(Flatten[B]())
+    def expose: Res[Producer[B]] = andThen(ExposeProducer())
+  }
+
+  implicit class OperationOps2[A, B](val op: A ==> Source[B]) extends Ops2[A, B] {
+    type Res[U] = A ==> U
+
+    def andThen[C](next: Source[B] ==> C): Res[C] = Operation(op, next)
+  }
+  implicit class SourceOps2[B](val source: Source[Source[B]]) extends Ops2[Nothing, B] {
+    type Res[U] = Source[U]
+
+    def andThen[C](next: Source[B] ==> C): Source[C] = source.andThen(next)
   }
 }

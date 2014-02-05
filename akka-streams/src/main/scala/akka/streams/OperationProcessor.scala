@@ -6,7 +6,7 @@ import rx.async.api.{ Producer, Processor }
 import akka.actor.{ Props, ActorRefFactory, Actor }
 import akka.streams.ops._
 import rx.async.spi.{ Subscription, Subscriber, Publisher }
-import akka.streams.Operation.FromProducerSource
+import akka.streams.Operation.{ Source, FromProducerSource }
 
 object OperationProcessor {
   def apply[I, O](operation: Operation[I, O], settings: ProcessorSettings): Processor[I, O] =
@@ -146,9 +146,9 @@ private class OperationProcessor[I, O](operation: Operation[I, O], settings: Pro
           singleSubscriber = subscriber
 
           val pubResults = new PublisherResults[O2] {
-            def emit(o: O2): Result[Producer[O2]] = SubEmit(subscriber, o)
-            def complete: Result[Producer[O2]] = SubComplete(subscriber)
-            def error(cause: Throwable): Result[Producer[O2]] = SubError(subscriber, cause)
+            def emit(o: O2): Result[Source[O2]] = SubEmit(subscriber, o)
+            def complete: Result[Source[O2]] = SubComplete(subscriber)
+            def error(cause: Throwable): Result[Source[O2]] = SubError(subscriber, cause)
           }
           val handler = publisherTemplate.f(subResults)(pubResults)
           subscriber.onSubscribe(new Subscription {

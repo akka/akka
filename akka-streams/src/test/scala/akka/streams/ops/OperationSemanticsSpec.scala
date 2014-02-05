@@ -1,10 +1,11 @@
 package akka.streams
 package ops
 
-import org.scalatest.{ ShouldMatchers, WordSpec }
+import org.scalatest.{ Tag, ShouldMatchers, WordSpec }
 import rx.async.api.Producer
 import rx.async.spi.Publisher
 import akka.streams.Operation._
+import akka.streams.ops.Implementation.ImplementationSettings
 
 class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
   val oneToTen = FromIterableSource(1 to 10)
@@ -12,14 +13,15 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
 
   "Operations" should {
     "fold elements synchronously with small input" in {
-      val p = instance[Nothing, Int](oneToTen.fold(0)(_ + _))
+      //implicit val implSettings = ImplementationSettings(traceTrampolining = true)
+      val p = instance[Int](oneToTen.fold(0)(_ + _))
       p.handle(RequestMore(1)) should be(Emit(55) ~ Complete)
     }
     "fold elements synchronously with big input" in {
-      val p = instance[Nothing, Long](FromIterableSource(1L to 1000000L).fold(0L)(_ + _))
+      val p = instance[Long](FromIterableSource(1L to 1000000L).fold(0L)(_ + _))
       p.handle(RequestMore(1)) should be(Emit(500000500000L) ~ Complete)
     }
-    /*"create element spans" in {
+    "create element spans" in {
       case class SubEmit(i: Int) extends CustomForwardResult[Source[Int]]
       case object SubComplete extends CustomForwardResult[Nothing]
       case class SubError(cause: Throwable) extends CustomForwardResult[Nothing]
@@ -29,7 +31,7 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
         def error(cause: Throwable): Result[Source[Int]] = SubError(cause)
       }
 
-      val p = instance[Nothing, Source[Int]](FromIterableSource(1 to 6).span(_ % 3 == 0))
+      val p = instance[Source[Int]](FromIterableSource(1 to 6).span(_ % 3 == 0))
       val Emit(InternalPublisherFinished(f)) = p.handle(RequestMore(1))
       val handler = f(MyPublisherResults)
       p.handle(RequestMore(1)) should be(Continue)
@@ -42,12 +44,12 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
       nextHandler.handle(RequestMore(1)) should be(SubEmit(4))
       nextHandler.handle(RequestMore(1)) should be(SubEmit(5))
       nextHandler.handle(RequestMore(1)) should be(SubEmit(6) ~ SubComplete ~ Complete)
-    }*/
+    }
     "flatten with generic producer" in {
       object MyProducer extends Producer[Int] {
         def getPublisher: Publisher[Int] = ???
       }
-      val p = instance[Producer[Int], Int](Identity[Producer[Int]]().flatten)
+      val p = opInstance[Producer[Int], Int](Identity[Producer[Int]]().flatten)
       p.handle(RequestMore(4)) should be(RequestMore(1))
       val s @ Subscribe(_) = p.handle(Emit(MyProducer))
 
@@ -71,10 +73,13 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
       handler2.handle(Emit(38)) should be(Emit(38))
       handler2.handle(Complete) should be(Complete)
     }
-    "flatten with internal producer" in {
+
+    "flatten with internal producer" taggedAs (Only) in {
       // TODO: maybe use another example as `span().flatten` could also be statically optimized into `identity`
-      val p = instance[Nothing, Int](FromIterableSource(1 to 6).span(_ % 3 == 0).flatten)
+      //implicit val implSettings = ImplementationSettings(traceTrampolining = true)
+      val p = instance[Int](FromIterableSource(1 to 6).span(_ % 3 == 0).flatten)
       p.handle(RequestMore(1)) should be(Emit(1))
+      println("After 1")
       p.handle(RequestMore(1)) should be(Emit(2))
       p.handle(RequestMore(1)) should be(Emit(3))
       p.handle(RequestMore(1)) should be(Emit(4))
@@ -83,5 +88,7 @@ class OperationSemanticsSpec extends WordSpec with ShouldMatchers {
     }
   }
 
-  def instance[I, O](op: Operation[I, O]): OpInstance[I, O] = Implementation(op)
+  def instance[O](source: Source[O])(implicit settings: ImplementationSettings): OpInstance[Nothing, O] = Implementation(source)
+  def opInstance[I, O](op: Operation[I, O])(implicit settings: ImplementationSettings): OpInstance[I, O] = Implementation(op)
 }
+object Only extends Tag("only")

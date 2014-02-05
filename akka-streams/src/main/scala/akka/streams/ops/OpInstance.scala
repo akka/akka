@@ -2,7 +2,7 @@ package akka.streams.ops
 
 import rx.async.api.Producer
 import rx.async.spi.Publisher
-import akka.streams.Operation.Source
+import akka.streams.Operation.{ CustomSource, Source }
 
 trait OpInstance[-I, +O] {
   def handle(result: SimpleResult[I]): Result[O]
@@ -55,14 +55,10 @@ case object Continue extends Result[Nothing] {
 }
 // Definitions for internal publishers that don't have to be wired completely if they
 // don't leave the scope of this execution
-case class InternalPublisherTemplate[O](f: SubscriptionResults ⇒ PublisherResults[O] ⇒ PublisherHandler[O]) extends Producer[O] {
-  def getPublisher: Publisher[O] = ???
-}
+case class InternalPublisherTemplate[O](f: SubscriptionResults ⇒ PublisherResults[O] ⇒ PublisherHandler[O]) extends CustomSource[O]
 // FIXME: What happens if this one escapes scope? Do we provide proper hooks to get it properly connected?
 //        Is this expected?
-case class InternalPublisherFinished[O](f: PublisherResults[O] ⇒ PublisherHandler[O]) extends Producer[O] {
-  def getPublisher: Publisher[O] = ???
-}
+case class InternalPublisherFinished[O](f: PublisherResults[O] ⇒ PublisherHandler[O]) extends CustomSource[O]
 
 // FORWARD
 case class Emit[+O](t: O) extends ForwardResult[O]
@@ -92,12 +88,12 @@ trait SubscriptionResults {
 }
 
 trait PublisherHandler[O] {
-  def handle(result: BackchannelResult): Result[Producer[O]]
+  def handle(result: BackchannelResult): Result[Source[O]]
 }
 trait PublisherResults[O] {
-  def emit(o: O): Result[Producer[O]]
-  def complete: Result[Producer[O]]
-  def error(cause: Throwable): Result[Producer[O]]
+  def emit(o: O): Result[Source[O]]
+  def complete: Result[Source[O]]
+  def error(cause: Throwable): Result[Source[O]]
 }
 
 /** A helper trait for an OpInstance that can change its behaviour */

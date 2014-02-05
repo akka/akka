@@ -7,6 +7,8 @@ import akka.streams.Operation.{ Source, Flatten }
 object FlattenImpl {
   def apply[I](flatten: Flatten[I]): OpInstance[Source[I], I] =
     new OpInstanceStateMachine[Source[I], I] {
+      override def toString: String = "Flatten"
+
       def initialState = Waiting
 
       def Waiting: State = {
@@ -45,6 +47,7 @@ object FlattenImpl {
         override def apply(v1: SimpleResult[Source[I]]): Result[I] = v1 match {
           case RequestMore(n) ⇒
             curRemaining += n
+            println("Requesting more from sub")
             subscription.requestMore(n)
           case Emit(i) ⇒ throw new IllegalStateException("No element requested")
           case Complete ⇒

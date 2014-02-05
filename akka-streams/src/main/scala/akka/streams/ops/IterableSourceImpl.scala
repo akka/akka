@@ -3,12 +3,13 @@ package ops
 
 import scala.collection.immutable.VectorBuilder
 import scala.annotation.tailrec
-import akka.streams.Operation.FromIterableSource
 
-object ProduceImpl {
-  def apply[O](produce: FromIterableSource[O]): OpInstance[Nothing, O] =
+object IterableSourceImpl {
+  def apply[O](iterable: Iterable[O]): OpInstance[Nothing, O] =
     new OpInstance[Nothing, O] {
-      val it = produce.iterable.iterator
+      override def toString: String = "IterableSource"
+
+      val it = iterable.iterator
 
       def handle(result: SimpleResult[Nothing]): Result[O] = result match {
         case RequestMore(n) ⇒ requestMore(n)

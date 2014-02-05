@@ -7,6 +7,8 @@ import scala.annotation.tailrec
 object FoldUntilImpl {
   def apply[I, O, Z](fold: FoldUntil[I, O, Z]): OpInstance[I, O] =
     new OpInstance[I, O] {
+      override def toString: String = "FoldUntil"
+
       var z = fold.seed
       val batchSize = 100
 

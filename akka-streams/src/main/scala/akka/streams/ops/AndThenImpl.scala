@@ -3,10 +3,14 @@ package ops
 
 import scala.annotation.tailrec
 import rx.async.api.Producer
+import akka.streams.Operation.Source
+import akka.streams.ops.Implementation.ImplementationSettings
 
 object AndThenImpl {
-  def apply[I1, I2, O](firstI: OpInstance[I1, I2], secondI: OpInstance[I2, O]): OpInstance[I1, O] =
+  def apply[I1, I2, O](firstI: OpInstance[I1, I2], secondI: OpInstance[I2, O])(implicit settings: ImplementationSettings): OpInstance[I1, O] =
     new OpInstance[I1, O] {
+      override def toString: String = s"AndThen[$firstI => $secondI]"
+
       def handle(result: SimpleResult[I1]): Result[O] = result match {
         case f: ForwardResult[I1] ⇒ handleFirstResult(firstI.handle(f))
         case b: BackchannelResult ⇒ handleSecondResult(secondI.handle(b))
@@ -26,27 +30,23 @@ object AndThenImpl {
       // before calling the stepper (which must contains the same logic once again)
       // This way we can avoid the wrapping cost of trampolining in many cases.
       def handleFirstResult(res: Result[I2]): Result[O] = res match {
-        case Continue             ⇒ Continue
-        case b: BackchannelResult ⇒ b
-        case Combine(a, b)        ⇒ run(CombinedResult(FirstResult(a), FirstResult(b)))
-        case x                    ⇒ run(FirstResult(x))
+        case Continue                               ⇒ Continue
+        case b: BackchannelResult                   ⇒ b
+        case Emit(t: InternalPublisherTemplate[I2]) ⇒ run(FirstResult(handleTemplate[I2](t, handleFirstResult)))
+        case Combine(a, b)                          ⇒ run(CombinedResult(FirstResult(a), FirstResult(b)))
+        case x                                      ⇒ run(FirstResult(x))
       }
       def handleSecondResult(res: Result[O]): Result[O] = res match {
-        case Continue ⇒ Continue
-        case Emit(InternalPublisherTemplate(f)) ⇒
-          // TODO: can we fix the types here?
-          val rest = f(new SubscriptionResults {
-            def requestMore(n: Int): Result[Nothing] = handleSecondResult(RequestMore(n)).asInstanceOf[Result[Nothing]]
-          })
-          Emit(InternalPublisherFinished(rest).asInstanceOf[O])
-        case f: ForwardResult[O] ⇒ f
-        case Combine(a, b)       ⇒ run(CombinedResult(SecondResult(a), SecondResult(b)))
-        case x                   ⇒ run(SecondResult(x))
+        case Continue                              ⇒ Continue
+        case Emit(t: InternalPublisherTemplate[O]) ⇒ handleTemplate(t, handleSecondResult)
+        case f: ForwardResult[O]                   ⇒ f
+        case Combine(a, b)                         ⇒ run(CombinedResult(SecondResult(a), SecondResult(b)))
+        case x                                     ⇒ run(SecondResult(x))
       }
 
       @tailrec def run(calc: Calc): Result[O] = {
         val res = runOneStep(calc)
-        //println(s"$calc => $res")
+        if (settings.traceTrampolining) println(s"[$firstI => $secondI] $calc => $res")
         res match {
           case Finished(res) ⇒ res
           case x             ⇒ run(x)
@@ -102,29 +102,33 @@ object AndThenImpl {
         case x                    ⇒ FirstResult(x)
       }
       def secondResult(res: Result[O]): SimpleCalc = res match {
-        case Continue            ⇒ Finished(Continue)
-        /*case Emit(InternalPublisherTemplate(f)) ⇒
-          // TODO: can we fix the types here?
-          val rest = f(new SubscriptionResults {
-            def requestMore(n: Int): Result[Nothing] = handleSecondResult(RequestMore(n)).asInstanceOf[Result[Nothing]]
-          })
-          Finished(Emit(InternalPublisherFinished(rest).asInstanceOf[O]))
+        case Continue                              ⇒ Finished(Continue)
+        case Emit(t: InternalPublisherTemplate[O]) ⇒ Finished(handleTemplate[O](t, handleSecondResult))
         case s @ Subscribe(InternalPublisherFinished(rest)) ⇒
           object Connector extends PublisherResults[Any] with SubscriptionResults {
-            def emit(o: Any): Result[Producer[Any]] = handle(Emit(o.asInstanceOf[O]))
-            def complete: Result[Producer[Any]] = handle(Complete)
-            def error(cause: Throwable): Result[Producer[Any]] = handle(Error(cause))
+            def emit(o: Any): Result[Source[Any]] = handle(Emit(o.asInstanceOf[O]))
+            def complete: Result[Source[Any]] = handle(Complete)
+            def error(cause: Throwable): Result[Source[Any]] = handle(Error(cause))
 
-            def handle(res: ForwardResult[O]): Result[Producer[Any]] = oHandler.handle(res).asInstanceOf[Result[Producer[Any]]]
+            def handle(res: ForwardResult[O]): Result[Source[Any]] = oHandler.handle(res).asInstanceOf[Result[Source[Any]]]
             def requestMore(n: Int): Result[Nothing] =
               iHandler.handle(RequestMore(n)).asInstanceOf[Result[Nothing]]
           }
           lazy val oHandler = s.handlerFactory(Connector)
           lazy val iHandler = rest(Connector)
 
-          SecondResult(oHandler.initial)*/
+          SecondResult(oHandler.initial)
         case f: ForwardResult[O] ⇒ Finished(f)
         case x                   ⇒ SecondResult(x)
       }
+
+      def handleTemplate[I](internal: InternalPublisherTemplate[I], handle: Result[I] ⇒ Result[O]): Result[I] = {
+        // TODO: can we fix the types here?
+        val rest = internal.f(new SubscriptionResults {
+          def requestMore(n: Int): Result[Nothing] = handle(RequestMore(n)).asInstanceOf[Result[Nothing]]
+        })
+        Emit(InternalPublisherFinished(rest).asInstanceOf[I])
+      }
     }
+
 }

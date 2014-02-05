@@ -1,12 +1,13 @@
 package akka.streams
 package ops
 
-import rx.async.api.Producer
-import akka.streams.Operation.Span
+import akka.streams.Operation.{ Source, Span }
 
 object SpanImpl {
-  def apply[I](span: Span[I]): OpInstance[I, Producer[I]] =
-    new OpInstanceStateMachine[I, Producer[I]] {
+  def apply[I](span: Span[I]): OpInstance[I, Source[I]] =
+    new OpInstanceStateMachine[I, Source[I]] {
+      override def toString: String = "Span"
+
       def initialState = WaitingForRequest
 
       var subStreamsRequested = 0
@@ -34,7 +35,7 @@ object SpanImpl {
               new PublisherHandler[I] {
                 var cachedFirst: AnyRef = i.asInstanceOf[AnyRef]
 
-                def handle(result: BackchannelResult): Result[Producer[I]] = result match {
+                def handle(result: BackchannelResult): Result[Source[I]] = result match {
                   case RequestMore(n) ⇒
                     undeliveredElements += n
 
