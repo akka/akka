@@ -1,0 +1,71 @@
+Publisher::subscribe
+  when Publisher is in `completed` state
+    must never `subscriber.onSubscribed`
+    must trigger a call to `subscriber.onComplete`
+
+  when Publisher is in an error state
+    must never `subscriber.onSubscribed`
+    must trigger a call to `subscriber.onError`
+
+  when Publisher is neither in `completed` nor an error state
+    if the subscription is to be accepted: must trigger a `subscriber.onSubscribed` call
+    if the subscription is to be rejected: must trigger a `subscriber.onError` call
+    if the same Subscriber (reference equality) already has an active subscription: must reject the subscription with an IllegalStateException
+
+
+Subscription::requestMore
+  when subscription is cancelled
+    must throw an IllegalStateException
+  when subscription is not cancelled
+    register N additional elements to be published to the respective Subscriber
+
+
+Subscription::cancel
+  when subscription is cancelled
+    must throw an IllegalStateException
+  when subscription is not cancelled
+    the Publisher must eventually cease to call any methods on the corresponding Subscriber
+    the Publisher must eventually drop any references to the corresponding Subscriber
+    the Publisher must obey "a `subscription.cancel()` happens before any subsequent `publisher.subscribe(...)`"
+
+
+A Publisher
+  must not call `onNext`
+    more times than the total number of elements that was previously requested with `subscription.requestMore` by the corresponding Subscriber
+    on a Subscriber before having called 'onNext` on all active subscribers for the previous message ("lockstep rule")
+    after having issued an `onComplete` or `onError` call on a Subscriber
+
+  must not call `onComplete` or `onError` more than once per subscription on a single Subscriber
+  must call `onComplete` on all other active Subscribers if it calls `onComplete` on one Subscriber ("complete all or none")
+  must call `onError` on all other active Subscribers if it calls `onError` on one active Subscriber ("error all or none")
+
+
+Subscriber::onSubscribed, onNext
+  must asyncly schedule a respective event to the Subscriber
+  must not call any methods on the Subscription, the Publisher or any other Publishers or Subscribers
+
+
+Subscriber::onComplete, onError
+  must asyncly schedule a respective event to the Subscriber
+  must not call any methods on the Subscription, the Publisher or any other Publishers or Subscribers
+  must consider the Subscription cancelled after having received the event
+
+
+A Subscriber
+  must trigger an error when an `onSubscribed` event is received while a subscription is still active (cannot be subscribed to multiple publishers at once)
+  must call `subscription.cancel()` during shutdown if it still has an active subscription
+  must not call `subscription.requestMore` on a cancelled Subscription
+  must not call `subscription.cancel()` on a cancelled Subscription
+  must be prepared to receive one or more `onNext` events after having called `subscription.cancel` (if there are still requested elements pending)
+  must be prepared to receive an `onComplete` event with or without a preceding `subscription.requestMore` authorization
+  must be prepared to receive an `onError` event with or without a preceding `subscription.requestMore` authorization
+
+
+A Processor
+  must obey all Publisher rules on its producing side
+  must obey all Subscriber rules on its consuming side
+  should not subscribe to its upstream before having received a subscription from its downstream
+  should cancel its upstream subscription if its last downstream subscription has been cancelled
+  should not request from its upstream before having received a request from its downstream
+  must be prepared to receive incoming elements from its upstream even after its last downstream subscription has been cancelled
+  must be prepared to receive incoming elements from its upstream even if a downstream Subscriber has not requested anything yet
