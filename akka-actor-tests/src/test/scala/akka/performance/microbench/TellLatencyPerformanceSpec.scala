@@ -68,7 +68,7 @@ class TellLatencyPerformanceSpec extends PerformanceSpec {
         val durationNs = (System.nanoTime - start)
 
         if (!warmup) {
-          ok must be(true)
+          ok should be(true)
           logMeasurement(numberOfClients, durationNs, stat)
         }
         clients.foreach(system.stop(_))
@@ -93,7 +93,7 @@ object TellLatencyPerformanceSpec {
 
   class Destination extends Actor {
     def receive = {
-      case msg: Msg ⇒ sender ! msg
+      case msg: Msg ⇒ sender() ! msg
     }
   }
 

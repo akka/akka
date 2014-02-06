@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor.dispatch
 
@@ -10,7 +10,7 @@ import java.util.concurrent.{ TimeUnit, CountDownLatch, ConcurrentHashMap }
 import java.util.concurrent.atomic.{ AtomicLong, AtomicInteger }
 
 import org.junit.runner.RunWith
-import org.scalatest.Assertions.{ fail, assert }
+import org.scalatest.Assertions._
 import org.scalatest.junit.JUnitRunner
 
 import com.typesafe.config.Config
@@ -21,6 +21,7 @@ import akka.dispatch._
 import akka.event.Logging.Error
 import akka.pattern.ask
 import akka.testkit._
+import akka.util.Helpers.ConfigOps
 import akka.util.Switch
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
@@ -85,15 +86,15 @@ object ActorModelSpec {
       case Meet(sign, wait)             ⇒ { ack(); sign.countDown(); wait.await(); busy.switchOff(()) }
       case Wait(time)                   ⇒ { ack(); Thread.sleep(time); busy.switchOff(()) }
       case WaitAck(time, l)             ⇒ { ack(); Thread.sleep(time); l.countDown(); busy.switchOff(()) }
-      case Reply(msg)                   ⇒ { ack(); sender ! msg; busy.switchOff(()) }
-      case TryReply(msg)                ⇒ { ack(); sender.tell(msg, null); busy.switchOff(()) }
+      case Reply(msg)                   ⇒ { ack(); sender() ! msg; busy.switchOff(()) }
+      case TryReply(msg)                ⇒ { ack(); sender().tell(msg, null); busy.switchOff(()) }
       case Forward(to, msg)             ⇒ { ack(); to.forward(msg); busy.switchOff(()) }
       case CountDown(latch)             ⇒ { ack(); latch.countDown(); busy.switchOff(()) }
       case Increment(count)             ⇒ { ack(); count.incrementAndGet(); busy.switchOff(()) }
       case CountDownNStop(l)            ⇒ { ack(); l.countDown(); context.stop(self); busy.switchOff(()) }
       case Restart                      ⇒ { ack(); busy.switchOff(()); throw new Exception("Restart requested") }
-      case Interrupt                    ⇒ { ack(); sender ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"))); busy.switchOff(()); throw new InterruptedException("Ping!") }
-      case InterruptNicely(msg)         ⇒ { ack(); sender ! msg; busy.switchOff(()); Thread.currentThread().interrupt() }
+      case Interrupt                    ⇒ { ack(); sender() ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"))); busy.switchOff(()); throw new InterruptedException("Ping!") }
+      case InterruptNicely(msg)         ⇒ { ack(); sender() ! msg; busy.switchOff(()); Thread.currentThread().interrupt() }
       case ThrowException(e: Throwable) ⇒ { ack(); busy.switchOff(()); throw e }
       case DoubleStop                   ⇒ { ack(); context.stop(self); context.stop(self); busy.switchOff }
     }
@@ -528,13 +529,15 @@ object DispatcherModelSpec {
   class MessageDispatcherInterceptorConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
     extends MessageDispatcherConfigurator(config, prerequisites) {
 
+    import akka.util.Helpers.ConfigOps
+
     private val instance: MessageDispatcher =
       new Dispatcher(this,
         config.getString("id"),
         config.getInt("throughput"),
-        Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+        config.getNanosDuration("throughput-deadline-time"),
         configureExecutor(),
-        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor
+        config.getMillisDuration("shutdown-timeout")) with MessageDispatcherInterceptor
 
     override def dispatcher(): MessageDispatcher = instance
   }
@@ -600,14 +603,16 @@ object BalancingDispatcherModelSpec {
   class BalancingMessageDispatcherInterceptorConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
     extends BalancingDispatcherConfigurator(config, prerequisites) {
 
+    import akka.util.Helpers.ConfigOps
+
     override protected def create(mailboxType: MailboxType): BalancingDispatcher =
       new BalancingDispatcher(this,
         config.getString("id"),
         config.getInt("throughput"),
-        Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+        config.getNanosDuration("throughput-deadline-time"),
         mailboxType,
         configureExecutor(),
-        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS),
+        config.getMillisDuration("shutdown-timeout"),
         config.getBoolean("attempt-teamwork")) with MessageDispatcherInterceptor
   }
 }

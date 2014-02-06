@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
@@ -484,7 +484,7 @@ class TestEventListener extends Logging.DefaultLogger {
   override def receive = {
     case InitializeLogger(bus) ⇒
       Seq(classOf[Mute], classOf[UnMute], classOf[DeadLetter], classOf[UnhandledMessage]) foreach (bus.subscribe(context.self, _))
-      sender ! LoggerInitialized
+      sender() ! LoggerInitialized
     case Mute(filters)   ⇒ filters foreach addFilter
     case UnMute(filters) ⇒ filters foreach removeFilter
     case event: LogEvent ⇒ if (!filter(event)) print(event)

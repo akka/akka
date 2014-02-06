@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package sample.persistence
@@ -26,31 +26,31 @@ class ExampleProcessor extends EventsourcedProcessor {
   def numEvents =
     state.size
 
-  val receiveReplay: Receive = {
-    case evt: Evt                                 ⇒ updateState(evt)
-    case SnapshotOffer(_, snapshot: ExampleState) ⇒ state = snapshot
+  val receiveRecover: Receive = {
+    case evt: Evt                                 => updateState(evt)
+    case SnapshotOffer(_, snapshot: ExampleState) => state = snapshot
   }
 
   val receiveCommand: Receive = {
-    case Cmd(data) ⇒
+    case Cmd(data) =>
       persist(Evt(s"${data}-${numEvents}"))(updateState)
-      persist(Evt(s"${data}-${numEvents + 1}")) { event ⇒
+      persist(Evt(s"${data}-${numEvents + 1}")) { event =>
         updateState(event)
         context.system.eventStream.publish(event)
         if (data == "foo") context.become(otherCommandHandler)
       }
-    case "snap"  ⇒ saveSnapshot(state)
-    case "print" ⇒ println(state)
+    case "snap"  => saveSnapshot(state)
+    case "print" => println(state)
   }
 
   val otherCommandHandler: Receive = {
-    case Cmd("bar") ⇒
-      persist(Evt(s"bar-${numEvents}")) { event ⇒
+    case Cmd("bar") =>
+      persist(Evt(s"bar-${numEvents}")) { event =>
         updateState(event)
         context.unbecome()
       }
       unstashAll()
-    case other ⇒ stash()
+    case other => stash()
   }
 }
 //#eventsourced-example

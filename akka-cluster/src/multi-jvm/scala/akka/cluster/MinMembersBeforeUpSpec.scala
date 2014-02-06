@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -94,12 +94,12 @@ abstract class MinMembersBeforeUpBase(multiNodeConfig: MultiNodeConfig)
       cluster join myself
       awaitAssert {
         clusterView.refreshCurrentState()
-        clusterView.status must be(Joining)
+        clusterView.status should be(Joining)
       }
     }
     enterBarrier("first-started")
 
-    onUpLatch.isOpen must be(false)
+    onUpLatch.isOpen should be(false)
 
     runOn(second) {
       cluster.join(first)
@@ -108,14 +108,14 @@ abstract class MinMembersBeforeUpBase(multiNodeConfig: MultiNodeConfig)
       val expectedAddresses = Set(first, second) map address
       awaitAssert {
         clusterView.refreshCurrentState()
-        clusterView.members.map(_.address) must be(expectedAddresses)
+        clusterView.members.map(_.address) should be(expectedAddresses)
       }
-      clusterView.members.map(_.status) must be(Set(Joining))
+      clusterView.members.map(_.status) should be(Set(Joining))
       // and it should not change
       1 to 5 foreach { _ ⇒
         Thread.sleep(1000)
-        clusterView.members.map(_.address) must be(expectedAddresses)
-        clusterView.members.map(_.status) must be(Set(Joining))
+        clusterView.members.map(_.address) should be(expectedAddresses)
+        clusterView.members.map(_.status) should be(Set(Joining))
       }
     }
     enterBarrier("second-joined")

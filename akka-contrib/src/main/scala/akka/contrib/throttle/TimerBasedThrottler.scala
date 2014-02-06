@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.contrib.throttle
@@ -92,7 +92,7 @@ object Throttler {
    * @param target if `target` is `None`, the throttler will stop delivering messages and the messages already received
    *  but not yet delivered, as well as any messages received in the future will be queued
    *  and eventually be delivered when a new target is set. If `target` is not `None`, the currently queued messages
-   *  as well as any messages received in the the future will be delivered to the new target at a rate not exceeding the current throttler's rate.
+   *  as well as any messages received in the future will be delivered to the new target at a rate not exceeding the current throttler's rate.
    */
   case class SetTarget(target: Option[ActorRef]) {
     /**
@@ -100,7 +100,7 @@ object Throttler {
      * @param target if `target` is `null`, the throttler will stop delivering messages and the messages already received
      *  but not yet delivered, as well as any messages received in the future will be queued
      *  and eventually be delivered when a new target is set. If `target` is not `null`, the currently queued messages
-     *  as well as any messages received in the the future will be delivered to the new target at a rate not exceeding
+     *  as well as any messages received in the future will be delivered to the new target at a rate not exceeding
      *  the current throttler's rate.
      */
     def this(target: ActorRef) = this(Option(target))
@@ -231,9 +231,9 @@ class TimerBasedThrottler(var rate: Rate) extends Actor with FSM[State, Data] {
 
     // Queuing
     case Event(msg, d @ Data(None, _, queue)) ⇒
-      stay using d.copy(queue = queue.enqueue(Message(msg, context.sender)))
+      stay using d.copy(queue = queue.enqueue(Message(msg, context.sender())))
     case Event(msg, d @ Data(Some(_), _, Seq())) ⇒
-      goto(Active) using deliverMessages(d.copy(queue = Q(Message(msg, context.sender))))
+      goto(Active) using deliverMessages(d.copy(queue = Q(Message(msg, context.sender()))))
     // Note: The case Event(msg, t @ Data(Some(_), _, _, Seq(_*))) should never happen here.
   }
 
@@ -269,11 +269,11 @@ class TimerBasedThrottler(var rate: Rate) extends Actor with FSM[State, Data] {
 
     // Queue a message (when we cannot send messages in the current period anymore)
     case Event(msg, d @ Data(_, 0, queue)) ⇒
-      stay using d.copy(queue = queue.enqueue(Message(msg, context.sender)))
+      stay using d.copy(queue = queue.enqueue(Message(msg, context.sender())))
 
     // Queue a message (when we can send some more messages in the current period)
     case Event(msg, d @ Data(_, _, queue)) ⇒
-      stay using deliverMessages(d.copy(queue = queue.enqueue(Message(msg, context.sender))))
+      stay using deliverMessages(d.copy(queue = queue.enqueue(Message(msg, context.sender()))))
   }
 
   onTransition {

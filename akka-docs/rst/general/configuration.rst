@@ -19,7 +19,7 @@ Akka uses the `Typesafe Config Library
 for the configuration of your own application or library built with or without
 Akka. This library is implemented in Java with no external dependencies; you
 should have a look at its documentation (in particular about `ConfigFactory
-<http://typesafehub.github.com/config/latest/api/com/typesafe/config/ConfigFactory.html>`_),
+<http://typesafehub.github.io/config/v1.2.0/com/typesafe/config/ConfigFactory.html>`_),
 which is only summarized in the following.
 
 .. warning::
@@ -379,12 +379,6 @@ akka-cluster
 .. literalinclude:: ../../../akka-cluster/src/main/resources/reference.conf
    :language: none
 
-akka-transactor
-~~~~~~~~~~~~~~~
-
-.. literalinclude:: ../../../akka-transactor/src/main/resources/reference.conf
-   :language: none
-
 akka-agent
 ~~~~~~~~~~
 
@@ -403,8 +397,4 @@ akka-zeromq
 .. literalinclude:: ../../../akka-zeromq/src/main/resources/reference.conf
    :language: none
 
-akka-file-mailbox
-~~~~~~~~~~~~~~~~~
 
-.. literalinclude:: ../../../akka-durable-mailboxes/akka-file-mailbox/src/main/resources/reference.conf
-   :language: none

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -54,7 +54,7 @@ abstract class JoinInProgressSpec
         val until = Deadline.now + 5.seconds
         while (!until.isOverdue) {
           Thread.sleep(200)
-          cluster.failureDetector.isAvailable(second) must be(true)
+          cluster.failureDetector.isAvailable(second) should be(true)
         }
       }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.routing
 
@@ -51,15 +51,15 @@ class SmallestMailboxSpec extends AkkaSpec("akka.actor.serialize-messages = off"
       busy.countDown()
 
       val busyPath = usedActors.get(0)
-      busyPath must not be (null)
+      busyPath should not be (null)
 
       val path1 = usedActors.get(1)
       val path2 = usedActors.get(2)
       val path3 = usedActors.get(3)
 
-      path1 must not be (busyPath)
-      path2 must not be (busyPath)
-      path3 must not be (busyPath)
+      path1 should not be (busyPath)
+      path2 should not be (busyPath)
+      path3 should not be (busyPath)
 
     }
   }

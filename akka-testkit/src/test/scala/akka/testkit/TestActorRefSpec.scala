@@ -1,10 +1,10 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
 import language.{ postfixOps, reflectiveCalls }
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
 import akka.event.Logging.Warning
@@ -42,22 +42,22 @@ object TestActorRefSpec {
 
     def receiveT = {
       case "complexRequest" ⇒ {
-        replyTo = sender
+        replyTo = sender()
         val worker = TestActorRef(Props[WorkerActor])
         worker ! "work"
       }
       case "complexRequest2" ⇒
         val worker = TestActorRef(Props[WorkerActor])
-        worker ! sender
+        worker ! sender()
       case "workDone"      ⇒ replyTo ! "complexReply"
-      case "simpleRequest" ⇒ sender ! "simpleReply"
+      case "simpleRequest" ⇒ sender() ! "simpleReply"
     }
   }
 
   class WorkerActor() extends TActor {
     def receiveT = {
       case "work" ⇒
-        sender ! "workDone"
+        sender() ! "workDone"
         context stop self
       case replyTo: Promise[_] ⇒ replyTo.asInstanceOf[Promise[Any]].success("complexReply")
       case replyTo: ActorRef   ⇒ replyTo ! "complexReply"
@@ -111,37 +111,37 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
   override def beforeEach(): Unit = otherthread = null
 
-  private def assertThread(): Unit = otherthread must (be(null) or equal(thread))
+  private def assertThread(): Unit = otherthread should (be(null) or equal(thread))
 
-  "A TestActorRef must be an ActorRef, hence it" must {
+  "A TestActorRef should be an ActorRef, hence it" must {
 
     "support nested Actor creation" when {
 
       "used with TestActorRef" in {
         val a = TestActorRef(Props(new Actor {
           val nested = TestActorRef(Props(new Actor { def receive = { case _ ⇒ } }))
-          def receive = { case _ ⇒ sender ! nested }
+          def receive = { case _ ⇒ sender() ! nested }
         }))
-        a must not be (null)
+        a should not be (null)
         val nested = Await.result((a ? "any").mapTo[ActorRef], timeout.duration)
-        nested must not be (null)
-        a must not be theSameInstanceAs(nested)
+        nested should not be (null)
+        a should not be theSameInstanceAs(nested)
       }
 
       "used with ActorRef" in {
         val a = TestActorRef(Props(new Actor {
           val nested = context.actorOf(Props(new Actor { def receive = { case _ ⇒ } }))
-          def receive = { case _ ⇒ sender ! nested }
+          def receive = { case _ ⇒ sender() ! nested }
         }))
-        a must not be (null)
+        a should not be (null)
         val nested = Await.result((a ? "any").mapTo[ActorRef], timeout.duration)
-        nested must not be (null)
-        a must not be theSameInstanceAs(nested)
+        nested should not be (null)
+        a should not be theSameInstanceAs(nested)
       }
 
     }
 
-    "support reply via sender" in {
+    "support reply via sender()" in {
       val serverRef = TestActorRef(Props[ReplyActor])
       val clientRef = TestActorRef(Props(classOf[SenderActor], serverRef))
 
@@ -152,7 +152,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
       clientRef ! "simple"
       clientRef ! "simple"
 
-      counter must be(0)
+      counter should be(0)
 
       counter = 4
 
@@ -161,7 +161,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
       clientRef ! "simple"
       clientRef ! "simple"
 
-      counter must be(0)
+      counter should be(0)
 
       assertThread()
     }
@@ -180,7 +180,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
         expectMsgPF(5 seconds) {
           case WrappedTerminated(Terminated(`a`)) ⇒ true
         }
-        a.isTerminated must be(true)
+        a.isTerminated should be(true)
         assertThread()
       }
     }
@@ -204,7 +204,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
         boss ! "sendKill"
 
-        counter must be(0)
+        counter should be(0)
         assertThread()
       }
     }
@@ -213,8 +213,8 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
       val a = TestActorRef[WorkerActor]
       val f = a ? "work"
       // CallingThreadDispatcher means that there is no delay
-      f must be('completed)
-      Await.result(f, timeout.duration) must equal("workDone")
+      f should be('completed)
+      Await.result(f, timeout.duration) should be("workDone")
     }
 
     "support receive timeout" in {
@@ -235,34 +235,34 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
       })
       ref ! "hallo"
       val actor = ref.underlyingActor
-      actor.s must equal("hallo")
+      actor.s should be("hallo")
     }
 
     "set receiveTimeout to None" in {
       val a = TestActorRef[WorkerActor]
-      a.underlyingActor.context.receiveTimeout must be theSameInstanceAs Duration.Undefined
+      a.underlyingActor.context.receiveTimeout should be theSameInstanceAs Duration.Undefined
     }
 
     "set CallingThreadDispatcher" in {
       val a = TestActorRef[WorkerActor]
-      a.underlying.dispatcher.getClass must be(classOf[CallingThreadDispatcher])
+      a.underlying.dispatcher.getClass should be(classOf[CallingThreadDispatcher])
     }
 
     "allow override of dispatcher" in {
       val a = TestActorRef(Props[WorkerActor].withDispatcher("disp1"))
-      a.underlying.dispatcher.getClass must be(classOf[Dispatcher])
+      a.underlying.dispatcher.getClass should be(classOf[Dispatcher])
     }
 
-    "proxy receive for the underlying actor without sender" in {
+    "proxy receive for the underlying actor without sender()" in {
       val ref = TestActorRef[WorkerActor]
       ref.receive("work")
-      ref.isTerminated must be(true)
+      ref.isTerminated should be(true)
     }
 
-    "proxy receive for the underlying actor with sender" in {
+    "proxy receive for the underlying actor with sender()" in {
       val ref = TestActorRef[WorkerActor]
       ref.receive("work", testActor)
-      ref.isTerminated must be(true)
+      ref.isTerminated should be(true)
       expectMsg("workDone")
     }
 

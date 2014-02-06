@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.testkit
 
@@ -9,21 +9,21 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.testkit.TestKit
 import org.scalatest.WordSpecLike
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import org.scalatest.BeforeAndAfterAll
 import akka.testkit.ImplicitSender
 
 object MySpec {
   class EchoActor extends Actor {
     def receive = {
-      case x ⇒ sender ! x
+      case x => sender() ! x
     }
   }
 }
 
 //#implicit-sender
 class MySpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
-  with WordSpecLike with MustMatchers with BeforeAndAfterAll {
+  with WordSpecLike with Matchers with BeforeAndAfterAll {
   //#implicit-sender
 
   def this() = this(ActorSystem("MySpec"))

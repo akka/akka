@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.camel.internal.component
@@ -10,7 +10,7 @@ import org.apache.camel._
 import org.apache.camel.impl.{ DefaultProducer, DefaultEndpoint, DefaultComponent }
 import akka.actor._
 import akka.pattern._
-import scala.reflect.BeanProperty
+import scala.beans.BeanProperty
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.control.NonFatal

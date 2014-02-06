@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.actor
 
@@ -13,7 +13,7 @@ import scala.concurrent.duration._
 //#imports1
 
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import akka.testkit._
 
 class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
@@ -43,7 +43,7 @@ class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       val Tick = "tick"
       class TickActor extends Actor {
         def receive = {
-          case Tick ⇒ //Do something
+          case Tick => //Do something
         }
       }
       val tickActor = system.actorOf(Props(classOf[TickActor], this))

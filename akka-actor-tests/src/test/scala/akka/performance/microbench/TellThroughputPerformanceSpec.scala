@@ -1,5 +1,6 @@
 package akka.performance.microbench
 
+import language.postfixOps
 import akka.performance.workbench.PerformanceSpec
 import akka.actor._
 import java.util.concurrent.{ ThreadPoolExecutor, CountDownLatch, TimeUnit }
@@ -123,7 +124,7 @@ class TellThroughputPerformanceSpec extends PerformanceSpec {
         val durationNs = (System.nanoTime - start)
 
         if (!warmup) {
-          ok must be(true)
+          ok should be(true)
           logMeasurement(numberOfClients, durationNs, repeat)
         }
         clients.foreach(system.stop(_))
@@ -141,13 +142,13 @@ object TellThroughputPerformanceSpec {
 
   class Destination1 extends Actor {
     def receive = {
-      case Msg ⇒ sender ! Msg
+      case Msg ⇒ sender() ! Msg
     }
   }
 
   class Destination2 extends Actor {
     def receive = {
-      case Msg ⇒ sender ! Msg
+      case Msg ⇒ sender() ! Msg
     }
   }
 

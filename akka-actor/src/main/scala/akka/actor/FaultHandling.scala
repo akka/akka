@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
@@ -145,26 +145,26 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
 
   /**
    * When supervisorStrategy is not specified for an actor this
-   * is used by default. OneForOneStrategy with decider defined in
-   * [[#defaultDecider]].
-   */
-  final val defaultStrategy: SupervisorStrategy = {
-    OneForOneStrategy()(defaultDecider)
-  }
-
-  /**
-   * When supervisorStrategy is not specified for an actor this
    * [[Decider]] is used by default in the supervisor strategy.
    * The child will be stopped when [[akka.actor.ActorInitializationException]],
    * [[akka.actor.ActorKilledException]], or [[akka.actor.DeathPactException]] is
    * thrown. It will be restarted for other `Exception` types.
    * The error is escalated if it's a `Throwable`, i.e. `Error`.
    */
-  final def defaultDecider: Decider = {
+  final val defaultDecider: Decider = {
     case _: ActorInitializationException ⇒ Stop
     case _: ActorKilledException         ⇒ Stop
     case _: DeathPactException           ⇒ Stop
     case _: Exception                    ⇒ Restart
+  }
+
+  /**
+   * When supervisorStrategy is not specified for an actor this
+   * is used by default. OneForOneStrategy with decider defined in
+   * [[#defaultDecider]].
+   */
+  final val defaultStrategy: SupervisorStrategy = {
+    OneForOneStrategy()(defaultDecider)
   }
 
   /**
@@ -372,10 +372,11 @@ abstract class SupervisorStrategy {
  * to all children when one fails, as opposed to [[akka.actor.OneForOneStrategy]] that applies
  * it only to the child actor that failed.
  *
- * @param maxNrOfRetries the number of times an actor is allowed to be restarted, negative value means no limit
+ * @param maxNrOfRetries the number of times a child actor is allowed to be restarted, negative value means no limit,
+ *   if the limit is exceeded the child actor is stopped
  * @param withinTimeRange duration of the time window for maxNrOfRetries, Duration.Inf means no window
  * @param decider mapping from Throwable to [[akka.actor.SupervisorStrategy.Directive]], you can also use a
- *   `Seq` of Throwables which maps the given Throwables to restarts, otherwise escalates.
+ *   [[scala.collection.immutable.Seq]] of Throwables which maps the given Throwables to restarts, otherwise escalates.
  * @param loggingEnabled the strategy logs the failure if this is enabled (true), by default it is enabled
  */
 case class AllForOneStrategy(
@@ -418,10 +419,11 @@ case class AllForOneStrategy(
  * to the child actor that failed, as opposed to [[akka.actor.AllForOneStrategy]] that applies
  * it to all children.
  *
- * @param maxNrOfRetries the number of times an actor is allowed to be restarted, negative value means no limit
+ * @param maxNrOfRetries the number of times a child actor is allowed to be restarted, negative value means no limit,
+ *   if the limit is exceeded the child actor is stopped
  * @param withinTimeRange duration of the time window for maxNrOfRetries, Duration.Inf means no window
  * @param decider mapping from Throwable to [[akka.actor.SupervisorStrategy.Directive]], you can also use a
- *   `Seq` of Throwables which maps the given Throwables to restarts, otherwise escalates.
+ *   [[scala.collection.immutable.Seq]] of Throwables which maps the given Throwables to restarts, otherwise escalates.
  * @param loggingEnabled the strategy logs the failure if this is enabled (true), by default it is enabled
  */
 case class OneForOneStrategy(

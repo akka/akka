@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote
@@ -230,11 +230,11 @@ private[akka] class RemoteActorRefProvider(
        *
        * Example:
        *
-       * akka://sys@home:1234/remote/akka/sys@remote:6667/remote/akka/sys@other:3333/user/a/b/c
+       * akka.tcp://sys@home:1234/remote/akka/sys@remote:6667/remote/akka/sys@other:3333/user/a/b/c
        *
-       * means that the logical parent originates from “akka://sys@other:3333” with
-       * one child (may be “a” or “b”) being deployed on “akka://sys@remote:6667” and
-       * finally either “b” or “c” being created on “akka://sys@home:1234”, where
+       * means that the logical parent originates from “akka.tcp://sys@other:3333” with
+       * one child (may be “a” or “b”) being deployed on “akka.tcp://sys@remote:6667” and
+       * finally either “b” or “c” being created on “akka.tcp://sys@home:1234”, where
        * this whole thing actually resides. Thus, the logical path is
        * “/user/a/b/c” and the physical path contains all remote placement
        * information.
@@ -428,6 +428,8 @@ private[akka] class RemoteActorRefProvider(
     message match {
       // Sending to local remoteWatcher relies strong delivery guarantees of local send, i.e.
       // default dispatcher must not be changed to an implementation that defeats that
+      case rew: RemoteWatcher.Rewatch ⇒
+        remoteWatcher ! RemoteWatcher.RewatchRemote(rew.watchee, rew.watcher)
       case Watch(watchee, watcher)   ⇒ remoteWatcher ! RemoteWatcher.WatchRemote(watchee, watcher)
       case Unwatch(watchee, watcher) ⇒ remoteWatcher ! RemoteWatcher.UnwatchRemote(watchee, watcher)
       case _                         ⇒

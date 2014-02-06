@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -69,12 +69,12 @@ abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
 
         within(28 seconds) {
           // third becomes unreachable
-          awaitAssert(clusterView.unreachableMembers.size must be(1))
+          awaitAssert(clusterView.unreachableMembers.size should be(1))
           awaitSeenSameState(first, second)
           // still one unreachable
-          clusterView.unreachableMembers.size must be(1)
-          clusterView.unreachableMembers.head.address must be(thirdAddress)
-          clusterView.members.size must be(3)
+          clusterView.unreachableMembers.size should be(1)
+          clusterView.unreachableMembers.head.address should be(thirdAddress)
+          clusterView.members.size should be(3)
 
         }
       }
@@ -95,11 +95,11 @@ abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
 
       runOn(first, second, fourth) {
         for (n ← 1 to 5) {
-          awaitAssert(clusterView.members.size must be(3))
+          awaitAssert(clusterView.members.size should be(3))
           awaitSeenSameState(first, second, fourth)
-          memberStatus(first) must be(Some(MemberStatus.Up))
-          memberStatus(second) must be(Some(MemberStatus.Up))
-          memberStatus(fourth) must be(None)
+          memberStatus(first) should be(Some(MemberStatus.Up))
+          memberStatus(second) should be(Some(MemberStatus.Up))
+          memberStatus(fourth) should be(None)
           // wait and then check again
           Thread.sleep(1.second.dilated.toMillis)
         }

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -74,6 +74,7 @@ object RemoteWatcherSpec {
 class RemoteWatcherSpec extends AkkaSpec(
   """akka {
        loglevel = INFO
+       log-dead-letters-during-shutdown = false
        actor.provider = "akka.remote.RemoteActorRefProvider"
        remote.netty.tcp {
          hostname = localhost

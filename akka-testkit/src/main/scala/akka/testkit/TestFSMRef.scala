@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.testkit
@@ -10,6 +10,7 @@ import akka.dispatch.DispatcherPrerequisites
 import scala.concurrent.duration.FiniteDuration
 import akka.dispatch.MessageDispatcher
 import akka.dispatch.MailboxType
+import scala.reflect.ClassTag
 
 /**
  * This is a specialised form of the TestActorRef with support for querying and
@@ -65,40 +66,37 @@ class TestFSMRef[S, D, T <: Actor](
   }
 
   /**
-   * Proxy for FSM.setTimer.
+   * Proxy for [[akka.actor.FSM#setTimer]].
    */
-  def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean) {
+  def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean = false) {
     fsm.setTimer(name, msg, timeout, repeat)
   }
 
   /**
-   * Proxy for FSM.cancelTimer.
+   * Proxy for [[akka.actor.FSM#cancelTimer]].
    */
   def cancelTimer(name: String) { fsm.cancelTimer(name) }
 
-  @deprecated("Use isTimerActive", "2.2")
-  def timerActive_?(name: String): Boolean = isTimerActive(name)
-
   /**
-   * Proxy for FSM.isTimerActive.
+   * Proxy for [[akka.actor.FSM#isStateTimerActive]].
    */
   def isTimerActive(name: String) = fsm.isTimerActive(name)
 
   /**
-   * Proxy for FSM.timerActive_?.
+   * Proxy for [[akka.actor.FSM#isStateTimerActive]].
    */
   def isStateTimerActive = fsm.isStateTimerActive
 }
 
 object TestFSMRef {
 
-  def apply[S, D, T <: Actor](factory: ⇒ T)(implicit ev: T <:< FSM[S, D], system: ActorSystem): TestFSMRef[S, D, T] = {
+  def apply[S, D, T <: Actor: ClassTag](factory: ⇒ T)(implicit ev: T <:< FSM[S, D], system: ActorSystem): TestFSMRef[S, D, T] = {
     val impl = system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
-    new TestFSMRef(impl, Props(creator = () ⇒ factory), impl.guardian.asInstanceOf[InternalActorRef], TestActorRef.randomName)
+    new TestFSMRef(impl, Props(factory), impl.guardian.asInstanceOf[InternalActorRef], TestActorRef.randomName)
   }
 
-  def apply[S, D, T <: Actor](factory: ⇒ T, name: String)(implicit ev: T <:< FSM[S, D], system: ActorSystem): TestFSMRef[S, D, T] = {
+  def apply[S, D, T <: Actor: ClassTag](factory: ⇒ T, name: String)(implicit ev: T <:< FSM[S, D], system: ActorSystem): TestFSMRef[S, D, T] = {
     val impl = system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
-    new TestFSMRef(impl, Props(creator = () ⇒ factory), impl.guardian.asInstanceOf[InternalActorRef], name)
+    new TestFSMRef(impl, Props(factory), impl.guardian.asInstanceOf[InternalActorRef], name)
   }
 }

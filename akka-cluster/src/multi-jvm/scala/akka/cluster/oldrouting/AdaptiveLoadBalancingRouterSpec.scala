@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster.oldrouting
@@ -27,7 +27,7 @@ object AdaptiveLoadBalancingRouterMultiJvmSpec extends MultiNodeConfig {
 
   class Routee extends Actor {
     def receive = {
-      case _ ⇒ sender ! Reply(Cluster(context.system).selfAddress)
+      case _ ⇒ sender() ! Reply(Cluster(context.system).selfAddress)
     }
   }
 
@@ -45,7 +45,7 @@ object AdaptiveLoadBalancingRouterMultiJvmSpec extends MultiNodeConfig {
         val numberOfArrays = allocateBytes / 1024
         usedMemory = Array.ofDim(numberOfArrays, 248) // each 248 element Int array will use ~ 1 kB
         log.debug("used heap after: [{}] bytes", ManagementFactory.getMemoryMXBean.getHeapMemoryUsage.getUsed)
-        sender ! "done"
+        sender() ! "done"
     }
   }
 
@@ -118,8 +118,8 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
       local = AdaptiveLoadBalancingRouter(HeapMetricsSelector),
       settings = ClusterRouterSettings(totalInstances = 10, maxInstancesPerNode = 1, useRole = None))), name)
     // it may take some time until router receives cluster member events
-    awaitAssert { currentRoutees(router).size must be(roles.size) }
-    currentRoutees(router).map(fullAddress).toSet must be(roles.map(address).toSet)
+    awaitAssert { currentRoutees(router).size should be(roles.size) }
+    currentRoutees(router).map(fullAddress).toSet should be(roles.map(address).toSet)
     router
   }
 
@@ -145,10 +145,10 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
 
         val replies = receiveReplies(iterationCount)
 
-        replies(first) must be > (0)
-        replies(second) must be > (0)
-        replies(third) must be > (0)
-        replies.values.sum must be(iterationCount)
+        replies(first) should be > (0)
+        replies(second) should be > (0)
+        replies(third) should be > (0)
+        replies.values.sum should be(iterationCount)
 
       }
 
@@ -180,8 +180,8 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
 
         val replies = receiveReplies(iterationCount)
 
-        replies(third) must be > (replies(second))
-        replies.values.sum must be(iterationCount)
+        replies(third) should be > (replies(second))
+        replies.values.sum should be(iterationCount)
 
       }
 
@@ -192,8 +192,8 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
       runOn(first) {
         val router3 = system.actorOf(Props[Memory].withRouter(FromConfig()), "router3")
         // it may take some time until router receives cluster member events
-        awaitAssert { currentRoutees(router3).size must be(9) }
-        currentRoutees(router3).map(fullAddress).toSet must be(Set(address(first)))
+        awaitAssert { currentRoutees(router3).size should be(9) }
+        currentRoutees(router3).map(fullAddress).toSet should be(Set(address(first)))
       }
       enterBarrier("after-4")
     }
@@ -202,8 +202,8 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
       runOn(first) {
         val router4 = system.actorOf(Props[Memory].withRouter(FromConfig()), "router4")
         // it may take some time until router receives cluster member events
-        awaitAssert { currentRoutees(router4).size must be(6) }
-        currentRoutees(router4).map(fullAddress).toSet must be(Set(
+        awaitAssert { currentRoutees(router4).size should be(6) }
+        currentRoutees(router4).map(fullAddress).toSet should be(Set(
           address(first), address(second), address(third)))
       }
       enterBarrier("after-5")

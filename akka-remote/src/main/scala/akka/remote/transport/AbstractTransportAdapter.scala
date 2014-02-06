@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote.transport
 
@@ -141,9 +141,8 @@ abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorS
   // Write once variable initialized when Listen is called.
   @volatile protected var manager: ActorRef = _
 
-  // FIXME #3074 how to replace actorFor here?
   private def registerManager(): Future[ActorRef] =
-    (system.actorFor("/system/transports") ? RegisterTransportActor(managerProps, managerName)).mapTo[ActorRef]
+    (system.actorSelection("/system/transports") ? RegisterTransportActor(managerProps, managerName)).mapTo[ActorRef]
 
   override def interceptListen(listenAddress: Address,
                                listenerPromise: Future[AssociationEventListener]): Future[AssociationEventListener] = {

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -24,7 +24,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
    * Current state
    */
   @volatile
-  private var state: CurrentClusterState = CurrentClusterState()
+  private var _state: CurrentClusterState = CurrentClusterState()
 
   @volatile
   private var _reachability: Reachability = Reachability.empty
@@ -52,34 +52,36 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
       def receive = {
         case e: ClusterDomainEvent ⇒ e match {
           case SeenChanged(convergence, seenBy) ⇒
-            state = state.copy(seenBy = seenBy)
+            _state = _state.copy(seenBy = seenBy)
           case ReachabilityChanged(reachability) ⇒
             _reachability = reachability
           case MemberRemoved(member, _) ⇒
-            state = state.copy(members = state.members - member, unreachable = state.unreachable - member)
+            _state = _state.copy(members = _state.members - member, unreachable = _state.unreachable - member)
           case UnreachableMember(member) ⇒
             // replace current member with new member (might have different status, only address is used in equals)
-            state = state.copy(unreachable = state.unreachable - member + member)
+            _state = _state.copy(unreachable = _state.unreachable - member + member)
           case ReachableMember(member) ⇒
-            state = state.copy(unreachable = state.unreachable - member)
+            _state = _state.copy(unreachable = _state.unreachable - member)
           case event: MemberEvent ⇒
             // replace current member with new member (might have different status, only address is used in equals)
             val newUnreachable =
-              if (state.unreachable.contains(event.member)) state.unreachable - event.member + event.member
-              else state.unreachable
-            state = state.copy(members = state.members - event.member + event.member,
+              if (_state.unreachable.contains(event.member)) _state.unreachable - event.member + event.member
+              else _state.unreachable
+            _state = _state.copy(members = _state.members - event.member + event.member,
               unreachable = newUnreachable)
           case LeaderChanged(leader) ⇒
-            state = state.copy(leader = leader)
+            _state = _state.copy(leader = leader)
           case RoleLeaderChanged(role, leader) ⇒
-            state = state.copy(roleLeaderMap = state.roleLeaderMap + (role -> leader))
-          case s: CurrentClusterState       ⇒ state = s
+            _state = _state.copy(roleLeaderMap = _state.roleLeaderMap + (role -> leader))
           case stats: CurrentInternalStats  ⇒ _latestStats = stats
           case ClusterMetricsChanged(nodes) ⇒ _clusterMetrics = nodes
         }
+        case s: CurrentClusterState ⇒ _state = s
       }
     }).withDispatcher(cluster.settings.UseDispatcher).withDeploy(Deploy.local), name = "clusterEventBusListener")
   }
+
+  def state: CurrentClusterState = _state
 
   def self: Member = {
     import cluster.selfUniqueAddress

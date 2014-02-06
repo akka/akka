@@ -1,12 +1,12 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.testkit
 
 import language.postfixOps
 
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
 import scala.concurrent.duration._
@@ -27,17 +27,17 @@ class TestFSMRefSpec extends AkkaSpec {
           case Event("back", _) ⇒ goto(1) using "back"
         }
       }, "test-fsm-ref-1")
-      fsm.stateName must be(1)
-      fsm.stateData must be("")
+      fsm.stateName should be(1)
+      fsm.stateData should be("")
       fsm ! "go"
-      fsm.stateName must be(2)
-      fsm.stateData must be("go")
+      fsm.stateName should be(2)
+      fsm.stateData should be("go")
       fsm.setState(stateName = 1)
-      fsm.stateName must be(1)
-      fsm.stateData must be("go")
+      fsm.stateName should be(1)
+      fsm.stateData should be("go")
       fsm.setState(stateData = "buh")
-      fsm.stateName must be(1)
-      fsm.stateData must be("buh")
+      fsm.stateName should be(1)
+      fsm.stateData should be("buh")
       fsm.setState(timeout = 100 millis)
       within(80 millis, 500 millis) {
         awaitCond(fsm.stateName == 2 && fsm.stateData == "timeout")
@@ -51,11 +51,11 @@ class TestFSMRefSpec extends AkkaSpec {
           case x ⇒ stay
         }
       }, "test-fsm-ref-2")
-      fsm.isTimerActive("test") must be(false)
+      fsm.isTimerActive("test") should be(false)
       fsm.setTimer("test", 12, 10 millis, true)
-      fsm.isTimerActive("test") must be(true)
+      fsm.isTimerActive("test") should be(true)
       fsm.cancelTimer("test")
-      fsm.isTimerActive("test") must be(false)
+      fsm.isTimerActive("test") should be(false)
     }
   }
 }

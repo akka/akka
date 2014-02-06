@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.extension
 
@@ -65,7 +65,7 @@ object SettingsExtensionDocSpec {
 
     //#extension-usage-actor
     def receive = {
-      case someMessage ⇒
+      case someMessage =>
     }
 
     def connect(dbUri: String, circuitBreakerTimeout: Duration) = {

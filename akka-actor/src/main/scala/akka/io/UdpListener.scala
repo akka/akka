@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.io
 
@@ -68,7 +68,7 @@ private[io] class UdpListener(val udp: UdpExt,
       log.debug("Unbinding endpoint [{}]", bind.localAddress)
       try {
         channel.close()
-        sender ! Unbound
+        sender() ! Unbound
         log.debug("Unbound endpoint [{}], stopping listener", bind.localAddress)
       } finally context.stop(self)
   }

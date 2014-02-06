@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -103,11 +103,11 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("second-terminated")
 
         markNodeAsUnavailable(third)
-        awaitAssert(clusterView.unreachableMembers.map(_.address) must contain(address(third)))
+        awaitAssert(clusterView.unreachableMembers.map(_.address) should contain(address(third)))
         cluster.down(third)
         // removed
-        awaitAssert(clusterView.members.map(_.address) must not contain (address(third)))
-        awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (address(third)))
+        awaitAssert(clusterView.members.map(_.address) should not contain (address(third)))
+        awaitAssert(clusterView.unreachableMembers.map(_.address) should not contain (address(third)))
         expectMsg(path3)
         enterBarrier("third-terminated")
 
@@ -119,11 +119,11 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("watch-established")
         runOn(third) {
           markNodeAsUnavailable(second)
-          awaitAssert(clusterView.unreachableMembers.map(_.address) must contain(address(second)))
+          awaitAssert(clusterView.unreachableMembers.map(_.address) should contain(address(second)))
           cluster.down(second)
           // removed
-          awaitAssert(clusterView.members.map(_.address) must not contain (address(second)))
-          awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (address(second)))
+          awaitAssert(clusterView.members.map(_.address) should not contain (address(second)))
+          awaitAssert(clusterView.unreachableMembers.map(_.address) should not contain (address(second)))
         }
         enterBarrier("second-terminated")
         enterBarrier("third-terminated")
@@ -171,7 +171,7 @@ abstract class ClusterDeathWatchSpec
         // fifth is not cluster member, so the watch is handled by the RemoteWatcher
         awaitAssert {
           remoteWatcher ! RemoteWatcher.Stats
-          expectMsgType[RemoteWatcher.Stats].watchingRefs must contain((subject5, testActor))
+          expectMsgType[RemoteWatcher.Stats].watchingRefs should contain((subject5, testActor))
         }
       }
       enterBarrier("remote-watch")
@@ -186,7 +186,7 @@ abstract class ClusterDeathWatchSpec
           remoteWatcher ! RemoteWatcher.Stats
           expectMsgType[RemoteWatcher.Stats].watchingRefs.map {
             case (watchee, watcher) ⇒ watchee.path.name
-          } must not contain ("subject5")
+          } should not contain ("subject5")
         }
       }
 
@@ -194,16 +194,16 @@ abstract class ClusterDeathWatchSpec
 
       runOn(fourth) {
         markNodeAsUnavailable(fifth)
-        awaitAssert(clusterView.unreachableMembers.map(_.address) must contain(address(fifth)))
+        awaitAssert(clusterView.unreachableMembers.map(_.address) should contain(address(fifth)))
         cluster.down(fifth)
         // removed
-        awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (address(fifth)))
-        awaitAssert(clusterView.members.map(_.address) must not contain (address(fifth)))
+        awaitAssert(clusterView.unreachableMembers.map(_.address) should not contain (address(fifth)))
+        awaitAssert(clusterView.members.map(_.address) should not contain (address(fifth)))
       }
 
       enterBarrier("fifth-terminated")
       runOn(first) {
-        expectMsgType[Terminated].actor.path.name must be("subject5")
+        expectMsgType[Terminated].actor.path.name should be("subject5")
       }
 
       enterBarrier("after-3")
@@ -220,17 +220,17 @@ abstract class ClusterDeathWatchSpec
 
       runOn(fourth) {
         val hello = system.actorOf(Props[Hello], "hello")
-        hello.isInstanceOf[RemoteActorRef] must be(true)
-        hello.path.address must be(address(first))
+        hello.isInstanceOf[RemoteActorRef] should be(true)
+        hello.path.address should be(address(first))
         watch(hello)
         enterBarrier("hello-deployed")
 
         markNodeAsUnavailable(first)
-        awaitAssert(clusterView.unreachableMembers.map(_.address) must contain(address(first)))
+        awaitAssert(clusterView.unreachableMembers.map(_.address) should contain(address(first)))
         cluster.down(first)
         // removed
-        awaitAssert(clusterView.unreachableMembers.map(_.address) must not contain (address(first)))
-        awaitAssert(clusterView.members.map(_.address) must not contain (address(first)))
+        awaitAssert(clusterView.unreachableMembers.map(_.address) should not contain (address(first)))
+        awaitAssert(clusterView.members.map(_.address) should not contain (address(first)))
 
         expectTerminated(hello)
 

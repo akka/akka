@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -28,7 +28,9 @@ object RemoteNodeDeathWatchMultiJvmSpec extends MultiNodeConfig {
     ConfigFactory.parseString("""
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = off
-      """)))
+      ## Use a tighter setting than the default, otherwise it takes 20s for DeathWatch to trigger
+      akka.remote.watch-failure-detector.acceptable-heartbeat-pause = 3 s
+                              """)))
 
   case class WatchIt(watchee: ActorRef)
   case class UnwatchIt(watchee: ActorRef)
@@ -44,10 +46,10 @@ object RemoteNodeDeathWatchMultiJvmSpec extends MultiNodeConfig {
     def receive = {
       case WatchIt(watchee) ⇒
         context watch watchee
-        sender ! Ack
+        sender() ! Ack
       case UnwatchIt(watchee) ⇒
         context unwatch watchee
-        sender ! Ack
+        sender() ! Ack
       case t: Terminated ⇒
         testActor forward WrappedTerminated(t)
       case msg ⇒ testActor forward msg
@@ -122,7 +124,7 @@ abstract class RemoteNodeDeathWatchSpec
         enterBarrier("watch-established-1")
 
         sleep()
-        expectMsgType[WrappedTerminated].t.actor must be(subject)
+        expectMsgType[WrappedTerminated].t.actor should be(subject)
       }
 
       runOn(second) {
@@ -246,7 +248,7 @@ abstract class RemoteNodeDeathWatchSpec
         system.stop(s2)
         enterBarrier("stop-s2-4")
 
-        expectMsgType[WrappedTerminated].t.actor must be(subject2)
+        expectMsgType[WrappedTerminated].t.actor should be(subject2)
       }
 
       runOn(third) {
@@ -333,8 +335,8 @@ abstract class RemoteNodeDeathWatchSpec
         enterBarrier("watch-established-5")
         enterBarrier("stopped-5")
 
-        p1.receiveN(2, 5 seconds).collect { case WrappedTerminated(t) ⇒ t.actor }.toSet must be(Set(a1, a2))
-        p3.expectMsgType[WrappedTerminated](5 seconds).t.actor must be(a3)
+        p1.receiveN(2, 5 seconds).collect { case WrappedTerminated(t) ⇒ t.actor }.toSet should be(Set(a1, a2))
+        p3.expectMsgType[WrappedTerminated](5 seconds).t.actor should be(a3)
         p2.expectNoMsg(2 seconds)
         enterBarrier("terminated-verified-5")
 
@@ -381,7 +383,7 @@ abstract class RemoteNodeDeathWatchSpec
 
         log.info("exit second")
         testConductor.exit(second, 0).await
-        expectMsgType[WrappedTerminated](15 seconds).t.actor must be(subject)
+        expectMsgType[WrappedTerminated](15 seconds).t.actor should be(subject)
 
         // verify that things are cleaned up, and heartbeating is stopped
         assertCleanup()

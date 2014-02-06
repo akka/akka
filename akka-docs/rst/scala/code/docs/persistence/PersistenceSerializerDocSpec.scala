@@ -1,15 +1,15 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package docs.persistence
 
 import com.typesafe.config._
-
+import scala.concurrent.duration._
 import org.scalatest.WordSpec
-
 import akka.actor.ActorSystem
 import akka.serialization.{ Serializer, SerializationExtension }
+import akka.testkit.TestKit
 
 class PersistenceSerializerDocSpec extends WordSpec {
 
@@ -29,7 +29,12 @@ class PersistenceSerializerDocSpec extends WordSpec {
       //#custom-serializer-config
     """.stripMargin
 
-  SerializationExtension(ActorSystem("doc", ConfigFactory.parseString(customSerializerConfig)))
+  val system = ActorSystem("PersistenceSerializerDocSpec", ConfigFactory.parseString(customSerializerConfig))
+  try {
+    SerializationExtension(system)
+  } finally {
+    TestKit.shutdownActorSystem(system, 10.seconds, false)
+  }
 }
 
 class MyPayload

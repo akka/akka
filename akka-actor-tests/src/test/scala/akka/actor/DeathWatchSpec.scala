@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -90,7 +90,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout �
         context.watch(terminal)
         context.unwatch(terminal)
         def receive = {
-          case "ping"        ⇒ sender ! "pong"
+          case "ping"        ⇒ sender() ! "pong"
           case t: Terminated ⇒ testActor ! WrappedTerminated(t)
         }
       }).withDeploy(Deploy.local))
@@ -113,18 +113,18 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout �
       filterException[ActorKilledException] {
         val supervisor = system.actorOf(Props(new Supervisor(
           OneForOneStrategy(maxNrOfRetries = 2)(List(classOf[Exception])))))
-        val terminalProps = Props(new Actor { def receive = { case x ⇒ sender ! x } })
+        val terminalProps = Props(new Actor { def receive = { case x ⇒ sender() ! x } })
         val terminal = Await.result((supervisor ? terminalProps).mapTo[ActorRef], timeout.duration)
 
         val monitor = startWatching(terminal)
 
         terminal ! Kill
         terminal ! Kill
-        Await.result(terminal ? "foo", timeout.duration) must be === "foo"
+        Await.result(terminal ? "foo", timeout.duration) should be("foo")
         terminal ! Kill
 
         expectTerminationOf(terminal)
-        terminal.isTerminated must be === true
+        terminal.isTerminated should be(true)
 
         system.stop(supervisor)
       }
@@ -154,8 +154,8 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout �
           case FF(Failed(_, DeathPactException(`failed`), _)) if lastSender eq brother ⇒ 2
           case WrappedTerminated(Terminated(`brother`))                                ⇒ 3
         }
-        testActor.isTerminated must not be true
-        result must be(Seq(1, 2, 3))
+        testActor.isTerminated should not be true
+        result should be(Seq(1, 2, 3))
       }
     }
 

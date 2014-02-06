@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -24,13 +24,13 @@ trait ClusterNodeMBean {
 
   /**
    * Comma separated addresses of member nodes, sorted in the cluster ring order.
-   * The address format is `akka://actor-system-name@hostname:port`
+   * The address format is `akka.tcp://actor-system-name@hostname:port`
    */
   def getMembers: String
 
   /**
    * Comma separated addresses of unreachable member nodes.
-   * The address format is `akka://actor-system-name@hostname:port`
+   * The address format is `akka.tcp://actor-system-name@hostname:port`
    */
   def getUnreachable: String
 
@@ -38,38 +38,38 @@ trait ClusterNodeMBean {
    * JSON format of the status of all nodes in the cluster as follows:
    * {{{
    * {
-   *   "self-address": "akka://system@host1:2552",
+   *   "self-address": "akka.tcp://system@host1:2552",
    *   "members": [
    *     {
-   *       "address": "akka://system@host1:2552",
+   *       "address": "akka.tcp://system@host1:2552",
    *       "status": "Up"
    *     },
    *     {
-   *       "address": "akka://system@host2:2552",
+   *       "address": "akka.tcp://system@host2:2552",
    *       "status": "Up"
    *     },
    *     {
-   *       "address": "akka://system@host3:2552",
+   *       "address": "akka.tcp://system@host3:2552",
    *       "status": "Down"
    *     },
    *     {
-   *       "address": "akka://system@host4:2552",
+   *       "address": "akka.tcp://system@host4:2552",
    *       "status": "Joining"
    *     }
    *   ],
    *   "unreachable": [
    *     {
-   *       "node": "akka://system@host2:2552",
+   *       "node": "akka.tcp://system@host2:2552",
    *       "observed-by": [
-   *         "akka://system@host1:2552",
-   *         "akka://system@host3:2552"
+   *         "akka.tcp://system@host1:2552",
+   *         "akka.tcp://system@host3:2552"
    *       ]
    *     },
    *     {
-   *       "node": "akka://system@host3:2552",
+   *       "node": "akka.tcp://system@host3:2552",
    *       "observed-by": [
-   *         "akka://system@host1:2552",
-   *         "akka://system@host2:2552"
+   *         "akka.tcp://system@host1:2552",
+   *         "akka.tcp://system@host2:2552"
    *       ]
    *     }
    *   ]
@@ -80,7 +80,7 @@ trait ClusterNodeMBean {
 
   /**
    * Get the address of the current leader.
-   * The address format is `akka://actor-system-name@hostname:port`
+   * The address format is `akka.tcp://actor-system-name@hostname:port`
    */
   def getLeader: String
 
@@ -97,20 +97,20 @@ trait ClusterNodeMBean {
 
   /**
    * Try to join this cluster node with the node specified by 'address'.
-   * The address format is `akka://actor-system-name@hostname:port`.
+   * The address format is `akka.tcp://actor-system-name@hostname:port`.
    * A 'Join(thisNodeAddress)' command is sent to the node to join.
    */
   def join(address: String)
 
   /**
    * Send command to issue state transition to LEAVING for the node specified by 'address'.
-   * The address format is `akka://actor-system-name@hostname:port`
+   * The address format is `akka.tcp://actor-system-name@hostname:port`
    */
   def leave(address: String)
 
   /**
    * Send command to DOWN the node specified by 'address'.
-   * The address format is `akka://actor-system-name@hostname:port`
+   * The address format is `akka.tcp://actor-system-name@hostname:port`
    */
   def down(address: String)
 }

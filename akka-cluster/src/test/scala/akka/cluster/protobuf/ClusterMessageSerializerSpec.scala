@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster.protobuf
 
@@ -21,11 +21,11 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
     obj match {
       case env: GossipEnvelope ⇒
         val env2 = obj.asInstanceOf[GossipEnvelope]
-        env2.from must be(env.from)
-        env2.to must be(env.to)
-        env2.gossip must be(env.gossip)
+        env2.from should be(env.from)
+        env2.to should be(env.to)
+        env2.gossip should be(env.gossip)
       case _ ⇒
-        ref must be(obj)
+        ref should be(obj)
     }
 
   }

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -70,7 +70,7 @@ abstract class SunnyWeatherSpec
 
       for (n ← 1 to 30) {
         enterBarrier("period-" + n)
-        unexpected.get must be(SortedSet.empty)
+        unexpected.get should be(SortedSet.empty)
         awaitMembersUp(roles.size)
         assertLeaderIn(roles)
         if (n % 5 == 0) log.debug("Passed period [{}]", n)

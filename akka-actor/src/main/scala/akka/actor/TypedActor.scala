@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
@@ -75,7 +75,7 @@ trait TypedActorFactory {
     val proxyVar = new AtomVar[R] //Chicken'n'egg-resolver
     val c = props.creator //Cache this to avoid closing over the Props
     val i = props.interfaces //Cache this to avoid closing over the Props
-    val ap = props.actorProps.withCreator(new TypedActor.TypedActor[R, T](proxyVar, c(), i))
+    val ap = Props(new TypedActor.TypedActor[R, T](proxyVar, c(), i)).withDeploy(props.actorProps.deploy)
     typedActor.createActorRefProxy(props, proxyVar, actorFactory.actorOf(ap))
   }
 
@@ -86,7 +86,7 @@ trait TypedActorFactory {
     val proxyVar = new AtomVar[R] //Chicken'n'egg-resolver
     val c = props.creator //Cache this to avoid closing over the Props
     val i = props.interfaces //Cache this to avoid closing over the Props
-    val ap = props.actorProps.withCreator(new akka.actor.TypedActor.TypedActor[R, T](proxyVar, c(), i))
+    val ap = Props(new akka.actor.TypedActor.TypedActor[R, T](proxyVar, c(), i)).withDeploy(props.actorProps.deploy)
     typedActor.createActorRefProxy(props, proxyVar, actorFactory.actorOf(ap, name))
   }
 
@@ -134,10 +134,6 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
     def returnsFuture = classOf[Future[_]] isAssignableFrom method.getReturnType
     def returnsJOption = classOf[akka.japi.Option[_]] isAssignableFrom method.getReturnType
     def returnsOption = classOf[scala.Option[_]] isAssignableFrom method.getReturnType
-
-    @deprecated("use returnsFuture instead", "2.2") def returnsFuture_? = returnsFuture
-    @deprecated("use returnsJOption instead", "2.2") def returnsJOption_? = returnsJOption
-    @deprecated("use returnsOption instead", "2.2") def returnsOption_? = returnsOption
 
     /**
      * Invokes the Method on the supplied instance
@@ -311,7 +307,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
         if (m.isOneWay) m(me)
         else {
           try {
-            val s = sender
+            val s = sender()
             m(me) match {
               case f: Future[_] if m.returnsFuture ⇒
                 implicit val dispatcher = context.dispatcher
@@ -325,14 +321,14 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
             }
           } catch {
             case NonFatal(e) ⇒
-              sender ! Status.Failure(e)
+              sender() ! Status.Failure(e)
               throw e
           }
         }
       }
 
       case msg if me.isInstanceOf[Receiver] ⇒ withContext {
-        me.asInstanceOf[Receiver].onReceive(msg, sender)
+        me.asInstanceOf[Receiver].onReceive(msg, sender())
       }
     }
   }
@@ -623,7 +619,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def actorProps(): Props =
     if (dispatcher == Props.default.dispatcher)
       Props.default.withDeploy(deploy)
-    else Props(dispatcher = dispatcher).withDeploy(deploy)
+    else Props.default.withDispatcher(dispatcher).withDeploy(deploy)
 }
 
 /**
@@ -641,11 +637,12 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
   protected def typedActor = this
 
   import system.settings
+  import akka.util.Helpers.ConfigOps
 
   /**
    * Default timeout for typed actor methods with non-void return type
    */
-  final val DefaultReturnTimeout = Timeout(Duration(settings.config.getMilliseconds("akka.actor.typed.timeout"), MILLISECONDS))
+  final val DefaultReturnTimeout = Timeout(settings.config.getMillisDuration("akka.actor.typed.timeout"))
 
   /**
    * Retrieves the underlying ActorRef for the supplied TypedActor proxy, or null if none found
@@ -685,7 +682,7 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
   /**
    * INTERNAL API
    */
-  private[akka] def invocationHandlerFor(@deprecatedName('typedActor_?) typedActor: AnyRef): TypedActorInvocationHandler =
+  private[akka] def invocationHandlerFor(typedActor: AnyRef): TypedActorInvocationHandler =
     if ((typedActor ne null) && classOf[Proxy].isAssignableFrom(typedActor.getClass) && Proxy.isProxyClass(typedActor.getClass)) typedActor match {
       case null ⇒ null
       case other ⇒ Proxy.getInvocationHandler(other) match {

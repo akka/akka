@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote.testconductor
 
@@ -33,7 +33,7 @@ class ControllerSpec extends AkkaSpec(ControllerSpec.config) with ImplicitSender
       c ! NodeInfo(B, AddressFromURIString("akka://sys"), testActor)
       expectMsg(ToClient(Done))
       c ! Controller.GetNodes
-      expectMsgType[Iterable[RoleName]].toSet must be(Set(A, B))
+      expectMsgType[Iterable[RoleName]].toSet should be(Set(A, B))
       c ! PoisonPill // clean up so network connections don't accumulate during test run
     }
 

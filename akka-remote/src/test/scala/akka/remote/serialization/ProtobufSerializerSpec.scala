@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote.serialization
@@ -17,8 +17,8 @@ class ProtobufSerializerSpec extends AkkaSpec {
   "Serialization" must {
 
     "resolve protobuf serializer" in {
-      ser.serializerFor(classOf[SerializedMessage]).getClass must be(classOf[ProtobufSerializer])
-      ser.serializerFor(classOf[MyMessage]).getClass must be(classOf[ProtobufSerializer])
+      ser.serializerFor(classOf[SerializedMessage]).getClass should be(classOf[ProtobufSerializer])
+      ser.serializerFor(classOf[MyMessage]).getClass should be(classOf[ProtobufSerializer])
     }
 
   }

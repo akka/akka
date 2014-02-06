@@ -1,25 +1,21 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.contrib.pattern
 
 import akka.testkit.AkkaSpec
-import akka.actor.Props
-import akka.actor.Actor
+import akka.actor._
 import akka.testkit.ImplicitSender
 import scala.concurrent.duration._
-import akka.actor.FSM
-import akka.actor.ActorRef
-import akka.testkit.TestProbe
 
 object ReliableProxyDocSpec {
 
   //#demo
   import akka.contrib.pattern.ReliableProxy
 
-  class ProxyParent(target: ActorRef) extends Actor {
-    val proxy = context.actorOf(Props(classOf[ReliableProxy], target, 100.millis))
+  class ProxyParent(targetPath: ActorPath) extends Actor {
+    val proxy = context.actorOf(ReliableProxy.props(targetPath, 100.millis))
 
     def receive = {
       case "hello" ⇒ proxy ! "world!"
@@ -28,8 +24,8 @@ object ReliableProxyDocSpec {
   //#demo
 
   //#demo-transition
-  class ProxyTransitionParent(target: ActorRef) extends Actor {
-    val proxy = context.actorOf(Props(classOf[ReliableProxy], target, 100.millis))
+  class ProxyTransitionParent(targetPath: ActorPath) extends Actor {
+    val proxy = context.actorOf(ReliableProxy.props(targetPath, 100.millis))
     proxy ! FSM.SubscribeTransitionCallBack(self)
 
     var client: ActorRef = _
@@ -37,7 +33,7 @@ object ReliableProxyDocSpec {
     def receive = {
       case "go" ⇒
         proxy ! 42
-        client = sender
+        client = sender()
       case FSM.CurrentState(`proxy`, initial) ⇒
       case FSM.Transition(`proxy`, from, to) ⇒
         if (to == ReliableProxy.Idle)
@@ -55,14 +51,14 @@ class ReliableProxyDocSpec extends AkkaSpec with ImplicitSender {
 
     "show usage" in {
       val target = testActor
-      val a = system.actorOf(Props(classOf[ProxyParent], target))
+      val a = system.actorOf(Props(classOf[ProxyParent], target.path))
       a ! "hello"
       expectMsg("world!")
     }
 
     "show state transitions" in {
       val target = system.deadLetters
-      val a = system.actorOf(Props(classOf[ProxyTransitionParent], target))
+      val a = system.actorOf(Props(classOf[ProxyTransitionParent], target.path))
       a ! "go"
       expectMsg("done")
     }

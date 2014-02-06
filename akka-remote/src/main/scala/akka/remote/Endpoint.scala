@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -57,7 +57,7 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
     val sender: ActorRef = senderOption.getOrElse(system.deadLetters)
     val originalReceiver = recipient.path
 
-    def msgLog = s"RemoteMessage: [$payload] to [$recipient]<+[$originalReceiver] from [$sender]"
+    def msgLog = s"RemoteMessage: [$payload] to [$recipient]<+[$originalReceiver] from [$sender()]"
 
     recipient match {
 
@@ -167,11 +167,12 @@ private[remote] object ReliableDeliverySupervisor {
     handleOrActive: Option[AkkaProtocolHandle],
     localAddress: Address,
     remoteAddress: Address,
-    transport: Transport,
+    refuseUid: Option[Int],
+    transport: AkkaProtocolTransport,
     settings: RemoteSettings,
     codec: AkkaPduCodec,
     receiveBuffers: ConcurrentHashMap[Link, ResendState]): Props =
-    Props(classOf[ReliableDeliverySupervisor], handleOrActive, localAddress, remoteAddress, transport, settings,
+    Props(classOf[ReliableDeliverySupervisor], handleOrActive, localAddress, remoteAddress, refuseUid, transport, settings,
       codec, receiveBuffers)
 }
 
@@ -182,14 +183,13 @@ private[remote] class ReliableDeliverySupervisor(
   handleOrActive: Option[AkkaProtocolHandle],
   val localAddress: Address,
   val remoteAddress: Address,
-  val transport: Transport,
+  val refuseUid: Option[Int],
+  val transport: AkkaProtocolTransport,
   val settings: RemoteSettings,
   val codec: AkkaPduCodec,
-  val receiveBuffers: ConcurrentHashMap[Link, ResendState]) extends Actor {
+  val receiveBuffers: ConcurrentHashMap[Link, ResendState]) extends Actor with ActorLogging {
   import ReliableDeliverySupervisor._
   import context.dispatcher
-
-  def retryGateEnabled = settings.RetryGateClosedFor > Duration.Zero
 
   var autoResendTimer: Option[Cancellable] = None
 
@@ -204,20 +204,18 @@ private[remote] class ReliableDeliverySupervisor(
     scheduleAutoResend()
   }
 
-  override val supervisorStrategy = OneForOneStrategy(settings.MaximumRetriesInWindow, settings.RetryWindow, loggingEnabled = false) {
+  override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
     case e @ (_: AssociationProblem) ⇒ Escalate
     case NonFatal(e) ⇒
+      log.warning("Association with remote system [{}] has failed, address is now gated for [{}] ms. Reason is: [{}].",
+        remoteAddress, settings.RetryGateClosedFor.toMillis, e.getMessage)
       uidConfirmed = false // Need confirmation of UID again
-      if (retryGateEnabled) {
-        context.become(gated)
-        context.system.scheduler.scheduleOnce(settings.RetryGateClosedFor, self, Ungate)
-        context.unwatch(writer)
-        currentHandle = None
-        context.parent ! StoppedReading(self)
-        Stop
-      } else {
-        Restart
-      }
+      context.become(gated)
+      context.system.scheduler.scheduleOnce(settings.RetryGateClosedFor, self, Ungate)
+      context.unwatch(writer)
+      currentHandle = None
+      context.parent ! StoppedReading(self)
+      Stop
   }
 
   var currentHandle: Option[AkkaProtocolHandle] = handleOrActive
@@ -330,7 +328,7 @@ private[remote] class ReliableDeliverySupervisor(
     case s @ Send(msg: SystemMessage, _, _, _) ⇒ tryBuffer(s.copy(seqOpt = Some(nextSeq())))
     case s: Send                               ⇒ context.system.deadLetters ! s
     case EndpointWriter.FlushAndStop           ⇒ context.stop(self)
-    case EndpointWriter.StopReading(w)         ⇒ sender ! EndpointWriter.StoppedReading(w)
+    case EndpointWriter.StopReading(w)         ⇒ sender() ! EndpointWriter.StoppedReading(w)
     case _                                     ⇒ // Ignore
   }
 
@@ -345,7 +343,7 @@ private[remote] class ReliableDeliverySupervisor(
       // Resending will be triggered by the incoming GotUid message after the connection finished
       context.become(receive)
     case EndpointWriter.FlushAndStop   ⇒ context.stop(self)
-    case EndpointWriter.StopReading(w) ⇒ sender ! EndpointWriter.StoppedReading(w)
+    case EndpointWriter.StopReading(w) ⇒ sender() ! EndpointWriter.StoppedReading(w)
   }
 
   def flushWait: Receive = {
@@ -386,6 +384,7 @@ private[remote] class ReliableDeliverySupervisor(
       handleOrActive = currentHandle,
       localAddress = localAddress,
       remoteAddress = remoteAddress,
+      refuseUid,
       transport = transport,
       settings = settings,
       AkkaPduProtobufCodec,
@@ -427,12 +426,13 @@ private[remote] object EndpointWriter {
     handleOrActive: Option[AkkaProtocolHandle],
     localAddress: Address,
     remoteAddress: Address,
-    transport: Transport,
+    refuseUid: Option[Int],
+    transport: AkkaProtocolTransport,
     settings: RemoteSettings,
     codec: AkkaPduCodec,
     receiveBuffers: ConcurrentHashMap[Link, ResendState],
     reliableDeliverySupervisor: Option[ActorRef]): Props =
-    Props(classOf[EndpointWriter], handleOrActive, localAddress, remoteAddress, transport, settings, codec,
+    Props(classOf[EndpointWriter], handleOrActive, localAddress, remoteAddress, refuseUid, transport, settings, codec,
       receiveBuffers, reliableDeliverySupervisor)
 
   /**
@@ -443,6 +443,7 @@ private[remote] object EndpointWriter {
    * @param handle Handle of the new inbound association.
    */
   case class TakeOver(handle: AkkaProtocolHandle) extends NoSerializationVerificationNeeded
+  case class TookOver(writer: ActorRef, handle: AkkaProtocolHandle) extends NoSerializationVerificationNeeded
   case object BackoffTimer
   case object FlushAndStop
   case object AckIdleCheckTimer
@@ -469,7 +470,8 @@ private[remote] class EndpointWriter(
   handleOrActive: Option[AkkaProtocolHandle],
   localAddress: Address,
   remoteAddress: Address,
-  transport: Transport,
+  refuseUid: Option[Int],
+  transport: AkkaProtocolTransport,
   settings: RemoteSettings,
   codec: AkkaPduCodec,
   val receiveBuffers: ConcurrentHashMap[Link, ResendState],
@@ -531,7 +533,7 @@ private[remote] class EndpointWriter(
           reader = startReadEndpoint(h)
           Writing
         case None ⇒
-          transport.associate(remoteAddress).mapTo[AkkaProtocolHandle].map(Handle(_)) pipeTo self
+          transport.associate(remoteAddress, refuseUid).map(Handle(_)) pipeTo self
           Initializing
       },
       stateData = ())
@@ -647,6 +649,7 @@ private[remote] class EndpointWriter(
       // Shutdown old reader
       handle foreach { _.disassociate() }
       handle = Some(newHandle)
+      sender() ! TookOver(self, newHandle)
       goto(Handoff)
     case Event(FlushAndStop, _) ⇒
       stopReason = AssociationHandle.Shutdown
@@ -802,7 +805,7 @@ private[remote] class EndpointReader(
     case StopReading(writer) ⇒
       saveState()
       context.become(notReading)
-      sender ! StoppedReading(writer)
+      sender() ! StoppedReading(writer)
 
   }
 
@@ -810,7 +813,7 @@ private[remote] class EndpointReader(
     case Disassociated(info) ⇒ handleDisassociated(info)
 
     case StopReading(writer) ⇒
-      sender ! StoppedReading(writer)
+      sender() ! StoppedReading(writer)
 
     case InboundPayload(p) ⇒
       val (ackOption, _) = tryDecodeMessageAndAck(p)

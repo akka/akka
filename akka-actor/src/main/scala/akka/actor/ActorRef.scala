@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -45,10 +45,10 @@ object ActorRef {
  *
  *   def receive {
  *     case Request1(msg) => other ! refine(msg)     // uses this actor as sender reference, reply goes to us
- *     case Request2(msg) => other.tell(msg, sender) // forward sender reference, enabling direct reply
+ *     case Request2(msg) => other.tell(msg, sender()) // forward sender reference, enabling direct reply
  *     case Request3(msg) =>
  *       implicit val timeout = Timeout(5.seconds)
- *       sender ! (other ? msg)  // will reply with a Future for holding other's reply
+ *       sender() ! (other ? msg)  // will reply with a Future for holding other's reply
  *   }
  * }
  * }}}
@@ -118,7 +118,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * Sends the specified message to the sender, i.e. fire-and-forget
    * semantics, including the sender reference if possible.
    *
-   * Pass [[ActorRef#noSender]] or `null` as sender if there is nobody to reply to
+   * Pass [[akka.actor.ActorRef$.noSender]] or `null` as sender if there is nobody to reply to
    */
   final def tell(msg: Any, sender: ActorRef): Unit = this.!(msg)(sender)
 
@@ -127,7 +127,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    *
    * Works, no matter whether originally sent with tell/'!' or ask/'?'.
    */
-  def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender)
+  def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender())
 
   /**
    * Is the actor shut down?
@@ -168,7 +168,7 @@ trait ScalaActorRef { ref: ActorRef ⇒
    * If invoked from within an actor then the actor reference is implicitly passed on as the implicit 'sender' argument.
    * <p/>
    *
-   * This actor 'sender' reference is then available in the receiving actor in the 'sender' member variable,
+   * This actor 'sender' reference is then available in the receiving actor in the 'sender()' member variable,
    * if invoked from within an Actor. If not then no sender is available.
    * <pre>
    *   actor ! message
@@ -476,7 +476,7 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
                                        override val path: ActorPath,
                                        val eventStream: EventStream) extends MinimalActorRef {
 
-  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") override def isTerminated(): Boolean = true
+  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") override def isTerminated = true
 
   override def sendSystemMessage(message: SystemMessage): Unit = {
     if (Mailbox.debug) println(s"ELAR $path having enqueued $message")

@@ -1,16 +1,16 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.camel
 
 import org.apache.camel.impl.{ DefaultExchange, DefaultMessage }
 import akka.camel.TestSupport.SharedCamelSystem
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
 
 //TODO merge it with MessageScalaTest
-class CamelMessageTest extends MustMatchers with WordSpecLike with SharedCamelSystem {
+class CamelMessageTest extends Matchers with WordSpecLike with SharedCamelSystem {
 
   "CamelMessage" must {
 

@@ -1,12 +1,11 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.testkit;
 
 import static org.junit.Assert.*;
 
 import akka.testkit.*;
-import docs.actor.mailbox.DurableMailboxDocSpec;
 import org.junit.ClassRule;
 import org.junit.Test;
 

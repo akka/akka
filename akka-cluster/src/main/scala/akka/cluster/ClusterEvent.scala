@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -20,6 +20,31 @@ import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
  * }}}
  */
 object ClusterEvent {
+
+  sealed abstract class SubscriptionInitialStateMode
+  /**
+   * When using this subscription mode a snapshot of
+   * [[akka.cluster.ClusterEvent.CurrentClusterState]] will be sent to the
+   * subscriber as the first message.
+   */
+  case object InitialStateAsSnapshot extends SubscriptionInitialStateMode
+  /**
+   * When using this subscription mode the events corresponding
+   * to the current state will be sent to the subscriber to mimic what you would
+   * have seen if you were listening to the events when they occurred in the past.
+   */
+  case object InitialStateAsEvents extends SubscriptionInitialStateMode
+
+  /**
+   * Java API
+   */
+  def initialStateAsSnapshot = InitialStateAsSnapshot
+
+  /**
+   * Java API
+   */
+  def initialStateAsEvents = InitialStateAsEvents
+
   /**
    * Marker interface for cluster domain events.
    */
@@ -33,7 +58,7 @@ object ClusterEvent {
     unreachable: Set[Member] = Set.empty,
     seenBy: Set[Address] = Set.empty,
     leader: Option[Address] = None,
-    roleLeaderMap: Map[String, Option[Address]] = Map.empty) extends ClusterDomainEvent {
+    roleLeaderMap: Map[String, Option[Address]] = Map.empty) {
 
     /**
      * Java API: get current member list.
@@ -102,7 +127,8 @@ object ClusterEvent {
   }
 
   /**
-   * Member status changed to Exiting.
+   * Member status changed to [[MemberStatus.Exiting]] and will be removed
+   * when all members have seen the `Exiting` status.
    */
   case class MemberExited(member: Member) extends MemberEvent {
     if (member.status != Exiting) throw new IllegalArgumentException("Expected Exiting status, got: " + member)
@@ -305,7 +331,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     case PublishChanges(newGossip)            ⇒ publishChanges(newGossip)
     case currentStats: CurrentInternalStats   ⇒ publishInternalStats(currentStats)
     case PublishCurrentClusterState(receiver) ⇒ publishCurrentClusterState(receiver)
-    case Subscribe(subscriber, to)            ⇒ subscribe(subscriber, to)
+    case Subscribe(subscriber, initMode, to)  ⇒ subscribe(subscriber, initMode, to)
     case Unsubscribe(subscriber, to)          ⇒ unsubscribe(subscriber, to)
     case PublishEvent(event)                  ⇒ publish(event)
   }
@@ -314,7 +340,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
 
   /**
    * The current snapshot state corresponding to latest gossip
-   * to mimic what you would have seen if you where listening to the events.
+   * to mimic what you would have seen if you were listening to the events.
    */
   def publishCurrentClusterState(receiver: Option[ActorRef]): Unit = {
     val state = CurrentClusterState(
@@ -329,9 +355,19 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     }
   }
 
-  def subscribe(subscriber: ActorRef, to: Class[_]): Unit = {
-    publishCurrentClusterState(Some(subscriber))
-    eventStream.subscribe(subscriber, to)
+  def subscribe(subscriber: ActorRef, initMode: SubscriptionInitialStateMode, to: Set[Class[_]]): Unit = {
+    initMode match {
+      case InitialStateAsEvents ⇒
+        def pub(event: AnyRef): Unit = {
+          if (to.exists(_.isAssignableFrom(event.getClass)))
+            subscriber ! event
+        }
+        publishDiff(Gossip.empty, latestGossip, pub)
+      case InitialStateAsSnapshot ⇒
+        publishCurrentClusterState(Some(subscriber))
+    }
+
+    to foreach { eventStream.subscribe(subscriber, _) }
   }
 
   def unsubscribe(subscriber: ActorRef, to: Option[Class[_]]): Unit = to match {
@@ -343,14 +379,18 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     val oldGossip = latestGossip
     // keep the latestGossip to be sent to new subscribers
     latestGossip = newGossip
-    diffUnreachable(oldGossip, newGossip) foreach publish
-    diffReachable(oldGossip, newGossip) foreach publish
-    diffMemberEvents(oldGossip, newGossip) foreach publish
-    diffLeader(oldGossip, newGossip) foreach publish
-    diffRolesLeader(oldGossip, newGossip) foreach publish
+    publishDiff(oldGossip, newGossip, publish)
+  }
+
+  def publishDiff(oldGossip: Gossip, newGossip: Gossip, pub: AnyRef ⇒ Unit): Unit = {
+    diffMemberEvents(oldGossip, newGossip) foreach pub
+    diffUnreachable(oldGossip, newGossip) foreach pub
+    diffReachable(oldGossip, newGossip) foreach pub
+    diffLeader(oldGossip, newGossip) foreach pub
+    diffRolesLeader(oldGossip, newGossip) foreach pub
     // publish internal SeenState for testing purposes
-    diffSeen(oldGossip, newGossip) foreach publish
-    diffReachability(oldGossip, newGossip) foreach publish
+    diffSeen(oldGossip, newGossip) foreach pub
+    diffReachability(oldGossip, newGossip) foreach pub
   }
 
   def publishInternalStats(currentStats: CurrentInternalStats): Unit = publish(currentStats)

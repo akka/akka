@@ -3,14 +3,6 @@
 Using TCP
 =========
 
-.. warning::
-
-  The IO implementation is marked as **“experimental”** as of its introduction
-  in Akka 2.2.0. We will continue to improve this API based on our users’
-  feedback, which implies that while we try to keep incompatible changes to a
-  minimum the binary compatibility guarantee for maintenance releases does not
-  apply to the contents of the `akka.io` package.
-
 The code snippets through-out this section assume the following imports:
 
 .. includecode:: code/docs/io/japi/IODocTest.java#imports
@@ -168,8 +160,9 @@ Throttling Reads and Writes
 The basic model of the TCP connection actor is that it has no internal
 buffering (i.e. it can only process one write at a time, meaning it can buffer
 one write until it has been passed on to the O/S kernel in full). Congestion
-needs to be handled at the user level, for which there are three modes of
-operation:
+needs to be handled at the user level, for both writes and reads.
+
+For back-pressuring writes there are three modes of operation
 
 * *ACK-based:* every :class:`Write` command carries an arbitrary object, and if
   this object is not ``Tcp.NoAck`` then it will be returned to the sender of
@@ -194,18 +187,32 @@ operation:
   :class:`WritingResumed` signal then every message is delivered exactly once
   to the network socket.
 
-These models (with the exception of the second which is rather specialised) are
+These write models (with the exception of the second which is rather specialised) are
 demonstrated in complete examples below. The full and contiguous source is
 available `on github <@github@/akka-docs/rst/java/code/docs/io/japi>`_.
+
+For back-pressuring reads there are two modes of operation
+
+* *Push-reading:* in this mode the connection actor sends the registered reader actor
+  incoming data as soon as available as :class:`Received` events. Whenever the reader actor
+  wants to signal back-pressure to the remote TCP endpoint it can send a :class:`SuspendReading`
+  message to the connection actor to indicate that it wants to suspend the
+  reception of new data. No :class:`Received` events will arrive until a corresponding
+  :class:`ResumeReading` is sent indicating that the receiver actor is ready again.
+
+* *Pull-reading:* after sending a :class:`Received` event the connection
+  actor automatically suspends accepting data from the socket until the reader actor signals
+  with a :class:`ResumeReading` message that it is ready to process more input data. Hence
+  new data is "pulled" from the connection by sending :class:`ResumeReading` messages.
 
 .. note::
 
    It should be obvious that all these flow control schemes only work between
-   one writer and one connection actor; as soon as multiple actors send write
+   one writer/reader and one connection actor; as soon as multiple actors send write
    commands to a single connection no consistent result can be achieved.
 
-ACK-Based Back-Pressure
------------------------
+ACK-Based Write Back-Pressure
+-----------------------------
 
 For proper function of the following example it is important to configure the
 connection to remain half-open when the remote side closed its writing end:
@@ -244,7 +251,7 @@ the remote side from writing, filling up its write buffer, until finally the
 writer on the other side cannot push any data into the socket anymore. This is
 how end-to-end back-pressure is realized across a TCP connection.
 
-NACK-Based Back-Pressure with Write Suspending
+NACK-Based Write Back-Pressure with Suspending
 ----------------------------------------------
 
 .. includecode:: code/docs/io/japi/EchoHandler.java#echo-handler
@@ -279,78 +286,55 @@ The helper functions are very similar to the ACK-based case:
 
 .. includecode:: code/docs/io/japi/EchoHandler.java#helpers
 
-Usage Example: TcpPipelineHandler and SSL
------------------------------------------
+Read Back-Pressure with Pull Mode
+---------------------------------
 
-This example shows the different parts described above working together. Let us
-first look at the SSL server:
+When using push based reading, data coming from the socket is sent to the actor as soon
+as it is available. In the case of the previous Echo server example
+this meant that we needed to maintain a buffer of incoming data to keep it around
+since the rate of writing might be slower than the rate of the arrival of new data.
 
-.. includecode:: code/docs/io/japi/SslDocTest.java#server
+With the Pull mode this buffer can be completely eliminated as the following snippet
+demonstrates:
 
-Please refer to `the source code`_ to see all imports.
+.. includecode:: code/docs/io/JavaReadBackPressure.java#pull-reading-echo
 
-.. _the source code: @github@/akka-docs/rst/java/code/docs/io/japi/SslDocTest.java
+The idea here is that reading is not resumed until the previous write has been
+completely acknowledged by the connection actor. Every pull mode connection
+actor starts from suspended state. To start the flow of data we send a
+``ResumeReading`` in the ``preStart`` method to tell the connection actor that
+we are ready to receive the first chunk of data. Since we only resume reading when
+the previous data chunk has been completely written there is no need for maintaining
+a buffer.
 
-The actor above binds to a local port and registers itself as the handler for
-new connections.  When a new connection comes in it will create a
-:class:`javax.net.ssl.SSLEngine` (details not shown here since they vary widely
-for different setups, please refer to the JDK documentation) and wrap that in
-an :class:`SslTlsSupport` pipeline stage (which is included in ``akka-actor``).
+To enable pull reading on an outbound connection the ``pullMode`` parameter of
+the :class:`Connect` should be set to ``true``:
 
-This sample demonstrates a few more things: below the SSL pipeline stage we
-have inserted a backpressure buffer which will generate a
-:class:`HighWatermarkReached` event to tell the upper stages to suspend writing
-(generated at 10000 buffered bytes) and a :class:`LowWatermarkReached` when
-they can resume writing (when buffer empties below 1000 bytes); the buffer has
-a maximum capacity of 1MB. The implementation is very similar to the NACK-based
-backpressure approach presented above, please refer to the API documentation
-for details about its usage. Above the SSL stage comes an adapter which
-extracts only the payload data from the TCP commands and events, i.e. it speaks
-:class:`ByteString` above. The resulting byte streams are broken into frames by
-a :class:`DelimiterFraming` stage which chops them up on newline characters.
-The top-most stage then converts between :class:`String` and UTF-8 encoded
-:class:`ByteString`.
+.. includecode:: code/docs/io/JavaReadBackPressure.java#pull-mode-connect
 
-As a result the pipeline will accept simple :class:`String` commands, encode
-them using UTF-8, delimit them with newlines (which are expected to be already
-present in the sending direction), transform them into TCP commands and events,
-encrypt them and send them off to the connection actor while buffering writes.
+Pull Mode Reading for Inbound Connections
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This pipeline is driven by a :class:`TcpPipelineHandler` actor which is also
-included in ``akka-actor``. In order to capture the generic command and event
-types consumed and emitted by that actor we need to create a wrapper—the nested
-:class:`Init` class—which also provides the the pipeline context needed by the
-supplied pipeline; in this case we use the :meth:`withLogger` convenience
-method which supplies a context that implements :class:`HasLogger` and
-:class:`HasActorContext` and should be sufficient for typical pipelines. With
-those things bundled up all that remains is creating a
-:class:`TcpPipelineHandler` and registering that one as the recipient of
-inbound traffic from the TCP connection.
+The previous section demonstrated how to enable pull reading mode for outbound
+connections but it is possible to create a listener actor with this mode of reading
+by setting the ``pullMode`` parameter of the :class:`Bind` command to ``true``:
 
-Since we instructed that handler actor to send any events which are emitted by
-the SSL pipeline to ourselves, we can then just wait for the reception of the
-decrypted payload messages, compute a response—just ``"world\n"`` in this
-case—and reply by sending back an ``Init.Command``. It should be noted that
-communication with the handler wraps commands and events in the inner types of
-the ``init`` object in order to keep things well separated. To ease handling of
-such path-dependent types there exist two helper methods, namely
-:class:`Init.command` for creating a command and :class:`Init.event` for
-unwrapping an event.
+.. includecode:: code/docs/io/JavaReadBackPressure.java#pull-mode-bind
 
-Looking at the client side we see that not much needs to be changed:
+One of the effects of this setting is that all connections accepted by this listener
+actor will use pull mode reading.
 
-.. includecode:: code/docs/io/japi/SslDocTest.java#client
+Another effect of this setting is that in addition of setting all inbound connections to
+pull mode, accepting connections becomes pull based, too. This means that after handling
+one (or more) :class:`Connected` events the listener actor has to be resumed by sending
+it a :class:`ResumeAccepting` message.
 
-Once the connection is established we again create a
-:class:`TcpPipelineHandler` wrapping an :class:`SslTlsSupport` (in client mode)
-and register that as the recipient of inbound traffic and ourselves as
-recipient for the decrypted payload data. The we send a greeting to the server
-and forward any replies to some ``listener`` actor.
+Listener actors with pull mode start suspended so to start accepting connections
+a :class:`ResumeAccepting`  command has to be sent to the listener actor after binding was successful:
 
-.. warning::
+.. includecode:: code/docs/io/JavaReadBackPressure.java#pull-accepting
 
-  The SslTlsSupport currently does not support using a ``Tcp.WriteCommand``
-  other than ``Tcp.Write``, like for example ``Tcp.WriteFile``. It also doesn't
-  support messages that are larger than the size of the send buffer on the socket.
-  Trying to send such a message will result in a ``CommandFailed``. If you need
-  to send large messages over SSL, then they have to be sent in chunks.
+As shown in the example after handling an incoming connection we need to resume accepting again.
+The :class:`ResumeAccepting` message accepts a ``batchSize`` parameter that specifies how
+many new connections are accepted before a next :class:`ResumeAccepting` message
+is needed to resume handling of new connections.

@@ -1,26 +1,25 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
 
 import java.util.concurrent._
-import akka.event.Logging.{ Error, LogEventException }
+import akka.event.Logging.{ Debug, Error, LogEventException }
 import akka.actor._
 import akka.dispatch.sysmsg._
-import akka.event.EventStream
-import com.typesafe.config.Config
+import akka.event.{ BusLogging, EventStream }
+import com.typesafe.config.{ ConfigFactory, Config }
 import akka.util.{ Unsafe, Index }
 import scala.annotation.tailrec
 import scala.concurrent.forkjoin.{ ForkJoinTask, ForkJoinPool }
 import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import scala.util.Try
-import scala.util.Failure
-import akka.util.Reflect
-import java.lang.reflect.ParameterizedType
+import java.{ util ⇒ ju }
 
 final case class Envelope private (val message: Any, val sender: ActorRef)
 
@@ -83,7 +82,7 @@ private[akka] object MessageDispatcher {
     }
 }
 
-abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator) extends AbstractMessageDispatcher with BatchingExecutor with ExecutionContext {
+abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator) extends AbstractMessageDispatcher with BatchingExecutor with ExecutionContextExecutor {
 
   import MessageDispatcher._
   import AbstractMessageDispatcher.{ inhabitantsOffset, shutdownScheduleOffset }
@@ -308,7 +307,9 @@ abstract class ExecutorServiceConfigurator(config: Config, prerequisites: Dispat
 /**
  * Base class to be used for hooking in new dispatchers into Dispatchers.
  */
-abstract class MessageDispatcherConfigurator(val config: Config, val prerequisites: DispatcherPrerequisites) {
+abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites: DispatcherPrerequisites) {
+
+  val config: Config = new CachingConfig(_config)
 
   /**
    * Returns an instance of MessageDispatcher given the configuration.
@@ -318,7 +319,7 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
   def dispatcher(): MessageDispatcher
 
   def configureExecutor(): ExecutorServiceConfigurator = {
-    config.getString("executor") match {
+    def configurator(executor: String): ExecutorServiceConfigurator = executor match {
       case null | "" | "fork-join-executor" ⇒ new ForkJoinExecutorConfigurator(config.getConfig("fork-join-executor"), prerequisites)
       case "thread-pool-executor"           ⇒ new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
       case fqcn ⇒
@@ -332,6 +333,11 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
               .format(fqcn, config.getString("id"), classOf[Config], classOf[DispatcherPrerequisites]), exception)
         }).get
     }
+
+    config.getString("executor") match {
+      case "default-executor" ⇒ new DefaultExecutorServiceConfigurator(config.getConfig("default-executor"), prerequisites, configurator(config.getString("default-executor.fallback")))
+      case other              ⇒ configurator(other)
+    }
   }
 }
 
@@ -340,8 +346,9 @@ class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPr
   val threadPoolConfig: ThreadPoolConfig = createThreadPoolConfigBuilder(config, prerequisites).config
 
   protected def createThreadPoolConfigBuilder(config: Config, prerequisites: DispatcherPrerequisites): ThreadPoolConfigBuilder = {
+    import akka.util.Helpers.ConfigOps
     ThreadPoolConfigBuilder(ThreadPoolConfig())
-      .setKeepAliveTime(Duration(config getMilliseconds "keep-alive-time", TimeUnit.MILLISECONDS))
+      .setKeepAliveTime(config.getMillisDuration("keep-alive-time"))
       .setAllowCoreThreadTimeout(config getBoolean "allow-core-timeout")
       .setCorePoolSizeFromFactor(config getInt "core-pool-size-min", config getDouble "core-pool-size-factor", config getInt "core-pool-size-max")
       .setMaxPoolSizeFromFactor(config getInt "max-pool-size-min", config getDouble "max-pool-size-factor", config getInt "max-pool-size-max")
@@ -421,4 +428,27 @@ class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrer
         config.getDouble("parallelism-factor"),
         config.getInt("parallelism-max")))
   }
+}
+
+class DefaultExecutorServiceConfigurator(config: Config, prerequisites: DispatcherPrerequisites, fallback: ExecutorServiceConfigurator) extends ExecutorServiceConfigurator(config, prerequisites) {
+  val provider: ExecutorServiceFactoryProvider =
+    prerequisites.defaultExecutionContext match {
+      case Some(ec) ⇒
+        prerequisites.eventStream.publish(Debug("DefaultExecutorServiceConfigurator", this.getClass, s"Using passed in ExecutionContext as default executor for this ActorSystem. If you want to use a different executor, please specify one in akka.actor.default-dispatcher.default-executor."))
+
+        new AbstractExecutorService with ExecutorServiceFactory with ExecutorServiceFactoryProvider {
+          def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = this
+          def createExecutorService: ExecutorService = this
+          def shutdown(): Unit = ()
+          def isTerminated: Boolean = false
+          def awaitTermination(timeout: Long, unit: TimeUnit): Boolean = false
+          def shutdownNow(): ju.List[Runnable] = ju.Collections.emptyList()
+          def execute(command: Runnable): Unit = ec.execute(command)
+          def isShutdown: Boolean = false
+        }
+      case None ⇒ fallback
+    }
+
+  def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
+    provider.createExecutorServiceFactory(id, threadFactory)
 }

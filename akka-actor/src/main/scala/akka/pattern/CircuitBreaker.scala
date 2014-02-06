@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.pattern
 
@@ -441,16 +441,17 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
      * @return Future containing result of protected call
      */
     override def invoke[T](body: ⇒ Future[T]): Future[T] =
-      Promise.failed[T](new CircuitBreakerOpenException(remainingTimeout().timeLeft)).future
+      Promise.failed[T](new CircuitBreakerOpenException(remainingDuration())).future
 
     /**
-     * Calculate remaining timeout to inform the caller in case a backoff algorithm is useful
+     * Calculate remaining duration until reset to inform the caller in case a backoff algorithm is useful
      *
-     * @return [[scala.concurrent.duration.Deadline]] to when the breaker will attempt a reset by transitioning to half-open
+     * @return duration to when the breaker will attempt a reset by transitioning to half-open
      */
-    private def remainingTimeout(): Deadline = get match {
-      case 0L ⇒ Deadline.now
-      case t  ⇒ (t.millis + resetTimeout).fromNow
+    private def remainingDuration(): FiniteDuration = {
+      val diff = System.nanoTime() - get
+      if (diff <= 0L) Duration.Zero
+      else diff.nanos
     }
 
     /**
@@ -474,7 +475,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
      * @return
      */
     override def _enter(): Unit = {
-      set(System.currentTimeMillis)
+      set(System.nanoTime())
       scheduler.scheduleOnce(resetTimeout) {
         attemptReset()
       }

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster.routing
 
@@ -239,7 +239,7 @@ private[akka] trait ClusterRouterConfigBase extends RouterConfig {
 
   // Intercept ClusterDomainEvent and route them to the ClusterRouterActor
   override def isManagementMessage(msg: Any): Boolean =
-    (msg.isInstanceOf[ClusterDomainEvent]) || super.isManagementMessage(msg)
+    (msg.isInstanceOf[ClusterDomainEvent]) || msg.isInstanceOf[CurrentClusterState] || super.isManagementMessage(msg)
 }
 
 /**
@@ -373,10 +373,9 @@ private[akka] trait ClusterRouterActor { this: RouterActor ⇒
   def cluster: Cluster = Cluster(context.system)
 
   // re-subscribe when restart
-  override def preStart(): Unit = {
-    cluster.subscribe(self, classOf[MemberEvent])
-    cluster.subscribe(self, classOf[ReachabilityEvent])
-  }
+  override def preStart(): Unit =
+    cluster.subscribe(self, classOf[MemberEvent], classOf[ReachabilityEvent])
+
   override def postStop(): Unit = cluster.unsubscribe(self)
 
   var nodes: immutable.SortedSet[Address] = {

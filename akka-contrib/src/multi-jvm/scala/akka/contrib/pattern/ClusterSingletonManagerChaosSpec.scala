@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.contrib.pattern
@@ -51,7 +51,7 @@ object ClusterSingletonManagerChaosSpec extends MultiNodeConfig {
     testActor ! EchoStarted
 
     def receive = {
-      case _ ⇒ sender ! self
+      case _ ⇒ sender() ! self
     }
   }
 }
@@ -99,10 +99,10 @@ class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonMan
 
   def awaitMemberUp(memberProbe: TestProbe, nodes: RoleName*): Unit = {
     runOn(nodes.filterNot(_ == nodes.head): _*) {
-      memberProbe.expectMsgType[MemberUp](15.seconds).member.address must be(node(nodes.head).address)
+      memberProbe.expectMsgType[MemberUp](15.seconds).member.address should be(node(nodes.head).address)
     }
     runOn(nodes.head) {
-      memberProbe.receiveN(nodes.size, 15.seconds).collect { case MemberUp(m) ⇒ m.address }.toSet must be(
+      memberProbe.receiveN(nodes.size, 15.seconds).collect { case MemberUp(m) ⇒ m.address }.toSet should be(
         nodes.map(node(_).address).toSet)
     }
     enterBarrier(nodes.head.name + "-up")
@@ -139,7 +139,7 @@ class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonMan
 
       runOn(controller) {
         echo(first) ! "hello"
-        expectMsgType[ActorRef](3.seconds).path.address must be(node(first).address)
+        expectMsgType[ActorRef](3.seconds).path.address should be(node(first).address)
       }
       enterBarrier("first-verified")
 
@@ -160,7 +160,7 @@ class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonMan
 
       runOn(controller) {
         echo(fourth) ! "hello"
-        expectMsgType[ActorRef](3.seconds).path.address must be(node(fourth).address)
+        expectMsgType[ActorRef](3.seconds).path.address should be(node(fourth).address)
       }
       enterBarrier("fourth-verified")
 

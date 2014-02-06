@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -17,8 +17,8 @@ import akka.util._
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.{ FiniteDuration, Duration }
-import scala.concurrent.{ Await, Awaitable, CanAwait, Future, ExecutionContext }
-import scala.util.{ Failure, Success }
+import scala.concurrent.{ Await, Awaitable, CanAwait, Future, ExecutionContext, ExecutionContextExecutor }
+import scala.util.{ Failure, Success, Try }
 import scala.util.control.{ NonFatal, ControlThrowable }
 
 object ActorSystem {
@@ -56,21 +56,38 @@ object ActorSystem {
   def create(name: String): ActorSystem = apply(name)
 
   /**
-   * Creates a new ActorSystem with the name "default", and the specified Config, then
+   * Creates a new ActorSystem with the specified name, and the specified Config, then
    * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
    * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
    * associated with the ActorSystem class.
    *
-   * @see <a href="http://typesafehub.github.com/config/v0.4.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def create(name: String, config: Config): ActorSystem = apply(name, config)
 
   /**
-   * Creates a new ActorSystem with the name "default", the specified Config, and specified ClassLoader
+   * Creates a new ActorSystem with the specified name, the specified Config, and specified ClassLoader
    *
-   * @see <a href="http://typesafehub.github.com/config/v0.4.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def create(name: String, config: Config, classLoader: ClassLoader): ActorSystem = apply(name, config, classLoader)
+
+  /**
+   * Creates a new ActorSystem with the specified name, the specified Config, the specified ClassLoader,
+   * and the specified ExecutionContext. The ExecutionContext will be used as the default executor inside this ActorSystem.
+   * If `null` is passed in for the Config, ClassLoader and/or ExecutionContext parameters, the respective default value
+   * will be used. If no Config is given, the default reference config will be obtained from the ClassLoader.
+   * If no ClassLoader is given, it obtains the current ClassLoader by first inspecting the current
+   * threads' getContextClassLoader, then tries to walk the stack to find the callers class loader, then
+   * falls back to the ClassLoader associated with the ActorSystem class. If no ExecutionContext is given, the
+   * system will fallback to the executor configured under "akka.actor.default-dispatcher.default-executor.fallback".
+   * Note that the given ExecutionContext will be used by all dispatchers that have been configured with
+   * executor = "default-executor", including those that have not defined the executor setting and thereby fallback
+   * to the default of "default-dispatcher.executor".
+   *
+   * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
+   */
+  def create(name: String, config: Config, classLoader: ClassLoader, defaultExecutionContext: ExecutionContext): ActorSystem = apply(name, Option(config), Option(classLoader), Option(defaultExecutionContext))
 
   /**
    * Creates a new ActorSystem with the name "default",
@@ -88,41 +105,55 @@ object ActorSystem {
    * associated with the ActorSystem class.
    * Then it loads the default reference configuration using the ClassLoader.
    */
-  def apply(name: String): ActorSystem = {
-    val classLoader = findClassLoader()
-    apply(name, ConfigFactory.load(classLoader), classLoader)
-  }
+  def apply(name: String): ActorSystem = apply(name, None, None, None)
 
   /**
-   * Creates a new ActorSystem with the name "default", and the specified Config, then
+   * Creates a new ActorSystem with the specified name, and the specified Config, then
    * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
    * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
    * associated with the ActorSystem class.
    *
-   * @see <a href="http://typesafehub.github.com/config/v0.4.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
-  def apply(name: String, config: Config): ActorSystem = apply(name, config, findClassLoader())
+  def apply(name: String, config: Config): ActorSystem = apply(name, Option(config), None, None)
 
   /**
-   * Creates a new ActorSystem with the name "default", the specified Config, and specified ClassLoader
+   * Creates a new ActorSystem with the specified name, the specified Config, and specified ClassLoader
    *
-   * @see <a href="http://typesafehub.github.com/config/v0.4.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
-  def apply(name: String, config: Config, classLoader: ClassLoader): ActorSystem = new ActorSystemImpl(name, config, classLoader).start()
+  def apply(name: String, config: Config, classLoader: ClassLoader): ActorSystem = apply(name, Option(config), Option(classLoader), None)
+
+  /**
+   * Creates a new ActorSystem with the specified name,
+   * the specified ClassLoader if given, otherwise obtains the current ClassLoader by first inspecting the current
+   * threads' getContextClassLoader, then tries to walk the stack to find the callers class loader, then
+   * falls back to the ClassLoader associated with the ActorSystem class.
+   * If an ExecutionContext is given, it will be used as the default executor inside this ActorSystem.
+   * If no ExecutionContext is given, the system will fallback to the executor configured under "akka.actor.default-dispatcher.default-executor.fallback".
+   * The system will use the passed in config, or falls back to the deafult reference configuration using the ClassLoader.
+   *
+   * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
+   */
+  def apply(name: String, config: Option[Config] = None, classLoader: Option[ClassLoader] = None, defaultExecutionContext: Option[ExecutionContext] = None): ActorSystem = {
+    val cl = classLoader.getOrElse(findClassLoader())
+    val appConfig = config.getOrElse(ConfigFactory.load(cl))
+    new ActorSystemImpl(name, appConfig, cl, defaultExecutionContext).start()
+  }
 
   /**
    * Settings are the overall ActorSystem Settings which also provides a convenient access to the Config object.
    *
    * For more detailed information about the different possible configuration options, look in the Akka Documentation under "Configuration"
    *
-   * @see <a href="http://typesafehub.github.com/config/v0.4.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   class Settings(classLoader: ClassLoader, cfg: Config, final val name: String) {
 
     /**
      * The backing Config of this ActorSystem's Settings
      *
-     * @see <a href="http://typesafehub.github.com/config/v0.4.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+     * @see <a href="http://typesafehub.github.io/config/v1.2.0/" target="_blank">The Typesafe Config Library API Documentation</a>
      */
     final val config: Config = {
       val config = cfg.withFallback(ConfigFactory.defaultReference(classLoader))
@@ -131,13 +162,14 @@ object ActorSystem {
     }
 
     import scala.collection.JavaConverters._
+    import akka.util.Helpers.ConfigOps
     import config._
 
     final val ConfigVersion: String = getString("akka.version")
     final val ProviderClass: String = getString("akka.actor.provider")
     final val SupervisorStrategyClass: String = getString("akka.actor.guardian-supervisor-strategy")
-    final val CreationTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.actor.creation-timeout"), MILLISECONDS))
-    final val UnstartedPushTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.actor.unstarted-push-timeout"), MILLISECONDS))
+    final val CreationTimeout: Timeout = Timeout(config.getMillisDuration("akka.actor.creation-timeout"))
+    final val UnstartedPushTimeout: Timeout = Timeout(config.getMillisDuration("akka.actor.unstarted-push-timeout"))
 
     final val SerializeAllMessages: Boolean = getBoolean("akka.actor.serialize-messages")
     final val SerializeAllCreators: Boolean = getBoolean("akka.actor.serialize-creators")
@@ -145,11 +177,7 @@ object ActorSystem {
     final val LogLevel: String = getString("akka.loglevel")
     final val StdoutLogLevel: String = getString("akka.stdout-loglevel")
     final val Loggers: immutable.Seq[String] = immutableSeq(getStringList("akka.loggers"))
-    final val LoggerStartTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.logger-startup-timeout"), MILLISECONDS))
-    @deprecated("use Loggers)", "2.2")
-    final val EventHandlers: immutable.Seq[String] = immutableSeq(getStringList("akka.event-handlers"))
-    @deprecated("use LoggerStartTimeout)", "2.2")
-    final val EventHandlerStartTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.event-handler-startup-timeout"), MILLISECONDS))
+    final val LoggerStartTimeout: Timeout = Timeout(config.getMillisDuration("akka.logger-startup-timeout"))
     final val LogConfigOnStart: Boolean = config.getBoolean("akka.log-config-on-start")
     final val LogDeadLetters: Int = config.getString("akka.log-dead-letters").toLowerCase match {
       case "off" | "false" ⇒ 0
@@ -324,7 +352,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * explicitly.
    * Importing this member will place the default MessageDispatcher in scope.
    */
-  implicit def dispatcher: ExecutionContext
+  implicit def dispatcher: ExecutionContextExecutor
 
   /**
    * Helper object for looking up configured mailbox types.
@@ -457,7 +485,7 @@ abstract class ExtendedActorSystem extends ActorSystem {
   private[akka] def printTree: String
 }
 
-private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config, classLoader: ClassLoader) extends ExtendedActorSystem {
+private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config, classLoader: ClassLoader, defaultExecutionContext: Option[ExecutionContext]) extends ExtendedActorSystem {
 
   if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-]*$"""))
     throw new IllegalArgumentException(
@@ -540,7 +568,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   val scheduler: Scheduler = createScheduler()
 
-  val provider: ActorRefProvider = {
+  val provider: ActorRefProvider = try {
     val arguments = Vector(
       classOf[String] -> name,
       classOf[Settings] -> settings,
@@ -548,6 +576,10 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
       classOf[DynamicAccess] -> dynamicAccess)
 
     dynamicAccess.createInstanceFor[ActorRefProvider](ProviderClass, arguments).get
+  } catch {
+    case NonFatal(e) ⇒
+      Try(stopScheduler())
+      throw e
   }
 
   def deadLetters: ActorRef = provider.deadLetters
@@ -555,9 +587,9 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   val mailboxes: Mailboxes = new Mailboxes(settings, eventStream, dynamicAccess, deadLetters)
 
   val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(
-    threadFactory, eventStream, scheduler, dynamicAccess, settings, mailboxes))
+    threadFactory, eventStream, scheduler, dynamicAccess, settings, mailboxes, defaultExecutionContext))
 
-  val dispatcher: ExecutionContext = dispatchers.defaultGlobalDispatcher
+  val dispatcher: ExecutionContextExecutor = dispatchers.defaultGlobalDispatcher
 
   val internalCallingThreadExecutionContext: ExecutionContext =
     dynamicAccess.getObjectFor[ExecutionContext]("scala.concurrent.Future$InternalCallbackExecutor$").getOrElse(
@@ -574,7 +606,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   def /(actorName: String): ActorPath = guardian.path / actorName
   def /(path: Iterable[String]): ActorPath = guardian.path / path
 
-  private lazy val _start: this.type = {
+  private lazy val _start: this.type = try {
     // the provider is expected to start default loggers, LocalActorRefProvider does this
     provider.init(this)
     if (settings.LogDeadLetters > 0)
@@ -583,6 +615,12 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
     this
+  } catch {
+    case NonFatal(e) ⇒
+      try {
+        shutdown()
+      } catch { case NonFatal(_) ⇒ Try(stopScheduler()) }
+      throw e
   }
 
   def start(): this.type = _start

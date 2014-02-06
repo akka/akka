@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.routing
@@ -40,7 +40,7 @@ trait Listeners { self: Actor ⇒
   }
 
   /**
-   * Sends the supplied message to all current listeners using the provided sender as sender.
+   * Sends the supplied message to all current listeners using the provided sender() as sender.
    *
    * @param msg
    * @param sender

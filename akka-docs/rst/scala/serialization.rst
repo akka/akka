@@ -112,8 +112,8 @@ address which shall be the recipient of the serialized information. Use
 
 This assumes that serialization happens in the context of sending a message
 through the remote transport. There are other uses of serialization, though,
-e.g. storing actor references outside of an actor application (database,
-durable mailbox, etc.). In this case, it is important to keep in mind that the
+e.g. storing actor references outside of an actor application (database, etc.).
+In this case, it is important to keep in mind that the
 address part of an actor’s path determines how that actor is communicated with.
 Storing a local actor path might be the right choice if the retrieval happens
 in the same logical context, but it is not enough when deserializing it on a
@@ -155,7 +155,7 @@ There is also a default remote address which is the one used by cluster support
 Deep serialization of Actors
 ----------------------------
 
-The recommended approach to do deep serialization of internal actor state is to use Akka :ref:`persistence`.
+The recommended approach to do deep serialization of internal actor state is to use Akka :ref:`persistence-scala`.
 
 A Word About Java Serialization
 ===============================

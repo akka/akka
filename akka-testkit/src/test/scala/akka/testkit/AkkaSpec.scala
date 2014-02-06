@@ -1,20 +1,18 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
 import language.{ postfixOps, reflectiveCalls }
 
-import org.scalatest.{ WordSpecLike, BeforeAndAfterAll, Tag }
-import org.scalatest.matchers.MustMatchers
-import akka.actor.{ Actor, Props, ActorSystem, PoisonPill, DeadLetter, ActorSystemImpl }
+import org.scalatest.{ WordSpecLike, BeforeAndAfterAll }
+import org.scalatest.Matchers
+import akka.actor.ActorSystem
 import akka.event.{ Logging, LoggingAdapter }
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Future
 import com.typesafe.config.{ Config, ConfigFactory }
-import java.util.concurrent.TimeoutException
 import akka.dispatch.Dispatchers
-import akka.pattern.ask
 import akka.testkit.TestEvent._
 
 object AkkaSpec {
@@ -54,7 +52,7 @@ object AkkaSpec {
 }
 
 abstract class AkkaSpec(_system: ActorSystem)
-  extends TestKit(_system) with WordSpecLike with MustMatchers with BeforeAndAfterAll with WatchedByCoroner {
+  extends TestKit(_system) with WordSpecLike with Matchers with BeforeAndAfterAll with WatchedByCoroner {
 
   def this(config: Config) = this(ActorSystem(AkkaSpec.getCallerName(getClass),
     ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
@@ -67,6 +65,8 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   val log: LoggingAdapter = Logging(system, this.getClass)
 
+  override val invokeBeforeAllAndAfterAllEvenIfNoTestsAreExpected = true
+
   final override def beforeAll {
     startCoroner
     atStartup()
@@ -74,7 +74,7 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   final override def afterAll {
     beforeTermination()
-    shutdown(system)
+    shutdown()
     afterTermination()
     stopCoroner()
   }

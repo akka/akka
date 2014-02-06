@@ -1,11 +1,15 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.util
 
 import java.util.Comparator
 import scala.annotation.tailrec
 import java.util.regex.Pattern
+import com.typesafe.config.Config
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.Duration
+import java.util.concurrent.TimeUnit
 
 object Helpers {
 
@@ -39,9 +43,12 @@ object Helpers {
 
   /**
    * Converts a "currentTimeMillis"-obtained timestamp accordingly:
+   * {{{
    *   "$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC"
+   * }}}
+   *
    * @param timestamp a "currentTimeMillis"-obtained timestamp
-   * @return A String formatted like: $hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC
+   * @return the formatted timestamp
    */
   def currentTimeMillisToUTCString(timestamp: Long): String = {
     val timeOfDay = timestamp % 86400000L
@@ -105,4 +112,17 @@ object Helpers {
       value
     }
   }
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] final implicit class ConfigOps(val config: Config) extends AnyVal {
+    def getMillisDuration(path: String): FiniteDuration = getDuration(path, TimeUnit.MILLISECONDS)
+
+    def getNanosDuration(path: String): FiniteDuration = getDuration(path, TimeUnit.NANOSECONDS)
+
+    private def getDuration(path: String, unit: TimeUnit): FiniteDuration =
+      Duration(config.getDuration(path, unit), unit)
+  }
+
 }

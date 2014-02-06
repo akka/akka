@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -50,7 +50,7 @@ abstract class InitialHeartbeatSpec
         within(10 seconds) {
           awaitAssert({
             cluster.sendCurrentClusterState(testActor)
-            expectMsgType[CurrentClusterState].members.map(_.address) must contain(secondAddress)
+            expectMsgType[CurrentClusterState].members.map(_.address) should contain(secondAddress)
           }, interval = 50.millis)
         }
       }
@@ -59,7 +59,7 @@ abstract class InitialHeartbeatSpec
         within(10 seconds) {
           awaitAssert({
             cluster.sendCurrentClusterState(testActor)
-            expectMsgType[CurrentClusterState].members.map(_.address) must contain(firstAddress)
+            expectMsgType[CurrentClusterState].members.map(_.address) should contain(firstAddress)
           }, interval = 50.millis)
         }
       }

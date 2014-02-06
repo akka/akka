@@ -19,6 +19,9 @@ object ThrottlerTransportAdapterSpec {
 
       remote.netty.tcp.hostname = "localhost"
       remote.log-remote-lifecycle-events = off
+      remote.retry-gate-closed-for = 1 s
+      remote.transport-failure-detector.heartbeat-interval = 1 s
+      remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
 
       remote.netty.tcp.applied-adapters = ["trttl"]
       remote.netty.tcp.port = 0
@@ -27,8 +30,8 @@ object ThrottlerTransportAdapterSpec {
 
   class Echo extends Actor {
     override def receive = {
-      case "ping" ⇒ sender ! "pong"
-      case x      ⇒ sender ! x
+      case "ping" ⇒ sender() ! "pong"
+      case x      ⇒ sender() ! x
     }
   }
 
@@ -56,6 +59,8 @@ object ThrottlerTransportAdapterSpec {
         if (received >= MessageCount) controller ! (System.nanoTime() - startTime)
     }
   }
+
+  case class Lost(msg: String)
 }
 
 class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSender with DefaultTimeout {
@@ -83,44 +88,47 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
 
   "ThrottlerTransportAdapter" must {
     "maintain average message rate" taggedAs TimingTest in {
-      throttle(Direction.Send, TokenBucket(200, 500, 0, 0)) must be(true)
+      throttle(Direction.Send, TokenBucket(200, 500, 0, 0)) should be(true)
       val tester = system.actorOf(Props(classOf[ThrottlingTester], here, self)) ! "start"
 
       val time = NANOSECONDS.toSeconds(expectMsgType[Long]((TotalTime + 3).seconds))
       log.warning("Total time of transmission: " + time)
-      time must be > (TotalTime - 3)
-      throttle(Direction.Send, Unthrottled) must be(true)
+      time should be > (TotalTime - 3)
+      throttle(Direction.Send, Unthrottled) should be(true)
     }
 
     "survive blackholing" taggedAs TimingTest in {
-      here ! "Blackhole 1"
-      expectMsg("Blackhole 1")
+      here ! Lost("Blackhole 1")
+      expectMsg(Lost("Blackhole 1"))
 
-      throttle(Direction.Both, Blackhole) must be(true)
+      muteDeadLetters(classOf[Lost])(system)
+      muteDeadLetters(classOf[Lost])(systemB)
 
-      here ! "Blackhole 2"
+      throttle(Direction.Both, Blackhole) should be(true)
+
+      here ! Lost("Blackhole 2")
       expectNoMsg(1.seconds)
-      disassociate() must be(true)
+      disassociate() should be(true)
       expectNoMsg(1.seconds)
 
-      throttle(Direction.Both, Unthrottled) must be(true)
+      throttle(Direction.Both, Unthrottled) should be(true)
 
       // after we remove the Blackhole we can't be certain of the state
       // of the connection, repeat until success
-      here ! "Blackhole 3"
+      here ! Lost("Blackhole 3")
       awaitCond({
-        if (receiveOne(Duration.Zero) == "Blackhole 3")
+        if (receiveOne(Duration.Zero) == Lost("Blackhole 3"))
           true
         else {
-          here ! "Blackhole 3"
+          here ! Lost("Blackhole 3")
           false
         }
-      }, 5.seconds)
+      }, 15.seconds)
 
       here ! "Cleanup"
       fishForMessage(5.seconds) {
-        case "Cleanup"     ⇒ true
-        case "Blackhole 3" ⇒ false
+        case "Cleanup"           ⇒ true
+        case Lost("Blackhole 3") ⇒ false
       }
     }
 

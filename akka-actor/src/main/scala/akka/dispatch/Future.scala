@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
@@ -61,7 +61,7 @@ object ExecutionContexts {
   /**
    * @return a reference to the global ExecutionContext
    */
-  def global(): ExecutionContext = ExecutionContext.global
+  def global(): ExecutionContextExecutor = ExecutionContext.global
 
   /**
    * WARNING: Not A General Purpose ExecutionContext!

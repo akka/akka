@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -19,7 +19,7 @@ object NewRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
   class SomeActor extends Actor {
     def receive = {
-      case "identify" ⇒ sender ! self
+      case "identify" ⇒ sender() ! self
     }
   }
 
@@ -54,12 +54,12 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
 
       runOn(master) {
         val actor = system.actorOf(Props[SomeActor], "service-hello")
-        actor.isInstanceOf[RemoteActorRef] must be(true)
-        actor.path.address must be(node(slave).address)
+        actor.isInstanceOf[RemoteActorRef] should be(true)
+        actor.path.address should be(node(slave).address)
 
         val slaveAddress = testConductor.getAddressFor(slave).await
         actor ! "identify"
-        expectMsgType[ActorRef].path.address must equal(slaveAddress)
+        expectMsgType[ActorRef].path.address should be(slaveAddress)
       }
 
       enterBarrier("done")
@@ -69,12 +69,12 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
 
       runOn(master) {
         val actor = system.actorOf(Props[SomeActor], "service-hello2")
-        actor.isInstanceOf[RemoteActorRef] must be(true)
-        actor.path.address must be(node(slave).address)
+        actor.isInstanceOf[RemoteActorRef] should be(true)
+        actor.path.address should be(node(slave).address)
 
         val slaveAddress = testConductor.getAddressFor(slave).await
         actor ! "identify"
-        expectMsgType[ActorRef].path.address must equal(slaveAddress)
+        expectMsgType[ActorRef].path.address should be(slaveAddress)
       }
 
       enterBarrier("done")
@@ -83,8 +83,8 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
     "be able to shutdown system when using remote deployed actor" taggedAs LongRunningTest in within(20 seconds) {
       runOn(master) {
         val actor = system.actorOf(Props[SomeActor], "service-hello3")
-        actor.isInstanceOf[RemoteActorRef] must be(true)
-        actor.path.address must be(node(slave).address)
+        actor.isInstanceOf[RemoteActorRef] should be(true)
+        actor.path.address should be(node(slave).address)
         // This watch is in race with the shutdown of the watched system. This race should remain, as the test should
         // handle both cases:
         //  - remote system receives watch, replies with DeathWatchNotification
@@ -104,7 +104,7 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
       }
 
       // Important that this is the last test.
-      // It must not be any barriers here.
+      // It should not be any barriers here.
       // verifySystemShutdown = true will ensure that system shutdown is successful
     }
   }

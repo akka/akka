@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -16,7 +16,7 @@ object LookupRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
   class SomeActor extends Actor {
     def receive = {
-      case "identify" ⇒ sender ! self
+      case "identify" ⇒ sender() ! self
     }
   }
 
@@ -47,9 +47,9 @@ class LookupRemoteActorSpec extends MultiNodeSpec(LookupRemoteActorMultiJvmSpec)
           system.actorSelection(node(master) / "user" / "service-hello") ! Identify("id1")
           expectMsgType[ActorIdentity].ref.get
         }
-        hello.isInstanceOf[RemoteActorRef] must be(true)
+        hello.isInstanceOf[RemoteActorRef] should be(true)
         val masterAddress = testConductor.getAddressFor(master).await
-        (hello ? "identify").await.asInstanceOf[ActorRef].path.address must equal(masterAddress)
+        (hello ? "identify").await.asInstanceOf[ActorRef].path.address should be(masterAddress)
       }
       enterBarrier("done")
     }

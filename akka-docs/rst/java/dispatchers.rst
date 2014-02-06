@@ -11,7 +11,11 @@ Default dispatcher
 ------------------
 
 Every ``ActorSystem`` will have a default dispatcher that will be used in case nothing else is configured for an ``Actor``.
-The default dispatcher can be configured, and is by default a ``Dispatcher`` with a "fork-join-executor", which gives excellent performance in most cases.
+The default dispatcher can be configured, and is by default a ``Dispatcher`` with the specified ``default-executor``.
+If an ActorSystem is created with an ExecutionContext passed in, this ExecutionContext will be used as the default executor for all
+dispatchers in this ActorSystem. If no ExecutionContext is given, it will fallback to the executor specified in
+``akka.actor.default-dispatcher.default-executor.fallback``. By default this is a "fork-join-executor", which
+gives excellent performance in most cases.
 
 .. _dispatcher-lookup-java:
 
@@ -86,27 +90,6 @@ There are 4 different types of message dispatchers:
 
   - Driven by: Any ``akka.dispatch.ThreadPoolExecutorConfigurator``
                by default a "thread-pool-executor"
-
-* BalancingDispatcher
-
-  - This is an executor based event driven dispatcher that will try to redistribute work from busy actors to idle actors.
-
-  - All the actors share a single Mailbox that they get their messages from.
-
-  - It is assumed that all actors using the same instance of this dispatcher can process all messages that have been sent to one of the actors; i.e. the actors belong to a pool of actors, and to the client there is no guarantee about which actor instance actually processes a given message.
-
-  - Sharability: Actors of the same type only
-
-  - Mailboxes: Any, creates one for all Actors
-
-  - Use cases: Work-sharing
-
-  - Driven by: ``java.util.concurrent.ExecutorService``
-               specify using "executor" using "fork-join-executor",
-               "thread-pool-executor" or the FQCN of
-               an ``akka.dispatcher.ExecutorServiceConfigurator``
-
-  - Note that you can **not** use a ``BalancingDispatcher`` as a **Router Dispatcher**. (You can however use it for the **Routees**)
 
 * CallingThreadDispatcher
 

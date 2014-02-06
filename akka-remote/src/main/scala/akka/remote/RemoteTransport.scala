@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote
@@ -65,7 +65,7 @@ private[akka] abstract class RemoteTransport(val system: ExtendedActorSystem, va
   def start(): Unit
 
   /**
-   * Sends the given message to the recipient supplying the sender if any
+   * Sends the given message to the recipient supplying the sender() if any
    */
   def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit
 

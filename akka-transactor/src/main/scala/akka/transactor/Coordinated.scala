@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.transactor
@@ -12,6 +12,7 @@ import java.util.concurrent.Callable
 /**
  * Akka-specific exception for coordinated transactions.
  */
+@deprecated("akka.transactor will be removed", "2.3")
 class CoordinatedTransactionException(message: String, cause: Throwable) extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null)
 }
@@ -19,6 +20,7 @@ class CoordinatedTransactionException(message: String, cause: Throwable) extends
 /**
  * Coordinated transactions across actors.
  */
+@deprecated("akka.transactor will be removed", "2.3")
 object Coordinated {
 
   /**
@@ -97,6 +99,7 @@ object Coordinated {
  *
  * @see [[akka.transactor.Transactor]] for an actor that implements coordinated transactions
  */
+@deprecated("akka.transactor will be removed", "2.3")
 class Coordinated(val message: Any, member: CommitBarrier.Member) {
 
   // Java API constructors

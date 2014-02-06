@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -9,6 +9,7 @@ import akka.testkit.AkkaSpec
 import akka.dispatch.Dispatchers
 import scala.concurrent.duration._
 import akka.remote.PhiAccrualFailureDetector
+import akka.util.Helpers.ConfigOps
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterConfigSpec extends AkkaSpec {
@@ -18,39 +19,39 @@ class ClusterConfigSpec extends AkkaSpec {
     "be able to parse generic cluster config elements" in {
       val settings = new ClusterSettings(system.settings.config, system.name)
       import settings._
-      LogInfo must be(true)
-      FailureDetectorConfig.getDouble("threshold") must be(8.0 plusOrMinus 0.0001)
-      FailureDetectorConfig.getInt("max-sample-size") must be(1000)
-      Duration(FailureDetectorConfig.getMilliseconds("min-std-deviation"), MILLISECONDS) must be(100 millis)
-      Duration(FailureDetectorConfig.getMilliseconds("acceptable-heartbeat-pause"), MILLISECONDS) must be(3 seconds)
-      FailureDetectorImplementationClass must be(classOf[PhiAccrualFailureDetector].getName)
-      SeedNodes must be(Seq.empty[String])
-      SeedNodeTimeout must be(5 seconds)
-      RetryUnsuccessfulJoinAfter must be(10 seconds)
-      PeriodicTasksInitialDelay must be(1 seconds)
-      GossipInterval must be(1 second)
-      GossipTimeToLive must be(2 seconds)
-      HeartbeatInterval must be(1 second)
-      MonitoredByNrOfMembers must be(5)
-      HeartbeatExpectedResponseAfter must be(5 seconds)
-      LeaderActionsInterval must be(1 second)
-      UnreachableNodesReaperInterval must be(1 second)
-      PublishStatsInterval must be(Duration.Undefined)
-      AutoDownUnreachableAfter must be(Duration.Undefined)
-      MinNrOfMembers must be(1)
-      MinNrOfMembersOfRole must be === Map.empty
-      Roles must be === Set.empty
-      JmxEnabled must be(true)
-      UseDispatcher must be(Dispatchers.DefaultDispatcherId)
-      GossipDifferentViewProbability must be(0.8 plusOrMinus 0.0001)
-      ReduceGossipDifferentViewProbability must be(400)
-      SchedulerTickDuration must be(33 millis)
-      SchedulerTicksPerWheel must be(512)
-      MetricsEnabled must be(true)
-      MetricsCollectorClass must be(classOf[SigarMetricsCollector].getName)
-      MetricsInterval must be(3 seconds)
-      MetricsGossipInterval must be(3 seconds)
-      MetricsMovingAverageHalfLife must be(12 seconds)
+      LogInfo should be(true)
+      FailureDetectorConfig.getDouble("threshold") should be(8.0 +- 0.0001)
+      FailureDetectorConfig.getInt("max-sample-size") should be(1000)
+      FailureDetectorConfig.getMillisDuration("min-std-deviation") should be(100 millis)
+      FailureDetectorConfig.getMillisDuration("acceptable-heartbeat-pause") should be(3 seconds)
+      FailureDetectorImplementationClass should be(classOf[PhiAccrualFailureDetector].getName)
+      SeedNodes should be(Seq.empty[String])
+      SeedNodeTimeout should be(5 seconds)
+      RetryUnsuccessfulJoinAfter should be(10 seconds)
+      PeriodicTasksInitialDelay should be(1 seconds)
+      GossipInterval should be(1 second)
+      GossipTimeToLive should be(2 seconds)
+      HeartbeatInterval should be(1 second)
+      MonitoredByNrOfMembers should be(5)
+      HeartbeatExpectedResponseAfter should be(5 seconds)
+      LeaderActionsInterval should be(1 second)
+      UnreachableNodesReaperInterval should be(1 second)
+      PublishStatsInterval should be(Duration.Undefined)
+      AutoDownUnreachableAfter should be(Duration.Undefined)
+      MinNrOfMembers should be(1)
+      MinNrOfMembersOfRole should be(Map.empty)
+      Roles should be(Set.empty)
+      JmxEnabled should be(true)
+      UseDispatcher should be(Dispatchers.DefaultDispatcherId)
+      GossipDifferentViewProbability should be(0.8 +- 0.0001)
+      ReduceGossipDifferentViewProbability should be(400)
+      SchedulerTickDuration should be(33 millis)
+      SchedulerTicksPerWheel should be(512)
+      MetricsEnabled should be(true)
+      MetricsCollectorClass should be(classOf[SigarMetricsCollector].getName)
+      MetricsInterval should be(3 seconds)
+      MetricsGossipInterval should be(3 seconds)
+      MetricsMovingAverageHalfLife should be(12 seconds)
     }
   }
 }

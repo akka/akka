@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.transactor
@@ -98,7 +98,7 @@ class TransactorSpec extends AkkaSpec {
       counters(0) ! Increment(counters.tail, incrementLatch)
       Await.ready(incrementLatch, 5 seconds)
       for (counter ← counters) {
-        Await.result(counter ? GetCount, timeout.duration) must be === 1
+        Await.result(counter ? GetCount, timeout.duration) should be(1)
       }
       counters foreach (system.stop(_))
       system.stop(failer)
@@ -115,7 +115,7 @@ class TransactorSpec extends AkkaSpec {
         counters(0) ! Increment(counters.tail :+ failer, failLatch)
         Await.ready(failLatch, 5 seconds)
         for (counter ← counters) {
-          Await.result(counter ? GetCount, timeout.duration) must be === 0
+          Await.result(counter ? GetCount, timeout.duration) should be(0)
         }
         counters foreach (system.stop(_))
         system.stop(failer)
@@ -131,7 +131,7 @@ class TransactorSpec extends AkkaSpec {
       transactor ! Set(ref, 5, latch)
       Await.ready(latch, 5 seconds)
       val value = ref.single.get
-      value must be === 5
+      value should be(5)
       system.stop(transactor)
     }
   }

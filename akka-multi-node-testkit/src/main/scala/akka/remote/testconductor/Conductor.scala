@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote.testconductor
 
@@ -345,7 +345,7 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
       stay
     case Event(ToClient(msg), None) ⇒
       channel.write(msg)
-      stay using Some(sender)
+      stay using Some(sender())
     case Event(ToClient(msg), _) ⇒
       log.warning("cannot send {} while waiting for previous ACK", msg)
       stay
@@ -414,7 +414,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
     case CreateServerFSM(channel) ⇒
       val (ip, port) = channel.getRemoteAddress match { case s: InetSocketAddress ⇒ (s.getAddress.getHostAddress, s.getPort) }
       val name = ip + ":" + port + "-server" + generation.next
-      sender ! context.actorOf(Props(classOf[ServerFSM], self, channel).withDeploy(Deploy.local), name)
+      sender() ! context.actorOf(Props(classOf[ServerFSM], self, channel).withDeploy(Deploy.local), name)
     case c @ NodeInfo(name, addr, fsm) ⇒
       barrier forward c
       if (nodes contains name) {
@@ -443,8 +443,8 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
         case _: EnterBarrier ⇒ barrier forward op
         case _: FailBarrier  ⇒ barrier forward op
         case GetAddress(node) ⇒
-          if (nodes contains node) sender ! ToClient(AddressReply(node, nodes(node).addr))
-          else addrInterest += node -> ((addrInterest get node getOrElse Set()) + sender)
+          if (nodes contains node) sender() ! ToClient(AddressReply(node, nodes(node).addr))
+          else addrInterest += node -> ((addrInterest get node getOrElse Set()) + sender())
         case _: Done ⇒ //FIXME what should happen?
       }
     case op: CommandOp ⇒
@@ -461,8 +461,8 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
         case Remove(node) ⇒
           barrier ! BarrierCoordinator.RemoveClient(node)
       }
-    case GetNodes    ⇒ sender ! nodes.keys
-    case GetSockAddr ⇒ sender ! connection.getLocalAddress
+    case GetNodes    ⇒ sender() ! nodes.keys
+    case GetSockAddr ⇒ sender() ! connection.getLocalAddress
   }
 
   override def postStop() {
@@ -547,12 +547,12 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
     case Event(EnterBarrier(name, timeout), d @ Data(clients, _, _, _)) ⇒
       if (failed)
         stay replying ToClient(BarrierResult(name, false))
-      else if (clients.map(_.fsm) == Set(sender))
+      else if (clients.map(_.fsm) == Set(sender()))
         stay replying ToClient(BarrierResult(name, true))
-      else if (clients.find(_.fsm == sender).isEmpty)
+      else if (clients.find(_.fsm == sender()).isEmpty)
         stay replying ToClient(BarrierResult(name, false))
       else {
-        goto(Waiting) using d.copy(barrier = name, arrived = sender :: Nil,
+        goto(Waiting) using d.copy(barrier = name, arrived = sender() :: Nil,
           deadline = getDeadline(timeout))
       }
     case Event(RemoveClient(name), d @ Data(clients, _, _, _)) ⇒
@@ -567,8 +567,8 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
 
   when(Waiting) {
     case Event(EnterBarrier(name, timeout), d @ Data(clients, barrier, arrived, deadline)) ⇒
-      if (name != barrier) throw WrongBarrier(name, sender, d)
-      val together = if (clients.exists(_.fsm == sender)) sender :: arrived else arrived
+      if (name != barrier) throw WrongBarrier(name, sender(), d)
+      val together = if (clients.exists(_.fsm == sender())) sender() :: arrived else arrived
       val enterDeadline = getDeadline(timeout)
       // we only allow the deadlines to get shorter
       if (enterDeadline.timeLeft < deadline.timeLeft) {
@@ -583,7 +583,7 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
           handleBarrier(d.copy(clients = clients - client, arrived = arrived filterNot (_ == client.fsm)))
       }
     case Event(FailBarrier(name), d @ Data(_, barrier, _, _)) ⇒
-      if (name != barrier) throw WrongBarrier(name, sender, d)
+      if (name != barrier) throw WrongBarrier(name, sender(), d)
       throw FailedBarrier(d)
     case Event(StateTimeout, d) ⇒
       throw BarrierTimeout(d)

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.pattern
 
@@ -173,6 +173,22 @@ object Patterns {
    */
   def gracefulStop(target: ActorRef, timeout: FiniteDuration): Future[java.lang.Boolean] =
     scalaGracefulStop(target, timeout).asInstanceOf[Future[java.lang.Boolean]]
+
+  /**
+   * Returns a [[scala.concurrent.Future]] that will be completed with success (value `true`) when
+   * existing messages of the target actor has been processed and the actor has been
+   * terminated.
+   *
+   * Useful when you need to wait for termination or compose ordered termination of several actors.
+   *
+   * If you want to invoke specialized stopping logic on your target actor instead of PoisonPill, you can pass your
+   * stop command as `stopMessage` parameter
+   *
+   * If the target actor isn't terminated within the timeout the [[scala.concurrent.Future]]
+   * is completed with failure [[akka.pattern.AskTimeoutException]].
+   */
+  def gracefulStop(target: ActorRef, timeout: FiniteDuration, stopMessage: Any): Future[java.lang.Boolean] =
+    scalaGracefulStop(target, timeout, stopMessage).asInstanceOf[Future[java.lang.Boolean]]
 
   /**
    * Returns a [[scala.concurrent.Future]] that will be completed with the success or failure of the provided Callable

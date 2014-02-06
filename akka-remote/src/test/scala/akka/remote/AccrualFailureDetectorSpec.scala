@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote
@@ -41,43 +41,43 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
 
     "use good enough cumulative distribution function" in {
       val fd = createFailureDetector()
-      cdf(fd.phi(0, 0, 10)) must be(0.5 plusOrMinus (0.001))
-      cdf(fd.phi(6L, 0, 10)) must be(0.7257 plusOrMinus (0.001))
-      cdf(fd.phi(15L, 0, 10)) must be(0.9332 plusOrMinus (0.001))
-      cdf(fd.phi(20L, 0, 10)) must be(0.97725 plusOrMinus (0.001))
-      cdf(fd.phi(25L, 0, 10)) must be(0.99379 plusOrMinus (0.001))
-      cdf(fd.phi(35L, 0, 10)) must be(0.99977 plusOrMinus (0.001))
-      cdf(fd.phi(40L, 0, 10)) must be(0.99997 plusOrMinus (0.0001))
+      cdf(fd.phi(0, 0, 10)) should be(0.5 +- (0.001))
+      cdf(fd.phi(6L, 0, 10)) should be(0.7257 +- (0.001))
+      cdf(fd.phi(15L, 0, 10)) should be(0.9332 +- (0.001))
+      cdf(fd.phi(20L, 0, 10)) should be(0.97725 +- (0.001))
+      cdf(fd.phi(25L, 0, 10)) should be(0.99379 +- (0.001))
+      cdf(fd.phi(35L, 0, 10)) should be(0.99977 +- (0.001))
+      cdf(fd.phi(40L, 0, 10)) should be(0.99997 +- (0.0001))
 
       for (x :: y :: Nil ← (0 to 40).toList.sliding(2)) {
-        fd.phi(x, 0, 10) must be < (fd.phi(y, 0, 10))
+        fd.phi(x, 0, 10) should be < (fd.phi(y, 0, 10))
       }
 
-      cdf(fd.phi(22, 20.0, 3)) must be(0.7475 plusOrMinus (0.001))
+      cdf(fd.phi(22, 20.0, 3)) should be(0.7475 +- (0.001))
     }
 
     "handle outliers without losing precision or hitting exceptions" in {
       val fd = createFailureDetector()
-      fd.phi(10L, 0, 1) must be(38.0 plusOrMinus 1.0)
-      fd.phi(-25L, 0, 1) must be(0.0)
+      fd.phi(10L, 0, 1) should be(38.0 +- 1.0)
+      fd.phi(-25L, 0, 1) should be(0.0)
     }
 
     "return realistic phi values" in {
       val fd = createFailureDetector()
       val test = TreeMap(0 -> 0.0, 500 -> 0.1, 1000 -> 0.3, 1200 -> 1.6, 1400 -> 4.7, 1600 -> 10.8, 1700 -> 15.3)
       for ((timeDiff, expectedPhi) ← test) {
-        fd.phi(timeDiff = timeDiff, mean = 1000.0, stdDeviation = 100.0) must be(expectedPhi plusOrMinus (0.1))
+        fd.phi(timeDiff = timeDiff, mean = 1000.0, stdDeviation = 100.0) should be(expectedPhi +- (0.1))
       }
 
       // larger stdDeviation results => lower phi
-      fd.phi(timeDiff = 1100, mean = 1000.0, stdDeviation = 500.0) must be < (
+      fd.phi(timeDiff = 1100, mean = 1000.0, stdDeviation = 500.0) should be < (
         fd.phi(timeDiff = 1100, mean = 1000.0, stdDeviation = 100.0))
     }
 
     "return phi value of 0.0 on startup for each address, when no heartbeats" in {
       val fd = createFailureDetector()
-      fd.phi must be(0.0)
-      fd.phi must be(0.0)
+      fd.phi should be(0.0)
+      fd.phi should be(0.0)
     }
 
     "return phi based on guess when only one heartbeat" in {
@@ -86,9 +86,9 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
         clock = fakeTimeGenerator(timeInterval))
 
       fd.heartbeat()
-      fd.phi must be(0.3 plusOrMinus 0.2)
-      fd.phi must be(4.5 plusOrMinus 0.3)
-      fd.phi must be > (15.0)
+      fd.phi should be(0.3 +- 0.2)
+      fd.phi should be(4.5 +- 0.3)
+      fd.phi should be > (15.0)
     }
 
     "return phi value using first interval after second heartbeat" in {
@@ -96,22 +96,22 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
       val fd = createFailureDetector(clock = fakeTimeGenerator(timeInterval))
 
       fd.heartbeat()
-      fd.phi must be > (0.0)
+      fd.phi should be > (0.0)
       fd.heartbeat()
-      fd.phi must be > (0.0)
+      fd.phi should be > (0.0)
     }
 
     "mark node as monitored after a series of successful heartbeats" in {
       val timeInterval = List[Long](0, 1000, 100, 100)
       val fd = createFailureDetector(clock = fakeTimeGenerator(timeInterval))
-      fd.isMonitoring must be(false)
+      fd.isMonitoring should be(false)
 
       fd.heartbeat()
       fd.heartbeat()
       fd.heartbeat()
 
-      fd.isMonitoring must be(true)
-      fd.isAvailable must be(true)
+      fd.isMonitoring should be(true)
+      fd.isAvailable should be(true)
     }
 
     "mark node as dead if heartbeat are missed" in {
@@ -122,8 +122,8 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
       fd.heartbeat() //1000
       fd.heartbeat() //1100
 
-      fd.isAvailable must be(true) //1200
-      fd.isAvailable must be(false) //8200
+      fd.isAvailable should be(true) //1200
+      fd.isAvailable should be(false) //8200
     }
 
     "mark node as available if it starts heartbeat again after being marked dead due to detection of failure" in {
@@ -133,15 +133,15 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
       val fd = createFailureDetector(threshold = 8, acceptableLostDuration = 3.seconds, clock = fakeTimeGenerator(timeIntervals))
 
       for (_ ← 0 until 1000) fd.heartbeat()
-      fd.isAvailable must be(false) // after the long pause
+      fd.isAvailable should be(false) // after the long pause
       fd.heartbeat()
-      fd.isAvailable must be(true)
+      fd.isAvailable should be(true)
       fd.heartbeat()
-      fd.isAvailable must be(false) // after the 7 seconds pause
+      fd.isAvailable should be(false) // after the 7 seconds pause
       fd.heartbeat()
-      fd.isAvailable must be(true)
+      fd.isAvailable should be(true)
       fd.heartbeat()
-      fd.isAvailable must be(true)
+      fd.isAvailable should be(true)
     }
 
     "accept some configured missing heartbeats" in {
@@ -152,9 +152,9 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
       fd.heartbeat()
       fd.heartbeat()
       fd.heartbeat()
-      fd.isAvailable must be(true)
+      fd.isAvailable should be(true)
       fd.heartbeat()
-      fd.isAvailable must be(true)
+      fd.isAvailable should be(true)
     }
 
     "fail after configured acceptable missing heartbeats" in {
@@ -167,9 +167,9 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
       fd.heartbeat()
       fd.heartbeat()
       fd.heartbeat()
-      fd.isAvailable must be(true)
+      fd.isAvailable should be(true)
       fd.heartbeat()
-      fd.isAvailable must be(false)
+      fd.isAvailable should be(false)
     }
 
     "use maxSampleSize heartbeats" in {
@@ -188,7 +188,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
       fd.heartbeat() //2000
       fd.heartbeat() //2500
       val phi2 = fd.phi //3000
-      phi2 must be(phi1.plusOrMinus(0.001))
+      phi2 should be(phi1.plusOrMinus(0.001))
     }
 
   }
@@ -200,26 +200,26 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
       val stats = (HeartbeatHistory(maxSampleSize = 20) /: samples) {
         (stats, value) ⇒ stats :+ value
       }
-      stats.mean must be(179.0 plusOrMinus 0.00001)
-      stats.variance must be(7584.0 plusOrMinus 0.00001)
+      stats.mean should be(179.0 +- 0.00001)
+      stats.variance should be(7584.0 +- 0.00001)
     }
 
     "have 0.0 variance for one sample" in {
-      (HeartbeatHistory(600) :+ 1000L).variance must be(0.0 plusOrMinus 0.00001)
+      (HeartbeatHistory(600) :+ 1000L).variance should be(0.0 +- 0.00001)
     }
 
     "be capped by the specified maxSampleSize" in {
       val history3 = HeartbeatHistory(maxSampleSize = 3) :+ 100 :+ 110 :+ 90
-      history3.mean must be(100.0 plusOrMinus 0.00001)
-      history3.variance must be(66.6666667 plusOrMinus 0.00001)
+      history3.mean should be(100.0 +- 0.00001)
+      history3.variance should be(66.6666667 +- 0.00001)
 
       val history4 = history3 :+ 140
-      history4.mean must be(113.333333 plusOrMinus 0.00001)
-      history4.variance must be(422.222222 plusOrMinus 0.00001)
+      history4.mean should be(113.333333 +- 0.00001)
+      history4.variance should be(422.222222 +- 0.00001)
 
       val history5 = history4 :+ 80
-      history5.mean must be(103.333333 plusOrMinus 0.00001)
-      history5.variance must be(688.88888889 plusOrMinus 0.00001)
+      history5.mean should be(103.333333 +- 0.00001)
+      history5.variance should be(688.88888889 +- 0.00001)
     }
 
   }

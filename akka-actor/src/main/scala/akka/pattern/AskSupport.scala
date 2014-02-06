@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.pattern
 
@@ -66,12 +66,11 @@ trait AskSupport {
    *
    * {{{
    *   val f = ask(worker, request)(timeout)
-   *   flow {
-   *     EnrichedRequest(request, f())
+   *   f.map { response =>
+   *     EnrichedMessage(response)
    *   } pipeTo nextActor
    * }}}
    *
-   * See [[scala.concurrent.Future]] for a description of `flow`
    */
   def ask(actorRef: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] = actorRef ? message
 
@@ -112,13 +111,12 @@ trait AskSupport {
    * <b>Recommended usage:</b>
    *
    * {{{
-   *   val f = ask(selection, request)(timeout)
-   *   flow {
-   *     EnrichedRequest(request, f())
+   *   val f = ask(worker, request)(timeout)
+   *   f.map { response =>
+   *     EnrichedMessage(response)
    *   } pipeTo nextActor
    * }}}
    *
-   * See [[scala.concurrent.Future]] for a description of `flow`
    */
   def ask(actorSelection: ActorSelection, message: Any)(implicit timeout: Timeout): Future[Any] = actorSelection ? message
 }
@@ -136,7 +134,7 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
       if (timeout.duration.length <= 0)
         Future.failed[Any](new IllegalArgumentException(s"Timeout length must not be negative, question not sent to [$actorRef]"))
       else {
-        val a = PromiseActorRef(ref.provider, timeout)
+        val a = PromiseActorRef(ref.provider, timeout, targetName = actorRef.toString)
         actorRef.tell(message, a)
         a.result.future
       }
@@ -157,7 +155,7 @@ final class AskableActorSelection(val actorSel: ActorSelection) extends AnyVal {
         Future.failed[Any](
           new IllegalArgumentException(s"Timeout length must not be negative, question not sent to [$actorSel]"))
       else {
-        val a = PromiseActorRef(ref.provider, timeout)
+        val a = PromiseActorRef(ref.provider, timeout, targetName = actorSel.toString)
         actorSel.tell(message, a)
         a.result.future
       }
@@ -326,12 +324,14 @@ private[akka] object PromiseActorRef {
   private case object Stopped
   private case class StoppedWithPath(path: ActorPath)
 
-  def apply(provider: ActorRefProvider, timeout: Timeout): PromiseActorRef = {
+  def apply(provider: ActorRefProvider, timeout: Timeout, targetName: String): PromiseActorRef = {
     val result = Promise[Any]()
     val scheduler = provider.guardian.underlying.system.scheduler
     val a = new PromiseActorRef(provider, result)
     implicit val ec = a.internalCallingThreadExecutionContext
-    val f = scheduler.scheduleOnce(timeout.duration) { result tryComplete Failure(new AskTimeoutException("Timed out")) }
+    val f = scheduler.scheduleOnce(timeout.duration) {
+      result tryComplete Failure(new AskTimeoutException(s"Ask timed out on [$targetName] after [${timeout.duration.toMillis} ms]"))
+    }
     result.future onComplete { _ ⇒ try a.stop() finally f.cancel() }
     a
   }

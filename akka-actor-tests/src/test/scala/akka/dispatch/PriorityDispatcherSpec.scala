@@ -66,7 +66,7 @@ class PriorityDispatcherSpec extends AkkaSpec(PriorityDispatcherSpec.config) wit
 
         def receive = {
           case i: Int  ⇒ acc += i
-          case 'Result ⇒ sender ! acc.toList
+          case 'Result ⇒ sender() ! acc.toList
         }
       }).withDispatcher(dispatcherKey))
 
@@ -74,7 +74,7 @@ class PriorityDispatcherSpec extends AkkaSpec(PriorityDispatcherSpec.config) wit
 
     }))
 
-    expectMsgType[List[_]] must be === msgs
+    expectMsgType[List[_]] should be(msgs)
   }
 
 }

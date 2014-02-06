@@ -1,35 +1,35 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.util
 
 import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-class SwitchSpec extends WordSpec with MustMatchers {
+class SwitchSpec extends WordSpec with Matchers {
 
   "Switch" must {
 
     "on and off" in {
       val s = new Switch(false)
-      s.isOff must be(true)
-      s.isOn must be(false)
+      s.isOff should be(true)
+      s.isOn should be(false)
 
-      s.switchOn(()) must be(true)
-      s.isOn must be(true)
-      s.isOff must be(false)
-      s.switchOn(()) must be(false)
-      s.isOn must be(true)
-      s.isOff must be(false)
+      s.switchOn(()) should be(true)
+      s.isOn should be(true)
+      s.isOff should be(false)
+      s.switchOn(()) should be(false)
+      s.isOn should be(true)
+      s.isOff should be(false)
 
-      s.switchOff(()) must be(true)
-      s.isOff must be(true)
-      s.isOn must be(false)
-      s.switchOff(()) must be(false)
-      s.isOff must be(true)
-      s.isOn must be(false)
+      s.switchOff(()) should be(true)
+      s.isOff should be(true)
+      s.isOn should be(false)
+      s.switchOff(()) should be(false)
+      s.isOff should be(true)
+      s.isOn should be(false)
     }
 
     "revert when exception" in {
@@ -37,42 +37,42 @@ class SwitchSpec extends WordSpec with MustMatchers {
       intercept[RuntimeException] {
         s.switchOn(throw new RuntimeException)
       }
-      s.isOff must be(true)
+      s.isOff should be(true)
     }
 
     "run action without locking" in {
       val s = new Switch(false)
-      s.ifOffYield("yes") must be(Some("yes"))
-      s.ifOnYield("no") must be(None)
-      s.ifOff(()) must be(true)
-      s.ifOn(()) must be(false)
+      s.ifOffYield("yes") should be(Some("yes"))
+      s.ifOnYield("no") should be(None)
+      s.ifOff(()) should be(true)
+      s.ifOn(()) should be(false)
 
       s.switchOn(())
-      s.ifOnYield("yes") must be(Some("yes"))
-      s.ifOffYield("no") must be(None)
-      s.ifOn(()) must be(true)
-      s.ifOff(()) must be(false)
+      s.ifOnYield("yes") should be(Some("yes"))
+      s.ifOffYield("no") should be(None)
+      s.ifOn(()) should be(true)
+      s.ifOff(()) should be(false)
     }
 
     "run action with locking" in {
       val s = new Switch(false)
-      s.whileOffYield("yes") must be(Some("yes"))
-      s.whileOnYield("no") must be(None)
-      s.whileOff(()) must be(true)
-      s.whileOn(()) must be(false)
+      s.whileOffYield("yes") should be(Some("yes"))
+      s.whileOnYield("no") should be(None)
+      s.whileOff(()) should be(true)
+      s.whileOn(()) should be(false)
 
       s.switchOn(())
-      s.whileOnYield("yes") must be(Some("yes"))
-      s.whileOffYield("no") must be(None)
-      s.whileOn(()) must be(true)
-      s.whileOff(()) must be(false)
+      s.whileOnYield("yes") should be(Some("yes"))
+      s.whileOffYield("no") should be(None)
+      s.whileOn(()) should be(true)
+      s.whileOff(()) should be(false)
     }
 
     "run first or second action depending on state" in {
       val s = new Switch(false)
-      s.fold("on")("off") must be("off")
+      s.fold("on")("off") should be("off")
       s.switchOn(())
-      s.fold("on")("off") must be("on")
+      s.fold("on")("off") should be("on")
     }
 
     "do proper locking" in {
@@ -81,7 +81,7 @@ class SwitchSpec extends WordSpec with MustMatchers {
       s.locked {
         Thread.sleep(500)
         s.switchOn(())
-        s.isOn must be(true)
+        s.isOn should be(true)
       }
 
       val latch = new CountDownLatch(1)
@@ -93,7 +93,7 @@ class SwitchSpec extends WordSpec with MustMatchers {
       }.start()
 
       latch.await(5, TimeUnit.SECONDS)
-      s.isOff must be(true)
+      s.isOff should be(true)
     }
   }
 }

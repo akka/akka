@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -40,7 +40,7 @@ abstract class NodeUpSpec
       enterBarrier("first-join-attempt")
 
       Thread.sleep(2000)
-      clusterView.members must be(Set.empty)
+      clusterView.members should be(Set.empty)
 
       enterBarrier("after-0")
     }
@@ -70,8 +70,8 @@ abstract class NodeUpSpec
       // let it run for a while to make sure that nothing bad happens
       for (n ← 1 to 20) {
         Thread.sleep(100.millis.dilated.toMillis)
-        unexpected.get must be(SortedSet.empty)
-        clusterView.members.forall(_.status == MemberStatus.Up) must be(true)
+        unexpected.get should be(SortedSet.empty)
+        clusterView.members.forall(_.status == MemberStatus.Up) should be(true)
       }
 
       enterBarrier("after-2")

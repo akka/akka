@@ -1,13 +1,15 @@
+/**
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.util
 
 import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.Matchers
 import org.scalatest.prop.Checkers
-import org.scalacheck._
-import org.scalacheck.Arbitrary._
-import org.scalacheck.Prop._
-import org.scalacheck.Gen._
+import org.scalacheck.Arbitrary
+import org.scalacheck.Arbitrary.arbitrary
+import org.scalacheck.Gen
 
 import scala.collection.mutable.Builder
 
@@ -16,20 +18,20 @@ import java.nio.ByteOrder, ByteOrder.{ BIG_ENDIAN, LITTLE_ENDIAN }
 import java.lang.Float.floatToRawIntBits
 import java.lang.Double.doubleToRawLongBits
 
-class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
+class ByteStringSpec extends WordSpec with Matchers with Checkers {
 
   def genSimpleByteString(min: Int, max: Int) = for {
-    n ← choose(min, max)
+    n ← Gen.choose(min, max)
     b ← Gen.containerOfN[Array, Byte](n, arbitrary[Byte])
-    from ← choose(0, b.length)
-    until ← choose(from, b.length)
+    from ← Gen.choose(0, b.length)
+    until ← Gen.choose(from, b.length)
   } yield ByteString(b).slice(from, until)
 
   implicit val arbitraryByteString: Arbitrary[ByteString] = Arbitrary {
     Gen.sized { s ⇒
       for {
-        chunks ← choose(0, s)
-        bytes ← listOfN(chunks, genSimpleByteString(1, s / (chunks max 1)))
+        chunks ← Gen.choose(0, s)
+        bytes ← Gen.listOfN(chunks, genSimpleByteString(1, s / (chunks max 1)))
       } yield (ByteString.empty /: bytes)(_ ++ _)
     }
   }
@@ -39,8 +41,8 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
   implicit val arbitraryByteStringSlice: Arbitrary[ByteStringSlice] = Arbitrary {
     for {
       xs ← arbitraryByteString.arbitrary
-      from ← choose(0, xs.length - 1)
-      until ← choose(from, xs.length)
+      from ← Gen.choose(0, xs.length - 1)
+      until ← Gen.choose(from, xs.length)
     } yield (xs, from, until)
   }
 
@@ -49,8 +51,8 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
   def arbSlice[A](arbArray: Arbitrary[Array[A]]): Arbitrary[ArraySlice[A]] = Arbitrary {
     for {
       xs ← arbArray.arbitrary
-      from ← choose(0, xs.length)
-      until ← choose(from, xs.length)
+      from ← Gen.choose(0, xs.length)
+      until ← Gen.choose(from, xs.length)
     } yield (xs, from, until)
   }
 
@@ -72,9 +74,9 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
   implicit val arbitraryLongArrayNumBytes: Arbitrary[ArrayNumBytes[Long]] = Arbitrary {
     for {
       xs ← arbitraryLongArray.arbitrary
-      from ← choose(0, xs.length)
-      until ← choose(from, xs.length)
-      bytes ← choose(0, 8)
+      from ← Gen.choose(0, xs.length)
+      until ← Gen.choose(from, xs.length)
+      bytes ← Gen.choose(0, 8)
     } yield (xs.slice(from, until), bytes)
   }
 

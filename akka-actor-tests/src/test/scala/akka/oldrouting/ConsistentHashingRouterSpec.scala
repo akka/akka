@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.oldrouting
 
@@ -35,7 +35,7 @@ object ConsistentHashingRouterSpec {
 
   class Echo extends Actor {
     def receive = {
-      case _ ⇒ sender ! self
+      case _ ⇒ sender() ! self
     }
   }
 
@@ -58,7 +58,7 @@ class ConsistentHashingRouterSpec extends AkkaSpec(ConsistentHashingRouterSpec.c
   "consistent hashing router" must {
     "create routees from configuration" in {
       val currentRoutees = Await.result(router1 ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees]
-      currentRoutees.routees.size must be(3)
+      currentRoutees.routees.size should be(3)
     }
 
     "select destination based on consistentHashKey of the message" in {

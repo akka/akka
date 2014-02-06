@@ -23,15 +23,12 @@ The Akka cluster is a separate jar file. Make sure that you have the following d
 A Simple Cluster Example
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-The following small program together with its configuration starts an ``ActorSystem``
-with the Cluster enabled. It joins the cluster and logs some membership events.
+The following configuration enables the ``Cluster`` extension to be used.
+It joins the cluster and an actor subscribes to cluster membership events and logs them.
 
-Try it out:
+The ``application.conf`` configuration looks like this:
 
-1. Add the following ``application.conf`` in your project, place it in ``src/main/resources``:
-
-
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf#cluster
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/resources/application.conf
 
 To enable cluster capabilities in your Akka project you should, at a minimum, add the :ref:`remoting-java`
 settings, but with ``akka.cluster.ClusterActorRefProvider``.
@@ -42,49 +39,17 @@ The seed nodes are configured contact points for initial, automatic, join of the
 Note that if you are going to start the nodes on different machines you need to specify the
 ip-addresses or host names of the machines in ``application.conf`` instead of ``127.0.0.1``
 
-2. Add the following main program to your project, place it in ``src/main/java``:
+An actor that uses the cluster extension may look like this:
 
-.. literalinclude:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/simple/japi/SimpleClusterApp.java
+.. literalinclude:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/simple/SimpleClusterListener.java
    :language: java
 
-3. Start the first seed node. Open a terminal window and run (one line)::
+The actor registers itself as subscriber of certain cluster events. It receives events corresponding to the current state
+of the cluster when the subscription starts and then it receives events for changes that happen in the cluster.
 
-    mvn exec:java -Dexec.mainClass="sample.cluster.simple.japi.SimpleClusterApp" \
-      -Dexec.args="2551"
-
-2551 corresponds to the port of the first seed-nodes element in the configuration.
-In the log output you see that the cluster node has been started and changed status to 'Up'.
-
-4. Start the second seed node. Open another terminal window and run::
-
-    mvn exec:java -Dexec.mainClass="sample.cluster.simple.japi.SimpleClusterApp" \
-      -Dexec.args="2552"
-
-
-2552 corresponds to the port of the second seed-nodes element in the configuration.
-In the log output you see that the cluster node has been started and joins the other seed node
-and becomes a member of the cluster. Its status changed to 'Up'.
-
-Switch over to the first terminal window and see in the log output that the member joined.
-
-5. Start another node. Open a maven session in yet another terminal window and run::
-
-    mvn exec:java -Dexec.mainClass="sample.cluster.simple.japi.SimpleClusterApp"
-
-Now you don't need to specify the port number, and it will use a random available port.
-It joins one of the configured seed nodes. Look at the log output in the different terminal
-windows.
-
-Start even more nodes in the same way, if you like.
-
-6. Shut down one of the nodes by pressing 'ctrl-c' in one of the terminal windows.
-The other nodes will detect the failure after a while, which you can see in the log
-output in the other terminals.
-
-Look at the source code of the program again. What it does is to create an actor
-and register it as subscriber of certain cluster events. It gets notified with
-an snapshot event, ``CurrentClusterState`` that holds full state information of
-the cluster. After that it receives events for changes that happen in the cluster.
+The easiest way to run this example yourself is to download `Typesafe Activator <http://typesafe.com/platform/getstarted>`_
+and open the tutorial named `Akka Cluster Samples with Java <http://typesafe.com/activator/template/akka-sample-cluster-java>`_.
+It contains instructions of how to run the ``SimpleClusterApp``.
 
 Joining to Seed Nodes
 ^^^^^^^^^^^^^^^^^^^^^
@@ -201,14 +166,26 @@ Subscribe to Cluster Events
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can subscribe to change notifications of the cluster membership by using
-``Cluster.get(system).subscribe(subscriber, to)``. A snapshot of the full state,
-``akka.cluster.ClusterEvent.CurrentClusterState``, is sent to the subscriber
-as the first event, followed by events for incremental updates.
+``Cluster.get(system).subscribe``.
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/simple/SimpleClusterListener2.java#subscribe
+
+A snapshot of the full state, ``akka.cluster.ClusterEvent.CurrentClusterState``, is sent to the subscriber
+as the first message, followed by events for incremental updates.
 
 Note that you may receive an empty ``CurrentClusterState``, containing no members,
 if you start the subscription before the initial join procedure has completed. 
 This is expected behavior. When the node has been accepted in the cluster you will 
 receive ``MemberUp`` for that node, and other nodes.
+
+If you find it inconvenient to handle the ``CurrentClusterState`` you can use
+``ClusterEvent.initialStateAsEvents()`` as parameter to ``subscribe``.
+That means that instead of receiving ``CurrentClusterState`` as the first message you will receive
+the events corresponding to the current state to mimic what you would have seen if you were
+listening to the events when they occurred in the past. Note that those initial events only correspond
+to the current state and it is not the full history of all changes that actually has occurred in the cluster.
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/simple/SimpleClusterListener.java#subscribe
 
 The events to track the life-cycle of members are:
 
@@ -225,6 +202,10 @@ There are more types of change events, consult the API documentation
 of classes that extends ``akka.cluster.ClusterEvent.ClusterDomainEvent``
 for details about the events.
 
+Instead of subscribing to cluster events it can sometimes be convenient to only get the full membership state with
+``Cluster.get(system).state()``. Note that this state is not necessarily in sync with the events published to a
+cluster subscription. 
+
 Worker Dial-in Example
 ----------------------
 
@@ -237,17 +218,13 @@ backend workers, which performs the transformation job, and sends the result bac
 the original client. New backend nodes, as well as new frontend nodes, can be
 added or removed to the cluster dynamically.
 
-In this example the following imports are used:
-
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/transformation/japi/TransformationBackend.java#imports
-
 Messages:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/transformation/japi/TransformationMessages.java#messages
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/transformation/TransformationMessages.java#messages
 
 The backend worker that performs the transformation job:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/transformation/japi/TransformationBackend.java#backend
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/transformation/TransformationBackend.java#backend
 
 Note that the ``TransformationBackend`` actor subscribes to cluster events to detect new,
 potential, frontend nodes, and send them a registration message so that they know
@@ -255,36 +232,17 @@ that they can use the backend worker.
 
 The frontend that receives user jobs and delegates to one of the registered backend workers:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/transformation/japi/TransformationFrontend.java#frontend
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/transformation/TransformationFrontend.java#frontend
 
 Note that the ``TransformationFrontend`` actor watch the registered backend
-to be able to remove it from its list of availble backend workers.
+to be able to remove it from its list of available backend workers.
 Death watch uses the cluster failure detector for nodes in the cluster, i.e. it detects
 network failures and JVM crashes, in addition to graceful termination of watched
 actor.
 
-This example is included in ``akka-samples/akka-sample-cluster`` and you can try it by copying the 
-`source <@github@/akka-samples/akka-sample-cluster>`_ to your
-maven project, defined as in :ref:`cluster_simple_example_java`.
-Run it by starting nodes in different terminal windows. For example, starting 2
-frontend nodes and 3 backend nodes::
-
-  mvn exec:java \
-    -Dexec.mainClass="sample.cluster.transformation.japi.TransformationFrontendMain" \
-    -Dexec.args="2551"
-
-  mvn exec:java \
-    -Dexec.mainClass="sample.cluster.transformation.japi.TransformationBackendMain" \
-    -Dexec.args="2552"
-
-  mvn exec:java \
-    -Dexec.mainClass="sample.cluster.transformation.japi.TransformationBackendMain"
-
-  mvn exec:java \
-    -Dexec.mainClass="sample.cluster.transformation.japi.TransformationBackendMain"
-
-  mvn exec:java \
-    -Dexec.mainClass="sample.cluster.transformation.japi.TransformationFrontendMain"
+The `Typesafe Activator <http://typesafe.com/platform/getstarted>`_ tutorial named 
+`Akka Cluster Samples with Java <http://typesafe.com/activator/template/akka-sample-cluster-java>`_.
+contains the full source code and instructions of how to run the **Worker Dial-in Example**.
 
 Node Roles
 ^^^^^^^^^^
@@ -307,18 +265,18 @@ members have joined, and the cluster has reached a certain size.
 With a configuration option you can define required number of members
 before the leader changes member status of 'Joining' members to 'Up'.
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/factorial.conf#min-nr-of-members
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/resources/factorial.conf#min-nr-of-members
 
 In a similar way you can define required number of members of a certain role
 before the leader changes member status of 'Joining' members to 'Up'.
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/factorial.conf#role-min-nr-of-members
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/resources/factorial.conf#role-min-nr-of-members
 
 You can start the actors in a ``registerOnMemberUp`` callback, which will 
 be invoked when the current member status is changed tp 'Up', i.e. the cluster
 has at least the defined number of members.
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/factorial/japi/FactorialFrontendMain.java#registerOnUp
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/factorial/FactorialFrontendMain.java#registerOnUp
 
 This callback can be used for other things than starting actors.
 
@@ -332,6 +290,15 @@ This can be implemented by subscribing to member events, but there are several c
 cases to consider. Therefore, this specific use case is made easily accessible by the 
 :ref:`cluster-singleton` in the contrib module. You can use it as is, or adjust to fit
 your specific needs. 
+
+Cluster Sharding
+^^^^^^^^^^^^^^^^
+
+When you have many stateful actors that together consume more resources (e.g. memory) than fit on one machine
+you need to distribute them across several nodes in the cluster. You want to be able to interact with them using their
+logical identifier, but without having to care about their physical location in the cluster.
+
+See :ref:`cluster-sharding` in the contrib module.
 
 Distributed Publish Subscribe Pattern
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -437,7 +404,7 @@ There are two distinct types of routers.
 * **Pool - router that creates routees as child actors and deploys them on remote nodes.** 
   Each router will have its own routee instances. For example, if you start a router
   on 3 nodes in a 10 nodes cluster you will have 30 routee actors in total if the router is
-  configured to use one inctance per node. The routees created by the the different routers
+  configured to use one inctance per node. The routees created by the different routers
   will not be shared between the routers. One example of a use case for this type of router
   is a single master that coordinate jobs and delegates the actual work to routees running 
   on other nodes in the cluster.
@@ -448,7 +415,7 @@ Router with Group of Routees
 When using a ``Group`` you must start the routee actors on the cluster member nodes.
 That is not done by the router. The configuration for a group looks like this:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#router-lookup-config
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#router-lookup-config
 
 .. note:: 
 
@@ -466,7 +433,7 @@ to a high value will result in new routees added to the router when nodes join t
 
 The same type of router could also have been defined in code:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsService.java#router-lookup-in-code
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/Extra.java#router-lookup-in-code
 
 See :ref:`cluster_configuration_java` section for further descriptions of the settings.
 
@@ -482,23 +449,19 @@ to count number of characters in each word to a separate worker, a routee of a r
 The character count for each word is sent back to an aggregator that calculates
 the average number of characters per word when all results have been collected.
 
-In this example we use the following imports:
-
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsService.java#imports
-
 Messages:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsMessages.java#messages
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/StatsMessages.java#messages
 
 The worker that counts number of characters in each word:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsWorker.java#worker
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/StatsWorker.java#worker
 
 The service that receives text from users and splits it up into words, delegates to workers and aggregates:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsService.java#service
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/StatsService.java#service
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsAggregator.java#aggregator
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/StatsAggregator.java#aggregator
 
 
 Note, nothing cluster specific so far, just plain actors.
@@ -506,31 +469,14 @@ Note, nothing cluster specific so far, just plain actors.
 All nodes start ``StatsService`` and ``StatsWorker`` actors. Remember, routees are the workers in this case.
 The router is configured with ``routees.paths``:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf#config-router-lookup
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/resources/stats1.conf#config-router-lookup
 
 This means that user requests can be sent to ``StatsService`` on any node and it will use
-``StatsWorker`` on all nodes. There can only be one worker per node, but that worker could easily
-fan out to local children if more parallelism is needed.
+``StatsWorker`` on all nodes.
 
-This example is included in ``akka-samples/akka-sample-cluster`` and you can try it by copying the 
-`source <@github@/akka-samples/akka-sample-cluster>`_ to your
-maven project, defined as in :ref:`cluster_simple_example_java`.
-Run it by starting nodes in different terminal windows. For example, starting 3
-service nodes and 1 client::
-
-  mvn exec:java \
-    -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleMain" \
-    -Dexec.args="2551"
-
-  mvn exec:java \
-    -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleMain" \
-    -Dexec.args="2552"
-
-  mvn exec:java \
-    -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleMain"
-
-  mvn exec:java \
-    -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleMain"
+The `Typesafe Activator <http://typesafe.com/platform/getstarted>`_ tutorial named 
+`Akka Cluster Samples with Java <http://typesafe.com/activator/template/akka-sample-cluster-java>`_.
+contains the full source code and instructions of how to run the **Router Example with Group of Routees**.
 
 Router with Pool of Remote Deployed Routees
 -------------------------------------------
@@ -538,7 +484,7 @@ Router with Pool of Remote Deployed Routees
 When using a ``Pool`` with routees created and deployed on the cluster member nodes
 the configuration for a router looks like this:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSingleMasterSpec.scala#router-deploy-config
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSingleMasterSpec.scala#router-deploy-config
 
 It is possible to limit the deployment of routees to member nodes tagged with a certain role by
 specifying ``use-role``.
@@ -550,7 +496,7 @@ the cluster.
 
 The same type of router could also have been defined in code:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsService.java#router-deploy-in-code
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/Extra.java#router-deploy-in-code
 
 See :ref:`cluster_configuration_java` section for further descriptions of the settings.
 
@@ -561,44 +507,23 @@ Let's take a look at how to use a cluster aware router on single master node tha
 and deploys workers. To keep track of a single master we use the :ref:`cluster-singleton` 
 in the contrib module. The ``ClusterSingletonManager`` is started on each node.
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsSampleOneMasterMain.java#create-singleton-manager
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/StatsSampleOneMasterMain.java#create-singleton-manager
 
 We also need an actor on each node that keeps track of where current single master exists and
 delegates jobs to the ``StatsService``.
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsFacade.java#facade
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/StatsFacade.java#facade
 
 The ``StatsFacade`` receives text from users and delegates to the current ``StatsService``, the single
 master. It listens to cluster events to lookup the ``StatsService`` on the oldest node.
 
 All nodes start ``StatsFacade`` and the ``ClusterSingletonManager``. The router is now configured like this:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf#config-router-deploy
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/resources/stats2.conf#config-router-deploy
 
-This example is included in ``akka-samples/akka-sample-cluster`` and you can try it by copying the 
-`source <@github@/akka-samples/akka-sample-cluster>`_ to your
-maven project, defined as in :ref:`cluster_simple_example_java`. Also add the `akka-contrib` dependency
-to your pom.xml.
-
-Run it by starting nodes in different terminal windows. For example, starting 3
-service nodes and 1 client::
-
-  mvn exec:java \
-    -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleOneMasterMain" \
-    -Dexec.args="2551"
-
-  mvn exec:java \
-    -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleOneMasterMain" \
-    -Dexec.args="2552"
-
-  mvn exec:java \
-    -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleOneMasterClientMain"
-
-  mvn exec:java \
-    -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleOneMasterMain"
-
-
-.. note:: The above example will be simplified when the cluster handles automatic actor partitioning.
+The `Typesafe Activator <http://typesafe.com/platform/getstarted>`_ tutorial named 
+`Akka Cluster Samples with Java <http://typesafe.com/activator/template/akka-sample-cluster-java>`_.
+contains the full source code and instructions of how to run the **Router Example with Pool of Remote Deployed Routees**.
 
 Cluster Metrics
 ^^^^^^^^^^^^^^^
@@ -637,63 +562,40 @@ It can be configured to use a specific MetricsSelector to produce the probabilit
 
 The collected metrics values are smoothed with `exponential weighted moving average <http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average>`_. In the :ref:`cluster_configuration_java` you can adjust how quickly past data is decayed compared to new data.
 
-Let's take a look at this router in action.
-
-In this example the following imports are used:
-
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/factorial/japi/FactorialBackend.java#imports
+Let's take a look at this router in action. What can be more demanding than calculating factorials?
 
 The backend worker that performs the factorial calculation:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/factorial/japi/FactorialBackend.java#backend
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/factorial/FactorialBackend.java#backend
 
 The frontend that receives user jobs and delegates to the backends via the router:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/factorial/japi/FactorialFrontend.java#frontend
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/factorial/FactorialFrontend.java#frontend
 
 
 As you can see, the router is defined in the same way as other routers, and in this case it is configured as follows:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf#adaptive-router
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/resources/factorial.conf#adaptive-router
 
 It is only router type ``adaptive`` and the ``metrics-selector`` that is specific to this router, other things work 
 in the same way as other routers.
 
 The same type of router could also have been defined in code:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/factorial/japi/FactorialFrontend.java#router-lookup-in-code
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/factorial/Extra.java#router-lookup-in-code
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/factorial/japi/FactorialFrontend.java#router-deploy-in-code
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/factorial/Extra.java#router-deploy-in-code
 
-This example is included in ``akka-samples/akka-sample-cluster`` and you can try it by copying the 
-`source <@github@/akka-samples/akka-sample-cluster>`_ to your
-maven project, defined as in :ref:`cluster_simple_example_java`.
-Run it by starting nodes in different terminal windows. For example, starting 3 backend nodes and 
-one frontend::
-
-  mvn exec:java \
-    -Dexec.mainClass="sample.cluster.factorial.japi.FactorialBackendMain" \
-    -Dexec.args="2551"
-
-  mvn exec:java \
-    -Dexec.mainClass="sample.cluster.factorial.japi.FactorialBackendMain" \
-    -Dexec.args="2552"
-
-  mvn exec:java \
-    -Dexec.mainClass="sample.cluster.factorial.japi.FactorialBackendMain"
-
-  mvn exec:java \
-    -Dexec.mainClass="sample.cluster.factorial.japi.FactorialFrontendMain"
-
-Press ctrl-c in the terminal window of the frontend to stop the factorial calculations.
-
+The `Typesafe Activator <http://typesafe.com/platform/getstarted>`_ tutorial named 
+`Akka Cluster Samples with Java <http://typesafe.com/activator/template/akka-sample-cluster-java>`_.
+contains the full source code and instructions of how to run the **Adaptive Load Balancing** sample.
 
 Subscribe to Metrics Events
 ---------------------------
 
 It is possible to subscribe to the metrics events directly to implement other functionality.
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/factorial/japi/MetricsListener.java#metrics-listener
+.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/factorial/MetricsListener.java#metrics-listener
 
 Custom Metrics Collector
 ------------------------

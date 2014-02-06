@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.pattern
@@ -37,7 +37,7 @@ trait GracefulStopSupport {
    * If the target actor isn't terminated within the timeout the [[scala.concurrent.Future]]
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    *
-   * If you want to invoke specalized stopping logic on your target actor instead of PoisonPill, you can pass your
+   * If you want to invoke specialized stopping logic on your target actor instead of PoisonPill, you can pass your
    * stop command as a parameter:
    * {{{
    *   gracefulStop(someChild, timeout, MyStopGracefullyMessage).onComplete {
@@ -49,7 +49,7 @@ trait GracefulStopSupport {
     if (target.isTerminated) Future successful true
     else {
       val internalTarget = target.asInstanceOf[InternalActorRef]
-      val ref = PromiseActorRef(internalTarget.provider, Timeout(timeout))
+      val ref = PromiseActorRef(internalTarget.provider, Timeout(timeout), targetName = target.toString)
       internalTarget.sendSystemMessage(Watch(internalTarget, ref))
       target.tell(stopMessage, Actor.noSender)
       ref.result.future.transform(

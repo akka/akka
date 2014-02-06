@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -40,9 +40,9 @@ abstract class ClusterAccrualFailureDetectorSpec
       awaitClusterUp(first, second, third)
 
       Thread.sleep(5.seconds.dilated.toMillis) // let them heartbeat
-      cluster.failureDetector.isAvailable(first) must be(true)
-      cluster.failureDetector.isAvailable(second) must be(true)
-      cluster.failureDetector.isAvailable(third) must be(true)
+      cluster.failureDetector.isAvailable(first) should be(true)
+      cluster.failureDetector.isAvailable(second) should be(true)
+      cluster.failureDetector.isAvailable(third) should be(true)
 
       enterBarrier("after-1")
     }
@@ -59,14 +59,14 @@ abstract class ClusterAccrualFailureDetectorSpec
           // detect failure...
           awaitCond(!cluster.failureDetector.isAvailable(second), 15.seconds)
           // other connections still ok
-          cluster.failureDetector.isAvailable(third) must be(true)
+          cluster.failureDetector.isAvailable(third) should be(true)
         }
 
         runOn(second) {
           // detect failure...
           awaitCond(!cluster.failureDetector.isAvailable(first), 15.seconds)
           // other connections still ok
-          cluster.failureDetector.isAvailable(third) must be(true)
+          cluster.failureDetector.isAvailable(third) should be(true)
         }
 
         enterBarrier("partitioned")
@@ -99,8 +99,8 @@ abstract class ClusterAccrualFailureDetectorSpec
         // remaning nodes should detect failure...
         awaitCond(!cluster.failureDetector.isAvailable(third), 15.seconds)
         // other connections still ok
-        cluster.failureDetector.isAvailable(first) must be(true)
-        cluster.failureDetector.isAvailable(second) must be(true)
+        cluster.failureDetector.isAvailable(first) should be(true)
+        cluster.failureDetector.isAvailable(second) should be(true)
       }
 
       enterBarrier("after-3")

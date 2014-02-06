@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.routing
 
@@ -166,9 +166,9 @@ private[akka] class RouterActor extends Actor {
 
   def receive = {
     case GetRoutees ⇒
-      sender ! Routees(cell.router.routees)
+      sender() ! Routees(cell.router.routees)
     case CurrentRoutees ⇒
-      context.actorOf(Props(classOf[CollectRouteeRefs], cell.router.routees, sender))
+      context.actorOf(Props(classOf[CollectRouteeRefs], cell.router.routees, sender()))
     case AddRoutee(routee) ⇒
       cell.addRoutee(routee)
     case RemoveRoutee(routee) ⇒

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 //#package
 package sample.multinode
@@ -46,7 +46,7 @@ class MultiNodeSample extends MultiNodeSpec(MultiNodeSampleConfig)
       runOn(node2) {
         system.actorOf(Props(new Actor {
           def receive = {
-            case "ping" ⇒ sender ! "pong"
+            case "ping" => sender() ! "pong"
           }
         }), "ponger")
         enterBarrier("deployed")

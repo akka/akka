@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote
@@ -35,7 +35,7 @@ object UntrustedSpec {
     context.actorOf(Props(classOf[FakeUser], testActor), "user")
 
     def receive = {
-      case IdentifyReq(path) ⇒ context.actorSelection(path).tell(Identify(None), sender)
+      case IdentifyReq(path) ⇒ context.actorSelection(path).tell(Identify(None), sender())
       case StopChild(name)   ⇒ context.child(name) foreach context.stop
       case msg               ⇒ testActor forward msg
     }
@@ -155,7 +155,7 @@ akka.loglevel = DEBUG
         Identify(None), p.ref)
       val clientReceptionistRef = p.expectMsgType[ActorIdentity].ref.get
 
-      val sel = ActorSelection(clientReceptionistRef, receptionist.path.elements.mkString("/", "/", ""))
+      val sel = ActorSelection(clientReceptionistRef, receptionist.path.toStringWithoutAddress)
       sel ! "hello"
       expectNoMsg(1.second)
     }

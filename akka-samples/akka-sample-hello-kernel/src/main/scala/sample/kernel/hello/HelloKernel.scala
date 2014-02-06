@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package sample.kernel.hello
 
@@ -12,15 +12,15 @@ class HelloActor extends Actor {
   val worldActor = context.actorOf(Props[WorldActor])
 
   def receive = {
-    case Start ⇒ worldActor ! "Hello"
-    case message: String ⇒
+    case Start => worldActor ! "Hello"
+    case message: String =>
       println("Received message '%s'" format message)
   }
 }
 
 class WorldActor extends Actor {
   def receive = {
-    case message: String ⇒ sender ! (message.toUpperCase + " world!")
+    case message: String => sender() ! (message.toUpperCase + " world!")
   }
 }
 

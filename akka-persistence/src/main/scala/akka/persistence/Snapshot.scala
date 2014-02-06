@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  * Copyright (C) 2012-2013 Eligotech BV.
  */
 
@@ -101,7 +101,7 @@ case class SelectedSnapshot(metadata: SnapshotMetadata, snapshot: Any)
 
 object SelectedSnapshot {
   /**
-   * Plugin Java API.
+   * Java API, Plugin API.
    */
   def create(metadata: SnapshotMetadata, snapshot: Any): SelectedSnapshot =
     SelectedSnapshot(metadata, snapshot)

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -122,8 +122,8 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
 
       val transitionTester = system.actorOf(Props(new Actor {
         def receive = {
-          case Transition(_, _, _)     ⇒ transitionCallBackLatch.open
-          case CurrentState(_, Locked) ⇒ initialStateLatch.open
+          case Transition(_, _, _)                          ⇒ transitionCallBackLatch.open
+          case CurrentState(_, s: LockState) if s eq Locked ⇒ initialStateLatch.open // SI-5900 workaround
         }
       }))
 
@@ -239,8 +239,8 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       })
 
       def checkTimersActive(active: Boolean) {
-        for (timer ← timerNames) fsmref.isTimerActive(timer) must be(active)
-        fsmref.isStateTimerActive must be(active)
+        for (timer ← timerNames) fsmref.isTimerActive(timer) should be(active)
+        fsmref.isStateTimerActive should be(active)
       }
 
       checkTimersActive(false)

@@ -44,13 +44,13 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
 
       val result = Await.result(transportA.listen, timeout.duration)
 
-      result._1 must be(addressA)
-      result._2 must not be null
+      result._1 should be(addressA)
+      result._2 should not be null
 
       registry.logSnapshot.exists {
         case ListenAttempt(address) ⇒ address == addressATest
         case _                      ⇒ false
-      } must be(true)
+      } should be(true)
     }
 
     "associate successfully with another transport of its kind" in {
@@ -69,7 +69,7 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
         case InboundAssociation(handle) if handle.remoteAddress == addressA ⇒
       }
 
-      registry.logSnapshot.contains(AssociateAttempt(addressATest, addressBTest)) must be(true)
+      registry.logSnapshot.contains(AssociateAttempt(addressATest, addressBTest)) should be(true)
       awaitCond(registry.existsAssociation(addressATest, addressBTest))
     }
 
@@ -118,7 +118,7 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
       registry.logSnapshot.exists {
         case WriteAttempt(`addressATest`, `addressBTest`, sentPdu) ⇒ sentPdu == pdu
         case _ ⇒ false
-      } must be(true)
+      } should be(true)
     }
 
     "successfully disassociate" in {

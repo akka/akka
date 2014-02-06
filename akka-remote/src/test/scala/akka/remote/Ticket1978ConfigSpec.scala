@@ -18,14 +18,14 @@ class Ticket1978ConfigSpec extends AkkaSpec("""
     "be able to parse these extra Netty config elements" in {
       val settings = new SSLSettings(system.settings.config.getConfig("akka.remote.netty.ssl.security"))
 
-      settings.SSLKeyStore must be(Some("keystore"))
-      settings.SSLKeyStorePassword must be(Some("changeme"))
-      settings.SSLKeyPassword must be(Some("changeme"))
-      settings.SSLTrustStore must be(Some("truststore"))
-      settings.SSLTrustStorePassword must be(Some("changeme"))
-      settings.SSLProtocol must be(Some("TLSv1"))
-      settings.SSLEnabledAlgorithms must be(Set("TLS_RSA_WITH_AES_128_CBC_SHA"))
-      settings.SSLRandomNumberGenerator must be(Some("AES128CounterSecureRNG"))
+      settings.SSLKeyStore should be(Some("keystore"))
+      settings.SSLKeyStorePassword should be(Some("changeme"))
+      settings.SSLKeyPassword should be(Some("changeme"))
+      settings.SSLTrustStore should be(Some("truststore"))
+      settings.SSLTrustStorePassword should be(Some("changeme"))
+      settings.SSLProtocol should be(Some("TLSv1"))
+      settings.SSLEnabledAlgorithms should be(Set("TLS_RSA_WITH_AES_128_CBC_SHA"))
+      settings.SSLRandomNumberGenerator should be(Some("AES128CounterSecureRNG"))
     }
   }
 }

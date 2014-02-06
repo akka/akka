@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote.testconductor
 
@@ -45,7 +45,7 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with ST
       runOn(master) {
         system.actorOf(Props(new Actor {
           def receive = {
-            case x ⇒ testActor ! x; sender ! x
+            case x ⇒ testActor ! x; sender() ! x
           }
         }).withDeploy(Deploy.local), "echo")
       }
@@ -74,7 +74,7 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with ST
 
       within(0.6 seconds, 2 seconds) {
         expectMsg(500 millis, 0)
-        receiveN(9) must be(1 to 9)
+        receiveN(9) should be(1 to 9)
       }
 
       enterBarrier("throttled_send2")
@@ -96,7 +96,7 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with ST
 
       within(min, max) {
         expectMsg(500 millis, 10)
-        receiveN(9) must be(11 to 19)
+        receiveN(9) should be(11 to 19)
       }
 
       enterBarrier("throttled_recv2")

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.contrib.pattern
 
@@ -36,13 +36,13 @@ object ClusterClientSpec extends MultiNodeConfig {
     def receive = {
       case msg ⇒
         testActor forward msg
-        sender ! "ack"
+        sender() ! "ack"
     }
   }
 
   class Service extends Actor {
     def receive = {
-      case msg ⇒ sender ! msg
+      case msg ⇒ sender() ! msg
     }
   }
 
@@ -72,7 +72,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
   def awaitCount(expected: Int): Unit = {
     awaitAssert {
       DistributedPubSubExtension(system).mediator ! DistributedPubSubMediator.Count
-      expectMsgType[Int] must be(expected)
+      expectMsgType[Int] should be(expected)
     }
   }
 
@@ -145,7 +145,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
       runOn(client) {
         // note that "hi" was sent to 2 "serviceB"
-        receiveN(3).toSet must be(Set("hello", "hi"))
+        receiveN(3).toSet should be(Set("hello", "hi"))
       }
 
       { //not used, only demo

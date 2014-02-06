@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  * Copyright (C) 2012-2013 Eligotech BV.
  */
 
@@ -19,6 +19,7 @@ trait SnapshotStore extends Actor {
   import context.dispatcher
 
   private val extension = Persistence(context.system)
+  private val publish = extension.settings.internal.publishPluginCommands
 
   final def receive = {
     case LoadSnapshot(processorId, criteria, toSequenceNr) ⇒
@@ -44,10 +45,10 @@ trait SnapshotStore extends Actor {
       sender ! evt // sender is processor
     case d @ DeleteSnapshot(metadata) ⇒
       delete(metadata)
-      if (extension.publishPluginCommands) context.system.eventStream.publish(d)
+      if (publish) context.system.eventStream.publish(d)
     case d @ DeleteSnapshots(processorId, criteria) ⇒
       delete(processorId, criteria)
-      if (extension.publishPluginCommands) context.system.eventStream.publish(d)
+      if (publish) context.system.eventStream.publish(d)
   }
 
   //#snapshot-store-plugin-api

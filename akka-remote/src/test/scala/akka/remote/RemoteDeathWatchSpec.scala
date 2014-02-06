@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -36,6 +36,8 @@ akka {
   override def afterTermination() {
     shutdown(other)
   }
+
+  override def expectedTestDuration: FiniteDuration = 90.seconds
 
   "receive Terminated when watched node is unknown host" in {
     val path = RootActorPath(Address("akka.tcp", system.name, "unknownhost", 2552)) / "user" / "subject"

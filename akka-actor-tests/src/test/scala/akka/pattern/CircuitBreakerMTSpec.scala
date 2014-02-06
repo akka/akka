@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.pattern
 
@@ -48,16 +48,16 @@ class CircuitBreakerMTSpec extends AkkaSpec {
     "allow many calls while in closed state with no errors" in {
       val futures = testCallsWithBreaker()
       val result = Await.result(Future.sequence(futures), 5.second.dilated)
-      result.size must be(numberOfTestCalls)
-      result.toSet must be === Set("succeed")
+      result.size should be(numberOfTestCalls)
+      result.toSet should be(Set("succeed"))
     }
 
     "transition to open state upon reaching failure limit and fail-fast" in {
       openBreaker()
       val futures = testCallsWithBreaker()
       val result = Await.result(Future.sequence(futures), 5.second.dilated)
-      result.size must be(numberOfTestCalls)
-      result.toSet must be === Set("CBO")
+      result.size should be(numberOfTestCalls)
+      result.toSet should be(Set("CBO"))
     }
 
     "allow a single call through in half-open state" in {
@@ -71,8 +71,8 @@ class CircuitBreakerMTSpec extends AkkaSpec {
 
       val futures = testCallsWithBreaker()
       val result = Await.result(Future.sequence(futures), 5.second.dilated)
-      result.size must be(numberOfTestCalls)
-      result.toSet must be === Set("succeed", "CBO")
+      result.size should be(numberOfTestCalls)
+      result.toSet should be(Set("succeed", "CBO"))
     }
 
     "recover and reset the breaker after the reset timeout" in {
@@ -91,8 +91,8 @@ class CircuitBreakerMTSpec extends AkkaSpec {
 
       val futures = testCallsWithBreaker()
       val result = Await.result(Future.sequence(futures), 5.second.dilated)
-      result.size must be(numberOfTestCalls)
-      result.toSet must be === Set("succeed")
+      result.size should be(numberOfTestCalls)
+      result.toSet should be(Set("succeed"))
     }
   }
 }

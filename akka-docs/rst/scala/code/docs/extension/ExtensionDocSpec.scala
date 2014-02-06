@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.extension
 
@@ -60,7 +60,7 @@ object ExtensionDocSpec {
 
   class MyActor extends Actor {
     def receive = {
-      case someMessage ⇒
+      case someMessage =>
         CountExtension(context.system).increment()
     }
   }
@@ -68,12 +68,12 @@ object ExtensionDocSpec {
 
   //#extension-usage-actor-trait
 
-  trait Counting { self: Actor ⇒
+  trait Counting { self: Actor =>
     def increment() = CountExtension(context.system).increment()
   }
   class MyCounterActor extends Actor with Counting {
     def receive = {
-      case someMessage ⇒ increment()
+      case someMessage => increment()
     }
   }
   //#extension-usage-actor-trait

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -77,8 +77,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
     MetricsInterval, self, MetricsTick)
 
   override def preStart(): Unit = {
-    cluster.subscribe(self, classOf[MemberEvent])
-    cluster.subscribe(self, classOf[ReachabilityEvent])
+    cluster.subscribe(self, classOf[MemberEvent], classOf[ReachabilityEvent])
     logInfo("Metrics collection has started successfully")
   }
 

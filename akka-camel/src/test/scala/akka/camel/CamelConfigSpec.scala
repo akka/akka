@@ -1,16 +1,17 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.camel
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import org.scalatest.WordSpec
 import akka.actor.ActorSystem
 import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit._
 import akka.testkit.TestKit
+import akka.util.Helpers.ConfigOps
 
-class CamelConfigSpec extends WordSpec with MustMatchers {
+class CamelConfigSpec extends WordSpec with Matchers {
 
   val (settings, config) = {
     val system = ActorSystem("CamelConfigSpec")
@@ -20,30 +21,30 @@ class CamelConfigSpec extends WordSpec with MustMatchers {
   }
   "CamelConfigSpec" must {
     "have correct activationTimeout config" in {
-      settings.ActivationTimeout must be === Duration(config.getMilliseconds("akka.camel.consumer.activation-timeout"), MILLISECONDS)
+      settings.ActivationTimeout should be(config.getMillisDuration("akka.camel.consumer.activation-timeout"))
     }
 
     "have correct autoAck config" in {
-      settings.AutoAck must be === config.getBoolean("akka.camel.consumer.auto-ack")
+      settings.AutoAck should be(config.getBoolean("akka.camel.consumer.auto-ack"))
     }
 
     "have correct replyTimeout config" in {
-      settings.ReplyTimeout must be === Duration(config.getMilliseconds("akka.camel.consumer.reply-timeout"), MILLISECONDS)
+      settings.ReplyTimeout should be(config.getMillisDuration("akka.camel.consumer.reply-timeout"))
     }
 
     "have correct streamingCache config" in {
-      settings.StreamingCache must be === config.getBoolean("akka.camel.streamingCache")
+      settings.StreamingCache should be(config.getBoolean("akka.camel.streamingCache"))
     }
 
     "have correct jmxStatistics config" in {
-      settings.JmxStatistics must be === config.getBoolean("akka.camel.jmx")
+      settings.JmxStatistics should be(config.getBoolean("akka.camel.jmx"))
     }
 
     "have correct body conversions config" in {
       val conversions = config.getConfig("akka.camel.conversions")
 
-      conversions.getString("file") must be === "java.io.InputStream"
-      conversions.entrySet.size must be === 1
+      conversions.getString("file") should be("java.io.InputStream")
+      conversions.entrySet.size should be(1)
     }
   }
 }

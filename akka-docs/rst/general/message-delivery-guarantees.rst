@@ -155,6 +155,17 @@ Causal transitive ordering would imply that ``M2`` is never received before
 violated due to different message delivery latencies when ``A``, ``B`` and
 ``C`` reside on different network hosts, see more below.
 
+.. note::
+
+  Actor creation is treated as a message sent from the parent to the child,
+  with the same semantics as discussed above. Sending a message to an actor in
+  a way which could be reordered with this initial creation message means that
+  the message might not arrive because the actor does not exist yet. An example
+  where the message might arrive too early would be to create a remote-deployed
+  actor R1, send its reference to another remote actor R2 and have R2 send a
+  message to R1. An example of well-defined ordering is a parent which creates
+  an actor and immediately sends a message to it.
+
 Communication of failure
 ........................
 
@@ -230,7 +241,7 @@ possibly non-exhaustive list of counter-indications is:
   deployed with Routers.
 
 - As mentioned above, the problem occurs anywhere a lock is involved during
-  enqueueing, which may also apply to custom mailboxes (or durable mailboxes).
+  enqueueing, which may also apply to custom mailboxes.
 
 This list has been compiled carefully, but other problematic scenarios may have
 escaped our analysis.
@@ -257,11 +268,11 @@ throughput or lower latency by removing this guarantee again, which would mean
 that choosing between different implementations would allow trading guarantees
 versus performance.
 
-Building On Top Of Akka
-=======================
+Higher-level abstractions
+=========================
 
-The philosophy of Akka is to provide a small and consistent tool set which is
-well suited for building powerful abstractions on top.
+Based on a small and consistent tool set in Akka's core, Akka also provides
+powerful, higher-level abstractions on top it.
 
 Messaging Patterns
 ------------------
@@ -274,12 +285,15 @@ delivery is an explicit ACK–RETRY protocol. In its simplest form this requires
 - a retry mechanism which will resend messages if not acknowledged in time
 - a way for the receiver to detect and discard duplicates
 
-The third becomes necessary by virtue of the acknowledgements not being
-guaranteed to arrive either. An example of implementing all three requirements
-is shown at :ref:`reliable-proxy`. Another way of implementing the third part
-would be to make processing the messages idempotent at the receiving end on the
-level of the business logic; this is convenient if it arises naturally and
-otherwise implemented by keeping track of processed message IDs.
+The third becomes necessary by virtue of the acknowledgements not being guaranteed
+to arrive either. An ACK-RETRY protocol with business-level acknowledgements is
+supported by :ref:`channels` of the Akka Persistence module. Duplicates can be
+detected by tracking the sequence numbers of messages received via channels.
+Another way of implementing the third part would be to make processing the messages
+idempotent on the level of the business logic.
+
+Another example of implementing all three requirements is shown at
+:ref:`reliable-proxy` (which is now superseded by :ref:`channels`).
 
 Event Sourcing
 --------------
@@ -296,7 +310,7 @@ state on a different continent or to react to changes). If the component’s
 state is lost—due to a machine failure or by being pushed out of a cache—it can
 easily be reconstructed by replaying the event stream (usually employing
 snapshots to speed up the process). :ref:`event-sourcing` is supported by
-Akka (see :ref:`persistence`).
+Akka Persistence.
 
 Mailbox with Explicit Acknowledgement
 -------------------------------------

@@ -14,6 +14,7 @@ object AkkaProtocolStressTest {
   val configA: Config = ConfigFactory parseString ("""
     akka {
       #loglevel = DEBUG
+      actor.serialize-messages = off
       actor.provider = "akka.remote.RemoteActorRefProvider"
 
       remote.log-remote-lifecycle-events = on
@@ -22,13 +23,12 @@ object AkkaProtocolStressTest {
         threshold = 1.0
         max-sample-size = 2
         min-std-deviation = 1 ms
-        acceptable-heartbeat-pause = 0.01 s
+        ## We want lots of lost connections in this test, keep it sensitive
+        heartbeat-interval = 1 s
+        acceptable-heartbeat-pause = 1 s
       }
-      remote.retry-window = 1 s
-      # This test drops messages, but dropping too much will make it fail. The reason is that this test
-      # expects at least a few of the final messages to arrive to prove that the Remoting does not get stuck
-      # in an irrecoverable state. The retry limit enabled case is covered by the SystemMessageDelivery tests.
-      remote.maximum-retries-in-window = 100
+      ## Keep gate duration in this test for a low value otherwise too much messages are dropped
+      remote.retry-gate-closed-for = 100 ms
 
       remote.netty.tcp {
         applied-adapters = ["gremlin"]
@@ -37,6 +37,8 @@ object AkkaProtocolStressTest {
 
     }
                                                    """)
+
+  object ResendFinal
 
   class SequenceVerifier(remote: ActorRef, controller: ActorRef) extends Actor {
     import context.dispatcher
@@ -58,12 +60,24 @@ object AkkaProtocolStressTest {
         if (seq > maxSeq) {
           losses += seq - maxSeq - 1
           maxSeq = seq
-          if (seq > limit * 0.9) {
+          // Due to the (bursty) lossyness of gate, we are happy with receiving at least one message from the upper
+          // half (> 50000). Since messages are sent in bursts of 2000 0.5 seconds apart, this is reasonable.
+          // The purpose of this test is not reliable delivery (there is a gremlin with 30% loss anyway) but respecting
+          // the proper ordering.
+          if (seq > limit * 0.5) {
             controller ! ((maxSeq, losses))
+            context.system.scheduler.schedule(1.second, 1.second, self, ResendFinal)
+            context.become(done)
           }
         } else {
           controller ! s"Received out of order message. Previous: ${maxSeq} Received: ${seq}"
         }
+    }
+
+    // Make sure the other side eventually "gets the message"
+    def done: Receive = {
+      case ResendFinal ⇒
+        controller ! ((maxSeq, losses))
     }
   }
 
@@ -74,7 +88,7 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
   val systemB = ActorSystem("systemB", system.settings.config)
   val remote = systemB.actorOf(Props(new Actor {
     def receive = {
-      case seq: Int ⇒ sender ! seq
+      case seq: Int ⇒ sender() ! seq
     }
   }), "echo")
 

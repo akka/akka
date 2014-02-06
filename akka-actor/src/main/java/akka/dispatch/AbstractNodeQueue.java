@@ -1,18 +1,21 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch;
 
 import akka.util.Unsafe;
+
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Lock-free MPSC linked queue implementation based on Dmitriy Vyukov's non-intrusive MPSC queue:
  * http://www.1024cores.net/home/lock-free-algorithms/queues/non-intrusive-mpsc-node-based-queue
  */
+@SuppressWarnings("serial")
 public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQueue.Node<T>> {
     // Extends AtomicReference for the "head" slot (which is the one that is appended to) since Unsafe does not expose XCHG operation intrinsically
+    @SuppressWarnings("unused")
     private volatile Node<T> _tailDoNotCallMeDirectly;
 
     protected AbstractNodeQueue() {
@@ -63,7 +66,6 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
     /*
      * !!! There is a copy of this code in pollNode() !!!
      */
-    @SuppressWarnings("unchecked")
     public final T poll() {
         final Node<T> next = peekNode();
         if (next == null) return null;
@@ -106,6 +108,7 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
 
     public static class Node<T> {
         public T value;
+        @SuppressWarnings("unused")
         private volatile Node<T> _nextDoNotCallMeDirectly;
 
         public Node() {

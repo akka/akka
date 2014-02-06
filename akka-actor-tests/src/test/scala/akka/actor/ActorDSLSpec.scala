@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -26,7 +26,7 @@ class ActorDSLSpec extends AkkaSpec {
 
   val echo = system.actorOf(Props(new Actor {
     def receive = {
-      case x ⇒ sender ! x
+      case x ⇒ sender() ! x
     }
   }))
 
@@ -36,7 +36,7 @@ class ActorDSLSpec extends AkkaSpec {
       //#inbox
       implicit val i = inbox()
       echo ! "hello"
-      i.receive() must be("hello")
+      i.receive() should be("hello")
       //#inbox
     }
 
@@ -50,7 +50,7 @@ class ActorDSLSpec extends AkkaSpec {
       i watch target
       //#watch
       target ! PoisonPill
-      i receive 1.second must be(Terminated(target)(true, false))
+      i receive 1.second should be(Terminated(target)(true, false))
     }
 
     "support queueing multiple queries" in {
@@ -61,11 +61,11 @@ class ActorDSLSpec extends AkkaSpec {
         Future { Thread.sleep(100); i.select() { case "world" ⇒ 1 } } recover { case x ⇒ x },
         Future { Thread.sleep(200); i.select() { case "hello" ⇒ 2 } } recover { case x ⇒ x }))
       Thread.sleep(1000)
-      res.isCompleted must be(false)
+      res.isCompleted should be(false)
       i.receiver ! 42
       i.receiver ! "hello"
       i.receiver ! "world"
-      Await.result(res, 5 second) must be(Seq(42, 1, 2))
+      Await.result(res, 5 second) should be(Seq(42, 1, 2))
     }
 
     "support selective receives" in {
@@ -75,8 +75,8 @@ class ActorDSLSpec extends AkkaSpec {
       val result = i.select() {
         case "world" ⇒ true
       }
-      result must be(true)
-      i.receive() must be("hello")
+      result should be(true)
+      i.receive() should be("hello")
     }
 
     "have a maximum queue size" in {
@@ -92,7 +92,7 @@ class ActorDSLSpec extends AkkaSpec {
         i.receiver ! 42
         expectNoMsg(1 second)
         val gotit = for (_ ← 1 to 1000) yield i.receive()
-        gotit must be((1 to 1000) map (_ ⇒ 0))
+        gotit should be((1 to 1000) map (_ ⇒ 0))
         intercept[TimeoutException] {
           i.receive(1 second)
         }
@@ -119,24 +119,24 @@ class ActorDSLSpec extends AkkaSpec {
       //#simple-actor
       val a = actor(new Act {
         become {
-          case "hello" ⇒ sender ! "hi"
+          case "hello" ⇒ sender() ! "hi"
         }
       })
       //#simple-actor
 
       implicit val i = inbox()
       a ! "hello"
-      i.receive() must be("hi")
+      i.receive() should be("hi")
     }
 
     "support becomeStacked" in {
       //#becomeStacked
       val a = actor(new Act {
         become { // this will replace the initial (empty) behavior
-          case "info" ⇒ sender ! "A"
+          case "info" ⇒ sender() ! "A"
           case "switch" ⇒
             becomeStacked { // this will stack upon the "A" behavior
-              case "info"   ⇒ sender ! "B"
+              case "info"   ⇒ sender() ! "B"
               case "switch" ⇒ unbecome() // return to the "A" behavior
             }
           case "lobotomize" ⇒ unbecome() // OH NOES: Actor.emptyBehavior
@@ -144,7 +144,7 @@ class ActorDSLSpec extends AkkaSpec {
       })
       //#becomeStacked
 
-      implicit def sender = testActor
+      implicit val sender = testActor
       a ! "info"
       expectMsg("A")
       a ! "switch"
@@ -231,7 +231,7 @@ class ActorDSLSpec extends AkkaSpec {
       })
       //#nested-actor
       expectMsg("hello from akka://ActorDSLSpec/user/fred/barney")
-      lastSender must be(a)
+      lastSender should be(a)
     }
 
     "support Stash" in {

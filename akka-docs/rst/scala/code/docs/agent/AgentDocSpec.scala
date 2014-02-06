@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.agent
 
@@ -28,20 +28,20 @@ class AgentDocSpec extends AkkaSpec {
       //#read-apply
       val result = agent()
       //#read-apply
-      result must be === 0
+      result should be(0)
     }
     {
       //#read-get
       val result = agent.get
       //#read-get
-      result must be === 0
+      result should be(0)
     }
 
     {
       //#read-future
       val future = agent.future
       //#read-future
-      Await.result(future, 5 seconds) must be === 0
+      Await.result(future, 5 seconds) should be(0)
     }
   }
 
@@ -58,7 +58,7 @@ class AgentDocSpec extends AkkaSpec {
     agent send (_ * 2)
     //#send
 
-    def longRunningOrBlockingFunction = (i: Int) ⇒ i * 1 // Just for the example code
+    def longRunningOrBlockingFunction = (i: Int) => i * 1 // Just for the example code
     def someExecutionContext() = scala.concurrent.ExecutionContext.Implicits.global // Just for the example code
     //#send-off
     // the ExecutionContext you want to run the function on
@@ -67,7 +67,7 @@ class AgentDocSpec extends AkkaSpec {
     agent sendOff longRunningOrBlockingFunction
     //#send-off
 
-    Await.result(agent.future, 5 seconds) must be === 16
+    Await.result(agent.future, 5 seconds) should be(16)
   }
 
   "alter and alterOff" in {
@@ -81,7 +81,7 @@ class AgentDocSpec extends AkkaSpec {
     val f3: Future[Int] = agent alter (_ * 2)
     //#alter
 
-    def longRunningOrBlockingFunction = (i: Int) ⇒ i * 1 // Just for the example code
+    def longRunningOrBlockingFunction = (i: Int) => i * 1 // Just for the example code
     def someExecutionContext() = ExecutionContext.global // Just for the example code
 
     //#alter-off
@@ -91,7 +91,7 @@ class AgentDocSpec extends AkkaSpec {
     val f4: Future[Int] = agent alterOff longRunningOrBlockingFunction
     //#alter-off
 
-    Await.result(f4, 5 seconds) must be === 16
+    Await.result(f4, 5 seconds) should be(16)
   }
 
   "transfer example" in {
@@ -102,7 +102,7 @@ class AgentDocSpec extends AkkaSpec {
     import scala.concurrent.stm._
 
     def transfer(from: Agent[Int], to: Agent[Int], amount: Int): Boolean = {
-      atomic { txn ⇒
+      atomic { txn =>
         if (from.get < amount) false
         else {
           from send (_ - amount)
@@ -120,9 +120,9 @@ class AgentDocSpec extends AkkaSpec {
     val toValue = to.future // -> 70
     //#transfer-example
 
-    Await.result(fromValue, 5 seconds) must be === 50
-    Await.result(toValue, 5 seconds) must be === 70
-    ok must be === true
+    Await.result(fromValue, 5 seconds) should be(50)
+    Await.result(toValue, 5 seconds) should be(70)
+    ok should be(true)
   }
 
   "monadic example" in {
@@ -133,24 +133,24 @@ class AgentDocSpec extends AkkaSpec {
     val agent2 = Agent(5)
 
     // uses foreach
-    for (value ← agent1)
+    for (value <- agent1)
       println(value)
 
     // uses map
-    val agent3 = for (value ← agent1) yield value + 1
+    val agent3 = for (value <- agent1) yield value + 1
 
     // or using map directly
     val agent4 = agent1 map (_ + 1)
 
     // uses flatMap
     val agent5 = for {
-      value1 ← agent1
-      value2 ← agent2
+      value1 <- agent1
+      value2 <- agent2
     } yield value1 + value2
     //#monadic-example
 
-    agent3() must be === 4
-    agent4() must be === 4
-    agent5() must be === 8
+    agent3() should be(4)
+    agent4() should be(4)
+    agent5() should be(8)
   }
 }

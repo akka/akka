@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.testkit
 
@@ -10,7 +10,7 @@ import scala.util.Random
 
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.WordSpecLike
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 
 import com.typesafe.config.ConfigFactory
 
@@ -31,7 +31,7 @@ class TestKitUsageSpec
   extends TestKit(ActorSystem("TestKitUsageSpec",
     ConfigFactory.parseString(TestKitUsageSpec.config)))
   with DefaultTimeout with ImplicitSender
-  with WordSpecLike with ShouldMatchers with BeforeAndAfterAll {
+  with WordSpecLike with Matchers with BeforeAndAfterAll {
   import TestKitUsageSpec._
 
   val echoRef = system.actorOf(Props[EchoActor])
@@ -45,7 +45,7 @@ class TestKitUsageSpec
     system.actorOf(Props(classOf[SequencingActor], testActor, headList, tailList))
 
   override def afterAll {
-    shutdown(system)
+    shutdown()
   }
 
   "An EchoActor" should {
@@ -79,7 +79,7 @@ class TestKitUsageSpec
         filterRef ! 1
 
         receiveWhile(500 millis) {
-          case msg: String ⇒ messages = msg +: messages
+          case msg: String => messages = msg +: messages
         }
       }
       messages.length should be(3)
@@ -90,12 +90,12 @@ class TestKitUsageSpec
     "receive an interesting message at some point " in {
       within(500 millis) {
         ignoreMsg {
-          case msg: String ⇒ msg != "something"
+          case msg: String => msg != "something"
         }
         seqRef ! "something"
         expectMsg("something")
         ignoreMsg {
-          case msg: String ⇒ msg == "1"
+          case msg: String => msg == "1"
         }
         expectNoMsg
         ignoreNoMsg
@@ -117,7 +117,7 @@ object TestKitUsageSpec {
    */
   class EchoActor extends Actor {
     def receive = {
-      case msg ⇒ sender ! msg
+      case msg => sender() ! msg
     }
   }
 
@@ -126,7 +126,7 @@ object TestKitUsageSpec {
    */
   class ForwardingActor(next: ActorRef) extends Actor {
     def receive = {
-      case msg ⇒ next ! msg
+      case msg => next ! msg
     }
   }
 
@@ -135,8 +135,8 @@ object TestKitUsageSpec {
    */
   class FilteringActor(next: ActorRef) extends Actor {
     def receive = {
-      case msg: String ⇒ next ! msg
-      case _           ⇒ None
+      case msg: String => next ! msg
+      case _           => None
     }
   }
 
@@ -149,7 +149,7 @@ object TestKitUsageSpec {
   class SequencingActor(next: ActorRef, head: immutable.Seq[String],
                         tail: immutable.Seq[String]) extends Actor {
     def receive = {
-      case msg ⇒ {
+      case msg => {
         head foreach { next ! _ }
         next ! msg
         tail foreach { next ! _ }

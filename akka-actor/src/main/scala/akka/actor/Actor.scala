@@ -1,15 +1,14 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
 
 import akka.AkkaException
-import scala.collection.immutable
 import scala.annotation.tailrec
-import scala.reflect.BeanProperty
+import scala.beans.BeanProperty
 import scala.util.control.NoStackTrace
-import java.util.regex.Pattern
+import akka.event.LoggingAdapter
 
 /**
  * INTERNAL API
@@ -256,7 +255,7 @@ object Status {
    * This class/message type is preferably used to indicate success of some operation performed.
    */
   @SerialVersionUID(1L)
-  case class Success(status: AnyRef) extends Status
+  case class Success(status: Any) extends Status
 
   /**
    * This class/message type is preferably used to indicate failure of some operation performed.
@@ -279,7 +278,15 @@ object Status {
  * }}}
  */
 trait ActorLogging { this: Actor ⇒
-  val log = akka.event.Logging(context.system, this)
+  private var _log: LoggingAdapter = _
+
+  def log: LoggingAdapter = {
+    // only used in Actor, i.e. thread safe
+    if (_log eq null)
+      _log = akka.event.Logging(context.system, this)
+    _log
+  }
+
 }
 
 /**
@@ -347,7 +354,7 @@ object Actor {
  *  - ''SHUTDOWN'' (when 'stop' is invoked) - can't do anything
  *
  * The Actor's own [[akka.actor.ActorRef]] is available as `self`, the current
- * message’s sender as `sender` and the [[akka.actor.ActorContext]] as
+ * message’s sender as `sender()` and the [[akka.actor.ActorContext]] as
  * `context`. The only abstract method is `receive` which shall return the
  * initial behavior of the actor as a partial function (behavior can be changed
  * using `context.become` and `context.unbecome`).
@@ -366,23 +373,23 @@ object Actor {
  *
  *   def receive = {
  *                                      // directly calculated reply
- *     case Request(r)               => sender ! calculate(r)
+ *     case Request(r)               => sender() ! calculate(r)
  *
  *                                      // just to demonstrate how to stop yourself
  *     case Shutdown                 => context.stop(self)
  *
- *                                      // error kernel with child replying directly to 'sender'
- *     case Dangerous(r)             => context.actorOf(Props[ReplyToOriginWorker]).tell(PerformWork(r), sender)
+ *                                      // error kernel with child replying directly to 'sender()'
+ *     case Dangerous(r)             => context.actorOf(Props[ReplyToOriginWorker]).tell(PerformWork(r), sender())
  *
  *                                      // error kernel with reply going through us
- *     case OtherJob(r)              => context.actorOf(Props[ReplyToMeWorker]) ! JobRequest(r, sender)
+ *     case OtherJob(r)              => context.actorOf(Props[ReplyToMeWorker]) ! JobRequest(r, sender())
  *     case JobReply(result, orig_s) => orig_s ! result
  *   }
  * }
  * }}}
  *
  * The last line demonstrates the essence of the error kernel design: spawn
- * one-off actors which terminate after doing their job, pass on `sender` to
+ * one-off actors which terminate after doing their job, pass on `sender()` to
  * allow direct reply if that is what makes sense, or round-trip the sender
  * as shown with the fictitious JobRequest/JobReply message pair.
  *
@@ -437,7 +444,7 @@ trait Actor {
    * WARNING: Only valid within the Actor itself, so do not close over it and
    * publish it to other threads!
    */
-  final def sender: ActorRef = context.sender
+  final def sender(): ActorRef = context.sender()
 
   /**
    * This defines the initial actor behavior, it must return a partial function
@@ -552,8 +559,15 @@ trait Actor {
   def unhandled(message: Any): Unit = {
     message match {
       case Terminated(dead) ⇒ throw new DeathPactException(dead)
-      case _                ⇒ context.system.eventStream.publish(UnhandledMessage(message, sender, self))
+      case _                ⇒ context.system.eventStream.publish(UnhandledMessage(message, sender(), self))
     }
   }
 }
 
+/**
+ * Java API
+ *
+ * Abstract base class for Java Actors.
+ *
+ */
+abstract class AbstractActor extends akka.actor.Actor

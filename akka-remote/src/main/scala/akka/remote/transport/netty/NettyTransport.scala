@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote.transport.netty
 
@@ -71,6 +71,7 @@ class NettyTransportException(msg: String, cause: Throwable) extends RuntimeExce
 
 class NettyTransportSettings(config: Config) {
 
+  import akka.util.Helpers.ConfigOps
   import config._
 
   val TransportMode: Mode = getString("transport-protocol") match {
@@ -92,7 +93,7 @@ class NettyTransportSettings(config: Config) {
     case other      ⇒ Some(other)
   }
 
-  val ConnectionTimeout: FiniteDuration = Duration(getMilliseconds("connection-timeout"), MILLISECONDS)
+  val ConnectionTimeout: FiniteDuration = config.getMillisDuration("connection-timeout")
 
   val WriteBufferHighWaterMark: Option[Int] = optionSize("write-buffer-high-water-mark")
 
@@ -379,7 +380,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
 
   // TODO: This should be factored out to an async (or thread-isolated) name lookup service #2960
   def addressToSocketAddress(addr: Address): Future[InetSocketAddress] = addr match {
-    case Address(_, _, Some(host), Some(port)) ⇒ Future { new InetSocketAddress(InetAddress.getByName(host), port) }
+    case Address(_, _, Some(host), Some(port)) ⇒ Future { blocking { new InetSocketAddress(InetAddress.getByName(host), port) } }
     case _                                     ⇒ Future.failed(new IllegalArgumentException(s"Address [$addr] does not contain host or port information."))
   }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.persistence
@@ -41,7 +41,7 @@ object SnapshotSpec {
   }
 }
 
-class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot")) with PersistenceSpec with ImplicitSender {
+class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotSpec")) with PersistenceSpec with ImplicitSender {
   import SnapshotSpec._
   import SnapshotProtocol._
 
@@ -70,8 +70,8 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot"
 
       expectMsgPF() {
         case (SnapshotMetadata(`processorId`, 4, timestamp), state) ⇒
-          state must be(List("a-1", "b-2", "c-3", "d-4").reverse)
-          timestamp must be > (0L)
+          state should be(List("a-1", "b-2", "c-3", "d-4").reverse)
+          timestamp should be > (0L)
       }
       expectMsg("e-5")
       expectMsg("f-6")
@@ -84,8 +84,8 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot"
 
       expectMsgPF() {
         case (SnapshotMetadata(`processorId`, 2, timestamp), state) ⇒
-          state must be(List("a-1", "b-2").reverse)
-          timestamp must be > (0L)
+          state should be(List("a-1", "b-2").reverse)
+          timestamp should be > (0L)
       }
       expectMsg("c-3")
     }
@@ -98,8 +98,8 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot"
 
       expectMsgPF() {
         case (SnapshotMetadata(`processorId`, 4, timestamp), state) ⇒
-          state must be(List("a-1", "b-2", "c-3", "d-4").reverse)
-          timestamp must be > (0L)
+          state should be(List("a-1", "b-2", "c-3", "d-4").reverse)
+          timestamp should be > (0L)
       }
       expectMsg("done")
     }
@@ -111,8 +111,8 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot"
 
       expectMsgPF() {
         case (SnapshotMetadata(`processorId`, 2, timestamp), state) ⇒
-          state must be(List("a-1", "b-2").reverse)
-          timestamp must be > (0L)
+          state should be(List("a-1", "b-2").reverse)
+          timestamp should be > (0L)
       }
       expectMsg("c-3")
       expectMsg("d-4")
@@ -127,8 +127,8 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot"
 
       expectMsgPF() {
         case (SnapshotMetadata(`processorId`, 2, timestamp), state) ⇒
-          state must be(List("a-1", "b-2").reverse)
-          timestamp must be > (0L)
+          state should be(List("a-1", "b-2").reverse)
+          timestamp should be > (0L)
       }
       expectMsg("c-3")
     }
@@ -155,7 +155,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot"
 
       val metadata = expectMsgPF() {
         case (md @ SnapshotMetadata(`processorId`, 4, _), state) ⇒
-          state must be(List("a-1", "b-2", "c-3", "d-4").reverse)
+          state should be(List("a-1", "b-2", "c-3", "d-4").reverse)
           md
       }
       expectMsg("done")
@@ -169,7 +169,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot"
       processor2 ! Recover(toSequenceNr = 4)
       expectMsgPF() {
         case (md @ SnapshotMetadata(`processorId`, 2, _), state) ⇒
-          state must be(List("a-1", "b-2").reverse)
+          state should be(List("a-1", "b-2").reverse)
           md
       }
       expectMsg("c-3")
@@ -188,7 +188,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "snapshot"
       processor1 ! DeleteN(SnapshotSelectionCriteria(maxSequenceNr = 4))
       expectMsgPF() {
         case (md @ SnapshotMetadata(`processorId`, 4, _), state) ⇒
-          state must be(List("a-1", "b-2", "c-3", "d-4").reverse)
+          state should be(List("a-1", "b-2", "c-3", "d-4").reverse)
       }
       deleteProbe.expectMsgType[DeleteSnapshots]
 

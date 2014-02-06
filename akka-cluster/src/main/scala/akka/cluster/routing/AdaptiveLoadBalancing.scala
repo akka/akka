@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster.routing
 
@@ -47,7 +47,7 @@ final case class AdaptiveLoadBalancingRoutingLogic(system: ActorSystem, metricsS
 
   // The current weighted routees, if any. Weights are produced by the metricsSelector
   // via the metricsListener Actor. It's only updated by the actor, but accessed from
-  // the threads of the senders.
+  // the threads of the sender()s.
   private val weightedRouteesRef =
     new AtomicReference[(immutable.IndexedSeq[Routee], Set[NodeMetrics], Option[WeightedRoutees])](
       (Vector.empty, Set.empty, None))

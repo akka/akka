@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.camel.internal
@@ -31,8 +31,8 @@ private[camel] class ActivationTracker extends Actor with ActorLogging {
       var awaitingDeActivation = List[ActorRef]()
 
       {
-        case AwaitActivation(ref)   ⇒ awaitingActivation ::= sender
-        case AwaitDeActivation(ref) ⇒ awaitingDeActivation ::= sender
+        case AwaitActivation(ref)   ⇒ awaitingActivation ::= sender()
+        case AwaitDeActivation(ref) ⇒ awaitingDeActivation ::= sender()
         case msg @ EndpointActivated(ref) ⇒
           awaitingActivation.foreach(_ ! msg)
           receive = activated(awaitingDeActivation)
@@ -51,8 +51,8 @@ private[camel] class ActivationTracker extends Actor with ActorLogging {
       var awaitingDeActivation = currentAwaitingDeActivation
 
       {
-        case AwaitActivation(ref)   ⇒ sender ! EndpointActivated(ref)
-        case AwaitDeActivation(ref) ⇒ awaitingDeActivation ::= sender
+        case AwaitActivation(ref)   ⇒ sender() ! EndpointActivated(ref)
+        case AwaitDeActivation(ref) ⇒ awaitingDeActivation ::= sender()
         case msg @ EndpointDeActivated(ref) ⇒
           awaitingDeActivation foreach (_ ! msg)
           receive = deactivated
@@ -67,9 +67,9 @@ private[camel] class ActivationTracker extends Actor with ActorLogging {
      * @return a partial function that handles messages in the 'de-activated' state
      */
     def deactivated: State = {
-      // deactivated means it was activated at some point, so tell sender it was activated
-      case AwaitActivation(ref)   ⇒ sender ! EndpointActivated(ref)
-      case AwaitDeActivation(ref) ⇒ sender ! EndpointDeActivated(ref)
+      // deactivated means it was activated at some point, so tell sender() it was activated
+      case AwaitActivation(ref)   ⇒ sender() ! EndpointActivated(ref)
+      case AwaitDeActivation(ref) ⇒ sender() ! EndpointDeActivated(ref)
       //resurrected at restart.
       case msg @ EndpointActivated(ref) ⇒
         receive = activated(Nil)
@@ -81,8 +81,8 @@ private[camel] class ActivationTracker extends Actor with ActorLogging {
      * @return a partial function that handles messages in 'failed to activate' state
      */
     def failedToActivate(cause: Throwable): State = {
-      case AwaitActivation(ref)   ⇒ sender ! EndpointFailedToActivate(ref, cause)
-      case AwaitDeActivation(ref) ⇒ sender ! EndpointFailedToActivate(ref, cause)
+      case AwaitActivation(ref)   ⇒ sender() ! EndpointFailedToActivate(ref, cause)
+      case AwaitDeActivation(ref) ⇒ sender() ! EndpointFailedToActivate(ref, cause)
       case EndpointDeActivated(_) ⇒ // the de-register at termination always sends a de-activated when the cleanup is done. ignoring.
     }
 
@@ -92,8 +92,8 @@ private[camel] class ActivationTracker extends Actor with ActorLogging {
      * @return a partial function that handles messages in 'failed to de-activate' state
      */
     def failedToDeActivate(cause: Throwable): State = {
-      case AwaitActivation(ref)   ⇒ sender ! EndpointActivated(ref)
-      case AwaitDeActivation(ref) ⇒ sender ! EndpointFailedToDeActivate(ref, cause)
+      case AwaitActivation(ref)   ⇒ sender() ! EndpointActivated(ref)
+      case AwaitDeActivation(ref) ⇒ sender() ! EndpointFailedToDeActivate(ref, cause)
       case EndpointDeActivated(_) ⇒ // the de-register at termination always sends a de-activated when the cleanup is done. ignoring.
     }
 

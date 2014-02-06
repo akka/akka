@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -73,7 +73,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       timeoutActor ! Tick
 
       Await.ready(timeoutLatch, TestLatch.DefaultTimeout)
-      count.get must be(1)
+      count.get should be(1)
       system.stop(timeoutActor)
     }
 

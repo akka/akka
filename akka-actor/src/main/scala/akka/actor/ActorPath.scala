@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 import scala.annotation.tailrec
@@ -97,6 +97,13 @@ sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
    * Walk up the tree to obtain and return the RootActorPath.
    */
   def root: RootActorPath
+
+  /**
+   * String representation of the path elements, excluding the address
+   * information. The elements are separated with "/" and starts with "/",
+   * e.g. "/user/a/b".
+   */
+  def toStringWithoutAddress: String = elements.mkString("/", "/", "")
 
   /**
    * Generate String representation, replacing the Address in the RootActor

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -39,6 +39,7 @@ import akka.testkit._
 import akka.testkit.TestEvent._
 import akka.actor.Identify
 import akka.actor.ActorIdentity
+import akka.util.Helpers.ConfigOps
 import akka.util.Helpers.Requiring
 import java.lang.management.ManagementFactory
 
@@ -67,7 +68,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
   val totalNumberOfNodes =
     System.getProperty("MultiJvm.akka.cluster.Stress.nrOfNodes") match {
       case null  ⇒ 13
-      case value ⇒ value.toInt requiring (_ >= 10, "nrOfNodes must be >= 10")
+      case value ⇒ value.toInt requiring (_ >= 10, "nrOfNodes should be >= 10")
     }
 
   for (n ← 1 to totalNumberOfNodes) role("node-" + n)
@@ -169,8 +170,6 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     private val testConfig = conf.getConfig("akka.test.cluster-stress-spec")
     import testConfig._
 
-    private def getDuration(name: String): FiniteDuration = Duration(getMilliseconds(name), MILLISECONDS)
-
     val infolog = getBoolean("infolog")
     val nFactor = getInt("nr-of-nodes-factor")
     val numberOfSeedNodes = getInt("nr-of-seed-nodes") // not scaled by nodes factor
@@ -182,7 +181,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     val numberOfNodesJoiningToSeedNodes = (totalNumberOfNodes - numberOfSeedNodes -
       numberOfNodesJoiningToSeedNodesInitially - numberOfNodesJoiningOneByOneSmall -
       numberOfNodesJoiningOneByOneLarge - numberOfNodesJoiningToOneNode) requiring (_ >= 0,
-        s"too many configured nr-of-nodes-joining-*, total must be <= ${totalNumberOfNodes}")
+        s"too many configured nr-of-nodes-joining-*, total should be <= ${totalNumberOfNodes}")
     val numberOfNodesLeavingOneByOneSmall = getInt("nr-of-nodes-leaving-one-by-one-small") * nFactor
     val numberOfNodesLeavingOneByOneLarge = getInt("nr-of-nodes-leaving-one-by-one-large") * nFactor
     val numberOfNodesLeaving = getInt("nr-of-nodes-leaving") * nFactor
@@ -192,19 +191,19 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     val numberOfNodesJoinRemove = getInt("nr-of-nodes-join-remove") // not scaled by nodes factor
 
     val workBatchSize = getInt("work-batch-size")
-    val workBatchInterval = Duration(getMilliseconds("work-batch-interval"), MILLISECONDS)
+    val workBatchInterval = testConfig.getMillisDuration("work-batch-interval")
     val payloadSize = getInt("payload-size")
     val dFactor = getInt("duration-factor")
-    val joinRemoveDuration = getDuration("join-remove-duration") * dFactor
-    val normalThroughputDuration = getDuration("normal-throughput-duration") * dFactor
-    val highThroughputDuration = getDuration("high-throughput-duration") * dFactor
-    val supervisionDuration = getDuration("supervision-duration") * dFactor
-    val supervisionOneIteration = getDuration("supervision-one-iteration") * dFactor
-    val idleGossipDuration = getDuration("idle-gossip-duration") * dFactor
-    val expectedTestDuration = getDuration("expected-test-duration") * dFactor
+    val joinRemoveDuration = testConfig.getMillisDuration("join-remove-duration") * dFactor
+    val normalThroughputDuration = testConfig.getMillisDuration("normal-throughput-duration") * dFactor
+    val highThroughputDuration = testConfig.getMillisDuration("high-throughput-duration") * dFactor
+    val supervisionDuration = testConfig.getMillisDuration("supervision-duration") * dFactor
+    val supervisionOneIteration = testConfig.getMillisDuration("supervision-one-iteration") * dFactor
+    val idleGossipDuration = testConfig.getMillisDuration("idle-gossip-duration") * dFactor
+    val expectedTestDuration = testConfig.getMillisDuration("expected-test-duration") * dFactor
     val treeWidth = getInt("tree-width")
     val treeLevels = getInt("tree-levels")
-    val reportMetricsInterval = getDuration("report-metrics-interval")
+    val reportMetricsInterval = testConfig.getMillisDuration("report-metrics-interval")
     val convergenceWithinFactor = getDouble("convergence-within-factor")
     val exerciseActors = getBoolean("exercise-actors")
 
@@ -217,7 +216,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       numberOfNodesShutdownOneByOneSmall + numberOfNodesShutdownOneByOneLarge + numberOfNodesShutdown <= totalNumberOfNodes - 3,
       s"specified number of leaving/shutdown nodes <= ${totalNumberOfNodes - 3}")
 
-    require(numberOfNodesJoinRemove <= totalNumberOfNodes, s"nr-of-nodes-join-remove must be <= ${totalNumberOfNodes}")
+    require(numberOfNodesJoinRemove <= totalNumberOfNodes, s"nr-of-nodes-join-remove should be <= ${totalNumberOfNodes}")
 
     override def toString: String = {
       testConfig.withFallback(ConfigFactory.parseString(s"nrOfNodes=${totalNumberOfNodes}")).root.render
@@ -521,8 +520,8 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       case SendBatch ⇒ sendJobs()
       case RetryTick ⇒ resend()
       case End ⇒
-        done(sender)
-        context.become(ending(sender))
+        done(sender())
+        context.become(ending(sender()))
     }
 
     def ending(replyTo: ActorRef): Receive = {
@@ -572,7 +571,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
    */
   class Worker extends Actor with ActorLogging {
     def receive = {
-      case SimpleJob(id, payload) ⇒ sender ! Ack(id)
+      case SimpleJob(id, payload) ⇒ sender() ! Ack(id)
       case TreeJob(id, payload, idx, levels, width) ⇒
         // create the actors when first TreeJob message is received
         val totalActors = ((width * math.pow(width, levels) - 1) / (width - 1)).toInt
@@ -584,7 +583,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     }
 
     def treeWorker(tree: ActorRef): Receive = {
-      case SimpleJob(id, payload) ⇒ sender ! Ack(id)
+      case SimpleJob(id, payload) ⇒ sender() ! Ack(id)
       case TreeJob(id, payload, idx, _, _) ⇒
         tree forward ((idx, SimpleJob(id, payload)))
     }
@@ -603,7 +602,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
 
   class Leaf extends Actor {
     def receive = {
-      case (_: Int, job: SimpleJob) ⇒ sender ! Ack(job.id)
+      case (_: Int, job: SimpleJob) ⇒ sender() ! Ack(job.id)
     }
   }
 
@@ -631,7 +630,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     def receive = {
       case props: Props     ⇒ context.actorOf(props)
       case e: Exception     ⇒ context.children foreach { _ ! e }
-      case GetChildrenCount ⇒ sender ! ChildrenCount(context.children.size, restartCount)
+      case GetChildrenCount ⇒ sender() ! ChildrenCount(context.children.size, restartCount)
       case Reset ⇒
         require(context.children.isEmpty,
           s"ResetChildrenCount not allowed when children exists, [${context.children.size}]")
@@ -984,7 +983,7 @@ abstract class StressSpec
             }
             val nextAddresses = clusterView.members.map(_.address) -- usedAddresses
             runOn(usedRoles: _*) {
-              nextAddresses.size must be(numberOfNodesJoinRemove)
+              nextAddresses.size should be(numberOfNodesJoinRemove)
             }
 
             enterBarrier("join-remove-" + step)
@@ -1021,24 +1020,24 @@ abstract class StressSpec
   def exerciseRouters(title: String, duration: FiniteDuration, batchInterval: FiniteDuration,
                       expectDroppedMessages: Boolean, tree: Boolean): Unit =
     within(duration + 10.seconds) {
-      nbrUsedRoles must be(totalNumberOfNodes)
+      nbrUsedRoles should be(totalNumberOfNodes)
       createResultAggregator(title, expectedResults = nbrUsedRoles, includeInHistory = false)
 
       val (masterRoles, otherRoles) = roles.take(nbrUsedRoles).splitAt(3)
       runOn(masterRoles: _*) {
         reportResult {
           val m = system.actorOf(Props(classOf[Master], settings, batchInterval, tree).withDeploy(Deploy.local),
-            name = "master-" + myself.name)
+            name = masterName)
           m ! Begin
           import system.dispatcher
           system.scheduler.scheduleOnce(duration) {
             m.tell(End, testActor)
           }
-          val workResult = awaitWorkResult
-          workResult.sendCount must be > (0L)
-          workResult.ackCount must be > (0L)
+          val workResult = awaitWorkResult(m)
+          workResult.sendCount should be > (0L)
+          workResult.ackCount should be > (0L)
           if (!expectDroppedMessages)
-            workResult.retryCount must be(0)
+            workResult.retryCount should be(0)
 
           enterBarrier("routers-done-" + step)
         }
@@ -1052,18 +1051,14 @@ abstract class StressSpec
       awaitClusterResult()
     }
 
-  def awaitWorkResult: WorkResult = {
+  def awaitWorkResult(m: ActorRef): WorkResult = {
     val workResult = expectMsgType[WorkResult]
     if (settings.infolog)
       log.info("{} result, [{}] jobs/s, retried [{}] of [{}] msg", masterName,
         workResult.jobsPerSecond.form,
         workResult.retryCount, workResult.sendCount)
-    master match {
-      case Some(m) ⇒
-        watch(m)
-        expectMsgPF(remaining) { case Terminated(a) if a.path == m.path ⇒ true }
-      case None ⇒ // ok, already terminated
-    }
+    watch(m)
+    expectTerminated(m)
     workResult
   }
 
@@ -1081,13 +1076,13 @@ abstract class StressSpec
               supervisor ! Props[RemoteChild].withDeploy(Deploy(scope = RemoteScope(address(r))))
             }
             supervisor ! GetChildrenCount
-            expectMsgType[ChildrenCount] must be(ChildrenCount(nbrUsedRoles, 0))
+            expectMsgType[ChildrenCount] should be(ChildrenCount(nbrUsedRoles, 0))
 
             1 to 5 foreach { _ ⇒ supervisor ! new RuntimeException("Simulated exception") }
             awaitAssert {
               supervisor ! GetChildrenCount
               val c = expectMsgType[ChildrenCount]
-              c must be(ChildrenCount(nbrUsedRoles, 5 * nbrUsedRoles))
+              c should be(ChildrenCount(nbrUsedRoles, 5 * nbrUsedRoles))
             }
 
             // after 5 restart attempts the children should be stopped
@@ -1096,7 +1091,7 @@ abstract class StressSpec
               supervisor ! GetChildrenCount
               val c = expectMsgType[ChildrenCount]
               // zero children
-              c must be(ChildrenCount(0, 6 * nbrUsedRoles))
+              c should be(ChildrenCount(0, 6 * nbrUsedRoles))
             }
             supervisor ! Reset
 
@@ -1118,9 +1113,9 @@ abstract class StressSpec
   def idleGossip(title: String): Unit = {
     createResultAggregator(title, expectedResults = nbrUsedRoles, includeInHistory = true)
     reportResult {
-      clusterView.members.size must be(nbrUsedRoles)
+      clusterView.members.size should be(nbrUsedRoles)
       Thread.sleep(idleGossipDuration.toMillis)
-      clusterView.members.size must be(nbrUsedRoles)
+      clusterView.members.size should be(nbrUsedRoles)
     }
     awaitClusterResult()
   }
@@ -1160,7 +1155,7 @@ abstract class StressSpec
     "start routers that are running while nodes are joining" taggedAs LongRunningTest in {
       runOn(roles.take(3): _*) {
         system.actorOf(Props(classOf[Master], settings, settings.workBatchInterval, false).withDeploy(Deploy.local),
-          name = "master-" + myself.name) ! Begin
+          name = masterName) ! Begin
       }
     }
 
@@ -1191,13 +1186,15 @@ abstract class StressSpec
     "end routers that are running while nodes are joining" taggedAs LongRunningTest in within(30.seconds) {
       if (exerciseActors) {
         runOn(roles.take(3): _*) {
-          val m = master
-          m must not be (None)
-          m.get.tell(End, testActor)
-          val workResult = awaitWorkResult
-          workResult.retryCount must be(0)
-          workResult.sendCount must be > (0L)
-          workResult.ackCount must be > (0L)
+          master match {
+            case Some(m) ⇒
+              m.tell(End, testActor)
+              val workResult = awaitWorkResult(m)
+              workResult.retryCount should be(0)
+              workResult.sendCount should be > (0L)
+              workResult.ackCount should be > (0L)
+            case None ⇒ fail("master not running")
+          }
         }
       }
       enterBarrier("after-" + step)
@@ -1256,7 +1253,7 @@ abstract class StressSpec
       if (exerciseActors) {
         runOn(roles.take(3): _*) {
           system.actorOf(Props(classOf[Master], settings, settings.workBatchInterval, false).withDeploy(Deploy.local),
-            name = "master-" + myself.name) ! Begin
+            name = masterName) ! Begin
         }
       }
       enterBarrier("after-" + step)
@@ -1297,12 +1294,14 @@ abstract class StressSpec
     "end routers that are running while nodes are removed" taggedAs LongRunningTest in within(30.seconds) {
       if (exerciseActors) {
         runOn(roles.take(3): _*) {
-          val m = master
-          m must not be (None)
-          m.get.tell(End, testActor)
-          val workResult = awaitWorkResult
-          workResult.sendCount must be > (0L)
-          workResult.ackCount must be > (0L)
+          master match {
+            case Some(m) ⇒
+              m.tell(End, testActor)
+              val workResult = awaitWorkResult(m)
+              workResult.sendCount should be > (0L)
+              workResult.ackCount should be > (0L)
+            case None ⇒ fail("master not running")
+          }
         }
       }
       enterBarrier("after-" + step)

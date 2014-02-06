@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.camel
@@ -59,17 +59,19 @@ trait Camel extends Extension with Activation {
  * @param config the config
  */
 class CamelSettings private[camel] (config: Config, dynamicAccess: DynamicAccess) {
+  import akka.util.Helpers.ConfigOps
+
   /**
    * Configured setting for how long the actor should wait for activation before it fails.
    */
-  final val ActivationTimeout: FiniteDuration = Duration(config.getMilliseconds("akka.camel.consumer.activation-timeout"), MILLISECONDS)
+  final val ActivationTimeout: FiniteDuration = config.getMillisDuration("akka.camel.consumer.activation-timeout")
 
   /**
    * Configured setting, when endpoint is out-capable (can produce responses) replyTimeout is the maximum time
    * the endpoint can take to send the response before the message exchange fails.
    * This setting is used for out-capable, in-only, manually acknowledged communication.
    */
-  final val ReplyTimeout: FiniteDuration = Duration(config.getMilliseconds("akka.camel.consumer.reply-timeout"), MILLISECONDS)
+  final val ReplyTimeout: FiniteDuration = config.getMillisDuration("akka.camel.consumer.reply-timeout")
 
   /**
    * Configured setting which determines whether one-way communications between an endpoint and this consumer actor

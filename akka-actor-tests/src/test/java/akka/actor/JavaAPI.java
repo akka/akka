@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor;
@@ -48,14 +48,18 @@ public class JavaAPI {
     ActorRef ref = system.actorOf(Props.create(JavaAPITestActor.class));
     assertNotNull(ref);
   }
-
-  @Test
-  public void mustBeAbleToCreateActorRefFromFactory() {
-    ActorRef ref = system.actorOf(Props.empty().withCreator(new Creator<Actor>() {
+  
+  public static Props mkProps() {
+    return Props.create(new Creator<Actor>() {
       public Actor create() {
         return new JavaAPITestActor();
       }
-    }));
+    });
+  }
+
+  @Test
+  public void mustBeAbleToCreateActorRefFromFactory() {
+    ActorRef ref = system.actorOf(mkProps());
     assertNotNull(ref);
   }
 

@@ -70,7 +70,7 @@ class ExampleProcessor extends UntypedEventsourcedProcessor {
         return state.size();
     }
 
-    public void onReceiveReplay(Object msg) {
+    public void onReceiveRecover(Object msg) {
         if (msg instanceof Evt) {
             state.update((Evt) msg);
         } else if (msg instanceof SnapshotOffer) {

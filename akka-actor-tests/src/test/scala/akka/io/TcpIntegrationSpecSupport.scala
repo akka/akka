@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.io
@@ -31,13 +31,13 @@ trait TcpIntegrationSpecSupport { _: AkkaSpec ⇒
       connectCommander.send(IO(Tcp), Connect(endpoint, options = connectOptions))
       val Connected(`endpoint`, localAddress) = connectCommander.expectMsgType[Connected]
       val clientHandler = TestProbe()
-      connectCommander.sender ! Register(clientHandler.ref)
+      connectCommander.sender() ! Register(clientHandler.ref)
 
       val Connected(`localAddress`, `endpoint`) = bindHandler.expectMsgType[Connected]
       val serverHandler = TestProbe()
-      bindHandler.sender ! Register(serverHandler.ref)
+      bindHandler.sender() ! Register(serverHandler.ref)
 
-      (clientHandler, connectCommander.sender, serverHandler, bindHandler.sender)
+      (clientHandler, connectCommander.sender(), serverHandler, bindHandler.sender())
     }
 
     @tailrec final def expectReceivedData(handler: TestProbe, remaining: Int): Unit =

@@ -1,16 +1,16 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
 
 import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import akka.actor.Address
 import scala.collection.immutable.SortedSet
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class GossipSpec extends WordSpec with MustMatchers {
+class GossipSpec extends WordSpec with Matchers {
 
   import MemberStatus._
 
@@ -29,7 +29,7 @@ class GossipSpec extends WordSpec with MustMatchers {
   "A Gossip" must {
 
     "reach convergence when it's empty" in {
-      Gossip.empty.convergence must be(true)
+      Gossip.empty.convergence should be(true)
     }
 
     "merge members by status priority" in {
@@ -37,12 +37,12 @@ class GossipSpec extends WordSpec with MustMatchers {
       val g2 = Gossip(members = SortedSet(a2, c2, e2))
 
       val merged1 = g1 merge g2
-      merged1.members must be(SortedSet(a2, c1, e1))
-      merged1.members.toSeq.map(_.status) must be(Seq(Up, Leaving, Up))
+      merged1.members should be(SortedSet(a2, c1, e1))
+      merged1.members.toSeq.map(_.status) should be(Seq(Up, Leaving, Up))
 
       val merged2 = g2 merge g1
-      merged2.members must be(SortedSet(a2, c1, e1))
-      merged2.members.toSeq.map(_.status) must be(Seq(Up, Leaving, Up))
+      merged2.members should be(SortedSet(a2, c1, e1))
+      merged2.members.toSeq.map(_.status) should be(Seq(Up, Leaving, Up))
 
     }
 
@@ -53,10 +53,10 @@ class GossipSpec extends WordSpec with MustMatchers {
       val g2 = Gossip(members = SortedSet(a1, b1, c1, d1), overview = GossipOverview(reachability = r2))
 
       val merged1 = g1 merge g2
-      merged1.overview.reachability.allUnreachable must be(Set(a1.uniqueAddress, c1.uniqueAddress, d1.uniqueAddress))
+      merged1.overview.reachability.allUnreachable should be(Set(a1.uniqueAddress, c1.uniqueAddress, d1.uniqueAddress))
 
       val merged2 = g2 merge g1
-      merged2.overview.reachability.allUnreachable must be(merged1.overview.reachability.allUnreachable)
+      merged2.overview.reachability.allUnreachable should be(merged1.overview.reachability.allUnreachable)
     }
 
     "merge members by removing removed members" in {
@@ -67,18 +67,18 @@ class GossipSpec extends WordSpec with MustMatchers {
       val g2 = Gossip(members = SortedSet(a1, b1, c3), overview = GossipOverview(reachability = r2))
 
       val merged1 = g1 merge g2
-      merged1.members must be(SortedSet(a1, b1))
-      merged1.overview.reachability.allUnreachable must be(Set(a1.uniqueAddress))
+      merged1.members should be(SortedSet(a1, b1))
+      merged1.overview.reachability.allUnreachable should be(Set(a1.uniqueAddress))
 
       val merged2 = g2 merge g1
-      merged2.overview.reachability.allUnreachable must be(merged1.overview.reachability.allUnreachable)
-      merged2.members must be(merged1.members)
+      merged2.overview.reachability.allUnreachable should be(merged1.overview.reachability.allUnreachable)
+      merged2.members should be(merged1.members)
     }
 
     "have leader as first member based on ordering, except Exiting status" in {
-      Gossip(members = SortedSet(c2, e2)).leader must be(Some(c2.uniqueAddress))
-      Gossip(members = SortedSet(c3, e2)).leader must be(Some(e2.uniqueAddress))
-      Gossip(members = SortedSet(c3)).leader must be(Some(c3.uniqueAddress))
+      Gossip(members = SortedSet(c2, e2)).leader should be(Some(c2.uniqueAddress))
+      Gossip(members = SortedSet(c3, e2)).leader should be(Some(e2.uniqueAddress))
+      Gossip(members = SortedSet(c3)).leader should be(Some(c3.uniqueAddress))
     }
 
     "merge seen table correctly" in {
@@ -89,13 +89,13 @@ class GossipSpec extends WordSpec with MustMatchers {
 
       def checkMerged(merged: Gossip) {
         val seen = merged.overview.seen.toSeq
-        seen.length must be(0)
+        seen.length should be(0)
 
-        merged seenByNode (a1.uniqueAddress) must be(false)
-        merged seenByNode (b1.uniqueAddress) must be(false)
-        merged seenByNode (c1.uniqueAddress) must be(false)
-        merged seenByNode (d1.uniqueAddress) must be(false)
-        merged seenByNode (e1.uniqueAddress) must be(false)
+        merged seenByNode (a1.uniqueAddress) should be(false)
+        merged seenByNode (b1.uniqueAddress) should be(false)
+        merged seenByNode (c1.uniqueAddress) should be(false)
+        merged seenByNode (d1.uniqueAddress) should be(false)
+        merged seenByNode (e1.uniqueAddress) should be(false)
       }
 
       checkMerged(g3 merge g2)
@@ -106,12 +106,12 @@ class GossipSpec extends WordSpec with MustMatchers {
       // a2 and e1 is Joining
       val g1 = Gossip(members = SortedSet(a2, b1.copyUp(3), e1), overview = GossipOverview(reachability =
         Reachability.empty.unreachable(a2.uniqueAddress, e1.uniqueAddress)))
-      g1.youngestMember must be(b1)
+      g1.youngestMember should be(b1)
       val g2 = Gossip(members = SortedSet(a2, b1.copyUp(3), e1), overview = GossipOverview(reachability =
         Reachability.empty.unreachable(a2.uniqueAddress, b1.uniqueAddress).unreachable(a2.uniqueAddress, e1.uniqueAddress)))
-      g2.youngestMember must be(b1)
+      g2.youngestMember should be(b1)
       val g3 = Gossip(members = SortedSet(a2, b1.copyUp(3), e2.copyUp(4)))
-      g3.youngestMember must be(e2)
+      g3.youngestMember should be(e2)
     }
   }
 }

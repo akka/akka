@@ -1,10 +1,11 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.persistence
 
 import scala.collection.immutable.Seq
+import scala.concurrent.duration._
 
 import com.typesafe.config.Config
 
@@ -27,7 +28,7 @@ object EventsourcedSpec {
       case GetState ⇒ sender ! events.reverse
     }
 
-    def receiveReplay = updateState
+    def receiveRecover = updateState
   }
 
   class Behavior1Processor(name: String) extends ExampleProcessor(name) {
@@ -122,7 +123,7 @@ object EventsourcedSpec {
   }
 
   class SnapshottingEventsourcedProcessor(name: String, probe: ActorRef) extends ExampleProcessor(name) {
-    override def receiveReplay = super.receiveReplay orElse {
+    override def receiveRecover = super.receiveRecover orElse {
       case SnapshotOffer(_, events: List[_]) ⇒
         probe ! "offered"
         this.events = events
@@ -337,5 +338,5 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
   }
 }
 
-class LeveldbEventsourcedSpec extends EventsourcedSpec(PersistenceSpec.config("leveldb", "eventsourced"))
-class InmemEventsourcedSpec extends EventsourcedSpec(PersistenceSpec.config("inmem", "eventsourced"))
+class LeveldbEventsourcedSpec extends EventsourcedSpec(PersistenceSpec.config("leveldb", "LeveldbEventsourcedSpec"))
+class InmemEventsourcedSpec extends EventsourcedSpec(PersistenceSpec.config("inmem", "InmemEventsourcedSpec"))

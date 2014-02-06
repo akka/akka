@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.oldrouting
 
@@ -62,40 +62,40 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
     "be picked up from Props" in {
       val actor = system.actorOf(Props(new Actor {
         def receive = {
-          case "get" ⇒ sender ! context.props
+          case "get" ⇒ sender() ! context.props
         }
       }).withRouter(RoundRobinRouter(12)), "someOther")
-      routerConfig(actor) must be === RoundRobinRouter(12)
+      routerConfig(actor) should be(RoundRobinRouter(12))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "be overridable in config" in {
       val actor = system.actorOf(Props(new Actor {
         def receive = {
-          case "get" ⇒ sender ! context.props
+          case "get" ⇒ sender() ! context.props
         }
       }).withRouter(RoundRobinRouter(12)), "config")
-      routerConfig(actor) must be === RandomPool(4)
+      routerConfig(actor) should be(RandomPool(4))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "be overridable in explicit deployment" in {
       val actor = system.actorOf(Props(new Actor {
         def receive = {
-          case "get" ⇒ sender ! context.props
+          case "get" ⇒ sender() ! context.props
         }
       }).withRouter(FromConfig).withDeploy(Deploy(routerConfig = RoundRobinRouter(12))), "someOther")
-      routerConfig(actor) must be === RoundRobinRouter(12)
+      routerConfig(actor) should be(RoundRobinRouter(12))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "be overridable in config even with explicit deployment" in {
       val actor = system.actorOf(Props(new Actor {
         def receive = {
-          case "get" ⇒ sender ! context.props
+          case "get" ⇒ sender() ! context.props
         }
       }).withRouter(FromConfig).withDeploy(Deploy(routerConfig = RoundRobinRouter(12))), "config")
-      routerConfig(actor) must be === RandomPool(4)
+      routerConfig(actor) should be(RandomPool(4))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
@@ -112,7 +112,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
       }).withRouter(FromConfig), "weird")
       val recv = Set() ++ (for (_ ← 1 to 3) yield expectMsgType[ActorRef])
       val expc = Set('a', 'b', 'c') map (i ⇒ system.actorFor("/user/weird/$" + i))
-      recv must be(expc)
+      recv should be(expc)
       expectNoMsg(1 second)
     }
 
@@ -159,7 +159,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
       val actor = system.actorOf(Props(new Actor {
         lazy val id = counter.getAndIncrement()
         def receive = {
-          case "hit" ⇒ sender ! id
+          case "hit" ⇒ sender() ! id
           case "end" ⇒ doneLatch.countDown()
         }
       }).withRouter(RoundRobinRouter(connectionCount)), "round-robin")
@@ -171,12 +171,12 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
         }
       }
 
-      counter.get must be(connectionCount)
+      counter.get should be(connectionCount)
 
       actor ! Broadcast("end")
       Await.ready(doneLatch, 5 seconds)
 
-      replies.values foreach { _ must be(iterationCount) }
+      replies.values foreach { _ should be(iterationCount) }
     }
 
     "deliver a broadcast message using the !" in {
@@ -208,7 +208,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
 
       val actor = system.actorOf(Props(new Actor {
         def receive = {
-          case "hello" ⇒ sender ! "world"
+          case "hello" ⇒ sender() ! "world"
         }
 
         override def postStop() {
@@ -244,7 +244,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
       val actor = system.actorOf(Props(new Actor {
         lazy val id = counter.getAndIncrement()
         def receive = {
-          case "hit" ⇒ sender ! id
+          case "hit" ⇒ sender() ! id
           case "end" ⇒ doneLatch.countDown()
         }
       }).withRouter(RandomRouter(connectionCount)), "random")
@@ -256,13 +256,13 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
         }
       }
 
-      counter.get must be(connectionCount)
+      counter.get should be(connectionCount)
 
       actor ! Broadcast("end")
       Await.ready(doneLatch, 5 seconds)
 
-      replies.values foreach { _ must be > (0) }
-      replies.values.sum must be === iterationCount * connectionCount
+      replies.values foreach { _ should be > (0) }
+      replies.values.sum should be(iterationCount * connectionCount)
     }
 
     "deliver a broadcast message using the !" in {

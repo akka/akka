@@ -3,7 +3,7 @@ package akka.testkit
 import language.postfixOps
 
 import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
 import scala.concurrent.{ Future, Await }
@@ -20,8 +20,8 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout {
       val future = tk.ref ? "hello"
       tk.expectMsg(0 millis, "hello") // TestActor runs on CallingThreadDispatcher
       tk.lastMessage.sender ! "world"
-      future must be('completed)
-      Await.result(future, timeout.duration) must equal("world")
+      future should be('completed)
+      Await.result(future, timeout.duration) should be("world")
     }
 
     "reply to messages" in {
@@ -69,13 +69,13 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout {
 
     "be able to expect primitive types" in {
       for (_ ← 1 to 7) testActor ! 42
-      expectMsgType[Int] must be(42)
-      expectMsgAnyClassOf(classOf[Int]) must be(42)
-      expectMsgAllClassOf(classOf[Int]) must be(Seq(42))
-      expectMsgAllConformingOf(classOf[Int]) must be(Seq(42))
-      expectMsgAllConformingOf(5 seconds, classOf[Int]) must be(Seq(42))
-      expectMsgAllClassOf(classOf[Int]) must be(Seq(42))
-      expectMsgAllClassOf(5 seconds, classOf[Int]) must be(Seq(42))
+      expectMsgType[Int] should be(42)
+      expectMsgAnyClassOf(classOf[Int]) should be(42)
+      expectMsgAllClassOf(classOf[Int]) should be(Seq(42))
+      expectMsgAllConformingOf(classOf[Int]) should be(Seq(42))
+      expectMsgAllConformingOf(5 seconds, classOf[Int]) should be(Seq(42))
+      expectMsgAllClassOf(classOf[Int]) should be(Seq(42))
+      expectMsgAllClassOf(5 seconds, classOf[Int]) should be(Seq(42))
     }
 
     "be able to ignore primitive types" in {

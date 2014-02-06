@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -8,6 +8,7 @@ import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.util.Timeout
 import scala.collection.immutable
+import akka.util.Helpers.ConfigOps
 import akka.util.Helpers.Requiring
 import akka.japi.Util._
 import akka.actor.Props
@@ -36,7 +37,7 @@ final class RemoteSettings(val config: Config) {
     }
   }
 
-  @deprecated("Use the RemoteLifecycleEventsLogLevel field instead.")
+  @deprecated("Use the RemoteLifecycleEventsLogLevel field instead.", "2.3")
   def LogRemoteLifecycleEvents: Boolean = RemoteLifecycleEventsLogLevel >= Logging.ErrorLevel
 
   val Dispatcher: String = getString("akka.remote.use-dispatcher")
@@ -44,71 +45,58 @@ final class RemoteSettings(val config: Config) {
   def configureDispatcher(props: Props): Props = if (Dispatcher.isEmpty) props else props.withDispatcher(Dispatcher)
 
   val ShutdownTimeout: Timeout = {
-    Timeout(Duration(getMilliseconds("akka.remote.shutdown-timeout"), MILLISECONDS))
+    Timeout(config.getMillisDuration("akka.remote.shutdown-timeout"))
   } requiring (_.duration > Duration.Zero, "shutdown-timeout must be > 0")
 
   val FlushWait: FiniteDuration = {
-    Duration(getMilliseconds("akka.remote.flush-wait-on-shutdown"), MILLISECONDS)
+    config.getMillisDuration("akka.remote.flush-wait-on-shutdown")
   } requiring (_ > Duration.Zero, "flush-wait-on-shutdown must be > 0")
 
   val StartupTimeout: Timeout = {
-    Timeout(Duration(getMilliseconds("akka.remote.startup-timeout"), MILLISECONDS))
+    Timeout(config.getMillisDuration("akka.remote.startup-timeout"))
   } requiring (_.duration > Duration.Zero, "startup-timeout must be > 0")
 
   val RetryGateClosedFor: FiniteDuration = {
-    Duration(getMilliseconds("akka.remote.retry-gate-closed-for"), MILLISECONDS)
+    config.getMillisDuration("akka.remote.retry-gate-closed-for")
   } requiring (_ >= Duration.Zero, "retry-gate-closed-for must be >= 0")
-
-  val UnknownAddressGateClosedFor: FiniteDuration = {
-    Duration(getMilliseconds("akka.remote.gate-invalid-addresses-for"), MILLISECONDS)
-  } requiring (_ > Duration.Zero, "gate-invalid-addresses-for must be > 0")
 
   val UsePassiveConnections: Boolean = getBoolean("akka.remote.use-passive-connections")
 
-  val MaximumRetriesInWindow: Int = {
-    getInt("akka.remote.maximum-retries-in-window")
-  } requiring (_ > 0, "maximum-retries-in-window must be > 0")
-
-  val RetryWindow: FiniteDuration = {
-    Duration(getMilliseconds("akka.remote.retry-window"), MILLISECONDS)
-  } requiring (_ > Duration.Zero, "retry-window must be > 0")
-
   val BackoffPeriod: FiniteDuration = {
-    Duration(getMilliseconds("akka.remote.backoff-interval"), MILLISECONDS)
+    config.getMillisDuration("akka.remote.backoff-interval")
   } requiring (_ > Duration.Zero, "backoff-interval must be > 0")
 
   val SysMsgAckTimeout: FiniteDuration = {
-    Duration(getMilliseconds("akka.remote.system-message-ack-piggyback-timeout"), MILLISECONDS)
+    config.getMillisDuration("akka.remote.system-message-ack-piggyback-timeout")
   } requiring (_ > Duration.Zero, "system-message-ack-piggyback-timeout must be > 0")
 
   val SysResendTimeout: FiniteDuration = {
-    Duration(getMilliseconds("akka.remote.resend-interval"), MILLISECONDS)
+    config.getMillisDuration("akka.remote.resend-interval")
   } requiring (_ > Duration.Zero, "resend-interval must be > 0")
 
   val SysMsgBufferSize: Int = {
     getInt("akka.remote.system-message-buffer-size")
   } requiring (_ > 0, "system-message-buffer-size must be > 0")
 
-  val QuarantineDuration: Duration = {
-    if (getString("akka.remote.quarantine-systems-for") == "off") Duration.Undefined
-    else Duration(getMilliseconds("akka.remote.quarantine-systems-for"), MILLISECONDS).requiring(_ > Duration.Zero,
-      "quarantine-systems-for must be > 0 or off")
+  val QuarantineDuration: FiniteDuration = {
+    config.getMillisDuration("akka.remote.prune-quarantine-marker-after").requiring(_ > Duration.Zero,
+      "prune-quarantine-marker-after must be > 0 ms")
   }
 
   val CommandAckTimeout: Timeout = {
-    Timeout(Duration(getMilliseconds("akka.remote.command-ack-timeout"), MILLISECONDS))
+    Timeout(config.getMillisDuration("akka.remote.command-ack-timeout"))
   } requiring (_.duration > Duration.Zero, "command-ack-timeout must be > 0")
 
   val WatchFailureDetectorConfig: Config = getConfig("akka.remote.watch-failure-detector")
   val WatchFailureDetectorImplementationClass: String = WatchFailureDetectorConfig.getString("implementation-class")
   val WatchHeartBeatInterval: FiniteDuration = {
-    Duration(WatchFailureDetectorConfig.getMilliseconds("heartbeat-interval"), MILLISECONDS)
+    WatchFailureDetectorConfig.getMillisDuration("heartbeat-interval")
   } requiring (_ > Duration.Zero, "watch-failure-detector.heartbeat-interval must be > 0")
   val WatchUnreachableReaperInterval: FiniteDuration = {
-    Duration(WatchFailureDetectorConfig.getMilliseconds("unreachable-nodes-reaper-interval"), MILLISECONDS)
+    WatchFailureDetectorConfig.getMillisDuration("unreachable-nodes-reaper-interval")
   } requiring (_ > Duration.Zero, "watch-failure-detector.unreachable-nodes-reaper-interval must be > 0")
   val WatchHeartbeatExpectedResponseAfter: FiniteDuration = {
-    Duration(WatchFailureDetectorConfig.getMilliseconds("expected-response-after"), MILLISECONDS)
+    WatchFailureDetectorConfig.getMillisDuration("expected-response-after")
   } requiring (_ > Duration.Zero, "watch-failure-detector.expected-response-after > 0")
 
   val Transports: immutable.Seq[(String, immutable.Seq[String], Config)] = transportNames.map { name ⇒

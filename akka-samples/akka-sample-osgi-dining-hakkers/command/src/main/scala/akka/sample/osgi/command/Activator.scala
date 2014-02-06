@@ -32,7 +32,7 @@ class Activator extends BundleActivator {
   }
 
   def startHakker(service: DiningHakkersService, name: String) {
-    hakker = Some(service.getHakker(name, (math.floor(math.random * 5)).toInt))
+    hakker = Some(service.getHakker(name, 4))
   }
 
   def stop(context: BundleContext) {

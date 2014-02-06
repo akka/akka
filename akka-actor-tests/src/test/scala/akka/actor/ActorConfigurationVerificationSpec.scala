@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
@@ -23,7 +23,7 @@ object ActorConfigurationVerificationSpec {
 
   val config = """
     balancing-dispatcher {
-      type = BalancingDispatcher
+      type = "akka.dispatch.BalancingDispatcherConfigurator"
       throughput = 1
     }
     pinned-dispatcher {

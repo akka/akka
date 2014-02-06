@@ -52,7 +52,7 @@ class FailureDetectorRegistrySpec extends AkkaSpec("akka.loglevel = INFO") {
     fd.heartbeat("resource1")
     fd.heartbeat("resource1")
 
-    fd.isAvailable("resource1") must be(true)
+    fd.isAvailable("resource1") should be(true)
   }
 
   "mark node as dead if heartbeat are missed" in {
@@ -63,9 +63,9 @@ class FailureDetectorRegistrySpec extends AkkaSpec("akka.loglevel = INFO") {
     fd.heartbeat("resource1") //1000
     fd.heartbeat("resource1") //1100
 
-    fd.isAvailable("resource1") must be(true) //1200
+    fd.isAvailable("resource1") should be(true) //1200
     fd.heartbeat("resource2") //5200, but unrelated resource
-    fd.isAvailable("resource1") must be(false) //8200
+    fd.isAvailable("resource1") should be(false) //8200
   }
 
   "accept some configured missing heartbeats" in {
@@ -76,9 +76,9 @@ class FailureDetectorRegistrySpec extends AkkaSpec("akka.loglevel = INFO") {
     fd.heartbeat("resource1")
     fd.heartbeat("resource1")
     fd.heartbeat("resource1")
-    fd.isAvailable("resource1") must be(true)
+    fd.isAvailable("resource1") should be(true)
     fd.heartbeat("resource1")
-    fd.isAvailable("resource1") must be(true)
+    fd.isAvailable("resource1") should be(true)
   }
 
   "fail after configured acceptable missing heartbeats" in {
@@ -91,9 +91,9 @@ class FailureDetectorRegistrySpec extends AkkaSpec("akka.loglevel = INFO") {
     fd.heartbeat("resource1")
     fd.heartbeat("resource1")
     fd.heartbeat("resource1")
-    fd.isAvailable("resource1") must be(true)
+    fd.isAvailable("resource1") should be(true)
     fd.heartbeat("resource1")
-    fd.isAvailable("resource1") must be(false)
+    fd.isAvailable("resource1") should be(false)
   }
 
   "mark node as available after explicit removal of connection" in {
@@ -103,37 +103,37 @@ class FailureDetectorRegistrySpec extends AkkaSpec("akka.loglevel = INFO") {
     fd.heartbeat("resource1")
     fd.heartbeat("resource1")
     fd.heartbeat("resource1")
-    fd.isAvailable("resource1") must be(true)
+    fd.isAvailable("resource1") should be(true)
     fd.remove("resource1")
 
-    fd.isAvailable("resource1") must be(true)
+    fd.isAvailable("resource1") should be(true)
   }
 
   "mark node as available after explicit removal of connection and receiving heartbeat again" in {
     val timeInterval = List[Long](0, 1000, 100, 1100, 1100, 1100, 1100, 1100, 100)
     val fd = createFailureDetectorRegistry(clock = fakeTimeGenerator(timeInterval))
-    fd.isMonitoring("resource1") must be(false)
+    fd.isMonitoring("resource1") should be(false)
 
     fd.heartbeat("resource1") //0
 
     fd.heartbeat("resource1") //1000
     fd.heartbeat("resource1") //1100
 
-    fd.isAvailable("resource1") must be(true) //2200
-    fd.isMonitoring("resource1") must be(true)
+    fd.isAvailable("resource1") should be(true) //2200
+    fd.isMonitoring("resource1") should be(true)
 
     fd.remove("resource1")
 
-    fd.isMonitoring("resource1") must be(false)
-    fd.isAvailable("resource1") must be(true) //3300
+    fd.isMonitoring("resource1") should be(false)
+    fd.isAvailable("resource1") should be(true) //3300
 
     // it receives heartbeat from an explicitly removed node
     fd.heartbeat("resource1") //4400
     fd.heartbeat("resource1") //5500
     fd.heartbeat("resource1") //6600
 
-    fd.isAvailable("resource1") must be(true) //6700
-    fd.isMonitoring("resource1") must be(true)
+    fd.isAvailable("resource1") should be(true) //6700
+    fd.isMonitoring("resource1") should be(true)
   }
 
 }

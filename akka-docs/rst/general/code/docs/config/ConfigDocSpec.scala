@@ -1,10 +1,10 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.config
 
 import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import akka.testkit.TestKit
 
 //#imports
@@ -12,7 +12,7 @@ import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 //#imports
 
-class ConfigDocSpec extends WordSpec with MustMatchers {
+class ConfigDocSpec extends WordSpec with Matchers {
 
   "programmatically configure ActorSystem" in {
     //#custom-config

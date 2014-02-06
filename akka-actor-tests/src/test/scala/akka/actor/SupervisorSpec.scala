@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -36,13 +36,13 @@ object SupervisorSpec {
     def receive = {
       case Ping ⇒
         sendTo ! PingMessage
-        if (sender != sendTo)
-          sender ! PongMessage
+        if (sender() != sendTo)
+          sender() ! PongMessage
       case Die ⇒
         throw new RuntimeException(ExceptionMessage)
       case DieReply ⇒
         val e = new RuntimeException(ExceptionMessage)
-        sender ! Status.Failure(e)
+        sender() ! Status.Failure(e)
         throw e
     }
 
@@ -139,7 +139,7 @@ class SupervisorSpec extends AkkaSpec("akka.actor.serialize-messages = off") wit
   }
 
   def ping(pingPongActor: ActorRef) = {
-    Await.result(pingPongActor.?(Ping)(DilatedTimeout), DilatedTimeout) must be === PongMessage
+    Await.result(pingPongActor.?(Ping)(DilatedTimeout), DilatedTimeout) should be(PongMessage)
     expectMsg(Timeout, PingMessage)
   }
 
@@ -172,7 +172,7 @@ class SupervisorSpec extends AkkaSpec("akka.actor.serialize-messages = off") wit
         override def postStop() { postStops += 1; testActor ! ("postStop" + postStops) }
         def receive = {
           case "crash" ⇒ { testActor ! "crashed"; throw new RuntimeException("Expected") }
-          case "ping"  ⇒ sender ! "pong"
+          case "ping"  ⇒ sender() ! "pong"
         }
       }
       val master = system.actorOf(Props(new Actor {
@@ -349,10 +349,10 @@ class SupervisorSpec extends AkkaSpec("akka.actor.serialize-messages = off") wit
         }
 
         def receive = {
-          case Ping ⇒ sender ! PongMessage
+          case Ping ⇒ sender() ! PongMessage
           case DieReply ⇒
             val e = new RuntimeException("Expected")
-            sender ! Status.Failure(e)
+            sender() ! Status.Failure(e)
             throw e
         }
       })
@@ -371,7 +371,7 @@ class SupervisorSpec extends AkkaSpec("akka.actor.serialize-messages = off") wit
       dyingActor ! Ping
       expectMsg(PongMessage)
 
-      inits.get must be(3)
+      inits.get should be(3)
 
       system.stop(supervisor)
     }
@@ -386,7 +386,7 @@ class SupervisorSpec extends AkkaSpec("akka.actor.serialize-messages = off") wit
           override def postRestart(reason: Throwable): Unit = testActor ! "child restarted"
           def receive = {
             case l: TestLatch ⇒ { Await.ready(l, 5 seconds); throw new IllegalStateException("OHNOES") }
-            case "test"       ⇒ sender ! "child green"
+            case "test"       ⇒ sender() ! "child green"
           }
         }), "child"))
 
@@ -401,9 +401,9 @@ class SupervisorSpec extends AkkaSpec("akka.actor.serialize-messages = off") wit
         def receive = {
           case Terminated(a) if a.path == child.path ⇒ testActor ! "child terminated"
           case l: TestLatch                          ⇒ child ! l
-          case "test"                                ⇒ sender ! "green"
+          case "test"                                ⇒ sender() ! "green"
           case "testchild"                           ⇒ child forward "test"
-          case "testchildAndAck"                     ⇒ child forward "test"; sender ! "ack"
+          case "testchildAndAck"                     ⇒ child forward "test"; sender() ! "ack"
         }
       }))
 

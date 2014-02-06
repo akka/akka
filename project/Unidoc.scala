@@ -11,15 +11,14 @@ object Unidoc {
   lazy val GenJavaDocEnabled = Option(sys.props("akka.genjavadoc.enabled")) filter (_.toLowerCase == "true") map (_ => true) getOrElse false
 
   lazy val javadocSettings =
-    inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
-      packageDoc in Compile <<= packageDoc in JavaDoc,
-      sources in JavaDoc <<= (target, compile in Compile, sources in Compile) map ((t, c, s) =>
-        if (GenJavaDocEnabled) (t / "java" ** "*.java").get ++ s.filter(_.getName.endsWith(".java"))
-        else throw new RuntimeException("cannot build java docs without -Dakka.genjavadoc.enabled=true")
-      ),
-      javacOptions in JavaDoc := Seq(),
-      artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar")
-    ) ++ (if (GenJavaDocEnabled) Seq(
+    inConfig(JavaDoc)(Defaults.configSettings) ++
+      (if (GenJavaDocEnabled) Seq(
+        packageDoc in Compile <<= packageDoc in JavaDoc,
+        sources in JavaDoc <<= (target, compile in Compile, sources in Compile) map ((t, c, s) =>
+          (t / "java" ** "*.java").get ++ s.filter(_.getName.endsWith(".java"))
+        ),
+        javacOptions in JavaDoc := Seq(),
+        artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar"),
         libraryDependencies += Dependencies.Compile.genjavadoc,
         scalacOptions <+= target map (t => "-P:genjavadoc:out=" + (t / "java"))
       ) else Nil)
@@ -69,10 +68,11 @@ object Unidoc {
   }
 
   def sunidocTask: Initialize[Task[File]] = {
-    (compilers, cacheDirectory, unidocSources, unidocClasspath, unidocDirectory, scalacOptions in doc, streams) map {
-      (compilers, cache, sources, classpath, target, options, s) => {
+    (compilers, cacheDirectory, unidocSources, unidocClasspath, unidocDirectory, scalacOptions in doc, apiMappings in (Compile, doc), streams) map {
+      (compilers, cache, sources, classpath, target, options, api, s) => {
         val scaladoc = new Scaladoc(100, compilers.scalac)
-        scaladoc.cached(cache / "unidoc", "main", sources, classpath, target, options, s.log)
+        val opts1 = options ++ Opts.doc.externalAPI(api)
+        scaladoc.cached(cache / "unidoc", "main", sources, classpath, target, opts1, s.log)
         target
       }
     }

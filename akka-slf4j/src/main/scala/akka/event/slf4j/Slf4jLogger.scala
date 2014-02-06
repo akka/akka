@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.event.slf4j
@@ -78,7 +78,7 @@ class Slf4jLogger extends Actor with SLF4JLogging {
 
     case InitializeLogger(_) ⇒
       log.info("Slf4jLogger started")
-      sender ! LoggerInitialized
+      sender() ! LoggerInitialized
   }
 
   @inline

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -126,7 +126,7 @@ case class AckedSendBuffer[T <: HasSequenceNumber](
 
 /**
  * Implements an immutable receive buffer that buffers incoming messages until they can be safely delivered. This
- * buffer works together with a [[akka.remote.AckedSendBuffer]] on the sender side.
+ * buffer works together with a [[akka.remote.AckedSendBuffer]] on the sender() side.
  *
  * @param lastDelivered Sequence number of the last message that has been delivered.
  * @param cumulativeAck The highest sequence number received so far.
@@ -151,7 +151,7 @@ case class AckedReceiveBuffer[T <: HasSequenceNumber](
   }
 
   /**
-   * Extract all messages that could be safely delivered, an updated ack to be sent to the sender, and an updated
+   * Extract all messages that could be safely delivered, an updated ack to be sent to the sender(), and an updated
    * buffer that has the messages removed that can be delivered.
    * @return Triplet of the updated buffer, messages that can be delivered and the updated acknowledgement.
    */

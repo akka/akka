@@ -1,13 +1,14 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka
 
 import scala.collection.immutable
-import java.net.{ SocketAddress, ServerSocket, DatagramSocket, InetSocketAddress }
+import scala.concurrent.duration.Duration
+import java.net.{ SocketAddress, InetSocketAddress }
 import java.nio.channels.{ DatagramChannel, ServerSocketChannel }
-import akka.actor.{ Terminated, ActorSystem, ActorRef }
+import akka.actor.{ ActorSystem, ActorRef }
 import akka.testkit.TestProbe
 
 object TestUtils {
@@ -33,10 +34,10 @@ object TestUtils {
     } collect { case (socket, address) ⇒ socket.close(); address }
   }
 
-  def verifyActorTermination(actor: ActorRef)(implicit system: ActorSystem): Unit = {
+  def verifyActorTermination(actor: ActorRef, max: Duration = Duration.Undefined)(implicit system: ActorSystem): Unit = {
     val watcher = TestProbe()
     watcher.watch(actor)
-    watcher.expectTerminated(actor)
+    watcher.expectTerminated(actor, max)
   }
 
 }

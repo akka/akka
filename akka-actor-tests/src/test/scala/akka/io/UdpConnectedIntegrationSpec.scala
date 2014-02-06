@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.io
 
@@ -20,14 +20,14 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
     val commander = TestProbe()
     commander.send(IO(Udp), Udp.Bind(handler, address))
     commander.expectMsg(Udp.Bound(address))
-    commander.sender
+    commander.sender()
   }
 
   def connectUdp(localAddress: Option[InetSocketAddress], remoteAddress: InetSocketAddress, handler: ActorRef): ActorRef = {
     val commander = TestProbe()
     commander.send(IO(UdpConnected), UdpConnected.Connect(handler, remoteAddress, localAddress, Nil))
     commander.expectMsg(UdpConnected.Connected)
-    commander.sender
+    commander.sender()
   }
 
   "The UDP connection oriented implementation" must {
@@ -41,13 +41,13 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
 
       val clientAddress = expectMsgPF() {
         case Udp.Received(d, a) ⇒
-          d must be === data1
+          d should be(data1)
           a
       }
 
       server ! Udp.Send(data2, clientAddress)
 
-      expectMsgType[UdpConnected.Received].data must be === data2
+      expectMsgType[UdpConnected.Received].data should be(data2)
     }
 
     "be able to send and receive with binding" in {
@@ -60,13 +60,13 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
 
       expectMsgPF() {
         case Udp.Received(d, a) ⇒
-          d must be === data1
-          a must be === clientAddress
+          d should be(data1)
+          a should be(clientAddress)
       }
 
       server ! Udp.Send(data2, clientAddress)
 
-      expectMsgType[UdpConnected.Received].data must be === data2
+      expectMsgType[UdpConnected.Received].data should be(data2)
     }
 
   }

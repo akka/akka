@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -120,7 +120,7 @@ abstract class UntypedActor extends Actor {
    * always a legal destination to send to, even if there is no logical recipient
    * for the reply, in which case it will be sent to the dead letter mailbox.
    */
-  def getSender(): ActorRef = sender
+  def getSender(): ActorRef = sender()
 
   /**
    * User overridable definition the strategy to use for supervising

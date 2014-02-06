@@ -1,12 +1,12 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
 import language.postfixOps
 
 import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.actor.Actor._
@@ -25,7 +25,7 @@ class SupervisorTreeSpec extends AkkaSpec("akka.actor.serialize-messages = off")
           val p = Props(new Actor {
             override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = 1 second)(List(classOf[Exception]))
             def receive = {
-              case p: Props ⇒ sender ! context.actorOf(p)
+              case p: Props ⇒ sender() ! context.actorOf(p)
             }
             override def preRestart(cause: Throwable, msg: Option[Any]) { testActor ! self.path }
           })

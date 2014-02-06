@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -135,7 +135,7 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
 
   ("-") must {
     if (cipherConfig.runTest) {
-      val ignoreMe = other.actorOf(Props(new Actor { def receive = { case ("ping", x) ⇒ sender ! ((("pong", x), sender)) } }), "echo")
+      val ignoreMe = other.actorOf(Props(new Actor { def receive = { case ("ping", x) ⇒ sender() ! ((("pong", x), sender())) } }), "echo")
       val otherAddress = other.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.defaultAddress
 
       "support tell" in {
@@ -156,12 +156,12 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
         }
 
         val f = for (i ← 1 to 1000) yield here ? (("ping", i)) mapTo classTag[((String, Int), ActorRef)]
-        Await.result(Future.sequence(f), timeout.duration).map(_._1._1).toSet must be(Set("pong"))
+        Await.result(Future.sequence(f), timeout.duration).map(_._1._1).toSet should be(Set("pong"))
       }
 
     } else {
-      "not be run when the cipher is not supported by the platform this test is currently being executed on" ignore {
-
+      "not be run when the cipher is not supported by the platform this test is currently being executed on" in {
+        pending
       }
     }
 

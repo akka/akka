@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.transactor
@@ -130,9 +130,9 @@ class FickleFriendsSpec extends AkkaSpec with BeforeAndAfterAll {
       val latch = new CountDownLatch(1)
       coordinator ! FriendlyIncrement(counters, timeout, latch)
       latch.await // this could take a while
-      Await.result(coordinator ? GetCount, timeout.duration) must be === 1
+      Await.result(coordinator ? GetCount, timeout.duration) should be(1)
       for (counter ← counters) {
-        Await.result(counter ? GetCount, timeout.duration) must be === 1
+        Await.result(counter ? GetCount, timeout.duration) should be(1)
       }
       counters foreach (system.stop(_))
       system.stop(coordinator)

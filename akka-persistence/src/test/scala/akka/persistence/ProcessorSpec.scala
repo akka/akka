@@ -1,9 +1,10 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.persistence
 
+import scala.concurrent.duration._
 import scala.collection.immutable.Seq
 
 import com.typesafe.config._
@@ -225,7 +226,7 @@ abstract class ProcessorSpec(config: Config) extends AkkaSpec(config) with Persi
     "derive outbound messages from the current message" in {
       val processor = namedProcessor[OutboundMessageTestProcessor]
       processor ! Persistent("c")
-      1 to 3 foreach { _ ⇒ expectMsgPF() { case Persistent(payload, snr) ⇒ payload must be(snr) } }
+      1 to 3 foreach { _ ⇒ expectMsgPF() { case Persistent(payload, snr) ⇒ payload should be(snr) } }
     }
     "support recovery with upper sequence number bound" in {
       val processor = namedProcessor[RecoverOffTestProcessor]
@@ -303,14 +304,14 @@ abstract class ProcessorSpec(config: Config) extends AkkaSpec(config) with Persi
     "support single message deletions" in {
       val deleteProbe = TestProbe()
 
-      system.eventStream.subscribe(deleteProbe.ref, classOf[Delete])
+      system.eventStream.subscribe(deleteProbe.ref, classOf[DeleteMessages])
 
       val processor1 = namedProcessor[DeleteMessageTestProcessor]
       processor1 ! Persistent("c")
       processor1 ! Persistent("d")
       processor1 ! Persistent("e")
       processor1 ! Delete1(4)
-      deleteProbe.expectMsgType[Delete]
+      deleteProbe.expectMsgType[DeleteMessages]
 
       val processor2 = namedProcessor[DeleteMessageTestProcessor]
       processor2 ! GetState
@@ -320,19 +321,29 @@ abstract class ProcessorSpec(config: Config) extends AkkaSpec(config) with Persi
     "support bulk message deletions" in {
       val deleteProbe = TestProbe()
 
-      system.eventStream.subscribe(deleteProbe.ref, classOf[Delete])
+      system.eventStream.subscribe(deleteProbe.ref, classOf[DeleteMessagesTo])
 
       val processor1 = namedProcessor[DeleteMessageTestProcessor]
       processor1 ! Persistent("c")
       processor1 ! Persistent("d")
       processor1 ! Persistent("e")
       processor1 ! DeleteN(4)
-      deleteProbe.expectMsgType[Delete]
+      deleteProbe.expectMsgType[DeleteMessagesTo]
 
       val processor2 = namedProcessor[DeleteMessageTestProcessor]
       processor2 ! GetState
 
       expectMsg(List("e-5"))
+
+      processor2 ! Persistent("f")
+      processor2 ! Persistent("g")
+      processor2 ! DeleteN(6)
+      deleteProbe.expectMsgType[DeleteMessagesTo]
+
+      val processor3 = namedProcessor[DeleteMessageTestProcessor]
+      processor3 ! GetState
+
+      expectMsg(List("g-7"))
     }
   }
 
@@ -346,5 +357,5 @@ abstract class ProcessorSpec(config: Config) extends AkkaSpec(config) with Persi
   }
 }
 
-class LeveldbProcessorSpec extends ProcessorSpec(PersistenceSpec.config("leveldb", "processor"))
-class InmemProcessorSpec extends ProcessorSpec(PersistenceSpec.config("inmem", "processor"))
+class LeveldbProcessorSpec extends ProcessorSpec(PersistenceSpec.config("leveldb", "LeveldbProcessorSpec"))
+class InmemProcessorSpec extends ProcessorSpec(PersistenceSpec.config("inmem", "InmemProcessorSpec"))

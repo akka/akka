@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.io
@@ -44,6 +44,8 @@ private[io] class TcpListener(selectorRouter: ActorRef,
   val channel = ServerSocketChannel.open
   channel.configureBlocking(false)
 
+  var acceptLimit = if (bind.pullMode) 0 else BatchAcceptLimit
+
   val localAddress =
     try {
       val socket = channel.socket
@@ -53,7 +55,7 @@ private[io] class TcpListener(selectorRouter: ActorRef,
         case isa: InetSocketAddress ⇒ isa
         case x                      ⇒ throw new IllegalArgumentException(s"bound to unknown SocketAddress [$x]")
       }
-      channelRegistry.register(channel, SelectionKey.OP_ACCEPT)
+      channelRegistry.register(channel, if (bind.pullMode) 0 else SelectionKey.OP_ACCEPT)
       log.debug("Successfully bound to {}", ret)
       ret
     } catch {
@@ -73,7 +75,12 @@ private[io] class TcpListener(selectorRouter: ActorRef,
 
   def bound(registration: ChannelRegistration): Receive = {
     case ChannelAcceptable ⇒
-      acceptAllPending(registration, BatchAcceptLimit)
+      acceptLimit = acceptAllPending(registration, acceptLimit)
+      if (acceptLimit > 0) registration.enableInterest(SelectionKey.OP_ACCEPT)
+
+    case ResumeAccepting(batchSize) ⇒
+      acceptLimit = batchSize
+      registration.enableInterest(SelectionKey.OP_ACCEPT)
 
     case FailedRegisterIncoming(socketChannel) ⇒
       log.warning("Could not register incoming connection since selector capacity limit is reached, closing connection")
@@ -85,12 +92,12 @@ private[io] class TcpListener(selectorRouter: ActorRef,
     case Unbind ⇒
       log.debug("Unbinding endpoint {}", localAddress)
       channel.close()
-      sender ! Unbound
+      sender() ! Unbound
       log.debug("Unbound endpoint {}, stopping listener", localAddress)
       context.stop(self)
   }
 
-  @tailrec final def acceptAllPending(registration: ChannelRegistration, limit: Int): Unit = {
+  @tailrec final def acceptAllPending(registration: ChannelRegistration, limit: Int): Int = {
     val socketChannel =
       if (limit > 0) {
         try channel.accept()
@@ -102,10 +109,10 @@ private[io] class TcpListener(selectorRouter: ActorRef,
       log.debug("New connection accepted")
       socketChannel.configureBlocking(false)
       def props(registry: ChannelRegistry) =
-        Props(classOf[TcpIncomingConnection], tcp, socketChannel, registry, bind.handler, bind.options)
+        Props(classOf[TcpIncomingConnection], tcp, socketChannel, registry, bind.handler, bind.options, bind.pullMode)
       selectorRouter ! WorkerForCommand(RegisterIncoming(socketChannel), self, props)
       acceptAllPending(registration, limit - 1)
-    } else registration.enableInterest(SelectionKey.OP_ACCEPT)
+    } else if (bind.pullMode) limit else BatchAcceptLimit
   }
 
   override def postStop() {

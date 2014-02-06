@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -9,6 +9,7 @@ import scala.concurrent.duration._
 import akka.pattern.ask
 import scala.concurrent.Await
 import akka.util.Timeout
+import akka.util.Helpers.ConfigOps
 import scala.collection.immutable.TreeSet
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
@@ -89,7 +90,7 @@ object ActorDSL extends dsl.Inbox with dsl.Creators {
 
     val boss = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(
       new Actor {
-        def receive = { case any ⇒ sender ! any }
+        def receive = { case any ⇒ sender() ! any }
       }), "dsl").asInstanceOf[RepointableActorRef]
 
     {
@@ -100,7 +101,7 @@ object ActorDSL extends dsl.Inbox with dsl.Creators {
 
     lazy val config = system.settings.config.getConfig("akka.actor.dsl")
 
-    val DSLDefaultTimeout = Duration(config.getMilliseconds("default-timeout"), TimeUnit.MILLISECONDS)
+    val DSLDefaultTimeout = config.getMillisDuration("default-timeout")
 
     def mkChild(p: Props, name: String) = boss.underlying.asInstanceOf[ActorCell].attachChild(p, name, systemService = true)
   }

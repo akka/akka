@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote.serialization
@@ -32,7 +32,7 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec {
   "Serialization" must {
 
     "resolve DaemonMsgCreateSerializer" in {
-      ser.serializerFor(classOf[DaemonMsgCreate]).getClass must be(classOf[DaemonMsgCreateSerializer])
+      ser.serializerFor(classOf[DaemonMsgCreate]).getClass should be(classOf[DaemonMsgCreateSerializer])
     }
 
     "serialize and de-serialize DaemonMsgCreate with FromClassCreator" in {
@@ -48,7 +48,7 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec {
     "serialize and de-serialize DaemonMsgCreate with function creator" in {
       verifySerialization {
         DaemonMsgCreate(
-          props = Props.empty.withCreator(new MyActor),
+          props = Props(new MyActor),
           deploy = Deploy(),
           path = "foo",
           supervisor = supervisor)

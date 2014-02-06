@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.routing
 
@@ -18,6 +18,7 @@ import akka.dispatch.ExecutionContexts
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
 import akka.util.Timeout
+import akka.util.Helpers.ConfigOps
 import java.util.concurrent.TimeUnit
 import akka.actor.ActorSystem
 
@@ -102,7 +103,7 @@ final case class ScatterGatherFirstCompletedPool(
   def this(config: Config) =
     this(
       nrOfInstances = config.getInt("nr-of-instances"),
-      within = Duration(config.getMilliseconds("within"), TimeUnit.MILLISECONDS),
+      within = config.getMillisDuration("within"),
       resizer = DefaultResizer.fromConfig(config),
       usePoolDispatcher = config.hasPath("pool-dispatcher"))
 
@@ -167,7 +168,7 @@ final case class ScatterGatherFirstCompletedGroup(
   def this(config: Config) =
     this(
       paths = immutableSeq(config.getStringList("routees.paths")),
-      within = Duration(config.getMilliseconds("within"), TimeUnit.MILLISECONDS))
+      within = config.getMillisDuration("within"))
 
   /**
    * Java API

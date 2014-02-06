@@ -15,8 +15,8 @@ object Introduction {
       def endpointUri = "mina2:tcp://localhost:6200?textline=true"
 
       def receive = {
-        case msg: CamelMessage ⇒ { /* ... */ }
-        case _                 ⇒ { /* ... */ }
+        case msg: CamelMessage => { /* ... */ }
+        case _                 => { /* ... */ }
       }
     }
 
@@ -35,8 +35,8 @@ object Introduction {
       def endpointUri = "jetty:http://localhost:8877/example"
 
       def receive = {
-        case msg: CamelMessage ⇒ { /* ... */ }
-        case _                 ⇒ { /* ... */ }
+        case msg: CamelMessage => { /* ... */ }
+        case _                 => { /* ... */ }
       }
     }
     //#Consumer
@@ -85,8 +85,8 @@ object Introduction {
       def endpointUri = "mina2:tcp://localhost:6200?textline=true"
 
       def receive = {
-        case msg: CamelMessage ⇒ { /* ... */ }
-        case _                 ⇒ { /* ... */ }
+        case msg: CamelMessage => { /* ... */ }
+        case _                 => { /* ... */ }
       }
     }
     val system = ActorSystem("some-system")

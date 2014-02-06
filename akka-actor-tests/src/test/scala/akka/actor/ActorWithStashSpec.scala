@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
@@ -119,7 +119,7 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
       stasher ! "bye"
       stasher ! "hello"
       state.finished.await
-      state.s must be("bye")
+      state.s should be("bye")
     }
 
     "support protocols" in {

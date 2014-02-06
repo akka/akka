@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.contrib.pattern.protobuf
 
@@ -17,7 +17,7 @@ class DistributedPubSubMessageSerializerSpec extends AkkaSpec {
   def checkSerialization(obj: AnyRef): Unit = {
     val blob = serializer.toBinary(obj)
     val ref = serializer.fromBinary(blob, obj.getClass)
-    ref must be(obj)
+    ref should be(obj)
   }
 
   " DistributedPubSubMessages" must {

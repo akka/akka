@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.contrib.jul
 
@@ -50,14 +50,14 @@ class JavaLoggerSpec extends AkkaSpec(JavaLoggerSpec.config) {
 
       val record = expectMsgType[logging.LogRecord]
 
-      record must not be (null)
-      record.getMillis must not be (0)
-      record.getThreadID must not be (0)
-      record.getLevel must be(logging.Level.SEVERE)
-      record.getMessage must be("Simulated error")
-      record.getThrown.isInstanceOf[RuntimeException] must be(true)
-      record.getSourceClassName must be(classOf[JavaLoggerSpec.LogProducer].getName)
-      record.getSourceMethodName must be(null)
+      record should not be (null)
+      record.getMillis should not be (0)
+      record.getThreadID should not be (0)
+      record.getLevel should be(logging.Level.SEVERE)
+      record.getMessage should be("Simulated error")
+      record.getThrown.isInstanceOf[RuntimeException] should be(true)
+      record.getSourceClassName should be(classOf[JavaLoggerSpec.LogProducer].getName)
+      record.getSourceMethodName should be(null)
     }
 
     "log info without stackTrace" in {
@@ -65,14 +65,14 @@ class JavaLoggerSpec extends AkkaSpec(JavaLoggerSpec.config) {
 
       val record = expectMsgType[logging.LogRecord]
 
-      record must not be (null)
-      record.getMillis must not be (0)
-      record.getThreadID must not be (0)
-      record.getLevel must be(logging.Level.INFO)
-      record.getMessage must be("3 is the magic number")
-      record.getThrown must be(null)
-      record.getSourceClassName must be(classOf[JavaLoggerSpec.LogProducer].getName)
-      record.getSourceMethodName must be(null)
+      record should not be (null)
+      record.getMillis should not be (0)
+      record.getThreadID should not be (0)
+      record.getLevel should be(logging.Level.INFO)
+      record.getMessage should be("3 is the magic number")
+      record.getThrown should be(null)
+      record.getSourceClassName should be(classOf[JavaLoggerSpec.LogProducer].getName)
+      record.getSourceMethodName should be(null)
     }
   }
 

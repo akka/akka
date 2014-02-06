@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote.testconductor
 
@@ -548,7 +548,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
         case x ⇒ testActor ! Failed(barrier, x); SupervisorStrategy.Restart
       }
       def receive = {
-        case _ ⇒ sender ! barrier
+        case _ ⇒ sender() ! barrier
       }
     }).withDeploy(Deploy.local)) ! ""
     expectMsgType[ActorRef]
@@ -556,7 +556,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
 
   private def noMsg(probes: TestProbe*) {
     expectNoMsg(1 second)
-    probes foreach (_.msgAvailable must be(false))
+    probes foreach (_.msgAvailable should be(false))
   }
 
   private def data(clients: Set[Controller.NodeInfo], barrier: String, arrived: List[ActorRef], previous: Data): Data = {

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
@@ -30,9 +30,6 @@ abstract class ActorSelection extends Serializable {
 
   protected val path: immutable.IndexedSeq[SelectionPathElement]
 
-  @deprecated("use the two-arg variant (typically getSelf() as second arg)", "2.2")
-  def tell(msg: Any): Unit = tell(msg, Actor.noSender)
-
   /**
    * Sends the specified message to the sender, i.e. fire-and-forget
    * semantics, including the sender reference if possible.
@@ -48,7 +45,7 @@ abstract class ActorSelection extends Serializable {
    *
    * Works, no matter whether originally sent with tell/'!' or ask/'?'.
    */
-  def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender)
+  def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender())
 
   /**
    * Resolve the [[ActorRef]] matching this selection.
@@ -91,6 +88,16 @@ abstract class ActorSelection extends Serializable {
     builder.append("), Path(").append(path.mkString("/", "/", "")).append(")]")
     builder.toString
   }
+
+  /**
+   * The [[akka.actor.ActorPath]] of the anchor actor.
+   */
+  def anchorPath: ActorPath = anchor.path
+
+  /**
+   * String representation of the path elements, starting with "/" and separated with "/".
+   */
+  def pathString: String = path.mkString("/", "/", "")
 
   override def equals(obj: Any): Boolean = obj match {
     case s: ActorSelection ⇒ this.anchor == s.anchor && this.path == s.path

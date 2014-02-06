@@ -11,14 +11,6 @@ and `spray.io`_ teams. Its design combines experiences from the
 ``spray-io`` module with improvements that were jointly developed for
 more general consumption as an actor-based service.
 
-.. warning::
-
-  The IO implementation is marked as **“experimental”** as of its introduction
-  in Akka 2.2.0. We will continue to improve this API based on our users’
-  feedback, which implies that while we try to keep incompatible changes to a
-  minimum the binary compatibility guarantee for maintenance releases does not
-  apply to the contents of the `akka.io` package.
-
 The guiding design goal for this I/O implementation was to reach extreme
 scalability, make no compromises in providing an API correctly matching the
 underlying transport mechanism and to be fully event-driven, non-blocking and

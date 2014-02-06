@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package sample.persistence
@@ -16,13 +16,13 @@ object ConversationRecoveryExample extends App {
     var counter = 0
 
     def receive = {
-      case m @ ConfirmablePersistent(Ping, _) ⇒
+      case m @ ConfirmablePersistent(Ping, _, _) =>
         counter += 1
         println(s"received ping ${counter} times ...")
         m.confirm()
         if (!recoveryRunning) Thread.sleep(1000)
-        pongChannel ! Deliver(m.withPayload(Pong), sender, Resolve.Destination)
-      case "init" ⇒ if (counter == 0) pongChannel ! Deliver(Persistent(Pong), sender)
+        pongChannel ! Deliver(m.withPayload(Pong), sender.path)
+      case "init" => if (counter == 0) pongChannel ! Deliver(Persistent(Pong), sender.path)
     }
 
     override def preStart() = ()
@@ -33,12 +33,12 @@ object ConversationRecoveryExample extends App {
     var counter = 0
 
     def receive = {
-      case m @ ConfirmablePersistent(Pong, _) ⇒
+      case m @ ConfirmablePersistent(Pong, _, _) =>
         counter += 1
         println(s"received pong ${counter} times ...")
         m.confirm()
         if (!recoveryRunning) Thread.sleep(1000)
-        pingChannel ! Deliver(m.withPayload(Ping), sender, Resolve.Destination)
+        pingChannel ! Deliver(m.withPayload(Ping), sender.path)
     }
 
     override def preStart() = ()

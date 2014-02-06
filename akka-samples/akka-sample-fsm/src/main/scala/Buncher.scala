@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>.
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>.
  */
 package sample.fsm.buncher
 
@@ -56,21 +56,21 @@ abstract class GenericBuncher[A: ClassTag, B](val singleTimeout: FiniteDuration,
   startWith(Idle, empty)
 
   when(Idle) {
-    case Event(Msg(m), acc) ⇒
+    case Event(Msg(m), acc) =>
       setTimer("multi", StateTimeout, multiTimeout, false)
       goto(Active) using merge(acc, m)
-    case Event(Flush, _) ⇒ stay
-    case Event(Stop, _)  ⇒ stop
+    case Event(Flush, _) => stay
+    case Event(Stop, _)  => stop
   }
 
   when(Active, stateTimeout = singleTimeout) {
-    case Event(Msg(m), acc) ⇒
+    case Event(Msg(m), acc) =>
       stay using merge(acc, m)
-    case Event(StateTimeout, acc) ⇒
+    case Event(StateTimeout, acc) =>
       flush(acc)
-    case Event(Flush, acc) ⇒
+    case Event(Flush, acc) =>
       flush(acc)
-    case Event(Stop, acc) ⇒
+    case Event(Stop, acc) =>
       send(acc)
       cancelTimer("multi")
       stop
@@ -99,7 +99,7 @@ class Buncher[A: ClassTag](singleTimeout: FiniteDuration, multiTimeout: FiniteDu
   protected def merge(l: List[A], elem: A) = elem :: l
 
   whenUnhandled {
-    case Event(Target(t), _) ⇒
+    case Event(Target(t), _) =>
       target = Some(t)
       stay
   }

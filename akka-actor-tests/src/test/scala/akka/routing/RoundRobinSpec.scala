@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.routing
 
@@ -58,7 +58,7 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       val actor = system.actorOf(RoundRobinPool(connectionCount).props(routeeProps = Props(new Actor {
         lazy val id = counter.getAndIncrement()
         def receive = {
-          case "hit" ⇒ sender ! id
+          case "hit" ⇒ sender() ! id
           case "end" ⇒ doneLatch.countDown()
         }
       })), "round-robin")
@@ -68,12 +68,12 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
         replies = replies + (id -> (replies(id) + 1))
       }
 
-      counter.get must be(connectionCount)
+      counter.get should be(connectionCount)
 
       actor ! akka.routing.Broadcast("end")
       Await.ready(doneLatch, 5 seconds)
 
-      replies.values foreach { _ must be(iterationCount) }
+      replies.values foreach { _ should be(iterationCount) }
     }
 
     "deliver a broadcast message using the !" in {
@@ -102,17 +102,17 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
         def receive = Actor.emptyBehavior
       })), "round-robin-managed")
 
-      routeeSize(actor) must be(3)
+      routeeSize(actor) should be(3)
       actor ! AdjustPoolSize(+4)
-      routeeSize(actor) must be(7)
+      routeeSize(actor) should be(7)
       actor ! AdjustPoolSize(-2)
-      routeeSize(actor) must be(5)
+      routeeSize(actor) should be(5)
 
       val other = ActorSelectionRoutee(system.actorSelection("/user/other"))
       actor ! AddRoutee(other)
-      routeeSize(actor) must be(6)
+      routeeSize(actor) should be(6)
       actor ! RemoveRoutee(other)
-      routeeSize(actor) must be(5)
+      routeeSize(actor) should be(5)
     }
   }
 
@@ -128,11 +128,11 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       val paths = (1 to connectionCount) map { n ⇒
         val ref = system.actorOf(Props(new Actor {
           def receive = {
-            case "hit" ⇒ sender ! self.path.name
+            case "hit" ⇒ sender() ! self.path.name
             case "end" ⇒ doneLatch.countDown()
           }
         }), name = "target-" + n)
-        ref.path.elements.mkString("/", "/", "")
+        ref.path.toStringWithoutAddress
       }
 
       val actor = system.actorOf(RoundRobinGroup(paths).props(), "round-robin-group1")
@@ -145,7 +145,7 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       actor ! akka.routing.Broadcast("end")
       Await.ready(doneLatch, 5 seconds)
 
-      replies.values foreach { _ must be(iterationCount) }
+      replies.values foreach { _ should be(iterationCount) }
     }
   }
 
@@ -170,13 +170,13 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
             router = router.removeRoutee(c)
             if (router.routees.isEmpty)
               context.stop(self)
-          case other ⇒ router.route(other, sender)
+          case other ⇒ router.route(other, sender())
         }
       }))
 
       val childProps = Props(new Actor {
         def receive = {
-          case "hit" ⇒ sender ! self.path.name
+          case "hit" ⇒ sender() ! self.path.name
           case "end" ⇒ context.stop(self)
         }
       })
@@ -192,7 +192,7 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       actor ! akka.routing.Broadcast("end")
       expectTerminated(actor)
 
-      replies.values foreach { _ must be(iterationCount) }
+      replies.values foreach { _ should be(iterationCount) }
     }
   }
 

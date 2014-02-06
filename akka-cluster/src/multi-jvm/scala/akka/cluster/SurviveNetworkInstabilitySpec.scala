@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -43,16 +43,24 @@ object SurviveNetworkInstabilityMultiJvmSpec extends MultiNodeConfig {
 
   class Parent extends Actor {
     def receive = {
-      case p: Props ⇒ sender ! context.actorOf(p)
+      case p: Props ⇒ sender() ! context.actorOf(p)
     }
   }
 
   class RemoteChild extends Actor {
     import context.dispatcher
-    context.system.scheduler.scheduleOnce(500.millis, self, "boom")
+
     def receive = {
+      case "hello" ⇒
+        context.system.scheduler.scheduleOnce(2.seconds, self, "boom")
+        sender() ! "hello"
       case "boom" ⇒ throw new SimulatedException
-      case x      ⇒ sender ! x
+    }
+  }
+
+  class Echo extends Actor {
+    def receive = {
+      case m ⇒ sender ! m
     }
   }
 
@@ -82,7 +90,22 @@ abstract class SurviveNetworkInstabilitySpec
 
   def assertUnreachable(subjects: RoleName*): Unit = {
     val expected = subjects.toSet map address
-    awaitAssert(clusterView.unreachableMembers.map(_.address) must be(expected))
+    awaitAssert(clusterView.unreachableMembers.map(_.address) should be(expected))
+  }
+
+  system.actorOf(Props[Echo], "echo")
+
+  def assertCanTalk(alive: RoleName*): Unit = {
+    runOn(alive: _*) {
+      for (to ← alive) {
+        val sel = system.actorSelection(node(to) / "user" / "echo")
+        awaitAssert {
+          sel ! "ping"
+          expectMsg(1.second, "ping")
+        }
+      }
+    }
+    enterBarrier("ping-ok")
   }
 
   "A network partition tolerant cluster" must {
@@ -91,9 +114,10 @@ abstract class SurviveNetworkInstabilitySpec
       awaitClusterUp(first, second, third, fourth, fifth)
 
       enterBarrier("after-1")
+      assertCanTalk(first, second, third, fourth, fifth)
     }
 
-    "heal after a broken pair" taggedAs LongRunningTest in within(30.seconds) {
+    "heal after a broken pair" taggedAs LongRunningTest in within(45.seconds) {
       runOn(first) {
         testConductor.blackhole(first, second, Direction.Both).await
       }
@@ -119,9 +143,10 @@ abstract class SurviveNetworkInstabilitySpec
 
       awaitAllReachable()
       enterBarrier("after-2")
+      assertCanTalk(first, second, third, fourth, fifth)
     }
 
-    "heal after one isolated node" taggedAs LongRunningTest in within(30.seconds) {
+    "heal after one isolated node" taggedAs LongRunningTest in within(45.seconds) {
       val others = Vector(second, third, fourth, fifth)
       runOn(first) {
         for (other ← others) {
@@ -145,9 +170,10 @@ abstract class SurviveNetworkInstabilitySpec
       enterBarrier("repair-3")
       awaitAllReachable()
       enterBarrier("after-3")
+      assertCanTalk((others :+ first): _*)
     }
 
-    "heal two isolated islands" taggedAs LongRunningTest in within(30.seconds) {
+    "heal two isolated islands" taggedAs LongRunningTest in within(45.seconds) {
       val island1 = Vector(first, second)
       val island2 = Vector(third, fourth, fifth)
       runOn(first) {
@@ -175,9 +201,10 @@ abstract class SurviveNetworkInstabilitySpec
       enterBarrier("repair-4")
       awaitAllReachable()
       enterBarrier("after-4")
+      assertCanTalk((island1 ++ island2): _*)
     }
 
-    "heal after unreachable when ring is changed" taggedAs LongRunningTest in within(45.seconds) {
+    "heal after unreachable when ring is changed" taggedAs LongRunningTest in within(60.seconds) {
       val joining = Vector(sixth, seventh)
       val others = Vector(second, third, fourth, fifth)
       runOn(first) {
@@ -220,9 +247,10 @@ abstract class SurviveNetworkInstabilitySpec
         awaitMembersUp(roles.size - 1)
       }
       enterBarrier("after-5")
+      assertCanTalk((joining ++ others): _*)
     }
 
-    "down and remove quarantined node" taggedAs LongRunningTest in within(45.seconds) {
+    "down and remove quarantined node" taggedAs LongRunningTest in within(60.seconds) {
       val others = Vector(first, third, fourth, fifth, sixth, seventh)
 
       runOn(second) {
@@ -236,7 +264,7 @@ abstract class SurviveNetworkInstabilitySpec
           val child = expectMsgType[ActorRef]
           child ! "hello"
           expectMsg("hello")
-          lastSender.path.address must be(address(third))
+          lastSender.path.address should be(address(third))
         }
       }
       runOn(third) {
@@ -257,7 +285,7 @@ abstract class SurviveNetworkInstabilitySpec
       runOn(third) {
         // undelivered system messages in RemoteChild on third should trigger QuarantinedEvent
         within(10.seconds) {
-          expectMsgType[QuarantinedEvent].address must be(address(second))
+          expectMsgType[QuarantinedEvent].address should be(address(second))
         }
         system.eventStream.unsubscribe(testActor, classOf[QuarantinedEvent])
       }
@@ -265,13 +293,14 @@ abstract class SurviveNetworkInstabilitySpec
 
       runOn(others: _*) {
         // second should be removed because of quarantine
-        awaitAssert(clusterView.members.map(_.address) must not contain (address(second)))
+        awaitAssert(clusterView.members.map(_.address) should not contain (address(second)))
       }
 
       enterBarrier("after-6")
+      assertCanTalk(others: _*)
     }
 
-    "continue and move Joining to Up after downing of one half" taggedAs LongRunningTest in within(45.seconds) {
+    "continue and move Joining to Up after downing of one half" taggedAs LongRunningTest in within(60.seconds) {
       // note that second is already removed in previous step
       val side1 = Vector(first, third, fourth)
       val side1AfterJoin = side1 :+ eighth
@@ -302,8 +331,8 @@ abstract class SurviveNetworkInstabilitySpec
       runOn(side1AfterJoin: _*) {
         // side2 removed
         val expected = (side1AfterJoin map address).toSet
-        awaitAssert(clusterView.members.map(_.address) must be(expected))
-        awaitAssert(clusterView.members.collectFirst { case m if m.address == address(eighth) ⇒ m.status } must be(
+        awaitAssert(clusterView.members.map(_.address) should be(expected))
+        awaitAssert(clusterView.members.collectFirst { case m if m.address == address(eighth) ⇒ m.status } should be(
           Some(MemberStatus.Up)))
       }
 
@@ -321,16 +350,17 @@ abstract class SurviveNetworkInstabilitySpec
 
       runOn(side1AfterJoin: _*) {
         val expected = (side1AfterJoin map address).toSet
-        clusterView.members.map(_.address) must be(expected)
+        clusterView.members.map(_.address) should be(expected)
       }
 
       runOn(side2: _*) {
         val expected = ((side2 ++ side1) map address).toSet
-        clusterView.members.map(_.address) must be(expected)
+        clusterView.members.map(_.address) should be(expected)
         assertUnreachable(side1: _*)
       }
 
       enterBarrier("after-7")
+      assertCanTalk((side1AfterJoin): _*)
     }
 
   }

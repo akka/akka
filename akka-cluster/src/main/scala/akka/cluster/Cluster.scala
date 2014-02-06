@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -29,6 +29,7 @@ import com.typesafe.config.Config
 import akka.event.LoggingAdapter
 import java.util.concurrent.ThreadFactory
 import scala.util.control.NonFatal
+import scala.annotation.varargs
 
 /**
  * Cluster Extension Id and factory for creating Cluster extension.
@@ -178,13 +179,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     }
   }
 
-  @volatile
-  private var readViewStarted = false
-  private[cluster] lazy val readView: ClusterReadView = {
-    val readView = new ClusterReadView(this)
-    readViewStarted = true
-    readView
-  }
+  private[cluster] val readView: ClusterReadView = new ClusterReadView(this)
 
   system.registerOnTermination(shutdown())
 
@@ -207,15 +202,38 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   def isTerminated: Boolean = _isTerminated.get
 
   /**
-   * Subscribe to cluster domain events.
-   * The `to` Class can be [[akka.cluster.ClusterEvent.ClusterDomainEvent]]
-   * or subclass.
+   * Current snapshot state of the cluster.
+   */
+  def state: CurrentClusterState = readView.state
+
+  /**
+   * Subscribe to one or more cluster domain events.
+   * The `to` classes can be [[akka.cluster.ClusterEvent.ClusterDomainEvent]]
+   * or subclasses.
    *
    * A snapshot of [[akka.cluster.ClusterEvent.CurrentClusterState]]
-   * will be sent to the subscriber as the first event.
+   * will be sent to the subscriber as the first message.
    */
-  def subscribe(subscriber: ActorRef, to: Class[_]): Unit =
-    clusterCore ! InternalClusterAction.Subscribe(subscriber, to)
+  @varargs def subscribe(subscriber: ActorRef, to: Class[_]*): Unit =
+    clusterCore ! InternalClusterAction.Subscribe(subscriber, initialStateMode = InitialStateAsSnapshot, to.toSet)
+
+  /**
+   * Subscribe to one or more cluster domain events.
+   * The `to` classes can be [[akka.cluster.ClusterEvent.ClusterDomainEvent]]
+   * or subclasses.
+   *
+   * If `initialStateMode` is [[ClusterEvent.InitialStateAsEvents]] the events corresponding
+   * to the current state will be sent to the subscriber to mimic what you would
+   * have seen if you were listening to the events when they occurred in the past.
+   *
+   * If `initialStateMode` is [[ClusterEvent.InitialStateAsSnapshot]] a snapshot of
+   * [[akka.cluster.ClusterEvent.CurrentClusterState]] will be sent to the subscriber as the
+   * first message.
+   *
+   * Note that for large clusters it is more efficient to use `InitialStateAsSnapshot`.
+   */
+  @varargs def subscribe(subscriber: ActorRef, initialStateMode: SubscriptionInitialStateMode, to: Class[_]*): Unit =
+    clusterCore ! InternalClusterAction.Subscribe(subscriber, initialStateMode, to.toSet)
 
   /**
    * Unsubscribe to all cluster domain events.
@@ -237,13 +255,15 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * If you want this to happen periodically you need to schedule a call to
    * this method yourself.
    */
+  @deprecated("Use sendCurrentClusterState instead of publishCurrentClusterState", "2.3")
   def publishCurrentClusterState(): Unit =
     clusterCore ! InternalClusterAction.PublishCurrentClusterState(None)
 
   /**
    * Publish current (full) state of the cluster to the specified
    * receiver. If you want this to happen periodically you need to schedule
-   * a call to this method yourself.
+   * a call to this method yourself. Note that you can also retrieve the current
+   * state with [[#state]].
    */
   def sendCurrentClusterState(receiver: ActorRef): Unit =
     clusterCore ! InternalClusterAction.PublishCurrentClusterState(Some(receiver))
@@ -333,7 +353,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
       logInfo("Shutting down...")
 
       system.stop(clusterDaemons)
-      if (readViewStarted) readView.close()
+      readView.close()
 
       closeScheduler()
 

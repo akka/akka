@@ -1,5 +1,5 @@
 /**
- *   Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor;
@@ -22,7 +22,7 @@ public class ActorCreationTest {
       });
       assert false;
     } catch(IllegalArgumentException e) {
-      assertEquals("cannot use non-static local Creator to create actors; make it static or top-level", e.getMessage());
+      assertEquals("cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level", e.getMessage());
     }
   }
   

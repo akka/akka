@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.actor
 
@@ -10,7 +10,7 @@ object InitializationDocSpec {
 
   class PreStartInitExample extends Actor {
     override def receive = {
-      case _ ⇒ // Ignore
+      case _ => // Ignore
     }
 
     //#preStartInit
@@ -37,14 +37,14 @@ object InitializationDocSpec {
     var initializeMe: Option[String] = None
 
     override def receive = {
-      case "init" ⇒
+      case "init" =>
         initializeMe = Some("Up and running")
         context.become(initialized, discardOld = true)
 
     }
 
     def initialized: Receive = {
-      case "U OK?" ⇒ initializeMe foreach { sender ! _ }
+      case "U OK?" => initializeMe foreach { sender() ! _ }
     }
     //#messageInit
 

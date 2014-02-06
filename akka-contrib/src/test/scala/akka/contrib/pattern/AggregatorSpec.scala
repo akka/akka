@@ -1,11 +1,11 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.contrib.pattern
 
 import akka.testkit.{ ImplicitSender, TestKit }
 import org.scalatest.FunSuiteLike
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 import scala.annotation.tailrec
 
 //#demo-code
@@ -41,19 +41,19 @@ case object CantUnderstand
 class SavingsAccountProxy extends Actor {
   def receive = {
     case GetAccountBalances(id: Long) ⇒
-      sender ! SavingsAccountBalances(Some(List((1, 150000), (2, 29000))))
+      sender() ! SavingsAccountBalances(Some(List((1, 150000), (2, 29000))))
   }
 }
 class CheckingAccountProxy extends Actor {
   def receive = {
     case GetAccountBalances(id: Long) ⇒
-      sender ! CheckingAccountBalances(Some(List((3, 15000))))
+      sender() ! CheckingAccountBalances(Some(List((3, 15000))))
   }
 }
 class MoneyMarketAccountProxy extends Actor {
   def receive = {
     case GetAccountBalances(id: Long) ⇒
-      sender ! MoneyMarketAccountBalances(None)
+      sender() ! MoneyMarketAccountBalances(None)
   }
 }
 
@@ -64,9 +64,9 @@ class AccountBalanceRetriever extends Actor with Aggregator {
   //#initial-expect
   expectOnce {
     case GetCustomerAccountBalances(id, types) ⇒
-      new AccountAggregator(sender, id, types)
+      new AccountAggregator(sender(), id, types)
     case _ ⇒
-      sender ! CantUnderstand
+      sender() ! CantUnderstand
       context.stop(self)
   }
   //#initial-expect
@@ -145,7 +145,7 @@ case class FinalResponse(qualifiedValues: List[String])
 class ChainingSample extends Actor with Aggregator {
 
   expectOnce {
-    case InitialRequest(name) ⇒ new MultipleResponseHandler(sender, name)
+    case InitialRequest(name) ⇒ new MultipleResponseHandler(sender(), name)
   }
 
   class MultipleResponseHandler(originalSender: ActorRef, propName: String) {
@@ -187,7 +187,7 @@ class ChainingSample extends Actor with Aggregator {
 }
 //#chain-sample
 
-class AggregatorSpec extends TestKit(ActorSystem("test")) with ImplicitSender with FunSuiteLike with ShouldMatchers {
+class AggregatorSpec extends TestKit(ActorSystem("test")) with ImplicitSender with FunSuiteLike with Matchers {
 
   test("Test request 1 account type") {
     system.actorOf(Props[AccountBalanceRetriever]) ! GetCustomerAccountBalances(1, Set(Savings))
@@ -195,7 +195,7 @@ class AggregatorSpec extends TestKit(ActorSystem("test")) with ImplicitSender wi
       case result: List[_] ⇒
         result should have size 1
       case result ⇒
-        assert(condition = false, s"Expect List, got ${result.getClass}")
+        assert(false, s"Expect List, got ${result.getClass}")
     }
   }
 
@@ -206,7 +206,7 @@ class AggregatorSpec extends TestKit(ActorSystem("test")) with ImplicitSender wi
       case result: List[_] ⇒
         result should have size 3
       case result ⇒
-        assert(condition = false, s"Expect List, got ${result.getClass}")
+        assert(false, s"Expect List, got ${result.getClass}")
     }
   }
 }

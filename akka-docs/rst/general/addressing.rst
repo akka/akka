@@ -23,7 +23,7 @@ to its canonical (local) reference through the :meth:`self` field; this
 reference is also included as sender reference by default for all messages sent
 to other actors. Conversely, during message processing the actor has access to
 a reference representing the sender of the current message through the
-:meth:`sender` field.
+:meth:`sender()` method.
 
 There are several different types of actor references that are supported
 depending on the configuration of the actor system:
@@ -200,7 +200,7 @@ is looked up when delivering each message.
 
 To acquire an :class:`ActorRef` that is bound to the life-cycle of a specific actor
 you need to send a message, such as the built-in :class:`Identify` message, to the actor
-and use the ``sender`` reference of a reply from the actor.
+and use the ``sender()`` reference of a reply from the actor.
 
 .. note::
 

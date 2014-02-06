@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.routing
 
@@ -20,7 +20,6 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.annotation.tailrec
 import akka.event.Logging.Warning
 import akka.dispatch.{ MailboxType, MessageDispatcher }
-import akka.dispatch.BalancingDispatcher
 
 /**
  * Sending this message to a router will make it send back its currently used routees.

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote.oldrouting
 
@@ -27,7 +27,7 @@ object RoundRobinRoutedRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
   class SomeActor extends Actor {
     def receive = {
-      case "hit" ⇒ sender ! self
+      case "hit" ⇒ sender() ! self
     }
   }
 
@@ -75,7 +75,7 @@ class RoundRobinRoutedRemoteActorSpec extends MultiNodeSpec(RoundRobinRoutedRemo
       runOn(fourth) {
         enterBarrier("start")
         val actor = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "service-hello")
-        actor.isInstanceOf[RoutedActorRef] must be(true)
+        actor.isInstanceOf[RoutedActorRef] should be(true)
 
         val connectionCount = 3
         val iterationCount = 10
@@ -94,8 +94,8 @@ class RoundRobinRoutedRemoteActorSpec extends MultiNodeSpec(RoundRobinRoutedRemo
         actor ! Broadcast(PoisonPill)
 
         enterBarrier("end")
-        replies.values foreach { _ must be(iterationCount) }
-        replies.get(node(fourth).address) must be(None)
+        replies.values foreach { _ should be(iterationCount) }
+        replies.get(node(fourth).address) should be(None)
 
         // shut down the actor before we let the other node(s) shut down so we don't try to send
         // "Terminate" to a shut down node
@@ -116,10 +116,10 @@ class RoundRobinRoutedRemoteActorSpec extends MultiNodeSpec(RoundRobinRoutedRemo
         enterBarrier("start")
         val actor = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter(
           resizer = Some(new TestResizer))), "service-hello2")
-        actor.isInstanceOf[RoutedActorRef] must be(true)
+        actor.isInstanceOf[RoutedActorRef] should be(true)
 
         actor ! CurrentRoutees
-        expectMsgType[RouterRoutees].routees.size must be(1)
+        expectMsgType[RouterRoutees].routees.size should be(1)
 
         val repliesFrom: Set[ActorRef] =
           (for (n ← 2 to 8) yield {
@@ -132,9 +132,9 @@ class RoundRobinRoutedRemoteActorSpec extends MultiNodeSpec(RoundRobinRoutedRemo
         actor ! Broadcast(PoisonPill)
 
         enterBarrier("end")
-        repliesFrom.size must be(7)
+        repliesFrom.size should be(7)
         val repliesFromAddresses = repliesFrom.map(_.path.address)
-        repliesFromAddresses must be === (Set(node(first), node(second), node(third)).map(_.address))
+        repliesFromAddresses should be(Set(node(first), node(second), node(third)).map(_.address))
 
         // shut down the actor before we let the other node(s) shut down so we don't try to send
         // "Terminate" to a shut down node

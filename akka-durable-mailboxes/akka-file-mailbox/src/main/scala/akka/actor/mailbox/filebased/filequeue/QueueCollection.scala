@@ -24,7 +24,7 @@ import akka.event.LoggingAdapter
 import akka.actor.mailbox.filebased.FileBasedMailboxSettings
 
 class InaccessibleQueuePath extends Exception("Inaccessible queue path: Must be a directory and writable")
-
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 class QueueCollection(queueFolder: String, settings: FileBasedMailboxSettings, log: LoggingAdapter) {
   private val path = new File(queueFolder)
 

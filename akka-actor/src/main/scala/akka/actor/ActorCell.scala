@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -12,7 +12,7 @@ import akka.japi.Procedure
 import java.io.{ ObjectOutputStream, NotSerializableException }
 import scala.annotation.{ switch, tailrec }
 import scala.collection.immutable
-import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.control.NonFatal
@@ -91,7 +91,7 @@ trait ActorContext extends ActorRefFactory {
   /**
    * Returns the sender 'ActorRef' of the current message.
    */
-  def sender: ActorRef
+  def sender(): ActorRef
 
   /**
    * Returns all supervised children; this method returns a view (i.e. a lazy
@@ -113,13 +113,13 @@ trait ActorContext extends ActorRefFactory {
 
   /**
    * Returns the dispatcher (MessageDispatcher) that is used for this Actor.
-   * Importing this member will place a implicit ExecutionContext in scope.
+   * Importing this member will place an implicit ExecutionContext in scope.
    */
-  implicit def dispatcher: ExecutionContext
+  implicit def dispatcher: ExecutionContextExecutor
 
   /**
    * The system that the actor belongs to.
-   * Importing this member will place a implicit ExecutionContext in scope.
+   * Importing this member will place an implicit ActorSystem in scope.
    */
   implicit def system: ActorSystem
 
@@ -310,7 +310,7 @@ private[akka] object ActorCell {
 
   final val emptyActorRefSet: Set[ActorRef] = immutable.HashSet.empty
 
-  final val terminatedProps: Props = Props(() ⇒ throw new IllegalActorStateException("This Actor has been terminated"))
+  final val terminatedProps: Props = Props((throw new IllegalActorStateException("This Actor has been terminated")): Actor)
 
   final val undefinedUid = 0
 
@@ -344,7 +344,7 @@ private[akka] object ActorCell {
 private[akka] class ActorCell(
   val system: ActorSystemImpl,
   val self: InternalActorRef,
-  val props: Props,
+  final val props: Props, // Must be final so that it can be properly cleared in clearActorCellFields
   val dispatcher: MessageDispatcher,
   val parent: InternalActorRef)
   extends UntypedActorContext with Cell
@@ -478,15 +478,15 @@ private[akka] class ActorCell(
       case Kill                       ⇒ throw new ActorKilledException("Kill")
       case PoisonPill                 ⇒ self.stop()
       case sel: ActorSelectionMessage ⇒ receiveSelection(sel)
-      case Identify(messageId)        ⇒ sender ! ActorIdentity(messageId, Some(self))
+      case Identify(messageId)        ⇒ sender() ! ActorIdentity(messageId, Some(self))
     }
   }
 
   private def receiveSelection(sel: ActorSelectionMessage): Unit =
     if (sel.elements.isEmpty)
-      invoke(Envelope(sel.msg, sender, system))
+      invoke(Envelope(sel.msg, sender(), system))
     else
-      ActorSelection.deliverSelection(self, sender, sel)
+      ActorSelection.deliverSelection(self, sender(), sel)
 
   final def receiveMessage(msg: Any): Unit = actor.aroundReceive(behaviorStack.head, msg)
 
@@ -494,7 +494,7 @@ private[akka] class ActorCell(
    * ACTOR CONTEXT IMPLEMENTATION
    */
 
-  final def sender: ActorRef = currentMessage match {
+  final def sender(): ActorRef = currentMessage match {
     case null                      ⇒ system.deadLetters
     case msg if msg.sender ne null ⇒ msg.sender
     case _                         ⇒ system.deadLetters
@@ -591,21 +591,27 @@ private[akka] class ActorCell(
   }
 
   @tailrec private final def lookupAndSetField(clazz: Class[_], instance: AnyRef, name: String, value: Any): Boolean = {
-    if (try {
-      val field = clazz.getDeclaredField(name)
-      field.setAccessible(true)
-      field.set(instance, value)
-      true
-    } catch {
-      case e: NoSuchFieldException ⇒ false
-    }) true
-    else if (clazz.getSuperclass eq null) false
-    else lookupAndSetField(clazz.getSuperclass, instance, name, value)
+    @tailrec def clearFirst(fields: Array[java.lang.reflect.Field], idx: Int): Boolean =
+      if (idx < fields.length) {
+        val field = fields(idx)
+        if (field.getName == name) {
+          field.setAccessible(true)
+          field.set(instance, value)
+          true
+        } else clearFirst(fields, idx + 1)
+      } else false
+
+    clearFirst(clazz.getDeclaredFields, 0) || {
+      clazz.getSuperclass match {
+        case null ⇒ false // clazz == classOf[AnyRef]
+        case sc   ⇒ lookupAndSetField(sc, instance, name, value)
+      }
+    }
   }
 
   final protected def clearActorCellFields(cell: ActorCell): Unit = {
     cell.unstashAll()
-    if (!lookupAndSetField(cell.getClass, cell, "props", ActorCell.terminatedProps))
+    if (!lookupAndSetField(classOf[ActorCell], cell, "props", ActorCell.terminatedProps))
       throw new IllegalArgumentException("ActorCell has no props field")
   }
 

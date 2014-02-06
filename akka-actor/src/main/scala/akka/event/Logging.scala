@@ -1,10 +1,9 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.event
 
 import language.existentials
-
 import akka.actor._
 import akka.{ ConfigurationException, AkkaException }
 import akka.actor.ActorSystem.Settings
@@ -16,6 +15,7 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.util.control.NoStackTrace
+import scala.util.control.NonFatal
 
 /**
  * This trait brings log level handling to the EventStream: it reads the log
@@ -99,14 +99,9 @@ trait LoggingBus extends ActorEventBus {
       ErrorLevel
     }
     try {
-      val defaultLoggers = system.settings.EventHandlers match {
-        case Nil ⇒ system.settings.Loggers match {
-          case Nil     ⇒ classOf[DefaultLogger].getName :: Nil
-          case loggers ⇒ loggers
-        }
-        case loggers ⇒
-          publish(Warning(logName, this.getClass, "[akka.event-handlers] config is deprecated, use [akka.loggers]"))
-          loggers
+      val defaultLoggers = system.settings.Loggers match {
+        case Nil     ⇒ classOf[DefaultLogger].getName :: Nil
+        case loggers ⇒ loggers
       }
       val myloggers =
         for {
@@ -142,9 +137,9 @@ trait LoggingBus extends ActorEventBus {
       }
     } catch {
       case e: Exception ⇒
-        System.err.println("error while starting up EventHandler")
+        System.err.println("error while starting up loggers")
         e.printStackTrace()
-        throw new ConfigurationException("Could not start Event Handler due to [" + e.toString + "]")
+        throw new ConfigurationException("Could not start logger due to [" + e.toString + "]")
     }
   }
 
@@ -177,13 +172,7 @@ trait LoggingBus extends ActorEventBus {
   private def addLogger(system: ActorSystemImpl, clazz: Class[_ <: Actor], level: LogLevel, logName: String): ActorRef = {
     val name = "log" + Extension(system).id() + "-" + simpleName(clazz)
     val actor = system.systemActorOf(Props(clazz), name)
-    implicit def timeout =
-      if (system.settings.EventHandlerStartTimeout.duration >= Duration.Zero) {
-        publish(Warning(logName, this.getClass,
-          "[akka.event-handler-startup-timeout] config is deprecated, use [akka.logger-startup-timeout]"))
-        system.settings.EventHandlerStartTimeout
-      } else system.settings.LoggerStartTimeout
-
+    implicit def timeout = system.settings.LoggerStartTimeout
     import akka.pattern.ask
     val response = try Await.result(actor ? InitializeLogger(this), timeout.duration) catch {
       case _: TimeoutException ⇒
@@ -281,11 +270,18 @@ object LogSource {
   }
 
   implicit val fromActor: LogSource[Actor] = new LogSource[Actor] {
-    def genString(a: Actor) = a.self.path.toString
+    def genString(a: Actor) = fromActorRef.genString(a.self)
+    override def genString(a: Actor, system: ActorSystem) = fromActorRef.genString(a.self, system)
   }
 
   implicit val fromActorRef: LogSource[ActorRef] = new LogSource[ActorRef] {
     def genString(a: ActorRef) = a.path.toString
+    override def genString(a: ActorRef, system: ActorSystem) = try {
+      a.path.toStringWithAddress(system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress)
+    } catch {
+      // it can fail if the ActorSystem (remoting) is not completely started yet
+      case NonFatal(_) ⇒ a.path.toString
+    }
   }
 
   // this one unfortunately does not work as implicit, because existential types have some weird behavior
@@ -721,11 +717,11 @@ object Logging {
 
     private val date = new Date()
     private val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.SSS")
-    private val errorFormat = "[ERROR] [%s] [%s] [%s] %s%s".intern
-    private val errorFormatWithoutCause = "[ERROR] [%s] [%s] [%s] %s".intern
-    private val warningFormat = "[WARN] [%s] [%s] [%s] %s".intern
-    private val infoFormat = "[INFO] [%s] [%s] [%s] %s".intern
-    private val debugFormat = "[DEBUG] [%s] [%s] [%s] %s".intern
+    private val errorFormat = "[ERROR] [%s] [%s] [%s] %s%s"
+    private val errorFormatWithoutCause = "[ERROR] [%s] [%s] [%s] %s"
+    private val warningFormat = "[WARN] [%s] [%s] [%s] %s"
+    private val infoFormat = "[INFO] [%s] [%s] [%s] %s"
+    private val debugFormat = "[DEBUG] [%s] [%s] [%s] %s"
 
     def timestamp(event: LogEvent): String = synchronized {
       date.setTime(event.timestamp)
@@ -797,7 +793,7 @@ object Logging {
    */
   class DefaultLogger extends Actor with StdOutLogger {
     override def receive: Receive = {
-      case InitializeLogger(_) ⇒ sender ! LoggerInitialized
+      case InitializeLogger(_) ⇒ sender() ! LoggerInitialized
       case event: LogEvent     ⇒ print(event)
     }
   }

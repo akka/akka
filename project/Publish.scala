@@ -29,14 +29,6 @@ object Publish {
 
   def akkaPomExtra = {
     (<inceptionYear>2009</inceptionYear>
-    <url>http://akka.io</url>
-    <licenses>
-      <license>
-        <name>Apache 2</name>
-        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        <distribution>repo</distribution>
-      </license>
-    </licenses>
     <scm>
       <url>git://github.com/akka/akka.git</url>
       <connection>scm:git:git@github.com:akka/akka.git</connection>
@@ -74,15 +66,6 @@ object Publish {
     }
   }
 
-  def akkaPluginPublishTo: Initialize[Option[Resolver]] = {
-    (defaultPublishTo, version) { (defaultPT, version) =>
-      pluginPublishLocally(defaultPT) orElse
-      akkaPublishRepository orElse
-      pluginRepo(version) orElse
-      Some(Resolver.file("Default Local Repository", defaultPT))
-    }
-  }
-
   def sonatypeRepo(version: String): Option[Resolver] = {
     Option(sys.props("publish.maven.central")) filter (_.toLowerCase == "true") map { _ =>
       val nexus = "https://oss.sonatype.org/"
@@ -91,22 +74,11 @@ object Publish {
     }
   }
 
-  def pluginRepo(version: String): Option[Resolver] =
-    Option(sys.props("publish.maven.central")) collect { case mc if mc.toLowerCase == "true" =>
-      val name = if (version endsWith "-SNAPSHOT") "sbt-plugin-snapshots" else "sbt-plugin-releases"
-      Resolver.url(name, url("http://scalasbt.artifactoryonline.com/scalasbt/" + name))(Resolver.ivyStylePatterns)
-    }
-
   def akkaPublishRepository: Option[Resolver] =
       Option(System.getProperty("akka.publish.repository", null)) map { "Akka Publish Repository" at _ }
 
   def akkaCredentials: Seq[Credentials] =
     Option(System.getProperty("akka.publish.credentials", null)) map (f => Credentials(new File(f))) toSeq
-
-  def pluginPublishLocally(defaultPT: File): Option[Resolver] =
-    Option(sys.props("publish.plugin.locally")) collect { case pl if pl.toLowerCase == "true" =>
-      Resolver.file("Default Local Repository", defaultPT)
-    }
 
   // timestamped versions
 

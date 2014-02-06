@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka
@@ -21,7 +21,7 @@ import scala.util.control.NonFatal
 object Main {
 
   /**
-   * @params args one argument: the class of the application supervisor actor
+   * @param args one argument: the class of the application supervisor actor
    */
   def main(args: Array[String]): Unit = {
     if (args.length != 1) {

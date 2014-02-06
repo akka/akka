@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package docs.pattern
@@ -26,11 +26,11 @@ object SchedulerPatternSpec {
     override def postStop() = tick.cancel()
 
     def receive = {
-      case "tick" ⇒
+      case "tick" =>
         // do something useful here
         //#schedule-constructor
         target ! "tick"
-      case "restart" ⇒
+      case "restart" =>
         throw new ArithmeticException
       //#schedule-constructor
     }
@@ -53,13 +53,13 @@ object SchedulerPatternSpec {
     override def postRestart(reason: Throwable) = {}
 
     def receive = {
-      case "tick" ⇒
+      case "tick" =>
         // send another periodic tick after the specified delay
         system.scheduler.scheduleOnce(1000 millis, self, "tick")
         // do something useful here
         //#schedule-receive
         target ! "tick"
-      case "restart" ⇒
+      case "restart" =>
         throw new ArithmeticException
       //#schedule-receive
     }

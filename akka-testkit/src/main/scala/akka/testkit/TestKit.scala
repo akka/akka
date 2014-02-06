@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
@@ -71,12 +71,12 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
     case UnWatch(ref)        ⇒ context.unwatch(ref)
     case SetAutoPilot(pilot) ⇒ autopilot = pilot
     case x: AnyRef ⇒
-      autopilot = autopilot.run(sender, x) match {
+      autopilot = autopilot.run(sender(), x) match {
         case KeepRunning ⇒ autopilot
         case other       ⇒ other
       }
       val observe = ignore map (ignoreFunc ⇒ !ignoreFunc.applyOrElse(x, FALSE)) getOrElse true
-      if (observe) queue.offerLast(RealMessage(x, sender))
+      if (observe) queue.offerLast(RealMessage(x, sender()))
   }
 
   override def postStop() = {
@@ -656,7 +656,7 @@ trait TestKitBase {
    *
    * If verifySystemShutdown is true, then an exception will be thrown on failure.
    */
-  def shutdown(actorSystem: ActorSystem,
+  def shutdown(actorSystem: ActorSystem = system,
                duration: Duration = 5.seconds.dilated.min(10.seconds),
                verifySystemShutdown: Boolean = false) {
     TestKit.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
@@ -790,12 +790,12 @@ class TestProbe(_application: ActorSystem) extends TestKit(_application) {
   /**
    * Get sender of last received message.
    */
-  def sender = lastMessage.sender
+  def sender() = lastMessage.sender
 
   /**
    * Send message to the sender of the last dequeued message.
    */
-  def reply(msg: Any): Unit = sender.!(msg)(ref)
+  def reply(msg: Any): Unit = sender().!(msg)(ref)
 
 }
 
@@ -803,11 +803,11 @@ object TestProbe {
   def apply()(implicit system: ActorSystem) = new TestProbe(system)
 }
 
-trait ImplicitSender { this: TestKit ⇒
+trait ImplicitSender { this: TestKitBase ⇒
   implicit def self = testActor
 }
 
-trait DefaultTimeout { this: TestKit ⇒
+trait DefaultTimeout { this: TestKitBase ⇒
   implicit val timeout: Timeout = testKitSettings.DefaultTimeout
 }
 

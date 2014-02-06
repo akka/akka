@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package docs.circuitbreaker
@@ -35,10 +35,10 @@ class DangerousActor extends Actor with ActorLogging {
   def dangerousCall: String = "This really isn't that dangerous of a call after all"
 
   def receive = {
-    case "is my middle name" ⇒
-      breaker.withCircuitBreaker(Future(dangerousCall)) pipeTo sender
-    case "block for me" ⇒
-      sender ! breaker.withSyncCircuitBreaker(dangerousCall)
+    case "is my middle name" =>
+      breaker.withCircuitBreaker(Future(dangerousCall)) pipeTo sender()
+    case "block for me" =>
+      sender() ! breaker.withSyncCircuitBreaker(dangerousCall)
   }
   //#circuit-breaker-usage
 

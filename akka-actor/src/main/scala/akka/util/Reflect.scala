@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.util
 import scala.util.control.NonFatal
@@ -8,6 +8,7 @@ import scala.collection.immutable
 import java.lang.reflect.Type
 import scala.annotation.tailrec
 import java.lang.reflect.ParameterizedType
+import scala.util.Try
 
 /**
  * Collection of internal reflection utilities which may or may not be
@@ -80,17 +81,30 @@ private[akka] object Reflect {
       val argClasses = args map safeGetClass mkString ", "
       throw new IllegalArgumentException(s"$msg found on $clazz for arguments [$argClasses]")
     }
-    val candidates =
-      clazz.getDeclaredConstructors filter (c ⇒
-        c.getParameterTypes.length == args.length &&
-          (c.getParameterTypes zip args forall {
-            case (found, required) ⇒
-              found.isInstance(required) || BoxedType(found).isInstance(required) ||
-                (required == null && !found.isPrimitive)
-          }))
-    if (candidates.size == 1) candidates.head.asInstanceOf[Constructor[T]]
-    else if (candidates.size > 1) error("multiple matching constructors")
-    else error("no matching constructor")
+
+    val constructor: Constructor[T] =
+      if (args.isEmpty) Try { clazz.getDeclaredConstructor() } getOrElse (null)
+      else {
+        val length = args.length
+        val candidates =
+          clazz.getDeclaredConstructors.asInstanceOf[Array[Constructor[T]]].iterator filter { c ⇒
+            val parameterTypes = c.getParameterTypes
+            parameterTypes.length == length &&
+              (parameterTypes.iterator zip args.iterator forall {
+                case (found, required) ⇒
+                  found.isInstance(required) || BoxedType(found).isInstance(required) ||
+                    (required == null && !found.isPrimitive)
+              })
+          }
+        if (candidates.hasNext) {
+          val cstrtr = candidates.next()
+          if (candidates.hasNext) error("multiple matching constructors")
+          else cstrtr
+        } else null
+      }
+
+    if (constructor == null) error("no matching constructor")
+    else constructor
   }
 
   private def safeGetClass(a: Any): Class[_] =

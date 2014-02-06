@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -69,7 +69,7 @@ abstract class RemoteDeploymentDeathWatchSpec
       runOn(second) {
         // remote deployment to third
         val hello = system.actorOf(Props[Hello], "hello")
-        hello.path.address must be(node(third).address)
+        hello.path.address should be(node(third).address)
         enterBarrier("hello-deployed")
 
         enterBarrier("third-crashed")

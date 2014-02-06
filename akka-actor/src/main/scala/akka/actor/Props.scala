@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -51,7 +51,7 @@ object Props {
   /**
    * The default Props instance, uses the settings from the Props object starting with default*.
    */
-  final val default = new Props()
+  final val default = Props(defaultDeploy, classOf[CreatorFunctionConsumer], List(defaultCreator))
 
   /**
    * INTERNAL API
@@ -66,7 +66,7 @@ object Props {
    * Scala API: Returns a Props that has default values except for "creator" which will be a function that creates an instance
    * of the supplied type using the default constructor.
    */
-  def apply[T <: Actor: ClassTag](): Props = apply(defaultDeploy, implicitly[ClassTag[T]].runtimeClass, Vector.empty)
+  def apply[T <: Actor: ClassTag](): Props = apply(defaultDeploy, implicitly[ClassTag[T]].runtimeClass, List.empty)
 
   /**
    * Scala API: Returns a Props that has default values except for "creator" which will be a function that creates an instance
@@ -88,52 +88,22 @@ object Props {
     Props(classOf[TypedCreatorFunctionConsumer], classOfActor, ctor)
 
   /**
-   * Returns a Props that has default values except for "creator" which will be a function that creates an instance
-   * using the supplied thunk.
-   */
-  @deprecated("give class and arguments instead", "2.2")
-  def apply(creator: Creator[_ <: Actor]): Props = default.withCreator(creator.create)
-
-  /**
-   * The deprecated legacy constructor.
-   */
-  @deprecated("use Props.withDispatcher and friends", "2.2")
-  def apply(
-    creator: () ⇒ Actor = Props.defaultCreator,
-    dispatcher: String = Deploy.NoDispatcherGiven,
-    routerConfig: RouterConfig = Props.defaultRoutedProps,
-    deploy: Deploy = Props.defaultDeploy): Props = {
-
-    val d1 = if (dispatcher != Deploy.NoDispatcherGiven) deploy.copy(dispatcher = dispatcher) else deploy
-    val d2 = if (routerConfig != Props.defaultRoutedProps) d1.copy(routerConfig = routerConfig) else d1
-    val p = Props(classOf[CreatorFunctionConsumer], creator)
-    if (d2 != Props.defaultDeploy) p.withDeploy(d2) else p
-  }
-
-  /**
-   * The deprecated legacy extractor.
-   */
-  @deprecated("use three-argument version", "2.2")
-  def unapply(p: Props)(dummy: Int = 0): Option[(() ⇒ Actor, String, RouterConfig, Deploy)] =
-    Some((p.creator, p.dispatcher, p.routerConfig, p.deploy))
-
-  /**
    * Scala API: create a Props given a class and its constructor arguments.
    */
-  def apply(clazz: Class[_], args: Any*): Props = apply(defaultDeploy, clazz, args.toVector)
+  def apply(clazz: Class[_], args: Any*): Props = apply(defaultDeploy, clazz, args.toList)
 
   /**
    * Java API: create a Props given a class and its constructor arguments.
    */
   @varargs
-  def create(clazz: Class[_], args: AnyRef*): Props = apply(defaultDeploy, clazz, args.toVector)
+  def create(clazz: Class[_], args: AnyRef*): Props = apply(defaultDeploy, clazz, args.toList)
 
   /**
    * Create new Props from the given [[akka.japi.Creator]].
    */
   def create[T <: Actor](creator: Creator[T]): Props = {
     if ((creator.getClass.getEnclosingClass ne null) && (creator.getClass.getModifiers & Modifier.STATIC) == 0)
-      throw new IllegalArgumentException("cannot use non-static local Creator to create actors; make it static or top-level")
+      throw new IllegalArgumentException("cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level")
     val ac = classOf[Actor]
     val actorClass = Reflect.findMarker(creator.getClass, classOf[Creator[_]]) match {
       case t: ParameterizedType ⇒
@@ -176,65 +146,28 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
 
   // derived property, does not need to be serialized
   @transient
-  private[this] var _constructor: Constructor[_] = _
+  private[this] var _producer: IndirectActorProducer = _
 
   // derived property, does not need to be serialized
   @transient
   private[this] var _cachedActorClass: Class[_ <: Actor] = _
 
-  private[this] def constructor: Constructor[_] = {
-    if (_constructor eq null)
-      _constructor = Reflect.findConstructor(clazz, args)
+  private[this] def producer: IndirectActorProducer = {
+    if (_producer eq null)
+      _producer = IndirectActorProducer(clazz, args)
 
-    _constructor
+    _producer
   }
 
   private[this] def cachedActorClass: Class[_ <: Actor] = {
     if (_cachedActorClass eq null)
-      _cachedActorClass =
-        if (classOf[IndirectActorProducer].isAssignableFrom(clazz))
-          Reflect.instantiate(constructor, args).asInstanceOf[IndirectActorProducer].actorClass
-        else if (classOf[Actor].isAssignableFrom(clazz))
-          clazz.asInstanceOf[Class[_ <: Actor]]
-        else
-          throw new IllegalArgumentException(s"unknown actor creator [$clazz]")
+      _cachedActorClass = producer.actorClass
 
     _cachedActorClass
   }
 
-  // validate constructor signature; throws IllegalArgumentException if invalid
-  constructor
-
-  /**
-   * No-args constructor that sets all the default values.
-   *
-   * @deprecated use `Props.create(clazz, args ...)` instead
-   */
-  @deprecated("use Props.create()", "2.2")
-  def this() = this(Props.defaultDeploy, classOf[CreatorFunctionConsumer], Vector(Props.defaultCreator))
-
-  /**
-   * Java API: create Props from an [[UntypedActorFactory]]
-   *
-   * @deprecated use `Props.create(clazz, args ...)` instead; this method has been
-   *             deprecated because it encourages creating Props which contain
-   *             non-serializable inner classes, making them also
-   *             non-serializable
-   */
-  @deprecated("use Props.create()", "2.2")
-  def this(factory: UntypedActorFactory) = this(Props.defaultDeploy, classOf[UntypedActorFactoryConsumer], Vector(factory))
-
-  /**
-   * Java API: create Props from a given [[java.lang.Class]]
-   *
-   * @deprecated use Props.create(clazz) instead; deprecated since it duplicates
-   *             another API
-   */
-  @deprecated("use Props.create()", "2.2")
-  def this(actorClass: Class[_ <: Actor]) = this(Props.defaultDeploy, actorClass, Vector.empty)
-
-  @deprecated("There is no use-case for this method anymore", "2.2")
-  def creator: () ⇒ Actor = newActor
+  // validate producer constructor signature; throws IllegalArgumentException if invalid
+  producer
 
   /**
    * Convenience method for extracting the dispatcher information from the
@@ -259,36 +192,6 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    * contained [[Deploy]] instance.
    */
   def routerConfig: RouterConfig = deploy.routerConfig
-
-  /**
-   * Scala API: Returns a new Props with the specified creator set.
-   *
-   * The creator must not return the same instance multiple times.
-   */
-  @deprecated("use Props(...).withDeploy(other.deploy)", "2.2")
-  def withCreator(c: ⇒ Actor): Props = copy(clazz = classOf[CreatorFunctionConsumer], args = (() ⇒ c) :: Nil)
-
-  /**
-   * Java API: Returns a new Props with the specified creator set.
-   *
-   * The creator must not return the same instance multiple times.
-   *
-   * @deprecated use `Props.create(clazz, args ...)` instead; this method has been
-   *             deprecated because it encourages creating Props which contain
-   *             non-serializable inner classes, making them also
-   *             non-serializable
-   */
-  @deprecated("use Props.create(clazz, args ...).withDeploy(other.deploy) instead", "2.2")
-  def withCreator(c: Creator[Actor]): Props = copy(clazz = classOf[CreatorConsumer], args = classOf[Actor] :: c :: Nil)
-
-  /**
-   * Returns a new Props with the specified creator set.
-   *
-   * @deprecated use Props.create(clazz) instead; deprecated since it duplicates
-   *             another API
-   */
-  @deprecated("use Props.create(clazz, args).withDeploy(other.deploy)", "2.2")
-  def withCreator(c: Class[_ <: Actor]): Props = copy(clazz = c, args = Nil)
 
   /**
    * Returns a new Props with the specified dispatcher set.
@@ -327,11 +230,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    * used within the implementation of [[IndirectActorProducer#produce]].
    */
   private[akka] def newActor(): Actor = {
-    Reflect.instantiate(constructor, args) match {
-      case a: Actor                 ⇒ a
-      case i: IndirectActorProducer ⇒ i.produce()
-      case _                        ⇒ throw new IllegalArgumentException(s"unknown actor creator [$clazz]")
-    }
+    producer.produce()
   }
 }
 
@@ -360,6 +259,37 @@ trait IndirectActorProducer {
    * later to produce the actor.
    */
   def actorClass: Class[_ <: Actor]
+}
+
+private[akka] object IndirectActorProducer {
+  val UntypedActorFactoryConsumerClass = classOf[UntypedActorFactoryConsumer]
+  val CreatorFunctionConsumerClass = classOf[CreatorFunctionConsumer]
+  val CreatorConsumerClass = classOf[CreatorConsumer]
+  val TypedCreatorFunctionConsumerClass = classOf[TypedCreatorFunctionConsumer]
+
+  def apply(clazz: Class[_], args: immutable.Seq[Any]): IndirectActorProducer = {
+    if (classOf[IndirectActorProducer].isAssignableFrom(clazz)) {
+      def get1stArg[T]: T = args.head.asInstanceOf[T]
+      def get2ndArg[T]: T = args.tail.head.asInstanceOf[T]
+      // The cost of doing reflection to create these for every props
+      // is rather high, so we match on them and do new instead
+      clazz match {
+        case TypedCreatorFunctionConsumerClass ⇒
+          new TypedCreatorFunctionConsumer(get1stArg, get2ndArg)
+        case UntypedActorFactoryConsumerClass ⇒
+          new UntypedActorFactoryConsumer(get1stArg)
+        case CreatorFunctionConsumerClass ⇒
+          new CreatorFunctionConsumer(get1stArg)
+        case CreatorConsumerClass ⇒
+          new CreatorConsumer(get1stArg, get2ndArg)
+        case _ ⇒
+          Reflect.instantiate(clazz, args).asInstanceOf[IndirectActorProducer]
+      }
+    } else if (classOf[Actor].isAssignableFrom(clazz)) {
+      if (args.isEmpty) new NoArgsReflectConstructor(clazz.asInstanceOf[Class[_ <: Actor]])
+      else new ArgsReflectConstructor(clazz.asInstanceOf[Class[_ <: Actor]], args)
+    } else throw new IllegalArgumentException(s"unknown actor creator [$clazz]")
+  }
 }
 
 /**
@@ -392,4 +322,22 @@ private[akka] class CreatorConsumer(clazz: Class[_ <: Actor], creator: Creator[A
 private[akka] class TypedCreatorFunctionConsumer(clz: Class[_ <: Actor], creator: () ⇒ Actor) extends IndirectActorProducer {
   override def actorClass = clz
   override def produce() = creator()
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] class ArgsReflectConstructor(clz: Class[_ <: Actor], args: immutable.Seq[Any]) extends IndirectActorProducer {
+  private[this] val constructor: Constructor[_] = Reflect.findConstructor(clz, args)
+  override def actorClass = clz
+  override def produce() = Reflect.instantiate(constructor, args).asInstanceOf[Actor]
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] class NoArgsReflectConstructor(clz: Class[_ <: Actor]) extends IndirectActorProducer {
+  Reflect.findConstructor(clz, List.empty)
+  override def actorClass = clz
+  override def produce() = Reflect.instantiate(clz)
 }

@@ -1,10 +1,10 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.persistence.journal.japi;
 
-import akka.persistence.PersistentRepr;
+import akka.persistence.*;
 
 interface SyncWritePlugin {
     //#sync-write-plugin-api
@@ -13,21 +13,28 @@ interface SyncWritePlugin {
      * journal. The batch write must be atomic i.e. either all persistent messages in the
      * batch are written or none.
      */
-    void doWrite(Iterable<PersistentRepr> persistentBatch);
+    void doWriteMessages(Iterable<PersistentRepr> messages);
 
     /**
-     * Java API, Plugin API: synchronously deletes all persistent messages within the
-     * range  from `fromSequenceNr` to `toSequenceNr`. If `permanent` is set to `false`,
-     * the persistent messages are marked as deleted, otherwise they are permanently
-     * deleted.
+     * Java API, Plugin API: synchronously writes a batch of delivery confirmations to
+     * the journal.
+     */
+    void doWriteConfirmations(Iterable<PersistentConfirmation> confirmations);
+
+    /**
+     * Java API, Plugin API: synchronously deletes messages identified by `messageIds`
+     * from the journal. If `permanent` is set to `false`, the persistent messages are
+     * marked as deleted, otherwise they are permanently deleted.
+     */
+    void doDeleteMessages(Iterable<PersistentId> messageIds, boolean permanent);
+
+    /**
+     * Java API, Plugin API: synchronously deletes all persistent messages up to
+     * `toSequenceNr`. If `permanent` is set to `false`, the persistent messages are
+     * marked as deleted, otherwise they are permanently deleted.
      *
-     * @see AsyncReplayPlugin
+     * @see AsyncRecoveryPlugin
      */
-    void doDelete(String processorId, long fromSequenceNr, long toSequenceNr, boolean permanent);
-
-    /**
-     * Java API, Plugin API: synchronously writes a delivery confirmation to the journal.
-     */
-    void doConfirm(String processorId, long sequenceNr, String channelId) throws Exception;
+    void doDeleteMessagesTo(String processorId, long toSequenceNr, boolean permanent);
     //#sync-write-plugin-api
 }

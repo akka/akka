@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -215,7 +215,7 @@ class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off"
       val boss = system.actorOf(Props(new Actor {
         override val supervisorStrategy = OneForOneStrategy(withinTimeRange = 1 second)(List(classOf[Throwable]))
         def receive = {
-          case p: Props      ⇒ sender ! context.watch(context.actorOf(p))
+          case p: Props      ⇒ sender() ! context.watch(context.actorOf(p))
           case t: Terminated ⇒ maxNoOfRestartsLatch.open()
         }
       }))

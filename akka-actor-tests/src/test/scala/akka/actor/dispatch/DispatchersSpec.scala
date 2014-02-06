@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor.dispatch
 
@@ -28,7 +28,7 @@ object DispatchersSpec {
         type = PinnedDispatcher
       }
       balancing-dispatcher {
-        type = BalancingDispatcher
+        type = "akka.dispatch.BalancingDispatcherConfigurator"
       }
     }
     akka.actor.deployment {
@@ -41,14 +41,17 @@ object DispatchersSpec {
       /pool1 {
         router = random-pool
         nr-of-instances = 3
-        pool-dispatcher.type = BalancingDispatcher
+        pool-dispatcher {
+          fork-join-executor.parallelism-min = 3
+          fork-join-executor.parallelism-max = 3
+        }
       }
     }
     """
 
   class ThreadNameEcho extends Actor {
     def receive = {
-      case _ ⇒ sender ! Thread.currentThread.getName
+      case _ ⇒ sender() ! Thread.currentThread.getName
     }
   }
 }
@@ -71,7 +74,6 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
   def ofType[T <: MessageDispatcher: ClassTag]: (MessageDispatcher) ⇒ Boolean = _.getClass == implicitly[ClassTag[T]].runtimeClass
 
   def typesAndValidators: Map[String, (MessageDispatcher) ⇒ Boolean] = Map(
-    "BalancingDispatcher" -> ofType[BalancingDispatcher],
     "PinnedDispatcher" -> ofType[PinnedDispatcher],
     "Dispatcher" -> ofType[Dispatcher])
 
@@ -96,12 +98,12 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
 
     "use defined properties" in {
       val dispatcher = lookup("myapp.mydispatcher")
-      dispatcher.throughput must be(17)
+      dispatcher.throughput should be(17)
     }
 
     "use specific id" in {
       val dispatcher = lookup("myapp.mydispatcher")
-      dispatcher.id must be("myapp.mydispatcher")
+      dispatcher.id should be("myapp.mydispatcher")
     }
 
     "complain about missing config" in {
@@ -112,8 +114,8 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
 
     "have only one default dispatcher" in {
       val dispatcher = lookup(Dispatchers.DefaultDispatcherId)
-      dispatcher must be === defaultGlobalDispatcher
-      dispatcher must be === system.dispatcher
+      dispatcher should be(defaultGlobalDispatcher)
+      dispatcher should be(system.dispatcher)
     }
 
     "throw ConfigurationException if type does not exist" in {
@@ -131,7 +133,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
     "provide lookup of dispatchers by id" in {
       val d1 = lookup("myapp.mydispatcher")
       val d2 = lookup("myapp.mydispatcher")
-      d1 must be === d2
+      d1 should be(d2)
     }
 
     "include system name and dispatcher id in thread names for fork-join-executor" in {

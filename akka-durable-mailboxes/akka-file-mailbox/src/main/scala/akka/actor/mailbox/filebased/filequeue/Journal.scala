@@ -25,6 +25,7 @@ import scala.util.control.NonFatal
 
 // returned from journal replay
 sealed trait JournalItem
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 object JournalItem {
   case class Add(item: QItem) extends JournalItem
   case object Remove extends JournalItem
@@ -38,6 +39,7 @@ object JournalItem {
 /**
  * Codes for working with the journal file for a PersistentQueue.
  */
+@deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 class Journal(queuePath: String, syncJournal: ⇒ Boolean, log: LoggingAdapter) {
 
   private val queueFile = new File(queuePath)

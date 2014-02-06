@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.io
 
@@ -30,15 +30,15 @@ private[io] trait WithUdpSend {
   def sendHandlers(registration: ChannelRegistration): Receive = {
     case send: Send if hasWritePending ⇒
       if (TraceLogging) log.debug("Dropping write because queue is full")
-      sender ! CommandFailed(send)
+      sender() ! CommandFailed(send)
 
     case send: Send if send.payload.isEmpty ⇒
       if (send.wantsAck)
-        sender ! send.ack
+        sender() ! send.ack
 
     case send: Send ⇒
       pendingSend = send
-      pendingCommander = sender
+      pendingCommander = sender()
       doSend(registration)
 
     case ChannelWritable ⇒ if (hasWritePending) doSend(registration)

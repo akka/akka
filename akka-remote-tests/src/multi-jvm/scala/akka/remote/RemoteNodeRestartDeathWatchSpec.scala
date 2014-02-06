@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -30,16 +30,18 @@ object RemoteNodeRestartDeathWatchMultiJvmSpec extends MultiNodeConfig {
     ConfigFactory.parseString("""
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = off
-      """)))
+      akka.remote.transport-failure-detector.heartbeat-interval = 1 s
+      akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
+    """)))
 
   testTransport(on = true)
 
   class Subject extends Actor {
     def receive = {
       case "shutdown" ⇒
-        sender ! "shutdown-ack"
+        sender() ! "shutdown-ack"
         context.system.shutdown()
-      case msg ⇒ sender ! msg
+      case msg ⇒ sender() ! msg
     }
   }
 

@@ -1,10 +1,9 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
 
-import scala.collection.immutable
 import akka.dispatch.sysmsg._
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 import akka.routing._
@@ -15,7 +14,7 @@ import akka.util.Collections.EmptyImmutableSeq
 import scala.util.{ Success, Failure }
 import scala.util.control.NonFatal
 import java.util.concurrent.atomic.AtomicLong
-import scala.concurrent.{ ExecutionContext, Future, Promise }
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future, Promise }
 import scala.annotation.implicitNotFound
 import akka.ConfigurationException
 import akka.dispatch.Mailboxes
@@ -191,7 +190,7 @@ trait ActorRefFactory {
   /**
    * Returns the default MessageDispatcher associated with this ActorRefFactory
    */
-  implicit def dispatcher: ExecutionContext
+  implicit def dispatcher: ExecutionContextExecutor
 
   /**
    * Father of all children created by this interface.
@@ -371,7 +370,7 @@ private[akka] object LocalActorRefProvider {
     def receive = {
       case Terminated(_)    ⇒ context.stop(self)
       case StopChild(child) ⇒ context.stop(child)
-      case m                ⇒ context.system.deadLetters forward DeadLetter(m, sender, self)
+      case m                ⇒ context.system.deadLetters forward DeadLetter(m, sender(), self)
     }
 
     // guardian MUST NOT lose its children during restart
@@ -400,16 +399,16 @@ private[akka] object LocalActorRefProvider {
         // termination process of guardian has started
         terminationHooks -= a
       case StopChild(child) ⇒ context.stop(child)
-      case RegisterTerminationHook if sender != context.system.deadLetters ⇒
-        terminationHooks += sender
-        context watch sender
-      case m ⇒ context.system.deadLetters forward DeadLetter(m, sender, self)
+      case RegisterTerminationHook if sender() != context.system.deadLetters ⇒
+        terminationHooks += sender()
+        context watch sender()
+      case m ⇒ context.system.deadLetters forward DeadLetter(m, sender(), self)
     }
 
     def terminating: Receive = {
       case Terminated(a)       ⇒ stopWhenAllTerminationHooksDone(a)
-      case TerminationHookDone ⇒ stopWhenAllTerminationHooksDone(sender)
-      case m                   ⇒ context.system.deadLetters forward DeadLetter(m, sender, self)
+      case TerminationHookDone ⇒ stopWhenAllTerminationHooksDone(sender())
+      case m                   ⇒ context.system.deadLetters forward DeadLetter(m, sender(), self)
     }
 
     def stopWhenAllTerminationHooksDone(remove: ActorRef): Unit = {

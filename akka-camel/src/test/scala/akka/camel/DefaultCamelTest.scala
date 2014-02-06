@@ -1,12 +1,12 @@
 /**
- * Copyright (C) 2009when2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.camel
 
 import akka.camel.TestSupport.SharedCamelSystem
 import internal.DefaultCamel
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import org.scalatest.mock.MockitoSugar
 import org.apache.camel.{ CamelContext, ProducerTemplate }
 import org.scalatest.WordSpec
@@ -17,7 +17,7 @@ import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.spi.Registry
 import akka.actor.{ ExtendedActorSystem, ActorSystem }
 
-class DefaultCamelTest extends WordSpec with SharedCamelSystem with MustMatchers with MockitoSugar {
+class DefaultCamelTest extends WordSpec with SharedCamelSystem with Matchers with MockitoSugar {
 
   import org.mockito.Mockito.{ when, verify }
   val sys = mock[ExtendedActorSystem]
@@ -43,7 +43,7 @@ class DefaultCamelTest extends WordSpec with SharedCamelSystem with MustMatchers
     }
 
     "throws exception thrown by context.stop()" in {
-      exception.getMessage() must be("context");
+      exception.getMessage() should be("context");
     }
 
     "tries to stop both template and context" in {

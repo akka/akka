@@ -19,6 +19,7 @@ prior deprecation.
 .. toctree::
    :maxdepth: 1
 
+   ../scala/persistence
    ../dev/multi-node-testing
 
 Another reason for marking a module as experimental is that it's too early

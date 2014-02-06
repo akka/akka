@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.io
 
@@ -20,14 +20,14 @@ class UdpIntegrationSpec extends AkkaSpec("""
     val commander = TestProbe()
     commander.send(IO(Udp), Bind(handler, address))
     commander.expectMsg(Bound(address))
-    commander.sender
+    commander.sender()
   }
 
   val simpleSender: ActorRef = {
     val commander = TestProbe()
     commander.send(IO(Udp), SimpleSender)
     commander.expectMsg(SimpleSenderReady)
-    commander.sender
+    commander.sender()
   }
 
   "The UDP Fire-and-Forget implementation" must {
@@ -38,7 +38,7 @@ class UdpIntegrationSpec extends AkkaSpec("""
       val data = ByteString("To infinity and beyond!")
       simpleSender ! Send(data, serverAddress)
 
-      expectMsgType[Received].data must be === data
+      expectMsgType[Received].data should be(data)
 
     }
 
@@ -53,16 +53,16 @@ class UdpIntegrationSpec extends AkkaSpec("""
         server ! Send(data, clientAddress)
         expectMsgPF() {
           case Received(d, a) ⇒
-            d must be === data
-            a must be === serverAddress
+            d should be(data)
+            a should be(serverAddress)
         }
       }
       def checkSendingToServer(): Unit = {
         client ! Send(data, serverAddress)
         expectMsgPF() {
           case Received(d, a) ⇒
-            d must be === data
-            a must be === clientAddress
+            d should be(data)
+            a should be(clientAddress)
         }
       }
 

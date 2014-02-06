@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
@@ -59,11 +59,11 @@ object Ticket669Spec {
     }
 
     override def preRestart(reason: scala.Throwable, msg: Option[Any]) {
-      sender ! "failure1"
+      sender() ! "failure1"
     }
 
     override def postStop() {
-      sender ! "failure2"
+      sender() ! "failure2"
     }
   }
 }

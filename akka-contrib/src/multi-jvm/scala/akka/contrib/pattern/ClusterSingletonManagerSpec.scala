@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.contrib.pattern
@@ -27,6 +27,7 @@ import akka.actor.Terminated
 import akka.actor.Identify
 import akka.actor.ActorIdentity
 import akka.actor.ActorSelection
+import akka.cluster.MemberStatus
 
 object ClusterSingletonManagerSpec extends MultiNodeConfig {
   val controller = role("controller")
@@ -72,33 +73,33 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
 
     def idle: Receive = {
       case RegisterConsumer ⇒
-        log.info("RegisterConsumer: [{}]", sender.path)
-        sender ! RegistrationOk
-        context.become(active(sender))
+        log.info("RegisterConsumer: [{}]", sender().path)
+        sender() ! RegistrationOk
+        context.become(active(sender()))
       case UnregisterConsumer ⇒
-        log.info("UnexpectedUnregistration: [{}]", sender.path)
-        sender ! UnexpectedUnregistration
+        log.info("UnexpectedUnregistration: [{}]", sender().path)
+        sender() ! UnexpectedUnregistration
         context stop self
-      case Reset ⇒ sender ! ResetOk
+      case Reset ⇒ sender() ! ResetOk
       case msg   ⇒ // no consumer, drop
     }
 
     def active(consumer: ActorRef): Receive = {
-      case UnregisterConsumer if sender == consumer ⇒
-        log.info("UnregistrationOk: [{}]", sender.path)
-        sender ! UnregistrationOk
+      case UnregisterConsumer if sender() == consumer ⇒
+        log.info("UnregistrationOk: [{}]", sender().path)
+        sender() ! UnregistrationOk
         context.become(idle)
       case UnregisterConsumer ⇒
-        log.info("UnexpectedUnregistration: [{}], expected [{}]", sender.path, consumer.path)
-        sender ! UnexpectedUnregistration
+        log.info("UnexpectedUnregistration: [{}], expected [{}]", sender().path, consumer.path)
+        sender() ! UnexpectedUnregistration
         context stop self
       case RegisterConsumer ⇒
-        log.info("Unexpected RegisterConsumer [{}], active consumer [{}]", sender.path, consumer.path)
-        sender ! UnexpectedRegistration
+        log.info("Unexpected RegisterConsumer [{}], active consumer [{}]", sender().path, consumer.path)
+        sender() ! UnexpectedRegistration
         context stop self
       case Reset ⇒
         context.become(idle)
-        sender ! ResetOk
+        sender() ! ResetOk
       case msg ⇒ consumer ! msg
     }
   }
@@ -128,7 +129,7 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
       case x @ (RegistrationOk | UnexpectedRegistration) ⇒
         delegateTo ! x
       case GetCurrent ⇒
-        sender ! current
+        sender() ! current
       //#consumer-end
       case End ⇒
         queue ! UnregisterConsumer
@@ -156,12 +157,11 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
 
     def receive = {
       case state: CurrentClusterState ⇒
-        membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.collect {
-          case m if m.hasRole(role) ⇒ m
-        }
+        membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.filter(m ⇒
+          m.status == MemberStatus.Up && m.hasRole(role))
       case MemberUp(m)         ⇒ if (m.hasRole(role)) membersByAge += m
       case MemberRemoved(m, _) ⇒ if (m.hasRole(role)) membersByAge -= m
-      case other               ⇒ consumer foreach { _.tell(other, sender) }
+      case other               ⇒ consumer foreach { _.tell(other, sender()) }
     }
 
     def consumer: Option[ActorSelection] =
@@ -207,10 +207,10 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
 
   def awaitMemberUp(memberProbe: TestProbe, nodes: RoleName*): Unit = {
     runOn(nodes.filterNot(_ == nodes.head): _*) {
-      memberProbe.expectMsgType[MemberUp](15.seconds).member.address must be(node(nodes.head).address)
+      memberProbe.expectMsgType[MemberUp](15.seconds).member.address should be(node(nodes.head).address)
     }
     runOn(nodes.head) {
-      memberProbe.receiveN(nodes.size, 15.seconds).collect { case MemberUp(m) ⇒ m.address }.toSet must be(
+      memberProbe.receiveN(nodes.size, 15.seconds).collect { case MemberUp(m) ⇒ m.address }.toSet should be(
         nodes.map(node(_).address).toSet)
     }
     enterBarrier(nodes.head.name + "-up")

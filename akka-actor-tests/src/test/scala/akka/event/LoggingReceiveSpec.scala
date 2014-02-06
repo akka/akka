@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.event
 
@@ -82,7 +82,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         val actor = TestActorRef(new Actor {
           def switch: Actor.Receive = { case "becomenull" ⇒ context.become(r, false) }
           def receive = switch orElse LoggingReceive {
-            case x ⇒ sender ! "x"
+            case x ⇒ sender() ! "x"
           }
         })
 
@@ -110,7 +110,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         system.eventStream.subscribe(testActor, classOf[Logging.Debug])
         val actor = TestActorRef(new Actor {
           def receive = LoggingReceive(LoggingReceive {
-            case _ ⇒ sender ! "x"
+            case _ ⇒ sender() ! "x"
           })
         })
         actor ! "buh"

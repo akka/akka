@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.pattern
@@ -32,7 +32,7 @@ class PatternSpec extends AkkaSpec("akka.actor.serialize-messages = off") {
     "provide Future for stopping an actor" in {
       val target = system.actorOf(Props[TargetActor])
       val result = gracefulStop(target, 5 seconds)
-      Await.result(result, 6 seconds) must be(true)
+      Await.result(result, 6 seconds) should be(true)
     }
 
     "complete Future when actor already terminated" in {
@@ -52,17 +52,19 @@ class PatternSpec extends AkkaSpec("akka.actor.serialize-messages = off") {
 
   "pattern.after" must {
     "be completed successfully eventually" in {
-      val f = after(1 second, using = system.scheduler)(Promise.successful(5).future)
+      // TODO after is unfortunately shadowed by ScalaTest, fix as part of #3759
+      val f = akka.pattern.after(1 second, using = system.scheduler)(Promise.successful(5).future)
 
       val r = Future.firstCompletedOf(Seq(Promise[Int]().future, f))
-      Await.result(r, remaining) must be(5)
+      Await.result(r, remaining) should be(5)
     }
 
     "be completed abnormally eventually" in {
-      val f = after(1 second, using = system.scheduler)(Promise.failed(new IllegalStateException("Mexico")).future)
+      // TODO after is unfortunately shadowed by ScalaTest, fix as part of #3759
+      val f = akka.pattern.after(1 second, using = system.scheduler)(Promise.failed(new IllegalStateException("Mexico")).future)
 
       val r = Future.firstCompletedOf(Seq(Promise[Int]().future, f))
-      intercept[IllegalStateException] { Await.result(r, remaining) }.getMessage must be("Mexico")
+      intercept[IllegalStateException] { Await.result(r, remaining) }.getMessage should be("Mexico")
     }
   }
 }

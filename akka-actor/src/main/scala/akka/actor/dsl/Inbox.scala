@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor.dsl
@@ -66,7 +66,7 @@ trait Inbox { this: ActorDSL.type ⇒
     var printedWarning = false
 
     def enqueueQuery(q: Query) {
-      val query = q withClient sender
+      val query = q withClient sender()
       clients enqueue query
       clientsByTimeout += query
     }
@@ -96,13 +96,13 @@ trait Inbox { this: ActorDSL.type ⇒
     def receive = ({
       case g: Get ⇒
         if (messages.isEmpty) enqueueQuery(g)
-        else sender ! messages.dequeue()
+        else sender() ! messages.dequeue()
       case s @ Select(_, predicate, _) ⇒
         if (messages.isEmpty) enqueueQuery(s)
         else {
           currentSelect = s
           messages.dequeueFirst(messagePredicate) match {
-            case Some(msg) ⇒ sender ! msg
+            case Some(msg) ⇒ sender() ! msg
             case None      ⇒ enqueueQuery(s)
           }
           currentSelect = null

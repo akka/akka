@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.remoting
 
@@ -13,7 +13,7 @@ import akka.remote.RemoteScope
 object RemoteDeploymentDocSpec {
 
   class SampleActor extends Actor {
-    def receive = { case _ ⇒ sender ! self }
+    def receive = { case _ => sender() ! self }
   }
 
 }
@@ -37,9 +37,9 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
     val ref = system.actorOf(Props[SampleActor].
       withDeploy(Deploy(scope = RemoteScope(address))))
     //#deploy
-    ref.path.address must be(address)
+    ref.path.address should be(address)
     ref ! "test"
-    expectMsgType[ActorRef].path.address must be(address)
+    expectMsgType[ActorRef].path.address should be(address)
   }
 
   "demonstrate address extractor" in {
@@ -47,7 +47,7 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
     val one = AddressFromURIString("akka.tcp://sys@host:1234")
     val two = Address("akka.tcp", "sys", "host", 1234) // this gives the same
     //#make-address
-    one must be === two
+    one should be(two)
   }
 
   "demonstrate sampleActor" in {

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -15,9 +15,9 @@ object ActorFireForgetRequestReplySpec {
   class ReplyActor extends Actor {
     def receive = {
       case "Send" ⇒
-        sender ! "Reply"
+        sender() ! "Reply"
       case "SendImplicit" ⇒
-        sender ! "ReplyImplicit"
+        sender() ! "ReplyImplicit"
     }
   }
 
@@ -68,7 +68,7 @@ class ActorFireForgetRequestReplySpec extends AkkaSpec with BeforeAndAfterEach w
       val senderActor = system.actorOf(Props(new SenderActor(replyActor)))
       senderActor ! "Init"
       state.finished.await
-      state.s must be("Reply")
+      state.s should be("Reply")
     }
 
     "reply to bang message using implicit sender" in {
@@ -76,7 +76,7 @@ class ActorFireForgetRequestReplySpec extends AkkaSpec with BeforeAndAfterEach w
       val senderActor = system.actorOf(Props(new SenderActor(replyActor)))
       senderActor ! "InitImplicit"
       state.finished.await
-      state.s must be("ReplyImplicit")
+      state.s should be("ReplyImplicit")
     }
 
     "shutdown crashed temporary actor" in {
@@ -84,11 +84,11 @@ class ActorFireForgetRequestReplySpec extends AkkaSpec with BeforeAndAfterEach w
         val supervisor = system.actorOf(Props(new Supervisor(
           OneForOneStrategy(maxNrOfRetries = 0)(List(classOf[Exception])))))
         val actor = Await.result((supervisor ? Props[CrashingActor]).mapTo[ActorRef], timeout.duration)
-        actor.isTerminated must be(false)
+        actor.isTerminated should be(false)
         actor ! "Die"
         state.finished.await
         Thread.sleep(1.second.dilated.toMillis)
-        actor.isTerminated must be(true)
+        actor.isTerminated should be(true)
         system.stop(supervisor)
       }
     }

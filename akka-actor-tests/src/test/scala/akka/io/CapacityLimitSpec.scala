@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.io
@@ -31,11 +31,11 @@ class CapacityLimitSpec extends AkkaSpec("""
 
       val bindToFail = Bind(bindHandler.ref, addresses(1))
       commander.send(IO(Tcp), bindToFail)
-      commander.expectMsgType[CommandFailed].cmd must be theSameInstanceAs (bindToFail)
+      commander.expectMsgType[CommandFailed].cmd should be theSameInstanceAs (bindToFail)
 
       val connectToFail = Connect(endpoint)
       commander.send(IO(Tcp), connectToFail)
-      commander.expectMsgType[CommandFailed].cmd must be theSameInstanceAs (connectToFail)
+      commander.expectMsgType[CommandFailed].cmd should be theSameInstanceAs (connectToFail)
     }
 
   }

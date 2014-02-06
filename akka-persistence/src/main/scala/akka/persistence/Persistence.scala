@@ -1,12 +1,65 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.persistence
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.Config
+
 import akka.actor._
 import akka.dispatch.Dispatchers
 import akka.persistence.journal.AsyncWriteJournal
+import akka.util.Helpers.ConfigOps
+
+/**
+ * Persistence configuration.
+ */
+final class PersistenceSettings(config: Config) {
+  object journal {
+    val maxMessageBatchSize: Int =
+      config.getInt("journal.max-message-batch-size")
+
+    val maxConfirmationBatchSize: Int =
+      config.getInt("journal.max-confirmation-batch-size")
+
+    val maxDeletionBatchSize: Int =
+      config.getInt("journal.max-deletion-batch-size")
+  }
+
+  object view {
+    val autoUpdate: Boolean =
+      config.getBoolean("view.auto-update")
+
+    val autoUpdateInterval: FiniteDuration =
+      config.getMillisDuration("view.auto-update-interval")
+
+    val autoUpdateReplayMax: Long =
+      posMax(config.getLong("view.auto-update-replay-max"))
+
+    private def posMax(v: Long) =
+      if (v < 0) Long.MaxValue else v
+  }
+
+  /**
+   * INTERNAL API.
+   *
+   * These config options are only used internally for testing
+   * purposes and are therefore not defined in reference.conf
+   */
+  private[persistence] object internal {
+    val publishPluginCommands: Boolean = {
+      val path = "publish-plugin-commands"
+      config.hasPath(path) && config.getBoolean(path)
+    }
+
+    val publishConfirmations: Boolean = {
+      val path = "publish-confirmations"
+      config.hasPath(path) && config.getBoolean(path)
+    }
+  }
+}
 
 /**
  * Persistence extension.
@@ -27,27 +80,34 @@ object Persistence extends ExtensionId[Persistence] with ExtensionIdProvider {
  */
 class Persistence(val system: ExtendedActorSystem) extends Extension {
   private val DefaultPluginDispatcherId = "akka.persistence.dispatchers.default-plugin-dispatcher"
-
   private val config = system.settings.config.getConfig("akka.persistence")
-  private val snapshotStore = createPlugin("snapshot-store", _ ⇒ DefaultPluginDispatcherId)
-  private val journal = createPlugin("journal", clazz ⇒
-    if (classOf[AsyncWriteJournal].isAssignableFrom(clazz)) Dispatchers.DefaultDispatcherId else DefaultPluginDispatcherId)
 
-  /**
-   * INTERNAL API.
-   */
-  private[persistence] val publishPluginCommands: Boolean = {
-    val path = "publish-plugin-commands"
-    // this config option is only used internally (for testing
-    // purposes) and is therefore not defined in reference.conf
-    config.hasPath(path) && config.getBoolean(path)
+  val settings = new PersistenceSettings(config)
+
+  private val snapshotStore = createPlugin("snapshot-store") { _ ⇒
+    DefaultPluginDispatcherId
   }
 
+  private val journal = createPlugin("journal") { clazz ⇒
+    if (classOf[AsyncWriteJournal].isAssignableFrom(clazz)) Dispatchers.DefaultDispatcherId
+    else DefaultPluginDispatcherId
+  }
+
+  private val confirmationBatchLayer = system.asInstanceOf[ActorSystemImpl]
+    .systemActorOf(Props(classOf[DeliveredByChannelBatching], journal, settings), "confirmation-batch-layer")
+
+  private val deletionBatchLayer = system.asInstanceOf[ActorSystemImpl]
+    .systemActorOf(Props(classOf[DeliveredByPersistentChannelBatching], journal, settings), "deletion-batch-layer")
+
   /**
-   * INTERNAL API.
+   * Creates a canonical processor id from a processor actor ref.
    */
-  private[persistence] val maxBatchSize: Int =
-    config.getInt("journal.max-batch-size")
+  def processorId(processor: ActorRef): String = id(processor)
+
+  /**
+   * Creates a canonical channel id from a channel actor ref.
+   */
+  def channelId(channel: ActorRef): String = id(channel)
 
   /**
    * Returns a snapshot store for a processor identified by `processorId`.
@@ -68,16 +128,18 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   }
 
   /**
-   * Creates a canonical processor id from a processor actor ref.
+   * INTERNAL API.
    */
-  def processorId(processor: ActorRef): String = id(processor)
+  private[persistence] def confirmationBatchingJournalForChannel(channelId: String): ActorRef =
+    confirmationBatchLayer
 
   /**
-   * Creates a canonical channel id from a channel actor ref.
+   * INTERNAL API.
    */
-  def channelId(channel: ActorRef): String = id(channel)
+  private[persistence] def deletionBatchingJournalForChannel(channelId: String): ActorRef =
+    deletionBatchLayer
 
-  private def createPlugin(pluginType: String, dispatcherSelector: Class[_] ⇒ String) = {
+  private def createPlugin(pluginType: String)(dispatcherSelector: Class[_] ⇒ String) = {
     val pluginConfigPath = config.getString(s"${pluginType}.plugin")
     val pluginConfig = system.settings.config.getConfig(pluginConfigPath)
     val pluginClassName = pluginConfig.getString("class")
@@ -86,5 +148,5 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
     system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(pluginClass).withDispatcher(pluginDispatcherId), pluginType)
   }
 
-  private def id(ref: ActorRef) = ref.path.toStringWithAddress(system.provider.getDefaultAddress)
+  private def id(ref: ActorRef) = ref.path.toStringWithoutAddress
 }

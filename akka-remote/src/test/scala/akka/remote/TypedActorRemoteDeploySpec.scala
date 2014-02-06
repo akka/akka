@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -38,7 +38,7 @@ class TypedActorRemoteDeploySpec extends AkkaSpec(conf) {
     val ts = TypedActor(system)
     val echoService: RemoteNameService = ts.typedActorOf(
       TypedProps[RemoteNameServiceImpl].withDeploy(Deploy(scope = RemoteScope(remoteAddress))))
-    Await.result(f(echoService), 3.seconds) must be(expected)
+    Await.result(f(echoService), 3.seconds) should be(expected)
     val actor = ts.getActorRefFor(echoService)
     system.stop(actor)
     verifyActorTermination(actor)

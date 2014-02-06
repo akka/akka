@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -22,7 +22,7 @@ private[cluster] final class ClusterHeartbeatReceiver extends Actor with ActorLo
   val selfHeartbeatRsp = HeartbeatRsp(Cluster(context.system).selfUniqueAddress)
 
   def receive = {
-    case Heartbeat(from) ⇒ sender ! selfHeartbeatRsp
+    case Heartbeat(from) ⇒ sender() ! selfHeartbeatRsp
   }
 
 }

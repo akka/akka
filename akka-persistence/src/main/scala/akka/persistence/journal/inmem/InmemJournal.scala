@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.persistence.journal.inmem
@@ -34,7 +34,7 @@ private[persistence] class InmemJournal extends AsyncWriteProxy {
  * INTERNAL API.
  */
 private[persistence] trait InmemMessages {
-  // processor id => persistent message
+  // processor id -> persistent message
   var messages = Map.empty[String, Vector[PersistentRepr]]
 
   def add(p: PersistentRepr) = messages = messages + (messages.get(p.processorId) match {
@@ -52,18 +52,21 @@ private[persistence] trait InmemMessages {
     case None     ⇒ messages
   }
 
-  def read(pid: String, fromSnr: Long, toSnr: Long): immutable.Seq[PersistentRepr] = messages.get(pid) match {
-    case Some(ms) ⇒ ms.filter(m ⇒ m.sequenceNr >= fromSnr && m.sequenceNr <= toSnr)
+  def read(pid: String, fromSnr: Long, toSnr: Long, max: Long): immutable.Seq[PersistentRepr] = messages.get(pid) match {
+    case Some(ms) ⇒ ms.filter(m ⇒ m.sequenceNr >= fromSnr && m.sequenceNr <= toSnr).take(safeLongToInt(max))
     case None     ⇒ Nil
   }
 
-  def maxSequenceNr(pid: String): Long = {
+  def highestSequenceNr(pid: String): Long = {
     val snro = for {
       ms ← messages.get(pid)
       m ← ms.lastOption
     } yield m.sequenceNr
     snro.getOrElse(0L)
   }
+
+  private def safeLongToInt(l: Long): Int =
+    if (Int.MaxValue < l) Int.MaxValue else l.toInt
 }
 
 /**
@@ -73,16 +76,22 @@ private[persistence] class InmemStore extends Actor with InmemMessages {
   import AsyncWriteTarget._
 
   def receive = {
-    case WriteBatch(pb) ⇒
-      sender ! pb.foreach(add)
-    case Delete(pid, fsnr, tsnr, false) ⇒
-      sender ! (fsnr to tsnr foreach { snr ⇒ update(pid, snr)(_.update(deleted = true)) })
-    case Delete(pid, fsnr, tsnr, true) ⇒
-      sender ! (fsnr to tsnr foreach { snr ⇒ delete(pid, snr) })
-    case Confirm(pid, snr, cid) ⇒
-      sender ! update(pid, snr)(p ⇒ p.update(confirms = cid +: p.confirms))
-    case Replay(pid, fromSnr, toSnr) ⇒
-      read(pid, fromSnr, toSnr).foreach(sender ! _)
-      sender ! ReplaySuccess(maxSequenceNr(pid))
+    case WriteMessages(msgs) ⇒
+      sender ! msgs.foreach(add)
+    case WriteConfirmations(cnfs) ⇒
+      sender ! cnfs.foreach(cnf ⇒ update(cnf.processorId, cnf.sequenceNr)(p ⇒ p.update(confirms = cnf.channelId +: p.confirms)))
+    case DeleteMessages(msgIds, false) ⇒
+      sender ! msgIds.foreach(msgId ⇒ update(msgId.processorId, msgId.sequenceNr)(_.update(deleted = true)))
+    case DeleteMessages(msgIds, true) ⇒
+      sender ! msgIds.foreach(msgId ⇒ delete(msgId.processorId, msgId.sequenceNr))
+    case DeleteMessagesTo(pid, tsnr, false) ⇒
+      sender ! (1L to tsnr foreach { snr ⇒ update(pid, snr)(_.update(deleted = true)) })
+    case DeleteMessagesTo(pid, tsnr, true) ⇒
+      sender ! (1L to tsnr foreach { snr ⇒ delete(pid, snr) })
+    case ReplayMessages(pid, fromSnr, toSnr, max) ⇒
+      read(pid, fromSnr, toSnr, max).foreach(sender ! _)
+      sender ! ReplaySuccess
+    case ReadHighestSequenceNr(processorId, _) ⇒
+      sender ! highestSequenceNr(processorId)
   }
 }

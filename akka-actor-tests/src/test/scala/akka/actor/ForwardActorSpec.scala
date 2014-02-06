@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -17,7 +17,7 @@ object ForwardActorSpec {
 
   def createForwardingChain(system: ActorSystem): ActorRef = {
     val replier = system.actorOf(Props(new Actor {
-      def receive = { case x ⇒ sender ! x }
+      def receive = { case x ⇒ sender() ! x }
     }))
 
     def mkforwarder(forwardTo: ActorRef) = system.actorOf(Props(

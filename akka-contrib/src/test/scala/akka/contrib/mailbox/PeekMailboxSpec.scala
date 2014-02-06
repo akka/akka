@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.contrib.mailbox
 
@@ -15,13 +15,13 @@ object PeekMailboxSpec {
     var togo = tries
     def receive = {
       case Check ⇒
-        sender ! Check
+        sender() ! Check
         PeekMailboxExtension.ack()
       case DoubleAck ⇒
         PeekMailboxExtension.ack()
         PeekMailboxExtension.ack()
       case msg ⇒
-        sender ! msg
+        sender() ! msg
         if (togo == 0) throw new RuntimeException("DONTWANNA")
         togo -= 1
         PeekMailboxExtension.ack()
@@ -83,7 +83,7 @@ class PeekMailboxSpec extends AkkaSpec("""
         a ! "DIE" // stays in the mailbox
       }
       expectMsg("DIE")
-      expectMsgType[DeadLetter].message must be("DIE")
+      expectMsgType[DeadLetter].message should be("DIE")
       expectTerminated(a)
     }
 

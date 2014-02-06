@@ -1,9 +1,10 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.persistence.journal.leveldb
 
+import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 
 import akka.actor._
@@ -20,9 +21,9 @@ object SharedLeveldbJournalSpec {
         persistence {
           journal {
             plugin = "akka.persistence.journal.leveldb-shared"
-            leveldb-shared.store.dir = target/shared-journal
+            leveldb-shared.store.dir = target/journal-SharedLeveldbJournalSpec
           }
-          snapshot-store.local.dir = target/snapshot-store
+          snapshot-store.local.dir = target/snapshots-SharedLeveldbJournalSpec
         }
         remote {
           enabled-transports = ["akka.remote.netty.tcp"]
@@ -43,7 +44,7 @@ object SharedLeveldbJournalSpec {
     }
   }
 
-  class ExampleApp(probe: ActorRef, port: Int) extends Actor {
+  class ExampleApp(probe: ActorRef, storePath: ActorPath) extends Actor {
     val processor = context.actorOf(Props(classOf[ExampleProcessor], probe, context.system.name))
 
     def receive = {
@@ -52,30 +53,35 @@ object SharedLeveldbJournalSpec {
     }
 
     override def preStart(): Unit = {
-      context.actorSelection(s"akka.tcp://store@127.0.0.1:${port}/user/store") ! Identify(1)
+      context.actorSelection(storePath) ! Identify(1)
     }
   }
 
-  def port(system: ActorSystem) =
-    system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress.port.get
 }
 
 class SharedLeveldbJournalSpec extends AkkaSpec(SharedLeveldbJournalSpec.config) with Cleanup {
   import SharedLeveldbJournalSpec._
 
+  val processorASystem = ActorSystem("processorA", system.settings.config)
+  val processorBSystem = ActorSystem("processorB", system.settings.config)
+
+  override protected def afterTermination() {
+    shutdown(processorASystem)
+    shutdown(processorBSystem)
+    super.afterTermination()
+  }
+
   "A LevelDB store" can {
     "be shared by multiple actor systems" in {
-      val storeSystem = ActorSystem("store", ConfigFactory.parseString(SharedLeveldbJournalSpec.config))
-      val processorASystem = ActorSystem("processorA", ConfigFactory.parseString(SharedLeveldbJournalSpec.config))
-      val processorBSystem = ActorSystem("processorB", ConfigFactory.parseString(SharedLeveldbJournalSpec.config))
 
       val processorAProbe = new TestProbe(processorASystem)
       val processorBProbe = new TestProbe(processorBSystem)
 
-      storeSystem.actorOf(Props[SharedLeveldbStore], "store")
+      system.actorOf(Props[SharedLeveldbStore], "store")
+      val storePath = RootActorPath(system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress) / "user" / "store"
 
-      val appA = processorASystem.actorOf(Props(classOf[ExampleApp], processorAProbe.ref, port(storeSystem)))
-      val appB = processorBSystem.actorOf(Props(classOf[ExampleApp], processorBProbe.ref, port(storeSystem)))
+      val appA = processorASystem.actorOf(Props(classOf[ExampleApp], processorAProbe.ref, storePath))
+      val appB = processorBSystem.actorOf(Props(classOf[ExampleApp], processorBProbe.ref, storePath))
 
       appA ! Persistent("a1")
       appB ! Persistent("b1")
@@ -83,8 +89,8 @@ class SharedLeveldbJournalSpec extends AkkaSpec(SharedLeveldbJournalSpec.config)
       processorAProbe.expectMsg("a1")
       processorBProbe.expectMsg("b1")
 
-      val recoveredAppA = processorASystem.actorOf(Props(classOf[ExampleApp], processorAProbe.ref, port(storeSystem)))
-      val recoveredAppB = processorBSystem.actorOf(Props(classOf[ExampleApp], processorBProbe.ref, port(storeSystem)))
+      val recoveredAppA = processorASystem.actorOf(Props(classOf[ExampleApp], processorAProbe.ref, storePath))
+      val recoveredAppB = processorBSystem.actorOf(Props(classOf[ExampleApp], processorBProbe.ref, storePath))
 
       recoveredAppA ! Persistent("a2")
       recoveredAppB ! Persistent("b2")

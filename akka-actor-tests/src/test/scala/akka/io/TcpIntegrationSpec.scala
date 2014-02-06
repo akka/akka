@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.io
@@ -46,11 +46,11 @@ class TcpIntegrationSpec extends AkkaSpec("""
 
       clientHandler.send(clientConnection, Write(ByteString("Captain on the bridge!"), Aye))
       clientHandler.expectMsg(Aye)
-      serverHandler.expectMsgType[Received].data.decodeString("ASCII") must be("Captain on the bridge!")
+      serverHandler.expectMsgType[Received].data.decodeString("ASCII") should be("Captain on the bridge!")
 
       serverHandler.send(serverConnection, Write(ByteString("For the king!"), Yes))
       serverHandler.expectMsg(Yes)
-      clientHandler.expectMsgType[Received].data.decodeString("ASCII") must be("For the king!")
+      clientHandler.expectMsgType[Received].data.decodeString("ASCII") should be("For the king!")
 
       serverHandler.send(serverConnection, Close)
       serverHandler.expectMsg(Closed)
@@ -78,7 +78,9 @@ class TcpIntegrationSpec extends AkkaSpec("""
       // a "random" endpoint hopefully unavailable
       val endpoint = new InetSocketAddress("10.226.182.48", 23825)
       connectCommander.send(IO(Tcp), Connect(endpoint))
-      connectCommander.expectNoMsg(1.second)
+      // expecting CommandFailed or no reply (within timeout)
+      val replies = connectCommander.receiveWhile(1.second) { case m: Connected ⇒ m }
+      replies should be(Nil)
     }
   }
 

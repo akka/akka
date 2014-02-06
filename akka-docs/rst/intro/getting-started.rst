@@ -34,17 +34,8 @@ Akka is very modular and consists of several JARs containing different features.
 
 - ``akka-cluster`` – Cluster membership management, elastic routers.
 
-- ``akka-dataflow`` – add-on to SIP-14 futures supporting implicit
-  continuation-passing style
-
-- ``akka-file-mailbox`` – Akka durable mailbox (find more among community
-  projects)
-
 - ``akka-kernel`` – Akka microkernel for running a bare-bones mini application
   server
-
-- ``akka-mailboxes-common`` – common infrastructure for implementing durable
-  mailboxes
 
 - ``akka-osgi`` – base bundle for using Akka in OSGi containers, containing the
   ``akka-actor`` classes
@@ -57,9 +48,6 @@ Akka is very modular and consists of several JARs containing different features.
 
 - ``akka-testkit`` – Toolkit for testing Actor systems
 
-- ``akka-transactor`` – Transactors - transactional actors, integrated with
-  Scala STM
-
 - ``akka-zeromq`` – ZeroMQ integration
 
 In addition to these stable modules there are several which are on their way
@@ -68,9 +56,6 @@ does not mean that they do not function as intended, it primarily means that
 their API has not yet solidified enough in order to be considered frozen. You
 can help accelerating this process by giving feedback on these modules on our
 mailing list.
-
-- ``akka-channels-experimental`` – Typed Channels on top of untyped Actors,
-  using Scala 2.10 macros
 
 - ``akka-contrib`` – an assortment of contributions which may or may not be
   moved into core modules, see :ref:`akka-contrib` for more details.
@@ -132,8 +117,8 @@ Using Akka with Maven
 ---------------------
 
 The simplest way to get started with Akka and Maven is to check out the
-`Akka/Maven template <http://typesafe.com/resources/getting-started/typesafe-stack/downloading-installing.html#template-projects-for-scala-akka-and-play>`_
-project.
+`Typesafe Activator <http://typesafe.com/platform/getstarted>`_
+tutorial named `Akka Main in Java <http://typesafe.com/activator/template/akka-sample-main-java>`_.
 
 Since Akka is published to Maven Central (for versions since 2.1-M2), is it
 enough to add the Akka dependencies to the POM. For example, here is the
@@ -225,7 +210,9 @@ Setup SBT project and then use `sbt-idea <https://github.com/mpeltonen/sbt-idea>
 Using Akka with NetBeans
 ------------------------
 
-Setup SBT project and then use `sbt-netbeans-plugin <https://github.com/remeniuk/sbt-netbeans-plugin>`_ to generate a NetBeans project.
+Setup SBT project and then use `nbsbt <https://github.com/dcaoyuan/nbsbt>`_ to generate a NetBeans project.
+
+You should also use `nbscala <https://github.com/dcaoyuan/nbscala>`_ for general scala support in the IDE.
 
 Do not use -optimize Scala compiler flag
 ----------------------------------------

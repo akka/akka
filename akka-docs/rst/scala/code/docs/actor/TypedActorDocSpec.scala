@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.actor
 
@@ -8,11 +8,11 @@ import scala.concurrent.{ Promise, Future, Await }
 import scala.concurrent.duration._
 import akka.actor.{ ActorContext, TypedActor, TypedProps }
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.Matchers
 import akka.testkit._
 
 //Mr funny man avoids printing to stdout AND keeping docs alright
-import java.lang.String.{ valueOf ⇒ println }
+import java.lang.String.{ valueOf => println }
 import akka.actor.ActorRef
 
 //#typed-actor-iface
@@ -25,6 +25,9 @@ trait Squarer {
   def squareNowPlease(i: Int): Option[Int] //blocking send-request-reply
 
   def squareNow(i: Int): Int //blocking send-request-reply
+
+  @throws(classOf[Exception]) //declare it or you will get an UndeclaredThrowableException
+  def squareTry(i: Int): Int //blocking send-request-reply with possible exception
   //#typed-actor-iface-methods
 }
 //#typed-actor-iface
@@ -41,6 +44,8 @@ class SquarerImpl(val name: String) extends Squarer {
   def squareNowPlease(i: Int): Option[Int] = Some(i * i)
 
   def squareNow(i: Int): Int = i * i
+
+  def squareTry(i: Int): Int = throw new Exception("Catch me!")
   //#typed-actor-impl-methods
 }
 //#typed-actor-impl
@@ -91,7 +96,7 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
       //#typed-actor-extension-tools
     } catch {
-      case e: Exception ⇒ //dun care
+      case e: Exception => //dun care
     }
   }
 
@@ -124,11 +129,11 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#typed-actor-call-strict
     //#typed-actor-calls
 
-    Await.result(fSquare, 3 seconds) must be === 100
+    Await.result(fSquare, 3 seconds) should be(100)
 
-    oSquare must be === Some(100)
+    oSquare should be(Some(100))
 
-    iSquare must be === 100
+    iSquare should be(100)
 
     //#typed-actor-stop
     TypedActor(system).stop(mySquarer)
@@ -160,7 +165,7 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       //Use "childSquarer" as a Squarer
       //#typed-actor-hierarchy
     } catch {
-      case e: Exception ⇒ //ignore
+      case e: Exception => //ignore
     }
   }
 
@@ -174,6 +179,6 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
     TypedActor(system).poisonPill(awesomeFooBar)
     //#typed-actor-supercharge-usage
-    Await.result(f, 3 seconds) must be === "YES"
+    Await.result(f, 3 seconds) should be("YES")
   }
 }
