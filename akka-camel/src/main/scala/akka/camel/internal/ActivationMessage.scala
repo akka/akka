@@ -1,7 +1,7 @@
 package akka.camel.internal
 
 /**
- * Copyright (C) 2009-2013 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 import akka.actor.ActorRef

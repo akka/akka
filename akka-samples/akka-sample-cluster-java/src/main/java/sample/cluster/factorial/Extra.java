@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2011 Typesafe <http://typesafe.com/>
+ * Copyright (C) 2011-2014 Typesafe <http://typesafe.com/>
  */
 package sample.cluster.factorial;
 
