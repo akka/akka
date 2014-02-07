@@ -15,6 +15,7 @@ object AndThenImpl {
     case a: AndThen[I, i2, O] ⇒
       AndThenImpl.operation(implementation(upstream, _: Downstream[i2], subscribable, a.f), implementation(_, downstream, subscribable, a.g))
     case Map(f)              ⇒ MapImpl(upstream, downstream, f)
+    case i: Identity[O]      ⇒ IdentityImpl(upstream, downstream).asInstanceOf[SyncOperation[I, O]]
     case Flatten()           ⇒ FlattenImpl(upstream, downstream, subscribable).asInstanceOf[SyncOperation[I, O]]
     case d: DirectFold[I, O] ⇒ FoldImpl(upstream, downstream, d)
   }
