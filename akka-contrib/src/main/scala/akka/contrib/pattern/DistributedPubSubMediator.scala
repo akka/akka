@@ -337,11 +337,15 @@ class DistributedPubSubMediator(
     case Delta(buckets) ⇒
       // reply from Status message in the gossip chat
       // the Delta contains potential updates (newer versions) from the other node
-      if (nodes.contains(sender().path.address)) {
+      // only accept deltas/buckets from known nodes, otherwise there is a risk of
+      // adding back entries when nodes are removed
+      if (nodes(sender().path.address)) {
         buckets foreach { b ⇒
-          val myBucket = registry(b.owner)
-          if (b.version > myBucket.version) {
-            registry += (b.owner -> myBucket.copy(version = b.version, content = myBucket.content ++ b.content))
+          if (nodes(b.owner)) {
+            val myBucket = registry(b.owner)
+            if (b.version > myBucket.version) {
+              registry += (b.owner -> myBucket.copy(version = b.version, content = myBucket.content ++ b.content))
+            }
           }
         }
       }
