@@ -8,14 +8,15 @@ sealed trait Operation[-I, +O]
 object Operation {
   type ==>[-I, +O] = Operation[I, O] // brevity alias (should we mark it `private`?)
 
+  case class Pipeline[A](source: Source[A], sink: Sink[A])
   //type Source[+O] = Unit ==> O
   //type Sink[-I] = I ==> Unit
 
   sealed trait Source[+O] {
     def andThen[O2](op: O ==> O2): Source[O2] = MappedSource(this, op)
+    def finish[O2 >: O](sink: Sink[O2]): Pipeline[O2] = Pipeline(this, sink)
   }
   trait CustomSource[O] extends Source[O]
-  sealed trait Sink[-I]
 
   implicit def fromIterable[T](iterable: Iterable[T]) = FromIterableSource(iterable)
   case class FromIterableSource[T](iterable: Iterable[T]) extends Source[T]
@@ -26,9 +27,15 @@ object Operation {
   implicit def fromProducer[T](producer: Producer[T]) = FromProducerSource(producer)
   case class FromProducerSource[T](producer: Producer[T]) extends Source[T]
 
+  sealed trait Sink[-I] {
+    def finish[I2 <: I](source: Source[I2]): Pipeline[I2] = Pipeline(source, this)
+  }
+  case class MappedSink[I, O](operation: I ==> O, sink: Sink[O]) extends Sink[I]
+
   implicit def fromConsumer[T](consumer: Consumer[T]) = FromConsumerSink(consumer)
   case class FromConsumerSink[T](consumer: Consumer[T]) extends Sink[T]
 
+  // this lifts an internal Source into a full-fledged Producer
   case class ExposeProducer[T]() extends (Source[T] ==> Producer[T])
   // implicit def sink2Producer[T](sink: Sink[T]): Producer[T] = ???
   // implicit def source2Consumer[T](source: Source[T]): Consumer[T] = ???
@@ -227,11 +234,13 @@ object Operation {
     type Res[U] = A ==> U
 
     def andThen[C](op: B ==> C): A ==> C = Operation(this.op, op)
+    def foreach(f: B ⇒ Unit): Sink[A] = MappedSink(op, Foreach(f))
   }
   implicit class SourceOps1[B](val source: Source[B]) extends Ops1[B] {
     type Res[U] = Source[U]
 
     def andThen[C](op: B ==> C): Source[C] = source.andThen(op)
+    def foreach(f: B ⇒ Unit): Pipeline[B] = Pipeline(source, Foreach(f))
   }
 
   trait Ops2[B] extends Any {
