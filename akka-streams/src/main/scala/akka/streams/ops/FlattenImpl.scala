@@ -1,7 +1,6 @@
 package akka.streams
 package ops
 
-import rx.async.api.Producer
 import akka.streams.Operation.{ Source, Flatten }
 
 object FlattenImpl {

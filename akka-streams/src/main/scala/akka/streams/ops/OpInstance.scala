@@ -74,6 +74,7 @@ case class Subscribe[T, U](producer: Source[T])(val handlerFactory: Subscription
 case class RequestMore(n: Int) extends BackchannelResult {
   require(n > 0)
 }
+case object CancelSubscription extends BackchannelResult
 
 // CUSTOM
 private[streams] trait CustomForwardResult[+O] extends ForwardResult[O]
