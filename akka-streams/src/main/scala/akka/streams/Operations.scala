@@ -157,7 +157,7 @@ object Operation {
   // merges the values produced by the given source into the consumed stream
   // consumes from the upstream and the given source no faster than the downstream
   // produces no faster than the combined rate from upstream and the given source
-  case class Merge[A, B](source: Source[B]) extends (A ==> B)
+  case class Merge[B](source: Source[B]) extends (B ==> B)
 
   // splits the upstream into sub-streams based on the given predicate
   // if p evaluates to true the current value is appended to the previous sub-stream,
@@ -213,7 +213,7 @@ object Operation {
     def head: Res[B] = andThen(Head())
     def map[C](f: B ⇒ C): Res[C] = andThen(Map(f))
     def mapFind[C](f: B ⇒ Option[C], default: ⇒ Option[C]): Res[C] = andThen(MapFind(f, default))
-    def merge(source: Source[B]): Res[B] = andThen(Merge(source))
+    def merge[B2 >: B](source: Source[B2]): Res[B2] = andThen(Merge(source))
     def span(p: B ⇒ Boolean): Res[Source[B]] = andThen(Span(p))
     def tee(sink: Sink[B]): Res[B] = andThen(Tee(sink))
     def tail: Res[B] = andThen(Tail())
