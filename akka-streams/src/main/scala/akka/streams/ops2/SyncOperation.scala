@@ -1,5 +1,7 @@
 package akka.streams.ops2
 
+import akka.streams.Operation.{ Sink, Source }
+
 sealed trait Result[+O] {
   def ~[O2 >: O](next: Result[O2]): Result[O2] =
     if (next == Continue) this
@@ -26,6 +28,9 @@ trait Step[+O] extends Result[O] {
 }
 trait SideEffect[+O] extends Result[O] {
   def runSideEffect(): Unit
+}
+abstract class SideEffectImpl[O](body: ⇒ Unit) extends SideEffect[O] {
+  def runSideEffect(): Unit = body
 }
 
 trait Upstream {
@@ -63,4 +68,8 @@ trait DynamicSyncOperation[I, O] extends SyncOperation[I, O] {
   def handleNext(element: I): Result[O] = state.handleNext(element)
   def handleComplete(): Result[O] = state.handleComplete()
   def handleError(cause: Throwable): Result[O] = state.handleError(cause)
+}
+
+trait Subscribable {
+  def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O, O], Result[O])): Result[O]
 }

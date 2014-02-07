@@ -7,7 +7,7 @@ import Operation._
 object DSL {
   case class ProcessedProducer[I, O](producer: Producer[I], operation: Operation[I, O]) {
     def consume()(implicit settings: ProcessorSettings): Producer[O] = {
-      val processor = OperationProcessor(operation, settings)
+      val processor = OperationProcessor2(operation, settings)
       producer.link(processor)
       processor
     }

@@ -2,10 +2,6 @@ package akka.streams.ops2
 
 import akka.streams.Operation.Source
 
-trait Subscribable {
-  def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O, O], Result[O])): Result[O]
-}
-
 object FlattenImpl {
   def apply[O](upstream: Upstream, downstream: Downstream[O], subscribable: Subscribable): SyncOperation[Source[O], O] =
     new DynamicSyncOperation[Source[O], O] {
