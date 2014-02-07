@@ -196,7 +196,7 @@ object Operation {
   implicit def producer2Ops1[T](producer: Producer[T]) = SourceOps1[T](fromProducer(producer))
   implicit def producerOps2[I, O](op: I ==> Producer[O]) = OperationOps2(OperationOps1(op).map(FromProducerSource(_)))
 
-  trait Ops1[A, B] extends Any {
+  trait Ops1[B] extends Any {
     type Res[_]
     def andThen[C](next: B ==> C): Res[C]
 
@@ -223,18 +223,18 @@ object Operation {
     def zip[C](source: Source[C]): Res[(B, C)] = andThen(Zip(source))
   }
 
-  implicit class OperationOps1[A, B](val op: A ==> B) extends Ops1[A, B] {
+  implicit class OperationOps1[A, B](val op: A ==> B) extends Ops1[B] {
     type Res[U] = A ==> U
 
     def andThen[C](op: B ==> C): A ==> C = Operation(this.op, op)
   }
-  implicit class SourceOps1[B](val source: Source[B]) extends Ops1[Nothing, B] {
+  implicit class SourceOps1[B](val source: Source[B]) extends Ops1[B] {
     type Res[U] = Source[U]
 
     def andThen[C](op: B ==> C): Source[C] = source.andThen(op)
   }
 
-  trait Ops2[A, B] extends Any {
+  trait Ops2[B] extends Any {
     type Res[_]
 
     def andThen[C](next: Source[B] ==> C): Res[C]
@@ -243,12 +243,12 @@ object Operation {
     def expose: Res[Producer[B]] = andThen(ExposeProducer())
   }
 
-  implicit class OperationOps2[A, B](val op: A ==> Source[B]) extends Ops2[A, B] {
+  implicit class OperationOps2[A, B](val op: A ==> Source[B]) extends Ops2[B] {
     type Res[U] = A ==> U
 
     def andThen[C](next: Source[B] ==> C): Res[C] = Operation(op, next)
   }
-  implicit class SourceOps2[B](val source: Source[Source[B]]) extends Ops2[Nothing, B] {
+  implicit class SourceOps2[B](val source: Source[Source[B]]) extends Ops2[B] {
     type Res[U] = Source[U]
 
     def andThen[C](next: Source[B] ==> C): Source[C] = source.andThen(next)
