@@ -123,7 +123,7 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
 }
 
 class PipelineProcessorActor(pipeline: Pipeline[_]) extends Actor with ProcessorActorImpl {
-  OperationImpl(ActorContextEffects, pipeline).start()
+  Effect.run(OperationImpl(ActorContextEffects, pipeline).start())
 
   def receive: Receive = {
     case RunDeferred(body) ⇒ body()
