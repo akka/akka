@@ -754,7 +754,7 @@ Hakkers`_). It will replace the current behavior (i.e. the top of the behavior
 stack), which means that you do not use :meth:`unbecome`, instead always the
 next behavior is explicitly installed.
 
-.. _Dining Hakkers: @github@/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnBecome.scala
+.. _Dining Hakkers: http://typesafe.com/activator/template/akka-sample-fsm-scala
 
 The other way of using :meth:`become` does not replace but add to the top of
 the behavior stack. In this case care must be taken to ensure that the number
