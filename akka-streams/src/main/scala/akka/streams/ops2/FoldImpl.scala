@@ -3,22 +3,21 @@ package akka.streams.ops2
 import akka.streams.Operation.DirectFold
 
 object FoldImpl {
-  def apply[I, O](upstream: Upstream, downstream: Downstream[O], directFold: DirectFold[I, O]): SyncOperation[I] =
+  def apply[I, O](upstream: Upstream, downstream: Downstream[O], directFold: DirectFold[I, O], batchSize: Int = 100): SyncOperation[I] =
     new SyncOperation[I] {
-      val batchSize = 100
       var remaining = 0
       var z = directFold.seed
-      def handleRequestMore(n: Int): Result =
+      def handleRequestMore(n: Int): Effect =
         upstream.requestMore(batchSize)
 
-      def handleCancel(): Result = upstream.cancel
+      def handleCancel(): Effect = upstream.cancel
 
-      def handleNext(element: I): Result = {
+      def handleNext(element: I): Effect = {
         z = directFold.f(z, element)
         upstream.requestMore(1)
       }
 
-      def handleComplete(): Result = downstream.next(z) ~ downstream.complete
-      def handleError(cause: Throwable): Result = downstream.error(cause)
+      def handleComplete(): Effect = downstream.next(z) ~ downstream.complete
+      def handleError(cause: Throwable): Effect = downstream.error(cause)
     }
 }

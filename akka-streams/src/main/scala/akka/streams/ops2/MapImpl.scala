@@ -3,11 +3,11 @@ package akka.streams.ops2
 object MapImpl {
   def apply[I, O](upstream: Upstream, downstream: Downstream[O], f: I ⇒ O): SyncOperation[I] =
     new SyncOperation[I] {
-      def handleRequestMore(n: Int): Result = upstream.requestMore(n)
-      def handleCancel(): Result = upstream.cancel
+      def handleRequestMore(n: Int): Effect = upstream.requestMore(n)
+      def handleCancel(): Effect = upstream.cancel
 
-      def handleNext(element: I): Result = downstream.next(f(element))
-      def handleComplete(): Result = downstream.complete
-      def handleError(cause: Throwable): Result = downstream.error(cause)
+      def handleNext(element: I): Effect = downstream.next(f(element))
+      def handleComplete(): Effect = downstream.complete
+      def handleError(cause: Throwable): Effect = downstream.error(cause)
     }
 }

@@ -4,33 +4,33 @@ import scala.annotation.tailrec
 
 trait SyncOperationSpec {
   abstract class DoNothing[O] extends SideEffect {
-    def runSideEffect(): Unit = ???
+    def run(): Unit = ???
   }
 
   case class UpstreamRequestMore(n: Int) extends DoNothing[Nothing]
   case object UpstreamCancel extends DoNothing[Nothing]
   val upstream = new Upstream {
-    val cancel: Result = UpstreamCancel
-    val requestMore: (Int) ⇒ Result = UpstreamRequestMore
+    val cancel: Effect = UpstreamCancel
+    val requestMore: (Int) ⇒ Effect = UpstreamRequestMore
   }
 
   case class DownstreamNext[O](element: O) extends DoNothing[O]
   case object DownstreamComplete extends DoNothing[Nothing]
   case class DownstreamError(cause: Throwable) extends DoNothing[Nothing]
   val downstream = new Downstream[Float] {
-    val next: (Float) ⇒ Result = DownstreamNext[Float]
-    val complete: Result = DownstreamComplete
-    val error: (Throwable) ⇒ Result = DownstreamError
+    val next: (Float) ⇒ Effect = DownstreamNext[Float]
+    val complete: Effect = DownstreamComplete
+    val error: (Throwable) ⇒ Effect = DownstreamError
   }
 
-  implicit class AddRunOnce[O](result: Result) {
-    def runOnce(): Result = result.asInstanceOf[Step].run()
-    def runToResult(): Result = {
-      @tailrec def rec(res: Result): Result =
+  implicit class AddRunOnce[O](result: Effect) {
+    def runOnce(): Effect = result.asInstanceOf[SingleStep].runOne()
+    def runToResult(): Effect = {
+      @tailrec def rec(res: Effect): Effect =
         res match {
-          case s: Step            ⇒ rec(s.run())
-          case CombinedResult(rs) ⇒ rs.fold(Continue: Result)(_ ~ _.runToResult())
-          case r                  ⇒ r
+          case s: SingleStep ⇒ rec(s.runOne())
+          case Effects(rs)   ⇒ rs.fold(Continue: Effect)(_ ~ _.runToResult())
+          case r             ⇒ r
         }
       rec(result)
     }

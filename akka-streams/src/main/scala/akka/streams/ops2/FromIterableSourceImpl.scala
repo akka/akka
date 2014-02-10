@@ -8,9 +8,9 @@ object FromIterableSourceImpl {
       val it = iterable.iterator
       var alreadyCompleted = false
 
-      def handleRequestMore(n: Int): Result = requestMore(n)
+      def handleRequestMore(n: Int): Effect = requestMore(n)
 
-      def requestMore(n: Int): Result =
+      def requestMore(n: Int): Effect =
         if (n > 0)
           if (it.hasNext)
             if (n == 1) downstream.next(it.next()) ~ maybeCompleted()
@@ -23,10 +23,10 @@ object FromIterableSourceImpl {
         downstream.complete
       }
 
-      @tailrec def rec(remaining: Int, result: Result = Continue): Result =
+      @tailrec def rec(remaining: Int, result: Effect = Continue): Effect =
         if (remaining > 0 && it.hasNext) rec(remaining - 1, result ~ downstream.next(it.next()))
         else result
 
-      def handleCancel(): Result = ???
+      def handleCancel(): Effect = ???
     }
 }

@@ -6,17 +6,17 @@ object FromConsumerSinkImpl {
   def apply[I](upstream: Upstream, subscribable: Subscribable, sink: Sink[I]): SyncSink[I] =
     new SyncSink[I] with SyncSource {
       var downstream: Downstream[I] = _
-      override def start(): Result = subscribable.subscribeFrom(sink)(handleSubscribe)
-      def handleSubscribe(downstream: Downstream[I]): (SyncSource, Result) = {
+      override def start(): Effect = subscribable.subscribeFrom(sink)(handleSubscribe)
+      def handleSubscribe(downstream: Downstream[I]): (SyncSource, Effect) = {
         this.downstream = downstream
         (this, Continue)
       }
 
-      def handleNext(element: I): Result = downstream.next(element)
-      def handleComplete(): Result = downstream.complete
-      def handleError(cause: Throwable): Result = downstream.error(cause)
+      def handleNext(element: I): Effect = downstream.next(element)
+      def handleComplete(): Effect = downstream.complete
+      def handleError(cause: Throwable): Effect = downstream.error(cause)
 
-      def handleRequestMore(n: Int): Result = upstream.requestMore(n)
-      def handleCancel(): Result = upstream.cancel
+      def handleRequestMore(n: Int): Effect = upstream.requestMore(n)
+      def handleCancel(): Effect = upstream.cancel
     }
 }

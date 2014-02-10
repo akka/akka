@@ -9,62 +9,62 @@ object FlattenImpl {
 
       def Waiting: State =
         new State {
-          def handleRequestMore(n: Int): Result = {
+          def handleRequestMore(n: Int): Effect = {
             become(WaitingForElement(n))
             upstream.requestMore(1)
           }
-          def handleCancel(): Result = ???
+          def handleCancel(): Effect = ???
 
-          def handleNext(element: Source[O]): Result = throw new IllegalStateException("No element requested")
-          def handleComplete(): Result = downstream.complete
-          def handleError(cause: Throwable): Result = downstream.error(cause)
+          def handleNext(element: Source[O]): Effect = throw new IllegalStateException("No element requested")
+          def handleComplete(): Effect = downstream.complete
+          def handleError(cause: Throwable): Effect = downstream.error(cause)
         }
 
       def WaitingForElement(remaining: Int): State =
         new State {
-          def handleRequestMore(n: Int): Result = {
+          def handleRequestMore(n: Int): Effect = {
             become(WaitingForElement(remaining + n))
             Continue
           }
-          def handleCancel(): Result = ???
+          def handleCancel(): Effect = ???
 
-          def handleNext(element: Source[O]): Result = {
+          def handleNext(element: Source[O]): Effect = {
             val readSubstream = new ReadSubstream(remaining)
             become(readSubstream)
             subscribable.subscribeTo(element)(readSubstream.setSubUpstream)
           }
-          def handleComplete(): Result = downstream.complete
-          def handleError(cause: Throwable): Result = downstream.error(cause)
+          def handleComplete(): Effect = downstream.complete
+          def handleError(cause: Throwable): Effect = downstream.error(cause)
         }
 
       class ReadSubstream(var remaining: Int) extends State {
         var subUpstream: Upstream = _
         var closeAtEnd = false
-        def setSubUpstream(upstream: Upstream): (SyncSink[O], Result) = {
+        def setSubUpstream(upstream: Upstream): (SyncSink[O], Effect) = {
           subUpstream = upstream
           (subDownstream, subUpstream.requestMore(remaining))
         }
 
-        def handleRequestMore(n: Int): Result = {
+        def handleRequestMore(n: Int): Effect = {
           remaining += n
           subUpstream.requestMore(n)
         }
-        def handleCancel(): Result = ???
+        def handleCancel(): Effect = ???
 
-        def handleNext(element: Source[O]): Result = ???
-        def handleComplete(): Result = {
+        def handleNext(element: Source[O]): Effect = ???
+        def handleComplete(): Effect = {
           closeAtEnd = true
           Continue
         }
-        def handleError(cause: Throwable): Result = ???
+        def handleError(cause: Throwable): Effect = ???
 
         val subDownstream = new SyncSink[O] {
-          def handleNext(element: O): Result = {
+          def handleNext(element: O): Effect = {
             remaining -= 1
             downstream.next(element)
           }
 
-          def handleComplete(): Result = {
+          def handleComplete(): Effect = {
             if (closeAtEnd) downstream.complete
             else if (remaining > 0) {
               become(WaitingForElement(remaining))
@@ -75,7 +75,7 @@ object FlattenImpl {
             }
           }
 
-          def handleError(cause: Throwable): Result = ???
+          def handleError(cause: Throwable): Effect = ???
         }
       }
     }

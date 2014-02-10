@@ -9,28 +9,28 @@ object FromProducerSourceImpl {
 
       def WaitingForRequest: State =
         new State {
-          def handleRequestMore(n: Int): Result = {
+          def handleRequestMore(n: Int): Effect = {
             val subscribed = new Subscribed(n)
             become(subscribed)
             subscribable.subscribeTo(source)(subscribed.onSubscribed)
           }
-          def handleCancel(): Result = ???
+          def handleCancel(): Effect = ???
         }
 
       class Subscribed(originallyRequested: Int) extends State {
         var subUpstream: Upstream = _
-        def onSubscribed(upstream: Upstream): (SyncSink[O], Result) = {
+        def onSubscribed(upstream: Upstream): (SyncSink[O], Effect) = {
           subUpstream = upstream
           (subDownstream, subUpstream.requestMore(originallyRequested))
         }
 
-        def handleRequestMore(n: Int): Result = subUpstream.requestMore(n)
-        def handleCancel(): Result = subUpstream.cancel
+        def handleRequestMore(n: Int): Effect = subUpstream.requestMore(n)
+        def handleCancel(): Effect = subUpstream.cancel
 
         val subDownstream = new SyncSink[O] {
-          def handleNext(element: O): Result = downstream.next(element)
-          def handleComplete(): Result = downstream.complete
-          def handleError(cause: Throwable): Result = downstream.error(cause)
+          def handleNext(element: O): Effect = downstream.next(element)
+          def handleComplete(): Effect = downstream.complete
+          def handleError(cause: Throwable): Effect = downstream.error(cause)
         }
       }
     }

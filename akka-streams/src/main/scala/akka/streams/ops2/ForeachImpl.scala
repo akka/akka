@@ -1,16 +1,15 @@
 package akka.streams.ops2
 
 object ForeachImpl {
-  def apply[I](upstream: Upstream, f: I ⇒ Unit): SyncSink[I] =
+  def apply[I](upstream: Upstream, f: I ⇒ Unit, batchSize: Int = 100): SyncSink[I] =
     new SyncSink[I] {
-      val batchSize = 100
-      override def start(): Result = upstream.requestMore(batchSize)
+      override def start(): Effect = upstream.requestMore(batchSize)
 
-      def handleNext(element: I): Result = {
+      def handleNext(element: I): Effect = {
         f(element)
         upstream.requestMore(1)
       }
-      def handleComplete(): Result = Continue
-      def handleError(cause: Throwable): Result = Continue
+      def handleComplete(): Effect = Continue
+      def handleError(cause: Throwable): Effect = Continue
     }
 }

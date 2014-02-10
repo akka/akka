@@ -17,7 +17,9 @@ object TcpEchoServer {
     TcpStream.listen(new InetSocketAddress("localhost", 1111)).foreach {
       case (address, (in, out)) ⇒
         println(s"Client connected: $address")
-        in.fold(0)(_ + _.map(_.toInt).sum).map(i ⇒ ByteString(i.toString)).finish(FromConsumerSink(out)).run()
+        in.map(ByteString("Hello ") ++).finish(out).run()
+
+      //in.fold(0)(_ + _.map(_.toInt).sum).map(i ⇒ ByteString(i.toString)).finish(FromConsumerSink(out)).run()
     }.run()
     /*// alternative
     TcpStream.listenAndHandle(new InetSocketAddress("localhost", 1111)) { peer ⇒
