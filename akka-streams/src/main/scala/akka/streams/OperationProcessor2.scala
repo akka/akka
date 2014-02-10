@@ -10,6 +10,8 @@ import akka.streams.ops2._
 import akka.streams.Operation.FromProducerSource
 import akka.streams.Operation.Pipeline
 
+case class ProcessorSettings(ctx: ActorRefFactory, constructFanOutBox: () ⇒ FanOutBox)
+
 object OperationProcessor2 {
   def apply[I, O](operation: Operation[I, O], settings: ProcessorSettings): Processor[I, O] =
     new OperationProcessor2(operation, settings)

@@ -20,7 +20,7 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
         val upstream = TestKit.producerProbe[Int]()
         val downstream = TestKit.consumerProbe[Int]()
 
-        val processed = OperationProcessor(Identity[Int](), settings)
+        val processed = OperationProcessor2(Identity[Int](), settings)
         processed.link(downstream)
         val downstreamSubscription = downstream.expectSubscription()
 
