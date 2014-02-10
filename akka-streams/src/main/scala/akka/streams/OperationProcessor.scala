@@ -36,7 +36,7 @@ trait WithActor[I, O] {
   case class RequestMore(subscriber: Subscriber[O], elements: Int)
   case class CancelSubscription(subscriber: Subscriber[O])
 
-  class OperationProcessorActor extends Actor with WithFanOutBox {
+  class OperationProcessorActor extends Actor with WithFanOutBox with ProcessorActorImpl {
     val impl = AndThenImpl.implementation(UpstreamSideEffects, DownstreamSideEffects, ActorContextEffects, operation)
     var upstream: Subscription = _
 
@@ -94,43 +94,6 @@ trait WithActor[I, O] {
       val complete: Effect = CompleteDownstream
       val error: (Throwable) ⇒ Effect = ErrorDownstream
     }
-    object ActorContextEffects extends ContextEffects {
-      def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Effect)): Effect =
-        Effect.step(handleSubscribeTo(source, onSubscribe))
-
-      def subscribeFrom[O](sink: Sink[O])(onSubscribe: (Downstream[O]) ⇒ (SyncSource, Effect)): Effect = ???
-    }
-
-    def handleSubscribeTo[OO](source: Source[OO], onSubscribeCallback: Upstream ⇒ (SyncSink[OO], Effect)): Effect = {
-      case class RequestMoreFromSub(subscription: Subscription, n: Int) extends SideEffectImpl(subscription.requestMore(n))
-      case class CancelSub(subscription: Subscription) extends SideEffectImpl(subscription.cancel())
-
-      case class SubUpstream(subscription: Subscription) extends Upstream {
-        val requestMore: (Int) ⇒ Effect = RequestMoreFromSub(subscription, _)
-        val cancel: Effect = CancelSub(subscription)
-      }
-
-      object SubSubscriber extends Subscriber[OO] {
-        var subscription: Subscription = _
-        var sink: SyncSink[OO] = _
-        def onSubscribe(subscription: Subscription): Unit = runEffectInThisActor {
-          this.subscription = subscription
-          val (handler, effect) = onSubscribeCallback(SubUpstream(subscription))
-          sink = handler
-          effect
-        }
-        def onNext(element: OO): Unit = runEffectInThisActor(sink.handleNext(element))
-        def onComplete(): Unit = runEffectInThisActor(sink.handleComplete())
-        def onError(cause: Throwable): Unit = runEffectInThisActor(sink.handleError(cause))
-      }
-      val FromProducerSource(prod: Producer[OO]) = source
-      prod.getPublisher.subscribe(SubSubscriber)
-      Continue // we need to wait for onSubscribe being called
-    }
-
-    case class RunDeferred(body: () ⇒ Unit)
-    def runInThisActor(body: ⇒ Unit): Unit = self ! RunDeferred(body _)
-    def runEffectInThisActor(body: ⇒ Effect): Unit = runInThisActor(Effect.run(body))
 
     def newSubscription(subscriber: Subscriber[O]): Subscription =
       new Subscription {
@@ -159,14 +122,15 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
   val actor = settings.ctx.actorOf(Props(new OperationProcessorActor))
 }
 
-class PipelineProcessorActor(pipeline: Pipeline[_]) extends Actor {
-  val impl = AndThenImpl.implementation(ActorContextEffects, pipeline)
-  Effect.run(impl.start())
+class PipelineProcessorActor(pipeline: Pipeline[_]) extends Actor with ProcessorActorImpl {
+  AndThenImpl.implementation(ActorContextEffects, pipeline).start()
 
   def receive: Receive = {
     case RunDeferred(body) ⇒ body()
   }
+}
 
+trait ProcessorActorImpl { _: Actor ⇒
   object ActorContextEffects extends ContextEffects {
     def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Effect)): Effect =
       Effect.step(handleSubscribeTo(source, onSubscribe))
