@@ -1,4 +1,4 @@
-package akka.streams.ops2
+package akka.streams.impl
 
 object ForeachImpl {
   def apply[I](upstream: Upstream, f: I ⇒ Unit, batchSize: Int = 100): SyncSink[I] =

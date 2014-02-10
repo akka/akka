@@ -1,4 +1,4 @@
-package akka.streams.ops2
+package akka.streams.impl
 
 import akka.streams.Operation.Source
 

@@ -1,5 +1,5 @@
 package akka.streams
-package ops2
+package impl
 
 import Operation._
 

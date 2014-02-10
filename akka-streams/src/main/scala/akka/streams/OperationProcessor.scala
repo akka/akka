@@ -6,7 +6,7 @@ import rx.async.api.{ Consumer, Producer, Processor }
 import akka.actor.{ Props, ActorRefFactory, Actor }
 import rx.async.spi.{ Subscription, Subscriber, Publisher }
 import akka.streams.Operation._
-import akka.streams.ops2._
+import akka.streams.impl._
 import akka.streams.Operation.FromProducerSource
 import akka.streams.Operation.Pipeline
 

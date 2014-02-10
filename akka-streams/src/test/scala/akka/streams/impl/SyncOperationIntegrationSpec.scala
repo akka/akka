@@ -1,4 +1,4 @@
-package akka.streams.ops2
+package akka.streams.impl
 
 import org.scalatest.{ ShouldMatchers, FreeSpec }
 import akka.streams.Operation
