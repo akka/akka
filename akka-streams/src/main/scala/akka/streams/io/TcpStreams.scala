@@ -192,27 +192,72 @@ class TcpListenStreamActor(address: InetSocketAddress) extends Actor {
   override def postStop(): Unit = if (subscriber ne null) subscriber.onComplete()
 }
 
-class InboundTcpStreamActor(address: InetSocketAddress, val connection: ActorRef) extends TcpStreamActor(address) {
+class InboundTcpStreamActor(address: InetSocketAddress, val connection: ActorRef) extends Actor {
   import TcpStreamActor._
 
   def receive = preInit
-  var pendingRead = false
+  connection ! Register(self, keepOpenOnPeerClosed = true)
 
   val preInit: Receive = {
     case NewSubscriber(c) ⇒
-      subscriber = c
-      subscriber.onSubscribe(new TcpSubscription(self))
-      startIfInitialized()
-    case NewSubscription(p) ⇒
-      subscription = p; startIfInitialized()
-    case RequestNext ⇒ pendingRead = true
-  }
+      c.onSubscribe(new TcpSubscription(self))
 
-  def startIfInitialized(): Unit =
-    if ((subscriber ne null) && (subscription ne null)) {
-      connection ! Register(self)
-      subscription requestMore 1
-      if (pendingRead) connection ! ResumeReading
-      context.become(ready)
-    }
+      context.become(WaitingForSubscription(c))
+    case NewSubscription(s) ⇒
+      s requestMore 1
+      context.become(WaitingForSubscriber(s))
+
+  }
+  def WaitingForSubscriber(subscription: Subscription): Receive = {
+    case NewSubscriber(c) ⇒
+      c.onSubscribe(new TcpSubscription(self))
+      context.become(Running(subscription, c))
+
+    case data: ByteString ⇒ connection ! Write(data, WriteAck)
+    case WriteAck         ⇒ subscription.requestMore(1)
+    case f: CommandFailed ⇒
+      subscription.cancel()
+      context.stop(self)
+    case c: ConnectionClosed ⇒
+      subscription.cancel()
+      context.stop(self)
+  }
+  def WaitingForSubscription(subscriber: Subscriber[ByteString]): Receive = {
+    case RequestNext    ⇒ connection ! ResumeReading
+    case Received(data) ⇒ subscriber.onNext(data)
+    case NewSubscription(s) ⇒
+      s requestMore 1
+      context.become(Running(s, subscriber))
+
+    case f: CommandFailed ⇒
+      subscriber.onError(new RuntimeException("Command failed: " + f.toString)); context.stop(self)
+    case c: ConnectionClosed ⇒ subscriber.onComplete(); context.stop(self)
+  }
+  def Running(subscription: Subscription, subscriber: Subscriber[ByteString]): Receive = {
+    case data: ByteString ⇒ connection ! Write(data, WriteAck)
+    case WriteAck         ⇒ subscription.requestMore(1)
+
+    case RequestNext      ⇒ connection ! ResumeReading
+    case Received(data)   ⇒ subscriber.onNext(data)
+
+    case f: CommandFailed ⇒
+      subscription.cancel()
+      subscriber.onError(new RuntimeException("Command failed: " + f.toString))
+      context.stop(self)
+    case PeerClosed ⇒
+      subscriber.onComplete()
+      context.become(Closing(subscription))
+    case c: ConnectionClosed ⇒
+      subscription.cancel()
+      subscriber.onComplete()
+      context.stop(self)
+  }
+  def Closing(subscription: Subscription): Receive = {
+    case data: ByteString ⇒ connection ! Write(data, WriteAck)
+    case WriteAck         ⇒ subscription.requestMore(1)
+
+    case c: ConnectionClosed ⇒
+      subscription.cancel()
+      context.stop(self)
+  }
 }
