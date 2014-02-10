@@ -79,6 +79,10 @@ abstract class DynamicSyncOperation[I] extends SyncOperation[I] {
  * of link internal sources and sinks.
  */
 trait ContextEffects {
+  /**
+   * Subscribe to the given source and once subscribed call the `onSubscribe` callback with upstream
+   * effects. onSubscribe
+   */
   def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Effect)): Effect
   def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect
 }
