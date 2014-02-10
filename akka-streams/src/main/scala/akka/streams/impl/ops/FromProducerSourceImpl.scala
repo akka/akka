@@ -1,9 +1,8 @@
-package akka.streams.impl.ops
+package akka.streams
+package impl
+package ops
 
-import akka.streams.impl._
-import akka.streams.Operation
-import Operation.{ Source, FromProducerSource }
-import akka.streams.impl._
+import Operation.Source
 
 object FromProducerSourceImpl {
   def apply[O](downstream: Downstream[O], ctx: ContextEffects, source: Source[O]): SyncSource =

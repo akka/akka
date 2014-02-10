@@ -1,7 +1,8 @@
-package akka.streams.impl.ops
+package akka.streams
+package impl
+package ops
 
 import scala.annotation.tailrec
-import akka.streams.impl._
 
 object FromIterableSourceImpl {
   def apply[O](downstream: Downstream[O], ctx: ContextEffects, iterable: Iterable[O]): SyncSource =

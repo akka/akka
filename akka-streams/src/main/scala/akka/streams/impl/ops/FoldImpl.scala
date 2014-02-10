@@ -1,9 +1,8 @@
-package akka.streams.impl.ops
+package akka.streams
+package impl
+package ops
 
-import akka.streams.impl._
-import akka.streams.Operation
 import Operation.Fold
-import akka.streams.impl.{ Effect, SyncOperation, Downstream, Upstream }
 
 object FoldImpl {
   def apply[I, O](upstream: Upstream, downstream: Downstream[O], fold: Fold[I, O], batchSize: Int = 100): SyncOperation[I] =

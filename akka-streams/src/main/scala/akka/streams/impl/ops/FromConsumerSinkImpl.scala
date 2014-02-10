@@ -1,9 +1,8 @@
-package akka.streams.impl.ops
+package akka.streams
+package impl
+package ops
 
-import akka.streams.impl._
-import akka.streams.Operation
 import Operation.Sink
-import akka.streams.impl._
 
 object FromConsumerSinkImpl {
   def apply[I](upstream: Upstream, ctx: ContextEffects, sink: Sink[I]): SyncSink[I] =
