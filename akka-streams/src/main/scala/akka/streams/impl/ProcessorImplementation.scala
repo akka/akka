@@ -88,19 +88,14 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
       case RunDeferred(body)                 ⇒ body()
     }
 
-    case class RequestMoreFromUpstream(n: Int) extends SideEffectImpl(upstream.requestMore(n))
-    case object CancelUpstream extends SideEffectImpl(upstream.cancel())
     object UpstreamSideEffects extends Upstream {
-      val requestMore: Int ⇒ Effect = RequestMoreFromUpstream
-      val cancel: Effect = CancelUpstream
+      val requestMore: Int ⇒ Effect = BasicEffects.RequestMoreFromSubscription(upstream, _)
+      val cancel: Effect = BasicEffects.CancelSubscription(upstream)
     }
-    case class DeliverNextToDownstream(next: O) extends SideEffectImpl(handleOnNext(next))
-    case object CompleteDownstream extends SideEffectImpl(handleOnComplete())
-    case class ErrorDownstream(cause: Throwable) extends SideEffectImpl(handleOnError(cause))
     object DownstreamSideEffects extends Downstream[O] {
-      val next: O ⇒ Effect = DeliverNextToDownstream
-      val complete: Effect = CompleteDownstream
-      val error: (Throwable) ⇒ Effect = ErrorDownstream
+      val next: O ⇒ Effect = BasicEffects.SubscriberOnNext(fanOutInput, _)
+      val complete: Effect = BasicEffects.SubscriberOnComplete(fanOutInput)
+      val error: Throwable ⇒ Effect = BasicEffects.SubscriberOnError(fanOutInput, _)
     }
 
     def newSubscription(subscriber: Subscriber[O]): Subscription =
@@ -153,12 +148,9 @@ trait ProcessorActorImpl { _: Actor ⇒
   }
 
   def handleSubscribeTo[O](source: Source[O], onSubscribeCallback: Upstream ⇒ (SyncSink[O], Effect)): Effect = {
-    case class RequestMoreFromSub(subscription: Subscription, n: Int) extends SideEffectImpl(subscription.requestMore(n))
-    case class CancelSub(subscription: Subscription) extends SideEffectImpl(subscription.cancel())
-
     case class SubUpstream(subscription: Subscription) extends Upstream {
-      val requestMore: (Int) ⇒ Effect = RequestMoreFromSub(subscription, _)
-      val cancel: Effect = CancelSub(subscription)
+      val requestMore: Int ⇒ Effect = BasicEffects.RequestMoreFromSubscription(subscription, _)
+      val cancel: Effect = BasicEffects.CancelSubscription(subscription)
     }
 
     object SubSubscriber extends Subscriber[O] {
@@ -182,8 +174,4 @@ trait ProcessorActorImpl { _: Actor ⇒
   case class RunDeferred(body: () ⇒ Unit)
   def runInThisActor(body: ⇒ Unit): Unit = self ! RunDeferred(body _)
   def runEffectInThisActor(body: ⇒ Effect): Unit = runInThisActor(Effect.run(body))
-}
-
-abstract class SideEffectImpl(body: ⇒ Unit) extends SideEffect {
-  def run(): Unit = body
 }

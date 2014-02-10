@@ -3,13 +3,6 @@ package impl
 package ops
 
 object ComposeImpl {
-  case class NextToRight[B](right: SyncSink[B], element: B) extends EffectImpl(right.handleNext(element))
-  case class CompleteRight(right: SyncSink[_]) extends EffectImpl(right.handleComplete())
-  case class ErrorToRight[B](right: SyncSink[B], cause: Throwable) extends EffectImpl(right.handleError(cause))
-
-  case class RequestMoreFromLeft(left: SyncSource, n: Int) extends EffectImpl(left.handleRequestMore(n))
-  case class CancelLeft(left: SyncSource) extends EffectImpl(left.handleCancel())
-
   def pipeline[B, C](_leftCons: Downstream[B] ⇒ SyncSource, _rightCons: Upstream ⇒ SyncSink[B]): SyncRunnable =
     new AbstractAndThenImpl[B, B] with SyncRunnable {
       type Left = SyncSource
@@ -61,13 +54,13 @@ object ComposeImpl {
     def rightCons: Upstream ⇒ Right
 
     lazy val innerDownstream = new Downstream[B] {
-      val next: B ⇒ Effect = NextToRight(right, _)
-      lazy val complete: Effect = CompleteRight(right)
-      val error: Throwable ⇒ Effect = ErrorToRight(right, _)
+      val next: B ⇒ Effect = BasicEffects.HandleNextInSink(right, _)
+      lazy val complete: Effect = BasicEffects.CompleteSink(right)
+      val error: Throwable ⇒ Effect = BasicEffects.HandleErrorInSink(right, _)
     }
     lazy val innerUpstream = new Upstream {
-      val requestMore: Int ⇒ Effect = RequestMoreFromLeft(left, _)
-      val cancel: Effect = CancelLeft(left)
+      val requestMore: Int ⇒ Effect = BasicEffects.RequestMoreFromSource(left, _)
+      val cancel: Effect = BasicEffects.CancelSource(left)
     }
     lazy val left: Left = leftCons(innerDownstream)
     lazy val right: Right = rightCons(innerUpstream)
@@ -86,8 +79,4 @@ object ComposeImpl {
       case x ⇒ x
     }
   }
-}
-
-class EffectImpl(body: ⇒ Effect) extends SingleStep {
-  def runOne(): Effect = body
 }

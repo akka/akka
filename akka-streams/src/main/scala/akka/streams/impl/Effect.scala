@@ -31,21 +31,27 @@ sealed trait Effect {
 object Continue extends Effect {
   override def ~(next: Effect): Effect = next
 }
-case class Effects(results: Vector[Effect]) extends Effect {
+case class Effects(effects: Vector[Effect]) extends Effect {
   override def ~(next: Effect): Effect =
     if (next == Continue) this
-    else Effects(results :+ next)
+    else Effects(effects :+ next)
 }
+
+/** A single step that will result in a new effect. */
 trait SingleStep extends Effect {
   def runOne(): Effect
 }
+
+/** A side-effect that executes some external effect. */
 trait SideEffect extends Effect {
   def run(): Unit
 }
 object Effect {
+  /** Creates an anonymous step */
   def step[O](body: ⇒ Effect): Effect = new SingleStep {
     def runOne(): Effect = body
   }
+  /** Creates an anonymous side-effect */
   def sideEffect[O](body: ⇒ Unit): Effect = new SideEffect {
     def run(): Unit = body
   }
