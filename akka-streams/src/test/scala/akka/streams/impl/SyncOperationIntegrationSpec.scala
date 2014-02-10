@@ -1,8 +1,9 @@
-package akka.streams.impl
+package akka.streams
+package impl
 
 import org.scalatest.{ ShouldMatchers, FreeSpec }
-import akka.streams.Operation
 import Operation._
+import ops.ComposeImpl
 
 class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {
   "Simple chains" - {}

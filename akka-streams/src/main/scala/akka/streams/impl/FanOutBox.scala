@@ -1,4 +1,4 @@
-package akka.streams
+package akka.streams.impl
 
 import scala.concurrent.duration.Deadline
 import rx.async.spi.Subscriber

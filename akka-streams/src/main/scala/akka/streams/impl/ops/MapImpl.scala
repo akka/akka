@@ -1,4 +1,6 @@
-package akka.streams.impl
+package akka.streams.impl.ops
+
+import akka.streams.impl.{ Effect, SyncOperation, Downstream, Upstream }
 
 object MapImpl {
   def apply[I, O](upstream: Upstream, downstream: Downstream[O], f: I ⇒ O): SyncOperation[I] =

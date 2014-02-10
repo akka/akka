@@ -1,6 +1,9 @@
-package akka.streams.impl
+package akka.streams.impl.ops
 
-import akka.streams.Operation.Source
+import akka.streams.impl._
+import akka.streams.Operation
+import Operation.Source
+import akka.streams.impl._
 
 object FlattenImpl {
   def apply[O](upstream: Upstream, downstream: Downstream[O], subscribable: ContextEffects): SyncOperation[Source[O]] =

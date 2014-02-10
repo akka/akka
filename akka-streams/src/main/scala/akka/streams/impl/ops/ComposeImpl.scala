@@ -1,5 +1,6 @@
-package akka.streams
-package impl
+package akka.streams.impl.ops
+
+import akka.streams.impl._
 
 object ComposeImpl {
   case class NextToRight[B](right: SyncSink[B], element: B) extends EffectImpl(right.handleNext(element))

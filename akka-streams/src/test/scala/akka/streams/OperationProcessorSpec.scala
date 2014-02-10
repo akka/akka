@@ -8,7 +8,8 @@ import akka.actor.ActorSystem
 import rx.async.api.Producer
 import scala.concurrent.duration._
 import akka.testkit.duration2TestDuration
-import akka.streams.Operation._
+import akka.streams.impl.{ RaceTrack }
+import Operation._
 
 class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatchers with BeforeAndAfterAll {
   implicit lazy val system = ActorSystem()

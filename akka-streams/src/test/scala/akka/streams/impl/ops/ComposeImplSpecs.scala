@@ -1,8 +1,9 @@
 package akka.streams
 package impl
+package ops
 
 import org.scalatest.{ ShouldMatchers, FreeSpec }
-import Operation._
+import Operation.Map
 
 class ComposeImplSpecs extends FreeSpec with ShouldMatchers with SyncOperationSpec {
   "AndThenImpl in simple cases" - {

@@ -1,6 +1,7 @@
 package akka.streams.impl
 
-import akka.streams.Operation.{ Sink, Source }
+import akka.streams.Operation
+import Operation.{ Sink, Source }
 
 /** Constructors for upstream effects */
 trait Upstream {

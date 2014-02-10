@@ -2,6 +2,7 @@ package akka.streams
 package impl
 
 import Operation._
+import ops._
 
 object OperationImpl {
   def apply[A](subscribable: ContextEffects, p: Pipeline[A]): SyncRunnable = {
@@ -23,9 +24,9 @@ object OperationImpl {
   def apply[I, O](upstream: Upstream, downstream: Downstream[O], subscribable: ContextEffects, op: Operation[I, O]): SyncOperation[I] = op match {
     case a: Compose[I, i2, O] ⇒
       ComposeImpl.operation(apply(upstream, _: Downstream[i2], subscribable, a.f), apply(_, downstream, subscribable, a.g))
-    case Map(f)              ⇒ MapImpl(upstream, downstream, f)
-    case i: Identity[O]      ⇒ IdentityImpl(upstream, downstream).asInstanceOf[SyncOperation[I]]
-    case Flatten()           ⇒ FlattenImpl(upstream, downstream, subscribable).asInstanceOf[SyncOperation[I]]
-    case d: DirectFold[I, O] ⇒ FoldImpl(upstream, downstream, d)
+    case Map(f)         ⇒ MapImpl(upstream, downstream, f)
+    case i: Identity[O] ⇒ IdentityImpl(upstream, downstream).asInstanceOf[SyncOperation[I]]
+    case Flatten()      ⇒ FlattenImpl(upstream, downstream, subscribable).asInstanceOf[SyncOperation[I]]
+    case d: Fold[I, O]  ⇒ FoldImpl(upstream, downstream, d)
   }
 }

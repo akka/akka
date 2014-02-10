@@ -1,7 +1,9 @@
-package akka.streams.impl
+package akka.streams
+package impl
+package ops
 
 import org.scalatest.{ FreeSpec, ShouldMatchers }
-import akka.streams.Operation.{ Sink, FromIterableSource, Source }
+import Operation.{ FromIterableSource, Sink, Source }
 
 class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {
   "Flatten should" - {

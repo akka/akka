@@ -1,7 +1,14 @@
-package akka.streams
+package akka.streams.impl
 
 import rx.async.spi.Subscriber
 
+/**
+ * A more natural interface for FanOutBox that doesn't rely on users of FanOutBox to
+ * know anything about its internal state.
+ *
+ * TODO: 1.) provide the final interface here with glue layer for previous one
+ *       2.) rewrite FanOutBox with the better interface
+ */
 trait WithFanOutBox {
   def fanOutBox: FanOutBox
 

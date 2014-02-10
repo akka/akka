@@ -119,13 +119,7 @@ object Operation {
 
   // classic fold
   // consumes at max rate, produces only one value
-  def Fold[A, B](seed: B, f: (B, A) ⇒ B): A ==> B =
-    FoldUntil[A, B, B]( // TODO: while this representation is correct it's also slower than a direct implementation
-      seed,
-      onNext = (b, a) ⇒ FoldUntil.Continue(f(b, a)),
-      onComplete = Some(_))
-
-  case class DirectFold[A, B](seed: B, f: (B, A) ⇒ B) extends (A ==> B)
+  case class Fold[A, B](seed: B, f: (B, A) ⇒ B) extends (A ==> B)
 
   // generalized fold potentially producing several output values
   // consumes at max rate as long as `onNext` returns `Continue`
@@ -220,7 +214,7 @@ object Operation {
     def filter(p: B ⇒ Boolean): Res[B] = andThen(Filter(p))
     def find(p: B ⇒ Boolean): Res[B] = andThen(Find(p))
     def flatMap[C](f: B ⇒ Source[C]): Res[C] = andThen(FlatMap(f))
-    def fold[C](seed: C)(f: (C, B) ⇒ C): Res[C] = andThen(DirectFold(seed, f))
+    def fold[C](seed: C)(f: (C, B) ⇒ C): Res[C] = andThen(Fold(seed, f))
     def foldUntil[S, C](seed: S)(f: (S, B) ⇒ FoldUntil.Command[C, S])(onComplete: S ⇒ Option[C]): Res[C] = andThen(FoldUntil(seed, f, onComplete))
     def forAll(p: B ⇒ Boolean): Res[Boolean] = andThen(ForAll(p))
     //def foreach(f: B ⇒ Unit): Sink[A] = andThen(Foreach(f))
