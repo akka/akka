@@ -62,12 +62,12 @@ class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpe
       val requestMore: Int ⇒ Effect = RequestMoreFromSubstream
       val cancel: Effect = CancelSubstream
     }
-    val subscribable = new ContextEffects {
+    val ctx = new ContextEffects {
       def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Effect)): Effect =
         SubscribeTo(source, onSubscribe)
 
       def subscribeFrom[O](sink: Sink[O])(onSubscribe: (Downstream[O]) ⇒ (SyncSource, Effect)): Effect = ???
     }
-    val flatten = FlattenImpl(upstream, downstream, subscribable)
+    val flatten = FlattenImpl(upstream, downstream, ctx)
   }
 }

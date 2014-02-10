@@ -6,10 +6,10 @@ import Operation.Sink
 import akka.streams.impl._
 
 object FromConsumerSinkImpl {
-  def apply[I](upstream: Upstream, subscribable: ContextEffects, sink: Sink[I]): SyncSink[I] =
+  def apply[I](upstream: Upstream, ctx: ContextEffects, sink: Sink[I]): SyncSink[I] =
     new SyncSink[I] with SyncSource {
       var downstream: Downstream[I] = _
-      override def start(): Effect = subscribable.subscribeFrom(sink)(handleSubscribe)
+      override def start(): Effect = ctx.subscribeFrom(sink)(handleSubscribe)
       def handleSubscribe(downstream: Downstream[I]): (SyncSource, Effect) = {
         this.downstream = downstream
         (this, Continue)
