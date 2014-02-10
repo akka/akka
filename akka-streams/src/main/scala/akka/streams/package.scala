@@ -9,6 +9,6 @@ package object streams {
     def link(consumer: Consumer[I]): Unit = producer.getPublisher.subscribe(consumer.getSubscriber)
   }
   implicit class RunPipeline(val pipeline: Pipeline[_]) extends AnyVal {
-    def run()(implicit settings: ProcessorSettings): Unit = OperationProcessor2(pipeline, settings)
+    def run()(implicit settings: ProcessorSettings): Unit = OperationProcessor(pipeline, settings)
   }
 }

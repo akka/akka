@@ -12,9 +12,9 @@ import akka.streams.Operation.Pipeline
 
 case class ProcessorSettings(ctx: ActorRefFactory, constructFanOutBox: () ⇒ FanOutBox)
 
-object OperationProcessor2 {
+object OperationProcessor {
   def apply[I, O](operation: Operation[I, O], settings: ProcessorSettings): Processor[I, O] =
-    new OperationProcessor2(operation, settings)
+    new OperationProcessor(operation, settings)
 
   def apply[I](sink: Sink[I]): Consumer[I] = ???
   def apply[O](source: Source[O]): Producer[O] = ???
@@ -140,7 +140,7 @@ trait WithActor[I, O] {
   }
 }
 
-private class OperationProcessor2[I, O](val operation: Operation[I, O], val settings: ProcessorSettings) extends Processor[I, O] with WithActor[I, O] {
+private class OperationProcessor[I, O](val operation: Operation[I, O], val settings: ProcessorSettings) extends Processor[I, O] with WithActor[I, O] {
   def isRunning = running
 
   val getSubscriber: Subscriber[I] =
