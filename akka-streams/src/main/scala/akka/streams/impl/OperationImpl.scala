@@ -16,7 +16,7 @@ object OperationImpl {
   def apply[O](downstream: Downstream[O], ctx: ContextEffects, source: Source[O]): SyncSource =
     source match {
       case m: MappedSource[i, O] ⇒
-        ComposeImpl.source[i, O](apply(_: Downstream[i], ctx, m.source), up ⇒ apply(up, downstream, ctx, m.operation))
+        ComposeImpl.source[i](apply(_: Downstream[i], ctx, m.source), up ⇒ apply(up, downstream, ctx, m.operation))
       case FromIterableSource(s)    ⇒ FromIterableSourceImpl(downstream, ctx, s)
       case f: FromProducerSource[_] ⇒ FromProducerSourceImpl(downstream, ctx, f)
     }
