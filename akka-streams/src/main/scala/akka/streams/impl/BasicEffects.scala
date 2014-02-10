@@ -17,6 +17,13 @@ object BasicEffects {
     def run() = subscriber.onError(cause)
   }
 
+  def forSubscriber[I](subscriber: ⇒ Subscriber[I]): Downstream[I] =
+    new Downstream[I] {
+      lazy val next: I ⇒ Effect = BasicEffects.SubscriberOnNext(subscriber, _)
+      lazy val complete: Effect = BasicEffects.SubscriberOnComplete(subscriber)
+      lazy val error: Throwable ⇒ Effect = BasicEffects.SubscriberOnError(subscriber, _)
+    }
+
   // Subscription
 
   case class RequestMoreFromSubscription(subscription: Subscription, n: Int) extends SideEffect {
@@ -25,6 +32,12 @@ object BasicEffects {
   case class CancelSubscription(subscription: Subscription) extends SideEffect {
     def run(): Unit = subscription.cancel()
   }
+
+  def forSubscription(subscription: ⇒ Subscription): Upstream =
+    new Upstream {
+      lazy val requestMore: Int ⇒ Effect = BasicEffects.RequestMoreFromSubscription(subscription, _)
+      lazy val cancel: Effect = BasicEffects.CancelSubscription(subscription)
+    }
 
   // SyncSink
 
