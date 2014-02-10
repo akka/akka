@@ -10,6 +10,13 @@ case class ProcessorSettings(ctx: ActorRefFactory, constructFanOutBox: () ⇒ Fa
 /**
  * An operation processor takes an immutable representation of an operation (or source, sink, or pipeline)
  * and implements a Processor, Consumer, or Producer from it or directly runs it (for a pipeline).
+ *
+ * The mapping works like this:
+ *
+ * Operation[I, O] => Processor[I, O]
+ * Sink[I]         => Consumer[I]
+ * Source[O]       => Producer[O]
+ * Pipeline[_]     => Unit
  */
 object OperationProcessor {
   def apply[I, O](operation: Operation[I, O], settings: ProcessorSettings): Processor[I, O] =

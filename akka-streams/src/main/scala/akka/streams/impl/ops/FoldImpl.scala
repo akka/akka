@@ -9,16 +9,14 @@ object FoldImpl {
     new SyncOperation[I] {
       var remaining = 0
       var z = fold.seed
-      def handleRequestMore(n: Int): Effect =
-        upstream.requestMore(batchSize)
 
+      def handleRequestMore(n: Int): Effect = upstream.requestMore(batchSize)
       def handleCancel(): Effect = upstream.cancel
 
       def handleNext(element: I): Effect = {
         z = fold.f(z, element)
         upstream.requestMore(1)
       }
-
       def handleComplete(): Effect = downstream.next(z) ~ downstream.complete
       def handleError(cause: Throwable): Effect = downstream.error(cause)
     }

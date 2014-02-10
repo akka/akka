@@ -9,8 +9,6 @@ object Operation {
   type ==>[-I, +O] = Operation[I, O] // brevity alias (should we mark it `private`?)
 
   case class Pipeline[A](source: Source[A], sink: Sink[A])
-  //type Source[+O] = Unit ==> O
-  //type Sink[-I] = I ==> Unit
 
   sealed trait Source[+O] {
     def andThen[O2](op: O ==> O2): Source[O2] = MappedSource(this, op)
@@ -42,8 +40,6 @@ object Operation {
 
   // this lifts an internal Source into a full-fledged Producer
   case class ExposeProducer[T]() extends (Source[T] ==> Producer[T])
-  // implicit def sink2Producer[T](sink: Sink[T]): Producer[T] = ???
-  // implicit def source2Consumer[T](source: Source[T]): Consumer[T] = ???
 
   def apply[A, B, C](f: A ==> B, g: B ==> C): A ==> C =
     (f, g) match {

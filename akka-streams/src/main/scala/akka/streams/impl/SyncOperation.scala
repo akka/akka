@@ -16,7 +16,7 @@ trait Downstream[O] {
   val error: Throwable ⇒ Effect
 }
 
-/** The interface an implementation a synchronous source implementation has to implement */
+/** The interface an implementation that a synchronous source implementation has to implement */
 trait SyncSource {
   def handleRequestMore(n: Int): Effect
   def handleCancel(): Effect
@@ -24,8 +24,9 @@ trait SyncSource {
 
 /**
  * Pipeline implementations and Sinks need a signal to start their work. This is needed because
- * internal subscriptions are not established from the outside but from inside a sink
- * implementation.
+ * internal subscriptions are not established from the outside and signalled to the inside (with onSubscribe)
+ * but instead must consider themselves properly connected. The SyncRunnable interface allows an
+ * implementation to provide an initial effect to initiate an element flow.
  */
 trait SyncRunnable {
   def start(): Effect = Continue
