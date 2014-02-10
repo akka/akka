@@ -47,13 +47,28 @@ trait SyncSource[+O] {
   def handleRequestMore(n: Int): Result[O]
   def handleCancel(): Result[O]
 }
-trait SyncSink[-I, +O] {
+trait SyncRunnable {
+  // should we call this onSubscribe instead?
+  def start(): Result[_] = Continue
+}
+trait SyncSink[-I, +O] extends SyncRunnable {
   def handleNext(element: I): Result[O]
   def handleComplete(): Result[O]
   def handleError(cause: Throwable): Result[O]
 }
 
 trait SyncOperation[-I, +O] extends SyncSource[O] with SyncSink[I, O]
+
+trait DynamicSyncSource[O] extends SyncSource[O] {
+  type State = SyncSource[O]
+  private[this] var state: State = initial
+
+  def initial: State
+  def become(nextState: State): Unit = state = nextState
+
+  def handleRequestMore(n: Int): Result[O] = state.handleRequestMore(n)
+  def handleCancel(): Result[O] = state.handleCancel()
+}
 
 trait DynamicSyncOperation[I, O] extends SyncOperation[I, O] {
   type State = SyncOperation[I, O]
@@ -72,4 +87,5 @@ trait DynamicSyncOperation[I, O] extends SyncOperation[I, O] {
 
 trait Subscribable {
   def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O, O], Result[O])): Result[O]
+  def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource[O], Result[O])): Result[O] = ???
 }

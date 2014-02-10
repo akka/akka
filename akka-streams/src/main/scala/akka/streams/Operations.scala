@@ -14,7 +14,12 @@ object Operation {
 
   sealed trait Source[+O] {
     def andThen[O2](op: O ==> O2): Source[O2] = MappedSource(this, op)
-    def finish[O2 >: O](sink: Sink[O2]): Pipeline[O2] = Pipeline(this, sink)
+    def finish(sink: Sink[O]): Pipeline[_] =
+      sink match {
+        // convert MappedSink into MappedSource
+        case MappedSink(op, sink) ⇒ andThen(op).finish(sink)
+        case s                    ⇒ Pipeline(this, s)
+      }
   }
   trait CustomSource[O] extends Source[O]
 

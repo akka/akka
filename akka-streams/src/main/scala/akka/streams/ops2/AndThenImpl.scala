@@ -4,11 +4,20 @@ import akka.streams.Operation
 import Operation._
 
 object AndThenImpl {
+  def implementation[A](subscribable: Subscribable, p: Pipeline[A]): SyncRunnable = {
+    pipeline(implementation[A](_: Downstream[A], subscribable, p.source), implementation[A](_: Upstream, subscribable, p.sink))
+  }
+  def implementation[I](upstream: Upstream, subscribable: Subscribable, sink: Sink[I]): SyncSink[I, I] =
+    sink match {
+      case Foreach(f)          ⇒ ForeachImpl(upstream, f)
+      case FromConsumerSink(s) ⇒ FromConsumerSinkImpl(upstream, subscribable, s)
+    }
   def implementation[O](downstream: Downstream[O], subscribable: Subscribable, source: Source[O]): SyncSource[O] =
     source match {
       case m: MappedSource[i, O] ⇒
         AndThenImpl.source[i, O](implementation(_: Downstream[i], subscribable, m.source), up ⇒ implementation(up, downstream, subscribable, m.operation))
-      case FromIterableSource(s) ⇒ FromIterableSourceImpl(downstream, subscribable, s)
+      case FromIterableSource(s)    ⇒ FromIterableSourceImpl(downstream, subscribable, s)
+      case f: FromProducerSource[_] ⇒ FromProducerSourceImpl(downstream, subscribable, f)
     }
 
   def implementation[I, O](upstream: Upstream, downstream: Downstream[O], subscribable: Subscribable, op: Operation[I, O]): SyncOperation[I, O] = op match {
@@ -26,6 +35,17 @@ object AndThenImpl {
 
   case class RequestMoreFromLeft(left: SyncSource[_], n: Int) extends ResultImpl[Nothing](left.handleRequestMore(n))
   case class CancelLeft(left: SyncSource[_]) extends ResultImpl[Nothing](left.handleCancel())
+
+  def pipeline[B, C](_leftCons: Downstream[B] ⇒ SyncSource[B], _rightCons: Upstream ⇒ SyncSink[B, B]): SyncRunnable =
+    new AbstractAndThenImpl[B, B] with SyncRunnable {
+      type Left = SyncSource[B]
+      type Right = SyncSink[B, B]
+
+      def leftCons = _leftCons
+      def rightCons = _rightCons
+
+      override def start(): Result[_] = right.start()
+    }
 
   def source[B, C] //(upstream: Upstream, downstream: Downstream[C]) //
   /*             */ (_leftCons: Downstream[B] ⇒ SyncSource[B], _rightCons: Upstream ⇒ SyncOperation[B, C]): SyncSource[C] =
@@ -56,6 +76,7 @@ object AndThenImpl {
       def handleComplete(): Result[C] = handleLeftResult(left.handleComplete())
       def handleError(cause: Throwable): Result[C] = handleLeftResult(left.handleError(cause))
 
+      override def start(): Result[_] = right.start()
     }
 
   abstract class AbstractAndThenImpl[B, C] {
@@ -65,17 +86,17 @@ object AndThenImpl {
     def leftCons: Downstream[B] ⇒ Left
     def rightCons: Upstream ⇒ Right
 
-    val innerDownstream = new Downstream[B] {
+    lazy val innerDownstream = new Downstream[B] {
       val next: B ⇒ Result[B] = NextToRight(right, _)
       lazy val complete: Result[Nothing] = CompleteRight(right)
       val error: Throwable ⇒ Result[B] = ErrorToRight(right, _)
     }
-    val innerUpstream = new Upstream {
+    lazy val innerUpstream = new Upstream {
       val requestMore: Int ⇒ Result[Nothing] = RequestMoreFromLeft(left, _)
       val cancel: Result[Nothing] = CancelLeft(left)
     }
-    val left: Left = leftCons(innerDownstream)
-    val right: Right = rightCons(innerUpstream)
+    lazy val left: Left = leftCons(innerDownstream)
+    lazy val right: Right = rightCons(innerUpstream)
 
     // TODO: add shortcuts for at least one direction (or one step)
     def handleLeftResult(result: Result[B]): Result[C] = result match {

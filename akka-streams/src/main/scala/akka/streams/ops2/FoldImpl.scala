@@ -11,7 +11,7 @@ object FoldImpl {
       def handleRequestMore(n: Int): Result[O] =
         upstream.requestMore(batchSize)
 
-      def handleCancel(): Result[O] = ???
+      def handleCancel(): Result[O] = upstream.cancel
 
       def handleNext(element: I): Result[O] = {
         z = directFold.f(z, element)
@@ -19,6 +19,6 @@ object FoldImpl {
       }
 
       def handleComplete(): Result[O] = downstream.next(z) ~ downstream.complete
-      def handleError(cause: Throwable): Result[O] = ???
+      def handleError(cause: Throwable): Result[O] = downstream.error(cause)
     }
 }
