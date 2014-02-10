@@ -43,7 +43,7 @@ trait SingleStep extends Effect {
 }
 
 /** A side-effect that executes some external effect. */
-trait SideEffect extends Effect {
+trait ExternalEffect extends Effect {
   def run(): Unit
 }
 object Effect {
@@ -51,8 +51,8 @@ object Effect {
   def step[O](body: ⇒ Effect): Effect = new SingleStep {
     def runOne(): Effect = body
   }
-  /** Creates an anonymous side-effect */
-  def sideEffect[O](body: ⇒ Unit): Effect = new SideEffect {
+  /** Creates an anonymous external side-effect */
+  def externalEffect[O](body: ⇒ Unit): Effect = new ExternalEffect {
     def run(): Unit = body
   }
 
@@ -60,16 +60,16 @@ object Effect {
   def run(effect: Effect): Unit =
     effect match {
       // shortcut for simple results
-      case s: SideEffect    ⇒ s.run()
-      case Continue         ⇒
-      case r: SingleStep    ⇒ iterate(Vector(r.runOne()))
-      case Effects(results) ⇒ iterate(results)
+      case s: ExternalEffect ⇒ s.run()
+      case Continue          ⇒
+      case r: SingleStep     ⇒ iterate(Vector(r.runOne()))
+      case Effects(results)  ⇒ iterate(results)
     }
 
   @tailrec private[this] def iterate(elements: Vector[Effect]): Unit =
     if (elements.isEmpty) ()
     else elements.head match {
-      case s: SideEffect ⇒
+      case s: ExternalEffect ⇒
         s.run(); iterate(elements.tail)
       case Continue         ⇒ iterate(elements.tail)
       case r: SingleStep    ⇒ iterate(r.runOne() +: elements.tail)

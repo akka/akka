@@ -7,13 +7,13 @@ import rx.async.spi.{ Subscription, Subscriber }
 object BasicEffects {
   // Subscriber
 
-  case class SubscriberOnNext[O](subscriber: Subscriber[O], o: O) extends SideEffect {
+  case class SubscriberOnNext[O](subscriber: Subscriber[O], o: O) extends ExternalEffect {
     def run() = subscriber.onNext(o)
   }
-  case class SubscriberOnComplete(subscriber: Subscriber[_]) extends SideEffect {
+  case class SubscriberOnComplete(subscriber: Subscriber[_]) extends ExternalEffect {
     def run() = subscriber.onComplete()
   }
-  case class SubscriberOnError(subscriber: Subscriber[_], cause: Throwable) extends SideEffect {
+  case class SubscriberOnError(subscriber: Subscriber[_], cause: Throwable) extends ExternalEffect {
     def run() = subscriber.onError(cause)
   }
 
@@ -26,10 +26,10 @@ object BasicEffects {
 
   // Subscription
 
-  case class RequestMoreFromSubscription(subscription: Subscription, n: Int) extends SideEffect {
+  case class RequestMoreFromSubscription(subscription: Subscription, n: Int) extends ExternalEffect {
     def run(): Unit = subscription.requestMore(n)
   }
-  case class CancelSubscription(subscription: Subscription) extends SideEffect {
+  case class CancelSubscription(subscription: Subscription) extends ExternalEffect {
     def run(): Unit = subscription.cancel()
   }
 
