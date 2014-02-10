@@ -1,7 +1,7 @@
 package akka.streams.ops2
 
 import org.scalatest.{ FreeSpec, ShouldMatchers }
-import akka.streams.Operation.{ FromIterableSource, Source }
+import akka.streams.Operation.{ Sink, FromIterableSource, Source }
 
 class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {
   "Flatten should" - {
@@ -60,9 +60,11 @@ class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpe
       val requestMore: Int ⇒ Effect = RequestMoreFromSubstream
       val cancel: Effect = CancelSubstream
     }
-    val subscribable = new Subscribable {
+    val subscribable = new ContextEffects {
       def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Effect)): Effect =
         SubscribeTo(source, onSubscribe)
+
+      def subscribeFrom[O](sink: Sink[O])(onSubscribe: (Downstream[O]) ⇒ (SyncSource, Effect)): Effect = ???
     }
     val flatten = FlattenImpl(upstream, downstream, subscribable)
   }

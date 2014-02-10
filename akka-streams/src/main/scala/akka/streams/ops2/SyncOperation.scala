@@ -2,10 +2,13 @@ package akka.streams.ops2
 
 import akka.streams.Operation.{ Sink, Source }
 
+/** Constructors for upstream effects */
 trait Upstream {
   val requestMore: Int ⇒ Effect
   val cancel: Effect
 }
+
+/** Constructors for downstream effects */
 trait Downstream[O] {
   val next: O ⇒ Effect
   val complete: Effect
@@ -17,6 +20,12 @@ trait SyncSource {
   def handleRequestMore(n: Int): Effect
   def handleCancel(): Effect
 }
+
+/**
+ * Pipeline implementations and Sinks need a signal to start their work. This is needed because
+ * internal subscriptions are not established from the outside but from inside a sink
+ * implementation.
+ */
 trait SyncRunnable {
   def start(): Effect = Continue
 }
@@ -65,7 +74,11 @@ abstract class DynamicSyncOperation[I] extends SyncOperation[I] {
   def handleError(cause: Throwable): Effect = state.handleError(cause)
 }
 
-trait Subscribable {
+/**
+ * Additional Effects supplied by the context to allow additional executing additional effects
+ * of link internal sources and sinks.
+ */
+trait ContextEffects {
   def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Effect)): Effect
-  def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect = ???
+  def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect
 }

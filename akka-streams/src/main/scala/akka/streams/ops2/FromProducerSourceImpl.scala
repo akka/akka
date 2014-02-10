@@ -3,7 +3,7 @@ package akka.streams.ops2
 import akka.streams.Operation.{ Source, FromProducerSource }
 
 object FromProducerSourceImpl {
-  def apply[O](downstream: Downstream[O], subscribable: Subscribable, source: Source[O]): SyncSource =
+  def apply[O](downstream: Downstream[O], subscribable: ContextEffects, source: Source[O]): SyncSource =
     new DynamicSyncSource {
       def initial = WaitingForRequest
 

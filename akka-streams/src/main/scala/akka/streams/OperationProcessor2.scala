@@ -7,10 +7,8 @@ import akka.actor.{ Props, ActorRefFactory, Actor }
 import rx.async.spi.{ Subscription, Subscriber, Publisher }
 import akka.streams.Operation._
 import akka.streams.ops2._
-import scala.annotation.tailrec
 import akka.streams.Operation.FromProducerSource
 import akka.streams.Operation.Pipeline
-import akka.streams.ops2.Effects
 
 object OperationProcessor2 {
   def apply[I, O](operation: Operation[I, O], settings: ProcessorSettings): Processor[I, O] =
@@ -37,7 +35,7 @@ trait WithActor[I, O] {
   case class CancelSubscription(subscriber: Subscriber[O])
 
   class OperationProcessorActor extends Actor with WithFanOutBox {
-    val impl = AndThenImpl.implementation(UpstreamSideEffects, DownstreamSideEffects, ActorSubscribable, operation)
+    val impl = AndThenImpl.implementation(UpstreamSideEffects, DownstreamSideEffects, ActorContextEffects, operation)
     var upstream: Subscription = _
 
     val fanOutBox: FanOutBox = settings.constructFanOutBox()
@@ -94,9 +92,11 @@ trait WithActor[I, O] {
       val complete: Effect = CompleteDownstream
       val error: (Throwable) ⇒ Effect = ErrorDownstream
     }
-    object ActorSubscribable extends Subscribable {
+    object ActorContextEffects extends ContextEffects {
       def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Effect)): Effect =
         Effect.step(handleSubscribeTo(source, onSubscribe))
+
+      def subscribeFrom[O](sink: Sink[O])(onSubscribe: (Downstream[O]) ⇒ (SyncSource, Effect)): Effect = ???
     }
 
     def handleSubscribeTo[OO](source: Source[OO], onSubscribeCallback: Upstream ⇒ (SyncSink[OO], Effect)): Effect = {
@@ -158,14 +158,14 @@ private class OperationProcessor2[I, O](val operation: Operation[I, O], val sett
 }
 
 class PipelineProcessorActor(pipeline: Pipeline[_]) extends Actor {
-  val impl = AndThenImpl.implementation(ActorSubscribable, pipeline)
+  val impl = AndThenImpl.implementation(ActorContextEffects, pipeline)
   Effect.run(impl.start())
 
   def receive: Receive = {
     case RunDeferred(body) ⇒ body()
   }
 
-  object ActorSubscribable extends Subscribable {
+  object ActorContextEffects extends ContextEffects {
     def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Effect)): Effect =
       Effect.step(handleSubscribeTo(source, onSubscribe))
 

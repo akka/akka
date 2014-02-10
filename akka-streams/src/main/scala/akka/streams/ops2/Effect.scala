@@ -2,6 +2,27 @@ package akka.streams.ops2
 
 import scala.annotation.tailrec
 
+/**
+ * The result of a synchronous handling step is zero, one, or several external effects.
+ * This allows easy testing of synchronous operation implementations that never *execute*
+ * their external side-effect but only return them. Their wrapper is then responsible for
+ * running all the effects. In tests, effects don't have to be actually run but can be
+ * matched on.
+ *
+ * The special Effect, `SingleStep`, allows for possibly mutually-recursive effects to be
+ * run in a trampolining fashion to avoid stack overflows.
+ *
+ * The complete hierarchy of effects is this:
+ *
+ * Effect
+ *  |-- Continue   => no effect
+ *  |-- Effects    => a combination of several effects
+ *  |-- SideEffect => the representation of an external effect
+ *  |-- SingleStep => a partial effect that returns another effect to be run afterwards
+ *
+ *  Effect.run implements the trampolining logic which executes a possibly long chain of
+ *  recursive effects without running into stack overflows.
+ */
 sealed trait Effect {
   def ~(next: Effect): Effect =
     if (next == Continue) this

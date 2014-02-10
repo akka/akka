@@ -3,7 +3,7 @@ package akka.streams.ops2
 import akka.streams.Operation.Source
 
 object FlattenImpl {
-  def apply[O](upstream: Upstream, downstream: Downstream[O], subscribable: Subscribable): SyncOperation[Source[O]] =
+  def apply[O](upstream: Upstream, downstream: Downstream[O], subscribable: ContextEffects): SyncOperation[Source[O]] =
     new DynamicSyncOperation[Source[O]] {
       def initial: State = Waiting
 
