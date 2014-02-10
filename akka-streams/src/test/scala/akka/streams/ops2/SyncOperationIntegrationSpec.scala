@@ -19,8 +19,8 @@ class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with Syn
     "span + flatten == identity" in pending
   }
 
-  def instance(source: Source[Float]): SyncSource[Float] =
+  def instance(source: Source[Float]): SyncSource =
     AndThenImpl.implementation(downstream, null, source)
-  def instance[I](operation: Operation[I, Float]): SyncOperation[I, Float] =
+  def instance[I](operation: Operation[I, Float]): SyncOperation[I] =
     AndThenImpl.implementation(upstream, downstream, null, operation)
 }

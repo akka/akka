@@ -80,56 +80,56 @@ trait WithActor[I, O] {
       case RunDeferred(body)                 ⇒ body()
     }
 
-    def run(res: Result[_]): Unit =
+    def run(res: Result): Unit =
       res match {
         // shortcut for simple results
-        case s: SideEffect[_]        ⇒ s.runSideEffect()
+        case s: SideEffect           ⇒ s.runSideEffect()
         case Continue                ⇒
-        case r: Step[_]              ⇒ iterate(Vector(r.run()))
+        case r: Step                 ⇒ iterate(Vector(r.run()))
         case CombinedResult(results) ⇒ iterate(results)
       }
 
-    @tailrec private[this] def iterate(elements: Vector[Result[_]]): Unit =
+    @tailrec private[this] def iterate(elements: Vector[Result]): Unit =
       if (elements.isEmpty) ()
       else elements.head match {
-        case s: SideEffect[_] ⇒
+        case s: SideEffect ⇒
           s.runSideEffect(); iterate(elements.tail)
         case Continue                ⇒ iterate(elements.tail)
-        case r: Step[_]              ⇒ iterate(r.run() +: elements.tail)
+        case r: Step                 ⇒ iterate(r.run() +: elements.tail)
         case CombinedResult(results) ⇒ iterate(results ++ elements.tail)
       }
 
-    case class RequestMoreFromUpstream(n: Int) extends SideEffectImpl[Nothing](upstream.requestMore(n))
-    case object CancelUpstream extends SideEffectImpl[Nothing](upstream.cancel())
+    case class RequestMoreFromUpstream(n: Int) extends SideEffectImpl(upstream.requestMore(n))
+    case object CancelUpstream extends SideEffectImpl(upstream.cancel())
     object UpstreamSideEffects extends Upstream {
-      val requestMore: Int ⇒ Result[Nothing] = RequestMoreFromUpstream
-      val cancel: Result[Nothing] = CancelUpstream
+      val requestMore: Int ⇒ Result = RequestMoreFromUpstream
+      val cancel: Result = CancelUpstream
     }
-    case class DeliverNextToDownstream(next: O) extends SideEffectImpl[O](handleOnNext(next))
-    case object CompleteDownstream extends SideEffectImpl[Nothing](handleOnComplete())
-    case class ErrorDownstream(cause: Throwable) extends SideEffectImpl[Nothing](handleOnError(cause))
+    case class DeliverNextToDownstream(next: O) extends SideEffectImpl(handleOnNext(next))
+    case object CompleteDownstream extends SideEffectImpl(handleOnComplete())
+    case class ErrorDownstream(cause: Throwable) extends SideEffectImpl(handleOnError(cause))
     object DownstreamSideEffects extends Downstream[O] {
-      val next: O ⇒ Result[O] = DeliverNextToDownstream
-      val complete: Result[Nothing] = CompleteDownstream
-      val error: (Throwable) ⇒ Result[O] = ErrorDownstream
+      val next: O ⇒ Result = DeliverNextToDownstream
+      val complete: Result = CompleteDownstream
+      val error: (Throwable) ⇒ Result = ErrorDownstream
     }
     object ActorSubscribable extends Subscribable {
-      def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O, O], Result[O])): Result[O] =
+      def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Result)): Result =
         Result.step(handleSubscribeTo(source, onSubscribe))
     }
 
-    def handleSubscribeTo[O](source: Source[O], onSubscribeCallback: Upstream ⇒ (SyncSink[O, O], Result[O])): Result[O] = {
-      case class RequestMoreFromSub(subscription: Subscription, n: Int) extends SideEffectImpl[Nothing](subscription.requestMore(n))
-      case class CancelSub(subscription: Subscription) extends SideEffectImpl[Nothing](subscription.cancel())
+    def handleSubscribeTo[O](source: Source[O], onSubscribeCallback: Upstream ⇒ (SyncSink[O], Result)): Result = {
+      case class RequestMoreFromSub(subscription: Subscription, n: Int) extends SideEffectImpl(subscription.requestMore(n))
+      case class CancelSub(subscription: Subscription) extends SideEffectImpl(subscription.cancel())
 
       case class SubUpstream(subscription: Subscription) extends Upstream {
-        val requestMore: (Int) ⇒ Result[Nothing] = RequestMoreFromSub(subscription, _)
-        val cancel: Result[Nothing] = CancelSub(subscription)
+        val requestMore: (Int) ⇒ Result = RequestMoreFromSub(subscription, _)
+        val cancel: Result = CancelSub(subscription)
       }
 
       object SubSubscriber extends Subscriber[O] {
         var subscription: Subscription = _
-        var sink: SyncSink[O, O] = _
+        var sink: SyncSink[O] = _
         def onSubscribe(subscription: Subscription): Unit = runInThisActor {
           this.subscription = subscription
           val (handler, result) = onSubscribeCallback(SubUpstream(subscription))
@@ -147,7 +147,7 @@ trait WithActor[I, O] {
 
     case class RunDeferred(body: () ⇒ Unit)
     def runInThisActor(body: ⇒ Unit): Unit = self ! RunDeferred(body _)
-    def runAndHandleResult(body: ⇒ Result[_]): Unit = runInThisActor(run(body))
+    def runAndHandleResult(body: ⇒ Result): Unit = runInThisActor(run(body))
 
     def newSubscription(subscriber: Subscriber[O]): Subscription =
       new Subscription {
@@ -184,41 +184,41 @@ class PipelineProcessorActor(pipeline: Pipeline[_]) extends Actor {
     case RunDeferred(body) ⇒ body()
   }
 
-  def run(res: Result[_]): Unit =
+  def run(res: Result): Unit =
     res match {
       // shortcut for simple results
-      case s: SideEffect[_]        ⇒ s.runSideEffect()
+      case s: SideEffect           ⇒ s.runSideEffect()
       case Continue                ⇒
-      case r: Step[_]              ⇒ iterate(Vector(r.run()))
+      case r: Step                 ⇒ iterate(Vector(r.run()))
       case CombinedResult(results) ⇒ iterate(results)
     }
 
-  @tailrec private[this] def iterate(elements: Vector[Result[_]]): Unit =
+  @tailrec private[this] def iterate(elements: Vector[Result]): Unit =
     if (elements.isEmpty) ()
     else elements.head match {
-      case s: SideEffect[_] ⇒
+      case s: SideEffect ⇒
         s.runSideEffect(); iterate(elements.tail)
       case Continue                ⇒ iterate(elements.tail)
-      case r: Step[_]              ⇒ iterate(r.run() +: elements.tail)
+      case r: Step                 ⇒ iterate(r.run() +: elements.tail)
       case CombinedResult(results) ⇒ iterate(results ++ elements.tail)
     }
 
   object ActorSubscribable extends Subscribable {
-    def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O, O], Result[O])): Result[O] =
+    def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Result)): Result =
       Result.step(handleSubscribeTo(source, onSubscribe))
 
-    override def subscribeFrom[O](sink: Sink[O])(onSubscribe: (Downstream[O]) ⇒ (SyncSource[O], Result[O])): Result[O] = {
+    override def subscribeFrom[O](sink: Sink[O])(onSubscribe: (Downstream[O]) ⇒ (SyncSource, Result)): Result = {
       val FromConsumerSink(consumer) = sink
       Result.step {
-        case class NextElement(o: O) extends SideEffectImpl[O](consumer.getSubscriber.onNext(o))
-        case object CompleteSink extends SideEffectImpl[Nothing](consumer.getSubscriber.onComplete())
-        case class Error(cause: Throwable) extends SideEffectImpl[O](consumer.getSubscriber.onError(cause))
+        case class NextElement(o: O) extends SideEffectImpl(consumer.getSubscriber.onNext(o))
+        case object CompleteSink extends SideEffectImpl(consumer.getSubscriber.onComplete())
+        case class Error(cause: Throwable) extends SideEffectImpl(consumer.getSubscriber.onError(cause))
         object SinkDownstream extends Downstream[O] {
-          val next: (O) ⇒ Result[O] = NextElement
-          val complete: Result[Nothing] = CompleteSink
-          val error: (Throwable) ⇒ Result[O] = Error
+          val next: (O) ⇒ Result = NextElement
+          val complete: Result = CompleteSink
+          val error: (Throwable) ⇒ Result = Error
         }
-        class SubSubscription(source: SyncSource[O]) extends Subscription {
+        class SubSubscription(source: SyncSource) extends Subscription {
           def requestMore(elements: Int): Unit = runAndHandleResult(source.handleRequestMore(elements))
           def cancel(): Unit = runAndHandleResult(source.handleCancel())
         }
@@ -229,18 +229,18 @@ class PipelineProcessorActor(pipeline: Pipeline[_]) extends Actor {
     }
   }
 
-  def handleSubscribeTo[O](source: Source[O], onSubscribeCallback: Upstream ⇒ (SyncSink[O, O], Result[O])): Result[O] = {
-    case class RequestMoreFromSub(subscription: Subscription, n: Int) extends SideEffectImpl[Nothing](subscription.requestMore(n))
-    case class CancelSub(subscription: Subscription) extends SideEffectImpl[Nothing](subscription.cancel())
+  def handleSubscribeTo[O](source: Source[O], onSubscribeCallback: Upstream ⇒ (SyncSink[O], Result)): Result = {
+    case class RequestMoreFromSub(subscription: Subscription, n: Int) extends SideEffectImpl(subscription.requestMore(n))
+    case class CancelSub(subscription: Subscription) extends SideEffectImpl(subscription.cancel())
 
     case class SubUpstream(subscription: Subscription) extends Upstream {
-      val requestMore: (Int) ⇒ Result[Nothing] = RequestMoreFromSub(subscription, _)
-      val cancel: Result[Nothing] = CancelSub(subscription)
+      val requestMore: (Int) ⇒ Result = RequestMoreFromSub(subscription, _)
+      val cancel: Result = CancelSub(subscription)
     }
 
     object SubSubscriber extends Subscriber[O] {
       var subscription: Subscription = _
-      var sink: SyncSink[O, O] = _
+      var sink: SyncSink[O] = _
       def onSubscribe(subscription: Subscription): Unit = runInThisActor {
         this.subscription = subscription
         val (handler, result) = onSubscribeCallback(SubUpstream(subscription))
@@ -258,5 +258,5 @@ class PipelineProcessorActor(pipeline: Pipeline[_]) extends Actor {
 
   case class RunDeferred(body: () ⇒ Unit)
   def runInThisActor(body: ⇒ Unit): Unit = self ! RunDeferred(body _)
-  def runAndHandleResult(body: ⇒ Result[_]): Unit = runInThisActor(run(body))
+  def runAndHandleResult(body: ⇒ Result): Unit = runInThisActor(run(body))
 }

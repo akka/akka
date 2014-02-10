@@ -47,21 +47,21 @@ class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpe
 
   class UnitializedSetup {
     val CustomSource = FromIterableSource(Seq(1f, 2f, 3f))
-    case class SubscribeTo[O](source: Source[O], onSubscribe: Upstream ⇒ (SyncSink[O, O], Result[O])) extends SideEffect[O] {
+    case class SubscribeTo[O](source: Source[O], onSubscribe: Upstream ⇒ (SyncSink[O], Result)) extends SideEffect {
       def runSideEffect(): Unit = ???
     }
-    case class RequestMoreFromSubstream(n: Int) extends SideEffect[Nothing] {
+    case class RequestMoreFromSubstream(n: Int) extends SideEffect {
       def runSideEffect(): Unit = ???
     }
-    case object CancelSubstream extends SideEffect[Nothing] {
+    case object CancelSubstream extends SideEffect {
       def runSideEffect(): Unit = ???
     }
     object SubUpstream extends Upstream {
-      val requestMore: Int ⇒ Result[Nothing] = RequestMoreFromSubstream
-      val cancel: Result[Nothing] = CancelSubstream
+      val requestMore: Int ⇒ Result = RequestMoreFromSubstream
+      val cancel: Result = CancelSubstream
     }
     val subscribable = new Subscribable {
-      def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O, O], Result[O])): Result[O] =
+      def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Result)): Result =
         SubscribeTo(source, onSubscribe)
     }
     val flatten = FlattenImpl(upstream, downstream, subscribable)
