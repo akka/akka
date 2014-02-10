@@ -9,7 +9,7 @@ class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with Syn
   "Complex chains requiring back-forth chatter" - {
     "internal source + map + fold" in {
       val combination = instance(FromIterableSource(1 to 10).map(_ + 1).fold(0f)(_ + _.toFloat))
-      val r @ AndThenImpl.RequestMoreFromLeft(_, 100) = combination.handleRequestMore(1)
+      val r @ ComposeImpl.RequestMoreFromLeft(_, 100) = combination.handleRequestMore(1)
       r.runToResult() should be(DownstreamNext(65.0) ~ DownstreamComplete)
     }
     "flatten.map(_ + 1f)" in {
@@ -20,7 +20,7 @@ class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with Syn
   }
 
   def instance(source: Source[Float]): SyncSource =
-    AndThenImpl.implementation(downstream, null, source)
+    OperationImpl(downstream, null, source)
   def instance[I](operation: Operation[I, Float]): SyncOperation[I] =
-    AndThenImpl.implementation(upstream, downstream, null, operation)
+    OperationImpl(upstream, downstream, null, operation)
 }

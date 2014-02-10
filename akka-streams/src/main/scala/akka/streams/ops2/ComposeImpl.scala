@@ -1,34 +1,7 @@
-package akka.streams.ops2
+package akka.streams
+package ops2
 
-import akka.streams.Operation
-import Operation._
-
-object AndThenImpl {
-  def implementation[A](subscribable: ContextEffects, p: Pipeline[A]): SyncRunnable = {
-    pipeline(implementation[A](_: Downstream[A], subscribable, p.source), implementation[A](_: Upstream, subscribable, p.sink))
-  }
-  def implementation[I](upstream: Upstream, subscribable: ContextEffects, sink: Sink[I]): SyncSink[I] =
-    sink match {
-      case Foreach(f)          ⇒ ForeachImpl(upstream, f)
-      case FromConsumerSink(s) ⇒ FromConsumerSinkImpl(upstream, subscribable, s)
-    }
-  def implementation[O](downstream: Downstream[O], subscribable: ContextEffects, source: Source[O]): SyncSource =
-    source match {
-      case m: MappedSource[i, O] ⇒
-        AndThenImpl.source[i, O](implementation(_: Downstream[i], subscribable, m.source), up ⇒ implementation(up, downstream, subscribable, m.operation))
-      case FromIterableSource(s)    ⇒ FromIterableSourceImpl(downstream, subscribable, s)
-      case f: FromProducerSource[_] ⇒ FromProducerSourceImpl(downstream, subscribable, f)
-    }
-
-  def implementation[I, O](upstream: Upstream, downstream: Downstream[O], subscribable: ContextEffects, op: Operation[I, O]): SyncOperation[I] = op match {
-    case a: AndThen[I, i2, O] ⇒
-      AndThenImpl.operation(implementation(upstream, _: Downstream[i2], subscribable, a.f), implementation(_, downstream, subscribable, a.g))
-    case Map(f)              ⇒ MapImpl(upstream, downstream, f)
-    case i: Identity[O]      ⇒ IdentityImpl(upstream, downstream).asInstanceOf[SyncOperation[I]]
-    case Flatten()           ⇒ FlattenImpl(upstream, downstream, subscribable).asInstanceOf[SyncOperation[I]]
-    case d: DirectFold[I, O] ⇒ FoldImpl(upstream, downstream, d)
-  }
-
+object ComposeImpl {
   case class NextToRight[B](right: SyncSink[B], element: B) extends EffectImpl(right.handleNext(element))
   case class CompleteRight(right: SyncSink[_]) extends EffectImpl(right.handleComplete())
   case class ErrorToRight[B](right: SyncSink[B], cause: Throwable) extends EffectImpl(right.handleError(cause))

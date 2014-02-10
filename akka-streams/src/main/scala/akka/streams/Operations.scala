@@ -49,12 +49,12 @@ object Operation {
     (f, g) match {
       case (Identity(), _) ⇒ g.asInstanceOf[A ==> C]
       case (_, Identity()) ⇒ f.asInstanceOf[A ==> C]
-      case _               ⇒ AndThen(f, g)
+      case _               ⇒ Compose(f, g)
     }
 
   // basic operation composition
   // consumes and produces no faster than the respective minimum rates of f and g
-  case class AndThen[A, B, C](f: A ==> B, g: B ==> C) extends (A ==> C)
+  case class Compose[A, B, C](f: A ==> B, g: B ==> C) extends (A ==> C)
 
   // adds (bounded or unbounded) pressure elasticity
   // consumes at max rate as long as `canConsume` is true,

@@ -37,7 +37,7 @@ trait WithActor[I, O] {
   case class CancelSubscription(subscriber: Subscriber[O])
 
   class OperationProcessorActor extends Actor with WithFanOutBox with ProcessorActorImpl {
-    val impl = AndThenImpl.implementation(UpstreamSideEffects, DownstreamSideEffects, ActorContextEffects, operation)
+    val impl = OperationImpl(UpstreamSideEffects, DownstreamSideEffects, ActorContextEffects, operation)
     var upstream: Subscription = _
 
     val fanOutBox: FanOutBox = settings.constructFanOutBox()
@@ -123,7 +123,7 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
 }
 
 class PipelineProcessorActor(pipeline: Pipeline[_]) extends Actor with ProcessorActorImpl {
-  AndThenImpl.implementation(ActorContextEffects, pipeline).start()
+  OperationImpl(ActorContextEffects, pipeline).start()
 
   def receive: Receive = {
     case RunDeferred(body) ⇒ body()
