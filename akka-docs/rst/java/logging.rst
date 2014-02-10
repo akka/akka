@@ -149,6 +149,8 @@ If you want to monitor subscriptions (subscribe/unsubscribe) on the ActorSystem.
       }
     }
 
+.. _logging-remote-java:
+
 Auxiliary remote logging options
 --------------------------------
 
