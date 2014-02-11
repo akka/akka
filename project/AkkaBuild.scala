@@ -370,7 +370,7 @@ object AkkaBuild extends Build {
     aggregate = Seq(camelSampleJava, camelSampleScala, mainSampleJava, mainSampleScala, 
           remoteSampleJava, remoteSampleScala, clusterSampleJava, clusterSampleScala,
           fsmSampleScala, persistenceSample,
-          multiNodeSample, helloKernelSample, osgiDiningHakkersSample)
+          multiNodeSampleScala, helloKernelSample, osgiDiningHakkersSample)
   )
 
   lazy val camelSampleJava = Project(
@@ -472,9 +472,9 @@ object AkkaBuild extends Build {
     )
   ) configs (MultiJvm)
   
-  lazy val multiNodeSample = Project(
-    id = "akka-sample-multi-node",
-    base = file("akka-samples/akka-sample-multi-node"),
+  lazy val multiNodeSampleScala = Project(
+    id = "akka-sample-multi-node-scala",
+    base = file("akka-samples/akka-sample-multi-node-scala"),
     dependencies = Seq(multiNodeTestkit % "test", testkit % "test"),
     settings = multiJvmSettings ++ sampleSettings ++ experimentalSettings ++ Seq(
       libraryDependencies ++= Dependencies.multiNodeSample,

@@ -1,0 +1,89 @@
+<!-- <html> -->
+<head>
+<title>Akka Multi-Node Testing Sample with Scala</title>
+</head>
+
+<body>
+
+<div>
+<p>
+This sample contains <a href="http://www.scala-sbt.org/" target="_blank">sbt</a> build settings
+and test classes for illustrating multi-node testing with Akka. 
+</p>
+
+<p>
+Please refer to the full documentation of 
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/dev/multi-node-testing.html" target="_blank">multi-node testing</a>
+and the closely related
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/dev/multi-jvm-testing.html" target="_blank">multi-jvm testing</a>
+for details.
+There is also an section on 
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/scala/cluster-usage.html#How_to_Test" target="_blank">cluster testing</a>.
+</p>
+
+</div>
+
+<div>
+<h2>sbt setup</h2>
+
+<p>
+Open <a href="#code/project/plugins.sbt" class="shortcut">project/plugins.sbt</a>
+</p>
+
+<p>
+It adds the <a href="http://github.com/typesafehub/sbt-multi-jvm" target="_blank">sbt-multi-jvm</a> plugin to the build.
+</p>
+
+<p>
+Open <a href="#code/project/Build.scala" class="shortcut">project/Build.scala</a>
+</p>
+
+<p> 
+It includes the MultiJvm settings that are needed to run multi-jvm tests.
+</p>
+
+</div>
+
+<div>
+<h2>Tests</h2>
+
+<p>
+Open <a href="#code/src/multi-jvm/scala/sample/multinode/MultiNodeSample.scala" class="shortcut">MultiNodeSample.scala</a>
+</p>
+
+<p>
+Note that MultiJvm test sources are located in <code>src/multi-jvm/...</code> and the 
+test classes must end with <code>MultiJvm</code> followed by the node name, typically
+<code>Node1</code>, <code>Node2</code>, <code>Node3</code>...
+</p>
+
+<p>
+To hook up the MultiNodeSpec with with ScalaTest you need something like:
+<a href="#code/src/test/scala/sample/multinode/STMultiNodeSpec.scala" class="shortcut">STMultiNodeSpec.scala</a>
+</p>
+
+<p>
+To see the test in action, open the <a href="#test" class="shortcut">Test</a> tab
+and click <b>Start</b> to run the <code>MultiNodeSample</code>. This corresponds to
+<code>sbt test</code>.
+</p>
+
+<p>
+In case you have many tests in the project it can be convenient to run a single test from
+the sbt prompt:
+</p>
+
+<pre><code>
+&gt; multi-jvm:testOnly sample.multinode.MultiNodeSampleSpec
+</code></pre>
+
+<p>
+The same test can be run on multiple machines as described in the
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/dev/multi-node-testing.html" target="_blank">multi-node testing documentation</a>.
+</p> 
+
+
+</div>
+
+</body>
+</html>

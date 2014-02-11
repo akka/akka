@@ -21,86 +21,9 @@ You can then add multi-JVM testing to ``project/Build.scala`` by including the `
 settings and config. Please note that MultiJvm test sources are located in ``src/multi-jvm/...``,
 and not in ``src/test/...``.
 
-Here is an example Build.scala file for sbt 0.12 that uses the MultiJvm plugin:
+Here is an example Build.scala file for sbt 0.13 that uses the MultiJvm plugin:
 
-.. parsed-literal::
-
-   import sbt._
-   import Keys._
-   import com.typesafe.sbt.SbtMultiJvm
-   import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
-
-   object ExampleBuild extends Build {
-
-     lazy val buildSettings = Defaults.defaultSettings ++ multiJvmSettings ++ Seq(
-       organization := "example",
-       version      := "1.0",
-       scalaVersion := "@scalaVersion@",
-       // make sure that the artifacts don't have the scala version in the name
-       crossPaths   := false
-     )
-
-     lazy val example = Project(
-       id = "example",
-       base = file("."),
-       settings = buildSettings ++
-         Seq(libraryDependencies ++= Dependencies.example)
-     ) configs(MultiJvm)
-
-     lazy val multiJvmSettings = SbtMultiJvm.multiJvmSettings ++ Seq(
-       // make sure that MultiJvm test are compiled by the default test compilation
-       compile in MultiJvm <<= (compile in MultiJvm) triggeredBy (compile in Test),
-       // disable parallel tests
-       parallelExecution in Test := false,
-       // make sure that MultiJvm tests are executed by the default test target
-       executeTests in Test <<=
-         ((executeTests in Test), (executeTests in MultiJvm)) map {
-           case ((_, testResults), (_, multiJvmResults))  =>
-             val results = testResults ++ multiJvmResults
-             (Tests.overall(results.values), results)
-       }
-     )
-
-     object Dependencies {
-       val example = Seq(
-         // ---- application dependencies ----
-         "com.typesafe.akka"  %% "akka-actor" % "@version@" @crossString@,
-         "com.typesafe.akka"  %% "akka-remote" % "@version@" @crossString@,
-
-         // ---- test dependencies ----
-         "com.typesafe.akka" %% "akka-testkit" % "@version@" %
-           "test" @crossString@,
-         "com.typesafe.akka" %% "akka-multi-node-testkit" % "@version@" %
-           "test" @crossString@,
-         "org.scalatest"     %% "scalatest" % "2.0" % "test",
-         "junit"              % "junit" % "4.10" % "test"
-       )
-     }
-   }
-
-If you are using sbt 0.13 the multiJvmSettings in the Build.scala file looks like this instead:
-
-.. parsed-literal::
-
-   lazy val multiJvmSettings = SbtMultiJvm.multiJvmSettings ++ Seq(
-     // make sure that MultiJvm test are compiled by the default test compilation
-     compile in MultiJvm <<= (compile in MultiJvm) triggeredBy (compile in Test),
-     // disable parallel tests
-     parallelExecution in Test := false,
-     // make sure that MultiJvm tests are executed by the default test target
-     executeTests in Test <<=
-       ((executeTests in Test), (executeTests in MultiJvm)) map {
-         case ((testResults), (multiJvmResults)) =>
-           val overall =
-             if (testResults.overall.id < multiJvmResults.overall.id)
-               multiJvmResults.overall
-             else
-               testResults.overall
-           Tests.Output(overall,
-             testResults.events ++ multiJvmResults.events,
-             testResults.summaries ++ multiJvmResults.summaries)
-     }
-   )
+.. includecode:: ../../../akka-samples/akka-sample-multi-node-scala/project/Build.scala
 
 You can specify JVM options for the forked JVMs::
 
