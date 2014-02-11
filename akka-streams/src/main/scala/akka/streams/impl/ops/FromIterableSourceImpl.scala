@@ -1,9 +1,11 @@
-package akka.streams.impl
+package akka.streams
+package impl
+package ops
 
 import scala.annotation.tailrec
 
 object FromIterableSourceImpl {
-  def apply[O](downstream: Downstream[O], subscribable: ContextEffects, iterable: Iterable[O]): SyncSource =
+  def apply[O](downstream: Downstream[O], ctx: ContextEffects, iterable: Iterable[O]): SyncSource =
     new SyncSource {
       val it = iterable.iterator
       var alreadyCompleted = false

@@ -1,22 +1,22 @@
-package akka.streams.impl
+package akka.streams
+package impl
+package ops
 
-import akka.streams.Operation.DirectFold
+import Operation.Fold
 
 object FoldImpl {
-  def apply[I, O](upstream: Upstream, downstream: Downstream[O], directFold: DirectFold[I, O], batchSize: Int = 100): SyncOperation[I] =
+  def apply[I, O](upstream: Upstream, downstream: Downstream[O], fold: Fold[I, O], batchSize: Int = 100): SyncOperation[I] =
     new SyncOperation[I] {
       var remaining = 0
-      var z = directFold.seed
-      def handleRequestMore(n: Int): Effect =
-        upstream.requestMore(batchSize)
+      var z = fold.seed
 
+      def handleRequestMore(n: Int): Effect = upstream.requestMore(batchSize)
       def handleCancel(): Effect = upstream.cancel
 
       def handleNext(element: I): Effect = {
-        z = directFold.f(z, element)
+        z = fold.f(z, element)
         upstream.requestMore(1)
       }
-
       def handleComplete(): Effect = downstream.next(z) ~ downstream.complete
       def handleError(cause: Throwable): Effect = downstream.error(cause)
     }

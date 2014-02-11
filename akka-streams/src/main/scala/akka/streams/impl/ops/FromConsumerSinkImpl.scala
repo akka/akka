@@ -1,12 +1,14 @@
-package akka.streams.impl
+package akka.streams
+package impl
+package ops
 
-import akka.streams.Operation.Sink
+import Operation.Sink
 
 object FromConsumerSinkImpl {
-  def apply[I](upstream: Upstream, subscribable: ContextEffects, sink: Sink[I]): SyncSink[I] =
+  def apply[I](upstream: Upstream, ctx: ContextEffects, sink: Sink[I]): SyncSink[I] =
     new SyncSink[I] with SyncSource {
       var downstream: Downstream[I] = _
-      override def start(): Effect = subscribable.subscribeFrom(sink)(handleSubscribe)
+      override def start(): Effect = ctx.subscribeFrom(sink)(handleSubscribe)
       def handleSubscribe(downstream: Downstream[I]): (SyncSource, Effect) = {
         this.downstream = downstream
         (this, Continue)

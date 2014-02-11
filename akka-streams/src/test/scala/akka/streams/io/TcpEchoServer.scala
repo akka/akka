@@ -5,10 +5,11 @@ import akka.actor.ActorSystem
 import java.net.InetSocketAddress
 import akka.streams.io.TcpStream.IOStream
 import akka.util.ByteString
+import akka.streams.impl.{ RaceTrack }
 
 object TcpEchoServer {
   //import akka.streams.Combinators._
-  import akka.streams.Operation._
+  import Operation._
   import scala.concurrent.ExecutionContext.Implicits.global
 
   def main(args: Array[String]) {

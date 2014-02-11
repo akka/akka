@@ -1,4 +1,4 @@
-package akka.streams
+package akka.streams.impl
 
 import scala.collection.mutable
 import scala.annotation.tailrec

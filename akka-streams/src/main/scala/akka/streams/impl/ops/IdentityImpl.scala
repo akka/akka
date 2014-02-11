@@ -1,4 +1,6 @@
-package akka.streams.impl
+package akka.streams
+package impl
+package ops
 
 object IdentityImpl {
   def apply[O](upstream: Upstream, downstream: Downstream[O]): SyncOperation[O] =

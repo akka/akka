@@ -1,7 +1,14 @@
-package akka.streams
+package akka.streams.impl
 
-import rx.async.spi.Subscriber
+import rx.async.spi.{ Subscription, Subscriber }
 
+/**
+ * A more natural interface for FanOutBox that doesn't rely on users of FanOutBox to
+ * know anything about its internal state.
+ *
+ * TODO: 1.) provide the final interface here with glue layer for previous one
+ *       2.) rewrite FanOutBox with the better interface
+ */
 trait WithFanOutBox {
   def fanOutBox: FanOutBox
 
@@ -10,12 +17,16 @@ trait WithFanOutBox {
   def fanOutBoxFinished(): Unit
 
   def hasSubscribers: Boolean = fanOutBox.state != FanOutBox.Empty
-  def handleOnNext(next: Any): Unit = {
-    fanOutBox.onNext(next)
-    if (fanOutBox.state == FanOutBox.Ready) requestNextBatch()
+
+  val fanOutInput: Subscriber[Any] = new Subscriber[Any] {
+    def onSubscribe(subscription: Subscription): Unit = ???
+    def onNext(next: Any): Unit = {
+      fanOutBox.onNext(next)
+      if (fanOutBox.state == FanOutBox.Ready) requestNextBatch()
+    }
+    def onError(cause: Throwable): Unit = fanOutBox.onError(cause)
+    def onComplete(): Unit = fanOutBox.onComplete()
   }
-  def handleOnError(cause: Throwable): Unit = fanOutBox.onError(cause)
-  def handleOnComplete(): Unit = fanOutBox.onComplete()
 
   def handleRequestMore(sub: Subscriber[_], elements: Int): Unit = {
     fanOutBox.requestMore(sub, elements)

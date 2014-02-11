@@ -1,9 +1,11 @@
-package akka.streams.impl
+package akka.streams
+package impl
+package ops
 
-import akka.streams.Operation.Source
+import Operation.Source
 
 object FlattenImpl {
-  def apply[O](upstream: Upstream, downstream: Downstream[O], subscribable: ContextEffects): SyncOperation[Source[O]] =
+  def apply[O](upstream: Upstream, downstream: Downstream[O], ctx: ContextEffects): SyncOperation[Source[O]] =
     new DynamicSyncOperation[Source[O]] {
       def initial: State = Waiting
 
@@ -31,7 +33,7 @@ object FlattenImpl {
           def handleNext(element: Source[O]): Effect = {
             val readSubstream = new ReadSubstream(remaining)
             become(readSubstream)
-            subscribable.subscribeTo(element)(readSubstream.setSubUpstream)
+            ctx.subscribeTo(element)(readSubstream.setSubUpstream)
           }
           def handleComplete(): Effect = downstream.complete
           def handleError(cause: Throwable): Effect = downstream.error(cause)

@@ -1,14 +1,15 @@
 package akka.streams
 package impl
+package ops
 
 import org.scalatest.{ ShouldMatchers, FreeSpec }
-import Operation._
+import Operation.Map
 
 class ComposeImplSpecs extends FreeSpec with ShouldMatchers with SyncOperationSpec {
   "AndThenImpl in simple cases" - {
     "let elements flow forward" in {
       val combination = OperationImpl[String, Float](upstream, downstream, null, Map((_: String) ⇒ 42).map(_.toFloat + 1.3f))
-      val step @ ComposeImpl.NextToRight(_, 42) = combination.handleNext("test")
+      val step @ BasicEffects.HandleNextInSink(_, 42) = combination.handleNext("test")
       step.runOne() should be(DownstreamNext(43.3f))
     }
     "let requests flow backwards" in pending

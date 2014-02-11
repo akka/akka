@@ -1,7 +1,9 @@
-package akka.streams.impl
+package akka.streams
+package impl
+package ops
 
 import org.scalatest.{ FreeSpec, ShouldMatchers }
-import akka.streams.Operation.{ Sink, FromIterableSource, Source }
+import Operation.{ FromIterableSource, Sink, Source }
 
 class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {
   "Flatten should" - {
@@ -47,25 +49,25 @@ class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpe
 
   class UnitializedSetup {
     val CustomSource = FromIterableSource(Seq(1f, 2f, 3f))
-    case class SubscribeTo[O](source: Source[O], onSubscribe: Upstream ⇒ (SyncSink[O], Effect)) extends SideEffect {
+    case class SubscribeTo[O](source: Source[O], onSubscribe: Upstream ⇒ (SyncSink[O], Effect)) extends ExternalEffect {
       def run(): Unit = ???
     }
-    case class RequestMoreFromSubstream(n: Int) extends SideEffect {
+    case class RequestMoreFromSubstream(n: Int) extends ExternalEffect {
       def run(): Unit = ???
     }
-    case object CancelSubstream extends SideEffect {
+    case object CancelSubstream extends ExternalEffect {
       def run(): Unit = ???
     }
     object SubUpstream extends Upstream {
       val requestMore: Int ⇒ Effect = RequestMoreFromSubstream
       val cancel: Effect = CancelSubstream
     }
-    val subscribable = new ContextEffects {
+    val ctx = new ContextEffects {
       def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Effect)): Effect =
         SubscribeTo(source, onSubscribe)
 
       def subscribeFrom[O](sink: Sink[O])(onSubscribe: (Downstream[O]) ⇒ (SyncSource, Effect)): Effect = ???
     }
-    val flatten = FlattenImpl(upstream, downstream, subscribable)
+    val flatten = FlattenImpl(upstream, downstream, ctx)
   }
 }

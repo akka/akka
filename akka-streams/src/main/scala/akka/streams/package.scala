@@ -1,7 +1,8 @@
 package akka
 
 import rx.async.api.{ Consumer, Producer }
-import akka.streams.Operation.Pipeline
+import akka.streams.Operation
+import Operation.Pipeline
 
 package object streams {
   implicit class LinkProducer[I](val producer: Producer[I]) extends AnyVal {

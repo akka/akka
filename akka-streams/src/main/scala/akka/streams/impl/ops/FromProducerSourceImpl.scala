@@ -1,9 +1,11 @@
-package akka.streams.impl
+package akka.streams
+package impl
+package ops
 
-import akka.streams.Operation.{ Source, FromProducerSource }
+import Operation.Source
 
 object FromProducerSourceImpl {
-  def apply[O](downstream: Downstream[O], subscribable: ContextEffects, source: Source[O]): SyncSource =
+  def apply[O](downstream: Downstream[O], ctx: ContextEffects, source: Source[O]): SyncSource =
     new DynamicSyncSource {
       def initial = WaitingForRequest
 
@@ -12,7 +14,7 @@ object FromProducerSourceImpl {
           def handleRequestMore(n: Int): Effect = {
             val subscribed = new Subscribed(n)
             become(subscribed)
-            subscribable.subscribeTo(source)(subscribed.onSubscribed)
+            ctx.subscribeTo(source)(subscribed.onSubscribed)
           }
           def handleCancel(): Effect = ???
         }

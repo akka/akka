@@ -3,7 +3,7 @@ package akka.streams.impl
 import scala.annotation.tailrec
 
 trait SyncOperationSpec {
-  abstract class DoNothing[O] extends SideEffect {
+  abstract class DoNothing[O] extends ExternalEffect {
     def run(): Unit = ???
   }
 
