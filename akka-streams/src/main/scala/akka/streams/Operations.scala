@@ -213,7 +213,6 @@ object Operation {
     def fold[C](seed: C)(f: (C, B) ⇒ C): Res[C] = andThen(Fold(seed, f))
     def foldUntil[S, C](seed: S)(f: (S, B) ⇒ FoldUntil.Command[C, S])(onComplete: S ⇒ Option[C]): Res[C] = andThen(FoldUntil(seed, f, onComplete))
     def forAll(p: B ⇒ Boolean): Res[Boolean] = andThen(ForAll(p))
-    //def foreach(f: B ⇒ Unit): Sink[A] = andThen(Foreach(f))
     def head: Res[B] = andThen(Head())
     def map[C](f: B ⇒ C): Res[C] = andThen(Map(f))
     def mapFind[C](f: B ⇒ Option[C], default: ⇒ Option[C]): Res[C] = andThen(MapFind(f, default))
