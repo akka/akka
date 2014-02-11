@@ -255,6 +255,7 @@ object AkkaBuild extends Build {
         // TODO: remove these preliminary dependencies we need
         // while parsers are still missing
         Seq(
+          "io.spray" % "spray-can" % "1.3-RC1",
           "io.spray" % "spray-http" % "1.3-RC1"
         ),
       resolvers += "repo.spray.io" at "http://repo.spray.io",

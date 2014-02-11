@@ -1,7 +1,7 @@
 package akka.streams
 
 import scala.language.{ implicitConversions, higherKinds }
-import rx.async.api.{ Consumer, Producer }
+import rx.async.api.{ Processor, Consumer, Producer }
 
 sealed trait Operation[-I, +O]
 
@@ -27,7 +27,7 @@ object Operation {
     type Input = I
     override def andThen[O2](op: Operation.==>[O, O2]): Source[O2] = MappedSource(source, Operation(operation, op))
   }
-  implicit def fromProducer[T](producer: Producer[T]) = FromProducerSource(producer)
+  implicit def fromProducer[T](producer: Producer[T]): Source[T] = FromProducerSource(producer)
   case class FromProducerSource[T](producer: Producer[T]) extends Source[T]
 
   sealed trait Sink[-I] {
@@ -51,6 +51,8 @@ object Operation {
   // basic operation composition
   // consumes and produces no faster than the respective minimum rates of f and g
   case class Compose[A, B, C](f: A ==> B, g: B ==> C) extends (A ==> C)
+
+  case class Concat[A](next: Source[A]) extends Operation[A, A]
 
   // adds (bounded or unbounded) pressure elasticity
   // consumes at max rate as long as `canConsume` is true,
@@ -109,6 +111,8 @@ object Operation {
   def FlatMap[A, B](f: A ⇒ Source[B]): A ==> B =
     Map(f).flatten
 
+  case class FlatMapNested[A, B](op: A ==> Source[B]) extends (A ==> B)
+
   // flattens the upstream by concatenation
   // consumes no faster than the downstream, produces no faster than the sources in the upstream
   case class Flatten[T]() extends (Source[T] ==> T)
@@ -131,6 +135,28 @@ object Operation {
     case object Stop extends Command[Nothing, Nothing]
   }
 
+  case class UserOperation[A, B, S](seed: S,
+                                    onNext: (S, A) ⇒ UserOperation.Command[B, S],
+                                    onComplete: S ⇒ Seq[B]) extends (A ==> B)
+  object UserOperation {
+    sealed trait Command[+B, +S] {
+      def ~[B2 >: B, S2 >: S](next: Command[B2, S2]): Command[B2, S2] = Commands(Seq(this, next))
+    }
+    case class Emit[B, S](value: B) extends Command[B, S]
+    case class Commands[B, S](commands: Seq[Command[B, S]]) extends Command[B, S] {
+      require(commands.size > 1)
+
+      override def ~[B2 >: B, S2 >: S](next: Command[B2, S2]): Command[B2, S2] = Commands(commands :+ next)
+    }
+    case class Continue[B, S](nextState: S) extends Command[B, S] {
+      override def ~[B2 >: B, S2 >: S](next: Command[B2, S2]): Command[B2, S2] = next
+    }
+    case object Stop extends Command[Nothing, Nothing] {
+      override def ~[B2, S2](next: Command[B2, S2]): Command[B2, S2] =
+        throw new IllegalStateException("Can't do anything after Stop")
+    }
+  }
+
   // produces one boolean (if all upstream values satisfy p emits true otherwise false)
   // consumes at max rate until p(t) becomes false, unsubscribes afterwards
   def ForAll[T](p: T ⇒ Boolean): T ==> Boolean =
@@ -139,6 +165,9 @@ object Operation {
   // sinks all upstream value into the given function
   // consumes at max rate
   case class Foreach[T](f: T ⇒ Unit) extends Sink[T]
+
+  implicit def liftProcessor[I, O](processor: Processor[I, O]): I ==> O = FromProcessorOperation(processor)
+  case class FromProcessorOperation[I, O](processor: Processor[I, O]) extends (I ==> O)
 
   // produces the first upstream element, unsubscribes afterwards
   def Head[T](): T ==> T = Take(1)
@@ -189,13 +218,15 @@ object Operation {
       },
       onComplete = _ ⇒ None)
 
+  case class TakeWhile[T](f: T ⇒ Boolean) extends (T ==> T)
+
   // combines the upstream and the given source into tuples
   // produces at the rate of the slower upstream (i.e. no values are dropped)
   // consumes from the upstream no faster than the downstream consumption rate or the production rate of the given source
   // consumes from the given source no faster than the downstream consumption rate or the upstream production rate
   case class Zip[A, B, C](source: Source[C]) extends (A ==> (B, C))
 
-  implicit def producer2Ops1[T](producer: Producer[T]) = SourceOps1[T](fromProducer(producer))
+  implicit def producerOps1[X, T](x: X)(implicit lift: X ⇒ Source[T]) = SourceOps1[T](lift(x))
   implicit def producerOps2[I, O](op: I ==> Producer[O]) = OperationOps2(OperationOps1(op).map(FromProducerSource(_)))
 
   trait Ops1[B] extends Any {
@@ -210,6 +241,7 @@ object Operation {
     def filter(p: B ⇒ Boolean): Res[B] = andThen(Filter(p))
     def find(p: B ⇒ Boolean): Res[B] = andThen(Find(p))
     def flatMap[C](f: B ⇒ Source[C]): Res[C] = andThen(FlatMap(f))
+    def flatMapNested[C](op: B ==> Source[C]): Res[C] = andThen(FlatMapNested(op))
     def fold[C](seed: C)(f: (C, B) ⇒ C): Res[C] = andThen(Fold(seed, f))
     def foldUntil[S, C](seed: S)(f: (S, B) ⇒ FoldUntil.Command[C, S])(onComplete: S ⇒ Option[C]): Res[C] = andThen(FoldUntil(seed, f, onComplete))
     def forAll(p: B ⇒ Boolean): Res[Boolean] = andThen(ForAll(p))
@@ -221,7 +253,10 @@ object Operation {
     def tee(sink: Sink[B]): Res[B] = andThen(Tee(sink))
     def tail: Res[B] = andThen(Tail())
     def take(n: Int): Res[B] = andThen(Take[B](n))
+    def takeWhile(f: B ⇒ Boolean): Res[B] = andThen(TakeWhile(f))
     def zip[C](source: Source[C]): Res[(B, C)] = andThen(Zip(source))
+
+    def ++(next: Source[B]): Res[B] = andThen(Concat(next))
   }
 
   implicit class OperationOps1[A, B](val op: A ==> B) extends Ops1[B] {

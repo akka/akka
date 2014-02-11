@@ -3,6 +3,7 @@ package impl
 
 import Operation._
 import ops._
+import rx.async.api.Processor
 
 object OperationImpl {
   def apply[A](ctx: ContextEffects, p: Pipeline[A]): SyncRunnable = {
@@ -26,9 +27,11 @@ object OperationImpl {
       ComposeImpl.operation(
         apply(upstream, _: Downstream[i2], ctx, a.f),
         apply(_, downstream, ctx, a.g))
-    case Map(f)         ⇒ MapImpl(upstream, downstream, f)
-    case i: Identity[O] ⇒ IdentityImpl(upstream, downstream).asInstanceOf[SyncOperation[I]]
-    case Flatten()      ⇒ FlattenImpl(upstream, downstream, ctx).asInstanceOf[SyncOperation[I]]
-    case d: Fold[I, O]  ⇒ FoldImpl(upstream, downstream, d)
+    case Map(f)                                     ⇒ MapImpl(upstream, downstream, f)
+    case i: Identity[O]                             ⇒ IdentityImpl(upstream, downstream).asInstanceOf[SyncOperation[I]]
+    case Flatten()                                  ⇒ FlattenImpl(upstream, downstream, ctx).asInstanceOf[SyncOperation[I]]
+    case d: Fold[I, O]                              ⇒ FoldImpl(upstream, downstream, d)
+    case u: UserOperation[I, O, _]                  ⇒ new UserOperationImpl(upstream, downstream, u)
+    case FromProcessorOperation(p: Processor[I, O]) ⇒ new FromProcessorOperationImpl(upstream, downstream, ctx, p)
   }
 }
