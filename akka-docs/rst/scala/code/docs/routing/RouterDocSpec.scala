@@ -149,6 +149,28 @@ akka.actor.deployment {
 }
 #//#config-consistent-hashing-group
 
+#//#config-remote-round-robin-pool
+akka.actor.deployment {
+  /parent/remotePool {
+    router = round-robin-pool
+    nr-of-instances = 10
+    target.nodes = ["akka.tcp://app@10.0.0.2:2552", "akka://app@10.0.0.3:2552"]
+  }
+}
+#//#config-remote-round-robin-pool
+    
+#//#config-remote-round-robin-group
+akka.actor.deployment {
+  /parent/remoteGroup {
+    router = round-robin-group
+    routees.paths = [
+      "akka.tcp://app@10.0.0.1:2552/user/workers/w1", 
+      "akka.tcp://app@10.0.0.2:2552/user/workers/w1",
+      "akka.tcp://app@10.0.0.3:2552/user/workers/w1"]
+  }
+}
+#//#config-remote-round-robin-group
+    
 #//#config-resize-pool
 akka.actor.deployment {
   /parent/router25 {
