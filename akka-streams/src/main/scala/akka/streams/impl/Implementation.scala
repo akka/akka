@@ -5,19 +5,19 @@ import rx.async.api.{ Consumer, Producer, Processor }
 import rx.async.spi.{ Publisher, Subscription, Subscriber }
 import akka.actor.{ Actor, Props }
 import Operation._
-import akka.streams.ProcessorSettings
+import akka.streams.ActorBasedImplementationSettings
 import Operation.FromConsumerSink
 import Operation.Pipeline
 
-object ProcessorImplementation {
-  def operation[I, O](operation: Operation[I, O], settings: ProcessorSettings): Processor[I, O] =
+object Implementation {
+  def operation[I, O](operation: Operation[I, O], settings: ActorBasedImplementationSettings): Processor[I, O] =
     new OperationProcessor(operation, settings)
 
-  def pipeline(pipeline: Pipeline[_], settings: ProcessorSettings): Unit =
-    settings.ctx.actorOf(Props(new PipelineProcessorActor(pipeline)))
+  def pipeline(pipeline: Pipeline[_], settings: ActorBasedImplementationSettings): Unit =
+    settings.ctx.actorOf(Props(new PipelineActor(pipeline)))
 }
 
-private class OperationProcessor[I, O](val operation: Operation[I, O], val settings: ProcessorSettings) extends Processor[I, O] {
+private class OperationProcessor[I, O](val operation: Operation[I, O], val settings: ActorBasedImplementationSettings) extends Processor[I, O] {
   def isRunning = running
 
   val getSubscriber: Subscriber[I] =
@@ -99,7 +99,7 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
   }
 }
 
-class PipelineProcessorActor(pipeline: Pipeline[_]) extends Actor with ProcessorActorImpl {
+class PipelineActor(pipeline: Pipeline[_]) extends Actor with ProcessorActorImpl {
   Effect.run(OperationImpl(ActorContextEffects, pipeline).start())
 
   def receive: Receive = {

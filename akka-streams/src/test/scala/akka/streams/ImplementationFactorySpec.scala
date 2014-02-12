@@ -11,17 +11,16 @@ import akka.testkit.duration2TestDuration
 import akka.streams.impl.{ RaceTrack }
 import Operation._
 
-class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatchers with BeforeAndAfterAll {
-  implicit lazy val system = ActorSystem()
-  implicit lazy val settings: ProcessorSettings = ProcessorSettings(system, () ⇒ new RaceTrack(bufferSize = 1))
+abstract class ImplementationFactorySpec extends WordSpec with TestKitBase with ShouldMatchers with BeforeAndAfterAll {
+  implicit def factory: ImplementationFactory
 
-  "An OperationProcessor" should {
+  "A processor built from an ImplementationFactory" should {
     "work uninitialized without publisher" when {
       "subscriber requests elements" in {
         val upstream = TestKit.producerProbe[Int]()
         val downstream = TestKit.consumerProbe[Int]()
 
-        val processed = OperationProcessor(Identity[Int](), settings)
+        val processed = Identity[Int]().create()
         processed.link(downstream)
         val downstreamSubscription = downstream.expectSubscription()
 
@@ -107,7 +106,7 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
         subStreamConsumer2.expectNext("end")
         subStreamConsumer2.expectComplete()
       })
-      "operation consumes Producer" in new InitializedChainSetup[Source[String], String](Flatten())(settings.copy(constructFanOutBox = () ⇒ new RaceTrack(5))) {
+      "operation consumes Producer" in new InitializedChainSetup[Source[String], String](Flatten()) {
         downstreamSubscription.requestMore(4)
         upstream.expectRequestMore(upstreamSubscription, 1)
 
@@ -268,18 +267,15 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
       }
     }
     "work after initial upstream was completed" when {}
-    "work when subscribed to multiple publishers" when {
-      "really?" in pending
-    }
   }
 
   override protected def afterAll(): Unit = system.shutdown()
 
-  class InitializedChainSetup[I, O](operation: Operation[I, O])(implicit settings: ProcessorSettings) {
+  class InitializedChainSetup[I, O](operation: Operation[I, O])(implicit factory: ImplementationFactory) {
     val upstream = TestKit.producerProbe[I]()
     val downstream = TestKit.consumerProbe[O]()
 
-    val processor = OperationProcessor(operation, settings)
+    val processor = operation.create()
     upstream.link(processor)
     val processed = processor
     val upstreamSubscription = upstream.expectSubscription()
