@@ -25,14 +25,20 @@ trait SyncOperationSpec {
 
   implicit class AddRunOnce[O](result: Effect) {
     def runOnce(): Effect = result.asInstanceOf[SingleStep].runOne()
-    def runToResult(): Effect = {
+    def runToResult(trace: (Effect, Effect) ⇒ Unit = dontTrace): Effect = {
       @tailrec def rec(res: Effect): Effect =
         res match {
           case s: SingleStep ⇒ rec(s.runOne())
-          case Effects(rs)   ⇒ rs.fold(Continue: Effect)(_ ~ _.runToResult())
+          case Effects(rs)   ⇒ rs.fold(Continue: Effect)(_ ~ _.runToResult(trace))
           case r             ⇒ r
         }
-      rec(result)
+
+      val res = rec(result)
+      trace(result, res)
+      res
     }
   }
+
+  val dontTrace: (Effect, Effect) ⇒ Unit = (_, _) ⇒ ()
+  val printStep: (Effect, Effect) ⇒ Unit = (in, out) ⇒ println(s"$in => $out")
 }
