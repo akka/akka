@@ -57,7 +57,18 @@ object Effect {
   }
 
   /** Runs a possibly tail-recursive chain of effects */
-  def run(effect: Effect): Unit =
+  def run(effect: Effect): Unit = {
+    @tailrec def iterate(elements: Vector[Effect]): Unit = {
+      if (elements.isEmpty) ()
+      else elements.head match {
+        case s: ExternalEffect ⇒
+          s.run(); iterate(elements.tail)
+        case Continue         ⇒ iterate(elements.tail)
+        case r: SingleStep    ⇒ iterate(elements.tail :+ r.runOne())
+        case Effects(results) ⇒ iterate(results ++ elements.tail)
+      }
+    }
+
     effect match {
       // shortcut for simple results
       case s: ExternalEffect ⇒ s.run()
@@ -65,14 +76,5 @@ object Effect {
       case r: SingleStep     ⇒ iterate(Vector(r.runOne()))
       case Effects(results)  ⇒ iterate(results)
     }
-
-  @tailrec private[this] def iterate(elements: Vector[Effect]): Unit =
-    if (elements.isEmpty) ()
-    else elements.head match {
-      case s: ExternalEffect ⇒
-        s.run(); iterate(elements.tail)
-      case Continue         ⇒ iterate(elements.tail)
-      case r: SingleStep    ⇒ iterate(r.runOne() +: elements.tail)
-      case Effects(results) ⇒ iterate(results ++ elements.tail)
-    }
+  }
 }
