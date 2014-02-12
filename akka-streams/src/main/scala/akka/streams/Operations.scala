@@ -72,10 +72,10 @@ object Operation {
   // drops the first n upstream values
   // consumes the first n upstream values at max rate, afterwards directly copies upstream
   def Drop[T](n: Int): T ==> T =
-    FoldUntil[T, T, Int](
+    Process[T, T, Int](
       seed = n,
-      onNext = (n, x) ⇒ if (n <= 0) FoldUntil.Emit(x, 0) else FoldUntil.Continue(n - 1),
-      onComplete = _ ⇒ None)
+      onNext = (n, x) ⇒ if (n <= 0) Process.Emit(x, Process.Continue(0)) else Process.Continue(n - 1),
+      onComplete = _ ⇒ Nil)
 
   // produces one boolean for the first T that satisfies p
   // consumes at max rate until p(t) becomes true, unsubscribes afterwards
@@ -94,10 +94,10 @@ object Operation {
   // filters a streams according to the given predicate
   // immediately consumes more whenever p(t) is false
   def Filter[T](p: T ⇒ Boolean): T ==> T =
-    FoldUntil[T, T, Unit](
+    Process[T, T, Unit](
       seed = (),
-      onNext = (_, x) ⇒ if (p(x)) FoldUntil.Emit(x, ()) else FoldUntil.Continue(()),
-      onComplete = _ ⇒ None)
+      onNext = (_, x) ⇒ if (p(x)) Process.Emit(x, Process.Continue(())) else Process.Continue(()),
+      onComplete = _ ⇒ Nil)
 
   // produces the first T that satisfies p
   // consumes at max rate until p(t) becomes true, unsubscribes afterwards
@@ -117,16 +117,15 @@ object Operation {
   // consumes at max rate, produces only one value
   case class Fold[A, B](seed: B, f: (B, A) ⇒ B) extends (A ==> B)
 
-  // generalized fold potentially producing several output values
+  // generalized process potentially producing several output values
   // consumes at max rate as long as `onNext` returns `Continue`
   // produces no faster than the upstream
-  case class FoldUntil[A, B, S](seed: S,
-                                onNext: (S, A) ⇒ FoldUntil.Command[B, S],
-                                onComplete: S ⇒ Option[B]) extends (A ==> B)
-  object FoldUntil {
+  case class Process[A, B, S](seed: S,
+                              onNext: (S, A) ⇒ Process.Command[B, S],
+                              onComplete: S ⇒ Seq[B]) extends (A ==> B)
+  object Process {
     sealed trait Command[+T, +S]
-    case class Emit[T, S](value: T, nextState: S) extends Command[T, S]
-    case class EmitAndStop[T, S](value: T) extends Command[T, S]
+    case class Emit[T, S](value: T, andThen: Command[T, S]) extends Command[T, S]
     case class Continue[T, S](nextState: S) extends Command[T, S]
     case object Stop extends Command[Nothing, Nothing]
   }
@@ -153,10 +152,10 @@ object Operation {
   // produces the first B returned by f or optionally the given default value
   // consumes at max rate until f returns a Some, unsubscribes afterwards
   def MapFind[A, B](f: A ⇒ Option[B], default: ⇒ Option[B]): A ==> B =
-    FoldUntil[A, B, Unit](
+    Process[A, B, Unit](
       seed = (),
-      onNext = (_, x) ⇒ f(x).fold[FoldUntil.Command[B, Unit]](FoldUntil.Continue(()))(FoldUntil.EmitAndStop(_)),
-      onComplete = _ ⇒ default)
+      onNext = (_, x) ⇒ f(x).fold[Process.Command[B, Unit]](Process.Continue(()))(Process.Emit(_, Process.Stop)),
+      onComplete = _ ⇒ default.toSeq)
 
   // merges the values produced by the given source into the consumed stream
   // consumes from the upstream and the given source no faster than the downstream
@@ -180,14 +179,14 @@ object Operation {
   // forwards the first n upstream values, unsubscribes afterwards
   // consumes no faster than the downstream, produces no faster than the upstream
   def Take[T](n: Int): T ==> T =
-    FoldUntil[T, T, Int](
+    Process[T, T, Int](
       seed = n,
       onNext = (n, x) ⇒ n match {
-        case _ if n <= 0 ⇒ FoldUntil.Stop
-        case 1           ⇒ FoldUntil.EmitAndStop(x)
-        case _           ⇒ FoldUntil.Emit(x, n - 1)
+        case _ if n <= 0 ⇒ Process.Stop
+        case 1           ⇒ Process.Emit(x, Process.Stop)
+        case _           ⇒ Process.Emit(x, Process.Continue(n - 1))
       },
-      onComplete = _ ⇒ None)
+      onComplete = _ ⇒ Nil)
 
   // combines the upstream and the given source into tuples
   // produces at the rate of the slower upstream (i.e. no values are dropped)
@@ -211,12 +210,12 @@ object Operation {
     def find(p: B ⇒ Boolean): Res[B] = andThen(Find(p))
     def flatMap[C](f: B ⇒ Source[C]): Res[C] = andThen(FlatMap(f))
     def fold[C](seed: C)(f: (C, B) ⇒ C): Res[C] = andThen(Fold(seed, f))
-    def foldUntil[S, C](seed: S)(f: (S, B) ⇒ FoldUntil.Command[C, S])(onComplete: S ⇒ Option[C]): Res[C] = andThen(FoldUntil(seed, f, onComplete))
     def forAll(p: B ⇒ Boolean): Res[Boolean] = andThen(ForAll(p))
     def head: Res[B] = andThen(Head())
     def map[C](f: B ⇒ C): Res[C] = andThen(Map(f))
     def mapFind[C](f: B ⇒ Option[C], default: ⇒ Option[C]): Res[C] = andThen(MapFind(f, default))
     def merge[B2 >: B](source: Source[B2]): Res[B2] = andThen(Merge(source))
+    def process[S, C](seed: S)(f: (S, B) ⇒ Process.Command[C, S])(onComplete: S ⇒ Seq[C]): Res[C] = andThen(Process(seed, f, onComplete))
     def span(p: B ⇒ Boolean): Res[Source[B]] = andThen(Span(p))
     def tee(sink: Sink[B]): Res[B] = andThen(Tee(sink))
     def tail: Res[B] = andThen(Tail())

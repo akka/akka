@@ -26,9 +26,10 @@ object OperationImpl {
       ComposeImpl.operation(
         apply(upstream, _: Downstream[i2], ctx, a.f),
         apply(_, downstream, ctx, a.g))
-    case Map(f)         ⇒ MapImpl(upstream, downstream, f)
-    case i: Identity[O] ⇒ IdentityImpl(upstream, downstream).asInstanceOf[SyncOperation[I]]
-    case Flatten()      ⇒ FlattenImpl(upstream, downstream, ctx).asInstanceOf[SyncOperation[I]]
-    case d: Fold[I, O]  ⇒ FoldImpl(upstream, downstream, d)
+    case Map(f)              ⇒ MapImpl(upstream, downstream, f)
+    case i: Identity[O]      ⇒ IdentityImpl(upstream, downstream).asInstanceOf[SyncOperation[I]]
+    case Flatten()           ⇒ FlattenImpl(upstream, downstream, ctx).asInstanceOf[SyncOperation[I]]
+    case d: Fold[I, O]       ⇒ FoldImpl(upstream, downstream, d)
+    case u: Process[I, O, _] ⇒ new ProcessImpl(upstream, downstream, u)
   }
 }
