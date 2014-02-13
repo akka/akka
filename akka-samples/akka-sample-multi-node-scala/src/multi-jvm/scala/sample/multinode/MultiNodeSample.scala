@@ -22,10 +22,19 @@ import akka.actor.{ Props, Actor }
 class MultiNodeSampleSpecMultiJvmNode1 extends MultiNodeSample
 class MultiNodeSampleSpecMultiJvmNode2 extends MultiNodeSample
 
+object MultiNodeSample {
+  class Ponger extends Actor {
+    def receive = {
+      case "ping" => sender() ! "pong"
+    }
+  }
+}
+
 class MultiNodeSample extends MultiNodeSpec(MultiNodeSampleConfig)
   with STMultiNodeSpec with ImplicitSender {
 
   import MultiNodeSampleConfig._
+  import MultiNodeSample._
 
   def initialParticipants = roles.size
 
@@ -38,17 +47,13 @@ class MultiNodeSample extends MultiNodeSpec(MultiNodeSampleConfig)
     "send to and receive from a remote node" in {
       runOn(node1) {
         enterBarrier("deployed")
-        val ponger = system.actorFor(node(node2) / "user" / "ponger")
+        val ponger = system.actorSelection(node(node2) / "user" / "ponger")
         ponger ! "ping"
         expectMsg("pong")
       }
 
       runOn(node2) {
-        system.actorOf(Props(new Actor {
-          def receive = {
-            case "ping" => sender() ! "pong"
-          }
-        }), "ponger")
+        system.actorOf(Props[Ponger], "ponger")
         enterBarrier("deployed")
       }
 
