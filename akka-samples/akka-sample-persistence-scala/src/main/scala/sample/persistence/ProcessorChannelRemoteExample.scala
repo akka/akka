@@ -34,19 +34,19 @@ object ProcessorChannelRemoteExample {
     """)
 }
 
-object SenderApp extends App {
+object SenderApp /*extends App*/ { // no app until https://github.com/typesafehub/activator/issues/287 is fixed
   import ProcessorChannelRemoteExample._
 
   class ExampleProcessor(destination: ActorPath) extends Processor {
     val listener = context.actorOf(Props[ExampleListener])
     val channel = context.actorOf(Channel.props(ChannelSettings(
-      redeliverMax = 5,
-      redeliverInterval = 1.second,
+      redeliverMax = 15,
+      redeliverInterval = 3.seconds,
       redeliverFailureListener = Some(listener))), "channel")
 
     def receive = {
-      case p @ Persistent(payload, _) =>
-        println(s"[processor] received payload: ${payload} (replayed = ${recoveryRunning})")
+      case p @ Persistent(payload, snr) =>
+        println(s"[processor] received payload: ${payload} (snr = ${snr}, replayed = ${recoveryRunning})")
         channel ! Deliver(p.withPayload(s"processed ${payload}"), destination)
       case "restart" =>
         throw new Exception("restart requested")
@@ -64,35 +64,23 @@ object SenderApp extends App {
   }
 
   val receiverPath = ActorPath.fromString("akka.tcp://receiver@127.0.0.1:44317/user/receiver")
-  val senderConfig = ConfigFactory.parseString("""
-      akka.persistence.journal.leveldb.dir = "target/example/journal"
-      akka.persistence.snapshot-store.local.dir = "target/example/snapshots"
-      akka.remote.netty.tcp.port = 44316
-    """)
+  val senderConfig = ConfigFactory.parseString("akka.remote.netty.tcp.port = 44316")
 
   val system = ActorSystem("sender", config.withFallback(senderConfig))
   val sender = system.actorOf(Props(classOf[ExampleProcessor], receiverPath))
 
-  @annotation.tailrec
-  def read(line: String): Unit = line match {
-    case "exit" | null =>
-    case msg =>
-      sender ! Persistent(msg)
-      read(Console.readLine())
-  }
+  import system.dispatcher
 
-  read(Console.readLine())
-  system.shutdown()
-
+  system.scheduler.schedule(Duration.Zero, 3.seconds, sender, Persistent("scheduled"))
 }
 
-object ReceiverApp extends App {
+object ReceiverApp /*extends App*/ { // no app until https://github.com/typesafehub/activator/issues/287 is fixed
   import ProcessorChannelRemoteExample._
 
   class ExampleDestination extends Actor {
     def receive = {
-      case p @ ConfirmablePersistent(payload, snr, _) =>
-        println(s"[destination] received payload: ${payload}")
+      case p @ ConfirmablePersistent(payload, snr, redel) =>
+        println(s"[destination] received payload: ${payload} (snr = ${snr}, redel = ${redel})")
         sender ! s"re: ${payload} (snr = ${snr})"
         p.confirm()
     }

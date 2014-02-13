@@ -1,0 +1,136 @@
+<!-- <html> -->
+<head>
+<title>Akka Persistence Samples with Scala</title>
+</head>
+
+<body>
+
+<div>
+<p>
+This tutorial contains examples that illustrate a subset of
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/java/persistence.html" target="_blank">Akka Persistence</a> features.
+</p>
+<ul>
+<li>Processors and channels</li>
+<li>Processsor snapshots</li>
+<li>Eventsourced processors</li>
+<li>Processor failure handling</li>
+<li>Processor views</li>
+<li>Processor conversation recovery</li>
+</ul>
+
+<p>
+Custom storage locations for the journal and snapshots can be defined in
+<a href="#code/src/main/resources/application.conf" class="shortcut">application.conf</a>.
+</p>
+</div>
+
+<div>
+<h2>Processors and channels</h2>
+<p>
+<a href="#code/src/main/java/sample/persistence/ProcessorChannelExample.java" class="shortcut">ProcessorChannelExample.java</a>
+defines an <code>ExampleProcessor</code> and an <code>ExampleDestination</code>. The processor sends messages to a
+destination via a channel. The destination confirms the delivery of these messages so that replayed messages aren't
+redundantly delivered to the destination. Repeated runs of the application demonstrates that the processor receives
+both replayed and new messages whereas the channel only receives new messages, sent by the application. The processor
+also receives replies from the destination, demonstrating that a channel preserves sender references.
+</p>
+
+<p>
+To run this example, go to the <a href="#run" class="shortcut">Run</a> tab, and run the application main class
+<b><code>sample.persistence.ProcessorChannelExample</code></b> several times.
+</p>
+</div>
+
+<div>
+<h2>Processor snapshots</h2>
+<p>
+<a href="#code/src/main/java/sample/persistence/SnapshotExample.java" class="shortcut">SnapshotExample.java</a>
+demonstrates how processors can take snapshots of application state and recover from previously stored snapshots.
+Snapshots are offered to processors at the beginning of recovery, before any messages (younger than the snapshot)
+are replayed.
+</p>
+
+<p>
+To run this example, go to the <a href="#run" class="shortcut">Run</a> tab, and run the application main class
+<b><code>sample.persistence.SnapshotExample</code></b> several times.  With every run, the state offered by the
+most recent snapshot is printed to <code>stdout</code>, followed by the updated state after sending new persistent
+messages to the processor.
+</p>
+</div>
+
+<div>
+<h2>Eventsourced processors</h2>
+<p>
+<a href="#code/src/main/java/sample/persistence/EventsourcedExample.java" class="shortcut">EventsourcedExample.java</a>
+is described in detail in the <a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/java/persistence.html#event-sourcing" target="_blank">Event sourcing</a>
+section of the user documentation. With every application run, the <code>ExampleProcessor</code> is recovered from
+events stored in previous application runs, processes new commands, stores new events and snapshots and prints the
+current processor state to <code>stdout</code>.
+</p>
+
+<p>
+To run this example, go to the <a href="#run" class="shortcut">Run</a> tab, and run the application main class
+<b><code>sample.persistence.EventsourcedExample</code></b> several times.
+</p>
+</div>
+
+<div>
+<h2>Processor failure handling</h2>
+<p>
+<a href="#code/src/main/java/sample/persistence/ProcessorFailureExample.java" class="shortcut">ProcessorFailureExample.java</a>
+shows how a processor can delete persistent messages from the journal if they threw an exception. Throwing an exception
+restarts the processor and replays messages. In order to prevent that the message that caused the exception is replayed,
+it is marked as deleted in the journal (during invocation of <code>preRestart</code>). This is a common pattern in
+command-sourcing to compensate write-ahead logging of messages.
+</p>
+
+<p>
+To run this example, go to the <a href="#run" class="shortcut">Run</a> tab, and run the application main class
+<b><code>sample.persistence.ProcessorFailureExample</code></b> several times.
+</p>
+
+<p>
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/java/persistence.html#event-sourcing" target="_blank">Event sourcing</a>
+on the other hand, does not persist commands directly but rather events that have been derived from received commands
+(not shown here). These events are known to be successfully applicable to current processor state i.e. there's
+no need for deleting them from the journal. Event sourced processors usually have a lower throughput than command
+sourced processors, as the maximum size of a write batch is limited by the number of persisted events per received
+command.
+</p>
+</div>
+
+<div>
+<h2>Processor views</h2>
+<p>
+<a href="#code/src/main/java/sample/persistence/ViewExample.java" class="shortcut">ViewExample.java</a> demonstrates
+how a view (<code>ExampleView</code>) is updated with the persistent message stream of a processor
+(<code>ExampleProcessor</code>). Messages sent to the processor are read from <code>stdin</code>. Views also support
+snapshotting and can be used in combination with channels in the same way as processors.
+</p>
+
+<p>
+To run this example, go to the <a href="#run" class="shortcut">Run</a> tab, and run the application main class
+<b><code>sample.persistence.ViewExample</code></b>.
+</p>
+
+<p>
+Views can also receive events that have been persisted by event sourced processors (not shown).
+</p>
+</div>
+
+<div>
+<h2>Processor conversation recovery</h2>
+<p>
+<a href="#code/src/main/java/sample/persistence/ConversationRecoveryExample.java" class="shortcut">ConversationRecoveryExample.java</a>
+defines two processors that send messages to each other via channels. The reliable delivery properties of channels,
+in combination with processors, allow these processors to automatically resume their conversation after a JVM crash.
+</p>
+<p>
+To run this example, go to the <a href="#run" class="shortcut">Run</a> tab, and run the application main class
+<b><code>sample.persistence.ConversationRecoveryExample</code></b> several times.
+</p>
+</div>
+
+</body>
+</html>

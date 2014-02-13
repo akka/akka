@@ -4,6 +4,8 @@
 
 package sample.persistence
 
+import scala.concurrent.duration._
+
 import akka.actor._
 import akka.persistence._
 
@@ -52,20 +54,8 @@ object ViewExample extends App {
   val processor = system.actorOf(Props(classOf[ExampleProcessor]))
   val view = system.actorOf(Props(classOf[ExampleView]))
 
-  @annotation.tailrec
-  def read(line: String): Unit = line match {
-    case "exit" | null =>
-    case "sync" =>
-      view ! Update(await = false)
-      read(Console.readLine())
-    case "snap" =>
-      view ! "snap"
-      read(Console.readLine())
-    case msg =>
-      processor ! Persistent(msg)
-      read(Console.readLine())
-  }
+  import system.dispatcher
 
-  read(Console.readLine())
-  system.shutdown()
+  system.scheduler.schedule(Duration.Zero, 2.seconds, processor, Persistent("scheduled"))
+  system.scheduler.schedule(Duration.Zero, 5.seconds, view, "snap")
 }

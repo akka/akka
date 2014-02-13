@@ -1,4 +1,8 @@
-package sample.persistence.japi;
+/**
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+package sample.persistence;
 
 //#eventsourced-example
 import java.io.Serializable;
