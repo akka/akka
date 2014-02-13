@@ -144,6 +144,8 @@ A custom ``application.conf`` might look like this::
     stdout-loglevel = "DEBUG"
 
     actor {
+      provider = "akka.cluster.ClusterActorRefProvider"
+      
       default-dispatcher {
         # Throughput for default Dispatcher, set to 1 for as fair as possible
         throughput = 10
@@ -151,10 +153,8 @@ A custom ``application.conf`` might look like this::
     }
 
     remote {
-      server {
-        # The port clients should connect to. Default is 2552 (AKKA)
-        port = 2562
-      }
+      # The port clients should connect to. Default is 2552.
+      netty.tcp.port = 4711
     }
   }
 
@@ -384,6 +384,27 @@ statement in ``application.conf`` rather than writing code.
 Includes at the top of ``application.conf`` will be overridden by
 the rest of ``application.conf``, while those at the bottom will
 override the earlier stuff.
+
+Actor Deployment Configuration
+------------------------------
+
+Deployment settings for specific actors can be defined in the ``akka.actor.deployment``
+section of the configuration. In the deployment section it is possible to define
+things like dispatcher, mailbox, router settings, and remote deployment.
+Configuration of these features are described in the chapters detailing corresponding
+topics. An example may look like this:
+
+.. includecode:: code/docs/config/ConfigDocSpec.scala#deployment-section
+
+The deployment section for a specific actor is identified by the 
+path of the actor relative to ``/user``.
+
+You can use asterisks as wildcard matches for the actor path sections, so you could specify:
+``/*/sampleActor`` and that would match all ``sampleActor`` on that level in the hierarchy.
+You can also use wildcard in the last position to match all actors at a certain level:
+``/someParent/*``. Non-wildcard matches always have higher priority to match than wildcards, so:
+``/foo/bar`` is considered **more specific** than ``/foo/*`` and only the highest priority match is used.
+Please note that it **cannot** be used to partially match section, like this: ``/foo*/bar``, ``/f*o/bar`` etc.
 
 Listing of the Reference Configuration
 --------------------------------------
