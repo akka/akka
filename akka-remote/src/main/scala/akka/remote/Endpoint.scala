@@ -211,8 +211,6 @@ private[remote] class ReliableDeliverySupervisor(
         remoteAddress, settings.RetryGateClosedFor.toMillis, e.getMessage)
       uidConfirmed = false // Need confirmation of UID again
       context.become(gated)
-      context.system.scheduler.scheduleOnce(settings.RetryGateClosedFor, self, Ungate)
-      context.unwatch(writer)
       currentHandle = None
       context.parent ! StoppedReading(self)
       Stop
@@ -319,6 +317,8 @@ private[remote] class ReliableDeliverySupervisor(
   }
 
   def gated: Receive = {
+    case Terminated(_) ⇒
+      context.system.scheduler.scheduleOnce(settings.RetryGateClosedFor, self, Ungate)
     case Ungate ⇒
       if (resendBuffer.nonAcked.nonEmpty || resendBuffer.nacked.nonEmpty) {
         writer = createWriter()
