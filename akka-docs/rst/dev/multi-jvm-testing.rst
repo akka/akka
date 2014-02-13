@@ -28,7 +28,7 @@ Here is an example Build.scala file for sbt 0.12 that uses the MultiJvm plugin:
    import sbt._
    import Keys._
    import com.typesafe.sbt.SbtMultiJvm
-   import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.{ MultiJvm }
+   import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 
    object ExampleBuild extends Build {
 
@@ -72,7 +72,7 @@ Here is an example Build.scala file for sbt 0.12 that uses the MultiJvm plugin:
            "test" @crossString@,
          "com.typesafe.akka" %% "akka-multi-node-testkit" % "@version@" %
            "test" @crossString@,
-         "org.scalatest"     %% "scalatest" % "1.9.2-SNAP2" % "test",
+         "org.scalatest"     %% "scalatest" % "2.0" % "test",
          "junit"              % "junit" % "4.10" % "test"
        )
      }
@@ -190,19 +190,17 @@ spawned, one for each node. It will look like this:
 
     > multi-jvm:run sample.Sample
     ...
-    [info] Starting JVM-Node1 for sample.SampleMultiJvmNode1
-    [info] Starting JVM-Node2 for sample.SampleMultiJvmNode2
-    [info] Starting JVM-Node3 for sample.SampleMultiJvmNode3
-    [JVM-Node1] Hello from node 1
-    [JVM-Node2] Hello from node 2
-    [JVM-Node3] Hello from node 3
+    [info] * sample.Sample
+    [JVM-1] Hello from node 1
+    [JVM-2] Hello from node 2
+    [JVM-3] Hello from node 3
     [success] Total time: ...
 
 
 Changing Defaults
 =================
 
-You can chenge the name of the multi-JVM test source directory by adding the following
+You can change the name of the multi-JVM test source directory by adding the following
 configuration to your project:
 
 .. code-block:: none
@@ -281,6 +279,6 @@ the sbt prompt.
 Multi Node Additions
 ====================
 
-There has also been some additions made to the ``SbtMultiJvm`` plugin to accomodate the
+There has also been some additions made to the ``SbtMultiJvm`` plugin to accommodate the
 :ref:`experimental <experimental>` module :ref:`multi node testing <multi-node-testing>`,
 described in that section.
