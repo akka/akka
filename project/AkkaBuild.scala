@@ -369,7 +369,7 @@ object AkkaBuild extends Build {
     settings = parentSettings ++ ActivatorDist.settings,
     aggregate = Seq(camelSampleJava, camelSampleScala, mainSampleJava, mainSampleScala, 
           remoteSampleJava, remoteSampleScala, clusterSampleJava, clusterSampleScala,
-          fsmSample, persistenceSample,
+          fsmSampleScala, persistenceSample,
           multiNodeSample, helloKernelSample, osgiDiningHakkersSample)
   )
 
@@ -387,9 +387,9 @@ object AkkaBuild extends Build {
     settings = sampleSettings ++ Seq(libraryDependencies ++= Dependencies.camelSample)
   )
 
-  lazy val fsmSample = Project(
-    id = "akka-sample-fsm",
-    base = file("akka-samples/akka-sample-fsm"),
+  lazy val fsmSampleScala = Project(
+    id = "akka-sample-fsm-scala",
+    base = file("akka-samples/akka-sample-fsm-scala"),
     dependencies = Seq(actor),
     settings = sampleSettings
   )

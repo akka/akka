@@ -1,12 +1,14 @@
 /**
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>.
  */
-package sample.fsm.dining.fsm
+package sample.fsm
 
-import language.postfixOps
 import akka.actor._
 import akka.actor.FSM._
 import scala.concurrent.duration._
+
+// Akka adaptation of
+// http://www.dalnefre.com/wp/2010/08/dining-philosophers-in-humus/
 
 /*
 * Some messages for the chopstick
@@ -91,7 +93,7 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
   when(Waiting) {
     case Event(Think, _) =>
       println("%s starts to think".format(name))
-      startThinking(5 seconds)
+      startThinking(5.seconds)
   }
 
   //When a hakker is thinking it can become hungry
@@ -125,12 +127,12 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
     case Event(Busy(chopstick), TakenChopsticks(leftOption, rightOption)) =>
       leftOption.foreach(_ ! Put)
       rightOption.foreach(_ ! Put)
-      startThinking(10 milliseconds)
+      startThinking(10.milliseconds)
   }
 
   private def startEating(left: ActorRef, right: ActorRef): State = {
     println("%s has picked up %s and %s and starts to eat".format(name, left.path.name, right.path.name))
-    goto(Eating) using TakenChopsticks(Some(left), Some(right)) forMax (5 seconds)
+    goto(Eating) using TakenChopsticks(Some(left), Some(right)) forMax (5.seconds)
   }
 
   // When the results of the other grab comes back,
@@ -139,9 +141,9 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
   when(FirstChopstickDenied) {
     case Event(Taken(secondChopstick), _) =>
       secondChopstick ! Put
-      startThinking(10 milliseconds)
+      startThinking(10.milliseconds)
     case Event(Busy(chopstick), _) =>
-      startThinking(10 milliseconds)
+      startThinking(10.milliseconds)
   }
 
   // When a hakker is eating, he can decide to start to think,
@@ -151,7 +153,7 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
       println("%s puts down his chopsticks and starts to think".format(name))
       left ! Put
       right ! Put
-      startThinking(5 seconds)
+      startThinking(5.seconds)
   }
 
   // Initialize the hakker

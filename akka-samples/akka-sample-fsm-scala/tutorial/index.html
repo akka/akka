@@ -1,0 +1,73 @@
+<!-- <html> -->
+<head>
+    <title>Akka FSM in Scala</title>
+</head>
+
+<body>
+
+<div>
+<h2>Finite State Machine in Actors</h2>
+
+<p>
+This sample is an adaptation of
+<a href="http://www.dalnefre.com/wp/2010/08/dining-philosophers-in-humus/" target="_blank">Dining Hakkers</a>.
+It illustrates how state and behavior can be managed within
+an Actor with two different approaches; using <code>become</code> and using
+the <code>FSM</code> trait.
+</p>
+
+
+</div>
+<div>
+
+<h2>Dining Hakkers with Become</h2>
+
+<p>
+Open <a href="#code/src/main/scala/sample/become/DiningHakkersOnBecome.scala" class="shortcut">DiningHakkersOnBecome.scala</a>.
+</p>
+
+<p>
+It illustrates how current behavior can be replaced with <code>context.become</code>.
+Note that no <code>var</code> members are used, instead the state is encoded in the current
+behavior and its parameters.
+</p>
+
+<p>
+Go to the <a href="#run" class="shortcut">Run</a> tab, and start the application main class
+<code>sample.become.DiningHakkersOnBecome</code>. 
+In the log output you can see the actions of the <code>Hakker</code> actors.
+</p>
+
+<p>
+Read more about <code>become</code> in
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/scala/actors.html#Become_Unbecome" target="_blank">the documentation</a>.
+</p>
+
+</div>
+<div>
+
+<h2>Dining Hakkers with FSM</h2>
+
+<p>
+Open <a href="#code/src/main/scala/sample/fsm/DiningHakkersOnFsm.scala" class="shortcut">DiningHakkersOnFsm.scala</a>.
+</p>
+
+<p>
+It illustrates how the states and transitions can be defined with the <code>akka.actor.FSM</code> trait.
+</p>
+
+<p>
+Go to the <a href="#run" class="shortcut">Run</a> tab, and start the application main class
+<code>sample.fsm.DiningHakkersOnFsm</code>. 
+In the log output you can see the actions of the <code>Hakker</code> actors.
+</p>
+
+<p>
+Read more about <code>akka.actor.FSM</code> in
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/scala/fsm.html" target="_blank">the documentation</a>.
+</p>
+  
+</div>
+
+</body>
+</html>

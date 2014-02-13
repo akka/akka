@@ -1,15 +1,13 @@
 /**
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>.
  */
-package sample.fsm.dining.become
-
-import language.postfixOps
-
-//Akka adaptation of
-//http://www.dalnefre.com/wp/2010/08/dining-philosophers-in-humus/
+package sample.become
 
 import akka.actor._
 import scala.concurrent.duration._
+
+// Akka adaptation of
+// http://www.dalnefre.com/wp/2010/08/dining-philosophers-in-humus/
 
 /*
 * First we define our messages, they basically speak for themselves
@@ -86,12 +84,11 @@ class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
     case Taken(`chopstickToWaitFor`) =>
       println("%s has picked up %s and %s and starts to eat".format(name, left.path.name, right.path.name))
       become(eating)
-      system.scheduler.scheduleOnce(5 seconds, self, Think)
+      system.scheduler.scheduleOnce(5.seconds, self, Think)
 
     case Busy(chopstick) =>
-      become(thinking)
       otherChopstick ! Put(self)
-      self ! Eat
+      startThinking(10.milliseconds)
   }
 
   //When the results of the other grab comes back,
@@ -99,38 +96,39 @@ class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
   //Then go back and think and try to grab the chopsticks again
   def denied_a_chopstick: Receive = {
     case Taken(chopstick) =>
-      become(thinking)
       chopstick ! Put(self)
-      self ! Eat
+      startThinking(10.milliseconds)
     case Busy(chopstick) =>
-      become(thinking)
-      self ! Eat
+      startThinking(10.milliseconds)
   }
 
   //When a hakker is eating, he can decide to start to think,
   //then he puts down his chopsticks and starts to think
   def eating: Receive = {
     case Think =>
-      become(thinking)
       left ! Put(self)
       right ! Put(self)
       println("%s puts down his chopsticks and starts to think".format(name))
-      system.scheduler.scheduleOnce(5 seconds, self, Eat)
+      startThinking(5.seconds)
   }
 
   //All hakkers start in a non-eating state
   def receive = {
     case Think =>
       println("%s starts to think".format(name))
-      become(thinking)
-      system.scheduler.scheduleOnce(5 seconds, self, Eat)
+      startThinking(5.seconds)
+  }
+
+  private def startThinking(duration: FiniteDuration): Unit = {
+    become(thinking)
+    system.scheduler.scheduleOnce(duration, self, Eat)
   }
 }
 
 /*
 * Alright, here's our test-harness
 */
-object DiningHakkers {
+object DiningHakkersOnBecome {
   val system = ActorSystem()
 
   def main(args: Array[String]): Unit = run()
