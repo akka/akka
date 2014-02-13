@@ -39,12 +39,17 @@ package object testkit {
   /**
    * Scala API. Scale timeouts (durations) during tests with the configured
    * 'akka.test.timefactor'.
-   * Implicit conversion to add dilated function to Duration.
+   * Implicit class providing `dilated` method.
+   * {{{
    * import scala.concurrent.duration._
    * import akka.testkit._
    * 10.milliseconds.dilated
-   *
-   * Corresponding Java API is available in TestKit.dilated
+   * }}}
+   * Corresponding Java API is available in JavaTestKit.dilated()
    */
-  implicit def duration2TestDuration(duration: FiniteDuration) = new TestDuration(duration)
+  implicit class TestDuration(val duration: FiniteDuration) extends AnyVal {
+    def dilated(implicit system: ActorSystem): FiniteDuration =
+      (duration * TestKitExtension(system).TestTimeFactor).asInstanceOf[FiniteDuration]
+  }
+
 }

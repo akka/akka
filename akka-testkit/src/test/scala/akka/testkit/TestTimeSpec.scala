@@ -1,13 +1,10 @@
 package akka.testkit
 
-import org.scalatest.Matchers
-import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import scala.concurrent.duration._
-import com.typesafe.config.Config
 import org.scalatest.exceptions.TestFailedException
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class TestTimeSpec extends AkkaSpec(Map("akka.test.timefactor" -> 2.0)) with BeforeAndAfterEach {
+class TestTimeSpec extends AkkaSpec(Map("akka.test.timefactor" -> 2.0)) {
 
   "A TestKit" must {
 
