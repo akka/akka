@@ -171,9 +171,12 @@ class ActorEventBusSpec extends EventBusSpec("ActorEventBus") {
 }
 
 object ScanningEventBusSpec {
-  import akka.event.japi.ScanningEventBus
 
-  class MyScanningEventBus extends ScanningEventBus[Int, akka.japi.Procedure[Int], String] {
+  class MyScanningEventBus extends EventBus with ScanningClassification {
+    type Event = Int
+    type Subscriber = Procedure[Int]
+    type Classifier = String
+
     protected def compareClassifiers(a: Classifier, b: Classifier): Int = a compareTo b
     protected def compareSubscribers(a: Subscriber, b: Subscriber): Int = akka.util.Helpers.compareIdentityHash(a, b)
 
@@ -200,11 +203,17 @@ class ScanningEventBusSpec extends EventBusSpec("ScanningEventBus") {
 }
 
 object LookupEventBusSpec {
-  class MyLookupEventBus extends akka.event.japi.LookupEventBus[Int, akka.japi.Procedure[Int], String] {
-    protected def classify(event: Event): Classifier = event.toString
-    protected def compareSubscribers(a: Subscriber, b: Subscriber): Int = akka.util.Helpers.compareIdentityHash(a, b)
-    protected def mapSize = 32
-    protected def publish(event: Event, subscriber: Subscriber): Unit = subscriber(event)
+  class MyLookupEventBus extends EventBus with LookupClassification {
+    type Event = Int
+    type Subscriber = Procedure[Int]
+    type Classifier = String
+
+    override protected def classify(event: Int): String = event.toString
+    override protected def compareSubscribers(a: Procedure[Int], b: Procedure[Int]): Int =
+      akka.util.Helpers.compareIdentityHash(a, b)
+    override protected def mapSize = 32
+    override protected def publish(event: Int, subscriber: Procedure[Int]): Unit =
+      subscriber(event)
   }
 }
 
@@ -223,3 +232,4 @@ class LookupEventBusSpec extends EventBusSpec("LookupEventBus") {
 
   def disposeSubscriber(system: ActorSystem, subscriber: BusType#Subscriber): Unit = ()
 }
+

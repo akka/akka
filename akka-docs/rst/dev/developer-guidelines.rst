@@ -61,8 +61,6 @@ All code that is checked in **should** have tests. All testing is done with ``Sc
 * Name tests as **Test.scala** if they do not depend on any external stuff. That keeps surefire happy.
 * Name tests as **Spec.scala** if they have external dependencies.
 
-There is a testing standard that should be followed: `Ticket001Spec <https://github.com/akka/akka/blob/master/akka-actor-tests/src/test/scala/akka/ticket/Ticket001Spec.scala>`_
-
 Actor TestKit
 ^^^^^^^^^^^^^
 
