@@ -90,8 +90,8 @@ Methods returning:
 
   * ``Unit`` will be dispatched with ``fire-and-forget`` semantics, exactly like ``ActorRef.tell``
   * ``scala.concurrent.Future[_]`` will use ``send-request-reply`` semantics, exactly like ``ActorRef.ask``
-  * ``scala.Option[_]`` or ``akka.japi.Option<?>`` will use ``send-request-reply`` semantics, but *will* block to wait for an answer,
-    and return None if no answer was produced within the timeout, or scala.Some/akka.japi.Some containing the result otherwise.
+  * ``scala.Option[_]`` will use ``send-request-reply`` semantics, but *will* block to wait for an answer,
+    and return ``scala.None`` if no answer was produced within the timeout, or ``scala.Some[_]`` containing the result otherwise.
     Any exception that was thrown during this call will be rethrown.
   * Any other type of value will use ``send-request-reply`` semantics, but *will* block to wait for an answer,
     throwing ``java.util.concurrent.TimeoutException`` if there was a timeout or rethrow any exception that was thrown during this call.
