@@ -57,9 +57,24 @@ public class JavaAPI {
     });
   }
 
+  @SuppressWarnings("unchecked")
+  public static Props mkErasedProps() {
+    return Props.create(JavaAPITestActor.class, new Creator() {
+      public Object create() {
+        return new JavaAPITestActor();
+      }
+    });
+  }
+
   @Test
   public void mustBeAbleToCreateActorRefFromFactory() {
     ActorRef ref = system.actorOf(mkProps());
+    assertNotNull(ref);
+  }
+
+  @Test
+  public void mustBeAbleToCreateActorRefFromErasedFactory() {
+    ActorRef ref = system.actorOf(mkErasedProps());
     assertNotNull(ref);
   }
 
