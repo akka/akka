@@ -14,10 +14,8 @@ import scala.annotation.tailrec
 
 /**
  * VectorClock module with helper classes and methods.
- *
- * Based on code from the 'vlock' VectorClock library by Coda Hale.
  */
-private[cluster] object VectorClock {
+object VectorClock {
 
   /**
    * Hash representation of a versioned node name.
@@ -82,6 +80,28 @@ final case class VectorClock(
     val currentTimestamp = versions.getOrElse(node, Timestamp.Zero)
     copy(versions = versions.updated(node, currentTimestamp + 1))
   }
+
+  /**
+   * Does it have any state changes from a specific node,
+   * which has been removed from the cluster and will be pruned
+   * or cleared.
+   */
+  def hasDataFrom(node: Node): Boolean =
+    versions.contains(node)
+
+  /**
+   * When the `from` node has been removed from the cluster the state
+   * changes from that node will be pruned by moving the data entries
+   * `to` another node.
+   */
+  def prune(from: Node, to: Node): VectorClock =
+    copy(versions = versions - from) :+ to
+
+  /**
+   * Remove data entries from a node that has been removed from the cluster
+   * and already been pruned.
+   */
+  def clear(from: Node): VectorClock = copy(versions = versions - from)
 
   /**
    * Returns true if <code>this</code> and <code>that</code> are concurrent else false.

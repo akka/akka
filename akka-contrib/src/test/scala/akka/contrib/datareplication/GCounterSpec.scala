@@ -1,0 +1,155 @@
+/**
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+package akka.contrib.datareplication
+
+import org.scalatest.WordSpec
+import org.scalatest.Matchers
+import akka.actor.Address
+import akka.cluster.UniqueAddress
+
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class GCounterSpec extends WordSpec with Matchers {
+  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
+  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2)
+
+  "A GCounter" must {
+
+    "be able to increment each node's record by one" in {
+      val c1 = GCounter()
+
+      val c2 = c1 increment node1
+      val c3 = c2 increment node1
+
+      val c4 = c3 increment node2
+      val c5 = c4 increment node2
+      val c6 = c5 increment node2
+
+      c6.state(node1) should be(2)
+      c6.state(node2) should be(3)
+    }
+
+    "be able to increment each node's record by arbitrary delta" in {
+      val c1 = GCounter()
+
+      val c2 = c1 increment (node1, 3)
+      val c3 = c2 increment (node1, 4)
+
+      val c4 = c3 increment (node2, 2)
+      val c5 = c4 increment (node2, 7)
+      val c6 = c5 increment node2
+
+      c6.state(node1) should be(7)
+      c6.state(node2) should be(10)
+    }
+
+    "be able to summarize the history to the correct aggregated value" in {
+      val c1 = GCounter()
+
+      val c2 = c1 increment (node1, 3)
+      val c3 = c2 increment (node1, 4)
+
+      val c4 = c3 increment (node2, 2)
+      val c5 = c4 increment (node2, 7)
+      val c6 = c5 increment node2
+
+      c6.state(node1) should be(7)
+      c6.state(node2) should be(10)
+
+      c6.value should be(17)
+    }
+
+    "be able to have its history correctly merged with another GCounter 1" in {
+      // counter 1
+      val c11 = GCounter()
+      val c12 = c11 increment (node1, 3)
+      val c13 = c12 increment (node1, 4)
+      val c14 = c13 increment (node2, 2)
+      val c15 = c14 increment (node2, 7)
+      val c16 = c15 increment node2
+
+      c16.state(node1) should be(7)
+      c16.state(node2) should be(10)
+      c16.value should be(17)
+
+      // counter 1
+      val c21 = GCounter()
+      val c22 = c21 increment (node1, 2)
+      val c23 = c22 increment (node1, 2)
+      val c24 = c23 increment (node2, 3)
+      val c25 = c24 increment (node2, 2)
+      val c26 = c25 increment node2
+
+      c26.state(node1) should be(4)
+      c26.state(node2) should be(6)
+      c26.value should be(10)
+
+      // merge both ways
+      val merged1 = c16 merge c26
+      merged1.state(node1) should be(7)
+      merged1.state(node2) should be(10)
+      merged1.value should be(17)
+
+      val merged2 = c26 merge c16
+      merged2.state(node1) should be(7)
+      merged2.state(node2) should be(10)
+      merged2.value should be(17)
+    }
+
+    "be able to have its history correctly merged with another GCounter 2" in {
+      // counter 1
+      val c11 = GCounter()
+      val c12 = c11 increment (node1, 2)
+      val c13 = c12 increment (node1, 2)
+      val c14 = c13 increment (node2, 2)
+      val c15 = c14 increment (node2, 7)
+      val c16 = c15 increment node2
+
+      c16.state(node1) should be(4)
+      c16.state(node2) should be(10)
+      c16.value should be(14)
+
+      // counter 1
+      val c21 = GCounter()
+      val c22 = c21 increment (node1, 3)
+      val c23 = c22 increment (node1, 4)
+      val c24 = c23 increment (node2, 3)
+      val c25 = c24 increment (node2, 2)
+      val c26 = c25 increment node2
+
+      c26.state(node1) should be(7)
+      c26.state(node2) should be(6)
+      c26.value should be(13)
+
+      // merge both ways
+      val merged1 = c16 merge c26
+      merged1.state(node1) should be(7)
+      merged1.state(node2) should be(10)
+      merged1.value should be(17)
+
+      val merged2 = c26 merge c16
+      merged2.state(node1) should be(7)
+      merged2.state(node2) should be(10)
+      merged2.value should be(17)
+    }
+
+    "have support for pruning" in {
+      val c1 = GCounter()
+      val c2 = c1 increment node1
+      val c3 = c2 increment node2
+      c2.hasDataFrom(node1) should be(true)
+      c2.hasDataFrom(node2) should be(false)
+      c3.hasDataFrom(node1) should be(true)
+      c3.hasDataFrom(node2) should be(true)
+
+      val c4 = c3.prune(node1, node2)
+      c4.hasDataFrom(node2) should be(true)
+      c4.hasDataFrom(node1) should be(false)
+
+      val c5 = (c4 increment node1).clear(node1)
+      c5.hasDataFrom(node1) should be(false)
+    }
+
+  }
+}
