@@ -79,6 +79,46 @@ When using JarJar, OneJar, Assembly or any jar-bundler
     that if you put/merge multiple jars into the same jar, you need to merge all the
     reference.confs as well. Otherwise all defaults will be lost and Akka will not function.
 
+
+If you are using Maven to package your application, you can also make use of the `Apache Maven Shade Plugin<http://maven.apache.org/plugins/maven-shade-plugin>`_ support for `Resource Transformers<http://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#AppendingTransformer>`_ to merge all the reference.confs on the build classpath into one. 
+
+The plugin configuration might look like this::
+
+    <plugin>
+     <groupId>org.apache.maven.plugins</groupId>
+     <artifactId>maven-shade-plugin</artifactId>
+     <version>1.5</version>
+     <executions>
+      <execution>
+       <phase>package</phase>
+       <goals>
+        <goal>shade</goal>
+       </goals>
+       <configuration>
+        <shadedArtifactAttached>true</shadedArtifactAttached>
+        <shadedClassifierName>allinone</shadedClassifierName>
+        <artifactSet>
+         <includes>
+          <include>*:*</include>
+         </includes>
+        </artifactSet>
+        <transformers>
+          <transformer
+           implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+           <resource>reference.conf</resource>
+          </transformer>
+          <transformer
+           implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+           <manifestEntries>
+            <Main-Class>akka.Main</Main-Class>
+           </manifestEntries>
+          </transformer>
+        </transformers>
+       </configuration>
+      </execution>
+     </executions>
+    </plugin>
+
 Custom application.conf
 -----------------------
 
