@@ -73,7 +73,7 @@ this can cause race conditions.
 
 .. note::
   The only guarantee that Akka provides about messages sent between a given pair of actors is that their order is
-  always preserved. see :ref:`message-delivery-guarantees`
+  always preserved. see :ref:`message-delivery-reliability`
 
 Non-blocking Guarantees (Progress Conditions)
 ---------------------------------------------

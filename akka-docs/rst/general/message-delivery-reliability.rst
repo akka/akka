@@ -1,8 +1,8 @@
-.. _message-delivery-guarantees:
+.. _message-delivery-reliability:
 
-###########################
-Message Delivery Guarantees
-###########################
+############################
+Message Delivery Reliability
+############################
 
 Akka helps you build reliable applications which make use of multiple processor
 cores in one machine (“scaling up”) or distributed across a computer network
@@ -31,7 +31,7 @@ actors—you can place them always on the same JVM and enjoy stricter guarantees
 on message delivery. The details of this trade-off are discussed further below.
 
 As a supplementary part we give a few pointers at how to build stronger
-guarantees on top of the built-in ones. The chapter closes by discussing the
+reliability on top of the built-in ones. The chapter closes by discussing the
 role of the “Dead Letter Office”.
 
 The General Rules
@@ -106,9 +106,9 @@ read more about this approach in the `Erlang documentation`_ (section 10.9 and
 10.10), Akka follows it closely.
 
 Another angle on this issue is that by providing only basic guarantees those
-use cases which do not need stricter guarantees do not pay the cost of their
-implementation; it is always possible to add stricter guarantees on top of
-basic ones, but it is not possible to retro-actively remove guarantees in order
+use cases which do not need stronger reliability do not pay the cost of their
+implementation; it is always possible to add stronger reliability on top of
+basic ones, but it is not possible to retro-actively remove reliability in order
 to gain more performance.
 
 .. _message-ordering:
@@ -188,7 +188,7 @@ The Rules for In-JVM (Local) Message Sends
 Be careful what you do with this section!
 -----------------------------------------
 
-Relying on the stronger guarantees in this section is not recommended since it
+Relying on the stronger reliability in this section is not recommended since it
 will bind your application to local-only deployment: an application may have to
 be designed differently (as opposed to just employing some message exchange
 patterns local to some actors) in order to be fit for running on a cluster of
@@ -277,7 +277,7 @@ powerful, higher-level abstractions on top it.
 Messaging Patterns
 ------------------
 
-As discussed above a straight-forward answer to the requirement of guaranteed
+As discussed above a straight-forward answer to the requirement of reliable
 delivery is an explicit ACK–RETRY protocol. In its simplest form this requires
 
 - a way to identify individual messages to correlate message with

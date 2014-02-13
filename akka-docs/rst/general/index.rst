@@ -11,5 +11,5 @@ General
    addressing
    remoting
    jmm
-   message-delivery-guarantees
+   message-delivery-reliability
    configuration
