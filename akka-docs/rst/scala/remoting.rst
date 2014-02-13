@@ -1,11 +1,15 @@
 .. _remoting-scala:
 
-#################
+##########
  Remoting
-#################
+##########
 
 
 For an introduction of remoting capabilities of Akka please see :ref:`remoting`.
+
+As explained in that chapter Akka remoting is designed for communication in a 
+peer-to-peer fashion and it has limitations for client-server setups. 
+
 
 Preparing your ActorSystem for Remoting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
