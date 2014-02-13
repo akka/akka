@@ -164,7 +164,7 @@ private[akka] class RemoteWatcher(
     watchingNodes foreach { a ⇒
       if (!unreachable(a) && !failureDetector.isAvailable(a)) {
         log.warning("Detected unreachable: [{}]", a)
-        addressUids.get(a) foreach { uid ⇒ quarantine(a, uid) }
+        quarantine(a, addressUids.get(a))
         publishAddressTerminated(a)
         unreachable += a
       }
@@ -173,7 +173,7 @@ private[akka] class RemoteWatcher(
   def publishAddressTerminated(address: Address): Unit =
     context.system.eventStream.publish(AddressTerminated(address))
 
-  def quarantine(address: Address, uid: Int): Unit =
+  def quarantine(address: Address, uid: Option[Int]): Unit =
     remoteProvider.quarantine(address, uid)
 
   def rewatchRemote(watchee: ActorRef, watcher: ActorRef): Unit =
