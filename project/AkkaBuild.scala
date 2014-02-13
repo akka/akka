@@ -701,10 +701,22 @@ object AkkaBuild extends Build {
     (if (useOnlyTestTags.isEmpty) Seq.empty else Seq("-n", if (multiNodeEnabled) useOnlyTestTags.mkString("\"", " ", "\"") else useOnlyTestTags.mkString(" ")))
   }
 
+  val (mavenLocalResolver, mavenLocalResolverSettings) =
+    System.getProperty("akka.build.M2Dir") match {
+      case null => (Resolver.mavenLocal, Seq.empty)
+      case path =>
+        // Maven resolver settings
+        val resolver = Resolver.file("user-publish-m2-local", new File(path))
+        (resolver, Seq(
+          otherResolvers := resolver:: publishTo.value.toList,
+          publishM2Configuration := Classpaths.publishConfig(packagedArtifacts.value, None, resolverName = resolver.name, checksums = checksums.in(publishM2).value, logging = ivyLoggingLevel.value)
+        ))
+    }
+
   lazy val resolverSettings = {
     // should we be allowed to use artifacts published to the local maven repository
     if(System.getProperty("akka.build.useLocalMavenResolver", "false").toBoolean)
-      Seq(resolvers += Resolver.mavenLocal)
+      Seq(resolvers += mavenLocalResolver)
     else Seq.empty
   } ++ {
     // should we be allowed to use artifacts from sonatype snapshots
@@ -773,16 +785,7 @@ object AkkaBuild extends Build {
 
     // don't save test output to a file
     testListeners in (Test, test) := Seq(TestLogger(streams.value.log, {_ => streams.value.log }, logBuffered.value))
-  ) ++ (System.getProperty("akka.build.M2Dir") match {
-    case null => Seq.empty
-    case path =>
-      // Maven resolver settings
-      Seq(
-        otherResolvers :=
-          Resolver.file("user-publish-m2-local", new File(path)) :: publishTo.value.toList,
-        publishM2Configuration := Classpaths.publishConfig(packagedArtifacts.value, None, resolverName = "user-publish-m2-local", checksums = checksums.in(publishM2).value, logging = ivyLoggingLevel.value)
-      )
-  })
+  ) ++ mavenLocalResolverSettings
 
   val validatePullRequest = TaskKey[Unit]("validate-pull-request", "Additional tasks for pull request validation")
 
