@@ -138,7 +138,8 @@ A custom ``application.conf`` might look like this::
     # Options: OFF, ERROR, WARNING, INFO, DEBUG
     loglevel = "DEBUG"
 
-    # Log level for the very basic logger activated during AkkaApplication startup
+    # Log level for the very basic logger activated during ActorSystem startup.
+    # This logger prints the log messages to stdout (System.out).
     # Options: OFF, ERROR, WARNING, INFO, DEBUG
     stdout-loglevel = "DEBUG"
 
