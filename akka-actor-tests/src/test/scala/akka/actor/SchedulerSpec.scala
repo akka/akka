@@ -512,7 +512,8 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
           // println(s"clock=$time")
           time
         }
-        override protected def getShutdownTimeout: FiniteDuration = super.getShutdownTimeout.dilated
+
+        override protected def getShutdownTimeout: FiniteDuration = (10 seconds).dilated
 
         override protected def waitNanos(ns: Long): Unit = {
           // println(s"waiting $ns")
