@@ -32,7 +32,6 @@ object DistributedPubSubMediatorSpec extends MultiNodeConfig {
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-down-unreachable-after = 0s
     akka.contrib.cluster.pub-sub.max-delta-elements = 500
-    #akka.remote.log-frame-size-exceeding = 1024b
     """))
 
   object TestChatUser {
@@ -388,5 +387,24 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
 
       enterBarrier("after-12")
     }
+
+    "remove entries when node is removed" in within(30 seconds) {
+      mediator ! Count
+      val countBefore = expectMsgType[Int]
+
+      runOn(first) {
+        testConductor.exit(third, 0).await
+      }
+
+      enterBarrier("third-shutdown")
+
+      // third had 2 entries u5 and u11, and those should be removed everywhere
+      runOn(first, second) {
+        awaitCount(countBefore - 2)
+      }
+
+      enterBarrier("after-13")
+    }
   }
+
 }
