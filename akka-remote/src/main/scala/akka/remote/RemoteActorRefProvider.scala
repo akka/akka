@@ -417,9 +417,10 @@ private[akka] class RemoteActorRefProvider(
   /**
    * Marks a remote system as out of sync and prevents reconnects until the quarantine timeout elapses.
    * @param address Address of the remote system to be quarantined
-   * @param uid UID of the remote system
+   * @param uid UID of the remote system, if the uid is not defined it will not be a strong quarantine but
+   *   the current endpoint writer will be stopped (dropping system messages) and the address will be gated
    */
-  def quarantine(address: Address, uid: Int): Unit = transport.quarantine(address: Address, uid: Int)
+  def quarantine(address: Address, uid: Option[Int]): Unit = transport.quarantine(address, uid)
 
   /**
    * INTERNAL API

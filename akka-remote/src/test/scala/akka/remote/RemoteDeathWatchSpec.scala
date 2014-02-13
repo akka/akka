@@ -8,6 +8,8 @@ import akka.actor._
 import com.typesafe.config.ConfigFactory
 import akka.actor.RootActorPath
 import scala.concurrent.duration._
+import akka.TestUtils
+import akka.event.Logging.Warning
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RemoteDeathWatchSpec extends AkkaSpec(ConfigFactory.parseString("""
@@ -37,7 +39,31 @@ akka {
     shutdown(other)
   }
 
-  override def expectedTestDuration: FiniteDuration = 90.seconds
+  override def expectedTestDuration: FiniteDuration = 120.seconds
+
+  "receive Terminated when system of de-serialized ActorRef is not running" in {
+    val probe = TestProbe()
+    system.eventStream.subscribe(probe.ref, classOf[QuarantinedEvent])
+    val rarp = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider]
+    // pick an unused port
+    val port = TestUtils.temporaryServerAddress().getPort
+    // simulate de-serialized ActorRef
+    val ref = rarp.resolveActorRef(s"akka.tcp://OtherSystem@localhost:$port/user/foo/bar#1752527294")
+    system.actorOf(Props(new Actor {
+      context.watch(ref)
+      def receive = {
+        case Terminated(r) ⇒ testActor ! r
+      }
+    }).withDeploy(Deploy.local))
+
+    expectMsg(20.seconds, ref)
+    // we don't expect real quarantine when the UID is unknown, i.e. QuarantinedEvent is not published 
+    probe.expectNoMsg(3.seconds)
+    // The following verifies ticket #3870, i.e. make sure that re-delivery of Watch message is stopped.
+    // It was observed as periodic logging of "address is now gated" when the gate was lifted.
+    system.eventStream.subscribe(probe.ref, classOf[Warning])
+    probe.expectNoMsg(rarp.remoteSettings.RetryGateClosedFor * 2)
+  }
 
   "receive Terminated when watched node is unknown host" in {
     val path = RootActorPath(Address("akka.tcp", system.name, "unknownhost", 2552)) / "user" / "subject"

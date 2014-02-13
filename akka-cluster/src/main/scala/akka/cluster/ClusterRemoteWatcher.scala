@@ -89,7 +89,7 @@ private[cluster] class ClusterRemoteWatcher(
       if (m.address != selfAddress) {
         clusterNodes -= m.address
         if (previousStatus == MemberStatus.Down) {
-          quarantine(m.address, m.uniqueAddress.uid)
+          quarantine(m.address, Some(m.uniqueAddress.uid))
         }
         publishAddressTerminated(m.address)
       }

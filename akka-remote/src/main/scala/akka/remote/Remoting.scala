@@ -211,7 +211,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
     case None ⇒ throw new RemoteTransportExceptionNoStackTrace("Attempted to send management command but Remoting is not running.", null)
   }
 
-  override def quarantine(remoteAddress: Address, uid: Int): Unit = endpointManager match {
+  override def quarantine(remoteAddress: Address, uid: Option[Int]): Unit = endpointManager match {
     case Some(manager) ⇒ manager ! Quarantine(remoteAddress, uid)
     case _ ⇒ throw new RemoteTransportExceptionNoStackTrace(
       s"Attempted to quarantine address [$remoteAddress] with uid [$uid] but Remoting is not running", null)
@@ -244,7 +244,7 @@ private[remote] object EndpointManager {
     // acknowledged delivery buffers
     def seq = seqOpt.get
   }
-  case class Quarantine(remoteAddress: Address, uid: Int) extends RemotingCommand
+  case class Quarantine(remoteAddress: Address, uid: Option[Int]) extends RemotingCommand
   case class ManagementCommand(cmd: Any) extends RemotingCommand
   case class ManagementCommandAck(status: Boolean)
 
@@ -479,19 +479,28 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       }
       Future.fold(allStatuses)(true)(_ && _) map ManagementCommandAck pipeTo sender()
 
-    case Quarantine(address, uid) ⇒
+    case Quarantine(address, uidOption) ⇒
       // Stop writers
       endpoints.writableEndpointWithPolicyFor(address) match {
-        case Some(Pass(endpoint)) ⇒ context.stop(endpoint)
-        case _                    ⇒ // nothing to stop
+        case Some(Pass(endpoint)) ⇒
+          context.stop(endpoint)
+          if (uidOption.isEmpty) {
+            log.warning("Association to [{}] with unknown UID is reported as quarantined, but " +
+              "address cannot be quarantined without knowing the UID, gating instead for {} ms.",
+              address, settings.RetryGateClosedFor.toMillis)
+            endpoints.markAsFailed(endpoint, Deadline.now + settings.RetryGateClosedFor)
+          }
+        case _ ⇒ // nothing to stop
       }
       // Stop inbound read-only associations
       endpoints.readOnlyEndpointFor(address) match {
         case Some(endpoint) ⇒ context.stop(endpoint)
         case _              ⇒ // nothing to stop
       }
-      endpoints.markAsQuarantined(address, uid, Deadline.now + settings.QuarantineDuration)
-      eventPublisher.notifyListeners(QuarantinedEvent(address, uid))
+      uidOption foreach { uid ⇒
+        endpoints.markAsQuarantined(address, uid, Deadline.now + settings.QuarantineDuration)
+        eventPublisher.notifyListeners(QuarantinedEvent(address, uid))
+      }
 
     case s @ Send(message, senderOption, recipientRef, _) ⇒
       val recipientAddress = recipientRef.path.address

@@ -67,7 +67,7 @@ abstract class RemoteQuarantinePiercingSpec extends MultiNodeSpec(RemoteQuaranti
         enterBarrier("actor-identified")
 
         // Manually Quarantine the other system
-        RARP(system).provider.transport.quarantine(node(second).address, uidFirst)
+        RARP(system).provider.transport.quarantine(node(second).address, Some(uidFirst))
 
         // Quarantine is up -- Cannot communicate with remote system any more
         system.actorSelection(RootActorPath(secondAddress) / "user" / "subject") ! "identify"
