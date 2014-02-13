@@ -72,7 +72,7 @@ private[akka] object SubclassifiedIndex {
  * cache, e.g. HashMap, is faster than tree traversal which must use linear
  * scan at each level. Therefore, no value traversals are published.
  */
-private[akka] class SubclassifiedIndex[K, V] private (private var values: Set[V])(implicit sc: Subclassification[K]) {
+private[akka] class SubclassifiedIndex[K, V] private (protected var values: Set[V])(implicit sc: Subclassification[K]) {
 
   import SubclassifiedIndex._
 
