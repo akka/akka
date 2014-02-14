@@ -1,25 +1,38 @@
 package rx.async.tck
 
 import java.util.concurrent._
-import org.junit.Assert._
+import org.testng.annotations.AfterClass
 import scala.annotation.tailrec
+import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 import scala.collection.JavaConverters._
 import rx.async.spi.{ Subscription, Subscriber, Publisher }
 
-class TestCaseEnvironment extends WithExecutor {
-  import WithExecutor._
+abstract class TestCaseEnvironment {
   import TestCaseEnvironment._
 
   val asyncErrors = new CopyOnWriteArrayList[Throwable]()
 
+  val executor: ExecutorService = Executors.newCachedThreadPool()
+
+  @AfterClass
+  def shutdownExecutor(): Unit = {
+    executor.shutdown()
+    try {
+      if (!executor.awaitTermination(500, TimeUnit.MILLISECONDS))
+        executor.shutdownNow()
+    } catch {
+      case _: InterruptedException ⇒ executor.shutdownNow()
+    }
+  }
+
   def async[U](block: ⇒ U): Unit =
-    executor.submit {
+    executor.execute {
       new Runnable {
         def run(): Unit =
           try block
           catch {
-            case NonFatal(e) ⇒ asyncErrors.add(e)
+            case e: Throwable ⇒ asyncErrors.add(e)
           }
       }
     }
@@ -43,6 +56,11 @@ class TestCaseEnvironment extends WithExecutor {
       case e: AssertionError ⇒ throw e
       case e                 ⇒ fail("Async error during test execution: " + e)
     }
+
+  def verifyNoAsyncErrorsAfter(delayMillis: Int): Unit = {
+    Thread.sleep(delayMillis)
+    verifyNoAsyncErrors()
+  }
 }
 
 object TestCaseEnvironment {
@@ -104,38 +122,34 @@ object TestCaseEnvironment {
       else fail(s"Subscriber::onError($cause) called before Subscriber::onSubscribe")
   }
 
+  // like a CountDownLatch, but resettable and with some convenience methods
   class Latch() {
     @volatile private var countDownLatch = new CountDownLatch(1)
     def reOpen() = countDownLatch = new CountDownLatch(1)
     def isClosed: Boolean = countDownLatch.getCount == 0
     def close() = countDownLatch.countDown()
+    def assertClosed(openErrorMsg: String): Unit = if (!isClosed) fail(openErrorMsg)
+    def assertOpen(closedErrorMsg: String): Unit = if (isClosed) fail(closedErrorMsg)
     def expectClose(timeoutMillis: Int, notClosedErrorMsg: String): Unit = {
       countDownLatch.await(timeoutMillis, TimeUnit.MILLISECONDS)
       if (countDownLatch.getCount > 0) fail(s"$notClosedErrorMsg within $timeoutMillis ms")
     }
-    def assertClosed(openErrorMsg: String): Unit =
-      if (!isClosed) fail(openErrorMsg)
-    def assertOpen(closedErrorMsg: String): Unit =
-      if (isClosed) fail(closedErrorMsg)
   }
 
   // simple promise for *one* value, which cannot be reset
   class Promise[T] {
     private val abq = new ArrayBlockingQueue[T](1)
     @volatile private var _value: T = _
-    def value: T =
-      if (isCompleted) _value else fail("Cannot access promise value before completion")
+    def value: T = if (isCompleted) _value else fail("Cannot access promise value before completion")
     def isCompleted: Boolean = _value.asInstanceOf[AnyRef] ne null
     def complete(value: T): Unit = abq.add(value)
+    def assertCompleted(notCompletedErrorMsg: String): Unit = if (!isCompleted) fail(notCompletedErrorMsg)
+    def assertUncompleted(completedErrorMsg: String): Unit = if (isCompleted) fail(completedErrorMsg)
     def expectCompletion(timeoutMillis: Int, notCompletedErrorMsg: String): Unit =
-      abq.poll(timeoutMillis, TimeUnit.MILLISECONDS) match {
+      if (!isCompleted) abq.poll(timeoutMillis, TimeUnit.MILLISECONDS) match {
         case null ⇒ fail(s"$notCompletedErrorMsg within $timeoutMillis ms")
         case x    ⇒ _value = x
       }
-    def assertCompleted(notCompletedErrorMsg: String): Unit =
-      if (!isCompleted) fail(notCompletedErrorMsg)
-    def assertUncompleted(completedErrorMsg: String): Unit =
-      if (isCompleted) fail(completedErrorMsg)
   }
 
   // a "Promise" for multiple values, which also supports "end-of-stream reached"
@@ -177,4 +191,11 @@ object TestCaseEnvironment {
   }
 
   def fail(msg: String): Nothing = org.junit.Assert.fail(msg).asInstanceOf[Nothing]
+
+  def expectThrowingOf[T <: Exception: ClassTag](notThrownErrorMsg: Throwable ⇒ String)(block: ⇒ Unit): Unit =
+    try block
+    catch {
+      case e: Exception if implicitly[ClassTag[T]].runtimeClass.isInstance(e) ⇒ // ok
+      case NonFatal(e) ⇒ fail(notThrownErrorMsg(e))
+    }
 }

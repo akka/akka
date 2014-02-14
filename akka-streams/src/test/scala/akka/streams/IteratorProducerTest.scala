@@ -1,16 +1,16 @@
-package rx.async.tck
+package akka.streams
 
-import akka.streams.Producer
-import org.junit.Test
-import org.junit.Assert._
-import org.scalatest.junit.JUnitSuiteLike
+import org.testng.annotations.Test
+import org.testng.Assert._
+import org.scalatest.testng.TestNGSuiteLike
 import rx.async.spi.Publisher
+import rx.async.tck.{ TestCaseEnvironment, PublisherVerification }
 
-class IteratorProducerTest extends PublisherVerification[Int] with JUnitSuiteLike {
+class IteratorProducerTest extends PublisherVerification[Int] with TestNGSuiteLike {
   import TestCaseEnvironment._
 
   def createPublisher(elements: Int): Publisher[Int] =
-    Producer(Stream from 1000 take elements).getPublisher
+    Producer(Iterator from 1000 take elements).getPublisher
 
   @Test
   def onNextMustBeCalledInLockstepOnAllActiveSubscribers(): Unit = {
@@ -32,8 +32,8 @@ class IteratorProducerTest extends PublisherVerification[Int] with JUnitSuiteLik
     val x1 = sub1.expectOne(timeoutMillis = 50, s"Publisher $pub did not produce requested element on 1st subscriber")
     val x2 = sub2.expectOne(timeoutMillis = 50, s"Publisher $pub did not produce requested element on 2nd subscriber")
     val x3 = sub3.expectOne(timeoutMillis = 50, s"Publisher $pub did not produce requested element on 3rd subscriber")
-    assertEquals("Element for 1st subscriber did not match element for 2nd subscriber", x1, x2)
-    assertEquals("Element for 1st subscriber did not match element for 3rd subscriber", x1, x3)
+    assertEquals(x1, x2, "Element for 1st subscriber did not match element for 2nd subscriber")
+    assertEquals(x1, x3, "Element for 1st subscriber did not match element for 3rd subscriber")
     sub1.expectNone(withinMillis = 50, x ⇒ s"Publisher $pub produced unrequested $x on 1st subscriber")
     sub2.expectNone(withinMillis = 50, x ⇒ s"Publisher $pub produced $x on 2nd subscriber outside of lockstep")
     sub3.expectNone(withinMillis = 50, x ⇒ s"Publisher $pub produced unrequested $x on 3rd subscriber")
@@ -47,8 +47,8 @@ class IteratorProducerTest extends PublisherVerification[Int] with JUnitSuiteLik
     val y1 = sub1.expectOne(timeoutMillis = 50, s"Publisher $pub did not produce requested element on 1st subscriber")
     val y2 = sub2.expectOne(timeoutMillis = 50, s"Publisher $pub did not produce requested element on 2nd subscriber")
     val y3 = sub3.expectOne(timeoutMillis = 50, s"Publisher $pub did not produce requested element on 3rd subscriber")
-    assertEquals("Element for 1st subscriber did not match element for 2nd subscriber", y1, y2)
-    assertEquals("Element for 1st subscriber did not match element for 3rd subscriber", y1, y3)
+    assertEquals(y1, y2, "Element for 1st subscriber did not match element for 2nd subscriber")
+    assertEquals(y1, y3, "Element for 1st subscriber did not match element for 3rd subscriber")
     sub1.expectNone(withinMillis = 50, x ⇒ s"Publisher $pub produced unrequested $x on 1st subscriber")
     sub2.expectNone(withinMillis = 50, x ⇒ s"Publisher $pub produced unrequested $x on 2nd subscriber")
     sub3.expectNone(withinMillis = 50, x ⇒ s"Publisher $pub produced unrequested $x on 3rd subscriber")

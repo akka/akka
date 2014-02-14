@@ -140,7 +140,7 @@ abstract class AbstractProducer[T] extends Prod[T] with Publisher[T] {
     def pushToDownstream(value: T): Unit = {
       @tailrec def allCanReceive(remaining: List[Subscription]): Boolean =
         remaining match {
-          case head :: tail ⇒ if (head.requested.get() > 0) allCanReceive(tail) else false
+          case head :: tail ⇒ if (head.get() > 0) allCanReceive(tail) else false
           case _            ⇒ true
         }
       @tailrec def dispatchTo(remaining: List[Subscription]): Unit =
@@ -177,7 +177,7 @@ abstract class AbstractProducer[T] extends Prod[T] with Publisher[T] {
       if (subs.nonEmpty) {
         @tailrec def findMinRequested(remaining: List[Subscription], result: Int = Int.MaxValue): Int =
           remaining match {
-            case head :: tail ⇒ findMinRequested(tail, math.min(result, head.requested.get()))
+            case head :: tail ⇒ findMinRequested(tail, math.min(result, head.get()))
             case _            ⇒ result
           }
         val minReq = findMinRequested(subs)
@@ -218,15 +218,14 @@ abstract class AbstractProducer[T] extends Prod[T] with Publisher[T] {
     def completeDownstream(): Unit = throw new IllegalStateException("Cannot completeDownstream() in the error state")
   }
 
-  protected class Subscription(val subscriber: Subscriber[T]) extends rx.async.spi.Subscription {
-    val requested = new AtomicInteger() // TODO: replace with AtomicFieldUpdater / sun.misc.Unsafe
+  protected class Subscription(val subscriber: Subscriber[T]) extends AtomicInteger with rx.async.spi.Subscription {
     @volatile var cancelled = false
 
     def requestMore(elements: Int): Unit =
       if (cancelled) throw new IllegalStateException("Cannot request from a cancelled subscription")
       else if (elements <= 0) throw new IllegalArgumentException("Argument must be > 0")
       else {
-        requested.addAndGet(elements)
+        addAndGet(elements)
         requestFromUpstreamIfRequired()
       }
 
@@ -238,7 +237,7 @@ abstract class AbstractProducer[T] extends Prod[T] with Publisher[T] {
       }
 
     def dispatch(value: T): Unit = {
-      requested.decrementAndGet()
+      decrementAndGet()
       subscriber.onNext(value)
     }
 
