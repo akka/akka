@@ -46,8 +46,8 @@ object TestKit {
           def sendComplete(): Unit = subscriber.onComplete()
           def sendError(cause: Exception): Unit = subscriber.onError(cause)
         }
-        subscriber.onSubscribe(subscription)
         probe.ref ! Subscribe(subscription)
+        subscriber.onSubscribe(subscription)
       }
 
       def expectSubscription(): ActiveSubscription[I] =
