@@ -11,8 +11,8 @@ import org.apache.camel.ProducerTemplate
 import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.model.RouteDefinition
 import com.typesafe.config.Config
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import java.util.concurrent.TimeUnit._
+import scala.concurrent.duration.FiniteDuration
+import scala.collection.immutable
 
 /**
  * Camel trait encapsulates the underlying camel machinery.
@@ -105,8 +105,17 @@ class CamelSettings private[camel] (config: Config, dynamicAccess: DynamicAccess
 
     (s: String, r: RouteDefinition) ⇒ conversions.get(s).fold(r)(r.convertBodyTo)
   }
-
+  /**
+   * Configured setting, determine the class used to load/retrive the instance of the Camel Context
+   */
+  final val ContextProvider: ContextProvider = {
+    val fqcn = config.getString("akka.camel.context-provider")
+    dynamicAccess.createInstanceFor[ContextProvider](fqcn, immutable.Seq.empty).recover {
+      case e ⇒ throw new ConfigurationException("Could not find/load Context Provider class [" + fqcn + "]", e)
+    }.get
+  }
 }
+
 /**
  * This class can be used to get hold of an instance of the Camel class bound to the actor system.
  * <p>For example:
