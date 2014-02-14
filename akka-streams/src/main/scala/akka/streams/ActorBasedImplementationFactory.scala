@@ -9,7 +9,7 @@ case class ActorBasedImplementationSettings(ctx: ActorRefFactory, constructFanOu
 
 class ActorBasedImplementationFactory(settings: ActorBasedImplementationSettings) extends ImplementationFactory {
   def processor[I, O](operation: Operation[I, O]): Processor[I, O] = Implementation.operation(operation, settings)
-  def producer[O](source: Source[O]): Producer[O] = ???
+  def producer[O](source: Source[O]): Producer[O] = Implementation.source(source, settings)
   def consumer[I](sink: Sink[I]): Consumer[I] = ???
   def runPipeline(pipeline: Pipeline[_]): Unit = Implementation.pipeline(pipeline, settings)
 }
