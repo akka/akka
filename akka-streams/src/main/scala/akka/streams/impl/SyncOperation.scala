@@ -10,7 +10,7 @@ trait Upstream {
 }
 
 /** Constructors for downstream effects */
-trait Downstream[O] {
+trait Downstream[-O] {
   val next: O ⇒ Effect
   val complete: Effect
   val error: Throwable ⇒ Effect

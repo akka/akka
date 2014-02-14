@@ -19,7 +19,7 @@ object Operation {
         case s                    ⇒ Pipeline(this, s)
       }
   }
-  trait CustomSource[O] extends Source[O]
+  trait CustomSource[+O] extends Source[O]
 
   implicit def fromIterable[T](iterable: Iterable[T]) = FromIterableSource(iterable)
   case class FromIterableSource[T](iterable: Iterable[T]) extends Source[T]
