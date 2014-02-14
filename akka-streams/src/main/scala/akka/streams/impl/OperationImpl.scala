@@ -20,6 +20,7 @@ object OperationImpl {
         ComposeImpl.source[i](apply(_: Downstream[i], ctx, m.source), up ⇒ apply(up, downstream, ctx, m.operation))
       case FromIterableSource(s)    ⇒ FromIterableSourceImpl(downstream, ctx, s)
       case f: FromProducerSource[_] ⇒ FromProducerSourceImpl(downstream, ctx, f)
+      case SingletonSource(element) ⇒ new SingletonSourceImpl(downstream, element)
     }
 
   def apply[I, O](upstream: Upstream, downstream: Downstream[O], ctx: ContextEffects, op: Operation[I, O]): SyncOperation[I] = op match {
