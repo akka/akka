@@ -145,6 +145,29 @@ trait ProcessorActorImpl { _: Actor ⇒
         consumer.getSubscriber.onSubscribe(new SubSubscription(handler))
         effect
       }, s"SubscribeFrom($sink)")
+
+    def expose[O](source: Source[O]): Producer[O] = {
+      source match {
+        case InternalSource(handler) ⇒
+          object InternalProducer extends Producer[O] with Publisher[O] {
+            var singleSubscriber: Subscriber[O] = _
+            def subscribe(subscriber: Subscriber[O]): Unit = runEffectInThisActor {
+              require(singleSubscriber eq null) // TODO: add FanOutBox
+              this.singleSubscriber = subscriber
+              val (upstream, effect) = handler(BasicEffects.forSubscriber(subscriber))
+              subscriber.onSubscribe(new Subscription {
+                def requestMore(elements: Int): Unit = runEffectInThisActor(upstream.handleRequestMore(elements))
+                def cancel(): Unit = runEffectInThisActor(upstream.handleCancel())
+              })
+              effect
+            }
+
+            def getPublisher: Publisher[O] = this
+          }
+
+          InternalProducer
+      }
+    }
   }
 
   case class RunDeferred(body: () ⇒ Unit)

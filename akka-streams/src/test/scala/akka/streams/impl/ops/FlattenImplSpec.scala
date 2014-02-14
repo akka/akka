@@ -4,6 +4,7 @@ package ops
 
 import org.scalatest.{ FreeSpec, ShouldMatchers }
 import Operation.{ FromIterableSource, Sink, Source }
+import rx.async.api.Producer
 
 class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {
   "Flatten should" - {
@@ -67,6 +68,7 @@ class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpe
         SubscribeTo(source, onSubscribe)
 
       def subscribeFrom[O](sink: Sink[O])(onSubscribe: (Downstream[O]) ⇒ (SyncSource, Effect)): Effect = ???
+      def expose[O](source: Source[O]): Producer[O] = ???
     }
     val flatten = FlattenImpl(upstream, downstream, ctx)
   }

@@ -14,6 +14,8 @@ trait ContextEffects {
    */
   def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Effect)): Effect
   def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect
+
+  def expose[O](source: Source[O]): Producer[O]
 }
 
 object ContextEffects {

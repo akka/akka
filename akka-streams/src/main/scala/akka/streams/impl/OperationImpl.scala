@@ -3,6 +3,7 @@ package impl
 
 import Operation._
 import ops._
+import rx.async.api.Producer
 
 object OperationImpl {
   def apply[A](ctx: ContextEffects, p: Pipeline[A]): SyncRunnable = {
@@ -32,5 +33,6 @@ object OperationImpl {
     case d: Fold[I, O]       ⇒ FoldImpl(upstream, downstream, d)
     case u: Process[I, O, _] ⇒ new ProcessImpl(upstream, downstream, u)
     case s: Span[I]          ⇒ new SpanImpl(upstream, downstream.asInstanceOf[Downstream[Source[I]]], s)
+    case ExposeProducer()    ⇒ new ExposeProducerImpl(upstream, downstream.asInstanceOf[Downstream[Producer[I]]], ctx).asInstanceOf[SyncOperation[I]]
   }
 }

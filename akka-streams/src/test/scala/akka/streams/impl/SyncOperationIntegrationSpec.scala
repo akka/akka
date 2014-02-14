@@ -26,6 +26,7 @@ class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with Syn
           }
 
         def subscribeFrom[O](sink: Sink[O])(onSubscribe: (Downstream[O]) ⇒ (SyncSource, Effect)): Effect = ???
+        def expose[O](source: Source[O]): Producer[O] = ???
       }
 
       val p = instance[Int](FromIterableSource(1 to 6).span(_ % 3 == 0).flatten, Context)

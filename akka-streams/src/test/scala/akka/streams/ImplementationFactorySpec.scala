@@ -65,7 +65,7 @@ abstract class ImplementationFactorySpec extends WordSpec with TestKitBase with 
         upstreamSubscription.sendError(WeirdError)
         downstream.expectError(WeirdError)
       }
-      "operation publishes Producer" in pendingUntilFixed(new InitializedChainSetup[String, Producer[String]](Span[String](_ == "end").expose) {
+      "operation publishes Producer" in new InitializedChainSetup[String, Producer[String]](Span[String](_ == "end").expose) {
         downstreamSubscription.requestMore(5)
         upstream.expectRequestMore(upstreamSubscription, 1)
 
@@ -105,7 +105,7 @@ abstract class ImplementationFactorySpec extends WordSpec with TestKitBase with 
         downstream.expectComplete()
         subStreamConsumer2.expectNext("end")
         subStreamConsumer2.expectComplete()
-      })
+      }
       "operation consumes Producer" in new InitializedChainSetup[Source[String], String](Flatten()) {
         downstreamSubscription.requestMore(4)
         upstream.expectRequestMore(upstreamSubscription, 1)
@@ -136,7 +136,35 @@ abstract class ImplementationFactorySpec extends WordSpec with TestKitBase with 
         subStreamSubscription2.sendComplete()
         downstream.expectComplete()
       }
-      "complex operation" in pending
+      "combined operation spanning internal subscription" in new InitializedChainSetup[Int, Int](Span[Int](_ % 3 == 0).flatten) {
+        downstreamSubscription.requestMore(1)
+        upstream.expectRequestMore(upstreamSubscription, 1)
+
+        upstreamSubscription.sendNext(1)
+        downstream.expectNext(1)
+
+        downstreamSubscription.requestMore(1)
+        upstream.expectRequestMore(upstreamSubscription, 1)
+        upstreamSubscription.sendNext(2)
+        downstream.expectNext(2)
+
+        downstreamSubscription.requestMore(1)
+        upstream.expectRequestMore(upstreamSubscription, 1)
+        upstreamSubscription.sendNext(3)
+        downstream.expectNext(3)
+
+        downstreamSubscription.requestMore(1)
+        upstream.expectRequestMore(upstreamSubscription, 1)
+        upstreamSubscription.sendNext(4)
+        downstream.expectNext(4)
+
+        downstreamSubscription.requestMore(1)
+        upstream.expectRequestMore(upstreamSubscription, 1)
+        upstreamSubscription.sendNext(5)
+        upstreamSubscription.sendComplete()
+        downstream.expectNext(5)
+        downstream.expectComplete()
+      }
     }
     "work with multiple subscribers (FanOutBox)" when {
       "adapt speed to the currently slowest consumer" in new InitializedChainSetup(Identity[Symbol]()) {
