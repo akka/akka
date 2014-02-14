@@ -52,9 +52,17 @@ object SurviveNetworkInstabilityMultiJvmSpec extends MultiNodeConfig {
 
     def receive = {
       case "hello" ⇒
-        context.system.scheduler.scheduleOnce(2.seconds, self, "boom")
+        context.actorSelection("/user/bad") ! self
         sender() ! "hello"
       case "boom" ⇒ throw new SimulatedException
+    }
+  }
+
+  class BadGuy extends Actor {
+    var victims = Vector.empty[ActorRef]
+    def receive = {
+      case ref: ActorRef ⇒ victims :+= ref
+      case "boom"        ⇒ victims foreach { _ ! "boom" }
     }
   }
 
@@ -94,8 +102,14 @@ abstract class SurviveNetworkInstabilitySpec
   }
 
   system.actorOf(Props[Echo], "echo")
+  val bad = system.actorOf(Props[BadGuy], "bad")
 
   def assertCanTalk(alive: RoleName*): Unit = {
+    runOn(alive: _*) {
+      awaitAllReachable
+    }
+    enterBarrier("reachable-ok")
+
     runOn(alive: _*) {
       for (to ← alive) {
         val sel = system.actorSelection(node(to) / "user" / "echo")
@@ -141,7 +155,6 @@ abstract class SurviveNetworkInstabilitySpec
       // unreachable they must accept gossip from first and second when their
       // broken connection has healed, otherwise they will be isolated forever.
 
-      awaitAllReachable()
       enterBarrier("after-2")
       assertCanTalk(first, second, third, fourth, fifth)
     }
@@ -168,8 +181,6 @@ abstract class SurviveNetworkInstabilitySpec
         }
       }
       enterBarrier("repair-3")
-      awaitAllReachable()
-      enterBarrier("after-3")
       assertCanTalk((others :+ first): _*)
     }
 
@@ -199,8 +210,6 @@ abstract class SurviveNetworkInstabilitySpec
         }
       }
       enterBarrier("repair-4")
-      awaitAllReachable()
-      enterBarrier("after-4")
       assertCanTalk((island1 ++ island2): _*)
     }
 
@@ -241,13 +250,12 @@ abstract class SurviveNetworkInstabilitySpec
       }
 
       enterBarrier("repair-5")
-      runOn((joining ++ others): _*) {
-        awaitAllReachable()
+      runOn((joining ++ others :+ first): _*) {
         // eighth not joined yet
-        awaitMembersUp(roles.size - 1)
+        awaitMembersUp(roles.size - 1, timeout = remaining)
       }
       enterBarrier("after-5")
-      assertCanTalk((joining ++ others): _*)
+      assertCanTalk((joining ++ others :+ first): _*)
     }
 
     "down and remove quarantined node" taggedAs LongRunningTest in within(60.seconds) {
@@ -278,12 +286,15 @@ abstract class SurviveNetworkInstabilitySpec
 
       runOn(first) {
         for (role ← others)
-          testConductor.blackhole(second, role, Direction.Send).await
+          testConductor.blackhole(role, second, Direction.Both).await
       }
       enterBarrier("blackhole-6")
 
       runOn(third) {
-        // undelivered system messages in RemoteChild on third should trigger QuarantinedEvent
+        // this will trigger Exception in RemoteChild on third, and the failures
+        // can't be reported to parent on second, resulting in too many outstanding
+        // system messages and quarantine
+        bad ! "boom"
         within(10.seconds) {
           expectMsgType[QuarantinedEvent].address should be(address(second))
         }
