@@ -1,15 +1,17 @@
 package akka.streams.impl.ops
 
-import akka.streams.Operation.{ Source, Span }
+import akka.streams.Operation.{ SingletonSource, Source, Span }
 import akka.streams.impl._
-import akka.streams.Operation.Span
 
 class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], span: Span[I]) extends DynamicSyncOperation[I] {
   def initial: State = WaitingForRequest
+  val subSource = new DynamicSyncSource {
+    def initial: State = SubCompleted
+  }
 
   var subStreamsRequested = 0
 
-  def WaitingForRequest: State = new State {
+  def WaitingForRequest: State = new DontExpectNext {
     def handleRequestMore(n: Int): Effect = {
       subStreamsRequested += n
       become(WaitingForFirstElement)
@@ -17,7 +19,6 @@ class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], span: S
     }
     def handleCancel(): Effect = upstream.cancel
 
-    def handleNext(element: I): Effect = ???
     def handleComplete(): Effect = downstream.complete
     def handleError(cause: Throwable): Effect = downstream.error(cause)
   }
@@ -29,36 +30,67 @@ class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], span: S
     def handleCancel(): Effect = ???
 
     def handleNext(element: I): Effect = {
-      // FIXME: case when first element matches predicate, in which case we could emit a singleton Producer
       subStreamsRequested -= 1
-      val running = new Running(element)
-      become(running)
-      downstream.next(InternalSource(running.onSubscribed))
+
+      if (span.p(element)) {
+        downstream.next(SingletonSource(element)) ~ {
+          if (subStreamsRequested > 0) upstream.requestMore(1)
+          else Continue
+        }
+      } else {
+        val running = new Subscribing(element)
+        become(running)
+        downstream.next(InternalSource(running.onSubscribed))
+      }
     }
     def handleComplete(): Effect = downstream.complete
     def handleError(cause: Throwable): Effect = ???
   }
-  class Running(firstElement: I) extends State {
-    var subDownstream: Downstream[I] = _
-    var undeliveredElements = -1
-
+  class Subscribing(firstElement: I) extends DontExpectNext {
+    var completed = false
     def onSubscribed(downstream: Downstream[I]): (SyncSource, Effect) = {
-      this.subDownstream = downstream
+      if (completed) become(CompleteAfter(downstream, firstElement))
+      else become(FirstElementUndelivered(downstream, firstElement))
       (subSource, Continue)
     }
-    val subSource = new SyncSource {
+
+    def handleRequestMore(n: Int): Effect = { subStreamsRequested += n; Continue }
+    def handleCancel(): Effect = ???
+
+    def handleComplete(): Effect = { completed = true; downstream.complete }
+    def handleError(cause: Throwable): Effect = ???
+  }
+  def FirstElementUndelivered(subDownstream: Downstream[I], firstElement: I): State = new DontExpectNext {
+    subSource.become(new SyncSource {
       def handleRequestMore(n: Int): Effect = {
-        val deliverFirst = if (undeliveredElements == -1) subDownstream.next(firstElement) else Continue
-
-        undeliveredElements += n
-
-        deliverFirst ~ {
-          if (undeliveredElements > 0) upstream.requestMore(1)
-          else Continue
-        }
+        become(Running(subDownstream, n - 1))
+        subDownstream.next(firstElement) ~ (if (n > 1) upstream.requestMore(1) else Continue)
       }
       def handleCancel(): Effect = ???
+    })
+
+    def handleRequestMore(n: Int): Effect = { subStreamsRequested += n; Continue }
+    def handleCancel(): Effect = ???
+
+    def handleComplete(): Effect = {
+      become(CompleteAfter(subDownstream, firstElement))
+      downstream.complete
     }
+    def handleError(cause: Throwable): Effect = ???
+  }
+  // invariant:
+  // if (undeliveredElements != 0) => one element currently requested
+  def Running(subDownstream: Downstream[I], _undeliveredElements: Int): State = new State {
+    var undeliveredElements = _undeliveredElements
+    subSource.become(new SyncSource {
+      def handleRequestMore(n: Int): Effect = {
+        val nothingRequested = undeliveredElements == 0
+        undeliveredElements += n
+
+        if (nothingRequested) upstream.requestMore(1) else Continue
+      }
+      def handleCancel(): Effect = ???
+    })
 
     def handleRequestMore(n: Int): Effect = {
       subStreamsRequested += n
@@ -80,7 +112,46 @@ class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], span: S
       } else
         subDownstream.next(element) ~ (if (undeliveredElements > 0) upstream.requestMore(1) else Continue)
     }
-    def handleComplete(): Effect = subDownstream.complete ~ downstream.complete
+    def handleComplete(): Effect = {
+      become(Completed)
+      subDownstream.complete ~ downstream.complete
+    }
     def handleError(cause: Throwable): Effect = ???
+  }
+
+  // invariant:
+  // upstream and parent stream already completed, substream established but nothing requested yet
+  def CompleteAfter(subDownstream: Downstream[I], firstElement: I): State = new DontExpectNext {
+    subSource.become(new SyncSource {
+      def handleRequestMore(n: Int): Effect = {
+        become(Completed)
+        subDownstream.next(firstElement) ~ subDownstream.complete
+      }
+      def handleCancel(): Effect = ???
+    })
+    def handleRequestMore(n: Int): Effect = Continue // ignore after completion
+    def handleCancel(): Effect = ???
+
+    def handleComplete(): Effect = ???
+    def handleError(cause: Throwable): Effect = ???
+  }
+
+  // invariant:
+  // upstream, parent stream and all substreams completed
+  val Completed: State = new DontExpectNext {
+    subSource.become(SubCompleted)
+    def handleRequestMore(n: Int): Effect = Continue
+    def handleCancel(): Effect = ???
+
+    def handleComplete(): Effect = ???
+    def handleError(cause: Throwable): Effect = ???
+  }
+  val SubCompleted = new SyncSource {
+    def handleRequestMore(n: Int): Effect = Continue // ignore
+    def handleCancel(): Effect = Continue // ignore
+  }
+
+  trait DontExpectNext extends State {
+    def handleNext(element: I): Effect = throw new IllegalStateException("No element requested")
   }
 }

@@ -23,6 +23,7 @@ object Operation {
 
   implicit def fromIterable[T](iterable: Iterable[T]) = FromIterableSource(iterable)
   case class FromIterableSource[T](iterable: Iterable[T]) extends Source[T]
+  case class SingletonSource[T](element: T) extends Source[T]
   case class MappedSource[I, O](source: Source[I], operation: Operation[I, O]) extends Source[O] {
     type Input = I
     override def andThen[O2](op: Operation.==>[O, O2]): Source[O2] = MappedSource(source, Operation(operation, op))
