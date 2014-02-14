@@ -31,5 +31,6 @@ object OperationImpl {
     case Flatten()           ⇒ FlattenImpl(upstream, downstream, ctx).asInstanceOf[SyncOperation[I]]
     case d: Fold[I, O]       ⇒ FoldImpl(upstream, downstream, d)
     case u: Process[I, O, _] ⇒ new ProcessImpl(upstream, downstream, u)
+    case s: Span[I]          ⇒ new SpanImpl(upstream, downstream.asInstanceOf[Downstream[Source[I]]], s)
   }
 }

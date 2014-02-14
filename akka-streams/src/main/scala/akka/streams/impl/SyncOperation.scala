@@ -75,16 +75,3 @@ abstract class DynamicSyncOperation[I] extends SyncOperation[I] {
   def handleComplete(): Effect = state.handleComplete()
   def handleError(cause: Throwable): Effect = state.handleError(cause)
 }
-
-/**
- * Additional Effects supplied by the context to allow additional executing additional effects
- * of link internal sources and sinks.
- */
-trait ContextEffects {
-  /**
-   * Subscribe to the given source and once subscribed call the `onSubscribe` callback with upstream
-   * effects. onSubscribe
-   */
-  def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Effect)): Effect
-  def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect
-}

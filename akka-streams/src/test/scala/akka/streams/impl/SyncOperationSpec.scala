@@ -41,4 +41,10 @@ trait SyncOperationSpec {
 
   val dontTrace: (Effect, Effect) ⇒ Unit = (_, _) ⇒ ()
   val printStep: (Effect, Effect) ⇒ Unit = (in, out) ⇒ println(s"$in => $out")
+
+  trait NoOpSink[-I] extends SyncSink[I] {
+    def handleNext(element: I): Effect = ???
+    def handleComplete(): Effect = ???
+    def handleError(cause: Throwable): Effect = ???
+  }
 }

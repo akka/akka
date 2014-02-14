@@ -112,6 +112,7 @@ trait ProcessorActorImpl { _: Actor ⇒
     def subscribeTo[O](source: Source[O])(onSubscribeCallback: Upstream ⇒ (SyncSink[O], Effect)): Effect =
       source match {
         case FromProducerSource(prod: Producer[O]) ⇒ subscribeToProducer(prod, onSubscribeCallback)
+        case InternalSource(handler)               ⇒ ContextEffects.subscribeToInternalSource(handler, onSubscribeCallback)
       }
 
     def subscribeToProducer[O](producer: Producer[O], onSubscribeCallback: Upstream ⇒ (SyncSink[O], Effect)): Effect =
@@ -144,7 +145,6 @@ trait ProcessorActorImpl { _: Actor ⇒
         consumer.getSubscriber.onSubscribe(new SubSubscription(handler))
         effect
       }, s"SubscribeFrom($sink)")
-      }
   }
 
   case class RunDeferred(body: () ⇒ Unit)

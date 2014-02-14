@@ -51,6 +51,13 @@ object BasicEffects {
     def runOne(): Effect = right.handleError(cause)
   }
 
+  def forSink[B](sink: SyncSink[B]): Downstream[B] =
+    new Downstream[B] {
+      val next: B ⇒ Effect = HandleNextInSink(sink, _)
+      val complete: Effect = CompleteSink(sink)
+      val error: Throwable ⇒ Effect = HandleErrorInSink(sink, _)
+    }
+
   // SYncSource
 
   case class RequestMoreFromSource(left: SyncSource, n: Int) extends SingleStep {
@@ -59,4 +66,10 @@ object BasicEffects {
   case class CancelSource(left: SyncSource) extends SingleStep {
     def runOne(): Effect = left.handleCancel()
   }
+
+  def forSource[B](source: SyncSource): Upstream =
+    new Upstream {
+      val requestMore: Int ⇒ Effect = RequestMoreFromSource(source, _)
+      val cancel: Effect = CancelSource(source)
+    }
 }
