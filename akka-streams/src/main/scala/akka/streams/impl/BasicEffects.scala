@@ -27,6 +27,7 @@ object BasicEffects {
   // Subscription
 
   case class RequestMoreFromSubscription(subscription: Subscription, n: Int) extends ExternalEffect {
+    require(n > 0)
     def run(): Unit = subscription.requestMore(n)
   }
   case class CancelSubscription(subscription: Subscription) extends ExternalEffect {
@@ -61,6 +62,7 @@ object BasicEffects {
   // SYncSource
 
   case class RequestMoreFromSource(left: SyncSource, n: Int) extends SingleStep {
+    require(n > 0)
     def runOne(): Effect = left.handleRequestMore(n)
   }
   case class CancelSource(left: SyncSource) extends SingleStep {
