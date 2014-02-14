@@ -80,7 +80,12 @@ When using JarJar, OneJar, Assembly or any jar-bundler
     reference.confs as well. Otherwise all defaults will be lost and Akka will not function.
 
 
-If you are using Maven to package your application, you can also make use of the `Apache Maven Shade Plugin<http://maven.apache.org/plugins/maven-shade-plugin>`_ support for `Resource Transformers<http://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#AppendingTransformer>`_ to merge all the reference.confs on the build classpath into one. 
+If you are using Maven to package your application, you can also make use of
+the `Apache Maven Shade Plugin
+<http://maven.apache.org/plugins/maven-shade-plugin>`_ support for `Resource
+Transformers
+<http://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#AppendingTransformer>`_
+to merge all the reference.confs on the build classpath into one. 
 
 The plugin configuration might look like this::
 
