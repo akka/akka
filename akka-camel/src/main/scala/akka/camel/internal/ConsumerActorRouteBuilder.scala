@@ -10,6 +10,8 @@ import akka.camel.internal.component.CamelPath
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.model.RouteDefinition
 
+import scala.language.existentials
+
 /**
  * INTERNAL API
  * Builder of a route to a target which can be an actor.
