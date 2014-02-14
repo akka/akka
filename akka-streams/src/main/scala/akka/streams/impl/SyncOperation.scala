@@ -74,4 +74,8 @@ abstract class DynamicSyncOperation[I] extends SyncOperation[I] {
   def handleNext(element: I): Effect = state.handleNext(element)
   def handleComplete(): Effect = state.handleComplete()
   def handleError(cause: Throwable): Effect = state.handleError(cause)
+
+  trait DontExpectNext extends State {
+    def handleNext(element: I): Effect = throw new IllegalStateException("No element requested")
+  }
 }

@@ -150,8 +150,4 @@ class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], span: S
     def handleRequestMore(n: Int): Effect = Continue // ignore
     def handleCancel(): Effect = Continue // ignore
   }
-
-  trait DontExpectNext extends State {
-    def handleNext(element: I): Effect = throw new IllegalStateException("No element requested")
-  }
 }
