@@ -5,7 +5,7 @@ import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 
 object AkkaSampleMultiNodeBuild extends Build {
 
-  val akkaVersion = "2.3-SNAPSHOT"
+  val akkaVersion = "2.3.0-RC3"
 
   lazy val akkaSampleMultiNode = Project(
     id = "akka-sample-multi-node-scala",

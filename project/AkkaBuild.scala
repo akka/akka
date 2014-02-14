@@ -38,7 +38,7 @@ object AkkaBuild extends Build {
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
-    version      := "2.3-SNAPSHOT",
+    version      := "2.3.0-RC3",
     scalaVersion := requestedScalaVersion,
     scalaBinaryVersion := System.getProperty("akka.scalaBinaryVersion", if (scalaVersion.value contains "-") scalaVersion.value else scalaBinaryVersion.value)
   )
