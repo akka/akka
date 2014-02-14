@@ -10,6 +10,8 @@ import akka.actor._
 import scala.concurrent.duration._
 import akka.dispatch.Mapper
 
+import scala.language.existentials
+
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.
  *
@@ -87,8 +89,17 @@ private[camel] object Consumer {
     override def checkedApply(rd: RouteDefinition): ProcessorDefinition[_] = rd
   }
 }
+
 /**
  * INTERNAL API
  * Captures the configuration of the Consumer.
+ *
+ * Was a case class but has been split up as a workaround for SI-8283
  */
-private[camel] case class ConsumerConfig(activationTimeout: FiniteDuration, replyTimeout: FiniteDuration, autoAck: Boolean, onRouteDefinition: RouteDefinition ⇒ ProcessorDefinition[_]) extends NoSerializationVerificationNeeded
+private[camel] class ConsumerConfig(val activationTimeout: FiniteDuration, val replyTimeout: FiniteDuration, val autoAck: Boolean, val onRouteDefinition: RouteDefinition ⇒ ProcessorDefinition[_]) extends NoSerializationVerificationNeeded
+  with scala.Serializable
+
+private[camel] object ConsumerConfig {
+  def apply(activationTimeout: FiniteDuration, replyTimeout: FiniteDuration, autoAck: Boolean, onRouteDefinition: RouteDefinition ⇒ ProcessorDefinition[_]): ConsumerConfig =
+    new ConsumerConfig(activationTimeout, replyTimeout, autoAck, onRouteDefinition)
+}
