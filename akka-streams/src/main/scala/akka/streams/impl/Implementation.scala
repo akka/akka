@@ -110,7 +110,12 @@ class PipelineActor(pipeline: Pipeline[_]) extends Actor with ProcessorActorImpl
 trait ProcessorActorImpl { _: Actor ⇒
   object ActorContextEffects extends ContextEffects {
     def subscribeTo[O](source: Source[O])(onSubscribeCallback: Upstream ⇒ (SyncSink[O], Effect)): Effect =
-      Effect.step {
+      source match {
+        case FromProducerSource(prod: Producer[O]) ⇒ subscribeToProducer(prod, onSubscribeCallback)
+      }
+
+    def subscribeToProducer[O](producer: Producer[O], onSubscribeCallback: Upstream ⇒ (SyncSink[O], Effect)): Effect =
+      Effect.step({
         object SubSubscriber extends Subscriber[O] {
           var subscription: Subscription = _
           var sink: SyncSink[O] = _
@@ -124,13 +129,12 @@ trait ProcessorActorImpl { _: Actor ⇒
           def onComplete(): Unit = runEffectInThisActor(sink.handleComplete())
           def onError(cause: Throwable): Unit = runEffectInThisActor(sink.handleError(cause))
         }
-        val FromProducerSource(prod: Producer[O]) = source
-        prod.getPublisher.subscribe(SubSubscriber)
+        producer.getPublisher.subscribe(SubSubscriber)
         Continue // we need to wait for onSubscribe being called
-      }
+      }, s"SubscribeTo($producer)")
 
     override def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect =
-      Effect.step {
+      Effect.step({
         val FromConsumerSink(consumer: Consumer[O]) = sink
         class SubSubscription(source: SyncSource) extends Subscription {
           def requestMore(elements: Int): Unit = runEffectInThisActor(source.handleRequestMore(elements))
@@ -139,6 +143,7 @@ trait ProcessorActorImpl { _: Actor ⇒
         val (handler, effect) = onSubscribe(BasicEffects.forSubscriber(consumer.getSubscriber))
         consumer.getSubscriber.onSubscribe(new SubSubscription(handler))
         effect
+      }, s"SubscribeFrom($sink)")
       }
   }
 

@@ -48,11 +48,14 @@ trait ExternalEffect extends Effect {
 }
 object Effect {
   /** Creates an anonymous step */
-  def step[O](body: ⇒ Effect): Effect = new SingleStep {
+  def step[O](body: ⇒ Effect, name: String): Effect = new SingleStep {
+    override def toString: String = name
+
     def runOne(): Effect = body
   }
   /** Creates an anonymous external side-effect */
-  def externalEffect[O](body: ⇒ Unit): Effect = new ExternalEffect {
+  def externalEffect[O](body: ⇒ Unit, name: String): Effect = new ExternalEffect {
+    override def toString: String = name
     def run(): Unit = body
   }
 
