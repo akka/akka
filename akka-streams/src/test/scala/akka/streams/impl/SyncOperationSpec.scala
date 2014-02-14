@@ -17,10 +17,10 @@ trait SyncOperationSpec {
   case class DownstreamNext[O](element: O) extends DoNothing[O]
   case object DownstreamComplete extends DoNothing[Nothing]
   case class DownstreamError(cause: Throwable) extends DoNothing[Nothing]
-  val downstream = new Downstream[Float] {
-    val next: (Float) ⇒ Effect = DownstreamNext[Float]
+  val downstream = new Downstream[Any] {
+    val next: Any ⇒ Effect = DownstreamNext[Any]
     val complete: Effect = DownstreamComplete
-    val error: (Throwable) ⇒ Effect = DownstreamError
+    val error: Throwable ⇒ Effect = DownstreamError
   }
 
   implicit class AddRunOnce[O](result: Effect) {
