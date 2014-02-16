@@ -209,19 +209,8 @@ trait EventsourcedProcessor extends Processor with Eventsourced {
   final def receive = initialBehavior
 }
 
-/**
- * Java API: an event sourced processor.
- */
-abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Eventsourced {
-  final def onReceive(message: Any) = initialBehavior(message)
-
-  final def receiveRecover: Receive = {
-    case msg ⇒ onReceiveRecover(msg)
-  }
-
-  final def receiveCommand: Receive = {
-    case msg ⇒ onReceiveCommand(msg)
-  }
+sealed trait EventsourceProcedurePersistor {
+  this: Eventsourced ⇒
 
   /**
    * Java API: asynchronously persists `event`. On successful persistence, `handler` is called with the
@@ -240,7 +229,7 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
    * data, notify listeners and reply to command senders.
    *
    * If persistence of an event fails, the processor will be stopped. This can be customized by
-   * handling [[PersistenceFailure]] in [[onReceiveCommand]].
+   * handling [[PersistenceFailure]] in [[receiveCommand]].
    *
    * @param event event to be persisted.
    * @param handler handler for each persisted `event`
@@ -258,6 +247,23 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
    */
   final def persist[A](events: JIterable[A], handler: Procedure[A]): Unit =
     persist(Util.immutableSeq(events))(event ⇒ handler(event))
+}
+
+/**
+ * Java API: an event sourced processor.
+ */
+abstract class UntypedEventsourcedProcessor extends UntypedProcessor
+  with Eventsourced
+  with EventsourceProcedurePersistor {
+  final def onReceive(message: Any) = initialBehavior(message)
+
+  final def receiveRecover: Receive = {
+    case msg ⇒ onReceiveRecover(msg)
+  }
+
+  final def receiveCommand: Receive = {
+    case msg ⇒ onReceiveCommand(msg)
+  }
 
   /**
    * Java API: recovery handler that receives persisted events during recovery. If a state snapshot
@@ -282,3 +288,15 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
    */
   def onReceiveCommand(msg: Any): Unit
 }
+
+/**
+ * Java API, compatible with lambda expressions (to be used with [[akka.japi.pf.ReceiveBuilder]]):
+ * command handler. Typically validates commands against current state (and/or by
+ * communication with other actors). On successful validation, one or more events are
+ * derived from a command and these events are then persisted by calling `persist`.
+ * Commands sent to event sourced processors must not be [[Persistent]] or
+ * [[PersistentBatch]] messages. In this case an `UnsupportedOperationException` is
+ * thrown by the processor.
+ */
+abstract class AbstractEventsourcedProcessor extends EventsourcedProcessor
+  with EventsourceProcedurePersistor {}
