@@ -405,17 +405,16 @@ abstract class UntypedProcessor extends UntypedActor with Processor
  *     public PartialFunction<Object, BoxedUnit> receive() {
  *         return ReceiveBuilder.
  *             match(Persistent.class, p -> {
- *                 Object payload = persistent.payload();
- *                 Long sequenceNr = persistent.sequenceNr();
+ *                 Object payload = p.payload();
+ *                 Long sequenceNr = p.sequenceNr();
  *                 // ...
- *             }).
- *             matchAny(/* message has not been written to journal */).build();
+ *             }).build();
  *     }
  * }
  *
  * // ...
  *
- * ActorRef processor = getContext().actorOf(Props.create(MyProcessor.class), "myProcessor");
+ * ActorRef processor = context().actorOf(Props.create(MyProcessor.class), "myProcessor");
  *
  * processor.tell(Persistent.create("foo"), null);
  * processor.tell("bar", null);
