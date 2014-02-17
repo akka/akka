@@ -209,7 +209,7 @@ trait EventsourcedProcessor extends Processor with Eventsourced {
   final def receive = initialBehavior
 }
 
-sealed trait EventsourceProcedurePersistor {
+sealed trait JEventPersistor {
   this: Eventsourced ⇒
 
   /**
@@ -254,7 +254,7 @@ sealed trait EventsourceProcedurePersistor {
  */
 abstract class UntypedEventsourcedProcessor extends UntypedProcessor
   with Eventsourced
-  with EventsourceProcedurePersistor {
+  with JEventPersistor {
   final def onReceive(message: Any) = initialBehavior(message)
 
   final def receiveRecover: Receive = {
@@ -299,4 +299,4 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor
  * thrown by the processor.
  */
 abstract class AbstractEventsourcedProcessor extends EventsourcedProcessor
-  with EventsourceProcedurePersistor {}
+  with JEventPersistor {}

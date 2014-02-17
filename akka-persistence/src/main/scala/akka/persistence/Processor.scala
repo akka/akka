@@ -388,8 +388,8 @@ case class RecoveryException(message: String, cause: Throwable) extends AkkaExce
 abstract class UntypedProcessor extends UntypedActor with Processor
 
 /**
- * Java API, compatible with lambda expressions (to be used with [[akka.japi.pf.ReceiveBuilder]])
- * an actor that persists (journals) messages of type [[Persistent]]. Messages of other types
+ * Java API, compatible with lambda expressions (to be used with [[akka.japi.pf.ReceiveBuilder]]).
+ * An actor that persists (journals) messages of type [[Persistent]]. Messages of other types
  * are not persisted.
  *
  * {{{
