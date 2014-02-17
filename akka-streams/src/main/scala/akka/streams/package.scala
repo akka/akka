@@ -12,11 +12,11 @@ package object streams {
   implicit class CreateProcessor[I, O](operation: Operation[I, O])(implicit factory: ImplementationFactory) {
     def create(): Processor[I, O] = factory.processor(operation)
   }
-  implicit class CreateProducer[O](producer: Source[O])(implicit factory: ImplementationFactory) {
-    def create(): Producer[O] = factory.producer(producer)
+  implicit class CreateProducer[O](source: Source[O])(implicit factory: ImplementationFactory) {
+    def create(): Producer[O] = factory.producer(source)
   }
-  implicit class CreateConsumer[I](consumer: Sink[I])(implicit factory: ImplementationFactory) {
-    def create(): Consumer[I] = factory.consumer(consumer)
+  implicit class CreateConsumer[I](sink: Sink[I])(implicit factory: ImplementationFactory) {
+    def create(): Consumer[I] = factory.consumer(sink)
   }
   implicit class RunPipeline(val pipeline: Pipeline[_])(implicit factory: ImplementationFactory) {
     def run(): Unit = factory.runPipeline(pipeline)

@@ -11,7 +11,7 @@ class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], span: S
 
   var subStreamsRequested = 0
 
-  def WaitingForRequest: State = new DontExpectNext {
+  def WaitingForRequest: State = new RejectNext {
     def handleRequestMore(n: Int): Effect = {
       subStreamsRequested += n
       become(WaitingForFirstElement)
@@ -46,11 +46,12 @@ class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], span: S
     def handleComplete(): Effect = downstream.complete
     def handleError(cause: Throwable): Effect = ???
   }
-  class Subscribing(firstElement: I) extends DontExpectNext {
+  class Subscribing(firstElement: I) extends RejectNext {
     var completed = false
     def onSubscribed(downstream: Downstream[I]): (SyncSource, Effect) = {
-      if (completed) become(CompleteAfter(downstream, firstElement))
-      else become(FirstElementUndelivered(downstream, firstElement))
+      become(
+        if (completed) CompleteAfter(downstream, firstElement)
+        else FirstElementUndelivered(downstream, firstElement))
       (subSource, Continue)
     }
 
@@ -60,7 +61,7 @@ class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], span: S
     def handleComplete(): Effect = { completed = true; downstream.complete }
     def handleError(cause: Throwable): Effect = ???
   }
-  def FirstElementUndelivered(subDownstream: Downstream[I], firstElement: I): State = new DontExpectNext {
+  def FirstElementUndelivered(subDownstream: Downstream[I], firstElement: I): State = new RejectNext {
     subSource.become(new SyncSource {
       def handleRequestMore(n: Int): Effect = {
         become(Running(subDownstream, n - 1))
@@ -121,7 +122,7 @@ class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], span: S
 
   // invariant:
   // upstream and parent stream already completed, substream established but nothing requested yet
-  def CompleteAfter(subDownstream: Downstream[I], firstElement: I): State = new DontExpectNext {
+  def CompleteAfter(subDownstream: Downstream[I], firstElement: I): State = new RejectNext {
     subSource.become(new SyncSource {
       def handleRequestMore(n: Int): Effect = {
         become(Completed)
@@ -138,7 +139,7 @@ class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], span: S
 
   // invariant:
   // upstream, parent stream and all substreams completed
-  val Completed: State = new DontExpectNext {
+  val Completed: State = new RejectNext {
     subSource.become(SubCompleted)
     def handleRequestMore(n: Int): Effect = Continue
     def handleCancel(): Effect = ???

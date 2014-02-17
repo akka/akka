@@ -10,19 +10,19 @@ import Operation.FromConsumerSink
 import Operation.Pipeline
 
 object Implementation {
-  def operation[I, O](operation: Operation[I, O], settings: ActorBasedImplementationSettings): Processor[I, O] =
+  def forOperation[I, O](operation: Operation[I, O], settings: ActorBasedImplementationSettings): Processor[I, O] =
     new OperationProcessor(operation, settings)
 
-  def source[O](source: Source[O], settings: ActorBasedImplementationSettings): Producer[O] =
+  def forSource[O](source: Source[O], settings: ActorBasedImplementationSettings): Producer[O] =
     new SourceProducer[O](source, settings)
 
-  def pipeline(pipeline: Pipeline[_], settings: ActorBasedImplementationSettings): Unit =
-    settings.ctx.actorOf(Props(new PipelineActor(pipeline)))
+  def forPipeline(pipeline: Pipeline[_], settings: ActorBasedImplementationSettings): Unit =
+    settings.refFactory.actorOf(Props(new PipelineActor(pipeline)))
 }
 
 private class SourceProducer[O](source: Source[O], val settings: ActorBasedImplementationSettings) extends ProducerImplementationBits[O] {
   @volatile protected var running = true
-  val actor = settings.ctx.actorOf(Props(new ProducerProcessorActor))
+  val actor = settings.refFactory.actorOf(Props(new ProducerProcessorActor))
 
   class ProducerProcessorActor extends ProducerActor {
     val sourceImpl = OperationImpl(DownstreamSideEffects, ActorContextEffects, source)
@@ -48,7 +48,7 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
     }
 
   @volatile protected var running = true
-  val actor = settings.ctx.actorOf(Props(new OperationProcessorActor))
+  val actor = settings.refFactory.actorOf(Props(new OperationProcessorActor))
 
   case class OnSubscribed(subscription: Subscription)
   case class OnNext(element: I)
