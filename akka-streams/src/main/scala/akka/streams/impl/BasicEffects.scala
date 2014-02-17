@@ -19,6 +19,8 @@ object BasicEffects {
 
   def forSubscriber[I](subscriber: ⇒ Subscriber[I]): Downstream[I] =
     new Downstream[I] {
+      override def toString: String = s"Downstream from Subscriber $subscriber"
+
       lazy val next: I ⇒ Effect = BasicEffects.SubscriberOnNext(subscriber, _)
       lazy val complete: Effect = BasicEffects.SubscriberOnComplete(subscriber)
       lazy val error: Throwable ⇒ Effect = BasicEffects.SubscriberOnError(subscriber, _)
