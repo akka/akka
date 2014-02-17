@@ -19,11 +19,15 @@ object Operation {
         case s                    ⇒ Pipeline(this, s)
       }
   }
+  object Source {
+    def empty[T]: Source[T] = EmptySource
+  }
   trait CustomSource[+O] extends Source[O]
 
   implicit def fromIterable[T](iterable: Iterable[T]) = FromIterableSource(iterable)
   case class FromIterableSource[T](iterable: Iterable[T]) extends Source[T]
   case class SingletonSource[T](element: T) extends Source[T]
+  case object EmptySource extends Source[Nothing]
   case class MappedSource[I, O](source: Source[I], operation: Operation[I, O]) extends Source[O] {
     type Input = I
     override def andThen[O2](op: Operation.==>[O, O2]): Source[O2] = MappedSource(source, Operation(operation, op))

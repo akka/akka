@@ -21,6 +21,7 @@ object OperationImpl {
       case FromIterableSource(s)    ⇒ FromIterableSourceImpl(downstream, ctx, s)
       case f: FromProducerSource[_] ⇒ FromProducerSourceImpl(downstream, ctx, f)
       case SingletonSource(element) ⇒ new SingletonSourceImpl(downstream, element)
+      case EmptySource              ⇒ new EmptySourceImpl(downstream)
     }
 
   def apply[I, O](upstream: Upstream, downstream: Downstream[O], ctx: ContextEffects, op: Operation[I, O]): SyncOperation[I] = op match {
