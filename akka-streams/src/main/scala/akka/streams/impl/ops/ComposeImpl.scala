@@ -68,7 +68,7 @@ object ComposeImpl {
     lazy val left: Left = leftCons(innerDownstream)
     lazy val right: Right = rightCons(innerUpstream)
 
-    override def start(): Effect = right.start()
+    override def start(): Effect = right.start() ~ left.start()
 
     // TODO: add shortcuts for at least one direction (or one step)
     def handleLeftResult(result: Effect): Effect = result match {

@@ -17,7 +17,7 @@ trait Downstream[-O] {
 }
 
 /** The interface an implementation that a synchronous source implementation has to implement */
-trait SyncSource {
+trait SyncSource extends SyncRunnable {
   def handleRequestMore(n: Int): Effect
   def handleCancel(): Effect
 }
