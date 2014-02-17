@@ -19,17 +19,7 @@ class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with Syn
       pending
     }
     "span + flatten == identity" in {
-      object Context extends ContextEffects {
-        def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Effect)): Effect =
-          source match {
-            case InternalSource(h) ⇒ ContextEffects.subscribeToInternalSource(h, onSubscribe)
-          }
-
-        def subscribeFrom[O](sink: Sink[O])(onSubscribe: (Downstream[O]) ⇒ (SyncSource, Effect)): Effect = ???
-        def expose[O](source: Source[O]): Producer[O] = ???
-      }
-
-      val p = instance[Int](FromIterableSource(1 to 6).span(_ % 3 == 0).flatten, Context)
+      val p = instance[Int](FromIterableSource(1 to 6).span(_ % 3 == 0).flatten)
       p.handleRequestMore(1).runToResult() should be(DownstreamNext(1))
       p.handleRequestMore(1).runToResult() should be(DownstreamNext(2))
       p.handleRequestMore(1).runToResult() should be(DownstreamNext(3))
@@ -39,8 +29,8 @@ class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with Syn
     }
   }
 
-  def instance[O](source: Source[O], ctx: ContextEffects = null): SyncSource =
-    OperationImpl(downstream, ctx, source)
+  def instance[O](source: Source[O]): SyncSource =
+    OperationImpl(downstream, TestContextEffects, source)
   def instance[I](operation: Operation[I, Float]): SyncOperation[I] =
-    OperationImpl(upstream, downstream, null, operation)
+    OperationImpl(upstream, downstream, TestContextEffects, operation)
 }

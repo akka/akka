@@ -1,22 +1,25 @@
 package akka.streams.impl
 
 import scala.annotation.tailrec
+import akka.streams.Operation.{ Sink, Source }
+import rx.async.api.Producer
+import rx.async.spi.Publisher
 
 trait SyncOperationSpec {
-  abstract class DoNothing[O] extends ExternalEffect {
+  abstract class DoNothing extends ExternalEffect {
     def run(): Unit = ???
   }
 
-  case class UpstreamRequestMore(n: Int) extends DoNothing[Nothing]
-  case object UpstreamCancel extends DoNothing[Nothing]
+  case class UpstreamRequestMore(n: Int) extends DoNothing
+  case object UpstreamCancel extends DoNothing
   val upstream = new Upstream {
     val cancel: Effect = UpstreamCancel
     val requestMore: (Int) ⇒ Effect = UpstreamRequestMore
   }
 
-  case class DownstreamNext[O](element: O) extends DoNothing[O]
-  case object DownstreamComplete extends DoNothing[Nothing]
-  case class DownstreamError(cause: Throwable) extends DoNothing[Nothing]
+  case class DownstreamNext[O](element: O) extends DoNothing
+  case object DownstreamComplete extends DoNothing
+  case class DownstreamError(cause: Throwable) extends DoNothing
   val downstream = new Downstream[Any] {
     val next: Any ⇒ Effect = DownstreamNext[Any]
     val complete: Effect = DownstreamComplete
@@ -46,5 +49,21 @@ trait SyncOperationSpec {
     def handleNext(element: I): Effect = ???
     def handleComplete(): Effect = ???
     def handleError(cause: Throwable): Effect = ???
+  }
+
+  case class SubscribeTo[O](source: Source[O], onSubscribe: Upstream ⇒ (SyncSink[O], Effect)) extends DoNothing
+  case class SubscribeFrom[O](sink: Sink[O], onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)) extends DoNothing
+  case class ExposedSource[O](source: Source[O]) extends Producer[O] {
+    def getPublisher: Publisher[O] = throw new IllegalStateException("Should only be deconstructed")
+  }
+  object TestContextEffects extends ContextEffects {
+    def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Effect)): Effect =
+      source match {
+        case InternalSource(h) ⇒ ContextEffects.subscribeToInternalSource(h, onSubscribe)
+        case _                 ⇒ SubscribeTo(source, onSubscribe)
+      }
+
+    def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect = SubscribeFrom(sink, onSubscribe)
+    def expose[O](source: Source[O]): Producer[O] = ExposedSource(source)
   }
 }
