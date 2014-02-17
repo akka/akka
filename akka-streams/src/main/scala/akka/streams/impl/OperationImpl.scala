@@ -1,6 +1,6 @@
-package akka.streams
-package impl
+package akka.streams.impl
 
+import akka.streams.Operation
 import Operation._
 import ops._
 import rx.async.api.Producer

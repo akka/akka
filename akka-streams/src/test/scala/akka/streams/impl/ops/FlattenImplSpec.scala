@@ -1,10 +1,9 @@
-package akka.streams
-package impl
-package ops
+package akka.streams.impl.ops
 
 import org.scalatest.{ FreeSpec, ShouldMatchers }
-import Operation.{ FromIterableSource, Sink, Source }
-import rx.async.api.Producer
+
+import akka.streams.impl._
+import akka.streams.Operation.FromIterableSource
 
 class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {
   "Flatten should" - {

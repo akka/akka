@@ -1,6 +1,7 @@
-package akka.streams
-package impl
-package ops
+package akka.streams.impl.ops
+
+import akka.streams.Operation
+import akka.streams.impl._
 
 class MapImpl[I, O](upstream: Upstream, downstream: Downstream[O], f: I ⇒ O) extends SyncOperation[I] {
   def handleRequestMore(n: Int): Effect = upstream.requestMore(n)

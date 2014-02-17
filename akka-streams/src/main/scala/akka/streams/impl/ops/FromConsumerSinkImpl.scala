@@ -1,7 +1,7 @@
-package akka.streams
-package impl
-package ops
+package akka.streams.impl.ops
 
+import akka.streams.Operation
+import akka.streams.impl._
 import Operation.Sink
 
 class FromConsumerSinkImpl[I](upstream: Upstream, ctx: ContextEffects, sink: Sink[I]) extends SyncSink[I] with SyncSource {

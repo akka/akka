@@ -1,6 +1,6 @@
-package akka.streams
-package impl
-package ops
+package akka.streams.impl.ops
+
+import akka.streams.impl._
 
 object ComposeImpl {
   def pipeline[B](_upstreamConstructor: Downstream[B] ⇒ SyncSource, _downstreamConstructor: Upstream ⇒ SyncSink[B]): SyncRunnable =

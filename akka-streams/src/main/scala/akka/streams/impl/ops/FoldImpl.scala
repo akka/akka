@@ -1,7 +1,7 @@
-package akka.streams
-package impl
-package ops
+package akka.streams.impl.ops
 
+import akka.streams.Operation
+import akka.streams.impl._
 import Operation.Fold
 
 class FoldImpl[I, O](upstream: Upstream, downstream: Downstream[O], fold: Fold[I, O], batchSize: Int = 100) extends SyncOperation[I] {

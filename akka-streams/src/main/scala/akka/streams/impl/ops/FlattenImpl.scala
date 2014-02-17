@@ -1,7 +1,7 @@
-package akka.streams
-package impl
-package ops
+package akka.streams.impl.ops
 
+import akka.streams.Operation
+import akka.streams.impl._
 import Operation.Source
 
 class FlattenImpl[O](upstream: Upstream, downstream: Downstream[O], ctx: ContextEffects) extends DynamicSyncOperation[Source[O]] {

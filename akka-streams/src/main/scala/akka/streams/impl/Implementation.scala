@@ -1,13 +1,11 @@
-package akka.streams
-package impl
+package akka.streams.impl
 
 import rx.async.api.{ Consumer, Producer, Processor }
 import rx.async.spi.{ Publisher, Subscription, Subscriber }
 import akka.actor.{ ActorRef, Props, Actor }
-import Operation._
-import akka.streams.ActorBasedImplementationSettings
-import Operation.FromConsumerSink
-import Operation.Pipeline
+import akka.streams.{ Producer, AbstractProducer, Operation, ActorBasedImplementationSettings }
+import akka.streams.Operation._
+import rx.async.api.Producer
 import rx.async.spi
 
 object Implementation {

@@ -1,7 +1,8 @@
-package akka.streams
-package impl
+package akka.streams.impl
 
 import org.scalatest.{ ShouldMatchers, FreeSpec }
+
+import akka.streams.Operation
 import Operation._
 
 class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {
