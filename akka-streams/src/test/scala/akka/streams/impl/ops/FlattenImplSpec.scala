@@ -60,6 +60,6 @@ class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpe
       val requestMore: Int ⇒ Effect = RequestMoreFromSubstream
       val cancel: Effect = CancelSubstream
     }
-    val flatten = FlattenImpl(upstream, downstream, TestContextEffects)
+    val flatten = new FlattenImpl(upstream, downstream, TestContextEffects)
   }
 }
