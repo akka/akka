@@ -5,7 +5,7 @@ import org.testng.annotations.Test
 import org.testng.Assert._
 import akka.streams.impl.RaceTrack
 import rx.async.spi.Publisher
-import rx.async.tck.{ WithActorSystem, PublisherVerification }
+import rx.async.tck.PublisherVerification
 import rx.async.tck.TestCaseEnvironment._
 
 class ProcessorProducerTest extends PublisherVerification[Int] with WithActorSystem with TestNGSuiteLike {

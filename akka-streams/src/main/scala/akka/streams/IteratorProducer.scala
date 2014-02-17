@@ -42,7 +42,7 @@ class IteratorProducer[T](iterator: Iterator[T]) extends AbstractProducer[T] {
 
   // outside Publisher interface, can potentially called from another thread,
   // so we need to wrap with synchronization
-  override def subscribe(subscriber: Subscriber[T]): Unit =
+  @tailrec final override def subscribe(subscriber: Subscriber[T]): Unit =
     if (lock.compareAndSet(UNLOCKED, LOCKED)) {
       try super.subscribe(subscriber)
       finally lock.set(UNLOCKED)
@@ -50,15 +50,15 @@ class IteratorProducer[T](iterator: Iterator[T]) extends AbstractProducer[T] {
 
   // called from a Subscription, i.e. probably from another thread,
   // so we need to wrap with synchronization
-  override protected def requestFromUpstreamIfRequired(): Unit =
+  @tailrec final override protected def requestFromUpstreamIfRequired(): Unit =
     if (lock.compareAndSet(UNLOCKED, LOCKED)) {
       try super.requestFromUpstreamIfRequired()
       finally lock.set(UNLOCKED)
-    } else super.requestFromUpstreamIfRequired()
+    } else requestFromUpstreamIfRequired()
 
   // called from a Subscription, i.e. probably from another thread,
   // so we need to wrap with synchronization
-  override def unregisterSubscription(subscription: Subscription) =
+  @tailrec final override def unregisterSubscription(subscription: Subscription) =
     if (lock.compareAndSet(UNLOCKED, LOCKED)) {
       try super.unregisterSubscription(subscription)
       finally lock.set(UNLOCKED)
@@ -140,7 +140,7 @@ abstract class AbstractProducer[T] extends Prod[T] with Publisher[T] {
     def pushToDownstream(value: T): Unit = {
       @tailrec def allCanReceive(remaining: List[Subscription]): Boolean =
         remaining match {
-          case head :: tail ⇒ if (head.get() > 0) allCanReceive(tail) else false
+          case head :: tail ⇒ head.get() > 0 && allCanReceive(tail)
           case _            ⇒ true
         }
       @tailrec def dispatchTo(remaining: List[Subscription]): Unit =
