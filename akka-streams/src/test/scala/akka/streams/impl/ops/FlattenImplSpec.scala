@@ -9,12 +9,12 @@ import rx.async.api.Producer
 class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {
   "Flatten should" - {
     "initially" - {
-      "request one substream as soon as at least one result element was requested" in new UnitializedSetup {
+      "request one substream as soon as at least one result element was requested" in new UninitializedSetup {
         flatten.handleRequestMore(1) should be(UpstreamRequestMore(1))
       }
     }
     "while consuming substream" - {
-      "request elements from substream and deliver results to downstream" in new UnitializedSetup {
+      "request elements from substream and deliver results to downstream" in new UninitializedSetup {
         flatten.handleRequestMore(10) should be(UpstreamRequestMore(1))
         flatten.handleRequestMore(1) should be(Continue) // don't request more substreams while one is still pending
         val SubscribeTo(CustomSource, onSubscribe) = flatten.handleNext(CustomSource)
@@ -23,7 +23,7 @@ class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpe
         subDownstream.handleNext(1.5f) should be(DownstreamNext(1.5f))
         subDownstream.handleNext(8.7f) should be(DownstreamNext(8.7f))
       }
-      "go on with super stream when substream is depleted" in new UnitializedSetup {
+      "go on with super stream when substream is depleted" in new UninitializedSetup {
         flatten.handleRequestMore(10) should be(UpstreamRequestMore(1))
         flatten.handleRequestMore(1) should be(Continue) // don't request more substreams while one is still pending
         val SubscribeTo(CustomSource, onSubscribe) = flatten.handleNext(CustomSource)
@@ -31,7 +31,7 @@ class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpe
         res should be(RequestMoreFromSubstream(11))
         subDownstream.handleComplete() should be(UpstreamRequestMore(1))
       }
-      "eventually close to downstream when super stream closes and last substream  is depleted" in new UnitializedSetup {
+      "eventually close to downstream when super stream closes and last substream  is depleted" in new UninitializedSetup {
         flatten.handleRequestMore(10) should be(UpstreamRequestMore(1))
         flatten.handleRequestMore(1) should be(Continue) // don't request more substreams while one is still pending
         val SubscribeTo(CustomSource, onSubscribe) = flatten.handleNext(CustomSource)
@@ -48,7 +48,7 @@ class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpe
     }
   }
 
-  class UnitializedSetup {
+  class UninitializedSetup {
     val CustomSource = FromIterableSource(Seq(1f, 2f, 3f))
     case class RequestMoreFromSubstream(n: Int) extends ExternalEffect {
       def run(): Unit = ???

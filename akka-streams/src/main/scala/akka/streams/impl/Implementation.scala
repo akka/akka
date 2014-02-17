@@ -147,6 +147,7 @@ trait ProcessorActorImpl { _: Actor ⇒
       source match {
         case FromProducerSource(prod: Producer[O]) ⇒ subscribeToProducer(prod, onSubscribeCallback)
         case InternalSource(handler)               ⇒ ContextEffects.subscribeToInternalSource(handler, onSubscribeCallback)
+        // TODO: what to do in the remaining cases? We can always build a full-fledged Producer, but is that what's needed?
       }
 
     def subscribeToProducer[O](producer: Producer[O], onSubscribeCallback: Upstream ⇒ (SyncSink[O], Effect)): Effect =

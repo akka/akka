@@ -3,7 +3,6 @@ package impl
 
 import org.scalatest.{ ShouldMatchers, FreeSpec }
 import Operation._
-import rx.async.api.Producer
 
 class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {
   "Simple chains" - {}

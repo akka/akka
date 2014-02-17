@@ -4,6 +4,7 @@ import scala.annotation.tailrec
 import akka.streams.Operation.{ Sink, Source }
 import rx.async.api.Producer
 import rx.async.spi.Publisher
+import akka.streams.impl.BasicEffects.HandleNextInSink
 
 trait SyncOperationSpec {
   abstract class DoNothing extends ExternalEffect {
@@ -65,5 +66,22 @@ trait SyncOperationSpec {
 
     def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect = SubscribeFrom(sink, onSubscribe)
     def expose[O](source: Source[O]): Producer[O] = ExposedSource(source)
+  }
+
+  implicit class RichEffect(effect: Effect) {
+    def expectHandleNextInSink[I](next: SyncSink[I]): I = effect match {
+      case HandleNextInSink(`next`, value: I @unchecked) ⇒ value
+      case x ⇒ throw new AssertionError(s"Expected HandleNextInSink but got $x")
+    }
+    def expectDownstreamNext[I](): I = effect match {
+      case DownstreamNext(i: I @unchecked) ⇒ i
+      case x                               ⇒ throw new AssertionError(s"Expected DownstreamNext but got $x")
+    }
+  }
+  implicit class RichSource[I](source: Source[I]) {
+    def expectInternalSourceHandler(): Downstream[I] ⇒ (SyncSource, Effect) = source match {
+      case InternalSource(handler) ⇒ handler
+      case x                       ⇒ throw new AssertionError(s"Expected InternalSource but got $x")
+    }
   }
 }
