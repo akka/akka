@@ -8,6 +8,7 @@ import Operation._
 import akka.streams.ActorBasedImplementationSettings
 import Operation.FromConsumerSink
 import Operation.Pipeline
+import rx.async.spi
 
 object Implementation {
   def operation[I, O](operation: Operation[I, O], settings: ActorBasedImplementationSettings): Processor[I, O] =
@@ -26,11 +27,12 @@ private class SourceProducer[O](source: Source[O], val settings: ActorBasedImple
 
   class ProducerProcessorActor extends ProducerActor {
     val sourceImpl = OperationImpl(DownstreamSideEffects, ActorContextEffects, source)
-    def sourceInitialized: Boolean = true
+    Effect.run(sourceImpl.start())
+    protected def requestFromUpstream(elements: Int): Unit = Effect.run(sourceImpl.handleRequestMore(elements))
 
-    def receive = WaitingForDownstream
+    def receive = Running
 
-    def Running = RunProducer.orElse {
+    def Running: Receive = RunProducer.orElse {
       case RunDeferred(body) ⇒ body()
     }
   }
@@ -57,27 +59,29 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
 
   class OperationProcessorActor extends ProducerActor {
     val impl = OperationImpl(UpstreamSideEffects, DownstreamSideEffects, ActorContextEffects, operation)
+    Effect.run(impl.start())
     var upstream: Subscription = _
+    var needToRequest = 0
 
-    def sourceImpl: SyncSource = impl
-    def sourceInitialized: Boolean = upstream ne null
+    protected def requestFromUpstream(elements: Int): Unit =
+      if (upstream eq null) needToRequest += elements
+      else Effect.run(impl.handleRequestMore(elements))
 
     def receive = WaitingForUpstream
 
     def WaitingForUpstream: Receive = {
       case OnSubscribed(subscription) ⇒
         upstream = subscription
-        if (hasSubscribers) {
-          if (fanOutBox.state == FanOutBox.Ready) requestNextBatch()
-          context.become(Running)
-        } else context.become(WaitingForDownstream)
-      case Subscribe(sub) ⇒
-        sub.onSubscribe(newSubscription(sub))
-        handleNewSubscription(sub)
-      case RequestMore(subscriber, elements) ⇒ handleRequestMore(subscriber, elements)
-      case CancelSubscription(subscriber)    ⇒ handleSubscriptionCancelled(subscriber)
+        context.become(Running)
+        if (needToRequest > 0) {
+          Effect.run(impl.handleRequestMore(needToRequest))
+          needToRequest = 0
+        }
+      case Subscribe(sub)    ⇒ fanOutBox.subscribe(sub)
+
+      case RunDeferred(body) ⇒ body()
     }
-    def Running = RunProducer orElse {
+    def Running: Receive = RunProducer orElse {
       case OnNext(element)   ⇒ Effect.run(impl.handleNext(element))
       case OnComplete        ⇒ Effect.run(impl.handleComplete())
       case OnError(cause)    ⇒ Effect.run(impl.handleError(cause))
@@ -109,36 +113,30 @@ trait ProducerImplementationBits[O] extends Producer[O] with Publisher[O] {
   case class RequestMore(subscriber: Subscriber[O], elements: Int)
   case class CancelSubscription(subscriber: Subscriber[O])
 
-  def newSubscription(subscriber: Subscriber[O]): Subscription =
-    new Subscription {
-      def requestMore(elements: Int): Unit = if (running) actor ! RequestMore(subscriber, elements)
-      def cancel(): Unit = if (running) actor ! CancelSubscription(subscriber)
+  trait ProducerActor extends Actor with ProcessorActorImpl { outer ⇒
+    protected def requestFromUpstream(elements: Int): Unit
+
+    val fanOutBox = new AbstractProducer[O] with Subscriber[O] {
+      protected def requestFromUpstream(elements: Int): Unit = outer.requestFromUpstream(elements)
+      protected def handleOverflow(value: O): Unit = {} // drop, TODO: maybe log?
+
+      startWith(Producer.State.Active)
+
+      def onSubscribe(subscription: spi.Subscription): Unit = ???
+      def onNext(element: O): Unit = pushToDownstream(element)
+      def onComplete(): Unit = completeDownstream()
+      def onError(cause: Throwable): Unit = completeDownstreamWithError(cause)
+
+      override protected def requestFromUpstreamIfRequired(): Unit =
+        runInThisActor(super.requestFromUpstreamIfRequired())
+      override protected def unregisterSubscription(subscription: Subscription): Unit =
+        runInThisActor(super.unregisterSubscription(subscription))
     }
 
-  trait ProducerActor extends Actor with WithFanOutBox with ProcessorActorImpl {
-    val fanOutBox: FanOutBox = settings.constructFanOutBox()
-    def DownstreamSideEffects = BasicEffects.forSubscriber(fanOutInput)
-    def sourceImpl: SyncSource
-    def sourceInitialized: Boolean
-    def Running: Receive
+    def DownstreamSideEffects = BasicEffects.forSubscriber(fanOutBox)
 
-    def requestNextBatch(): Unit = if (sourceInitialized) Effect.run(sourceImpl.handleRequestMore(1))
-    def allSubscriptionsCancelled(): Unit = context.become(WaitingForDownstream) // or autoUnsubscribe
-    def fanOutBoxFinished(): Unit = {} // ignore for now
-
-    def WaitingForDownstream: Receive = {
-      case Subscribe(sub) ⇒
-        sub.onSubscribe(newSubscription(sub))
-        handleNewSubscription(sub)
-        context.become(Running)
-    }
     def RunProducer: Receive = {
-      case Subscribe(sub) ⇒
-        sub.onSubscribe(newSubscription(sub))
-        handleNewSubscription(sub)
-
-      case RequestMore(subscriber, elements) ⇒ handleRequestMore(subscriber, elements)
-      case CancelSubscription(subscriber)    ⇒ handleSubscriptionCancelled(subscriber)
+      case Subscribe(sub) ⇒ fanOutBox.subscribe(sub)
     }
   }
 }
@@ -163,7 +161,16 @@ trait ProcessorActorImpl { _: Actor ⇒
             effect
           }
           def onNext(element: O): Unit = runEffectInThisActor(sink.handleNext(element))
-          def onComplete(): Unit = runEffectInThisActor(sink.handleComplete())
+
+          def onComplete(): Unit =
+            if (sink eq null) {
+              val (handler, effect) = onSubscribeCallback(new Upstream {
+                val cancel: Effect = Continue
+                val requestMore: (Int) ⇒ Effect = _ ⇒ Continue
+              })
+              runEffectInThisActor(effect ~ handler.handleComplete())
+            } else runEffectInThisActor(sink.handleComplete())
+          // FIXME: add same handling for onError as for completed
           def onError(cause: Throwable): Unit = runEffectInThisActor(sink.handleError(cause))
         }
         producer.getPublisher.subscribe(SubSubscriber)

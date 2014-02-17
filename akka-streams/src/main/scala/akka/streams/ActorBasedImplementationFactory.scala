@@ -5,7 +5,7 @@ import akka.actor.ActorRefFactory
 import akka.streams.impl._
 import Operation._
 
-case class ActorBasedImplementationSettings(ctx: ActorRefFactory, constructFanOutBox: () ⇒ FanOutBox)
+case class ActorBasedImplementationSettings(ctx: ActorRefFactory, fanOutBufferSize: Int = 1)
 
 class ActorBasedImplementationFactory(settings: ActorBasedImplementationSettings) extends ImplementationFactory {
   def processor[I, O](operation: Operation[I, O]): Processor[I, O] = Implementation.operation(operation, settings)

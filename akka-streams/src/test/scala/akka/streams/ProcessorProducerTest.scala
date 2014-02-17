@@ -3,7 +3,6 @@ package akka.streams
 import org.scalatest.testng.TestNGSuiteLike
 import org.testng.annotations.Test
 import org.testng.Assert._
-import akka.streams.impl.RaceTrack
 import rx.async.spi.Publisher
 import rx.async.tck.{ WithActorSystem, PublisherVerification }
 import rx.async.tck.TestCaseEnvironment._
@@ -11,11 +10,13 @@ import rx.async.tck.TestCaseEnvironment._
 class ProcessorProducerTest extends PublisherVerification[Int] with WithActorSystem with TestNGSuiteLike {
 
   def createPublisher(elements: Int): Publisher[Int] = {
-    val settings = ActorBasedImplementationSettings(system, () ⇒ new RaceTrack(1))
+    val settings = ActorBasedImplementationSettings(system, 1)
     implicit val abif = new ActorBasedImplementationFactory(settings)
-    val proc = Operation.Identity[Int]().create()
-    Producer(Iterator from 1000 take elements).getPublisher.subscribe(proc.getSubscriber)
-    proc.getPublisher
+    import Operation._
+    val producer =
+      if (elements > 0) FromProducerSource(Producer(Iterator from 1000 take elements)).create()
+      else Source.empty[Int].create()
+    producer.getPublisher
   }
 
   @Test

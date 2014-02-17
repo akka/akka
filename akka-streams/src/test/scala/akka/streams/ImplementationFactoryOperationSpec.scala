@@ -16,12 +16,14 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         val processed = Identity[Int]().create()
         processed.link(downstream)
         val downstreamSubscription = downstream.expectSubscription()
-
         downstreamSubscription.requestMore(1)
+
         upstream.link(processed)
+
         val upstreamSubscription = upstream.expectSubscription()
         upstreamSubscription.expectRequestMore(1)
         upstreamSubscription.sendNext(42)
+
         downstream.expectNext(42)
       }
       "subscriber cancels subscription and resubscribes" in pending
@@ -106,12 +108,10 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         val subStream = TestKit.producerProbe[String]()
         upstreamSubscription.sendNext(subStream)
         val subStreamSubscription = subStream.expectSubscription()
-        subStream.expectRequestMore(subStreamSubscription, 1)
+        subStream.expectRequestMore(subStreamSubscription, 4)
         subStreamSubscription.sendNext("test")
-        subStream.expectRequestMore(subStreamSubscription, 1)
         downstream.expectNext("test")
         subStreamSubscription.sendNext("abc")
-        subStream.expectRequestMore(subStreamSubscription, 1)
         downstream.expectNext("abc")
         subStreamSubscription.sendComplete()
 
@@ -121,9 +121,8 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         upstreamSubscription.sendNext(subStream2)
         upstreamSubscription.sendComplete()
         val subStreamSubscription2 = subStream2.expectSubscription()
-        subStream2.expectRequestMore(subStreamSubscription2, 1)
+        subStream2.expectRequestMore(subStreamSubscription2, 2)
         subStreamSubscription2.sendNext("123")
-        subStream2.expectRequestMore(subStreamSubscription2, 1)
         downstream.expectNext("123")
 
         subStreamSubscription2.sendComplete()
@@ -160,7 +159,7 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
       }
     }
     "work with multiple subscribers (FanOutBox)" - {
-      "adapt speed to the currently slowest consumer" in new InitializedChainSetup(Identity[Symbol]()) {
+      "adapt speed to the currently slowest consumer" in new InitializedChainSetupWithFanOutBuffer(Identity[Symbol](), 1) {
         val downstream2 = TestKit.consumerProbe[Symbol]()
         processed.link(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
@@ -181,7 +180,7 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         downstream2Subscription.requestMore(1)
         downstream2.expectNext('element2)
       }
-      "incoming subscriber while elements were requested before" in new InitializedChainSetup(Identity[Symbol]()) {
+      "incoming subscriber while elements were requested before" in new InitializedChainSetupWithFanOutBuffer(Identity[Symbol](), 1) {
         val downstream2 = TestKit.consumerProbe[Symbol]()
         // don't link it just yet
 
@@ -209,7 +208,7 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
 
         upstream.expectRequestMore(upstreamSubscription, 1) // because of buffer size 1
       }
-      "blocking subscriber cancels subscription" in new InitializedChainSetup(Identity[Symbol]()) {
+      "blocking subscriber cancels subscription" in new InitializedChainSetupWithFanOutBuffer(Identity[Symbol](), 1) {
         val downstream2 = TestKit.consumerProbe[Symbol]()
         processed.link(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
@@ -229,12 +228,10 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         upstream.expectNoMsg(100.millis.dilated)
         // should unblock fanoutbox
         downstream2Subscription.cancel()
-        // ... but doesn't currently
-        pending // TODO: fix RaceTrack
         upstreamSubscription.expectRequestMore(1)
       }
       "children Producers must support multiple subscribers" in pending
-      "finish gracefully onComplete" in new InitializedChainSetup(Identity[Symbol]()) {
+      "finish gracefully onComplete" in new InitializedChainSetupWithFanOutBuffer(Identity[Symbol](), 1) {
         val downstream2 = TestKit.consumerProbe[Symbol]()
         // don't link it just yet
 
@@ -272,7 +269,7 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
       }
     }
     "work in special situations" - {
-      "single subscriber cancels subscription while receiving data" in new InitializedChainSetup(Identity[String]()) {
+      "single subscriber cancels subscription while receiving data" in new InitializedChainSetupWithFanOutBuffer(Identity[String](), 1) {
         downstreamSubscription.requestMore(5)
         upstreamSubscription.expectRequestMore(1)
         upstreamSubscription.sendNext("test")
@@ -290,6 +287,9 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
     "work after initial upstream was completed" - {}
   }
 
+  class InitializedChainSetupWithFanOutBuffer[I, O](operation: Operation[I, O], capacity: Int) extends InitializedChainSetup(operation)(factoryWithFanOutBuffer(capacity)) {
+    pending
+  }
   class InitializedChainSetup[I, O](operation: Operation[I, O])(implicit factory: ImplementationFactory) {
     val upstream = TestKit.producerProbe[I]()
     val downstream = TestKit.consumerProbe[O]()

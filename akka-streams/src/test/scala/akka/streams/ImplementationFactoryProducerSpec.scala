@@ -28,7 +28,9 @@ trait ImplementationFactoryProducerSpec extends ImplementationFactorySpec {
     }
     "for FromProducerSource" in {
       val producerProbe = TestKit.producerProbe[String]()
-      new InitializedChainSetup[String](FromProducerSource(producerProbe)) {
+      new InitializedChainSetup[String](FromProducerSource(producerProbe))(factoryWithFanOutBuffer(1)) {
+        //FIXME: pending as long as fanOutBuffer isn't supported yet
+        pending
         downstreamSubscription.requestMore(2)
         val upstreamSubscription = producerProbe.expectSubscription()
         // default fan-out-box with buffer size 1 translates any incoming request to one upstream
