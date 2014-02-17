@@ -102,6 +102,9 @@ abstract class AbstractProducer[T] extends Prod[T] with Publisher[T] {
   protected def completeDownstream(): Unit =
     stateBehavior.completeDownstream()
 
+  protected def completeDownstreamWithError(cause: Throwable): Unit =
+    stateBehavior.completeDownstreamWithError(cause)
+
   protected def requestFromUpstreamIfRequired(): Unit =
     stateBehavior.requestFromUpstreamIfRequired()
 
@@ -113,6 +116,7 @@ abstract class AbstractProducer[T] extends Prod[T] with Publisher[T] {
     def subscribe(subscriber: Subscriber[T]): Unit
     def pushToDownstream(value: T): Unit
     def completeDownstream(): Unit
+    def completeDownstreamWithError(cause: Throwable): Unit
     def unregisterSubscription(subscription: Subscription): Unit
     def requestFromUpstreamIfRequired(): Unit
   }
@@ -172,6 +176,18 @@ abstract class AbstractProducer[T] extends Prod[T] with Publisher[T] {
       stateBehavior = new CompletedStateBehavior
     }
 
+    def completeDownstreamWithError(cause: Throwable): Unit = {
+      @tailrec def error(remaining: List[Subscription]): Unit =
+        remaining match {
+          case head :: tail ⇒
+            head.error(cause)
+            error(tail)
+          case _ ⇒
+        }
+      error(subscriptions)
+      stateBehavior = new ErrorStateBehavior(cause)
+    }
+
     def requestFromUpstreamIfRequired(): Unit = {
       val subs = subscriptions
       if (subs.nonEmpty) {
@@ -210,12 +226,14 @@ abstract class AbstractProducer[T] extends Prod[T] with Publisher[T] {
     def state: State = State.Completed
     def subscribe(subscriber: Subscriber[T]): Unit = subscriber.onComplete()
     def completeDownstream(): Unit = throw new IllegalStateException("Cannot completeDownstream() twice")
+    def completeDownstreamWithError(cause: Throwable): Unit = throw new IllegalStateException("Cannot error out on a completed stream.")
   }
 
   class ErrorStateBehavior(cause: Throwable) extends FinalStateBehavior {
     def state: State = State.Error(cause)
     def subscribe(subscriber: Subscriber[T]): Unit = subscriber.onError(cause)
     def completeDownstream(): Unit = throw new IllegalStateException("Cannot completeDownstream() in the error state")
+    def completeDownstreamWithError(cause: Throwable): Unit = throw new IllegalStateException("Cannot err out twice")
   }
 
   protected class Subscription(val subscriber: Subscriber[T]) extends AtomicInteger with rx.async.spi.Subscription {
@@ -244,6 +262,10 @@ abstract class AbstractProducer[T] extends Prod[T] with Publisher[T] {
     def complete(): Unit = {
       cancelled = true
       subscriber.onComplete()
+    }
+    def error(cause: Throwable): Unit = {
+      cancelled = true
+      subscriber.onError(cause)
     }
   }
 }
