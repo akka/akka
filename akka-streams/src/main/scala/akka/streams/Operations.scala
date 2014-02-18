@@ -21,6 +21,7 @@ object Operation {
   }
   object Source {
     def empty[T]: Source[T] = EmptySource
+    def apply[T](t: T): Source[T] = SingletonSource(t)
   }
   trait CustomSource[+O] extends Source[O]
 
