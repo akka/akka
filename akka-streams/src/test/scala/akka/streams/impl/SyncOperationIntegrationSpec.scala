@@ -1,8 +1,10 @@
 package akka.streams.impl
 
+import scala.language.postfixOps
+
 import org.scalatest.{ ShouldMatchers, FreeSpec }
 
-import akka.streams.Operation
+import akka.streams._
 import Operation._
 
 class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {
@@ -15,7 +17,7 @@ class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with Syn
     }
     "flatten with generic producer" in pending
     "flatten.map(_ + 1f)" in {
-      val combination = instance(Flatten[Float]().map(_ + 1f))
+      val impl = instance(Flatten[Float]().map(_ + 1f))
       pending
     }
     "span + flatten == identity" in {
@@ -26,6 +28,31 @@ class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with Syn
       p.handleRequestMore(1).runToResult() should be(DownstreamNext(4))
       p.handleRequestMore(1).runToResult() should be(DownstreamNext(5))
       p.handleRequestMore(1).runToResult() should be(DownstreamNext(6) ~ DownstreamComplete)
+    }
+    "map value to source and then flatten" in {
+      def f(i: Int): Source[Int] = Seq(Seq(999).toSource, 1 to i toSource).toSource.flatten
+      val impl = instance[Int]((1 to 5 toSource).map(f).flatten)
+      // TODO: exhausting a source seems like a pattern: simplify!
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(999))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(1))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(999))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(1))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(2))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(999))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(1))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(2))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(3))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(999))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(1))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(2))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(3))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(4))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(999))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(1))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(2))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(3))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(4))
+      impl.handleRequestMore(1).runToResult() should be(DownstreamNext(5) ~ DownstreamComplete)
     }
   }
 

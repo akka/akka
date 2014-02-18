@@ -140,14 +140,7 @@ trait ProducerImplementationBits[O] extends Producer[O] with Publisher[O] {
 }
 
 trait ProcessorActorImpl { _: Actor ⇒
-  object ActorContextEffects extends ContextEffects {
-    def subscribeTo[O](source: Source[O])(onSubscribeCallback: Upstream ⇒ (SyncSink[O], Effect)): Effect =
-      source match {
-        case FromProducerSource(prod: Producer[O]) ⇒ subscribeToProducer(prod, onSubscribeCallback)
-        case InternalSource(handler)               ⇒ ContextEffects.subscribeToInternalSource(handler, onSubscribeCallback)
-        // TODO: what to do in the remaining cases? We can always build a full-fledged Producer, but is that what's needed?
-      }
-
+  object ActorContextEffects extends AbstractContextEffects {
     def subscribeToProducer[O](producer: Producer[O], onSubscribeCallback: Upstream ⇒ (SyncSink[O], Effect)): Effect =
       Effect.step({
         object SubSubscriber extends Subscriber[O] {

@@ -1,7 +1,7 @@
 package akka.streams.impl
 
 import scala.annotation.tailrec
-import akka.streams.Operation.{ Sink, Source }
+import akka.streams.Operation.{ FromProducerSource, Sink, Source }
 import rx.async.api.Producer
 import rx.async.spi.Publisher
 import akka.streams.impl.BasicEffects.HandleNextInSink
@@ -52,17 +52,14 @@ trait SyncOperationSpec {
     def handleError(cause: Throwable): Effect = ???
   }
 
-  case class SubscribeTo[O](source: Source[O], onSubscribe: Upstream ⇒ (SyncSink[O], Effect)) extends DoNothing
+  case class SubscribeToProducer[O](source: Producer[O], onSubscribe: Upstream ⇒ (SyncSink[O], Effect)) extends DoNothing
   case class SubscribeFrom[O](sink: Sink[O], onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)) extends DoNothing
   case class ExposedSource[O](source: Source[O]) extends Producer[O] {
     def getPublisher: Publisher[O] = throw new IllegalStateException("Should only be deconstructed")
   }
-  object TestContextEffects extends ContextEffects {
-    def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Effect)): Effect =
-      source match {
-        case InternalSource(h) ⇒ ContextEffects.subscribeToInternalSource(h, onSubscribe)
-        case _                 ⇒ SubscribeTo(source, onSubscribe)
-      }
+  object TestContextEffects extends AbstractContextEffects {
+    def subscribeToProducer[O](producer: Producer[O], onSubscribeCallback: (Upstream) ⇒ (SyncSink[O], Effect)): Effect =
+      SubscribeToProducer(producer, onSubscribeCallback)
 
     def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect = SubscribeFrom(sink, onSubscribe)
     def expose[O](source: Source[O]): Producer[O] = ExposedSource(source)
@@ -84,6 +81,12 @@ trait SyncOperationSpec {
       case x                       ⇒ throw new AssertionError(s"Expected InternalSource but got $x")
     }
   }
+
+  def namedProducer[T](name: String): Producer[T] =
+    new Producer[T] {
+      override def toString: String = s"TestProducer<$name>"
+      def getPublisher: Publisher[T] = ???
+    }
 
   case object TestException extends RuntimeException("This is a test exception")
 }

@@ -1,6 +1,7 @@
 package akka
 
 import rx.async.api.{ Processor, Consumer, Producer }
+import akka.streams.Operation.FromIterableSource
 
 package object streams {
   import Operation.{ Sink, Source, Pipeline }
@@ -20,5 +21,9 @@ package object streams {
   }
   implicit class RunPipeline(val pipeline: Pipeline[_])(implicit factory: ImplementationFactory) {
     def run(): Unit = factory.runPipeline(pipeline)
+  }
+
+  implicit class SourceFromIterable[T](val iterable: Iterable[T]) extends AnyVal {
+    def toSource: Source[T] = FromIterableSource(iterable)
   }
 }
