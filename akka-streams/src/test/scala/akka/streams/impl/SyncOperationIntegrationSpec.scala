@@ -30,8 +30,8 @@ class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with Syn
       p.handleRequestMore(1).runToResult() should be(DownstreamNext(6) ~ DownstreamComplete)
     }
     "map value to source and then flatten" in {
-      def f(i: Int): Source[Int] = Seq(Seq(999).toSource, 1 to i toSource).toSource.flatten
-      val impl = instance[Int]((1 to 5 toSource).map(f).flatten)
+      def f(i: Int): Source[Int] = Seq(999).toSource ++ (1 to i)
+      val impl = instance[Int]((1 to 5 toSource).flatMap(f))
       // TODO: exhausting a source seems like a pattern: simplify!
       impl.handleRequestMore(1).runToResult() should be(DownstreamNext(999))
       impl.handleRequestMore(1).runToResult() should be(DownstreamNext(1))

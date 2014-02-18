@@ -34,6 +34,7 @@ object Operation {
   }
   implicit def fromProducer[T](producer: Producer[T]) = FromProducerSource(producer)
   case class FromProducerSource[T](producer: Producer[T]) extends Source[T]
+  case class ConcatSources[T](source1: Source[T], source2: Source[T]) extends Source[T]
 
   sealed trait Sink[-I] {
     def finish[I2 <: I](source: Source[I2]): Pipeline[I2] = Pipeline(source, this)
@@ -111,8 +112,7 @@ object Operation {
 
   // general flatmap operation
   // consumes no faster than the downstream, produces no faster than upstream or generated sources
-  def FlatMap[A, B](f: A ⇒ Source[B]): A ==> B =
-    Map(f).flatten
+  case class FlatMap[A, B](f: A ⇒ Source[B]) extends (A ==> B)
 
   // flattens the upstream by concatenation
   // consumes no faster than the downstream, produces no faster than the sources in the upstream
@@ -239,6 +239,7 @@ object Operation {
 
     def andThen[C](op: B ==> C): Source[C] = source.andThen(op)
     def foreach(f: B ⇒ Unit): Pipeline[B] = Pipeline(source, Foreach(f))
+    def ++(other: Source[B]): Source[B] = ConcatSources(source, other)
   }
 
   trait Ops2[B] extends Any {
