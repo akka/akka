@@ -84,4 +84,6 @@ trait SyncOperationSpec {
       case x                       ⇒ throw new AssertionError(s"Expected InternalSource but got $x")
     }
   }
+
+  case object TestException extends RuntimeException("This is a test exception")
 }
