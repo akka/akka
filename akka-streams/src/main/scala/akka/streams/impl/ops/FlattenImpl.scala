@@ -7,10 +7,15 @@ import Operation.Source
 class FlattenImpl[O](upstream: Upstream, downstream: Downstream[O], ctx: ContextEffects) extends DynamicSyncOperation[Source[O]] {
   def initial: State = Waiting
 
+  var undeliveredToDownstream: Int = 0
+  var closeAtEnd = false
+
   def Waiting: State =
     new State {
       def handleRequestMore(n: Int): Effect = {
-        become(WaitingForElement(n))
+        become(WaitingForElement)
+        assert(undeliveredToDownstream == 0)
+        undeliveredToDownstream = n
         upstream.requestMore(1)
       }
       def handleCancel(): Effect = ???
@@ -20,16 +25,17 @@ class FlattenImpl[O](upstream: Upstream, downstream: Downstream[O], ctx: Context
       def handleError(cause: Throwable): Effect = downstream.error(cause)
     }
 
-  def WaitingForElement(remaining: Int): State =
+  def WaitingForElement: State =
     new State {
       def handleRequestMore(n: Int): Effect = {
-        become(WaitingForElement(remaining + n))
+        become(WaitingForElement)
+        undeliveredToDownstream += n
         Continue
       }
       def handleCancel(): Effect = ???
 
       def handleNext(element: Source[O]): Effect = {
-        val readSubstream = new ReadSubstream(remaining)
+        val readSubstream = new Subscribing
         become(readSubstream)
         ctx.subscribeTo(element)(readSubstream.setSubUpstream)
       }
@@ -37,45 +43,61 @@ class FlattenImpl[O](upstream: Upstream, downstream: Downstream[O], ctx: Context
       def handleError(cause: Throwable): Effect = downstream.error(cause)
     }
 
-  class ReadSubstream(var remaining: Int) extends State {
-    var subUpstream: Upstream = _
-    var closeAtEnd = false
+  val subDownstream =
+    new SyncSink[O] {
+      def handleNext(element: O): Effect = {
+        undeliveredToDownstream -= 1
+        downstream.next(element)
+      }
+
+      def handleComplete(): Effect =
+        if (closeAtEnd) downstream.complete
+        else if (undeliveredToDownstream > 0) {
+          become(WaitingForElement)
+          upstream.requestMore(1)
+        } else {
+          become(Waiting)
+          Continue
+        }
+
+      def handleError(cause: Throwable): Effect = ???
+    }
+
+  // invariant:
+  // we've got a single subSource that we are currently subscribing to
+  class Subscribing extends RejectNext {
     def setSubUpstream(upstream: Upstream): (SyncSink[O], Effect) = {
-      subUpstream = upstream
-      (subDownstream, subUpstream.requestMore(remaining))
+      become(DeliverSubstreamElements(upstream))
+      (subDownstream, upstream.requestMore(undeliveredToDownstream))
     }
 
     def handleRequestMore(n: Int): Effect = {
-      remaining += n
-      subUpstream.requestMore(n)
+      undeliveredToDownstream += n
+      Continue
     }
     def handleCancel(): Effect = ???
 
-    def handleNext(element: Source[O]): Effect = ???
     def handleComplete(): Effect = {
       closeAtEnd = true
       Continue
     }
     def handleError(cause: Throwable): Effect = ???
 
-    val subDownstream = new SyncSink[O] {
-      def handleNext(element: O): Effect = {
-        remaining -= 1
-        downstream.next(element)
-      }
-
-      def handleComplete(): Effect = {
-        if (closeAtEnd) downstream.complete
-        else if (remaining > 0) {
-          become(WaitingForElement(remaining))
-          upstream.requestMore(1)
-        } else {
-          become(Waiting)
-          Continue
-        }
-      }
-
-      def handleError(cause: Throwable): Effect = ???
+  }
+  // invariant:
+  // substream is not depleted, all elements have been requested from subUpstream
+  def DeliverSubstreamElements(subUpstream: Upstream): State = new RejectNext {
+    def handleRequestMore(n: Int): Effect = {
+      val noElementsRequested = undeliveredToDownstream == 0
+      undeliveredToDownstream += n
+      if (noElementsRequested) subUpstream.requestMore(undeliveredToDownstream) else Continue
     }
+    def handleCancel(): Effect = ???
+
+    def handleComplete(): Effect = {
+      closeAtEnd = true
+      Continue
+    }
+    def handleError(cause: Throwable): Effect = ???
   }
 }
