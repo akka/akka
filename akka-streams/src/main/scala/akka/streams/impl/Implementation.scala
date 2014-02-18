@@ -9,13 +9,13 @@ import rx.async.api.Producer
 import rx.async.spi
 
 object Implementation {
-  def forOperation[I, O](operation: Operation[I, O], settings: ActorBasedImplementationSettings): Processor[I, O] =
+  def toProcessor[I, O](operation: Operation[I, O], settings: ActorBasedImplementationSettings): Processor[I, O] =
     new OperationProcessor(operation, settings)
 
-  def forSource[O](source: Source[O], settings: ActorBasedImplementationSettings): Producer[O] =
+  def toProducer[O](source: Source[O], settings: ActorBasedImplementationSettings): Producer[O] =
     new SourceProducer[O](source, settings)
 
-  def forPipeline(pipeline: Pipeline[_], settings: ActorBasedImplementationSettings): Unit =
+  def runPipeline(pipeline: Pipeline[_], settings: ActorBasedImplementationSettings): Unit =
     settings.refFactory.actorOf(Props(new PipelineActor(pipeline)))
 }
 

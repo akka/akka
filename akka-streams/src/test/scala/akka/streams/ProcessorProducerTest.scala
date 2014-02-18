@@ -14,8 +14,8 @@ class ProcessorProducerTest extends PublisherVerification[Int] with WithActorSys
     implicit val abif = new ActorBasedImplementationFactory(settings)
     import Operation._
     val producer =
-      if (elements > 0) FromProducerSource(Producer(Iterator from 1000 take elements)).create()
-      else Source.empty[Int].create()
+      if (elements > 0) FromProducerSource(Producer(Iterator from 1000 take elements)).toProducer()
+      else Source.empty[Int].toProducer()
     producer.getPublisher
   }
 

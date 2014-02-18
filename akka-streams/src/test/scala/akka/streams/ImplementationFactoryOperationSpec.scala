@@ -13,7 +13,7 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         val upstream = TestKit.producerProbe[Int]()
         val downstream = TestKit.consumerProbe[Int]()
 
-        val processed = Identity[Int]().create()
+        val processed = Identity[Int]().toProcessor()
         processed.link(downstream)
         val downstreamSubscription = downstream.expectSubscription()
         downstreamSubscription.requestMore(1)
@@ -294,7 +294,7 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
     val upstream = TestKit.producerProbe[I]()
     val downstream = TestKit.consumerProbe[O]()
 
-    val processor = operation.create()
+    val processor = operation.toProcessor()
     upstream.link(processor)
     val processed = processor
     val upstreamSubscription = upstream.expectSubscription()

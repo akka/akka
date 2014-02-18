@@ -61,7 +61,7 @@ trait ImplementationFactoryProducerSpec extends ImplementationFactorySpec {
   }
 
   class InitializedChainSetup[O](source: Source[O])(implicit factory: ImplementationFactory) {
-    val producer = source.create()
+    val producer = source.toProducer()
 
     val downstream = TestKit.consumerProbe[O]()
     producer.link(downstream)

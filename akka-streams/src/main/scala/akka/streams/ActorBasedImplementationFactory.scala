@@ -8,8 +8,8 @@ import Operation._
 case class ActorBasedImplementationSettings(refFactory: ActorRefFactory, fanOutBufferSize: Int = 1)
 
 class ActorBasedImplementationFactory(settings: ActorBasedImplementationSettings) extends ImplementationFactory {
-  def processor[I, O](operation: Operation[I, O]): Processor[I, O] = Implementation.forOperation(operation, settings)
-  def producer[O](source: Source[O]): Producer[O] = Implementation.forSource(source, settings)
-  def consumer[I](sink: Sink[I]): Consumer[I] = ???
-  def runPipeline(pipeline: Pipeline[_]): Unit = Implementation.forPipeline(pipeline, settings)
+  def toProcessor[I, O](operation: Operation[I, O]): Processor[I, O] = Implementation.toProcessor(operation, settings)
+  def toProducer[O](source: Source[O]): Producer[O] = Implementation.toProducer(source, settings)
+  def toConsumer[I](sink: Sink[I]): Consumer[I] = ???
+  def runPipeline(pipeline: Pipeline[_]): Unit = Implementation.runPipeline(pipeline, settings)
 }
