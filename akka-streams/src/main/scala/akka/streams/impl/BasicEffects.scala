@@ -1,7 +1,7 @@
 package akka.streams.impl
 
 import scala.language.existentials
-import rx.async.spi.{ Subscription, Subscriber }
+import rx.async.spi.{ Publisher, Subscription, Subscriber }
 
 /** Predefined effects */
 object BasicEffects {
@@ -41,6 +41,10 @@ object BasicEffects {
       lazy val requestMore: Int ⇒ Effect = BasicEffects.RequestMoreFromSubscription(subscription, _)
       lazy val cancel: Effect = BasicEffects.CancelSubscription(subscription)
     }
+
+  case class Subscribe[T](publisher: Publisher[T], subscriber: Subscriber[T]) extends ExternalEffect {
+    def run(): Unit = publisher.subscribe(subscriber)
+  }
 
   // SyncSink
 

@@ -16,15 +16,14 @@ trait ContextEffects {
   def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect
 
   def expose[O](source: Source[O]): Producer[O]
+
+  def runInContext(body: ⇒ Effect): Unit
 }
 
 /** Tries to implement ContextEffect methods generally */
 abstract class AbstractContextEffects extends ContextEffects {
-  def subscribeToProducer[O](producer: Producer[O], onSubscribeCallback: Upstream ⇒ (SyncSink[O], Effect)): Effect
-
   def subscribeTo[O](source: Source[O])(onSubscribeCallback: Upstream ⇒ (SyncSink[O], Effect)): Effect = source match {
-    case FromProducerSource(prod: Producer[O]) ⇒ subscribeToProducer(prod, onSubscribeCallback)
-    case InternalSource(handler)               ⇒ ContextEffects.subscribeToInternalSource(handler, onSubscribeCallback)
+    case InternalSource(handler) ⇒ ContextEffects.subscribeToInternalSource(handler, onSubscribeCallback)
     // TODO: make sure only to match on the right types
     case x ⇒
       // TODO: this is very interesting and seems to be generally related to the compose implementation

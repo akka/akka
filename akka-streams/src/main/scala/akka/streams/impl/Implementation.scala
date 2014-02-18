@@ -141,34 +141,6 @@ trait ProducerImplementationBits[O] extends Producer[O] with Publisher[O] {
 
 trait ProcessorActorImpl { _: Actor ⇒
   object ActorContextEffects extends AbstractContextEffects {
-    def subscribeToProducer[O](producer: Producer[O], onSubscribeCallback: Upstream ⇒ (SyncSink[O], Effect)): Effect =
-      Effect.step({
-        object SubSubscriber extends Subscriber[O] {
-          var subscription: Subscription = _
-          var sink: SyncSink[O] = _
-          def onSubscribe(subscription: Subscription): Unit = runEffectInThisActor {
-            this.subscription = subscription
-            val (handler, effect) = onSubscribeCallback(BasicEffects.forSubscription(subscription))
-            sink = handler
-            effect
-          }
-          def onNext(element: O): Unit = runEffectInThisActor(sink.handleNext(element))
-
-          def onComplete(): Unit =
-            if (sink eq null) {
-              val (handler, effect) = onSubscribeCallback(new Upstream {
-                val cancel: Effect = Continue
-                val requestMore: (Int) ⇒ Effect = _ ⇒ Continue
-              })
-              runEffectInThisActor(effect ~ handler.handleComplete())
-            } else runEffectInThisActor(sink.handleComplete())
-          // FIXME: add same handling for onError as for completed
-          def onError(cause: Throwable): Unit = runEffectInThisActor(sink.handleError(cause))
-        }
-        producer.getPublisher.subscribe(SubSubscriber)
-        Continue // we need to wait for onSubscribe being called
-      }, s"SubscribeTo($producer)")
-
     override def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect =
       Effect.step({
         val FromConsumerSink(consumer: Consumer[O]) = sink
@@ -203,6 +175,8 @@ trait ProcessorActorImpl { _: Actor ⇒
           InternalProducer
       }
     }
+
+    def runInContext(body: ⇒ Effect): Unit = runEffectInThisActor(body)
   }
 
   case class RunDeferred(body: () ⇒ Unit)

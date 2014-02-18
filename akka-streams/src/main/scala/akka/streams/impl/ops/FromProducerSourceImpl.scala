@@ -1,9 +1,11 @@
 package akka.streams.impl.ops
 
 import akka.streams.impl._
-import akka.streams.Operation.FromProducerSource
+import akka.streams.Operation.{ Source, FromProducerSource }
+import rx.async.spi.{ Subscription, Subscriber }
+import rx.async.api.Producer
 
-class FromProducerSourceImpl[O](downstream: Downstream[O], ctx: ContextEffects, source: FromProducerSource[O]) extends DynamicSyncSource {
+class FromProducerSourceImpl[O](downstream: Downstream[O], ctx: ContextEffects, producer: Producer[O]) extends DynamicSyncSource {
   def initial = WaitingForRequest
 
   def WaitingForRequest: State =
@@ -15,14 +17,19 @@ class FromProducerSourceImpl[O](downstream: Downstream[O], ctx: ContextEffects, 
   def startSubscribing(requested: Int): Effect = {
     val nextState = new WaitingForSubscription(requested)
     become(nextState)
-    ctx.subscribeTo(source)(nextState.onSubscribed)
+    BasicEffects.Subscribe(producer.getPublisher, nextState)
   }
 
-  class WaitingForSubscription(var originallyRequested: Int) extends State {
-    def onSubscribed(upstream: Upstream): (SyncSink[O], Effect) = {
+  class WaitingForSubscription(var originallyRequested: Int) extends State with Subscriber[O] {
+    def onSubscribe(subscription: Subscription): Unit = ctx.runInContext {
+      val upstream = BasicEffects.forSubscription(subscription)
       become(Subscribed(upstream))
-      (subDownstream, if (originallyRequested > 0) upstream.requestMore(originallyRequested) else Continue)
+      if (originallyRequested > 0) subscription.requestMore(originallyRequested)
+      Continue
     }
+    def onNext(element: O): Unit = ctx.runInContext(downstream.next(element))
+    def onComplete(): Unit = ctx.runInContext(downstream.complete)
+    def onError(cause: Throwable): Unit = ctx.runInContext(downstream.error(cause))
 
     def handleRequestMore(n: Int): Effect = {
       originallyRequested += n
@@ -30,14 +37,8 @@ class FromProducerSourceImpl[O](downstream: Downstream[O], ctx: ContextEffects, 
     }
     def handleCancel(): Effect = ???
   }
-  def Subscribed(subUpstream: Upstream) = new State {
-    def handleRequestMore(n: Int): Effect = subUpstream.requestMore(n)
-    def handleCancel(): Effect = subUpstream.cancel
-  }
-
-  val subDownstream = new SyncSink[O] {
-    def handleNext(element: O): Effect = downstream.next(element)
-    def handleComplete(): Effect = downstream.complete
-    def handleError(cause: Throwable): Effect = downstream.error(cause)
+  def Subscribed(upstream: Upstream) = new State {
+    def handleRequestMore(n: Int): Effect = upstream.requestMore(n)
+    def handleCancel(): Effect = upstream.cancel
   }
 }

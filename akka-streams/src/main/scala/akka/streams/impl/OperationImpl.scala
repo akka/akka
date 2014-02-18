@@ -21,7 +21,7 @@ object OperationImpl {
       case m: MappedSource[i, O] ⇒
         ComposeImpl.source[i](apply(_: Downstream[i], ctx, m.source), up ⇒ apply(up, downstream, ctx, m.operation))
       case FromIterableSource(s)    ⇒ new FromIterableSourceImpl(downstream, ctx, s)
-      case f: FromProducerSource[_] ⇒ new FromProducerSourceImpl(downstream, ctx, f)
+      case FromProducerSource(p)    ⇒ new FromProducerSourceImpl(downstream, ctx, p)
       case SingletonSource(element) ⇒ new SingletonSourceImpl(downstream, element)
       case EmptySource              ⇒ new EmptySourceImpl(downstream)
       case c: ConcatSources[_]      ⇒ delegate()

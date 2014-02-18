@@ -58,11 +58,16 @@ trait SyncOperationSpec {
     def getPublisher: Publisher[O] = throw new IllegalStateException("Should only be deconstructed")
   }
   object TestContextEffects extends AbstractContextEffects {
-    def subscribeToProducer[O](producer: Producer[O], onSubscribeCallback: (Upstream) ⇒ (SyncSink[O], Effect)): Effect =
-      SubscribeToProducer(producer, onSubscribeCallback)
+
+    override def subscribeTo[O](source: Source[O])(onSubscribeCallback: (Upstream) ⇒ (SyncSink[O], Effect)): Effect = source match {
+      case FromProducerSource(p) ⇒ SubscribeToProducer(p, onSubscribeCallback)
+      case x                     ⇒ super.subscribeTo(x)(onSubscribeCallback)
+    }
 
     def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect = SubscribeFrom(sink, onSubscribe)
     def expose[O](source: Source[O]): Producer[O] = ExposedSource(source)
+
+    def runInContext(body: ⇒ Effect): Unit = ???
   }
 
   implicit class RichEffect(effect: Effect) {
