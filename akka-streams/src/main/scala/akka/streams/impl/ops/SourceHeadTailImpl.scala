@@ -15,7 +15,7 @@ class SourceHeadTailImpl[O](upstream: Upstream, downstream: Downstream[(O, Sourc
       become(WaitingForElement)
       upstream.requestMore(1)
     }
-    def handleCancel(): Effect = upstream.cancel
+    def handleCancel(): Effect = ??? //upstream.cancel
 
     override def handleComplete(): Effect = downstream.complete
     override def handleError(cause: Throwable): Effect = downstream.error(cause)
@@ -25,7 +25,7 @@ class SourceHeadTailImpl[O](upstream: Upstream, downstream: Downstream[(O, Sourc
       undeliveredElements += n
       Continue
     }
-    def handleCancel(): Effect = upstream.cancel
+    def handleCancel(): Effect = ??? //upstream.cancel
 
     def handleNext(element: Source[O]): Effect = {
       val nextState = new WaitingForSubscription()
@@ -54,14 +54,21 @@ class SourceHeadTailImpl[O](upstream: Upstream, downstream: Downstream[(O, Sourc
   }
   class WaitingForFirstElement(subUpstream: Upstream) extends RejectNext { outer ⇒
     val subSink = new DynamicSyncSink[O] {
+      var closing = false
       override def initial: State = WaitingForFirstElement
 
       def WaitingForFirstElement = new State {
         override def handleNext(element: O): Effect = {
           undeliveredElements -= 1
+          become(Subscribing)
           downstream.next((element, InternalSource(onSubscribe))) ~ receivedFirst()
         }
         override def handleComplete(): Effect = ??? // FIXME: what, if there is no head!?!
+        override def handleError(cause: Throwable): Effect = ???
+      }
+      def Subscribing = new State {
+        override def handleNext(element: O): Effect = ???
+        override def handleComplete(): Effect = { closing = true; Continue }
         override def handleError(cause: Throwable): Effect = ???
       }
 
@@ -74,10 +81,13 @@ class SourceHeadTailImpl[O](upstream: Upstream, downstream: Downstream[(O, Sourc
         override def handleRequestMore(n: Int): Effect = subUpstream.requestMore(n)
         override def handleCancel(): Effect = ???
       }
-      def onSubscribe(subDownstream: Downstream[O]): (SyncSource, Effect) = {
-        become(Running(subDownstream))
-        (innerSource, Continue)
-      }
+      def onSubscribe(subDownstream: Downstream[O]): (SyncSource, Effect) =
+        if (!closing) {
+          become(Running(subDownstream))
+          (innerSource, Continue)
+        } else {
+          (innerSource, subDownstream.complete)
+        }
     }
 
     def receivedFirst(): Effect =

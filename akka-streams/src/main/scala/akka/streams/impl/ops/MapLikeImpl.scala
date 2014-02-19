@@ -22,6 +22,7 @@ abstract class MapLikeImpl[I, O] extends DynamicSyncOperation[I] {
         downstream.next(map(element))
       } catch {
         case NonFatal(ex) ⇒
+          ex.printStackTrace()
           become(Stopped)
           downstream.error(ex) ~ upstream.cancel
       }

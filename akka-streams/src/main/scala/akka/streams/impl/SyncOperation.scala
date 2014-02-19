@@ -6,7 +6,7 @@ import Operation.{ Sink, Source }
 /** Constructors for upstream effects */
 trait Upstream {
   val requestMore: Int ⇒ Effect
-  val cancel: Effect
+  def cancel: Effect
 }
 
 /** Constructors for downstream effects */

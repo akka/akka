@@ -46,7 +46,10 @@ object ComposeImpl {
     type Down = SyncOperation[B]
 
     def handleRequestMore(n: Int): Effect = handleDownResult(downstreamHandler.handleRequestMore(n))
-    def handleCancel(): Effect = handleDownResult(downstreamHandler.handleCancel())
+    def handleCancel(): Effect = {
+      Thread.dumpStack()
+      handleDownResult(downstreamHandler.handleCancel())
+    }
   }
 
   abstract class AbstractComposeImpl[T] extends SyncRunnable {
@@ -63,7 +66,7 @@ object ComposeImpl {
     }
     lazy val innerUpstream = new Upstream {
       val requestMore: Int ⇒ Effect = BasicEffects.RequestMoreFromSource(upstreamHandler, _)
-      val cancel: Effect = BasicEffects.CancelSource(upstreamHandler)
+      def cancel: Effect = BasicEffects.CancelSource(upstreamHandler)
     }
     lazy val upstreamHandler: Up = upstreamConstructor(innerDownstream)
     lazy val downstreamHandler: Down = downstreamConstructor(innerUpstream)
