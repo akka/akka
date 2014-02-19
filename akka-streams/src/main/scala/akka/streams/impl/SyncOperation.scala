@@ -58,6 +58,22 @@ abstract class DynamicSyncSource extends SyncSource {
 }
 
 /**
+ *  An abstract SyncSink implementation to be used as a base for SyncSink implementations
+ *  that implement their behavior as a state machine.
+ */
+abstract class DynamicSyncSink[I] extends SyncSink[I] {
+  type State = SyncSink[I]
+  private[this] var state: State = initial
+
+  def initial: State
+  def become(nextState: State): Unit = state = nextState
+
+  def handleNext(element: I): Effect = state.handleNext(element)
+  def handleComplete(): Effect = state.handleComplete()
+  def handleError(cause: Throwable): Effect = state.handleError(cause)
+}
+
+/**
  *  An abstract SyncOperation implementation to be used as a base for SyncOperation implementations
  *  that implement their behavior as a state machine.
  */

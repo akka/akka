@@ -152,6 +152,8 @@ object Operation {
   // produces the first upstream element, unsubscribes afterwards
   def Head[T](): T ==> T = Take(1)
 
+  case class SourceHeadTail[A]() extends (Source[A] ==> (A, Source[A]))
+
   // maps the upstream onto itself
   case class Identity[A]() extends (A ==> A)
 
@@ -254,6 +256,7 @@ object Operation {
 
     def flatten: Res[B] = andThen(Flatten[B]())
     def expose: Res[Producer[B]] = andThen(ExposeProducer())
+    def headTail: Res[(B, Source[B])] = andThen(SourceHeadTail())
   }
 
   implicit class OperationOps2[A, B](val op: A ==> Source[B]) extends Ops2[B] {

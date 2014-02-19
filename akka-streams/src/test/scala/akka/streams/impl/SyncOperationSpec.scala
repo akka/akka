@@ -3,7 +3,7 @@ package akka.streams.impl
 import scala.annotation.tailrec
 import akka.streams.Operation.{ FromProducerSource, Sink, Source }
 import rx.async.api.Producer
-import rx.async.spi.Publisher
+import rx.async.spi.{ Subscription, Subscriber, Publisher }
 import akka.streams.impl.BasicEffects.HandleNextInSink
 import akka.testkit.TestProbe
 import akka.actor.ActorSystem
@@ -55,10 +55,20 @@ trait SyncOperationSpec extends WithActorSystem {
   val dontTrace: (Effect, Effect) ⇒ Unit = (_, _) ⇒ ()
   val printStep: (Effect, Effect) ⇒ Unit = (in, out) ⇒ println(s"$in => $out")
 
+  trait NoOpSubscriber[I] extends Subscriber[I] {
+    override def onSubscribe(subscription: Subscription): Unit = ???
+    override def onNext(element: I): Unit = ???
+    override def onComplete(): Unit = ???
+    override def onError(cause: Throwable): Unit = ???
+  }
   trait NoOpSink[-I] extends SyncSink[I] {
     def handleNext(element: I): Effect = ???
     def handleComplete(): Effect = ???
     def handleError(cause: Throwable): Effect = ???
+  }
+  trait NoOpSource extends SyncSource {
+    override def handleCancel(): Effect = ???
+    override def handleRequestMore(n: Int): Effect = ???
   }
 
   case class SubscribeToProducer[O](source: Producer[O], onSubscribe: Upstream ⇒ (SyncSink[O], Effect)) extends DoNothing
