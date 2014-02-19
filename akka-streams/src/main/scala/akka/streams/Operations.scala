@@ -23,12 +23,12 @@ object Operation {
   object Source {
     def empty[T]: Source[T] = EmptySource
     def apply[T](t: T): Source[T] = SingletonSource(t)
+
+    implicit def fromIterable[T](iterable: Iterable[T]): Source[T] = FromIterableSource(iterable)
+    implicit def fromProducer[T](producer: Producer[T]): Source[T] = FromProducerSource(producer)
+    implicit def fromFuture[T](future: Future[T]): Source[T] = FromFutureSource(future)
   }
   trait CustomSource[+O] extends Source[O]
-
-  implicit def fromIterable[T](iterable: Iterable[T]) = FromIterableSource(iterable)
-  implicit def fromProducer[T](producer: Producer[T]) = FromProducerSource(producer)
-  implicit def fromFuture[T](future: Future[T]) = FromFutureSource(future)
 
   case class FromIterableSource[T](iterable: Iterable[T]) extends Source[T]
   case class SingletonSource[T](element: T) extends Source[T]
@@ -200,13 +200,23 @@ object Operation {
       },
       onComplete = _ ⇒ Nil)
 
+  def TakeWhile[T](p: T ⇒ Boolean): T ==> T =
+    Process[T, T, Boolean](
+      seed = true,
+      onNext = {
+        (running, next) ⇒
+          if (p(next)) Process.Emit(next, Process.Continue(false))
+          else Process.Emit(next, Process.Continue(false))
+      },
+      onComplete = _ ⇒ Nil)
+
   // combines the upstream and the given source into tuples
   // produces at the rate of the slower upstream (i.e. no values are dropped)
   // consumes from the upstream no faster than the downstream consumption rate or the production rate of the given source
   // consumes from the given source no faster than the downstream consumption rate or the upstream production rate
   case class Zip[A, B, C](source: Source[C]) extends (A ==> (B, C))
 
-  implicit def producer2Ops1[T](producer: Producer[T]) = SourceOps1[T](fromProducer(producer))
+  implicit def producer2Ops1[T](producer: Producer[T]) = SourceOps1[T](producer)
   implicit def producerOps2[I, O](op: I ==> Producer[O]) = OperationOps2(OperationOps1(op).map(FromProducerSource(_)))
 
   trait Ops1[B] extends Any {
@@ -232,6 +242,7 @@ object Operation {
     def tee(sink: Sink[B]): Res[B] = andThen(Tee(sink))
     def tail: Res[B] = andThen(Tail())
     def take(n: Int): Res[B] = andThen(Take[B](n))
+    def takeWhile(p: B ⇒ Boolean): Res[B] = andThen(TakeWhile(p))
     def zip[C](source: Source[C]): Res[(B, C)] = andThen(Zip(source))
   }
 
