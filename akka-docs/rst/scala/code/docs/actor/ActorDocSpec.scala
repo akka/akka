@@ -13,13 +13,12 @@ import akka.event.Logging
 //#imports1
 
 import scala.concurrent.Future
-import akka.actor.{ ActorRef, ActorSystem, PoisonPill, Terminated }
+import akka.actor.{ ActorRef, ActorSystem, PoisonPill, Terminated, ActorLogging }
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.Matchers
 import akka.testkit._
 import akka.util._
 import scala.concurrent.duration._
-import akka.actor.Actor.Receive
 import scala.concurrent.Await
 
 //#my-actor
@@ -197,25 +196,47 @@ object SwapperApp extends App {
 
 //#receive-orElse
 
-abstract class GenericActor extends Actor {
-  // to be defined in subclassing actor
-  def specificMessageHandler: Receive
+trait ProducerBehavior {
+  this: Actor =>
 
-  // generic message handler
-  def genericMessageHandler: Receive = {
-    case event => printf("generic: %s\n", event)
-  }
-
-  def receive = specificMessageHandler orElse genericMessageHandler
-}
-
-class SpecificActor extends GenericActor {
-  def specificMessageHandler = {
-    case event: MyMsg => printf("specific: %s\n", event.subject)
+  val producerBehavior: Receive = {
+    case GiveMeThings =>
+      sender() ! Give("thing")
   }
 }
 
-case class MyMsg(subject: String)
+trait ConsumerBehavior {
+  this: Actor with ActorLogging =>
+
+  val consumerBehavior: Receive = {
+    case ref: ActorRef =>
+      ref ! GiveMeThings
+
+    case Give(thing) =>
+      log.info("Got a thing! It's {}", thing)
+  }
+}
+
+
+class Producer extends Actor with ProducerBehavior {
+  def receive = producerBehavior
+}
+
+class Consumer extends Actor with ActorLogging with ConsumerBehavior {
+  def receive = consumerBehavior
+}
+
+
+class ProducerConsumer extends Actor with ActorLogging
+  with ProducerBehavior with ConsumerBehavior {
+  
+  def receive = producerBehavior orElse consumerBehavior
+}
+
+// protocol
+case object GiveMeThings
+case class Give(thing: Any)
+
 //#receive-orElse
 
 class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
