@@ -22,6 +22,7 @@ object OperationImpl {
         ComposeImpl.source[i](apply(_: Downstream[i], ctx, m.source), up ⇒ apply(up, downstream, ctx, m.operation))
       case FromIterableSource(s)    ⇒ new FromIterableSourceImpl(downstream, ctx, s)
       case FromProducerSource(p)    ⇒ new FromProducerSourceImpl(downstream, ctx, p)
+      case FromFutureSource(f)      ⇒ new FromFutureSourceImpl(downstream, ctx, f)
       case SingletonSource(element) ⇒ new SingletonSourceImpl(downstream, element)
       case EmptySource              ⇒ new EmptySourceImpl(downstream)
       case c: ConcatSources[_]      ⇒ delegate()

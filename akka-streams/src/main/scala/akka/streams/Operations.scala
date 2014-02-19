@@ -218,7 +218,7 @@ object Operation {
     def expand[S](seed: S)(produce: S ⇒ (S, B)): Res[B] = andThen(Expand(seed, produce))
     def filter(p: B ⇒ Boolean): Res[B] = andThen(Filter(p))
     def find(p: B ⇒ Boolean): Res[B] = andThen(Find(p))
-    def flatMap[C](f: B ⇒ Source[C]): Res[C] = andThen(FlatMap(f))
+    def flatMap[C, S](f: B ⇒ S)(implicit conv: S ⇒ Source[C]): Res[C] = andThen(FlatMap(s ⇒ conv(f(s))))
     def fold[C](seed: C)(f: (C, B) ⇒ C): Res[C] = andThen(Fold(seed, f))
     def forAll(p: B ⇒ Boolean): Res[Boolean] = andThen(ForAll(p))
     def head: Res[B] = andThen(Head())

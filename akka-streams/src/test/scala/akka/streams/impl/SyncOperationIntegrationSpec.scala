@@ -6,6 +6,10 @@ import org.scalatest.{ ShouldMatchers, FreeSpec }
 
 import akka.streams._
 import Operation._
+import scala.concurrent.{ Promise, Future }
+import scala.concurrent.duration._
+import java.util.concurrent.ThreadLocalRandom
+import scala.util.Success
 
 class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {
   "Simple chains" - {}
@@ -19,6 +23,32 @@ class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with Syn
     "flatten.map(_ + 1f)" in {
       val impl = instance(Flatten[Float]().map(_ + 1f))
       pending
+    }
+    "mapAsync = flatMap with function returning future" in {
+      import system.dispatcher
+      def mapSlow(i: Int): Future[Int] = {
+        // simulate a long-running complex addition
+        val promise = Promise[Int]()
+        system.scheduler.scheduleOnce(ThreadLocalRandom.current().nextInt(0, 100).millis) {
+          promise.complete(Success(i + 1))
+        }
+        promise.future
+      }
+      val p = instance[Int](FromIterableSource(1 to 6).flatMap(mapSlow))
+      p.start().runToResult() should be(Continue)
+      def requestAndExpectNextEffect(e: Effect): Unit =
+        p.handleRequestMore(1).runToResult() match {
+          case Continue ⇒ expectAndRunContextEffect().runToResult() should be(e)
+          case x        ⇒ x should be(e)
+        }
+      def requestAndExpectNext(i: Int): Unit = requestAndExpectNextEffect(DownstreamNext(i))
+
+      requestAndExpectNext(2)
+      requestAndExpectNext(3)
+      requestAndExpectNext(4)
+      requestAndExpectNext(5)
+      requestAndExpectNext(6)
+      requestAndExpectNextEffect(DownstreamNext(7) ~ DownstreamComplete)
     }
     "span + flatten == identity" in {
       val p = instance[Int](FromIterableSource(1 to 6).span(_ % 3 == 0).flatten)

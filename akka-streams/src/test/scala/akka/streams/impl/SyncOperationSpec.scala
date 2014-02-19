@@ -11,7 +11,7 @@ import org.scalatest.{ Suite, BeforeAndAfterAll }
 import scala.concurrent.ExecutionContext
 
 trait WithActorSystem extends Suite with BeforeAndAfterAll {
-  implicit def system: ActorSystem = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
   override protected def afterAll(): Unit = system.shutdown()
 }
 
