@@ -1,15 +1,9 @@
-package akka.streams
-package impl
-package ops
+package akka.streams.impl.ops
 
-object MapImpl {
-  def apply[I, O](upstream: Upstream, downstream: Downstream[O], f: I ⇒ O): SyncOperation[I] =
-    new SyncOperation[I] {
-      def handleRequestMore(n: Int): Effect = upstream.requestMore(n)
-      def handleCancel(): Effect = upstream.cancel
+import akka.streams.impl._
+import scala.util.control.NonFatal
 
-      def handleNext(element: I): Effect = downstream.next(f(element))
-      def handleComplete(): Effect = downstream.complete
-      def handleError(cause: Throwable): Effect = downstream.error(cause)
-    }
+class MapImpl[I, O](val upstream: Upstream, val downstream: Downstream[O], f: I ⇒ O)
+  extends MapLikeImpl[I, O] {
+  def map(i: I): O = f(i)
 }

@@ -1163,6 +1163,8 @@ object Dependencies {
     val levelDB       = "org.iq80.leveldb"            % "leveldb"                      % "0.5"         // ApacheV2
     val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"               % "1.7"         // New BSD
 
+    val testNG        = "org.testng"                  % "testng"                       % "5.14.10" // ApacheV2
+
     // Camel Sample
     val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
 
@@ -1178,7 +1180,7 @@ object Dependencies {
       val commonsMath  = "org.apache.commons"          % "commons-math"                 % "2.1"              % "test" // ApacheV2
       val commonsIo    = "commons-io"                  % "commons-io"                   % "2.4"              % "test" // ApacheV2
       val commonsCodec = "commons-codec"               % "commons-codec"                % "1.7"              % "test" // ApacheV2
-      val junit        = "junit"                       % "junit"                        % "4.10"             % "test" // Common Public License 1.0
+      val junit        = "junit"                       % "junit"                        % "4.11"             % "test" // Common Public License 1.0
       val logback      = "ch.qos.logback"              % "logback-classic"              % "1.0.13"           % "test" // EPL 1.0 / LGPL 2.1
       val mockito      = "org.mockito"                 % "mockito-all"                  % "1.8.1"            % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
@@ -1216,7 +1218,7 @@ object Dependencies {
 
   val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
 
-  val akkaStreams = Seq(Test.scalatest, Test.junit)
+  val akkaStreams = Seq(testNG, Test.scalatest)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 

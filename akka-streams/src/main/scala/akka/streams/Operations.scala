@@ -2,6 +2,7 @@ package akka.streams
 
 import scala.language.{ implicitConversions, higherKinds }
 import rx.async.api.{ Consumer, Producer }
+import scala.concurrent.Future
 
 sealed trait Operation[-I, +O]
 
@@ -19,16 +20,26 @@ object Operation {
         case s                    ⇒ Pipeline(this, s)
       }
   }
-  trait CustomSource[O] extends Source[O]
+  object Source {
+    def empty[T]: Source[T] = EmptySource
+    def apply[T](t: T): Source[T] = SingletonSource(t)
+  }
+  trait CustomSource[+O] extends Source[O]
 
   implicit def fromIterable[T](iterable: Iterable[T]) = FromIterableSource(iterable)
+  implicit def fromProducer[T](producer: Producer[T]) = FromProducerSource(producer)
+  implicit def fromFuture[T](future: Future[T]) = FromFutureSource(future)
+
   case class FromIterableSource[T](iterable: Iterable[T]) extends Source[T]
+  case class SingletonSource[T](element: T) extends Source[T]
+  case object EmptySource extends Source[Nothing]
   case class MappedSource[I, O](source: Source[I], operation: Operation[I, O]) extends Source[O] {
     type Input = I
     override def andThen[O2](op: Operation.==>[O, O2]): Source[O2] = MappedSource(source, Operation(operation, op))
   }
-  implicit def fromProducer[T](producer: Producer[T]) = FromProducerSource(producer)
   case class FromProducerSource[T](producer: Producer[T]) extends Source[T]
+  case class FromFutureSource[T](future: Future[T]) extends Source[T]
+  case class ConcatSources[T](source1: Source[T], source2: Source[T]) extends Source[T]
 
   sealed trait Sink[-I] {
     def finish[I2 <: I](source: Source[I2]): Pipeline[I2] = Pipeline(source, this)
@@ -72,10 +83,10 @@ object Operation {
   // drops the first n upstream values
   // consumes the first n upstream values at max rate, afterwards directly copies upstream
   def Drop[T](n: Int): T ==> T =
-    FoldUntil[T, T, Int](
+    Process[T, T, Int](
       seed = n,
-      onNext = (n, x) ⇒ if (n <= 0) FoldUntil.Emit(x, 0) else FoldUntil.Continue(n - 1),
-      onComplete = _ ⇒ None)
+      onNext = (n, x) ⇒ if (n <= 0) Process.Emit(x, Process.Continue(0)) else Process.Continue(n - 1),
+      onComplete = _ ⇒ Nil)
 
   // produces one boolean for the first T that satisfies p
   // consumes at max rate until p(t) becomes true, unsubscribes afterwards
@@ -94,10 +105,10 @@ object Operation {
   // filters a streams according to the given predicate
   // immediately consumes more whenever p(t) is false
   def Filter[T](p: T ⇒ Boolean): T ==> T =
-    FoldUntil[T, T, Unit](
+    Process[T, T, Unit](
       seed = (),
-      onNext = (_, x) ⇒ if (p(x)) FoldUntil.Emit(x, ()) else FoldUntil.Continue(()),
-      onComplete = _ ⇒ None)
+      onNext = (_, x) ⇒ if (p(x)) Process.Emit(x, Process.Continue(())) else Process.Continue(()),
+      onComplete = _ ⇒ Nil)
 
   // produces the first T that satisfies p
   // consumes at max rate until p(t) becomes true, unsubscribes afterwards
@@ -106,8 +117,7 @@ object Operation {
 
   // general flatmap operation
   // consumes no faster than the downstream, produces no faster than upstream or generated sources
-  def FlatMap[A, B](f: A ⇒ Source[B]): A ==> B =
-    Map(f).flatten
+  case class FlatMap[A, B](f: A ⇒ Source[B]) extends (A ==> B)
 
   // flattens the upstream by concatenation
   // consumes no faster than the downstream, produces no faster than the sources in the upstream
@@ -117,16 +127,15 @@ object Operation {
   // consumes at max rate, produces only one value
   case class Fold[A, B](seed: B, f: (B, A) ⇒ B) extends (A ==> B)
 
-  // generalized fold potentially producing several output values
+  // generalized process potentially producing several output values
   // consumes at max rate as long as `onNext` returns `Continue`
   // produces no faster than the upstream
-  case class FoldUntil[A, B, S](seed: S,
-                                onNext: (S, A) ⇒ FoldUntil.Command[B, S],
-                                onComplete: S ⇒ Option[B]) extends (A ==> B)
-  object FoldUntil {
+  case class Process[A, B, S](seed: S,
+                              onNext: (S, A) ⇒ Process.Command[B, S],
+                              onComplete: S ⇒ Seq[B]) extends (A ==> B)
+  object Process {
     sealed trait Command[+T, +S]
-    case class Emit[T, S](value: T, nextState: S) extends Command[T, S]
-    case class EmitAndStop[T, S](value: T) extends Command[T, S]
+    case class Emit[T, S](value: T, andThen: Command[T, S]) extends Command[T, S]
     case class Continue[T, S](nextState: S) extends Command[T, S]
     case object Stop extends Command[Nothing, Nothing]
   }
@@ -143,6 +152,8 @@ object Operation {
   // produces the first upstream element, unsubscribes afterwards
   def Head[T](): T ==> T = Take(1)
 
+  case class SourceHeadTail[A]() extends (Source[A] ==> (A, Source[A]))
+
   // maps the upstream onto itself
   case class Identity[A]() extends (A ==> A)
 
@@ -153,10 +164,10 @@ object Operation {
   // produces the first B returned by f or optionally the given default value
   // consumes at max rate until f returns a Some, unsubscribes afterwards
   def MapFind[A, B](f: A ⇒ Option[B], default: ⇒ Option[B]): A ==> B =
-    FoldUntil[A, B, Unit](
+    Process[A, B, Unit](
       seed = (),
-      onNext = (_, x) ⇒ f(x).fold[FoldUntil.Command[B, Unit]](FoldUntil.Continue(()))(FoldUntil.EmitAndStop(_)),
-      onComplete = _ ⇒ default)
+      onNext = (_, x) ⇒ f(x).fold[Process.Command[B, Unit]](Process.Continue(()))(Process.Emit(_, Process.Stop)),
+      onComplete = _ ⇒ default.toSeq)
 
   // merges the values produced by the given source into the consumed stream
   // consumes from the upstream and the given source no faster than the downstream
@@ -180,14 +191,14 @@ object Operation {
   // forwards the first n upstream values, unsubscribes afterwards
   // consumes no faster than the downstream, produces no faster than the upstream
   def Take[T](n: Int): T ==> T =
-    FoldUntil[T, T, Int](
+    Process[T, T, Int](
       seed = n,
       onNext = (n, x) ⇒ n match {
-        case _ if n <= 0 ⇒ FoldUntil.Stop
-        case 1           ⇒ FoldUntil.EmitAndStop(x)
-        case _           ⇒ FoldUntil.Emit(x, n - 1)
+        case _ if n <= 0 ⇒ Process.Stop
+        case 1           ⇒ Process.Emit(x, Process.Stop)
+        case _           ⇒ Process.Emit(x, Process.Continue(n - 1))
       },
-      onComplete = _ ⇒ None)
+      onComplete = _ ⇒ Nil)
 
   // combines the upstream and the given source into tuples
   // produces at the rate of the slower upstream (i.e. no values are dropped)
@@ -209,14 +220,14 @@ object Operation {
     def expand[S](seed: S)(produce: S ⇒ (S, B)): Res[B] = andThen(Expand(seed, produce))
     def filter(p: B ⇒ Boolean): Res[B] = andThen(Filter(p))
     def find(p: B ⇒ Boolean): Res[B] = andThen(Find(p))
-    def flatMap[C](f: B ⇒ Source[C]): Res[C] = andThen(FlatMap(f))
+    def flatMap[C, S](f: B ⇒ S)(implicit conv: S ⇒ Source[C]): Res[C] = andThen(FlatMap(s ⇒ conv(f(s))))
     def fold[C](seed: C)(f: (C, B) ⇒ C): Res[C] = andThen(Fold(seed, f))
-    def foldUntil[S, C](seed: S)(f: (S, B) ⇒ FoldUntil.Command[C, S])(onComplete: S ⇒ Option[C]): Res[C] = andThen(FoldUntil(seed, f, onComplete))
     def forAll(p: B ⇒ Boolean): Res[Boolean] = andThen(ForAll(p))
     def head: Res[B] = andThen(Head())
     def map[C](f: B ⇒ C): Res[C] = andThen(Map(f))
     def mapFind[C](f: B ⇒ Option[C], default: ⇒ Option[C]): Res[C] = andThen(MapFind(f, default))
     def merge[B2 >: B](source: Source[B2]): Res[B2] = andThen(Merge(source))
+    def process[S, C](seed: S)(f: (S, B) ⇒ Process.Command[C, S])(onComplete: S ⇒ Seq[C]): Res[C] = andThen(Process(seed, f, onComplete))
     def span(p: B ⇒ Boolean): Res[Source[B]] = andThen(Span(p))
     def tee(sink: Sink[B]): Res[B] = andThen(Tee(sink))
     def tail: Res[B] = andThen(Tail())
@@ -235,6 +246,7 @@ object Operation {
 
     def andThen[C](op: B ==> C): Source[C] = source.andThen(op)
     def foreach(f: B ⇒ Unit): Pipeline[B] = Pipeline(source, Foreach(f))
+    def ++(other: Source[B]): Source[B] = ConcatSources(source, other)
   }
 
   trait Ops2[B] extends Any {
@@ -244,6 +256,7 @@ object Operation {
 
     def flatten: Res[B] = andThen(Flatten[B]())
     def expose: Res[Producer[B]] = andThen(ExposeProducer())
+    def headTail: Res[(B, Source[B])] = andThen(SourceHeadTail())
   }
 
   implicit class OperationOps2[A, B](val op: A ==> Source[B]) extends Ops2[B] {

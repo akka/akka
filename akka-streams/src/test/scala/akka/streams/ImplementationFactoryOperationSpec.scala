@@ -1,44 +1,38 @@
 package akka.streams
 
-import org.scalatest.{ Tag, BeforeAndAfterAll, WordSpec, ShouldMatchers }
-import rx.async.tck._
 import akka.streams.testkit.TestKit
-import akka.testkit.TestKitBase
-import akka.actor.ActorSystem
 import rx.async.api.Producer
 import scala.concurrent.duration._
 import akka.testkit.duration2TestDuration
-import akka.streams.impl.{ RaceTrack }
 import Operation._
 
-class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatchers with BeforeAndAfterAll {
-  implicit lazy val system = ActorSystem()
-  implicit lazy val settings: ProcessorSettings = ProcessorSettings(system, () ⇒ new RaceTrack(bufferSize = 1))
-
-  "An OperationProcessor" should {
-    "work uninitialized without publisher" when {
-      "subscriber requests elements" in {
+trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
+  "A processor built from an ImplementationFactory" - {
+    "if uninitialized without publisher" - {
+      "buffer upstream requests when subscriber requests elements" in {
         val upstream = TestKit.producerProbe[Int]()
         val downstream = TestKit.consumerProbe[Int]()
 
-        val processed = OperationProcessor(Identity[Int](), settings)
+        val processed = Identity[Int]().toProcessor()
         processed.link(downstream)
         val downstreamSubscription = downstream.expectSubscription()
-
         downstreamSubscription.requestMore(1)
+
         upstream.link(processed)
+
         val upstreamSubscription = upstream.expectSubscription()
         upstreamSubscription.expectRequestMore(1)
         upstreamSubscription.sendNext(42)
+
         downstream.expectNext(42)
       }
       "subscriber cancels subscription and resubscribes" in pending
     }
-    "work uninitialized without subscriber" when {
+    "work uninitialized without subscriber" - {
       "publisher completes" in pending
       "publisher errs out" in pending
     }
-    "work initialized" when {
+    "work initialized" - {
       "subscriber requests elements" in new InitializedChainSetup(Identity[String]()) {
         downstreamSubscription.requestMore(1)
         upstream.expectRequestMore(upstreamSubscription, 1)
@@ -66,7 +60,7 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
         upstreamSubscription.sendError(WeirdError)
         downstream.expectError(WeirdError)
       }
-      "operation publishes Producer" in pendingUntilFixed(new InitializedChainSetup[String, Producer[String]](Span[String](_ == "end").expose) {
+      "operation publishes Producer" in new InitializedChainSetup[String, Producer[String]](Span[String](_ == "end").expose) {
         downstreamSubscription.requestMore(5)
         upstream.expectRequestMore(upstreamSubscription, 1)
 
@@ -106,20 +100,18 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
         downstream.expectComplete()
         subStreamConsumer2.expectNext("end")
         subStreamConsumer2.expectComplete()
-      })
-      "operation consumes Producer" in new InitializedChainSetup[Source[String], String](Flatten())(settings.copy(constructFanOutBox = () ⇒ new RaceTrack(5))) {
+      }
+      "operation consumes Producer" in new InitializedChainSetup[Source[String], String](Flatten()) {
         downstreamSubscription.requestMore(4)
         upstream.expectRequestMore(upstreamSubscription, 1)
 
         val subStream = TestKit.producerProbe[String]()
         upstreamSubscription.sendNext(subStream)
         val subStreamSubscription = subStream.expectSubscription()
-        subStream.expectRequestMore(subStreamSubscription, 1)
+        subStream.expectRequestMore(subStreamSubscription, 4)
         subStreamSubscription.sendNext("test")
-        subStream.expectRequestMore(subStreamSubscription, 1)
         downstream.expectNext("test")
         subStreamSubscription.sendNext("abc")
-        subStream.expectRequestMore(subStreamSubscription, 1)
         downstream.expectNext("abc")
         subStreamSubscription.sendComplete()
 
@@ -129,18 +121,45 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
         upstreamSubscription.sendNext(subStream2)
         upstreamSubscription.sendComplete()
         val subStreamSubscription2 = subStream2.expectSubscription()
-        subStream2.expectRequestMore(subStreamSubscription2, 1)
+        subStream2.expectRequestMore(subStreamSubscription2, 2)
         subStreamSubscription2.sendNext("123")
-        subStream2.expectRequestMore(subStreamSubscription2, 1)
         downstream.expectNext("123")
 
         subStreamSubscription2.sendComplete()
         downstream.expectComplete()
       }
-      "complex operation" in pending
+      "combined operation spanning internal subscription" in new InitializedChainSetup[Int, Int](Span[Int](_ % 3 == 0).flatten) {
+        downstreamSubscription.requestMore(1)
+        upstream.expectRequestMore(upstreamSubscription, 1)
+
+        upstreamSubscription.sendNext(1)
+        downstream.expectNext(1)
+
+        downstreamSubscription.requestMore(1)
+        upstream.expectRequestMore(upstreamSubscription, 1)
+        upstreamSubscription.sendNext(2)
+        downstream.expectNext(2)
+
+        downstreamSubscription.requestMore(1)
+        upstream.expectRequestMore(upstreamSubscription, 1)
+        upstreamSubscription.sendNext(3)
+        downstream.expectNext(3)
+
+        downstreamSubscription.requestMore(1)
+        upstream.expectRequestMore(upstreamSubscription, 1)
+        upstreamSubscription.sendNext(4)
+        downstream.expectNext(4)
+
+        downstreamSubscription.requestMore(1)
+        upstream.expectRequestMore(upstreamSubscription, 1)
+        upstreamSubscription.sendNext(5)
+        upstreamSubscription.sendComplete()
+        downstream.expectNext(5)
+        downstream.expectComplete()
+      }
     }
-    "work with multiple subscribers (FanOutBox)" when {
-      "adapt speed to the currently slowest consumer" in new InitializedChainSetup(Identity[Symbol]()) {
+    "work with multiple subscribers (FanOutBox)" - {
+      "adapt speed to the currently slowest consumer" in new InitializedChainSetupWithFanOutBuffer(Identity[Symbol](), 1) {
         val downstream2 = TestKit.consumerProbe[Symbol]()
         processed.link(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
@@ -161,7 +180,7 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
         downstream2Subscription.requestMore(1)
         downstream2.expectNext('element2)
       }
-      "incoming subscriber while elements were requested before" in new InitializedChainSetup(Identity[Symbol]()) {
+      "incoming subscriber while elements were requested before" in new InitializedChainSetupWithFanOutBuffer(Identity[Symbol](), 1) {
         val downstream2 = TestKit.consumerProbe[Symbol]()
         // don't link it just yet
 
@@ -189,7 +208,7 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
 
         upstream.expectRequestMore(upstreamSubscription, 1) // because of buffer size 1
       }
-      "blocking subscriber cancels subscription" in new InitializedChainSetup(Identity[Symbol]()) {
+      "blocking subscriber cancels subscription" in new InitializedChainSetupWithFanOutBuffer(Identity[Symbol](), 1) {
         val downstream2 = TestKit.consumerProbe[Symbol]()
         processed.link(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
@@ -209,12 +228,10 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
         upstream.expectNoMsg(100.millis.dilated)
         // should unblock fanoutbox
         downstream2Subscription.cancel()
-        // ... but doesn't currently
-        pending // TODO: fix RaceTrack
         upstreamSubscription.expectRequestMore(1)
       }
       "children Producers must support multiple subscribers" in pending
-      "finish gracefully onComplete" in new InitializedChainSetup(Identity[Symbol]()) {
+      "finish gracefully onComplete" in new InitializedChainSetupWithFanOutBuffer(Identity[Symbol](), 1) {
         val downstream2 = TestKit.consumerProbe[Symbol]()
         // don't link it just yet
 
@@ -251,8 +268,8 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
         pending
       }
     }
-    "work in special situations" when {
-      "single subscriber cancels subscription while receiving data" in new InitializedChainSetup(Identity[String]()) {
+    "work in special situations" - {
+      "single subscriber cancels subscription while receiving data" in new InitializedChainSetupWithFanOutBuffer(Identity[String](), 1) {
         downstreamSubscription.requestMore(5)
         upstreamSubscription.expectRequestMore(1)
         upstreamSubscription.sendNext("test")
@@ -267,19 +284,17 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
         pending
       }
     }
-    "work after initial upstream was completed" when {}
-    "work when subscribed to multiple publishers" when {
-      "really?" in pending
-    }
+    "work after initial upstream was completed" - {}
   }
 
-  override protected def afterAll(): Unit = system.shutdown()
-
-  class InitializedChainSetup[I, O](operation: Operation[I, O])(implicit settings: ProcessorSettings) {
+  class InitializedChainSetupWithFanOutBuffer[I, O](operation: Operation[I, O], capacity: Int) extends InitializedChainSetup(operation)(factoryWithFanOutBuffer(capacity)) {
+    pending
+  }
+  class InitializedChainSetup[I, O](operation: Operation[I, O])(implicit factory: ImplementationFactory) {
     val upstream = TestKit.producerProbe[I]()
     val downstream = TestKit.consumerProbe[O]()
 
-    val processor = OperationProcessor(operation, settings)
+    val processor = operation.toProcessor()
     upstream.link(processor)
     val processed = processor
     val upstreamSubscription = upstream.expectSubscription()
@@ -287,4 +302,3 @@ class OperationProcessorSpec extends WordSpec with TestKitBase with ShouldMatche
     val downstreamSubscription = downstream.expectSubscription()
   }
 }
-

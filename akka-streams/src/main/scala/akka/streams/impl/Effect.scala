@@ -35,6 +35,8 @@ case class Effects(effects: Vector[Effect]) extends Effect {
   override def ~(next: Effect): Effect =
     if (next == Continue) this
     else Effects(effects :+ next)
+
+  override def toString: String = effects.mkString("(", " ~ ", ")")
 }
 
 /** A single step that will result in a new effect. */
@@ -48,16 +50,30 @@ trait ExternalEffect extends Effect {
 }
 object Effect {
   /** Creates an anonymous step */
-  def step[O](body: ⇒ Effect): Effect = new SingleStep {
+  def step[O](body: ⇒ Effect, name: String): Effect = new SingleStep {
+    override def toString: String = name
+
     def runOne(): Effect = body
   }
   /** Creates an anonymous external side-effect */
-  def externalEffect[O](body: ⇒ Unit): Effect = new ExternalEffect {
+  def externalEffect[O](body: ⇒ Unit, name: String): Effect = new ExternalEffect {
+    override def toString: String = name
     def run(): Unit = body
   }
 
   /** Runs a possibly tail-recursive chain of effects */
-  def run(effect: Effect): Unit =
+  def run(effect: Effect): Unit = {
+    @tailrec def iterate(elements: Vector[Effect]): Unit = {
+      if (elements.isEmpty) ()
+      else elements.head match {
+        case s: ExternalEffect ⇒
+          s.run(); iterate(elements.tail)
+        case Continue         ⇒ iterate(elements.tail)
+        case r: SingleStep    ⇒ iterate(elements.tail :+ r.runOne())
+        case Effects(results) ⇒ iterate(results ++ elements.tail)
+      }
+    }
+
     effect match {
       // shortcut for simple results
       case s: ExternalEffect ⇒ s.run()
@@ -65,14 +81,5 @@ object Effect {
       case r: SingleStep     ⇒ iterate(Vector(r.runOne()))
       case Effects(results)  ⇒ iterate(results)
     }
-
-  @tailrec private[this] def iterate(elements: Vector[Effect]): Unit =
-    if (elements.isEmpty) ()
-    else elements.head match {
-      case s: ExternalEffect ⇒
-        s.run(); iterate(elements.tail)
-      case Continue         ⇒ iterate(elements.tail)
-      case r: SingleStep    ⇒ iterate(r.runOne() +: elements.tail)
-      case Effects(results) ⇒ iterate(results ++ elements.tail)
-    }
+  }
 }

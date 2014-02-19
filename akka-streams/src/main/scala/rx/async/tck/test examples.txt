@@ -1,6 +1,6 @@
 Publisher::subscribe
   when Publisher is in `completed` state
-    must never `subscriber.onSubscribed`
+    must never call `subscriber.onSubscribed`
     must trigger a call to `subscriber.onComplete`
 
   when Publisher is in an error state
@@ -17,7 +17,9 @@ Subscription::requestMore
   when subscription is cancelled
     must throw an IllegalStateException
   when subscription is not cancelled
-    register N additional elements to be published to the respective Subscriber
+    must register N additional elements to be published to the respective Subscriber
+    must throw an IllegalArgumentException if the argument is <= 0
+    is allowed to synchronously call `onNext` on this (or other) Subcriber(s) if and only if the next element is already available
 
 
 Subscription::cancel
@@ -32,12 +34,11 @@ Subscription::cancel
 A Publisher
   must not call `onNext`
     more times than the total number of elements that was previously requested with `subscription.requestMore` by the corresponding Subscriber
-    on a Subscriber before having called 'onNext` on all active subscribers for the previous message ("lockstep rule")
     after having issued an `onComplete` or `onError` call on a Subscriber
 
+  must produce the same elements in the same sequence for all simultaneously subscribed Subscribers (but is allowed to produce at temporarily differing rates)
+  must start producing with the oldest still available element for a newly subscribed Subscriber
   must not call `onComplete` or `onError` more than once per subscription on a single Subscriber
-  must call `onComplete` on all other active Subscribers if it calls `onComplete` on one Subscriber ("complete all or none")
-  must call `onError` on all other active Subscribers if it calls `onError` on one active Subscriber ("error all or none")
 
 
 Subscriber::onSubscribed, onNext
@@ -69,3 +70,6 @@ A Processor
   should not request from its upstream before having received a request from its downstream
   must be prepared to receive incoming elements from its upstream even after its last downstream subscription has been cancelled
   must be prepared to receive incoming elements from its upstream even if a downstream Subscriber has not requested anything yet
+
+Generally
+  all methods should neither block nor run expensive logic on the calling thread, i.e. they are supposed to return control to the caller quickly

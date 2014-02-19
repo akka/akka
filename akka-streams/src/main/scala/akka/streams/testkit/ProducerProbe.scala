@@ -1,7 +1,6 @@
-package rx.async
-package tck
+package akka.streams.testkit
 
-import spi.{ Subscriber, Subscription }
+import rx.async.spi.{ Subscriber, Subscription }
 import rx.async.api.Producer
 import scala.concurrent.duration.FiniteDuration
 

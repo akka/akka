@@ -1,84 +1,103 @@
-package akka.streams
-package impl
-package ops
+package akka.streams.impl.ops
 
+import akka.streams.Operation
+import akka.streams.impl._
 import Operation.Source
 
-object FlattenImpl {
-  def apply[O](upstream: Upstream, downstream: Downstream[O], ctx: ContextEffects): SyncOperation[Source[O]] =
-    new DynamicSyncOperation[Source[O]] {
-      def initial: State = Waiting
+class FlattenImpl[O](upstream: Upstream, downstream: Downstream[O], ctx: ContextEffects) extends DynamicSyncOperation[Source[O]] {
+  def initial: State = Waiting
 
-      def Waiting: State =
-        new State {
-          def handleRequestMore(n: Int): Effect = {
-            become(WaitingForElement(n))
-            upstream.requestMore(1)
-          }
-          def handleCancel(): Effect = ???
+  var undeliveredToDownstream: Int = 0
+  var closeAtEnd = false
 
-          def handleNext(element: Source[O]): Effect = throw new IllegalStateException("No element requested")
-          def handleComplete(): Effect = downstream.complete
-          def handleError(cause: Throwable): Effect = downstream.error(cause)
-        }
+  def Waiting: State =
+    new State {
+      def handleRequestMore(n: Int): Effect = {
+        become(WaitingForElement)
+        assert(undeliveredToDownstream == 0)
+        undeliveredToDownstream = n
+        upstream.requestMore(1)
+      }
+      def handleCancel(): Effect = ???
 
-      def WaitingForElement(remaining: Int): State =
-        new State {
-          def handleRequestMore(n: Int): Effect = {
-            become(WaitingForElement(remaining + n))
-            Continue
-          }
-          def handleCancel(): Effect = ???
+      def handleNext(element: Source[O]): Effect = throw new IllegalStateException("No element requested")
+      def handleComplete(): Effect = downstream.complete
+      def handleError(cause: Throwable): Effect = downstream.error(cause)
+    }
 
-          def handleNext(element: Source[O]): Effect = {
-            val readSubstream = new ReadSubstream(remaining)
-            become(readSubstream)
-            ctx.subscribeTo(element)(readSubstream.setSubUpstream)
-          }
-          def handleComplete(): Effect = downstream.complete
-          def handleError(cause: Throwable): Effect = downstream.error(cause)
-        }
+  def WaitingForElement: State =
+    new State {
+      def handleRequestMore(n: Int): Effect = {
+        become(WaitingForElement)
+        undeliveredToDownstream += n
+        Continue
+      }
+      def handleCancel(): Effect = ???
 
-      class ReadSubstream(var remaining: Int) extends State {
-        var subUpstream: Upstream = _
-        var closeAtEnd = false
-        def setSubUpstream(upstream: Upstream): (SyncSink[O], Effect) = {
-          subUpstream = upstream
-          (subDownstream, subUpstream.requestMore(remaining))
-        }
+      def handleNext(element: Source[O]): Effect = {
+        val readSubstream = new Subscribing
+        become(readSubstream)
+        ctx.subscribeTo(element)(readSubstream.setSubUpstream)
+      }
+      def handleComplete(): Effect = downstream.complete
+      def handleError(cause: Throwable): Effect = downstream.error(cause)
+    }
 
-        def handleRequestMore(n: Int): Effect = {
-          remaining += n
-          subUpstream.requestMore(n)
-        }
-        def handleCancel(): Effect = ???
+  val subDownstream =
+    new SyncSink[O] {
+      def handleNext(element: O): Effect = {
+        undeliveredToDownstream -= 1
+        downstream.next(element)
+      }
 
-        def handleNext(element: Source[O]): Effect = ???
-        def handleComplete(): Effect = {
-          closeAtEnd = true
+      def handleComplete(): Effect =
+        if (closeAtEnd) downstream.complete
+        else if (undeliveredToDownstream > 0) {
+          become(WaitingForElement)
+          upstream.requestMore(1)
+        } else {
+          become(Waiting)
           Continue
         }
-        def handleError(cause: Throwable): Effect = ???
 
-        val subDownstream = new SyncSink[O] {
-          def handleNext(element: O): Effect = {
-            remaining -= 1
-            downstream.next(element)
-          }
-
-          def handleComplete(): Effect = {
-            if (closeAtEnd) downstream.complete
-            else if (remaining > 0) {
-              become(WaitingForElement(remaining))
-              upstream.requestMore(1)
-            } else {
-              become(Waiting)
-              Continue
-            }
-          }
-
-          def handleError(cause: Throwable): Effect = ???
-        }
-      }
+      def handleError(cause: Throwable): Effect = ???
     }
+
+  // invariant:
+  // we've got a single subSource that we are currently subscribing to
+  class Subscribing extends RejectNext {
+    def setSubUpstream(upstream: Upstream): (SyncSink[O], Effect) = {
+      become(DeliverSubstreamElements(upstream))
+      (subDownstream, upstream.requestMore(undeliveredToDownstream))
+    }
+
+    def handleRequestMore(n: Int): Effect = {
+      undeliveredToDownstream += n
+      Continue
+    }
+    def handleCancel(): Effect = ???
+
+    def handleComplete(): Effect = {
+      closeAtEnd = true
+      Continue
+    }
+    def handleError(cause: Throwable): Effect = ???
+
+  }
+  // invariant:
+  // substream is not depleted, all elements have been requested from subUpstream
+  def DeliverSubstreamElements(subUpstream: Upstream): State = new RejectNext {
+    def handleRequestMore(n: Int): Effect = {
+      val noElementsRequested = undeliveredToDownstream == 0
+      undeliveredToDownstream += n
+      if (noElementsRequested) subUpstream.requestMore(undeliveredToDownstream) else Continue
+    }
+    def handleCancel(): Effect = ???
+
+    def handleComplete(): Effect = {
+      closeAtEnd = true
+      Continue
+    }
+    def handleError(cause: Throwable): Effect = ???
+  }
 }

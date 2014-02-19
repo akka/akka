@@ -1,39 +1,49 @@
-package akka.streams
-package impl
-package ops
+package akka.streams.impl.ops
 
 import org.scalatest.{ FreeSpec, ShouldMatchers }
-import Operation.{ FromIterableSource, Sink, Source }
+
+import akka.streams.impl._
+import akka.streams.Operation.{ FromProducerSource, FromIterableSource }
 
 class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {
   "Flatten should" - {
     "initially" - {
-      "request one substream as soon as at least one result element was requested" in new UnitializedSetup {
+      "request one substream as soon as at least one result element was requested" in new UninitializedSetup {
         flatten.handleRequestMore(1) should be(UpstreamRequestMore(1))
       }
     }
+    "while waiting for subscription" - {
+      "support requestMore" in new UninitializedSetup {
+        flatten.handleRequestMore(10) should be(UpstreamRequestMore(1))
+        val SubscribeToProducer(CustomProducer, onSubscribe) = flatten.handleNext(CustomSource)
+        flatten.handleRequestMore(3) should be(Continue)
+        val (subDownstream, res) = onSubscribe(SubUpstream)
+        // should now request all previously requested elements
+        res should be(RequestMoreFromSubstream(13))
+      }
+    }
     "while consuming substream" - {
-      "request elements from substream and deliver results to downstream" in new UnitializedSetup {
+      "request elements from substream and deliver results to downstream" in new UninitializedSetup {
         flatten.handleRequestMore(10) should be(UpstreamRequestMore(1))
         flatten.handleRequestMore(1) should be(Continue) // don't request more substreams while one is still pending
-        val SubscribeTo(CustomSource, onSubscribe) = flatten.handleNext(CustomSource)
+        val SubscribeToProducer(CustomProducer, onSubscribe) = flatten.handleNext(CustomSource)
         val (subDownstream, res) = onSubscribe(SubUpstream)
         res should be(RequestMoreFromSubstream(11))
         subDownstream.handleNext(1.5f) should be(DownstreamNext(1.5f))
         subDownstream.handleNext(8.7f) should be(DownstreamNext(8.7f))
       }
-      "go on with super stream when substream is depleted" in new UnitializedSetup {
+      "go on with super stream when substream is depleted" in new UninitializedSetup {
         flatten.handleRequestMore(10) should be(UpstreamRequestMore(1))
         flatten.handleRequestMore(1) should be(Continue) // don't request more substreams while one is still pending
-        val SubscribeTo(CustomSource, onSubscribe) = flatten.handleNext(CustomSource)
+        val SubscribeToProducer(CustomProducer, onSubscribe) = flatten.handleNext(CustomSource)
         val (subDownstream, res) = onSubscribe(SubUpstream)
         res should be(RequestMoreFromSubstream(11))
         subDownstream.handleComplete() should be(UpstreamRequestMore(1))
       }
-      "eventually close to downstream when super stream closes and last substream  is depleted" in new UnitializedSetup {
+      "eventually close to downstream when super stream closes and last substream is depleted" in new UninitializedSetup {
         flatten.handleRequestMore(10) should be(UpstreamRequestMore(1))
         flatten.handleRequestMore(1) should be(Continue) // don't request more substreams while one is still pending
-        val SubscribeTo(CustomSource, onSubscribe) = flatten.handleNext(CustomSource)
+        val SubscribeToProducer(CustomProducer, onSubscribe) = flatten.handleNext(CustomSource)
         val (subDownstream, res) = onSubscribe(SubUpstream)
         res should be(RequestMoreFromSubstream(11))
         subDownstream.handleNext(1.5f) should be(DownstreamNext(1.5f))
@@ -47,11 +57,9 @@ class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpe
     }
   }
 
-  class UnitializedSetup {
-    val CustomSource = FromIterableSource(Seq(1f, 2f, 3f))
-    case class SubscribeTo[O](source: Source[O], onSubscribe: Upstream ⇒ (SyncSink[O], Effect)) extends ExternalEffect {
-      def run(): Unit = ???
-    }
+  class UninitializedSetup {
+    val CustomProducer = namedProducer[Any]("customProducer")
+    val CustomSource = FromProducerSource(CustomProducer)
     case class RequestMoreFromSubstream(n: Int) extends ExternalEffect {
       def run(): Unit = ???
     }
@@ -62,12 +70,6 @@ class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpe
       val requestMore: Int ⇒ Effect = RequestMoreFromSubstream
       val cancel: Effect = CancelSubstream
     }
-    val ctx = new ContextEffects {
-      def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Effect)): Effect =
-        SubscribeTo(source, onSubscribe)
-
-      def subscribeFrom[O](sink: Sink[O])(onSubscribe: (Downstream[O]) ⇒ (SyncSource, Effect)): Effect = ???
-    }
-    val flatten = FlattenImpl(upstream, downstream, ctx)
+    val flatten = new FlattenImpl(upstream, downstream, TestContextEffects)
   }
 }

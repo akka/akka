@@ -10,14 +10,14 @@ trait Upstream {
 }
 
 /** Constructors for downstream effects */
-trait Downstream[O] {
+trait Downstream[-O] {
   val next: O ⇒ Effect
   val complete: Effect
   val error: Throwable ⇒ Effect
 }
 
 /** The interface an implementation that a synchronous source implementation has to implement */
-trait SyncSource {
+trait SyncSource extends SyncRunnable {
   def handleRequestMore(n: Int): Effect
   def handleCancel(): Effect
 }
@@ -58,6 +58,22 @@ abstract class DynamicSyncSource extends SyncSource {
 }
 
 /**
+ *  An abstract SyncSink implementation to be used as a base for SyncSink implementations
+ *  that implement their behavior as a state machine.
+ */
+abstract class DynamicSyncSink[I] extends SyncSink[I] {
+  type State = SyncSink[I]
+  private[this] var state: State = initial
+
+  def initial: State
+  def become(nextState: State): Unit = state = nextState
+
+  def handleNext(element: I): Effect = state.handleNext(element)
+  def handleComplete(): Effect = state.handleComplete()
+  def handleError(cause: Throwable): Effect = state.handleError(cause)
+}
+
+/**
  *  An abstract SyncOperation implementation to be used as a base for SyncOperation implementations
  *  that implement their behavior as a state machine.
  */
@@ -74,17 +90,8 @@ abstract class DynamicSyncOperation[I] extends SyncOperation[I] {
   def handleNext(element: I): Effect = state.handleNext(element)
   def handleComplete(): Effect = state.handleComplete()
   def handleError(cause: Throwable): Effect = state.handleError(cause)
-}
 
-/**
- * Additional Effects supplied by the context to allow additional executing additional effects
- * of link internal sources and sinks.
- */
-trait ContextEffects {
-  /**
-   * Subscribe to the given source and once subscribed call the `onSubscribe` callback with upstream
-   * effects. onSubscribe
-   */
-  def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Effect)): Effect
-  def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect
+  trait RejectNext extends State {
+    def handleNext(element: I): Effect = throw new IllegalStateException("No element requested")
+  }
 }
