@@ -244,22 +244,24 @@ object AkkaBuild extends Build {
   ) configs (MultiJvm)
 
 
+  import spray.revolver.RevolverPlugin._
   lazy val httpCore = Project(
     id = "akka-http-core",
     base = file("akka-http-core"),
     dependencies = Seq(actor, akkaStreams, testkit % "test->test"),
-    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.httpCore++ Seq(
+    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.httpCore++ Seq(
       fork in Test := true,
       publishArtifact in Compile := false,
       libraryDependencies ++= Dependencies.httpCore ++
         // TODO: remove these preliminary dependencies we need
         // while parsers are still missing
         Seq(
+          "io.spray" % "spray-can" % "1.3-RC1",
           "io.spray" % "spray-http" % "1.3-RC1"
         ),
       resolvers += "repo.spray.io" at "http://repo.spray.io",
       previousArtifact := akkaPreviousArtifact("akka-http-core")
-    )
+    ) ++ Revolver.settings
   )
 
   lazy val slf4j = Project(
