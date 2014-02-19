@@ -35,6 +35,8 @@ case class Effects(effects: Vector[Effect]) extends Effect {
   override def ~(next: Effect): Effect =
     if (next == Continue) this
     else Effects(effects :+ next)
+
+  override def toString: String = effects.mkString("(", " ~ ", ")")
 }
 
 /** A single step that will result in a new effect. */
