@@ -364,8 +364,8 @@ invariably lead to spurious test failures on the heavily loaded Jenkins server
 internally scaled by a factor taken from the :ref:`configuration`,
 ``akka.test.timefactor``, which defaults to 1.
 
-You can scale other durations with the same factor by using the implicit conversion
-in ``akka.testkit`` package object to add dilated function to :class:`Duration`.
+You can scale other durations with the same factor by using ``dilated`` method
+in :class:`JavaTestKit`.
 
 .. includecode:: code/docs/testkit/TestKitDocTest.java#duration-dilation
 

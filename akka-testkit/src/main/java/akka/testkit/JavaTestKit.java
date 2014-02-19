@@ -100,7 +100,7 @@ public class JavaTestKit {
   }
 
   public Duration dilated(Duration d) {
-    return d.mul(TestKitExtension.get(p.system()).TestTimeFactor());
+    return d.mul(TestKitExtension.get(getSystem()).TestTimeFactor());
   }
 
   /**
@@ -671,8 +671,7 @@ public class JavaTestKit {
   public void shutdown(ActorSystem actorSystem, Duration duration, Boolean verifySystemShutdown) {
     boolean vss = verifySystemShutdown != null ? verifySystemShutdown : false;
     Duration dur = duration != null ? duration :
-            TestKit.dilated(FiniteDuration.create(5, TimeUnit.SECONDS),
-                    getSystem()).min(FiniteDuration.create(10, TimeUnit.SECONDS));
+            dilated(FiniteDuration.create(5, TimeUnit.SECONDS)).min(FiniteDuration.create(10, TimeUnit.SECONDS));
     JavaTestKit.shutdownActorSystem(actorSystem, dur, vss);
   }
 

@@ -742,6 +742,7 @@ object TestKit {
    * Java API: Scale timeouts (durations) during tests with the configured
    * 'akka.test.timefactor'.
    */
+  @deprecated("Use JavaTestKit.dilated", "2.3")
   def dilated(duration: Duration, system: ActorSystem): Duration =
     duration * TestKitExtension(system).TestTimeFactor
 
@@ -834,14 +835,4 @@ private[testkit] abstract class CachingPartialFunction[A, B <: AnyRef] extends s
   var cache: B = _
   final def isDefinedAt(x: A): Boolean = try { cache = `match`(x); true } catch { case NoMatch ⇒ cache = null.asInstanceOf[B]; false }
   final override def apply(x: A): B = cache
-}
-
-/**
- * Wrapper for implicit conversion to add dilated function to Duration.
- */
-class TestDuration(duration: FiniteDuration) {
-  def dilated(implicit system: ActorSystem): FiniteDuration = {
-    // this cast will succeed unless TestTimeFactor is non-finite (which would be a misconfiguration)
-    (duration * TestKitExtension(system).TestTimeFactor).asInstanceOf[FiniteDuration]
-  }
 }
