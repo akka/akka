@@ -5,8 +5,17 @@ import akka.streams.Operation.{ FromProducerSource, Sink, Source }
 import rx.async.api.Producer
 import rx.async.spi.Publisher
 import akka.streams.impl.BasicEffects.HandleNextInSink
+import akka.testkit.TestProbe
+import akka.actor.ActorSystem
+import org.scalatest.{ Suite, BeforeAndAfterAll }
+import scala.concurrent.ExecutionContext
 
-trait SyncOperationSpec {
+trait WithActorSystem extends Suite with BeforeAndAfterAll {
+  implicit def system: ActorSystem = ActorSystem()
+  override protected def afterAll(): Unit = system.shutdown()
+}
+
+trait SyncOperationSpec extends WithActorSystem {
   abstract class DoNothing extends ExternalEffect {
     def run(): Unit = ???
   }
@@ -57,6 +66,11 @@ trait SyncOperationSpec {
   case class ExposedSource[O](source: Source[O]) extends Producer[O] {
     def getPublisher: Publisher[O] = throw new IllegalStateException("Should only be deconstructed")
   }
+
+  case class Thunk(body: () ⇒ Effect)
+  val runInContextProbe = TestProbe()
+  def expectThunk(): () ⇒ Effect = runInContextProbe.expectMsgType[Thunk].body
+  def expectAndRunContextEffect(): Effect = expectThunk()()
   object TestContextEffects extends AbstractContextEffects {
 
     override def subscribeTo[O](source: Source[O])(onSubscribeCallback: (Upstream) ⇒ (SyncSink[O], Effect)): Effect = source match {
@@ -67,7 +81,8 @@ trait SyncOperationSpec {
     def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect = SubscribeFrom(sink, onSubscribe)
     def expose[O](source: Source[O]): Producer[O] = ExposedSource(source)
 
-    def runInContext(body: ⇒ Effect): Unit = ???
+    override implicit def executionContext: ExecutionContext = system.dispatcher
+    def runInContext(body: ⇒ Effect): Unit = runInContextProbe.ref ! Thunk(body _)
   }
 
   implicit class RichEffect(effect: Effect) {

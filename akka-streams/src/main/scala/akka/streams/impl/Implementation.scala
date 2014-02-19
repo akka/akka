@@ -7,6 +7,7 @@ import akka.streams.{ Producer, AbstractProducer, Operation, ActorBasedImplement
 import akka.streams.Operation._
 import rx.async.api.Producer
 import rx.async.spi
+import scala.concurrent.ExecutionContext
 
 object Implementation {
   def toProcessor[I, O](operation: Operation[I, O], settings: ActorBasedImplementationSettings): Processor[I, O] =
@@ -177,6 +178,7 @@ trait ProcessorActorImpl { _: Actor ⇒
     }
 
     def runInContext(body: ⇒ Effect): Unit = runEffectInThisActor(body)
+    override implicit def executionContext: ExecutionContext = context.dispatcher
   }
 
   case class RunDeferred(body: () ⇒ Unit)

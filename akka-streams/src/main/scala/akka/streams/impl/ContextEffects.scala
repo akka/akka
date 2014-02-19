@@ -2,6 +2,7 @@ package akka.streams.impl
 
 import akka.streams.Operation.{ FromProducerSource, Sink, Source }
 import rx.async.api.Producer
+import scala.concurrent.ExecutionContext
 
 /**
  * Additional Effects supplied by the context to allow additional executing additional effects
@@ -17,6 +18,7 @@ trait ContextEffects {
 
   def expose[O](source: Source[O]): Producer[O]
 
+  implicit def executionContext: ExecutionContext
   def runInContext(body: ⇒ Effect): Unit
 }
 

@@ -2,6 +2,7 @@ package akka.streams
 
 import scala.language.{ implicitConversions, higherKinds }
 import rx.async.api.{ Consumer, Producer }
+import scala.concurrent.Future
 
 sealed trait Operation[-I, +O]
 
@@ -26,6 +27,9 @@ object Operation {
   trait CustomSource[+O] extends Source[O]
 
   implicit def fromIterable[T](iterable: Iterable[T]) = FromIterableSource(iterable)
+  implicit def fromProducer[T](producer: Producer[T]) = FromProducerSource(producer)
+  implicit def fromFuture[T](future: Future[T]) = FromFutureSource(future)
+
   case class FromIterableSource[T](iterable: Iterable[T]) extends Source[T]
   case class SingletonSource[T](element: T) extends Source[T]
   case object EmptySource extends Source[Nothing]
@@ -33,8 +37,8 @@ object Operation {
     type Input = I
     override def andThen[O2](op: Operation.==>[O, O2]): Source[O2] = MappedSource(source, Operation(operation, op))
   }
-  implicit def fromProducer[T](producer: Producer[T]) = FromProducerSource(producer)
   case class FromProducerSource[T](producer: Producer[T]) extends Source[T]
+  case class FromFutureSource[T](future: Future[T]) extends Source[T]
   case class ConcatSources[T](source1: Source[T], source2: Source[T]) extends Source[T]
 
   sealed trait Sink[-I] {
