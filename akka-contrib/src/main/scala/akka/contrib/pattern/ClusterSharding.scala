@@ -601,7 +601,7 @@ class ShardRegion(
   val ageOrdering = Ordering.fromLessThan[Member] { (a, b) ⇒ a.isOlderThan(b) }
   var membersByAge: immutable.SortedSet[Member] = immutable.SortedSet.empty(ageOrdering)
 
-  var regions = Map.empty[ActorRef, ShardId]
+  var regions = Map.empty[ActorRef, Set[ShardId]]
   var regionByShard = Map.empty[ShardId, ActorRef]
   var entries = Map.empty[ActorRef, ShardId]
   var entriesByShard = Map.empty[ShardId, Set[ActorRef]]
@@ -685,7 +685,7 @@ class ShardRegion(
         case _ ⇒
       }
       regionByShard = regionByShard.updated(shard, ref)
-      regions = regions.updated(ref, shard)
+      regions = regions.updated(ref, regions.getOrElse(ref, Set.empty) + shard)
       if (ref != self)
         context.watch(ref)
       shardBuffers.get(shard) match {
@@ -705,7 +705,10 @@ class ShardRegion(
     case BeginHandOff(shard) ⇒
       log.debug("BeginHandOff shard [{}]", shard)
       if (regionByShard.contains(shard)) {
-        regions -= regionByShard(shard)
+        val regionRef = regionByShard(shard)
+        val updatedShards = regions(regionRef) - shard
+        if (updatedShards.isEmpty) regions -= regionRef
+        else regions = regions.updated(regionRef, updatedShards)
         regionByShard -= shard
       }
       sender() ! BeginHandOffAck(shard)
@@ -745,9 +748,11 @@ class ShardRegion(
     if (coordinator.exists(_ == ref))
       coordinator = None
     else if (regions.contains(ref)) {
-      val shard = regions(ref)
-      regionByShard -= shard
+      val shards = regions(ref)
+      regionByShard --= shards
       regions -= ref
+      if (log.isDebugEnabled)
+        log.debug("Region [{}] with shards [{}] terminated", ref, shards.mkString(", "))
     } else if (entries.contains(ref)) {
       val shard = entries(ref)
       val newShardEntities = entriesByShard(shard) - ref
@@ -1220,13 +1225,14 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, rebalanceInterval: Finite
       }
 
     case RebalanceTick ⇒
-      allocationStrategy.rebalance(persistentState.regions, rebalanceInProgress).foreach { shard ⇒
-        rebalanceInProgress += shard
-        val rebalanceFromRegion = persistentState.shards(shard)
-        log.debug("Rebalance shard [{}] from [{}]", shard, rebalanceFromRegion)
-        context.actorOf(Props(classOf[RebalanceWorker], shard, rebalanceFromRegion, handOffTimeout,
-          persistentState.regions.keySet ++ persistentState.regionProxies))
-      }
+      if (persistentState.regions.nonEmpty)
+        allocationStrategy.rebalance(persistentState.regions, rebalanceInProgress).foreach { shard ⇒
+          rebalanceInProgress += shard
+          val rebalanceFromRegion = persistentState.shards(shard)
+          log.debug("Rebalance shard [{}] from [{}]", shard, rebalanceFromRegion)
+          context.actorOf(Props(classOf[RebalanceWorker], shard, rebalanceFromRegion, handOffTimeout,
+            persistentState.regions.keySet ++ persistentState.regionProxies))
+        }
 
     case RebalanceDone(shard, ok) ⇒
       rebalanceInProgress -= shard
