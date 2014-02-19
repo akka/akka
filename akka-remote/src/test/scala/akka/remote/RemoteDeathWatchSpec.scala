@@ -20,6 +20,8 @@ akka {
             /watchers.remote = "akka.tcp://other@localhost:2666"
         }
     }
+    remote.retry-gate-closed-for = 1 s
+    remote.initial-system-message-delivery-timeout = 3 s
     remote.netty.tcp {
         hostname = "localhost"
         port = 0
@@ -44,7 +46,7 @@ akka {
   "receive Terminated when system of de-serialized ActorRef is not running" in {
     val probe = TestProbe()
     system.eventStream.subscribe(probe.ref, classOf[QuarantinedEvent])
-    val rarp = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider]
+    val rarp = RARP(system).provider
     // pick an unused port
     val port = TestUtils.temporaryServerAddress().getPort
     // simulate de-serialized ActorRef
@@ -81,6 +83,23 @@ akka {
     val path = RootActorPath(Address("akka.tcp", system.name, "unknownhost2", 2552)) / "user" / "subject"
     system.actorSelection(path) ! Identify(path)
     expectMsg(60.seconds, ActorIdentity(path, None))
+  }
+
+  "quarantine systems after unsuccessful system message delivery if have not communicated before" in {
+    // Synthesize an ActorRef to a remote system this one has never talked to before.
+    // This forces ReliableDeliverySupervisor to start with unknown remote system UID.
+    val extinctPath = RootActorPath(Address("akka.tcp", "extinct-system", "localhost", TestUtils.temporaryServerAddress().getPort)) / "user" / "noone"
+    val transport = RARP(system).provider.transport
+    val extinctRef = new RemoteActorRef(transport, transport.localAddressForRemote(extinctPath.address),
+      extinctPath, Nobody, props = None, deploy = None)
+
+    val probe = TestProbe()
+    probe.watch(extinctRef)
+    probe.unwatch(extinctRef)
+
+    probe.expectNoMsg(5.seconds)
+    system.eventStream.subscribe(probe.ref, classOf[Warning])
+    probe.expectNoMsg(RARP(system).provider.remoteSettings.RetryGateClosedFor * 2)
   }
 
 }
