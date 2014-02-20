@@ -8,6 +8,7 @@ import scala.annotation.tailrec
 object Producer {
   def apply[T](iterable: Iterable[T]): Prod[T] = apply(iterable.iterator)
   def apply[T](iterator: Iterator[T]): Prod[T] = new IteratorProducer[T](iterator)
+  def empty[T]: Prod[T] = EmptyProducer.asInstanceOf[Prod[T]]
 
   sealed trait State
   object State {
@@ -15,6 +16,13 @@ object Producer {
     case object Completed extends State
     case class Error(cause: Throwable) extends State
   }
+}
+
+object EmptyProducer extends Prod[Nothing] with Publisher[Nothing] {
+  def getPublisher: Publisher[Nothing] = this
+
+  def subscribe(subscriber: Subscriber[Nothing]): Unit =
+    subscriber.onComplete()
 }
 
 /**

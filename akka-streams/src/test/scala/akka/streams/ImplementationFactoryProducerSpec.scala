@@ -58,6 +58,15 @@ trait ImplementationFactoryProducerSpec extends ImplementationFactorySpec {
       "single subscriber cancels subscription while receiving data" in pending
       "properly serve multiple subscribers" in pending
     }
+    "work when attached to EmptyProducer" in {
+      val producer = Producer.empty[Int].map(_ + 1).toProducer()
+
+      val downstream = TestKit.consumerProbe[Int]()
+      downstream.expectNoMsg(100.millis.dilated) // to make sure producer above has subscribed to source
+      producer.link(downstream)
+
+      downstream.expectComplete()
+    }
   }
 
   class InitializedChainSetup[O](source: Source[O])(implicit factory: ImplementationFactory) {
