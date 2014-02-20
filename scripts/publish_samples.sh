@@ -84,7 +84,7 @@ declare -r version=$1
 type -P curl &> /dev/null || fail "curl command not found"
 
 
-names=`find akka-samples -name "activator.properties" | awk -F"/" '{printf "%s\n",$2}'`
+names=`find akka-samples -name "activator.properties" -depth 2 | awk -F"/" '{printf "%s\n",$2}'`
 
 for name in $names; do
   echolog "Publishing $name"
