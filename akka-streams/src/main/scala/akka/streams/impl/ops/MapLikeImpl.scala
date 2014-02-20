@@ -35,14 +35,4 @@ abstract class MapLikeImpl[I, O] extends DynamicSyncOperation[I] {
       downstream.error(cause)
     }
   }
-  def Stopped = new State {
-    def handleRequestMore(n: Int): Effect = errOut()
-    def handleCancel(): Effect = errOut()
-
-    def handleNext(element: I): Effect = errOut()
-    def handleComplete(): Effect = errOut()
-    def handleError(cause: Throwable): Effect = errOut()
-
-    def errOut(): Nothing = throw new IllegalStateException("No events expected after complete/error/cancelled")
-  }
 }

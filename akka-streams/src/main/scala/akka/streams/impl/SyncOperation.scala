@@ -94,4 +94,15 @@ abstract class DynamicSyncOperation[I] extends SyncOperation[I] {
   trait RejectNext extends State {
     def handleNext(element: I): Effect = throw new IllegalStateException("No element requested")
   }
+
+  def Stopped = new State {
+    def handleRequestMore(n: Int): Effect = errOut()
+    def handleCancel(): Effect = errOut()
+
+    def handleNext(element: I): Effect = errOut()
+    def handleComplete(): Effect = errOut()
+    def handleError(cause: Throwable): Effect = errOut()
+
+    def errOut(): Nothing = throw new IllegalStateException("No events expected after complete/error/cancelled")
+  }
 }

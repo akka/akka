@@ -119,4 +119,9 @@ trait SyncOperationSpec extends WithActorSystem {
     }
 
   case object TestException extends RuntimeException("This is a test exception")
+
+  def expectIllegalState[T](impl: SyncOperation[T], value: T): Unit = {
+    intercept[IllegalStateException](impl.handleRequestMore(12))
+    intercept[IllegalStateException](impl.handleNext(value))
+  }
 }
