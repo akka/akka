@@ -6,13 +6,12 @@ import rx.async.spi.{ Subscription, Subscriber }
 import rx.async.api.Producer
 
 class FromProducerSourceImpl[O](downstream: Downstream[O], ctx: ContextEffects, producer: Producer[O]) extends DynamicSyncSource {
-  def initial = WaitingForRequest
+  def initial = new State {
+    override def handleRequestMore(n: Int): Effect = ???
+    override def handleCancel(): Effect = ???
+  }
 
-  def WaitingForRequest: State =
-    new State {
-      def handleRequestMore(n: Int): Effect = startSubscribing(n)
-      def handleCancel(): Effect = ???
-    }
+  override def start(): Effect = startSubscribing(0)
 
   def startSubscribing(requested: Int): Effect = {
     val nextState = new WaitingForSubscription(requested)
