@@ -12,7 +12,7 @@ import rx.async.spi.Subscriber
  * than merely retrieve an element in their `next()` method!
  */
 class IteratorProducer[T](iterator: Iterator[T], maxBufferSize: Int = 16)
-  extends AbstractProducer[T](initialBufferSize = 10, maxBufferSize = maxBufferSize) {
+  extends AbstractProducer[T](initialBufferSize = 1, maxBufferSize = maxBufferSize) {
 
   // compile-time constants
   private final val UNLOCKED = 0
@@ -46,7 +46,7 @@ class IteratorProducer[T](iterator: Iterator[T], maxBufferSize: Int = 16)
         pushToDownstream(iterator.next())
         requestFromUpstream(elements - 1)
       } else completeDownstream()
-    }
+    } else if (!iterator.hasNext) completeDownstream() // complete eagerly
 
   // called from a Subscription, i.e. probably from another thread,
   // so we need to wrap with synchronization
