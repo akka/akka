@@ -59,7 +59,7 @@ Architecture
 * *Event sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
   development of event sourced applications (see section :ref:`event-sourcing`)
 
-.. _Community plugins: https://gist.github.com/krasserm/8612920#file-akka-persistence-plugins-md
+.. _Community plugins: http://akka.io/community/
 
 .. _processors:
 
