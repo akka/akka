@@ -1,7 +1,8 @@
 package akka
 
 import rx.async.api.{ Processor, Consumer, Producer }
-import akka.streams.Operation.FromIterableSource
+import akka.streams.Operation.{ FromFutureSource, FromProducerSource, FromIterableSource }
+import scala.concurrent.Future
 
 package object streams {
   import Operation.{ Sink, Source, Pipeline }
@@ -23,6 +24,12 @@ package object streams {
     def run(): Unit = factory.runPipeline(pipeline)
   }
 
+  implicit class SourceFromFuture[T](val future: Future[T]) extends AnyVal {
+    def toSource: Source[T] = FromFutureSource(future)
+  }
+  implicit class SourceFromProducer[T](val producer: Producer[T]) extends AnyVal {
+    def toSource: Source[T] = FromProducerSource(producer)
+  }
   implicit class SourceFromIterable[T](val iterable: Iterable[T]) extends AnyVal {
     def toSource: Source[T] = FromIterableSource(iterable)
   }
