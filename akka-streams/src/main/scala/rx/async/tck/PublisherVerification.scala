@@ -7,14 +7,20 @@ import org.testng.Assert._
 abstract class PublisherVerification[T] extends TestCaseEnvironment {
   import TestCaseEnvironment._
 
-  // TODO: make the timeouts be dilate-able so that one can tune the suite after the machine it runs on
+  // TODO: make the timeouts be dilate-able so that one can tune the suite for the machine it runs on
 
   /**
    * This is the main method you must implement in your test incarnation.
    * It must produce a Publisher for a stream with exactly the given number of elements.
-   * Note that, if `elements` is zero, the created Publisher must already be in completed state.
+   * Will always be called with `elements > 0`.
    */
   def createPublisher(elements: Int): Publisher[T]
+
+  /**
+   * Override in your test if you want to enable error-state verification.
+   * If you don't override the respective tests will be ignored.
+   */
+  def createCompletedStatePublisher(): Publisher[T] = null
 
   /**
    * Override in your test if you want to enable error-state verification.
@@ -38,21 +44,23 @@ abstract class PublisherVerification[T] extends TestCaseEnvironment {
 
   @Test
   def publisherSubscribeWhenCompletedMustTriggerOnCompleteAndNotOnSubscribe(): Unit = {
-    val pub = createPublisher(elements = 0)
-    val latch = new Latch()
-    pub.subscribe {
-      new TestSubscriber[T] {
-        override def onComplete(): Unit = {
-          latch.assertOpen(s"Publisher $pub called `onComplete` twice on new Subscriber")
-          latch.close()
+    val pub = createCompletedStatePublisher()
+    if (pub ne null) {
+      val latch = new Latch()
+      pub.subscribe {
+        new TestSubscriber[T] {
+          override def onComplete(): Unit = {
+            latch.assertOpen(s"Publisher $pub called `onComplete` twice on new Subscriber")
+            latch.close()
+          }
+          override def onSubscribe(subscription: Subscription): Unit =
+            fail(s"Publisher created by `createPublisher(0)` ($pub) called `onSubscribe` on new Subscriber")
         }
-        override def onSubscribe(subscription: Subscription): Unit =
-          fail(s"Publisher created by `createPublisher(0)` ($pub) called `onSubscribe` on new Subscriber")
       }
+      latch.expectClose(timeoutMillis = 100, s"Publisher created by `createPublisher(0)` ($pub) did not call `onComplete` on new Subscriber")
+      // wait for the Publisher to potentially call 'onSubscribe' or `onNext` which would trigger an async error
+      verifyNoAsyncErrorsAfter(delayMillis = 100)
     }
-    latch.expectClose(timeoutMillis = 100, s"Publisher created by `createPublisher(0)` ($pub) did not call `onComplete` on new Subscriber")
-    // wait for the Publisher to potentially call 'onSubscribe' or `onNext` which would trigger an async error
-    verifyNoAsyncErrorsAfter(delayMillis = 100)
   }
 
   @Test
@@ -159,6 +167,26 @@ abstract class PublisherVerification[T] extends TestCaseEnvironment {
   }
 
   @Test
+  def subscriptionCancelWhenCancelledMustThrow(): Unit = {
+    // TODO
+  }
+
+  @Test
+  def onSubscriptionCancelWhenUncancelledThePublisherMustEventuallyCeaseToCallAnyMethodsOnTheSubscriber(): Unit = {
+    // TODO
+  }
+
+  @Test
+  def onSubscriptionCancelWhenUncancelledThePublisherMustEventuallyDropAllReferencesToTheSubscriber(): Unit = {
+    // TODO
+  }
+
+  @Test
+  def onSubscriptionCancelWhenUncancelledThePublisherMustObeyCancelHappensBeforeSubsequentSubscribe(): Unit = {
+    // TODO
+  }
+
+  @Test
   def mustProduceTheSameElementsInTheSameSequenceForAllSimultaneouslySubscribedSubscribers(): Unit = {
     val pub = createPublisher(5)
     val sub1 = new FullManualSubscriber[T]
@@ -169,25 +197,30 @@ abstract class PublisherVerification[T] extends TestCaseEnvironment {
     subscribe(pub, sub3)
 
     sub1.requestOne()
+    val x1 = sub1.expectOne(timeoutMillis = 100, s"Publisher $pub did not produce the requested 1 element on 1st subscriber")
     sub2.requestN(2)
+    val y1 = sub2.expectN(2, timeoutMillis = 100, s"Publisher $pub did not produce the requested 2 elements on 2nd subscriber")
     sub1.requestOne()
+    val x2 = sub1.expectOne(timeoutMillis = 100, s"Publisher $pub did not produce the requested 1 element on 1st subscriber")
     sub3.requestN(3)
+    val z1 = sub3.expectN(3, timeoutMillis = 100, s"Publisher $pub did not produce the requested 3 elements on 3rd subscriber")
     sub3.requestOne()
+    val z2 = sub3.expectOne(timeoutMillis = 100, s"Publisher $pub did not produce the requested 1 element on 3rd subscriber")
     sub3.requestOne()
+    val z3 = sub3.expectOne(timeoutMillis = 100, s"Publisher $pub did not produce the requested 1 element on 3rd subscriber")
+    sub3.expectCompletion(timeoutMillis = 100, s"Publisher $pub did not complete the stream as expected on 3rd subscriber")
     sub2.requestN(3)
+    val y2 = sub2.expectN(3, timeoutMillis = 100, s"Publisher $pub did not produce the requested 3 elements on 2nd subscriber")
+    sub2.expectCompletion(timeoutMillis = 100, s"Publisher $pub did not complete the stream as expected on 2nd subscriber")
     sub1.requestN(2)
+    val x3 = sub1.expectN(2, timeoutMillis = 100, s"Publisher $pub did not produce the requested 2 elements on 1st subscriber")
     sub1.requestOne()
+    val x4 = sub1.expectOne(timeoutMillis = 100, s"Publisher $pub did not produce the requested 1 element on 1st subscriber")
+    sub1.expectCompletion(timeoutMillis = 100, s"Publisher $pub did not complete the stream as expected on 1st subscriber")
 
-    val x = sub1.expectN(5, timeoutMillis = 100, s"Publisher $pub did not produce the requested 5 elements on 1st subscriber")
-    val y = sub2.expectN(5, timeoutMillis = 100, s"Publisher $pub did not produce the requested 5 elements on 2nd subscriber")
-    val z = sub3.expectN(5, timeoutMillis = 100, s"Publisher $pub did not produce the requested 5 elements on 3rd subscriber")
-
-    assertEquals(x, y, s"Publisher $pub did not produce the same element sequence for subscribers 1 and 2")
-    assertEquals(x, z, s"Publisher $pub did not produce the same element sequence for subscribers 1 and 3")
-
-    sub1.expectNone(withinMillis = 100, x ⇒ s"Publisher $pub produced unrequested $x on 1st subscriber")
-    sub2.expectNone(withinMillis = 100, x ⇒ s"Publisher $pub produced unrequested $x on 2nd subscriber")
-    sub3.expectNone(withinMillis = 100, x ⇒ s"Publisher $pub produced unrequested $x on 3rd subscriber")
+    val r = x1 :: x2 :: x3.toList ::: x4 :: Nil
+    assertEquals(r, y1.toList ::: y2.toList, s"Publisher $pub did not produce the same element sequence for subscribers 1 and 2")
+    assertEquals(r, z1.toList ::: z2 :: z3 :: Nil, s"Publisher $pub did not produce the same element sequence for subscribers 1 and 3")
 
     verifyNoAsyncErrors()
   }

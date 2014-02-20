@@ -77,11 +77,14 @@ object Operation {
 
   // "compresses" a fast upstream by keeping one element buffered and reducing surplus values using the given function
   // consumes at max rate, produces no faster than the upstream
-  def Compress[T](f: (T, T) ⇒ T): T ==> T =
-    Buffer[T, T, Option[T]](
-      seed = None,
-      compress = (s, x) ⇒ s.map(f(_, x)) orElse Some(x),
-      expand = None -> _,
+  def Compress[A, B](seed: B, f: (B, A) ⇒ B): A ==> B =
+    Buffer[A, B, Either[B, B]]( // Left(b) = we need to request from upstream first, Right(b) = we can dispatch to downstream
+      seed = Left(seed),
+      compress = (either, a) ⇒ Right(f(either.fold(identity, identity), a)),
+      expand = {
+        case x @ Left(_) ⇒ x -> None
+        case Right(b)    ⇒ Left(b) -> Some(b)
+      },
       canConsume = _ ⇒ true)
 
   // drops the first n upstream values
@@ -220,7 +223,7 @@ object Operation {
     def andThen[C](next: B ==> C): Res[C]
 
     def buffer[C, S](seed: S)(compress: (S, B) ⇒ S)(expand: S ⇒ (S, Option[C]))(canConsume: S ⇒ Boolean): Res[C] = andThen(Buffer(seed, compress, expand, canConsume))
-    def compress(f: (B, B) ⇒ B): Res[B] = andThen(Compress(f))
+    def compress[C](seed: C)(f: (C, B) ⇒ C): Res[C] = andThen(Compress(seed, f))
     def drop(n: Int): Res[B] = andThen(Drop(n))
     def exists(p: B ⇒ Boolean): Res[Boolean] = andThen(Exists(p))
     def expand[S](seed: S)(produce: S ⇒ (S, B)): Res[B] = andThen(Expand(seed, produce))

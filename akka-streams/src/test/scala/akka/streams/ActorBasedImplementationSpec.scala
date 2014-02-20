@@ -6,5 +6,5 @@ class ActorBasedImplementationSpec extends ImplementationFactorySpec
   with ImplementationFactoryOperationSpec
   with ImplementationFactoryProducerSpec {
   implicit lazy val system = ActorSystem()
-  def factoryWithFanOutBuffer(capacity: Int): ImplementationFactory = new ActorBasedImplementationFactory(ActorBasedImplementationSettings(system, capacity))
+  def factoryWithFanOutBuffer(capacity: Int): ImplementationFactory = new ActorBasedImplementationFactory(ActorBasedImplementationSettings(system, maxFanOutBufferSize = capacity))
 }

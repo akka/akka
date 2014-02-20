@@ -115,19 +115,17 @@ trait ProducerImplementationBits[O] extends Producer[O] with Publisher[O] {
   trait ProducerActor extends Actor with ProcessorActorImpl { outer ⇒
     protected def requestFromUpstream(elements: Int): Unit
 
-    val fanOutBox = new AbstractProducer[O] with Subscriber[O] {
+    val fanOutBox = new AbstractProducer[O](settings.initialFanOutBufferSize, settings.maxFanOutBufferSize) with Subscriber[O] {
       protected def requestFromUpstream(elements: Int): Unit = outer.requestFromUpstream(elements)
-      protected def handleOverflow(value: O): Unit = {} // drop, TODO: maybe log?
-
-      startWith(Producer.State.Active)
 
       def onSubscribe(subscription: spi.Subscription): Unit = ???
       def onNext(element: O): Unit = pushToDownstream(element)
       def onComplete(): Unit = completeDownstream()
-      def onError(cause: Throwable): Unit = completeDownstreamWithError(cause)
+      def onError(cause: Throwable): Unit = abortDownstream(cause)
 
-      override protected def requestFromUpstreamIfRequired(): Unit =
-        runInThisActor(super.requestFromUpstreamIfRequired())
+      override protected def moreRequested(subscription: Subscription, elements: Int): Unit =
+        runInThisActor(super.moreRequested(subscription, elements))
+
       override protected def unregisterSubscription(subscription: Subscription): Unit =
         runInThisActor(super.unregisterSubscription(subscription))
     }
