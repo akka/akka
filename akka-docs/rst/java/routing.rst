@@ -187,6 +187,8 @@ The routee actors are created externally from the router:
 The paths may contain protocol and address information for actors running on remote hosts.
 Remoting requires the ``akka-remote`` module to be included in the classpath.
 
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-remote-round-robin-group
+
 Router usage
 ^^^^^^^^^^^^
 

@@ -211,8 +211,6 @@ private[remote] class ReliableDeliverySupervisor(
         remoteAddress, settings.RetryGateClosedFor.toMillis, e.getMessage)
       uidConfirmed = false // Need confirmation of UID again
       context.become(gated)
-      context.system.scheduler.scheduleOnce(settings.RetryGateClosedFor, self, Ungate)
-      context.unwatch(writer)
       currentHandle = None
       context.parent ! StoppedReading(self)
       Stop
@@ -243,6 +241,7 @@ private[remote] class ReliableDeliverySupervisor(
 
   var writer: ActorRef = createWriter()
   var uid: Option[Int] = handleOrActive map { _.handshakeInfo.uid }
+  val bailoutAt: Deadline = Deadline.now + settings.InitialSysMsgDeliveryTimeout
   // Processing of Acks has to be delayed until the UID after a reconnect is discovered. Depending whether the
   // UID matches the expected one, pending Acks can be processed, or must be dropped. It is guaranteed that for
   // any inbound connections (calling createWriter()) the first message from that connection is GotUid() therefore
@@ -319,8 +318,18 @@ private[remote] class ReliableDeliverySupervisor(
   }
 
   def gated: Receive = {
+    case Terminated(_) ⇒
+      context.system.scheduler.scheduleOnce(settings.RetryGateClosedFor, self, Ungate)
     case Ungate ⇒
       if (resendBuffer.nonAcked.nonEmpty || resendBuffer.nacked.nonEmpty) {
+        // If we talk to a system we have not talked to before (or has given up talking to in the past) stop
+        // system delivery attempts after the specified time. This act will drop the pending system messages and gate the
+        // remote address at the EndpointManager level stopping this actor. In case the remote system becomes reachable
+        // again it will be immediately quarantined due to out-of-sync system message buffer and becomes quarantined.
+        // In other words, this action is safe.
+        if (!uidConfirmed && bailoutAt.isOverdue())
+          throw new InvalidAssociation(localAddress, remoteAddress,
+            new java.util.concurrent.TimeoutException("Delivery of system messages timed out and they were dropped."))
         writer = createWriter()
         // Resending will be triggered by the incoming GotUid message after the connection finished
         context.become(receive)

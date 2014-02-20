@@ -112,8 +112,8 @@ object ClusterShardingSpec extends MultiNodeConfig {
   }
 
   val shardResolver: ShardRegion.ShardResolver = msg ⇒ msg match {
-    case EntryEnvelope(id, _) ⇒ (id % 10).toString
-    case Get(id)              ⇒ (id % 10).toString
+    case EntryEnvelope(id, _) ⇒ (id % 12).toString
+    case Get(id)              ⇒ (id % 12).toString
   }
   //#counter-extractor
 
@@ -222,6 +222,13 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
         region ! EntryEnvelope(2, Decrement)
         region ! Get(2)
         expectMsg(2)
+
+        region ! EntryEnvelope(11, Increment)
+        region ! EntryEnvelope(12, Increment)
+        region ! Get(11)
+        expectMsg(1)
+        region ! Get(12)
+        expectMsg(1)
       }
       enterBarrier("second-update")
       runOn(first) {
@@ -229,6 +236,14 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
         region ! Get(2)
         expectMsg(3)
         lastSender.path should be(node(second) / "user" / "counterRegion" / "2")
+
+        region ! Get(11)
+        expectMsg(1)
+        // local on first
+        lastSender.path should be(region.path / "11")
+        region ! Get(12)
+        expectMsg(1)
+        lastSender.path should be(node(second) / "user" / "counterRegion" / "12")
       }
       enterBarrier("first-update")
 
@@ -267,12 +282,20 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
       enterBarrier("crash-second")
 
       runOn(first) {
-        val probe = TestProbe()
+        val probe1 = TestProbe()
         awaitAssert {
           within(1.second) {
-            region.tell(Get(2), probe.ref)
-            probe.expectMsg(4)
-            probe.lastSender.path should be(region.path / "2")
+            region.tell(Get(2), probe1.ref)
+            probe1.expectMsg(4)
+            probe1.lastSender.path should be(region.path / "2")
+          }
+        }
+        val probe2 = TestProbe()
+        awaitAssert {
+          within(1.second) {
+            region.tell(Get(12), probe2.ref)
+            probe2.expectMsg(1)
+            probe2.lastSender.path should be(region.path / "12")
           }
         }
       }

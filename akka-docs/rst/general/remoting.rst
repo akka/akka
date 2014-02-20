@@ -52,6 +52,23 @@ be set to a specific :class:`Deploy` instance; this has the same effect as
 putting an equivalent deployment into the configuration file (if both are
 given, configuration file wins).
 
+Peer-to-Peer vs. Client-Server
+------------------------------
+
+Akka Remoting is a communication module for connecting actor systems in a peer-to-peer fashion,
+and it is the foundation for Akka Clustering. The design of remoting is driven by two (related)
+design decisions:
+
+#. Communication between involved systems is symmetric: if a system A can connect to a system B
+   then system B must also be able to connect to system A independently.
+#. The role of the communicating systems are symmetric in regards to connection patterns: there
+   is no system that only accepts connections, and there is no system that only initiates connections.
+   
+The consequence of these decisions is that it is not possible to safely create pure client-server setups
+with predefined roles (violates assumption 2) and using setups involving NAT (violates assumption 1).
+
+For client-server setups it is better to use HTTP or Akka I/O.
+
 Marking Points for Scaling Up with Routers
 ------------------------------------------
 
@@ -66,4 +83,4 @@ up a configurable number of children of the desired type and route to them in
 the configured fashion. Once such a router has been declared, its configuration
 can be freely overridden from the configuration file, including mixing it with
 the remote deployment of (some of) the children. Read more about
-this in :ref:`routing-scala` and :ref:`routing-java`.
+this in :ref:`Routing (Scala) <routing-scala>` and :ref:`Routing (Java) <routing-java>`.

@@ -8,7 +8,6 @@ import language.postfixOps
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.math.BigInt.int2bigInt
 import scala.util.Random
 import scala.util.control.NoStackTrace
 import com.typesafe.config.{ ConfigFactory, Config }
@@ -17,7 +16,7 @@ import akka.actor.SupervisorStrategy.seqThrowable2Decider
 import akka.dispatch.{ MessageDispatcher, DispatcherPrerequisites, DispatcherConfigurator, Dispatcher }
 import akka.pattern.ask
 import akka.testkit.{ ImplicitSender, EventFilter, DefaultTimeout, AkkaSpec }
-import akka.testkit.{ filterException, filterEvents, duration2TestDuration, TestLatch }
+import akka.testkit.{ filterException, filterEvents, TestDuration, TestLatch }
 import akka.testkit.TestEvent.Mute
 import java.util.concurrent.ConcurrentHashMap
 import java.lang.ref.WeakReference

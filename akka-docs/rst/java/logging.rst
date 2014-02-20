@@ -149,6 +149,8 @@ If you want to monitor subscriptions (subscribe/unsubscribe) on the ActorSystem.
       }
     }
 
+.. _logging-remote-java:
+
 Auxiliary remote logging options
 --------------------------------
 
@@ -218,8 +220,6 @@ Loggers
 Logging is performed asynchronously through an event bus. Log events are processed by an event handler actor
 and it will receive the log events in the same order as they were emitted. 
 
-One gotcha is that currently the timestamp is attributed in the event handler, not when actually doing the logging.
-
 You can configure which event handlers are created at system start-up and listen to logging events. That is done using the 
 ``loggers`` element in the :ref:`configuration`.
 Here you can also define the log level.
@@ -247,6 +247,14 @@ Example of creating a listener:
 
 .. _slf4j-java:
 
+Logging to stdout during startup and shutdown
+=============================================
+
+While the actor system is starting up and shutting down the configured ``loggers`` are not used.
+Instead log messages are printed to stdout (System.out). The default log level for this
+stdout logger is ``WARNING`` and it can be silenced completely by setting 
+``akka.stdout-loglevel=OFF``.
+
 SLF4J
 =====
 
@@ -272,6 +280,8 @@ More fine grained log levels can be defined in the configuration of the SLF4J ba
     loggers = ["akka.event.slf4j.Slf4jLogger"]
     loglevel = "DEBUG"
   }
+  
+One gotcha is that the timestamp is attributed in the event handler, not when actually doing the logging.
 
 The SLF4J logger selected for each log event is chosen based on the
 :class:`Class` of the log source specified when creating the

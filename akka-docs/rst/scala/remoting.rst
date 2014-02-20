@@ -1,11 +1,15 @@
 .. _remoting-scala:
 
-#################
+##########
  Remoting
-#################
+##########
 
 
 For an introduction of remoting capabilities of Akka please see :ref:`remoting`.
+
+As explained in that chapter Akka remoting is designed for communication in a 
+peer-to-peer fashion and it has limitations for client-server setups. 
+
 
 Preparing your ActorSystem for Remoting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -257,24 +261,21 @@ Routers with Remote Destinations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 It is absolutely feasible to combine remoting with :ref:`routing-scala`.
-This is also done via configuration::
 
-  akka {
-    actor {
-      deployment {
-        /serviceA/aggregation {
-          router = "round-robin-pool"
-          nr-of-instances = 10
-          target {
-            nodes = ["akka.tcp://app@10.0.0.2:2552", "akka.tcp://app@10.0.0.3:2552"]
-          }
-        }
-      }
-    }
-  }
+A pool of remote deployed routees can be configured as:
 
-This configuration setting will clone the actor “aggregation” 10 times and deploy it evenly distributed across
-the two given target nodes.
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-remote-round-robin-pool
+
+This configuration setting will clone the actor defined in the ``Props`` of the ``remotePool`` 10
+times and deploy it evenly distributed across the two given target nodes.
+
+A group of remote actors can be configured as:
+
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-remote-round-robin-group
+
+This configuration setting will send messages to the defined remote actor paths.
+It requires that you create the destination actors on the remote nodes with matching paths.
+That is not done by the router. 
 
 .. _remote-sample-scala:
 

@@ -479,7 +479,6 @@ zero.
 Examples
 ========
 
-A bigger FSM example contrasted with Actor's :meth:`become`/:meth:`unbecome` can be found in the sources:
-
- * `Dining Hakkers using FSM <https://github.com/akka/akka/blob/master/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnFsm.scala#L1>`_
- * `Dining Hakkers using become <https://github.com/akka/akka/blob/master/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnBecome.scala#L1>`_
+A bigger FSM example contrasted with Actor's :meth:`become`/:meth:`unbecome` can be found in
+the `Typesafe Activator <http://typesafe.com/platform/getstarted>`_ template named 
+`Akka FSM in Scala <http://typesafe.com/activator/template/akka-sample-fsm-scala>`_

@@ -3,22 +3,23 @@ package akka.actor
 import language.postfixOps
 
 import akka.testkit.AkkaSpec
-import akka.dispatch.UnboundedMailbox
+import akka.dispatch.{ ThreadPoolConfig, ThreadPoolConfigBuilder, UnboundedMailbox }
 import scala.concurrent.duration._
 
 object ConsistencySpec {
-  val config = """
+  val minThreads = 1
+  val maxThreads = 2000
+  val factor = 1.5d
+  val threads = ThreadPoolConfig.scaledPoolSize(minThreads, factor, maxThreads) // Make sure we have more threads than cores
+
+  val config = s"""
       consistency-dispatcher {
         throughput = 1
-        keep-alive-time = 1 ms
-        executor = "thread-pool-executor"
-        thread-pool-executor {
-          core-pool-size-min = 10
-          core-pool-size-max = 10
-          max-pool-size-min = 10
-          max-pool-size-max = 10
-          task-queue-type = array
-          task-queue-size = 7
+        executor = "fork-join-executor"
+        fork-join-executor {
+          parallelism-min = $minThreads
+          parallelism-factor = $factor
+          parallelism-max = $maxThreads
         }
       }
     """
@@ -55,11 +56,11 @@ class ConsistencySpec extends AkkaSpec(ConsistencySpec.config) {
 
   "The Akka actor model implementation" must {
     "provide memory consistency" in {
-      val noOfActors = 7
+      val noOfActors = threads + 1
       val props = Props[ConsistencyCheckingActor].withDispatcher("consistency-dispatcher")
       val actors = Vector.fill(noOfActors)(system.actorOf(props))
 
-      for (i ← 0L until 600000L) {
+      for (i ← 0L until 100000L) {
         actors.foreach(_.tell(i, testActor))
       }
 
