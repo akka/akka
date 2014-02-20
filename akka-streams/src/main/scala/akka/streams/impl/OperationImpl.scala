@@ -48,6 +48,7 @@ object OperationImpl {
       case u: Process[I, O, _] ⇒ new ProcessImpl(upstream, downstream, u)
       case s: Span[I]          ⇒ new SpanImpl(upstream, downstream.asInstanceOf[Downstream[Source[I]]], s)
       case ExposeProducer()    ⇒ new ExposeProducerImpl(upstream, downstream.asInstanceOf[Downstream[Producer[I]]], ctx).asInstanceOf[SyncOperation[I]]
+      case SourceHeadTail()    ⇒ new SourceHeadTailImpl(upstream, downstream.asInstanceOf[Downstream[(I, Source[I])]], ctx).asInstanceOf[SyncOperation[I]]
       case i: Identity[O]      ⇒ delegate()
       case f: FlatMap[_, _]    ⇒ delegate()
       case t: TakeWhile[_]     ⇒ delegate()

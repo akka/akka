@@ -37,13 +37,17 @@ class SourceHeadTailImpl[O](upstream: Upstream, downstream: Downstream[(O, Sourc
     def handleError(cause: Throwable): Effect = downstream.error(cause)
   }
   class WaitingForSubscription() extends RejectNext {
+    var closeAfterNext = false
     def onSubscribe(upstream: Upstream): (SyncSink[O], Effect) = {
-      val next = new WaitingForFirstElement(upstream)
+      val next = new WaitingForFirstElement(upstream, closeAfterNext)
       become(next)
       (next.subSink, upstream.requestMore(1))
     }
 
-    override def handleComplete(): Effect = ???
+    override def handleComplete(): Effect = {
+      closeAfterNext = true
+      Continue
+    }
     override def handleError(cause: Throwable): Effect = ???
 
     override def handleRequestMore(n: Int): Effect = {
@@ -52,16 +56,23 @@ class SourceHeadTailImpl[O](upstream: Upstream, downstream: Downstream[(O, Sourc
     }
     override def handleCancel(): Effect = ???
   }
-  class WaitingForFirstElement(subUpstream: Upstream) extends RejectNext { outer ⇒
+  class WaitingForFirstElement(subUpstream: Upstream, closeDownstreamAfterFirst: Boolean) extends RejectNext { outer ⇒
     val subSink = new DynamicSyncSink[O] {
+      var closing = false
       override def initial: State = WaitingForFirstElement
 
       def WaitingForFirstElement = new State {
         override def handleNext(element: O): Effect = {
           undeliveredElements -= 1
-          downstream.next((element, InternalSource(onSubscribe))) ~ receivedFirst()
+          become(Subscribing)
+          downstream.next((element, InternalSource(onSubscribe))) ~ (if (closeDownstreamAfterFirst) downstream.complete else Continue) ~ receivedFirst()
         }
         override def handleComplete(): Effect = ??? // FIXME: what, if there is no head!?!
+        override def handleError(cause: Throwable): Effect = ???
+      }
+      def Subscribing = new State {
+        override def handleNext(element: O): Effect = ???
+        override def handleComplete(): Effect = { closing = true; Continue }
         override def handleError(cause: Throwable): Effect = ???
       }
 
@@ -74,10 +85,13 @@ class SourceHeadTailImpl[O](upstream: Upstream, downstream: Downstream[(O, Sourc
         override def handleRequestMore(n: Int): Effect = subUpstream.requestMore(n)
         override def handleCancel(): Effect = ???
       }
-      def onSubscribe(subDownstream: Downstream[O]): (SyncSource, Effect) = {
-        become(Running(subDownstream))
-        (innerSource, Continue)
-      }
+      def onSubscribe(subDownstream: Downstream[O]): (SyncSource, Effect) =
+        if (!closing) {
+          become(Running(subDownstream))
+          (innerSource, Continue)
+        } else {
+          (innerSource, subDownstream.complete)
+        }
     }
 
     def receivedFirst(): Effect =
