@@ -50,6 +50,7 @@ object OperationImpl {
       case ExposeProducer()    ⇒ new ExposeProducerImpl(upstream, downstream.asInstanceOf[Downstream[Producer[I]]], ctx).asInstanceOf[SyncOperation[I]]
       case i: Identity[O]      ⇒ delegate()
       case f: FlatMap[_, _]    ⇒ delegate()
+      case t: TakeWhile[_]     ⇒ delegate()
     }
   }
 
@@ -57,6 +58,17 @@ object OperationImpl {
   def delegateOperationImpl[I, O](op: Operation[I, O]): Operation[I, O] = op match {
     case FlatMap(f) ⇒ Map(f).flatten
     case Identity() ⇒ Map(i ⇒ i.asInstanceOf[O])
-    case x          ⇒ x
+    case TakeWhile(p) ⇒
+      def takeWhileAsProcess[T](p: T ⇒ Boolean): Operation[T, T] =
+        Process[T, T, Boolean](
+          seed = true,
+          onNext = {
+            (running, next) ⇒
+              if (p(next)) Process.Emit(next, Process.Continue(false))
+              else Process.Emit(next, Process.Continue(false))
+          },
+          onComplete = _ ⇒ Nil)
+      takeWhileAsProcess(p).asInstanceOf[Operation[I, O]]
+    case x ⇒ x
   }
 }

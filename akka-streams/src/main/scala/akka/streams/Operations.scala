@@ -204,6 +204,8 @@ object Operation {
       },
       onComplete = _ ⇒ Nil)
 
+  case class TakeWhile[T](p: T ⇒ Boolean) extends (T ==> T)
+
   // combines the upstream and the given source into tuples
   // produces at the rate of the slower upstream (i.e. no values are dropped)
   // consumes from the upstream no faster than the downstream consumption rate or the production rate of the given source
@@ -236,6 +238,7 @@ object Operation {
     def tee(sink: Sink[B]): Res[B] = andThen(Tee(sink))
     def tail: Res[B] = andThen(Tail())
     def take(n: Int): Res[B] = andThen(Take[B](n))
+    def takeWhile(p: B ⇒ Boolean): Res[B] = andThen(TakeWhile(p))
     def zip[C](source: Source[C]): Res[(B, C)] = andThen(Zip(source))
   }
 

@@ -24,7 +24,7 @@ class ProcessImpl[A, B, S](upstream: Upstream, downstream: Downstream[B], op: Pr
 
     def handleComplete(): Effect = {
       become(Stopped)
-      op.onComplete(state).foldLeft(Continue: Effect)((e, element) ⇒ e ~ downstream.next(element)) ~ downstream.complete ~ upstream.cancel
+      op.onComplete(state).foldLeft(Continue: Effect)((e, element) ⇒ e ~ downstream.next(element)) ~ downstream.complete
     }
     def handleError(cause: Throwable): Effect = {
       become(Stopped)
