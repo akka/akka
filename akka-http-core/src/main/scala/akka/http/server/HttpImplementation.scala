@@ -29,7 +29,7 @@ object HttpImplementation {
       .andThen(collect)
       .flatMap {
         case Parsed(request)             ⇒ handler(request).toSource
-        case ImmediateResponse(response) ⇒ Future.successful(ImmediateHttpResponse(response)).toSource
+        case ImmediateResponse(response) ⇒ Source(ImmediateHttpResponse(response))
       }
       .andThen(toParts)
       .andThen(render).finish(out)
@@ -66,6 +66,7 @@ object HttpImplementation {
             rest.map(extract).takeWhile(_.isInstanceOf[MessageChunk]).map {
               case MessageChunk(data, "") ⇒ data.toByteString
             }
+          // FIXME: is this a bug? span delivers InternalSources that will then be executed in the wrong context, right?
           Parsed[HttpRequestStream]((req, bodyParts.toProducer()))
         case (i: ImmediateResponse, _) ⇒ i
       }

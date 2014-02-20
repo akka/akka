@@ -1,6 +1,6 @@
 package akka.http.server
 
-import java.io.{FileInputStream, InputStream, File}
+import java.io.{ FileInputStream, InputStream, File }
 import akka.util.ByteString
 
 trait StatefulIterator[T] extends Iterator[T] {
