@@ -1,8 +1,9 @@
 package akka.streams.impl
 
-import akka.streams.Operation.{ Sink, Source }
+import akka.streams.Operation.{ FromProducerSource, Sink, Source }
 import rx.async.api.Producer
 import scala.concurrent.ExecutionContext
+import rx.async.spi.{ Subscription, Subscriber, Publisher }
 
 /**
  * Additional Effects supplied by the context to allow additional executing additional effects
@@ -33,6 +34,32 @@ abstract class AbstractContextEffects extends ContextEffects {
 
   def subscribeFrom[O](sink: Sink[O])(sourceConstructor: Downstream[O] ⇒ SyncSource): Effect =
     ConnectInternalSourceSink(sourceConstructor, OperationImpl(_, this, sink))
+
+  def expose[O](source: Source[O]): Producer[O] =
+    source match {
+      case FromProducerSource(i: InternalProducer[O]) ⇒ i
+    }
+
+  abstract class InternalProducerImpl[O](sourceConstructor: Downstream[O] ⇒ SyncSource) extends Producer[O] with Publisher[O] {
+    var singleSubscriber: Subscriber[O] = _
+    def subscribe(subscriber: Subscriber[O]): Unit = runInContext {
+      require(singleSubscriber eq null) // TODO: add FanOutBox
+      this.singleSubscriber = subscriber
+      val source = sourceConstructor(BasicEffects.forSubscriber(subscriber))
+      subscriber.onSubscribe(new Subscription {
+        def requestMore(elements: Int): Unit = runInContext(source.handleRequestMore(elements))
+        def cancel(): Unit = runInContext(source.handleCancel())
+      })
+      source.start()
+    }
+
+    def getPublisher: Publisher[O] = this
+  }
+
+  override def internalProducer[O](sourceConstructor: Downstream[O] ⇒ SyncSource): Producer[O] =
+    new InternalProducerImpl[O](sourceConstructor) with InternalProducer[O] {
+      override def createSource(downstream: Downstream[O]): SyncSource = sourceConstructor(downstream)
+    }
 }
 
 case class ConnectInternalSourceSink[O](sourceConstructor: Downstream[O] ⇒ SyncSource, sinkConstructor: Upstream ⇒ SyncSink[O]) extends SingleStep {

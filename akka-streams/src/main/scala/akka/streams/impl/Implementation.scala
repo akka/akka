@@ -144,32 +144,6 @@ trait ProducerImplementationBits[O] extends Producer[O] with Publisher[O] {
 
 trait ProcessorActorImpl { _: Actor ⇒
   object ActorContextEffects extends AbstractContextEffects {
-    def expose[O](source: Source[O]): Producer[O] =
-      source match {
-        case FromProducerSource(i: InternalProducer[O]) ⇒ i
-      }
-
-    abstract class InternalProducerImpl[O](sourceConstructor: Downstream[O] ⇒ SyncSource) extends Producer[O] with Publisher[O] {
-      var singleSubscriber: Subscriber[O] = _
-      def subscribe(subscriber: Subscriber[O]): Unit = runEffectInThisActor {
-        require(singleSubscriber eq null) // TODO: add FanOutBox
-        this.singleSubscriber = subscriber
-        val source = sourceConstructor(BasicEffects.forSubscriber(subscriber))
-        subscriber.onSubscribe(new Subscription {
-          def requestMore(elements: Int): Unit = runEffectInThisActor(source.handleRequestMore(elements))
-          def cancel(): Unit = runEffectInThisActor(source.handleCancel())
-        })
-        source.start()
-      }
-
-      def getPublisher: Publisher[O] = this
-    }
-
-    override def internalProducer[O](sourceConstructor: Downstream[O] ⇒ SyncSource): Producer[O] =
-      new InternalProducerImpl[O](sourceConstructor) with InternalProducer[O] {
-        override def createSource(downstream: Downstream[O]): SyncSource = sourceConstructor(downstream)
-      }
-
     def runInContext(body: ⇒ Effect): Unit = runEffectInThisActor(body)
     override implicit def executionContext: ExecutionContext = context.dispatcher
   }
