@@ -273,6 +273,7 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
       "finish gracefully onError" in new InitializedChainSetup(Identity[Symbol]()) {
         pending
       }
+      "allow new subscriptions after all subscribers have been cancelled" in pending
     }
     "work in special situations" - {
       "single subscriber cancels subscription while receiving data" in new InitializedChainSetupWithFanOutBuffer(Identity[String](), 1) {
