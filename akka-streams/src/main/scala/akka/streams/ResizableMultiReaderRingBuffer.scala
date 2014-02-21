@@ -1,6 +1,7 @@
 package akka.streams
 
 import scala.annotation.tailrec
+import scala.util.control.NoStackTrace
 import ResizableMultiReaderRingBuffer._
 
 /**
@@ -8,13 +9,13 @@ import ResizableMultiReaderRingBuffer._
  * Contrary to many other ring buffer implementations this one does not automatically overwrite the oldest
  * elements, rather, if full, the buffer tries to grow and rejects further writes if max capacity is reached.
  */
-class ResizableMultiReaderRingBuffer[T >: Null <: AnyRef](val initialSize: Int,
-                                                          val maxSize: Int,
-                                                          val cursors: Cursors) {
-  require(maxSize <= Int.MaxValue / 2, "maxSize must be <= Int.MaxValue / 2")
+class ResizableMultiReaderRingBuffer[T](val initialSize: Int,
+                                        val maxSize: Int,
+                                        val cursors: Cursors) {
+  require(0 < maxSize && maxSize <= Int.MaxValue / 2, "maxSize must be > 0 and <= Int.MaxValue/2")
   require(0 < initialSize && initialSize <= maxSize, "initialSize must be > 0 and <= maxSize")
 
-  private[this] var array = new Array[AnyRef](initialSize)
+  private[this] var array = new Array[Any](initialSize)
 
   // Usual ring buffer implementations keep two pointers into the array which are wrapped around
   // (mod array.length) upon increase. However, there is an ambiguity when writeIx == readIx since this state
@@ -57,6 +58,11 @@ class ResizableMultiReaderRingBuffer[T >: Null <: AnyRef](val initialSize: Int,
   def count(cursor: Cursor): Int = writeIx - cursor.cursor
 
   /**
+   * Initializes the given Cursor to the oldest buffer entry that is still available.
+   */
+  def initCursor(cursor: Cursor): Unit = cursor.cursor = readIx
+
+  /**
    * Tries to write the given value into the buffer thereby potentially growing the backing array.
    * Returns `true` if the write was successful and false if the buffer is full and cannot grow anymore.
    */
@@ -70,7 +76,7 @@ class ResizableMultiReaderRingBuffer[T >: Null <: AnyRef](val initialSize: Int,
       // the growing logic is quite simple: we assemble all current buffer entries in the new array
       // in their natural order (removing potential wrap around) and rebase all indices to zero
       val newLen = math.min(len << 1, maxSize)
-      val newArray = new Array[AnyRef](newLen)
+      val newArray = new Array[Any](newLen)
       val r = readIx % len
       System.arraycopy(array, r, newArray, 0, len - r)
       System.arraycopy(array, 0, newArray, len - r, r)
@@ -92,7 +98,8 @@ class ResizableMultiReaderRingBuffer[T >: Null <: AnyRef](val initialSize: Int,
 
   /**
    * Tries to read from the buffer using the given Cursor.
-   * If there are no more data to be read (i.e. the cursor is already at writeIx) the method returns null !
+   * If there are no more data to be read (i.e. the cursor is already
+   * at writeIx) the method throws ResizableMultiReaderRingBuffer.NothingToReadException!
    */
   def read(cursor: Cursor): T = {
     val c = cursor.cursor
@@ -128,7 +135,7 @@ class ResizableMultiReaderRingBuffer[T >: Null <: AnyRef](val initialSize: Int,
         }
       } else cursor.cursor = c + 1
       array(c % array.length).asInstanceOf[T]
-    } else null
+    } else throw NothingToReadException
   }
 
   // from time to time we need to rebase all pointers and cursors so they don't overflow,
@@ -138,20 +145,15 @@ class ResizableMultiReaderRingBuffer[T >: Null <: AnyRef](val initialSize: Int,
     x - x % array.length // the largest safe threshold is the largest multiple of array.length that is < Int.MaxValue / 2
   }
 
-  protected def arrayLen: Int = array.length
-
-  /**
-   * Initializes the given Cursor to the oldest buffer entry that is still available.
-   */
-  def initCursor(cursor: Cursor): Unit = cursor.cursor = readIx
-
-  def toSeq: Seq[AnyRef] = array.toSeq
+  protected def underlyingArray: Array[Any] = array
 
   override def toString: String =
     s"ResizableMultiReaderRingBuffer(size=$size, writeIx=$writeIx, readIx=$readIx, cursors=${cursors.cursors.size})"
 }
 
 object ResizableMultiReaderRingBuffer {
+  object NothingToReadException extends RuntimeException with NoStackTrace
+
   trait Cursors {
     def cursors: List[Cursor]
   }

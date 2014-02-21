@@ -31,14 +31,13 @@ abstract class PublisherVerification[T] extends TestCaseEnvironment {
   @Test
   def createPublisher3MustProduceAStreamOfExactly3Elements(): Unit = {
     val pub = createPublisher(elements = 3)
-    val sub = new FullManualSubscriber[T]
-    subscribe(pub, sub)
-    def requestAndExpectOneOrEndOfStream() =
-      sub.requestAndExpectOneOrEndOfStream(timeoutMillis = 100, s"Timeout while waiting for next element from Publisher $pub")
-    assertTrue(requestAndExpectOneOrEndOfStream().isDefined, s"Publisher $pub produced no elements")
-    assertTrue(requestAndExpectOneOrEndOfStream().isDefined, s"Publisher $pub produced only 1 element")
-    assertTrue(requestAndExpectOneOrEndOfStream().isDefined, s"Publisher $pub produced only 2 elements")
-    sub.expectNone(withinMillis = 100, x ⇒ s"`createPublisher(5)` created stream of more than 3 elements (4th element was $x)")
+    val sub = newManualSubscriber(pub)
+    def requestNextElementOrEndOfStream() =
+      sub.requestNextElementOrEndOfStream(errorMsg = s"Timeout while waiting for next element from Publisher $pub")
+    assertTrue(requestNextElementOrEndOfStream().isDefined, s"Publisher $pub produced no elements")
+    assertTrue(requestNextElementOrEndOfStream().isDefined, s"Publisher $pub produced only 1 element")
+    assertTrue(requestNextElementOrEndOfStream().isDefined, s"Publisher $pub produced only 2 elements")
+    sub.expectNone(errorMsg = x ⇒ s"`createPublisher(3)` created stream of more than 3 elements (4th element was $x)")
     verifyNoAsyncErrors()
   }
 
@@ -137,17 +136,17 @@ abstract class PublisherVerification[T] extends TestCaseEnvironment {
   @Test
   def subscriptionRequestMoreWhenUncancelledMustResultInTheCorrectNumberOfProducedElements(): Unit = {
     val pub = createPublisher(5)
-    val sub = new FullManualSubscriber[T]
-    subscribe(pub, sub)
+    val sub = newManualSubscriber(pub)
 
-    sub.expectNone(withinMillis = 100, x ⇒ s"Publisher $pub produced $x before the first `requestMore`")
-    sub.requestAndExpectOne(timeoutMillis = 100, s"Publisher $pub produced no element after first `requestMore`")
+    sub.expectNone(errorMsg = x ⇒ s"Publisher $pub produced $x before the first `requestMore`")
+    sub.requestMore(1)
+    sub.nextElement(errorMsg = s"Publisher $pub produced no element after first `requestMore`")
 
     sub.subscription.value.requestMore(1)
     sub.subscription.value.requestMore(2)
-    sub.received.expectN(3, timeoutMillis = 100, s"Publisher $pub produced less than 3 elements after two respective `requestMore` calls")
+    sub.received.nextN(3, timeoutMillis = 100, s"Publisher $pub produced less than 3 elements after two respective `requestMore` calls")
 
-    sub.expectNone(withinMillis = 100, x ⇒ s"Publisher $pub produced unrequested $x")
+    sub.expectNone(errorMsg = x ⇒ s"Publisher $pub produced unrequested $x")
 
     verifyNoAsyncErrors()
   }
@@ -155,8 +154,7 @@ abstract class PublisherVerification[T] extends TestCaseEnvironment {
   @Test
   def subscriptionRequestMoreWhenUncancelledMustThrowIfArgumentIsNonPositive(): Unit = {
     val pub = createPublisher(1)
-    val sub = new FullManualSubscriber[T]
-    subscribe(pub, sub)
+    val sub = newManualSubscriber(pub)
     expectThrowingOf[IllegalArgumentException](e ⇒ s"Calling `requestMore(-1)` a subscription to $pub did not fail with an `IllegalArgumentException` but $e") {
       sub.subscription.value.requestMore(-1)
     }
@@ -189,34 +187,31 @@ abstract class PublisherVerification[T] extends TestCaseEnvironment {
   @Test
   def mustProduceTheSameElementsInTheSameSequenceForAllSimultaneouslySubscribedSubscribers(): Unit = {
     val pub = createPublisher(5)
-    val sub1 = new FullManualSubscriber[T]
-    subscribe(pub, sub1)
-    val sub2 = new FullManualSubscriber[T]
-    subscribe(pub, sub2)
-    val sub3 = new FullManualSubscriber[T]
-    subscribe(pub, sub3)
+    val sub1 = newManualSubscriber(pub)
+    val sub2 = newManualSubscriber(pub)
+    val sub3 = newManualSubscriber(pub)
 
-    sub1.requestOne()
-    val x1 = sub1.expectOne(timeoutMillis = 100, s"Publisher $pub did not produce the requested 1 element on 1st subscriber")
-    sub2.requestN(2)
-    val y1 = sub2.expectN(2, timeoutMillis = 100, s"Publisher $pub did not produce the requested 2 elements on 2nd subscriber")
-    sub1.requestOne()
-    val x2 = sub1.expectOne(timeoutMillis = 100, s"Publisher $pub did not produce the requested 1 element on 1st subscriber")
-    sub3.requestN(3)
-    val z1 = sub3.expectN(3, timeoutMillis = 100, s"Publisher $pub did not produce the requested 3 elements on 3rd subscriber")
-    sub3.requestOne()
-    val z2 = sub3.expectOne(timeoutMillis = 100, s"Publisher $pub did not produce the requested 1 element on 3rd subscriber")
-    sub3.requestOne()
-    val z3 = sub3.expectOne(timeoutMillis = 100, s"Publisher $pub did not produce the requested 1 element on 3rd subscriber")
-    sub3.expectCompletion(timeoutMillis = 100, s"Publisher $pub did not complete the stream as expected on 3rd subscriber")
-    sub2.requestN(3)
-    val y2 = sub2.expectN(3, timeoutMillis = 100, s"Publisher $pub did not produce the requested 3 elements on 2nd subscriber")
-    sub2.expectCompletion(timeoutMillis = 100, s"Publisher $pub did not complete the stream as expected on 2nd subscriber")
-    sub1.requestN(2)
-    val x3 = sub1.expectN(2, timeoutMillis = 100, s"Publisher $pub did not produce the requested 2 elements on 1st subscriber")
-    sub1.requestOne()
-    val x4 = sub1.expectOne(timeoutMillis = 100, s"Publisher $pub did not produce the requested 1 element on 1st subscriber")
-    sub1.expectCompletion(timeoutMillis = 100, s"Publisher $pub did not complete the stream as expected on 1st subscriber")
+    sub1.requestMore(1)
+    val x1 = sub1.nextElement(errorMsg = s"Publisher $pub did not produce the requested 1 element on 1st subscriber")
+    sub2.requestMore(2)
+    val y1 = sub2.nextElements(2, errorMsg = s"Publisher $pub did not produce the requested 2 elements on 2nd subscriber")
+    sub1.requestMore(1)
+    val x2 = sub1.nextElement(errorMsg = s"Publisher $pub did not produce the requested 1 element on 1st subscriber")
+    sub3.requestMore(3)
+    val z1 = sub3.nextElements(3, errorMsg = s"Publisher $pub did not produce the requested 3 elements on 3rd subscriber")
+    sub3.requestMore(1)
+    val z2 = sub3.nextElement(errorMsg = s"Publisher $pub did not produce the requested 1 element on 3rd subscriber")
+    sub3.requestMore(1)
+    val z3 = sub3.nextElement(errorMsg = s"Publisher $pub did not produce the requested 1 element on 3rd subscriber")
+    sub3.expectCompletion(errorMsg = s"Publisher $pub did not complete the stream as expected on 3rd subscriber")
+    sub2.requestMore(3)
+    val y2 = sub2.nextElements(3, errorMsg = s"Publisher $pub did not produce the requested 3 elements on 2nd subscriber")
+    sub2.expectCompletion(errorMsg = s"Publisher $pub did not complete the stream as expected on 2nd subscriber")
+    sub1.requestMore(2)
+    val x3 = sub1.nextElements(2, errorMsg = s"Publisher $pub did not produce the requested 2 elements on 1st subscriber")
+    sub1.requestMore(1)
+    val x4 = sub1.nextElement(errorMsg = s"Publisher $pub did not produce the requested 1 element on 1st subscriber")
+    sub1.expectCompletion(errorMsg = s"Publisher $pub did not complete the stream as expected on 1st subscriber")
 
     val r = x1 :: x2 :: x3.toList ::: x4 :: Nil
     assertEquals(r, y1.toList ::: y2.toList, s"Publisher $pub did not produce the same element sequence for subscribers 1 and 2")
