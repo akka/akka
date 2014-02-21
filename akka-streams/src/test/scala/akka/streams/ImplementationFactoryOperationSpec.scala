@@ -181,9 +181,6 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         downstream2.expectNext('element2)
       }
       "incoming subscriber while elements were requested before" in new InitializedChainSetupWithFanOutBuffer(Identity[Symbol](), 1) {
-        val downstream2 = TestKit.consumerProbe[Symbol]()
-        // don't link it just yet
-
         downstreamSubscription.requestMore(5)
         upstream.expectRequestMore(upstreamSubscription, 1)
         upstreamSubscription.sendNext('a1)
@@ -196,8 +193,13 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         upstream.expectRequestMore(upstreamSubscription, 1)
 
         // link now while an upstream element is already requested
+        val downstream2 = TestKit.consumerProbe[Symbol]()
         processed.link(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
+
+        // situation here:
+        // downstream 1 now has 3 outstanding
+        // downstream 2 has 0 outstanding
 
         upstreamSubscription.sendNext('a3)
         downstream.expectNext('a3)
@@ -205,6 +207,10 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
 
         downstream2Subscription.requestMore(1)
         downstream2.expectNext('a3)
+
+        // d1 now has 2 outstanding
+        // d2 now has 0 outstanding
+        // buffer should be empty so we should be requesting one new element
 
         upstream.expectRequestMore(upstreamSubscription, 1) // because of buffer size 1
       }
@@ -236,15 +242,15 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         // don't link it just yet
 
         downstreamSubscription.requestMore(5)
-        upstream.expectRequestMore(upstreamSubscription, 1 /* or batch/window size? */ )
+        upstream.expectRequestMore(upstreamSubscription, 1)
         upstreamSubscription.sendNext('a1)
         downstream.expectNext('a1)
 
-        upstream.expectRequestMore(upstreamSubscription, 1 /* or batch/window size? */ )
+        upstream.expectRequestMore(upstreamSubscription, 1)
         upstreamSubscription.sendNext('a2)
         downstream.expectNext('a2)
 
-        upstream.expectRequestMore(upstreamSubscription, 1 /* or batch/window size? */ )
+        upstream.expectRequestMore(upstreamSubscription, 1)
 
         // link now while an upstream element is already requested
         processed.link(downstream2)
