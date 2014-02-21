@@ -285,9 +285,8 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         downstream.expectNext("test")
         downstream.expectNext("test2")
         downstreamSubscription.cancel()
-        // autoUnsubscribe?
-        //upstreamSubscription.expectCancellation()
-        pending
+
+        upstream.expectNoMsg(100.millis.dilated)
       }
     }
     "work after initial upstream was completed" - {}
