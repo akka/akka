@@ -690,7 +690,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    * Initiates a new round of gossip.
    */
   def gossip(): Unit = {
-    log.debug("Cluster Node [{}] - Initiating new round of gossip", selfAddress)
 
     if (!isSingletonCluster) {
       val localGossip = latestGossip
