@@ -1,4 +1,8 @@
-package sample.java8.buncher;
+/**
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+package docs.actor.fsm;
 
 //#simple-imports
 import akka.actor.AbstractFSM;
@@ -10,15 +14,14 @@ import java.util.List;
 import scala.concurrent.duration.Duration;
 //#simple-imports
 
-import static sample.java8.buncher.Buncher.State;
-import static sample.java8.buncher.Buncher.Data;
-import static sample.java8.buncher.Buncher.State.*;
-import static sample.java8.buncher.Buncher.Uninitialized.*;
-import static sample.java8.buncher.Events.*;
+import static docs.actor.fsm.Buncher.Data;
+import static docs.actor.fsm.Buncher.State.*;
+import static docs.actor.fsm.Buncher.State;
+import static docs.actor.fsm.Buncher.Uninitialized.*;
+import static docs.actor.fsm.Events.*;
 
 //#simple-fsm
 public class Buncher extends AbstractFSM<State, Data> {
-
   {
     //#fsm-body
     startWith(Idle, Uninitialized);
@@ -26,7 +29,8 @@ public class Buncher extends AbstractFSM<State, Data> {
     //#when-syntax
     when(Idle,
       matchEvent(SetTarget.class, Uninitialized.class,
-        (setTarget, uninitialized) -> stay().using(new Todo(setTarget.getRef(), new LinkedList<>()))));
+        (setTarget, uninitialized) ->
+          stay().using(new Todo(setTarget.getRef(), new LinkedList<>()))));
     //#when-syntax
 
     //#transition-elided
@@ -50,25 +54,14 @@ public class Buncher extends AbstractFSM<State, Data> {
       matchEvent(Queue.class, Todo.class,
         (queue, todo) -> goTo(Active).using(todo.addElement(queue.getObj()))).
         anyEvent((event, state) -> {
-          log().warning("received unhandled request {} in state {}/{}", event, stateName(), state);
+          log().warning("received unhandled request {} in state {}/{}",
+            event, stateName(), state);
           return stay();
         }));
     //#unhandled-elided
 
-    //#termination-elided
-    //#termination-syntax
-    onTermination(
-      matchStop(Normal(),
-        (state, data) -> {/* Do something here */}).
-      stop(Shutdown(),
-        (state, data) -> {/* Do something here */}).
-      stop(Failure(),
-        (reason, state, data) -> {/* Do something here */}));
-    //#termination-syntax
-    //#termination-elided
-    //#fsm-body
-
     initialize();
+    //#fsm-body
   }
   //#simple-fsm
 
@@ -141,15 +134,3 @@ public class Buncher extends AbstractFSM<State, Data> {
   //#simple-fsm
 }
 //#simple-fsm
-
-//#NullFunction
-//#unhandled-syntax
-//#modifier-syntax
-//#transition-syntax
-//#stop-syntax
-// TODO add code example here
-//#stop-syntax
-//#transition-syntax
-//#modifier-syntax
-//#unhandled-syntax
-//#NullFunction

@@ -1,4 +1,8 @@
-package sample.java8.buncher;
+/**
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+package docs.actor.fsm;
 
 import akka.actor.ActorRef;
 import java.util.List;

@@ -149,8 +149,8 @@ __ Props_
   singleton scope.
 
 Techniques for dependency injection and integration with dependency injection frameworks
-are described in more depth in the 
-`Using Akka with Dependency Injection <http://letitcrash.com/post/55958814293/akka-dependency-injection>`_ 
+are described in more depth in the
+`Using Akka with Dependency Injection <http://letitcrash.com/post/55958814293/akka-dependency-injection>`_
 guideline and the `Akka Java Spring <http://typesafe.com/activator/template/akka-java-spring>`_ tutorial
 in Typesafe Activator.
 
@@ -185,11 +185,11 @@ to have them converted into actual Debug messages).
 
 In addition, it offers:
 
-* :obj:`getSelf()` reference to the :class:`ActorRef` of the actor
+* :meth:`getSelf()` reference to the :class:`ActorRef` of the actor
 
-* :obj:`getSender()` reference sender Actor of the last received message, typically used as described in :ref:`UntypedActor.Reply`
+* :meth:`getSender()` reference sender Actor of the last received message, typically used as described in :ref:`UntypedActor.Reply`
 
-* :obj:`supervisorStrategy()` user overridable definition the strategy to use for supervising child actors
+* :meth:`supervisorStrategy()` user overridable definition the strategy to use for supervising child actors
 
   This strategy is typically declared inside the actor in order to have access
   to the actor’s internal state within the decider function: since failure is
@@ -200,7 +200,7 @@ In addition, it offers:
   occurred within a distant descendant it is still reported one level up at a
   time).
 
-* :obj:`getContext()` exposes contextual information for the actor and the current message, such as:
+* :meth:`getContext()` exposes contextual information for the actor and the current message, such as:
 
   * factory methods to create child actors (:meth:`actorOf`)
   * system that the actor belongs to
@@ -250,7 +250,7 @@ occupying it. ``ActorSelection`` cannot be watched for this reason. It is
 possible to resolve the current incarnation's ``ActorRef`` living under the
 path by sending an ``Identify`` message to the ``ActorSelection`` which
 will be replied to with an ``ActorIdentity`` containing the correct reference
-(see :ref:`actorSelection-java`). This can also be done with the ``resolveOne`` 
+(see :ref:`actorSelection-java`). This can also be done with the ``resolveOne``
 method of the :class:`ActorSelection`, which returns a ``Future`` of the matching
 :class:`ActorRef`.
 
@@ -273,8 +273,8 @@ the whole functionality):
 
 It should be noted that the :class:`Terminated` message is generated
 independent of the order in which registration and termination occur.
-In particular, the watching actor will receive a :class:`Terminated` message even if the 
-watched actor has already been terminated at the time of registration.
+In particular, the watching actor will receive a :class:`Terminated` message
+even if the watched actor has already been terminated at the time of registration.
 
 Registering multiple times does not necessarily lead to multiple messages being
 generated, but there is no guarantee that only exactly one such message is
@@ -402,12 +402,12 @@ actors which are traversed in the sense that if a concrete name lookup fails
 negative result is generated. Please note that this does not mean that delivery
 of that reply is guaranteed, it still is a normal message.
 
-.. includecode:: code/docs/actor/UntypedActorDocTest.java
-   :include: import-identify,identify
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#import-identify
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#identify
 
 You can also acquire an :class:`ActorRef` for an :class:`ActorSelection` with
-the ``resolveOne`` method of the :class:`ActorSelection`. It returns a ``Future`` 
-of the matching :class:`ActorRef` if such an actor exists. It is completed with 
+the ``resolveOne`` method of the :class:`ActorSelection`. It returns a ``Future``
+of the matching :class:`ActorRef` if such an actor exists. It is completed with
 failure [[akka.actor.ActorNotFound]] if no such actor exists or the identification
 didn't complete within the supplied `timeout`.
 
@@ -772,7 +772,7 @@ major impact on performance.
 
 Note that the stash is part of the ephemeral actor state, unlike the
 mailbox. Therefore, it should be managed like other parts of the
-actor's state which have the same property. The :class:`Stash` trait’s
+actor's state which have the same property. The :class:`UntypedActorWithStash`
 implementation of :meth:`preRestart` will call ``unstashAll()``, which is
 usually the desired behavior.
 

@@ -251,7 +251,7 @@ of the modifiers described in the following:
   This modifier sends a reply to the currently processed message and otherwise
   does not modify the state transition.
 
-All modifier can be chained to achieve a nice and concise description:
+All modifiers can be chained to achieve a nice and concise description:
 
 .. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: modifier-syntax

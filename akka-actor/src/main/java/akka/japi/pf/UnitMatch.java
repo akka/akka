@@ -48,6 +48,32 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
   }
 
   /**
+   * Convenience function to create a {@link UnitPFBuilder} with the first
+   * case statement added.
+   *
+   * @param object  the object to compare equals with
+   * @param apply  an action to apply to the argument if the object compares equal
+   * @return a builder with the case statement added
+   * @see UnitPFBuilder#matchEquals(Object, FI.UnitApply)
+   */
+  public static <F, P> UnitPFBuilder<F> matchEquals(final P object,
+                                                    final FI.UnitApply<P> apply) {
+    return new UnitPFBuilder<F>().matchEquals(object, apply);
+  }
+
+  /**
+   * Convenience function to create a {@link UnitPFBuilder} with the first
+   * case statement added.
+   *
+   * @param apply  an action to apply to the argument
+   * @return a builder with the case statement added
+   * @see UnitPFBuilder#matchAny(FI.UnitApply)
+   */
+  public static <F> UnitPFBuilder<F> matchAny(final FI.UnitApply<Object> apply) {
+    return new UnitPFBuilder<F>().matchAny(apply);
+  }
+
+  /**
    * Create a {@link UnitMatch} from the builder.
    *
    * @param builder  a builder representing the partial function
