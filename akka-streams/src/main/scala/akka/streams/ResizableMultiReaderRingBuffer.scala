@@ -104,38 +104,37 @@ class ResizableMultiReaderRingBuffer[T](val initialSize: Int,
   def read(cursor: Cursor): T = {
     val c = cursor.cursor
     if (c < writeIx) {
-      if (c == readIx) {
-        val threshold = rebaseThreshold
-        if (c > threshold) {
-          @tailrec def rebaseCursorsAndDetermineNoOtherAtReadIx(remaining: List[Cursor], result: Boolean = true): Boolean =
-            remaining match {
-              case head :: tail ⇒
-                val next =
-                  if (head eq cursor) {
-                    head.cursor = c - threshold + 1
-                    result
-                  } else {
-                    val hc = head.cursor
-                    head.cursor = hc - threshold
-                    result && hc != c
-                  }
-                rebaseCursorsAndDetermineNoOtherAtReadIx(tail, next)
-              case _ ⇒ result
-            }
-          this.writeIx = writeIx - threshold
-          readIx = if (rebaseCursorsAndDetermineNoOtherAtReadIx(cursors.cursors)) c - threshold + 1 else c - threshold
-        } else {
-          @tailrec def noOtherAtReadIx(remaining: List[Cursor]): Boolean = remaining match {
-            case head :: tail ⇒ ((head eq cursor) || head.cursor != c) && noOtherAtReadIx(tail)
-            case _            ⇒ true
-          }
-          val newC = c + 1
-          if (noOtherAtReadIx(cursors.cursors)) readIx = newC
-          cursor.cursor = newC
-        }
-      } else cursor.cursor = c + 1
+      cursor.cursor += 1
+      if (c == readIx)
+        updateReadIxAndPotentiallyRebaseCursors()
       array(c % array.length).asInstanceOf[T]
     } else throw NothingToReadException
+  }
+
+  def onCursorRemoved(cursor: Cursor): Unit =
+    if (cursor.cursor == readIx) // if this cursor is the last one it must be at readIx
+      updateReadIxAndPotentiallyRebaseCursors()
+
+  private def updateReadIxAndPotentiallyRebaseCursors(): Unit = {
+    val threshold = rebaseThreshold
+    if (readIx > threshold) {
+      @tailrec def rebaseCursorsAndReturnMin(remaining: List[Cursor], result: Int): Int =
+        remaining match {
+          case head :: tail ⇒
+            head.cursor -= threshold
+            rebaseCursorsAndReturnMin(tail, math.min(head.cursor, result))
+          case _ ⇒ result
+        }
+      writeIx -= threshold
+      readIx = rebaseCursorsAndReturnMin(cursors.cursors, writeIx)
+    } else {
+      @tailrec def minCursor(remaining: List[Cursor], result: Int): Int =
+        remaining match {
+          case head :: tail ⇒ minCursor(tail, math.min(head.cursor, result))
+          case _            ⇒ result
+        }
+      readIx = minCursor(cursors.cursors, writeIx)
+    }
   }
 
   // from time to time we need to rebase all pointers and cursors so they don't overflow,

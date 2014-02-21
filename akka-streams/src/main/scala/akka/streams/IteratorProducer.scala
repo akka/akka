@@ -23,6 +23,8 @@ class IteratorProducer[T](iterator: Iterator[T], maxBufferSize: Int = 16)
         requestFromUpstream(elements - 1)
       } else completeDownstream()
     } else if (!iterator.hasNext) completeDownstream() // complete eagerly
+
+  protected def lastSubscriptionCancelled(): Unit = () // nothing to do
 }
 
 /**

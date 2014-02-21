@@ -40,12 +40,19 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
   // if non-null, holds the end-of-stream state
   private[this] var endOfStream: EndOfStream = _
 
+  // called when we are ready to consume more elements from our upstream
+  // the implementation of this method is allowed to synchronously call `pushToDownstream`
+  // if (part of) the requested elements are already available
+  protected def requestFromUpstream(elements: Int): Unit
+
+  // called when that last subscription has been cancelled
+  protected def lastSubscriptionCancelled(): Unit
+
   def getPublisher: Publisher[T] = this
   def cursors = subscriptions
 
   // called from anywhere, i.e. potentially from another thread,
-  // override to add synchronization with itself, `moreRequested`,
-  // `completeDownstream`, `abortDownstream` and `unregisterSubscription`
+  // override to add synchronization with itself, `moreRequested` and `unregisterSubscription`
   def subscribe(subscriber: Subscriber[T]): Unit = {
     def doSubscribe(): Unit = {
       @tailrec def allDifferentFromNewSubscriber(remaining: List[Subscription]): Boolean =
@@ -67,8 +74,7 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
   }
 
   // called from `Subscription::requestMore`, i.e. from another thread,
-  // override to add synchronization with itself, `subscribe`,
-  // `completeDownstream`, `abortDownstream` and `unregisterSubscription`
+  // override to add synchronization with itself, `subscribe` and `unregisterSubscription`
   protected def moreRequested(subscription: Subscription, elements: Int): Unit = {
     val eos = endOfStream
 
@@ -89,12 +95,6 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
         if (x == -1) dispatchFromBufferAndReturnRemainingRequested(requested - 1) else x
       }
 
-    @tailrec def maxRequested(remaining: List[Subscription], result: Int = 0): Int =
-      remaining match {
-        case head :: tail ⇒ maxRequested(tail, math.max(head.requested, result))
-        case _            ⇒ result
-      }
-
     eos match {
       case null | Completed ⇒
         dispatchFromBufferAndReturnRemainingRequested(subscription.requested + elements) match {
@@ -103,14 +103,23 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
             unregisterSubscriptionInternal(subscription) // idempotent
           case 0 ⇒
             subscription.requested = 0
-            if (pendingFromUpstream == 0)
-              requestFromUpstreamIfPossible(maxRequested(subscriptions))
+            requestFromUpstreamIfRequired()
           case requested ⇒
             subscription.requested = requested
             requestFromUpstreamIfPossible(requested)
         }
       case ErrorCompleted(_) ⇒ // ignore, the Subscriber might not have seen our error event yet
     }
+  }
+
+  private def requestFromUpstreamIfRequired(): Unit = {
+    @tailrec def maxRequested(remaining: List[Subscription], result: Int = 0): Int =
+      remaining match {
+        case head :: tail ⇒ maxRequested(tail, math.max(head.requested, result))
+        case _            ⇒ result
+      }
+    if (pendingFromUpstream == 0)
+      requestFromUpstreamIfPossible(maxRequested(subscriptions))
   }
 
   private def requestFromUpstreamIfPossible(elements: Int): Unit = {
@@ -121,15 +130,7 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
     }
   }
 
-  // called when we are ready to consume more elements from our upstream
-  // the implementation of this method is allowed to synchronously call `pushToDownstream` if
-  // the (part of) the requested elements are already available
-  protected def requestFromUpstream(elements: Int): Unit
-
-  // this method must be called by the implementing class whenever a new value
-  // is available to be pushed downstream
-  // if it is not exclusively called directly by `requestFromUpstream` it must be synchronized with
-  // `subscribe`, `moreRequested`, `completeDownstream`, `abortDownstream` and `unregisterSubscription`
+  // this method must be called by the implementing class whenever a new value is available to be pushed downstream
   protected def pushToDownstream(value: T): Unit = {
     @tailrec def dispatchAndReturnMaxRequested(remaining: List[Subscription], result: Int = 0): Int =
       remaining match {
@@ -159,8 +160,6 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
 
   // this method must be called by the implementing class whenever
   // it has been determined that no more elements will be produced
-  // if it is not exclusively called directly by `requestFromUpstream` it must be synchronized with
-  // `subscribe`, `moreRequested`, `completeDownstream`, `abortDownstream` and `unregisterSubscription`
   protected def completeDownstream(): Unit = {
     if (endOfStream eq null) {
       endOfStream = Completed
@@ -182,8 +181,6 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
   }
 
   // this method must be called by the implementing class to push an error downstream
-  // if it is not exclusively called directly by `requestFromUpstream` it must be synchronized with itself,
-  // `subscribe`, `moreRequested`, `completeDownstream` and `unregisterSubscription`
   protected def abortDownstream(cause: Throwable): Unit = {
     val eos = ErrorCompleted(cause)
     endOfStream = eos
@@ -191,8 +188,7 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
   }
 
   // called from `Subscription::cancel`, i.e. from another thread,
-  // override to add synchronization with itself, `subscribe`, `moreRequested`,
-  // `completeDownstream` and `abortDownstream`,
+  // override to add synchronization with itself, `subscribe` and `moreRequested`
   protected def unregisterSubscription(subscription: Subscription): Unit =
     unregisterSubscriptionInternal(subscription)
 
@@ -201,9 +197,14 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
     def removeFrom(remaining: List[Subscription]): List[Subscription] =
       remaining match {
         case head :: tail ⇒ if (head eq subscription) tail else head :: removeFrom(tail)
-        case _            ⇒ Nil // we need to be idempotent
+        case _            ⇒ Nil // not found, but since we need to be idempotent we must not throw
       }
+    val beforeRemoval = subscriptions
     subscriptions = removeFrom(subscriptions)
+    buffer.onCursorRemoved(subscription)
+    if (subscriptions.isEmpty) {
+      if (beforeRemoval.nonEmpty) lastSubscriptionCancelled()
+    } else requestFromUpstreamIfRequired() // we might have removed a "blocking" subscriber and can continue now
   }
 
   protected class Subscription(val subscriber: Subscriber[T])
