@@ -140,18 +140,6 @@ trait ProducerImplementationBits[O] extends Producer[O] with Publisher[O] {
 
 trait ProcessorActorImpl { _: Actor ⇒
   object ActorContextEffects extends AbstractContextEffects {
-    override def subscribeFrom[O](sink: Sink[O])(sourceConstructor: Downstream[O] ⇒ SyncSource): Effect =
-      Effect.step({
-        val FromConsumerSink(consumer: Consumer[O]) = sink
-        class SubSubscription(source: SyncSource) extends Subscription {
-          def requestMore(elements: Int): Unit = runEffectInThisActor(source.handleRequestMore(elements))
-          def cancel(): Unit = runEffectInThisActor(source.handleCancel())
-        }
-        val handler = sourceConstructor(BasicEffects.forSubscriber(consumer.getSubscriber))
-        consumer.getSubscriber.onSubscribe(new SubSubscription(handler))
-        handler.start()
-      }, s"SubscribeFrom($sink)")
-
     def expose[O](source: Source[O]): Producer[O] = {
       source match {
         case FromProducerSource(i: InternalProducer[O]) ⇒

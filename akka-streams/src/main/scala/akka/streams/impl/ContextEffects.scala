@@ -29,7 +29,10 @@ abstract class AbstractContextEffects extends ContextEffects {
   def subscribeTo[O](source: Source[O])(sinkConstructor: Upstream ⇒ SyncSink[O]): Effect =
     // TODO: think about how to avoid redundant creation of closures
     //       e.g. by letting OperationImpl provide constructors from static info
-    ConnectInternalSourceSink(OperationImpl.apply(_: Downstream[O], this, source), sinkConstructor)
+    ConnectInternalSourceSink(OperationImpl(_: Downstream[O], this, source), sinkConstructor)
+
+  def subscribeFrom[O](sink: Sink[O])(sourceConstructor: Downstream[O] ⇒ SyncSource): Effect =
+    ConnectInternalSourceSink(sourceConstructor, OperationImpl(_, this, sink))
 }
 
 case class ConnectInternalSourceSink[O](sourceConstructor: Downstream[O] ⇒ SyncSource, sinkConstructor: Upstream ⇒ SyncSink[O]) extends SingleStep {

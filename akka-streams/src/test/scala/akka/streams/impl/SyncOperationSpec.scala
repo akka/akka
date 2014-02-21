@@ -89,7 +89,7 @@ trait SyncOperationSpec extends WithActorSystem {
       case x ⇒ super.subscribeTo(x)(sinkConstructor)
     }
 
-    def subscribeFrom[O](sink: Sink[O])(sourceConstructor: Downstream[O] ⇒ SyncSource): Effect = SubscribeFrom(sink, sourceConstructor)
+    override def subscribeFrom[O](sink: Sink[O])(sourceConstructor: Downstream[O] ⇒ SyncSource): Effect = SubscribeFrom(sink, sourceConstructor)
     def expose[O](source: Source[O]): Producer[O] = ExposedSource(source)
 
     def internalProducer[O](constructor: Downstream[O] ⇒ SyncSource): Producer[O] =
