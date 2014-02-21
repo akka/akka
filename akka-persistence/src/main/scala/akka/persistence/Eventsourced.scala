@@ -209,9 +209,90 @@ trait EventsourcedProcessor extends Processor with Eventsourced {
   final def receive = initialBehavior
 }
 
-sealed trait JEventPersistor {
-  this: Eventsourced ⇒
+/**
+ * Java API: an event sourced processor.
+ */
+abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Eventsourced {
+  final def onReceive(message: Any) = initialBehavior(message)
 
+  final def receiveRecover: Receive = {
+    case msg ⇒ onReceiveRecover(msg)
+  }
+
+  final def receiveCommand: Receive = {
+    case msg ⇒ onReceiveCommand(msg)
+  }
+
+  /**
+   * Java API: asynchronously persists `event`. On successful persistence, `handler` is called with the
+   * persisted event. It is guaranteed that no new commands will be received by a processor
+   * between a call to `persist` and the execution of its `handler`. This also holds for
+   * multiple `persist` calls per received command. Internally, this is achieved by stashing new
+   * commands and unstashing them when the `event` has been persisted and handled. The stash used
+   * for that is an internal stash which doesn't interfere with the user stash inherited from
+   * [[UntypedProcessor]].
+   *
+   * An event `handler` may close over processor state and modify it. The `getSender()` of a persisted
+   * event is the sender of the corresponding command. This means that one can reply to a command
+   * sender within an event `handler`.
+   *
+   * Within an event handler, applications usually update processor state using persisted event
+   * data, notify listeners and reply to command senders.
+   *
+   * If persistence of an event fails, the processor will be stopped. This can be customized by
+   * handling [[PersistenceFailure]] in [[onReceiveCommand]].
+   *
+   * @param event event to be persisted.
+   * @param handler handler for each persisted `event`
+   */
+  final def persist[A](event: A, handler: Procedure[A]): Unit =
+    persist(event)(event ⇒ handler(event))
+
+  /**
+   * Java API: asynchronously persists `events` in specified order. This is equivalent to calling
+   * `persist[A](event: A, handler: Procedure[A])` multiple times with the same `handler`,
+   * except that `events` are persisted atomically with this method.
+   *
+   * @param events events to be persisted.
+   * @param handler handler for each persisted `events`
+   */
+  final def persist[A](events: JIterable[A], handler: Procedure[A]): Unit =
+    persist(Util.immutableSeq(events))(event ⇒ handler(event))
+
+  /**
+   * Java API: recovery handler that receives persisted events during recovery. If a state snapshot
+   * has been captured and saved, this handler will receive a [[SnapshotOffer]] message
+   * followed by events that are younger than the offered snapshot.
+   *
+   * This handler must not have side-effects other than changing processor state i.e. it
+   * should not perform actions that may fail, such as interacting with external services,
+   * for example.
+   *
+   * @see [[Recover]]
+   */
+  def onReceiveRecover(msg: Any): Unit
+
+  /**
+   * Java API: command handler. Typically validates commands against current state (and/or by
+   * communication with other actors). On successful validation, one or more events are
+   * derived from a command and these events are then persisted by calling `persist`.
+   * Commands sent to event sourced processors must not be [[Persistent]] or
+   * [[PersistentBatch]] messages. In this case an `UnsupportedOperationException` is
+   * thrown by the processor.
+   */
+  def onReceiveCommand(msg: Any): Unit
+}
+
+/**
+ * Java API: compatible with lambda expressions (to be used with [[akka.japi.pf.ReceiveBuilder]]):
+ * command handler. Typically validates commands against current state (and/or by
+ * communication with other actors). On successful validation, one or more events are
+ * derived from a command and these events are then persisted by calling `persist`.
+ * Commands sent to event sourced processors must not be [[Persistent]] or
+ * [[PersistentBatch]] messages. In this case an `UnsupportedOperationException` is
+ * thrown by the processor.
+ */
+abstract class AbstractEventsourcedProcessor extends EventsourcedProcessor {
   /**
    * Java API: asynchronously persists `event`. On successful persistence, `handler` is called with the
    * persisted event. It is guaranteed that no new commands will be received by a processor
@@ -248,55 +329,3 @@ sealed trait JEventPersistor {
   final def persist[A](events: JIterable[A], handler: Procedure[A]): Unit =
     persist(Util.immutableSeq(events))(event ⇒ handler(event))
 }
-
-/**
- * Java API: an event sourced processor.
- */
-abstract class UntypedEventsourcedProcessor extends UntypedProcessor
-  with Eventsourced
-  with JEventPersistor {
-  final def onReceive(message: Any) = initialBehavior(message)
-
-  final def receiveRecover: Receive = {
-    case msg ⇒ onReceiveRecover(msg)
-  }
-
-  final def receiveCommand: Receive = {
-    case msg ⇒ onReceiveCommand(msg)
-  }
-
-  /**
-   * Java API: recovery handler that receives persisted events during recovery. If a state snapshot
-   * has been captured and saved, this handler will receive a [[SnapshotOffer]] message
-   * followed by events that are younger than the offered snapshot.
-   *
-   * This handler must not have side-effects other than changing processor state i.e. it
-   * should not perform actions that may fail, such as interacting with external services,
-   * for example.
-   *
-   * @see [[Recover]]
-   */
-  def onReceiveRecover(msg: Any): Unit
-
-  /**
-   * Java API: command handler. Typically validates commands against current state (and/or by
-   * communication with other actors). On successful validation, one or more events are
-   * derived from a command and these events are then persisted by calling `persist`.
-   * Commands sent to event sourced processors must not be [[Persistent]] or
-   * [[PersistentBatch]] messages. In this case an `UnsupportedOperationException` is
-   * thrown by the processor.
-   */
-  def onReceiveCommand(msg: Any): Unit
-}
-
-/**
- * Java API, compatible with lambda expressions (to be used with [[akka.japi.pf.ReceiveBuilder]]):
- * command handler. Typically validates commands against current state (and/or by
- * communication with other actors). On successful validation, one or more events are
- * derived from a command and these events are then persisted by calling `persist`.
- * Commands sent to event sourced processors must not be [[Persistent]] or
- * [[PersistentBatch]] messages. In this case an `UnsupportedOperationException` is
- * thrown by the processor.
- */
-abstract class AbstractEventsourcedProcessor extends EventsourcedProcessor
-  with JEventPersistor {}

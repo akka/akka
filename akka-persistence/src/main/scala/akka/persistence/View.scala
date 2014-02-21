@@ -199,7 +199,7 @@ trait View extends Actor with Recovery {
 abstract class UntypedView extends UntypedActor with View
 
 /**
- * Java API, compatible with lambda expressions (to be used with [[akka.japi.pf.ReceiveBuilder]])
+ * Java API: compatible with lambda expressions (to be used with [[akka.japi.pf.ReceiveBuilder]])
  *
  * @see [[View]]
  */
