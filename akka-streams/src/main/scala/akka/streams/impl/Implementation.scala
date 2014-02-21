@@ -120,7 +120,7 @@ trait ProducerImplementationBits[O] extends Producer[O] with Publisher[O] { impl
     protected def requestFromUpstream(elements: Int): Unit
     protected def settings: ActorBasedImplementationSettings = impl.settings
 
-    val fanOut = ActorContextEffects.externalProducer[O](requestFromUpstream)
+    val fanOut = ActorContextEffects.createFanOut[O](requestFromUpstream)
     def DownstreamSideEffects: Downstream[O] = fanOut.downstream
 
     def RunProducer: Receive = {
@@ -132,11 +132,8 @@ trait ProducerImplementationBits[O] extends Producer[O] with Publisher[O] { impl
 trait ProcessorActorImpl { _: Actor ⇒
   protected def settings: ActorBasedImplementationSettings
 
-  trait FanOut[I] extends Publisher[I] {
-    def downstream: Downstream[I]
-  }
   object ActorContextEffects extends AbstractContextEffects {
-    def externalProducer[O](requestMore: Int ⇒ Unit): FanOut[O] =
+    def createFanOut[O](requestMore: Int ⇒ Unit): FanOut[O] =
       new AbstractProducer[O](settings.initialFanOutBufferSize, settings.maxFanOutBufferSize) with FanOut[O] {
         protected def requestFromUpstream(elements: Int): Unit = requestMore(elements)
 

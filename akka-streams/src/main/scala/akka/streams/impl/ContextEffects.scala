@@ -5,6 +5,10 @@ import rx.async.api.Producer
 import scala.concurrent.ExecutionContext
 import rx.async.spi.{ Subscription, Subscriber, Publisher }
 
+trait FanOut[I] extends Publisher[I] {
+  def downstream: Downstream[I]
+}
+
 /**
  * Additional Effects supplied by the context to allow additional executing additional effects
  * of link internal sources and sinks.
@@ -20,6 +24,8 @@ trait ContextEffects {
   def expose[O](source: Source[O]): Producer[O]
 
   def internalProducer[O](constructor: Downstream[O] ⇒ SyncSource): Producer[O]
+
+  def createFanOut[O](requestMore: Int ⇒ Unit): FanOut[O]
 
   implicit def executionContext: ExecutionContext
   def runInContext(body: ⇒ Effect): Unit
@@ -40,25 +46,44 @@ abstract class AbstractContextEffects extends ContextEffects {
       case FromProducerSource(i: InternalProducer[O]) ⇒ i
     }
 
-  abstract class InternalProducerImpl[O](sourceConstructor: Downstream[O] ⇒ SyncSource) extends Producer[O] with Publisher[O] {
-    var singleSubscriber: Subscriber[O] = _
-    def subscribe(subscriber: Subscriber[O]): Unit = runInContext {
-      require(singleSubscriber eq null) // TODO: add FanOutBox
-      this.singleSubscriber = subscriber
-      val source = sourceConstructor(BasicEffects.forSubscriber(subscriber))
-      subscriber.onSubscribe(new Subscription {
-        def requestMore(elements: Int): Unit = runInContext(source.handleRequestMore(elements))
-        def cancel(): Unit = runInContext(source.handleCancel())
-      })
-      source.start()
-    }
+  abstract class InternalProducerImpl[O](sourceConstructor: Downstream[O] ⇒ SyncSource) extends Producer[O] {
+    def requestMore(elements: Int): Unit = Effect.run(internalSource.handleRequestMore(elements))
+    val fanOut = createFanOut[O](requestMore)
+    val internalSource = sourceConstructor(fanOut.downstream)
 
-    def getPublisher: Publisher[O] = this
+    def getPublisher: Publisher[O] = fanOut
   }
 
   override def internalProducer[O](sourceConstructor: Downstream[O] ⇒ SyncSource): Producer[O] =
     new InternalProducerImpl[O](sourceConstructor) with InternalProducer[O] {
-      override def createSource(downstream: Downstream[O]): SyncSource = sourceConstructor(downstream)
+      override def createSource(downstream: Downstream[O]): SyncSource = {
+        object InternalSourceConnector extends Subscriber[O] with SyncSource {
+          var subscription: Subscription = _
+          var source: Upstream = _
+          def onSubscribe(subscription: Subscription): Unit = {
+            this.subscription = subscription
+            this.source = BasicEffects.forSubscription(subscription)
+          }
+          // called from fanOut to this subscriber
+          def onNext(element: O): Unit = Effect.run(downstream.next(element))
+          def onComplete(): Unit = Effect.run(downstream.complete)
+          def onError(cause: Throwable): Unit = Effect.run(downstream.error(cause))
+
+          // called from internal subscriber
+          // TODO: this may call moreRequested which will then be re-scheduled to run
+          //       in the right context (the same we are already in internally). Then it
+          //       will eventually call `requestFromUpstream` which calls the above
+          //       `InternalProducerImpl.requestMore` and run further upstream processing.
+          //       we could get rid of this extra scheduling round-trip if
+          //       we can capture calls to moreRequested / unregisterSubscription and
+          //       convert it into effects to be run instantly afterwards
+          def handleRequestMore(n: Int): Effect = source.requestMore(n)
+          // TODO: same as for handleRequestMore
+          def handleCancel(): Effect = source.cancel
+        }
+        fanOut.subscribe(InternalSourceConnector)
+        InternalSourceConnector
+      }
     }
 }
 
