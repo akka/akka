@@ -14,7 +14,11 @@ object Implementation {
     new OperationProcessor(operation, settings)
 
   def toProducer[O](source: Source[O], settings: ActorBasedImplementationSettings): Producer[O] =
-    new SourceProducer[O](source, settings)
+    source match {
+      // just unpack the internal producer
+      case FromProducerSource(i: InternalProducer[O]) ⇒ i
+      case _ ⇒ new SourceProducer[O](source, settings)
+    }
 
   def runPipeline(pipeline: Pipeline[_], settings: ActorBasedImplementationSettings): Unit =
     settings.refFactory.actorOf(Props(new PipelineActor(pipeline)))
@@ -140,33 +144,30 @@ trait ProducerImplementationBits[O] extends Producer[O] with Publisher[O] {
 
 trait ProcessorActorImpl { _: Actor ⇒
   object ActorContextEffects extends AbstractContextEffects {
-    def expose[O](source: Source[O]): Producer[O] = {
+    def expose[O](source: Source[O]): Producer[O] =
       source match {
-        case FromProducerSource(i: InternalProducer[O]) ⇒
-          object InternalProducer extends Producer[O] with Publisher[O] {
-            var singleSubscriber: Subscriber[O] = _
-            def subscribe(subscriber: Subscriber[O]): Unit = runEffectInThisActor {
-              require(singleSubscriber eq null) // TODO: add FanOutBox
-              this.singleSubscriber = subscriber
-              val upstream = i.createSource(BasicEffects.forSubscriber(subscriber))
-              subscriber.onSubscribe(new Subscription {
-                def requestMore(elements: Int): Unit = runEffectInThisActor(upstream.handleRequestMore(elements))
-                def cancel(): Unit = runEffectInThisActor(upstream.handleCancel())
-              })
-              upstream.start()
-            }
-
-            def getPublisher: Publisher[O] = this
-          }
-
-          InternalProducer
+        case FromProducerSource(i: InternalProducer[O]) ⇒ i
       }
+
+    abstract class InternalProducerImpl[O](sourceConstructor: Downstream[O] ⇒ SyncSource) extends Producer[O] with Publisher[O] {
+      var singleSubscriber: Subscriber[O] = _
+      def subscribe(subscriber: Subscriber[O]): Unit = runEffectInThisActor {
+        require(singleSubscriber eq null) // TODO: add FanOutBox
+        this.singleSubscriber = subscriber
+        val source = sourceConstructor(BasicEffects.forSubscriber(subscriber))
+        subscriber.onSubscribe(new Subscription {
+          def requestMore(elements: Int): Unit = runEffectInThisActor(source.handleRequestMore(elements))
+          def cancel(): Unit = runEffectInThisActor(source.handleCancel())
+        })
+        source.start()
+      }
+
+      def getPublisher: Publisher[O] = this
     }
 
     override def internalProducer[O](sourceConstructor: Downstream[O] ⇒ SyncSource): Producer[O] =
-      new InternalProducer[O] {
+      new InternalProducerImpl[O](sourceConstructor) with InternalProducer[O] {
         override def createSource(downstream: Downstream[O]): SyncSource = sourceConstructor(downstream)
-        override def getPublisher: Publisher[O] = ???
       }
 
     def runInContext(body: ⇒ Effect): Unit = runEffectInThisActor(body)
