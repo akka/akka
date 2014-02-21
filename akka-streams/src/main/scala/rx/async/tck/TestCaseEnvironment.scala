@@ -8,7 +8,7 @@ import scala.util.control.NonFatal
 import scala.collection.JavaConverters._
 import rx.async.spi.{ Subscription, Subscriber, Publisher }
 
-abstract class TestCaseEnvironment {
+trait TestCaseEnvironment {
   import TestCaseEnvironment._
 
   val asyncErrors = new CopyOnWriteArrayList[Throwable]()
@@ -37,17 +37,22 @@ abstract class TestCaseEnvironment {
       }
     }
 
-  def drain[T](pub: Publisher[T], timeoutMillis: Int): Unit = {
-    val sub = new FullManualSubscriber[T]
-    subscribe(pub, sub)
-    while (sub.requestAndExpectOneOrEndOfStream(timeoutMillis = 100, s"Timeout while draining Publisher $pub").isDefined) {}
-    sub.expectNone(withinMillis = 100, x ⇒ s"Publisher $pub called `onNext($x)` after `onComplete`")
+  def subscribe[T](pub: Publisher[T], sub: TestSubscriber[T], timeoutMillis: Int = 100): Unit = {
+    pub.subscribe(sub)
+    sub.subscription.expectCompletion(timeoutMillis, s"Could not subscribe $sub to Publisher $pub")
     verifyNoAsyncErrors()
   }
 
-  def subscribe[T](pub: Publisher[T], sub: TestSubscriber[T]): Unit = {
-    pub.subscribe(sub)
-    sub.subscription.expectCompletion(timeoutMillis = 100, s"Could not subscribe to Publisher $pub")
+  def newManualSubscriber[T](pub: Publisher[T], timeoutMillis: Int = 100): ManualSubscriber[T] = {
+    val sub = new ManualSubscriber[T] with SubscriptionSupport[T]
+    subscribe(pub, sub, timeoutMillis)
+    sub
+  }
+
+  def drain[T](pub: Publisher[T], timeoutMillis: Int): Unit = {
+    val sub = newManualSubscriber(pub)
+    while (sub.requestNextElementOrEndOfStream(timeoutMillis = 100, s"Timeout while draining Publisher $pub").isDefined) {}
+    sub.expectNone(withinMillis = 100, x ⇒ s"Publisher $pub called `onNext($x)` after `onComplete`")
     verifyNoAsyncErrors()
   }
 
@@ -77,35 +82,32 @@ object TestCaseEnvironment {
     val received = new Receptacle[T]
     override def onNext(element: T) = received.add(element)
     override def onComplete() = received.complete()
-    def requestOne(): Unit = requestN(1)
-    def requestN(elements: Int): Unit = {
+    def requestMore(elements: Int): Unit = {
       subscription.value.requestMore(elements)
     }
-    def requestAndExpectOne(timeoutMillis: Int, notReceivedErrorMsg: String): T = {
-      requestOne()
-      expectOne(timeoutMillis, notReceivedErrorMsg)
+    def requestNextElement(timeoutMillis: Int = 100, errorMsg: String = "Did not receive expected element"): T = {
+      requestMore(1)
+      nextElement(timeoutMillis, errorMsg)
     }
-    def requestAndExpectOneOrEndOfStream(timeoutMillis: Int, notReceivedErrorMsg: String): Option[T] = {
-      requestOne()
-      expectOneOrEndOfStream(timeoutMillis, notReceivedErrorMsg)
+    def requestNextElementOrEndOfStream(timeoutMillis: Int = 100, errorMsg: String = "Did not receive expected stream completion"): Option[T] = {
+      requestMore(1)
+      nextElementOrEndOfStream(timeoutMillis, errorMsg)
     }
-    def requestAndExpectN(elements: Int, timeoutMillis: Int, notReceivedErrorMsg: String): Seq[T] = {
-      requestN(elements)
-      expectN(elements, timeoutMillis, notReceivedErrorMsg)
+    def requestNextElements(elements: Int, timeoutMillis: Int = 100, errorMsg: String = "Did not receive expected elements"): Seq[T] = {
+      requestMore(elements)
+      nextElements(elements, timeoutMillis, errorMsg)
     }
-    def expectOne(timeoutMillis: Int, notReceivedErrorMsg: String): T =
-      received.expectOne(timeoutMillis, notReceivedErrorMsg)
-    def expectOneOrEndOfStream(timeoutMillis: Int, notReceivedErrorMsg: String): Option[T] =
-      received.expectOneOrEndOfStream(timeoutMillis, notReceivedErrorMsg)
-    def expectN(elements: Int, timeoutMillis: Int, notReceivedErrorMsg: String): Seq[T] =
-      received.expectN(elements, timeoutMillis, notReceivedErrorMsg)
-    def expectCompletion(timeoutMillis: Int, notCompletedErrorMsg: String): Unit =
-      received.expectCompletion(timeoutMillis, notCompletedErrorMsg)
-    def expectNone(withinMillis: Int, didReceiveErrorMsg: T ⇒ String): Unit =
-      received.expectNone(withinMillis, didReceiveErrorMsg)
+    def nextElement(timeoutMillis: Int = 100, errorMsg: String = "Did not receive expected element"): T =
+      received.next(timeoutMillis, errorMsg)
+    def nextElementOrEndOfStream(timeoutMillis: Int = 100, errorMsg: String = "Did not receive expected stream completion"): Option[T] =
+      received.nextOrEndOfStream(timeoutMillis, errorMsg)
+    def nextElements(elements: Int, timeoutMillis: Int = 100, errorMsg: String = "Did not receive expected element or completion"): Seq[T] =
+      received.nextN(elements, timeoutMillis, errorMsg)
+    def expectCompletion(timeoutMillis: Int = 100, errorMsg: String = "Did not receive expected stream completion"): Unit =
+      received.expectCompletion(timeoutMillis, errorMsg)
+    def expectNone(withinMillis: Int = 100, errorMsg: T ⇒ String = "Did not expect an element but got " + _): Unit =
+      received.expectNone(withinMillis, errorMsg)
   }
-
-  class FullManualSubscriber[T] extends ManualSubscriber[T] with SubscriptionSupport[T]
 
   trait SubscriptionSupport[T] extends TestSubscriber[T] {
     abstract override def onNext(element: T) =
@@ -143,11 +145,11 @@ object TestCaseEnvironment {
     def value: T = if (isCompleted) _value else fail("Cannot access promise value before completion")
     def isCompleted: Boolean = _value.asInstanceOf[AnyRef] ne null
     def complete(value: T): Unit = abq.add(value)
-    def assertCompleted(notCompletedErrorMsg: String): Unit = if (!isCompleted) fail(notCompletedErrorMsg)
-    def assertUncompleted(completedErrorMsg: String): Unit = if (isCompleted) fail(completedErrorMsg)
-    def expectCompletion(timeoutMillis: Int, notCompletedErrorMsg: String): Unit =
+    def assertCompleted(errorMsg: String): Unit = if (!isCompleted) fail(errorMsg)
+    def assertUncompleted(errorMsg: String): Unit = if (isCompleted) fail(errorMsg)
+    def expectCompletion(timeoutMillis: Int, errorMsg: String): Unit =
       if (!isCompleted) abq.poll(timeoutMillis, TimeUnit.MILLISECONDS) match {
-        case null ⇒ fail(s"$notCompletedErrorMsg within $timeoutMillis ms")
+        case null ⇒ fail(s"$errorMsg within $timeoutMillis ms")
         case x    ⇒ _value = x
       }
   }
@@ -157,34 +159,34 @@ object TestCaseEnvironment {
     private val abq = new ArrayBlockingQueue[Option[T]](queueSize)
     def add(value: T): Unit = abq.add(Some(value))
     def complete(): Unit = abq.add(None)
-    def expectOne(timeoutMillis: Int, notReceivedErrorMsg: String): T =
+    def next(timeoutMillis: Int, errorMsg: String): T =
       abq.poll(timeoutMillis, TimeUnit.MILLISECONDS) match {
-        case null    ⇒ fail(s"$notReceivedErrorMsg within $timeoutMillis ms")
+        case null    ⇒ fail(s"$errorMsg within $timeoutMillis ms")
         case Some(x) ⇒ x
         case None    ⇒ fail(s"Expected element but got end-of-stream")
       }
-    def expectOneOrEndOfStream(timeoutMillis: Int, notReceivedErrorMsg: String): Option[T] =
+    def nextOrEndOfStream(timeoutMillis: Int, errorMsg: String): Option[T] =
       abq.poll(timeoutMillis, TimeUnit.MILLISECONDS) match {
-        case null ⇒ fail(s"$notReceivedErrorMsg within $timeoutMillis ms")
+        case null ⇒ fail(s"$errorMsg within $timeoutMillis ms")
         case x    ⇒ x
       }
-    def expectN(elements: Int, timeoutMillis: Int, notReceivedErrorMsg: String): Seq[T] = {
+    def nextN(elements: Int, timeoutMillis: Int, errorMsg: String): Seq[T] = {
       @tailrec def rec(remaining: Int, result: Seq[T] = Nil): Seq[T] =
         if (remaining > 0)
-          rec(remaining - 1, result :+ expectOne(timeoutMillis, notReceivedErrorMsg)) // TODO: fix error messages showing wrong timeout info
+          rec(remaining - 1, result :+ next(timeoutMillis, errorMsg)) // TODO: fix error messages showing wrong timeout info
         else result
       rec(elements)
     }
-    def expectCompletion(timeoutMillis: Int, notCompletedErrorMsg: String): Unit =
+    def expectCompletion(timeoutMillis: Int, errorMsg: String): Unit =
       abq.poll(timeoutMillis, TimeUnit.MILLISECONDS) match {
-        case null    ⇒ fail(s"$notCompletedErrorMsg within $timeoutMillis ms")
+        case null    ⇒ fail(s"$errorMsg within $timeoutMillis ms")
         case Some(x) ⇒ fail(s"Expected end-of-stream but got $x")
         case None    ⇒ // ok
       }
-    def expectNone(withinMillis: Int, didReceiveErrorMsg: T ⇒ String): Unit = {
+    def expectNone(withinMillis: Int, errorMsg: T ⇒ String): Unit = {
       Thread.sleep(withinMillis)
       abq.poll() match {
-        case Some(x)     ⇒ fail(didReceiveErrorMsg(x))
+        case Some(x)     ⇒ fail(errorMsg(x))
         case null | None ⇒ // ok
       }
     }
@@ -192,10 +194,10 @@ object TestCaseEnvironment {
 
   def fail(msg: String): Nothing = org.junit.Assert.fail(msg).asInstanceOf[Nothing]
 
-  def expectThrowingOf[T <: Exception: ClassTag](notThrownErrorMsg: Throwable ⇒ String)(block: ⇒ Unit): Unit =
+  def expectThrowingOf[T <: Exception: ClassTag](errorMsg: Throwable ⇒ String)(block: ⇒ Unit): Unit =
     try block
     catch {
       case e: Exception if implicitly[ClassTag[T]].runtimeClass.isInstance(e) ⇒ // ok
-      case NonFatal(e) ⇒ fail(notThrownErrorMsg(e))
+      case NonFatal(e) ⇒ fail(errorMsg(e))
     }
 }

@@ -115,8 +115,7 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with ShouldMatchers {
     "pass the stress test" in {
       // create 100 buffers with an initialSize of 1 and a maxSize of 1 to 100,
       // for each one attach 1 to 3 cursors and randomly try reading and writing to the buffer;
-      // in total 200 elements need to be written to the buffer and subsequently read in the
-      // correct order by each cursor
+      // in total 200 elements need to be written to the buffer and read in the correct order by each cursor
       val MAXSIZE_LIMIT = 100
       val COUNTER_LIMIT = 200
       val LOG = false
@@ -126,21 +125,21 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with ShouldMatchers {
       class StressTestCursor(cursorNr: Int, run: Int) extends Cursor {
         var cursor: Int = _
         var counter = 1
-        def tryReadAndReturnTrueIfDone(buf: ResizableMultiReaderRingBuffer[Integer]): Boolean = {
+        def tryReadAndReturnTrueIfDone(buf: TestBuffer): Boolean = {
           log(s"  Try reading of $toString: ")
-          buf.read(this) match {
-            case null ⇒
-              log("FAILED\n"); false // ok, we currently can't read, try again later
-            case x ⇒
-              log("OK\n")
-              if (x != counter)
-                fail(s"""|Run $run, cursorNr $cursorNr, counter $counter: got unexpected $x
-                         |  Buf: ${inspect(buf)}
+          try {
+            val x = buf.read(this)
+            log("OK\n")
+            if (x != counter)
+              fail(s"""|Run $run, cursorNr $cursorNr, counter $counter: got unexpected $x
+                         |  Buf: ${buf.inspect}
                          |  Cursors: ${buf.cursors.cursors.mkString("\n           ")}
                          |Log:\n$sb
                       """.stripMargin)
-              counter += 1
-              counter == COUNTER_LIMIT
+            counter += 1
+            counter == COUNTER_LIMIT
+          } catch {
+            case NothingToReadException ⇒ log("FAILED\n"); false // ok, we currently can't read, try again later
           }
         }
         override def toString: String = s"cursorNr $cursorNr, ix $cursor, counter $counter"
@@ -151,10 +150,10 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with ShouldMatchers {
         var counter = 1
         var activeCursors = List.tabulate(random.nextInt(3) + 1)(new StressTestCursor(_, maxSize))
         var stillWriting = 1
-        val buf = new ResizableMultiReaderRingBuffer[Integer](1, maxSize, new Cursors { def cursors = activeCursors })
+        val buf = new TestBuffer(1, maxSize, new Cursors { def cursors = activeCursors })
         sb.setLength(0)
         while (activeCursors.nonEmpty) {
-          log(s"Buf: ${inspect(buf)}\n")
+          log(s"Buf: ${buf.inspect}\n")
           val activeCursorCount = activeCursors.size
           val index = random.nextInt(activeCursorCount + stillWriting)
           if (index == activeCursorCount) {
@@ -176,17 +175,18 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with ShouldMatchers {
     }
   }
 
-  class Test(iSize: Int, mSize: Int, cursorCount: Int)
-    extends ResizableMultiReaderRingBuffer[Integer](iSize, mSize, new SimpleCursors(cursorCount)) {
-    def inspect: String = ResizableMultiReaderRingBufferSpec.this.inspect(this)
-    def read(cursorIx: Int): Integer = read(cursors.cursors(cursorIx))
-    override protected def rebaseThreshold: Int = arrayLen // use a low threshold in order to test the rebasing logic
+  class TestBuffer(iSize: Int, mSize: Int, cursors: Cursors) extends ResizableMultiReaderRingBuffer[Int](iSize, mSize, cursors) {
+    def inspect: String =
+      underlyingArray.map(x ⇒ if (x == null) 0 else x).mkString("", " ", " " + toString.dropWhile(_ != '('))
+  }
+
+  class Test(iSize: Int, mSize: Int, cursorCount: Int) extends TestBuffer(iSize, mSize, new SimpleCursors(cursorCount)) {
+    def read(cursorIx: Int): Integer =
+      try read(cursors.cursors(cursorIx)) catch { case NothingToReadException ⇒ null }
+    override def rebaseThreshold: Int = underlyingArray.length // use a low threshold in order to test the rebasing logic
   }
 
   class SimpleCursors(cursorCount: Int) extends Cursors {
     val cursors: List[Cursor] = List.fill(cursorCount)(new Cursor { var cursor: Int = _ })
   }
-
-  def inspect(buf: ResizableMultiReaderRingBuffer[Integer]): String =
-    buf.toSeq.map { case null ⇒ 0; case x ⇒ x }.mkString("", " ", " " + buf.toString().dropWhile(_ != '('))
 }

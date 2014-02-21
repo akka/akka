@@ -1,6 +1,6 @@
 package akka.streams
 
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.annotation.tailrec
 import rx.async.spi.Subscriber
 
@@ -14,31 +14,7 @@ import rx.async.spi.Subscriber
 class IteratorProducer[T](iterator: Iterator[T], maxBufferSize: Int = 16)
   extends AbstractProducer[T](initialBufferSize = 1, maxBufferSize = maxBufferSize) {
 
-  // compile-time constants
-  private final val UNLOCKED = 0
-  private final val LOCKED = 1
-
-  private[this] val lock = new AtomicInteger(UNLOCKED) // TODO: replace with AtomicFieldUpdater / sun.misc.Unsafe
-
-  require(maxBufferSize > 0, "maxBufferSize must be > 0")
-
   if (!iterator.hasNext) completeDownstream()
-
-  // outside Publisher interface, can potentially called from another thread,
-  // so we need to wrap with synchronization
-  @tailrec final override def subscribe(subscriber: Subscriber[T]): Unit =
-    if (lock.compareAndSet(UNLOCKED, LOCKED)) {
-      try super.subscribe(subscriber)
-      finally lock.set(UNLOCKED)
-    } else subscribe(subscriber)
-
-  // called from `Subscription::requestMore`, i.e. from another thread
-  // so we need to add synchronisation here
-  @tailrec final override protected def moreRequested(subscription: Subscription, elements: Int): Unit =
-    if (lock.compareAndSet(UNLOCKED, LOCKED)) {
-      try super.moreRequested(subscription, elements)
-      finally lock.set(UNLOCKED)
-    } else moreRequested(subscription, elements)
 
   @tailrec final protected def requestFromUpstream(elements: Int): Unit =
     if (elements > 0) {
@@ -47,12 +23,37 @@ class IteratorProducer[T](iterator: Iterator[T], maxBufferSize: Int = 16)
         requestFromUpstream(elements - 1)
       } else completeDownstream()
     } else if (!iterator.hasNext) completeDownstream() // complete eagerly
+}
+
+/**
+ * Base class for producers that can provide their elements synchronously.
+ */
+abstract class AbstractStrictProducer[T](initialBufferSize: Int, maxBufferSize: Int)
+  extends AbstractProducer[T](initialBufferSize, maxBufferSize) {
+
+  private[this] val locked = new AtomicBoolean // TODO: replace with AtomicFieldUpdater / sun.misc.Unsafe
+
+  // outside Publisher interface, can potentially called from another thread,
+  // so we need to wrap with synchronization
+  @tailrec final override def subscribe(subscriber: Subscriber[T]): Unit =
+    if (locked.compareAndSet(false, true)) {
+      try super.subscribe(subscriber)
+      finally locked.set(false)
+    } else subscribe(subscriber)
+
+  // called from `Subscription::requestMore`, i.e. from another thread
+  // so we need to add synchronisation here
+  @tailrec final override protected def moreRequested(subscription: Subscription, elements: Int): Unit =
+    if (locked.compareAndSet(false, true)) {
+      try super.moreRequested(subscription, elements)
+      finally locked.set(false)
+    } else moreRequested(subscription, elements)
 
   // called from a Subscription, i.e. probably from another thread,
   // so we need to wrap with synchronization
   @tailrec final override def unregisterSubscription(subscription: Subscription) =
-    if (lock.compareAndSet(UNLOCKED, LOCKED)) {
+    if (locked.compareAndSet(false, true)) {
       try super.unregisterSubscription(subscription)
-      finally lock.set(UNLOCKED)
+      finally locked.set(false)
     } else unregisterSubscription(subscription)
 }
