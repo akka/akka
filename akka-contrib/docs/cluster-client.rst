@@ -83,6 +83,9 @@ The ``initialContacts`` parameter is a ``Set[ActorSelection]``, which can be cre
 
 You will probably define the address information of the initial contact points in configuration or system property.
 
+A more comprehensive sample is available in the `Typesafe Activator <http://typesafe.com/platform/getstarted>`_
+tutorial named `Distributed workers with Akka and Scala! <http://typesafe.com/activator/template/akka-distributed-workers>`_
+and `Distributed workers with Akka and Java! <http://typesafe.com/activator/template/akka-distributed-workers-java>`_.
 
 ClusterReceptionistExtension
 ----------------------------
