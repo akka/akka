@@ -30,6 +30,7 @@ class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpe
         val (subDownstream, res) = onSubscribe(SubUpstream)
         res should be(RequestMoreFromSubstream(11))
         subDownstream.handleNext(1.5f) should be(DownstreamNext(1.5f))
+        flatten.handleRequestMore(5) should be(RequestMoreFromSubstream(5))
         subDownstream.handleNext(8.7f) should be(DownstreamNext(8.7f))
       }
       "go on with super stream when substream is depleted" in new UninitializedSetup {

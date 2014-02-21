@@ -101,7 +101,7 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         subStreamConsumer2.expectNext("end")
         subStreamConsumer2.expectComplete()
       }
-      "operation consumes Producer" in new InitializedChainSetup[Source[String], String](Flatten()) {
+      "operation consumes Producer" in new InitializedChainSetup[Source[String], String](Flatten())(factoryWithFanOutBuffer(10)) {
         downstreamSubscription.requestMore(4)
         upstream.expectRequestMore(upstreamSubscription, 1)
 

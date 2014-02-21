@@ -66,9 +66,9 @@ class FlattenImpl[O](upstream: Upstream, downstream: Downstream[O], ctx: Context
   // invariant:
   // we've got a single subSource that we are currently subscribing to
   class Subscribing extends RejectNext {
-    def setSubUpstream(upstream: Upstream): (SyncSink[O], Effect) = {
-      become(DeliverSubstreamElements(upstream))
-      (subDownstream, upstream.requestMore(undeliveredToDownstream))
+    def setSubUpstream(subUpstream: Upstream): (SyncSink[O], Effect) = {
+      become(DeliverSubstreamElements(subUpstream))
+      (subDownstream, subUpstream.requestMore(undeliveredToDownstream))
     }
 
     def handleRequestMore(n: Int): Effect = {
@@ -88,9 +88,8 @@ class FlattenImpl[O](upstream: Upstream, downstream: Downstream[O], ctx: Context
   // substream is not depleted, all elements have been requested from subUpstream
   def DeliverSubstreamElements(subUpstream: Upstream): State = new RejectNext {
     def handleRequestMore(n: Int): Effect = {
-      val noElementsRequested = undeliveredToDownstream == 0
       undeliveredToDownstream += n
-      if (noElementsRequested) subUpstream.requestMore(undeliveredToDownstream) else Continue
+      subUpstream.requestMore(n)
     }
     def handleCancel(): Effect = ???
 
