@@ -3,81 +3,81 @@ package akka.streams.impl.ops
 import akka.streams.impl._
 
 object ComposeImpl {
-  def pipeline[B](_upstreamConstructor: Downstream[B] ⇒ SyncSource, _downstreamConstructor: Upstream ⇒ SyncSink[B]): SyncRunnable =
+  def pipeline[B](_sourceConstructor: Downstream[B] ⇒ SyncSource, _sinkConstructor: Upstream ⇒ SyncSink[B]): SyncRunnable =
     new AbstractComposeImpl[B] {
-      type Up = SyncSource
-      type Down = SyncSink[B]
+      type Source = SyncSource
+      type Sink = SyncSink[B]
 
-      def upstreamConstructor = _upstreamConstructor
-      def downstreamConstructor = _downstreamConstructor
+      def sourceConstructor = _sourceConstructor
+      def sinkConstructor = _sinkConstructor
     }
 
-  def source[B](_upstreamConstructor: Downstream[B] ⇒ SyncSource, _downstreamConstructor: Upstream ⇒ SyncOperation[B]): SyncSource =
+  def source[B](_sourceConstructor: Downstream[B] ⇒ SyncSource, _sinkConstructor: Upstream ⇒ SyncOperation[B]): SyncSource =
     new AbstractComposeImpl[B] with DownOperation[B] {
-      type Up = SyncSource
+      type Source = SyncSource
 
-      def upstreamConstructor: Downstream[B] ⇒ Up = _upstreamConstructor
-      def downstreamConstructor: Upstream ⇒ Down = _downstreamConstructor
+      def sourceConstructor: Downstream[B] ⇒ Source = _sourceConstructor
+      def sinkConstructor: Upstream ⇒ Sink = _sinkConstructor
     }
-  def sink[A, B](_upstreamConstructor: Downstream[B] ⇒ SyncOperation[A], _downstreamConstructor: Upstream ⇒ SyncSink[B]): SyncSink[A] =
+  def sink[A, B](_sourceConstructor: Downstream[B] ⇒ SyncOperation[A], _sinkConstructor: Upstream ⇒ SyncSink[B]): SyncSink[A] =
     new AbstractComposeImpl[B] with UpOperation[A, B] {
-      type Down = SyncSink[B]
+      type Sink = SyncSink[B]
 
-      def upstreamConstructor: Downstream[B] ⇒ Up = _upstreamConstructor
-      def downstreamConstructor: Upstream ⇒ Down = _downstreamConstructor
+      def sourceConstructor: Downstream[B] ⇒ Source = _sourceConstructor
+      def sinkConstructor: Upstream ⇒ Sink = _sinkConstructor
     }
 
-  def operation[A, B](_upstreamConstructor: Downstream[B] ⇒ SyncOperation[A], _downstreamConstructor: Upstream ⇒ SyncOperation[B]): SyncOperation[A] =
+  def operation[A, B](_sourceConstructor: Downstream[B] ⇒ SyncOperation[A], _sinkConstructor: Upstream ⇒ SyncOperation[B]): SyncOperation[A] =
     new AbstractComposeImpl[B] with SyncOperation[A] with UpOperation[A, B] with DownOperation[B] {
-      def upstreamConstructor: Downstream[B] ⇒ Up = _upstreamConstructor
-      def downstreamConstructor: Upstream ⇒ Down = _downstreamConstructor
+      def sourceConstructor: Downstream[B] ⇒ Source = _sourceConstructor
+      def sinkConstructor: Upstream ⇒ Sink = _sinkConstructor
 
-      override def start(): Effect = downstreamHandler.start()
+      override def start(): Effect = sink.start()
     }
 
   trait UpOperation[A, B] extends AbstractComposeImpl[B] with SyncSink[A] {
-    type Up = SyncOperation[A]
+    type Source = SyncOperation[A]
 
-    def handleNext(element: A): Effect = handleUpResult(upstreamHandler.handleNext(element))
-    def handleComplete(): Effect = handleUpResult(upstreamHandler.handleComplete())
-    def handleError(cause: Throwable): Effect = handleUpResult(upstreamHandler.handleError(cause))
+    def handleNext(element: A): Effect = handleInternalSourceResult(source.handleNext(element))
+    def handleComplete(): Effect = handleInternalSourceResult(source.handleComplete())
+    def handleError(cause: Throwable): Effect = handleInternalSourceResult(source.handleError(cause))
   }
   trait DownOperation[B] extends AbstractComposeImpl[B] with SyncSource {
-    type Down = SyncOperation[B]
+    type Sink = SyncOperation[B]
 
-    def handleRequestMore(n: Int): Effect = handleDownResult(downstreamHandler.handleRequestMore(n))
-    def handleCancel(): Effect = handleDownResult(downstreamHandler.handleCancel())
+    def handleRequestMore(n: Int): Effect = handleInternalSinkResult(sink.handleRequestMore(n))
+    def handleCancel(): Effect = handleInternalSinkResult(sink.handleCancel())
   }
 
   abstract class AbstractComposeImpl[T] extends SyncRunnable {
-    type Up <: SyncSource
-    type Down <: SyncSink[T]
+    type Source <: SyncSource
+    type Sink <: SyncSink[T]
 
-    def upstreamConstructor: Downstream[T] ⇒ Up
-    def downstreamConstructor: Upstream ⇒ Down
+    def sourceConstructor: Downstream[T] ⇒ Source
+    def sinkConstructor: Upstream ⇒ Sink
 
     lazy val innerDownstream = new Downstream[T] {
-      val next: T ⇒ Effect = BasicEffects.HandleNextInSink(downstreamHandler, _)
-      lazy val complete: Effect = BasicEffects.CompleteSink(downstreamHandler)
-      val error: Throwable ⇒ Effect = BasicEffects.HandleErrorInSink(downstreamHandler, _)
+      val next: T ⇒ Effect = BasicEffects.HandleNextInSink(sink, _)
+      lazy val complete: Effect = BasicEffects.CompleteSink(sink)
+      val error: Throwable ⇒ Effect = BasicEffects.HandleErrorInSink(sink, _)
     }
     lazy val innerUpstream = new Upstream {
-      val requestMore: Int ⇒ Effect = BasicEffects.RequestMoreFromSource(upstreamHandler, _)
-      val cancel: Effect = BasicEffects.CancelSource(upstreamHandler)
+      val requestMore: Int ⇒ Effect = BasicEffects.RequestMoreFromSource(source, _)
+      val cancel: Effect = BasicEffects.CancelSource(source)
     }
-    lazy val upstreamHandler: Up = upstreamConstructor(innerDownstream)
-    lazy val downstreamHandler: Down = downstreamConstructor(innerUpstream)
+    lazy val source: Source = sourceConstructor(innerDownstream)
+    lazy val sink: Sink = sinkConstructor(innerUpstream)
 
-    override def start(): Effect = downstreamHandler.start() ~ upstreamHandler.start()
+    override def start(): Effect = sink.start() ~ source.start()
 
     // TODO: add shortcuts for at least one direction (or one step)
-    def handleUpResult(result: Effect): Effect = result match {
+    def handleInternalSourceResult(result: Effect): Effect = result match {
       //case NextToDown(_, element) ⇒ right.handleNext(element)
       //case CompleteDown(_)       ⇒ right.handleComplete()
       //case ErrorToDown(_, cause) ⇒ right.handleError(cause)
       case x ⇒ x
     }
-    def handleDownResult(result: Effect): Effect = result match {
+    def handleInternalSinkResult(result: Effect): Effect = result match {
       //case f: Backward ⇒ f.run()
       //case RequestMoreFromUp(_, n) ⇒ left.handleRequestMore(n)
       //case CancelUp(_)             ⇒ left.handleCancel()
