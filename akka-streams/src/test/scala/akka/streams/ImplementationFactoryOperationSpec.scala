@@ -294,9 +294,7 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
     "work after initial upstream was completed" - {}
   }
 
-  class InitializedChainSetupWithFanOutBuffer[I, O](operation: Operation[I, O], capacity: Int) extends InitializedChainSetup(operation)(factoryWithFanOutBuffer(capacity)) {
-
-  }
+  class InitializedChainSetupWithFanOutBuffer[I, O](operation: Operation[I, O], capacity: Int) extends InitializedChainSetup(operation)(factoryWithFanOutBuffer(capacity))
   class InitializedChainSetup[I, O](operation: Operation[I, O])(implicit factory: ImplementationFactory) {
     val upstream = TestKit.producerProbe[I]()
     val downstream = TestKit.consumerProbe[O]()

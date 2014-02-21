@@ -126,7 +126,7 @@ trait ProducerImplementationBits[O] extends Producer[O] with Publisher[O] { impl
     protected def lastSubscriptionCancelled(): Unit
     protected def settings: ActorBasedImplementationSettings = impl.settings
 
-    val fanOut = ActorContextEffects.createFanOut[O](requestFromUpstream _, lastSubscriptionCancelled _)
+    val fanOut = ActorContextEffects.createFanOut[O](requestFromUpstream, lastSubscriptionCancelled)
     def DownstreamSideEffects: Downstream[O] = fanOut.downstream
 
     def RunProducer: Receive = {

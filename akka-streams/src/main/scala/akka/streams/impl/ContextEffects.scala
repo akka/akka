@@ -31,7 +31,7 @@ trait ContextEffects {
   def runInContext(body: ⇒ Effect): Unit
 }
 
-/** Tries to implement ContextEffect methods generally */
+/** General implementations of most ContextEffect methods */
 abstract class AbstractContextEffects extends ContextEffects {
   def subscribeTo[O](source: Source[O])(sinkConstructor: Upstream ⇒ SyncSink[O]): Effect =
     // TODO: think about how to avoid redundant creation of closures
@@ -49,7 +49,7 @@ abstract class AbstractContextEffects extends ContextEffects {
   abstract class InternalProducerImpl[O](sourceConstructor: Downstream[O] ⇒ SyncSource) extends Producer[O] {
     def requestMore(elements: Int): Unit = Effect.run(internalSource.handleRequestMore(elements))
     def cancel(): Unit = Effect.run(internalSource.handleCancel())
-    val fanOut = createFanOut[O](requestMore _, cancel _)
+    val fanOut = createFanOut[O](requestMore, cancel)
     val internalSource = sourceConstructor(fanOut.downstream)
 
     def getPublisher: Publisher[O] = fanOut
