@@ -25,7 +25,7 @@ trait ContextEffects {
 
   def internalProducer[O](constructor: Downstream[O] ⇒ SyncSource): Producer[O]
 
-  def createFanOut[O](requestMore: Int ⇒ Unit): FanOut[O]
+  def createFanOut[O](requestMore: Int ⇒ Unit, lastSubscriptionCancelled: () ⇒ Unit): FanOut[O]
 
   implicit def executionContext: ExecutionContext
   def runInContext(body: ⇒ Effect): Unit
@@ -48,7 +48,8 @@ abstract class AbstractContextEffects extends ContextEffects {
 
   abstract class InternalProducerImpl[O](sourceConstructor: Downstream[O] ⇒ SyncSource) extends Producer[O] {
     def requestMore(elements: Int): Unit = Effect.run(internalSource.handleRequestMore(elements))
-    val fanOut = createFanOut[O](requestMore)
+    def cancel(): Unit = Effect.run(internalSource.handleCancel())
+    val fanOut = createFanOut[O](requestMore _, cancel _)
     val internalSource = sourceConstructor(fanOut.downstream)
 
     def getPublisher: Publisher[O] = fanOut

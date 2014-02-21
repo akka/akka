@@ -214,7 +214,7 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
 
         upstream.expectRequestMore(upstreamSubscription, 1) // because of buffer size 1
       }
-      "blocking subscriber cancels subscription" in pendingUntilFixed(new InitializedChainSetupWithFanOutBuffer(Identity[Symbol](), 1) {
+      "blocking subscriber cancels subscription" in new InitializedChainSetupWithFanOutBuffer(Identity[Symbol](), 1) {
         val downstream2 = TestKit.consumerProbe[Symbol]()
         processed.link(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
@@ -235,7 +235,7 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         // should unblock fanoutbox
         downstream2Subscription.cancel()
         upstreamSubscription.expectRequestMore(1)
-      })
+      }
       "children Producers must support multiple subscribers" in pending
       "finish gracefully onComplete" in new InitializedChainSetupWithFanOutBuffer(Identity[Symbol](), 1) {
         val downstream2 = TestKit.consumerProbe[Symbol]()
@@ -275,7 +275,7 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
       }
     }
     "work in special situations" - {
-      "single subscriber cancels subscription while receiving data" in pendingUntilFixed(new InitializedChainSetupWithFanOutBuffer(Identity[String](), 1) {
+      "single subscriber cancels subscription while receiving data" in new InitializedChainSetupWithFanOutBuffer(Identity[String](), 1) {
         downstreamSubscription.requestMore(5)
         upstreamSubscription.expectRequestMore(1)
         upstreamSubscription.sendNext("test")
@@ -288,7 +288,7 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
 
         // because of the "must cancel its upstream Subscription if its last downstream Subscription has been cancelled" rule
         upstreamSubscription.expectCancellation()
-      })
+      }
     }
     "work after initial upstream was completed" - {}
   }

@@ -97,7 +97,7 @@ trait SyncOperationSpec extends WithActorSystem {
         override def createSource(downstream: Downstream[O]): SyncSource = constructor(downstream)
         override def getPublisher: Publisher[O] = ???
       }
-    def createFanOut[O](requestMore: Int ⇒ Unit): FanOut[O] = ???
+    def createFanOut[O](requestMore: (Int) ⇒ Unit, lastSubscriptionCancelled: () ⇒ Unit): FanOut[O] = ???
 
     implicit def executionContext: ExecutionContext = system.dispatcher
     def runInContext(body: ⇒ Effect): Unit = runInContextProbe.ref ! Thunk(body _)

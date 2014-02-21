@@ -32,6 +32,7 @@ private class SourceProducer[O](source: Source[O], val settings: ActorBasedImple
     val sourceImpl = OperationImpl(DownstreamSideEffects, ActorContextEffects, source)
     Effect.run(sourceImpl.start())
     protected def requestFromUpstream(elements: Int): Unit = Effect.run(sourceImpl.handleRequestMore(elements))
+    protected def lastSubscriptionCancelled(): Unit = Effect.run(sourceImpl.handleCancel())
 
     def receive = Running
 
@@ -69,6 +70,10 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
     protected def requestFromUpstream(elements: Int): Unit =
       if (upstream eq null) needToRequest += elements
       else Effect.run(impl.handleRequestMore(elements))
+
+    protected def lastSubscriptionCancelled(): Unit =
+      /*if (upstream eq null) needToRequest += elements // TODO: instantly go into a cancelled mode
+      else*/ Effect.run(impl.handleCancel())
 
     def receive = WaitingForUpstream
 
@@ -118,9 +123,10 @@ trait ProducerImplementationBits[O] extends Producer[O] with Publisher[O] { impl
 
   trait ProducerActor extends Actor with ProcessorActorImpl { outer ⇒
     protected def requestFromUpstream(elements: Int): Unit
+    protected def lastSubscriptionCancelled(): Unit
     protected def settings: ActorBasedImplementationSettings = impl.settings
 
-    val fanOut = ActorContextEffects.createFanOut[O](requestFromUpstream)
+    val fanOut = ActorContextEffects.createFanOut[O](requestFromUpstream _, lastSubscriptionCancelled _)
     def DownstreamSideEffects: Downstream[O] = fanOut.downstream
 
     def RunProducer: Receive = {
@@ -133,9 +139,10 @@ trait ProcessorActorImpl { _: Actor ⇒
   protected def settings: ActorBasedImplementationSettings
 
   object ActorContextEffects extends AbstractContextEffects {
-    def createFanOut[O](requestMore: Int ⇒ Unit): FanOut[O] =
+    def createFanOut[O](requestMore: Int ⇒ Unit, _lastSubscriptionCancelled: () ⇒ Unit): FanOut[O] =
       new AbstractProducer[O](settings.initialFanOutBufferSize, settings.maxFanOutBufferSize) with FanOut[O] {
         protected def requestFromUpstream(elements: Int): Unit = requestMore(elements)
+        protected def lastSubscriptionCancelled(): Unit = _lastSubscriptionCancelled()
 
         val innerSubscriber = new Subscriber[O] {
           def onSubscribe(subscription: spi.Subscription): Unit = ???
