@@ -43,8 +43,10 @@ class FlattenImpl[O](upstream: Upstream, downstream: Downstream[O], ctx: Context
       def handleError(cause: Throwable): Effect = downstream.error(cause)
     }
 
-  val subDownstream =
+  def createSubSink(subUpstream: Upstream, initialRequest: Int) =
     new SyncSink[O] {
+      override def start(): Effect = subUpstream.requestMore(initialRequest)
+
       def handleNext(element: O): Effect = {
         undeliveredToDownstream -= 1
         downstream.next(element)
@@ -66,9 +68,9 @@ class FlattenImpl[O](upstream: Upstream, downstream: Downstream[O], ctx: Context
   // invariant:
   // we've got a single subSource that we are currently subscribing to
   class Subscribing extends RejectNext {
-    def setSubUpstream(subUpstream: Upstream): (SyncSink[O], Effect) = {
+    def setSubUpstream(subUpstream: Upstream): SyncSink[O] = {
       become(DeliverSubstreamElements(subUpstream))
-      (subDownstream, subUpstream.requestMore(undeliveredToDownstream))
+      createSubSink(subUpstream, undeliveredToDownstream)
     }
 
     def handleRequestMore(n: Int): Effect = {

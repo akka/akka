@@ -38,10 +38,10 @@ class SourceHeadTailImpl[O](upstream: Upstream, downstream: Downstream[(O, Sourc
   }
   class WaitingForSubscription() extends RejectNext {
     var closeAfterNext = false
-    def onSubscribe(upstream: Upstream): (SyncSink[O], Effect) = {
+    def onSubscribe(upstream: Upstream): SyncSink[O] = {
       val next = new WaitingForFirstElement(upstream, closeAfterNext)
       become(next)
-      (next.subSink, upstream.requestMore(1))
+      next.subSink
     }
 
     override def handleComplete(): Effect = {
@@ -58,6 +58,8 @@ class SourceHeadTailImpl[O](upstream: Upstream, downstream: Downstream[(O, Sourc
   }
   class WaitingForFirstElement(subUpstream: Upstream, closeDownstreamAfterFirst: Boolean) extends RejectNext { outer ⇒
     val subSink = new DynamicSyncSink[O] {
+      override def start(): Effect = subUpstream.requestMore(1)
+
       var closing = false
       override def initial: State = WaitingForFirstElement
 
@@ -81,7 +83,7 @@ class SourceHeadTailImpl[O](upstream: Upstream, downstream: Downstream[(O, Sourc
         override def handleComplete(): Effect = subDownstream.complete
         override def handleError(cause: Throwable): Effect = subDownstream.error(cause)
       }
-      def innerSource(init: Effect) = new SyncSource {
+      def createInnerSource(init: Effect) = new SyncSource {
         override def start(): Effect = init
 
         override def handleRequestMore(n: Int): Effect = subUpstream.requestMore(n)
@@ -90,8 +92,8 @@ class SourceHeadTailImpl[O](upstream: Upstream, downstream: Downstream[(O, Sourc
       def onSubscribe(subDownstream: Downstream[O]): SyncSource =
         if (!closing) {
           become(Running(subDownstream))
-          innerSource(Continue)
-        } else innerSource(subDownstream.complete)
+          createInnerSource(Continue)
+        } else createInnerSource(subDownstream.complete)
     }
 
     def receivedFirst(): Effect =

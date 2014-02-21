@@ -140,16 +140,16 @@ trait ProducerImplementationBits[O] extends Producer[O] with Publisher[O] {
 
 trait ProcessorActorImpl { _: Actor ⇒
   object ActorContextEffects extends AbstractContextEffects {
-    override def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect =
+    override def subscribeFrom[O](sink: Sink[O])(sourceConstructor: Downstream[O] ⇒ SyncSource): Effect =
       Effect.step({
         val FromConsumerSink(consumer: Consumer[O]) = sink
         class SubSubscription(source: SyncSource) extends Subscription {
           def requestMore(elements: Int): Unit = runEffectInThisActor(source.handleRequestMore(elements))
           def cancel(): Unit = runEffectInThisActor(source.handleCancel())
         }
-        val (handler, effect) = onSubscribe(BasicEffects.forSubscriber(consumer.getSubscriber))
+        val handler = sourceConstructor(BasicEffects.forSubscriber(consumer.getSubscriber))
         consumer.getSubscriber.onSubscribe(new SubSubscription(handler))
-        effect
+        handler.start()
       }, s"SubscribeFrom($sink)")
 
     def expose[O](source: Source[O]): Producer[O] = {
@@ -175,9 +175,9 @@ trait ProcessorActorImpl { _: Actor ⇒
       }
     }
 
-    override def internalProducer[O](constructor: Downstream[O] ⇒ SyncSource): Producer[O] =
+    override def internalProducer[O](sourceConstructor: Downstream[O] ⇒ SyncSource): Producer[O] =
       new InternalProducer[O] {
-        override def createSource(downstream: Downstream[O]): SyncSource = constructor(downstream)
+        override def createSource(downstream: Downstream[O]): SyncSource = sourceConstructor(downstream)
         override def getPublisher: Publisher[O] = ???
       }
 

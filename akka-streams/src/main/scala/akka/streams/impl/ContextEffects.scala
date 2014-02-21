@@ -10,11 +10,11 @@ import scala.concurrent.ExecutionContext
  */
 trait ContextEffects {
   /**
-   * Subscribe to the given source and once subscribed call the `onSubscribe` callback with upstream
-   * effects. onSubscribe
+   * Subscribe to the given source and once subscribed call the `sinkConstructor` with upstream
+   * effects.
    */
-  def subscribeTo[O](source: Source[O])(onSubscribe: Upstream ⇒ (SyncSink[O], Effect)): Effect
-  def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect
+  def subscribeTo[O](source: Source[O])(sinkConstructor: Upstream ⇒ SyncSink[O]): Effect
+  def subscribeFrom[O](sink: Sink[O])(sourceConstructor: Downstream[O] ⇒ SyncSource): Effect
 
   def expose[O](source: Source[O]): Producer[O]
 
@@ -26,23 +26,23 @@ trait ContextEffects {
 
 /** Tries to implement ContextEffect methods generally */
 abstract class AbstractContextEffects extends ContextEffects {
-  def subscribeTo[O](source: Source[O])(sinkConstructor: Upstream ⇒ (SyncSink[O], Effect)): Effect =
+  def subscribeTo[O](source: Source[O])(sinkConstructor: Upstream ⇒ SyncSink[O]): Effect =
     // TODO: think about how to avoid redundant creation of closures
     //       e.g. by letting OperationImpl provide constructors from static info
     ConnectInternalSourceSink(OperationImpl.apply(_: Downstream[O], this, source), sinkConstructor)
 }
 
-case class ConnectInternalSourceSink[O](sourceConstructor: Downstream[O] ⇒ SyncSource, sinkConstructor: Upstream ⇒ (SyncSink[O], Effect)) extends SingleStep {
+case class ConnectInternalSourceSink[O](sourceConstructor: Downstream[O] ⇒ SyncSource, sinkConstructor: Upstream ⇒ SyncSink[O]) extends SingleStep {
   override def runOne(): Effect = {
     object LazyUpstream extends Upstream {
       var source: SyncSource = _
       val requestMore: Int ⇒ Effect = n ⇒ Effect.step(source.handleRequestMore(n), s"RequestMoreFromInternalSource($source)")
       val cancel: Effect = Effect.step(source.handleCancel(), s"Cancel internal source")
     }
-    val (sink, sinkEffect) = sinkConstructor(LazyUpstream)
+    val sink = sinkConstructor(LazyUpstream)
     val downstream = BasicEffects.forSink(sink)
     val source = sourceConstructor(downstream)
     LazyUpstream.source = source
-    sinkEffect ~ source.start()
+    sink.start() ~ source.start()
   }
 }

@@ -76,8 +76,8 @@ class SourceHeadTailImplSpec extends FreeSpec with ShouldMatchers with SyncOpera
         val S1Upstream = new MockUpstream
 
         val ConnectInternalSourceSink(_, downstreamCons) = impl.handleNext(s1Source)
-        val (s1, request) = downstreamCons(S1Upstream)
-        request should be(S1Upstream.requestMore(1))
+        val s1 = downstreamCons(S1Upstream)
+        s1.start() should be(S1Upstream.requestMore(1))
         val Effects(Vector(downstreamNext, UpstreamRequestMore(1))) = s1.handleNext(42)
         val (42, internal) = downstreamNext.expectDownstreamNext[(Int, Source[Int])]()
         val handler1 = internal.expectInternalSourceHandler()
@@ -88,8 +88,8 @@ class SourceHeadTailImplSpec extends FreeSpec with ShouldMatchers with SyncOpera
         val (d1, Continue) = handler1(S1Downstream)
 
         val ConnectInternalSourceSink(_, downstreamCons2) = impl.handleNext(s2Source)
-        val (s2, request2) = downstreamCons(S2Upstream)
-        request2 should be(S2Upstream.requestMore(1))
+        val s2 = downstreamCons(S2Upstream)
+        s2.start() should be(S2Upstream.requestMore(1))
 
         d1.handleRequestMore(3) should be(S1Upstream.requestMore(3))
         s1.handleNext(38) should be(S1Downstream.next(38))
@@ -112,8 +112,8 @@ class SourceHeadTailImplSpec extends FreeSpec with ShouldMatchers with SyncOpera
         val S1Upstream = new MockUpstream
 
         val ConnectInternalSourceSink(_, downstreamCons) = impl.handleNext(s1Source)
-        val (s1, request) = downstreamCons(S1Upstream)
-        request should be(S1Upstream.requestMore(1))
+        val s1 = downstreamCons(S1Upstream)
+        s1.start() should be(S1Upstream.requestMore(1))
         val Effects(Vector(downstreamNext, UpstreamRequestMore(1))) = s1.handleNext(42)
         s1.handleComplete() should be(Continue)
 

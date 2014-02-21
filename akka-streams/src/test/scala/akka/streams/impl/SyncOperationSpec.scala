@@ -71,8 +71,8 @@ trait SyncOperationSpec extends WithActorSystem {
     override def handleRequestMore(n: Int): Effect = ???
   }
 
-  case class SubscribeToProducer[O](source: Producer[O], onSubscribe: Upstream ⇒ (SyncSink[O], Effect)) extends DoNothing
-  case class SubscribeFrom[O](sink: Sink[O], onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)) extends DoNothing
+  case class SubscribeToProducer[O](source: Producer[O], sinkConstructor: Upstream ⇒ SyncSink[O]) extends DoNothing
+  case class SubscribeFrom[O](sink: Sink[O], sourceConstructor: Downstream[O] ⇒ SyncSource) extends DoNothing
   case class ExposedSource[O](source: Source[O]) extends Producer[O] {
     def getPublisher: Publisher[O] = throw new IllegalStateException("Should only be deconstructed")
   }
@@ -83,13 +83,13 @@ trait SyncOperationSpec extends WithActorSystem {
   def expectAndRunContextEffect(): Effect = expectThunk()()
   object TestContextEffects extends AbstractContextEffects {
 
-    override def subscribeTo[O](source: Source[O])(onSubscribeCallback: (Upstream) ⇒ (SyncSink[O], Effect)): Effect = source match {
-      case f @ FromProducerSource(i: InternalProducer[O]) ⇒ super.subscribeTo(f)(onSubscribeCallback)
-      case FromProducerSource(p) ⇒ SubscribeToProducer(p, onSubscribeCallback)
-      case x ⇒ super.subscribeTo(x)(onSubscribeCallback)
+    override def subscribeTo[O](source: Source[O])(sinkConstructor: Upstream ⇒ SyncSink[O]): Effect = source match {
+      case f @ FromProducerSource(i: InternalProducer[O]) ⇒ super.subscribeTo(f)(sinkConstructor)
+      case FromProducerSource(p) ⇒ SubscribeToProducer(p, sinkConstructor)
+      case x ⇒ super.subscribeTo(x)(sinkConstructor)
     }
 
-    def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect = SubscribeFrom(sink, onSubscribe)
+    def subscribeFrom[O](sink: Sink[O])(sourceConstructor: Downstream[O] ⇒ SyncSource): Effect = SubscribeFrom(sink, sourceConstructor)
     def expose[O](source: Source[O]): Producer[O] = ExposedSource(source)
 
     def internalProducer[O](constructor: Downstream[O] ⇒ SyncSource): Producer[O] =
