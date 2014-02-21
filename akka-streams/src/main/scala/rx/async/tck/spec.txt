@@ -2,9 +2,9 @@ Reactive-Streams SPI Specification
 ==================================
 
 Clarification of terminology used throughout this document:
- "Publisher"   : an object implementing the `rx.async.spi.Publisher` interface  
- "Subscriber"  : an object implementing the `rx.async.spi.Subscriber` interface  
- "Subscription": an object implementing the `rx.async.spi.Subscription` interface
+ "Publisher"   : an implementation of the `rx.async.spi.Publisher` interface
+ "Subscriber"  : an implementation of the `rx.async.spi.Subscriber` interface
+ "Subscription": an implementation of the `rx.async.spi.Subscription` interface
  "subscriber"  : a Subscriber which is currently subscribed, i.e. has an active Subscription
  Foo::bar      : an instance method `bar` on the class `Foo`
 
@@ -14,15 +14,15 @@ Specification Rules
 
 Publisher::subscribe(Subscriber)
   when Publisher is in `completed` state
-    must not call `onSubscribed` on the given Subscriber
+    must not call `onSubscribe` on the given Subscriber
     must trigger a call to `onComplete` on the given Subscriber
 
-  when Publisher is in an error state
-    must not call `onSubscribed` on the given Subscriber
+  when Publisher is in `error` state
+    must not call `onSubscribe` on the given Subscriber
     must trigger a call to `onError` on the given Subscriber
 
-  when Publisher is neither in `completed` nor an error state
-    must trigger a call to `onSubscribed` on the given Subscriber if the Subscription is to be accepted
+  when Publisher is neither in `completed` nor `error` state
+    must trigger a call to `onSubscribe` on the given Subscriber if the Subscription is to be accepted
     must trigger a call to `onError` on the given Subscriber if the Subscription is to be rejected
     must reject the Subscription if the same Subscriber already has an active Subscription [1, 2]
 
@@ -35,7 +35,7 @@ Subscription::requestMore(Int)
     must call `onError` if the total number of requested elements for the respective subscriber would overflow 2^63-1 [2]
     must throw a `java.lang.IllegalArgumentException` if the argument is <= 0
     is allowed to synchronously call `onNext` on this (or other) subscriber(s) if and only if the next element is already available
-    is allowed to synchronously call 'onComplete' on this (or other) subscriber(s)
+    is allowed to synchronously call `onComplete` or `onError` on this (or other) subscriber(s)
 
 
 Subscription::cancel
