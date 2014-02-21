@@ -1,7 +1,7 @@
 .. _cluster-singleton:
 
-Cluster Singleton Pattern
-=========================
+Cluster Singleton
+=================
 
 For some use cases it is convenient and sometimes also mandatory to ensure that
 you have exactly one actor of a certain type running somewhere in the cluster.
@@ -19,7 +19,7 @@ such as single-point of bottleneck. Single-point of failure is also a relevant c
 but for some cases this feature takes care of that by making sure that another singleton
 instance will eventually be started.
 
-The cluster singleton pattern is implemented by ``akka.contrib.pattern.ClusterSingletonManager``.
+The cluster singleton is implemented by ``akka.contrib.pattern.ClusterSingletonManager``.
 It manages singleton actor instance among all cluster nodes or a group of nodes tagged with
 a specific role. ``ClusterSingletonManager`` is an actor that is supposed to be started on
 all nodes, or all nodes with specified role, in the cluster. The actual singleton actor is
@@ -84,10 +84,6 @@ Here is how the singleton actor handles the ``terminationMessage`` in this examp
 
 .. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterSingletonManagerSpec.scala#consumer-end
 
-Note that you can send back current state to the ``ClusterSingletonManager`` before terminating.
-This message will be sent over to the ``ClusterSingletonManager`` at the new oldest node and it
-will be passed to the ``singletonProps`` factory when creating the new singleton instance.
-
 With the names given above the path of singleton actor can be constructed by subscribing to
 ``MemberEvent`` cluster event and sort the members by age to keep track of oldest member.
 
@@ -109,4 +105,8 @@ A nice alternative to the above proxy is to use :ref:`distributed-pub-sub`. Let 
 actor register itself to the mediator with ``DistributedPubSubMediator.Put`` message when it is
 started. Send messages to the singleton actor via the mediator with ``DistributedPubSubMediator.SendToAll``.
 
-.. note:: The singleton pattern will be simplified, perhaps provided out-of-the-box, when the cluster handles automatic actor partitioning.
+A more comprehensive sample is available in the `Typesafe Activator <http://typesafe.com/platform/getstarted>`_
+tutorial named `Distributed workers with Akka and Scala! <http://typesafe.com/activator/template/akka-distributed-workers>`_
+and `Distributed workers with Akka and Java! <http://typesafe.com/activator/template/akka-distributed-workers-java>`_.
+
+

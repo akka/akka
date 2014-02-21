@@ -3,14 +3,17 @@
 Cluster Sharding
 ================
 
-The typical use case for this feature is when you have many stateful actors that together consume
-more resources (e.g. memory) than fit on one machine. You need to distribute them across
-several nodes in the cluster and you want to be able to interact with them using their
-logical identifier, but without having to care about their physical location in the cluster,
-which might also change over time. It could for example be actors representing Aggregate Roots in
-Domain-Driven Design terminology. Here we call these actors "entries". These actors
-typically have persistent (durable) state, but this feature is not limited to
-actors with persistent state.
+Cluster sharding is useful when you need to distribute actors across several nodes in the cluster and want to
+be able to interact with them using their logical identifier, but without having to care about
+their physical location in the cluster, which might also change over time.
+
+It could for example be actors representing Aggregate Roots in Domain-Driven Design terminology.
+Here we call these actors "entries". These actors typically have persistent (durable) state, 
+but this feature is not limited to actors with persistent state.
+
+Cluster sharding is typically used when you have many stateful actors that together consume
+more resources (e.g. memory) than fit on one machine. If you only have a few stateful actors
+it might be easier to run them on a :ref:`cluster-singleton` node. 
 
 In this context sharding means that actors with an identifier, so called entries,
 can be automatically distributed across multiple nodes in the cluster. Each entry
@@ -106,6 +109,9 @@ delegate the message to the right node and it will create the entry actor on dem
 first message for a specific entry is delivered.
 
 .. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterShardingSpec.scala#counter-usage
+
+A more comprehensive sample is available in the `Typesafe Activator <http://typesafe.com/platform/getstarted>`_
+tutorial named `Akka Cluster Sharding with Scala! <http://typesafe.com/activator/template/akka-cluster-sharding-scala>`_.
 
 How it works
 ------------

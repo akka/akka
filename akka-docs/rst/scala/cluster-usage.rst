@@ -275,33 +275,40 @@ has at least the defined number of members.
 
 This callback can be used for other things than starting actors.
 
-Cluster Singleton Pattern
-^^^^^^^^^^^^^^^^^^^^^^^^^
+Cluster Singleton
+^^^^^^^^^^^^^^^^^
 
 For some use cases it is convenient and sometimes also mandatory to ensure that
 you have exactly one actor of a certain type running somewhere in the cluster.
 
 This can be implemented by subscribing to member events, but there are several corner 
 cases to consider. Therefore, this specific use case is made easily accessible by the 
-:ref:`cluster-singleton` in the contrib module. You can use it as is, or adjust to fit
-your specific needs.
+:ref:`cluster-singleton` in the contrib module.
 
 Cluster Sharding
 ^^^^^^^^^^^^^^^^
 
-When you have many stateful actors that together consume more resources (e.g. memory) than fit on one machine
-you need to distribute them across several nodes in the cluster. You want to be able to interact with them using their
-logical identifier, but without having to care about their physical location in the cluster.
+Distributes actors across several nodes in the cluster and supports interaction
+with the actors using their logical identifier, but without having to care about
+their physical location in the cluster.
 
 See :ref:`cluster-sharding` in the contrib module. 
 
-Distributed Publish Subscribe Pattern
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Distributed Publish Subscribe
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Publish-subscribe messaging between actors in the cluster, and point-to-point messaging
+using the logical path of the actors, i.e. the sender does not have to know on which
+node the destination actor is running.
 
 See :ref:`distributed-pub-sub` in the contrib module.
 
 Cluster Client
 ^^^^^^^^^^^^^^
+
+Communication from an actor system that is not part of the cluster to actors running
+somewhere in the cluster. The client does not have to know on which node the destination
+actor is running.
 
 See :ref:`cluster-client` in the contrib module.
 

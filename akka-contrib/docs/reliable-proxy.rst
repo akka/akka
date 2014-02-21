@@ -3,7 +3,7 @@
 Reliable Proxy Pattern
 ======================
 
-Looking at :ref:`message-delivery-guarantees` one might come to the conclusion that
+Looking at :ref:`message-delivery-reliability` one might come to the conclusion that
 Akka actors are made for blue-sky scenarios: sending messages is the only way
 for actors to communicate, and then that is not even guaranteed to work. Is the
 whole paradigm built on sand? Of course the answer is an emphatic “No!”.
