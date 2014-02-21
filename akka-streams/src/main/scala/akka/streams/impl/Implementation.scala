@@ -21,7 +21,7 @@ object Implementation {
     }
 
   def runPipeline(pipeline: Pipeline[_], settings: ActorBasedImplementationSettings): Unit =
-    settings.refFactory.actorOf(Props(new PipelineActor(pipeline)))
+    settings.refFactory.actorOf(Props(new PipelineActor(pipeline, settings)))
 }
 
 private class SourceProducer[O](source: Source[O], val settings: ActorBasedImplementationSettings) extends ProducerImplementationBits[O] {
@@ -80,7 +80,7 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
           Effect.run(impl.handleRequestMore(needToRequest))
           needToRequest = 0
         }
-      case Subscribe(sub)    ⇒ fanOutBox.subscribe(sub)
+      case Subscribe(sub)    ⇒ fanOut.subscribe(sub)
 
       case RunDeferred(body) ⇒ body()
     }
@@ -96,7 +96,7 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
   }
 }
 
-class PipelineActor(pipeline: Pipeline[_]) extends Actor with ProcessorActorImpl {
+class PipelineActor(pipeline: Pipeline[_], val settings: ActorBasedImplementationSettings) extends Actor with ProcessorActorImpl {
   Effect.run(OperationImpl(ActorContextEffects, pipeline).start())
 
   def receive: Receive = {
@@ -104,7 +104,7 @@ class PipelineActor(pipeline: Pipeline[_]) extends Actor with ProcessorActorImpl
   }
 }
 
-trait ProducerImplementationBits[O] extends Producer[O] with Publisher[O] {
+trait ProducerImplementationBits[O] extends Producer[O] with Publisher[O] { impl ⇒
   protected def running: Boolean
   protected def actor: ActorRef
   protected def settings: ActorBasedImplementationSettings
@@ -118,32 +118,44 @@ trait ProducerImplementationBits[O] extends Producer[O] with Publisher[O] {
 
   trait ProducerActor extends Actor with ProcessorActorImpl { outer ⇒
     protected def requestFromUpstream(elements: Int): Unit
+    protected def settings: ActorBasedImplementationSettings = impl.settings
 
-    val fanOutBox = new AbstractProducer[O](settings.initialFanOutBufferSize, settings.maxFanOutBufferSize) with Subscriber[O] {
-      protected def requestFromUpstream(elements: Int): Unit = outer.requestFromUpstream(elements)
-
-      def onSubscribe(subscription: spi.Subscription): Unit = ???
-      def onNext(element: O): Unit = pushToDownstream(element)
-      def onComplete(): Unit = completeDownstream()
-      def onError(cause: Throwable): Unit = abortDownstream(cause)
-
-      override protected def moreRequested(subscription: Subscription, elements: Int): Unit =
-        runInThisActor(super.moreRequested(subscription, elements))
-
-      override protected def unregisterSubscription(subscription: Subscription): Unit =
-        runInThisActor(super.unregisterSubscription(subscription))
-    }
-
-    def DownstreamSideEffects = BasicEffects.forSubscriber(fanOutBox)
+    val fanOut = ActorContextEffects.externalProducer[O](requestFromUpstream)
+    def DownstreamSideEffects: Downstream[O] = fanOut.downstream
 
     def RunProducer: Receive = {
-      case Subscribe(sub) ⇒ fanOutBox.subscribe(sub)
+      case Subscribe(sub) ⇒ fanOut.subscribe(sub)
     }
   }
 }
 
 trait ProcessorActorImpl { _: Actor ⇒
+  protected def settings: ActorBasedImplementationSettings
+
+  trait FanOut[I] extends Publisher[I] {
+    def downstream: Downstream[I]
+  }
   object ActorContextEffects extends AbstractContextEffects {
+    def externalProducer[O](requestMore: Int ⇒ Unit): FanOut[O] =
+      new AbstractProducer[O](settings.initialFanOutBufferSize, settings.maxFanOutBufferSize) with FanOut[O] {
+        protected def requestFromUpstream(elements: Int): Unit = requestMore(elements)
+
+        val innerSubscriber = new Subscriber[O] {
+          def onSubscribe(subscription: spi.Subscription): Unit = ???
+          def onNext(element: O): Unit = pushToDownstream(element)
+          def onComplete(): Unit = completeDownstream()
+          def onError(cause: Throwable): Unit = abortDownstream(cause)
+        }
+
+        override protected def moreRequested(subscription: Subscription, elements: Int): Unit =
+          runInThisActor(super.moreRequested(subscription, elements))
+
+        override protected def unregisterSubscription(subscription: Subscription): Unit =
+          runInThisActor(super.unregisterSubscription(subscription))
+
+        val downstream: Downstream[O] = BasicEffects.forSubscriber(innerSubscriber)
+      }
+
     def runInContext(body: ⇒ Effect): Unit = runEffectInThisActor(body)
     override implicit def executionContext: ExecutionContext = context.dispatcher
   }
