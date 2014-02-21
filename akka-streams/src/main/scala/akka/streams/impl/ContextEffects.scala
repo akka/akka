@@ -1,6 +1,6 @@
 package akka.streams.impl
 
-import akka.streams.Operation.{ FromProducerSource, Sink, Source }
+import akka.streams.Operation.{ Sink, Source }
 import rx.async.api.Producer
 import scala.concurrent.ExecutionContext
 
@@ -18,37 +18,31 @@ trait ContextEffects {
 
   def expose[O](source: Source[O]): Producer[O]
 
+  def internalProducer[O](constructor: Downstream[O] ⇒ SyncSource): Producer[O]
+
   implicit def executionContext: ExecutionContext
   def runInContext(body: ⇒ Effect): Unit
 }
 
 /** Tries to implement ContextEffect methods generally */
 abstract class AbstractContextEffects extends ContextEffects {
-  def subscribeTo[O](source: Source[O])(onSubscribeCallback: Upstream ⇒ (SyncSink[O], Effect)): Effect = source match {
-    case InternalSource(handler) ⇒ ConnectInternalSourceSink(handler, onSubscribeCallback)
-    // TODO: make sure only to match on the right types
-    case x ⇒
-      // TODO: this is very interesting and seems to be generally related to the compose implementation
-      // can we get both together?
-      def upstreamCons(downstream: Downstream[O]): (SyncSource, Effect) = {
-        val source = OperationImpl.apply(downstream: Downstream[O], this, x)
-        (source, source.start())
-      }
-      ConnectInternalSourceSink(upstreamCons, onSubscribeCallback)
-  }
+  def subscribeTo[O](source: Source[O])(sinkConstructor: Upstream ⇒ (SyncSink[O], Effect)): Effect =
+    // TODO: think about how to avoid redundant creation of closures
+    //       e.g. by letting OperationImpl provide constructors from static info
+    ConnectInternalSourceSink(OperationImpl.apply(_: Downstream[O], this, source), sinkConstructor)
 }
 
-case class ConnectInternalSourceSink[O](upstreamConstructor: Downstream[O] ⇒ (SyncSource, Effect), downstreamConstructor: Upstream ⇒ (SyncSink[O], Effect)) extends SingleStep {
+case class ConnectInternalSourceSink[O](sourceConstructor: Downstream[O] ⇒ SyncSource, sinkConstructor: Upstream ⇒ (SyncSink[O], Effect)) extends SingleStep {
   override def runOne(): Effect = {
     object LazyUpstream extends Upstream {
       var source: SyncSource = _
       val requestMore: Int ⇒ Effect = n ⇒ Effect.step(source.handleRequestMore(n), s"RequestMoreFromInternalSource($source)")
       val cancel: Effect = Effect.step(source.handleCancel(), s"Cancel internal source")
     }
-    val (sink, sinkEffect) = downstreamConstructor(LazyUpstream)
+    val (sink, sinkEffect) = sinkConstructor(LazyUpstream)
     val downstream = BasicEffects.forSink(sink)
-    val (source, sourceEffect) = upstreamConstructor(downstream)
+    val source = sourceConstructor(downstream)
     LazyUpstream.source = source
-    sinkEffect ~ sourceEffect
+    sinkEffect ~ source.start()
   }
 }

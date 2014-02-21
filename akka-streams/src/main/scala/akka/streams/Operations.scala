@@ -32,7 +32,6 @@ object Operation {
     implicit def fromProducer[T](producer: Producer[T]): Source[T] = FromProducerSource(producer)
     implicit def fromFuture[T](future: Future[T]): Source[T] = FromFutureSource(future)
   }
-  trait CustomSource[+O] extends Source[O]
 
   case class FromIterableSource[T](iterable: Iterable[T]) extends Source[T]
   case class SingletonSource[T](element: T) extends Source[T]

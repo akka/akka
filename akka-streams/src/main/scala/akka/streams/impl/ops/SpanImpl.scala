@@ -3,7 +3,7 @@ package akka.streams.impl.ops
 import akka.streams.Operation.{ SingletonSource, Source, Span }
 import akka.streams.impl._
 
-class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], span: Span[I]) extends DynamicSyncOperation[I] {
+class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], ctx: ContextEffects, span: Span[I]) extends DynamicSyncOperation[I] {
   def initial: State = WaitingForRequest
   val subSource = new DynamicSyncSource {
     def initial: State = SubCompleted
@@ -40,7 +40,7 @@ class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], span: S
       } else {
         val running = new Subscribing(element)
         become(running)
-        downstream.next(InternalSource(running.onSubscribed))
+        downstream.next(ctx.internalProducer(running.onSubscribed))
       }
     }
     def handleComplete(): Effect = downstream.complete
@@ -48,11 +48,11 @@ class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], span: S
   }
   class Subscribing(firstElement: I) extends RejectNext {
     var completed = false
-    def onSubscribed(downstream: Downstream[I]): (SyncSource, Effect) = {
+    def onSubscribed(downstream: Downstream[I]): SyncSource = {
       become(
         if (completed) CompleteAfter(downstream, firstElement)
         else FirstElementUndelivered(downstream, firstElement))
-      (subSource, Continue)
+      subSource
     }
 
     def handleRequestMore(n: Int): Effect = { subStreamsRequested += n; Continue }

@@ -20,12 +20,13 @@ object OperationImpl {
     source match {
       case m: MappedSource[i, O] ⇒
         ComposeImpl.source[i](apply(_: Downstream[i], ctx, m.source), up ⇒ apply(up, downstream, ctx, m.operation))
-      case FromIterableSource(s)    ⇒ new FromIterableSourceImpl(downstream, ctx, s)
-      case FromProducerSource(p)    ⇒ new FromProducerSourceImpl(downstream, ctx, p)
-      case FromFutureSource(f)      ⇒ new FromFutureSourceImpl(downstream, ctx, f)
-      case SingletonSource(element) ⇒ new SingletonSourceImpl(downstream, element)
-      case EmptySource              ⇒ new EmptySourceImpl(downstream)
-      case c: ConcatSources[_]      ⇒ delegate()
+      case FromIterableSource(s)                      ⇒ new FromIterableSourceImpl(downstream, ctx, s)
+      case FromProducerSource(i: InternalProducer[O]) ⇒ i.createSource(downstream)
+      case FromProducerSource(p)                      ⇒ new FromProducerSourceImpl(downstream, ctx, p)
+      case FromFutureSource(f)                        ⇒ new FromFutureSourceImpl(downstream, ctx, f)
+      case SingletonSource(element)                   ⇒ new SingletonSourceImpl(downstream, element)
+      case EmptySource                                ⇒ new EmptySourceImpl(downstream)
+      case c: ConcatSources[_]                        ⇒ delegate()
     }
   }
 
@@ -46,7 +47,7 @@ object OperationImpl {
       case Flatten()           ⇒ new FlattenImpl(upstream, downstream, ctx).asInstanceOf[SyncOperation[I]]
       case d: Fold[I, O]       ⇒ new FoldImpl(upstream, downstream, d)
       case u: Process[I, O, _] ⇒ new ProcessImpl(upstream, downstream, u)
-      case s: Span[I]          ⇒ new SpanImpl(upstream, downstream.asInstanceOf[Downstream[Source[I]]], s)
+      case s: Span[I]          ⇒ new SpanImpl(upstream, downstream.asInstanceOf[Downstream[Source[I]]], ctx, s)
       case ExposeProducer()    ⇒ new ExposeProducerImpl(upstream, downstream.asInstanceOf[Downstream[Producer[I]]], ctx).asInstanceOf[SyncOperation[I]]
       case SourceHeadTail()    ⇒ new SourceHeadTailImpl(upstream, downstream.asInstanceOf[Downstream[(I, Source[I])]], ctx).asInstanceOf[SyncOperation[I]]
       case i: Identity[O]      ⇒ delegate()

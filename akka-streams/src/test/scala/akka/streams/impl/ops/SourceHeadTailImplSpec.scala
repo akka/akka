@@ -25,6 +25,7 @@ class SourceHeadTailImplSpec extends FreeSpec with ShouldMatchers with SyncOpera
 
   val S1Downstream = new MockDownstream[Int]
   val S2Downstream = new MockDownstream[Int]
+  val UpstreamConsPlaceholder: Downstream[Int] ⇒ SyncSource = _ ⇒ ???
 
   "SourceHeadTailImpl should" - {
     "complete downstream immediately when upstream is already completed" in {
@@ -71,23 +72,22 @@ class SourceHeadTailImplSpec extends FreeSpec with ShouldMatchers with SyncOpera
         val impl = implementation()
         impl.handleRequestMore(2) should be(UpstreamRequestMore(1))
 
-        val UpstreamConsPlaceholder: Downstream[Int] ⇒ (SyncSource, Effect) = _ ⇒ ???
-        val s1Source = InternalSource[Int](UpstreamConsPlaceholder)
+        val s1Source = TestContextEffects.internalProducer[Int](UpstreamConsPlaceholder)
         val S1Upstream = new MockUpstream
 
-        val ConnectInternalSourceSink(UpstreamConsPlaceholder, downstreamCons) = impl.handleNext(s1Source)
+        val ConnectInternalSourceSink(_, downstreamCons) = impl.handleNext(s1Source)
         val (s1, request) = downstreamCons(S1Upstream)
         request should be(S1Upstream.requestMore(1))
         val Effects(Vector(downstreamNext, UpstreamRequestMore(1))) = s1.handleNext(42)
         val (42, internal) = downstreamNext.expectDownstreamNext[(Int, Source[Int])]()
         val handler1 = internal.expectInternalSourceHandler()
 
-        val s2Source = InternalSource[Int](UpstreamConsPlaceholder)
+        val s2Source = TestContextEffects.internalProducer[Int](UpstreamConsPlaceholder)
         val S2Upstream = new MockUpstream
 
         val (d1, Continue) = handler1(S1Downstream)
 
-        val ConnectInternalSourceSink(UpstreamConsPlaceholder, downstreamCons2) = impl.handleNext(s2Source)
+        val ConnectInternalSourceSink(_, downstreamCons2) = impl.handleNext(s2Source)
         val (s2, request2) = downstreamCons(S2Upstream)
         request2 should be(S2Upstream.requestMore(1))
 
@@ -107,11 +107,11 @@ class SourceHeadTailImplSpec extends FreeSpec with ShouldMatchers with SyncOpera
         val impl = implementation()
         impl.handleRequestMore(2) should be(UpstreamRequestMore(1))
 
-        val UpstreamConsPlaceholder: Downstream[Int] ⇒ (SyncSource, Effect) = _ ⇒ ???
-        val s1Source = InternalSource[Int](UpstreamConsPlaceholder)
+        val UpstreamConsPlaceholder: Downstream[Int] ⇒ SyncSource = _ ⇒ ???
+        val s1Source = TestContextEffects.internalProducer[Int](UpstreamConsPlaceholder)
         val S1Upstream = new MockUpstream
 
-        val ConnectInternalSourceSink(UpstreamConsPlaceholder, downstreamCons) = impl.handleNext(s1Source)
+        val ConnectInternalSourceSink(_, downstreamCons) = impl.handleNext(s1Source)
         val (s1, request) = downstreamCons(S1Upstream)
         request should be(S1Upstream.requestMore(1))
         val Effects(Vector(downstreamNext, UpstreamRequestMore(1))) = s1.handleNext(42)

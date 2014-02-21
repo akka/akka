@@ -65,7 +65,7 @@ class SourceHeadTailImpl[O](upstream: Upstream, downstream: Downstream[(O, Sourc
         override def handleNext(element: O): Effect = {
           undeliveredElements -= 1
           become(Subscribing)
-          downstream.next((element, InternalSource(onSubscribe))) ~ (if (closeDownstreamAfterFirst) downstream.complete else Continue) ~ receivedFirst()
+          downstream.next((element, ctx.internalProducer(onSubscribe))) ~ (if (closeDownstreamAfterFirst) downstream.complete else Continue) ~ receivedFirst()
         }
         override def handleComplete(): Effect = ??? // FIXME: what, if there is no head!?!
         override def handleError(cause: Throwable): Effect = ???
@@ -81,17 +81,17 @@ class SourceHeadTailImpl[O](upstream: Upstream, downstream: Downstream[(O, Sourc
         override def handleComplete(): Effect = subDownstream.complete
         override def handleError(cause: Throwable): Effect = subDownstream.error(cause)
       }
-      val innerSource = new SyncSource {
+      def innerSource(init: Effect) = new SyncSource {
+        override def start(): Effect = init
+
         override def handleRequestMore(n: Int): Effect = subUpstream.requestMore(n)
         override def handleCancel(): Effect = ???
       }
-      def onSubscribe(subDownstream: Downstream[O]): (SyncSource, Effect) =
+      def onSubscribe(subDownstream: Downstream[O]): SyncSource =
         if (!closing) {
           become(Running(subDownstream))
-          (innerSource, Continue)
-        } else {
-          (innerSource, subDownstream.complete)
-        }
+          innerSource(Continue)
+        } else innerSource(subDownstream.complete)
     }
 
     def receivedFirst(): Effect =

@@ -84,14 +84,21 @@ trait SyncOperationSpec extends WithActorSystem {
   object TestContextEffects extends AbstractContextEffects {
 
     override def subscribeTo[O](source: Source[O])(onSubscribeCallback: (Upstream) ⇒ (SyncSink[O], Effect)): Effect = source match {
+      case f @ FromProducerSource(i: InternalProducer[O]) ⇒ super.subscribeTo(f)(onSubscribeCallback)
       case FromProducerSource(p) ⇒ SubscribeToProducer(p, onSubscribeCallback)
-      case x                     ⇒ super.subscribeTo(x)(onSubscribeCallback)
+      case x ⇒ super.subscribeTo(x)(onSubscribeCallback)
     }
 
     def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect = SubscribeFrom(sink, onSubscribe)
     def expose[O](source: Source[O]): Producer[O] = ExposedSource(source)
 
-    override implicit def executionContext: ExecutionContext = system.dispatcher
+    def internalProducer[O](constructor: Downstream[O] ⇒ SyncSource): Producer[O] =
+      new InternalProducer[O] {
+        override def createSource(downstream: Downstream[O]): SyncSource = constructor(downstream)
+        override def getPublisher: Publisher[O] = ???
+      }
+
+    implicit def executionContext: ExecutionContext = system.dispatcher
     def runInContext(body: ⇒ Effect): Unit = runInContextProbe.ref ! Thunk(body _)
   }
 
@@ -107,8 +114,11 @@ trait SyncOperationSpec extends WithActorSystem {
   }
   implicit class RichSource[I](source: Source[I]) {
     def expectInternalSourceHandler(): Downstream[I] ⇒ (SyncSource, Effect) = source match {
-      case InternalSource(handler) ⇒ handler
-      case x                       ⇒ throw new AssertionError(s"Expected InternalSource but got $x")
+      case FromProducerSource(i: InternalProducer[I]) ⇒ { d ⇒
+        val source = i.createSource(d)
+        (source, source.start())
+      }
+      case x ⇒ throw new AssertionError(s"Expected InternalSource but got $x")
     }
   }
 

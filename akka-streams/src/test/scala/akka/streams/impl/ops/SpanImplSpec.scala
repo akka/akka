@@ -11,69 +11,69 @@ class SpanImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {
 
   "SpanImpl should" - {
     "produce stream of sources" in {
-      val p: SyncOperation[Int] = new SpanImpl[Int](upstream, downstream, Span[Int](_ % 3 == 0))
+      val impl = implementation()
 
-      p.handleRequestMore(1) should be(UpstreamRequestMore(1))
-      val h1 = p.handleNext(1).expectDownstreamNext[Source[Int]]().expectInternalSourceHandler()
+      impl.handleRequestMore(1) should be(UpstreamRequestMore(1))
+      val h1 = impl.handleNext(1).expectDownstreamNext[Source[Int]]().expectInternalSourceHandler()
 
       val (s1, Continue) = h1(BasicEffects.forSink(S1Downstream))
 
       s1.handleRequestMore(1) should be(HandleNextInSink(S1Downstream, 1))
       s1.handleRequestMore(2) should be(UpstreamRequestMore(1))
-      p.handleNext(2) should be(HandleNextInSink(S1Downstream, 2) ~ UpstreamRequestMore(1))
-      p.handleNext(3) should be(HandleNextInSink(S1Downstream, 3) ~ CompleteSink(S1Downstream))
+      impl.handleNext(2) should be(HandleNextInSink(S1Downstream, 2) ~ UpstreamRequestMore(1))
+      impl.handleNext(3) should be(HandleNextInSink(S1Downstream, 3) ~ CompleteSink(S1Downstream))
 
-      p.handleRequestMore(1) should be(UpstreamRequestMore(1))
-      val h2 = p.handleNext(4).expectDownstreamNext[Source[Int]]().expectInternalSourceHandler()
+      impl.handleRequestMore(1) should be(UpstreamRequestMore(1))
+      val h2 = impl.handleNext(4).expectDownstreamNext[Source[Int]]().expectInternalSourceHandler()
 
       val (s2, Continue) = h2(BasicEffects.forSink(S2Downstream))
       s2.handleRequestMore(1) should be(HandleNextInSink(S2Downstream, 4))
       s2.handleRequestMore(1) should be(UpstreamRequestMore(1))
-      p.handleNext(5) should be(HandleNextInSink(S2Downstream, 5))
-      p.handleComplete() should be(CompleteSink(S2Downstream) ~ DownstreamComplete)
+      impl.handleNext(5) should be(HandleNextInSink(S2Downstream, 5))
+      impl.handleComplete() should be(CompleteSink(S2Downstream) ~ DownstreamComplete)
     }
     "return singleton source when first element of span matches" - {
       "in first span" in {
-        val p: SyncOperation[Int] = new SpanImpl[Int](upstream, downstream, Span[Int](_ % 3 == 0))
+        val impl = implementation()
 
-        p.handleRequestMore(1) should be(UpstreamRequestMore(1))
-        p.handleNext(3).expectDownstreamNext[Source[Int]]() should be(SingletonSource(3))
+        impl.handleRequestMore(1) should be(UpstreamRequestMore(1))
+        impl.handleNext(3).expectDownstreamNext[Source[Int]]() should be(SingletonSource(3))
       }
       "in consecutive spans" in {
-        val p: SyncOperation[Int] = new SpanImpl[Int](upstream, downstream, Span[Int](_ % 3 == 0))
+        val impl = implementation()
 
-        p.handleRequestMore(1) should be(UpstreamRequestMore(1))
-        val h1 = p.handleNext(1).expectDownstreamNext[Source[Int]]().expectInternalSourceHandler()
+        impl.handleRequestMore(1) should be(UpstreamRequestMore(1))
+        val h1 = impl.handleNext(1).expectDownstreamNext[Source[Int]]().expectInternalSourceHandler()
 
         val (s1, Continue) = h1(BasicEffects.forSink(S1Downstream))
 
         s1.handleRequestMore(1) should be(HandleNextInSink(S1Downstream, 1))
         s1.handleRequestMore(2) should be(UpstreamRequestMore(1))
-        p.handleNext(2) should be(HandleNextInSink(S1Downstream, 2) ~ UpstreamRequestMore(1))
-        p.handleNext(3) should be(HandleNextInSink(S1Downstream, 3) ~ CompleteSink(S1Downstream))
+        impl.handleNext(2) should be(HandleNextInSink(S1Downstream, 2) ~ UpstreamRequestMore(1))
+        impl.handleNext(3) should be(HandleNextInSink(S1Downstream, 3) ~ CompleteSink(S1Downstream))
 
-        p.handleRequestMore(1) should be(UpstreamRequestMore(1))
-        p.handleNext(3).expectDownstreamNext[Source[Int]]() should be(SingletonSource(3))
+        impl.handleRequestMore(1) should be(UpstreamRequestMore(1))
+        impl.handleNext(3).expectDownstreamNext[Source[Int]]() should be(SingletonSource(3))
       }
     }
     "upstream completes while nothing is requested" in {
-      val p: SyncOperation[Int] = new SpanImpl[Int](upstream, downstream, Span[Int](_ % 3 == 0))
+      val impl = implementation()
 
-      p.handleComplete() should be(DownstreamComplete)
+      impl.handleComplete() should be(DownstreamComplete)
     }
     "upstream completes while waiting for first element" in {
-      val p: SyncOperation[Int] = new SpanImpl[Int](upstream, downstream, Span[Int](_ % 3 == 0))
+      val impl = implementation()
 
-      p.handleRequestMore(1) should be(UpstreamRequestMore(1))
-      p.handleComplete() should be(DownstreamComplete)
+      impl.handleRequestMore(1) should be(UpstreamRequestMore(1))
+      impl.handleComplete() should be(DownstreamComplete)
     }
     "upstream completes while waiting for sub-subscription" in {
-      val p: SyncOperation[Int] = new SpanImpl[Int](upstream, downstream, Span[Int](_ % 3 == 0))
+      val impl = implementation()
 
-      p.handleRequestMore(1) should be(UpstreamRequestMore(1))
-      val h1 = p.handleNext(1).expectDownstreamNext[Source[Int]]().expectInternalSourceHandler()
+      impl.handleRequestMore(1) should be(UpstreamRequestMore(1))
+      val h1 = impl.handleNext(1).expectDownstreamNext[Source[Int]]().expectInternalSourceHandler()
 
-      p.handleComplete() should be(DownstreamComplete)
+      impl.handleComplete() should be(DownstreamComplete)
 
       val (s1, Continue) = h1(BasicEffects.forSink(S1Downstream))
       s1.handleRequestMore(1) should be(HandleNextInSink(S1Downstream, 1) ~ CompleteSink(S1Downstream))
@@ -81,4 +81,8 @@ class SpanImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {
     // test errors and cancellation
     // test behavior after completion / error
   }
+
+  def implementation(): SyncOperation[Int] = implementation(_ % 3 == 0)
+  def implementation[T](endAt: T ⇒ Boolean): SyncOperation[T] =
+    new SpanImpl(upstream, downstream, TestContextEffects, Span(endAt))
 }
