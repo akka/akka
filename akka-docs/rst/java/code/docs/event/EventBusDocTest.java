@@ -3,36 +3,25 @@
  */
 package docs.event;
 
-import java.util.concurrent.TimeUnit;
-
-import org.junit.ClassRule;
-import org.junit.Test;
-
-import scala.concurrent.duration.FiniteDuration;
-import akka.actor.ActorSystem;
 import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.event.japi.*;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.JavaTestKit;
-import akka.event.japi.EventBus;
-
-//#lookup-bus
-import akka.event.japi.LookupEventBus;
-
-//#lookup-bus
-
-//#subchannel-bus
-import akka.event.japi.SubchannelEventBus;
 import akka.util.Subclassification;
+import org.junit.ClassRule;
+import org.junit.Test;
+import scala.concurrent.duration.FiniteDuration;
 
+import java.util.concurrent.TimeUnit;
+
+//#lookup-bus
+//#lookup-bus
 //#subchannel-bus
-
+//#subchannel-bus
 //#scanning-bus
-import akka.event.japi.ScanningEventBus;
-
 //#scanning-bus
-
 //#actor-bus
-import akka.event.japi.ActorEventBus;
 
 //#actor-bus
 
@@ -226,6 +215,12 @@ public class EventBusDocTest {
   static
   //#actor-bus
   public class ActorBusImpl extends ActorEventBus<Notification> {
+
+    // the ActorSystem will be used for book-keeping operations, such as subscribers terminating
+    public ActorBusImpl(ActorSystem system) {
+      super(system);
+    }
+
     // is used for extracting the classifier from the incoming events
     @Override public ActorRef classify(Notification event) {
       return event.ref;
@@ -299,7 +294,7 @@ public class EventBusDocTest {
       JavaTestKit probe2 = new JavaTestKit(system);
       ActorRef subscriber1 = probe1.getRef();
       ActorRef subscriber2 = probe2.getRef();
-      ActorBusImpl actorBus = new ActorBusImpl();
+      ActorBusImpl actorBus = new ActorBusImpl(system);
       actorBus.subscribe(subscriber1, observer1);
       actorBus.subscribe(subscriber2, observer1);
       actorBus.subscribe(subscriber2, observer2);
