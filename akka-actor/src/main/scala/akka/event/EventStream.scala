@@ -5,16 +5,11 @@ package akka.event
 
 import language.implicitConversions
 
-import akka.actor._
+import akka.actor.{ ActorRef, ActorSystem }
 import akka.event.Logging.simpleName
 import akka.util.Subclassification
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
-
-object EventStream {
-  //Why is this here and why isn't there a failing test if it is removed?
-  implicit def fromActorSystem(system: ActorSystem) = system.eventStream
-}
 
 /**
  * An Akka EventStream is a pub-sub stream of events both system and user generated,
@@ -25,7 +20,7 @@ object EventStream {
  * The debug flag in the constructor toggles if operations on this EventStream should also be published
  * as Debug-Events
  */
-class EventStream(private val debug: Boolean = false) extends LoggingBus with SubchannelClassification {
+class EventStream(sys: ActorSystem, private val debug: Boolean = false) extends LoggingBus with SubchannelClassification {
 
   type Event = AnyRef
   type Classifier = Class[_]
@@ -67,9 +62,16 @@ class EventStream(private val debug: Boolean = false) extends LoggingBus with Su
   }
 
   /**
+   * ''Must'' be called after actor system is "ready".
+   * Starts system actor that takes care of unsubscribing subscribers that have terminated.
+   */
+  def startUnsubscriber() = EventStreamUnsubscriber.start(sys, this)
+
+  /**
    * INTERNAL API
    */
-  private[akka] def initUnsubscriber(unsubscriber: ActorRef): Boolean = {
+  @tailrec
+  final private[akka] def initUnsubscriber(unsubscriber: ActorRef): Boolean = {
     initiallySubscribedOrUnsubscriber.get match {
       case value @ Left(subscribers) ⇒
         if (initiallySubscribedOrUnsubscriber.compareAndSet(value, Right(unsubscriber))) {
@@ -91,7 +93,8 @@ class EventStream(private val debug: Boolean = false) extends LoggingBus with Su
   /**
    * INTERNAL API
    */
-  private[akka] def registerWithUnsubscriber(subscriber: ActorRef): Unit = {
+  @tailrec
+  private def registerWithUnsubscriber(subscriber: ActorRef): Unit = {
     initiallySubscribedOrUnsubscriber.get match {
       case value @ Left(subscribers) ⇒
         if (!initiallySubscribedOrUnsubscriber.compareAndSet(value, Left(subscribers + subscriber)))
@@ -109,7 +112,8 @@ class EventStream(private val debug: Boolean = false) extends LoggingBus with Su
    * because it's an expensive operation, and we don want to block client-code for that long, the Actor will eventually
    * catch up and perform the apropriate operation.
    */
-  private[akka] def unregisterIfNoMoreSubscribedChannels(subscriber: ActorRef): Unit = {
+  @tailrec
+  private def unregisterIfNoMoreSubscribedChannels(subscriber: ActorRef): Unit = {
     initiallySubscribedOrUnsubscriber.get match {
       case value @ Left(subscribers) ⇒
         if (!initiallySubscribedOrUnsubscriber.compareAndSet(value, Left(subscribers - subscriber)))

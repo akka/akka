@@ -10,9 +10,11 @@ import org.scalatest.BeforeAndAfterEach
 import akka.testkit._
 import scala.concurrent.duration._
 import java.util.concurrent.atomic._
-import akka.actor.{ Props, Actor, ActorRef, ActorSystem }
-import java.util.Comparator
+
+import akka.actor.{ Props, Actor, ActorRef, ActorSystem, PoisonPill, RootActorPath }
 import akka.japi.{ Procedure, Function }
+import com.typesafe.config.{ Config, ConfigFactory }
+import scala.concurrent.Await
 
 object EventBusSpec {
   class TestActorWrapperActor(testActor: ActorRef) extends Actor {
@@ -23,7 +25,7 @@ object EventBusSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-abstract class EventBusSpec(busName: String) extends AkkaSpec with BeforeAndAfterEach {
+abstract class EventBusSpec(busName: String, conf: Config = ConfigFactory.empty()) extends AkkaSpec(conf) with BeforeAndAfterEach {
   import EventBusSpec._
   type BusType <: EventBus
 
@@ -37,13 +39,13 @@ abstract class EventBusSpec(busName: String) extends AkkaSpec with BeforeAndAfte
 
   def disposeSubscriber(system: ActorSystem, subscriber: BusType#Subscriber): Unit
 
-  busName must {
+  lazy val bus = createNewEventBus()
 
+  busName must {
     def createNewSubscriber() = createSubscriber(testActor).asInstanceOf[bus.Subscriber]
     def getClassifierFor(event: BusType#Event) = classifierFor(event).asInstanceOf[bus.Classifier]
     def createNewEvents(numberOfEvents: Int): Iterable[bus.Event] = createEvents(numberOfEvents).asInstanceOf[Iterable[bus.Event]]
 
-    val bus = createNewEventBus()
     val events = createNewEvents(100)
     val event = events.head
     val classifier = getClassifierFor(event)
@@ -144,30 +146,137 @@ abstract class EventBusSpec(busName: String) extends AkkaSpec with BeforeAndAfte
 }
 
 object ActorEventBusSpec {
-  class ComposedActorEventBus extends ActorEventBus with LookupClassification {
-    type Event = Int
-    type Classifier = String
+  class MyActorEventBus(protected val system: ActorSystem) extends ActorEventBus
+    with ActorClassification with ActorClassifier {
 
-    def classify(event: Event) = event.toString
+    type Event = Notification
+
+    def classify(event: Event) = event.ref
     protected def mapSize = 32
     def publish(event: Event, subscriber: Subscriber) = subscriber ! event
   }
+
+  case class Notification(ref: ActorRef, payload: Int)
 }
 
-class ActorEventBusSpec extends EventBusSpec("ActorEventBus") {
+class ActorEventBusSpec(conf: Config) extends EventBusSpec("ActorEventBus", conf) {
   import akka.event.ActorEventBusSpec._
   import EventBusSpec.TestActorWrapperActor
 
-  type BusType = ComposedActorEventBus
-  def createNewEventBus(): BusType = new ComposedActorEventBus
+  def this() {
+    this(ConfigFactory.parseString("akka.actor.debug.event-stream = on").withFallback(AkkaSpec.testConf))
+  }
 
-  def createEvents(numberOfEvents: Int) = (0 until numberOfEvents)
+  type BusType = MyActorEventBus
+  def createNewEventBus(): BusType = new MyActorEventBus(system)
+
+  // different actor in each event because we want each event to have a different classifier (see EventBusSpec tests)
+  def createEvents(numberOfEvents: Int) = (0 until numberOfEvents).map(Notification(TestProbe().ref, _)).toSeq
 
   def createSubscriber(pipeTo: ActorRef) = system.actorOf(Props(new TestActorWrapperActor(pipeTo)))
 
-  def classifierFor(event: BusType#Event) = event.toString
+  def classifierFor(event: BusType#Event) = event.ref
 
   def disposeSubscriber(system: ActorSystem, subscriber: BusType#Subscriber): Unit = system.stop(subscriber)
+
+  // ActorClassification specific tests
+
+  "must unsubscribe subscriber when it terminates" in {
+    val a1 = createSubscriber(system.deadLetters)
+    val subs = createSubscriber(testActor)
+    def m(i: Int) = Notification(a1, i)
+    val p = TestProbe()
+    system.eventStream.subscribe(p.ref, classOf[Logging.Debug])
+
+    bus.subscribe(subs, a1)
+    bus.publish(m(1))
+    expectMsg(m(1))
+
+    watch(subs)
+    subs ! PoisonPill // when a1 dies, subs has nothing subscribed
+    expectTerminated(subs)
+    expectUnsubscribedByUnsubscriber(p, subs)
+
+    bus.publish(m(2))
+    expectNoMsg(1 second)
+
+    disposeSubscriber(system, subs)
+    disposeSubscriber(system, a1)
+  }
+
+  "must keep subscriber even if its subscription-actors have died" in {
+    // Deaths of monitored actors should not influence the subscription.
+    // For example: one might still want to monitor messages classified to A
+    // even though it died, and handle these in some way.
+    val a1 = createSubscriber(system.deadLetters)
+    val subs = createSubscriber(testActor)
+    def m(i: Int) = Notification(a1, i)
+
+    bus.subscribe(subs, a1) should equal(true)
+
+    bus.publish(m(1))
+    expectMsg(m(1))
+
+    watch(a1)
+    a1 ! PoisonPill
+    expectTerminated(a1)
+
+    bus.publish(m(2)) // even though a1 has terminated, classification still applies
+    expectMsg(m(2))
+
+    disposeSubscriber(system, subs)
+    disposeSubscriber(system, a1)
+  }
+
+  "must unregister subscriber only after it unsubscribes from all of it's subscriptions" in {
+    val a1, a2 = createSubscriber(system.deadLetters)
+    val subs = createSubscriber(testActor)
+    def m1(i: Int) = Notification(a1, i)
+    def m2(i: Int) = Notification(a2, i)
+
+    val p = TestProbe()
+    system.eventStream.subscribe(p.ref, classOf[Logging.Debug])
+
+    bus.subscribe(subs, a1) should equal(true)
+    bus.subscribe(subs, a2) should equal(true)
+
+    bus.publish(m1(1))
+    bus.publish(m2(1))
+    expectMsg(m1(1))
+    expectMsg(m2(1))
+
+    bus.unsubscribe(subs, a1)
+    bus.publish(m1(2))
+    expectNoMsg(1 second)
+    bus.publish(m2(2))
+    expectMsg(m2(2))
+
+    bus.unsubscribe(subs, a2)
+    expectUnregisterFromUnsubscriber(p, subs)
+    bus.publish(m1(3))
+    bus.publish(m2(3))
+    expectNoMsg(1 second)
+
+    disposeSubscriber(system, subs)
+    disposeSubscriber(system, a1)
+    disposeSubscriber(system, a2)
+  }
+
+  private def expectUnsubscribedByUnsubscriber(p: TestProbe, a: ActorRef) {
+    val expectedMsg = s"actor $a has terminated, unsubscribing it from $bus"
+    p.fishForMessage(1 second, hint = expectedMsg) {
+      case Logging.Debug(_, _, msg) if msg equals expectedMsg ⇒ true
+      case other ⇒ false
+    }
+  }
+
+  private def expectUnregisterFromUnsubscriber(p: TestProbe, a: ActorRef) {
+    val expectedMsg = s"unregistered watch of $a in $bus"
+    p.fishForMessage(1 second, hint = expectedMsg) {
+      case Logging.Debug(_, _, msg) if msg equals expectedMsg ⇒ true
+      case other ⇒ false
+    }
+  }
 }
 
 object ScanningEventBusSpec {

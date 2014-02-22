@@ -79,7 +79,11 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
   "An EventStream" must {
 
     "manage subscriptions" in {
-      val bus = new EventStream(true)
+      //#event-bus-start-unsubscriber-scala
+      val bus = new EventStream(system, true)
+      bus.startUnsubscriber()
+      //#event-bus-start-unsubscriber-scala
+
       bus.subscribe(testActor, classOf[M])
       bus.publish(M(42))
       within(1 second) {
@@ -91,12 +95,12 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     }
 
     "not allow null as subscriber" in {
-      val bus = new EventStream(true)
+      val bus = new EventStream(system, true)
       intercept[IllegalArgumentException] { bus.subscribe(null, classOf[M]) }.getMessage should be("subscriber is null")
     }
 
     "not allow null as unsubscriber" in {
-      val bus = new EventStream(true)
+      val bus = new EventStream(system, true)
       intercept[IllegalArgumentException] { bus.unsubscribe(null, classOf[M]) }.getMessage should be("subscriber is null")
       intercept[IllegalArgumentException] { bus.unsubscribe(null) }.getMessage should be("subscriber is null")
     }
@@ -115,7 +119,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     }
 
     "manage log levels" in {
-      val bus = new EventStream(false)
+      val bus = new EventStream(system, false)
       bus.startDefaultLoggers(impl)
       bus.publish(SetTarget(testActor))
       expectMsg("OK")
@@ -136,7 +140,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       val b1 = new B1
       val b2 = new B2
       val c = new C
-      val bus = new EventStream(false)
+      val bus = new EventStream(system, false)
       within(2 seconds) {
         bus.subscribe(testActor, classOf[B2]) should be(true)
         bus.publish(c)
@@ -158,7 +162,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     }
 
     "manage sub-channels using classes and traits (update on subscribe)" in {
-      val es = new EventStream(false)
+      val es = new EventStream(system, false)
       val tm1 = new CC
       val tm2 = new CCATBT
       val a1, a2, a3, a4 = TestProbe()
@@ -181,7 +185,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     }
 
     "manage sub-channels using classes and traits (update on unsubscribe)" in {
-      val es = new EventStream(false)
+      val es = new EventStream(system, false)
       val tm1 = new CC
       val tm2 = new CCATBT
       val a1, a2, a3, a4 = TestProbe()
@@ -203,7 +207,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     }
 
     "manage sub-channels using classes and traits (update on unsubscribe all)" in {
-      val es = new EventStream(false)
+      val es = new EventStream(system, false)
       val tm1 = new CC
       val tm2 = new CCATBT
       val a1, a2, a3, a4 = TestProbe()
@@ -225,7 +229,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     }
 
     "manage sub-channels using classes and traits (update on publish)" in {
-      val es = new EventStream(false)
+      val es = new EventStream(system, false)
       val tm1 = new CC
       val tm2 = new CCATBT
       val a1, a2 = TestProbe()
@@ -241,7 +245,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     }
 
     "manage sub-channels using classes and traits (unsubscribe classes used with trait)" in {
-      val es = new EventStream(false)
+      val es = new EventStream(system, false)
       val tm1 = new CC
       val tm2 = new CCATBT
       val a1, a2, a3 = TestProbe()
@@ -263,7 +267,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     }
 
     "manage sub-channels using classes and traits (subscribe after publish)" in {
-      val es = new EventStream(false)
+      val es = new EventStream(system, false)
       val tm1 = new CCATBT
       val a1, a2 = TestProbe()
 
@@ -304,7 +308,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         a1.expectNoMsg(1 second)
         a2.expectMsg(tm)
       } finally {
-        sys.shutdown()
+        shutdown(sys)
       }
     }
 
@@ -332,7 +336,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         es.subscribe(target, classOf[A]) should be(true)
         fishForDebugMessage(a2, s"unsubscribing $target from all channels")
       } finally {
-        sys.shutdown()
+        shutdown(sys)
       }
     }
 
@@ -349,7 +353,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         refWillBeUsedAsUnsubscriber should equal(false)
 
       } finally {
-        sys.shutdown()
+        shutdown(sys)
       }
     }
 
@@ -369,7 +373,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         fishForDebugMessage(a1, s"unwatching ${a2.ref}")
 
       } finally {
-        sys.shutdown()
+        shutdown(sys)
       }
     }
 
@@ -398,7 +402,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         es.unsubscribe(a2.ref, classOf[T]) should equal(false)
 
       } finally {
-        sys.shutdown()
+        shutdown(sys)
       }
     }
 
