@@ -92,3 +92,8 @@ tmp="$script_dir/../../akka-samples/akka-docs-java-lambda"
 try cd  "$tmp" "can't step into project directory: $tmp"
 export JAVA_HOME="$java8_home"
 try mvn clean test "mvn execution in akka-docs-java-lambda failed"
+
+tmp="$script_dir/../../akka-samples/akka-sample-fsm-java-lambda"
+try cd  "$tmp" "can't step into project directory: $tmp"
+export JAVA_HOME="$java8_home"
+try mvn clean test "mvn execution in akka-sample-fsm-java-lambda failed"

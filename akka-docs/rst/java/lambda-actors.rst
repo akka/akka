@@ -17,6 +17,13 @@ its syntax from Erlang.
 
 .. _Actor Model: http://en.wikipedia.org/wiki/Actor_model
 
+.. warning::
+
+  The Java with lambda support part of Akka is marked as **“experimental”** as of its introduction in
+  Akka 2.3.0. We will continue to improve this API based on our users’ feedback, which implies that
+  while we try to keep incompatible changes to a minimum, but the binary compatibility guarantee for
+  maintenance releases does not apply to the :class:`akka.actor.AbstractActor`, related classes and
+  the :class:`akka.japi.pf` package.
 
 Creating Actors
 ===============

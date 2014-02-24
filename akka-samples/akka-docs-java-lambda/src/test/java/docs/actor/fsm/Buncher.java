@@ -47,7 +47,7 @@ public class Buncher extends AbstractFSM<State, Data> {
 
     when(Active, Duration.create(1, "second"),
       matchEvent(Arrays.asList(Flush.class, StateTimeout()), Todo.class,
-        todo -> goTo(Idle).using(todo.copy(new LinkedList<>()))));
+        (event, todo) -> goTo(Idle).using(todo.copy(new LinkedList<>()))));
 
     //#unhandled-elided
     whenUnhandled(

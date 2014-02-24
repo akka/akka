@@ -4,6 +4,11 @@
 
 package akka.actor
 
+/**
+ * Java API: compatible with lambda expressions
+ *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
+ */
 object AbstractActor {
   /**
    * emptyBehavior is a Receive-expression that matches no messages at all, ever.
@@ -12,6 +17,8 @@ object AbstractActor {
 }
 
 /**
+ * Java API: compatible with lambda expressions
+ *
  * Actor base class that should be extended to create Java actors that use lambdas.
  * <p/>
  * Example:
@@ -33,6 +40,8 @@ object AbstractActor {
  *   }
  * }
  * </pre>
+ *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 abstract class AbstractActor extends Actor {
   /**
@@ -44,6 +53,8 @@ abstract class AbstractActor extends Actor {
 }
 
 /**
+ * Java API: compatible with lambda expressions
+ *
  * Actor base class that should be extended to create an actor with a stash.
  *
  * The stash enables an actor to temporarily stash away messages that can not or
@@ -83,18 +94,28 @@ abstract class AbstractActor extends Actor {
  * For a `Stash` based actor that enforces unbounded deques see [[akka.actor.AbstractActorWithUnboundedStash]].
  * There is also an unrestricted version [[akka.actor.AbstractActorWithUnrestrictedStash]] that does not
  * enforce the mailbox type.
+ *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 abstract class AbstractActorWithStash extends AbstractActor with Stash
 
 /**
+ * Java API: compatible with lambda expressions
+ *
  * Actor base class with `Stash` that enforces an unbounded deque for the actor. The proper mailbox has to be configured
  * manually, and the mailbox should extend the [[akka.dispatch.DequeBasedMessageQueueSemantics]] marker trait.
  * See [[akka.actor.AbstractActorWithStash]] for details on how `Stash` works.
+ *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 abstract class AbstractActorWithUnboundedStash extends AbstractActor with UnboundedStash
 
 /**
+ * Java API: compatible with lambda expressions
+ *
  * Actor base class with `Stash` that does not enforce any mailbox type. The mailbox of the actor has to be configured
  * manually. See [[akka.actor.AbstractActorWithStash]] for details on how `Stash` works.
+ *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 abstract class AbstractActorWithUnrestrictedStash extends AbstractActor with UnrestrictedStash
