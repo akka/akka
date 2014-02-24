@@ -1011,7 +1011,10 @@ object AkkaBuild extends Build {
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.EndpointWriter.this"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.transport.AkkaProtocolManager.akka$remote$transport$AkkaProtocolManager$$wrappedTransport"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.transport.ProtocolStateActor.this"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.transport.ProtocolStateActor.this")
+
+      // Removal of unused parameter from internal method tellWatchersWeDied
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorCell.tellWatchersWeDied"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.dungeon.DeathWatch.tellWatchersWeDied")
     )
   }
 
