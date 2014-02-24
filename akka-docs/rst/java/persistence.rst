@@ -20,8 +20,9 @@ communication channels with at-least-once message delivery semantics.
   changes to a minimum the binary compatibility guarantee for maintenance releases does not apply to the
   contents of the ``akka.persistence`` package.
 
-Akka persistence is inspired by the `eventsourced`_ library. It follows the same concepts and architecture of
-`eventsourced`_ but significantly differs on API and implementation level.
+Akka persistence is inspired by and the official replacement of the `eventsourced`_ library. It follows the same
+concepts and architecture of `eventsourced`_ but significantly differs on API and implementation level. See also
+:ref:`migration-eventsourced-2.3`
 
 .. _eventsourced: https://github.com/eligosource/eventsourced
 
