@@ -270,9 +270,7 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         upstream.expectNoMsg(100.millis.dilated)
       }
       "finish gracefully if last subscriber needing data cancels subscription" in pending
-      "finish gracefully onError" in new InitializedChainSetup(Identity[Symbol]()) {
-        pending
-      }
+      "finish gracefully onError" in pending
       "allow new subscriptions after all subscribers have been cancelled" in pending
     }
     "work in special situations" - {
@@ -291,7 +289,17 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         upstreamSubscription.expectCancellation()
       }
     }
-    "work after initial upstream was completed" - {}
+    "after initial upstream was completed" - {
+      "future subscribers' onComplete should be called instead of onSubscribed" in pending
+    }
+    "after initial upstream reported an error" - {
+      "future subscribers' onError should be called instead of onSubscribed" in pending
+    }
+    "if an internal error occurs" - {
+      "upstream should be cancelled" in pending
+      "subscribers' onError method should be called" in pending
+      "future subscribers' onError should be called instead of onSubscribed" in pending
+    }
   }
 
   class InitializedChainSetupWithFanOutBuffer[I, O](operation: Operation[I, O], capacity: Int) extends InitializedChainSetup(operation)(factoryWithFanOutBuffer(capacity))
