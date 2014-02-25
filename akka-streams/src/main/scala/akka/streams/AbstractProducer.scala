@@ -1,6 +1,5 @@
 package akka.streams
 
-import java.util.concurrent.atomic.AtomicInteger
 import scala.annotation.tailrec
 import rx.async.api.{ Producer ⇒ Prod }
 import rx.async.spi.{ Subscriber, Publisher }
@@ -83,42 +82,43 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
 
   // called from `Subscription::requestMore`, i.e. from another thread,
   // override to add synchronization with itself, `subscribe` and `unregisterSubscription`
-  protected def moreRequested(subscription: Subscription, elements: Int): Unit = {
-    val eos = endOfStream
+  protected def moreRequested(subscription: Subscription, elements: Int): Unit =
+    if (subscription.isActive) {
+      val eos = endOfStream
 
-    // returns Int.MinValue if the subscription is to be terminated
-    @tailrec def dispatchFromBufferAndReturnRemainingRequested(requested: Int): Int =
-      if (requested == 0) {
-        // if we are at end-of-stream and have nothing more to read we complete now rather than after the next `requestMore`
-        if ((eos ne null) && buffer.count(subscription) == 0) Int.MinValue else 0
-      } else {
-        val x =
-          try {
-            val element = buffer.read(subscription)
-            subscription.dispatch(element) // as long as we can produce elements from our buffer we do so synchronously
-            -1 // we can't directly tailrec from here since we are in a try/catch, so signal with special value
-          } catch {
-            case NothingToReadException ⇒ if (eos ne null) Int.MinValue else requested // terminate or request from upstream
-          }
-        if (x == -1) dispatchFromBufferAndReturnRemainingRequested(requested - 1) else x
-      }
-
-    eos match {
-      case null | Completed ⇒
-        dispatchFromBufferAndReturnRemainingRequested(subscription.requested + elements) match {
-          case Int.MinValue ⇒
-            subscription.terminate(eos) // idempotent
-            unregisterSubscriptionInternal(subscription) // idempotent
-          case 0 ⇒
-            subscription.requested = 0
-            requestFromUpstreamIfRequired()
-          case requested ⇒
-            subscription.requested = requested
-            requestFromUpstreamIfPossible(requested)
+      // returns Int.MinValue if the subscription is to be terminated
+      @tailrec def dispatchFromBufferAndReturnRemainingRequested(requested: Int): Int =
+        if (requested == 0) {
+          // if we are at end-of-stream and have nothing more to read we complete now rather than after the next `requestMore`
+          if ((eos ne null) && buffer.count(subscription) == 0) Int.MinValue else 0
+        } else {
+          val x =
+            try {
+              val element = buffer.read(subscription)
+              subscription.dispatch(element) // as long as we can produce elements from our buffer we do so synchronously
+              -1 // we can't directly tailrec from here since we are in a try/catch, so signal with special value
+            } catch {
+              case NothingToReadException ⇒ if (eos ne null) Int.MinValue else requested // terminate or request from upstream
+            }
+          if (x == -1) dispatchFromBufferAndReturnRemainingRequested(requested - 1) else x
         }
-      case ErrorCompleted(_) ⇒ // ignore, the Subscriber might not have seen our error event yet
+
+      eos match {
+        case null | Completed ⇒
+          dispatchFromBufferAndReturnRemainingRequested(subscription.requested + elements) match {
+            case Int.MinValue ⇒
+              eos(subscription.subscriber)
+              unregisterSubscriptionInternal(subscription)
+            case 0 ⇒
+              subscription.requested = 0
+              requestFromUpstreamIfRequired()
+            case requested ⇒
+              subscription.requested = requested
+              requestFromUpstreamIfPossible(requested)
+          }
+        case ErrorCompleted(_) ⇒ // ignore, the Subscriber might not have seen our error event yet
+      }
     }
-  }
 
   private def requestFromUpstreamIfRequired(): Unit = {
     @tailrec def maxRequested(remaining: List[Subscription], result: Int = 0): Int =
@@ -178,21 +178,22 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
           case head :: tail ⇒
             val newResult =
               if (buffer.count(head) == 0) {
-                head.terminate(Completed)
+                Completed(head.subscriber)
                 result
               } else head :: result
             completeDoneSubscriptions(tail, newResult)
           case _ ⇒ result
         }
       subscriptions = completeDoneSubscriptions(subscriptions)
+      if (subscriptions.isEmpty) lastSubscriptionCancelled()
     } // else ignore, we need to be idempotent
   }
 
   // this method must be called by the implementing class to push an error downstream
   protected def abortDownstream(cause: Throwable): Unit = {
-    val eos = ErrorCompleted(cause)
-    endOfStream = eos
-    subscriptions.foreach(_.terminate(eos))
+    endOfStream = ErrorCompleted(cause)
+    subscriptions.foreach(s ⇒ endOfStream(s.subscriber))
+    subscriptions = Nil
   }
 
   // called from `Subscription::cancel`, i.e. from another thread,
@@ -200,52 +201,43 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
   protected def unregisterSubscription(subscription: Subscription): Unit =
     unregisterSubscriptionInternal(subscription)
 
+  // must be idempotent
   private def unregisterSubscriptionInternal(subscription: Subscription): Unit = {
     // is non-tail recursion acceptable here? (it's the fastest impl but might stack overflow for large numbers of subscribers)
     def removeFrom(remaining: List[Subscription]): List[Subscription] =
       remaining match {
         case head :: tail ⇒ if (head eq subscription) tail else head :: removeFrom(tail)
-        case _            ⇒ Nil // not found, but since we need to be idempotent we must not throw
+        case _            ⇒ throw new IllegalStateException("Subscription to unregister not found")
       }
-    val beforeRemoval = subscriptions
-    subscriptions = removeFrom(subscriptions)
-    buffer.onCursorRemoved(subscription)
-    if (subscriptions.isEmpty) {
-      if (beforeRemoval.nonEmpty) lastSubscriptionCancelled()
-    } else requestFromUpstreamIfRequired() // we might have removed a "blocking" subscriber and can continue now
+    if (subscription.isActive) {
+      subscriptions = removeFrom(subscriptions)
+      buffer.onCursorRemoved(subscription)
+      subscription.deactivate()
+      if (subscriptions.isEmpty) lastSubscriptionCancelled()
+      else requestFromUpstreamIfRequired() // we might have removed a "blocking" subscriber and can continue now
+    } // else ignore, we need to be idempotent
   }
 
   protected class Subscription(val subscriber: Subscriber[T])
-    extends AtomicInteger with rx.async.spi.Subscription with ResizableMultiReaderRingBuffer.Cursor {
-    private final val ACTIVE = 0
-    private final val TERMINATED = 1
-    private final val CANCELLED = 2
-
-    var requested: Int = 0 // number of requested but not yet dispatched elements
-    var cursor: Int = 0
+    extends rx.async.spi.Subscription with ResizableMultiReaderRingBuffer.Cursor {
 
     def requestMore(elements: Int): Unit =
-      get match {
-        case ACTIVE ⇒
-          if (elements <= 0) throw new IllegalArgumentException("Argument must be > 0")
-          moreRequested(this, elements) // NOTE: `moreRequested` still needs to be able to handle inactive subscriptions!
-        case TERMINATED ⇒ // ignore
-        case CANCELLED  ⇒ throw new IllegalStateException("Cannot requestMore from a cancelled subscription")
-      }
+      if (elements <= 0) throw new IllegalArgumentException("Argument must be > 0")
+      else moreRequested(this, elements) // needs to be able to ignore calls after termination / cancellation
 
-    def cancel(): Unit =
-      if (compareAndSet(ACTIVE, CANCELLED))
-        unregisterSubscription(this)
-      else if (!compareAndSet(TERMINATED, CANCELLED))
-        throw new IllegalStateException("Cannot cancel an already cancelled subscription")
+    def cancel(): Unit = unregisterSubscription(this) // must be idempotent
 
-    def terminate(eos: EndOfStream): Unit =
-      if (compareAndSet(ACTIVE, TERMINATED)) // don't change from CANCELLED to TERMINATED
-        eos(subscriber)
+    /////////////// internal interface, no unsynced access from subscriber's thread //////////////
+
+    var requested: Int = 0 // number of requested but not yet dispatched elements
+    var cursor: Int = 0 // buffer cursor, set to Int.MinValue if this subscription has been cancelled / terminated
+
+    def isActive: Boolean = cursor != Int.MinValue
+    def deactivate(): Unit = cursor = Int.MinValue
 
     def dispatch(element: T): Unit = subscriber.onNext(element)
 
-    override def toString: String = "Subscription" + System.identityHashCode(this)
+    override def toString: String = "Subscription" + System.identityHashCode(this) // helpful for testing
   }
 }
 

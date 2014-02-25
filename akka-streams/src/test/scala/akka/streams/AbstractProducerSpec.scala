@@ -1,11 +1,11 @@
 package akka.streams
 
 import org.scalatest.{ ShouldMatchers, WordSpec }
-import rx.async.tck.TestCaseEnvironment
-import TestCaseEnvironment._
+import rx.async.tck.TestEnvironment
+import TestEnvironment._
 import java.util.concurrent.atomic.AtomicBoolean
 
-class AbstractProducerSpec extends WordSpec with ShouldMatchers with TestCaseEnvironment {
+class AbstractProducerSpec extends WordSpec with ShouldMatchers with TestEnvironment {
 
   "An AbstractProducer" should {
 
@@ -48,7 +48,6 @@ class AbstractProducerSpec extends WordSpec with ShouldMatchers with TestCaseEnv
       sendNext('a)
 
       expectNoRequestMore() // because we only have buffer size 1 and sub2 hasn't seen 'a yet
-
       sub2.subscription.value.cancel() // should "unblock"
       nextRequestMore() shouldEqual 1
 

@@ -2,14 +2,15 @@ package rx.async.tck
 
 import java.util.concurrent._
 import org.testng.annotations.AfterClass
+import org.testng.Assert
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 import scala.collection.JavaConverters._
 import rx.async.spi.{ Subscription, Subscriber, Publisher }
 
-trait TestCaseEnvironment {
-  import TestCaseEnvironment._
+trait TestEnvironment {
+  import TestEnvironment._
 
   val asyncErrors = new CopyOnWriteArrayList[Throwable]()
 
@@ -49,42 +50,33 @@ trait TestCaseEnvironment {
     sub
   }
 
-  def drain[T](pub: Publisher[T], timeoutMillis: Int): Unit = {
-    val sub = newManualSubscriber(pub)
-    while (sub.requestNextElementOrEndOfStream(timeoutMillis = 100, s"Timeout while draining Publisher $pub").isDefined) {}
-    sub.expectNone(withinMillis = 100, x ⇒ s"Publisher $pub called `onNext($x)` after `onComplete`")
-    verifyNoAsyncErrors()
-  }
-
   def verifyNoAsyncErrors(): Unit =
     asyncErrors.asScala.foreach {
       case e: AssertionError ⇒ throw e
       case e                 ⇒ fail("Async error during test execution: " + e)
     }
-
-  def verifyNoAsyncErrorsAfter(delayMillis: Int): Unit = {
-    Thread.sleep(delayMillis)
-    verifyNoAsyncErrors()
-  }
 }
 
-object TestCaseEnvironment {
+object TestEnvironment {
 
   class TestSubscriber[T] extends Subscriber[T] {
-    val subscription = new Promise[Subscription]
+    @volatile var subscription = new Promise[Subscription]
     def onError(cause: Throwable): Unit = fail(s"Unexpected Subscriber::onError($cause)")
     def onComplete(): Unit = fail("Unexpected Subscriber::onComplete()")
     def onNext(element: T): Unit = fail(s"Unexpected Subscriber::onNext($element)")
     def onSubscribe(subscription: Subscription): Unit = fail(s"Unexpected Subscriber::onSubscribe($subscription)")
+    def cancel(): Unit =
+      if (subscription.isCompleted) {
+        subscription.value.cancel()
+        subscription = new Promise[Subscription]
+      } else fail("Cannot cancel a subscription before having received it")
   }
 
   class ManualSubscriber[T] extends TestSubscriber[T] {
     val received = new Receptacle[T]
     override def onNext(element: T) = received.add(element)
     override def onComplete() = received.complete()
-    def requestMore(elements: Int): Unit = {
-      subscription.value.requestMore(elements)
-    }
+    def requestMore(elements: Int): Unit = subscription.value.requestMore(elements)
     def requestNextElement(timeoutMillis: Int = 100, errorMsg: String = "Did not receive expected element"): T = {
       requestMore(1)
       nextElement(timeoutMillis, errorMsg)
@@ -192,12 +184,14 @@ object TestCaseEnvironment {
     }
   }
 
-  def fail(msg: String): Nothing = org.junit.Assert.fail(msg).asInstanceOf[Nothing]
+  def fail(msg: String): Nothing = Assert.fail(msg).asInstanceOf[Nothing]
 
-  def expectThrowingOf[T <: Exception: ClassTag](errorMsg: Throwable ⇒ String)(block: ⇒ Unit): Unit =
-    try block
-    catch {
+  def expectThrowingOf[T <: Exception: ClassTag](errorMsg: String)(block: ⇒ Unit): Unit =
+    try {
+      block
+      fail(errorMsg)
+    } catch {
       case e: Exception if implicitly[ClassTag[T]].runtimeClass.isInstance(e) ⇒ // ok
-      case NonFatal(e) ⇒ fail(errorMsg(e))
+      case NonFatal(e) ⇒ fail(s"$errorMsg but $e")
     }
 }

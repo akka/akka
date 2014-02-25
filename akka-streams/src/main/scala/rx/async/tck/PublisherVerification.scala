@@ -1,11 +1,12 @@
 package rx.async.tck
 
-import rx.async.spi.{ Subscription, Publisher }
+import java.lang.ref.{ WeakReference, ReferenceQueue }
 import org.testng.annotations.Test
 import org.testng.Assert._
+import rx.async.spi.{ Subscription, Publisher }
 
-abstract class PublisherVerification[T] extends TestCaseEnvironment {
-  import TestCaseEnvironment._
+abstract class PublisherVerification[T] extends TestEnvironment {
+  import TestEnvironment._
 
   // TODO: make the timeouts be dilate-able so that one can tune the suite for the machine it runs on
 
@@ -28,23 +29,29 @@ abstract class PublisherVerification[T] extends TestCaseEnvironment {
    */
   def createErrorStatePublisher(): Publisher[T] = null
 
-  @Test
-  def createPublisher3MustProduceAStreamOfExactly3Elements(): Unit = {
-    val pub = createPublisher(elements = 3)
-    val sub = newManualSubscriber(pub)
-    def requestNextElementOrEndOfStream() =
-      sub.requestNextElementOrEndOfStream(errorMsg = s"Timeout while waiting for next element from Publisher $pub")
-    assertTrue(requestNextElementOrEndOfStream().isDefined, s"Publisher $pub produced no elements")
-    assertTrue(requestNextElementOrEndOfStream().isDefined, s"Publisher $pub produced only 1 element")
-    assertTrue(requestNextElementOrEndOfStream().isDefined, s"Publisher $pub produced only 2 elements")
-    sub.expectNone(errorMsg = x ⇒ s"`createPublisher(3)` created stream of more than 3 elements (4th element was $x)")
-    verifyNoAsyncErrors()
-  }
+  ////////////////////// TEST SETUP VERIFICATION ///////////////////////////
 
   @Test
-  def publisherSubscribeWhenCompletedMustTriggerOnCompleteAndNotOnSubscribe(): Unit = {
-    val pub = createCompletedStatePublisher()
-    if (pub ne null) {
+  def createPublisher3MustProduceAStreamOfExactly3Elements(): Unit =
+    activePublisherTest(elements = 3) { pub ⇒
+      val sub = newManualSubscriber(pub)
+      def requestNextElementOrEndOfStream() =
+        sub.requestNextElementOrEndOfStream(errorMsg = s"Timeout while waiting for next element from Publisher $pub")
+      assertTrue(requestNextElementOrEndOfStream().isDefined, s"Publisher $pub produced no elements")
+      assertTrue(requestNextElementOrEndOfStream().isDefined, s"Publisher $pub produced only 1 element")
+      assertTrue(requestNextElementOrEndOfStream().isDefined, s"Publisher $pub produced only 2 elements")
+      sub.expectNone(errorMsg = x ⇒ s"`createPublisher(3)` created stream of more than 3 elements (4th element was $x)")
+    }
+
+  ////////////////////// SPEC RULE VERIFICATION ///////////////////////////
+
+  // Publisher::subscribe(Subscriber)
+  //   when Publisher is in `completed` state
+  //     must not call `onSubscribe` on the given Subscriber
+  //     must trigger a call to `onComplete` on the given Subscriber
+  @Test
+  def publisherSubscribeWhenCompletedMustTriggerOnCompleteAndNotOnSubscribe(): Unit =
+    completedPublisherTest { pub ⇒
       val latch = new Latch()
       pub.subscribe {
         new TestSubscriber[T] {
@@ -57,15 +64,16 @@ abstract class PublisherVerification[T] extends TestCaseEnvironment {
         }
       }
       latch.expectClose(timeoutMillis = 100, s"Publisher created by `createPublisher(0)` ($pub) did not call `onComplete` on new Subscriber")
-      // wait for the Publisher to potentially call 'onSubscribe' or `onNext` which would trigger an async error
-      verifyNoAsyncErrorsAfter(delayMillis = 100)
+      Thread.sleep(100) // wait for the Publisher to potentially call 'onSubscribe' or `onNext` which would trigger an async error
     }
-  }
 
+  // Publisher::subscribe(Subscriber)
+  //   when Publisher is in `error` state
+  //     must not call `onSubscribe` on the given Subscriber
+  //     must trigger a call to `onError` on the given Subscriber
   @Test
-  def publisherSubscribeWhenInErrorStateMustTriggerOnErrorAndNotOnSubscribe(): Unit = {
-    val pub = createErrorStatePublisher()
-    if (pub ne null) {
+  def publisherSubscribeWhenInErrorStateMustTriggerOnErrorAndNotOnSubscribe(): Unit =
+    errorPublisherTest { pub ⇒
       val latch = new Latch()
       pub.subscribe {
         new TestSubscriber[T] {
@@ -76,153 +84,251 @@ abstract class PublisherVerification[T] extends TestCaseEnvironment {
         }
       }
       latch.expectClose(timeoutMillis = 100, s"Error-state Publisher $pub did not call `onError` on new Subscriber")
-      // wait for the Publisher to potentially call 'onSubscribe' or `onNext` which would trigger an async error
-      verifyNoAsyncErrorsAfter(delayMillis = 100)
-    } // else test is pending/ignored, which our great Java test frameworks have no concept for
-  }
+      Thread.sleep(100) // wait for the Publisher to potentially call 'onSubscribe' or `onNext` which would trigger an async error
+    }
 
+  // Publisher::subscribe(Subscriber)
+  //   when Publisher is neither in `completed` nor `error` state
+  //     must trigger a call to `onSubscribe` on the given Subscriber if the Subscription is to be accepted
   @Test
-  def publisherSubscribeWhenActiveMustCallOnSubscribeFirst(): Unit = {
-    val pub = createPublisher(1)
-    val latch = new Latch()
-    pub.subscribe {
-      new TestSubscriber[T] {
+  def publisherSubscribeWhenActiveMustCallOnSubscribeFirst(): Unit =
+    activePublisherTest(elements = 1) { pub ⇒
+      val latch = new Latch()
+      pub.subscribe {
+        new TestSubscriber[T] {
+          override def onSubscribe(subscription: Subscription): Unit = latch.close()
+        }
+      }
+      latch.expectClose(timeoutMillis = 100, s"Active Publisher $pub did not call `onSubscribe` on new subscription request")
+    }
+
+  // Publisher::subscribe(Subscriber)
+  //   when Publisher is neither in `completed` nor `error` state
+  //     must trigger a call to `onError` on the given Subscriber if the Subscription is to be rejected
+  //     must reject the Subscription if the same Subscriber already has an active Subscription
+  @Test
+  def publisherSubscribeWhenActiveMustRejectDoubleSubscription(): Unit =
+    activePublisherTest(elements = 1) { pub ⇒
+      val latch = new Latch()
+      val errorCause = new Promise[Throwable]
+      val sub = new TestSubscriber[T] {
         override def onSubscribe(subscription: Subscription): Unit = latch.close()
+        override def onError(cause: Throwable): Unit = errorCause.complete(cause)
+      }
+      pub.subscribe(sub)
+      latch.expectClose(timeoutMillis = 100, s"Active Publisher $pub did not call `onSubscribe` on first subscription request")
+      errorCause.assertUncompleted(s"Active Publisher $pub unexpectedly called `onError` on first subscription request")
+
+      latch.reOpen()
+      pub.subscribe(sub)
+      errorCause.expectCompletion(timeoutMillis = 100, s"Active Publisher $pub did not call `onError` on double subscription request")
+      if (!errorCause.value.isInstanceOf[IllegalStateException])
+        fail(s"Publisher $pub called `onError` with ${errorCause.value} rather than an `IllegalStateException` on double subscription request")
+      latch.assertOpen(s"Active Publisher $pub unexpectedly called `onSubscribe` on double subscription request")
+    }
+
+  // Subscription::requestMore(Int)
+  //   when Subscription is cancelled
+  //     must ignore the call
+  @Test
+  def subscriptionRequestMoreWhenCancelledMustIgnoreTheCall(): Unit =
+    activePublisherTest(elements = 1) { pub ⇒
+      val sub = new TestSubscriber[T] with SubscriptionSupport[T]
+      subscribe(pub, sub)
+      sub.subscription.value.cancel() // first time must succeed
+      sub.subscription.value.cancel() // the second time must not throw
+    }
+
+  // Subscription::requestMore(Int)
+  //   when Subscription is not cancelled
+  //     must register the given number of additional elements to be produced to the respective subscriber
+  // A Publisher
+  //   must not call `onNext`
+  //    more times than the total number of elements that was previously requested with Subscription::requestMore by the corresponding subscriber
+  @Test
+  def subscriptionRequestMoreMustResultInTheCorrectNumberOfProducedElements(): Unit =
+    activePublisherTest(elements = 5) { pub ⇒
+      val sub = newManualSubscriber(pub)
+
+      sub.expectNone(errorMsg = x ⇒ s"Publisher $pub produced $x before the first `requestMore`")
+      sub.requestMore(1)
+      sub.nextElement(errorMsg = s"Publisher $pub produced no element after first `requestMore`")
+
+      sub.requestMore(1)
+      sub.requestMore(2)
+      sub.nextElements(3, timeoutMillis = 100, s"Publisher $pub produced less than 3 elements after two respective `requestMore` calls")
+
+      sub.expectNone(errorMsg = x ⇒ s"Publisher $pub produced unrequested $x")
+    }
+
+  // Subscription::requestMore(Int)
+  //   when Subscription is not cancelled
+  //     must throw a `java.lang.IllegalArgumentException` if the argument is <= 0
+  @Test
+  def subscriptionRequestMoreMustThrowIfArgumentIsNonPositive(): Unit =
+    activePublisherTest(elements = 1) { pub ⇒
+      val sub = newManualSubscriber(pub)
+      expectThrowingOf[IllegalArgumentException](s"Calling `requestMore(-1)` a subscription to $pub did not fail with an `IllegalArgumentException`") {
+        sub.subscription.value.requestMore(-1)
+      }
+      expectThrowingOf[IllegalArgumentException](s"Calling `requestMore(0)` a subscription to $pub did not fail with an `IllegalArgumentException`") {
+        sub.subscription.value.requestMore(0)
       }
     }
-    latch.expectClose(timeoutMillis = 100, s"Active Publisher $pub did not call `onSubscribe` on new subscription request")
-    verifyNoAsyncErrors()
-  }
 
+  // Subscription::cancel
+  //   when Subscription is cancelled
+  //     must ignore the call
   @Test
-  def publisherSubscribeWhenActiveMustRejectDoubleSubscription(): Unit = {
-    val pub = createPublisher(1)
-    val latch = new Latch()
-    val errorCause = new Promise[Throwable]
-    val sub = new TestSubscriber[T] {
-      override def onSubscribe(subscription: Subscription): Unit = latch.close()
-      override def onError(cause: Throwable): Unit = errorCause.complete(cause)
-    }
-    pub.subscribe(sub)
-    latch.expectClose(timeoutMillis = 100, s"Active Publisher $pub did not call `onSubscribe` on first subscription request")
-    errorCause.assertUncompleted(s"Active Publisher $pub unexpectedly called `onError` on first subscription request")
-
-    latch.reOpen()
-    pub.subscribe(sub)
-    errorCause.expectCompletion(timeoutMillis = 100, s"Active Publisher $pub did not call `onError` on double subscription request")
-    if (!errorCause.value.isInstanceOf[IllegalStateException])
-      fail(s"Publisher $pub called `onError` with ${errorCause.value} rather than an `IllegalStateException` on double subscription request")
-    latch.assertOpen(s"Active Publisher $pub unexpectedly called `onSubscribe` on double subscription request")
-    verifyNoAsyncErrors()
-  }
-
-  @Test
-  def subscriptionRequestMoreWhenCancelledMustThrow(): Unit = {
-    val pub = createPublisher(1)
-    val sub = new TestSubscriber[T] with SubscriptionSupport[T]
-    subscribe(pub, sub)
-
-    sub.subscription.value.cancel() // first time must succeed
-    expectThrowingOf[IllegalStateException](e ⇒ s"Cancelling a subscription to $pub twice did not fail with an `IllegalStateException` but $e") {
+  def subscriptionCancelWhenCancelledMustIgnoreCall(): Unit =
+    activePublisherTest(elements = 1) { pub ⇒
+      val sub = newManualSubscriber(pub)
       sub.subscription.value.cancel()
+      sub.subscription.value.requestMore(1) // must not throw
+    }
+
+  // Subscription::cancel
+  //   when Subscription is not cancelled
+  //     the Publisher must eventually cease to call any methods on the corresponding subscriber
+  @Test
+  def onSubscriptionCancelThePublisherMustEventuallyCeaseToCallAnyMethodsOnTheSubscriber(): Unit = {
+    // cannot be meaningfully tested, or can it?
+  }
+
+  // Subscription::cancel
+  //   when Subscription is not cancelled
+  //     the Publisher must eventually drop any references to the corresponding subscriber
+  @Test
+  def onSubscriptionCancelThePublisherMustEventuallyDropAllReferencesToTheSubscriber(): Unit = {
+    activePublisherTest(elements = 3) { pub ⇒
+      var sub = newManualSubscriber(pub)
+      val ref = new WeakReference(sub, new ReferenceQueue[ManualSubscriber[T]]())
+      sub.requestMore(1)
+      sub.cancel()
+      sub = null
+      System.gc()
+      if (!ref.isEnqueued)
+        fail(s"Publisher $pub did not drop reference to test subscriber after subscription cancellation")
     }
   }
 
-  // this test tests two rules at the same time:
-  // - Subscription::requestMore, when subscription is not cancelled,
-  //   must register N additional elements to be published to the respective Subscriber
-  // - A Publisher must not call `onNext` more times than the total number of elements
-  //   that was previously requested with `subscription.requestMore`
+  // Subscription::cancel
+  //   when Subscription is not cancelled
+  //     the Publisher must obey the "a Subscription::cancel happens before any subsequent Publisher::subscribe" rule
   @Test
-  def subscriptionRequestMoreWhenUncancelledMustResultInTheCorrectNumberOfProducedElements(): Unit = {
-    val pub = createPublisher(5)
-    val sub = newManualSubscriber(pub)
-
-    sub.expectNone(errorMsg = x ⇒ s"Publisher $pub produced $x before the first `requestMore`")
-    sub.requestMore(1)
-    sub.nextElement(errorMsg = s"Publisher $pub produced no element after first `requestMore`")
-
-    sub.subscription.value.requestMore(1)
-    sub.subscription.value.requestMore(2)
-    sub.received.nextN(3, timeoutMillis = 100, s"Publisher $pub produced less than 3 elements after two respective `requestMore` calls")
-
-    sub.expectNone(errorMsg = x ⇒ s"Publisher $pub produced unrequested $x")
-
-    verifyNoAsyncErrors()
-  }
-
-  @Test
-  def subscriptionRequestMoreWhenUncancelledMustThrowIfArgumentIsNonPositive(): Unit = {
-    val pub = createPublisher(1)
-    val sub = newManualSubscriber(pub)
-    expectThrowingOf[IllegalArgumentException](e ⇒ s"Calling `requestMore(-1)` a subscription to $pub did not fail with an `IllegalArgumentException` but $e") {
-      sub.subscription.value.requestMore(-1)
+  def onSubscriptionCancelThePublisherMustObeyCancelHappensBeforeSubsequentSubscribe(): Unit = {
+    activePublisherTest(elements = 3) { pub ⇒
+      val keeper = newManualSubscriber(pub) // required to prevent the publisher from shutting down
+      val sub = newManualSubscriber(pub)
+      for (i ← 1 to 100) {
+        // try to cancel and resubscribe very quickly, in order to potentially trigger an "overtaking"
+        sub.cancel()
+        subscribe(pub, sub)
+      }
     }
-    expectThrowingOf[IllegalArgumentException](e ⇒ s"Calling `requestMore(0)` a subscription to $pub did not fail with an `IllegalArgumentException` but $e") {
-      sub.subscription.value.requestMore(0)
+  }
+
+  // A Publisher
+  //   must not call `onNext`
+  //     after having issued an `onComplete` or `onError` call on a subscriber
+  @Test
+  def mustNotCallOnNextAfterHavingIssuedAnOnCompleteOrOnErrorCallOnASubscriber(): Unit = {
+    // this is implicitly verified by the test infrastructure
+  }
+
+  // A Publisher
+  //   must produce the same elements in the same sequence for all its subscribers
+  @Test
+  def mustProduceTheSameElementsInTheSameSequenceForAllItsSubscribers(): Unit =
+    activePublisherTest(elements = 5) { pub ⇒
+      val sub1 = newManualSubscriber(pub)
+      val sub2 = newManualSubscriber(pub)
+      val sub3 = newManualSubscriber(pub)
+
+      sub1.requestMore(1)
+      val x1 = sub1.nextElement(errorMsg = s"Publisher $pub did not produce the requested 1 element on 1st subscriber")
+      sub2.requestMore(2)
+      val y1 = sub2.nextElements(2, errorMsg = s"Publisher $pub did not produce the requested 2 elements on 2nd subscriber")
+      sub1.requestMore(1)
+      val x2 = sub1.nextElement(errorMsg = s"Publisher $pub did not produce the requested 1 element on 1st subscriber")
+      sub3.requestMore(3)
+      val z1 = sub3.nextElements(3, errorMsg = s"Publisher $pub did not produce the requested 3 elements on 3rd subscriber")
+      sub3.requestMore(1)
+      val z2 = sub3.nextElement(errorMsg = s"Publisher $pub did not produce the requested 1 element on 3rd subscriber")
+      sub3.requestMore(1)
+      val z3 = sub3.nextElement(errorMsg = s"Publisher $pub did not produce the requested 1 element on 3rd subscriber")
+      sub3.expectCompletion(errorMsg = s"Publisher $pub did not complete the stream as expected on 3rd subscriber")
+      sub2.requestMore(3)
+      val y2 = sub2.nextElements(3, errorMsg = s"Publisher $pub did not produce the requested 3 elements on 2nd subscriber")
+      sub2.expectCompletion(errorMsg = s"Publisher $pub did not complete the stream as expected on 2nd subscriber")
+      sub1.requestMore(2)
+      val x3 = sub1.nextElements(2, errorMsg = s"Publisher $pub did not produce the requested 2 elements on 1st subscriber")
+      sub1.requestMore(1)
+      val x4 = sub1.nextElement(errorMsg = s"Publisher $pub did not produce the requested 1 element on 1st subscriber")
+      sub1.expectCompletion(errorMsg = s"Publisher $pub did not complete the stream as expected on 1st subscriber")
+
+      val r = x1 :: x2 :: x3.toList ::: x4 :: Nil
+      assertEquals(r, y1.toList ::: y2.toList, s"Publisher $pub did not produce the same element sequence for subscribers 1 and 2")
+      assertEquals(r, z1.toList ::: z2 :: z3 :: Nil, s"Publisher $pub did not produce the same element sequence for subscribers 1 and 3")
     }
-    verifyNoAsyncErrors()
-  }
 
+  // A Publisher
+  //   must support a pending element count up to 2^63-1 (Long.MAX_VALUE) and provide for overflow protection
   @Test
-  def subscriptionCancelWhenCancelledMustThrow(): Unit = {
+  def mustSupportAPendingElementCountUpToLongMaxValueAndProviderForOverflowProtection(): Unit = {
     // TODO
   }
 
+  // A Publisher
+  //   must call `onComplete` on a subscriber after having produced the final stream element to it
+  //   must call `onComplete` on a subscriber at the earliest possible point in time
   @Test
-  def onSubscriptionCancelWhenUncancelledThePublisherMustEventuallyCeaseToCallAnyMethodsOnTheSubscriber(): Unit = {
+  def mustCallOnCompleteOnASubscriberAfterHavingProducedTheFinalStreamElementToIt(): Unit = {
     // TODO
   }
 
+  // A Publisher
+  //   must start producing with the oldest still available element for a new subscriber
   @Test
-  def onSubscriptionCancelWhenUncancelledThePublisherMustEventuallyDropAllReferencesToTheSubscriber(): Unit = {
-    // TODO
-  }
-
-  @Test
-  def onSubscriptionCancelWhenUncancelledThePublisherMustObeyCancelHappensBeforeSubsequentSubscribe(): Unit = {
-    // TODO
-  }
-
-  @Test
-  def mustProduceTheSameElementsInTheSameSequenceForAllSimultaneouslySubscribedSubscribers(): Unit = {
-    val pub = createPublisher(5)
-    val sub1 = newManualSubscriber(pub)
-    val sub2 = newManualSubscriber(pub)
-    val sub3 = newManualSubscriber(pub)
-
-    sub1.requestMore(1)
-    val x1 = sub1.nextElement(errorMsg = s"Publisher $pub did not produce the requested 1 element on 1st subscriber")
-    sub2.requestMore(2)
-    val y1 = sub2.nextElements(2, errorMsg = s"Publisher $pub did not produce the requested 2 elements on 2nd subscriber")
-    sub1.requestMore(1)
-    val x2 = sub1.nextElement(errorMsg = s"Publisher $pub did not produce the requested 1 element on 1st subscriber")
-    sub3.requestMore(3)
-    val z1 = sub3.nextElements(3, errorMsg = s"Publisher $pub did not produce the requested 3 elements on 3rd subscriber")
-    sub3.requestMore(1)
-    val z2 = sub3.nextElement(errorMsg = s"Publisher $pub did not produce the requested 1 element on 3rd subscriber")
-    sub3.requestMore(1)
-    val z3 = sub3.nextElement(errorMsg = s"Publisher $pub did not produce the requested 1 element on 3rd subscriber")
-    sub3.expectCompletion(errorMsg = s"Publisher $pub did not complete the stream as expected on 3rd subscriber")
-    sub2.requestMore(3)
-    val y2 = sub2.nextElements(3, errorMsg = s"Publisher $pub did not produce the requested 3 elements on 2nd subscriber")
-    sub2.expectCompletion(errorMsg = s"Publisher $pub did not complete the stream as expected on 2nd subscriber")
-    sub1.requestMore(2)
-    val x3 = sub1.nextElements(2, errorMsg = s"Publisher $pub did not produce the requested 2 elements on 1st subscriber")
-    sub1.requestMore(1)
-    val x4 = sub1.nextElement(errorMsg = s"Publisher $pub did not produce the requested 1 element on 1st subscriber")
-    sub1.expectCompletion(errorMsg = s"Publisher $pub did not complete the stream as expected on 1st subscriber")
-
-    val r = x1 :: x2 :: x3.toList ::: x4 :: Nil
-    assertEquals(r, y1.toList ::: y2.toList, s"Publisher $pub did not produce the same element sequence for subscribers 1 and 2")
-    assertEquals(r, z1.toList ::: z2 :: z3 :: Nil, s"Publisher $pub did not produce the same element sequence for subscribers 1 and 3")
-
-    verifyNoAsyncErrors()
-  }
-
-  @Test
-  def mustStartProducingWithTheOldestStillAvailableElementForANewlySubscribedSubscriber(): Unit = {
+  def mustStartProducingWithTheOldestStillAvailableElementForASubscriber(): Unit = {
     // can only be properly tested if we know more about the Producer implementation
     // like buffer size and buffer retention logic
   }
+
+  // A Publisher
+  //   must call `onError` on all its subscribers if it encounters a non-recoverable error
+  @Test
+  def mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError(): Unit = {
+    // TODO
+  }
+
+  // A Publisher
+  //   must not call `onComplete` or `onError` more than once per subscriber
+  @Test
+  def mustNotCallOnCompleteOrOnErrorMoreThanOncePerSubscriber(): Unit = {
+    // this is implicitly verified by the test infrastructure
+  }
+
+  /////////////////////// ADDITIONAL "COROLLARY" TESTS //////////////////////
+
+  /////////////////////// TEST INFRASTRUCTURE //////////////////////
+
+  def activePublisherTest[U](elements: Int)(body: Publisher[T] ⇒ U): Unit = {
+    val pub = createPublisher(elements)
+    body(pub)
+    verifyNoAsyncErrors()
+  }
+
+  def completedPublisherTest[U](body: Publisher[T] ⇒ U): Unit =
+    potentiallyPendingTest(createCompletedStatePublisher(), body)
+
+  def errorPublisherTest[U](body: Publisher[T] ⇒ U): Unit =
+    potentiallyPendingTest(createErrorStatePublisher(), body)
+
+  def potentiallyPendingTest[U](pub: Publisher[T], body: Publisher[T] ⇒ U): Unit =
+    if (pub ne null) {
+      body(pub)
+      verifyNoAsyncErrors()
+    } // else test is pending/ignored, which our great Java test frameworks have no (non-static) concept for
+
 }
