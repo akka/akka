@@ -95,7 +95,7 @@ abstract class DynamicSyncOperation[I] extends SyncOperation[I] { outer ⇒
     def handleNext(element: I): Effect = throw new IllegalStateException("No element requested")
   }
 
-  def Stopped = new State {
+  def Stopped(reason: String) = new State {
     def handleRequestMore(n: Int): Effect = errOut("requestMore")
     def handleCancel(): Effect = errOut("cancel")
 
@@ -105,6 +105,6 @@ abstract class DynamicSyncOperation[I] extends SyncOperation[I] { outer ⇒
 
     def errOut(which: String): Nothing =
       throw new IllegalStateException(
-        s"No events expected after complete/error/cancelled in ${outer.getClass.getSimpleName} but got '$which'")
+        s"No events expected after $reason in ${outer.getClass.getSimpleName} but got '$which'")
   }
 }
