@@ -5,6 +5,7 @@ Clarification of terminology used throughout this document:
  "Publisher"   : an implementation of the `rx.async.spi.Publisher` interface
  "Subscriber"  : an implementation of the `rx.async.spi.Subscriber` interface
  "Subscription": an implementation of the `rx.async.spi.Subscription` interface
+ "Processor"   : an implementation of the `rx.async.api.Processor` interface
  "subscriber"  : a Subscriber which is currently subscribed, i.e. has an active Subscription
  Foo::bar      : an instance method `bar` on the class `Foo`
 
@@ -93,7 +94,6 @@ A Processor
   must obey all Subscriber rules on its consuming side
   must cancel its upstream Subscription if its last downstream Subscription has been cancelled [11]
   must immediately pass on `onError` events received from its upstream to its downstream [12]
-  must be prepared to receive incoming elements from its upstream even after its last downstream Subscription has been cancelled
   must be prepared to receive incoming elements from its upstream even if a downstream subscriber has not requested anything yet
 
 Generally
@@ -110,7 +110,8 @@ Generally
 [6] In particular a Publisher should not wait for another Subscription::requestMore call before calling `onComplete`
     if the information that no more elements will follow is already available before.
 [7] I.e. one Subscriber cannot be subscribed to multiple Publishers at the same time.
-    What exactly "not accepting" means is left to the implementation.
+    What exactly "not accepting" means is left to the implementation but should include behavior that makes the user
+    aware of the usage error (e.g. by logging, throwing an exception or similar).
 [8] The Subscription implementation is not required to be thread-safe.
 [9] if there are still requested elements pending
 [10] I.e. the Subscriber must take care of properly publishing the event to its processing logic.
