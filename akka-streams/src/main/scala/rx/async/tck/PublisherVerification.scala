@@ -276,7 +276,8 @@ abstract class PublisherVerification[T] extends TestEnvironment {
   //   must support a pending element count up to 2^63-1 (Long.MAX_VALUE) and provide for overflow protection
   @Test
   def mustSupportAPendingElementCountUpToLongMaxValueAndProviderForOverflowProtection(): Unit = {
-    // TODO
+    // not really testable without more control over the Publisher,
+    // we verify this part of the fanout logic with the IdentityProcessorVerification
   }
 
   // A Publisher
@@ -284,7 +285,14 @@ abstract class PublisherVerification[T] extends TestEnvironment {
   //   must call `onComplete` on a subscriber at the earliest possible point in time
   @Test
   def mustCallOnCompleteOnASubscriberAfterHavingProducedTheFinalStreamElementToIt(): Unit = {
-    // TODO
+    activePublisherTest(elements = 3) { pub ⇒
+      val sub = newManualSubscriber(pub)
+      sub.requestNextElement()
+      sub.requestNextElement()
+      sub.requestNextElement()
+      sub.expectCompletion(errorMsg = s"Publisher $pub did not complete the stream immediately after the final element")
+      sub.expectNone()
+    }
   }
 
   // A Publisher
@@ -299,7 +307,8 @@ abstract class PublisherVerification[T] extends TestEnvironment {
   //   must call `onError` on all its subscribers if it encounters a non-recoverable error
   @Test
   def mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError(): Unit = {
-    // TODO
+    // not really testable without more control over the Publisher,
+    // we verify this part of the fanout logic with the IdentityProcessorVerification
   }
 
   // A Publisher
@@ -307,6 +316,13 @@ abstract class PublisherVerification[T] extends TestEnvironment {
   @Test
   def mustNotCallOnCompleteOrOnErrorMoreThanOncePerSubscriber(): Unit = {
     // this is implicitly verified by the test infrastructure
+  }
+
+  // A Publisher
+  //   must shut itself down if its last downstream Subscription has been cancelled
+  @Test
+  def mustShutItselfDownIfItsLastDownstreamSubscriptionHasBeenCancelled(): Unit = {
+    // cannot be meaningfully tested, or can it?
   }
 
   /////////////////////// ADDITIONAL "COROLLARY" TESTS //////////////////////
