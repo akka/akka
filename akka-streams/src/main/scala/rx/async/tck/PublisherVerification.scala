@@ -1,6 +1,6 @@
 package rx.async.tck
 
-import java.lang.ref.{ WeakReference, ReferenceQueue }
+import java.lang.ref.{ Reference, WeakReference, ReferenceQueue }
 import org.testng.annotations.Test
 import org.testng.Assert._
 import rx.async.spi.{ Subscription, Publisher }
@@ -60,7 +60,7 @@ abstract class PublisherVerification[T] extends TestEnvironment {
             latch.close()
           }
           override def onSubscribe(subscription: Subscription): Unit =
-            fail(s"Publisher created by `createPublisher(0)` ($pub) called `onSubscribe` on new Subscriber")
+            fail(s"Publisher created by `createCompletedStatePublisher()` ($pub) called `onSubscribe` on new Subscriber")
         }
       }
       latch.expectClose(timeoutMillis = 100, s"Publisher created by `createPublisher(0)` ($pub) did not call `onComplete` on new Subscriber")
@@ -225,13 +225,21 @@ abstract class PublisherVerification[T] extends TestEnvironment {
   //     the Publisher must eventually drop any references to the corresponding subscriber
   @Test
   def onSubscriptionCancelThePublisherMustEventuallyDropAllReferencesToTheSubscriber(): Unit = {
-    activePublisherTest(elements = 3) { pub ⇒
-      var sub = newManualSubscriber(pub)
+    def run(pub: Publisher[T]): Reference[ManualSubscriber[T]] = {
+      val sub = newManualSubscriber(pub)
       val ref = new WeakReference(sub, new ReferenceQueue[ManualSubscriber[T]]())
       sub.requestMore(1)
+      sub.nextElement()
       sub.cancel()
-      sub = null
+      ref
+    }
+    activePublisherTest(elements = 3) { pub ⇒
+      val ref = run(pub)
+      // cancel may be run asynchronously so we add a sleep before running the GC
+      // to "resolve" the race
+      Thread.sleep(200)
       System.gc()
+
       if (!ref.isEnqueued)
         fail(s"Publisher $pub did not drop reference to test subscriber after subscription cancellation")
     }
