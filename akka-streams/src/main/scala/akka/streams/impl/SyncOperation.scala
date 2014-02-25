@@ -77,7 +77,7 @@ abstract class DynamicSyncSink[I] extends SyncSink[I] {
  *  An abstract SyncOperation implementation to be used as a base for SyncOperation implementations
  *  that implement their behavior as a state machine.
  */
-abstract class DynamicSyncOperation[I] extends SyncOperation[I] {
+abstract class DynamicSyncOperation[I] extends SyncOperation[I] { outer ⇒
   type State = SyncOperation[I]
   private[this] var state: State = initial
 
@@ -96,13 +96,15 @@ abstract class DynamicSyncOperation[I] extends SyncOperation[I] {
   }
 
   def Stopped = new State {
-    def handleRequestMore(n: Int): Effect = errOut()
-    def handleCancel(): Effect = errOut()
+    def handleRequestMore(n: Int): Effect = errOut("requestMore")
+    def handleCancel(): Effect = errOut("cancel")
 
-    def handleNext(element: I): Effect = errOut()
-    def handleComplete(): Effect = errOut()
-    def handleError(cause: Throwable): Effect = errOut()
+    def handleNext(element: I): Effect = errOut("next")
+    def handleComplete(): Effect = errOut("complete")
+    def handleError(cause: Throwable): Effect = errOut("error")
 
-    def errOut(): Nothing = throw new IllegalStateException("No events expected after complete/error/cancelled")
+    def errOut(which: String): Nothing =
+      throw new IllegalStateException(
+        s"No events expected after complete/error/cancelled in ${outer.getClass.getSimpleName} but got '$which'")
   }
 }
