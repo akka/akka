@@ -3,13 +3,13 @@ package akka.streams
 import org.scalatest.{ ShouldMatchers, WordSpec }
 import rx.async.tck.TestEnvironment
 import TestEnvironment._
-import java.util.concurrent.atomic.AtomicBoolean
 
+// same as some of the IdentityProcessorTest cases but directly on the fanout logic level
 class AbstractProducerSpec extends WordSpec with ShouldMatchers with TestEnvironment {
 
   "An AbstractProducer" should {
 
-    "trigger `requestFromUpstream` for elements that have requested 'long ago'" in new Test(iSize = 1, mSize = 1) {
+    "trigger `requestFromUpstream` for elements that have been requested 'long ago'" in new Test(iSize = 1, mSize = 1) {
       val sub1 = newSubscriber()
       sub1.requestMore(5)
 
@@ -48,7 +48,7 @@ class AbstractProducerSpec extends WordSpec with ShouldMatchers with TestEnviron
       sendNext('a)
 
       expectNoRequestMore() // because we only have buffer size 1 and sub2 hasn't seen 'a yet
-      sub2.subscription.value.cancel() // should "unblock"
+      sub2.cancel() // must "unblock"
       nextRequestMore() shouldEqual 1
 
       verifyNoAsyncErrors()
@@ -62,12 +62,12 @@ class AbstractProducerSpec extends WordSpec with ShouldMatchers with TestEnviron
     protected def shutdown(): Unit = shutDown = true
     protected def cancelUpstream(): Unit = ()
 
+    def newSubscriber() = newManualSubscriber(this)
     def nextRequestMore(timeoutMillis: Int = 100): Int =
       requests.next(timeoutMillis, "Did not receive expected `requestMore` call")
     def expectNoRequestMore(timeoutMillis: Int = 100): Unit =
       requests.expectNone(timeoutMillis, "Received an unexpected `requestMore" + _ + "` call")
     def sendNext(element: Symbol): Unit = pushToDownstream(element)
-    def newSubscriber() = newManualSubscriber(this)
     def assertShutDown(): Unit = shutDown shouldEqual true
   }
 }

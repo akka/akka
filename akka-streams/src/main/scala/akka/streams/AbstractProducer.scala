@@ -182,6 +182,7 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
           case head :: tail ⇒
             val newResult =
               if (buffer.count(head) == 0) {
+                head.deactivate()
                 Completed(head.subscriber)
                 result
               } else head :: result
@@ -218,8 +219,10 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
       buffer.onCursorRemoved(subscription)
       subscription.deactivate()
       if (subscriptions.isEmpty) {
-        endOfStream = ShutDown
-        cancelUpstream()
+        if (endOfStream eq null) {
+          endOfStream = ShutDown
+          cancelUpstream()
+        }
         shutdown()
       } else requestFromUpstreamIfRequired() // we might have removed a "blocking" subscriber and can continue now
     } // else ignore, we need to be idempotent
