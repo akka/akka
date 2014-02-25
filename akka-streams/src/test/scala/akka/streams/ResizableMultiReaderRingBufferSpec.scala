@@ -8,34 +8,34 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with ShouldMatchers {
 
   "A ResizableMultiReaderRingBuffer" should {
 
-    "initially be empty (1)" in new Test(iSize = 2, mSize = 5, cursorCount = 1) {
+    "initially be empty (1)" in new Test(iSize = 2, mSize = 4, cursorCount = 1) {
       inspect shouldEqual "0 0 (size=0, writeIx=0, readIx=0, cursors=1)"
     }
 
-    "initially be empty (2)" in new Test(iSize = 5, mSize = 5, cursorCount = 3) {
-      inspect shouldEqual "0 0 0 0 0 (size=0, writeIx=0, readIx=0, cursors=3)"
+    "initially be empty (2)" in new Test(iSize = 4, mSize = 4, cursorCount = 3) {
+      inspect shouldEqual "0 0 0 0 (size=0, writeIx=0, readIx=0, cursors=3)"
     }
 
-    "fail reads if nothing can be read" in new Test(iSize = 5, mSize = 5, cursorCount = 3) {
+    "fail reads if nothing can be read" in new Test(iSize = 4, mSize = 4, cursorCount = 3) {
       write(1) shouldEqual true
       write(2) shouldEqual true
       write(3) shouldEqual true
-      inspect shouldEqual "1 2 3 0 0 (size=3, writeIx=3, readIx=0, cursors=3)"
+      inspect shouldEqual "1 2 3 0 (size=3, writeIx=3, readIx=0, cursors=3)"
       read(0) shouldEqual 1
       read(0) shouldEqual 2
       read(1) shouldEqual 1
-      inspect shouldEqual "1 2 3 0 0 (size=3, writeIx=3, readIx=0, cursors=3)"
+      inspect shouldEqual "1 2 3 0 (size=3, writeIx=3, readIx=0, cursors=3)"
       read(0) shouldEqual 3
       read(0) shouldEqual null
       read(1) shouldEqual 2
-      inspect shouldEqual "1 2 3 0 0 (size=3, writeIx=3, readIx=0, cursors=3)"
+      inspect shouldEqual "1 2 3 0 (size=3, writeIx=3, readIx=0, cursors=3)"
       read(2) shouldEqual 1
-      inspect shouldEqual "1 2 3 0 0 (size=2, writeIx=3, readIx=1, cursors=3)"
+      inspect shouldEqual "1 2 3 0 (size=2, writeIx=3, readIx=1, cursors=3)"
       read(1) shouldEqual 3
       read(1) shouldEqual null
       read(2) shouldEqual 2
       read(2) shouldEqual 3
-      inspect shouldEqual "1 2 3 0 0 (size=0, writeIx=3, readIx=3, cursors=3)"
+      inspect shouldEqual "1 2 3 0 (size=0, writeIx=3, readIx=3, cursors=3)"
     }
 
     "fail writes if there is no more space" in new Test(iSize = 4, mSize = 4, cursorCount = 2) {
@@ -78,7 +78,7 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with ShouldMatchers {
       inspect shouldEqual "9 6 7 8 (size=0, writeIx=5, readIx=5, cursors=2)"
     }
 
-    "automatically grow if possible" in new Test(iSize = 2, mSize = 5, cursorCount = 2) {
+    "automatically grow if possible" in new Test(iSize = 2, mSize = 8, cursorCount = 2) {
       write(1) shouldEqual true
       inspect shouldEqual "1 0 (size=1, writeIx=1, readIx=0, cursors=2)"
       write(2) shouldEqual true
@@ -97,7 +97,7 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with ShouldMatchers {
       write(6) shouldEqual true
       inspect shouldEqual "5 6 3 4 (size=4, writeIx=6, readIx=2, cursors=2)"
       write(7) shouldEqual true
-      inspect shouldEqual "3 4 5 6 7 (size=5, writeIx=5, readIx=0, cursors=2)"
+      inspect shouldEqual "3 4 5 6 7 0 0 0 (size=5, writeIx=5, readIx=0, cursors=2)"
       read(0) shouldEqual 4
       read(0) shouldEqual 5
       read(0) shouldEqual 6
@@ -109,14 +109,14 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with ShouldMatchers {
       read(1) shouldEqual 6
       read(1) shouldEqual 7
       read(1) shouldEqual null
-      inspect shouldEqual "3 4 5 6 7 (size=0, writeIx=5, readIx=5, cursors=2)"
+      inspect shouldEqual "3 4 5 6 7 0 0 0 (size=0, writeIx=5, readIx=5, cursors=2)"
     }
 
     "pass the stress test" in {
-      // create 100 buffers with an initialSize of 1 and a maxSize of 1 to 100,
-      // for each one attach 1 to 3 cursors and randomly try reading and writing to the buffer;
+      // create 100 buffers with an initialSize of 1 and a maxSize of 1 to 64,
+      // for each one attach 1 to 8 cursors and randomly try reading and writing to the buffer;
       // in total 200 elements need to be written to the buffer and read in the correct order by each cursor
-      val MAXSIZE_LIMIT = 100
+      val MAXSIZEBIT_LIMIT = 6 // 2 ^ (this number)
       val COUNTER_LIMIT = 200
       val LOG = false
       val sb = new java.lang.StringBuilder
@@ -146,17 +146,20 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with ShouldMatchers {
       }
 
       val random = new Random
-      for (maxSize ← 1 to MAXSIZE_LIMIT) {
+      for {
+        bit ← 1 to MAXSIZEBIT_LIMIT
+        n ← 1 to 2
+      } {
         var counter = 1
-        var activeCursors = List.tabulate(random.nextInt(3) + 1)(new StressTestCursor(_, maxSize))
-        var stillWriting = 1
-        val buf = new TestBuffer(1, maxSize, new Cursors { def cursors = activeCursors })
+        var activeCursors = List.tabulate(random.nextInt(8) + 1)(new StressTestCursor(_, 1 << bit))
+        var stillWriting = 2 // give writing a slight bias, so as to somewhat "stretch" the buffer
+        val buf = new TestBuffer(1, 1 << bit, new Cursors { def cursors = activeCursors })
         sb.setLength(0)
         while (activeCursors.nonEmpty) {
           log(s"Buf: ${buf.inspect}\n")
           val activeCursorCount = activeCursors.size
           val index = random.nextInt(activeCursorCount + stillWriting)
-          if (index == activeCursorCount) {
+          if (index >= activeCursorCount) {
             log(s"  Writing $counter: ")
             if (buf.write(counter)) {
               log("OK\n")
