@@ -50,7 +50,6 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
    * it will be propagated to user's receive.
    */
   protected def watchedActorTerminated(actor: ActorRef, existenceConfirmed: Boolean, addressTerminated: Boolean): Unit = {
-    if (childrenRefs.getByRef(actor).isDefined) handleChildTerminated(actor)
     if (watchingContains(actor)) {
       maintainAddressTerminatedSubscription(actor) {
         watching = removeFromSet(actor, watching)
@@ -60,6 +59,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
         terminatedQueued += actor
       }
     }
+    if (childrenRefs.getByRef(actor).isDefined) handleChildTerminated(actor)
   }
 
   // TODO this should be removed and be replaced with `watching.contains(subject)`
@@ -74,12 +74,13 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
     if (subject.path.uid != ActorCell.undefinedUid) (set - subject) - new UndefinedUidActorRef(subject)
     else set filterNot (_.path == subject.path)
 
-  protected def tellWatchersWeDied(actor: Actor): Unit =
+  protected def tellWatchersWeDied(): Unit =
     if (!watchedBy.isEmpty) {
       try {
+        // Don't need to send to parent parent since it receives a DWN by default
         def sendTerminated(ifLocal: Boolean)(watcher: ActorRef): Unit =
-          if (watcher.asInstanceOf[ActorRefScope].isLocal == ifLocal) watcher.asInstanceOf[InternalActorRef].sendSystemMessage(
-            DeathWatchNotification(self, existenceConfirmed = true, addressTerminated = false))
+          if (watcher.asInstanceOf[ActorRefScope].isLocal == ifLocal && watcher != parent)
+            watcher.asInstanceOf[InternalActorRef].sendSystemMessage(DeathWatchNotification(self, existenceConfirmed = true, addressTerminated = false))
 
         /*
          * It is important to notify the remote watchers first, otherwise RemoteDaemon might shut down, causing
