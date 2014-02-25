@@ -52,8 +52,12 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
   // if (part of) the requested elements are already available
   protected def requestFromUpstream(elements: Int): Unit
 
-  // called when that last subscription has been cancelled
-  protected def lastSubscriptionCancelled(): Unit
+  // called before `shutdown()` if the stream is *not* being regularly completed
+  // but shut-down due to the last subscriber having cancelled its subscription
+  protected def cancelUpstream(): Unit
+
+  // called when the Publisher/Processor is ready to be shut down.
+  protected def shutdown(): Unit
 
   def getPublisher: Publisher[T] = this
   def cursors = subscriptions
@@ -185,7 +189,7 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
           case _ ⇒ result
         }
       subscriptions = completeDoneSubscriptions(subscriptions)
-      if (subscriptions.isEmpty) lastSubscriptionCancelled()
+      if (subscriptions.isEmpty) shutdown()
     } // else ignore, we need to be idempotent
   }
 
@@ -213,8 +217,11 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
       subscriptions = removeFrom(subscriptions)
       buffer.onCursorRemoved(subscription)
       subscription.deactivate()
-      if (subscriptions.isEmpty) lastSubscriptionCancelled()
-      else requestFromUpstreamIfRequired() // we might have removed a "blocking" subscriber and can continue now
+      if (subscriptions.isEmpty) {
+        endOfStream = ShutDown
+        cancelUpstream()
+        shutdown()
+      } else requestFromUpstreamIfRequired() // we might have removed a "blocking" subscriber and can continue now
     } // else ignore, we need to be idempotent
   }
 
@@ -251,4 +258,5 @@ object AbstractProducer {
   private case class ErrorCompleted(cause: Throwable) extends EndOfStream {
     def apply[T](subscriber: Subscriber[T]): Unit = subscriber.onError(cause)
   }
+  private val ShutDown = new ErrorCompleted(new IllegalStateException("Cannot subscribe to shut-down Publisher"))
 }

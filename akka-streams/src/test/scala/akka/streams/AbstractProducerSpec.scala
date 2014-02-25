@@ -57,15 +57,17 @@ class AbstractProducerSpec extends WordSpec with ShouldMatchers with TestEnviron
 
   class Test(iSize: Int, mSize: Int) extends AbstractStrictProducer[Symbol](iSize, mSize) {
     private val requests = new Receptacle[Int]()
-    @volatile private var lastCancelled = false
+    @volatile private var shutDown = false
     protected def requestFromUpstream(elements: Int): Unit = requests.add(elements)
-    protected def lastSubscriptionCancelled(): Unit = lastCancelled = true
+    protected def shutdown(): Unit = shutDown = true
+    protected def cancelUpstream(): Unit = ()
+
     def nextRequestMore(timeoutMillis: Int = 100): Int =
       requests.next(timeoutMillis, "Did not receive expected `requestMore` call")
     def expectNoRequestMore(timeoutMillis: Int = 100): Unit =
       requests.expectNone(timeoutMillis, "Received an unexpected `requestMore" + _ + "` call")
     def sendNext(element: Symbol): Unit = pushToDownstream(element)
     def newSubscriber() = newManualSubscriber(this)
-    def assertLastCancelled(): Unit = lastCancelled shouldEqual true
+    def assertShutDown(): Unit = shutDown shouldEqual true
   }
 }
