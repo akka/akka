@@ -76,6 +76,7 @@ A Subscriber
   must call Subscription::cancel during shutdown if it still has an active Subscription
   must not call Subscription::requestMore on a cancelled Subscription
   must not call Subscription::cancel on a cancelled Subscription
+  must ensure that all calls on a Subscription happen from the same thread or provide for respective external synchronization
   must be prepared to receive one or more `onNext` events after having called Subscription::cancel [7]
   must be prepared to receive an `onComplete` event with or without a preceding Subscription::requestMore call
   must be prepared to receive an `onError` event with or without a preceding Subscription::requestMore call
@@ -84,7 +85,8 @@ A Subscriber
 A Processor
   must obey all Publisher rules on its producing side
   must obey all Subscriber rules on its consuming side
-  must cancel its upstream Subscription if its last downstream Subscription has been cancelled
+  must cancel its upstream Subscription and shut itself down if its last downstream Subscription has been cancelled
+  must reject new Subscriptions with a `java.lang.IllegalStateException` once it has shut down
   must immediately pass on `onError` events received from its upstream to its downstream [8]
   must be prepared to receive incoming elements from its upstream even after its last downstream Subscription has been cancelled
   must be prepared to receive incoming elements from its upstream even if a downstream subscriber has not requested anything yet
