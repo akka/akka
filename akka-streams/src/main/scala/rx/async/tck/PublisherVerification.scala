@@ -88,6 +88,32 @@ abstract class PublisherVerification[T] extends TestEnvironment {
     }
 
   // Publisher::subscribe(Subscriber)
+  //   when Publisher is in `shut-down` state
+  //     must not call `onSubscribe` on the given Subscriber
+  //     must trigger a call to `onError` with a `java.lang.IllegalStateException` on the given Subscriber
+  // Subscription::cancel
+  //   when Subscription is not cancelled
+  //     the Publisher must shut itself down if the given Subscription is the last downstream Subscription
+  @Test
+  def publisherSubscribeWhenInShutDownStateMustTriggerOnErrorAndNotOnSubscribe(): Unit =
+    activePublisherTest(3) { pub ⇒
+      val sub = newManualSubscriber(pub)
+      sub.cancel()
+
+      val latch = new Latch()
+      pub.subscribe {
+        new TestSubscriber[T] {
+          override def onError(cause: Throwable): Unit = {
+            latch.assertOpen(s"shut-down-state Publisher $pub called `onError` twice on new Subscriber")
+            latch.close()
+          }
+        }
+      }
+      latch.expectClose(timeoutMillis = 100, s"shut-down-state Publisher $pub did not call `onError` on new Subscriber")
+      Thread.sleep(100) // wait for the Publisher to potentially call 'onSubscribe' or `onNext` which would trigger an async error
+    }
+
+  // Publisher::subscribe(Subscriber)
   //   when Publisher is neither in `completed` nor `error` state
   //     must trigger a call to `onSubscribe` on the given Subscriber if the Subscription is to be accepted
   @Test
@@ -133,8 +159,7 @@ abstract class PublisherVerification[T] extends TestEnvironment {
   @Test
   def subscriptionRequestMoreWhenCancelledMustIgnoreTheCall(): Unit =
     activePublisherTest(elements = 1) { pub ⇒
-      val sub = new TestSubscriber[T] with SubscriptionSupport[T]
-      subscribe(pub, sub)
+      val sub = newManualSubscriber(pub)
       sub.subscription.value.cancel() // first time must succeed
       sub.subscription.value.cancel() // the second time must not throw
     }

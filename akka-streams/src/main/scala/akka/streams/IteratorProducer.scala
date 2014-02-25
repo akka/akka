@@ -13,7 +13,7 @@ import rx.async.spi.Subscriber
  * than merely retrieve an element in their `next()` method!
  */
 class IteratorProducer[T](iterator: Iterator[T], maxBufferSize: Int = 16)
-  extends AbstractProducer[T](initialBufferSize = 1, maxBufferSize = maxBufferSize) {
+  extends AbstractStrictProducer[T](initialBufferSize = 1, maxBufferSize = maxBufferSize) {
 
   if (!iterator.hasNext) completeDownstream()
 
@@ -25,7 +25,8 @@ class IteratorProducer[T](iterator: Iterator[T], maxBufferSize: Int = 16)
       } else completeDownstream()
     } else if (!iterator.hasNext) completeDownstream() // complete eagerly
 
-  protected def lastSubscriptionCancelled(): Unit = () // nothing to do
+  protected def shutdown(): Unit = ()
+  protected def cancelUpstream(): Unit = ()
 }
 
 /**
