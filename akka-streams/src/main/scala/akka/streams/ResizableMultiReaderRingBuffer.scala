@@ -9,24 +9,34 @@ import ResizableMultiReaderRingBuffer._
  * Contrary to many other ring buffer implementations this one does not automatically overwrite the oldest
  * elements, rather, if full, the buffer tries to grow and rejects further writes if max capacity is reached.
  */
-class ResizableMultiReaderRingBuffer[T](val initialSize: Int,
-                                        val maxSize: Int,
+class ResizableMultiReaderRingBuffer[T](initialSize: Int, // constructor param, not field
+                                        maxSize: Int, // constructor param, not field
                                         val cursors: Cursors) {
-  require(0 < maxSize && maxSize <= Int.MaxValue / 2, "maxSize must be > 0 and <= Int.MaxValue/2")
-  require(0 < initialSize && initialSize <= maxSize, "initialSize must be > 0 and <= maxSize")
+  require(Integer.lowestOneBit(maxSize) == maxSize && 0 < maxSize && maxSize <= Int.MaxValue / 2,
+    "maxSize must be a power of 2 that is > 0 and < Int.MaxValue/2")
+  require(Integer.lowestOneBit(initialSize) == initialSize && 0 < initialSize && initialSize <= maxSize,
+    "initialSize must be a power of 2 that is > 0 and <= maxSize")
 
+  private[this] val maxSizeBit = Integer.numberOfTrailingZeros(maxSize)
   private[this] var array = new Array[Any](initialSize)
 
   // Usual ring buffer implementations keep two pointers into the array which are wrapped around
   // (mod array.length) upon increase. However, there is an ambiguity when writeIx == readIx since this state
   // will be reached when the buffer is completely empty as well as when the buffer is completely full.
   // An easy fix is to add another field (like 'count') that serves as additional data point resolving the
-  // ambiguity. However, adding another (esp. volatile) field adds more overhead than required and is
-  // especially inconvenient when supporting multiple readers.
+  // ambiguity. However, adding another field adds more overhead than required and is especially inconvenient
+  // when supporting multiple readers.
   // Therefore the approach we take here does not add another field, rather we don't wrap around the pointers
   // at all but simply rebase them from time to time when we have to loop through the cursors anyway.
   private[this] var writeIx = 0
   private[this] var readIx = 0 // the "oldest" of all read cursor indices, i.e. the one that is most behind
+
+  // current array.length log2, we don't keep it as an extra field because `Integer.numberOfTrailingZeros`
+  // is a JVM intrinsic compiling down to a `BSF` instruction on x86, which is very fast on modern CPUs
+  private def lenBit: Int = Integer.numberOfTrailingZeros(array.length)
+
+  // bit mask for converting a cursor into an array index
+  private def mask: Int = Int.MaxValue >> (31 - lenBit)
 
   /**
    * The number of elements currently in the buffer.
@@ -41,16 +51,14 @@ class ResizableMultiReaderRingBuffer[T](val initialSize: Int,
   /**
    * The maximum number of elements the buffer can still take.
    */
-  def maxAvailable: Int = maxSize - size
+  def maxAvailable: Int = (1 << maxSizeBit) - size
 
   /**
    * Applies availability bounds to the given element number.
-   * Equal to `min(maxAvailable, max(immediatelyAvailable, elements))` but slightly more efficient.
+   * Equivalent to `min(maxAvailable, max(immediatelyAvailable, elements))`.
    */
-  def potentiallyAvailable(elements: Int): Int = {
-    val size = this.size
-    math.min(maxSize - size, math.max(array.length - size, elements))
-  }
+  def potentiallyAvailable(elements: Int): Int =
+    math.min(maxAvailable, math.max(immediatelyAvailable, elements))
 
   /**
    * Returns the number of elements that the buffer currently contains for the given cursor.
@@ -66,20 +74,18 @@ class ResizableMultiReaderRingBuffer[T](val initialSize: Int,
    * Tries to write the given value into the buffer thereby potentially growing the backing array.
    * Returns `true` if the write was successful and false if the buffer is full and cannot grow anymore.
    */
-  def write(value: T): Boolean = {
-    val len = array.length
-    if (writeIx - readIx < len) { // if we have space left we can simply write and be done
-      array(writeIx % len) = value
-      this.writeIx = writeIx + 1
+  def write(value: T): Boolean =
+    if (size < array.length) { // if we have space left we can simply write and be done
+      array(writeIx & mask) = value
+      writeIx = writeIx + 1
       true
-    } else if (len < maxSize) { // if we are full but can grow we do so
+    } else if (lenBit < maxSizeBit) { // if we are full but can grow we do so
       // the growing logic is quite simple: we assemble all current buffer entries in the new array
       // in their natural order (removing potential wrap around) and rebase all indices to zero
-      val newLen = math.min(len << 1, maxSize)
-      val newArray = new Array[Any](newLen)
-      val r = readIx % len
-      System.arraycopy(array, r, newArray, 0, len - r)
-      System.arraycopy(array, 0, newArray, len - r, r)
+      val r = readIx & mask
+      val newArray = new Array[Any](array.length << 1)
+      System.arraycopy(array, r, newArray, 0, array.length - r)
+      System.arraycopy(array, 0, newArray, array.length - r, r)
       @tailrec def rebaseCursors(remaining: List[Cursor]): Unit = remaining match {
         case head :: tail ⇒
           head.cursor -= readIx
@@ -87,14 +93,13 @@ class ResizableMultiReaderRingBuffer[T](val initialSize: Int,
         case _ ⇒ // done
       }
       rebaseCursors(cursors.cursors)
-      val w = writeIx - readIx
-      newArray(w % newLen) = value
       array = newArray
+      val w = size
+      array(w & mask) = value
       writeIx = w + 1
       readIx = 0
       true
     } else false
-  }
 
   /**
    * Tries to read from the buffer using the given Cursor.
@@ -105,9 +110,8 @@ class ResizableMultiReaderRingBuffer[T](val initialSize: Int,
     val c = cursor.cursor
     if (c < writeIx) {
       cursor.cursor += 1
-      if (c == readIx)
-        updateReadIxAndPotentiallyRebaseCursors()
-      array(c % array.length).asInstanceOf[T]
+      if (c == readIx) updateReadIxAndPotentiallyRebaseCursors()
+      array(c & mask).asInstanceOf[T]
     } else throw NothingToReadException
   }
 
@@ -134,15 +138,14 @@ class ResizableMultiReaderRingBuffer[T](val initialSize: Int,
           case _            ⇒ result
         }
       readIx = minCursor(cursors.cursors, writeIx)
+      // TODO: is not nulling-out the now unused buffer cells acceptable here?
     }
   }
 
   // from time to time we need to rebase all pointers and cursors so they don't overflow,
   // rebasing is performed when `readIx` is greater than this threshold which *must* be a multiple of array.length!
-  protected def rebaseThreshold: Int = {
-    val x = Int.MaxValue / 2
-    x - x % array.length // the largest safe threshold is the largest multiple of array.length that is < Int.MaxValue / 2
-  }
+  // default: the largest safe threshold which is the largest multiple of array.length that is < Int.MaxValue/2
+  protected def rebaseThreshold: Int = (Int.MaxValue / 2) & ~mask
 
   protected def underlyingArray: Array[Any] = array
 
