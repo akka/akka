@@ -7,8 +7,8 @@ import rx.async.tck.PublisherVerification
 class IteratorProducerTest extends PublisherVerification[Int] with TestNGSuiteLike {
 
   def createPublisher(elements: Int): Publisher[Int] = {
-    require(elements > 0)
-    Producer(Iterator from 1000 take elements).getPublisher
+    val iter = Iterator from 1000
+    Producer(if (elements > 0) iter take elements else iter).getPublisher
   }
 
   override def createCompletedStatePublisher(): Publisher[Int] =
