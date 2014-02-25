@@ -80,8 +80,6 @@ Subscriber::onComplete, Subscriber::onError(Throwable)
 A Subscriber
   must not accept an `onSubscribe` event if it already has an active Subscription [7]
   must call Subscription::cancel during shutdown if it still has an active Subscription
-  must not call Subscription::requestMore on a cancelled Subscription
-  must not call Subscription::cancel on a cancelled Subscription
   must ensure that all calls on a Subscription take place from the same thread or provide for respective external synchronization [8]
   must be prepared to receive one or more `onNext` events after having called Subscription::cancel [9]
   must be prepared to receive an `onComplete` event with or without a preceding Subscription::requestMore call
