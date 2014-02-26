@@ -7,6 +7,8 @@ import akka.testkit.duration2TestDuration
 import Operation._
 
 trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
+  object TestException extends RuntimeException
+
   "A processor built from an ImplementationFactory" - {
     "if uninitialized without publisher" - {
       "buffer upstream requests when subscriber requests elements" in {
@@ -29,8 +31,30 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
       "subscriber cancels subscription and resubscribes" in pending
     }
     "work uninitialized without subscriber" - {
-      "publisher completes" in pending
-      "publisher errs out" in pending
+      "upstream completes" in {
+        val processed = Identity[Int]().toProcessor()
+
+        val upstream = TestKit.producerProbe[Int]()
+        upstream.link(processed)
+        val upstreamSubscription = upstream.expectSubscription()
+        upstreamSubscription.sendComplete()
+
+        val downstream = TestKit.consumerProbe[Int]()
+        processed.link(downstream)
+        downstream.expectComplete()
+      }
+      "upstream errs out" in {
+        val processed = Identity[Int]().toProcessor()
+
+        val upstream = TestKit.producerProbe[Int]()
+        upstream.link(processed)
+        val upstreamSubscription = upstream.expectSubscription()
+        upstreamSubscription.sendError(TestException)
+
+        val downstream = TestKit.consumerProbe[Int]()
+        processed.link(downstream)
+        downstream.expectError(TestException)
+      }
     }
     "work initialized" - {
       "subscriber requests elements" in new InitializedChainSetup(Identity[String]()) {
@@ -237,7 +261,25 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         upstreamSubscription.expectRequestMore(1)
       }
       "children Producers must support multiple subscribers" in pending
-      "finish gracefully onComplete" in new InitializedChainSetupWithFanOutBuffer(Identity[Symbol](), 1) {
+    }
+    "work in special situations" - {
+      "single subscriber cancels subscription while receiving data" in new InitializedChainSetupWithFanOutBuffer(Identity[String](), 1) {
+        downstreamSubscription.requestMore(5)
+        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.sendNext("test")
+        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.sendNext("test2")
+        upstreamSubscription.expectRequestMore(1)
+        downstream.expectNext("test")
+        downstream.expectNext("test2")
+        downstreamSubscription.cancel()
+
+        // because of the "must cancel its upstream Subscription if its last downstream Subscription has been cancelled" rule
+        upstreamSubscription.expectCancellation()
+      }
+    }
+    "after initial upstream was completed" - {
+      "future subscribers' onComplete should be called instead of onSubscribed" in new InitializedChainSetupWithFanOutBuffer(Identity[Symbol](), 1) {
         val downstream2 = TestKit.consumerProbe[Symbol]()
         // don't link it just yet
 
@@ -268,32 +310,35 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         downstream2.expectComplete()
 
         upstream.expectNoMsg(100.millis.dilated)
-      }
-      "finish gracefully if last subscriber needing data cancels subscription" in pending
-      "finish gracefully onError" in pending
-      "allow new subscriptions after all subscribers have been cancelled" in pending
-    }
-    "work in special situations" - {
-      "single subscriber cancels subscription while receiving data" in new InitializedChainSetupWithFanOutBuffer(Identity[String](), 1) {
-        downstreamSubscription.requestMore(5)
-        upstreamSubscription.expectRequestMore(1)
-        upstreamSubscription.sendNext("test")
-        upstreamSubscription.expectRequestMore(1)
-        upstreamSubscription.sendNext("test2")
-        upstreamSubscription.expectRequestMore(1)
-        downstream.expectNext("test")
-        downstream.expectNext("test2")
-        downstreamSubscription.cancel()
 
-        // because of the "must cancel its upstream Subscription if its last downstream Subscription has been cancelled" rule
-        upstreamSubscription.expectCancellation()
+        val downstream3 = TestKit.consumerProbe[Symbol]()
+        processed.link(downstream3)
+        downstream3.expectComplete()
       }
-    }
-    "after initial upstream was completed" - {
-      "future subscribers' onComplete should be called instead of onSubscribed" in pending
     }
     "after initial upstream reported an error" - {
-      "future subscribers' onError should be called instead of onSubscribed" in pending
+      "future subscribers' onError should be called instead of onSubscribed" in new InitializedChainSetupWithFanOutBuffer(Map[Int, Int](_ ⇒ throw TestException), 1) {
+        downstreamSubscription.requestMore(1)
+        upstreamSubscription.expectRequestMore(1)
+
+        upstreamSubscription.sendNext(5)
+        upstreamSubscription.expectCancellation()
+        downstream.expectError(TestException)
+
+        val downstream2 = TestKit.consumerProbe[Int]()
+        processed.link(downstream2)
+        downstream2.expectError(TestException)
+      }
+    }
+    "when all subscriptions were cancelled" - {
+      "future subscribers' onError should be called" in new InitializedChainSetupWithFanOutBuffer(Identity[Symbol](), 1) {
+        downstreamSubscription.cancel()
+        upstreamSubscription.expectCancellation()
+
+        val downstream2 = TestKit.consumerProbe[Symbol]()
+        processed.link(downstream2)
+        downstream2.expectError()
+      }
     }
     "if an internal error occurs" - {
       "upstream should be cancelled" in pending

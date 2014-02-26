@@ -24,61 +24,25 @@ object Implementation {
 }
 
 private class SourceProducer[O](source: Source[O], val settings: ActorBasedImplementationSettings) extends ProducerImplementationBits[O] {
-  @volatile protected var finished = false
-  @volatile protected var errorCause: Throwable = null
-
   val actor = settings.refFactory.actorOf(Props(new ProducerProcessorActor))
-
-  object ProducerShutdown extends IllegalStateException("This producer was already cancelled")
 
   class ProducerProcessorActor extends ProducerActor {
     val sourceImpl = OperationImpl(DownstreamSideEffects, ActorContextEffects, source)
     Effect.run(sourceImpl.start())
 
-    case class RequestFromSourceImplementation(elements: Int) extends SingleStep {
-      def runOne(): Effect =
-        if (running) sourceImpl.handleRequestMore(elements)
-        else Continue
-    }
-    case object CancelSourceImplementation extends ExternalEffect {
-      def run(): Unit = stopWithError(ProducerShutdown)
-    }
-    case object ShutdownSourceImplementation extends ExternalEffect {
-      def run(): Unit = stopWithError(null)
-    }
-    case class ShutdownSourceImplementationWithError(cause: Throwable) extends ExternalEffect {
-      def run(): Unit = stopWithError(cause)
-    }
-    def stopWithError(cause: Throwable): Unit = {
-      context.become {
-        if (cause eq null) Completed
-        else Error(cause)
-      }
-      // the order is important here
-      errorCause = cause
-      finished = true
-      // we need PoisonPill because there may already be `Subscribe` messages lying in the mailbox
-      // before we switched running to false
-      self ! PoisonPill
-    }
-
-    protected lazy val requestFromUpstream = RequestFromSourceImplementation
-    protected lazy val cancelUpstream = Effect.step(sourceImpl.handleCancel(), "RunCancelHandler") ~ CancelSourceImplementation
-    protected lazy val shutdownComplete = ShutdownSourceImplementation
-    protected lazy val shutdownWithError = ShutdownSourceImplementationWithError
-
     def receive = Running
 
-    def Running: Receive = RunProducer.orElse {
+    def Running: Receive = RunProducer orElse {
       case RunEffects(e) ⇒ Effect.run(e)
     }
   }
 }
 
-private class OperationProcessor[I, O](val operation: Operation[I, O], val settings: ActorBasedImplementationSettings) extends Processor[I, O] with ProducerImplementationBits[O] {
-  @volatile protected var finished = false
-  protected def errorCause: Throwable = null
+private class OperationProcessor[I, O](val operation: Operation[I, O], val settings: ActorBasedImplementationSettings)
+  extends Processor[I, O]
+  with ProducerImplementationBits[O] {
 
+  // TODO: refactor into ConsumerImplementationBits to implement SinkConsumer
   val getSubscriber: Subscriber[I] =
     new Subscriber[I] {
       def onSubscribe(subscription: Subscription): Unit = if (running) actor ! OnSubscribed(subscription)
@@ -94,14 +58,16 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
   case object OnComplete
   case class OnError(cause: Throwable)
 
-  object ProcessorShutdown extends IllegalStateException("This processor was already shutdown")
-
   class OperationProcessorActor extends ProducerActor {
     val impl = OperationImpl(UpstreamSideEffects, DownstreamSideEffects, ActorContextEffects, operation)
     Effect.run(impl.start())
     var upstream: Subscription = _
     var needToRequest = 0
 
+    protected def sourceImpl: SyncSource = impl
+
+    // a special implementation that delays requesting from upstream until upstream
+    // has connected
     case class RequestMoreFromImplementation(elements: Int) extends SingleStep {
       def runOne(): Effect =
         if (upstream eq null) {
@@ -109,32 +75,14 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
           Continue
         } else impl.handleRequestMore(elements)
     }
-    case object CancelImplementation extends SingleStep {
-      def runOne(): Effect = {
-        context.become(Error(ProcessorShutdown))
-        impl.handleCancel()
-        // TODO: decommission
-      }
-    }
-    case object ShutdownCompleteImplementation extends SingleStep {
-      /* TODO:
-      if (upstream eq null) needToRequest += elements // TODO: instantly go into a cancelled mode
-      else decommission actor */
-      def runOne(): Effect = Continue
-    }
-    case class ShutdownImplementationWithError(cause: Throwable) extends SingleStep {
-      // TODO: see ShutdownCompleteImplementation
-      def runOne(): Effect = Continue
-    }
-    protected lazy val requestFromUpstream = RequestMoreFromImplementation
-    protected lazy val cancelUpstream = CancelImplementation
-    protected lazy val shutdownComplete = ShutdownCompleteImplementation
-    protected lazy val shutdownWithError = ShutdownImplementationWithError
+
+    protected override lazy val requestFromUpstream = RequestMoreFromImplementation
 
     def receive = WaitingForUpstream
 
     def WaitingForUpstream: Receive = {
       case OnSubscribed(subscription) ⇒
+        assert(subscription != null)
         upstream = subscription
         context.become(Running)
         if (needToRequest > 0) {
@@ -169,8 +117,8 @@ trait ProducerImplementationBits[O] extends Producer[O] with Publisher[O] { impl
   // if !finished: actor is still running and will be able to handle Subscribe messages
   // if finished && errorCause eq null: the producer completed normally, actor was stopped
   // if finished && errorCause ne null: the producer completed with an error, actor was stopped
-  protected def finished: Boolean
-  protected def errorCause: Throwable
+  @volatile protected var finished = false
+  @volatile protected var errorCause: Throwable = null
 
   protected def running: Boolean = !finished
 
@@ -188,19 +136,47 @@ trait ProducerImplementationBits[O] extends Producer[O] with Publisher[O] { impl
 
   case class Subscribe(subscriber: Subscriber[O])
 
+  object ProducerShutdown extends IllegalStateException("This producer was already cancelled")
+
   trait ProducerActor extends Actor with ProcessorActorImpl { outer ⇒
-    protected def requestFromUpstream: Int ⇒ Effect
-    /** Used from the fanOut if subscriptions have been cancelled before completion but not otherwise */
-    protected def cancelUpstream: Effect
-    /** Used from the fanOut when the actor can shutdown in the completed state. */
-    protected def shutdownComplete: Effect
-    /** Used from the fanOut when the actor should shutdown with an error state. */
-    protected def shutdownWithError: Throwable ⇒ Effect
+    protected def sourceImpl: SyncSource
 
     protected def settings: ActorBasedImplementationSettings = impl.settings
 
     val fanOut = ActorContextEffects.createFanOut[O](requestFromUpstream, cancelUpstream, shutdownComplete, shutdownWithError)
     def DownstreamSideEffects: Downstream[O] = fanOut.downstream
+
+    case class RequestFromSourceImplementation(elements: Int) extends SingleStep {
+      def runOne(): Effect =
+        if (running) sourceImpl.handleRequestMore(elements)
+        else Continue
+    }
+    case object CancelSourceImplementation extends ExternalEffect {
+      def run(): Unit = stopWithError(ProducerShutdown)
+    }
+    case object ShutdownSourceImplementation extends ExternalEffect {
+      def run(): Unit = stopWithError(null)
+    }
+    case class ShutdownSourceImplementationWithError(cause: Throwable) extends ExternalEffect {
+      def run(): Unit = stopWithError(cause)
+    }
+    def stopWithError(cause: Throwable): Unit = {
+      context.become {
+        if (cause eq null) Completed
+        else Error(cause)
+      }
+      // the order is important here
+      errorCause = cause
+      finished = true
+      // we need PoisonPill because there may already be `Subscribe` messages lying in the mailbox
+      // before we switched running to false
+      self ! PoisonPill
+    }
+
+    protected lazy val requestFromUpstream: Int ⇒ Effect = RequestFromSourceImplementation
+    protected lazy val cancelUpstream = Effect.step(sourceImpl.handleCancel(), "RunCancelHandler") ~ CancelSourceImplementation
+    protected lazy val shutdownComplete = ShutdownSourceImplementation
+    protected lazy val shutdownWithError = ShutdownSourceImplementationWithError
 
     def RunProducer: Receive = {
       case Subscribe(sub) ⇒ fanOut.subscribe(sub)
