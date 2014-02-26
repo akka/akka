@@ -5,6 +5,7 @@ import rx.async.spi.{ Publisher, Subscriber, Subscription }
 import rx.async.tck._
 import akka.actor.ActorSystem
 import scala.concurrent.duration.FiniteDuration
+import scala.annotation.tailrec
 
 object TestKit {
   def consumerProbe[I]()(implicit system: ActorSystem): AkkaConsumerProbe[I] =
@@ -14,6 +15,11 @@ object TestKit {
       def expectSubscription(): Subscription = probe.expectMsgType[OnSubscribe].subscription
       def expectEvent(event: ConsumerEvent): Unit = probe.expectMsg(event)
       def expectNext(element: I): Unit = probe.expectMsg(OnNext(element))
+      def expectNext(e1: I, e2: I, es: I*): Unit = {
+        val all = e1 +: e2 +: es
+        all.foreach(e ⇒ probe.expectMsg(OnNext(e)))
+      }
+
       def expectNext(): I = probe.expectMsgType[OnNext[I]].element
       def expectComplete(): Unit = probe.expectMsg(OnComplete)
       def expectError(cause: Throwable): Unit = probe.expectMsg(OnError(cause))
