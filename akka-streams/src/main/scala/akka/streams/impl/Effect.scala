@@ -28,7 +28,7 @@ sealed trait Effect {
     if (next == Continue) this
     else Effects(Vector(this, next))
 }
-object Continue extends Effect {
+case object Continue extends Effect {
   override def ~(next: Effect): Effect = next
 }
 case class Effects(effects: Vector[Effect]) extends Effect {
