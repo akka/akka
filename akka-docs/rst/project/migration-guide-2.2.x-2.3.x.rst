@@ -29,9 +29,6 @@ configured time of unreachability. This feature is disabled by default, as it al
 
 During the deprecation phase ``akka.cluster.auto-down=on`` is interpreted at as instant auto-down.
 
-
-
-=======
 Routers
 =======
 
