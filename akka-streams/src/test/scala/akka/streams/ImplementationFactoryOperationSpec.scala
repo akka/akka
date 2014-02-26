@@ -1,7 +1,7 @@
 package akka.streams
 
 import akka.streams.testkit.TestKit
-import rx.async.api.Producer
+import rx.async.api
 import scala.concurrent.duration._
 import akka.testkit.duration2TestDuration
 import Operation._
@@ -84,7 +84,7 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         upstreamSubscription.sendError(WeirdError)
         downstream.expectError(WeirdError)
       }
-      "operation publishes Producer" in new InitializedChainSetup[String, Producer[String]](Span[String](_ == "end").expose) {
+      "operation publishes Producer" in new InitializedChainSetup[String, api.Producer[String]](Span[String](_ == "end").expose) {
         downstreamSubscription.requestMore(5)
         upstream.expectRequestMore(upstreamSubscription, 1)
 
