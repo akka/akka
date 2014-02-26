@@ -70,7 +70,7 @@ private class SourceProducer[O](source: Source[O], val settings: ActorBasedImple
     def receive = Running
 
     def Running: Receive = RunProducer.orElse {
-      case RunEffects(e) ⇒ Effect.run(e())
+      case RunEffects(e) ⇒ Effect.run(e)
     }
   }
 }
@@ -143,13 +143,13 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
         }
       case Subscribe(sub) ⇒ fanOut.subscribe(sub)
 
-      case RunEffects(e)  ⇒ Effect.run(e())
+      case RunEffects(e)  ⇒ Effect.run(e)
     }
     def Running: Receive = RunProducer orElse {
       case OnNext(element) ⇒ Effect.run(impl.handleNext(element))
       case OnComplete      ⇒ Effect.run(impl.handleComplete())
       case OnError(cause)  ⇒ Effect.run(impl.handleError(cause))
-      case RunEffects(e)   ⇒ Effect.run(e())
+      case RunEffects(e)   ⇒ Effect.run(e)
     }
 
     lazy val UpstreamSideEffects = BasicEffects.forSubscription(upstream)
@@ -160,7 +160,7 @@ class PipelineActor(pipeline: Pipeline[_], val settings: ActorBasedImplementatio
   Effect.run(OperationImpl(ActorContextEffects, pipeline).start())
 
   def receive: Receive = {
-    case RunEffects(e) ⇒ Effect.run(e())
+    case RunEffects(e) ⇒ Effect.run(e)
   }
 }
 
@@ -258,12 +258,10 @@ trait ProcessorActorImpl { _: Actor ⇒
         }
       }
 
-    def runInContext(body: ⇒ Effect): Unit = runEffectInThisActor(body)
+    def runInContext(body: ⇒ Effect): Unit = runEffectInThisActor(Effect.step(body, s"deferred ${(body _).getClass.getSimpleName}"))
     override implicit def executionContext: ExecutionContext = context.dispatcher
   }
 
-  case class RunEffects(body: () ⇒ Effect) {
-    override def toString: String = s"RunEffects(${body.getClass.getSimpleName}})"
-  }
-  def runEffectInThisActor(body: ⇒ Effect): Unit = self ! RunEffects(body _)
+  case class RunEffects(body: Effect)
+  def runEffectInThisActor(body: Effect): Unit = self ! RunEffects(body)
 }
