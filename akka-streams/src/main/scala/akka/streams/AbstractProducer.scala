@@ -52,12 +52,15 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
   // if (part of) the requested elements are already available
   protected def requestFromUpstream(elements: Int): Unit
 
-  // called before `shutdown()` if the stream is *not* being regularly completed
-  // but shut-down due to the last subscriber having cancelled its subscription
-  protected def cancelUpstream(): Unit
+  // called if the stream is *not* being regularly completed but shut-down
+  // due to the last subscriber having cancelled its subscription
+  protected def shutdownCancelled(): Unit
 
-  // called when the Publisher/Processor is ready to be shut down.
-  protected def shutdown(): Unit
+  // called when the Publisher/Processor is ready to be shut down in Completed state.
+  protected def shutdownComplete(): Unit
+
+  // called when the Publisher/Processor is ready to be shut down in Error state.
+  protected def shutdownWithError(cause: Throwable): Unit
 
   def getPublisher: Publisher[T] = this
   def cursors = subscriptions
@@ -182,6 +185,7 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
           case head :: tail ⇒
             val newResult =
               if (buffer.count(head) == 0) {
+                head.deactivate()
                 Completed(head.subscriber)
                 result
               } else head :: result
@@ -189,7 +193,7 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
           case _ ⇒ result
         }
       subscriptions = completeDoneSubscriptions(subscriptions)
-      if (subscriptions.isEmpty) shutdown()
+      if (subscriptions.isEmpty) shutdownComplete()
     } // else ignore, we need to be idempotent
   }
 
@@ -198,6 +202,7 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
     endOfStream = ErrorCompleted(cause)
     subscriptions.foreach(s ⇒ endOfStream(s.subscriber))
     subscriptions = Nil
+    shutdownWithError(cause)
   }
 
   // called from `Subscription::cancel`, i.e. from another thread,
@@ -218,9 +223,14 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
       buffer.onCursorRemoved(subscription)
       subscription.deactivate()
       if (subscriptions.isEmpty) {
-        endOfStream = ShutDown
-        cancelUpstream()
-        shutdown()
+        endOfStream match {
+          case null ⇒
+            endOfStream = ShutDown
+            shutdownCancelled()
+
+          case Completed             ⇒ shutdownComplete()
+          case ErrorCompleted(cause) ⇒ throw new IllegalStateException("Cannot happen because abortDownstream should clear all subscriptions")
+        }
       } else requestFromUpstreamIfRequired() // we might have removed a "blocking" subscriber and can continue now
     } // else ignore, we need to be idempotent
   }

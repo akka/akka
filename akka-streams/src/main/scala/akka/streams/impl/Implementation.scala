@@ -143,7 +143,10 @@ trait ProcessorActorImpl { _: Actor ⇒
       new AbstractProducer[O](settings.initialFanOutBufferSize, settings.maxFanOutBufferSize) with FanOut[O] {
         protected def requestFromUpstream(elements: Int): Unit = requestMore(elements)
         protected def shutdown(): Unit = _lastSubscriptionCancelled()
-        protected def cancelUpstream(): Unit = ()
+        // FIXME: this is a broken implementation
+        protected def shutdownWithError(cause: Throwable): Unit = shutdown()
+        protected def shutdownComplete(): Unit = shutdown()
+        protected def shutdownCancelled(): Unit = shutdown()
 
         val innerSubscriber = new Subscriber[O] {
           def onSubscribe(subscription: spi.Subscription): Unit = ???
