@@ -12,8 +12,8 @@ abstract class PublisherVerification[T] extends TestEnvironment {
 
   /**
    * This is the main method you must implement in your test incarnation.
-   * It must produce a Publisher for a stream with exactly the given number of elements.
-   * Will always be called with `elements > 0`.
+   * It must create a Publisher for a stream with exactly the given number of elements.
+   * If `elements` is zero the produced stream must be infinite.
    */
   def createPublisher(elements: Int): Publisher[T]
 

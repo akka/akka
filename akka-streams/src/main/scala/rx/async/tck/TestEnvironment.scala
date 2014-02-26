@@ -116,6 +116,29 @@ object TestEnvironment {
       else fail(s"Subscriber::onError($cause) called before Subscriber::onSubscribe")
   }
 
+  class ManualPublisher[T] extends Publisher[T] {
+    val subscriber = new Promise[Subscriber[T]]
+    val requests = new Receptacle[Int]()
+    val cancelled = new Latch
+    def subscribe(s: Subscriber[T]): Unit =
+      if (!subscriber.isCompleted) {
+        subscriber.complete(s)
+        s.onSubscribe {
+          new Subscription {
+            def requestMore(elements: Int): Unit = requests.add(elements)
+            def cancel(): Unit = cancelled.close()
+          }
+        }
+      } else fail("TestPublisher doesn't support more than one Subscriber")
+    def sendNext(element: T): Unit =
+      if (subscriber.isCompleted) subscriber.value.onNext(element)
+      else fail(s"Cannot sendNext before subscriber subscription")
+    def nextRequestMore(timeoutMillis: Int = 100): Int =
+      requests.next(timeoutMillis, "Did not receive expected `requestMore` call")
+    def expectNoRequestMore(timeoutMillis: Int = 100): Unit =
+      requests.expectNone(timeoutMillis, "Received an unexpected `requestMore" + _ + "` call")
+  }
+
   // like a CountDownLatch, but resettable and with some convenience methods
   class Latch() {
     @volatile private var countDownLatch = new CountDownLatch(1)
