@@ -88,7 +88,7 @@ trait ImplementationFactoryProducerSpec extends ImplementationFactorySpec {
       }
     }
     "support multiple subscribers" - {
-      "properly serve multiple subscribers to completion" taggedAs (Only) in new InitializedChainSetup(FromIterableSource(Seq(1, 2, 3)).map(_ + 1)) {
+      "properly serve multiple subscribers to completion" in new InitializedChainSetup(FromIterableSource(Seq(1, 2, 3)).map(_ + 1)) {
         downstreamSubscription.requestMore(1)
         downstream.expectNext(2)
         downstream.expectNoMsg(100.millis.dilated)
