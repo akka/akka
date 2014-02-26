@@ -7,8 +7,8 @@ import rx.async.api.Producer
 
 class FromProducerSourceImpl[O](downstream: Downstream[O], ctx: ContextEffects, producer: Producer[O]) extends DynamicSyncSource {
   def initial = new State {
-    override def handleRequestMore(n: Int): Effect = ???
-    override def handleCancel(): Effect = ???
+    def handleRequestMore(n: Int): Effect = ???
+    def handleCancel(): Effect = ???
   }
 
   override def start(): Effect = startSubscribing(0)
@@ -20,11 +20,14 @@ class FromProducerSourceImpl[O](downstream: Downstream[O], ctx: ContextEffects, 
   }
 
   class WaitingForSubscription(var originallyRequested: Int) extends State with Subscriber[O] {
+    var cancelled = false
     def onSubscribe(subscription: Subscription): Unit = ctx.runInContext {
       val upstream = BasicEffects.forSubscription(subscription)
-      become(Subscribed(upstream))
-      if (originallyRequested > 0) subscription.requestMore(originallyRequested)
-      Continue
+      if (!cancelled) {
+        become(Subscribed(upstream))
+        if (originallyRequested > 0) subscription.requestMore(originallyRequested)
+        Continue
+      } else upstream.cancel
     }
     def onNext(element: O): Unit = ctx.runInContext(downstream.next(element))
     def onComplete(): Unit = ctx.runInContext(downstream.complete)
@@ -34,10 +37,16 @@ class FromProducerSourceImpl[O](downstream: Downstream[O], ctx: ContextEffects, 
       originallyRequested += n
       Continue
     }
-    def handleCancel(): Effect = ???
+    def handleCancel(): Effect = {
+      cancelled = true
+      // TODO: test
+      Continue
+    }
   }
   def Subscribed(upstream: Upstream) = new State {
     def handleRequestMore(n: Int): Effect = upstream.requestMore(n)
-    def handleCancel(): Effect = upstream.cancel
+    def handleCancel(): Effect = {
+      upstream.cancel
+    }
   }
 }

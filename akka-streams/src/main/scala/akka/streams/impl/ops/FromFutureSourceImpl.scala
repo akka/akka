@@ -10,6 +10,8 @@ import scala.util.Success
 class FromFutureSourceImpl[O](downstream: Downstream[O], ctx: ContextEffects, future: Future[O]) extends DynamicSyncSource {
   import ctx.executionContext
 
+  var cancelled = false
+
   override def start(): Effect =
     future.value match {
       case Some(Success(result)) ⇒ Continue // still need to wait for request
@@ -31,27 +33,33 @@ class FromFutureSourceImpl[O](downstream: Downstream[O], ctx: ContextEffects, fu
           }
           Continue
       }
-
-    def handleCancel(): Effect = ???
+    def handleCancel(): Effect = handleCancelled()
   }
   // invariants:
   //  - at least one element has been requested
   //  - future.onComplete has been called and we are waiting for the result
   def WaitingForResult = new State {
     def handleRequestMore(n: Int): Effect = Continue
-    def handleCancel(): Effect = ???
+    override def handleCancel(): Effect = handleCancelled()
   }
   def Completed = new State {
     def handleRequestMore(n: Int): Effect = ???
     def handleCancel(): Effect = ???
   }
 
+  def handleCancelled(): Effect = {
+    cancelled = true
+    become(Completed)
+    Continue
+  }
   def handleSuccessfulResult(result: O): Effect = {
     become(Completed)
-    downstream.next(result) ~ downstream.complete
+    if (!cancelled) downstream.next(result) ~ downstream.complete
+    else Continue
   }
   def handleError(cause: Throwable): Effect = {
     become(Completed)
-    downstream.error(cause)
+    if (!cancelled) downstream.error(cause)
+    else Continue
   }
 }

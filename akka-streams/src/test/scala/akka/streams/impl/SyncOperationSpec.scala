@@ -97,7 +97,7 @@ trait SyncOperationSpec extends WithActorSystem {
         override def createSource(downstream: Downstream[O]): SyncSource = constructor(downstream)
         override def getPublisher: Publisher[O] = ???
       }
-    def createFanOut[O](requestMore: (Int) ⇒ Unit, lastSubscriptionCancelled: () ⇒ Unit): FanOut[O] = ???
+    def createFanOut[O](requestMore: (Int) ⇒ Effect, cancelUpstream: Effect, shutdownComplete: Effect, shutdownWithError: (Throwable) ⇒ Effect): FanOut[O] = ???
 
     implicit def executionContext: ExecutionContext = system.dispatcher
     def runInContext(body: ⇒ Effect): Unit = runInContextProbe.ref ! Thunk(body _)
@@ -130,9 +130,4 @@ trait SyncOperationSpec extends WithActorSystem {
     }
 
   case object TestException extends RuntimeException("This is a test exception")
-
-  def expectIllegalState[T](impl: SyncOperation[T], value: T): Unit = {
-    intercept[IllegalStateException](impl.handleRequestMore(12))
-    intercept[IllegalStateException](impl.handleNext(value))
-  }
 }

@@ -96,15 +96,12 @@ abstract class DynamicSyncOperation[I] extends SyncOperation[I] { outer ⇒
   }
 
   def Stopped(reason: String) = new State {
-    def handleRequestMore(n: Int): Effect = errOut("requestMore")
-    def handleCancel(): Effect = errOut("cancel")
+    // ignore any further events that may have been lying in the effects queue
+    def handleRequestMore(n: Int): Effect = Continue
+    def handleCancel(): Effect = Continue
 
-    def handleNext(element: I): Effect = errOut("next")
-    def handleComplete(): Effect = errOut("complete")
-    def handleError(cause: Throwable): Effect = errOut("error")
-
-    def errOut(which: String): Nothing =
-      throw new IllegalStateException(
-        s"No events expected after $reason in ${outer.getClass.getSimpleName} but got '$which'")
+    def handleNext(element: I): Effect = Continue
+    def handleComplete(): Effect = Continue
+    def handleError(cause: Throwable): Effect = Continue
   }
 }

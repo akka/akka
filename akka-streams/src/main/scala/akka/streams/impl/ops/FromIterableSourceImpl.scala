@@ -7,7 +7,10 @@ class FromIterableSourceImpl[O](downstream: Downstream[O], ctx: ContextEffects, 
   val it = iterable.iterator
   var alreadyCompleted = false
 
+  override def start(): Effect = maybeCompleted()
+
   def handleRequestMore(n: Int): Effect = requestMore(n)
+  def handleCancel(): Effect = Continue
 
   def requestMore(n: Int): Effect = {
     @tailrec def rec(remaining: Int, result: Effect = Continue): Effect =
@@ -26,6 +29,4 @@ class FromIterableSourceImpl[O](downstream: Downstream[O], ctx: ContextEffects, 
     alreadyCompleted = true
     downstream.complete
   }
-
-  def handleCancel(): Effect = ???
 }

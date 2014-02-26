@@ -10,10 +10,13 @@ class SingletonSourceImpl[O](downstream: Downstream[O], element: O) extends Dyna
       become(Completed)
       downstream.next(element) ~ downstream.complete
     }
-    def handleCancel(): Effect = Continue // nothing to do here
+    def handleCancel(): Effect = {
+      become(Completed)
+      Continue
+    }
   }
   def Completed = new State {
-    def handleRequestMore(n: Int): Effect = Continue // ignore
-    def handleCancel(): Effect = Continue // nothing to do here
+    def handleRequestMore(n: Int): Effect = Continue
+    def handleCancel(): Effect = Continue
   }
 }
