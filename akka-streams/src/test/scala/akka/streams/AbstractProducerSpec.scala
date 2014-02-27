@@ -1,11 +1,15 @@
 package akka.streams
 
-import org.scalatest.{ ShouldMatchers, WordSpec }
+import org.scalatest.{ BeforeAndAfterAll, ShouldMatchers, WordSpec }
+import akka.actor.ActorSystem
 import rx.async.tck.TestEnvironment
-import TestEnvironment._
 
 // same as some of the IdentityProcessorTest cases but directly on the fanout logic level
-class AbstractProducerSpec extends WordSpec with ShouldMatchers with TestEnvironment {
+class AbstractProducerSpec extends WordSpec with ShouldMatchers with BeforeAndAfterAll {
+  import TestEnvironment._
+
+  val system = ActorSystem()
+  import system.dispatcher
 
   "An AbstractProducer" should {
 
@@ -35,8 +39,6 @@ class AbstractProducerSpec extends WordSpec with ShouldMatchers with TestEnviron
       sub2.nextElement() shouldEqual 'c
 
       nextRequestMore() shouldEqual 1 // because sub1 still has 2 pending
-
-      verifyNoAsyncErrors()
     }
 
     "unblock the stream if a 'blocking' subscription has been cancelled" in new Test(iSize = 1, mSize = 1) {
@@ -50,17 +52,19 @@ class AbstractProducerSpec extends WordSpec with ShouldMatchers with TestEnviron
       expectNoRequestMore() // because we only have buffer size 1 and sub2 hasn't seen 'a yet
       sub2.cancel() // must "unblock"
       nextRequestMore() shouldEqual 1
-
-      verifyNoAsyncErrors()
     }
   }
+
+  override protected def afterAll(): Unit = system.shutdown()
 
   class Test(iSize: Int, mSize: Int) extends AbstractStrictProducer[Symbol](iSize, mSize) {
     private val requests = new Receptacle[Int]()
     @volatile private var shutDown = false
-    protected def requestFromUpstream(elements: Int): Unit = requests.add(elements)
-    protected def shutdown(): Unit = shutDown = true
-    protected def cancelUpstream(): Unit = ()
+    protected def pushNext(count: Int): Unit = requests.add(count)
+    override protected def shutdown(): Unit = {
+      shutDown = true
+      super.shutdown()
+    }
 
     def newSubscriber() = newManualSubscriber(this)
     def nextRequestMore(timeoutMillis: Int = 100): Int =

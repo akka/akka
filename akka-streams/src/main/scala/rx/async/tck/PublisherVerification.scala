@@ -5,7 +5,7 @@ import org.testng.annotations.Test
 import org.testng.Assert._
 import rx.async.spi.{ Subscription, Publisher }
 
-trait PublisherVerification[T] extends TestEnvironment {
+trait PublisherVerification[T] {
   import TestEnvironment._
 
   // TODO: make the timeouts be dilate-able so that one can tune the suite for the machine it runs on
@@ -18,7 +18,7 @@ trait PublisherVerification[T] extends TestEnvironment {
   def createPublisher(elements: Int): Publisher[T]
 
   /**
-   * Override in your test if you want to enable error-state verification.
+   * Override in your test if you want to enable completed-state verification.
    * If you don't override the respective tests will be ignored.
    */
   def createCompletedStatePublisher(): Publisher[T] = null
@@ -40,7 +40,7 @@ trait PublisherVerification[T] extends TestEnvironment {
       assertTrue(requestNextElementOrEndOfStream().isDefined, s"Publisher $pub produced no elements")
       assertTrue(requestNextElementOrEndOfStream().isDefined, s"Publisher $pub produced only 1 element")
       assertTrue(requestNextElementOrEndOfStream().isDefined, s"Publisher $pub produced only 2 elements")
-      sub.expectNone(errorMsg = x ⇒ s"`createPublisher(3)` created stream of more than 3 elements (4th element was $x)")
+      sub.expectCompletion()
     }
 
   ////////////////////// SPEC RULE VERIFICATION ///////////////////////////
@@ -100,6 +100,8 @@ trait PublisherVerification[T] extends TestEnvironment {
       val sub = newManualSubscriber(pub)
       sub.cancel()
 
+      // we cannot meaningfully test whether the publisher has really shut down
+      // however, we can tests whether it reacts to new subscription requests with `onError`
       val latch = new Latch()
       pub.subscribe {
         new TestSubscriber[T] {
@@ -160,8 +162,8 @@ trait PublisherVerification[T] extends TestEnvironment {
   def subscriptionRequestMoreWhenCancelledMustIgnoreTheCall(): Unit =
     activePublisherTest(elements = 1) { pub ⇒
       val sub = newManualSubscriber(pub)
-      sub.subscription.value.cancel() // first time must succeed
-      sub.subscription.value.cancel() // the second time must not throw
+      sub.subscription.value.cancel()
+      sub.subscription.value.requestMore(1) // must not throw
     }
 
   // Subscription::requestMore(Int)
@@ -178,6 +180,7 @@ trait PublisherVerification[T] extends TestEnvironment {
       sub.expectNone(errorMsg = x ⇒ s"Publisher $pub produced $x before the first `requestMore`")
       sub.requestMore(1)
       sub.nextElement(errorMsg = s"Publisher $pub produced no element after first `requestMore`")
+      sub.expectNone(errorMsg = x ⇒ s"Publisher $pub produced unrequested $x")
 
       sub.requestMore(1)
       sub.requestMore(2)
@@ -208,17 +211,28 @@ trait PublisherVerification[T] extends TestEnvironment {
   def subscriptionCancelWhenCancelledMustIgnoreCall(): Unit =
     activePublisherTest(elements = 1) { pub ⇒
       val sub = newManualSubscriber(pub)
-      sub.subscription.value.cancel()
-      sub.subscription.value.requestMore(1) // must not throw
+      sub.subscription.value.cancel() // first time must succeed
+      sub.subscription.value.cancel() // the second time must not throw
     }
 
   // Subscription::cancel
   //   when Subscription is not cancelled
   //     the Publisher must eventually cease to call any methods on the corresponding subscriber
   @Test
-  def onSubscriptionCancelThePublisherMustEventuallyCeaseToCallAnyMethodsOnTheSubscriber(): Unit = {
-    // cannot be meaningfully tested, or can it?
-  }
+  def onSubscriptionCancelThePublisherMustEventuallyCeaseToCallAnyMethodsOnTheSubscriber(): Unit =
+    activePublisherTest(elements = 0) { pub ⇒ // infinite stream
+      var drop = true
+      val sub = new ManualSubscriber[T] with SubscriptionSupport[T] {
+        override def onNext(element: T): Unit = if (!drop) super.onNext(element)
+      }
+      subscribe(pub, sub)
+      sub.requestMore(Int.MaxValue)
+      sub.cancel()
+      Thread.sleep(100)
+
+      drop = false // "switch on" element collection
+      sub.expectNone(withinMillis = 100)
+    }
 
   // Subscription::cancel
   //   when Subscription is not cancelled
@@ -240,7 +254,7 @@ trait PublisherVerification[T] extends TestEnvironment {
       Thread.sleep(200)
       System.gc()
 
-      if (!ref.isEnqueued)
+      if (!ref.isEnqueued) // consider switching to remove(timeout) on the queue if required
         fail(s"Publisher $pub did not drop reference to test subscriber after subscription cancellation")
     }
   }
@@ -308,7 +322,7 @@ trait PublisherVerification[T] extends TestEnvironment {
   // A Publisher
   //   must support a pending element count up to 2^63-1 (Long.MAX_VALUE) and provide for overflow protection
   @Test
-  def mustSupportAPendingElementCountUpToLongMaxValueAndProviderForOverflowProtection(): Unit = {
+  def mustSupportAPendingElementCountUpToLongMaxValue(): Unit = {
     // not really testable without more control over the Publisher,
     // we verify this part of the fanout logic with the IdentityProcessorVerification
   }
@@ -351,13 +365,6 @@ trait PublisherVerification[T] extends TestEnvironment {
     // this is implicitly verified by the test infrastructure
   }
 
-  // A Publisher
-  //   must shut itself down if its last downstream Subscription has been cancelled
-  @Test
-  def mustShutItselfDownIfItsLastDownstreamSubscriptionHasBeenCancelled(): Unit = {
-    // cannot be meaningfully tested, or can it?
-  }
-
   /////////////////////// ADDITIONAL "COROLLARY" TESTS //////////////////////
 
   /////////////////////// TEST INFRASTRUCTURE //////////////////////
@@ -365,7 +372,6 @@ trait PublisherVerification[T] extends TestEnvironment {
   def activePublisherTest[U](elements: Int)(body: Publisher[T] ⇒ U): Unit = {
     val pub = createPublisher(elements)
     body(pub)
-    verifyNoAsyncErrors()
   }
 
   def completedPublisherTest[U](body: Publisher[T] ⇒ U): Unit =
@@ -377,7 +383,6 @@ trait PublisherVerification[T] extends TestEnvironment {
   def potentiallyPendingTest[U](pub: Publisher[T], body: Publisher[T] ⇒ U): Unit =
     if (pub ne null) {
       body(pub)
-      verifyNoAsyncErrors()
     } // else test is pending/ignored, which our great Java test frameworks have no (non-static) concept for
 
 }

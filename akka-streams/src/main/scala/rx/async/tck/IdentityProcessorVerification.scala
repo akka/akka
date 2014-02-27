@@ -5,7 +5,7 @@ import rx.async.spi.{ Subscription, Subscriber, Publisher }
 import org.testng.annotations.Test
 import rx.async.tck.SubscriberVerification.SubscriberProbe
 
-abstract class IdentityProcessorVerification[T] extends PublisherVerification[T] with SubscriberVerification[T] { verification ⇒
+abstract class IdentityProcessorVerification[T] extends PublisherVerification[T] with SubscriberVerification[T] {
   import TestEnvironment._
 
   // TODO: make the timeouts be dilate-able so that one can tune the suite for the machine it runs on
@@ -13,9 +13,9 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
   /**
    * This is the main method you must implement in your test incarnation.
    * It must create a Processor, which simply forwards all stream elements from its upstream
-   * to its downstream. It is not allowed to internally buffer more than the given number of elements.
+   * to its downstream. It must be able to internally buffer the given number of elements.
    */
-  def createIdentityProcessor(maxBufferSize: Int): Processor[T, T]
+  def createIdentityProcessor(bufferSize: Int): Processor[T, T]
 
   /**
    * Helper method required for running the Publisher rules against a Processor.
@@ -29,7 +29,7 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
   // A Processor
   //   must obey all Publisher rules on its producing side
   def createPublisher(elements: Int): Publisher[T] = {
-    val processor = createIdentityProcessor(maxBufferSize = 16)
+    val processor = createIdentityProcessor(bufferSize = 16)
     val pub = createHelperPublisher(elements)
     pub.subscribe(processor.getSubscriber)
     processor.getPublisher // we run the PublisherVerification against this
@@ -38,36 +38,37 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
   // A Publisher
   //   must support a pending element count up to 2^63-1 (Long.MAX_VALUE) and provide for overflow protection
   @Test
-  override def mustSupportAPendingElementCountUpToLongMaxValueAndProviderForOverflowProtection(): Unit =
-    new TestSetup(maxBufferSize = 1) {
+  override def mustSupportAPendingElementCountUpToLongMaxValue(): Unit =
+    new TestSetup(bufferSize = 1) {
       val sub = newSubscriber()
       sub.requestMore(Int.MaxValue)
       sub.requestMore(Int.MaxValue)
       sub.requestMore(2) // if the Subscription only keeps an Int counter without overflow protection it will now be at zero
 
-      sendNextTFromUpstream()
-      expectNextElement(sub, lastT)
+      val x = nextT()
+      sendNext(x)
+      expectNextElement(sub, x)
 
-      sendNextTFromUpstream()
-      expectNextElement(sub, lastT)
-
-      verifyNoAsyncErrors()
+      val y = nextT()
+      sendNext(y)
+      expectNextElement(sub, y)
     }
 
   // A Publisher
   //   must call `onError` on all its subscribers if it encounters a non-recoverable error
   @Test
   override def mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError(): Unit =
-    new TestSetup(maxBufferSize = 1) {
+    new TestSetup(bufferSize = 1) {
       val sub1 = new ManualSubscriber[T] with SubscriptionSupport[T] with ErrorCollection[T]
-      verification.subscribe(processor.getPublisher, sub1)
+      TestEnvironment.subscribe(processor.getPublisher, sub1)
       val sub2 = new ManualSubscriber[T] with SubscriptionSupport[T] with ErrorCollection[T]
-      verification.subscribe(processor.getPublisher, sub2)
+      TestEnvironment.subscribe(processor.getPublisher, sub2)
 
       sub1.requestMore(1)
       expectRequestMore(1)
-      sendNextTFromUpstream()
-      expectNextElement(sub1, lastT)
+      val x = nextT()
+      sendNext(x)
+      expectNextElement(sub1, x)
       sub1.requestMore(1)
 
       // sub1 now has received and element and has 1 pending
@@ -77,8 +78,6 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
       sendError(ex)
       sub1.expectError(ex)
       sub2.expectError(ex)
-
-      verifyNoAsyncErrors()
     }
 
   ////////////////////// SUBSCRIBER RULES VERIFICATION ///////////////////////////
@@ -86,7 +85,7 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
   // A Processor
   //   must obey all Subscriber rules on its consuming side
   def createSubscriber(probe: SubscriberProbe[T]): Subscriber[T] = {
-    val processor = createIdentityProcessor(maxBufferSize = 2)
+    val processor = createIdentityProcessor(bufferSize = 2)
     processor.getPublisher.subscribe {
       new Subscriber[T] {
         def onSubscribe(subscription: Subscription): Unit =
@@ -111,58 +110,60 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
   //   must cancel its upstream Subscription if its last downstream Subscription has been cancelled
   @Test
   def mustCancelItsUpstreamSubscriptionIfItsLastDownstreamSubscriptionHasBeenCancelled(): Unit =
-    new TestSetup(maxBufferSize = 1) {
+    new TestSetup(bufferSize = 1) {
       val sub = newSubscriber()
       sub.cancel()
       expectCancelling()
-
-      verifyNoAsyncErrors()
     }
 
   // A Processor
   //   must immediately pass on `onError` events received from its upstream to its downstream
   @Test
   def mustImmediatelyPassOnOnErrorEventsReceivedFromItsUpstreamToItsDownstream(): Unit =
-    new TestSetup(maxBufferSize = 1) {
+    new TestSetup(bufferSize = 1) {
       val sub = new ManualSubscriber[T] with SubscriptionSupport[T] with ErrorCollection[T]
-      verification.subscribe(processor.getPublisher, sub)
+      TestEnvironment.subscribe(processor.getPublisher, sub)
 
       val ex = new RuntimeException
       sendError(ex)
-      sub.expectError(ex)
-
-      verifyNoAsyncErrors()
+      sub.expectError(ex) // "immediately", i.e. without a preceding requestMore
     }
 
   // A Processor
   //   must be prepared to receive incoming elements from its upstream even if a downstream subscriber has not requested anything yet
   @Test
   def mustBePreparedToReceiveIncomingElementsFromItsUpstreamEvenIfADownstreamSubscriberHasNotRequestedYet(): Unit =
-    new TestSetup(maxBufferSize = 4) {
+    new TestSetup(bufferSize = 2) {
       val sub = newSubscriber()
-      sendNextTFromUpstream()
+      val x = nextT()
+      sendNext(x)
       sub.expectNone(withinMillis = 50)
-      sendNextTFromUpstream()
+      val y = nextT()
+      sendNext(y)
       sub.expectNone(withinMillis = 50)
 
-      verifyNoAsyncErrors()
+      sub.requestMore(2)
+      sub.expectNext(x)
+      sub.expectNext(y)
     }
 
   /////////////////////// ADDITIONAL "COROLLARY" TESTS //////////////////////
 
   @Test // trigger `requestFromUpstream` for elements that have been requested 'long ago'
   def mustRequestFromUpstreamForElementsThatHaveBeenRequestedLongAgo(): Unit =
-    new TestSetup(maxBufferSize = 1) {
+    new TestSetup(bufferSize = 1) {
       val sub1 = newSubscriber()
       sub1.requestMore(5)
 
       expectRequestMore(1)
-      sendNextTFromUpstream()
-      expectNextElement(sub1, lastT)
+      val x = nextT()
+      sendNext(x)
+      expectNextElement(sub1, x)
 
       expectRequestMore(1)
-      sendNextTFromUpstream()
-      expectNextElement(sub1, lastT)
+      val y = nextT()
+      sendNext(y)
+      expectNextElement(sub1, y)
 
       expectRequestMore(1)
 
@@ -171,49 +172,41 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
       // sub1 now has 3 pending
       // sub2 has 0 pending
 
-      sendNextTFromUpstream()
-      expectNextElement(sub1, lastT)
+      val z = nextT()
+      sendNext(z)
+      expectNextElement(sub1, z)
       sub2.expectNone() // since sub2 hasn't requested anything yet
 
       sub2.requestMore(1)
-      expectNextElement(sub2, lastT)
+      expectNextElement(sub2, z)
 
       expectRequestMore(1) // because sub1 still has 2 pending
-
-      verifyNoAsyncErrors()
     }
 
   @Test // unblock the stream if a 'blocking' subscription has been cancelled
   def mustUnblockTheStreamIfABlockingSubscriptionHasBeenCancelled(): Unit =
-    new TestSetup(maxBufferSize = 1) {
+    new TestSetup(bufferSize = 1) {
       val sub1 = newSubscriber()
       val sub2 = newSubscriber()
 
       sub1.requestMore(5)
       expectRequestMore(1)
-      sendNextTFromUpstream()
+      sendNext(nextT())
 
       expectNoRequestMore() // because we only have buffer size 1 and sub2 hasn't seen the first value yet
       sub2.cancel() // must "unblock"
       expectRequestMore(1)
-
-      verifyNoAsyncErrors()
     }
 
   /////////////////////// TEST INFRASTRUCTURE //////////////////////
 
-  abstract class TestSetup(maxBufferSize: Int) extends ManualPublisher[T] {
-    val tees = newManualSubscriber(createPublisher(0)) // gives us access to an infinite stream of T values
-    val processor = createIdentityProcessor(maxBufferSize)
-    var lastT: T = _
+  abstract class TestSetup(bufferSize: Int) extends ManualPublisher[T] {
+    val tees = newManualSubscriber(createHelperPublisher(0)) // gives us access to an infinite stream of T values
+    val processor = createIdentityProcessor(bufferSize)
     subscribe(processor.getSubscriber)
 
     def newSubscriber() = newManualSubscriber(processor.getPublisher)
-    def sendNextTFromUpstream(): Unit = sendNext(nextT())
-    def nextT(): T = {
-      lastT = tees.requestNextElement()
-      lastT
-    }
+    def nextT(): T = tees.requestNextElement()
     def expectNextElement(sub: ManualSubscriber[T], expected: T): Unit = {
       val elem = sub.nextElement()
       if (elem != expected) fail(s"Received `onNext($elem)` on downstream but expected `onNext($expected)`")

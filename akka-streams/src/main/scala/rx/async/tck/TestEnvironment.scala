@@ -1,47 +1,17 @@
 package rx.async.tck
 
 import java.util.concurrent._
-import org.testng.annotations.AfterClass
 import org.testng.Assert
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
-import scala.collection.JavaConverters._
 import rx.async.spi.{ Subscription, Subscriber, Publisher }
 
-trait TestEnvironment {
-  import TestEnvironment._
-
-  val asyncErrors = new CopyOnWriteArrayList[Throwable]()
-
-  val executor: ExecutorService = Executors.newCachedThreadPool()
-
-  @AfterClass
-  def shutdownExecutor(): Unit = {
-    executor.shutdown()
-    try {
-      if (!executor.awaitTermination(500, TimeUnit.MILLISECONDS))
-        executor.shutdownNow()
-    } catch {
-      case _: InterruptedException ⇒ executor.shutdownNow()
-    }
-  }
-
-  def async[U](block: ⇒ U): Unit =
-    executor.execute {
-      new Runnable {
-        def run(): Unit =
-          try block
-          catch {
-            case e: Throwable ⇒ asyncErrors.add(e)
-          }
-      }
-    }
+object TestEnvironment {
 
   def subscribe[T](pub: Publisher[T], sub: TestSubscriber[T], timeoutMillis: Int = 100): Unit = {
     pub.subscribe(sub)
     sub.subscription.expectCompletion(timeoutMillis, s"Could not subscribe $sub to Publisher $pub")
-    verifyNoAsyncErrors()
   }
 
   def newManualSubscriber[T](pub: Publisher[T], timeoutMillis: Int = 100): ManualSubscriber[T] = {
@@ -50,14 +20,16 @@ trait TestEnvironment {
     sub
   }
 
-  def verifyNoAsyncErrors(): Unit =
-    asyncErrors.asScala.foreach {
-      case e: AssertionError ⇒ throw e
-      case e                 ⇒ fail("Async error during test execution: " + e)
-    }
-}
+  def fail(msg: String): Nothing = Assert.fail(msg).asInstanceOf[Nothing]
 
-object TestEnvironment {
+  def expectThrowingOf[T <: Exception: ClassTag](errorMsg: String)(block: ⇒ Unit): Unit =
+    try {
+      block
+      fail(errorMsg)
+    } catch {
+      case e: Exception if implicitly[ClassTag[T]].runtimeClass.isInstance(e) ⇒ // ok
+      case NonFatal(e) ⇒ fail(s"$errorMsg but $e")
+    }
 
   class TestSubscriber[T] extends Subscriber[T] {
     @volatile var subscription = new Promise[Subscription]
@@ -95,6 +67,10 @@ object TestEnvironment {
       received.nextOrEndOfStream(timeoutMillis, errorMsg)
     def nextElements(elements: Int, timeoutMillis: Int = 100, errorMsg: String = "Did not receive expected element or completion"): Seq[T] =
       received.nextN(elements, timeoutMillis, errorMsg)
+    def expectNext(expected: T, timeoutMillis: Int = 100): Unit = {
+      val received = nextElement(timeoutMillis, "Did not receive expected element on downstream")
+      if (received != expected) fail(s"Expected element $expected on downstream but received $received")
+    }
     def expectCompletion(timeoutMillis: Int = 100, errorMsg: String = "Did not receive expected stream completion"): Unit =
       received.expectCompletion(timeoutMillis, errorMsg)
     def expectNone(withinMillis: Int = 100, errorMsg: T ⇒ String = "Did not expect an element but got " + _): Unit =
@@ -222,20 +198,10 @@ object TestEnvironment {
     def expectNone(withinMillis: Int, errorMsg: T ⇒ String): Unit = {
       Thread.sleep(withinMillis)
       abq.poll() match {
-        case Some(x)     ⇒ fail(errorMsg(x))
-        case null | None ⇒ // ok
+        case null    ⇒ // ok
+        case Some(x) ⇒ fail(errorMsg(x))
+        case None    ⇒ fail("Expected no element but got end-of-stream")
       }
     }
   }
-
-  def fail(msg: String): Nothing = Assert.fail(msg).asInstanceOf[Nothing]
-
-  def expectThrowingOf[T <: Exception: ClassTag](errorMsg: String)(block: ⇒ Unit): Unit =
-    try {
-      block
-      fail(errorMsg)
-    } catch {
-      case e: Exception if implicitly[ClassTag[T]].runtimeClass.isInstance(e) ⇒ // ok
-      case NonFatal(e) ⇒ fail(s"$errorMsg but $e")
-    }
 }

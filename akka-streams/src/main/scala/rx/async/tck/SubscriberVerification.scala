@@ -3,7 +3,7 @@ package rx.async.tck
 import org.testng.annotations.Test
 import rx.async.spi.{ Subscription, Subscriber, Publisher }
 
-trait SubscriberVerification[T] extends TestEnvironment {
+trait SubscriberVerification[T] {
   import TestEnvironment._
   import SubscriberVerification._
 
@@ -42,8 +42,6 @@ trait SubscriberVerification[T] extends TestEnvironment {
 
       puppet.triggerCancel()
       expectCancelling()
-
-      verifyNoAsyncErrors()
     }
 
   ////////////////////// SPEC RULE VERIFICATION ///////////////////////////
@@ -70,14 +68,13 @@ trait SubscriberVerification[T] extends TestEnvironment {
   @Test
   def mustNotAcceptAnOnSubscribeEventIfItAlreadyHasAnActiveSubscription(): Unit =
     new TestSetup {
-      // try to subscribe another time, if the subscriber calls `probe.registerOnSubscribe` the test will fail 
+      // try to subscribe another time, if the subscriber calls `probe.registerOnSubscribe` the test will fail
       sub.onSubscribe {
         new Subscription {
           def requestMore(elements: Int): Unit = fail(s"Subscriber $sub illegally called `subscription.requestMore($elements)`")
           def cancel(): Unit = fail(s"Subscriber $sub illegally called `subscription.cancel()`")
         }
       }
-      verifyNoAsyncErrors()
     }
 
   // A Subscriber
@@ -87,8 +84,6 @@ trait SubscriberVerification[T] extends TestEnvironment {
     new TestSetup {
       puppet.triggerShutdown()
       expectCancelling()
-
-      verifyNoAsyncErrors()
     }
 
   // A Subscriber
@@ -107,8 +102,6 @@ trait SubscriberVerification[T] extends TestEnvironment {
       puppet.triggerCancel()
       expectCancelling()
       sendNextTFromUpstream()
-
-      verifyNoAsyncErrors()
     }
 
   // A Subscriber
@@ -119,8 +112,6 @@ trait SubscriberVerification[T] extends TestEnvironment {
       puppet.triggerRequestMore(1)
       sendCompletion()
       probe.expectCompletion()
-
-      verifyNoAsyncErrors()
     }
 
   // A Subscriber
@@ -130,8 +121,6 @@ trait SubscriberVerification[T] extends TestEnvironment {
     new TestSetup {
       sendCompletion()
       probe.expectCompletion()
-
-      verifyNoAsyncErrors()
     }
 
   // A Subscriber
@@ -143,8 +132,6 @@ trait SubscriberVerification[T] extends TestEnvironment {
       val ex = new RuntimeException("Test exception")
       sendError(ex)
       probe.expectError(ex)
-
-      verifyNoAsyncErrors()
     }
 
   // A Subscriber
@@ -155,8 +142,6 @@ trait SubscriberVerification[T] extends TestEnvironment {
       val ex = new RuntimeException("Test exception")
       sendError(ex)
       probe.expectError(ex)
-
-      verifyNoAsyncErrors()
     }
 
   // A Subscriber
