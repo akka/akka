@@ -59,8 +59,8 @@ abstract class AbstractContextEffects extends ContextEffects {
 
   def internalProducer[O](sourceConstructor: Downstream[O] ⇒ SyncSource, shutdownEffect: Effect, initialFanOutBufferSize: Int, maxFanOutBufferSize: Int): Producer[O] =
     new AbstractProducer[O](initialFanOutBufferSize, maxFanOutBufferSize) with InternalProducer[O] {
-      protected def requestFromUpstream(elements: Int): Unit = runEffect(source.handleRequestMore(elements))
-      protected def cancelUpstream(): Unit = runEffect(source.handleCancel())
+      protected def requestFromUpstream(elements: Int): Unit = runEffect(sourceEffects.requestMore(elements))
+      protected def cancelUpstream(): Unit = runEffect(sourceEffects.cancel)
       protected def shutdown(): Unit = runEffect(shutdownEffect)
 
       var effects: Effect = null
@@ -108,6 +108,8 @@ abstract class AbstractContextEffects extends ContextEffects {
         val error: Throwable ⇒ Effect = cause ⇒ Collecting("errorFanOut")(abortDownstream(cause))
       }
       val source = sourceConstructor(downstream)
+      val sourceEffects = BasicEffects.forSource(source)
+      // this requires that this constructor is run in context
       runEffectHere(source.start())
 
       def createSource(downstream: Downstream[O]): SyncSource = {
