@@ -4,7 +4,8 @@ import org.scalatest.testng.TestNGSuiteLike
 import rx.async.spi.Publisher
 import rx.async.tck.PublisherVerification
 
-class IteratorProducerTest extends PublisherVerification[Int] with TestNGSuiteLike {
+class IteratorProducerTest extends PublisherVerification[Int] with WithActorSystem with TestNGSuiteLike {
+  import system.dispatcher
 
   def createPublisher(elements: Int): Publisher[Int] = {
     val iter = Iterator from 1000

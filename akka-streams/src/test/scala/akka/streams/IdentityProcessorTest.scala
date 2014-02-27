@@ -15,6 +15,7 @@ class IdentityProcessorTest extends IdentityProcessorVerification[Int] with With
   }
 
   def createHelperPublisher(elements: Int): Publisher[Int] = {
+    import system.dispatcher
     val iter = Iterator from 1000
     Producer(if (elements > 0) iter take elements else iter).getPublisher
   }

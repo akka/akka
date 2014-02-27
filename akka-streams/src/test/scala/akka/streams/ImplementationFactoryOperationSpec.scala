@@ -28,7 +28,7 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
 
         downstream.expectNext(42)
       }
-      "subscriber cancels subscription before upstream is attached" taggedAs (Only) in {
+      "subscriber cancels subscription before upstream is attached" in {
         val downstream = TestKit.consumerProbe[Int]()
 
         val processed = Identity[Int]().toProcessor()

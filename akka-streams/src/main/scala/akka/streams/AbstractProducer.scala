@@ -1,13 +1,14 @@
 package akka.streams
 
 import scala.annotation.tailrec
+import scala.concurrent.ExecutionContext
 import rx.async.api
 import rx.async.spi.{ Subscriber, Publisher }
 import ResizableMultiReaderRingBuffer.NothingToReadException
 
 object Producer {
-  def apply[T](iterable: Iterable[T]): api.Producer[T] = apply(iterable.iterator)
-  def apply[T](iterator: Iterator[T]): api.Producer[T] = new IteratorProducer[T](iterator)
+  def apply[T](iterable: Iterable[T])(implicit executor: ExecutionContext): api.Producer[T] = apply(iterable.iterator)
+  def apply[T](iterator: Iterator[T])(implicit executor: ExecutionContext): api.Producer[T] = new IteratorProducer[T](iterator)
   def empty[T]: api.Producer[T] = EmptyProducer.asInstanceOf[api.Producer[T]]
 }
 
@@ -169,8 +170,9 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
       if (!writtenOk) throw new IllegalStateException("Output buffer overflow")
       val maxRequested = dispatchAndReturnMaxRequested(subscriptions)
       if (pendingFromUpstream == 0) requestFromUpstreamIfPossible(capAtIntMaxValue(maxRequested))
-    } else if (endOfStream eq ShutDown) {} // ignore, race between cancel / onNext is expected
-    else throw new IllegalStateException("pushToDownStream(...) after completeDownstream() or abortDownstream(...)")
+    } else // don't throw if we have transitioned into shutdown in the mean-time, since there is an expected
+    if (endOfStream ne ShutDown) // race condition between `cancelUpstream` and `pushToDownstream`
+      throw new IllegalStateException("pushToDownStream(...) after completeDownstream() or abortDownstream(...)")
   }
 
   // this method must be called by the implementing class whenever
