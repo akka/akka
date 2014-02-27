@@ -100,6 +100,7 @@ trait SyncOperationSpec extends WithActorSystem {
 
     implicit def executionContext: ExecutionContext = system.dispatcher
     def runStrictInContext(effect: Effect): Unit = runInContextProbe.ref ! RunEffect(effect)
+    def runEffectHere(effect: Effect): Unit = PlainEffectExecutor.run(effect)
 
     def defaultInitialBufferSize: Int = 1
     def defaultMaxBufferSize: Int = 16

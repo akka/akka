@@ -38,6 +38,8 @@ trait ContextEffects {
   implicit def executionContext: ExecutionContext
   def runInContext(body: ⇒ Effect): Unit = runStrictInContext(Effect.step(body, s"deferred ${(body _).getClass.getSimpleName}"))
   def runStrictInContext(effect: Effect): Unit
+  /** Directly runs an effect, must be executed in context */
+  def runEffectHere(effect: Effect): Unit
 }
 
 /** General implementations of most ContextEffect methods */
@@ -106,7 +108,7 @@ abstract class AbstractContextEffects extends ContextEffects {
         val error: Throwable ⇒ Effect = cause ⇒ Collecting("errorFanOut")(abortDownstream(cause))
       }
       val source = sourceConstructor(downstream)
-      Effect.run(source.start())
+      runEffectHere(source.start())
 
       def createSource(downstream: Downstream[O]): SyncSource = {
         object InternalSourceConnector extends Subscriber[O] with SyncSource {
@@ -130,6 +132,8 @@ abstract class AbstractContextEffects extends ContextEffects {
           //       we could get rid of this extra scheduling round-trip if
           //       we can capture calls to moreRequested / unregisterSubscription and
           //       convert it into effects to be run instantly afterwards
+          //       One possibility would be to match for internal subscribers in
+          //       moreRequested and handle it directly in context.
           // TODO: check! this may already have been fixed
           def handleRequestMore(n: Int): Effect = source.requestMore(n)
           // TODO: same as for handleRequestMore

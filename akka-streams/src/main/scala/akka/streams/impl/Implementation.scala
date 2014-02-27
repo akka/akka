@@ -35,7 +35,7 @@ private class SourceProducer[O](source: Source[O], val settings: ActorBasedImple
     })
 
     def receive = {
-      case RunEffects(e) ⇒ Effect.run(e)
+      case RunEffects(e) ⇒ settings.effectExecutor.run(e)
     }
   }
 }
@@ -81,7 +81,7 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
     }
     promise.complete(Success(ActorContextEffects.internalProducer(InnerSource.receiveDownstream, ShutdownActor).getPublisher))
     val impl = OperationImpl(UpstreamSideEffects, InnerSource.downstream, ActorContextEffects, operation)
-    Effect.run(impl.start())
+    settings.effectExecutor.run(impl.start())
     var upstream: Subscription = _
     lazy val UpstreamSideEffects = BasicEffects.forSubscription(upstream)
     var needToRequest = 0
@@ -108,10 +108,10 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
         upstream = subscription
         context.become(Running)
         if (needToRequest > 0) {
-          Effect.run(impl.handleRequestMore(needToRequest))
+          settings.effectExecutor.run(impl.handleRequestMore(needToRequest))
           needToRequest = 0
         }
-      case RunEffects(e) ⇒ Effect.run(e)
+      case RunEffects(e) ⇒ settings.effectExecutor.run(e)
     }
     def Cancelled: Receive = {
       case OnSubscribed(subscription) ⇒
@@ -119,19 +119,19 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
         context.stop(self)
     }
     def Running: Receive = {
-      case OnNext(element) ⇒ Effect.run(impl.handleNext(element))
-      case OnComplete      ⇒ Effect.run(impl.handleComplete())
-      case OnError(cause)  ⇒ Effect.run(impl.handleError(cause))
-      case RunEffects(e)   ⇒ Effect.run(e)
+      case OnNext(element) ⇒ settings.effectExecutor.run(impl.handleNext(element))
+      case OnComplete      ⇒ settings.effectExecutor.run(impl.handleComplete())
+      case OnError(cause)  ⇒ settings.effectExecutor.run(impl.handleError(cause))
+      case RunEffects(e)   ⇒ settings.effectExecutor.run(e)
     }
   }
 }
 
 class PipelineActor(pipeline: Pipeline[_], val settings: ActorBasedImplementationSettings) extends Actor with ProcessorActorImpl {
-  Effect.run(OperationImpl(ActorContextEffects, pipeline).start())
+  settings.effectExecutor.run(OperationImpl(ActorContextEffects, pipeline).start())
 
   def receive: Receive = {
-    case RunEffects(e) ⇒ Effect.run(e)
+    case RunEffects(e) ⇒ settings.effectExecutor.run(e)
   }
 }
 
@@ -161,6 +161,7 @@ trait ProcessorActorImpl { _: Actor ⇒
 
     def runStrictInContext(effect: Effect): Unit = if (effect ne Continue) self ! RunEffects(effect)
     def executionContext: ExecutionContext = context.dispatcher
+    def runEffectHere(effect: Effect): Unit = settings.effectExecutor.run(effect)
   }
   case object ShutdownActor extends ExternalEffect {
     def run(): Unit = shutdown()
