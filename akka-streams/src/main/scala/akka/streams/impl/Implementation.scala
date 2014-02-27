@@ -205,6 +205,8 @@ trait ProcessorActorImpl { _: Actor ⇒
         protected def shutdownCancelled(): Unit = runEffect(_cancelUpstream)
         protected def shutdownWithError(cause: Throwable): Unit = runEffect(_shutdownWithError(cause))
         protected def shutdownComplete(): Unit = runEffect(_shutdownComplete)
+        protected def shutdown(): Unit = ???
+        protected def cancelUpstream(): Unit = ???
 
         var effects: Effect = null
         def runEffect(effect: Effect): Unit = effects ~= effect
