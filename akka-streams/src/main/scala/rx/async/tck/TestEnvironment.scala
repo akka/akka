@@ -133,10 +133,15 @@ object TestEnvironment {
     def sendNext(element: T): Unit =
       if (subscriber.isDefined) subscriber.get.onNext(element)
       else fail(s"Cannot sendNext before subscriber subscription")
+    def sendError(cause: Throwable): Unit =
+      if (subscriber.isDefined) subscriber.get.onError(cause)
+      else fail(s"Cannot sendError before subscriber subscription")
     def nextRequestMore(timeoutMillis: Int = 100): Int =
       requests.next(timeoutMillis, "Did not receive expected `requestMore` call")
     def expectNoRequestMore(timeoutMillis: Int = 100): Unit =
       requests.expectNone(timeoutMillis, "Received an unexpected `requestMore" + _ + "` call")
+    def expectCancelling(timeoutMillis: Int = 100): Unit =
+      cancelled.expectClose(timeoutMillis, "Did not receive expected cancelling of upstream subscription")
   }
 
   // like a CountDownLatch, but resettable and with some convenience methods
