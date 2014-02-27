@@ -9,11 +9,6 @@ import akka.streams.AbstractProducer
 import scala.annotation.tailrec
 import java.util.concurrent.atomic.AtomicBoolean
 
-trait FanOut[I] extends Publisher[I] {
-  def downstream: Downstream[I]
-  def runEffect(effect: Effect): Unit
-}
-
 /**
  * Additional Effects supplied by the context to allow additional executing additional effects
  * of link internal sources and sinks.
@@ -71,7 +66,7 @@ abstract class AbstractContextEffects extends ContextEffects {
        *  going into the processing logic/upstream is going to be scheduled and run in the main context.
        */
       @tailrec def collectingEffects(body: ⇒ Unit): Effect =
-        if (locked.compareAndSet(false, true)) {
+        if (locked.compareAndSet(false, true))
           try {
             assert(effects eq null)
             effects = Continue
@@ -80,7 +75,7 @@ abstract class AbstractContextEffects extends ContextEffects {
             effects = null
             result
           } finally locked.set(false)
-        } else collectingEffects(body)
+        else collectingEffects(body)
 
       private[this] val locked = new AtomicBoolean // TODO: replace with AtomicFieldUpdater / sun.misc.Unsafe
 
@@ -88,15 +83,22 @@ abstract class AbstractContextEffects extends ContextEffects {
         collectAndRunInContext(super.subscribe(subscriber))
       override protected def moreRequested(subscription: Subscription, elements: Int): Unit =
         collectAndRunInContext(super.moreRequested(subscription, elements))
+
       override protected def unregisterSubscription(subscription: Subscription): Unit =
         collectAndRunInContext(super.unregisterSubscription(subscription))
 
       /**
-       * Establishes an internal susbcription under the assumption that the code is
+       * Establishes an internal subscription under the assumption that the code is
        * already running in context.
        */
       def subscribeInternal(subscriber: Subscriber[O]): Effect =
         collectingEffects(super.subscribe(subscriber))
+
+      def requestMoreInternal(subscription: Subscription, elements: Int): Effect =
+        collectingEffects(super.moreRequested(subscription, elements))
+
+      def cancelInternal(subscription: Subscription): Effect =
+        collectingEffects(super.unregisterSubscription(subscription))
 
       def collectAndRunInContext(body: ⇒ Unit): Unit = runStrictInContext(collectingEffects(body))
       case class Collecting(name: String)(body: ⇒ Unit) extends SingleStep {
@@ -114,32 +116,18 @@ abstract class AbstractContextEffects extends ContextEffects {
 
       def createSource(downstream: Downstream[O]): SyncSource = {
         object InternalSourceConnector extends Subscriber[O] with SyncSource {
-          var subscription: spi.Subscription = _
-          var source: Upstream = _
+          var subscription: Subscription = _
 
           def onSubscribe(subscription: spi.Subscription): Unit = {
-            this.subscription = subscription
-            this.source = BasicEffects.forSubscription(subscription)
+            this.subscription = subscription.asInstanceOf[Subscription]
           }
           // called from fanOut to this subscriber
           def onNext(element: O): Unit = runEffect(downstream.next(element))
           def onComplete(): Unit = runEffect(downstream.complete)
           def onError(cause: Throwable): Unit = runEffect(downstream.error(cause))
 
-          // called from internal subscriber
-          // TODO: this may call moreRequested which will then be re-scheduled to run
-          //       in the right context (the same we are already in internally). Then it
-          //       will eventually call `requestFromUpstream` which calls the above
-          //       `InternalProducerImpl.requestMore` and run further upstream processing.
-          //       we could get rid of this extra scheduling round-trip if
-          //       we can capture calls to moreRequested / unregisterSubscription and
-          //       convert it into effects to be run instantly afterwards
-          //       One possibility would be to match for internal subscribers in
-          //       moreRequested and handle it directly in context.
-          // TODO: check! this may already have been fixed
-          def handleRequestMore(n: Int): Effect = source.requestMore(n)
-          // TODO: same as for handleRequestMore
-          override def handleCancel(): Effect = source.cancel
+          def handleRequestMore(n: Int): Effect = requestMoreInternal(subscription, n)
+          def handleCancel(): Effect = cancelInternal(subscription)
 
           override def start(): Effect = subscribeInternal(InternalSourceConnector)
         }
@@ -150,6 +138,8 @@ abstract class AbstractContextEffects extends ContextEffects {
 }
 
 case class ConnectInternalSourceSink[O](sourceConstructor: Downstream[O] ⇒ SyncSource, sinkConstructor: Upstream ⇒ SyncSink[O]) extends SingleStep {
+  override def toString: String = s"ConnectInternalSourceSink(${sourceConstructor.getClass.getSimpleName}}, ${sinkConstructor.getClass.getSimpleName}})"
+
   override def runOne(): Effect = {
     object LazyUpstream extends Upstream {
       var source: SyncSource = _

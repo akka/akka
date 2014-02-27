@@ -64,14 +64,19 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
   class OperationProcessorActor(promise: Promise[Publisher[O]]) extends Actor with ProcessorActorImpl {
     protected def settings: ActorBasedImplementationSettings = outer.settings
 
-    object InnerSource extends SyncSource {
+    case object OperationSource extends SyncSource {
       var downstream: Downstream[O] = _
       def receiveDownstream(downstream: Downstream[O]): SyncSource = {
         this.downstream = downstream
         this
       }
 
-      def handleRequestMore(n: Int): Effect = RequestMoreFromImplementation(n)
+      def handleRequestMore(elements: Int): Effect =
+        if (upstream eq null) {
+          needToRequest += elements
+          Continue
+        } else impl.handleRequestMore(elements)
+
       def handleCancel(): Effect =
         if (upstream eq null) {
           cancelling = true
@@ -79,22 +84,12 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
           Continue
         } else impl.handleCancel()
     }
-    promise.complete(Success(ActorContextEffects.internalProducer(InnerSource.receiveDownstream, ShutdownActor).getPublisher))
-    val impl = OperationImpl(UpstreamSideEffects, InnerSource.downstream, ActorContextEffects, operation)
+    promise.complete(Success(ActorContextEffects.internalProducer(OperationSource.receiveDownstream, ShutdownActor).getPublisher))
+    val impl = OperationImpl(UpstreamSideEffects, OperationSource.downstream, ActorContextEffects, operation)
     settings.effectExecutor.run(impl.start())
     var upstream: Subscription = _
     lazy val UpstreamSideEffects = BasicEffects.forSubscription(upstream)
     var needToRequest = 0
-
-    // a special implementation that delays requesting from upstream until upstream
-    // has connected
-    case class RequestMoreFromImplementation(elements: Int) extends SingleStep {
-      def runOne(): Effect =
-        if (upstream eq null) {
-          needToRequest += elements
-          Continue
-        } else impl.handleRequestMore(elements)
-    }
 
     override def receive = WaitingForUpstream
     var cancelling = false
