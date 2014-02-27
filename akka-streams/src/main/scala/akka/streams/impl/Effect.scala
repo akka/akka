@@ -60,7 +60,14 @@ object Effect {
     override def toString: String = name
     def run(): Unit = body
   }
+}
 
+/** An interface for implementations that can run effects */
+trait EffectExecutor {
+  def run(effect: Effect): Unit
+}
+
+object PlainEffectExecutor extends EffectExecutor {
   /** Runs a possibly tail-recursive chain of effects */
   def run(effect: Effect): Unit = {
     @tailrec def iterate(elements: Vector[Effect]): Unit = {

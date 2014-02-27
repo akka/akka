@@ -6,7 +6,11 @@ import akka.actor.ActorRefFactory
 import akka.streams.impl._
 import Operation._
 
-case class ActorBasedImplementationSettings(refFactory: ActorRefFactory, initialFanOutBufferSize: Int = 1, maxFanOutBufferSize: Int = 16) {
+case class ActorBasedImplementationSettings(
+  refFactory: ActorRefFactory,
+  initialFanOutBufferSize: Int = 1,
+  maxFanOutBufferSize: Int = 16,
+  effectExecutor: EffectExecutor = PlainEffectExecutor) {
   require(initialFanOutBufferSize > 0, "initialFanOutBufferSize must be > 0")
   require(maxFanOutBufferSize > 0, "maxFanOutBufferSize must be > 0")
   require(initialFanOutBufferSize <= maxFanOutBufferSize,
