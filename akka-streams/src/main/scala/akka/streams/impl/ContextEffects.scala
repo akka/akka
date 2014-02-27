@@ -78,16 +78,20 @@ abstract class AbstractContextEffects extends ContextEffects {
       private[this] val locked = new AtomicBoolean // TODO: replace with AtomicFieldUpdater / sun.misc.Unsafe
 
       override def subscribe(subscriber: Subscriber[O]): Unit =
-        collectAndRun(super.subscribe(subscriber))
+        collectAndRunInContext(super.subscribe(subscriber))
       override protected def moreRequested(subscription: Subscription, elements: Int): Unit =
-        collectAndRun(super.moreRequested(subscription, elements))
+        collectAndRunInContext(super.moreRequested(subscription, elements))
       override protected def unregisterSubscription(subscription: Subscription): Unit =
-        collectAndRun(super.unregisterSubscription(subscription))
+        collectAndRunInContext(super.unregisterSubscription(subscription))
 
+      /**
+       * Establishes an internal susbcription under the assumption that the code is
+       * already running in context.
+       */
       def subscribeInternal(subscriber: Subscriber[O]): Effect =
         collectingEffects(super.subscribe(subscriber))
 
-      def collectAndRun(body: ⇒ Unit): Unit = runStrictInContext(collectingEffects(body))
+      def collectAndRunInContext(body: ⇒ Unit): Unit = runStrictInContext(collectingEffects(body))
       case class Collecting(name: String)(body: ⇒ Unit) extends SingleStep {
         def runOne(): Effect = collectingEffects(body)
       }

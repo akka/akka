@@ -2,14 +2,13 @@ package akka.streams.impl
 
 import rx.async.api.Processor
 import rx.async.spi.{ Publisher, Subscription, Subscriber }
-import akka.actor.{ PoisonPill, ActorRef, Props, Actor }
-import akka.streams.{ AbstractProducer, Operation, ActorBasedImplementationSettings }
+import akka.actor.{ ActorRef, Props, Actor }
+import akka.streams.{ Operation, ActorBasedImplementationSettings }
 import akka.streams.Operation._
 import rx.async.api.Producer
-import scala.concurrent.{ Await, ExecutionContext }
+import scala.concurrent.{ Promise, Await, ExecutionContext }
 import akka.util.Timeout
-import java.util.concurrent.atomic.AtomicBoolean
-import scala.annotation.tailrec
+import scala.util.{ Try, Success }
 
 object Implementation {
   def toProcessor[I, O](operation: Operation[I, O], settings: ActorBasedImplementationSettings): Processor[I, O] =
@@ -27,11 +26,17 @@ object Implementation {
 }
 
 private class SourceProducer[O](source: Source[O], val settings: ActorBasedImplementationSettings) extends ProducerImplementationBits[O] { outer ⇒
-  protected def createActor(): ActorRef = settings.refFactory.actorOf(Props(new SourceProducerActor))
-  protected def createImplementation(ctx: ContextEffects)(downstream: Downstream[O]): SyncSource = OperationImpl(downstream, ctx, source)
+  protected def createActor(promise: Promise[Publisher[O]]): ActorRef = settings.refFactory.actorOf(Props(new SourceProducerActor(promise)))
 
-  class SourceProducerActor extends ProducerActor {
+  class SourceProducerActor(promise: Promise[Publisher[O]]) extends Actor with ProcessorActorImpl {
     protected def settings: ActorBasedImplementationSettings = outer.settings
+    promise.complete(Try {
+      ActorContextEffects.internalProducer(OperationImpl(_: Downstream[O], ActorContextEffects, source), ShutdownActor).getPublisher
+    })
+
+    def receive = {
+      case RunEffects(e) ⇒ Effect.run(e)
+    }
   }
 }
 
@@ -48,15 +53,15 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
       def onError(cause: Throwable): Unit = actor ! OnError(cause)
     }
 
-  protected def createActor(): ActorRef = settings.refFactory.actorOf(Props(new OperationProcessorActor))
-  protected def createImplementation(ctx: ContextEffects)(downstream: Downstream[O]): SyncSource = ???
+  protected def createActor(promise: Promise[Publisher[O]]): ActorRef =
+    settings.refFactory.actorOf(Props(new OperationProcessorActor(promise)))
 
   case class OnSubscribed(subscription: Subscription)
   case class OnNext(element: I)
   case object OnComplete
   case class OnError(cause: Throwable)
 
-  class OperationProcessorActor extends ProducerActor {
+  class OperationProcessorActor(promise: Promise[Publisher[O]]) extends Actor with ProcessorActorImpl {
     protected def settings: ActorBasedImplementationSettings = outer.settings
 
     object InnerSource extends SyncSource {
@@ -69,7 +74,7 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
       def handleRequestMore(n: Int): Effect = RequestMoreFromImplementation(n)
       def handleCancel(): Effect = impl.handleCancel() // TODO: handle case where impl was not yet created
     }
-    getPublisher = ActorContextEffects.internalProducer(InnerSource.receiveDownstream, ShutdownActor).getPublisher
+    promise.complete(Success(ActorContextEffects.internalProducer(InnerSource.receiveDownstream, ShutdownActor).getPublisher))
     val impl = OperationImpl(UpstreamSideEffects, InnerSource.downstream, ActorContextEffects, operation)
     Effect.run(impl.start())
     var upstream: Subscription = _
@@ -89,7 +94,6 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
     override def receive = WaitingForUpstream
 
     def WaitingForUpstream: Receive = {
-      case Initialize ⇒ sender ! "initialized"
       case OnSubscribed(subscription) ⇒
         assert(subscription != null)
         upstream = subscription
@@ -118,25 +122,18 @@ class PipelineActor(pipeline: Pipeline[_], val settings: ActorBasedImplementatio
 }
 
 trait ProducerImplementationBits[O] extends Producer[O] {
-  protected def createActor(): ActorRef
+  protected def createActor(promise: Promise[Publisher[O]]): ActorRef
   protected def settings: ActorBasedImplementationSettings
-  protected def createImplementation(ctx: ContextEffects)(downstream: Downstream[O]): SyncSource
 
   var getPublisher: Publisher[O] = _
-  import akka.pattern.ask
   import scala.concurrent.duration._
   implicit val timeout = Timeout(1.second)
-  val actor = createActor()
-  Await.ready(actor ? Initialize, 1.seconds)
-  case object Initialize
+  val actor = {
+    val publisherPromise = Promise[Publisher[O]]()
+    val res = createActor(publisherPromise)
 
-  trait ProducerActor extends Actor with ProcessorActorImpl {
-    def receive = {
-      case Initialize ⇒
-        getPublisher = ActorContextEffects.internalProducer(createImplementation(ActorContextEffects), ShutdownActor).getPublisher
-        sender ! "initialized"
-      case RunEffects(e) ⇒ Effect.run(e)
-    }
+    getPublisher = Await.result(publisherPromise.future, 1.seconds)
+    res
   }
 }
 
