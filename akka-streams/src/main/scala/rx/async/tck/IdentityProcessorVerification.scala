@@ -2,9 +2,9 @@ package rx.async.tck
 
 import rx.async.api.Processor
 import rx.async.spi.Publisher
-import org.testng.annotations.{ Factory, Test }
+import org.testng.annotations.Test
 
-abstract class IdentityProcessorVerification[T] extends TestEnvironment {
+abstract class IdentityProcessorVerification[T] extends PublisherVerification[T] {
   import TestEnvironment._
 
   // TODO: make the timeouts be dilate-able so that one can tune the suite for the machine it runs on
@@ -21,24 +21,18 @@ abstract class IdentityProcessorVerification[T] extends TestEnvironment {
    * It must create a Publisher for a stream with exactly the given number of elements.
    * If `elements` is zero the produced stream must be infinite.
    */
-  def createPublisher(elements: Int): Publisher[T]
+  def createHelperPublisher(elements: Int): Publisher[T]
 
   ////////////////////// SPEC RULE VERIFICATION ///////////////////////////
 
   // A Processor
   //   must obey all Publisher rules on its producing side
-  @Factory
-  def mustObeyAllPublisherRulesOnItsProducingSide(): Array[AnyRef] =
-    Array {
-      new PublisherVerification[T] {
-        def createPublisher(elements: Int): Publisher[T] = {
-          val processor = createIdentityProcessor(maxBufferSize = 16)
-          val pub = IdentityProcessorVerification.this.createPublisher(elements)
-          pub.subscribe(processor.getSubscriber)
-          processor.getPublisher
-        }
-      }
-    }
+  def createPublisher(elements: Int): Publisher[T] = {
+    val processor = createIdentityProcessor(maxBufferSize = 16)
+    val pub = createHelperPublisher(elements)
+    pub.subscribe(processor.getSubscriber)
+    processor.getPublisher // we run the PublisherVerification against this
+  }
 
   // A Processor
   //   must cancel its upstream Subscription if its last downstream Subscription has been cancelled

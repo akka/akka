@@ -117,12 +117,12 @@ object TestEnvironment {
   }
 
   class ManualPublisher[T] extends Publisher[T] {
-    val subscriber = new Promise[Subscriber[T]]
+    var subscriber: Option[Subscriber[T]] = None
     val requests = new Receptacle[Int]()
     val cancelled = new Latch
     def subscribe(s: Subscriber[T]): Unit =
-      if (!subscriber.isCompleted) {
-        subscriber.complete(s)
+      if (subscriber.isEmpty) {
+        subscriber = Some(s)
         s.onSubscribe {
           new Subscription {
             def requestMore(elements: Int): Unit = requests.add(elements)
@@ -131,7 +131,7 @@ object TestEnvironment {
         }
       } else fail("TestPublisher doesn't support more than one Subscriber")
     def sendNext(element: T): Unit =
-      if (subscriber.isCompleted) subscriber.value.onNext(element)
+      if (subscriber.isDefined) subscriber.get.onNext(element)
       else fail(s"Cannot sendNext before subscriber subscription")
     def nextRequestMore(timeoutMillis: Int = 100): Int =
       requests.next(timeoutMillis, "Did not receive expected `requestMore` call")
