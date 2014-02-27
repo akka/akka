@@ -4,8 +4,12 @@ import akka.streams.Operation.{ SingletonSource, Source, Span }
 import akka.streams.impl._
 
 class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], ctx: ContextEffects, span: Span[I]) extends DynamicSyncOperation[I] {
+  override def toString: String = s"Span(${span.p.getClass.getSimpleName})"
+
   def initial: State = WaitingForRequest
   val subSource = new DynamicSyncSource {
+    override def toString: String = "SpanChildSource"
+
     def initial: State = SubCompleted
   }
 

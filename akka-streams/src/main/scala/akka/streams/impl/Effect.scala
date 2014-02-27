@@ -93,7 +93,8 @@ object PlainEffectExecutor extends EffectExecutor {
 
 class TracingEffectExecutor(log: String ⇒ Unit) extends EffectExecutor {
   def run(effect: Effect): Unit = if (effect ne Continue) {
-    log(s"Executing these effects: $effect")
+    import Console._
+    log(s"${WHITE}Executing these effects: $effect$RESET")
     @tailrec def iterate(elements: Vector[Effect]): Unit = {
       if (elements.isEmpty) ()
       else {
@@ -106,17 +107,16 @@ class TracingEffectExecutor(log: String ⇒ Unit) extends EffectExecutor {
       }
     }
 
-    import Console._
     def runOne(effect: Effect): Vector[Effect] =
       effect match {
         // shortcut for simple results
         case s: ExternalEffect ⇒
-          log(s"${YELLOW}EE${RESET} $s")
+          log(s"${YELLOW}EE$RESET $s")
           s.run(); Vector.empty
         case Continue ⇒ Vector.empty
         case r: SingleStep ⇒
           val result = r.runOne()
-          log(s"${BLUE}STEP${RESET} $effect ⇒ $result ")
+          log(s"${BLUE}STEP$RESET $effect $WHITE⇒$RESET $result")
           Vector(result)
         case Effects(effects) ⇒ effects
       }

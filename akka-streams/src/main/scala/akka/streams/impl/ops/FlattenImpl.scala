@@ -5,6 +5,8 @@ import akka.streams.impl._
 import Operation.Source
 
 class FlattenImpl[O](upstream: Upstream, downstream: Downstream[O], ctx: ContextEffects) extends DynamicSyncOperation[Source[O]] {
+  override def toString: String = "Flatten"
+
   def initial: State = Waiting
 
   var undeliveredToDownstream: Int = 0
@@ -45,6 +47,8 @@ class FlattenImpl[O](upstream: Upstream, downstream: Downstream[O], ctx: Context
 
   def createSubSink(subUpstream: Upstream, initialRequest: Int) =
     new SyncSink[O] {
+      override def toString: String = "FlattenSubSink"
+
       override def start(): Effect = subUpstream.requestMore(initialRequest)
 
       def handleNext(element: O): Effect = {
