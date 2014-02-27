@@ -59,8 +59,9 @@ class AbstractProducerSpec extends WordSpec with ShouldMatchers with TestEnviron
     private val requests = new Receptacle[Int]()
     @volatile private var shutDown = false
     protected def requestFromUpstream(elements: Int): Unit = requests.add(elements)
-    protected def shutdown(): Unit = shutDown = true
-    protected def cancelUpstream(): Unit = ()
+    protected def shutdownComplete(): Unit = shutDown = true
+    protected def shutdownWithError(cause: Throwable): Unit = shutDown = true
+    protected def shutdownCancelled(): Unit = shutDown = true
 
     def newSubscriber() = newManualSubscriber(this)
     def nextRequestMore(timeoutMillis: Int = 100): Int =

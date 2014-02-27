@@ -7,9 +7,14 @@ import rx.async.tck.IdentityProcessorVerification
 import akka.streams.Operation._
 
 class IdentityProcessorTest extends IdentityProcessorVerification[Int] with WithActorSystem with TestNGSuiteLike {
-  implicit val abif = new ActorBasedImplementationFactory(ActorBasedImplementationSettings(system))
+  def createIdentityProcessor(maxBufferSize: Int): Processor[Int, Int] = {
+    val settings = ActorBasedImplementationSettings(system, maxFanOutBufferSize = maxBufferSize)
+    implicit val abif = new ActorBasedImplementationFactory(settings)
+    abif.toProcessor(Identity[Int]())
+  }
 
-  def createIdentityProcessor(maxBufferSize: Int): Processor[Int, Int] = abif.toProcessor(Identity[Int]())
-
-  def createPublisher(elements: Int): Publisher[Int] = Producer(Iterator from 1000 take elements).getPublisher
+  def createPublisher(elements: Int): Publisher[Int] = {
+    val iter = Iterator from 1000
+    Producer(if (elements > 0) iter take elements else iter).getPublisher
+  }
 }

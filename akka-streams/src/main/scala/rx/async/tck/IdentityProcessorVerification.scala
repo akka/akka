@@ -32,7 +32,7 @@ abstract class IdentityProcessorVerification[T] extends TestEnvironment {
     Array {
       new PublisherVerification[T] {
         def createPublisher(elements: Int): Publisher[T] = {
-          val processor = createIdentityProcessor(maxBufferSize = 1)
+          val processor = createIdentityProcessor(maxBufferSize = 16)
           val pub = IdentityProcessorVerification.this.createPublisher(elements)
           pub.subscribe(processor.getSubscriber)
           processor.getPublisher

@@ -30,6 +30,7 @@ object BasicEffects {
 
   case class RequestMoreFromSubscription(subscription: Subscription, n: Int) extends ExternalEffect {
     require(n > 0)
+    require(subscription ne null)
     def run(): Unit = subscription.requestMore(n)
   }
   case class CancelSubscription(subscription: Subscription) extends ExternalEffect {

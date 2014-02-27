@@ -25,8 +25,9 @@ class IteratorProducer[T](iterator: Iterator[T], maxBufferSize: Int = 16)
       } else completeDownstream()
     } else if (!iterator.hasNext) completeDownstream() // complete eagerly
 
-  protected def shutdown(): Unit = ()
-  protected def cancelUpstream(): Unit = ()
+  protected def shutdownWithError(cause: Throwable): Unit = ()
+  protected def shutdownComplete(): Unit = ()
+  protected def shutdownCancelled(): Unit = ()
 }
 
 /**

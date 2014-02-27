@@ -17,14 +17,10 @@ class TakeWhileImplSpec extends FreeSpec with ShouldMatchers with SyncOperationS
 
       impl.handleRequestMore(1) should be(UpstreamRequestMore(1))
       impl.handleNext(10) should be(DownstreamComplete ~ UpstreamCancel)
-
-      expectIllegalState(impl, 38)
     }
     "work on empty input" in {
       val impl = implementation[Int](_ % 10 == 0)
       impl.handleComplete() should be(DownstreamComplete)
-
-      expectIllegalState(impl, 38)
     }
     "don't change requestMore" in pendingUntilFixed {
       val impl = implementation[Int](_ % 10 == 0)
