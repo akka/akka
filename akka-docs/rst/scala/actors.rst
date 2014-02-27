@@ -255,6 +255,8 @@ described in the following:
 The implementations shown above are the defaults provided by the :class:`Actor`
 trait.
 
+.. _actor-lifecycle-scala:
+
 Actor Lifecycle
 ---------------
 
