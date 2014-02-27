@@ -4,7 +4,7 @@ import akka.streams.Operation.{ FromProducerSource, Sink, Source }
 import rx.async.api.Producer
 import scala.concurrent.ExecutionContext
 import rx.async.spi
-import spi.{ Subscriber, Publisher }
+import spi.Subscriber
 import akka.streams.AbstractProducer
 import scala.annotation.tailrec
 import java.util.concurrent.atomic.AtomicBoolean
