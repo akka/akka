@@ -72,7 +72,12 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
       }
 
       def handleRequestMore(n: Int): Effect = RequestMoreFromImplementation(n)
-      def handleCancel(): Effect = impl.handleCancel() // TODO: handle case where impl was not yet created
+      def handleCancel(): Effect =
+        if (upstream eq null) {
+          cancelling = true
+          context.become(Cancelled)
+          Continue
+        } else impl.handleCancel()
     }
     promise.complete(Success(ActorContextEffects.internalProducer(InnerSource.receiveDownstream, ShutdownActor).getPublisher))
     val impl = OperationImpl(UpstreamSideEffects, InnerSource.downstream, ActorContextEffects, operation)
@@ -92,6 +97,10 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
     }
 
     override def receive = WaitingForUpstream
+    var cancelling = false
+    override def shutdown(): Unit =
+      // if cancelling shutdown needs to be deferred until after a possible subscription
+      if (!cancelling) super.shutdown()
 
     def WaitingForUpstream: Receive = {
       case OnSubscribed(subscription) ⇒
@@ -103,6 +112,11 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
           needToRequest = 0
         }
       case RunEffects(e) ⇒ Effect.run(e)
+    }
+    def Cancelled: Receive = {
+      case OnSubscribed(subscription) ⇒
+        subscription.cancel()
+        context.stop(self)
     }
     def Running: Receive = {
       case OnNext(element) ⇒ Effect.run(impl.handleNext(element))
@@ -139,6 +153,7 @@ trait ProducerImplementationBits[O] extends Producer[O] {
 
 trait ProcessorActorImpl { _: Actor ⇒
   protected def settings: ActorBasedImplementationSettings
+  def shutdown(): Unit = context.stop(self)
 
   object ActorContextEffects extends AbstractContextEffects {
     def defaultInitialBufferSize: Int = settings.initialFanOutBufferSize
@@ -148,7 +163,7 @@ trait ProcessorActorImpl { _: Actor ⇒
     def executionContext: ExecutionContext = context.dispatcher
   }
   case object ShutdownActor extends ExternalEffect {
-    def run(): Unit = context.stop(self)
+    def run(): Unit = shutdown()
   }
 }
 
