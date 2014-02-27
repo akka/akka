@@ -3,7 +3,11 @@ package akka.streams.impl
 import akka.streams.Operation.{ FromProducerSource, Sink, Source }
 import rx.async.api.Producer
 import scala.concurrent.ExecutionContext
-import rx.async.spi.{ Subscription, Subscriber, Publisher }
+import rx.async.spi
+import spi.{ Subscriber, Publisher }
+import akka.streams.AbstractProducer
+import scala.annotation.tailrec
+import java.util.concurrent.atomic.AtomicBoolean
 
 trait FanOut[I] extends Publisher[I] {
   def downstream: Downstream[I]
@@ -24,12 +28,16 @@ trait ContextEffects {
 
   def expose[O](source: Source[O]): Producer[O]
 
-  def internalProducer[O](constructor: Downstream[O] ⇒ SyncSource): Producer[O]
+  def internalProducer[O](sourceConstructor: Downstream[O] ⇒ SyncSource,
+                          shutdown: Effect = Continue,
+                          initialFanOutBufferSize: Int = defaultInitialBufferSize,
+                          maxFanOutBufferSize: Int = defaultMaxBufferSize): Producer[O]
 
-  def createFanOut[O](requestMore: Int ⇒ Effect, cancelUpstream: Effect, shutdownComplete: Effect, shutdownWithError: Throwable ⇒ Effect): FanOut[O]
-
+  def defaultInitialBufferSize: Int
+  def defaultMaxBufferSize: Int
   implicit def executionContext: ExecutionContext
-  def runInContext(body: ⇒ Effect): Unit
+  def runInContext(body: ⇒ Effect): Unit = runStrictInContext(Effect.step(body, s"deferred ${(body _).getClass.getSimpleName}"))
+  def runStrictInContext(effect: Effect): Unit
 }
 
 /** General implementations of most ContextEffect methods */
@@ -47,34 +55,63 @@ abstract class AbstractContextEffects extends ContextEffects {
       case FromProducerSource(i: InternalProducer[O]) ⇒ i
     }
 
-  override def internalProducer[O](sourceConstructor: Downstream[O] ⇒ SyncSource): Producer[O] =
-    new InternalProducer[O] with Producer[O] {
-      val shutdownComplete: Effect = Continue // TODO: what to do here?
-      val shutdownWithError: Throwable ⇒ Effect = _ ⇒ Continue // TODO: what to do here?
-      val fanOut = createFanOut[O](RequestMoreFromInternalSource, CancelInternalSource, shutdownComplete, shutdownWithError)
-      val internalSource = sourceConstructor(fanOut.downstream)
-      case object CancelInternalSource extends SingleStep {
-        def runOne(): Effect = internalSource.handleCancel()
-      }
-      case class RequestMoreFromInternalSource(elements: Int) extends SingleStep {
-        def runOne(): Effect = internalSource.handleRequestMore(elements)
-      }
+  def internalProducer[O](sourceConstructor: Downstream[O] ⇒ SyncSource, shutdownEffect: Effect, initialFanOutBufferSize: Int, maxFanOutBufferSize: Int): Producer[O] =
+    new AbstractProducer[O](initialFanOutBufferSize, maxFanOutBufferSize) with InternalProducer[O] {
+      protected def requestFromUpstream(elements: Int): Unit = runEffect(source.handleRequestMore(elements))
+      protected def cancelUpstream(): Unit = runEffect(source.handleCancel())
+      protected def shutdown(): Unit = runEffect(shutdownEffect)
 
-      def getPublisher: Publisher[O] = fanOut
+      var effects: Effect = null
+      def runEffect(effect: Effect): Unit = effects ~= effect
+      @tailrec def collectingEffects(body: ⇒ Unit): Effect =
+        if (locked.compareAndSet(false, true)) {
+          try {
+            assert(effects eq null)
+            effects = Continue
+            body
+            val result = effects
+            effects = null
+            result
+          } finally locked.set(false)
+        } else collectingEffects(body)
+
+      private[this] val locked = new AtomicBoolean // TODO: replace with AtomicFieldUpdater / sun.misc.Unsafe
+
+      override def subscribe(subscriber: Subscriber[O]): Unit =
+        collectAndRun(super.subscribe(subscriber))
+      override protected def moreRequested(subscription: Subscription, elements: Int): Unit =
+        collectAndRun(super.moreRequested(subscription, elements))
+      override protected def unregisterSubscription(subscription: Subscription): Unit =
+        collectAndRun(super.unregisterSubscription(subscription))
+
+      def subscribeInternal(subscriber: Subscriber[O]): Effect =
+        collectingEffects(super.subscribe(subscriber))
+
+      def collectAndRun(body: ⇒ Unit): Unit = runStrictInContext(collectingEffects(body))
+      case class Collecting(name: String)(body: ⇒ Unit) extends SingleStep {
+        def runOne(): Effect = collectingEffects(body)
+      }
+      val downstream: Downstream[O] = new Downstream[O] {
+        val next = (o: O) ⇒ Collecting("nextFanOut")(pushToDownstream(o))
+        val complete: Effect = Collecting("completeFanOut")(completeDownstream())
+        val error: Throwable ⇒ Effect = cause ⇒ Collecting("errorFanOut")(abortDownstream(cause))
+      }
+      val source = sourceConstructor(downstream)
+      Effect.run(source.start())
 
       def createSource(downstream: Downstream[O]): SyncSource = {
         object InternalSourceConnector extends Subscriber[O] with SyncSource {
-          var subscription: Subscription = _
+          var subscription: spi.Subscription = _
           var source: Upstream = _
 
-          def onSubscribe(subscription: Subscription): Unit = {
+          def onSubscribe(subscription: spi.Subscription): Unit = {
             this.subscription = subscription
             this.source = BasicEffects.forSubscription(subscription)
           }
           // called from fanOut to this subscriber
-          def onNext(element: O): Unit = fanOut.runEffect(downstream.next(element))
-          def onComplete(): Unit = fanOut.runEffect(downstream.complete)
-          def onError(cause: Throwable): Unit = fanOut.runEffect(downstream.error(cause))
+          def onNext(element: O): Unit = runEffect(downstream.next(element))
+          def onComplete(): Unit = runEffect(downstream.complete)
+          def onError(cause: Throwable): Unit = runEffect(downstream.error(cause))
 
           // called from internal subscriber
           // TODO: this may call moreRequested which will then be re-scheduled to run
@@ -88,11 +125,13 @@ abstract class AbstractContextEffects extends ContextEffects {
           def handleRequestMore(n: Int): Effect = source.requestMore(n)
           // TODO: same as for handleRequestMore
           override def handleCancel(): Effect = source.cancel
+
+          override def start(): Effect = subscribeInternal(InternalSourceConnector)
         }
-        fanOut.subscribe(InternalSourceConnector)
         InternalSourceConnector
       }
     }
+
 }
 
 case class ConnectInternalSourceSink[O](sourceConstructor: Downstream[O] ⇒ SyncSource, sinkConstructor: Upstream ⇒ SyncSink[O]) extends SingleStep {

@@ -39,8 +39,14 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         val upstreamSubscription = upstream.expectSubscription()
         upstreamSubscription.sendComplete()
 
+        // we need some leeway for the actor to do its processing before
+        // the fanOut will have registered that the downstream is complete
+        Thread.sleep(100)
+
         val downstream = TestKit.consumerProbe[Int]()
         processed.link(downstream)
+        // without the sleep you will get an onSubscribe first here
+        // downstream.expectSubscription
         downstream.expectComplete()
       }
       "upstream errs out" in {
@@ -50,6 +56,9 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
         upstream.link(processed)
         val upstreamSubscription = upstream.expectSubscription()
         upstreamSubscription.sendError(TestException)
+
+        // see "upstream completes"
+        Thread.sleep(100)
 
         val downstream = TestKit.consumerProbe[Int]()
         processed.link(downstream)

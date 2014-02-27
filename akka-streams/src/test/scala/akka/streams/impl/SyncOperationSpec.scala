@@ -77,9 +77,9 @@ trait SyncOperationSpec extends WithActorSystem {
     def getPublisher: Publisher[O] = throw new IllegalStateException("Should only be deconstructed")
   }
 
-  case class Thunk(body: () ⇒ Effect)
+  case class RunEffect(body: Effect)
   val runInContextProbe = TestProbe()
-  def expectThunk(): () ⇒ Effect = runInContextProbe.expectMsgType[Thunk].body
+  def expectThunk(): () ⇒ Effect = runInContextProbe.expectMsgType[RunEffect].body.asInstanceOf[SingleStep].runOne
   def expectAndRunContextEffect(): Effect = expectThunk()()
   object TestContextEffects extends AbstractContextEffects {
 
@@ -92,15 +92,17 @@ trait SyncOperationSpec extends WithActorSystem {
     override def subscribeFrom[O](sink: Sink[O])(sourceConstructor: Downstream[O] ⇒ SyncSource): Effect = SubscribeFrom(sink, sourceConstructor)
     override def expose[O](source: Source[O]): Producer[O] = ExposedSource(source)
 
-    override def internalProducer[O](constructor: Downstream[O] ⇒ SyncSource): Producer[O] =
+    override def internalProducer[O](sourceConstructor: Downstream[O] ⇒ SyncSource, shutdownEffect: Effect, initialFanOutBufferSize: Int, maxFanOutBufferSize: Int): Producer[O] =
       new InternalProducer[O] {
-        override def createSource(downstream: Downstream[O]): SyncSource = constructor(downstream)
+        override def createSource(downstream: Downstream[O]): SyncSource = sourceConstructor(downstream)
         override def getPublisher: Publisher[O] = ???
       }
-    def createFanOut[O](requestMore: (Int) ⇒ Effect, cancelUpstream: Effect, shutdownComplete: Effect, shutdownWithError: (Throwable) ⇒ Effect): FanOut[O] = ???
 
     implicit def executionContext: ExecutionContext = system.dispatcher
-    def runInContext(body: ⇒ Effect): Unit = runInContextProbe.ref ! Thunk(body _)
+    def runStrictInContext(effect: Effect): Unit = runInContextProbe.ref ! RunEffect(effect)
+
+    def defaultInitialBufferSize: Int = 1
+    def defaultMaxBufferSize: Int = 16
   }
 
   implicit class RichEffect(effect: Effect) {

@@ -17,7 +17,7 @@ trait ImplementationFactoryProducerSpec extends ImplementationFactorySpec {
       }
       "for FromIterableSource" - {
         "empty" in {
-          val producer = FromIterableSource[String](Seq()).toProducer()
+          val producer = FromIterableSource[String](Nil).toProducer()
           val downstream = TestKit.consumerProbe[String]()
           producer.link(downstream)
           downstream.expectComplete()
