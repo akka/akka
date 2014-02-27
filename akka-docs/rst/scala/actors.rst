@@ -890,11 +890,18 @@ supervisor’s decision the actor is resumed (as if nothing happened), restarted
 Extending Actors using PartialFunction chaining
 ===============================================
 
-A bit advanced but very useful way of defining a base message handler and then
-extend that, either through inheritance or delegation, is to use
-``PartialFunction.orElse`` chaining.
+Sometimes it can be useful to share common behavior among a few actors, or compose one actor's behavior from multiple smaller functions.
+This is is possible because an actor's :meth:`receive` method returns an ``Actor.Receive``, which is a type alias for ``PartialFunction[Any,Unit]``,
+and partial functions can be chained together using the ``PartialFunction#orElse`` method. You can chain as many functions you need,
+however you should keep in mind that "first match" wins - which may be important when combining functions that both can handle the same type of message.
+
+For example, imagine you have a set of actors which are either ``Producers`` or ``Consumers``, yet sometimes it makes sense to
+have an actor share both behaviors. This can be easily achieved without having to duplicate code by extracting the behaviors to
+traits and implementing the actor's :meth:`receive` as combination of these partial functions.
 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#receive-orElse
+
+Instead of inheritance the same pattern can be applied via composition - one would simply compose the receive method using partial functions from delegates.
 
 Initialization patterns
 =======================
