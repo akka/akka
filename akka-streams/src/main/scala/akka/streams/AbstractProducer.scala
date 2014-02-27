@@ -169,7 +169,8 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
       if (!writtenOk) throw new IllegalStateException("Output buffer overflow")
       val maxRequested = dispatchAndReturnMaxRequested(subscriptions)
       if (pendingFromUpstream == 0) requestFromUpstreamIfPossible(capAtIntMaxValue(maxRequested))
-    } else throw new IllegalStateException("pushToDownStream(...) after completeDownstream() or abortDownstream(...)")
+    } else if (endOfStream eq ShutDown) {} // ignore, race between cancel / onNext is expected
+    else throw new IllegalStateException("pushToDownStream(...) after completeDownstream() or abortDownstream(...)")
   }
 
   // this method must be called by the implementing class whenever
