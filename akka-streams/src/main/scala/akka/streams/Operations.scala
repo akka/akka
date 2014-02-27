@@ -13,6 +13,7 @@ object Operation {
 
   sealed trait Source[+O] {
     def andThen[O2](op: O ==> O2): Source[O2] = MappedSource(this, op)
+    // TODO: find a better name
     def finish(sink: Sink[O]): Pipeline[_] =
       sink match {
         // convert MappedSink into MappedSource
@@ -36,6 +37,7 @@ object Operation {
   case class FromIterableSource[T](iterable: Iterable[T]) extends Source[T]
   case class SingletonSource[T](element: T) extends Source[T]
   case object EmptySource extends Source[Nothing]
+  // TODO: get rid of MappedSource and move operation into Source
   case class MappedSource[I, O](source: Source[I], operation: Operation[I, O]) extends Source[O] {
     type Input = I
     override def andThen[O2](op: Operation.==>[O, O2]): Source[O2] = MappedSource(source, Operation(operation, op))
@@ -47,6 +49,7 @@ object Operation {
   sealed trait Sink[-I] {
     def finish[I2 <: I](source: Source[I2]): Pipeline[I2] = Pipeline(source, this)
   }
+  // TODO: get rid of MappedSink and push operation into Sink
   case class MappedSink[I, O](operation: I ==> O, sink: Sink[O]) extends Sink[I]
 
   implicit def fromConsumer[T](consumer: Consumer[T]) = FromConsumerSink(consumer)
@@ -217,6 +220,7 @@ object Operation {
   implicit def producer2Ops1[T](producer: Producer[T]) = SourceOps1[T](producer)
   implicit def producerOps2[I, O](op: I ==> Producer[O]) = OperationOps2(OperationOps1(op).map(FromProducerSource(_)))
 
+  // TODO: move API-prototype into separate file as it is basically unrelated to the model itself
   trait Ops1[B] extends Any {
     type Res[_]
     def andThen[C](next: B ==> C): Res[C]

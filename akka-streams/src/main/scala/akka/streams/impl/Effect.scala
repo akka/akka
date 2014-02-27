@@ -70,7 +70,7 @@ object Effect {
           s.run(); iterate(elements.tail)
         case Continue         ⇒ iterate(elements.tail)
         case r: SingleStep    ⇒ iterate(elements.tail :+ r.runOne())
-        case Effects(results) ⇒ iterate(results ++ elements.tail)
+        case Effects(effects) ⇒ iterate(effects ++ elements.tail)
       }
     }
 
@@ -79,7 +79,7 @@ object Effect {
       case s: ExternalEffect ⇒ s.run()
       case Continue          ⇒
       case r: SingleStep     ⇒ iterate(Vector(r.runOne()))
-      case Effects(results)  ⇒ iterate(results)
+      case Effects(effects)  ⇒ iterate(effects)
     }
   }
 }
