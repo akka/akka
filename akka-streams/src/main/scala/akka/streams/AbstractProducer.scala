@@ -1,17 +1,17 @@
 package akka.streams
 
 import scala.annotation.tailrec
-import rx.async.api.{ Producer ⇒ Prod }
+import rx.async.api
 import rx.async.spi.{ Subscriber, Publisher }
 import ResizableMultiReaderRingBuffer.NothingToReadException
 
 object Producer {
-  def apply[T](iterable: Iterable[T]): Prod[T] = apply(iterable.iterator)
-  def apply[T](iterator: Iterator[T]): Prod[T] = new IteratorProducer[T](iterator)
-  def empty[T]: Prod[T] = EmptyProducer.asInstanceOf[Prod[T]]
+  def apply[T](iterable: Iterable[T]): api.Producer[T] = apply(iterable.iterator)
+  def apply[T](iterator: Iterator[T]): api.Producer[T] = new IteratorProducer[T](iterator)
+  def empty[T]: api.Producer[T] = EmptyProducer.asInstanceOf[api.Producer[T]]
 }
 
-object EmptyProducer extends Prod[Nothing] with Publisher[Nothing] {
+object EmptyProducer extends api.Producer[Nothing] with Publisher[Nothing] {
   def getPublisher: Publisher[Nothing] = this
 
   def subscribe(subscriber: Subscriber[Nothing]): Unit =
@@ -23,7 +23,7 @@ object EmptyProducer extends Prod[Nothing] with Publisher[Nothing] {
  * with configurable and adaptive output buffer size.
  */
 abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
-  extends Prod[T] with Publisher[T] with ResizableMultiReaderRingBuffer.Cursors {
+  extends api.Producer[T] with Publisher[T] with ResizableMultiReaderRingBuffer.Cursors {
   import AbstractProducer._
 
   // we keep an element (ring) buffer which serves two purposes:
@@ -42,7 +42,7 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
   private[this] var subscriptions: List[Subscription] = Nil
 
   // number of elements already requested but not yet received from upstream
-  private[this] var pendingFromUpstream: Int = 0
+  private[this] var pendingFromUpstream: Long = 0
 
   // if non-null, holds the end-of-stream state
   private[this] var endOfStream: EndOfStream = _
@@ -91,10 +91,10 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
       val eos = endOfStream
 
       // returns Int.MinValue if the subscription is to be terminated
-      @tailrec def dispatchFromBufferAndReturnRemainingRequested(requested: Int): Int =
+      @tailrec def dispatchFromBufferAndReturnRemainingRequested(requested: Long): Long =
         if (requested == 0) {
           // if we are at end-of-stream and have nothing more to read we complete now rather than after the next `requestMore`
-          if ((eos ne null) && buffer.count(subscription) == 0) Int.MinValue else 0
+          if ((eos ne null) && buffer.count(subscription) == 0) Long.MinValue else 0
         } else {
           val x =
             try {
@@ -102,7 +102,7 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
               subscription.dispatch(element) // as long as we can produce elements from our buffer we do so synchronously
               -1 // we can't directly tailrec from here since we are in a try/catch, so signal with special value
             } catch {
-              case NothingToReadException ⇒ if (eos ne null) Int.MinValue else requested // terminate or request from upstream
+              case NothingToReadException ⇒ if (eos ne null) Long.MinValue else requested // terminate or request from upstream
             }
           if (x == -1) dispatchFromBufferAndReturnRemainingRequested(requested - 1) else x
         }
@@ -110,7 +110,7 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
       eos match {
         case null | Completed ⇒
           dispatchFromBufferAndReturnRemainingRequested(subscription.requested + elements) match {
-            case Int.MinValue ⇒
+            case Long.MinValue ⇒
               eos(subscription.subscriber)
               unregisterSubscriptionInternal(subscription)
             case 0 ⇒
@@ -118,20 +118,20 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
               requestFromUpstreamIfRequired()
             case requested ⇒
               subscription.requested = requested
-              requestFromUpstreamIfPossible(requested)
+              requestFromUpstreamIfPossible(capAtIntMaxValue(requested))
           }
         case ErrorCompleted(_) ⇒ // ignore, the Subscriber might not have seen our error event yet
       }
     }
 
   private def requestFromUpstreamIfRequired(): Unit = {
-    @tailrec def maxRequested(remaining: List[Subscription], result: Int = 0): Int =
+    @tailrec def maxRequested(remaining: List[Subscription], result: Long = 0): Long =
       remaining match {
         case head :: tail ⇒ maxRequested(tail, math.max(head.requested, result))
         case _            ⇒ result
       }
     if (pendingFromUpstream == 0)
-      requestFromUpstreamIfPossible(maxRequested(subscriptions))
+      requestFromUpstreamIfPossible(capAtIntMaxValue(maxRequested(subscriptions)))
   }
 
   private def requestFromUpstreamIfPossible(elements: Int): Unit = {
@@ -142,9 +142,11 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
     }
   }
 
+  private def capAtIntMaxValue(long: Long): Int = math.min(long, Int.MaxValue).toInt
+
   // this method must be called by the implementing class whenever a new value is available to be pushed downstream
   protected def pushToDownstream(value: T): Unit = {
-    @tailrec def dispatchAndReturnMaxRequested(remaining: List[Subscription], result: Int = 0): Int =
+    @tailrec def dispatchAndReturnMaxRequested(remaining: List[Subscription], result: Long = 0): Long =
       remaining match {
         case head :: tail ⇒
           var requested = head.requested
@@ -166,7 +168,7 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
       val writtenOk = buffer.write(value)
       if (!writtenOk) throw new IllegalStateException("Output buffer overflow")
       val maxRequested = dispatchAndReturnMaxRequested(subscriptions)
-      if (pendingFromUpstream == 0) requestFromUpstreamIfPossible(maxRequested)
+      if (pendingFromUpstream == 0) requestFromUpstreamIfPossible(capAtIntMaxValue(maxRequested))
     } else throw new IllegalStateException("pushToDownStream(...) after completeDownstream() or abortDownstream(...)")
   }
 
@@ -239,7 +241,7 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
 
     /////////////// internal interface, no unsynced access from subscriber's thread //////////////
 
-    var requested: Int = 0 // number of requested but not yet dispatched elements
+    var requested: Long = 0 // number of requested but not yet dispatched elements
     var cursor: Int = 0 // buffer cursor, set to Int.MinValue if this subscription has been cancelled / terminated
 
     def isActive: Boolean = cursor != Int.MinValue

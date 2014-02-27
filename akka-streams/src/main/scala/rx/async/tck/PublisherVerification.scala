@@ -5,7 +5,7 @@ import org.testng.annotations.Test
 import org.testng.Assert._
 import rx.async.spi.{ Subscription, Publisher }
 
-abstract class PublisherVerification[T] extends TestEnvironment {
+trait PublisherVerification[T] extends TestEnvironment {
   import TestEnvironment._
 
   // TODO: make the timeouts be dilate-able so that one can tune the suite for the machine it runs on
