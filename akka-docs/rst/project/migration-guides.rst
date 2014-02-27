@@ -10,3 +10,4 @@ Migration Guides
    migration-guide-2.0.x-2.1.x
    migration-guide-2.1.x-2.2.x
    migration-guide-2.2.x-2.3.x
+   migration-guide-eventsourced-2.3.x

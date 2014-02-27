@@ -21,7 +21,8 @@ communication channels with at-least-once message delivery semantics.
   contents of the ``akka.persistence`` package.
 
 Akka persistence is inspired by and the official replacement of the `eventsourced`_ library. It follows the same
-concepts and architecture of `eventsourced`_ but significantly differs on API and implementation level.
+concepts and architecture of `eventsourced`_ but significantly differs on API and implementation level. See also
+:ref:`migration-eventsourced-2.3`
 
 .. _eventsourced: https://github.com/eligosource/eventsourced
 
@@ -80,6 +81,8 @@ so that the sender can re-send the message, if needed.
 A ``Processor`` itself is an ``Actor`` and can therefore be instantiated with ``actorOf``.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#usage
+
+.. _recovery:
 
 Recovery
 --------
@@ -295,6 +298,8 @@ If an application wants to have more control how sequence numbers are assigned t
 application-specific sequence number generator and include the generated sequence numbers into the ``payload``
 of ``Persistent`` messages.
 
+.. _persistent-channels:
+
 Persistent channels
 -------------------
 
@@ -333,6 +338,8 @@ creating the channel with the ``replyPersistent`` configuration parameter set to
 With this setting, either the successfully persisted message is replied to the sender or a ``PersistenceFailure``
 message. In case the latter case, the sender should re-send the message.
 
+.. _processor-identifiers:
+
 Identifiers
 -----------
 
@@ -343,6 +350,8 @@ a channel identifier, it should be provided as argument ``Channel.props(String)`
 (recommended to generate stable identifiers).
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#channel-id-override
+
+.. _persistent-messages:
 
 Persistent messages
 ===================
@@ -490,6 +499,8 @@ In larger integration scenarios, channel destinations may be actors that submit 
 message broker, for example. After having successfully submitted an event, they should call ``confirm()`` on the
 received ``ConfirmablePersistent`` message.
 
+.. _batch-writes:
+
 Batch writes
 ============
 
@@ -520,6 +531,8 @@ Confirmation and deletion operations performed by :ref:`channels` are also batch
 and deletion batch sizes are configurable with ``akka.persistence.journal.max-confirmation-batch-size`` and
 ``akka.persistence.journal.max-deletion-batch-size``, respectively.
 
+.. _storage-plugins:
+
 Storage plugins
 ===============
 
@@ -530,6 +543,8 @@ plugins by implementing a plugin API and activate them by configuration. Plugin 
 imports:
 
 .. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#plugin-imports
+
+.. _journal-plugin-api:
 
 Journal plugin API
 ------------------
@@ -570,6 +585,8 @@ A snapshot store plugin can be activated with the following minimal configuratio
 
 The specified plugin ``class`` must have a no-arg constructor. The ``plugin-dispatcher`` is the dispatcher
 used for the plugin actor. If not specified, it defaults to ``akka.persistence.dispatchers.default-plugin-dispatcher``.
+
+.. _pre-packaged-plugins:
 
 Pre-packaged plugins
 ====================
@@ -634,6 +651,8 @@ the local filesystem. The default storage location is a directory named ``snapsh
 directory. This can be changed by configuration where the specified path can be relative or absolute:
 
 .. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#snapshot-config
+
+.. _custom-serialization:
 
 Custom serialization
 ====================
