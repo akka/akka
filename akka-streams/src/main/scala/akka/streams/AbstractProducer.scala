@@ -1,17 +1,17 @@
 package akka.streams
 
 import scala.annotation.tailrec
-import rx.async.api.{ Producer ⇒ Prod }
+import rx.async.api
 import rx.async.spi.{ Subscriber, Publisher }
 import ResizableMultiReaderRingBuffer.NothingToReadException
 
 object Producer {
-  def apply[T](iterable: Iterable[T]): Prod[T] = apply(iterable.iterator)
-  def apply[T](iterator: Iterator[T]): Prod[T] = new IteratorProducer[T](iterator)
-  def empty[T]: Prod[T] = EmptyProducer.asInstanceOf[Prod[T]]
+  def apply[T](iterable: Iterable[T]): api.Producer[T] = apply(iterable.iterator)
+  def apply[T](iterator: Iterator[T]): api.Producer[T] = new IteratorProducer[T](iterator)
+  def empty[T]: api.Producer[T] = EmptyProducer.asInstanceOf[api.Producer[T]]
 }
 
-object EmptyProducer extends Prod[Nothing] with Publisher[Nothing] {
+object EmptyProducer extends api.Producer[Nothing] with Publisher[Nothing] {
   def getPublisher: Publisher[Nothing] = this
 
   def subscribe(subscriber: Subscriber[Nothing]): Unit =
@@ -23,7 +23,7 @@ object EmptyProducer extends Prod[Nothing] with Publisher[Nothing] {
  * with configurable and adaptive output buffer size.
  */
 abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
-  extends Prod[T] with Publisher[T] with ResizableMultiReaderRingBuffer.Cursors {
+  extends api.Producer[T] with Publisher[T] with ResizableMultiReaderRingBuffer.Cursors {
   import AbstractProducer._
 
   // we keep an element (ring) buffer which serves two purposes:
