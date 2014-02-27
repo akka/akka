@@ -1,10 +1,11 @@
 package rx.async.tck
 
 import rx.async.api.Processor
-import rx.async.spi.Publisher
+import rx.async.spi.{ Subscription, Subscriber, Publisher }
 import org.testng.annotations.Test
+import rx.async.tck.SubscriberVerification.SubscriberProbe
 
-abstract class IdentityProcessorVerification[T] extends PublisherVerification[T] { verification ⇒
+abstract class IdentityProcessorVerification[T] extends PublisherVerification[T] with SubscriberVerification[T] { verification ⇒
   import TestEnvironment._
 
   // TODO: make the timeouts be dilate-able so that one can tune the suite for the machine it runs on
@@ -53,6 +54,57 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
       verifyNoAsyncErrors()
     }
 
+  // A Publisher
+  //   must call `onError` on all its subscribers if it encounters a non-recoverable error
+  @Test
+  override def mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError(): Unit =
+    new TestSetup(maxBufferSize = 1) {
+      val sub1 = new ManualSubscriber[T] with SubscriptionSupport[T] with ErrorCollection[T]
+      verification.subscribe(processor.getPublisher, sub1)
+      val sub2 = new ManualSubscriber[T] with SubscriptionSupport[T] with ErrorCollection[T]
+      verification.subscribe(processor.getPublisher, sub2)
+
+      sub1.requestMore(1)
+      expectRequestMore(1)
+      sendNextTFromUpstream()
+      expectNextElement(sub1, lastT)
+      sub1.requestMore(1)
+
+      // sub1 now has received and element and has 1 pending
+      // sub2 has not yet requested anything
+
+      val ex = new RuntimeException
+      sendError(ex)
+      sub1.expectError(ex)
+      sub2.expectError(ex)
+
+      verifyNoAsyncErrors()
+    }
+
+  ////////////////////// SUBSCRIBER RULES VERIFICATION ///////////////////////////
+
+  // A Processor
+  //   must obey all Subscriber rules on its consuming side
+  def createSubscriber(probe: SubscriberProbe[T]): Subscriber[T] = {
+    val processor = createIdentityProcessor(maxBufferSize = 2)
+    processor.getPublisher.subscribe {
+      new Subscriber[T] {
+        def onSubscribe(subscription: Subscription): Unit =
+          probe.registerOnSubscribe {
+            new SubscriberVerification.SubscriberPuppet {
+              def triggerShutdown(): Unit = subscription.cancel() // TODO: improve
+              def triggerRequestMore(elements: Int): Unit = subscription.requestMore(elements)
+              def triggerCancel(): Unit = subscription.cancel()
+            }
+          }
+        def onNext(element: T): Unit = probe.registerOnNext(element)
+        def onComplete(): Unit = probe.registerOnComplete()
+        def onError(cause: Throwable): Unit = probe.registerOnError(cause)
+      }
+    }
+    processor.getSubscriber // we run the SubscriberVerification against this
+  }
+
   ////////////////////// OTHER SPEC RULE VERIFICATION ///////////////////////////
 
   // A Processor
@@ -72,15 +124,12 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
   @Test
   def mustImmediatelyPassOnOnErrorEventsReceivedFromItsUpstreamToItsDownstream(): Unit =
     new TestSetup(maxBufferSize = 1) {
-      val error = new Promise[Throwable]
-      val sub = new ManualSubscriber[T] with SubscriptionSupport[T] {
-        override def onError(cause: Throwable): Unit = error.complete(cause)
-      }
+      val sub = new ManualSubscriber[T] with SubscriptionSupport[T] with ErrorCollection[T]
       verification.subscribe(processor.getPublisher, sub)
 
       val ex = new RuntimeException
       sendError(ex)
-      error.expectCompletion(timeoutMillis = 100, errorMsg = "The Processor did not pass on the upstream error immediately")
+      sub.expectError(ex)
 
       verifyNoAsyncErrors()
     }
@@ -153,7 +202,7 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
 
   /////////////////////// TEST INFRASTRUCTURE //////////////////////
 
-  class TestSetup(maxBufferSize: Int) extends ManualPublisher[T] {
+  abstract class TestSetup(maxBufferSize: Int) extends ManualPublisher[T] {
     val tees = newManualSubscriber(createPublisher(0)) // gives us access to an infinite stream of T values
     val processor = createIdentityProcessor(maxBufferSize)
     var lastT: T = _
@@ -168,10 +217,6 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
     def expectNextElement(sub: ManualSubscriber[T], expected: T): Unit = {
       val elem = sub.nextElement()
       if (elem != expected) fail(s"Received `onNext($elem)` on downstream but expected `onNext($expected)`")
-    }
-    def expectRequestMore(expected: Int): Unit = {
-      val requested = nextRequestMore()
-      if (requested != expected) fail(s"Received `requestMore(requested)` on upstream but expected `requestMore($expected)`")
     }
   }
 }

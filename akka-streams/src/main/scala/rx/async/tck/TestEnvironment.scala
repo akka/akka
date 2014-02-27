@@ -116,6 +116,15 @@ object TestEnvironment {
       else fail(s"Subscriber::onError($cause) called before Subscriber::onSubscribe")
   }
 
+  trait ErrorCollection[T] extends TestSubscriber[T] {
+    val error = new Promise[Throwable]
+    override def onError(cause: Throwable): Unit = error.complete(cause)
+    def expectError(cause: Throwable, timeoutMillis: Int = 100): Unit = {
+      error.expectCompletion(timeoutMillis, "Did not receive expected error on downstream")
+      if (error.value != cause) fail(s"Expected error $cause but got ${error.value}")
+    }
+  }
+
   class ManualPublisher[T] extends Publisher[T] {
     var subscriber: Option[Subscriber[T]] = None
     val requests = new Receptacle[Int]()
@@ -133,11 +142,18 @@ object TestEnvironment {
     def sendNext(element: T): Unit =
       if (subscriber.isDefined) subscriber.get.onNext(element)
       else fail(s"Cannot sendNext before subscriber subscription")
+    def sendCompletion(): Unit =
+      if (subscriber.isDefined) subscriber.get.onComplete()
+      else fail(s"Cannot sendCompletion before subscriber subscription")
     def sendError(cause: Throwable): Unit =
       if (subscriber.isDefined) subscriber.get.onError(cause)
       else fail(s"Cannot sendError before subscriber subscription")
     def nextRequestMore(timeoutMillis: Int = 100): Int =
       requests.next(timeoutMillis, "Did not receive expected `requestMore` call")
+    def expectRequestMore(expected: Int, timeoutMillis: Int = 100): Unit = {
+      val requested = nextRequestMore(timeoutMillis)
+      if (requested != expected) fail(s"Received `requestMore($requested)` on upstream but expected `requestMore($expected)`")
+    }
     def expectNoRequestMore(timeoutMillis: Int = 100): Unit =
       requests.expectNone(timeoutMillis, "Received an unexpected `requestMore" + _ + "` call")
     def expectCancelling(timeoutMillis: Int = 100): Unit =
