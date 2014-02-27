@@ -63,6 +63,11 @@ abstract class AbstractContextEffects extends ContextEffects {
 
       var effects: Effect = null
       def runEffect(effect: Effect): Unit = effects ~= effect
+
+      /**
+       *  AbstractProducer logic is run on the thread of the calling party however any further effects
+       *  going into the processing logic/upstream is going to be scheduled and run in the main context.
+       */
       @tailrec def collectingEffects(body: ⇒ Unit): Effect =
         if (locked.compareAndSet(false, true)) {
           try {
