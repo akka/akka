@@ -34,7 +34,7 @@ object AkkaBuild extends Build {
 
   val enableMiMa = false
 
-  val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.3")
+  val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.11.0-RC1")
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
@@ -731,7 +731,10 @@ object AkkaBuild extends Build {
     if(System.getProperty("akka.build.useSnapshotSonatypeResolver", "false").toBoolean)
       Seq(resolvers += Resolver.sonatypeRepo("snapshots"))
     else Seq.empty
-  }
+  } ++ Seq(
+    resolvers += "scala-release-temp" at "http://private-repo.typesafe.com/typesafe/scala-release-temp/",
+    pomIncludeRepository := (_ => false)
+  )
 
   lazy val defaultSettings = baseSettings ++ mimaSettings ++ resolverSettings ++
     Protobuf.settings ++ Seq(
