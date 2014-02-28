@@ -5,8 +5,7 @@ import org.testng.annotations.Test
 import org.testng.Assert._
 import rx.async.spi.{ Subscription, Publisher }
 
-trait PublisherVerification[T] {
-  import TestEnvironment._
+trait PublisherVerification[T] extends TestEnvironment {
 
   // TODO: make the timeouts be dilate-able so that one can tune the suite for the machine it runs on
 
@@ -60,7 +59,7 @@ trait PublisherVerification[T] {
             latch.close()
           }
           override def onSubscribe(subscription: Subscription): Unit =
-            fail(s"Publisher created by `createCompletedStatePublisher()` ($pub) called `onSubscribe` on new Subscriber")
+            flop(s"Publisher created by `createCompletedStatePublisher()` ($pub) called `onSubscribe` on new Subscriber")
         }
       }
       latch.expectClose(timeoutMillis = 100, s"Publisher created by `createPublisher(0)` ($pub) did not call `onComplete` on new Subscriber")
@@ -151,7 +150,7 @@ trait PublisherVerification[T] {
       pub.subscribe(sub)
       errorCause.expectCompletion(timeoutMillis = 100, s"Active Publisher $pub did not call `onError` on double subscription request")
       if (!errorCause.value.isInstanceOf[IllegalStateException])
-        fail(s"Publisher $pub called `onError` with ${errorCause.value} rather than an `IllegalStateException` on double subscription request")
+        flop(s"Publisher $pub called `onError` with ${errorCause.value} rather than an `IllegalStateException` on double subscription request")
       latch.assertOpen(s"Active Publisher $pub unexpectedly called `onSubscribe` on double subscription request")
     }
 
@@ -255,7 +254,7 @@ trait PublisherVerification[T] {
       System.gc()
 
       if (!ref.isEnqueued) // consider switching to remove(timeout) on the queue if required
-        fail(s"Publisher $pub did not drop reference to test subscriber after subscription cancellation")
+        flop(s"Publisher $pub did not drop reference to test subscriber after subscription cancellation")
     }
   }
 
@@ -372,6 +371,7 @@ trait PublisherVerification[T] {
   def activePublisherTest[U](elements: Int)(body: Publisher[T] ⇒ U): Unit = {
     val pub = createPublisher(elements)
     body(pub)
+    verifyNoAsyncErrors()
   }
 
   def completedPublisherTest[U](body: Publisher[T] ⇒ U): Unit =
@@ -383,6 +383,7 @@ trait PublisherVerification[T] {
   def potentiallyPendingTest[U](pub: Publisher[T], body: Publisher[T] ⇒ U): Unit =
     if (pub ne null) {
       body(pub)
+      verifyNoAsyncErrors()
     } // else test is pending/ignored, which our great Java test frameworks have no (non-static) concept for
 
 }

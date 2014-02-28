@@ -1,17 +1,39 @@
 package rx.async.tck
 
 import java.util.concurrent._
-import org.testng.Assert
+import org.testng.Assert.fail
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
+import scala.collection.JavaConverters._
 import rx.async.spi.{ Subscription, Subscriber, Publisher }
 
-object TestEnvironment {
+trait TestEnvironment {
+
+  val asyncErrors = new CopyOnWriteArrayList[Throwable]()
+
+  // don't use the name `fail` as it would collide with other `fail` definitions like the one in scalatest's traits
+  def flop(msg: String): Nothing =
+    try fail(msg).asInstanceOf[Nothing]
+    catch {
+      case t: Throwable ⇒
+        asyncErrors.add(t)
+        throw t
+    }
+
+  def expectThrowingOf[T <: Exception: ClassTag](errorMsg: String)(block: ⇒ Unit): Unit =
+    try {
+      block
+      flop(errorMsg)
+    } catch {
+      case e: Exception if implicitly[ClassTag[T]].runtimeClass.isInstance(e) ⇒ // ok
+      case NonFatal(e) ⇒ flop(s"$errorMsg but $e")
+    }
 
   def subscribe[T](pub: Publisher[T], sub: TestSubscriber[T], timeoutMillis: Int = 100): Unit = {
     pub.subscribe(sub)
     sub.subscription.expectCompletion(timeoutMillis, s"Could not subscribe $sub to Publisher $pub")
+    verifyNoAsyncErrors()
   }
 
   def newManualSubscriber[T](pub: Publisher[T], timeoutMillis: Int = 100): ManualSubscriber[T] = {
@@ -20,28 +42,23 @@ object TestEnvironment {
     sub
   }
 
-  def fail(msg: String): Nothing = Assert.fail(msg).asInstanceOf[Nothing]
-
-  def expectThrowingOf[T <: Exception: ClassTag](errorMsg: String)(block: ⇒ Unit): Unit =
-    try {
-      block
-      fail(errorMsg)
-    } catch {
-      case e: Exception if implicitly[ClassTag[T]].runtimeClass.isInstance(e) ⇒ // ok
-      case NonFatal(e) ⇒ fail(s"$errorMsg but $e")
+  def verifyNoAsyncErrors(): Unit =
+    asyncErrors.asScala.foreach {
+      case e: AssertionError ⇒ throw e
+      case e                 ⇒ fail("Async error during test execution: " + e)
     }
 
   class TestSubscriber[T] extends Subscriber[T] {
     @volatile var subscription = new Promise[Subscription]
-    def onError(cause: Throwable): Unit = fail(s"Unexpected Subscriber::onError($cause)")
-    def onComplete(): Unit = fail("Unexpected Subscriber::onComplete()")
-    def onNext(element: T): Unit = fail(s"Unexpected Subscriber::onNext($element)")
-    def onSubscribe(subscription: Subscription): Unit = fail(s"Unexpected Subscriber::onSubscribe($subscription)")
+    def onError(cause: Throwable): Unit = flop(s"Unexpected Subscriber::onError($cause)")
+    def onComplete(): Unit = flop("Unexpected Subscriber::onComplete()")
+    def onNext(element: T): Unit = flop(s"Unexpected Subscriber::onNext($element)")
+    def onSubscribe(subscription: Subscription): Unit = flop(s"Unexpected Subscriber::onSubscribe($subscription)")
     def cancel(): Unit =
       if (subscription.isCompleted) {
         subscription.value.cancel()
         subscription = new Promise[Subscription]
-      } else fail("Cannot cancel a subscription before having received it")
+      } else flop("Cannot cancel a subscription before having received it")
   }
 
   class ManualSubscriber[T] extends TestSubscriber[T] {
@@ -69,7 +86,7 @@ object TestEnvironment {
       received.nextN(elements, timeoutMillis, errorMsg)
     def expectNext(expected: T, timeoutMillis: Int = 100): Unit = {
       val received = nextElement(timeoutMillis, "Did not receive expected element on downstream")
-      if (received != expected) fail(s"Expected element $expected on downstream but received $received")
+      if (received != expected) flop(s"Expected element $expected on downstream but received $received")
     }
     def expectCompletion(timeoutMillis: Int = 100, errorMsg: String = "Did not receive expected stream completion"): Unit =
       received.expectCompletion(timeoutMillis, errorMsg)
@@ -80,16 +97,16 @@ object TestEnvironment {
   trait SubscriptionSupport[T] extends TestSubscriber[T] {
     abstract override def onNext(element: T) =
       if (subscription.isCompleted) super.onNext(element)
-      else fail(s"Subscriber::onNext($element) called before Subscriber::onSubscribe")
+      else flop(s"Subscriber::onNext($element) called before Subscriber::onSubscribe")
     abstract override def onComplete() =
       if (subscription.isCompleted) super.onComplete()
-      else fail("Subscriber::onComplete() called before Subscriber::onSubscribe")
+      else flop("Subscriber::onComplete() called before Subscriber::onSubscribe")
     abstract override def onSubscribe(s: Subscription) =
       if (!subscription.isCompleted) subscription.complete(s)
-      else fail("Subscriber::onSubscribe called on an already-subscribed Subscriber")
+      else flop("Subscriber::onSubscribe called on an already-subscribed Subscriber")
     abstract override def onError(cause: Throwable) =
       if (subscription.isCompleted) super.onError(cause)
-      else fail(s"Subscriber::onError($cause) called before Subscriber::onSubscribe")
+      else flop(s"Subscriber::onError($cause) called before Subscriber::onSubscribe")
   }
 
   trait ErrorCollection[T] extends TestSubscriber[T] {
@@ -97,7 +114,7 @@ object TestEnvironment {
     override def onError(cause: Throwable): Unit = error.complete(cause)
     def expectError(cause: Throwable, timeoutMillis: Int = 100): Unit = {
       error.expectCompletion(timeoutMillis, "Did not receive expected error on downstream")
-      if (error.value != cause) fail(s"Expected error $cause but got ${error.value}")
+      if (error.value != cause) flop(s"Expected error $cause but got ${error.value}")
     }
   }
 
@@ -114,21 +131,21 @@ object TestEnvironment {
             def cancel(): Unit = cancelled.close()
           }
         }
-      } else fail("TestPublisher doesn't support more than one Subscriber")
+      } else flop("TestPublisher doesn't support more than one Subscriber")
     def sendNext(element: T): Unit =
       if (subscriber.isDefined) subscriber.get.onNext(element)
-      else fail(s"Cannot sendNext before subscriber subscription")
+      else flop(s"Cannot sendNext before subscriber subscription")
     def sendCompletion(): Unit =
       if (subscriber.isDefined) subscriber.get.onComplete()
-      else fail(s"Cannot sendCompletion before subscriber subscription")
+      else flop(s"Cannot sendCompletion before subscriber subscription")
     def sendError(cause: Throwable): Unit =
       if (subscriber.isDefined) subscriber.get.onError(cause)
-      else fail(s"Cannot sendError before subscriber subscription")
+      else flop(s"Cannot sendError before subscriber subscription")
     def nextRequestMore(timeoutMillis: Int = 100): Int =
       requests.next(timeoutMillis, "Did not receive expected `requestMore` call")
     def expectRequestMore(expected: Int, timeoutMillis: Int = 100): Unit = {
       val requested = nextRequestMore(timeoutMillis)
-      if (requested != expected) fail(s"Received `requestMore($requested)` on upstream but expected `requestMore($expected)`")
+      if (requested != expected) flop(s"Received `requestMore($requested)` on upstream but expected `requestMore($expected)`")
     }
     def expectNoRequestMore(timeoutMillis: Int = 100): Unit =
       requests.expectNone(timeoutMillis, "Received an unexpected `requestMore" + _ + "` call")
@@ -142,11 +159,11 @@ object TestEnvironment {
     def reOpen() = countDownLatch = new CountDownLatch(1)
     def isClosed: Boolean = countDownLatch.getCount == 0
     def close() = countDownLatch.countDown()
-    def assertClosed(openErrorMsg: String): Unit = if (!isClosed) fail(openErrorMsg)
-    def assertOpen(closedErrorMsg: String): Unit = if (isClosed) fail(closedErrorMsg)
+    def assertClosed(openErrorMsg: String): Unit = if (!isClosed) flop(openErrorMsg)
+    def assertOpen(closedErrorMsg: String): Unit = if (isClosed) flop(closedErrorMsg)
     def expectClose(timeoutMillis: Int, notClosedErrorMsg: String): Unit = {
       countDownLatch.await(timeoutMillis, TimeUnit.MILLISECONDS)
-      if (countDownLatch.getCount > 0) fail(s"$notClosedErrorMsg within $timeoutMillis ms")
+      if (countDownLatch.getCount > 0) flop(s"$notClosedErrorMsg within $timeoutMillis ms")
     }
   }
 
@@ -154,14 +171,14 @@ object TestEnvironment {
   class Promise[T] {
     private val abq = new ArrayBlockingQueue[T](1)
     @volatile private var _value: T = _
-    def value: T = if (isCompleted) _value else fail("Cannot access promise value before completion")
+    def value: T = if (isCompleted) _value else flop("Cannot access promise value before completion")
     def isCompleted: Boolean = _value.asInstanceOf[AnyRef] ne null
     def complete(value: T): Unit = abq.add(value)
-    def assertCompleted(errorMsg: String): Unit = if (!isCompleted) fail(errorMsg)
-    def assertUncompleted(errorMsg: String): Unit = if (isCompleted) fail(errorMsg)
+    def assertCompleted(errorMsg: String): Unit = if (!isCompleted) flop(errorMsg)
+    def assertUncompleted(errorMsg: String): Unit = if (isCompleted) flop(errorMsg)
     def expectCompletion(timeoutMillis: Int, errorMsg: String): Unit =
       if (!isCompleted) abq.poll(timeoutMillis, TimeUnit.MILLISECONDS) match {
-        case null ⇒ fail(s"$errorMsg within $timeoutMillis ms")
+        case null ⇒ flop(s"$errorMsg within $timeoutMillis ms")
         case x    ⇒ _value = x
       }
   }
@@ -173,13 +190,13 @@ object TestEnvironment {
     def complete(): Unit = abq.add(None)
     def next(timeoutMillis: Int, errorMsg: String): T =
       abq.poll(timeoutMillis, TimeUnit.MILLISECONDS) match {
-        case null    ⇒ fail(s"$errorMsg within $timeoutMillis ms")
+        case null    ⇒ flop(s"$errorMsg within $timeoutMillis ms")
         case Some(x) ⇒ x
-        case None    ⇒ fail(s"Expected element but got end-of-stream")
+        case None    ⇒ flop(s"Expected element but got end-of-stream")
       }
     def nextOrEndOfStream(timeoutMillis: Int, errorMsg: String): Option[T] =
       abq.poll(timeoutMillis, TimeUnit.MILLISECONDS) match {
-        case null ⇒ fail(s"$errorMsg within $timeoutMillis ms")
+        case null ⇒ flop(s"$errorMsg within $timeoutMillis ms")
         case x    ⇒ x
       }
     def nextN(elements: Int, timeoutMillis: Int, errorMsg: String): Seq[T] = {
@@ -191,16 +208,16 @@ object TestEnvironment {
     }
     def expectCompletion(timeoutMillis: Int, errorMsg: String): Unit =
       abq.poll(timeoutMillis, TimeUnit.MILLISECONDS) match {
-        case null    ⇒ fail(s"$errorMsg within $timeoutMillis ms")
-        case Some(x) ⇒ fail(s"Expected end-of-stream but got $x")
+        case null    ⇒ flop(s"$errorMsg within $timeoutMillis ms")
+        case Some(x) ⇒ flop(s"Expected end-of-stream but got $x")
         case None    ⇒ // ok
       }
     def expectNone(withinMillis: Int, errorMsg: T ⇒ String): Unit = {
       Thread.sleep(withinMillis)
       abq.poll() match {
         case null    ⇒ // ok
-        case Some(x) ⇒ fail(errorMsg(x))
-        case None    ⇒ fail("Expected no element but got end-of-stream")
+        case Some(x) ⇒ flop(errorMsg(x))
+        case None    ⇒ flop("Expected no element but got end-of-stream")
       }
     }
   }
