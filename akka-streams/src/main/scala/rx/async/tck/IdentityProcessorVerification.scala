@@ -215,7 +215,7 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
 
   abstract class TestSetup(bufferSize: Int) extends ManualPublisher[T] {
     private val tees = newManualSubscriber(createHelperPublisher(0)) // gives us access to an infinite stream of T values
-    private val seenTees = Set.empty[T]
+    private var seenTees = Set.empty[T]
     val processor = createIdentityProcessor(bufferSize)
     subscribe(processor.getSubscriber)
 
@@ -223,6 +223,7 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
     def nextT(): T = {
       val t = tees.requestNextElement()
       if (seenTees.contains(t)) flop(s"Helper publisher illegally produced the same element $t twice")
+      seenTees += t
       t
     }
     def expectNextElement(sub: ManualSubscriber[T], expected: T): Unit = {
