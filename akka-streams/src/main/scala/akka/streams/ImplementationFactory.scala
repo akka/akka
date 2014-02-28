@@ -1,6 +1,6 @@
 package akka.streams
 
-import rx.async.api.{ Consumer, Producer, Processor }
+import asyncrx.api.{ Consumer, Producer, Processor }
 import akka.streams.Operation.{ Pipeline, Source, Sink }
 
 /**

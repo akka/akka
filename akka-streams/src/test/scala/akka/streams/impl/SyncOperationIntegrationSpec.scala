@@ -8,7 +8,7 @@ import akka.streams._
 import Operation._
 import scala.concurrent.{ Promise, Future }
 import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom
+import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.Success
 
 class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {

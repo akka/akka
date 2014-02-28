@@ -1,6 +1,6 @@
 package akka.streams.impl
 
-import rx.async.api.Producer
+import asyncrx.api.Producer
 
 trait InternalProducer[O] extends Producer[O] {
   // TODO: rename to subscribeDownstream

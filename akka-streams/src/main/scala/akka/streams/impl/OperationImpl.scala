@@ -3,7 +3,7 @@ package akka.streams.impl
 import akka.streams.Operation
 import Operation._
 import ops._
-import rx.async.api.Producer
+import asyncrx.api.Producer
 
 object OperationImpl {
   def apply[A](ctx: ContextEffects, p: Pipeline[A]): SyncRunnable = {

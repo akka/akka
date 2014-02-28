@@ -3,7 +3,7 @@ package akka.streams.impl.ops
 import org.scalatest.{ FreeSpec, ShouldMatchers }
 import akka.streams.impl._
 import akka.streams.Operation.Source
-import rx.async.spi.Subscription
+import asyncrx.spi.Subscription
 
 class SourceHeadTailImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {
   class MockDownstream[I] extends Downstream[I] {

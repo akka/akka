@@ -1,7 +1,7 @@
 package akka.streams.impl
 
 import scala.language.existentials
-import rx.async.spi.{ Publisher, Subscription, Subscriber }
+import asyncrx.spi.{ Publisher, Subscription, Subscriber }
 
 /** Predefined effects */
 object BasicEffects {

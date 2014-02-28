@@ -2,7 +2,23 @@ package akka.streams
 
 import org.scalatest.{ BeforeAndAfterAll, ShouldMatchers, WordSpec }
 import akka.actor.ActorSystem
-import rx.async.tck.TestEnvironment
+import asyncrx.tck.TestEnvironment
+import scala.concurrent.ExecutionContext
+import asyncrx.api
+import asyncrx.spi.{ Publisher, Subscriber }
+
+object TestProducer {
+  def apply[T](iterable: Iterable[T])(implicit executor: ExecutionContext): api.Producer[T] = apply(iterable.iterator)
+  def apply[T](iterator: Iterator[T])(implicit executor: ExecutionContext): api.Producer[T] = new IteratorProducer[T](iterator)
+  def empty[T]: api.Producer[T] = EmptyProducer.asInstanceOf[api.Producer[T]]
+}
+
+object EmptyProducer extends api.Producer[Nothing] with Publisher[Nothing] {
+  def getPublisher: Publisher[Nothing] = this
+
+  def subscribe(subscriber: Subscriber[Nothing]): Unit =
+    subscriber.onComplete()
+}
 
 // same as some of the IdentityProcessorTest cases but directly on the fanout logic level
 class AbstractProducerSpec extends WordSpec with ShouldMatchers with TestEnvironment with BeforeAndAfterAll {

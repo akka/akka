@@ -1,6 +1,6 @@
 package akka.streams
 
-import rx.async.api
+import asyncrx.api
 import api.{ Consumer, Processor }
 import akka.actor.ActorRefFactory
 import akka.streams.impl._

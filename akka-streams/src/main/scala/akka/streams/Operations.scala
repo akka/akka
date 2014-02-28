@@ -2,7 +2,7 @@ package akka.streams
 
 import scala.language.implicitConversions
 
-import rx.async.api
+import asyncrx.api
 import api.Consumer
 import scala.concurrent.Future
 

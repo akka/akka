@@ -2,8 +2,8 @@ package akka.streams.impl.ops
 
 import akka.streams.impl._
 import akka.streams.Operation.{ Source, FromProducerSource }
-import rx.async.spi.{ Subscription, Subscriber }
-import rx.async.api.Producer
+import asyncrx.spi.{ Subscription, Subscriber }
+import asyncrx.api.Producer
 
 class FromProducerSourceImpl[O](downstream: Downstream[O], ctx: ContextEffects, producer: Producer[O]) extends DynamicSyncSource {
   def initial = new State {

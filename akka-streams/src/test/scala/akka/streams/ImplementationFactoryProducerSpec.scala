@@ -78,7 +78,7 @@ trait ImplementationFactoryProducerSpec extends ImplementationFactorySpec {
       }
 
       "work when attached to EmptyProducer" in {
-        val producer = Producer.empty[Int].map(_ + 1).toProducer()
+        val producer = TestProducer.empty[Int].map(_ + 1).toProducer()
 
         val downstream = TestKit.consumerProbe[Int]()
         downstream.expectNoMsg(100.millis.dilated) // to make sure producer above has subscribed to source
