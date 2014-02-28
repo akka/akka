@@ -37,7 +37,7 @@ class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], ctx: Co
       subStreamsRequested -= 1
 
       if (span.p(element)) {
-        downstream.next(SingletonSource(element)) ~ {
+        downstream.next(Source(element)) ~ {
           if (subStreamsRequested > 0) upstream.requestMore(1)
           else Continue
         }

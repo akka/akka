@@ -4,7 +4,7 @@ import rx.async.api.{ Processor, Consumer, Producer }
 import akka.streams.Operation.{ FromFutureSource, FromProducerSource, FromIterableSource }
 import scala.concurrent.Future
 
-package object streams {
+package object streams extends OperationApiImplicits {
   import Operation.{ Sink, Source, Pipeline }
 
   implicit class LinkProducer[I](val producer: Producer[I]) extends AnyVal {
@@ -25,12 +25,12 @@ package object streams {
   }
 
   implicit class SourceFromFuture[T](val future: Future[T]) extends AnyVal {
-    def toSource: Source[T] = FromFutureSource(future)
+    def toSource: Source[T] = Source(future)
   }
   implicit class SourceFromProducer[T](val producer: Producer[T]) extends AnyVal {
-    def toSource: Source[T] = FromProducerSource(producer)
+    def toSource: Source[T] = Source(producer)
   }
   implicit class SourceFromIterable[T](val iterable: Iterable[T]) extends AnyVal {
-    def toSource: Source[T] = FromIterableSource(iterable)
+    def toSource: Source[T] = Source(iterable)
   }
 }

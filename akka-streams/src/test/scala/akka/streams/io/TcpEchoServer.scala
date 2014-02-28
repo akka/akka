@@ -3,11 +3,9 @@ package akka.streams.io
 import akka.actor.ActorSystem
 import java.net.InetSocketAddress
 import akka.util.ByteString
-import akka.streams.{ ActorBasedImplementationSettings, Operation, ActorBasedImplementationFactory }
+import akka.streams._
 
 object TcpEchoServer {
-  import Operation._
-
   def main(args: Array[String]) {
     implicit val system = ActorSystem("tcpdemo")
     implicit val factory = new ActorBasedImplementationFactory(ActorBasedImplementationSettings(system))
