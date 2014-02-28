@@ -50,8 +50,13 @@ abstract class AbstractContextEffects extends ContextEffects {
   def expose[O](source: Source[O]): Producer[O] =
     source match {
       case FromProducerSource(i: InternalProducer[O]) ⇒ i
+      // TODO: what's with all the other cases? Maybe this (untested):
+      // case _ ⇒ internalProducer(OperationImpl(_, this, source))
     }
 
+  /**
+   * This is the central implementation of fanOut for the implementation.
+   */
   def internalProducer[O](sourceConstructor: Downstream[O] ⇒ SyncSource, shutdownEffect: Effect, initialFanOutBufferSize: Int, maxFanOutBufferSize: Int): Producer[O] =
     new AbstractProducer[O](initialFanOutBufferSize, maxFanOutBufferSize) with InternalProducer[O] {
       protected def requestFromUpstream(elements: Int): Unit = runEffect(sourceEffects.requestMore(elements))
@@ -61,53 +66,71 @@ abstract class AbstractContextEffects extends ContextEffects {
       var effects: Effect = null
       def runEffect(effect: Effect): Unit = effects ~= effect
 
+      type F[T1, T2] = (T1, T2) ⇒ Unit
       /**
        *  AbstractProducer logic is run on the thread of the calling party however any further effects
        *  going into the processing logic/upstream is going to be scheduled and run in the main context.
+       *  Needless closure generation is prevented by allowing two parameters to be passed to the body to be run.
        */
-      @tailrec def collectingEffects(body: ⇒ Unit): Effect =
+      @tailrec def collectingEffects[T1, T2](body: F[T1, T2], t1: T1, t2: T2): Effect =
         if (locked.compareAndSet(false, true))
           try {
             assert(effects eq null)
             effects = Continue
-            body
+            body(t1, t2)
             val result = effects
             effects = null
             result
           } finally locked.set(false)
-        else collectingEffects(body)
+        else collectingEffects(body, t1, t2)
 
-      private[this] val locked = new AtomicBoolean // TODO: replace with AtomicFieldUpdater / sun.misc.Unsafe
+      private[this] val locked = new AtomicBoolean
 
+      // premature optimization? Try preventing to create closures all the time by preallocating the function stubs here.
+      val subscribe: F[Subscriber[O], Null] = (s, _) ⇒ super.subscribe(s)
+      val moreRequested: F[Subscription, Int] = super.moreRequested
+      val unregisterSubscription: F[Subscription, Null] = (s, _) ⇒ super.unregisterSubscription(s)
+
+      // These methods are called from the AbstractProducer in the context of subscribers / subscriptions
+      // The fanOut logic is handled inside the calling context but any further processing is scheduled
+      // to run on our own context.
       override def subscribe(subscriber: Subscriber[O]): Unit =
-        collectAndRunInContext(super.subscribe(subscriber))
+        runHereAndResultsInCtx(subscribe, subscriber, null)
       override protected def moreRequested(subscription: Subscription, elements: Int): Unit =
-        collectAndRunInContext(super.moreRequested(subscription, elements))
-
+        runHereAndResultsInCtx(moreRequested, subscription, elements)
       override protected def unregisterSubscription(subscription: Subscription): Unit =
-        collectAndRunInContext(super.unregisterSubscription(subscription))
+        runHereAndResultsInCtx(unregisterSubscription, subscription, null)
 
-      /**
-       * Establishes an internal subscription under the assumption that the code is
-       * already running in context.
-       */
+      // These methods are internal entry points for the above ones that avoid the additional scheduling.
+      // They still need to synchronize running of any AbstractProducer logic.
       def subscribeInternal(subscriber: Subscriber[O]): Effect =
-        collectingEffects(super.subscribe(subscriber))
-
+        collectingEffects(subscribe, subscriber, null)
       def requestMoreInternal(subscription: Subscription, elements: Int): Effect =
-        collectingEffects(super.moreRequested(subscription, elements))
-
+        collectingEffects(moreRequested, subscription, elements)
       def cancelInternal(subscription: Subscription): Effect =
-        collectingEffects(super.unregisterSubscription(subscription))
+        collectingEffects(unregisterSubscription, subscription, null)
 
-      def collectAndRunInContext(body: ⇒ Unit): Unit = runStrictInContext(collectingEffects(body))
-      case class Collecting(name: String)(body: ⇒ Unit) extends SingleStep {
-        def runOne(): Effect = collectingEffects(body)
+      def runHereAndResultsInCtx[T1, T2](body: F[T1, T2], t1: T1, t2: T2): Unit = {
+        val result = collectingEffects(body, t1, t2)
+        runStrictInContext(result)
+      }
+
+      case class PushToFanOut(o: O) extends SingleStep with F[O, Null] {
+        def apply(o: O, v2: Null): Unit = pushToDownstream(o)
+        def runOne(): Effect = collectingEffects(this, o, null)
+      }
+      case object CompleteFanOut extends SingleStep with F[Null, Null] {
+        def apply(v1: Null, v2: Null): Unit = completeDownstream()
+        def runOne(): Effect = collectingEffects(this, null, null)
+      }
+      case class AbortFanOut(cause: Throwable) extends SingleStep with F[Throwable, Null] {
+        def apply(cause: Throwable, v2: Null): Unit = abortDownstream(cause)
+        def runOne(): Effect = collectingEffects(this, cause, null)
       }
       val downstream: Downstream[O] = new Downstream[O] {
-        val next = (o: O) ⇒ Collecting("nextFanOut")(pushToDownstream(o))
-        val complete: Effect = Collecting("completeFanOut")(completeDownstream())
-        val error: Throwable ⇒ Effect = cause ⇒ Collecting("errorFanOut")(abortDownstream(cause))
+        val next = PushToFanOut
+        val complete: Effect = CompleteFanOut
+        val error: Throwable ⇒ Effect = AbortFanOut
       }
       val source = sourceConstructor(downstream)
       val sourceEffects = BasicEffects.forSource(source)

@@ -9,7 +9,6 @@ trait OperationApiImplicits {
   implicit def producer2Ops1[T](producer: api.Producer[T]) = SourceOps1[T](producer)
   implicit def producerOps2[I, O](op: I ==> api.Producer[O]) = OperationOps2(OperationOps1(op).map(FromProducerSource(_)))
 
-  // TODO: move API-prototype into separate file as it is basically unrelated to the model itself
   trait Ops1[B] extends Any {
     type Res[_]
     def andThen[C](next: B ==> C): Res[C]
