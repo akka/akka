@@ -5,9 +5,7 @@ import akka.actor.ActorSystem
 import rx.async.tck.TestEnvironment
 
 // same as some of the IdentityProcessorTest cases but directly on the fanout logic level
-class AbstractProducerSpec extends WordSpec with ShouldMatchers with BeforeAndAfterAll {
-  import TestEnvironment._
-
+class AbstractProducerSpec extends WordSpec with ShouldMatchers with TestEnvironment with BeforeAndAfterAll {
   val system = ActorSystem()
   import system.dispatcher
 
@@ -39,6 +37,8 @@ class AbstractProducerSpec extends WordSpec with ShouldMatchers with BeforeAndAf
       sub2.nextElement() shouldEqual 'c
 
       nextRequestMore() shouldEqual 1 // because sub1 still has 2 pending
+
+      verifyNoAsyncErrors()
     }
 
     "unblock the stream if a 'blocking' subscription has been cancelled" in new Test(iSize = 1, mSize = 1) {
@@ -52,6 +52,8 @@ class AbstractProducerSpec extends WordSpec with ShouldMatchers with BeforeAndAf
       expectNoRequestMore() // because we only have buffer size 1 and sub2 hasn't seen 'a yet
       sub2.cancel() // must "unblock"
       nextRequestMore() shouldEqual 1
+
+      verifyNoAsyncErrors()
     }
   }
 

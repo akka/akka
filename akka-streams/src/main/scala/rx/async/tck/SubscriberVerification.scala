@@ -3,8 +3,7 @@ package rx.async.tck
 import org.testng.annotations.Test
 import rx.async.spi.{ Subscription, Subscriber, Publisher }
 
-trait SubscriberVerification[T] {
-  import TestEnvironment._
+trait SubscriberVerification[T] extends TestEnvironment {
   import SubscriberVerification._
 
   // TODO: make the timeouts be dilate-able so that one can tune the suite for the machine it runs on
@@ -42,6 +41,8 @@ trait SubscriberVerification[T] {
 
       puppet.triggerCancel()
       expectCancelling()
+
+      verifyNoAsyncErrors()
     }
 
   ////////////////////// SPEC RULE VERIFICATION ///////////////////////////
@@ -71,10 +72,11 @@ trait SubscriberVerification[T] {
       // try to subscribe another time, if the subscriber calls `probe.registerOnSubscribe` the test will fail
       sub.onSubscribe {
         new Subscription {
-          def requestMore(elements: Int): Unit = fail(s"Subscriber $sub illegally called `subscription.requestMore($elements)`")
-          def cancel(): Unit = fail(s"Subscriber $sub illegally called `subscription.cancel()`")
+          def requestMore(elements: Int): Unit = flop(s"Subscriber $sub illegally called `subscription.requestMore($elements)`")
+          def cancel(): Unit = flop(s"Subscriber $sub illegally called `subscription.cancel()`")
         }
       }
+      verifyNoAsyncErrors()
     }
 
   // A Subscriber
@@ -84,6 +86,8 @@ trait SubscriberVerification[T] {
     new TestSetup {
       puppet.triggerShutdown()
       expectCancelling()
+
+      verifyNoAsyncErrors()
     }
 
   // A Subscriber
@@ -102,6 +106,8 @@ trait SubscriberVerification[T] {
       puppet.triggerCancel()
       expectCancelling()
       sendNextTFromUpstream()
+
+      verifyNoAsyncErrors()
     }
 
   // A Subscriber
@@ -112,6 +118,8 @@ trait SubscriberVerification[T] {
       puppet.triggerRequestMore(1)
       sendCompletion()
       probe.expectCompletion()
+
+      verifyNoAsyncErrors()
     }
 
   // A Subscriber
@@ -121,6 +129,8 @@ trait SubscriberVerification[T] {
     new TestSetup {
       sendCompletion()
       probe.expectCompletion()
+
+      verifyNoAsyncErrors()
     }
 
   // A Subscriber
@@ -132,6 +142,8 @@ trait SubscriberVerification[T] {
       val ex = new RuntimeException("Test exception")
       sendError(ex)
       probe.expectError(ex)
+
+      verifyNoAsyncErrors()
     }
 
   // A Subscriber
@@ -142,6 +154,8 @@ trait SubscriberVerification[T] {
       val ex = new RuntimeException("Test exception")
       sendError(ex)
       probe.expectError(ex)
+
+      verifyNoAsyncErrors()
     }
 
   // A Subscriber
@@ -177,21 +191,21 @@ trait SubscriberVerification[T] {
       val error = new Promise[Throwable]
       def registerOnSubscribe(p: SubscriberPuppet): Unit =
         if (!puppet.isCompleted) puppet.complete(p)
-        else fail(s"Subscriber $sub illegally accepted a second Subscription")
+        else flop(s"Subscriber $sub illegally accepted a second Subscription")
       def registerOnNext(element: T): Unit = elements.add(element)
       def registerOnComplete(): Unit = completed.close()
       def registerOnError(cause: Throwable): Unit = error.complete(cause)
       def expectNext(expected: T, timeoutMillis: Int = 100) = {
         val received = elements.next(timeoutMillis, s"Subscriber $sub did not call `registerOnNext($expected)`")
         if (received != expected)
-          fail(s"Subscriber $sub called `registerOnNext($received)` rather than `registerOnNext($expected)`")
+          flop(s"Subscriber $sub called `registerOnNext($received)` rather than `registerOnNext($expected)`")
       }
       def expectCompletion(timeoutMillis: Int = 100): Unit =
         completed.expectClose(timeoutMillis, s"Subscriber $sub did not call `registerOnComplete()`")
       def expectError(expected: Throwable, timeoutMillis: Int = 100): Unit = {
         error.expectCompletion(timeoutMillis, s"Subscriber $sub did not call `registerOnError($expected)`")
         if (error.value != expected)
-          fail(s"Subscriber $sub called `registerOnError(${error.value})` rather than `registerOnError($expected)`")
+          flop(s"Subscriber $sub called `registerOnError(${error.value})` rather than `registerOnError($expected)`")
       }
     }
   }

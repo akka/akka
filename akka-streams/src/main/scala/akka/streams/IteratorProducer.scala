@@ -63,27 +63,24 @@ abstract class AbstractStrictProducer[T](initialBufferSize: Int,
   protected def requestFromUpstream(elements: Int): Unit = {
     recursionLevel += 1
     try {
-      if (recursionLevel <= maxRecursionLevel) {
-        if (pending == 0) produce(elements)
-        else pending += elements // if we still have something scheduled we must not produce synchronously
-      } else {
-        pending = elements
-        schedule()
-      }
+      if (pending == 0) {
+        if (recursionLevel <= maxRecursionLevel) produce(elements)
+        else schedule(elements)
+      } else pending += elements // if we still have something scheduled we must not produce synchronously
     } finally recursionLevel -= 1
   }
 
   private def produce(elements: Long): Unit =
     if (elements > maxSyncBatchSize) {
       pushNext(maxSyncBatchSize)
-      pending = elements - maxSyncBatchSize
-      schedule()
+      schedule(elements - maxSyncBatchSize)
     } else {
       pushNext(elements.toInt)
       pending = 0
     }
 
-  private def schedule(): Unit =
+  private def schedule(newPending: Long): Unit = {
+    pending = newPending
     executor.execute {
       new Runnable {
         def run(): Unit =
@@ -93,6 +90,7 @@ abstract class AbstractStrictProducer[T](initialBufferSize: Int,
           } else run()
       }
     }
+  }
 
   protected def shutdown(): Unit = cancelUpstream()
   protected def cancelUpstream(): Unit = pending = 0

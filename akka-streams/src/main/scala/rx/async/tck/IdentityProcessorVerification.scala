@@ -1,12 +1,11 @@
 package rx.async.tck
 
+import org.testng.annotations.Test
 import rx.async.api.Processor
 import rx.async.spi.{ Subscription, Subscriber, Publisher }
-import org.testng.annotations.Test
 import rx.async.tck.SubscriberVerification.SubscriberProbe
 
-abstract class IdentityProcessorVerification[T] extends PublisherVerification[T] with SubscriberVerification[T] {
-  import TestEnvironment._
+abstract class IdentityProcessorVerification[T] extends PublisherVerification[T] with SubscriberVerification[T] { verification ⇒
 
   // TODO: make the timeouts be dilate-able so that one can tune the suite for the machine it runs on
 
@@ -21,6 +20,8 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
    * Helper method required for running the Publisher rules against a Processor.
    * It must create a Publisher for a stream with exactly the given number of elements.
    * If `elements` is zero the produced stream must be infinite.
+   * The stream must not produce the same element twice (in case of an infinite stream this requirement
+   * is relaxed to only apply to the elements that are actually requested during all tests).
    */
   def createHelperPublisher(elements: Int): Publisher[T]
 
@@ -60,9 +61,9 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
   override def mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError(): Unit =
     new TestSetup(bufferSize = 1) {
       val sub1 = new ManualSubscriber[T] with SubscriptionSupport[T] with ErrorCollection[T]
-      TestEnvironment.subscribe(processor.getPublisher, sub1)
+      verification.subscribe(processor.getPublisher, sub1)
       val sub2 = new ManualSubscriber[T] with SubscriptionSupport[T] with ErrorCollection[T]
-      TestEnvironment.subscribe(processor.getPublisher, sub2)
+      verification.subscribe(processor.getPublisher, sub2)
 
       sub1.requestMore(1)
       expectRequestMore(1)
@@ -78,6 +79,8 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
       sendError(ex)
       sub1.expectError(ex)
       sub2.expectError(ex)
+
+      verifyNoAsyncErrors()
     }
 
   ////////////////////// SUBSCRIBER RULES VERIFICATION ///////////////////////////
@@ -114,6 +117,8 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
       val sub = newSubscriber()
       sub.cancel()
       expectCancelling()
+
+      verifyNoAsyncErrors()
     }
 
   // A Processor
@@ -122,11 +127,13 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
   def mustImmediatelyPassOnOnErrorEventsReceivedFromItsUpstreamToItsDownstream(): Unit =
     new TestSetup(bufferSize = 1) {
       val sub = new ManualSubscriber[T] with SubscriptionSupport[T] with ErrorCollection[T]
-      TestEnvironment.subscribe(processor.getPublisher, sub)
+      verification.subscribe(processor.getPublisher, sub)
 
       val ex = new RuntimeException
       sendError(ex)
       sub.expectError(ex) // "immediately", i.e. without a preceding requestMore
+
+      verifyNoAsyncErrors()
     }
 
   // A Processor
@@ -145,6 +152,8 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
       sub.requestMore(2)
       sub.expectNext(x)
       sub.expectNext(y)
+
+      verifyNoAsyncErrors()
     }
 
   /////////////////////// ADDITIONAL "COROLLARY" TESTS //////////////////////
@@ -181,6 +190,8 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
       expectNextElement(sub2, z)
 
       expectRequestMore(1) // because sub1 still has 2 pending
+
+      verifyNoAsyncErrors()
     }
 
   @Test // unblock the stream if a 'blocking' subscription has been cancelled
@@ -196,20 +207,27 @@ abstract class IdentityProcessorVerification[T] extends PublisherVerification[T]
       expectNoRequestMore() // because we only have buffer size 1 and sub2 hasn't seen the first value yet
       sub2.cancel() // must "unblock"
       expectRequestMore(1)
+
+      verifyNoAsyncErrors()
     }
 
   /////////////////////// TEST INFRASTRUCTURE //////////////////////
 
   abstract class TestSetup(bufferSize: Int) extends ManualPublisher[T] {
-    val tees = newManualSubscriber(createHelperPublisher(0)) // gives us access to an infinite stream of T values
+    private val tees = newManualSubscriber(createHelperPublisher(0)) // gives us access to an infinite stream of T values
+    private val seenTees = Set.empty[T]
     val processor = createIdentityProcessor(bufferSize)
     subscribe(processor.getSubscriber)
 
     def newSubscriber() = newManualSubscriber(processor.getPublisher)
-    def nextT(): T = tees.requestNextElement()
+    def nextT(): T = {
+      val t = tees.requestNextElement()
+      if (seenTees.contains(t)) flop(s"Helper publisher illegally produced the same element $t twice")
+      t
+    }
     def expectNextElement(sub: ManualSubscriber[T], expected: T): Unit = {
       val elem = sub.nextElement()
-      if (elem != expected) fail(s"Received `onNext($elem)` on downstream but expected `onNext($expected)`")
+      if (elem != expected) flop(s"Received `onNext($elem)` on downstream but expected `onNext($expected)`")
     }
   }
 }
