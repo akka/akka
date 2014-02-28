@@ -73,7 +73,7 @@ object AkkaBuild extends Build {
       }
       
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, httpCore, slf4j, agent, transactor,
       persistence, akkaStreams, mailboxes, zeroMQ, kernel, osgi, osgiAries, docs, contrib, samples, multiNodeTestkit)
   )
 
@@ -243,6 +243,18 @@ object AkkaBuild extends Build {
     )
   ) configs (MultiJvm)
 
+
+  lazy val httpCore = Project(
+    id = "akka-http-core",
+    base = file("akka-http-core"),
+    settings = defaultSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.httpCore++ Seq(
+      fork in Test := true,
+      publishArtifact in Compile := false,
+      libraryDependencies ++= Dependencies.httpCore,
+      previousArtifact := akkaPreviousArtifact("akka-http-core")
+    )
+  )
+
   lazy val slf4j = Project(
     id = "akka-slf4j",
     base = file("akka-slf4j"),
@@ -288,7 +300,7 @@ object AkkaBuild extends Build {
   lazy val akkaStreams /* Can't use `streams` which has another meaning */ = Project(
     id = "akka-streams",
     base = file("akka-streams"),
-    dependencies = Seq(actor, testkit % "test->test"),
+    dependencies = Seq(actor, testkit % "test->test; compile->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.akkaStreams ++ Seq(
       libraryDependencies ++= Dependencies.akkaStreams,
       previousArtifact := akkaPreviousArtifact("akka-streams")
@@ -1060,6 +1072,8 @@ object AkkaBuild extends Build {
 
     val remote = exports(Seq("akka.remote.*"), imports = Seq(protobufImport()))
 
+    val httpCore = exports(Seq("akka.http.*"))
+
     val slf4j = exports(Seq("akka.event.slf4j.*"))
 
     val dataflow = exports(Seq("akka.dataflow.*"))
@@ -1140,6 +1154,8 @@ object Dependencies {
     val levelDB       = "org.iq80.leveldb"            % "leveldb"                      % "0.5"         // ApacheV2
     val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"               % "1.7"         // New BSD
 
+    val testNG        = "org.testng"                  % "testng"                       % "5.14.10" // ApacheV2
+
     // Camel Sample
     val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
 
@@ -1155,7 +1171,7 @@ object Dependencies {
       val commonsMath  = "org.apache.commons"          % "commons-math"                 % "2.1"              % "test" // ApacheV2
       val commonsIo    = "commons-io"                  % "commons-io"                   % "2.4"              % "test" // ApacheV2
       val commonsCodec = "commons-codec"               % "commons-codec"                % "1.7"              % "test" // ApacheV2
-      val junit        = "junit"                       % "junit"                        % "4.10"             % "test" // Common Public License 1.0
+      val junit        = "junit"                       % "junit"                        % "4.11"             % "test" // Common Public License 1.0
       val logback      = "ch.qos.logback"              % "logback-classic"              % "1.0.13"           % "test" // EPL 1.0 / LGPL 2.1
       val mockito      = "org.mockito"                 % "mockito-all"                  % "1.8.1"            % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
@@ -1181,6 +1197,8 @@ object Dependencies {
 
   val remoteTests = Seq(Test.junit, Test.scalatest)
 
+  val httpCore = Seq()
+
   val cluster = Seq(Test.junit, Test.scalatest)
 
   val slf4j = Seq(slf4jApi, Test.logback)
@@ -1191,7 +1209,7 @@ object Dependencies {
 
   val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
 
-  val akkaStreams = Seq(Test.scalatest, Test.junit)
+  val akkaStreams = Seq(testNG, Test.scalatest)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
