@@ -93,6 +93,6 @@ case class QuarantinedEvent(address: Address, uid: Int) extends RemotingLifecycl
 private[remote] class EventPublisher(system: ActorSystem, log: LoggingAdapter, logLevel: Logging.LogLevel) {
   def notifyListeners(message: RemotingLifecycleEvent): Unit = {
     system.eventStream.publish(message)
-    if (logLevel <= message.logLevel) log.log(message.logLevel, "{}", message)
+    if (message.logLevel <= logLevel) log.log(message.logLevel, "{}", message)
   }
 }
