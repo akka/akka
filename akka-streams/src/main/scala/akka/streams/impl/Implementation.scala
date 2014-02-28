@@ -2,7 +2,7 @@ package akka.streams.impl
 
 import rx.async.api.Processor
 import rx.async.spi.{ Publisher, Subscription, Subscriber }
-import akka.actor.{ ActorRef, Props, Actor }
+import akka.actor.{ PoisonPill, ActorRef, Props, Actor }
 import akka.streams.{ Operation, ActorBasedImplementationSettings }
 import akka.streams.Operation._
 import rx.async.api.Producer
@@ -43,14 +43,21 @@ private class SourceProducer[O](source: Source[O], val settings: ActorBasedImple
 private class OperationProcessor[I, O](val operation: Operation[I, O], val settings: ActorBasedImplementationSettings)
   extends Processor[I, O]
   with ProducerImplementationBits[O] { outer ⇒
+  @volatile var finished = false
 
   // TODO: refactor into ConsumerImplementationBits to implement SinkConsumer
   val getSubscriber: Subscriber[I] =
     new Subscriber[I] {
-      def onSubscribe(subscription: Subscription): Unit = actor ! OnSubscribed(subscription)
-      def onNext(element: I): Unit = actor ! OnNext(element)
-      def onComplete(): Unit = actor ! OnComplete
-      def onError(cause: Throwable): Unit = actor ! OnError(cause)
+      def onSubscribe(subscription: Subscription): Unit =
+        if (finished) throw new IllegalStateException("Cannot subscribe shutdown subscriber")
+        else actor ! OnSubscribed(subscription)
+      def onNext(element: I): Unit = sendIfNotFinished(OnNext(element))
+      def onComplete(): Unit = sendIfNotFinished(OnComplete)
+      def onError(cause: Throwable): Unit = sendIfNotFinished(OnError(cause))
+
+      def sendIfNotFinished(msg: AnyRef): Unit =
+        if (!finished) actor ! msg
+      // else ignore
     }
 
   protected def createActor(promise: Promise[Publisher[O]]): ActorRef =
@@ -95,7 +102,7 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
     var cancelling = false
     override def shutdown(): Unit =
       // if cancelling shutdown needs to be deferred until after a possible subscription
-      if (!cancelling) super.shutdown()
+      if (!cancelling) stop()
 
     def WaitingForUpstream: Receive = {
       case OnSubscribed(subscription) ⇒
@@ -111,13 +118,23 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
     def Cancelled: Receive = {
       case OnSubscribed(subscription) ⇒
         subscription.cancel()
-        context.stop(self)
+        stop()
     }
     def Running: Receive = {
       case OnNext(element) ⇒ settings.effectExecutor.run(impl.handleNext(element))
       case OnComplete      ⇒ settings.effectExecutor.run(impl.handleComplete())
       case OnError(cause)  ⇒ settings.effectExecutor.run(impl.handleError(cause))
       case RunEffects(e)   ⇒ settings.effectExecutor.run(e)
+    }
+    def Finishing: Receive = {
+      case OnSubscribed(subscription) ⇒ throw new IllegalStateException("Cannot subscribe shutdown subscriber")
+      case _                          ⇒ // ignore everything else
+    }
+
+    def stop(): Unit = {
+      finished = true
+      context.become(Finishing)
+      self ! PoisonPill
     }
   }
 }
