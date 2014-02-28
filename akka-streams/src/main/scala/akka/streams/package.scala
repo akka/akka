@@ -4,7 +4,7 @@ import rx.async.api.{ Processor, Consumer, Producer }
 import akka.streams.Operation.{ FromFutureSource, FromProducerSource, FromIterableSource }
 import scala.concurrent.Future
 
-package object streams {
+package object streams extends OperationApiImplicits {
   import Operation.{ Sink, Source, Pipeline }
 
   implicit class LinkProducer[I](val producer: Producer[I]) extends AnyVal {
