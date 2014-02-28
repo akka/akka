@@ -2,8 +2,8 @@ package akka.streams.impl
 
 import scala.annotation.tailrec
 import akka.streams.Operation.{ FromProducerSource, Sink, Source }
-import rx.async.api.Producer
-import rx.async.spi.{ Subscription, Subscriber, Publisher }
+import asyncrx.api.Producer
+import asyncrx.spi.{ Subscription, Subscriber, Publisher }
 import akka.streams.impl.BasicEffects.HandleNextInSink
 import akka.testkit.TestProbe
 import akka.actor.ActorSystem

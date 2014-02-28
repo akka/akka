@@ -1,11 +1,11 @@
 package akka.streams.impl
 
-import rx.async.api.Processor
-import rx.async.spi.{ Publisher, Subscription, Subscriber }
+import asyncrx.api.Processor
+import asyncrx.spi.{ Publisher, Subscription, Subscriber }
 import akka.actor.{ PoisonPill, ActorRef, Props, Actor }
 import akka.streams.{ Operation, ActorBasedImplementationSettings }
 import akka.streams.Operation._
-import rx.async.api.Producer
+import asyncrx.api.Producer
 import scala.concurrent.{ Promise, Await, ExecutionContext }
 import akka.util.Timeout
 import scala.util.{ Try, Success }

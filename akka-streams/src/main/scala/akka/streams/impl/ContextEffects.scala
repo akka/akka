@@ -1,9 +1,9 @@
 package akka.streams.impl
 
 import akka.streams.Operation.{ FromProducerSource, Sink, Source }
-import rx.async.api.Producer
+import asyncrx.api.Producer
 import scala.concurrent.ExecutionContext
-import rx.async.spi
+import asyncrx.spi
 import spi.Subscriber
 import akka.streams.AbstractProducer
 import scala.annotation.tailrec

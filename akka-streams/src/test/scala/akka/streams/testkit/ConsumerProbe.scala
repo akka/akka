@@ -1,8 +1,8 @@
 package akka.streams.testkit
 
 import scala.concurrent.duration.FiniteDuration
-import rx.async.api.Consumer
-import rx.async.spi.Subscription
+import asyncrx.api.Consumer
+import asyncrx.spi.Subscription
 
 sealed trait ConsumerEvent
 case class OnSubscribe(subscription: Subscription) extends ConsumerEvent

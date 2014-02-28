@@ -2,7 +2,7 @@ package akka.streams
 
 import scala.language.{ implicitConversions, higherKinds }
 
-import rx.async.api
+import asyncrx.api
 import Operation._
 
 trait OperationApiImplicits {

@@ -1,6 +1,6 @@
 package akka
 
-import rx.async.api.{ Processor, Consumer, Producer }
+import asyncrx.api.{ Processor, Consumer, Producer }
 import akka.streams.Operation.{ FromFutureSource, FromProducerSource, FromIterableSource }
 import scala.concurrent.Future
 

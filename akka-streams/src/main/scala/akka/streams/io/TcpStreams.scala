@@ -7,8 +7,8 @@ import akka.actor._
 import akka.io.{ IO, Tcp }
 import akka.io.Tcp._
 
-import rx.async.spi._
-import rx.async.api.{ Consumer, Producer }
+import asyncrx.spi._
+import asyncrx.api.{ Consumer, Producer }
 
 import akka.streams.io.TcpStream.IOStream
 

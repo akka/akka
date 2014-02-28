@@ -1,7 +1,7 @@
 package akka.streams
 
 import akka.streams.testkit.TestKit
-import rx.async.api
+import asyncrx.api
 import scala.concurrent.duration._
 import akka.testkit.duration2TestDuration
 import Operation._

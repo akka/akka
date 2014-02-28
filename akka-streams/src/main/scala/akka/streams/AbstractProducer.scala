@@ -2,22 +2,9 @@ package akka.streams
 
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
-import rx.async.api
-import rx.async.spi.{ Subscriber, Publisher }
+import asyncrx.api
+import asyncrx.spi.{ Subscriber, Publisher }
 import ResizableMultiReaderRingBuffer.NothingToReadException
-
-object Producer {
-  def apply[T](iterable: Iterable[T])(implicit executor: ExecutionContext): api.Producer[T] = apply(iterable.iterator)
-  def apply[T](iterator: Iterator[T])(implicit executor: ExecutionContext): api.Producer[T] = new IteratorProducer[T](iterator)
-  def empty[T]: api.Producer[T] = EmptyProducer.asInstanceOf[api.Producer[T]]
-}
-
-object EmptyProducer extends api.Producer[Nothing] with Publisher[Nothing] {
-  def getPublisher: Publisher[Nothing] = this
-
-  def subscribe(subscriber: Subscriber[Nothing]): Unit =
-    subscriber.onComplete()
-}
 
 /**
  * Implements basic subscriber management as well as efficient "slowest-subscriber-rate" downstream fan-out support
@@ -234,7 +221,7 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
   }
 
   protected class Subscription(val subscriber: Subscriber[T])
-    extends rx.async.spi.Subscription with ResizableMultiReaderRingBuffer.Cursor {
+    extends asyncrx.spi.Subscription with ResizableMultiReaderRingBuffer.Cursor {
 
     def requestMore(elements: Int): Unit =
       if (elements <= 0) throw new IllegalArgumentException("Argument must be > 0")

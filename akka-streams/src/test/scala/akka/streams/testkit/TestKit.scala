@@ -1,8 +1,8 @@
 package akka.streams.testkit
 
 import akka.testkit.TestProbe
-import rx.async.spi.{ Publisher, Subscriber, Subscription }
-import rx.async.tck._
+import asyncrx.spi.{ Publisher, Subscriber, Subscription }
+import asyncrx.tck._
 import akka.actor.ActorSystem
 import scala.concurrent.duration.FiniteDuration
 import scala.annotation.tailrec

@@ -3,7 +3,7 @@ package akka.streams
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
-import rx.async.spi.Subscriber
+import asyncrx.spi.Subscriber
 
 /**
  * An efficient producer for iterators.
